@@ -2,7 +2,7 @@
   "topic": "rapamycin",
   "section_key": "methods",
   "iteration": 5,
-  "provenance": "iter-04 base + 4 user micro-patches (Methods lock candidate)",
+  "provenance": "iter-04 base + 4 user micro-patches (Methods lock)",
   "patches": [
     "P1: 'adult mice' -> 'mice of any eligible age at treatment initiation' (preserves age moderator)",
     "P2: Removed Harrison citation from GM-model rule; replaced with [PLACEHOLDER:gm-sensitivity-protocol]",
@@ -13,8 +13,8 @@
     "METHODS"
   ],
   "word_counts": {
-    "METHODS": 1208
+    "METHODS": 1197
   },
-  "gate_violations": 1,
-  "status": "methods-still-iterating"
+  "gate_violations": 0,
+  "status": "methods-lock-candidate"
 }

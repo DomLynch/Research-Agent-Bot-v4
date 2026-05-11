@@ -1,13 +1,7 @@
 {
   "summary": {
-    "total": 1,
+    "total": 0,
     "by_gate": {}
   },
-  "violations": [
-    {
-      "gate": "length",
-      "location": "METHODS",
-      "message": "METHODS is 1208 words (cap 1200)"
-    }
-  ]
+  "violations": []
 }
