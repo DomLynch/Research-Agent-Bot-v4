@@ -1,19 +1,14 @@
 """Pass-1 deterministic eligibility triage.
 
-Reads a `CandidateStudy` + `ParsedFullText` + topic-pack keyword lists
-and emits an `EligibilityTriage` with one of three labels:
+Scans candidate title + parsed full-text for topic-pack keyword lists and
+emits an `EligibilityTriage` label:
 
-  - eligible_likely : every mandatory field is present, no hard excluder fires
-  - exclude_likely  : a hard excluder fires (rapalog-only intervention,
-                      non-primary design, etc.)
-  - unclear         : mandatory evidence is missing but no hard excluder
-                      fires; pass to LLM judge for adjudication
+  - eligible_likely : every mandatory field present, no hard excluder fires
+  - exclude_likely  : hard excluder fires (rapalog-only, non-primary design)
+  - unclear         : evidence missing but no excluder; pass to LLM judge
 
-The mandatory-fields checklist is the same dict shape the LLM judge will
-return in Pass 2, so the merge step in Pass 3 can compare apples to apples.
-
-Universal: every keyword list comes from the topic pack. No biomedical
-literal in this file.
+Checklist shape matches what the LLM judge returns, so Pass-3 merge can
+compare apples to apples. Universal: keyword lists come from the topic pack.
 """
 from __future__ import annotations
 

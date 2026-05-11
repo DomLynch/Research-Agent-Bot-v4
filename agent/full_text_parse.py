@@ -32,8 +32,6 @@ SourceKind = Literal["pmc-xml", "html", "unsupported"]
 
 @dataclass(frozen=True, slots=True)
 class ParsedFullText:
-    """One parsed open-access full-text document."""
-
     study_id: str
     source_url: str
     source_kind: SourceKind
@@ -88,7 +86,6 @@ async def _fetch_html(url: str, *, client: httpx.AsyncClient) -> tuple[str, str]
 async def parse_one(
     receipt: FullTextReceipt, *, client: httpx.AsyncClient, settings: Settings,
 ) -> ParsedFullText:
-    """Fetch + parse one full-text source. Fail-soft."""
     if not receipt.retrieved:
         return ParsedFullText(
             study_id=receipt.study_id, source_url="", source_kind="unsupported",
@@ -122,7 +119,6 @@ async def parse_one(
 async def parse_full_texts(
     receipts: tuple[FullTextReceipt, ...], *, settings: Settings,
 ) -> tuple[ParsedFullText, ...]:
-    """Fan out parses in parallel; preserve receipt order."""
     if not receipts:
         return ()
     async with httpx.AsyncClient(timeout=25.0) as client:

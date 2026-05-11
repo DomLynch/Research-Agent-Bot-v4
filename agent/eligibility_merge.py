@@ -1,29 +1,13 @@
-"""Pass-3 deterministic eligibility merge.
+"""Pass-3 deterministic eligibility merge. LLM proposes; code disposes.
 
-`LLM proposes -> code disposes.`
+Merge rules:
+  include  : triage != exclude_likely AND proposal.include AND
+             confidence >= CONF_FLOOR AND every mandatory field true
+  exclude  : triage == exclude_likely OR proposal.exclude w/ confidence
+             >= CONF_FLOOR OR rapalog-only / combination-only flag fires
+  unclear  : otherwise (rule/judge conflict, low confidence, missing evidence)
 
-Takes the Pass-1 `EligibilityTriage` + Pass-2 `EligibilityProposal` and
-applies the merge rules to produce a final `EligibilityReceipt` with a
-full audit trail.
-
-Merge rules (user-specified):
-
-  include if:
-    triage.label != "exclude_likely"
-    AND proposal.decision == "include"
-    AND proposal.confidence >= CONF_FLOOR (default 0.75)
-    AND every mandatory field in proposal.eligibility_fields is True
-
-  exclude if:
-    triage.label == "exclude_likely"  (hard rule excluder fired)
-    OR proposal.decision == "exclude" with confidence >= CONF_FLOOR
-    OR rapalog_only_intervention flag is True in either source
-    OR combination_only_no_isolated_arm flag is True in the proposal
-
-  unclear otherwise (rule/judge conflict, low confidence, missing evidence)
-
-Universal: no domain literals. Merge logic only reads the structured
-`EligibilityTriage` and `EligibilityProposal` records.
+Output is a single `EligibilityReceipt` with full audit trail.
 """
 from __future__ import annotations
 
