@@ -1,0 +1,10 @@
+[
+  {
+    "study_id": "s001",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC12842240",
+    "parsed": true,
+    "text_hash": "8ad30383c6bfea4923c41cd067442e601934272e4b0ccf92e6d8324e3244991d",
+    "char_count": 10282,
+    "failure_reason": ""
+  }
+]

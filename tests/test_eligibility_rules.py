@@ -47,6 +47,7 @@ def _pack(
         eligibility_exclude_design_terms=excludes,
         eligibility_combination_terms=(),
         eligibility_min_text_chars=min_chars,
+        sentinel_primary=(), sentinel_prior_meta=(),
     )
 
 

@@ -19,6 +19,7 @@ from typing import Literal
 
 import httpx
 
+from agent.pdf_parse import extract_pdf_text
 from agent.screening import FullTextReceipt, ParsedFullTextReceipt
 from agent.settings import Settings
 
@@ -27,7 +28,7 @@ _MAX_CHARS = 80_000
 _TAG_RE = re.compile(r"<[^>]+>")
 _WS_RE = re.compile(r"\s+")
 
-SourceKind = Literal["pmc-xml", "html", "unsupported"]
+SourceKind = Literal["pmc-xml", "html", "pdf", "unsupported"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,16 +84,21 @@ async def _fetch_pmc_xml(
         return "", f"pmc fetch failed: {e.__class__.__name__}"
 
 
-async def _fetch_html(url: str, *, client: httpx.AsyncClient) -> tuple[str, str]:
+async def _fetch_html_or_pdf(
+    url: str, *, client: httpx.AsyncClient,
+) -> tuple[str, str, str]:
+    """Fetch + decode. Returns (text, source_kind_hint, error). Source kind
+    is "pdf" or "html" so the caller can record it correctly."""
     try:
-        r = await client.get(url, timeout=20.0, follow_redirects=True)
+        r = await client.get(url, timeout=30.0, follow_redirects=True)
         r.raise_for_status()
     except httpx.HTTPError as e:
-        return "", f"html fetch failed: {e.__class__.__name__}"
+        return "", "html", f"html fetch failed: {e.__class__.__name__}"
     ctype = r.headers.get("content-type", "").lower()
     if "pdf" in ctype or url.lower().endswith(".pdf"):
-        return "", "PDF extraction not supported in Sprint 7"
-    return r.text, ""
+        text, err = extract_pdf_text(r.content)
+        return text, "pdf", err
+    return r.text, "html", ""
 
 
 async def parse_one(
@@ -110,17 +116,23 @@ async def parse_one(
         )
         kind: SourceKind = "pmc-xml"
         source_url = f"{_EFETCH_PMC}?db=pmc&id={receipt.reason}"
+        text = _strip(raw) if raw else ""
     elif receipt.source == "Unpaywall":
-        raw, err = await _fetch_html(receipt.reason, client=client)
-        kind = "html"
+        raw, kind_hint, err = await _fetch_html_or_pdf(receipt.reason, client=client)
         source_url = receipt.reason
+        if kind_hint == "pdf":
+            kind = "pdf"
+            # PyMuPDF/pdfminer return plain text; normalise whitespace + cap length.
+            text = _WS_RE.sub(" ", raw).strip()[:_MAX_CHARS] if raw else ""
+        else:
+            kind = "html"
+            text = _strip(raw) if raw else ""
     else:
         return ParsedFullText(
             study_id=receipt.study_id, source_url=receipt.reason,
             source_kind="unsupported", text="", char_count=0, sha256="",
             fetched_at_utc=_now_utc(), error=f"unknown source {receipt.source!r}",
         )
-    text = _strip(raw) if raw else ""
     return ParsedFullText(
         study_id=receipt.study_id, source_url=source_url, source_kind=kind,
         text=text, char_count=len(text), sha256=_hash(text),
