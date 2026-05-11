@@ -40,8 +40,16 @@ _POOLED = re.compile(
 )
 
 
+def _strip_markdown_structure(text: str) -> str:
+    """Drop markdown headers and blank lines — they are not claims."""
+    return "\n".join(
+        line for line in text.splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    )
+
+
 def _split_sentences(text: str) -> list[str]:
-    raw = re.split(r"(?<=[.!?])\s+(?=[A-Z\[])", text)
+    raw = re.split(r"(?<=[.!?])\s+(?=[A-Z\[])", _strip_markdown_structure(text))
     return [s.strip() for s in raw if s.strip()]
 
 
