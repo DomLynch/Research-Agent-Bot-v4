@@ -121,38 +121,44 @@ async def main() -> int:
     by_id: dict[str, CandidateStudy] = {c.study_id: c for c in candidates}
 
     # Only parse the OA-located subset; the validator forbids parsed receipts
-    # for candidates that have no FullTextReceipt(retrieved=True). For the
-    # rest, we synthesise an empty ParsedFullText so the rule/judge/merge
-    # pipeline still produces an unclear receipt with an honest reason.
-    located_ids = {r.study_id for r in ft_receipts if r.retrieved}
+    # for candidates without a FullTextReceipt(retrieved=True). And only the
+    # parsed-OK subset gets an eligibility decision - "decision pending" is
+    # the honest state for everything else, recorded as missing receipts.
     located_receipts = tuple(r for r in ft_receipts if r.retrieved)
     parsed_docs = await parse_full_texts(located_receipts, settings=settings)
     parsed_receipts: tuple[ParsedFullTextReceipt, ...] = tuple(d.to_receipt() for d in parsed_docs)
     parsed_by_id: dict[str, ParsedFullText] = {d.study_id: d for d in parsed_docs}
     print(f"[s7] parsed {sum(1 for r in parsed_receipts if r.parsed)}/{len(parsed_receipts)} full texts")
 
-    def _empty_doc(study_id: str) -> ParsedFullText:
-        return ParsedFullText(
-            study_id=study_id, source_url="", source_kind="unsupported",
-            text="", char_count=0, sha256="", fetched_at_utc="",
-            error="no open-access source",
-        )
-
     eligibility_receipts: list[EligibilityReceipt] = []
     label_counts: Counter[str] = Counter()
     decision_counts: Counter[str] = Counter()
-    for ft_r in ft_receipts:
+    skipped_parse_failed = 0
+    for ft_r in located_receipts:
         candidate = by_id[ft_r.study_id]
-        parsed_doc = parsed_by_id.get(ft_r.study_id, _empty_doc(ft_r.study_id))
+        parsed_doc = parsed_by_id[ft_r.study_id]
+        # Parsing failed for this OA-located candidate. Per validator, an
+        # eligibility receipt requires parsed=True; the honest state for a
+        # parse-failed candidate is "no decision made", recorded as the
+        # ABSENCE of an eligibility receipt and a populated parsed_receipt
+        # with parsed=False + failure_reason.
+        if not parsed_doc.text.strip():
+            skipped_parse_failed += 1
+            continue
         tri = triage(candidate, parsed_doc, pack)
         label_counts[tri.label] += 1
-        if args.dry_run or ft_r.study_id not in located_ids:
-            proposal = _dry_proposal(candidate.study_id)
-        else:
-            proposal = judge_eligibility(candidate, parsed_doc, tri, pack, settings)
+        proposal = (
+            _dry_proposal(candidate.study_id) if args.dry_run
+            else judge_eligibility(candidate, parsed_doc, tri, pack, settings)
+        )
         receipt = adjudicate(tri, proposal, parsed_doc)
         decision_counts[receipt.decision] += 1
         eligibility_receipts.append(receipt)
+    if skipped_parse_failed:
+        print(
+            f"[s7] skipped {skipped_parse_failed} candidates with parse failures "
+            f"(no eligibility decision possible)"
+        )
 
     # Sprint-7 strictness: assemble EvidenceState with parsed_receipts so the
     # eligibility validator can prove every include has a parsed=True receipt.
