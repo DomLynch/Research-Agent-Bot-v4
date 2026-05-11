@@ -40,8 +40,13 @@ def adjudicate(
     merged: dict[str, bool] = dict(triage.mandatory_fields)
     for k, v in proposal.eligibility_fields.items():
         merged[k] = bool(v)
-    rapalog = bool(merged.get("rapalog_only_intervention", False))
-    combo_only = bool(merged.get("combination_only_no_isolated_arm", False))
+    # OR semantics on hard excluders: LLM cannot whitewash a rule-detected flag.
+    rapalog = bool(
+        triage.mandatory_fields.get("rapalog_only_intervention", False)
+        or proposal.eligibility_fields.get("rapalog_only_intervention", False)
+    )
+    combo_only = bool(proposal.eligibility_fields.get("combination_only_no_isolated_arm", False))
+    merged["rapalog_only_intervention"] = rapalog
     judge_reviewer = JUDGE_REVIEWER if not proposal.parse_error else RULE_REVIEWER
 
     if triage.label == "exclude_likely":
