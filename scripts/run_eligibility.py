@@ -171,7 +171,7 @@ async def main() -> int:
         parsed_receipts=parsed_receipts,
         eligibility_receipts=tuple(eligibility_receipts),
     )
-    packets = compile_all(state, moderators=())
+    packets = compile_all(state, moderators=(), pack=pack)
     results_text = write_results_section(packets)
     violations = validate_results_text(results_text, packets)
 

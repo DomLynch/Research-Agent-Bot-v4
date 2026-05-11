@@ -127,7 +127,6 @@ primary = [
     "10.1038/nature08221",   # harrison-2009 (Nature)
     "10.1093/gerona/glq178", # miller-2011 (J Gerontol)
     "10.1111/acel.12496",    # strong-2016 (Aging Cell)
-    "10.1111/acel.12496",    # alt id placeholder
     "10.1111/acel.12476",    # bitto-2016 (Aging Cell)
 ]
 prior_meta = [
