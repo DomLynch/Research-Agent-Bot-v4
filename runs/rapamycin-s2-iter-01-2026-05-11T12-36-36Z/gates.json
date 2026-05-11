@@ -1,0 +1,21 @@
+{
+  "summary": {
+    "total": 2,
+    "by_gate": {
+      "evidence_slot": 1,
+      "length": 1
+    }
+  },
+  "violations": [
+    {
+      "gate": "evidence_slot",
+      "location": "METHODS",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'These matrices are designed to identify regions of concordance, where multiple moderators converge on a consistent effect, and regions of\u2026'"
+    },
+    {
+      "gate": "length",
+      "location": "METHODS",
+      "message": "METHODS is 1285 words (cap 1200)"
+    }
+  ]
+}

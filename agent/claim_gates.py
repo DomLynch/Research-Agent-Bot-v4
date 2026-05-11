@@ -165,9 +165,11 @@ _ABBREV = re.compile(
 # aims to identify — not a result claim. Skips the soft-trigger check.
 _PLANNED_ANALYSIS = re.compile(
     r"\b(?:"
-    # Modal + analytical verb ("will quantify", "aims to identify")
-    r"(?:will|would|is\s+planned\s+to|is\s+specified\s+to|are\s+specified\s+to|"
-    r"aims?\s+to|seeks?\s+to|is\s+designed\s+to)\s+"
+    # Modal + analytical verb ("will quantify", "are designed to identify")
+    r"(?:will|would|is\s+planned\s+to|are\s+planned\s+to|"
+    r"is\s+specified\s+to|are\s+specified\s+to|"
+    r"aims?\s+to|seeks?\s+to|"
+    r"is\s+designed\s+to|are\s+designed\s+to)\s+"
     r"(?:quantify|estimate|compute|partition|test|assess|measure|model|evaluate|"
     r"examine|determine|investigate|aggregate|synthesi[sz]e|identify|characteri[sz]e|"
     r"map|address|interrogate|visuali[sz]e|provide|describe|explain|distinguish|"
