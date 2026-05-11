@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from types import MappingProxyType
 
-from agent.results_compiler import InformationalPacket
+from agent.results_compiler import InformationalPacket, PacketLike
 from agent.results_contract import validate_results_text
 from agent.results_packets import ResultsPacket
 from agent.results_writer import write_results_section
@@ -88,14 +88,16 @@ def test_writer_renders_primary_effect_when_available() -> None:
 
 
 def test_writer_output_passes_contract_when_packets_exist() -> None:
-    packets = [_study_selection_packet(), _corpus_packet(), _primary_effect_packet()]
+    packets: list[PacketLike] = [
+        _study_selection_packet(), _corpus_packet(), _primary_effect_packet()
+    ]
     text = write_results_section(packets)
     violations = validate_results_text(text, packets)
     assert violations == [], f"unexpected violations: {violations}"
 
 
 def test_writer_minimal_output_passes_contract_with_refusals() -> None:
-    packets = [_study_selection_packet(), _corpus_packet()]
+    packets: list[PacketLike] = [_study_selection_packet(), _corpus_packet()]
     text = write_results_section(packets)
     violations = validate_results_text(text, packets)
     assert violations == [], (

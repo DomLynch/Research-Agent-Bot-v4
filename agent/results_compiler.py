@@ -1,0 +1,165 @@
+"""Results-packet compiler.
+
+Reads a frozen `EvidenceState` and emits a list of packets that the
+Results writer consumes. Two packet shapes:
+
+  - `InformationalPacket`: counts / descriptive content (study selection,
+    corpus characteristics, translational evidence map). No effect estimate.
+  - `ResultsPacket` (from agent.results_packets): pooled effect estimates
+    with k_studies / k_effects / metric / source_effect_ids.
+
+Universal: nothing biomedical in this module. Packet IDs are stable
+strings. Packets that have no evidence simply aren't emitted. Refusal
+output lives downstream in the writer / results_contract.
+"""
+from __future__ import annotations
+
+import math
+from collections import Counter
+from collections.abc import Mapping
+from dataclasses import dataclass
+from types import MappingProxyType
+
+from agent.effect_sizes import EffectSizeRecord
+from agent.evidence_state import EvidenceState
+from agent.results_packets import ResultsPacket
+
+
+@dataclass(frozen=True, slots=True)
+class InformationalPacket:
+    """Counts / descriptive packet with no effect estimate."""
+
+    packet_id: str
+    description: str
+    counts: Mapping[str, int]
+    notes: tuple[str, ...] = ()
+    source_study_ids: tuple[str, ...] = ()
+
+
+PacketLike = InformationalPacket | ResultsPacket
+
+
+def compile_study_selection(state: EvidenceState) -> InformationalPacket:
+    counts: dict[str, int] = {
+        "identified": state.k_hits,
+        "screened_title_abstract": sum(1 for r in state.receipts if r.stage == "title-abstract"),
+        "screened_full_text": sum(1 for r in state.receipts if r.stage == "full-text"),
+        "included": state.k_included,
+    }
+    return InformationalPacket(
+        packet_id="study_selection",
+        description="PRISMA-style flow counts (identified -> screened -> included).",
+        counts=MappingProxyType(counts),
+    )
+
+
+def compile_corpus_characteristics(state: EvidenceState) -> InformationalPacket:
+    years = [s.year for s in state.included if s.year is not None]
+    venues = sorted({s.venue for s in state.included if s.venue})
+    counts: dict[str, int] = {
+        "included": state.k_included,
+        "year_min": min(years) if years else 0,
+        "year_max": max(years) if years else 0,
+        "distinct_venues": len(venues),
+    }
+    return InformationalPacket(
+        packet_id="corpus_characteristics",
+        description="Corpus characteristics: year range, venue count, included-study count.",
+        counts=MappingProxyType(counts),
+        source_study_ids=tuple(s.study_id for s in state.included),
+    )
+
+
+def _pool_inverse_variance(
+    estimates: list[float], standard_errors: list[float | None]
+) -> tuple[float | None, float | None, float | None, float | None]:
+    """Return (pooled_estimate, se, ci_low, ci_high) or (None, None, None, None)."""
+    weights: list[float] = []
+    values: list[float] = []
+    for est, se in zip(estimates, standard_errors, strict=True):
+        if se is None or se <= 0:
+            continue
+        weights.append(1.0 / (se * se))
+        values.append(est)
+    if not weights:
+        return None, None, None, None
+    total_w = sum(weights)
+    pooled = sum(w * v for w, v in zip(weights, values, strict=True)) / total_w
+    pooled_se = math.sqrt(1.0 / total_w)
+    return pooled, pooled_se, pooled - 1.96 * pooled_se, pooled + 1.96 * pooled_se
+
+
+def _packet_for_effects(
+    packet_id: str,
+    description: str,
+    effects: list[EffectSizeRecord],
+    moderator_levels: Mapping[str, str],
+) -> ResultsPacket:
+    estimates = [e.estimate for e in effects]
+    errors = [e.se for e in effects]
+    pooled, pooled_se, ci_low, ci_high = _pool_inverse_variance(estimates, errors)
+    source_ids = tuple((e.study_id, e.outcome_id) for e in effects)
+    return ResultsPacket(
+        packet_id=packet_id,
+        description=description,
+        k_studies=len({sid for sid, _ in source_ids}),
+        k_effects=len(source_ids),
+        metric=effects[0].metric,
+        moderator_levels=moderator_levels,
+        source_effect_ids=source_ids,
+        estimate=pooled,
+        se=pooled_se,
+        ci_low=ci_low,
+        ci_high=ci_high,
+    )
+
+
+def compile_primary_effect(state: EvidenceState) -> ResultsPacket | None:
+    if not state.effects:
+        return None
+    primary_metric = Counter(e.metric for e in state.effects).most_common(1)[0][0]
+    in_scope = [e for e in state.effects if e.metric == primary_metric]
+    return _packet_for_effects(
+        packet_id="primary_effect",
+        description=f"Pooled inverse-variance-weighted estimate ({primary_metric}).",
+        effects=in_scope,
+        moderator_levels={},
+    )
+
+
+def compile_moderator_effects(
+    state: EvidenceState, moderator: str
+) -> list[ResultsPacket]:
+    if not state.effects:
+        return []
+    by_level: dict[str, list[EffectSizeRecord]] = {}
+    for e in state.effects:
+        level = e.moderators.get(moderator)
+        if level is None:
+            continue
+        by_level.setdefault(level, []).append(e)
+    return [
+        _packet_for_effects(
+            packet_id=f"moderator_effect.{moderator}.{level}",
+            description=f"Pooled estimate for {moderator}={level}.",
+            effects=group,
+            moderator_levels=MappingProxyType({moderator: level}),
+        )
+        for level, group in sorted(by_level.items())
+    ]
+
+
+def compile_all(
+    state: EvidenceState, *, moderators: tuple[str, ...] = ()
+) -> list[PacketLike]:
+    """Run all compilers. Skips packets that lack evidence."""
+    packets: list[PacketLike] = [
+        compile_study_selection(state),
+        compile_corpus_characteristics(state),
+    ]
+    primary = compile_primary_effect(state)
+    if primary is not None:
+        packets.append(primary)
+    for m in moderators:
+        packets.extend(compile_moderator_effects(state, m))
+    return packets
