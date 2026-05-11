@@ -20,11 +20,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.evidence_state import EvidenceState
+from agent.full_text_fetch import fetch_full_text_receipts
 from agent.results_compiler import InformationalPacket, compile_all
 from agent.results_contract import validate_results_text
 from agent.results_packets import ResultsPacket
 from agent.results_writer import write_results_section
 from agent.retrieval.unified import search_all
+from agent.screening import FullTextReceipt
 from agent.screening_rules import build_candidate_studies, screen_hits
 from agent.settings import load_settings
 from agent.topic_pack import TopicPack, load_topic_pack
@@ -46,6 +48,11 @@ async def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--topic", default="rapamycin")
     parser.add_argument("--iter", type=int, default=1)
+    parser.add_argument(
+        "--fetch-full-text",
+        action="store_true",
+        help="run open-access full-text availability check (PMC + Unpaywall)",
+    )
     args = parser.parse_args()
 
     settings = load_settings()
@@ -70,11 +77,20 @@ async def main() -> int:
     print(f"[s3] screened {len(receipts)} TA receipts; {n_include_ta} candidates")
 
     candidates = build_candidate_studies(tuple(hits), receipts)
+
+    ft_receipts: tuple[FullTextReceipt, ...] = ()
+    if args.fetch_full_text and candidates:
+        print(f"[s3] fetching full-text availability for {len(candidates)} candidates...")
+        ft_receipts = await fetch_full_text_receipts(candidates, settings=settings)
+        n_retrieved = sum(1 for r in ft_receipts if r.retrieved)
+        print(f"[s3] full-text receipts: {n_retrieved}/{len(ft_receipts)} retrieved")
+
     state = EvidenceState.build(
         topic=args.topic,
         hits=tuple(hits),
         receipts=receipts,
         candidates=candidates,
+        full_text_receipts=ft_receipts,
     )
     packets = compile_all(state, moderators=())
     text = write_results_section(packets)
