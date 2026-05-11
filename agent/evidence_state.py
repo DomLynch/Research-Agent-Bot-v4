@@ -1,10 +1,15 @@
 """Frozen `EvidenceState` — the single source of truth.
 
 Holds every record in the evidence chain (hits, screening receipts,
-included studies, extracted outcomes, effect-size records, results
+candidate studies, extracted outcomes, effect-size records, results
 packets). `EvidenceState.build()` validates every link and returns an
 immutable container. Downstream code reads the container; no other module
 may mint receipts or packets.
+
+`k_candidates` counts every CandidateStudy regardless of stage.
+`k_eligible` counts only candidates with stage `full_text_eligible`
+or `effect_extractable` — these are the studies that can legitimately
+be described as "included" in the meta-analysis.
 
 Universal: this module is domain-agnostic. Topic packs supply the
 moderator vocabulary; the records themselves carry only stable identifiers
@@ -23,10 +28,10 @@ from agent.effect_sizes import (
 from agent.results_packets import ResultsPacket, validate_packets
 from agent.retrieval.base import PaperHit
 from agent.screening import (
+    CandidateStudy,
     EvidenceLinkError,
-    IncludedStudy,
     ScreeningReceipt,
-    validate_included,
+    validate_candidates,
     validate_screening,
 )
 
@@ -41,7 +46,7 @@ class EvidenceState:
     topic: str
     hits: tuple[PaperHit, ...]
     receipts: tuple[ScreeningReceipt, ...]
-    included: tuple[IncludedStudy, ...]
+    candidates: tuple[CandidateStudy, ...]
     outcomes: tuple[ExtractedOutcome, ...]
     effects: tuple[EffectSizeRecord, ...]
     packets: tuple[ResultsPacket, ...]
@@ -55,8 +60,16 @@ class EvidenceState:
         return len({r.hit_key for r in self.receipts})
 
     @property
-    def k_included(self) -> int:
-        return len(self.included)
+    def k_candidates(self) -> int:
+        return len(self.candidates)
+
+    @property
+    def k_eligible(self) -> int:
+        return sum(1 for s in self.candidates if s.is_eligible)
+
+    @property
+    def eligible_studies(self) -> tuple[CandidateStudy, ...]:
+        return tuple(s for s in self.candidates if s.is_eligible)
 
     @property
     def k_outcomes(self) -> int:
@@ -77,15 +90,15 @@ class EvidenceState:
         topic: str,
         hits: tuple[PaperHit, ...] = (),
         receipts: tuple[ScreeningReceipt, ...] = (),
-        included: tuple[IncludedStudy, ...] = (),
+        candidates: tuple[CandidateStudy, ...] = (),
         outcomes: tuple[ExtractedOutcome, ...] = (),
         effects: tuple[EffectSizeRecord, ...] = (),
         packets: tuple[ResultsPacket, ...] = (),
     ) -> EvidenceState:
         """Validate the whole chain in dependency order, then freeze."""
         validate_screening(hits, receipts)
-        validate_included(receipts, included)
-        validate_outcomes(included, outcomes)
+        validate_candidates(receipts, candidates)
+        validate_outcomes(candidates, outcomes)
         validate_effects(outcomes, effects)
         validate_packets(effects, packets)
-        return cls(topic, hits, receipts, included, outcomes, effects, packets)
+        return cls(topic, hits, receipts, candidates, outcomes, effects, packets)

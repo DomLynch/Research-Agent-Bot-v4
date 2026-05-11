@@ -34,7 +34,7 @@ class PubMedSource:
         return True  # public; api_key only affects rate limit
 
     async def search(
-        self, query: str, *, client: httpx.AsyncClient, retmax: int = 50
+        self, query: str, *, client: httpx.AsyncClient, retmax: int = 500
     ) -> list[PaperHit]:
         pmids = await self._esearch(client, query, retmax)
         if not pmids:
