@@ -18,10 +18,53 @@ def _study_selection_packet() -> InformationalPacket:
             "screened_title_abstract": 50,
             "candidates_after_title_abstract": 12,
             "full_text_availability_located": 0,
+            "full_text_parsed": 0,
             "eligibility_decisions_made": 0,
+            "eligibility_included": 0,
+            "eligibility_excluded": 0,
+            "eligibility_unclear": 0,
             "eligible_after_full_text": 0,
         }),
     )
+
+
+def _selection_with(parsed: int, decisions: int, inc: int, exc: int, unc: int) -> InformationalPacket:
+    return InformationalPacket(
+        packet_id="study_selection",
+        description="x",
+        counts=MappingProxyType({
+            "identified": 500, "screened_title_abstract": 500,
+            "candidates_after_title_abstract": 65,
+            "full_text_availability_located": 59,
+            "full_text_parsed": parsed,
+            "eligibility_decisions_made": decisions,
+            "eligibility_included": inc,
+            "eligibility_excluded": exc,
+            "eligibility_unclear": unc,
+            "eligible_after_full_text": inc,
+        }),
+    )
+
+
+def test_writer_renders_parsed_pending_branch() -> None:
+    pkt = _selection_with(parsed=0, decisions=0, inc=0, exc=0, unc=0)
+    text = write_results_section([pkt])
+    assert "Open-access full-text availability was located for 59 candidates" in text
+    assert "full-text content has not yet been parsed" in text
+
+
+def test_writer_renders_eligibility_pending_branch() -> None:
+    pkt = _selection_with(parsed=45, decisions=0, inc=0, exc=0, unc=0)
+    text = write_results_section([pkt])
+    assert "full-text content was parsed for 45 of these" in text
+    assert "Eligibility assessment has not yet been performed" in text
+
+
+def test_writer_renders_eligibility_breakdown_when_decisions_made() -> None:
+    pkt = _selection_with(parsed=45, decisions=45, inc=18, exc=20, unc=7)
+    text = write_results_section([pkt])
+    assert "full-text content was parsed for 45 of these" in text
+    assert "applied to 45 parsed records, yielding 18 included, 20 excluded, and 7 flagged" in text
 
 
 def _corpus_packet() -> InformationalPacket:

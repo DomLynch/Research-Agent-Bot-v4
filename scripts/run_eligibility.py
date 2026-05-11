@@ -28,10 +28,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from agent.eligibility_judge import EligibilityProposal, judge_eligibility
 from agent.eligibility_merge import adjudicate
 from agent.eligibility_rules import triage
+from agent.evidence_state import EvidenceState
 from agent.full_text_fetch import fetch_full_text_receipts
 from agent.full_text_parse import parse_full_texts
+from agent.results_compiler import compile_all
+from agent.results_contract import validate_results_text
+from agent.results_writer import write_results_section
 from agent.retrieval.unified import search_all
-from agent.screening import CandidateStudy, EligibilityReceipt
+from agent.screening import CandidateStudy, EligibilityReceipt, ParsedFullTextReceipt
 from agent.screening_rules import build_candidate_studies, screen_hits
 from agent.settings import load_settings
 from agent.topic_pack import TopicPack, load_topic_pack
@@ -116,13 +120,14 @@ async def main() -> int:
 
     by_id: dict[str, CandidateStudy] = {c.study_id: c for c in candidates}
 
-    parsed = await parse_full_texts(ft_receipts, settings=settings)
-    print(f"[s7] parsed {sum(1 for p in parsed if p.text)}/{len(parsed)} full texts")
+    parsed_docs = await parse_full_texts(ft_receipts, settings=settings)
+    parsed_receipts: tuple[ParsedFullTextReceipt, ...] = tuple(d.to_receipt() for d in parsed_docs)
+    print(f"[s7] parsed {sum(1 for r in parsed_receipts if r.parsed)}/{len(parsed_receipts)} full texts")
 
     eligibility_receipts: list[EligibilityReceipt] = []
     label_counts: Counter[str] = Counter()
     decision_counts: Counter[str] = Counter()
-    for ft_r, parsed_doc in zip(ft_receipts, parsed, strict=True):
+    for ft_r, parsed_doc in zip(ft_receipts, parsed_docs, strict=True):
         candidate = by_id[ft_r.study_id]
         tri = triage(candidate, parsed_doc, pack)
         label_counts[tri.label] += 1
@@ -134,10 +139,37 @@ async def main() -> int:
         decision_counts[receipt.decision] += 1
         eligibility_receipts.append(receipt)
 
+    # Sprint-7 strictness: assemble EvidenceState with parsed_receipts so the
+    # eligibility validator can prove every include has a parsed=True receipt.
+    state = EvidenceState.build(
+        topic=args.topic,
+        hits=tuple(hits),
+        receipts=receipts,
+        candidates=candidates,
+        full_text_receipts=ft_receipts,
+        parsed_receipts=parsed_receipts,
+        eligibility_receipts=tuple(eligibility_receipts),
+    )
+    packets = compile_all(state, moderators=())
+    results_text = write_results_section(packets)
+    violations = validate_results_text(results_text, packets)
+
     (out_dir / "eligibility_receipts.json").write_text(
         json.dumps([_receipt_dict(r) for r in eligibility_receipts], indent=2),
         encoding="utf-8",
     )
+    (out_dir / "parsed_receipts.json").write_text(
+        json.dumps([
+            {
+                "study_id": r.study_id, "source_url": r.source_url,
+                "parsed": r.parsed, "text_hash": r.text_hash,
+                "char_count": r.char_count, "failure_reason": r.failure_reason,
+            }
+            for r in parsed_receipts
+        ], indent=2),
+        encoding="utf-8",
+    )
+    (out_dir / "main_draft.md").write_text(results_text, encoding="utf-8")
     summary = {
         "topic": args.topic,
         "iter": args.iter,
@@ -145,9 +177,11 @@ async def main() -> int:
         "k_hits": len(hits),
         "k_candidates": len(candidates),
         "k_full_text_located": sum(1 for r in ft_receipts if r.retrieved),
-        "k_parsed_with_text": sum(1 for p in parsed if p.text),
+        "k_parsed_with_text": sum(1 for r in parsed_receipts if r.parsed),
         "triage_labels": dict(label_counts),
         "final_decisions": dict(decision_counts),
+        "k_eligible": state.k_eligible,
+        "contract_violations": len(violations),
         "dry_run": args.dry_run,
         "judge_model": (
             settings.eligibility_judge_model or settings.judge_model
@@ -160,7 +194,10 @@ async def main() -> int:
 
     print(f"[s7] triage labels: {dict(label_counts)}")
     print(f"[s7] final decisions: {dict(decision_counts)}")
+    print(f"[s7] eligible studies after merge: {state.k_eligible}")
+    print(f"[s7] contract violations: {len(violations)}")
     print(f"[s7] saved -> {out_dir}/eligibility_receipts.json")
+    print(f"[s7] saved -> {out_dir}/main_draft.md")
     return 0
 
 
