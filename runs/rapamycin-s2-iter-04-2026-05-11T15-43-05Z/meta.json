@@ -1,0 +1,18 @@
+{
+  "topic": "rapamycin",
+  "section_key": "methods",
+  "iteration": 4,
+  "provenance": "iter-02 (Version 1) base + 3 user patches applied manually",
+  "patches": [
+    "include GM models with separate coding + sensitivity-exclude",
+    "single primary effect-size metric: log response ratio of lifespan",
+    "translational evidence map (no pooling with primary)"
+  ],
+  "sections_parsed": [
+    "METHODS"
+  ],
+  "word_counts": {
+    "METHODS": 1124
+  },
+  "gate_violations": 0
+}
