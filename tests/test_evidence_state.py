@@ -11,7 +11,7 @@ from agent.effect_sizes import EffectSizeRecord, ExtractedOutcome
 from agent.evidence_state import EvidenceLinkError, EvidenceState
 from agent.results_packets import ResultsPacket
 from agent.retrieval.base import PaperHit
-from agent.screening import IncludedStudy, ScreeningReceipt
+from agent.screening import CandidateStudy, ScreeningReceipt
 
 
 def _hit(doi: str = "10.1/x") -> PaperHit:
@@ -36,8 +36,8 @@ def _receipts_for(hit: PaperHit) -> tuple[ScreeningReceipt, ...]:
     )
 
 
-def _included(hit: PaperHit, study_id: str = "s1") -> IncludedStudy:
-    return IncludedStudy(
+def _candidate(hit: PaperHit, study_id: str = "s1") -> CandidateStudy:
+    return CandidateStudy(
         study_id=study_id,
         hit_key=hit.dedupe_key,
         title=hit.title,
@@ -95,7 +95,7 @@ def _packet(effects: tuple[EffectSizeRecord, ...], packet_id: str = "primary-poo
 def test_evidence_state_build_happy_path() -> None:
     h = _hit()
     receipts = _receipts_for(h)
-    inc = _included(h)
+    inc = _candidate(h)
     out = _outcome("s1")
     eff = _effect("s1")
     pkt = _packet((eff,))
@@ -103,7 +103,7 @@ def test_evidence_state_build_happy_path() -> None:
         topic="rapamycin",
         hits=(h,),
         receipts=receipts,
-        included=(inc,),
+        candidates=(inc,),
         outcomes=(out,),
         effects=(eff,),
         packets=(pkt,),
@@ -111,7 +111,7 @@ def test_evidence_state_build_happy_path() -> None:
     assert state.topic == "rapamycin"
     assert state.k_hits == 1
     assert state.k_screened == 1
-    assert state.k_included == 1
+    assert state.k_candidates == 1
     assert state.k_outcomes == 1
     assert state.k_effects == 1
     assert state.k_packets == 1
@@ -138,25 +138,25 @@ def test_validate_screening_fires_on_unknown_hit_key() -> None:
 
 # ---------- included links --------------------------------------------------
 
-def test_included_requires_full_text_include_receipt() -> None:
+def test_candidate_requires_at_least_one_include_receipt() -> None:
     h = _hit()
-    # only title-abstract include, no full-text receipt
+    # exclude-only receipt — no include of any stage
     receipts = (
-        ScreeningReceipt(h.dedupe_key, "include", "title-abstract", "x"),
+        ScreeningReceipt(h.dedupe_key, "exclude", "title-abstract", "out of scope"),
     )
-    inc = _included(h)
-    with pytest.raises(EvidenceLinkError, match="no full-text include receipt"):
-        EvidenceState.build(topic="t", hits=(h,), receipts=receipts, included=(inc,))
+    inc = _candidate(h)
+    with pytest.raises(EvidenceLinkError, match="no include screening receipt"):
+        EvidenceState.build(topic="t", hits=(h,), receipts=receipts, candidates=(inc,))
 
 
 def test_included_duplicate_study_id_rejected() -> None:
     h1, h2 = _hit("10.1/a"), _hit("10.1/b")
     receipts = _receipts_for(h1) + _receipts_for(h2)
-    inc1 = _included(h1, "dup")
-    inc2 = _included(h2, "dup")
-    with pytest.raises(EvidenceLinkError, match=r"Duplicate IncludedStudy\.study_id"):
+    inc1 = _candidate(h1, "dup")
+    inc2 = _candidate(h2, "dup")
+    with pytest.raises(EvidenceLinkError, match=r"Duplicate CandidateStudy\.study_id"):
         EvidenceState.build(
-            topic="t", hits=(h1, h2), receipts=receipts, included=(inc1, inc2)
+            topic="t", hits=(h1, h2), receipts=receipts, candidates=(inc1, inc2)
         )
 
 
@@ -165,11 +165,11 @@ def test_included_duplicate_study_id_rejected() -> None:
 def test_outcome_must_reference_included_study() -> None:
     h = _hit()
     receipts = _receipts_for(h)
-    inc = _included(h, "s1")
+    inc = _candidate(h, "s1")
     ghost_outcome = _outcome("s-ghost")
-    with pytest.raises(EvidenceLinkError, match="not in IncludedStudy"):
+    with pytest.raises(EvidenceLinkError, match="not in CandidateStudy"):
         EvidenceState.build(
-            topic="t", hits=(h,), receipts=receipts, included=(inc,),
+            topic="t", hits=(h,), receipts=receipts, candidates=(inc,),
             outcomes=(ghost_outcome,),
         )
 
@@ -179,12 +179,12 @@ def test_outcome_must_reference_included_study() -> None:
 def test_effect_must_reference_real_outcome() -> None:
     h = _hit()
     receipts = _receipts_for(h)
-    inc = _included(h, "s1")
+    inc = _candidate(h, "s1")
     out = _outcome("s1", "o1")
     ghost_effect = _effect("s1", "o-ghost")
     with pytest.raises(EvidenceLinkError, match="unknown outcome"):
         EvidenceState.build(
-            topic="t", hits=(h,), receipts=receipts, included=(inc,),
+            topic="t", hits=(h,), receipts=receipts, candidates=(inc,),
             outcomes=(out,), effects=(ghost_effect,),
         )
 
@@ -225,7 +225,7 @@ def test_packet_k_studies_must_match_source_studies() -> None:
 def test_packet_must_cite_known_effects() -> None:
     h = _hit()
     receipts = _receipts_for(h)
-    inc = _included(h, "s1")
+    inc = _candidate(h, "s1")
     out = _outcome("s1")
     eff = _effect("s1")
     ghost_packet = ResultsPacket(
@@ -235,6 +235,6 @@ def test_packet_must_cite_known_effects() -> None:
     )
     with pytest.raises(EvidenceLinkError, match="cites unknown effect"):
         EvidenceState.build(
-            topic="t", hits=(h,), receipts=receipts, included=(inc,),
+            topic="t", hits=(h,), receipts=receipts, candidates=(inc,),
             outcomes=(out,), effects=(eff,), packets=(ghost_packet,),
         )

@@ -66,21 +66,26 @@ class PubMedSource:
     async def _efetch(
         self, client: httpx.AsyncClient, pmids: list[str]
     ) -> list[PaperHit]:
-        params: dict[str, str] = {
-            "db": "pubmed",
-            "id": ",".join(pmids),
-            "retmode": "xml",
-        }
-        if self._api_key:
-            params["api_key"] = self._api_key
-        if self._email:
-            params["email"] = self._email
-        try:
-            r = await client.get(_EFETCH, params=params, timeout=30.0)
-            r.raise_for_status()
-        except httpx.HTTPError:
-            return []
-        return _parse_pubmed_xml(r.text)
+        """Batch-fetch in chunks; PubMed rejects long GET URLs at ~200+ ids."""
+        hits: list[PaperHit] = []
+        for i in range(0, len(pmids), 100):
+            chunk = pmids[i : i + 100]
+            params: dict[str, str] = {
+                "db": "pubmed",
+                "id": ",".join(chunk),
+                "retmode": "xml",
+            }
+            if self._api_key:
+                params["api_key"] = self._api_key
+            if self._email:
+                params["email"] = self._email
+            try:
+                r = await client.get(_EFETCH, params=params, timeout=30.0)
+                r.raise_for_status()
+            except httpx.HTTPError:
+                continue
+            hits.extend(_parse_pubmed_xml(r.text))
+        return hits
 
 
 def _parse_pubmed_xml(xml: str) -> list[PaperHit]:

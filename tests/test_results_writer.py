@@ -16,8 +16,9 @@ def _study_selection_packet() -> InformationalPacket:
         counts=MappingProxyType({
             "identified": 50,
             "screened_title_abstract": 50,
-            "screened_full_text": 50,
-            "included": 12,
+            "candidates_after_title_abstract": 12,
+            "full_text_retrieved": 0,
+            "eligible_after_full_text": 0,
         }),
     )
 
@@ -27,7 +28,7 @@ def _corpus_packet() -> InformationalPacket:
         packet_id="corpus_characteristics",
         description="x",
         counts=MappingProxyType({
-            "included": 12,
+            "eligible": 12,
             "year_min": 2009,
             "year_max": 2024,
             "distinct_venues": 8,
@@ -67,14 +68,14 @@ def test_writer_emits_all_subsections() -> None:
 
 def test_writer_refuses_when_packet_missing() -> None:
     text = write_results_section([_study_selection_packet()])
-    assert "[RESULTS_BLOCKED:no corpus_characteristics packet]" in text
+    assert "[RESULTS_BLOCKED:corpus characterization requires full-text-eligible" in text
     assert "[RESULTS_BLOCKED:no EffectSizeRecord" in text
 
 
 def test_writer_renders_study_selection_counts() -> None:
     text = write_results_section([_study_selection_packet()])
     assert "50 records identified" in text
-    assert "12 met all inclusion criteria" in text
+    assert "12 were flagged as candidate full-text inclusions" in text
     assert "[PACKET:study_selection]" in text
 
 

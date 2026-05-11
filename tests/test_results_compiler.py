@@ -13,7 +13,7 @@ from agent.results_compiler import (
 )
 from agent.results_packets import ResultsPacket
 from agent.retrieval.base import PaperHit
-from agent.screening import IncludedStudy, ScreeningReceipt
+from agent.screening import CandidateStudy, ScreeningReceipt
 
 
 def _hit(doi: str, year: int = 2020) -> PaperHit:
@@ -32,9 +32,10 @@ def _full_state(n_studies: int = 3) -> EvidenceState:
         )
     )
     included = tuple(
-        IncludedStudy(
+        CandidateStudy(
             study_id=f"s{i}", hit_key=h.dedupe_key, title=h.title, year=h.year,
             venue=h.venue, doi=h.doi,
+            screening_stage="full_text_eligible",
         )
         for i, h in enumerate(hits)
     )
@@ -55,7 +56,7 @@ def _full_state(n_studies: int = 3) -> EvidenceState:
         for i in range(n_studies)
     )
     return EvidenceState.build(
-        topic="t", hits=hits, receipts=receipts, included=included,
+        topic="t", hits=hits, receipts=receipts, candidates=included,
         outcomes=outcomes, effects=effects,
     )
 
@@ -68,7 +69,7 @@ def test_study_selection_packet_on_empty_state() -> None:
     assert isinstance(pkt, InformationalPacket)
     assert pkt.packet_id == "study_selection"
     assert pkt.counts["identified"] == 0
-    assert pkt.counts["included"] == 0
+    assert pkt.counts["candidates_after_title_abstract"] == 0
 
 
 def test_study_selection_counts_from_state() -> None:
@@ -76,8 +77,8 @@ def test_study_selection_counts_from_state() -> None:
     pkt = compile_study_selection(state)
     assert pkt.counts["identified"] == 3
     assert pkt.counts["screened_title_abstract"] == 3
-    assert pkt.counts["screened_full_text"] == 3
-    assert pkt.counts["included"] == 3
+    assert pkt.counts["full_text_retrieved"] == 3
+    assert pkt.counts["candidates_after_title_abstract"] == 3
 
 
 # ---------- corpus_characteristics ------------------------------------------
@@ -85,10 +86,16 @@ def test_study_selection_counts_from_state() -> None:
 def test_corpus_characteristics_year_range() -> None:
     state = _full_state(n_studies=3)
     pkt = compile_corpus_characteristics(state)
+    assert pkt is not None
     assert pkt.counts["year_min"] == 2018
     assert pkt.counts["year_max"] == 2020
     assert pkt.counts["distinct_venues"] == 1
     assert len(pkt.source_study_ids) == 3
+
+
+def test_corpus_characteristics_none_when_no_eligible_studies() -> None:
+    state = EvidenceState.build(topic="t")
+    assert compile_corpus_characteristics(state) is None
 
 
 # ---------- primary_effect --------------------------------------------------
@@ -152,4 +159,5 @@ def test_compile_all_skips_primary_when_no_effects() -> None:
     ids = {p.packet_id for p in packets}
     assert "primary_effect" not in ids
     assert "study_selection" in ids
-    assert "corpus_characteristics" in ids
+    # corpus_characteristics is also skipped when no eligible studies exist
+    assert "corpus_characteristics" not in ids
