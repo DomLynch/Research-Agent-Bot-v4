@@ -27,10 +27,10 @@ from agent.results_writer import write_results_section
 from agent.retrieval.unified import search_all
 from agent.screening_rules import build_included_studies, screen_hits
 from agent.settings import load_settings
-from agent.topic_pack import load_topic_pack
+from agent.topic_pack import TopicPack, load_topic_pack
 
 
-def _query_for(pack) -> str:
+def _query_for(pack: TopicPack) -> str:
     """Compose a search query from topic-pack scope vocabulary."""
     pref = " ".join(pack.preferred_terms[:1]) if pack.preferred_terms else ""
     endpoint = pack.endpoint

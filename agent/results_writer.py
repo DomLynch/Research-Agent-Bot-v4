@@ -59,7 +59,7 @@ def _render_corpus(p: InformationalPacket) -> str:
 def _render_effect(p: ResultsPacket) -> str:
     if p.estimate is None or p.ci_low is None or p.ci_high is None:
         return (
-            f"[RESULTS_BLOCKED:packet {p.packet_id} has no estimate — "
+            f"[RESULTS_BLOCKED:packet {p.packet_id} has no estimate - "
             f"upstream stats step pending]"
         )
     return (
@@ -100,7 +100,7 @@ def write_results_section(packets: Sequence[PacketLike]) -> str:
     parts.append(
         _render_effect(pe)
         if isinstance(pe, ResultsPacket)
-        else _refuse("no EffectSizeRecord — effect-extraction step pending")
+        else _refuse("no EffectSizeRecord - effect-extraction step pending")
     )
     parts.append("")
 
@@ -110,19 +110,19 @@ def write_results_section(packets: Sequence[PacketLike]) -> str:
         for m in mods:
             parts.append(_render_effect(m))
     else:
-        parts.append(_refuse("no moderator effects — extraction pending"))
+        parts.append(_refuse("no moderator effects - extraction pending"))
     parts.append("")
 
     parts.append("### Sensitivity Analyses")
-    parts.append(_refuse("no sensitivity packets — pending stats step"))
+    parts.append(_refuse("no sensitivity packets - pending stats step"))
     parts.append("")
 
     parts.append("### Tension Matrix")
-    parts.append(_refuse("no tension_matrix packet — pending moderator pooling"))
+    parts.append(_refuse("no tension_matrix packet - pending moderator pooling"))
     parts.append("")
 
     parts.append("### Translational Evidence Map")
-    parts.append(_refuse("no translational_map packet — pending separate sweep"))
+    parts.append(_refuse("no translational_map packet - pending separate sweep"))
     parts.append("")
 
     return "\n".join(parts).rstrip() + "\n"

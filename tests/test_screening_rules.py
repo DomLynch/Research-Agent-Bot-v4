@@ -15,6 +15,7 @@ def _hit(title: str, abstract: str = "", doi: str = "10.1/x") -> PaperHit:
 
 def test_include_when_preferred_and_primary_match() -> None:
     pack = load_topic_pack("rapamycin")
+    assert pack is not None
     h = _hit("Rapamycin extends lifespan in mice", "Murine cohort study of sirolimus")
     ta, ft = screen_hit(h, pack)
     assert ta.decision == "include"
@@ -25,6 +26,7 @@ def test_include_when_preferred_and_primary_match() -> None:
 
 def test_exclude_when_no_primary_intervention() -> None:
     pack = load_topic_pack("rapamycin")
+    assert pack is not None
     h = _hit("Caloric restriction in murine lifespan studies")
     ta, _ = screen_hit(h, pack)
     assert ta.decision == "exclude"
@@ -33,6 +35,7 @@ def test_exclude_when_no_primary_intervention() -> None:
 
 def test_exclude_when_no_preferred_scope_term() -> None:
     pack = load_topic_pack("rapamycin")
+    assert pack is not None
     h = _hit("Rapamycin in human clinical trials", "Adult patients treated with sirolimus")
     ta, _ = screen_hit(h, pack)
     assert ta.decision == "exclude"
@@ -41,6 +44,7 @@ def test_exclude_when_no_preferred_scope_term() -> None:
 
 def test_exclude_when_discouraged_term_present() -> None:
     pack = load_topic_pack("rapamycin")
+    assert pack is not None
     # 'mammalian' is discouraged in the rapamycin pack
     h = _hit("Rapamycin in mammalian models including mice")
     ta, _ = screen_hit(h, pack)
@@ -50,6 +54,7 @@ def test_exclude_when_discouraged_term_present() -> None:
 
 def test_screen_hits_emits_two_receipts_per_hit() -> None:
     pack = load_topic_pack("rapamycin")
+    assert pack is not None
     h1 = _hit("Rapamycin in mice", doi="10.1/a")
     h2 = _hit("Unrelated topic", doi="10.1/b")
     receipts = screen_hits((h1, h2), pack)
@@ -59,6 +64,7 @@ def test_screen_hits_emits_two_receipts_per_hit() -> None:
 
 def test_build_included_studies_only_from_full_text_includes() -> None:
     pack = load_topic_pack("rapamycin")
+    assert pack is not None
     good = _hit("Rapamycin extends lifespan in mice", doi="10.1/good")
     bad = _hit("Off-topic study", doi="10.1/bad")
     receipts = screen_hits((good, bad), pack)
