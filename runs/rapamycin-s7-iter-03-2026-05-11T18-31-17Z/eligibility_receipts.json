@@ -1,0 +1,28 @@
+[
+  {
+    "study_id": "s001",
+    "decision": "exclude",
+    "reason": "Pass-1 hard excluder: text matches review / non-primary design markers",
+    "reviewer": "rule-triage",
+    "confidence": 1.0,
+    "mandatory_fields": {
+      "species_match": false,
+      "intervention_match": false,
+      "endpoint_present": false,
+      "control_present": false,
+      "primary_research_design": false,
+      "rapalog_only_intervention": false,
+      "parsed_text_adequate": true,
+      "combination_only_no_isolated_arm": false
+    },
+    "evidence_quotes": [
+      "Editorial",
+      "Geroscience: A Translational Review",
+      "The articles featured in this Special Issue contribute substantially to molecular geroscience by providing robust experimental and mechanistic evidence that advances our understanding of the relationship between oxidative stress, autophagy, and senescence."
+    ],
+    "judge_model": "anthropic/claude-opus-4",
+    "rule_decision": "exclude_likely",
+    "source_text_hash": "8ad30383c6bfea4923c41cd067442e601934272e4b0ccf92e6d8324e3244991d",
+    "timestamp_utc": "2026-05-11T18:31:51+00:00"
+  }
+]

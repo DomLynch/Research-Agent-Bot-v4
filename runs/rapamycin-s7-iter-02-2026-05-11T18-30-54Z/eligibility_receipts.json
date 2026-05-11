@@ -1,0 +1,86 @@
+[
+  {
+    "study_id": "s001",
+    "decision": "exclude",
+    "reason": "Pass-1 hard excluder: text matches review / non-primary design markers",
+    "reviewer": "rule-triage",
+    "confidence": 0.0,
+    "mandatory_fields": {
+      "species_match": false,
+      "intervention_match": false,
+      "endpoint_present": true,
+      "control_present": true,
+      "primary_research_design": false,
+      "rapalog_only_intervention": false,
+      "parsed_text_adequate": true
+    },
+    "evidence_quotes": [],
+    "judge_model": "(dry-run)",
+    "rule_decision": "exclude_likely",
+    "source_text_hash": "8ad30383c6bfea4923c41cd067442e601934272e4b0ccf92e6d8324e3244991d",
+    "timestamp_utc": "2026-05-11T18:31:08+00:00"
+  },
+  {
+    "study_id": "s002",
+    "decision": "unclear",
+    "reason": "proposal parse error: dry-run; low judge confidence 0.00",
+    "reviewer": "rule-triage",
+    "confidence": 0.0,
+    "mandatory_fields": {
+      "species_match": true,
+      "intervention_match": true,
+      "endpoint_present": true,
+      "control_present": true,
+      "primary_research_design": true,
+      "rapalog_only_intervention": false,
+      "parsed_text_adequate": true
+    },
+    "evidence_quotes": [],
+    "judge_model": "(dry-run)",
+    "rule_decision": "eligible_likely",
+    "source_text_hash": "52ab5a11c6e6f2fb6745102667379098607a0536949e399cae1516b39a6d060a",
+    "timestamp_utc": "2026-05-11T18:31:08+00:00"
+  },
+  {
+    "study_id": "s003",
+    "decision": "exclude",
+    "reason": "Pass-1 hard excluder: text matches review / non-primary design markers",
+    "reviewer": "rule-triage",
+    "confidence": 0.0,
+    "mandatory_fields": {
+      "species_match": true,
+      "intervention_match": true,
+      "endpoint_present": true,
+      "control_present": true,
+      "primary_research_design": false,
+      "rapalog_only_intervention": false,
+      "parsed_text_adequate": true
+    },
+    "evidence_quotes": [],
+    "judge_model": "(dry-run)",
+    "rule_decision": "exclude_likely",
+    "source_text_hash": "3ef01c9a71a2fde121f950a18365469c42e6a677345234879bca327c7beb6c23",
+    "timestamp_utc": "2026-05-11T18:31:08+00:00"
+  },
+  {
+    "study_id": "s004",
+    "decision": "unclear",
+    "reason": "proposal parse error: dry-run; low judge confidence 0.00; missing mandatory: control_present",
+    "reviewer": "rule-triage",
+    "confidence": 0.0,
+    "mandatory_fields": {
+      "species_match": true,
+      "intervention_match": true,
+      "endpoint_present": true,
+      "control_present": false,
+      "primary_research_design": true,
+      "rapalog_only_intervention": false,
+      "parsed_text_adequate": true
+    },
+    "evidence_quotes": [],
+    "judge_model": "(dry-run)",
+    "rule_decision": "unclear",
+    "source_text_hash": "1d364e44c21420098bfa6434693d613765ff87ea74852c13a5d9a63e4309b4f0",
+    "timestamp_utc": "2026-05-11T18:31:08+00:00"
+  }
+]
