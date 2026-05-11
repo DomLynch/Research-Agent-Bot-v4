@@ -38,15 +38,32 @@ def _filter_prefix(
 
 def _render_study_selection(p: InformationalPacket) -> str:
     c = p.counts
+    identified = c.get("identified", 0)
+    if identified == 0:
+        return _refuse(
+            "retrieval returned zero records - query or source configuration "
+            "may be broken"
+        )
+    ta_screened = c.get("screened_title_abstract", 0)
+    candidates = c.get("candidates_after_title_abstract", 0)
+    ft_retrieved = c.get("full_text_retrieved", 0)
+    if ft_retrieved == 0:
+        return (
+            f"Of {identified} records identified through systematic database "
+            f"search, {ta_screened} were screened at title/abstract level; "
+            f"{candidates} were flagged as candidate full-text inclusions. "
+            f"Full-text retrieval has not yet been performed; therefore, no "
+            f"studies are currently classified as full-text eligible for the "
+            f"primary pooled analysis [PACKET:study_selection]."
+        )
+    eligible = c.get("eligible_after_full_text", 0)
     return (
-        f"Of {c.get('identified', 0)} records identified through systematic "
-        f"database search, {c.get('screened_title_abstract', 0)} were screened at "
-        f"title/abstract level; {c.get('candidates_after_title_abstract', 0)} were "
-        f"flagged as candidate full-text inclusions pending full-text retrieval and "
-        f"eligibility assessment. Full-text retrieval is recorded for "
-        f"{c.get('full_text_retrieved', 0)} candidates, of which "
-        f"{c.get('eligible_after_full_text', 0)} met all inclusion criteria for the "
-        f"primary pooled analysis [PACKET:study_selection]."
+        f"Of {identified} records identified through systematic database "
+        f"search, {ta_screened} were screened at title/abstract level; "
+        f"{candidates} were flagged as candidate full-text inclusions. "
+        f"Full-text was retrieved for {ft_retrieved} candidates, of which "
+        f"{eligible} met all inclusion criteria for the primary pooled "
+        f"analysis [PACKET:study_selection]."
     )
 
 

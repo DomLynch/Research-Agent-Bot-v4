@@ -76,7 +76,23 @@ def test_writer_renders_study_selection_counts() -> None:
     text = write_results_section([_study_selection_packet()])
     assert "50 records identified" in text
     assert "12 were flagged as candidate full-text inclusions" in text
+    assert "Full-text retrieval has not yet been performed" in text
     assert "[PACKET:study_selection]" in text
+
+
+def test_writer_refuses_study_selection_when_zero_identified() -> None:
+    from types import MappingProxyType
+    pkt = InformationalPacket(
+        packet_id="study_selection",
+        description="x",
+        counts=MappingProxyType({
+            "identified": 0, "screened_title_abstract": 0,
+            "candidates_after_title_abstract": 0,
+            "full_text_retrieved": 0, "eligible_after_full_text": 0,
+        }),
+    )
+    text = write_results_section([pkt])
+    assert "[RESULTS_BLOCKED:retrieval returned zero records" in text
 
 
 def test_writer_renders_primary_effect_when_available() -> None:

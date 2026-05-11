@@ -1,8 +1,8 @@
 {
   "topic": "rapamycin",
-  "k_hits": 0,
-  "k_screened": 0,
-  "k_candidates": 0,
+  "k_hits": 500,
+  "k_screened": 500,
+  "k_candidates": 65,
   "k_eligible": 0,
   "k_outcomes": 0,
   "k_effects": 0,
