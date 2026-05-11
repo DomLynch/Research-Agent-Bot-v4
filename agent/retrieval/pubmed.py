@@ -41,6 +41,23 @@ class PubMedSource:
             return []
         return await self._efetch(client, pmids)
 
+    async def fetch_by_identifier(
+        self, identifier: str, *, client: httpx.AsyncClient,
+    ) -> list[PaperHit]:
+        """Fetch a single paper by PMID or DOI. Used by sentinel injection
+        so canonical anchors enter the corpus even when PubMed relevance
+        sort buries them under recent papers."""
+        ident = identifier.strip()
+        if not ident:
+            return []
+        if "/" in ident:
+            pmids = await self._esearch(client, f"{ident}[DOI]", retmax=5)
+        else:
+            pmids = [ident]
+        if not pmids:
+            return []
+        return await self._efetch(client, pmids)
+
     async def _esearch(
         self, client: httpx.AsyncClient, query: str, retmax: int
     ) -> list[str]:

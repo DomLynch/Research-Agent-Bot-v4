@@ -65,17 +65,56 @@ async def search_all(
             *[s.search(query, client=client) for s in sources],
             return_exceptions=True,
         )
-    flat: list[PaperHit] = []
-    seen: set[str] = set()
-    for r in results:
-        if isinstance(r, BaseException):
-            continue
-        for hit in r:
-            if hit.dedupe_key in seen:
+        flat: list[PaperHit] = []
+        seen: set[str] = set()
+        for r in results:
+            if isinstance(r, BaseException):
                 continue
-            seen.add(hit.dedupe_key)
-            flat.append(hit)
+            for hit in r:
+                if hit.dedupe_key in seen:
+                    continue
+                seen.add(hit.dedupe_key)
+                flat.append(hit)
+        # Sentinel injection: canonical anchors PubMed relevance-sort buried
+        # may still be needed for the recall gate. Fetch each sentinel
+        # explicitly and merge whatever's not already in the dedup set.
+        sentinel_ids = (
+            tuple(pack.sentinel_primary) + tuple(pack.sentinel_prior_meta)
+            if pack else ()
+        )
+        if sentinel_ids:
+            flat.extend(
+                await _inject_sentinels(sentinel_ids, sources, client=client, seen=seen)
+            )
     return flat
+
+
+async def _inject_sentinels(
+    sentinel_ids: tuple[str, ...],
+    sources: list[AsyncSource],
+    *,
+    client: httpx.AsyncClient,
+    seen: set[str],
+) -> list[PaperHit]:
+    """Look up each sentinel identifier explicitly on any source that
+    exposes `fetch_by_identifier`. Idempotent: hits already in `seen` are
+    skipped."""
+    added: list[PaperHit] = []
+    for sid in sentinel_ids:
+        for src in sources:
+            fetch = getattr(src, "fetch_by_identifier", None)
+            if fetch is None:
+                continue
+            try:
+                hits = await fetch(sid, client=client)
+            except Exception:
+                continue
+            for hit in hits:
+                if hit.dedupe_key in seen:
+                    continue
+                seen.add(hit.dedupe_key)
+                added.append(hit)
+    return added
 
 
 def _register_default_sources() -> None:
