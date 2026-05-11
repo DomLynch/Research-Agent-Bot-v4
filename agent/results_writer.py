@@ -151,6 +151,12 @@ def write_results_section(packets: Sequence[PacketLike]) -> str:
     )
     parts.append("")
 
+    sr = _find(packets, "sentinel_recall")
+    if isinstance(sr, InformationalPacket):
+        parts.append("### Sentinel Recall Audit")
+        parts.append(_render_sentinel_recall(sr))
+        parts.append("")
+
     parts.append("### Corpus Characteristics")
     cc = _find(packets, "corpus_characteristics")
     parts.append(
