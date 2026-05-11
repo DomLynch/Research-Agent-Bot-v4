@@ -38,6 +38,7 @@ class TopicPack:
     subjects_extra: tuple[str, ...]
     primary_interventions: tuple[str, ...]
     translational_only_interventions: tuple[str, ...]
+    retrieval_sources: tuple[str, ...]
 
     @property
     def has_scope_rules(self) -> bool:
@@ -79,4 +80,5 @@ def load_topic_pack(topic: str, *, pack_dir: Path | None = None) -> TopicPack | 
         subjects_extra=tuple(triggers.get("subjects_extra", [])),
         primary_interventions=tuple(scope.get("primary_interventions", [])),
         translational_only_interventions=tuple(scope.get("translational_only_interventions", [])),
+        retrieval_sources=tuple(raw.get("retrieval", {}).get("sources", [])),
     )
