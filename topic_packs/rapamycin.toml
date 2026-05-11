@@ -48,6 +48,13 @@ allowed = [
 "mannick-2014-everolimus"        = "clinical-trial"
 "mannick-2018-rtb101"            = "clinical-trial"
 "page-2020-prisma"               = "method-citation"
+"sterne-2019-rob2"               = "method-citation"
+"sterne-2016-robins-i"           = "method-citation"
+"schunemann-grade"               = "method-citation"
+"egger-1997-funnel"              = "method-citation"
+"viechtbauer-2010-metafor"       = "method-citation"
+"higgins-2003-i2"                = "method-citation"
+"hartung-knapp"                  = "method-citation"
 
 # --- length caps -----------------------------------------------------------
 # Per-section word ceilings — drives the length gate.
