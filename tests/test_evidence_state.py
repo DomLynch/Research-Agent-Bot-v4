@@ -154,7 +154,7 @@ def test_included_duplicate_study_id_rejected() -> None:
     receipts = _receipts_for(h1) + _receipts_for(h2)
     inc1 = _included(h1, "dup")
     inc2 = _included(h2, "dup")
-    with pytest.raises(EvidenceLinkError, match="Duplicate IncludedStudy.study_id"):
+    with pytest.raises(EvidenceLinkError, match=r"Duplicate IncludedStudy\.study_id"):
         EvidenceState.build(
             topic="t", hits=(h1, h2), receipts=receipts, included=(inc1, inc2)
         )
