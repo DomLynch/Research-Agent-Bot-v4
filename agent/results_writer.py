@@ -47,8 +47,11 @@ def _render_study_selection(p: InformationalPacket) -> str:
     ta_screened = c.get("screened_title_abstract", 0)
     candidates = c.get("candidates_after_title_abstract", 0)
     availability = c.get("full_text_availability_located", 0)
+    parsed = c.get("full_text_parsed", 0)
     decisions = c.get("eligibility_decisions_made", 0)
-    eligible = c.get("eligible_after_full_text", 0)
+    included = c.get("eligibility_included", 0)
+    excluded = c.get("eligibility_excluded", 0)
+    unclear = c.get("eligibility_unclear", 0)
 
     prefix = (
         f"Of {identified} records identified through systematic database "
@@ -63,10 +66,19 @@ def _render_study_selection(p: InformationalPacket) -> str:
             f"primary pooled analysis [PACKET:study_selection]."
         )
 
+    if parsed == 0:
+        return (
+            f"{prefix} Open-access full-text availability was located for "
+            f"{availability} candidates; however, full-text content has not yet "
+            f"been parsed, so no studies are currently classified as full-text "
+            f"eligible for the primary pooled analysis [PACKET:study_selection]."
+        )
+
     if decisions == 0:
         return (
             f"{prefix} Open-access full-text availability was located for "
-            f"{availability} candidates. Eligibility assessment has not yet been "
+            f"{availability} candidates; full-text content was parsed for "
+            f"{parsed} of these. Eligibility assessment has not yet been "
             f"performed; therefore, no studies are currently classified as "
             f"full-text eligible for the primary pooled analysis "
             f"[PACKET:study_selection]."
@@ -74,9 +86,12 @@ def _render_study_selection(p: InformationalPacket) -> str:
 
     return (
         f"{prefix} Open-access full-text availability was located for "
-        f"{availability} candidates; eligibility was assessed for {decisions} of "
-        f"these, of which {eligible} met all inclusion criteria for the primary "
-        f"pooled analysis [PACKET:study_selection]."
+        f"{availability} candidates; full-text content was parsed for "
+        f"{parsed} of these. Pre-specified eligibility adjudication was "
+        f"applied to {decisions} parsed records, yielding {included} included, "
+        f"{excluded} excluded, and {unclear} flagged for manual review of "
+        f"low-confidence or rule-judge conflicts for the primary pooled "
+        f"analysis [PACKET:study_selection]."
     )
 
 

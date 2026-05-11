@@ -268,7 +268,7 @@ def test_eligibility_receipt_requires_full_text_retrieved() -> None:
     cand = _candidate(h, "s1")
     # No FullTextReceipt — eligibility receipt should fail validation
     elig = EligibilityReceipt(study_id="s1", decision="include", reason="ok")
-    with pytest.raises(EvidenceLinkError, match="lacks a full-text-retrieved receipt"):
+    with pytest.raises(EvidenceLinkError, match="lacks a full-text-located receipt"):
         EvidenceState.build(
             topic="t", hits=(h,), receipts=receipts, candidates=(cand,),
             eligibility_receipts=(elig,),

@@ -62,6 +62,7 @@ class Settings:
     openrouter_api_key: str
     openrouter_base_url: str
     judge_model: str
+    eligibility_judge_model: str
 
     writer_max_retries: int
 
@@ -79,7 +80,7 @@ class Settings:
 
     runs_dir: str
 
-    loc_ceiling: int = 3000
+    loc_ceiling: int = 5000
 
     @property
     def writer_configured(self) -> bool:
@@ -104,6 +105,7 @@ def load_settings() -> Settings:
         openrouter_api_key=_env("OPENROUTER_API_KEY"),
         openrouter_base_url=_env("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
         judge_model=_env("JUDGE_MODEL", "google/gemma-4-31b-it"),
+        eligibility_judge_model=_env("ELIGIBILITY_JUDGE_MODEL"),
         writer_max_retries=_int("WRITER_MAX_RETRIES", 2),
         researka_database_url=_env("RESEARKA_DATABASE_URL", "https://database.researka.org"),
         researka_database_token=_env("RESEARKA_DATABASE_TOKEN"),

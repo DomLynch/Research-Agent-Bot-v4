@@ -96,3 +96,22 @@ outcome_nouns_extra   = ["lifespan", "survival", "longevity", "mortality",
 direction_verbs_extra = ["extends", "extend", "prolongs", "prolong",
                          "attenuates", "attenuate", "abolishes", "abolish"]
 subjects_extra        = ["mice", "animals"]
+
+# --- eligibility adjudication ----------------------------------------------
+# Sprint 7: hybrid eligibility ladder. Pass 1 (deterministic triage) scans
+# parsed full-text + title for these keyword groups. Pass 2 (LLM judge) sees
+# the same lists in its prompt so its mandatory-fields checklist matches.
+# Universal: add a `[eligibility]` block per topic pack; no code change.
+[eligibility]
+endpoint_terms       = ["lifespan", "survival", "longevity", "mortality",
+                        "median survival", "maximum lifespan", "kaplan-meier",
+                        "log-rank"]
+control_terms        = ["control", "vehicle", "placebo", "untreated",
+                        "wild-type", "wild type"]
+exclude_design_terms = ["systematic review", "meta-analysis",
+                        "narrative review", "scoping review",
+                        "in vitro", "cell line", "cell culture",
+                        "case report", "editorial", "commentary"]
+combination_terms    = ["combined with", "combination with", "plus ",
+                        "co-treatment", "co-administered"]
+min_text_chars       = 2000

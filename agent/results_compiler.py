@@ -45,12 +45,16 @@ def compile_study_selection(state: EvidenceState) -> InformationalPacket:
         "screened_title_abstract": sum(1 for r in state.receipts if r.stage == "title-abstract"),
         "candidates_after_title_abstract": state.k_candidates,
         "full_text_availability_located": state.k_full_text_retrieved,
+        "full_text_parsed": state.k_full_text_parsed,
         "eligibility_decisions_made": len(state.eligibility_receipts),
+        "eligibility_included": state.k_eligibility_included,
+        "eligibility_excluded": state.k_eligibility_excluded,
+        "eligibility_unclear": state.k_eligibility_unclear,
         "eligible_after_full_text": state.k_eligible,
     }
     return InformationalPacket(
         packet_id="study_selection",
-        description="PRISMA-style flow counts (identified -> candidates -> availability -> eligibility).",
+        description="PRISMA-style flow counts (identified -> candidates -> availability -> parsed -> eligibility).",
         counts=MappingProxyType(counts),
     )
 

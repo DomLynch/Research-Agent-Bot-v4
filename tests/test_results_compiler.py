@@ -88,6 +88,11 @@ def test_study_selection_counts_from_state() -> None:
     assert pkt.counts["screened_title_abstract"] == 3
     assert pkt.counts["full_text_availability_located"] == 3
     assert pkt.counts["candidates_after_title_abstract"] == 3
+    # Sprint 7 counts (default 0 in the legacy fixture - parsed_receipts not wired)
+    assert "full_text_parsed" in pkt.counts
+    assert "eligibility_included" in pkt.counts
+    assert "eligibility_excluded" in pkt.counts
+    assert "eligibility_unclear" in pkt.counts
 
 
 # ---------- corpus_characteristics ------------------------------------------
