@@ -85,17 +85,25 @@ def call_judge(
     messages: list[dict[str, str]],
     *,
     temperature: float = 0.0,
+    model_override: str = "",
 ) -> LLMResponse:
-    """Single Gemma chat call via OpenRouter. Used for judge + editor pass."""
+    """Single OpenRouter chat call.
+
+    Defaults to `settings.judge_model` (Gemma 4 31B). Pass `model_override`
+    to route to a different OpenRouter-hosted model — used by the Sprint 7
+    eligibility judge to escalate to a frontier reviewer (Claude Opus-class
+    or GPT-class) without disturbing the prose-judge pipeline.
+    """
     if not settings.judge_configured:
         raise RuntimeError("Judge not configured: set OPENROUTER_API_KEY")
+    model = model_override or settings.judge_model
     data = _post_chat(
         base_url=settings.openrouter_base_url,
         api_key=settings.openrouter_api_key,
-        model=settings.judge_model,
+        model=model,
         messages=messages,
         timeout_sec=settings.mimo_timeout_sec,
         temperature=temperature,
         extra_headers={"HTTP-Referer": "https://research-agent-bot-v4.local"},
     )
-    return _extract(data, settings.judge_model)
+    return _extract(data, model)

@@ -1,17 +1,12 @@
 """Full-text parsing for eligibility adjudication.
 
-Given a `FullTextReceipt` that locates an open-access source (PMC XML
-or an Unpaywall HTML URL), fetch the bytes, strip markup to plain text,
-hash, and return a `ParsedFullText` record. Fail-soft: every HTTP or
-parse error returns a record with empty text and a populated `error`
-field so downstream stages can refuse cleanly.
+Dereferences a `FullTextReceipt` (PMC XML id or Unpaywall HTML URL),
+strips markup, hashes, and returns a `ParsedFullText`. Fail-soft: any
+HTTP / parse error sets `error` and leaves `text` empty so downstream
+stages can refuse cleanly. PDFs are out of scope for Sprint 7 and
+yield a `PDF extraction not supported` error.
 
-PDFs are out of scope for Sprint 7 (no pdfminer dependency yet); a PDF
-URL becomes a parse error so the LLM judge sees nothing and the merge
-step falls through to `unclear`.
-
-Universal: this module knows nothing about biomedicine. It only knows
-how to dereference PMC ids and HTML URLs, strip tags, and hash.
+Universal: no biomedical literals; only HTTP + regex tag stripping.
 """
 from __future__ import annotations
 
