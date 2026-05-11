@@ -59,6 +59,26 @@ class CandidateStudy:
         return self.screening_stage in _ELIGIBLE_STAGES
 
 
+@dataclass(frozen=True, slots=True)
+class FullTextReceipt:
+    """Records whether full-text retrieval was attempted for a candidate."""
+
+    study_id: str
+    retrieved: bool
+    source: str = ""
+    reason: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class EligibilityReceipt:
+    """Records the eligibility decision after full-text review."""
+
+    study_id: str
+    decision: Literal["include", "exclude"]
+    reason: str
+    reviewer: str = ""
+
+
 class EvidenceLinkError(ValueError):
     """A receipt, study, outcome, effect, or packet references a missing record."""
 
@@ -88,3 +108,69 @@ def validate_candidates(
         if s.study_id in seen_ids:
             raise EvidenceLinkError(f"Duplicate CandidateStudy.study_id {s.study_id!r}")
         seen_ids.add(s.study_id)
+
+
+def validate_full_text_receipts(
+    candidates: tuple[CandidateStudy, ...], receipts: tuple[FullTextReceipt, ...]
+) -> None:
+    study_ids = {s.study_id for s in candidates}
+    for r in receipts:
+        if r.study_id not in study_ids:
+            raise EvidenceLinkError(
+                f"FullTextReceipt references unknown study_id {r.study_id!r}"
+            )
+
+
+def validate_eligibility_receipts(
+    candidates: tuple[CandidateStudy, ...],
+    ft_receipts: tuple[FullTextReceipt, ...],
+    elig_receipts: tuple[EligibilityReceipt, ...],
+) -> None:
+    """An eligibility decision presupposes successful full-text retrieval."""
+    study_ids = {s.study_id for s in candidates}
+    retrieved = {r.study_id for r in ft_receipts if r.retrieved}
+    for r in elig_receipts:
+        if r.study_id not in study_ids:
+            raise EvidenceLinkError(
+                f"EligibilityReceipt references unknown study_id {r.study_id!r}"
+            )
+        if r.study_id not in retrieved:
+            raise EvidenceLinkError(
+                f"EligibilityReceipt for {r.study_id!r} lacks a full-text-retrieved receipt"
+            )
+
+
+def upgrade_candidate_stages(
+    candidates: tuple[CandidateStudy, ...],
+    ft_receipts: tuple[FullTextReceipt, ...],
+    elig_receipts: tuple[EligibilityReceipt, ...],
+    effect_study_ids: frozenset[str] = frozenset(),
+) -> tuple[CandidateStudy, ...]:
+    """Promote each candidate to the highest stage its receipts justify."""
+    retrieved = {r.study_id for r in ft_receipts if r.retrieved}
+    eligible = {r.study_id for r in elig_receipts if r.decision == "include"}
+    out: list[CandidateStudy] = []
+    for s in candidates:
+        stage: ScreeningStage = s.screening_stage
+        if s.study_id in retrieved:
+            stage = "full_text_retrieved"
+        if s.study_id in eligible:
+            stage = "full_text_eligible"
+        if s.study_id in effect_study_ids:
+            stage = "effect_extractable"
+        if stage == s.screening_stage:
+            out.append(s)
+        else:
+            out.append(
+                CandidateStudy(
+                    study_id=s.study_id,
+                    hit_key=s.hit_key,
+                    title=s.title,
+                    year=s.year,
+                    venue=s.venue,
+                    screening_stage=stage,
+                    pmid=s.pmid,
+                    doi=s.doi,
+                )
+            )
+    return tuple(out)
