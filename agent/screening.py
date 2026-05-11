@@ -17,7 +17,9 @@ stable identifier or a free-text reason.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import Literal
 
 from agent.retrieval.base import PaperHit
@@ -69,14 +71,40 @@ class FullTextReceipt:
     reason: str = ""
 
 
+_EMPTY_FIELDS: Mapping[str, bool] = MappingProxyType({})
+
+
 @dataclass(frozen=True, slots=True)
 class EligibilityReceipt:
-    """Records the eligibility decision after full-text review."""
+    """Records the eligibility decision after full-text review.
+
+    Decision values:
+      - "include"  : eligible for downstream pooling
+      - "exclude"  : disqualified by hard rule or judge
+      - "unclear"  : rule/judge conflict or low confidence; needs manual review
+
+    Sprint 7 audit-trail fields (optional, default to empty so legacy callers
+    that only pass study_id/decision/reason continue to work):
+      confidence       : judge confidence in [0, 1]
+      mandatory_fields : per-criterion boolean checklist (immutable mapping)
+      evidence_quotes  : verbatim snippets supporting the decision
+      judge_model      : model id that produced the proposal
+      rule_decision    : Pass-1 triage label
+      source_text_hash : hash of the parsed full-text that fed the judge
+      timestamp_utc    : ISO-8601 UTC when adjudication ran
+    """
 
     study_id: str
-    decision: Literal["include", "exclude"]
+    decision: Literal["include", "exclude", "unclear"]
     reason: str
     reviewer: str = ""
+    confidence: float = 0.0
+    mandatory_fields: Mapping[str, bool] = field(default_factory=lambda: _EMPTY_FIELDS)
+    evidence_quotes: tuple[str, ...] = ()
+    judge_model: str = ""
+    rule_decision: str = ""
+    source_text_hash: str = ""
+    timestamp_utc: str = ""
 
 
 class EvidenceLinkError(ValueError):
