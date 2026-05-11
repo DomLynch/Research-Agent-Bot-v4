@@ -12,7 +12,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
 
-from agent.screening import EvidenceLinkError, IncludedStudy
+from agent.screening import CandidateStudy, EvidenceLinkError
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,14 +45,14 @@ class EffectSizeRecord:
 
 
 def validate_outcomes(
-    included: tuple[IncludedStudy, ...], outcomes: tuple[ExtractedOutcome, ...]
+    candidates: tuple[CandidateStudy, ...], outcomes: tuple[ExtractedOutcome, ...]
 ) -> None:
-    study_ids = {s.study_id for s in included}
+    study_ids = {s.study_id for s in candidates}
     seen_pairs: set[tuple[str, str]] = set()
     for o in outcomes:
         if o.study_id not in study_ids:
             raise EvidenceLinkError(
-                f"ExtractedOutcome.study_id {o.study_id!r} not in IncludedStudy list"
+                f"ExtractedOutcome.study_id {o.study_id!r} not in CandidateStudy list"
             )
         key = (o.study_id, o.outcome_id)
         if key in seen_pairs:

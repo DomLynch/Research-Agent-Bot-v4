@@ -41,8 +41,11 @@ def _render_study_selection(p: InformationalPacket) -> str:
     return (
         f"Of {c.get('identified', 0)} records identified through systematic "
         f"database search, {c.get('screened_title_abstract', 0)} were screened at "
-        f"title and abstract, {c.get('screened_full_text', 0)} were assessed at "
-        f"full text, and {c.get('included', 0)} met all inclusion criteria for the "
+        f"title/abstract level; {c.get('candidates_after_title_abstract', 0)} were "
+        f"flagged as candidate full-text inclusions pending full-text retrieval and "
+        f"eligibility assessment. Full-text retrieval is recorded for "
+        f"{c.get('full_text_retrieved', 0)} candidates, of which "
+        f"{c.get('eligible_after_full_text', 0)} met all inclusion criteria for the "
         f"primary pooled analysis [PACKET:study_selection]."
     )
 
@@ -50,7 +53,7 @@ def _render_study_selection(p: InformationalPacket) -> str:
 def _render_corpus(p: InformationalPacket) -> str:
     c = p.counts
     return (
-        f"The {c.get('included', 0)} included studies span publication years "
+        f"The {c.get('eligible', 0)} eligible studies span publication years "
         f"{c.get('year_min', 0)}-{c.get('year_max', 0)} and {c.get('distinct_venues', 0)} "
         f"distinct venues [PACKET:corpus_characteristics]."
     )
@@ -91,7 +94,10 @@ def write_results_section(packets: Sequence[PacketLike]) -> str:
     parts.append(
         _render_corpus(cc)
         if isinstance(cc, InformationalPacket)
-        else _refuse("no corpus_characteristics packet")
+        else _refuse(
+            "corpus characterization requires full-text-eligible studies; "
+            "current state has only title/abstract candidates"
+        )
     )
     parts.append("")
 

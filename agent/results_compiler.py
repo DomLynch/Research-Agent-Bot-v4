@@ -43,30 +43,40 @@ def compile_study_selection(state: EvidenceState) -> InformationalPacket:
     counts: dict[str, int] = {
         "identified": state.k_hits,
         "screened_title_abstract": sum(1 for r in state.receipts if r.stage == "title-abstract"),
-        "screened_full_text": sum(1 for r in state.receipts if r.stage == "full-text"),
-        "included": state.k_included,
+        "candidates_after_title_abstract": state.k_candidates,
+        "full_text_retrieved": sum(1 for r in state.receipts if r.stage == "full-text"),
+        "eligible_after_full_text": state.k_eligible,
     }
     return InformationalPacket(
         packet_id="study_selection",
-        description="PRISMA-style flow counts (identified -> screened -> included).",
+        description="PRISMA-style flow counts (identified -> screened -> candidates -> eligible).",
         counts=MappingProxyType(counts),
     )
 
 
-def compile_corpus_characteristics(state: EvidenceState) -> InformationalPacket:
-    years = [s.year for s in state.included if s.year is not None]
-    venues = sorted({s.venue for s in state.included if s.venue})
+def compile_corpus_characteristics(state: EvidenceState) -> InformationalPacket | None:
+    """Only emit when at least one full-text-eligible study exists.
+
+    A corpus characterisation drawn from title-abstract candidates only
+    would lie about year range, venue diversity, and inclusion count, so
+    the compiler refuses and the writer will emit a [RESULTS_BLOCKED:].
+    """
+    eligible = state.eligible_studies
+    if not eligible:
+        return None
+    years = [s.year for s in eligible if s.year is not None]
+    venues = sorted({s.venue for s in eligible if s.venue})
     counts: dict[str, int] = {
-        "included": state.k_included,
+        "eligible": len(eligible),
         "year_min": min(years) if years else 0,
         "year_max": max(years) if years else 0,
         "distinct_venues": len(venues),
     }
     return InformationalPacket(
         packet_id="corpus_characteristics",
-        description="Corpus characteristics: year range, venue count, included-study count.",
+        description="Corpus characteristics (eligible studies only): year range, venues, count.",
         counts=MappingProxyType(counts),
-        source_study_ids=tuple(s.study_id for s in state.included),
+        source_study_ids=tuple(s.study_id for s in eligible),
     )
 
 
@@ -153,10 +163,10 @@ def compile_all(
     state: EvidenceState, *, moderators: tuple[str, ...] = ()
 ) -> list[PacketLike]:
     """Run all compilers. Skips packets that lack evidence."""
-    packets: list[PacketLike] = [
-        compile_study_selection(state),
-        compile_corpus_characteristics(state),
-    ]
+    packets: list[PacketLike] = [compile_study_selection(state)]
+    corpus = compile_corpus_characteristics(state)
+    if corpus is not None:
+        packets.append(corpus)
     primary = compile_primary_effect(state)
     if primary is not None:
         packets.append(primary)

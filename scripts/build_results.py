@@ -25,7 +25,7 @@ from agent.results_contract import validate_results_text
 from agent.results_packets import ResultsPacket
 from agent.results_writer import write_results_section
 from agent.retrieval.unified import search_all
-from agent.screening_rules import build_included_studies, screen_hits
+from agent.screening_rules import build_candidate_studies, screen_hits
 from agent.settings import load_settings
 from agent.topic_pack import TopicPack, load_topic_pack
 
@@ -66,15 +66,15 @@ async def main() -> int:
     print(f"[s3] retrieved {len(hits)} hits")
 
     receipts = screen_hits(tuple(hits), pack)
-    n_include_ft = sum(1 for r in receipts if r.decision == "include" and r.stage == "full-text")
-    print(f"[s3] screened {len(receipts)} receipts; {n_include_ft} full-text includes")
+    n_include_ta = sum(1 for r in receipts if r.decision == "include" and r.stage == "title-abstract")
+    print(f"[s3] screened {len(receipts)} TA receipts; {n_include_ta} candidates")
 
-    included = build_included_studies(tuple(hits), receipts)
+    candidates = build_candidate_studies(tuple(hits), receipts)
     state = EvidenceState.build(
         topic=args.topic,
         hits=tuple(hits),
         receipts=receipts,
-        included=included,
+        candidates=candidates,
     )
     packets = compile_all(state, moderators=())
     text = write_results_section(packets)
@@ -87,7 +87,8 @@ async def main() -> int:
                 "topic": state.topic,
                 "k_hits": state.k_hits,
                 "k_screened": state.k_screened,
-                "k_included": state.k_included,
+                "k_candidates": state.k_candidates,
+                "k_eligible": state.k_eligible,
                 "k_outcomes": state.k_outcomes,
                 "k_effects": state.k_effects,
                 "k_packets": len(packets),
