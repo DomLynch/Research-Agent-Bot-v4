@@ -28,9 +28,7 @@ def _now_utc() -> str:
     return datetime.now(tz=UTC).isoformat(timespec="seconds")
 
 
-def _every_mandatory_true(fields: dict[str, bool] | object) -> bool:
-    if not isinstance(fields, dict):
-        return False
+def _every_mandatory_true(fields: dict[str, bool]) -> bool:
     return all(bool(fields.get(k, False)) for k in MANDATORY_KEYS)
 
 
@@ -39,63 +37,44 @@ def adjudicate(
     proposal: EligibilityProposal,
     parsed: ParsedFullText,
 ) -> EligibilityReceipt:
-    """Apply merge rules; return the final receipt with full audit trail."""
-    merged_fields: dict[str, bool] = dict(triage.mandatory_fields)
+    merged: dict[str, bool] = dict(triage.mandatory_fields)
     for k, v in proposal.eligibility_fields.items():
-        # LLM verdict on a field beats the triage scan (more context).
-        merged_fields[k] = bool(v)
-
-    rapalog = bool(merged_fields.get("rapalog_only_intervention", False))
-    combination_only = bool(
-        merged_fields.get("combination_only_no_isolated_arm", False)
-    )
+        merged[k] = bool(v)
+    rapalog = bool(merged.get("rapalog_only_intervention", False))
+    combo_only = bool(merged.get("combination_only_no_isolated_arm", False))
+    judge_reviewer = JUDGE_REVIEWER if not proposal.parse_error else RULE_REVIEWER
 
     if triage.label == "exclude_likely":
-        decision = "exclude"
-        reviewer = RULE_REVIEWER
-        reason = (
-            "Pass-1 hard excluder fired: "
-            + (triage.reasons[0] if triage.reasons else "see triage record")
-        )
-    elif rapalog or combination_only:
-        decision = "exclude"
-        reviewer = JUDGE_REVIEWER if proposal.parse_error == "" else RULE_REVIEWER
-        flag = (
+        decision, reviewer = "exclude", RULE_REVIEWER
+        reason = "Pass-1 hard excluder: " + (triage.reasons[0] if triage.reasons else "see triage")
+    elif rapalog or combo_only:
+        decision, reviewer = "exclude", judge_reviewer
+        reason = "merged checklist excluder: " + (
             "rapalog-only intervention" if rapalog
             else "combination-only without isolated intervention arm"
         )
-        reason = f"hard-rule excluder via merged checklist: {flag}"
-    elif (
-        proposal.decision == "exclude"
-        and proposal.confidence >= CONF_FLOOR
-    ):
-        decision = "exclude"
-        reviewer = JUDGE_REVIEWER
+    elif proposal.decision == "exclude" and proposal.confidence >= CONF_FLOOR:
+        decision, reviewer = "exclude", JUDGE_REVIEWER
         reason = (
-            f"judge excluded with confidence {proposal.confidence:.2f}: "
+            f"judge excluded (conf {proposal.confidence:.2f}): "
             + (proposal.reasons[0] if proposal.reasons else "(no reason given)")
         )
     elif (
         proposal.decision == "include"
         and proposal.confidence >= CONF_FLOOR
-        and _every_mandatory_true(merged_fields)
-        and proposal.parse_error == ""
+        and _every_mandatory_true(merged)
+        and not proposal.parse_error
     ):
-        decision = "include"
-        reviewer = JUDGE_REVIEWER
-        reason = (
-            f"judge included with confidence {proposal.confidence:.2f}; "
-            "all mandatory fields confirmed"
-        )
+        decision, reviewer = "include", JUDGE_REVIEWER
+        reason = f"judge included (conf {proposal.confidence:.2f}); mandatory fields confirmed"
     else:
-        decision = "unclear"
-        reviewer = JUDGE_REVIEWER if proposal.parse_error == "" else RULE_REVIEWER
+        decision, reviewer = "unclear", judge_reviewer
         bits: list[str] = []
         if proposal.parse_error:
             bits.append(f"proposal parse error: {proposal.parse_error}")
         if proposal.confidence < CONF_FLOOR:
             bits.append(f"low judge confidence {proposal.confidence:.2f}")
-        missing = [k for k in MANDATORY_KEYS if not merged_fields.get(k, False)]
+        missing = [k for k in MANDATORY_KEYS if not merged.get(k, False)]
         if missing:
             bits.append("missing mandatory: " + ", ".join(missing))
         if not bits:
@@ -108,7 +87,7 @@ def adjudicate(
         reason=reason,
         reviewer=reviewer,
         confidence=proposal.confidence,
-        mandatory_fields=MappingProxyType(merged_fields),
+        mandatory_fields=MappingProxyType(merged),
         evidence_quotes=proposal.evidence_quotes,
         judge_model=proposal.model,
         rule_decision=triage.label,

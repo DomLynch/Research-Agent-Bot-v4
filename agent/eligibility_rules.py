@@ -46,68 +46,51 @@ def _any_term(haystack: str, terms: tuple[str, ...]) -> bool:
     return any(term.lower() in haystack for term in terms if term)
 
 
+def _build(
+    study_id: str, label: TriageLabel, checklist: dict[str, bool],
+    reasons: list[str],
+) -> EligibilityTriage:
+    return EligibilityTriage(
+        study_id=study_id, label=label,
+        mandatory_fields=MappingProxyType(checklist), reasons=tuple(reasons),
+    )
+
+
 def triage(
     candidate: CandidateStudy, parsed: ParsedFullText, pack: TopicPack,
 ) -> EligibilityTriage:
-    body = (parsed.text or "").lower()
-    title = (candidate.title or "").lower()
-    haystack = body + " " + title
-
-    species_ok = _any_term(haystack, pack.preferred_terms)
+    haystack = (parsed.text or "").lower() + " " + (candidate.title or "").lower()
     intervention_ok = _any_term(haystack, pack.primary_interventions)
     rapalog_only = (
-        _any_term(haystack, pack.translational_only_interventions) and not intervention_ok
+        _any_term(haystack, pack.translational_only_interventions)
+        and not intervention_ok
     )
-    endpoint_ok = _any_term(haystack, pack.eligibility_endpoint_terms)
-    control_ok = _any_term(haystack, pack.eligibility_control_terms)
     excluded_design = _any_term(haystack, pack.eligibility_exclude_design_terms)
     text_long_enough = len(parsed.text) >= pack.eligibility_min_text_chars
-
     checklist: dict[str, bool] = {
-        "species_match": species_ok,
+        "species_match": _any_term(haystack, pack.preferred_terms),
         "intervention_match": intervention_ok,
-        "endpoint_present": endpoint_ok,
-        "control_present": control_ok,
+        "endpoint_present": _any_term(haystack, pack.eligibility_endpoint_terms),
+        "control_present": _any_term(haystack, pack.eligibility_control_terms),
         "primary_research_design": not excluded_design,
         "rapalog_only_intervention": rapalog_only,
         "parsed_text_adequate": text_long_enough,
     }
     reasons: list[str] = []
-
     if parsed.error:
         reasons.append(f"parse error: {parsed.error}")
-
     if rapalog_only:
-        reasons.append(
-            "translational-only intervention detected without primary "
-            "intervention present"
-        )
-        return EligibilityTriage(
-            study_id=candidate.study_id, label="exclude_likely",
-            mandatory_fields=MappingProxyType(checklist), reasons=tuple(reasons),
-        )
-
+        reasons.append("translational-only intervention without primary intervention")
+        return _build(candidate.study_id, "exclude_likely", checklist, reasons)
     if excluded_design:
         reasons.append("text matches review / non-primary design markers")
-        return EligibilityTriage(
-            study_id=candidate.study_id, label="exclude_likely",
-            mandatory_fields=MappingProxyType(checklist), reasons=tuple(reasons),
-        )
-
-    all_mandatory = all(checklist[k] for k in MANDATORY_KEYS)
-    if all_mandatory and text_long_enough:
+        return _build(candidate.study_id, "exclude_likely", checklist, reasons)
+    if all(checklist[k] for k in MANDATORY_KEYS) and text_long_enough:
         reasons.append("all mandatory fields present in parsed text")
-        return EligibilityTriage(
-            study_id=candidate.study_id, label="eligible_likely",
-            mandatory_fields=MappingProxyType(checklist), reasons=tuple(reasons),
-        )
-
+        return _build(candidate.study_id, "eligible_likely", checklist, reasons)
     if not text_long_enough:
         reasons.append("parsed text below minimum length for confident triage")
     missing = [k for k in MANDATORY_KEYS if not checklist[k]]
     if missing:
-        reasons.append("mandatory fields missing in parsed text: " + ", ".join(missing))
-    return EligibilityTriage(
-        study_id=candidate.study_id, label="unclear",
-        mandatory_fields=MappingProxyType(checklist), reasons=tuple(reasons),
-    )
+        reasons.append("mandatory fields missing: " + ", ".join(missing))
+    return _build(candidate.study_id, "unclear", checklist, reasons)

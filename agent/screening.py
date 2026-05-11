@@ -76,22 +76,11 @@ _EMPTY_FIELDS: Mapping[str, bool] = MappingProxyType({})
 
 @dataclass(frozen=True, slots=True)
 class EligibilityReceipt:
-    """Records the eligibility decision after full-text review.
+    """Final eligibility verdict after the Sprint-7 adjudication ladder.
 
-    Decision values:
-      - "include"  : eligible for downstream pooling
-      - "exclude"  : disqualified by hard rule or judge
-      - "unclear"  : rule/judge conflict or low confidence; needs manual review
-
-    Sprint 7 audit-trail fields (optional, default to empty so legacy callers
-    that only pass study_id/decision/reason continue to work):
-      confidence       : judge confidence in [0, 1]
-      mandatory_fields : per-criterion boolean checklist (immutable mapping)
-      evidence_quotes  : verbatim snippets supporting the decision
-      judge_model      : model id that produced the proposal
-      rule_decision    : Pass-1 triage label
-      source_text_hash : hash of the parsed full-text that fed the judge
-      timestamp_utc    : ISO-8601 UTC when adjudication ran
+    Decision: include / exclude / unclear. Audit-trail fields default to
+    empty so legacy callers that pass only study_id/decision/reason still
+    construct correctly.
     """
 
     study_id: str

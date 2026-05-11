@@ -57,25 +57,23 @@ def _build_user_prompt(
     candidate: CandidateStudy, parsed: ParsedFullText,
     triage: EligibilityTriage, pack: TopicPack,
 ) -> str:
-    fields = tuple(MANDATORY_KEYS) + _EXTRA_FIELDS
-    schema = ",\n".join(f'    "{k}": <bool>' for k in fields)
+    schema = ",\n".join(
+        f'    "{k}": <bool>' for k in tuple(MANDATORY_KEYS) + _EXTRA_FIELDS
+    )
     return (
         f"Eligibility criteria for topic '{pack.display_name}':\n"
         f"  species: {', '.join(pack.preferred_terms)}\n"
         f"  primary intervention: {', '.join(pack.primary_interventions)}\n"
-        f"  translational-only (NOT primary): "
-        f"{', '.join(pack.translational_only_interventions)}\n"
+        f"  translational-only (NOT primary): {', '.join(pack.translational_only_interventions)}\n"
         f"  endpoint keywords: {', '.join(pack.eligibility_endpoint_terms)}\n"
         f"  comparator keywords: {', '.join(pack.eligibility_control_terms)}\n"
-        f"  excluded designs: "
-        f"{', '.join(pack.eligibility_exclude_design_terms)}\n\n"
+        f"  excluded designs: {', '.join(pack.eligibility_exclude_design_terms)}\n\n"
         f"Pass-1 triage: {triage.label}\n"
         f"Pass-1 fields: {json.dumps(dict(triage.mandatory_fields), sort_keys=True)}\n"
         f"Pass-1 reasons: {'; '.join(triage.reasons) or '(none)'}\n\n"
         f"Title: {candidate.title}\n"
         f"DOI: {candidate.doi or '(missing)'}  PMID: {candidate.pmid or '(missing)'}\n\n"
-        f"Excerpt (first {_EVIDENCE_CHARS} chars):\n---\n"
-        f"{parsed.text[:_EVIDENCE_CHARS]}\n---\n\n"
+        f"Excerpt (first {_EVIDENCE_CHARS} chars):\n---\n{parsed.text[:_EVIDENCE_CHARS]}\n---\n\n"
         "Return JSON ONLY:\n{\n"
         '  "decision": "include" | "exclude" | "unclear",\n'
         '  "confidence": <float 0..1>,\n'
