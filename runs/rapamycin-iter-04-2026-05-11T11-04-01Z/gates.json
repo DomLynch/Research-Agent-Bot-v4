@@ -1,0 +1,20 @@
+{
+  "summary": {
+    "total": 2,
+    "by_gate": {
+      "evidence_slot": 2
+    }
+  },
+  "violations": [
+    {
+      "gate": "evidence_slot",
+      "location": "ABSTRACT",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'Rapamycin, a mechanistic target of rapamycin (mTOR) inhibitor, reliably extends lifespan in multiple mammalian models, yet the magnitude \u2026'"
+    },
+    {
+      "gate": "evidence_slot",
+      "location": "INTRODUCTION",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'Collectively, prior work establishes that rapamycin extends lifespan under a range of conditions but leaves unresolved how much of the ob\u2026'"
+    }
+  ]
+}

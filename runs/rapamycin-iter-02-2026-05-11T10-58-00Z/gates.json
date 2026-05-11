@@ -1,0 +1,25 @@
+{
+  "summary": {
+    "total": 3,
+    "by_gate": {
+      "evidence_slot": 3
+    }
+  },
+  "violations": [
+    {
+      "gate": "evidence_slot",
+      "location": "ABSTRACT",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'Findings that survive robustness checks would motivate targeted replication studies; those that do not would direct resources toward unde\u2026'"
+    },
+    {
+      "gate": "evidence_slot",
+      "location": "INTRODUCTION",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'The foundational mouse result reported by Harrison et al.'"
+    },
+    {
+      "gate": "evidence_slot",
+      "location": "INTRODUCTION",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'The primary endpoint is lifespan or survival, operationalized as either median or maximum lifespan extension, reported as a ratio or log-\u2026'"
+    }
+  ]
+}

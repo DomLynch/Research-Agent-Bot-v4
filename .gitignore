@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.env
+.DS_Store
+.coverage
+htmlcov/
+
+# Keep runs/ tracked — they are the section deliverables.
+# If runs/ grows large later, switch to selective tracking.

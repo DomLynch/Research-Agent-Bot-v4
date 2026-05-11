@@ -1,0 +1,77 @@
+# Topic pack: rapamycin (mTOR inhibitor) lifespan synthesis.
+# Topic-agnostic schema — every field is read by agent/topic_pack.py.
+
+topic = "rapamycin"
+display_name = "Rapamycin"
+
+# --- scope -----------------------------------------------------------------
+# Drives the scope_consistency gate. The writer prompt also reads these.
+[scope]
+primary_system = "mouse"
+preferred_terms = ["murine", "mouse", "mice", "rodent"]
+discouraged_terms = ["mammalian", "vertebrate"]
+endpoint = "lifespan"
+
+# --- citation roles --------------------------------------------------------
+# Drives the citation_role gate. Every [CIT:] must carry a role from this
+# allowed list, written as [CIT:<key>|<role>].
+[cite_roles]
+default = "literature-reference"
+allowed = [
+    "primary-study",
+    "prior-meta-analysis",
+    "narrative-review",
+    "systematic-review",
+    "mechanism-review",
+    "clinical-trial",
+    "protocol-registration",
+    "method-citation",
+    "literature-reference",
+]
+
+# --- anchor citations ------------------------------------------------------
+# Known prior work and their canonical roles. Drives:
+#   1. citation_role gate (anchor key must be cited with anchor's role)
+#   2. anchor_role_in_prose gate (prose calling 'X by Smith' must match role)
+[anchors]
+"harrison-2009-rapamycin"        = "primary-study"
+"miller-2011-rapamycin"          = "primary-study"
+"strong-2008-itp"                = "primary-study"
+"strong-2016-rapamycin"          = "primary-study"
+"bitto-2016-rapamycin"           = "primary-study"
+"swindell-2017-meta"             = "prior-meta-analysis"
+"fok-2023-meta-rapamycin"        = "prior-meta-analysis"
+"tyshkovskiy-2025-vertebrate-meta" = "prior-meta-analysis"
+"lamming-2013-mtor"              = "mechanism-review"
+"saxton-2017-mtor"               = "mechanism-review"
+"arriola-apelo-2016-review"      = "narrative-review"
+"mannick-2014-everolimus"        = "clinical-trial"
+"mannick-2018-rtb101"            = "clinical-trial"
+"page-2020-prisma"               = "method-citation"
+
+# --- length caps -----------------------------------------------------------
+# Per-section word ceilings — drives the length gate.
+[length_caps]
+abstract = 300
+introduction = 1000
+
+# --- citation density ------------------------------------------------------
+# Minimum words per citation bracket — drives the citation_density gate.
+# Density floor of 45 words/bracket prevents the writer from over-citing.
+[density]
+min_words_per_citation = 45
+
+# --- empirical-trigger extensions ------------------------------------------
+# Domain-specific outcome nouns / verbs / subjects ADDED to the universal
+# trigger core in agent/claim_gates.py. Universal core covers generic terms
+# (effect, gain, increase, signal, response, benefit, impact, cohorts,
+# experiments, participants, etc.); each pack augments with its own
+# domain vocabulary. Climate, materials, social-science packs would list
+# their own outcome nouns and subject types here.
+[empirical_triggers]
+outcome_nouns_extra   = ["lifespan", "survival", "longevity", "mortality",
+                         "burden", "incidence", "prevalence", "hazard",
+                         "extension"]
+direction_verbs_extra = ["extends", "extend", "prolongs", "prolong",
+                         "attenuates", "attenuate", "abolishes", "abolish"]
+subjects_extra        = ["mice", "rats", "animals"]
