@@ -61,6 +61,7 @@ allowed = [
 [length_caps]
 abstract = 300
 introduction = 1000
+methods = 1200
 
 # --- citation density ------------------------------------------------------
 # Minimum words per citation bracket — drives the citation_density gate.

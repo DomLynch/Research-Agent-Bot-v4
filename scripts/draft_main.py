@@ -21,9 +21,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.claim_gates import run_all_gates
 from agent.llm_client import call_writer
-from agent.prompts import writer_title_abstract_intro
+from agent.prompts import writer_methods, writer_title_abstract_intro
 from agent.settings import load_settings
 from agent.topic_pack import load_topic_pack
+
+_SECTION_PROMPTS = {
+    "title_abstract_intro": (writer_title_abstract_intro, ["TITLE", "ABSTRACT", "INTRODUCTION"]),
+    "methods": (writer_methods, ["METHODS"]),
+}
 
 _SECTION_RE = re.compile(r"^===\s*([A-Z][A-Z0-9 \-]*?)\s*===\s*$", re.MULTILINE)
 
@@ -42,15 +47,17 @@ def _parse_sections(raw: str) -> dict[str, str]:
     return parsed
 
 
-def _render_markdown(parsed: dict[str, str]) -> str:
+def _render_markdown(parsed: dict[str, str], order: list[str]) -> str:
     """Render parsed sections as a clean Markdown document."""
-    order = ["TITLE", "ABSTRACT", "INTRODUCTION"]
     lines: list[str] = []
-    title = parsed.get("TITLE", "").strip()
-    if title:
-        lines.append(f"# {title}")
-        lines.append("")
-    for name in order[1:]:
+    if "TITLE" in order:
+        title = parsed.get("TITLE", "").strip()
+        if title:
+            lines.append(f"# {title}")
+            lines.append("")
+    for name in order:
+        if name == "TITLE":
+            continue
         body = parsed.get(name, "").strip()
         if not body:
             continue
@@ -65,6 +72,12 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--topic", default="rapamycin", help="research topic")
     parser.add_argument("--iter", type=int, default=1, help="iteration number")
+    parser.add_argument(
+        "--section",
+        default="title_abstract_intro",
+        choices=sorted(_SECTION_PROMPTS),
+        help="which manuscript section to draft",
+    )
     args = parser.parse_args()
 
     settings = load_settings()
@@ -73,20 +86,22 @@ def main() -> int:
         return 2
 
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
-    run_id = f"{args.topic}-iter-{args.iter:02d}-{ts}"
+    section_short = "s1" if args.section == "title_abstract_intro" else "s2"
+    run_id = f"{args.topic}-{section_short}-iter-{args.iter:02d}-{ts}"
     out_dir = Path(settings.runs_dir) / run_id
     out_dir.mkdir(parents=True, exist_ok=True)
 
     pack = load_topic_pack(args.topic)
-    messages = writer_title_abstract_intro(args.topic, pack)
-    print(f"[draft] topic={args.topic} iter={args.iter} model={settings.mimo_model}")
+    prompt_fn, order = _SECTION_PROMPTS[args.section]
+    messages = prompt_fn(args.topic, pack)
+    print(f"[draft] topic={args.topic} section={args.section} iter={args.iter} model={settings.mimo_model}")
     print(f"[draft] topic_pack={'loaded' if pack else 'none'}")
     print("[draft] calling writer…")
     resp = call_writer(settings, messages)
     print(f"[draft] tokens: prompt={resp.prompt_tokens} completion={resp.completion_tokens}")
 
     parsed = _parse_sections(resp.content)
-    rendered = _render_markdown(parsed) if parsed else f"# (parse failed)\n\n{resp.content}\n"
+    rendered = _render_markdown(parsed, order) if parsed else f"# (parse failed)\n\n{resp.content}\n"
 
     violations = run_all_gates(parsed, pack) if parsed else []
     gates_by_type: dict[str, int] = {}
@@ -114,7 +129,8 @@ def main() -> int:
                 "model": resp.model,
                 "prompt_tokens": resp.prompt_tokens,
                 "completion_tokens": resp.completion_tokens,
-                "sections_requested": ["TITLE", "ABSTRACT", "INTRODUCTION"],
+                "section_key": args.section,
+                "sections_requested": order,
                 "sections_parsed": sorted(parsed.keys()),
                 "parse_ok": bool(parsed),
                 "gate_violations": len(violations),

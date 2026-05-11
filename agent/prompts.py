@@ -99,6 +99,73 @@ def _topic_pack_block(pack: TopicPack) -> str:
     return "\n".join(parts)
 
 
+def writer_methods(
+    topic: str, pack: TopicPack | None = None
+) -> list[dict[str, str]]:
+    """Section 2: produce Methods only.
+
+    Universal structure: search strategy, eligibility, extraction, moderator
+    coding, quality assessment, statistical synthesis, sensitivity analyses,
+    tension-matrix construction. Topic-pack injects scope vocabulary, the
+    moderator list, length caps, and method-citation anchors.
+    """
+    specs = [
+        (
+            "METHODS",
+            "800-1,200 words. Write a registered/planned Methods section as "
+            "ordered paragraphs (no markdown headers), one paragraph per "
+            "component below. Each paragraph must contain at least one "
+            "[CIT:<method-key>|method-citation] anchor (drawn from the "
+            "anchor list) OR a [PLACEHOLDER:...] slot when the operational "
+            "detail is not yet pinned. Use planned-analysis voice ('will be', "
+            "'is designed to', 'pre-specifies') throughout — no retrospective "
+            "claims.\n\n"
+            "Components, in order:\n"
+            "1. SEARCH STRATEGY — databases that will be queried, search-date "
+            "range, query-term shape. Cite the relevant reporting framework "
+            "(e.g. [CIT:page-2020-prisma|method-citation]). Use "
+            "[PLACEHOLDER:databases], [PLACEHOLDER:date-range], "
+            "[PLACEHOLDER:query-terms] when not pinned.\n"
+            "2. ELIGIBILITY — inclusion and exclusion criteria framed in "
+            "PICO/PECO terms appropriate to the domain; scope-vocabulary "
+            "alignment with the topic pack.\n"
+            "3. DATA EXTRACTION — variables extracted from each included "
+            "study; independent dual extraction; disagreement-resolution "
+            "rule.\n"
+            "4. MODERATOR CODING — the pre-specified moderators (drawn from "
+            "topic-pack scope), their levels, and the rationale for each. "
+            "Use [MODERATOR_P:<name>] for each.\n"
+            "5. RISK-OF-BIAS / QUALITY — the formal tool or framework "
+            "applied (e.g. [CIT:sterne-2019-rob2|method-citation] for trials, "
+            "[CIT:sterne-2016-robins-i|method-citation] for non-randomized "
+            "designs, [CIT:schunemann-grade|method-citation] for evidence "
+            "quality grading). State how disagreements are arbitrated.\n"
+            "6. STATISTICAL SYNTHESIS — multi-level mixed-effects "
+            "meta-regression specification: random-effects structure "
+            "(study-ID, outcome-within-study), fixed-effects predictors "
+            "(the coded moderators), variance estimator (e.g. REML), "
+            "degrees-of-freedom correction (e.g. Hartung-Knapp "
+            "[CIT:hartung-knapp|method-citation]), and software / package "
+            "(e.g. metafor [CIT:viechtbauer-2010-metafor|method-citation]).\n"
+            "7. SENSITIVITY ANALYSES — leave-one-out, influence diagnostics, "
+            "publication-bias diagnostics (funnel asymmetry "
+            "[CIT:egger-1997-funnel|method-citation], trim-and-fill), and "
+            "heterogeneity quantification ([CIT:higgins-2003-i2|method-citation]).\n"
+            "8. TENSION-MATRIX CONSTRUCTION — how moderator combinations "
+            "define cells, which cells are plotted, how sparsely-populated "
+            "cells are flagged, and how the matrix feeds back into the "
+            "moderator interpretation and future-study recommendations.",
+        ),
+    ]
+    system = SYSTEM_WRITER
+    if pack:
+        system = SYSTEM_WRITER + "\n\n" + _topic_pack_block(pack)
+    return [
+        {"role": "system", "content": system},
+        {"role": "user", "content": _user_request(topic, specs)},
+    ]
+
+
 def writer_title_abstract_intro(
     topic: str, pack: TopicPack | None = None
 ) -> list[dict[str, str]]:
