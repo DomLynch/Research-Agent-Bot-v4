@@ -21,6 +21,7 @@ def _make_settings() -> Any:
 class _FakeResponse:
     def __init__(self, text: str, status_code: int = 200, content_type: str = "text/html"):
         self.text = text
+        self.content = text.encode("utf-8")
         self.status_code = status_code
         self.headers = {"content-type": content_type}
 
@@ -87,8 +88,14 @@ def test_unpaywall_html_path_used_for_doi_url() -> None:
     assert "hello" in out.text
 
 
-def test_pdf_url_returns_unsupported_error() -> None:
-    client = _FakeClient(_FakeResponse("ignored", content_type="application/pdf"))
+def test_pdf_url_routes_through_pdf_extractor(monkeypatch: Any) -> None:
+    # Mock extract_pdf_text so this test works regardless of whether
+    # pymupdf/pdfminer are installed in the test environment.
+    monkeypatch.setattr(
+        "agent.full_text_parse.extract_pdf_text",
+        lambda data, **_: ("rapamycin extends lifespan in mice", ""),
+    )
+    client = _FakeClient(_FakeResponse("PDFBYTES", content_type="application/pdf"))
     receipt = FullTextReceipt(
         study_id="s4", retrieved=True, source="Unpaywall",
         reason="https://example.org/paper.pdf",
@@ -98,7 +105,28 @@ def test_pdf_url_returns_unsupported_error() -> None:
         return await parse_one(receipt, client=client, settings=_make_settings())  # type: ignore[arg-type]
 
     out = asyncio.run(go())
-    assert "PDF extraction not supported" in out.error
+    assert out.source_kind == "pdf"
+    assert out.error == ""
+    assert "rapamycin extends lifespan in mice" in out.text
+
+
+def test_pdf_url_records_extractor_failure(monkeypatch: Any) -> None:
+    monkeypatch.setattr(
+        "agent.full_text_parse.extract_pdf_text",
+        lambda data, **_: ("", "pymupdf: open failed | pdfminer: open failed"),
+    )
+    client = _FakeClient(_FakeResponse("BROKENPDF", content_type="application/pdf"))
+    receipt = FullTextReceipt(
+        study_id="s5", retrieved=True, source="Unpaywall",
+        reason="https://example.org/paper.pdf",
+    )
+
+    async def go() -> ParsedFullText:
+        return await parse_one(receipt, client=client, settings=_make_settings())  # type: ignore[arg-type]
+
+    out = asyncio.run(go())
+    assert out.source_kind == "pdf"
+    assert "pymupdf" in out.error
     assert out.text == ""
 
 

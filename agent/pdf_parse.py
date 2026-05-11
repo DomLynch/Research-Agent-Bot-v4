@@ -10,6 +10,7 @@ Universal: no biomedical literals; only PDF byte handling.
 from __future__ import annotations
 
 import io
+from typing import Any
 
 
 def _pymupdf_extract(data: bytes) -> tuple[str, str]:
@@ -18,14 +19,15 @@ def _pymupdf_extract(data: bytes) -> tuple[str, str]:
         import pymupdf
     except ImportError:
         return "", "pymupdf not installed"
+    pm: Any = pymupdf  # PyMuPDF has loose typing; one cast keeps mypy quiet.
     try:
-        doc = pymupdf.open(stream=data, filetype="pdf")
+        doc = pm.open(stream=data, filetype="pdf")
     except Exception as e:
         return "", f"pymupdf open failed: {e.__class__.__name__}"
     try:
         parts: list[str] = []
-        for page in doc:
-            parts.append(page.get_text("text"))
+        for i in range(doc.page_count):
+            parts.append(doc[i].get_text("text"))
         text = "\n".join(parts).strip()
     except Exception as e:
         return "", f"pymupdf extract failed: {e.__class__.__name__}"
