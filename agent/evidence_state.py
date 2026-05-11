@@ -29,9 +29,14 @@ from agent.results_packets import ResultsPacket, validate_packets
 from agent.retrieval.base import PaperHit
 from agent.screening import (
     CandidateStudy,
+    EligibilityReceipt,
     EvidenceLinkError,
+    FullTextReceipt,
     ScreeningReceipt,
+    upgrade_candidate_stages,
     validate_candidates,
+    validate_eligibility_receipts,
+    validate_full_text_receipts,
     validate_screening,
 )
 
@@ -47,9 +52,19 @@ class EvidenceState:
     hits: tuple[PaperHit, ...]
     receipts: tuple[ScreeningReceipt, ...]
     candidates: tuple[CandidateStudy, ...]
+    full_text_receipts: tuple[FullTextReceipt, ...]
+    eligibility_receipts: tuple[EligibilityReceipt, ...]
     outcomes: tuple[ExtractedOutcome, ...]
     effects: tuple[EffectSizeRecord, ...]
     packets: tuple[ResultsPacket, ...]
+
+    @property
+    def k_full_text_retrieved(self) -> int:
+        return sum(1 for r in self.full_text_receipts if r.retrieved)
+
+    @property
+    def k_eligibility_included(self) -> int:
+        return sum(1 for r in self.eligibility_receipts if r.decision == "include")
 
     @property
     def k_hits(self) -> int:
@@ -91,14 +106,28 @@ class EvidenceState:
         hits: tuple[PaperHit, ...] = (),
         receipts: tuple[ScreeningReceipt, ...] = (),
         candidates: tuple[CandidateStudy, ...] = (),
+        full_text_receipts: tuple[FullTextReceipt, ...] = (),
+        eligibility_receipts: tuple[EligibilityReceipt, ...] = (),
         outcomes: tuple[ExtractedOutcome, ...] = (),
         effects: tuple[EffectSizeRecord, ...] = (),
         packets: tuple[ResultsPacket, ...] = (),
     ) -> EvidenceState:
-        """Validate the whole chain in dependency order, then freeze."""
+        """Validate the whole chain in dependency order, upgrade candidate stages, freeze."""
         validate_screening(hits, receipts)
         validate_candidates(receipts, candidates)
+        validate_full_text_receipts(candidates, full_text_receipts)
+        validate_eligibility_receipts(candidates, full_text_receipts, eligibility_receipts)
         validate_outcomes(candidates, outcomes)
         validate_effects(outcomes, effects)
         validate_packets(effects, packets)
-        return cls(topic, hits, receipts, candidates, outcomes, effects, packets)
+        upgraded = upgrade_candidate_stages(
+            candidates,
+            full_text_receipts,
+            eligibility_receipts,
+            frozenset(e.study_id for e in effects),
+        )
+        return cls(
+            topic, hits, receipts, upgraded,
+            full_text_receipts, eligibility_receipts,
+            outcomes, effects, packets,
+        )

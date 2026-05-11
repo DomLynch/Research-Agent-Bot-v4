@@ -11,7 +11,12 @@ from agent.effect_sizes import EffectSizeRecord, ExtractedOutcome
 from agent.evidence_state import EvidenceLinkError, EvidenceState
 from agent.results_packets import ResultsPacket
 from agent.retrieval.base import PaperHit
-from agent.screening import CandidateStudy, ScreeningReceipt
+from agent.screening import (
+    CandidateStudy,
+    EligibilityReceipt,
+    FullTextReceipt,
+    ScreeningReceipt,
+)
 
 
 def _hit(doi: str = "10.1/x") -> PaperHit:
@@ -237,4 +242,34 @@ def test_packet_must_cite_known_effects() -> None:
         EvidenceState.build(
             topic="t", hits=(h,), receipts=receipts, candidates=(inc,),
             outcomes=(out,), effects=(eff,), packets=(ghost_packet,),
+        )
+
+
+# ---------- Sprint 5: FullTextReceipt + EligibilityReceipt -----------------
+
+def test_upgrade_promotes_to_full_text_eligible_when_receipts_present() -> None:
+    h = _hit()
+    receipts = _receipts_for(h)
+    cand = _candidate(h, "s1")
+    ft = FullTextReceipt(study_id="s1", retrieved=True, source="PMC")
+    elig = EligibilityReceipt(study_id="s1", decision="include", reason="ok")
+    state = EvidenceState.build(
+        topic="t", hits=(h,), receipts=receipts, candidates=(cand,),
+        full_text_receipts=(ft,), eligibility_receipts=(elig,),
+    )
+    assert state.k_eligible == 1
+    assert state.k_full_text_retrieved == 1
+    assert state.eligible_studies[0].screening_stage == "full_text_eligible"
+
+
+def test_eligibility_receipt_requires_full_text_retrieved() -> None:
+    h = _hit()
+    receipts = _receipts_for(h)
+    cand = _candidate(h, "s1")
+    # No FullTextReceipt — eligibility receipt should fail validation
+    elig = EligibilityReceipt(study_id="s1", decision="include", reason="ok")
+    with pytest.raises(EvidenceLinkError, match="lacks a full-text-retrieved receipt"):
+        EvidenceState.build(
+            topic="t", hits=(h,), receipts=receipts, candidates=(cand,),
+            eligibility_receipts=(elig,),
         )

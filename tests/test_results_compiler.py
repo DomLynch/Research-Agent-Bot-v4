@@ -13,7 +13,12 @@ from agent.results_compiler import (
 )
 from agent.results_packets import ResultsPacket
 from agent.retrieval.base import PaperHit
-from agent.screening import CandidateStudy, ScreeningReceipt
+from agent.screening import (
+    CandidateStudy,
+    EligibilityReceipt,
+    FullTextReceipt,
+    ScreeningReceipt,
+)
 
 
 def _hit(doi: str, year: int = 2020) -> PaperHit:
@@ -24,20 +29,23 @@ def _hit(doi: str, year: int = 2020) -> PaperHit:
 def _full_state(n_studies: int = 3) -> EvidenceState:
     hits = tuple(_hit(f"10.1/{i}", 2018 + i) for i in range(n_studies))
     receipts: tuple[ScreeningReceipt, ...] = tuple(
-        r
+        ScreeningReceipt(h.dedupe_key, "include", "title-abstract", "ok")
         for h in hits
-        for r in (
-            ScreeningReceipt(h.dedupe_key, "include", "title-abstract", "ok"),
-            ScreeningReceipt(h.dedupe_key, "include", "full-text", "ok"),
-        )
     )
     included = tuple(
         CandidateStudy(
             study_id=f"s{i}", hit_key=h.dedupe_key, title=h.title, year=h.year,
             venue=h.venue, doi=h.doi,
-            screening_stage="full_text_eligible",
         )
         for i, h in enumerate(hits)
+    )
+    ft_receipts = tuple(
+        FullTextReceipt(study_id=f"s{i}", retrieved=True, source="PMC", reason="ok")
+        for i in range(n_studies)
+    )
+    elig_receipts = tuple(
+        EligibilityReceipt(study_id=f"s{i}", decision="include", reason="meets PICO")
+        for i in range(n_studies)
     )
     outcomes = tuple(
         ExtractedOutcome(
@@ -57,6 +65,7 @@ def _full_state(n_studies: int = 3) -> EvidenceState:
     )
     return EvidenceState.build(
         topic="t", hits=hits, receipts=receipts, candidates=included,
+        full_text_receipts=ft_receipts, eligibility_receipts=elig_receipts,
         outcomes=outcomes, effects=effects,
     )
 
