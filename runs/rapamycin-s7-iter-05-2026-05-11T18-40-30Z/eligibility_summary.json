@@ -1,0 +1,23 @@
+{
+  "topic": "rapamycin",
+  "iter": 5,
+  "timestamp_utc": "2026-05-11T18-40-30Z",
+  "k_hits": 500,
+  "k_candidates": 65,
+  "k_full_text_located": 58,
+  "k_parsed_with_text": 21,
+  "triage_labels": {
+    "eligible_likely": 4,
+    "exclude_likely": 13,
+    "unclear": 4
+  },
+  "final_decisions": {
+    "exclude": 17,
+    "include": 2,
+    "unclear": 2
+  },
+  "k_eligible": 2,
+  "contract_violations": 0,
+  "dry_run": false,
+  "judge_model": "anthropic/claude-opus-4"
+}
