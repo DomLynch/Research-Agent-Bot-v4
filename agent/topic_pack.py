@@ -39,6 +39,11 @@ class TopicPack:
     primary_interventions: tuple[str, ...]
     translational_only_interventions: tuple[str, ...]
     retrieval_sources: tuple[str, ...]
+    eligibility_endpoint_terms: tuple[str, ...]
+    eligibility_control_terms: tuple[str, ...]
+    eligibility_exclude_design_terms: tuple[str, ...]
+    eligibility_combination_terms: tuple[str, ...]
+    eligibility_min_text_chars: int
 
     @property
     def has_scope_rules(self) -> bool:
@@ -63,6 +68,7 @@ def load_topic_pack(topic: str, *, pack_dir: Path | None = None) -> TopicPack | 
     cite = raw.get("cite_roles", {})
     density = raw.get("density", {})
     triggers = raw.get("empirical_triggers", {})
+    elig = raw.get("eligibility", {})
     return TopicPack(
         topic=str(raw.get("topic", topic)),
         display_name=str(raw.get("display_name", topic.title())),
@@ -81,4 +87,9 @@ def load_topic_pack(topic: str, *, pack_dir: Path | None = None) -> TopicPack | 
         primary_interventions=tuple(scope.get("primary_interventions", [])),
         translational_only_interventions=tuple(scope.get("translational_only_interventions", [])),
         retrieval_sources=tuple(raw.get("retrieval", {}).get("sources", [])),
+        eligibility_endpoint_terms=tuple(elig.get("endpoint_terms", [])),
+        eligibility_control_terms=tuple(elig.get("control_terms", [])),
+        eligibility_exclude_design_terms=tuple(elig.get("exclude_design_terms", [])),
+        eligibility_combination_terms=tuple(elig.get("combination_terms", [])),
+        eligibility_min_text_chars=int(elig.get("min_text_chars", 2000)),
     )
