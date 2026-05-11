@@ -75,7 +75,7 @@ def test_writer_refuses_when_packet_missing() -> None:
 def test_writer_renders_study_selection_counts() -> None:
     text = write_results_section([_study_selection_packet()])
     assert "50 records identified" in text
-    assert "12 were flagged as candidate full-text inclusions" in text
+    assert "12 were flagged as candidate records for full-text retrieval" in text
     assert "Full-text retrieval has not yet been performed" in text
     assert "[PACKET:study_selection]" in text
 
