@@ -30,7 +30,7 @@ from agent.eligibility_merge import adjudicate
 from agent.eligibility_rules import triage
 from agent.evidence_state import EvidenceState
 from agent.full_text_fetch import fetch_full_text_receipts
-from agent.full_text_parse import parse_full_texts
+from agent.full_text_parse import ParsedFullText, parse_full_texts
 from agent.results_compiler import compile_all
 from agent.results_contract import validate_results_text
 from agent.results_writer import write_results_section
@@ -120,21 +120,36 @@ async def main() -> int:
 
     by_id: dict[str, CandidateStudy] = {c.study_id: c for c in candidates}
 
-    parsed_docs = await parse_full_texts(ft_receipts, settings=settings)
+    # Only parse the OA-located subset; the validator forbids parsed receipts
+    # for candidates that have no FullTextReceipt(retrieved=True). For the
+    # rest, we synthesise an empty ParsedFullText so the rule/judge/merge
+    # pipeline still produces an unclear receipt with an honest reason.
+    located_ids = {r.study_id for r in ft_receipts if r.retrieved}
+    located_receipts = tuple(r for r in ft_receipts if r.retrieved)
+    parsed_docs = await parse_full_texts(located_receipts, settings=settings)
     parsed_receipts: tuple[ParsedFullTextReceipt, ...] = tuple(d.to_receipt() for d in parsed_docs)
+    parsed_by_id: dict[str, ParsedFullText] = {d.study_id: d for d in parsed_docs}
     print(f"[s7] parsed {sum(1 for r in parsed_receipts if r.parsed)}/{len(parsed_receipts)} full texts")
+
+    def _empty_doc(study_id: str) -> ParsedFullText:
+        return ParsedFullText(
+            study_id=study_id, source_url="", source_kind="unsupported",
+            text="", char_count=0, sha256="", fetched_at_utc="",
+            error="no open-access source",
+        )
 
     eligibility_receipts: list[EligibilityReceipt] = []
     label_counts: Counter[str] = Counter()
     decision_counts: Counter[str] = Counter()
-    for ft_r, parsed_doc in zip(ft_receipts, parsed_docs, strict=True):
+    for ft_r in ft_receipts:
         candidate = by_id[ft_r.study_id]
+        parsed_doc = parsed_by_id.get(ft_r.study_id, _empty_doc(ft_r.study_id))
         tri = triage(candidate, parsed_doc, pack)
         label_counts[tri.label] += 1
-        proposal = (
-            _dry_proposal(candidate.study_id) if args.dry_run
-            else judge_eligibility(candidate, parsed_doc, tri, pack, settings)
-        )
+        if args.dry_run or ft_r.study_id not in located_ids:
+            proposal = _dry_proposal(candidate.study_id)
+        else:
+            proposal = judge_eligibility(candidate, parsed_doc, tri, pack, settings)
         receipt = adjudicate(tri, proposal, parsed_doc)
         decision_counts[receipt.decision] += 1
         eligibility_receipts.append(receipt)
