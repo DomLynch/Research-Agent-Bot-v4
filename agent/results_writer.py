@@ -104,6 +104,23 @@ def _render_corpus(p: InformationalPacket) -> str:
     )
 
 
+def _render_sentinel_recall(p: InformationalPacket) -> str:
+    c = p.counts
+    pri_n = c.get("expected_primary", 0)
+    pri_r = c.get("retrieved_primary", 0)
+    pri_c = c.get("candidate_primary", 0)
+    meta_n = c.get("expected_prior_meta", 0)
+    meta_r = c.get("retrieved_prior_meta", 0)
+    status = "PASS" if c.get("gate_passes", 0) else "FAIL"
+    return (
+        f"Sentinel-paper recall audit (gate: {status}): "
+        f"{pri_r}/{pri_n} canonical primary-study anchors retrieved "
+        f"({pri_c} promoted to candidate set); "
+        f"{meta_r}/{meta_n} prior meta-analysis anchors retrieved "
+        f"[PACKET:sentinel_recall]."
+    )
+
+
 def _render_effect(p: ResultsPacket) -> str:
     if p.estimate is None or p.ci_low is None or p.ci_high is None:
         return (

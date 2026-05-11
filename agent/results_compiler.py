@@ -23,6 +23,8 @@ from types import MappingProxyType
 from agent.effect_sizes import EffectSizeRecord
 from agent.evidence_state import EvidenceState
 from agent.results_packets import ResultsPacket
+from agent.sentinel_recall import audit_sentinel_recall
+from agent.topic_pack import TopicPack
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,6 +39,38 @@ class InformationalPacket:
 
 
 PacketLike = InformationalPacket | ResultsPacket
+
+
+def compile_sentinel_recall(
+    state: EvidenceState, pack: TopicPack,
+) -> InformationalPacket | None:
+    if not (pack.sentinel_primary or pack.sentinel_prior_meta):
+        return None
+    r = audit_sentinel_recall(state, pack)
+    counts: dict[str, int] = {
+        "expected_primary": r.expected_primary,
+        "retrieved_primary": r.retrieved_primary,
+        "candidate_primary": r.candidate_primary,
+        "expected_prior_meta": r.expected_prior_meta,
+        "retrieved_prior_meta": r.retrieved_prior_meta,
+        "candidate_prior_meta": r.candidate_prior_meta,
+        "gate_passes": 1 if r.gate_passes else 0,
+    }
+    notes: tuple[str, ...] = tuple(
+        f"{s.role}:{s.sentinel_id}:"
+        f"{'retrieved' if s.retrieved else 'missing'}/"
+        f"{'candidate' if s.candidate else 'no-candidate'}"
+        for s in r.statuses
+    )
+    return InformationalPacket(
+        packet_id="sentinel_recall",
+        description=(
+            "Sentinel-paper audit: canonical anchors must be retrieved; "
+            "primary sentinels also expected to enter candidate set."
+        ),
+        counts=MappingProxyType(counts),
+        notes=notes,
+    )
 
 
 def compile_study_selection(state: EvidenceState) -> InformationalPacket:
@@ -165,10 +199,21 @@ def compile_moderator_effects(
 
 
 def compile_all(
-    state: EvidenceState, *, moderators: tuple[str, ...] = ()
+    state: EvidenceState,
+    *,
+    moderators: tuple[str, ...] = (),
+    pack: TopicPack | None = None,
 ) -> list[PacketLike]:
-    """Run all compilers. Skips packets that lack evidence."""
+    """Run all compilers. Skips packets that lack evidence.
+
+    When `pack` is provided and declares sentinels, also runs the recall
+    audit and emits a `sentinel_recall` packet.
+    """
     packets: list[PacketLike] = [compile_study_selection(state)]
+    if pack is not None:
+        sentinel_pkt = compile_sentinel_recall(state, pack)
+        if sentinel_pkt is not None:
+            packets.append(sentinel_pkt)
     corpus = compile_corpus_characteristics(state)
     if corpus is not None:
         packets.append(corpus)

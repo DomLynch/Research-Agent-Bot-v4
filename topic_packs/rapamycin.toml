@@ -115,3 +115,22 @@ exclude_design_terms = ["systematic review", "meta-analysis",
 combination_terms    = ["combined with", "combination with", "plus ",
                         "co-treatment", "co-administered"]
 min_text_chars       = 2000
+
+# --- sentinel recall -------------------------------------------------------
+# Canonical anchor papers for this topic. The sentinel-recall gate checks
+# whether retrieval/screening surfaced each by DOI or PMID. `primary` are
+# expected to appear in the candidate set (or be flagged unavailable);
+# `prior_meta` are expected to be retrieved but NOT to enter the primary
+# pooled corpus (they're prior syntheses, not primary studies).
+[sentinel_recall]
+primary = [
+    "10.1038/nature08221",   # harrison-2009 (Nature)
+    "10.1093/gerona/glq178", # miller-2011 (J Gerontol)
+    "10.1111/acel.12496",    # strong-2016 (Aging Cell)
+    "10.1111/acel.12496",    # alt id placeholder
+    "10.1111/acel.12476",    # bitto-2016 (Aging Cell)
+]
+prior_meta = [
+    "10.1111/acel.12674",       # swindell-2017 meta
+    "10.1186/s13059-023-02929-6", # fok-2023 meta
+]
