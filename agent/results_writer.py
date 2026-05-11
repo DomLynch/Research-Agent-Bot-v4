@@ -46,24 +46,37 @@ def _render_study_selection(p: InformationalPacket) -> str:
         )
     ta_screened = c.get("screened_title_abstract", 0)
     candidates = c.get("candidates_after_title_abstract", 0)
-    ft_retrieved = c.get("full_text_retrieved", 0)
-    if ft_retrieved == 0:
-        return (
-            f"Of {identified} records identified through systematic database "
-            f"search, {ta_screened} were screened at title/abstract level; "
-            f"{candidates} were flagged as candidate records for full-text retrieval. "
-            f"Full-text retrieval has not yet been performed; therefore, no "
-            f"studies are currently classified as full-text eligible for the "
-            f"primary pooled analysis [PACKET:study_selection]."
-        )
+    availability = c.get("full_text_availability_located", 0)
+    decisions = c.get("eligibility_decisions_made", 0)
     eligible = c.get("eligible_after_full_text", 0)
-    return (
+
+    prefix = (
         f"Of {identified} records identified through systematic database "
         f"search, {ta_screened} were screened at title/abstract level; "
-        f"{candidates} were flagged as candidate records for full-text retrieval. "
-        f"Full-text was retrieved for {ft_retrieved} candidates, of which "
-        f"{eligible} met all inclusion criteria for the primary pooled "
-        f"analysis [PACKET:study_selection]."
+        f"{candidates} were flagged as candidate records for full-text retrieval."
+    )
+
+    if availability == 0:
+        return (
+            f"{prefix} Full-text retrieval has not yet been performed; therefore, "
+            f"no studies are currently classified as full-text eligible for the "
+            f"primary pooled analysis [PACKET:study_selection]."
+        )
+
+    if decisions == 0:
+        return (
+            f"{prefix} Open-access full-text availability was located for "
+            f"{availability} candidates. Eligibility assessment has not yet been "
+            f"performed; therefore, no studies are currently classified as "
+            f"full-text eligible for the primary pooled analysis "
+            f"[PACKET:study_selection]."
+        )
+
+    return (
+        f"{prefix} Open-access full-text availability was located for "
+        f"{availability} candidates; eligibility was assessed for {decisions} of "
+        f"these, of which {eligible} met all inclusion criteria for the primary "
+        f"pooled analysis [PACKET:study_selection]."
     )
 
 

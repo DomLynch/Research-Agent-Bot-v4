@@ -17,7 +17,8 @@ def _study_selection_packet() -> InformationalPacket:
             "identified": 50,
             "screened_title_abstract": 50,
             "candidates_after_title_abstract": 12,
-            "full_text_retrieved": 0,
+            "full_text_availability_located": 0,
+            "eligibility_decisions_made": 0,
             "eligible_after_full_text": 0,
         }),
     )
@@ -88,7 +89,9 @@ def test_writer_refuses_study_selection_when_zero_identified() -> None:
         counts=MappingProxyType({
             "identified": 0, "screened_title_abstract": 0,
             "candidates_after_title_abstract": 0,
-            "full_text_retrieved": 0, "eligible_after_full_text": 0,
+            "full_text_availability_located": 0,
+            "eligibility_decisions_made": 0,
+            "eligible_after_full_text": 0,
         }),
     )
     text = write_results_section([pkt])

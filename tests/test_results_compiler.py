@@ -86,7 +86,7 @@ def test_study_selection_counts_from_state() -> None:
     pkt = compile_study_selection(state)
     assert pkt.counts["identified"] == 3
     assert pkt.counts["screened_title_abstract"] == 3
-    assert pkt.counts["full_text_retrieved"] == 3
+    assert pkt.counts["full_text_availability_located"] == 3
     assert pkt.counts["candidates_after_title_abstract"] == 3
 
 
