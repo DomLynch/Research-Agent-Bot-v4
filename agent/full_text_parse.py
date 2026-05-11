@@ -19,7 +19,7 @@ from typing import Literal
 
 import httpx
 
-from agent.screening import FullTextReceipt
+from agent.screening import FullTextReceipt, ParsedFullTextReceipt
 from agent.settings import Settings
 
 _EFETCH_PMC = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
@@ -40,6 +40,18 @@ class ParsedFullText:
     sha256: str
     fetched_at_utc: str
     error: str = ""
+
+    def to_receipt(self) -> ParsedFullTextReceipt:
+        """Project the heavy parsed document down to the slim audit-trail
+        receipt that EvidenceState stores."""
+        return ParsedFullTextReceipt(
+            study_id=self.study_id,
+            source_url=self.source_url,
+            parsed=bool(self.text),
+            text_hash=self.sha256,
+            char_count=self.char_count,
+            failure_reason=self.error,
+        )
 
 
 def _now_utc() -> str:

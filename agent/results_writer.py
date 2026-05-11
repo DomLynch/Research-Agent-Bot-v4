@@ -38,15 +38,60 @@ def _filter_prefix(
 
 def _render_study_selection(p: InformationalPacket) -> str:
     c = p.counts
+    identified = c.get("identified", 0)
+    if identified == 0:
+        return _refuse(
+            "retrieval returned zero records - query or source configuration "
+            "may be broken"
+        )
+    ta_screened = c.get("screened_title_abstract", 0)
+    candidates = c.get("candidates_after_title_abstract", 0)
+    availability = c.get("full_text_availability_located", 0)
+    parsed = c.get("full_text_parsed", 0)
+    decisions = c.get("eligibility_decisions_made", 0)
+    included = c.get("eligibility_included", 0)
+    excluded = c.get("eligibility_excluded", 0)
+    unclear = c.get("eligibility_unclear", 0)
+
+    prefix = (
+        f"Of {identified} records identified through systematic database "
+        f"search, {ta_screened} were screened at title/abstract level; "
+        f"{candidates} were flagged as candidate records for full-text retrieval."
+    )
+
+    if availability == 0:
+        return (
+            f"{prefix} Full-text retrieval has not yet been performed; therefore, "
+            f"no studies are currently classified as full-text eligible for the "
+            f"primary pooled analysis [PACKET:study_selection]."
+        )
+
+    if parsed == 0:
+        return (
+            f"{prefix} Open-access full-text availability was located for "
+            f"{availability} candidates; however, full-text content has not yet "
+            f"been parsed, so no studies are currently classified as full-text "
+            f"eligible for the primary pooled analysis [PACKET:study_selection]."
+        )
+
+    if decisions == 0:
+        return (
+            f"{prefix} Open-access full-text availability was located for "
+            f"{availability} candidates; full-text content was parsed for "
+            f"{parsed} of these. Eligibility assessment has not yet been "
+            f"performed; therefore, no studies are currently classified as "
+            f"full-text eligible for the primary pooled analysis "
+            f"[PACKET:study_selection]."
+        )
+
     return (
-        f"Of {c.get('identified', 0)} records identified through systematic "
-        f"database search, {c.get('screened_title_abstract', 0)} were screened at "
-        f"title/abstract level; {c.get('candidates_after_title_abstract', 0)} were "
-        f"flagged as candidate full-text inclusions pending full-text retrieval and "
-        f"eligibility assessment. Full-text retrieval is recorded for "
-        f"{c.get('full_text_retrieved', 0)} candidates, of which "
-        f"{c.get('eligible_after_full_text', 0)} met all inclusion criteria for the "
-        f"primary pooled analysis [PACKET:study_selection]."
+        f"{prefix} Open-access full-text availability was located for "
+        f"{availability} candidates; full-text content was parsed for "
+        f"{parsed} of these. Pre-specified eligibility adjudication was "
+        f"applied to {decisions} parsed records, yielding {included} included, "
+        f"{excluded} excluded, and {unclear} flagged for manual review of "
+        f"low-confidence or rule-judge conflicts for the primary pooled "
+        f"analysis [PACKET:study_selection]."
     )
 
 

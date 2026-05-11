@@ -32,11 +32,13 @@ from agent.screening import (
     EligibilityReceipt,
     EvidenceLinkError,
     FullTextReceipt,
+    ParsedFullTextReceipt,
     ScreeningReceipt,
     upgrade_candidate_stages,
     validate_candidates,
     validate_eligibility_receipts,
     validate_full_text_receipts,
+    validate_parsed_receipts,
     validate_screening,
 )
 
@@ -53,6 +55,7 @@ class EvidenceState:
     receipts: tuple[ScreeningReceipt, ...]
     candidates: tuple[CandidateStudy, ...]
     full_text_receipts: tuple[FullTextReceipt, ...]
+    parsed_receipts: tuple[ParsedFullTextReceipt, ...]
     eligibility_receipts: tuple[EligibilityReceipt, ...]
     outcomes: tuple[ExtractedOutcome, ...]
     effects: tuple[EffectSizeRecord, ...]
@@ -63,8 +66,20 @@ class EvidenceState:
         return sum(1 for r in self.full_text_receipts if r.retrieved)
 
     @property
+    def k_full_text_parsed(self) -> int:
+        return sum(1 for r in self.parsed_receipts if r.parsed)
+
+    @property
     def k_eligibility_included(self) -> int:
         return sum(1 for r in self.eligibility_receipts if r.decision == "include")
+
+    @property
+    def k_eligibility_excluded(self) -> int:
+        return sum(1 for r in self.eligibility_receipts if r.decision == "exclude")
+
+    @property
+    def k_eligibility_unclear(self) -> int:
+        return sum(1 for r in self.eligibility_receipts if r.decision == "unclear")
 
     @property
     def k_hits(self) -> int:
@@ -107,6 +122,7 @@ class EvidenceState:
         receipts: tuple[ScreeningReceipt, ...] = (),
         candidates: tuple[CandidateStudy, ...] = (),
         full_text_receipts: tuple[FullTextReceipt, ...] = (),
+        parsed_receipts: tuple[ParsedFullTextReceipt, ...] = (),
         eligibility_receipts: tuple[EligibilityReceipt, ...] = (),
         outcomes: tuple[ExtractedOutcome, ...] = (),
         effects: tuple[EffectSizeRecord, ...] = (),
@@ -116,7 +132,10 @@ class EvidenceState:
         validate_screening(hits, receipts)
         validate_candidates(receipts, candidates)
         validate_full_text_receipts(candidates, full_text_receipts)
-        validate_eligibility_receipts(candidates, full_text_receipts, eligibility_receipts)
+        validate_parsed_receipts(candidates, full_text_receipts, parsed_receipts)
+        validate_eligibility_receipts(
+            candidates, full_text_receipts, eligibility_receipts, parsed_receipts,
+        )
         validate_outcomes(candidates, outcomes)
         validate_effects(outcomes, effects)
         validate_packets(effects, packets)
@@ -125,9 +144,10 @@ class EvidenceState:
             full_text_receipts,
             eligibility_receipts,
             frozenset(e.study_id for e in effects),
+            parsed_receipts=parsed_receipts,
         )
         return cls(
             topic, hits, receipts, upgraded,
-            full_text_receipts, eligibility_receipts,
+            full_text_receipts, parsed_receipts, eligibility_receipts,
             outcomes, effects, packets,
         )
