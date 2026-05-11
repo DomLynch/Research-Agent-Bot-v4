@@ -204,10 +204,7 @@ async def main() -> int:
         "k_eligible": state.k_eligible,
         "contract_violations": len(violations),
         "dry_run": args.dry_run,
-        "judge_model": (
-            settings.eligibility_judge_model or settings.judge_model
-            if not args.dry_run else "(dry-run)"
-        ),
+        "judge_model": settings.judge_model if not args.dry_run else "(dry-run)",
     }
     (out_dir / "eligibility_summary.json").write_text(
         json.dumps(summary, indent=2), encoding="utf-8",
