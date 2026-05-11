@@ -76,12 +76,8 @@ _EMPTY_FIELDS: Mapping[str, bool] = MappingProxyType({})
 
 @dataclass(frozen=True, slots=True)
 class EligibilityReceipt:
-    """Final eligibility verdict after the Sprint-7 adjudication ladder.
-
-    Decision: include / exclude / unclear. Audit-trail fields default to
-    empty so legacy callers that pass only study_id/decision/reason still
-    construct correctly.
-    """
+    """Final eligibility verdict. Audit-trail fields default to empty so
+    legacy callers passing only study_id/decision/reason still work."""
 
     study_id: str
     decision: Literal["include", "exclude", "unclear"]
