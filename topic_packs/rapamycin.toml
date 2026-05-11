@@ -74,7 +74,7 @@ methods = 1200
 # must be a key registered via agent.retrieval.unified.register(). Add or
 # remove sources here per topic without touching code.
 [retrieval]
-sources = ["pubmed", "researka_database"]
+sources = ["pubmed"]
 
 # --- citation density ------------------------------------------------------
 # Minimum words per citation bracket — drives the citation_density gate.

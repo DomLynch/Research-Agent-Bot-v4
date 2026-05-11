@@ -1,18 +1,19 @@
 """Retrieval tests — mock httpx; no live network."""
 from __future__ import annotations
 
+from dataclasses import replace
+from typing import Any
+
 import httpx
 import pytest
 
 from agent.retrieval.base import PaperHit
 from agent.retrieval.pubmed import PubMedSource, _parse_pubmed_xml
 from agent.retrieval.unified import available_sources, register, search_all
-from agent.settings import load_settings
+from agent.settings import Settings, load_settings
 from agent.topic_pack import load_topic_pack
 
-_ESEARCH_RESP = {
-    "esearchresult": {"idlist": ["19587680", "21164542"]}
-}
+_ESEARCH_RESP = {"esearchresult": {"idlist": ["19587680"]}}
 
 _EFETCH_XML = """<?xml version="1.0"?>
 <PubmedArticleSet>
@@ -36,7 +37,7 @@ _EFETCH_XML = """<?xml version="1.0"?>
 """
 
 
-def _mock_transport() -> httpx.MockTransport:
+def _mock_pubmed_transport() -> httpx.MockTransport:
     def handler(request: httpx.Request) -> httpx.Response:
         if "esearch.fcgi" in request.url.path:
             return httpx.Response(200, json=_ESEARCH_RESP)
@@ -68,7 +69,7 @@ async def test_pubmed_source_full_search() -> None:
     settings = load_settings()
     source = PubMedSource(settings)
     assert source.configured is True
-    async with httpx.AsyncClient(transport=_mock_transport()) as client:
+    async with httpx.AsyncClient(transport=_mock_pubmed_transport()) as client:
         hits = await source.search("rapamycin lifespan", client=client)
     assert len(hits) == 1
     assert hits[0].pmid == "19587680"
@@ -87,21 +88,41 @@ async def test_pubmed_source_returns_empty_on_no_results() -> None:
     assert hits == []
 
 
-# ---------- unified registry + dedupe ---------------------------------------
+# ---------- Unified search registry + dedupe --------------------------------
 
 class _FakeSource:
+    """Deterministic source for unified-search tests."""
+
     name = "fake"
     configured = True
-    def __init__(self, settings, hits):
+
+    def __init__(self, settings: Settings, hits: list[PaperHit]) -> None:
         self._hits = hits
-    async def search(self, query, *, client):
+
+    async def search(self, query: str, *, client: httpx.AsyncClient) -> list[PaperHit]:
         return self._hits
 
 
-def test_pubmed_and_researka_database_are_registered_by_default() -> None:
-    names = available_sources()
-    assert "pubmed" in names
-    assert "researka_database" in names
+def _make_fake_class(hits: list[PaperHit]) -> type:
+    captured: list[PaperHit] = list(hits)
+
+    def init(self: Any, settings: Settings) -> None:
+        return None
+
+    async def search(
+        self: Any, query: str, *, client: httpx.AsyncClient
+    ) -> list[PaperHit]:
+        return captured
+
+    return type(
+        "FakeSource",
+        (),
+        {"name": "fake", "configured": True, "__init__": init, "search": search},
+    )
+
+
+def test_pubmed_registered_by_default() -> None:
+    assert "pubmed" in available_sources()
 
 
 @pytest.mark.asyncio
@@ -113,50 +134,36 @@ async def test_search_all_dedupes_across_sources() -> None:
                           doi="10.1/abc", pmid=None, venue=None)
     hit_c_new = PaperHit(source="src-b", title="other", abstract="", year=2021, url="u",
                          doi="10.1/xyz", pmid=None, venue=None)
-    register("test-a", type("A", (), {"__init__": lambda s, _: setattr(s, "_h", [hit_a]),
-                                       "name": "test-a", "configured": True,
-                                       "search": lambda s, q, *, client: __import__("asyncio").sleep(0, result=s._h)}))
-    # Cleaner: just register a class that returns a fixed list
-    class A:
-        name = "test-a"
-        configured = True
-        def __init__(self, s):
-            self._h = [hit_a]
-        async def search(self, q, *, client):
-            return self._h
-    class B:
-        name = "test-b"
-        configured = True
-        def __init__(self, s):
-            self._h = [hit_b_same, hit_c_new]
-        async def search(self, q, *, client):
-            return self._h
-    register("test-a", A)
-    register("test-b", B)
-    # Build a pack-less call but force sources via a stand-in pack
+    register("test-a", _make_fake_class([hit_a]))
+    register("test-b", _make_fake_class([hit_b_same, hit_c_new]))
     pack = load_topic_pack("rapamycin")
-    # Override retrieval_sources via dataclass replace
-    from dataclasses import replace
+    assert pack is not None
     pack_override = replace(pack, retrieval_sources=("test-a", "test-b"))
     hits = await search_all("q", settings=settings, pack=pack_override)
-    assert len(hits) == 2  # hit_a (or hit_b_same — same dedupe key) + hit_c_new
+    assert len(hits) == 2
     keys = {h.dedupe_key for h in hits}
-    assert "doi:10.1/abc" in keys
-    assert "doi:10.1/xyz" in keys
+    assert keys == {"doi:10.1/abc", "doi:10.1/xyz"}
 
 
 @pytest.mark.asyncio
 async def test_search_all_swallows_source_failures() -> None:
     settings = load_settings()
+
     class Broken:
         name = "broken"
         configured = True
-        def __init__(self, s): pass
-        async def search(self, q, *, client):
+
+        def __init__(self, s: Settings) -> None:
+            pass
+
+        async def search(
+            self, query: str, *, client: httpx.AsyncClient
+        ) -> list[PaperHit]:
             raise httpx.HTTPError("boom")
+
     register("broken", Broken)
     pack = load_topic_pack("rapamycin")
-    from dataclasses import replace
+    assert pack is not None
     pack_override = replace(pack, retrieval_sources=("broken",))
     hits = await search_all("q", settings=settings, pack=pack_override)
     assert hits == []

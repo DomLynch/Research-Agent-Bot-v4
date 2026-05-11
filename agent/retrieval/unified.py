@@ -51,7 +51,11 @@ async def search_all(
     settings: Settings,
     pack: TopicPack | None = None,
 ) -> list[PaperHit]:
-    names = list(pack.retrieval_sources) if pack and pack.retrieval_sources else available_sources()
+    names = (
+        list(pack.retrieval_sources)
+        if pack and pack.retrieval_sources
+        else available_sources()
+    )
     sources = [_REGISTRY[n](settings) for n in names if n in _REGISTRY]
     sources = [s for s in sources if getattr(s, "configured", False)]
     if not sources:
@@ -77,10 +81,8 @@ async def search_all(
 def _register_default_sources() -> None:
     """Lazy bind of in-tree sources to avoid circular imports."""
     from agent.retrieval.pubmed import PubMedSource
-    from agent.retrieval.researka_database import ResearkaDatabaseSource
 
     register("pubmed", PubMedSource)
-    register("researka_database", ResearkaDatabaseSource)
 
 
 _register_default_sources()
