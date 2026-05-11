@@ -1,0 +1,20 @@
+{
+  "topic": "rapamycin",
+  "section_key": "methods",
+  "iteration": 5,
+  "provenance": "iter-04 base + 4 user micro-patches (Methods lock candidate)",
+  "patches": [
+    "P1: 'adult mice' -> 'mice of any eligible age at treatment initiation' (preserves age moderator)",
+    "P2: Removed Harrison citation from GM-model rule; replaced with [PLACEHOLDER:gm-sensitivity-protocol]",
+    "P3: Endpoint hierarchy = median lifespan primary, mean as flagged substitute",
+    "P4: Tension matrix pre-specified pairs (sex-by-strain, dose-by-age, route-by-dose); exploratory matrices labelled separately"
+  ],
+  "sections_parsed": [
+    "METHODS"
+  ],
+  "word_counts": {
+    "METHODS": 1208
+  },
+  "gate_violations": 1,
+  "status": "methods-still-iterating"
+}
