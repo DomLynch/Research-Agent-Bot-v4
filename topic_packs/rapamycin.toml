@@ -8,9 +8,15 @@ display_name = "Rapamycin"
 # Drives the scope_consistency gate. The writer prompt also reads these.
 [scope]
 primary_system = "mouse"
-preferred_terms = ["murine", "mouse", "mice", "rodent"]
-discouraged_terms = ["mammalian", "vertebrate"]
+preferred_terms = ["murine", "mouse", "mice"]
+discouraged_terms = ["mammalian", "vertebrate", "rodent", "rat", "rats"]
 endpoint = "lifespan"
+# Primary intervention names that count toward the pooled lifespan corpus.
+# Analog/derivative names listed below are retained in the topic pack so prose
+# can reference them for translational context, but they MUST NOT enter the
+# primary pooled-effect analysis.
+primary_interventions = ["rapamycin", "sirolimus"]
+translational_only_interventions = ["everolimus", "rtb101", "rapalog", "rapalogs"]
 
 # --- citation roles --------------------------------------------------------
 # Drives the citation_role gate. Every [CIT:] must carry a role from this
@@ -48,8 +54,8 @@ allowed = [
 "mannick-2014-everolimus"        = "clinical-trial"
 "mannick-2018-rtb101"            = "clinical-trial"
 "page-2020-prisma"               = "method-citation"
-"sterne-2019-rob2"               = "method-citation"
-"sterne-2016-robins-i"           = "method-citation"
+"hooijmans-2014-syrcle"          = "method-citation"
+"percie-du-sert-2020-arrive"     = "method-citation"
 "schunemann-grade"               = "method-citation"
 "egger-1997-funnel"              = "method-citation"
 "viechtbauer-2010-metafor"       = "method-citation"
@@ -82,4 +88,4 @@ outcome_nouns_extra   = ["lifespan", "survival", "longevity", "mortality",
                          "extension"]
 direction_verbs_extra = ["extends", "extend", "prolongs", "prolong",
                          "attenuates", "attenuate", "abolishes", "abolish"]
-subjects_extra        = ["mice", "rats", "animals"]
+subjects_extra        = ["mice", "animals"]
