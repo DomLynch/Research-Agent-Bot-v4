@@ -51,7 +51,7 @@ def _render_study_selection(p: InformationalPacket) -> str:
         return (
             f"Of {identified} records identified through systematic database "
             f"search, {ta_screened} were screened at title/abstract level; "
-            f"{candidates} were flagged as candidate full-text inclusions. "
+            f"{candidates} were flagged as candidate records for full-text retrieval. "
             f"Full-text retrieval has not yet been performed; therefore, no "
             f"studies are currently classified as full-text eligible for the "
             f"primary pooled analysis [PACKET:study_selection]."
@@ -60,7 +60,7 @@ def _render_study_selection(p: InformationalPacket) -> str:
     return (
         f"Of {identified} records identified through systematic database "
         f"search, {ta_screened} were screened at title/abstract level; "
-        f"{candidates} were flagged as candidate full-text inclusions. "
+        f"{candidates} were flagged as candidate records for full-text retrieval. "
         f"Full-text was retrieved for {ft_retrieved} candidates, of which "
         f"{eligible} met all inclusion criteria for the primary pooled "
         f"analysis [PACKET:study_selection]."
