@@ -44,7 +44,7 @@ def compile_study_selection(state: EvidenceState) -> InformationalPacket:
         "identified": state.k_hits,
         "screened_title_abstract": sum(1 for r in state.receipts if r.stage == "title-abstract"),
         "candidates_after_title_abstract": state.k_candidates,
-        "full_text_retrieved": sum(1 for r in state.receipts if r.stage == "full-text"),
+        "full_text_retrieved": state.k_full_text_retrieved,
         "eligible_after_full_text": state.k_eligible,
     }
     return InformationalPacket(
