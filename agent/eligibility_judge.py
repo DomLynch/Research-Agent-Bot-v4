@@ -5,10 +5,14 @@ judge call returns strict JSON with decision, confidence in [0,1],
 reasons, evidence_quotes, and a mandatory-fields checklist matching
 agent.eligibility_rules.MANDATORY_KEYS.
 
-Model routing: settings.eligibility_judge_model (e.g. an Opus- or
-GPT-class OpenRouter id) takes precedence; falls back to
-settings.judge_model. Fail-soft: HTTP / JSON / refusal errors return a
-proposal with decision='unclear', confidence=0.0, parse_error filled.
+Model: Gemma 4 31B via OpenRouter (settings.judge_model). The two-model
+stack is non-negotiable (AGENTS.md): MiMo writer + Gemma judge. Do not
+introduce a separate eligibility-judge model override without explicit
+prior approval - per-call escalation to frontier models is a paid
+external side effect and a deviation from the documented architecture.
+
+Fail-soft: HTTP / JSON / refusal errors return a proposal with
+decision='unclear', confidence=0.0, parse_error filled.
 """
 from __future__ import annotations
 
@@ -136,8 +140,12 @@ def judge_eligibility(
     candidate: CandidateStudy, parsed: ParsedFullText,
     triage: EligibilityTriage, pack: TopicPack, settings: Settings,
 ) -> EligibilityProposal:
-    """Single LLM call; fail-soft to decision='unclear'."""
-    model = settings.eligibility_judge_model or settings.judge_model
+    """Single Gemma 4 31B call via OpenRouter; fail-soft to decision='unclear'.
+
+    Model is fixed to settings.judge_model (Gemma) - the documented
+    2-model stack from AGENTS.md. No per-call model override.
+    """
+    model = settings.judge_model
     if not parsed.text.strip():
         return _empty(candidate.study_id, model, "", "parsed text empty")
     messages = [
@@ -145,10 +153,7 @@ def judge_eligibility(
         {"role": "user", "content": _build_user_prompt(candidate, parsed, triage, pack)},
     ]
     try:
-        resp = call_judge(
-            settings, messages, temperature=0.0,
-            model_override=settings.eligibility_judge_model,
-        )
+        resp = call_judge(settings, messages, temperature=0.0)
     except Exception as e:
         return _empty(candidate.study_id, model, "", f"llm call failed: {e.__class__.__name__}")
     obj = _parse_json(resp.content)

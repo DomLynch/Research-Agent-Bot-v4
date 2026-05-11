@@ -64,9 +64,9 @@ def _pack() -> TopicPack:
     )
 
 
-def _settings(override: str = "") -> Any:
+def _settings() -> Any:
     return SimpleNamespace(
-        eligibility_judge_model=override, judge_model="google/gemma-4-31b-it",
+        judge_model="google/gemma-4-31b-it",
         openrouter_api_key="x", openrouter_base_url="x", mimo_timeout_sec=60.0,
         judge_configured=True,
     )
@@ -114,29 +114,27 @@ def test_judge_returns_unclear_when_text_empty() -> None:
     assert "empty" in out.parse_error
 
 
-def test_judge_routes_to_override_model(monkeypatch: Any) -> None:
+def test_judge_uses_only_documented_gemma_model(monkeypatch: Any) -> None:
+    """Lock the 2-model stack: eligibility judge MUST go through call_judge
+    without any per-call model override. Adding an override path requires
+    explicit prior approval (AGENTS.md non-negotiable)."""
     captured: dict[str, Any] = {}
 
     def fake_call(settings: Any, messages: list[dict[str, str]], **kw: Any) -> LLMResponse:
-        captured["model_override"] = kw.get("model_override", "")
+        captured["kwargs"] = kw
         return LLMResponse(
             content='{"decision":"include","confidence":0.9,'
                     '"reasons":["ok"],"evidence_quotes":["q"],'
                     '"eligibility_fields":{"species_match":true}}',
-            model="anthropic/claude-opus-4.1",
+            model=settings.judge_model,
             prompt_tokens=10, completion_tokens=10,
         )
 
     monkeypatch.setattr("agent.eligibility_judge.call_judge", fake_call)
-    out = judge_eligibility(
-        _candidate(), _parsed(), _triage(), _pack(),
-        _settings(override="anthropic/claude-opus-4.1"),
-    )
-    assert captured["model_override"] == "anthropic/claude-opus-4.1"
+    out = judge_eligibility(_candidate(), _parsed(), _triage(), _pack(), _settings())
+    assert "model_override" not in captured["kwargs"]
+    assert out.model == "google/gemma-4-31b-it"
     assert out.decision == "include"
-    assert out.confidence == 0.9
-    assert out.model == "anthropic/claude-opus-4.1"
-    assert "q" in out.evidence_quotes
 
 
 def test_judge_fail_soft_on_http_error(monkeypatch: Any) -> None:
