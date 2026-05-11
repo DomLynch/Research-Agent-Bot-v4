@@ -43,7 +43,7 @@ _SLOT_RE = re.compile(r"\[[A-Z][A-Z0-9_]*(?:\s*[:=][^\]]*)?\]")
 # Universal core: terms domain-agnostic across biomedical, climate, materials,
 # economics, social science. Topic-pack `empirical_triggers` augments this
 # core with domain-specific outcome nouns / direction verbs / study subjects
-# (see e.g. topic_packs/rapamycin.toml).
+# (see topic_packs/<topic>.toml for the per-topic extension shape).
 
 _UNIVERSAL_OUTCOME_NOUNS = (
     "effect|gain|reduction|increase|signal|response|benefit|impact|trend|"
