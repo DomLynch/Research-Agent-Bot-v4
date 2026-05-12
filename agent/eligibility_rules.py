@@ -59,13 +59,18 @@ def _build(
 def triage(
     candidate: CandidateStudy, parsed: ParsedFullText, pack: TopicPack,
 ) -> EligibilityTriage:
-    haystack = (parsed.text or "").lower() + " " + (candidate.title or "").lower()
+    title = (candidate.title or "").lower()
+    haystack = (parsed.text or "").lower() + " " + title
     intervention_ok = _any_term(haystack, pack.primary_interventions)
     rapalog_only = (
         _any_term(haystack, pack.translational_only_interventions)
         and not intervention_ok
     )
-    excluded_design = _any_term(haystack, pack.eligibility_exclude_design_terms)
+    # Exclude-design check is TITLE-only. Bodies of primary studies routinely
+    # cite reviews / meta-analyses in references and prior-work sections;
+    # scanning the full body false-rejects every primary study that mentions
+    # a related synthesis. A paper's actual design is named in its title.
+    excluded_design = _any_term(title, pack.eligibility_exclude_design_terms)
     text_long_enough = len(parsed.text) >= pack.eligibility_min_text_chars
     checklist: dict[str, bool] = {
         "species_match": _any_term(haystack, pack.preferred_terms),

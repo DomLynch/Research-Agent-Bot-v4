@@ -26,7 +26,11 @@ from types import MappingProxyType
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from agent.eligibility_judge import EligibilityProposal, judge_eligibility
+from agent.eligibility_judge import (
+    EligibilityProposal,
+    judge_eligibility,
+    judge_eligibility_with_variance,
+)
 from agent.eligibility_merge import adjudicate
 from agent.eligibility_rules import triage
 from agent.evidence_state import EvidenceState
@@ -92,7 +96,16 @@ async def main() -> int:
         "--limit", type=int, default=0,
         help="Optional cap on number of candidates to adjudicate (0 = no cap)",
     )
+    parser.add_argument(
+        "--variance-check", action="store_true",
+        help="Run the Gemma judge twice with different prompt phrasings; "
+             "downgrade to 'unclear' on disagreement. Doubles LLM cost.",
+    )
     args = parser.parse_args()
+    judge_fn = (
+        judge_eligibility_with_variance if args.variance_check
+        else judge_eligibility
+    )
 
     settings = load_settings()
     pack = load_topic_pack(args.topic)
@@ -176,7 +189,7 @@ async def main() -> int:
             proposal = (
                 _dry_proposal(candidate.study_id) if args.dry_run
                 else await asyncio.to_thread(
-                    judge_eligibility, candidate, parsed_doc, tri, pack, settings,
+                    judge_fn, candidate, parsed_doc, tri, pack, settings,
                 )
             )
         receipt = adjudicate(tri, proposal, parsed_doc)

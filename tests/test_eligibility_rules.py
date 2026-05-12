@@ -62,11 +62,31 @@ def test_all_fields_present_yields_eligible_likely() -> None:
     assert all(out.mandatory_fields[k] for k in MANDATORY_KEYS)
 
 
-def test_excluded_design_yields_exclude_likely() -> None:
-    text = "This systematic review summarises rapamycin trials in mice. " + "x" * 4000
-    out = triage(_candidate(), _parsed(text), _pack())
+def test_excluded_design_in_title_yields_exclude_likely() -> None:
+    # Sprint 7.7: exclude-design check is now TITLE-only - body mentions
+    # of "systematic review" (in cited prior work) should not false-reject
+    # a primary study.
+    text = "Body mentions a prior systematic review of rapamycin. " + "x" * 4000
+    out = triage(
+        _candidate(title="A systematic review of rapamycin in mice"),
+        _parsed(text), _pack(),
+    )
     assert out.label == "exclude_likely"
     assert "review / non-primary design" in " ".join(out.reasons)
+
+
+def test_review_in_body_does_NOT_exclude_when_title_is_primary() -> None:
+    # Harrison-2009 rescue: title is a primary study, body cites reviews.
+    text = (
+        "Body mentions a prior systematic review and meta-analysis in cited work. "
+        "We treated mice with rapamycin and measured median lifespan. "
+        "Control animals received vehicle. " + "x" * 4000
+    )
+    out = triage(
+        _candidate(title="Rapamycin extends lifespan in mice"),
+        _parsed(text), _pack(),
+    )
+    assert out.label == "eligible_likely"
 
 
 def test_rapalog_only_yields_exclude_likely() -> None:
