@@ -81,15 +81,11 @@ def _passes_contract(
       - >= 1 quote containing an endpoint term
       - >= 1 quote containing an intervention or control term
 
-    Sprint 7.10b: manual overrides BYPASS the contract (human is the
-    evidence, see agent.include_contract._is_manual_override).
+    Sprint 7.11.1: NO manual bypass. The universal evidence contract
+    is the sole gate; manuals can only resolve sentinel status, never
+    launder unresolved evidence into the corpus.
     """
     from agent.include_contract import MIN_CHARS, MIN_EVIDENCE_QUOTES
-    if (
-        receipt.get("reviewer", "").startswith("human-")
-        or receipt.get("rule_decision") == "manual-override"
-    ):
-        return True
     if not receipt.get("mandatory_fields", {}).get("parsed_text_adequate", False):
         return False
     if int(parsed.get("char_count", 0)) < MIN_CHARS:
@@ -296,8 +292,6 @@ def main() -> int:
     high_conf_partial = [
         r for r in elig
         if r["decision"] == "include" and r["confidence"] >= 0.99
-        and not (r.get("reviewer", "").startswith("human-")
-                 or r.get("rule_decision") == "manual-override")
         and not all(r["mandatory_fields"].get(k, False) for k in
                     ("species_match", "intervention_match", "endpoint_present",
                      "control_present", "primary_research_design"))

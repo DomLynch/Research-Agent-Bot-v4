@@ -1,17 +1,17 @@
-"""Sprint 7.9 - freeze the primary-effect-extraction input set.
+"""Sprint 7.9 / 7.11.1 - freeze the primary-effect-extraction input set.
 
-Reads an iter-N run dir, applies the include contract retroactively,
-classifies surviving includes into lanes A/B/C/D/E, and writes:
+Reads an iter-N run dir, applies the universal evidence contract
+retroactively, classifies surviving includes into lanes A/B/C/D/E, and
+writes:
 
   primary_effect_input_set.json   { topic, run_id, frozen_at_utc,
-                                    studies: [ {study_id, title, doi,
-                                    pmid, year, venue, lane,
-                                    char_count, evidence_quotes,
-                                    contract_pass} ] }
+                                    studies: [...] }
 
-Only Lane A (direct lifespan) papers are stamped as primary-effect
-candidates. Lane B (disease-model survival) is included with a flag
-for later pre-specified inclusion. Lanes C/D/E are excluded.
+Sprint 7.11.1: manuals can only resolve sentinel STATUS or subtract
+papers from the primary corpus (status='resolved_excluded'). They
+cannot launder a paper into the primary set. The universal evidence
+contract is the sole gate; the same rules apply to sentinels and
+non-sentinels alike.
 
 Universal: lane terms and contract rules come from agent.include_contract.
 No biomedical literals in this script.
@@ -28,29 +28,18 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.include_contract import classify_lane, strict_a_core_check
-from agent.manual_resolution import load_manual_resolutions
-from agent.retrieval.base import normalize_doi
+from agent.manual_resolution import build_manual_status_overlay, load_manual_resolutions
+from agent.screening import CandidateStudy
 from agent.topic_pack import load_topic_pack
-
-_LANE_LETTERS = {
-    "direct_lifespan": "A",
-    "disease_model_survival": "B",
-    "secondary_molecular": "C",
-    "healthspan_only": "C",
-    "exclude": "E",
-}
-
-
-def _lane_letter(manual_lane: str) -> str:
-    """Map the manual TOML lane name to the lane-letter prefix used by
-    agent.include_contract.Lane (A/B/C/D/E)."""
-    return _LANE_LETTERS.get(manual_lane, "E")
 
 
 def _passes_contract(
     receipt: dict[str, Any], parsed: dict[str, Any], title: str, pack: Any,
 ) -> bool:
-    """Mirror of agent.include_contract.validate_include on JSON dicts."""
+    """Mirror of agent.include_contract.validate_include on JSON dicts.
+
+    Sprint 7.11.1: no manual bypass. Every receipt is contract-checked
+    by the same universal rules regardless of reviewer."""
     from agent.include_contract import MIN_CHARS, MIN_EVIDENCE_QUOTES
     if not receipt.get("mandatory_fields", {}).get("parsed_text_adequate", False):
         return False
@@ -78,6 +67,18 @@ def _passes_contract(
     )
 
 
+def _candidate_from_dict(d: dict[str, Any]) -> CandidateStudy:
+    return CandidateStudy(
+        study_id=str(d["study_id"]),
+        hit_key=str(d.get("hit_key", "")),
+        title=str(d.get("title", "")),
+        year=d.get("year"),
+        venue=d.get("venue"),
+        pmid=d.get("pmid"),
+        doi=d.get("doi"),
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("run_dir", type=Path)
@@ -89,7 +90,7 @@ def main() -> int:
     args = parser.parse_args()
 
     rd: Path = args.run_dir
-    cands = json.loads((rd / "candidates.json").read_text(encoding="utf-8"))
+    cands_raw = json.loads((rd / "candidates.json").read_text(encoding="utf-8"))
     elig = json.loads((rd / "eligibility_receipts.json").read_text(encoding="utf-8"))
     parsed = json.loads((rd / "parsed_receipts.json").read_text(encoding="utf-8"))
     pack = load_topic_pack(args.topic)
@@ -97,37 +98,24 @@ def main() -> int:
         print(f"ERROR: no topic pack {args.topic!r}", file=sys.stderr)
         return 2
 
-    cand_by_id = {c["study_id"]: c for c in cands}
+    cand_by_id = {c["study_id"]: c for c in cands_raw}
     parsed_by_id = {p["study_id"]: p for p in parsed}
+
+    # Sprint 7.11.1 manual overlay: maps study_id -> ManualResolutionReceipt.
+    # Only resolved_excluded subtracts from the primary corpus; other
+    # statuses are informational for the sentinel-recall gate.
+    candidates = tuple(_candidate_from_dict(c) for c in cands_raw)
+    manual_overlay = build_manual_status_overlay(
+        load_manual_resolutions(args.topic), candidates,
+    )
+    excluded_by_manual: dict[str, str] = {
+        sid: r.reason for sid, r in manual_overlay.items()
+        if r.status == "resolved_excluded"
+    }
 
     accept_lanes = {"A_direct_lifespan"}
     if args.include_lane_b:
         accept_lanes.add("B_disease_model_survival")
-
-    # Sprint 7.10b: manual overrides may carry a `lane` declaration that
-    # short-circuits the heuristic classifier. Index by DOI + PMID for
-    # fast lookup against candidate identifiers.
-    manual_by_key: dict[str, str] = {}
-    for mr in load_manual_resolutions(args.topic):
-        if mr.lane:
-            if mr.doi:
-                norm = normalize_doi(mr.doi)
-                if norm:
-                    manual_by_key[norm] = f"{_lane_letter(mr.lane)}_{mr.lane}"
-            if mr.pmid:
-                manual_by_key[mr.pmid] = f"{_lane_letter(mr.lane)}_{mr.lane}"
-
-    def _resolve_lane(cand: dict[str, Any], parsed_rec: dict[str, Any],
-                      decision: str) -> str:
-        doi_norm = normalize_doi(cand.get("doi") or "") if cand.get("doi") else None
-        if doi_norm and doi_norm in manual_by_key:
-            return manual_by_key[doi_norm]
-        if cand.get("pmid") and cand["pmid"] in manual_by_key:
-            return manual_by_key[cand["pmid"]]
-        return classify_lane(
-            cand.get("title", ""), int(parsed_rec.get("char_count", 0)),
-            decision, pack,
-        )
 
     studies: list[dict[str, Any]] = []
     counts = {"A_direct_lifespan": 0, "B_disease_model_survival": 0,
@@ -135,8 +123,7 @@ def main() -> int:
               "E_exclude": 0}
     # Sprint 7.11: strict-A bucket collects evidence-quote-audited primaries;
     # B keeps disease-model survival; C_secondary_contextual collects every
-    # paper demoted out of A by the strict gate plus all originally Lane-C
-    # secondary-molecular includes.
+    # paper demoted out of A by the strict gate or by manual exclusion.
     strict_a: list[dict[str, Any]] = []
     strict_b: list[dict[str, Any]] = []
     strict_c: list[dict[str, Any]] = []
@@ -148,16 +135,18 @@ def main() -> int:
         cand = cand_by_id.get(sid, {})
         parsed_rec = parsed_by_id.get(sid, {})
         contract_ok = _passes_contract(r, parsed_rec, cand.get("title", ""), pack)
-        # Manual overrides bypass the contract (handled by include_contract
-        # already, but check defensively here too for retro QA on legacy runs).
-        is_manual = (
-            r.get("reviewer", "").startswith("human-")
-            or r.get("rule_decision") == "manual-override"
-        )
-        if is_manual:
-            contract_ok = True
         effective_decision = "include" if contract_ok else "unclear"
-        lane = _resolve_lane(cand, parsed_rec, effective_decision)
+
+        # Manual exclusion subtracts from primary corpus regardless of
+        # contract result. resolved_excluded is conservative and always
+        # allowed.
+        if sid in excluded_by_manual:
+            lane = "C_secondary_molecular"
+        else:
+            lane = classify_lane(
+                cand.get("title", ""), int(parsed_rec.get("char_count", 0)),
+                effective_decision, pack,
+            )
         counts[lane] = counts.get(lane, 0) + 1
         study_entry = {
             "study_id": sid,
@@ -170,18 +159,23 @@ def main() -> int:
             "char_count": parsed_rec.get("char_count", 0),
             "evidence_quotes": r.get("evidence_quotes", []),
             "contract_pass": contract_ok,
-            "manual_override": is_manual,
+            "manually_excluded": sid in excluded_by_manual,
         }
         if lane in accept_lanes:
             studies.append(study_entry)
-        # Strict 3-bucket assignment runs over EVERY include receipt, not
-        # just the lanes the legacy script accepts. Manual overrides skip
-        # the strict gate by the same human-is-evidence principle.
+
+        # Strict 3-bucket assignment. NO manual bypass: every paper must
+        # pass strict_a_core_check on its evidence quotes to land in
+        # A-core. Manuals only subtract (resolved_excluded) — they
+        # cannot promote.
         quotes = tuple(r.get("evidence_quotes", []))
-        strict_ok, strict_reasons = (
-            (True, ()) if is_manual
-            else strict_a_core_check(r["decision"], quotes, pack)
+        strict_ok, strict_reasons = strict_a_core_check(
+            r["decision"], quotes, pack,
         )
+        if sid in excluded_by_manual:
+            # Manual exclusion overrides strict result and routes to C.
+            strict_reasons = (f"manual:resolved_excluded: {excluded_by_manual[sid]}",)
+            strict_ok = False
         if strict_reasons:
             strict_demote_reasons[sid] = strict_reasons
         if lane == "A_direct_lifespan" and strict_ok:
@@ -195,7 +189,10 @@ def main() -> int:
         elif lane == "B_disease_model_survival":
             strict_b.append(study_entry)
         elif lane == "C_secondary_molecular":
-            strict_c.append({**study_entry, "demoted_from": None})
+            strict_c.append({
+                **study_entry, "demoted_from": None,
+                "demote_reasons": list(strict_reasons),
+            })
 
     out = {
         "topic": args.topic,
@@ -204,6 +201,7 @@ def main() -> int:
         "lane_counts": counts,
         "accepted_lanes": sorted(accept_lanes),
         "k_studies_frozen": len(studies),
+        "manual_exclusions": list(excluded_by_manual),
         "studies": studies,
     }
     target = rd / "primary_effect_input_set.json"
@@ -211,6 +209,7 @@ def main() -> int:
     print(f"[freeze] lane counts: {counts}")
     print(f"[freeze] frozen {len(studies)} studies in primary set "
           f"({'+ Lane B' if args.include_lane_b else 'Lane A only'})")
+    print(f"[freeze] manual exclusions: {len(excluded_by_manual)}")
     print(f"[freeze] wrote {target}")
 
     strict_out = {

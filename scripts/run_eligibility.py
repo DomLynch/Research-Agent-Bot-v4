@@ -287,6 +287,19 @@ async def main() -> int:
         encoding="utf-8",
     )
     (out_dir / "main_draft.md").write_text(results_text, encoding="utf-8")
+    if manual_overlay:
+        (out_dir / "manual_status_overlay.json").write_text(
+            json.dumps([
+                {
+                    "study_id": sid, "doi": r.doi, "pmid": r.pmid,
+                    "status": r.status, "reason": r.reason,
+                    "evidence_quote": r.evidence_quote, "reviewer": r.reviewer,
+                    "action_required": r.action_required,
+                }
+                for sid, r in manual_overlay.items()
+            ], indent=2),
+            encoding="utf-8",
+        )
     summary = {
         "topic": args.topic,
         "iter": args.iter,

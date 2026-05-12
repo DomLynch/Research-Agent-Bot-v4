@@ -23,7 +23,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.evidence_state import EvidenceState
-from agent.manual_resolution import apply_manual_resolutions, load_manual_resolutions
+from agent.manual_resolution import build_manual_status_overlay, load_manual_resolutions
 from agent.results_compiler import InformationalPacket, compile_all
 from agent.results_writer import write_results_section
 from agent.retrieval.base import PaperHit
@@ -150,15 +150,16 @@ def main() -> int:
     parsed_receipts = tuple(_parsed_from_dict(p) for p in parsed_raw)
     eligibility = tuple(_eligibility_from_dict(r) for r in elig_raw)
 
-    # Re-apply the live manual_resolutions.toml so the rendered prose
-    # reflects the latest overrides even if the frozen receipts file
-    # was written before they were added.
+    # Sprint 7.11.1: manual_resolutions are a status-only overlay. They
+    # do NOT mutate eligibility receipts and cannot promote a paper into
+    # primary inclusion; that is the universal contract's job. The
+    # overlay informs the sentinel-recall packet so the prose can say
+    # "WARN: sentinel located but retrieval/parser failed" instead of
+    # silently treating manual entries as auto-includes.
     resolutions = load_manual_resolutions(args.topic)
-    eligibility, applied_ids = apply_manual_resolutions(
-        eligibility, candidates, resolutions,
-    )
-    if applied_ids:
-        print(f"[regen] re-applied {len(applied_ids)} manual overrides")
+    manual_overlay = build_manual_status_overlay(resolutions, candidates)
+    if manual_overlay:
+        print(f"[regen] loaded {len(manual_overlay)} manual status overlay records")
 
     # Stub hits + TA screening receipts + full-text receipts to satisfy
     # EvidenceState chain validation. Each candidate by definition has an
