@@ -246,7 +246,11 @@ def writer_title_abstract_intro(
         ),
         (
             "ABSTRACT",
-            "250-300 words total, unlabeled paragraphs covering, in order: "
+            "250-300 words total, unlabeled paragraphs covering, in order. "
+            "FORBIDDEN: do NOT say 'pre-registered', 'registered in PROSPERO', "
+            "'dual reviewer', or any other claim about external registration "
+            "or human-team staffing. Honest framing is 'implemented through a "
+            "reproducible evidence-contract pipeline'. "
             "(1) the precise research question. Open with an EXPLICIT interrogative "
             "framing ('How consistent is the effect of X on Y across …?', 'To what "
             "extent does …?'). Do NOT open with an implicit empirical assertion like "
