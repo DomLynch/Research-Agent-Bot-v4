@@ -45,6 +45,11 @@ _TOKEN_RE = re.compile(
     # A-core). Critical to keep pool prose from naming A-core members
     # that aren't actually contributing effects.
     r"|POOL_EFFECT_IDS|POOL_EFFECT_COUNT|SKIPPED_IDS"
+    # Sprint 12.7: A-core records that didn't contribute to the pool —
+    # set difference A_core \\ pool.effects. Distinct from SKIPPED_IDS
+    # (which is the full pool.skipped, including C-lane records).
+    r"|A_CORE_NOT_POOLED_IDS|A_CORE_NOT_POOLED_COUNT"
+    r"|A_CORE_NOT_POOLED_COUNT:[a-z]+"
     r"|POOL_ESTIMATE|POOL_CI_LOW|POOL_CI_HIGH"
     r"|POOL_RATIO_BACK|POOL_PERCENT_EXT"
     # Count-aware noun-agreement: e.g. [B_LANE_COUNT:study] -> "1 study"
@@ -113,6 +118,12 @@ def resolve_placeholders(
     pool_effect_ids = [
         str(e.get("study_id", "")) for e in pool_effects
         if isinstance(e, dict) and e.get("study_id")
+    ]
+    pool_effect_id_set = set(pool_effect_ids)
+    # A-core records that didn't make the pool (parse_failed / off-modal
+    # / no_numerics). Preserves first-seen order from strict.A_core list.
+    a_core_not_pooled_ids = [
+        sid for sid in a_core_ids if sid not in pool_effect_id_set
     ]
     pool_skipped_ids: list[str] = []
     if pool is not None:
@@ -202,6 +213,13 @@ def resolve_placeholders(
             ", ".join(pool_skipped_ids) if pool_skipped_ids
             else ("(none)" if pool is not None else "")
         ),
+        "A_CORE_NOT_POOLED_IDS": (
+            ", ".join(a_core_not_pooled_ids) if a_core_not_pooled_ids
+            else ("(none)" if pool is not None else "")
+        ),
+        "A_CORE_NOT_POOLED_COUNT": (
+            str(len(a_core_not_pooled_ids)) if pool is not None else ""
+        ),
         "INCOMPLETE_RECOVERY_IDS": (
             ", ".join(incomplete_ids) if incomplete_ids
             else ("(none)" if extractions is not None else "")
@@ -219,6 +237,9 @@ def resolve_placeholders(
         "C_LANE_COUNT": len(c_lane_list),
         "K_POOLABLE_COUNT": len(pool_effects) if pool is not None else 0,
         "POOL_EFFECT_COUNT": len(pool_effect_ids) if pool is not None else 0,
+        "A_CORE_NOT_POOLED_COUNT": (
+            len(a_core_not_pooled_ids) if pool is not None else 0
+        ),
     }
 
     def _sub(match: re.Match[str]) -> str:
