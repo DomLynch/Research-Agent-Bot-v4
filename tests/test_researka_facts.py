@@ -191,7 +191,32 @@ def test_crosscheck_picks_best_delta_among_multiple_percent_facts() -> None:
 
 @pytest.mark.asyncio
 async def test_crosscheck_receipts_handles_empty_list() -> None:
-    results = await crosscheck_receipts((), settings=_settings_with())
+    # Empty-receipts short-circuit; the pack contents are irrelevant
+    # here, so use a minimal in-test fixture instead of touching disk.
+    from types import MappingProxyType
+
+    from agent.topic_pack import TopicPack
+    pack = TopicPack(
+        topic="t", display_name="T", primary_system="",
+        preferred_terms=(), discouraged_terms=(),
+        endpoint="", cite_role_default="", cite_roles_allowed=(),
+        anchors=MappingProxyType({}), length_caps=MappingProxyType({}),
+        min_words_per_citation=0,
+        outcome_nouns_extra=(), direction_verbs_extra=(),
+        subjects_extra=(),
+        primary_interventions=(), translational_only_interventions=(),
+        retrieval_sources=(),
+        eligibility_endpoint_terms=(), eligibility_control_terms=(),
+        eligibility_exclude_design_terms=(),
+        eligibility_combination_terms=(),
+        eligibility_min_text_chars=0,
+        sentinel_primary=(), sentinel_prior_meta=(),
+        non_mouse_species_terms=(),
+        secondary_design_quote_markers=(),
+    )
+    results = await crosscheck_receipts(
+        (), settings=_settings_with(), pack=pack,
+    )
     assert results == ()
 
 

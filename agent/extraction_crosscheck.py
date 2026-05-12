@@ -38,6 +38,7 @@ from agent.researka_facts import (
     search_facts,
 )
 from agent.settings import Settings
+from agent.topic_pack import TopicPack
 
 _TOLERANCE_PERCENT = 25.0  # |Δ| / canonical_value ≤ 25% → matched
 
@@ -116,18 +117,25 @@ def crosscheck_one(
 
 async def crosscheck_receipts(
     receipts: tuple[dict[str, Any], ...], *, settings: Settings,
-    a_core_ids: tuple[str, ...] = (), topic_query_hint: str = "rapamycin",
+    pack: TopicPack,
+    a_core_ids: tuple[str, ...] = (),
 ) -> tuple[CrosscheckResult, ...]:
     """Cross-check every receipt against Researka canonical facts.
 
-    `topic_query_hint` seeds the Researka search query; for biomed packs
-    that's e.g. 'rapamycin'. The search casts a wide enough net (one
-    query per receipt with first-pass topic context) that the DOI
-    filter then narrows to that receipt's specific paper.
+    Topic query terms are derived from the topic pack — no hardcoded
+    biomedical vocabulary. The per-receipt query uses the topic name +
+    study_id + DOI; the A-core broader sweep uses topic + endpoint +
+    primary_system (e.g. for climate packs that'd be 'forest-fire +
+    burn-area + ecosystem'). The DOI filter then narrows to the right
+    paper.
     """
     results: list[CrosscheckResult] = []
     if not receipts:
         return ()
+    topic = pack.topic
+    broader_terms = " ".join(
+        t for t in (pack.topic, pack.endpoint, pack.primary_system) if t
+    )
     async with httpx.AsyncClient(timeout=30.0) as client:
         for r in receipts:
             sid = str(r.get("study_id") or "")
@@ -138,22 +146,16 @@ async def crosscheck_receipts(
                     pct = float(pct)
                 except (TypeError, ValueError):
                     pct = None
-            # Query is the topic + study cue so search recall is high;
-            # DOI filter narrows to the right paper.
             facts = await search_facts(
-                f"{topic_query_hint} {sid} {doi or ''}".strip(),
+                f"{topic} {sid} {doi or ''}".strip(),
                 client=client, settings=settings, top_k=20,
                 min_confidence="medium", numeric_only=True,
             )
             results.append(crosscheck_one(sid, doi, pct, facts=facts))
-            if sid in a_core_ids:
-                # A-core gets a second, broader query for recall on
-                # canonical facts not surfaced by the receipt-keyed
-                # query.
+            if sid in a_core_ids and broader_terms:
                 broader = await search_facts(
-                    f"{topic_query_hint} lifespan mouse",
-                    client=client, settings=settings, top_k=50,
-                    min_confidence="medium", numeric_only=True,
+                    broader_terms, client=client, settings=settings,
+                    top_k=50, min_confidence="medium", numeric_only=True,
                 )
                 results[-1] = crosscheck_one(
                     sid, doi, pct, facts=facts + broader,
@@ -163,10 +165,9 @@ async def crosscheck_receipts(
 
 def _runner(
     receipts: tuple[dict[str, Any], ...], *, settings: Settings,
-    a_core_ids: tuple[str, ...] = (), topic_query_hint: str = "rapamycin",
+    pack: TopicPack, a_core_ids: tuple[str, ...] = (),
 ) -> tuple[CrosscheckResult, ...]:
     """Sync wrapper around the async crosscheck for CLI/script use."""
     return asyncio.run(crosscheck_receipts(
-        receipts, settings=settings, a_core_ids=a_core_ids,
-        topic_query_hint=topic_query_hint,
+        receipts, settings=settings, pack=pack, a_core_ids=a_core_ids,
     ))

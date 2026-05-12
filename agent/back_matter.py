@@ -57,7 +57,7 @@ def build_back_matter(
     *,
     run_dir_name: str = "",
     repository_url: str = "",
-    operator_handle: str = "human-operator",
+    operator_handle: str = "the operator",
 ) -> BackMatter:
     """Compose back-matter prose from pipeline-known facts.
 
@@ -79,7 +79,7 @@ def build_back_matter(
         f"`{repo_ref}`. Retrieval sources configured for this topic "
         f"pack: {sources}. The reproducibility contract is auditable: "
         "every count and effect estimate in the manuscript carries a "
-        "Supplementary §S{N} / Appendix A cross-reference that points "
+        "Supplementary-section / Appendix A cross-reference that points "
         "at the corresponding JSON receipt (`eligibility_summary.json`, "
         "`primary_effect_input_set_strict.json`, `effect_extractions.json`, "
         "`effect_pool.json`, `extraction_crosscheck.json`) so downstream "
