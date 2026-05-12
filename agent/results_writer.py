@@ -159,6 +159,20 @@ def _render_effect(p: ResultsPacket) -> str:
             f"[RESULTS_BLOCKED:packet {p.packet_id} has no estimate - "
             f"upstream stats step pending]"
         )
+    # Sprint 8: log-scale metrics (log_hazard_ratio, log_median_ratio)
+    # also report the back-transformed ratio + CI so the prose is
+    # readable without forcing readers to mentally exponentiate.
+    if p.metric.startswith("log_"):
+        import math as _math
+        ratio = _math.exp(p.estimate)
+        ratio_lo = _math.exp(p.ci_low)
+        ratio_hi = _math.exp(p.ci_high)
+        return (
+            f"The pooled estimate ({p.metric}) was {p.estimate:.3f} "
+            f"(back-transformed ratio {ratio:.3f}, 95% CI {ratio_lo:.3f} "
+            f"to {ratio_hi:.3f}; k_studies={p.k_studies}, "
+            f"k_effects={p.k_effects}) [PACKET:{p.packet_id}]."
+        )
     return (
         f"The pooled estimate ({p.metric}) was {p.estimate:.3f} "
         f"(95% CI {p.ci_low:.3f} to {p.ci_high:.3f}; k_studies={p.k_studies}, "
