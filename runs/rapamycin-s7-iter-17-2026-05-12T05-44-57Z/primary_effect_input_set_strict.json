@@ -3,16 +3,13 @@
   "canonical_for_sprint_8": true,
   "topic": "rapamycin",
   "run_id": "latest",
-  "frozen_at_utc": "2026-05-12T07:44:57+00:00",
+  "frozen_at_utc": "2026-05-12T07:52:02+00:00",
   "bucket_counts": {
     "A_core_direct_lifespan": 6,
     "B_disease_model_survival": 4,
     "C_secondary_contextual": 12
   },
   "demote_reasons": {
-    "s086": [
-      "no quote names a control term"
-    ],
     "s092": [
       "manual:resolved_excluded: Off-topic for primary lifespan corpus. Paper studies metformin-driven\nnephrotoxicity in acute kidney injury (AKI); rapamycin appears only as\none of several comparator drugs tested for protective effect against\nI/R-induced renal damage. The \"100% survival\" quoted refers to AKI\nsurvival over days, not lifespan extension.\n"
     ],
@@ -53,9 +50,6 @@
       "manual:resolved_excluded: SRN-901 (a novel compound) is the primary intervention; rapamycin is a\npositive-control comparator. Per pre-specified PICO (\"primary\nintervention = rapamycin/sirolimus\"), this is comparator usage, not a\nprimary rapamycin trial.\n"
     ],
     "s282": [
-      "no quote names a control term"
-    ],
-    "s288": [
       "no quote names a control term"
     ]
   },

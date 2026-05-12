@@ -310,6 +310,28 @@ def main() -> int:
     )
     print(f"[regen] wrote canonical {receipts_path}")
 
+    # Refresh eligibility_summary.json against the canonical receipts so
+    # its final_decisions block stops disagreeing with the receipts file.
+    summary_file = rd / "eligibility_summary.json"
+    if summary_file.exists():
+        summary = json.loads(summary_file.read_text(encoding="utf-8"))
+        legacy = summary.get("final_decisions", {})
+        new_decisions = {
+            "include": state.k_eligibility_included,
+            "exclude": state.k_eligibility_excluded,
+            "unclear": state.k_eligibility_unclear,
+            "unavailable": sum(
+                1 for r in eligibility if r.decision == "unavailable"
+            ),
+        }
+        summary["final_decisions"] = new_decisions
+        summary["final_decisions_legacy_run_time"] = legacy
+        summary["canonicalized_at_utc"] = dt.datetime.now(tz=dt.UTC).isoformat(
+            timespec="seconds",
+        )
+        summary_file.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+        print(f"[regen] refreshed {summary_file}")
+
     timestamp = dt.datetime.now(tz=dt.UTC).isoformat(timespec="seconds")
     print(
         f"[regen] {state.k_eligibility_included} include / "

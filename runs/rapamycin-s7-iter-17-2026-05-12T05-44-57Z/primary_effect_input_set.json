@@ -3,13 +3,13 @@
   "canonical_for_sprint_8": false,
   "topic": "rapamycin",
   "run_id": "latest",
-  "frozen_at_utc": "2026-05-12T07:44:57+00:00",
+  "frozen_at_utc": "2026-05-12T07:52:02+00:00",
   "lane_counts": {
     "A_direct_lifespan": 12,
     "B_disease_model_survival": 4,
     "C_secondary_molecular": 6,
     "D_review_background": 0,
-    "E_exclude": 2
+    "E_exclude": 0
   },
   "accepted_lanes": [
     "A_direct_lifespan"
