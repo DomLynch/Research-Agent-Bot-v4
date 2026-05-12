@@ -9,6 +9,7 @@
 doi = "10.1038/nature08221"
 pmid = "19587680"
 decision = "include"
+lane = "direct_lifespan"
 reason = """
 Foundational primary mouse rapamycin lifespan study (NIA-ITP). The
 auto-judge intermittently fails to read this paper because NCBI's PMC
@@ -26,6 +27,7 @@ reviewer = "human-dom"
 doi = "10.1093/gerona/glq178"
 pmid = "20974732"
 decision = "unavailable"
+lane = ""  # unavailable = no lane; documented retrieval limitation
 reason = """
 Miller 2011 NIA-ITP follow-up. Located via PMC + Unpaywall but neither
 serves the full text accessibly: PMC strip yields ~4000 chars (abstract
@@ -42,6 +44,7 @@ reviewer = "human-dom"
 doi = "10.7554/elife.16351"
 pmid = "27549339"
 decision = "include"
+lane = "direct_lifespan"
 reason = """
 Bitto 2016 transient-rapamycin study (eLife, OA). Auto-judge has
 sometimes landed this as include conf 1.00 (iter-13, iter-15) and

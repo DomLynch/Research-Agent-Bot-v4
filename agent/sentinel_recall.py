@@ -39,6 +39,7 @@ class SentinelStatus:
     retrieved: bool
     candidate: bool
     eligibility: EligibilityOutcome
+    manually_resolved: bool = False
 
 
 @dataclass(frozen=True, slots=True)

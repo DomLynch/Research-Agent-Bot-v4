@@ -79,6 +79,7 @@ def load_manual_resolutions(
             reason=str(entry.get("reason", "")),
             evidence_quote=str(entry.get("evidence_quote", "")),
             reviewer=str(entry.get("reviewer", "human")),
+            lane=str(entry.get("lane", "")),  # type: ignore[arg-type]
         ))
     return tuple(out)
 
