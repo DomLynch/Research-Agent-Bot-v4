@@ -180,6 +180,65 @@ async def parse_one(
     )
 
 
+def load_manual_full_text_overrides(
+    topic: str, candidates_doi_pmid: dict[str, tuple[str, str]],
+    *, base_dir: str | None = None,
+) -> dict[str, str]:
+    """Sprint 9 corpus recovery: load manual full-text overrides.
+
+    The pipeline keeps an opt-in directory at
+    `topic_packs/manual_full_text/<topic>/` where the operator can drop
+    a verbatim full-text file per sentinel paper that the auto retrieval
+    cannot recover (Nature paywall / OUP auth / abstract-only PMC strip).
+    Files are looked up by normalised DOI ('10.1038-nature08221.txt') or
+    by PMID ('19587680.txt'); returns a {study_id: text} dict for any
+    candidate whose identifier matches a file on disk. Universal: no
+    biomedical literals; the directory is topic-pack-scoped, the lookup
+    is identifier-based.
+    """
+    from pathlib import Path
+    root = Path(base_dir) if base_dir else Path(__file__).resolve().parent.parent / "topic_packs" / "manual_full_text" / topic
+    if not root.is_dir():
+        return {}
+    out: dict[str, str] = {}
+    for study_id, (doi, pmid) in candidates_doi_pmid.items():
+        candidates = []
+        if doi:
+            candidates.append(doi.casefold().replace("/", "-") + ".txt")
+        if pmid:
+            candidates.append(pmid + ".txt")
+        for name in candidates:
+            path = root / name
+            if path.exists():
+                out[study_id] = path.read_text(encoding="utf-8", errors="replace")[:_MAX_CHARS]
+                break
+    return out
+
+
+def apply_manual_overrides(
+    parsed_docs: tuple[ParsedFullText, ...],
+    overrides: dict[str, str],
+) -> tuple[ParsedFullText, ...]:
+    """Replace parsed docs whose study_id has a manual text override.
+    Marks the override with source_url='manual:full_text' so audit can
+    distinguish operator-supplied content from auto-fetched bytes."""
+    if not overrides:
+        return parsed_docs
+    result: list[ParsedFullText] = []
+    for d in parsed_docs:
+        if d.study_id in overrides:
+            text = overrides[d.study_id]
+            result.append(ParsedFullText(
+                study_id=d.study_id, source_url="manual:full_text",
+                source_kind="html", text=text, char_count=len(text),
+                sha256=_hash(text), fetched_at_utc=_now_utc(),
+                error="" if text.strip() else "manual override empty",
+            ))
+        else:
+            result.append(d)
+    return tuple(result)
+
+
 async def parse_full_texts(
     receipts: tuple[FullTextReceipt, ...], *, settings: Settings,
 ) -> tuple[ParsedFullText, ...]:
