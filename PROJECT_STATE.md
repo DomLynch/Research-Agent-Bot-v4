@@ -53,7 +53,10 @@ Wall-clock ≤ 10 min. Cost ≤ $0.50/run.
 - Sequential build, one step at a time, perfect before advancing
 - Topic_pack TOML format reused from v06 (data, not code)
 - Manuscript schema: 11 main sections + 8 supplement blocks (locked above)
-- LOC ceiling: 3,000 hard gate in `agent/`
+- LOC ceiling: **7,500 hard gate in `agent/`** (raised from 3,000 → 5,000
+  → 7,500 across Sprint 6 and Sprint 11.1). New modules under the higher
+  cap must delete or prevent a fake-evidence failure mode (contracts,
+  validators, receipts, provenance) — not buy prose polish or speculation.
 
 ## Verification Commands
 ```bash
