@@ -185,18 +185,27 @@ def main() -> int:
         else:
             assert settings is not None
             messages = build_extraction_prompt(pack, sid, title, parsed_text)
-            try:
-                resp = call_writer(
-                    settings, messages, temperature=args.temperature,
-                )
-                parsed = parse_extraction_response(resp.content)
-                text_hash = parsed_receipts.get(sid, {}).get("text_hash", "")
-                r = receipt_from_response(
-                    parsed, study_id=sid, text_hash=text_hash,
-                    reviewer=f"mimo:{resp.model}", timestamp_utc=_now_utc(),
-                )
-            except (ValueError, OSError, RuntimeError) as e:
-                r = _placeholder_receipt(sid, f"extraction error: {e}")
+            # One transient retry at slightly higher temperature when the
+            # first attempt fails to return parseable JSON (observed on
+            # large excerpts where MIMO occasionally returns a non-JSON
+            # refusal or empty content at temp=0). Determinism break costs
+            # one extra call only when the first fails.
+            r = _placeholder_receipt(sid, "extraction not yet attempted")
+            for attempt, temp in ((1, args.temperature), (2, max(args.temperature, 0.2))):
+                try:
+                    resp = call_writer(settings, messages, temperature=temp)
+                    parsed = parse_extraction_response(resp.content)
+                    text_hash = parsed_receipts.get(sid, {}).get("text_hash", "")
+                    r = receipt_from_response(
+                        parsed, study_id=sid, text_hash=text_hash,
+                        reviewer=f"mimo:{resp.model}", timestamp_utc=_now_utc(),
+                    )
+                    break
+                except (ValueError, OSError, RuntimeError) as e:
+                    if attempt == 2:
+                        r = _placeholder_receipt(
+                            sid, f"extraction error after 2 attempts: {e}",
+                        )
         receipts.append(r)
         with checkpoint.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(_receipt_to_dict(r)) + "\n")

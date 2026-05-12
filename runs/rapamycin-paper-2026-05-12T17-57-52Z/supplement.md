@@ -27,34 +27,35 @@ Auto-generated from the run-directory receipts that accompany the main manuscrip
 
 Full receipts (decision, reviewer, confidence, mandatory fields, evidence quotes, model, timestamps) are filed in `eligibility_receipts.json` alongside this supplement. The block above lists aggregate counts; per-study rows are available in the run directory.
 
-## S4 — Strict A-core Corpus (k = 4)
+## S4 — Strict A-core Corpus (k = 3)
 
 | study_id | title | year | venue | doi |
 | --- | --- | --- | --- | --- |
-| s086 | Rapamycin fed late in life extends lifespan in genetically heterogene... | 2009 | Nature | 10.1038/nature08221 |
-| s230 | Health Effects of Long-Term Rapamycin Treatment: The Impact on Mouse ... | 2015 | PloS one | 10.1371/journal.pone.0126644 |
-| s235 | Transient rapamycin treatment during developmental stage extends life... | 2022 | EMBO reports | 10.15252/embr.202255299 |
-| s288 | Transient rapamycin treatment can increase lifespan and healthspan in... | 2016 | eLife | 10.7554/elife.16351 |
+| s126 | Rapamycin, but not resveratrol or simvastatin, extends life span of g... | 2011 | J Gerontol A | 10.1093/gerona/glq178 |
+| s235 | Transient rapamycin treatment during developmental stage extends life... | 2022 | EMBO Reports | 10.15252/embr.202255299 |
+| s288 | Transient rapamycin treatment can increase lifespan and healthspan in... | 2016 | eLife | 10.7554/eLife.16351 |
 
 
-## S5 — Effect Extraction Receipts (n = 5)
+## S5 — Effect Extraction Receipts (n = 6)
 
 | study_id | status | metric | T_value | C_value | n_T | n_C | HR | % |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| s086 | parse_failed |  | None | None | None | None | None | None |
+| s086 | extracted | maximum_lifespan | 1245.0 | 1094.0 | None | None | None | 14.0 |
+| s126 | extracted | median_lifespan_days | 913.0 | 822.0 | 318 | 313 | 0.69 | 10.0 |
 | s230 | parse_failed |  | None | None | None | None | None | None |
-| s235 | parse_failed |  | None | None | None | None | None | None |
-| s246 | extracted | median_lifespan_days | 345.0 | 234.0 | 31 | 73 | None | 50.0 |
-| s288 | extracted | median_lifespan_days | 1054.0 | 925.0 | 17 | 18 | None | 14.0 |
+| s235 | extracted | median_lifespan_days | 938.0 | 856.0 | 23 | 23 | None | 9.6 |
+| s246 | extracted | median_lifespan_days | 350.03 | 237.41 | 31 | 73 | None | 50.0 |
+| s288 | parse_failed |  | None | None | None | None | None | None |
 
 
-### S5b — Inverse-variance pool (k_effects = 1, skipped = 3)
+### S5b — Inverse-variance pool (k_effects = 2, skipped = 3)
 
 | study_id | metric | estimate | SE | CI_low | CI_high |
 | --- | --- | --- | --- | --- | --- |
-| s288 | log_median_ratio | 0.1306 | 0.3382 | -0.5323 | 0.7934 |
+| s126 | log_median_ratio | 0.1050 | 0.0796 | -0.0511 | 0.2611 |
+| s235 | log_median_ratio | 0.0915 | 0.2949 | -0.4865 | 0.6694 |
 
-Skipped (no inverse-variance numerics): `s086`, `s230`, `s235`
+Skipped (no inverse-variance numerics): `s086`, `s230`, `s288`
 
 
 ## S6 — Risk-of-Bias Notes
@@ -71,7 +72,8 @@ Per-sentinel resolution (auto verdict + manual status overlay) is rendered in `q
 
 | study_id | title | demoted_from | reasons |
 | --- | --- | --- | --- |
-| s244 | Rapamycin doses sufficient to extend lifespan do not compro... | originally C | manual:resolved_excluded: Side-effect / mechanism study, not a primary lifespan... |
+| s086 | Rapamycin fed late in life extends lifespan in genetically ... | originally C | off-modal-metric |
+| s230 | Health Effects of Long-Term Rapamycin Treatment | originally C | no own survival numerics |
 
 
 ## S9 — Code and Data Availability

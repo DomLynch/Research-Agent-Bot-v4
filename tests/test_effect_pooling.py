@@ -208,3 +208,43 @@ def test_compile_pool_records_failures() -> None:
     assert {o.study_id for o in outcomes} == {"ok"}
     assert {e.study_id for e in effects} == {"ok"}
     assert "bad" in skipped
+
+
+def _pack_with_preferred_median() -> TopicPack:
+    from dataclasses import replace
+    return replace(_pack(), preferred_metric_families=("median_lifespan",))
+
+
+def test_prefer_absolute_path_when_pack_declares_family_and_both_present() -> None:
+    """A receipt with BOTH hazard_ratio AND median absolute values should
+    route through the median path when the pack declares median as the
+    preferred family — keeps the study in the larger pool family.
+    """
+    receipt = _r(
+        study_id="s126", metric="median_lifespan_days",
+        treated_value=913.0, control_value=822.0,
+        treated_n=318, control_n=313,
+        hazard_ratio=0.69, hazard_ratio_ci_low=0.59,
+        hazard_ratio_ci_high=0.81,
+    )
+    pair = compute_effect(receipt, _pack_with_preferred_median())
+    assert pair is not None
+    _, eff = pair
+    assert eff.metric == "log_median_ratio"
+    # Sanity: estimate is log(913/822) ≈ 0.1050
+    assert abs(eff.estimate - math.log(913 / 822)) < 1e-9
+
+
+def test_no_preference_still_uses_hr_when_present() -> None:
+    """If the pack declares no preferred family, the legacy HR path wins."""
+    receipt = _r(
+        study_id="s126", metric="median_lifespan_days",
+        treated_value=913.0, control_value=822.0,
+        treated_n=318, control_n=313,
+        hazard_ratio=0.69, hazard_ratio_ci_low=0.59,
+        hazard_ratio_ci_high=0.81,
+    )
+    pair = compute_effect(receipt, _pack())  # no preferred_metric_families
+    assert pair is not None
+    _, eff = pair
+    assert eff.metric == "log_hazard_ratio"
