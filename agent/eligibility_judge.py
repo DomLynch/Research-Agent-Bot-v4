@@ -129,11 +129,34 @@ def _strip_fence(raw: str) -> str:
 
 
 def _parse_json(raw: str) -> dict[str, Any] | None:
+    """Find a JSON object inside the response. Robust to:
+      - bare JSON ({"...": ...})
+      - code-fenced JSON (```json ... ```)
+      - paragraph-then-JSON (reasoning-first variant emits prose then {...})
+    Scans for the first balanced { ... } pair after fence stripping.
+    """
+    stripped = _strip_fence(raw)
     try:
-        obj = json.loads(_strip_fence(raw))
+        obj = json.loads(stripped)
+        return obj if isinstance(obj, dict) else None
     except json.JSONDecodeError:
+        pass
+    start = stripped.find("{")
+    if start == -1:
         return None
-    return obj if isinstance(obj, dict) else None
+    depth = 0
+    for i, ch in enumerate(stripped[start:], start=start):
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                try:
+                    obj = json.loads(stripped[start : i + 1])
+                except json.JSONDecodeError:
+                    return None
+                return obj if isinstance(obj, dict) else None
+    return None
 
 
 def _normalise(obj: dict[str, Any]) -> tuple[

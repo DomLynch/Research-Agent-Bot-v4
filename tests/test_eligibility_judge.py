@@ -84,6 +84,21 @@ def test_parse_json_returns_none_on_garbage() -> None:
     assert _parse_json('{"x": 1}') == {"x": 1}
 
 
+def test_parse_json_finds_object_after_paragraph() -> None:
+    # The reasoning-first variant emits prose, then JSON. Parser must find
+    # the first balanced {...} object, not fail on the prefix prose.
+    raw = (
+        "This paper is a primary mouse rapamycin lifespan study with a clean "
+        "control arm and extractable median lifespan endpoints.\n\n"
+        '{"decision": "include", "confidence": 0.9, "reasons": ["clear"], '
+        '"evidence_quotes": ["q"], "eligibility_fields": {"species_match": true}}'
+    )
+    obj = _parse_json(raw)
+    assert obj is not None
+    assert obj["decision"] == "include"
+    assert obj["confidence"] == 0.9
+
+
 def test_normalise_clamps_confidence_and_filters_types() -> None:
     obj = {
         "decision": "include", "confidence": 1.5,
