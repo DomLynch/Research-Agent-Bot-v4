@@ -95,8 +95,8 @@ Per-sentinel resolution (auto verdict + manual status overlay) is rendered in `q
 
 - Pipeline source: see the project repository under `agent/`, `scripts/`, and `tests/`. All counts and effect estimates are computed from the JSON receipts filed in this paper folder; no number in the main manuscript originates outside those receipts.
 - Topic pack: `topic_packs/rapamycin.toml` (search vocabulary, sentinels, anchors, bibliography, strict A-core terms).
-- Manual full-text overrides (if any): `topic_packs/manual_full_text/rapamycin/` with audit hashes in `manual_full_text_audit.json`.
-- Receipts in this folder: `candidates.json`, `eligibility_receipts.json`, `parsed_receipts.json`, `primary_effect_input_set_strict.json`, `effect_extractions.json`, `effect_pool.json`, `eligibility_summary.json`, `qa_report.md`.
+- Manual full-text overrides (if any): `topic_packs/manual_full_text/rapamycin/` (per-injection SHA-256 hashes are recorded in `manual_full_text_audit.json` when present in the run dir).
+- Receipts present in this folder: `effect_extractions.json`, `effect_pool.json`, `eligibility_summary.json`, `extraction_crosscheck.json`, `primary_effect_input_set_strict.json`.
 
 ## S10 — QA Report (verbatim, from upstream eligibility run)
 

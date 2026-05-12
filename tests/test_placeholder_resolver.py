@@ -120,6 +120,43 @@ def test_unknown_moderator_p_surfaces_unresolved() -> None:
     assert out.unresolved == ("MODERATOR_P:not-in-pack",)
 
 
+def test_count_aware_noun_agreement_pluralises_correctly() -> None:
+    """Sprint 12.5: [<LANE>_COUNT:<noun>] returns 'N noun' (singular at 1)
+    or 'N nouns' (plural at >1), with universal English rules."""
+    strict = {
+        "A_core_direct_lifespan": [
+            {"study_id": "s1"}, {"study_id": "s2"}, {"study_id": "s3"},
+        ],
+        "B_disease_model_survival": [{"study_id": "s246"}],
+        "C_secondary_contextual": [],
+    }
+    body = (
+        "A=[A_CORE_COUNT:study], "
+        "B=[B_LANE_COUNT:record], "
+        "C=[C_LANE_COUNT:study], "
+        "verb=[B_LANE_COUNT:effect]"
+    )
+    out = resolve_placeholders(body, summary={}, strict=strict, pack=_pack({}))
+    assert out.body == "A=3 studies, B=1 record, C=0 studies, verb=1 effect"
+
+
+def test_count_aware_noun_agreement_pluralises_y_consonant_to_ies() -> None:
+    """study -> studies (y->ies); but ratio -> ratios (-o/-os simple plural)."""
+    strict = {"A_core_direct_lifespan": [{"study_id": "s1"}, {"study_id": "s2"}]}
+    body = "[A_CORE_COUNT:study] / [A_CORE_COUNT:effect] / [A_CORE_COUNT:bus]"
+    out = resolve_placeholders(body, summary={}, strict=strict, pack=_pack({}))
+    assert out.body == "2 studies / 2 effects / 2 buses"
+
+
+def test_k_poolable_count_noun_resolves_from_pool() -> None:
+    body = "k=[K_POOLABLE_COUNT:effect]"
+    out = resolve_placeholders(
+        body, summary={}, strict={}, pack=_pack({}),
+        pool={"effects": [{"study_id": "a"}, {"study_id": "b"}]},
+    )
+    assert out.body == "k=2 effects"
+
+
 def test_lane_tokens_resolve_a_b_c_counts_and_ids() -> None:
     """Sprint 12.3 universal lane tokens: B + C count/ids alongside A-core."""
     strict = {

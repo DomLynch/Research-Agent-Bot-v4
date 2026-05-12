@@ -1,22 +1,38 @@
 # PROJECT_STATE.md
 
 ## Current Objective
-Build v07 (`synthesis-lite`) — greenfield, 3,000 LOC core, AAA-grade output.
+Build v07 (`synthesis-lite`) — greenfield, AAA-grade output.
 
-## Success Condition
+## Success Condition (current — staged CLI pipeline)
+The pipeline is invoked stage-by-stage via individual scripts; a
+single-command runner is on the Sprint-13 backlog. For topic `<T>`:
+
 ```bash
-python -m run_synthesis --topic metformin
+python3 scripts/run_eligibility.py    --topic <T> --iter <N>
+python3 scripts/freeze_primary_set.py runs/<latest-s7-dir> --topic <T>
+python3 scripts/extract_effects.py    runs/<latest-s7-dir> --topic <T>
+python3 scripts/draft_main.py         --topic <T> --iter <N> --section title_abstract_intro
+python3 scripts/draft_main.py         --topic <T> --iter <N> --section methods
+python3 scripts/build_results.py      --topic <T> --iter <N>
+python3 scripts/draft_main.py         --topic <T> --iter <N> --section discussion
+python3 scripts/stitch_paper.py       --topic <T>
+python3 scripts/build_supplement.py   runs/latest --topic <T>
 ```
-produces:
-- `main.md` (~9k words, 11 sections, journal-tone)
-- `supplement.md` (~5k words, full audit trail)
-- `contract.json` (status=PASS, fails=0)
-- `verdict.json` (verdict=AAA, journal_ready=true)
 
-Wall-clock ≤ 10 min. Cost ≤ $0.50/run.
+End-to-end success produces, under `runs/<topic>-paper-<utc-stamp>/`:
+- `paper.md` (manuscript: Title + Abstract + Introduction + Methods +
+  Results + Discussion + Limitations + Conclusion + Appendix A run
+  audit + References + 6-block back-matter)
+- `supplement.md` (S1–S10 with auto-rendered receipt cross-references)
+- 4 JSON receipts that the manuscript carries cross-references to:
+  `eligibility_summary.json`, `primary_effect_input_set_strict.json`,
+  `effect_extractions.json`, `effect_pool.json`
+- `extraction_crosscheck.json` (Researka Tier 2 audit sidecar)
 
-**Cutover gate**: contract PASS on 3 topics (metformin, rapamycin, statins)
-× 2 consecutive renders each.
+Wall-clock ≤ 10 min. Cost ≤ $0.50/run (MiMo + Gemma).
+
+**Cutover gate**: every stage exits 0 + the run-folder integrity test
+(`tests/test_run_folder_integrity.py`) passes for the topic.
 
 ## Build Order (12 steps — sequential, verify each)
 1. ⏳ **Foundation** — settings.py, env, scaffolding, smoke test

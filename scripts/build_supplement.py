@@ -340,6 +340,16 @@ def build(pd: Path, topic: str, *, qa_report_path: Path | None = None) -> str:
     parts += ["", ""]
 
     parts += ["## S9 — Code and Data Availability", ""]
+    # Dynamic receipts list — describe what's actually in the folder,
+    # never claim files that aren't there. Sorted for deterministic
+    # output. Excludes the manuscript outputs themselves.
+    visible_receipts = sorted(
+        f.name for f in pd.iterdir()
+        if f.is_file()
+        and f.suffix in {".json", ".md"}
+        and f.name not in {"paper.md", "supplement.md"}
+    )
+    receipts_md = ", ".join(f"`{n}`" for n in visible_receipts) or "(none)"
     parts += [
         "- Pipeline source: see the project repository under "
         "`agent/`, `scripts/`, and `tests/`. All counts and effect "
@@ -351,12 +361,9 @@ def build(pd: Path, topic: str, *, qa_report_path: Path | None = None) -> str:
         "strict A-core terms).",
         "- Manual full-text overrides (if any): "
         "`topic_packs/manual_full_text/" f"{pack.topic}/`"
-        " with audit hashes in `manual_full_text_audit.json`.",
-        "- Receipts in this folder: `candidates.json`, "
-        "`eligibility_receipts.json`, `parsed_receipts.json`, "
-        "`primary_effect_input_set_strict.json`, "
-        "`effect_extractions.json`, `effect_pool.json`, "
-        "`eligibility_summary.json`, `qa_report.md`.",
+        " (per-injection SHA-256 hashes are recorded in "
+        "`manual_full_text_audit.json` when present in the run dir).",
+        f"- Receipts present in this folder: {receipts_md}.",
         "",
     ]
 
