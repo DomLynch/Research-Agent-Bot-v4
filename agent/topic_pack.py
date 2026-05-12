@@ -48,6 +48,8 @@ class TopicPack:
     sentinel_prior_meta: tuple[str, ...]
     non_mouse_species_terms: tuple[str, ...]
     secondary_design_quote_markers: tuple[str, ...]
+    genotype_modified_strain_markers: tuple[str, ...] = ()
+    preferred_metric_families: tuple[str, ...] = ()
     references_bibliography: Mapping[str, str] = field(
         default_factory=lambda: MappingProxyType({}),
     )
@@ -112,6 +114,12 @@ def load_topic_pack(topic: str, *, pack_dir: Path | None = None) -> TopicPack | 
         non_mouse_species_terms=tuple(strict.get("non_mouse_species_terms", [])),
         secondary_design_quote_markers=tuple(
             strict.get("secondary_design_quote_markers", [])
+        ),
+        genotype_modified_strain_markers=tuple(
+            strict.get("genotype_modified_strain_markers", [])
+        ),
+        preferred_metric_families=tuple(
+            raw.get("extraction", {}).get("preferred_metric_families", [])
         ),
         references_bibliography=MappingProxyType(dict(
             raw.get("references", {}).get("bibliography", {})

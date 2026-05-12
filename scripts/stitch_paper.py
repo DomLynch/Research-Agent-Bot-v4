@@ -47,6 +47,7 @@ from agent.methods_honesty import apply_honesty_rewrites
 from agent.placeholder_resolver import resolve_placeholders
 from agent.reference_resolver import resolve_citations
 from agent.settings import load_settings
+from agent.study_table import build_study_characteristics_table
 from agent.topic_pack import load_topic_pack
 
 _RUNS = Path(__file__).resolve().parent.parent / "runs"
@@ -70,25 +71,49 @@ def _pending(label: str, hint: str) -> str:
     return f"[SECTIONS_PENDING:{label} — {hint}]"
 
 
-def _load_receipts(run_dir: Path | None) -> tuple[dict[str, object], dict[str, object]]:
-    """Pull eligibility_summary + strict A-core JSON from the s7 run dir.
+def _load_receipts(
+    run_dir: Path | None,
+) -> tuple[dict[str, object], dict[str, object], dict[str, object], dict[str, object]]:
+    """Pull eligibility_summary, strict A-core, extractions, and pool JSON.
 
-    The Results bundle (s7) carries the canonical receipts the placeholder
-    resolver substitutes from. Empty dicts mean the corresponding tokens
-    surface as `[UNRESOLVED]` rather than being silently dropped.
+    Empty dicts mean the corresponding tokens / table rows surface as
+    `[UNRESOLVED]` / em-dashes rather than being silently dropped.
     """
     if run_dir is None:
-        return {}, {}
+        return {}, {}, {}, {}
     import json
-    summary_path = run_dir / "eligibility_summary.json"
-    strict_path = run_dir / "primary_effect_input_set_strict.json"
-    summary: dict[str, object] = {}
-    strict: dict[str, object] = {}
-    if summary_path.exists():
-        summary = json.loads(summary_path.read_text(encoding="utf-8"))
-    if strict_path.exists():
-        strict = json.loads(strict_path.read_text(encoding="utf-8"))
-    return summary, strict
+    out: list[dict[str, object]] = []
+    for fname in (
+        "eligibility_summary.json",
+        "primary_effect_input_set_strict.json",
+        "effect_extractions.json",
+        "effect_pool.json",
+    ):
+        path = run_dir / fname
+        out.append(
+            json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+        )
+    return out[0], out[1], out[2], out[3]
+
+
+def _inject_study_table(
+    body: str,
+    strict: dict[str, object],
+    extr: dict[str, object],
+    pool: dict[str, object],
+) -> str:
+    """Insert the study-characteristics table before `## Discussion`.
+
+    No-op if the body has no Discussion heading or no A-core records.
+    Universal: anchor is the journal-standard Discussion header.
+    """
+    table = build_study_characteristics_table(strict, extr, pool)
+    if not table:
+        return body
+    anchor = "## Discussion"
+    if anchor not in body:
+        return body
+    return body.replace(anchor, f"{table}\n{anchor}", 1)
 
 
 def stitch(
@@ -124,10 +149,11 @@ def stitch(
 
     raw_body = "\n\n".join([intro, methods, results, discussion]) + "\n"
 
-    summary, strict = _load_receipts(s7)
+    summary, strict, extr, pool = _load_receipts(s7)
     ph = resolve_placeholders(raw_body, summary=summary, strict=strict, pack=pack)
     hon = apply_honesty_rewrites(ph.body, pack)
-    resolved = resolve_citations(hon.body, pack)
+    with_table = _inject_study_table(hon.body, strict, extr, pool)
+    resolved = resolve_citations(with_table, pack)
 
     if target is None:
         stamp = dt.datetime.now(tz=dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
