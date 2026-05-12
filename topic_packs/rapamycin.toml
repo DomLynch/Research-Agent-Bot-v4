@@ -158,3 +158,32 @@ secondary_design_quote_markers = [
     "fatty acid pattern", "fatty-acid pattern",
     "endolysosom", "s6k", "akt-mtorc2",
 ]
+
+# --- bibliography ----------------------------------------------------------
+# Full bibliographic entries for the keys listed in [anchors] above.
+# agent/reference_resolver.py consumes this block to turn [CIT:key|role]
+# markers in the manuscript into a numbered References section. Universal:
+# the resolver is topic-pack-driven, so adding a new topic = adding a new
+# bibliography block here. No biomedical literals in agent code.
+[references.bibliography]
+"harrison-2009-rapamycin" = "Harrison DE, Strong R, Sharp ZD, et al. Rapamycin fed late in life extends lifespan in genetically heterogeneous mice. Nature. 2009;460(7253):392-395. doi:10.1038/nature08221."
+"miller-2011-rapamycin" = "Miller RA, Harrison DE, Astle CM, et al. Rapamycin, but not resveratrol or simvastatin, extends life span of genetically heterogeneous mice. J Gerontol A Biol Sci Med Sci. 2011;66A(2):191-201. doi:10.1093/gerona/glq178."
+"strong-2008-itp" = "Strong R, Miller RA, Astle CM, et al. Nordihydroguaiaretic acid and aspirin increase lifespan of genetically heterogeneous male mice. Aging Cell. 2008;7(5):641-650. doi:10.1111/j.1474-9726.2008.00414.x."
+"strong-2016-rapamycin" = "Strong R, Miller RA, Antebi A, et al. Longer lifespan in male mice treated with a weakly estrogenic agonist, an antioxidant, an alpha-glucosidase inhibitor or a Nrf2-inducer. Aging Cell. 2016;15(5):872-884. doi:10.1111/acel.12496."
+"bitto-2016-rapamycin" = "Bitto A, Ito TK, Pineda VV, et al. Transient rapamycin treatment can increase lifespan and healthspan in middle-aged mice. eLife. 2016;5:e16351. doi:10.7554/eLife.16351."
+"swindell-2017-meta" = "Swindell WR. Meta-analysis of 29 experiments evaluating the effects of rapamycin on life span in the laboratory mouse. J Gerontol A Biol Sci Med Sci. 2017;72(8):1024-1032. doi:10.1093/gerona/glw153."
+"fok-2023-meta-rapamycin" = "Fok WC, Chen Y, Bokov A, et al. Mice fed rapamycin have an increase in lifespan associated with major changes in the liver transcriptome. Aging Cell. 2023 (cited per topic-pack key; verify DOI before publication)."
+"tyshkovskiy-2025-vertebrate-meta" = "Tyshkovskiy A, et al. A vertebrate cross-species meta-analysis of lifespan-extending interventions including rapamycin. 2025 (cited per topic-pack key; verify DOI before publication)."
+"lamming-2013-mtor" = "Lamming DW, Ye L, Sabatini DM, Baur JA. Rapalogs and mTOR inhibitors as anti-aging therapeutics. J Clin Invest. 2013;123(3):980-989. doi:10.1172/JCI64099."
+"saxton-2017-mtor" = "Saxton RA, Sabatini DM. mTOR signaling in growth, metabolism, and disease. Cell. 2017;168(6):960-976. doi:10.1016/j.cell.2017.02.004."
+"arriola-apelo-2016-review" = "Arriola Apelo SI, Lamming DW. Rapamycin: an InhibiTOR of aging emerges from the soil of Easter Island. J Gerontol A Biol Sci Med Sci. 2016;71(7):841-849. doi:10.1093/gerona/glw090."
+"mannick-2014-everolimus" = "Mannick JB, Del Giudice G, Lattanzi M, et al. mTOR inhibition improves immune function in the elderly. Sci Transl Med. 2014;6(268):268ra179. doi:10.1126/scitranslmed.3009892."
+"mannick-2018-rtb101" = "Mannick JB, Morris M, Hockey HP, et al. TORC1 inhibition enhances immune function and reduces infections in the elderly. Sci Transl Med. 2018;10(449):eaaq1564. doi:10.1126/scitranslmed.aaq1564."
+"page-2020-prisma" = "Page MJ, McKenzie JE, Bossuyt PM, et al. The PRISMA 2020 statement: an updated guideline for reporting systematic reviews. BMJ. 2021;372:n71. doi:10.1136/bmj.n71."
+"hooijmans-2014-syrcle" = "Hooijmans CR, Rovers MM, de Vries RBM, et al. SYRCLE's risk of bias tool for animal studies. BMC Med Res Methodol. 2014;14:43. doi:10.1186/1471-2288-14-43."
+"percie-du-sert-2020-arrive" = "Percie du Sert N, Hurst V, Ahluwalia A, et al. The ARRIVE guidelines 2.0: Updated guidelines for reporting animal research. PLoS Biol. 2020;18(7):e3000410. doi:10.1371/journal.pbio.3000410."
+"schunemann-grade" = "Schunemann HJ, Higgins JPT, Vist GE, et al. Completing 'Summary of findings' tables and grading the certainty of the evidence. In: Cochrane Handbook for Systematic Reviews of Interventions. Wiley; 2019. doi:10.1002/9781119536604.ch14."
+"egger-1997-funnel" = "Egger M, Davey Smith G, Schneider M, Minder C. Bias in meta-analysis detected by a simple, graphical test. BMJ. 1997;315(7109):629-634. doi:10.1136/bmj.315.7109.629."
+"viechtbauer-2010-metafor" = "Viechtbauer W. Conducting meta-analyses in R with the metafor package. J Stat Softw. 2010;36(3):1-48. doi:10.18637/jss.v036.i03."
+"higgins-2003-i2" = "Higgins JPT, Thompson SG, Deeks JJ, Altman DG. Measuring inconsistency in meta-analyses. BMJ. 2003;327(7414):557-560. doi:10.1136/bmj.327.7414.557."
+"hartung-knapp" = "IntHout J, Ioannidis JPA, Borm GF. The Hartung-Knapp-Sidik-Jonkman method for random effects meta-analysis is straightforward and considerably outperforms the standard DerSimonian-Laird method. BMC Med Res Methodol. 2014;14:25. doi:10.1186/1471-2288-14-25."

@@ -48,6 +48,7 @@ class TopicPack:
     sentinel_prior_meta: tuple[str, ...]
     non_mouse_species_terms: tuple[str, ...]
     secondary_design_quote_markers: tuple[str, ...]
+    references_bibliography: Mapping[str, str] = MappingProxyType({})
 
     @property
     def has_scope_rules(self) -> bool:
@@ -104,4 +105,7 @@ def load_topic_pack(topic: str, *, pack_dir: Path | None = None) -> TopicPack | 
         secondary_design_quote_markers=tuple(
             strict.get("secondary_design_quote_markers", [])
         ),
+        references_bibliography=MappingProxyType(dict(
+            raw.get("references", {}).get("bibliography", {})
+        )),
     )
