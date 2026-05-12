@@ -30,8 +30,15 @@ class HonestyResult:
     rewrites_applied: tuple[str, ...]
 
 
-def apply_honesty_rewrites(body: str, pack: TopicPack) -> HonestyResult:
+def apply_honesty_rewrites(
+    body: str, pack: TopicPack, *, max_passes: int = 3,
+) -> HonestyResult:
     """Apply phrase -> replacement substitutions from the topic pack.
+
+    Multi-pass to converge on chained rewrites (rewrite A's target
+    introduces text that rewrite B should consume). Each source fires
+    at most once globally — prevents A->B->A cycles. Passes stop early
+    when a pass produces no new firings.
 
     Returns the rewritten body plus the list of original phrases that
     actually matched (so callers can verify the rewrites fired and an
@@ -45,9 +52,16 @@ def apply_honesty_rewrites(body: str, pack: TopicPack) -> HonestyResult:
         key=lambda kv: -len(kv[0]),
     )
     applied: list[str] = []
+    fired: set[str] = set()
     out = body
-    for source, target in rewrites:
-        if source and source in out:
-            out = out.replace(source, target)
-            applied.append(source)
+    for _ in range(max_passes):
+        pass_fired = False
+        for source, target in rewrites:
+            if source and source not in fired and source in out:
+                out = out.replace(source, target)
+                applied.append(source)
+                fired.add(source)
+                pass_fired = True
+        if not pass_fired:
+            break
     return HonestyResult(body=out, rewrites_applied=tuple(applied))

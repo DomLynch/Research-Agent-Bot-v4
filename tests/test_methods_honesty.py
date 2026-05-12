@@ -83,6 +83,40 @@ def test_empty_rewrites_returns_body_unchanged() -> None:
     assert out.rewrites_applied == ()
 
 
+def test_chained_rewrite_converges_in_multi_pass() -> None:
+    """Sprint 11.7A regression: rewrite A produces text that rewrite B
+    is supposed to consume. With a single pass + length-DESC ordering,
+    B was being considered before A had fired and missed its source.
+    Multi-pass converges within max_passes.
+    """
+    body = "We will write everything in future tense."
+    pack = _pack({
+        # A: long source, target injects "future tense" -> a phrase that B
+        # should rewrite to "present tense".
+        "We will write everything in future tense.": "We rewrite in future tense.",
+        "future tense": "present tense",
+    })
+    out = apply_honesty_rewrites(body, pack)
+    assert "We rewrite in present tense." in out.body
+    # Both rewrites must be in applied list (A then B).
+    assert set(out.rewrites_applied) == {
+        "We will write everything in future tense.",
+        "future tense",
+    }
+
+
+def test_each_rewrite_fires_at_most_once_no_cycle() -> None:
+    """A -> 'A' (target contains source) must not loop forever; the
+    fired-set guard prevents re-firing within the same call.
+    """
+    body = "trigger phrase appears here"
+    pack = _pack({"trigger phrase": "trigger phrase plus tail"})
+    out = apply_honesty_rewrites(body, pack)
+    # Even though target contains source, it fires once globally.
+    assert out.body == "trigger phrase plus tail appears here"
+    assert out.rewrites_applied == ("trigger phrase",)
+
+
 def test_multiple_rewrites_apply_in_order() -> None:
     body = (
         "We will assess SYRCLE risk-of-bias and run Egger's test for funnel "
