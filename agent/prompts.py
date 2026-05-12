@@ -224,7 +224,15 @@ def writer_methods(
 def writer_title_abstract_intro(
     topic: str, pack: TopicPack | None = None
 ) -> list[dict[str, str]]:
-    """Iteration prompt: produce Title + Abstract + Introduction only (pre-results)."""
+    """Iteration prompt: produce Title + Abstract + Introduction only (pre-results).
+
+    FORBIDDEN OVERCLAIMS apply to every sub-section in this prompt and the
+    writer_methods prompt: no claim of formal registration (PROSPERO, OSF,
+    etc.) and no claim of dual-reviewer / third-reviewer staffing unless
+    the topic pack supplies a registration_id anchor. Honest wording for
+    this pipeline is "implemented-protocol" / "reproducible-pipeline" /
+    "this synthesis uses an automated extraction pipeline".
+    """
     specs = [
         (
             "TITLE",
@@ -233,11 +241,16 @@ def writer_title_abstract_intro(
             "'only when Y', 'fails to Z') because the analysis has not yet run. "
             "Use neutral, design-descriptive framing such as 'Heterogeneous Effects "
             "of X by Y, Z, and Treatment Timing' or 'Systematic Synthesis of X "
-            "Across Y'. Reject generic 'a review of …' framings.",
+            "Across Y'. Reject generic 'a review of …' framings. Do NOT use the "
+            "word 'pre-registered' or 'registered'.",
         ),
         (
             "ABSTRACT",
-            "250-300 words total, unlabeled paragraphs covering, in order: "
+            "250-300 words total, unlabeled paragraphs covering, in order. "
+            "FORBIDDEN: do NOT say 'pre-registered', 'registered in PROSPERO', "
+            "'dual reviewer', or any other claim about external registration "
+            "or human-team staffing. Honest framing is 'implemented through a "
+            "reproducible evidence-contract pipeline'. "
             "(1) the precise research question. Open with an EXPLICIT interrogative "
             "framing ('How consistent is the effect of X on Y across …?', 'To what "
             "extent does …?'). Do NOT open with an implicit empirical assertion like "
