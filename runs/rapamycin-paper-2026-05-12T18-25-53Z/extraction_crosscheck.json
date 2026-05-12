@@ -1,0 +1,60 @@
+{
+  "_doc": "Sprint 12.0 Researka crosscheck audit. Verdict per receipt: matched / discrepant / no_canonical_fact / no_receipt_numerics. Tolerance: |delta| <= 25% of canonical %-value.",
+  "tolerance_percent": 25.0,
+  "results": [
+    {
+      "study_id": "s086",
+      "doi": "10.1038/nature08221",
+      "verdict": "no_canonical_fact",
+      "receipt_percent_change": 14.0,
+      "best_match_fact_id": null,
+      "delta_percent": null,
+      "canonical_fact_count": 0
+    },
+    {
+      "study_id": "s126",
+      "doi": "10.1093/gerona/glq178",
+      "verdict": "no_canonical_fact",
+      "receipt_percent_change": 10.0,
+      "best_match_fact_id": null,
+      "delta_percent": null,
+      "canonical_fact_count": 0
+    },
+    {
+      "study_id": "s230",
+      "doi": "10.1371/journal.pone.0126644",
+      "verdict": "no_receipt_numerics",
+      "receipt_percent_change": null,
+      "best_match_fact_id": null,
+      "delta_percent": null,
+      "canonical_fact_count": 0
+    },
+    {
+      "study_id": "s235",
+      "doi": "10.15252/embr.202255299",
+      "verdict": "no_canonical_fact",
+      "receipt_percent_change": 9.6,
+      "best_match_fact_id": null,
+      "delta_percent": null,
+      "canonical_fact_count": 0
+    },
+    {
+      "study_id": "s246",
+      "doi": "10.18632/aging.100633",
+      "verdict": "no_canonical_fact",
+      "receipt_percent_change": 50.0,
+      "best_match_fact_id": null,
+      "delta_percent": null,
+      "canonical_fact_count": 0
+    },
+    {
+      "study_id": "s288",
+      "doi": "10.7554/eLife.16351",
+      "verdict": "no_receipt_numerics",
+      "receipt_percent_change": null,
+      "best_match_fact_id": null,
+      "delta_percent": null,
+      "canonical_fact_count": 2
+    }
+  ]
+}

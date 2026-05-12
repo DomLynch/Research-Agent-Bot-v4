@@ -207,6 +207,56 @@ def build(pd: Path, topic: str, *, qa_report_path: Path | None = None) -> str:
         )
     parts += ["", ""]
 
+    # S5c: Researka Tier 2 canonical-fact crosscheck (Sprint 12.0).
+    crosscheck = _read_json(pd / "extraction_crosscheck.json")
+    if isinstance(crosscheck, dict) and crosscheck.get("results"):
+        parts += [
+            "### S5c — Researka Canonical-Fact Cross-Check",
+            "",
+            "Third-party-validation overlay. For every extraction receipt "
+            f"with `percent_change` numerics, the Researka Tier 2 facts "
+            f"index (POST `/api/v1/tier2/facts/search`) was queried and "
+            f"filtered to facts whose paper DOI matches the receipt. The "
+            f"verdict is computed against a "
+            f"{crosscheck.get('tolerance_percent', 25.0):.0f}% tolerance "
+            "band on the canonical %-value.",
+            "",
+        ]
+        rows = [
+            [
+                str(r.get("study_id", "?")),
+                _truncate(str(r.get("doi") or "—"), 32),
+                str(r.get("verdict", "?")),
+                _truncate(
+                    f"{r['receipt_percent_change']:.1f}%"
+                    if r.get("receipt_percent_change") is not None else "—",
+                    8,
+                ),
+                _truncate(str(r.get("best_match_fact_id") or "—"), 40),
+                _truncate(
+                    f"{r['delta_percent']:.1f}"
+                    if r.get("delta_percent") is not None else "—",
+                    6,
+                ),
+            ]
+            for r in crosscheck["results"]
+        ]
+        parts.append(_md_table(
+            ["study_id", "doi", "verdict", "receipt%",
+             "best_match_fact_id", "Δ%"],
+            rows,
+        ))
+        verdicts = [r.get("verdict") for r in crosscheck["results"]]
+        parts += [
+            "",
+            f"Crosscheck distribution: matched="
+            f"{verdicts.count('matched')}, "
+            f"discrepant={verdicts.count('discrepant')}, "
+            f"no_canonical_fact={verdicts.count('no_canonical_fact')}, "
+            f"no_receipt_numerics={verdicts.count('no_receipt_numerics')}.",
+            "",
+        ]
+
     parts += ["## S6 — Risk-of-Bias Notes", ""]
     parts += [
         "Automated rule-based screen per the pre-specified eligibility "
