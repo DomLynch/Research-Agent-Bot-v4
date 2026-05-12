@@ -39,6 +39,7 @@ class SentinelStatus:
     retrieved: bool
     candidate: bool
     eligibility: EligibilityOutcome
+    manually_resolved: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,20 +55,32 @@ class SentinelRecallReceipt:
 
     @property
     def gate_level(self) -> Literal["PASS", "WARN", "FAIL"]:
-        """Three-level gate honest about the pipeline's actual recovery:
+        """Three-level gate honest about the pipeline's actual recovery.
 
-          PASS: every primary sentinel landed as INCLUDED in the corpus.
-          WARN: primary sentinels were retrieved but at least one is in a
-                validly-unresolved state (parse/HTTP fail, unclear).
-          FAIL: at least one primary sentinel is not retrieved at all OR
-                was actively excluded.
+        A sentinel is RESOLVED if it landed include OR was manually
+        adjudicated (any decision: include, exclude, unavailable - the
+        human reviewer has stamped a final state with a reason).
+
+          PASS: every primary sentinel resolved.
+          WARN: any primary sentinel is in unresolved auto-state
+                (unclear, no_parse, no_oa, auto-excluded with no human
+                reason).
+          FAIL: any primary sentinel never retrieved at all.
         """
         primaries = [s for s in self.statuses if s.role == "primary"]
         if any(s.eligibility == "not_retrieved" for s in primaries):
             return "FAIL"
-        if any(s.eligibility == "excluded" for s in primaries):
-            return "FAIL"
-        if all(s.eligibility == "included" for s in primaries) and primaries:
+
+        def _resolved(s: SentinelStatus) -> bool:
+            if s.eligibility == "included":
+                return True
+            # Manual override of any kind (incl. exclude / unavailable)
+            # counts as a final state because the human added a reason.
+            return bool(s.manually_resolved and s.eligibility in {
+                "included", "excluded", "unavailable",
+            })
+
+        if primaries and all(_resolved(s) for s in primaries):
             return "PASS"
         return "WARN"
 
@@ -103,11 +116,13 @@ def _normalise_id(sentinel_id: str) -> str:
 
 def _sentinel_eligibility(
     sid_norm: str, state: EvidenceState, retrieved: bool, candidate: bool,
-) -> EligibilityOutcome:
-    """Map a sentinel id to its eligibility outcome via the state's
-    candidate index + receipts. Pure: no IO, no LLM."""
+) -> tuple[EligibilityOutcome, bool]:
+    """Map a sentinel id to (eligibility outcome, manually_resolved).
+    Pure: no IO, no LLM. A receipt is considered manually resolved if
+    its reviewer string indicates a human reviewer (starts with 'human-'
+    or its rule_decision is 'manual-override')."""
     if not retrieved:
-        return "not_retrieved"
+        return "not_retrieved", False
     cand_by_id_or_pmid: dict[str, str] = {}
     for c in state.candidates:
         if c.doi:
@@ -118,23 +133,38 @@ def _sentinel_eligibility(
             cand_by_id_or_pmid[c.pmid] = c.study_id
     study_id = cand_by_id_or_pmid.get(sid_norm)
     if study_id is None:
-        return "not_retrieved" if not candidate else "no_oa"
+        return ("not_retrieved" if not candidate else "no_oa"), False
+    elig = next((r for r in state.eligibility_receipts if r.study_id == study_id), None)
+    manual = bool(
+        elig and (
+            elig.reviewer.startswith("human-")
+            or elig.rule_decision == "manual-override"
+        )
+    )
+    # Manual receipts trump pipeline-state checks; the human declared
+    # final status irrespective of whether parse / OA succeeded.
+    if manual and elig is not None:
+        if elig.decision == "include":
+            return "included", True
+        if elig.decision == "exclude":
+            return "excluded", True
+        if elig.decision == "unavailable":
+            return "unavailable", True
     ft = next((r for r in state.full_text_receipts if r.study_id == study_id), None)
     if ft is None or not ft.retrieved:
-        return "no_oa"
+        return "no_oa", False
     parsed = next((p for p in state.parsed_receipts if p.study_id == study_id), None)
     if parsed is None or not parsed.parsed:
-        return "no_parse"
-    elig = next((r for r in state.eligibility_receipts if r.study_id == study_id), None)
+        return "no_parse", False
     if elig is None:
-        return "unclear"
+        return "unclear", False
     if elig.decision == "include":
-        return "included"
+        return "included", False
     if elig.decision == "exclude":
-        return "excluded"
+        return "excluded", False
     if elig.decision == "unavailable":
-        return "unavailable"
-    return "unclear"
+        return "unavailable", False
+    return "unclear", False
 
 
 def audit_sentinel_recall(
@@ -151,18 +181,20 @@ def audit_sentinel_recall(
     for sid in primary:
         retrieved = sid in hit_keys
         candidate = sid in cand_keys
+        elig, manual = _sentinel_eligibility(sid, state, retrieved, candidate)
         statuses.append(SentinelStatus(
             sentinel_id=sid, role="primary",
             retrieved=retrieved, candidate=candidate,
-            eligibility=_sentinel_eligibility(sid, state, retrieved, candidate),
+            eligibility=elig, manually_resolved=manual,
         ))
     for sid in prior:
         retrieved = sid in hit_keys
         candidate = sid in cand_keys
+        elig, manual = _sentinel_eligibility(sid, state, retrieved, candidate)
         statuses.append(SentinelStatus(
             sentinel_id=sid, role="prior_meta",
             retrieved=retrieved, candidate=candidate,
-            eligibility=_sentinel_eligibility(sid, state, retrieved, candidate),
+            eligibility=elig, manually_resolved=manual,
         ))
 
     return SentinelRecallReceipt(

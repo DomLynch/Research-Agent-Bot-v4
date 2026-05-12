@@ -28,7 +28,23 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.include_contract import classify_lane
+from agent.manual_resolution import load_manual_resolutions
+from agent.retrieval.base import normalize_doi
 from agent.topic_pack import load_topic_pack
+
+_LANE_LETTERS = {
+    "direct_lifespan": "A",
+    "disease_model_survival": "B",
+    "secondary_molecular": "C",
+    "healthspan_only": "C",
+    "exclude": "E",
+}
+
+
+def _lane_letter(manual_lane: str) -> str:
+    """Map the manual TOML lane name to the lane-letter prefix used by
+    agent.include_contract.Lane (A/B/C/D/E)."""
+    return _LANE_LETTERS.get(manual_lane, "E")
 
 
 def _passes_contract(
@@ -88,6 +104,31 @@ def main() -> int:
     if args.include_lane_b:
         accept_lanes.add("B_disease_model_survival")
 
+    # Sprint 7.10b: manual overrides may carry a `lane` declaration that
+    # short-circuits the heuristic classifier. Index by DOI + PMID for
+    # fast lookup against candidate identifiers.
+    manual_by_key: dict[str, str] = {}
+    for mr in load_manual_resolutions(args.topic):
+        if mr.lane:
+            if mr.doi:
+                norm = normalize_doi(mr.doi)
+                if norm:
+                    manual_by_key[norm] = f"{_lane_letter(mr.lane)}_{mr.lane}"
+            if mr.pmid:
+                manual_by_key[mr.pmid] = f"{_lane_letter(mr.lane)}_{mr.lane}"
+
+    def _resolve_lane(cand: dict[str, Any], parsed_rec: dict[str, Any],
+                      decision: str) -> str:
+        doi_norm = normalize_doi(cand.get("doi") or "") if cand.get("doi") else None
+        if doi_norm and doi_norm in manual_by_key:
+            return manual_by_key[doi_norm]
+        if cand.get("pmid") and cand["pmid"] in manual_by_key:
+            return manual_by_key[cand["pmid"]]
+        return classify_lane(
+            cand.get("title", ""), int(parsed_rec.get("char_count", 0)),
+            decision, pack,
+        )
+
     studies: list[dict[str, Any]] = []
     counts = {"A_direct_lifespan": 0, "B_disease_model_survival": 0,
               "C_secondary_molecular": 0, "D_review_background": 0,
@@ -99,12 +140,17 @@ def main() -> int:
         cand = cand_by_id.get(sid, {})
         parsed_rec = parsed_by_id.get(sid, {})
         contract_ok = _passes_contract(r, parsed_rec, cand.get("title", ""), pack)
-        effective_decision = "include" if contract_ok else "unclear"
-        lane = classify_lane(
-            cand.get("title", ""), int(parsed_rec.get("char_count", 0)),
-            effective_decision, pack,
+        # Manual overrides bypass the contract (handled by include_contract
+        # already, but check defensively here too for retro QA on legacy runs).
+        is_manual = (
+            r.get("reviewer", "").startswith("human-")
+            or r.get("rule_decision") == "manual-override"
         )
-        counts[lane] += 1
+        if is_manual:
+            contract_ok = True
+        effective_decision = "include" if contract_ok else "unclear"
+        lane = _resolve_lane(cand, parsed_rec, effective_decision)
+        counts[lane] = counts.get(lane, 0) + 1
         if lane in accept_lanes:
             studies.append({
                 "study_id": sid,
@@ -117,6 +163,7 @@ def main() -> int:
                 "char_count": parsed_rec.get("char_count", 0),
                 "evidence_quotes": r.get("evidence_quotes", []),
                 "contract_pass": contract_ok,
+                "manual_override": is_manual,
             })
 
     out = {

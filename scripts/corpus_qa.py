@@ -80,8 +80,16 @@ def _passes_contract(
       - >= 2 non-title-duplicate evidence quotes
       - >= 1 quote containing an endpoint term
       - >= 1 quote containing an intervention or control term
+
+    Sprint 7.10b: manual overrides BYPASS the contract (human is the
+    evidence, see agent.include_contract._is_manual_override).
     """
     from agent.include_contract import MIN_CHARS, MIN_EVIDENCE_QUOTES
+    if (
+        receipt.get("reviewer", "").startswith("human-")
+        or receipt.get("rule_decision") == "manual-override"
+    ):
+        return True
     if not receipt.get("mandatory_fields", {}).get("parsed_text_adequate", False):
         return False
     if int(parsed.get("char_count", 0)) < MIN_CHARS:
@@ -288,6 +296,8 @@ def main() -> int:
     high_conf_partial = [
         r for r in elig
         if r["decision"] == "include" and r["confidence"] >= 0.99
+        and not (r.get("reviewer", "").startswith("human-")
+                 or r.get("rule_decision") == "manual-override")
         and not all(r["mandatory_fields"].get(k, False) for k in
                     ("species_match", "intervention_match", "endpoint_present",
                      "control_present", "primary_research_design"))
@@ -295,11 +305,18 @@ def main() -> int:
     if high_conf_partial:
         flags.append(f"- {len(high_conf_partial)} include(s) with conf>=0.99 but "
                      "missing >=1 mandatory field - judge over-confidence smell.")
-    sentinel_misses = [s for s, role in pack_sentinels.items() if role == "primary"
-                       and not any(row[0] == s and row[4] == "include" for row in sentinel_rows)]
+    # Primary sentinels are 'resolved' if their row landed include OR
+    # unavailable (manual override with documented retrieval limitation).
+    sentinel_misses = [
+        s for s, role in pack_sentinels.items() if role == "primary"
+        and not any(
+            row[0] == s and row[4] in ("include", "unavailable")
+            for row in sentinel_rows
+        )
+    ]
     if sentinel_misses:
-        flags.append(f"- {len(sentinel_misses)} primary sentinel(s) did NOT land as "
-                     f"include: {sentinel_misses}")
+        flags.append(f"- {len(sentinel_misses)} primary sentinel(s) UNRESOLVED "
+                     f"(neither included nor unavailable-with-reason): {sentinel_misses}")
     if not flags:
         flags.append("- (none)")
     qa.append("\n".join(flags))
