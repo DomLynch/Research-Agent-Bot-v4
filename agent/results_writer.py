@@ -221,8 +221,14 @@ def write_results_section(packets: Sequence[PacketLike]) -> str:
     )
     parts.append("")
 
-    parts.append("### Primary Pooled Effect")
     pe = _find(packets, "primary_effect")
+    # Sprint 11: header wording depends on k. A pool of 1 is honestly a
+    # single-study extracted effect, not a pooled meta-analysis estimate,
+    # and the section heading should match.
+    if isinstance(pe, ResultsPacket) and pe.k_studies >= 2:
+        parts.append("### Primary Pooled Effect")
+    else:
+        parts.append("### Extracted Primary Effect")
     parts.append(
         _render_effect(pe)
         if isinstance(pe, ResultsPacket)

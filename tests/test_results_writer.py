@@ -102,16 +102,53 @@ def _primary_effect_packet() -> ResultsPacket:
 
 def test_writer_emits_all_subsections() -> None:
     text = write_results_section([_study_selection_packet(), _corpus_packet()])
+    # Every Section-3 subsection must appear in the output unconditionally.
+    # The primary-effect subsection's heading word ("Pooled" vs "Extracted")
+    # depends on k_studies, but the section itself is always present.
     for header in (
         "### Study Selection",
         "### Corpus Characteristics",
-        "### Primary Pooled Effect",
         "### Moderator Meta-Regression",
         "### Sensitivity Analyses",
         "### Tension Matrix",
         "### Translational Evidence Map",
     ):
-        assert header in text
+        assert header in text, f"missing subsection: {header}"
+    assert (
+        "### Primary Pooled Effect" in text
+        or "### Extracted Primary Effect" in text
+    ), "missing primary-effect subsection under either valid heading"
+
+
+def test_writer_uses_pooled_heading_when_k_ge_2() -> None:
+    pkt = ResultsPacket(
+        packet_id="primary_effect", description="x",
+        k_studies=3, k_effects=3, metric="log_median_ratio",
+        moderator_levels={},
+        source_effect_ids=(("s1", "o1"), ("s2", "o1"), ("s3", "o1")),
+        estimate=0.20, se=0.05, ci_low=0.10, ci_high=0.30,
+    )
+    text = write_results_section([
+        _study_selection_packet(), _corpus_packet(), pkt,
+    ])
+    assert "### Primary Pooled Effect" in text
+    assert "### Extracted Primary Effect" not in text
+
+
+def test_writer_uses_extracted_heading_when_k_lt_2() -> None:
+    pkt = ResultsPacket(
+        packet_id="primary_effect", description="x",
+        k_studies=1, k_effects=1, metric="log_median_ratio",
+        moderator_levels={},
+        source_effect_ids=(("s1", "o1"),),
+        estimate=0.39, se=0.21, ci_low=-0.03, ci_high=0.81,
+    )
+    text = write_results_section([
+        _study_selection_packet(), _corpus_packet(), pkt,
+    ])
+    assert "### Extracted Primary Effect" in text
+    assert "### Primary Pooled Effect" not in text
+    assert "single-study extracted effect" in text
 
 
 def test_writer_refuses_when_packet_missing() -> None:

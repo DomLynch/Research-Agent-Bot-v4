@@ -45,7 +45,7 @@ Sentinel-paper recall audit (gate: PASS): 3/3 canonical primary-study anchors re
 ### Corpus Characteristics
 The 8 auto-eligible records span publication years 2009-2024 and 7 distinct venues; after strict A-core auditing, 4 records remain eligible for primary-effect extraction [PACKET:corpus_characteristics].
 
-### Primary Pooled Effect
+### Extracted Primary Effect
 The single-study extracted effect (log_median_ratio) was 0.388 (95% CI -0.032 to 0.808; back-transformed ratio 1.474; k_studies=1, k_effects=1) [PACKET:primary_effect].
 
 ### Moderator Meta-Regression
@@ -80,6 +80,8 @@ numbers.
 - open-access full-text located: 256
 - parsed-with-text: 75
 - manual full-text overrides applied: Harrison 2009 (s086), Bitto 2016 (s288)
+- manual full-text audit trail: manual_full_text_audit.json (per-injection
+  SHA-256 hash, byte count, source pointer)
 - final eligibility decisions: {'include': 8, 'exclude': 60, 'unclear': 7, 'unavailable': 0}
 - contract violations: 0
 - judge model: google/gemma-4-31b-it
@@ -110,19 +112,24 @@ numbers.
 
 ## Appendix B — Honest limitations of this draft
 
-- Discussion / Conclusion / Limitations / References sections have no
-  writer yet; out of scope for this pipeline pass.
+- Discussion / Conclusion / Limitations / References sections have
+  no writer yet; out of scope for this pipeline pass.
 - Sentinel-recall gate is PASS as of Sprint 9: Harrison 2009 and
-  Bitto 2016 were recovered via manual full-text injection from PMC,
-  and Miller 2011 is manually resolved as unavailable. The injection
-  is auditable: the verbatim PMC bytes live in
-  topic_packs/manual_full_text/rapamycin/.
-- Strict A-core now contains 4 records (s086 Harrison 2009, s230 long-
-  term rapamycin treatment, s235 transient developmental rapamycin,
-  s246 BMAL1 mTOR aging). 2 receipts pass the extraction contract.
-- Inverse-variance pool still has k_studies = 1 because three of the
-  four receipts (s086, s230, s235) lack sample sizes; the pipeline
-  reports this as a single-study extracted effect, not a pooled
-  meta-analysis. Future passes can recover sample sizes from tables.
-- Risk-of-bias adjudication is automated; pre-publication submission
-  requires explicit human review.
+  Bitto 2016 were recovered via manual full-text injection from
+  PMC, and Miller 2011 is manually resolved as unavailable. The
+  injection is auditable: the verbatim PMC bytes live in
+  topic_packs/manual_full_text/rapamycin/, and a per-injection
+  ManualFullTextReceipt (hash + byte_count + source) is written
+  to manual_full_text_audit.json on every run.
+- Strict A-core contains 4 records (s086 Harrison 2009, s230 long-
+  term rapamycin, s235 transient developmental, s246 BMAL1 mTOR).
+- The inverse-variance pool still has k_studies = 1 because three
+  of the four receipts (s086, s230, s235) lack sample sizes in the
+  visible excerpt; the heading reads "Extracted Primary Effect",
+  not "Primary Pooled Effect", until k_studies >= 2 in the same
+  metric family. Future passes can recover sample sizes from tables.
+- Metric family discipline: 90th-percentile lifespan ratios are
+  labelled log_max_or_percentile_lifespan_ratio so they are NOT
+  pooled with log_median_ratio observations from other studies.
+- Risk-of-bias adjudication is automated; pre-publication
+  submission requires explicit human review.

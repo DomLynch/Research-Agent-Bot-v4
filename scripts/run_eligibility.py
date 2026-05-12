@@ -174,9 +174,44 @@ async def main() -> int:
     }
     overrides = load_manual_full_text_overrides(args.topic, cand_doi_pmid)
     if overrides:
+        import hashlib as _hashlib
         parsed_docs = apply_manual_overrides(parsed_docs, overrides)
         print(f"[s7] applied {len(overrides)} manual full-text override(s): "
               f"{sorted(overrides)}")
+        # ManualFullTextReceipt audit: this is source recovery, not
+        # eligibility override. Record what bytes were injected, by
+        # whom, when, with a SHA-256 so reviewers can verify the
+        # operator-supplied text matches what the pipeline consumed.
+        cand_by_id = {c.study_id: c for c in candidates}
+        (out_dir / "manual_full_text_audit.json").write_text(
+            json.dumps([
+                {
+                    "study_id": sid, "topic": args.topic,
+                    "doi": (cand_by_id[sid].doi if sid in cand_by_id else None),
+                    "pmid": (cand_by_id[sid].pmid if sid in cand_by_id else None),
+                    "source_name": "manual_full_text",
+                    "source_path": (
+                        f"topic_packs/manual_full_text/{args.topic}/"
+                        f"{(cand_by_id[sid].doi or '').casefold().replace('/', '-')}.txt"
+                        if sid in cand_by_id and cand_by_id[sid].doi
+                        else f"topic_packs/manual_full_text/{args.topic}/"
+                             f"{cand_by_id[sid].pmid}.txt"
+                        if sid in cand_by_id else ""
+                    ),
+                    "file_hash_sha256": _hashlib.sha256(text.encode("utf-8")).hexdigest(),
+                    "byte_count": len(text.encode("utf-8")),
+                    "retrieved_by": "human-operator",
+                    "timestamp_utc": dt.datetime.now(tz=dt.UTC).isoformat(timespec="seconds"),
+                    "reason": (
+                        "auto retrieval (PMC/Unpaywall) failed or returned "
+                        "junk for this sentinel; verbatim full-text supplied "
+                        "by operator under manual_full_text/."
+                    ),
+                }
+                for sid, text in overrides.items()
+            ], indent=2),
+            encoding="utf-8",
+        )
 
     parsed_receipts: tuple[ParsedFullTextReceipt, ...] = tuple(d.to_receipt() for d in parsed_docs)
     parsed_by_id: dict[str, ParsedFullText] = {d.study_id: d for d in parsed_docs}
