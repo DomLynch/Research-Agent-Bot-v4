@@ -117,14 +117,24 @@ def build(pd: Path, topic: str, *, qa_report_path: Path | None = None) -> str:
     ]
 
     parts += ["## S3 — Eligibility Receipts (per-study auto-judge verdicts)", ""]
-    parts += [
-        "Full receipts (decision, reviewer, confidence, mandatory "
-        "fields, evidence quotes, model, timestamps) are filed in "
-        "`eligibility_receipts.json` alongside this supplement. The "
-        "block above lists aggregate counts; per-study rows are "
-        "available in the run directory.",
-        "",
-    ]
+    if (pd / "eligibility_receipts.json").exists():
+        parts += [
+            "Full receipts (decision, reviewer, confidence, mandatory "
+            "fields, evidence quotes, model, timestamps) are filed in "
+            "`eligibility_receipts.json` alongside this supplement. The "
+            "block above lists aggregate counts; per-study rows are "
+            "available in the run directory.",
+            "",
+        ]
+    else:
+        parts += [
+            "Aggregate eligibility counts are embedded above from "
+            "`eligibility_summary.json`. Per-study eligibility receipts "
+            "are not packaged in this final paper folder; regenerate "
+            "or inspect the upstream eligibility run directory for the "
+            "full receipt table.",
+            "",
+        ]
 
     a_core = strict.get("A_core_direct_lifespan", [])
     parts += ["## S4 — Strict A-core Corpus "
@@ -289,12 +299,18 @@ def build(pd: Path, topic: str, *, qa_report_path: Path | None = None) -> str:
         + ", ".join(f"`{s}`" for s in pack.sentinel_prior_meta)
         + ".",
         "",
-        "Per-sentinel resolution (auto verdict + manual status overlay) "
-        "is rendered in `qa_report.md` under the "
-        "_Sentinel resolution status (manual overlay)_ table. The gate "
-        "passes only when every primary sentinel either auto-contract-"
-        "passes or is documented as resolved_unavailable / "
-        "resolved_excluded.",
+        (
+            "Per-sentinel resolution (auto verdict + manual status overlay) "
+            "is rendered below in S10 from the upstream QA report. The gate "
+            "passes only when every primary sentinel either auto-contract-"
+            "passes or is documented as resolved_unavailable / "
+            "resolved_excluded."
+            if qa else
+            "Per-sentinel resolution is available in the upstream QA report "
+            "for the eligibility run. The gate passes only when every "
+            "primary sentinel either auto-contract-passes or is documented "
+            "as resolved_unavailable / resolved_excluded."
+        ),
         "",
     ]
     if audit:

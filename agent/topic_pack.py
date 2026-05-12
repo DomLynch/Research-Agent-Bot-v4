@@ -59,6 +59,7 @@ class TopicPack:
     methods_honesty_rewrites: Mapping[str, str] = field(
         default_factory=lambda: MappingProxyType({}),
     )
+    ethics_statement: str = ""
 
     @property
     def has_scope_rules(self) -> bool:
@@ -128,4 +129,5 @@ def load_topic_pack(topic: str, *, pack_dir: Path | None = None) -> TopicPack | 
         methods_honesty_rewrites=MappingProxyType(dict(
             raw.get("methods_honesty_rewrites", {})
         )),
+        ethics_statement=str(raw.get("back_matter", {}).get("ethics_statement", "")),
     )

@@ -2,10 +2,7 @@
 
 Cover:
   - all six sections render and join into `as_markdown()`
-  - ethics statement branches off `pack.primary_system`:
-      * mouse-family → animal-research framing
-      * human-family → human-subjects framing
-      * anything else → neutral previously-published framing
+  - ethics statement is topic-pack supplied, with a neutral fallback
   - data/code line wires in retrieval sources and run-dir/repo refs
   - AI-use line names both writer + judge model strings
 """
@@ -33,7 +30,7 @@ def _empty_settings() -> Settings:
     )
 
 
-def _pack(primary_system: str) -> TopicPack:
+def _pack(primary_system: str, *, ethics_statement: str = "") -> TopicPack:
     return TopicPack(
         topic="t", display_name="T", primary_system=primary_system,
         preferred_terms=(), discouraged_terms=(),
@@ -53,6 +50,7 @@ def _pack(primary_system: str) -> TopicPack:
         non_mouse_species_terms=(),
         secondary_design_quote_markers=(),
         references_bibliography=MappingProxyType({}),
+        ethics_statement=ethics_statement,
     )
 
 
@@ -93,20 +91,24 @@ def test_ai_use_names_both_models() -> None:
     assert "google/gemma-4-31b-it" in bm.ai_use_disclosure
 
 
-def test_ethics_branch_mouse() -> None:
-    bm = build_back_matter(_pack("mouse"), _empty_settings())
-    assert "animal-research" in bm.ethics_statement
-    assert "human" not in bm.ethics_statement.lower()
+def test_ethics_uses_topic_pack_statement() -> None:
+    bm = build_back_matter(
+        _pack("system", ethics_statement="Pack-specific ethics text."),
+        _empty_settings(),
+    )
+    assert bm.ethics_statement == "Pack-specific ethics text."
 
 
-def test_ethics_branch_human() -> None:
-    bm = build_back_matter(_pack("human"), _empty_settings())
-    assert "human-subjects" in bm.ethics_statement
-    assert "animal" not in bm.ethics_statement.lower()
+def test_ethics_statement_strips_topic_pack_whitespace() -> None:
+    bm = build_back_matter(
+        _pack("system", ethics_statement="  Pack ethics.  "),
+        _empty_settings(),
+    )
+    assert bm.ethics_statement == "Pack ethics."
 
 
-def test_ethics_branch_neutral_for_unrecognised_system() -> None:
+def test_ethics_fallback_is_neutral_for_unspecified_pack() -> None:
     bm = build_back_matter(_pack("climate-time-series"), _empty_settings())
     assert "previously published data" in bm.ethics_statement
-    assert "animal" not in bm.ethics_statement.lower()
-    assert "human-subjects" not in bm.ethics_statement.lower()
+    assert "animal-research" not in bm.ethics_statement
+    assert "human-subjects" not in bm.ethics_statement
