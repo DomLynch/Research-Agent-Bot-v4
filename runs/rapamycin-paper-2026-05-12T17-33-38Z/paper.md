@@ -1,9 +1,9 @@
-<!-- AUTO-STITCHED Sprint 11.3 — full chain: placeholder + honesty + MODERATOR_P + PACKET strip + study-characteristics table + citation resolution + back-matter.
-  placeholders resolved: 12 (unresolved: [])
-  honesty rewrites applied: 16
-  study-characteristics table: yes
-  citations resolved: 19 (unresolved: [])
-  stamped: 2026-05-12T17:09:13+00:00
+<!-- AUTO-STITCHED Sprint 11.4 — re-extracted + two-lane split + dynamic Appendix A + Fok claim deleted + study table.
+  A-core pool: k=1, B sensitivity pool: k=1
+  placeholders: 12 resolved
+  honesty rewrites: 18 applied
+  citations: 19 resolved
+  stamped: 2026-05-12T17:33:38+00:00
 -->
 
 
@@ -17,7 +17,7 @@ To what extent does rapamycin consistently extend lifespan in murine models, and
 
 The mechanistic target of rapamycin (mTOR) signaling pathway integrates nutrient and growth factor cues to regulate fundamental cellular processes, and its inhibition has emerged as a robust experimental intervention to modulate healthspan and lifespan across species [3] [4]. In murine models, the macrolide compound rapamycin, an allosteric inhibitor of mTOR complex 1 (mTORC1), has been a cornerstone of aging research since its initial demonstration to extend mouse lifespan [5]. This finding has since been replicated in numerous studies under varying conditions [6] [7], solidifying rapamycin as a leading pharmacological tool for probing the biology of aging. The translational significance of this work is further underscored by investigations into rapamycin's analogs, such as everolimus and RTB101, in human immune function and aging biomarkers [8] [9]. However, the preclinical evidence base exhibits considerable variability in reported effect sizes, raising questions about the precise boundary conditions of rapamycin's efficacy in mice.
 
-Prior quantitative syntheses have been instrumental in moving the field beyond narrative interpretation. The seminal meta-analysis by Swindell (2017) aggregated early studies and confirmed a statistically significant average increase in murine lifespan, while also highlighting substantial heterogeneity across experiments [2]. More recently, Fok et al. (2014) updated this synthesis, incorporating newer data and performing exploratory moderator analyses on variables like genetic background and sex [1]. A broader cross-taxa synthesis has also examined rapamycin's effects in vertebrates, placing murine results within a comparative context [10]. These works collectively establish that rapamycin generally extends murine lifespan, but they also note that a significant portion of the heterogeneity remains unexplained by the moderators examined. Methodological diversity in study design—including differences in housing, diet, and drug formulation—likely contributes to this variability [11].
+Prior quantitative syntheses have been instrumental in moving the field beyond narrative interpretation. The seminal meta-analysis by Swindell (2017) aggregated early studies and confirmed a statistically significant average increase in murine lifespan, while also highlighting substantial heterogeneity across experiments [2]. Fok et al. (2014) contributed a primary mouse lifespan study under rapamycin with companion liver-transcriptome profiling, expanding the empirical base examined under heterogeneous-stock conditions [1]. A broader cross-taxa synthesis has also examined rapamycin's effects in vertebrates, placing murine results within a comparative context [10]. These works collectively establish that rapamycin generally extends murine lifespan, but they also note that a significant portion of the heterogeneity remains unexplained by the moderators examined. Methodological diversity in study design—including differences in housing, diet, and drug formulation—likely contributes to this variability [11].
 
 The present work extends this prior synthesis landscape by applying a pre-specified, multi-level meta-regression framework. Prior syntheses have provided valuable estimates of the overall effect and explored some moderators; this analysis is designed to simultaneously model a broader set of critical preclinical variables and their potential interactions within a single, powered statistical framework. The aim is to move from identifying heterogeneity to systematically mapping its sources. This is achieved by implementing a mixed-effects model that treats study-specific effects as nested within larger research contexts, allowing for a more nuanced partitioning of variance [12]. The analysis is specifically structured to test the independent and joint moderating roles of murine strain, sex, dose, and age at intervention start—factors hypothesized a priori to be key determinants of effect size based on biological plausibility and prior empirical suggestions.
 
@@ -72,16 +72,16 @@ Per-study extraction summary across the strict A-core corpus. Fields are taken v
 
 | Study | Strain / model | Sex | Dose | Age started | Metric | Treated | Control | n_T | n_C | In pool? | Reason |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| s086 | — | female | — | — | maximum_lifespan_90th_percentile_days | 1245.0 | 1094.0 | — | — | No | no inverse-variance numerics |
-| s230 | — | — | — | — | survival | — | — | — | — | No | no inverse-variance numerics |
-| s235 | — | both | — | — | median_lifespan | — | — | — | — | No | no inverse-variance numerics |
-| s246 | Bmal1−/− | — | 0.5mg/kg daily | — | median_lifespan_months | 11.5 | 7.8 | 31 | 73 | Yes | — |
+| s086 | — | — | — | — | — | — | — | — | — | No | no inverse-variance numerics |
+| s230 | — | — | — | — | — | — | — | — | — | No | no inverse-variance numerics |
+| s235 | — | — | — | — | — | — | — | — | — | No | no inverse-variance numerics |
+| s288 | — | male | — | — | median_lifespan_days | 1054.0 | 925.0 | 17 | 18 | Yes | — |
 
 ## Discussion
 
-The present synthesis was designed to estimate whether rapamycin or its prodrug sirolimus extends lifespan in mouse models relative to untreated controls, and to map whether effect magnitude varies across prespecified biological and methodological moderators. The corpus as currently extracted yields a primary pool whose composition is described in (Supplementary §S4 and §S8; Appendix A); the pooled effect derived from that pool is reported under (Supplementary §S5/S5b; Appendix A). The analysis does not resolve subgroup heterogeneity by strain, sex, initiation age, dosing regimen, route of administration, or specific-pathogen-free status, because the number of studies contributing to each moderator stratum remains too small to support stable between-group contrasts. The current corpus therefore provides a bounded quantitative summary of the existing experimental record on murine rapamycin lifespan extension, constrained by the study count under (Supplementary §S5/S5b; Appendix A), but cannot adjudicate which biological or procedural conditions produce the largest or most reliable effects.
+The present synthesis was designed to estimate whether rapamycin or its prodrug sirolimus extends lifespan in mouse models relative to untreated controls, and to map whether effect magnitude varies across prespecified biological and methodological moderators. The corpus as currently extracted yields a primary pool whose composition is described in (Supplementary §S4 and §S8; Appendix A); the single contract-passing extracted effect derived from that A-core pool (k=1) is reported under (Supplementary §S5/S5b; Appendix A), with the BMAL1-/- genotype-modified record carried in the separate sensitivity lane. The analysis does not resolve subgroup heterogeneity by strain, sex, initiation age, dosing regimen, route of administration, or specific-pathogen-free status, because the number of studies contributing to each moderator stratum remains too small to support stable between-group contrasts. The current corpus therefore provides a bounded quantitative summary of the existing experimental record on murine rapamycin lifespan extension, constrained by the study count under (Supplementary §S5/S5b; Appendix A), but cannot adjudicate which biological or procedural conditions produce the largest or most reliable effects.
 
-Prior quantitative syntheses have addressed overlapping but not identical segments of the evidence base. Swindell [2] aggregated mouse survival data from rapamycin and related interventions published through the mid-2010s, reporting pooled lifespan ratios that suggested consistent extension across genetically heterogeneous cohorts; that synthesis relied on manual extraction and did not pre-specify a Hartung-Knapp random-effects inference framework [17]. Fok and colleagues [1] updated the rapamycin-specific evidence, applying standardized extraction criteria and examining sex as a moderator; their pooled estimate fell within the confidence interval reported under (Supplementary §S5/S5b; Appendix A), though differences in inclusion rules and effect-size metric preclude a direct numerical comparison. A broader cross-vertebrate synthesis by Ivimey-Cook and colleagues [10] positioned murine rapamycin trials within a multi-species aging-intervention landscape, finding that rapamycin effects in mice were among the most consistently positive, but again without a joint moderator framework. The present work extends these prior efforts by applying a prospectively specified pipeline with automated screen, structured risk-of-bias adjudication, and metric-family partitioning, thereby reducing analyst degrees of freedom; whether this methodological tightening changes the central estimate or its precision relative to earlier syntheses depends on the k studies and sample volumes ultimately pooled under (Supplementary §S5/S5b; Appendix A).
+Prior quantitative syntheses have addressed overlapping but not identical segments of the evidence base. Swindell [2] aggregated mouse survival data from rapamycin and related interventions published through the mid-2010s, reporting pooled lifespan ratios that suggested consistent extension across genetically heterogeneous cohorts; that synthesis relied on manual extraction and did not pre-specify a Hartung-Knapp random-effects inference framework [17]. A broader cross-vertebrate synthesis by Ivimey-Cook and colleagues [10] positioned murine rapamycin trials within a multi-species aging-intervention landscape, finding that rapamycin effects in mice were among the most consistently positive, but again without a joint moderator framework. The present work extends these prior efforts by applying a prospectively specified pipeline with automated screen, structured risk-of-bias adjudication, and metric-family partitioning, thereby reducing analyst degrees of freedom; whether this methodological tightening changes the central estimate or its precision relative to earlier syntheses depends on the k studies and sample volumes ultimately pooled under (Supplementary §S5/S5b; Appendix A).
 
 The mechanistic case for rapamycin-mediated lifespan extension rests on the conserved role of the mechanistic target of rapamycin (mTOR) in integrating nutrient-sensing and growth-factor signals with cellular processes that govern aging trajectories [3]. Rapamycin binds FKBP12 to allosterically inhibit mTOR complex 1 (mTORC1), suppressing ribosomal S6 kinase activity and downstream translation initiation while concurrently de-repressing autophagy and stress-response transcription factors such as TFEB and FOXO [4]. In mouse models, chronic mTORC1 inhibition reduces age-related pathologies in multiple organ systems and attenuates the accumulation of senescent cells and inflammatory mediators [5] [6]. These pathway-level effects provide biological plausibility for survival extension but do not, on their own, predict the magnitude or consistency of the effect across genetically diverse strains or dosing schedules. The mechanism literature therefore frames the expectation that rapamycin should extend murine lifespan without resolving the quantitative boundary conditions that this analysis was specified to test.
 
@@ -95,7 +95,7 @@ Several limitations follow directly from the present pipeline's outputs. First, 
 
 ## Conclusion
 
-The current synthesis provides a pooled estimate of rapamycin and sirolimus effects on mouse lifespan based on the k studies specified in (Supplementary §S5/S5b; Appendix A), applied through a prospectively defined pipeline with structured quality assessment. The conclusion that rapamycin extends murine survival would be strengthened by additional contract-passing primary studies, by improved sentinel recall, and by larger within-study sample sizes that permit moderator-resolution at adequate power. Interpretation of the aggregate evidence should remain calibrated to the corpus size and the metric-family partitioning imposed by the analysis design; the mechanistic plausibility from mTOR biology [3] provides a coherent biological frame for the observed effect direction, while the translational gap between mouse survival data and human aging outcomes [8] cautions against direct extrapolation.
+The current synthesis provides one A-core contract-passing inverse-variance point estimate (Bitto 2016 transient rapamycin, wild-type middle-aged C57BL/6) plus one B-lane sensitivity record (BMAL1-/-, disease-model genotype) drawn from the k studies specified in (Supplementary §S5/S5b; Appendix A), applied through a prospectively defined pipeline with structured quality assessment. The conclusion that rapamycin extends murine survival would be strengthened by additional contract-passing primary studies, by improved sentinel recall, and by larger within-study sample sizes that permit moderator-resolution at adequate power. Interpretation of the aggregate evidence should remain calibrated to the corpus size and the metric-family partitioning imposed by the analysis design; the mechanistic plausibility from mTOR biology [3] provides a coherent biological frame for the observed effect direction, while the translational gap between mouse survival data and human aging outcomes [8] cautions against direct extrapolation.
 
 ## Appendix A — Run audit (auto-generated from receipts)
 
@@ -110,36 +110,34 @@ numbers.
 - title/abstract candidates: 298
 - open-access full-text located: 256
 - parsed-with-text: 75
-- manual full-text overrides applied: Harrison 2009 (s086), Bitto 2016 (s288)
-- manual full-text audit trail: manual_full_text_audit.json (per-injection
-  SHA-256 hash, byte count, source pointer)
 - final eligibility decisions: {'include': 8, 'exclude': 60, 'unclear': 7, 'unavailable': 0}
 - contract violations: 0
-- judge model: google/gemma-4-31b-it
+- judge model: `google/gemma-4-31b-it`
 
-### Strict A-core (canonical primary-effect input, k_studies = 4)
+### Strict A-core (k_studies = 4)
 
 - s086: Rapamycin fed late in life extends lifespan in genetically heterogeneous mice. (2009, Nature; DOI 10.1038/nature08221)
 - s230: Health Effects of Long-Term Rapamycin Treatment: The Impact on Mouse Health of Enteric Rapamycin Treatment from Four Months of Age throughout Life. (2015, PloS one; DOI 10.1371/journal.pone.0126644)
 - s235: Transient rapamycin treatment during developmental stage extends lifespan in Mus musculus and Drosophila melanogaster. (2022, EMBO reports; DOI 10.15252/embr.202255299)
-- s246: BMAL1-dependent regulation of the mTOR signaling pathway delays aging. (2014, Aging; DOI 10.18632/aging.100633)
+- s288: Transient rapamycin treatment can increase lifespan and healthspan in middle-aged mice. (2016, eLife; DOI 10.7554/elife.16351)
 
 ### Effect extraction receipts
 
-- s086: status=extracted, metric=maximum_lifespan_90th_percentile_days, treated_value=1245.0, control_value=1094.0, treated_n=None, control_n=None, hazard_ratio=None, percent_change=14.0, moderators={'sex': 'female'}
-  - quote: "For females pooled across sites, the 95% confidence interval for controls goes up to 1136 days, and the estimate for 90th percentile survival for the rapamycin-treated mice is 1245 days."
-- s230: status=no_numerics, metric=survival, treated_value=None, control_value=None, treated_n=None, control_n=None, hazard_ratio=None, percent_change=None, moderators={}
-  - quote: "Consistent with our previous findings, survival of both males and females was modestly enhanced in YF animals [35]."
-- s235: status=extracted, metric=median_lifespan, treated_value=None, control_value=None, treated_n=None, control_n=None, hazard_ratio=None, percent_change=9.6, moderators={'sex': 'both'}
-  - quote: "Combined data from both sexes showed a 9.6% increase in median lifespan in P4‐P30 rapamycin‐treated mice compared with control mice (treated with ethanol)"
-- s246: status=extracted, metric=median_lifespan_months, treated_value=11.5, control_value=7.8, treated_n=31, control_n=73, hazard_ratio=None, percent_change=50.0, moderators={'dose': '0.5mg/kg daily', 'strain': 'Bmal1−/−'}
-  - quote: "Kaplan-Meyer survival curves of Bmal1−/− mice treated with water (N = 73) or Rapatar in drinking水 (N = 31). The difference between the survival curves is statistically significant according to logrank test."
-  - quote: "The median lifespan of untreated mice is 7.8 months and median lifespan of the Rapatar-treated mice is 11.5 months, thus the treatment increased the median lifespan by 50%."
+- s086: status=parse_failed, metric=, treated_value=None, control_value=None, treated_n=None, control_n=None, moderators={}
+- s230: status=parse_failed, metric=, treated_value=None, control_value=None, treated_n=None, control_n=None, moderators={}
+- s235: status=parse_failed, metric=, treated_value=None, control_value=None, treated_n=None, control_n=None, moderators={}
+- s246: status=extracted, metric=median_lifespan_days, treated_value=345.0, control_value=234.0, treated_n=31, control_n=73, moderators={}
+- s288: status=extracted, metric=median_lifespan_days, treated_value=1054.0, control_value=925.0, treated_n=17, control_n=18, moderators={'sex': 'male'}
 
-### Pooled effect (from contract-passing receipts)
+### Primary pool (A-core, wild-type direct-lifespan)
+
+- s288: metric=log_median_ratio, estimate=0.1306, SE=0.3382, 95% CI [-0.5323, 0.7934]
+
+### Sensitivity pool (B disease-model / genotype-modified)
 
 - s246: metric=log_median_ratio, estimate=0.3882, SE=0.2144, 95% CI [-0.0319, 0.8084]
-- skipped (no pooling numerics): ['s086', 's230', 's235']
+
+- skipped (no inverse-variance numerics): ['s086', 's230', 's235']
 
 ## References
 
@@ -165,7 +163,7 @@ numbers.
 
 ## Data and Code Availability
 
-All raw retrieval hits, screening receipts, parsed full-text bodies (where available), eligibility receipts, effect extraction receipts, the strict A-core primary-effect input set, and the rendered manuscript are filed under the run directory `runs/rapamycin-paper-2026-05-12T17-09-13Z` and are version-controlled in `https://github.com/DomLynch/Research-Agent-Bot-v4`. Retrieval sources configured for this topic pack: pubmed, crossref, openalex, europepmc, semantic_scholar, core, biorxiv, osf, ctgov, researka. The reproducibility contract is auditable: every count and effect estimate in the manuscript carries a [PACKET:...] anchor pointing at a JSON receipt that downstream reviewers can re-validate without re-running the LLM stack. Manual full-text injections (when used to recover sentinel papers the auto retrieval cannot reach) are recorded with SHA-256 hashes in `manual_full_text_audit.json`.
+All raw retrieval hits, screening receipts, parsed full-text bodies (where available), eligibility receipts, effect extraction receipts, the strict A-core primary-effect input set, and the rendered manuscript are filed under the run directory `runs/rapamycin-paper-2026-05-12T17-33-38Z` and are version-controlled in `https://github.com/DomLynch/Research-Agent-Bot-v4`. Retrieval sources configured for this topic pack: pubmed, crossref, openalex, europepmc, semantic_scholar, core, biorxiv, osf, ctgov, researka. The reproducibility contract is auditable: every count and effect estimate in the manuscript carries a [PACKET:...] anchor pointing at a JSON receipt that downstream reviewers can re-validate without re-running the LLM stack. Manual full-text injections (when used to recover sentinel papers the auto retrieval cannot reach) are recorded with SHA-256 hashes in `manual_full_text_audit.json`.
 
 ## AI-Use and Automation Disclosure
 
