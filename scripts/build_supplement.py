@@ -117,14 +117,26 @@ def build(pd: Path, topic: str, *, qa_report_path: Path | None = None) -> str:
     ]
 
     parts += ["## S3 — Eligibility Receipts (per-study auto-judge verdicts)", ""]
-    parts += [
-        "Full receipts (decision, reviewer, confidence, mandatory "
-        "fields, evidence quotes, model, timestamps) are filed in "
-        "`eligibility_receipts.json` alongside this supplement. The "
-        "block above lists aggregate counts; per-study rows are "
-        "available in the run directory.",
-        "",
-    ]
+    # Only name `eligibility_receipts.json` when that sidecar is
+    # actually packaged in this paper folder; otherwise describe what's
+    # really here (aggregate counts only) and point readers upstream.
+    if (pd / "eligibility_receipts.json").exists():
+        s3_body = (
+            "Full receipts (decision, reviewer, confidence, mandatory "
+            "fields, evidence quotes, model, timestamps) are filed in "
+            "`eligibility_receipts.json` alongside this supplement. The "
+            "block above lists aggregate counts; per-study rows are "
+            "available in the run directory."
+        )
+    else:
+        s3_body = (
+            "Aggregate eligibility counts are embedded above from "
+            "`eligibility_summary.json`. Per-study eligibility receipts "
+            "are not packaged in this final paper folder; regenerate or "
+            "inspect the upstream eligibility run directory for the full "
+            "receipt table."
+        )
+    parts += [s3_body, ""]
 
     a_core = strict.get("A_core_direct_lifespan", [])
     parts += ["## S4 — Strict A-core Corpus "
@@ -282,6 +294,16 @@ def build(pd: Path, topic: str, *, qa_report_path: Path | None = None) -> str:
     ]
 
     parts += ["## S7 — Sentinel Recall Audit", ""]
+    # When the upstream QA report is stitched in as S10 below, point
+    # there. Otherwise point at the upstream eligibility run directory
+    # — never reference a `qa_report.md` filename that isn't packaged
+    # in this folder.
+    s7_pointer = (
+        "is rendered below in S10 from the upstream QA report"
+        if qa else
+        "is recorded in the upstream eligibility run directory's QA "
+        "report (not packaged in this final paper folder)"
+    )
     parts += [
         "Topic-pack-declared sentinels are: **primary** = "
         + ", ".join(f"`{s}`" for s in pack.sentinel_primary)
@@ -289,12 +311,11 @@ def build(pd: Path, topic: str, *, qa_report_path: Path | None = None) -> str:
         + ", ".join(f"`{s}`" for s in pack.sentinel_prior_meta)
         + ".",
         "",
-        "Per-sentinel resolution (auto verdict + manual status overlay) "
-        "is rendered in `qa_report.md` under the "
-        "_Sentinel resolution status (manual overlay)_ table. The gate "
-        "passes only when every primary sentinel either auto-contract-"
-        "passes or is documented as resolved_unavailable / "
-        "resolved_excluded.",
+        f"Per-sentinel resolution (auto verdict + manual status overlay) "
+        f"{s7_pointer} under the _Sentinel resolution status (manual "
+        "overlay)_ table. The gate passes only when every primary "
+        "sentinel either auto-contract-passes or is documented as "
+        "resolved_unavailable / resolved_excluded.",
         "",
     ]
     if audit:
@@ -350,6 +371,22 @@ def build(pd: Path, topic: str, *, qa_report_path: Path | None = None) -> str:
         and f.name not in {"paper.md", "supplement.md"}
     )
     receipts_md = ", ".join(f"`{n}`" for n in visible_receipts) or "(none)"
+    # Only name `manual_full_text_audit.json` when that sidecar is
+    # actually packaged here; otherwise point at the overrides dir only.
+    if (pd / "manual_full_text_audit.json").exists():
+        manual_line = (
+            "- Manual full-text overrides (if any): "
+            f"`topic_packs/manual_full_text/{pack.topic}/`"
+            " (per-injection SHA-256 hashes are recorded in "
+            "`manual_full_text_audit.json` alongside this supplement)."
+        )
+    else:
+        manual_line = (
+            "- Manual full-text overrides (if any): "
+            f"`topic_packs/manual_full_text/{pack.topic}/`. "
+            "No manual-full-text audit sidecar is packaged in this "
+            "final paper folder."
+        )
     parts += [
         "- Pipeline source: see the project repository under "
         "`agent/`, `scripts/`, and `tests/`. All counts and effect "
@@ -359,10 +396,7 @@ def build(pd: Path, topic: str, *, qa_report_path: Path | None = None) -> str:
         "- Topic pack: `topic_packs/" f"{pack.topic}.toml`"
         " (search vocabulary, sentinels, anchors, bibliography, "
         "strict A-core terms).",
-        "- Manual full-text overrides (if any): "
-        "`topic_packs/manual_full_text/" f"{pack.topic}/`"
-        " (per-injection SHA-256 hashes are recorded in "
-        "`manual_full_text_audit.json` when present in the run dir).",
+        manual_line,
         f"- Receipts present in this folder: {receipts_md}.",
         "",
     ]
