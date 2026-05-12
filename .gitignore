@@ -14,3 +14,7 @@ htmlcov/
 
 # Keep runs/ tracked — they are the section deliverables.
 # If runs/ grows large later, switch to selective tracking.
+
+# macOS Finder dedup-on-copy artifacts ("foo 2.json", "main_draft 2.md", etc.).
+# Never canonical; have polluted run-dir bundles before.
+* 2.*
