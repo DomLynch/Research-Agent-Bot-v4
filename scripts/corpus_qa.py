@@ -386,18 +386,27 @@ def main() -> int:
             f"the universal contract can pass."
         )
     # Hard miss: primary sentinel where neither auto nor manual reaches
-    # a final state.
-    sentinel_misses = [
-        s for s, role in pack_sentinels.items() if role == "primary"
-        and not any(
-            row[0] == s and row[4] in (
-                "include", "unavailable",
-                "resolved_available_pending_contract",
-                "resolved_unavailable", "resolved_excluded",
-            )
-            for row in overlay_rows
-        )
-    ]
+    # a final state. A sentinel counts as RESOLVED when:
+    #   - auto_decision (row[3]) is in {include, exclude, unavailable}
+    #     -> the auto pipeline already produced a terminal verdict; OR
+    #   - manual_status (row[4]) is a documented terminal manual state
+    #     (resolved_unavailable / resolved_excluded). resolved_available
+    #     ALONE is not terminal — it's a status assertion that still
+    #     needs a contract pass, surfaced separately via the "sentinel
+    #     contract gaps remain" flag above.
+    _RESOLVED_AUTO = {"include", "exclude", "unavailable"}
+    _RESOLVED_MANUAL = {"resolved_unavailable", "resolved_excluded"}
+    sentinel_misses: list[str] = []
+    for s, role in pack_sentinels.items():
+        if role != "primary":
+            continue
+        row = next((r for r in overlay_rows if r[0] == s), None)
+        if row is None or (
+            row[3] not in _RESOLVED_AUTO
+            and row[4] not in _RESOLVED_MANUAL
+            and row[4] != "resolved_available_pending_contract"
+        ):
+            sentinel_misses.append(s)
     if sentinel_misses:
         flags.append(f"- {len(sentinel_misses)} primary sentinel(s) UNRESOLVED "
                      f"(no auto verdict + no manual record): {sentinel_misses}")

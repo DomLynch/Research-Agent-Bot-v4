@@ -9,7 +9,7 @@ Sentinel-paper recall audit (gate: PASS): 3/3 canonical primary-study anchors re
 ### Corpus Characteristics
 The 8 auto-eligible records span publication years 2009-2024 and 7 distinct venues; after strict A-core auditing, 4 records remain eligible for primary-effect extraction [PACKET:corpus_characteristics].
 
-### Primary Pooled Effect
+### Extracted Primary Effect
 The single-study extracted effect (log_median_ratio) was 0.388 (95% CI -0.032 to 0.808; back-transformed ratio 1.474; k_studies=1, k_effects=1) [PACKET:primary_effect].
 
 ### Moderator Meta-Regression
