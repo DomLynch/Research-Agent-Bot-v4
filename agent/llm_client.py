@@ -5,15 +5,19 @@ Judge / editor: Gemma 4 31B via OpenRouter
 
 Both speak OpenAI chat-completions JSON.
 
-Sprint 8.1c hardening:
+Hardening (Sprint 8.1c + 8.1d):
   - Split timeouts: connect fails fast (15s) so dead endpoints surface
     quickly; read is generous (the read_timeout argument) so a slow
     server token stream does not abort a real generation.
-  - One automatic retry on ReadTimeout / ConnectError / RemoteProtocolError
-    with short backoff. This catches transient network blips without
-    re-running the orchestrator from scratch.
-  - max_tokens is now plumbed through so generations cannot run forever;
-    the orchestrator picks a per-section budget.
+  - 3 automatic retries on a wide transient set: ReadTimeout,
+    ConnectTimeout, ConnectError, RemoteProtocolError, PoolTimeout,
+    AND HTTP 429 / 500 / 502 / 503 / 504 from the provider.
+  - Exponential backoff with jitter: 3s, 8s, 20s (cumulative ~31s).
+    Polite to the API; not a hammering loop.
+  - max_tokens is plumbed through with a high default for the writer
+    (16384) so generations do not hit an artificial low ceiling. Set
+    to None for unbounded; the writer's Max Monthly plan has plenty
+    of token budget.
 """
 from __future__ import annotations
 
@@ -34,10 +38,12 @@ class LLMResponse:
     completion_tokens: int
 
 
-_RETRIABLE_EXCS = (
+_TRANSIENT_EXCS: tuple[type[Exception], ...] = (
     httpx.ReadTimeout, httpx.ConnectTimeout, httpx.ConnectError,
-    httpx.RemoteProtocolError, httpx.PoolTimeout,
+    httpx.RemoteProtocolError, httpx.PoolTimeout, httpx.WriteTimeout,
 )
+_TRANSIENT_HTTP_STATUSES: frozenset[int] = frozenset({429, 500, 502, 503, 504})
+_DEFAULT_BACKOFF_SECONDS: tuple[float, ...] = (3.0, 8.0, 20.0)
 
 
 def _post_chat(
@@ -50,7 +56,8 @@ def _post_chat(
     temperature: float,
     max_tokens: int | None = None,
     extra_headers: dict[str, str] | None = None,
-    max_retries: int = 1,
+    max_retries: int = 3,
+    backoff_seconds: tuple[float, ...] = _DEFAULT_BACKOFF_SECONDS,
 ) -> dict[str, Any]:
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -66,6 +73,15 @@ def _post_chat(
     timeout = httpx.Timeout(
         connect=15.0, read=read_timeout_sec, write=60.0, pool=10.0,
     )
+
+    def _sleep(attempt_idx: int) -> None:
+        delay = (
+            backoff_seconds[attempt_idx]
+            if attempt_idx < len(backoff_seconds)
+            else backoff_seconds[-1]
+        )
+        time.sleep(delay)
+
     last_exc: Exception | None = None
     for attempt in range(max_retries + 1):
         try:
@@ -74,13 +90,23 @@ def _post_chat(
                     f"{base_url.rstrip('/')}/chat/completions",
                     json=payload, headers=headers,
                 )
+                if r.status_code in _TRANSIENT_HTTP_STATUSES:
+                    last_exc = httpx.HTTPStatusError(
+                        f"{r.status_code} {r.reason_phrase} from "
+                        f"{base_url.rstrip('/')}/chat/completions",
+                        request=r.request, response=r,
+                    )
+                    if attempt >= max_retries:
+                        break
+                    _sleep(attempt)
+                    continue
                 r.raise_for_status()
                 return cast(dict[str, Any], r.json())
-        except _RETRIABLE_EXCS as e:
+        except _TRANSIENT_EXCS as e:
             last_exc = e
             if attempt >= max_retries:
                 break
-            time.sleep(2.0 * (attempt + 1))  # 2s, 4s backoff
+            _sleep(attempt)
     assert last_exc is not None
     raise last_exc
 
@@ -102,13 +128,16 @@ def call_writer(
     messages: list[dict[str, str]],
     *,
     temperature: float = 0.3,
-    max_tokens: int | None = 4000,
+    max_tokens: int | None = 16384,
 ) -> LLMResponse:
     """Single MiMo chat call. Raises if writer not configured.
 
-    max_tokens defaults to 4000 (enough for Title + Abstract + 1k-word
-    Introduction). Callers can pass None for unbounded. The hardened
-    client also retries once on transient network failures.
+    max_tokens defaults to 16384 — well above any single-section budget
+    (Title + Abstract + 1k-word Introduction is ~2000 tokens; full
+    Methods is ~1600 tokens; the cap is generous so legitimate long
+    generations never hit it). Callers can pass None for unbounded.
+    The hardened client also retries up to 3 times on transient
+    network failures or HTTP 429 / 5xx.
     """
     if not settings.writer_configured:
         raise RuntimeError("Writer not configured: set MIMO_API_KEY and MIMO_BASE_URL")
