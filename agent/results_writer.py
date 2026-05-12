@@ -105,9 +105,11 @@ def _render_study_selection(p: InformationalPacket) -> str:
 def _render_corpus(p: InformationalPacket) -> str:
     c = p.counts
     strict_k = c.get("strict_a_core", 0)
+    strict_word = "record" if strict_k == 1 else "records"
     strict_clause = (
-        f"; after strict A-core auditing, {strict_k} records remain "
-        f"eligible for primary-effect extraction" if strict_k else ""
+        f"; after strict A-core auditing, {strict_k} {strict_word} "
+        f"remain{'s' if strict_k == 1 else ''} eligible for primary-effect "
+        f"extraction" if strict_k else ""
     )
     return (
         f"The {c.get('eligible', 0)} auto-eligible records span publication years "
@@ -160,18 +162,18 @@ def _render_effect(p: ResultsPacket) -> str:
             f"upstream stats step pending]"
         )
     # Sprint 8: log-scale metrics (log_hazard_ratio, log_median_ratio)
-    # also report the back-transformed ratio + CI so the prose is
-    # readable without forcing readers to mentally exponentiate.
+    # also report the back-transformed ratio so the prose is readable
+    # without forcing readers to mentally exponentiate; the log-scale
+    # CI is the primary statistical anchor.
     if p.metric.startswith("log_"):
         import math as _math
         ratio = _math.exp(p.estimate)
-        ratio_lo = _math.exp(p.ci_low)
-        ratio_hi = _math.exp(p.ci_high)
         return (
             f"The pooled estimate ({p.metric}) was {p.estimate:.3f} "
-            f"(back-transformed ratio {ratio:.3f}, 95% CI {ratio_lo:.3f} "
-            f"to {ratio_hi:.3f}; k_studies={p.k_studies}, "
-            f"k_effects={p.k_effects}) [PACKET:{p.packet_id}]."
+            f"(95% CI {p.ci_low:.3f} to {p.ci_high:.3f}; "
+            f"back-transformed ratio {ratio:.3f}; "
+            f"k_studies={p.k_studies}, k_effects={p.k_effects}) "
+            f"[PACKET:{p.packet_id}]."
         )
     return (
         f"The pooled estimate ({p.metric}) was {p.estimate:.3f} "

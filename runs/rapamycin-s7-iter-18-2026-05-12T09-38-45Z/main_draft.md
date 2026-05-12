@@ -1,0 +1,31 @@
+## Results
+
+### Study Selection
+Of 502 records identified through systematic database search, 502 were screened at title/abstract level; 298 were flagged as candidate records for full-text retrieval. Open-access full-text availability was located for 254 candidates; full-text content was parsed for 71 of these. Pre-specified eligibility adjudication was applied to 71 records, yielding 5 auto-eligible records (universal evidence contract passed), 61 excluded, 5 flagged for manual review of low-confidence or rule-judge conflicts; the subset of strict A-core records is the canonical input for primary-effect extraction [PACKET:study_selection].
+
+### Sentinel Recall Audit
+Sentinel-paper recall audit (gate: WARN): 3/3 canonical primary-study anchors retrieved, 3 promoted to candidate set, 0 contract-passed include; 1/1 prior meta-analysis anchors retrieved. 1 primary sentinel(s) located but retrieval/parser did not yield contract-passing evidence — system-level gap. [PACKET:sentinel_recall]
+
+### Corpus Characteristics
+The 5 auto-eligible records span publication years 2012-2023 and 4 distinct venues; after strict A-core auditing, 1 record remains eligible for primary-effect extraction [PACKET:corpus_characteristics].
+
+### Primary Pooled Effect
+[RESULTS_BLOCKED:no EffectSizeRecord - effect-extraction step pending]
+
+### Moderator Meta-Regression
+[RESULTS_BLOCKED:no moderator effects - extraction pending]
+
+### Sensitivity Analyses
+[RESULTS_BLOCKED:no sensitivity packets - pending stats step]
+
+### Tension Matrix
+[RESULTS_BLOCKED:no tension_matrix packet - pending moderator pooling]
+
+### Translational Evidence Map
+[RESULTS_BLOCKED:no translational_map packet - pending separate sweep]
+
+### Primary Pool Composition
+
+After applying the strict A-core evidence-quote audit, 1 study form the primary direct-lifespan corpus, 2 studies populate the disease-model survival sensitivity lane, and 2 studies are retained as secondary/contextual (of which 1 was demoted from the auto-judge direct-lifespan lane because their evidence quotes failed the per-quote mouse/intervention/control/endpoint audit) [PACKET:primary_pool_composition].
+
+Strict A-core records selected for primary extraction (1): s246 [PACKET:primary_pool_composition].

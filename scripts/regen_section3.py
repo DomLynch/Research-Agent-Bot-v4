@@ -123,17 +123,21 @@ def _render_primary_pool_block(strict: dict[str, Any]) -> str:
         1 for s in strict.get("C_secondary_contextual", [])
         if s.get("demoted_from") == "A_direct_lifespan"
     )
+
+    def _w(n: int) -> str:
+        return "study" if n == 1 else "studies"
     lines = [
         "### Primary Pool Composition",
         "",
         (
             f"After applying the strict A-core evidence-quote audit, "
-            f"{a} studies form the primary direct-lifespan corpus, "
-            f"{b} studies populate the disease-model survival sensitivity "
-            f"lane, and {c} studies are retained as secondary/contextual "
-            f"(of which {demoted_a} were demoted from the auto-judge "
-            f"direct-lifespan lane because their evidence quotes failed "
-            f"the per-quote mouse/intervention/control/endpoint audit) "
+            f"{a} {_w(a)} form the primary direct-lifespan corpus, "
+            f"{b} {_w(b)} populate the disease-model survival sensitivity "
+            f"lane, and {c} {_w(c)} are retained as secondary/contextual "
+            f"(of which {demoted_a} {'was' if demoted_a == 1 else 'were'} "
+            f"demoted from the auto-judge direct-lifespan lane because "
+            f"their evidence quotes failed the per-quote "
+            f"mouse/intervention/control/endpoint audit) "
             f"[PACKET:primary_pool_composition]."
         ),
         "",
