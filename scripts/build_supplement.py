@@ -49,7 +49,16 @@ def _truncate(s: str, n: int = 200) -> str:
     return s if len(s) <= n else s[: n - 1] + "..."
 
 
-def build(pd: Path, topic: str) -> str:
+def build(pd: Path, topic: str, *, qa_report_path: Path | None = None) -> str:
+    """Render supplement.md from the receipts in `pd`.
+
+    The four JSON receipts (eligibility_summary, primary_effect_input_set_strict,
+    effect_extractions, effect_pool) are read from `pd` so the final paper folder
+    is self-describing. `qa_report.md` is the only large textual receipt; by
+    default it is read from `pd` (legacy layout), but callers can pass
+    `qa_report_path` to point at the upstream s7 run dir — keeping the final
+    paper folder lean (paper.md + supplement.md + 4 JSON receipts only).
+    """
     pack = load_topic_pack(topic)
     if pack is None:
         raise RuntimeError(f"no topic pack: {topic}")
@@ -59,7 +68,8 @@ def build(pd: Path, topic: str) -> str:
     extr = _read_json(pd / "effect_extractions.json") or {}
     pool = _read_json(pd / "effect_pool.json") or {}
     audit = _read_json(pd / "manual_full_text_audit.json") or []
-    qa = (pd / "qa_report.md").read_text(encoding="utf-8") if (pd / "qa_report.md").exists() else ""
+    qa_p = qa_report_path or (pd / "qa_report.md")
+    qa = qa_p.read_text(encoding="utf-8") if qa_p.exists() else ""
 
     parts: list[str] = [
         f"# Supplementary Materials — {pack.display_name}",
