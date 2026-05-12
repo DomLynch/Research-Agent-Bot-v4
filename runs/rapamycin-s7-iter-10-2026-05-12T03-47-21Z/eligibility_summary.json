@@ -1,0 +1,19 @@
+{
+  "topic": "rapamycin",
+  "iter": 10,
+  "timestamp_utc": "2026-05-12T03-47-21Z",
+  "k_hits": 502,
+  "k_candidates": 12,
+  "k_full_text_located": 8,
+  "k_parsed_with_text": 2,
+  "triage_labels": {
+    "exclude_likely": 2
+  },
+  "final_decisions": {
+    "exclude": 2
+  },
+  "k_eligible": 0,
+  "contract_violations": 0,
+  "dry_run": true,
+  "judge_model": "(dry-run)"
+}

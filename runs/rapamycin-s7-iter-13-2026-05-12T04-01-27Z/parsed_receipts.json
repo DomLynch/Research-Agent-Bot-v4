@@ -1,0 +1,2090 @@
+[
+  {
+    "study_id": "s001",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC12842240",
+    "parsed": true,
+    "text_hash": "8ad30383c6bfea4923c41cd067442e601934272e4b0ccf92e6d8324e3244991d",
+    "char_count": 10282,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s002",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/acn3.50846",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s003",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/ctm2.1071",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s004",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC5391217",
+    "parsed": true,
+    "text_hash": "2666bca00e9d6cf11bf23df53bbc930fc3550b99bfedfbf4852146a44d46e287",
+    "char_count": 54327,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s005",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC13147676",
+    "parsed": true,
+    "text_hash": "c49940d136ae04276fdf9796a4fa151b6abcd3162f5849f4abfaee4f26038102",
+    "char_count": 56505,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s007",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/jcsm.12505",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s009",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC9828006",
+    "parsed": true,
+    "text_hash": "c8716470cab65343a98691a2fd984dfb7851710ce2fcd2cba37aedc9e99990b2",
+    "char_count": 58223,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s010",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/prp2.1091",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s012",
+    "source_url": "https://link.springer.com/content/pdf/10.1007/s10068-017-0252-6.pdf",
+    "parsed": true,
+    "text_hash": "84316402845e8826ab0bc5bd00a43dc17a6582a1e03cdb43741354d9e87c5146",
+    "char_count": 10689,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s013",
+    "source_url": "https://zenodo.org/record/3412433",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s015",
+    "source_url": "https://link.springer.com/content/pdf/10.1007/s10522-019-09802-9.pdf",
+    "parsed": true,
+    "text_hash": "ee659bdc3b7ffe9c36e02ce5625803b5d99f9a79275178e5348b636a48e6711e",
+    "char_count": 16612,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s016",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC11766253",
+    "parsed": true,
+    "text_hash": "b7a05a8f1cc258732df510dbc13f37a3989071cf836e8264f45ce111a42a78f6",
+    "char_count": 43479,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s018",
+    "source_url": "https://hdl.handle.net/20.500.14094/0100495486",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: ConnectTimeout"
+  },
+  {
+    "study_id": "s019",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/5114712",
+    "parsed": true,
+    "text_hash": "344322cd77fefe1fc04a24b7a6b8a7c0bbd41eec7965204a26bb32d5d790efe5",
+    "char_count": 11338,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s020",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC8122064",
+    "parsed": true,
+    "text_hash": "52ab5a11c6e6f2fb6745102667379098607a0536949e399cae1516b39a6d060a",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s021",
+    "source_url": "https://link.springer.com/content/pdf/10.1007/s11357-013-9572-5.pdf",
+    "parsed": true,
+    "text_hash": "d976cfafdd3c56df4660a1774dce116759001b36ff64d91b021cc8cd572d157e",
+    "char_count": 24911,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s022",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC8110668",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "pmc fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s023",
+    "source_url": "https://link.springer.com/content/pdf/10.1007/s11357-020-00274-1.pdf",
+    "parsed": true,
+    "text_hash": "a11fdf6f80d750c7f3ba1ea7b97561834bb2c1f5e6781a0800e4d5f6b0cc9583",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s024",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC8599537",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "pmc fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s025",
+    "source_url": "https://link.springer.com/content/pdf/10.1007/s11357-022-00691-4.pdf",
+    "parsed": true,
+    "text_hash": "cf25236b253501beeddef9023247899e0a1eaddb12cc46b8bcc0096fb91c109a",
+    "char_count": 36463,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s026",
+    "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10651632/pdf/11357_2023_Article_770.pdf",
+    "parsed": true,
+    "text_hash": "585b59ecf78f616a3715fd0c4750397c548a97d4800bd8e528a2aa2e6bceecb6",
+    "char_count": 54,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s027",
+    "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10400743/pdf/11357_2023_Article_786.pdf",
+    "parsed": true,
+    "text_hash": "585b59ecf78f616a3715fd0c4750397c548a97d4800bd8e528a2aa2e6bceecb6",
+    "char_count": 54,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s028",
+    "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10828338/pdf/11357_2023_Article_917.pdf",
+    "parsed": true,
+    "text_hash": "585b59ecf78f616a3715fd0c4750397c548a97d4800bd8e528a2aa2e6bceecb6",
+    "char_count": 54,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s029",
+    "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12181462/pdf/11357_2024_Article_1466.pdf",
+    "parsed": true,
+    "text_hash": "585b59ecf78f616a3715fd0c4750397c548a97d4800bd8e528a2aa2e6bceecb6",
+    "char_count": 54,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s030",
+    "source_url": "https://link.springer.com/content/pdf/10.1007/s12035-025-05392-5.pdf",
+    "parsed": true,
+    "text_hash": "48c185d764eb58efd115cf7c3292610726b086095b36bbe7f5a5705dead98898",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s031",
+    "source_url": "https://link.springer.com/content/pdf/10.1007/s40620-015-0222-0.pdf",
+    "parsed": true,
+    "text_hash": "a4e259ba9860a391303bb70d3f19a0ec3eb4056349cdf73168e638ba2b506d3f",
+    "char_count": 34342,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s032",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/3356510",
+    "parsed": true,
+    "text_hash": "ea8827cdc69f2a253dac46c0c7ee3f7ebed9fdf060fb06e87b23064e438b6a5c",
+    "char_count": 11337,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s034",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC12951065",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "pmc fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s036",
+    "source_url": "https://ars.els-cdn.com/content/image/1-s2.0-S0006295219302370-ga1_lrg.jpg",
+    "parsed": true,
+    "text_hash": "591abed9baf39eee1d422b726651b5dc63b2365b5a5dbf3236b9cff5e2baee37",
+    "char_count": 79678,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s040",
+    "source_url": "https://doi.org/10.1016/j.celrep.2016.10.040",
+    "parsed": true,
+    "text_hash": "b457f6c37cfa57814ec3a9a197015ca06b3bb4c1e0103a04e7a5ae1a7ad32eca",
+    "char_count": 962,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s041",
+    "source_url": "https://doi.org/10.1016/j.celrep.2019.08.084",
+    "parsed": true,
+    "text_hash": "0af4a4c0a0d36a7232edc6e8b55b0c56a59b7db4caf1d307a8f9a93974d8fd02",
+    "char_count": 1013,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s042",
+    "source_url": "https://doi.org/10.1016/j.celrep.2024.114663",
+    "parsed": true,
+    "text_hash": "3591675f9e7b8bc05c14d851ebfbdb2402d50ab775533ec8dd38c89676fd90c6",
+    "char_count": 1008,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s043",
+    "source_url": "http://www.cell.com/article/S1550413112001040/pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s044",
+    "source_url": "http://www.cell.com/article/S1550413112001477/pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s045",
+    "source_url": "http://www.cell.com/article/S1550413116302273/pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s046",
+    "source_url": "http://www.cell.com/article/S0960982212008159/pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s047",
+    "source_url": "http://www.cell.com/article/S0960982223009703/pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s048",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/5544385",
+    "parsed": true,
+    "text_hash": "405107b40b4e7a9abe9dd7bd80ef9dfadc814a95a08ccffc2e229c82e0b72aee",
+    "char_count": 11338,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s049",
+    "source_url": "https://doi.org/10.1016/j.exger.2014.12.002",
+    "parsed": true,
+    "text_hash": "f0b6371af0f4c0ec79448c52b0272031e0e2307566901a5c5d4971bc3c7c8e6f",
+    "char_count": 890,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s051",
+    "source_url": "https://www.sciencedirect.com/science/article/am/pii/S0531556517309130?via%3Dihub",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s052",
+    "source_url": "https://escholarship.org/content/qt8r41h7qh/qt8r41h7qh.pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s053",
+    "source_url": "https://doi.org/10.1016/j.exger.2021.111516",
+    "parsed": true,
+    "text_hash": "254f9e10a66e0f65a995d7f5810283ee3503ed026948f870c050ca491b47c8d7",
+    "char_count": 870,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s055",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/9982835",
+    "parsed": true,
+    "text_hash": "c2ea72a5b830495897cf54905f41decba5cde214ec6097e91d2512041311af3d",
+    "char_count": 11338,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s056",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/6263958",
+    "parsed": true,
+    "text_hash": "3d50acc82ca39ef49d8446db7cb04a0b9927be51a1147c3b17986a522db7f7b9",
+    "char_count": 11337,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s057",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/4792645",
+    "parsed": true,
+    "text_hash": "302f9b0e8f7bc50a7eba679bce9dabaa624e6a97903ca034f13e84b65143ec66",
+    "char_count": 11338,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s058",
+    "source_url": "http://www.cell.com/article/S2405844022016590/pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s060",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC4401992",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "pmc fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s063",
+    "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11351721/pdf/nihms-1946832.pdf",
+    "parsed": true,
+    "text_hash": "585b59ecf78f616a3715fd0c4750397c548a97d4800bd8e528a2aa2e6bceecb6",
+    "char_count": 54,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s064",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/4167584",
+    "parsed": true,
+    "text_hash": "7c9f8b56b3e64384bd7fc83a427110e68c1cc6aabc9b1989a42e55813959a7f9",
+    "char_count": 11337,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s065",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/7307802",
+    "parsed": true,
+    "text_hash": "b0ac921e9afcde4cb2e1a0172907b929aa976b270ce2472304b87248e8f0c844",
+    "char_count": 11337,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s068",
+    "source_url": "https://doi.org/10.1016/j.molcel.2025.05.003",
+    "parsed": true,
+    "text_hash": "78d5dd59d44e7421c9f8d2562243238f3ef63c4253716fcfdd28614151cff1b9",
+    "char_count": 961,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s069",
+    "source_url": "https://doi.org/10.1016/j.molmet.2024.101902",
+    "parsed": true,
+    "text_hash": "a76bfd963af03cb0814a885b6d38ad8fa29fc101bcb564a9cc1c5a2b91e9b62b",
+    "char_count": 940,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s071",
+    "source_url": "https://doi.org/10.1016/j.nbd.2020.104834",
+    "parsed": true,
+    "text_hash": "ba80b2514057212b4770a54f32216e7f45a59c9b6e971b888f07fed77f9c8733",
+    "char_count": 920,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s073",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/4860108",
+    "parsed": true,
+    "text_hash": "8d4dc7598648982373620a7230949758bb63b965308029f7c5a9de8ecc40556d",
+    "char_count": 11338,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s074",
+    "source_url": "http://www.cell.com/article/S2329050119300555/pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s075",
+    "source_url": "https://doi.org/10.1016/j.redox.2025.103822",
+    "parsed": true,
+    "text_hash": "fe8a4f6726c93a668d300cac0ecbd1fa7df505ed154763656447fdba8fc6714a",
+    "char_count": 905,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s076",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC13007445",
+    "parsed": true,
+    "text_hash": "df0caf21e62b4f57724ef949cc2dc912c64a4905a6427c8b14a267f13c0ea59a",
+    "char_count": 56333,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s077",
+    "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10739780/pdf/main.pdf",
+    "parsed": true,
+    "text_hash": "585b59ecf78f616a3715fd0c4750397c548a97d4800bd8e528a2aa2e6bceecb6",
+    "char_count": 54,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s078",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/4004650",
+    "parsed": true,
+    "text_hash": "625d93b0686bf8d7658339f7f3da0bf66f20d44c6538b52717532960e4578f6d",
+    "char_count": 11337,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s079",
+    "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12990209/",
+    "parsed": true,
+    "text_hash": "45c11f139bb79e7218d525b23d7f9a9d5207337ffc7bdd104a2e019025e5c901",
+    "char_count": 65944,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s080",
+    "source_url": "https://doi.org/10.1016/j.ymthe.2024.06.022",
+    "parsed": true,
+    "text_hash": "e3359bcd8420f62a16b015496bb72ac713586033c720c3cb9ce0b9ee79afc685",
+    "char_count": 1013,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s081",
+    "source_url": "https://www.cambridge.org/core/services/aop-cambridge-core/content/view/B8A804D160E679EDE2B7CB2F8A7434E0/S0029665113003832a.pdf/div-class-title-dietary-restriction-and-the-pursuit-of-effective-mimetics-div.pdf",
+    "parsed": true,
+    "text_hash": "cf6f6c39816a9273ca644ca0224e2983c18a5dbc08c92fc19f1aa2292e4f3763",
+    "char_count": 60943,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s082",
+    "source_url": "https://www.cambridge.org/core/services/aop-cambridge-core/content/view/750D14E9B3AF2BABD2F7F061620E6129/S0954422415000062a.pdf/div-class-title-energy-restriction-and-potential-energy-restriction-mimetics-div.pdf",
+    "parsed": true,
+    "text_hash": "f510e7427c40cf900994be683052a48570fc3efce135acd4e8b3dc5387d03c69",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s084",
+    "source_url": "https://www.nature.com/articles/aps2012188.pdf",
+    "parsed": true,
+    "text_hash": "33b3767c5708f32c6fa2d1df84725a98326999e8a026273f63701243c3269905",
+    "char_count": 38276,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s085",
+    "source_url": "https://journals.sagepub.com/doi/pdf/10.1038/jcbfm.2013.82",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s086",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/2786175",
+    "parsed": true,
+    "text_hash": "af36b5f518255385757f1b94e65700940e610040dcc823a5282be972b803cbe8",
+    "char_count": 11337,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s087",
+    "source_url": "http://infoscience.epfl.ch/record/186694",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s089",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/4691706",
+    "parsed": true,
+    "text_hash": "452f195071efe580769c10630266477d9f5d3e4e2ad3ecd9379c11e28394582f",
+    "char_count": 11337,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s090",
+    "source_url": "https://www.nature.com/articles/s41419-020-03226-x.pdf",
+    "parsed": true,
+    "text_hash": "8ad78c5658373a162037e04ca1a358f5f361353165a17341fe607f25b1afdc6f",
+    "char_count": 69438,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s091",
+    "source_url": "https://www.nature.com/articles/s41419-022-04541-1.pdf",
+    "parsed": true,
+    "text_hash": "572fb486dade023522e81f571302bdfeb3f847aafac551f72e74dba066947f39",
+    "char_count": 59660,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s092",
+    "source_url": "https://www.nature.com/articles/s41421-023-00595-3.pdf",
+    "parsed": true,
+    "text_hash": "09c9e05fa319013ba67ea616c30c2654182945266d5eb0975adb9d855e697feb",
+    "char_count": 76604,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s093",
+    "source_url": "https://www.nature.com/articles/s41467-019-11174-0.pdf",
+    "parsed": true,
+    "text_hash": "0d0814e7b87e3756cd34e067b5f11e93b2dc42dab569c973233be0ba7f1be6f1",
+    "char_count": 75041,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s094",
+    "source_url": "https://www.nature.com/articles/s41467-020-14962-1.pdf",
+    "parsed": true,
+    "text_hash": "a1fd3bd02f9daff9685af1552be2c0c3b3d208e5e8fd3341bc807d8f74b1a77e",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s095",
+    "source_url": "https://doi.org/10.1038/s41467-020-18140-1",
+    "parsed": true,
+    "text_hash": "7023d7b1ea804f6b80adeebd999e1f09569cf5ea81b438dd11bc3dbb0ca14929",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s096",
+    "source_url": "https://www.nature.com/articles/s41467-021-23857-8.pdf",
+    "parsed": true,
+    "text_hash": "0cfa4e23a3db96e6efc2e5de5f8261fb19796345d2fbc51c36d2c757d8f18ea6",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s097",
+    "source_url": "https://www.nature.com/articles/s41467-022-29714-6.pdf",
+    "parsed": true,
+    "text_hash": "c28a0f1622eea6463a5f79b9f6c79b84f051ad1c359895649c39a5347b98928f",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s098",
+    "source_url": "https://www.nature.com/articles/s41467-022-34051-9.pdf",
+    "parsed": true,
+    "text_hash": "f0cf6a2e6ece68a704c6a3e6d809d80c213ac321039b453233a49c9a14bf81b8",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s099",
+    "source_url": "https://www.nature.com/articles/s41467-025-58188-5.pdf",
+    "parsed": true,
+    "text_hash": "266935a1d35f87214f781f49037157793e10bb0368696b942389668142c32855",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s100",
+    "source_url": "https://www.nature.com/articles/s41514-017-0014-y.pdf",
+    "parsed": true,
+    "text_hash": "e7b7091957642f3242e5abdb1330b8d49205aa47bd599d6cc7dab4962e2d441d",
+    "char_count": 40173,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s101",
+    "source_url": "https://www.nature.com/articles/s41598-017-18598-y.pdf",
+    "parsed": true,
+    "text_hash": "d187cacbe726e1611959e95892bc01cfb6395e111626c69bbafe2ea6e85192df",
+    "char_count": 25804,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s102",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC6834565",
+    "parsed": true,
+    "text_hash": "2bd377bb98979ac53a0e5c92e4971d9f368c80de774350d371a7013355921bdd",
+    "char_count": 48497,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s103",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC10363145",
+    "parsed": true,
+    "text_hash": "0c1af00799419373edd3d5d5ff9ad9768554022cd6558ed6183e24fd2ed96656",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s104",
+    "source_url": "https://www.nature.com/articles/s42003-025-08178-6.pdf",
+    "parsed": true,
+    "text_hash": "4051110d90820f202d491b1291cd33b0fb897f1b57f37e164bbcddabe1392575",
+    "char_count": 78522,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s105",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC13112404",
+    "parsed": true,
+    "text_hash": "9b3c18edb43082fb79d121dade65bc3f31182955b0f76076594bc1d48c395763",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s106",
+    "source_url": "https://www.nature.com/articles/s42255-025-01267-0.pdf",
+    "parsed": true,
+    "text_hash": "839495a19365587bbde7af73a15a4ec53ae3a4fc2418fc09058cc39c25d74e46",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s107",
+    "source_url": "https://www.nature.com/articles/s43587-022-00278-w.pdf",
+    "parsed": true,
+    "text_hash": "c335365c30e9dfb71984af78d108ed24cfb2e45115931b318f4c5a3f112e8e8c",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s108",
+    "source_url": "https://www.nature.com/articles/s43587-023-00416-y.pdf",
+    "parsed": true,
+    "text_hash": "00ab2b8013a03c722a3f9d8ae99f71649032b3b30fe10cb65be02bfd3b4215c4",
+    "char_count": 60907,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s109",
+    "source_url": "https://www.nature.com/articles/s43587-024-00578-3.pdf",
+    "parsed": true,
+    "text_hash": "0b4667e1000fb6f43744db0636b92e4b0a719891b10298395d4c255fdd760ab3",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s110",
+    "source_url": "https://www.nature.com/articles/s43587-024-00635-x.pdf",
+    "parsed": true,
+    "text_hash": "8de5d822688c863783ca67414cc712847a86d5af3e2d162a8daad5e4ed167406",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s111",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/12003089",
+    "parsed": true,
+    "text_hash": "d8e81ec4b25d51796241070681c0f07af7580af2d27ac2f861f695c3b127e5ef",
+    "char_count": 11337,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s112",
+    "source_url": "https://www.nature.com/articles/s43587-025-00876-4.pdf",
+    "parsed": true,
+    "text_hash": "12e757531d5340b61792b3718fff646f94c91bc13383fdb9ec83bd8e246d88d3",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s113",
+    "source_url": "https://www.nature.com/articles/s43587-025-00927-w.pdf",
+    "parsed": true,
+    "text_hash": "2408abbd820e8c17afce6238455c3d85f979d15d7c9f772a8a83f85f5e76f87d",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s114",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC6910232",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "pmc fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s115",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC5816183",
+    "parsed": true,
+    "text_hash": "f701b90652e58e15b0d98a97baf304bacca9b70fb59a431369803172e7eacb2c",
+    "char_count": 5255,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s116",
+    "source_url": "http://www.jbc.org/article/S0021925820365650/pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s117",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC8726715",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "pmc fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s118",
+    "source_url": "https://doi.org/10.1080/15548627.2024.2396793",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s120",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC12628967",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "pmc fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s121",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/8087275",
+    "parsed": true,
+    "text_hash": "b54b2b69737a82e98676203d25944c1076995548978f1d0f81139fa1766cb523",
+    "char_count": 11338,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s123",
+    "source_url": "https://academic.oup.com/biomedgerontology/article-pdf/78/3/397/49378794/glac221.pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s126",
+    "source_url": "https://academic.oup.com/biomedgerontology/article-pdf/66A/2/191/16743258/glq178.pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s127",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC3598360",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "pmc fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s128",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC3693598",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "pmc fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s129",
+    "source_url": "https://academic.oup.com/biomedgerontology/article-pdf/68/12/1493/16743701/glt047.pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s130",
+    "source_url": "https://academic.oup.com/biomedgerontology/article-pdf/69A/2/119/16743809/glt056.pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s131",
+    "source_url": "https://academic.oup.com/biomedgerontology/article-pdf/70/3/263/16744345/glu040.pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s132",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC4447794",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "pmc fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s133",
+    "source_url": "https://doi.org/10.1093/gerona/glu241",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s134",
+    "source_url": "https://academic.oup.com/biomedgerontology/article-pdf/71/7/850/8080616/glv170.pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s135",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC4906330",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "pmc fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s137",
+    "source_url": "https://academic.oup.com/biomedgerontology/article-pdf/75/1/32/33101683/glz058.pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s138",
+    "source_url": "https://academic.oup.com/biomedgerontology/article-pdf/75/1/4/31509385/glz060.pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s139",
+    "source_url": "https://academic.oup.com/biomedgerontology/article-pdf/75/1/24/31509304/glz080.pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s140",
+    "source_url": "https://academic.oup.com/biomedgerontology/article-pdf/75/1/89/31509408/glz177.pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s141",
+    "source_url": "https://academic.oup.com/hmg/article-pdf/22/1/140/14139084/dds414.pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s142",
+    "source_url": "https://academic.oup.com/hmg/article-pdf/26/23/4588/24339107/ddx341.pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s143",
+    "source_url": "https://academic.oup.com/jbmrplus/advance-article-pdf/doi/10.1093/jbmrpl/ziae001/55384706/ziae001.pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s145",
+    "source_url": "https://www.biorxiv.org/content/biorxiv/early/2024/05/17/2024.05.14.594256.full.pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s146",
+    "source_url": "https://www.biorxiv.org/content/biorxiv/early/2024/08/05/2024.08.01.606196.full.pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s147",
+    "source_url": "http://perspectivesinmedicine.cshlp.org/content/5/11/a025114.full.pdf",
+    "parsed": true,
+    "text_hash": "cebe9adb2737064fb793ed32f1baa86156a87fcc36fa9e1262bcc15d95c0666e",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s148",
+    "source_url": "http://perspectivesinmedicine.cshlp.org/content/6/5/a025924.full.pdf",
+    "parsed": true,
+    "text_hash": "c7e683038a5049a4564ec29c7449d43cc005a8ad67e3e93976276ef793145f67",
+    "char_count": 63156,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s149",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.12057",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s150",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.12097",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s151",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.12109",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s152",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.12140",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s153",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.12175",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s154",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.12194",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s155",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.12203",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s156",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.12256",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s157",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.12264",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s158",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.12280",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s159",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.12317",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s160",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.12380",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s161",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.12405",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s162",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.12425",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s163",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.12496",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s164",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.12504",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s165",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.12524",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s166",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.12587",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s167",
+    "source_url": "https://doi.org/10.1111/acel.12617",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s168",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.12882",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s169",
+    "source_url": "https://www.onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.13014",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s170",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.13057",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s171",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.13088",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s172",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.13269",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s173",
+    "source_url": "https://doi.org/10.1111/acel.13277",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s174",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.13302",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s175",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.13345",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s176",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.13457",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s177",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.13724",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s178",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.13774",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s179",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.13784",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s180",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/acel.14465",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s181",
+    "source_url": "https://doi.org/10.1111/acel.70395",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s182",
+    "source_url": "https://doi.org/10.1111/bjh.14057",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s183",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/3717568",
+    "parsed": true,
+    "text_hash": "bb46f6831892a9a11e36150f03145defbc428af17820081495e3612a704bfaaf",
+    "char_count": 11338,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s184",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/j.1474-9726.2012.00832.x",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s185",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/jcmm.12074",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s186",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/jcmm.13091",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s188",
+    "source_url": "https://doi.org/10.1126/sciadv.abo5482",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s189",
+    "source_url": "http://hdl.handle.net/1721.1/85837",
+    "parsed": true,
+    "text_hash": "40ee544979b90e178950104bf94e6336b418db5bca7086d210a44dbdff0bc2f9",
+    "char_count": 4097,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s191",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/3423099",
+    "parsed": true,
+    "text_hash": "40b911b1748ad7a04bb7f78528a861e54b05822fb066941e2cd9ccd489ff0c25",
+    "char_count": 11337,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s192",
+    "source_url": "https://doi.org/10.1152/ajpheart.00530.2024",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s193",
+    "source_url": "https://www.physiology.org/doi/pdf/10.1152/ajpheart.00570.2017",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s194",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/4137151",
+    "parsed": true,
+    "text_hash": "b503d5af3aa92ca52aeb307222820ba1a239ef4a1aa0c0ac0ff5b1dcdd436f86",
+    "char_count": 11337,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s195",
+    "source_url": "https://doi.org/10.1152/japplphysiol.00987.2024",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s196",
+    "source_url": "http://downloads.hindawi.com/journals/omcl/2018/8364608.pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s197",
+    "source_url": "https://cancerres.aacrjournals.org/content/canres/76/20/5970.full.pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s198",
+    "source_url": "https://doi.org/10.1158/1078-0432.ccr-12-1371",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s199",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/4058993",
+    "parsed": true,
+    "text_hash": "291564bf97103fddd28efba879c9a8285159d840d1f946f4d57961d2f0381942",
+    "char_count": 11337,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s200",
+    "source_url": "https://cancerimmunolres.aacrjournals.org/content/canimm/7/3/466.full.pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s203",
+    "source_url": "https://www.karger.com/Article/Pdf/364982",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s204",
+    "source_url": "https://www.karger.com/Article/Pdf/489369",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s205",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC4280880",
+    "parsed": true,
+    "text_hash": "328fa0e5205cd1913a70c93a12ead14b69f8f7168c0a8de78648929f15132d22",
+    "char_count": 3361,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s206",
+    "source_url": "http://www.jci.org/articles/view/64099/files/pdf",
+    "parsed": true,
+    "text_hash": "c2ef60402f8173706a64eb80e79e30794ce02b807246715182279102da3a8907",
+    "char_count": 60809,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s207",
+    "source_url": "http://www.jci.org/articles/view/67674/files/pdf",
+    "parsed": true,
+    "text_hash": "a1457ee22b22ba2ea4969f0623050ed3972acb0e7e53ab84f671a57f5edb4db7",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s208",
+    "source_url": "http://www.jci.org/articles/view/70800/files/pdf",
+    "parsed": true,
+    "text_hash": "b4face75b6aa74de1cc0391d75df0c592290efa321a063e3ecd8a3a4bb8d47cf",
+    "char_count": 21016,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s209",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/4463211",
+    "parsed": true,
+    "text_hash": "cffac5f649730e06b829c0bc5093f6408e8d3d19a0b51ae5d5f492b0dc0180f5",
+    "char_count": 11337,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s210",
+    "source_url": "https://journals.sagepub.com/doi/pdf/10.1177/0271678X15621575",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s211",
+    "source_url": "https://journals.sagepub.com/doi/pdf/10.1177/0300985815591082",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s212",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC12273038",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "pmc fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s213",
+    "source_url": "https://rbej.biomedcentral.com/counter/pdf/10.1186/s12958-025-01427-7",
+    "parsed": true,
+    "text_hash": "00a77b5fff1ffa987ec2fd055dbdc6b492db21d20a8093f7914f6da4721604e3",
+    "char_count": 67414,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s214",
+    "source_url": "https://doi.org/10.1186/s12964-022-00969-2",
+    "parsed": true,
+    "text_hash": "caffe3fc9df56e364d2c955a828ca647e764ce6c71cde2c90c80f8b2c52cfef1",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s215",
+    "source_url": "https://biosignaling.biomedcentral.com/counter/pdf/10.1186/s12964-023-01158-5",
+    "parsed": true,
+    "text_hash": "3109df1df1964efbece3e01d41b34d8732bb1d244566df738a2bdae1bf8fc8cc",
+    "char_count": 74023,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s216",
+    "source_url": "https://immunityageing.biomedcentral.com/counter/pdf/10.1186/s12979-022-00264-1",
+    "parsed": true,
+    "text_hash": "3a4763c5a8ac1bbc86926da61724b780d693c3636d247e07c3bdbd97e991a68c",
+    "char_count": 72127,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s217",
+    "source_url": "https://ovarianresearch.biomedcentral.com/track/pdf/10.1186/s13048-021-00846-5",
+    "parsed": true,
+    "text_hash": "1d5246c3960bebe974d18968ec854c44ed9ff29f0615251367fc9dd82c7cb977",
+    "char_count": 67118,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s218",
+    "source_url": "https://genomebiology.biomedcentral.com/track/pdf/10.1186/s13059-017-1185-3",
+    "parsed": true,
+    "text_hash": "0c6b0e2e4a3c9d92da80ff1bb3362853c070374206067feef2eff984906de421",
+    "char_count": 69871,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s219",
+    "source_url": "https://genomebiology.biomedcentral.com/track/pdf/10.1186/s13059-017-1186-2",
+    "parsed": true,
+    "text_hash": "ab28869a67f530008b667f202d578f80417eb09c124557db287787eedfcf1985",
+    "char_count": 51704,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s220",
+    "source_url": "https://springerplus.springeropen.com/counter/pdf/10.1186/s40064-015-0909-7",
+    "parsed": true,
+    "text_hash": "78fde6db316eb5eef074415638f485a55275e136f2da3bfd8f8989b9f271593f",
+    "char_count": 40471,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s221",
+    "source_url": "https://academic.oup.com/endo/article-pdf/156/2/565/8990194/endo0565.pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s222",
+    "source_url": "https://dev.biologists.org/content/develop/147/17/dev185678.full.pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s223",
+    "source_url": "https://f1000.com/prime/reports/b/5/5/pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s224",
+    "source_url": "https://journals.plos.org/plosbiology/article/file?id=10.1371/journal.pbio.2001951&type=printable",
+    "parsed": true,
+    "text_hash": "a750d6d31a0c29c8228ae69eaa5a19758bf9f27fa3caf4a6e4f444bccfa1b02e",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s225",
+    "source_url": "https://journals.plos.org/plosgenetics/article/file?id=10.1371/journal.pgen.1007766&type=printable",
+    "parsed": true,
+    "text_hash": "8d1e64fcaf46d33a5b04910bdbcb7d11d2311243ae24186c8983d5c9f28077ad",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s226",
+    "source_url": "https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0053810&type=printable",
+    "parsed": true,
+    "text_hash": "e56737e5cb61eafb999029da978cc2af626a42e34c8ad5abe36ff477992fa547",
+    "char_count": 27767,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s227",
+    "source_url": "https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0083988&type=printable",
+    "parsed": true,
+    "text_hash": "ae37baa503756d49077edaf511b10cb12f05d1858903dacf1b1640bfd988f0c0",
+    "char_count": 67976,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s228",
+    "source_url": "https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0084117&type=printable",
+    "parsed": true,
+    "text_hash": "40ebe59fc6526732c4327fe1fc3248f363d187102128389713342875fbabcf2d",
+    "char_count": 66331,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s229",
+    "source_url": "https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0116165&type=printable",
+    "parsed": true,
+    "text_hash": "9e72b2d7726272229d4953c0a4d5deaf1073a62bbb0dd85c046cc0eb3f62c360",
+    "char_count": 53011,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s230",
+    "source_url": "https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0126644&type=printable",
+    "parsed": true,
+    "text_hash": "78731930cf1ca6a14fe3e5fac237d2ad069c05076ef8712ded0dec22875cf7c0",
+    "char_count": 54842,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s231",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC7714189",
+    "parsed": true,
+    "text_hash": "c2940a6542ca78447e8ec58174e8e3ff49e258ec89b64e13c3ea2e1d499991fe",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s232",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC9983852",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "pmc fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s233",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC4113516",
+    "parsed": true,
+    "text_hash": "110fb37f596a2be51e898f6fefe76c843d77bce364a024eb8e9e62ea059ca439",
+    "char_count": 2167,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s234",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC8143195",
+    "parsed": true,
+    "text_hash": "51b5f3514177260804006185f56e188d019b5112d1d3e4b13210e096cdc92929",
+    "char_count": 5010,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s235",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC9442325",
+    "parsed": true,
+    "text_hash": "79269abf78a56ed6b15ec94117870a4de53205d277a63bccc780f94e5cae0fb1",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s236",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC13112403",
+    "parsed": true,
+    "text_hash": "1091d4076a061807970a847b33cae8e2c8998c2e350e352212b7f91497208ec3",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s237",
+    "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11556393/pdf/nihms-2026484.pdf",
+    "parsed": true,
+    "text_hash": "585b59ecf78f616a3715fd0c4750397c548a97d4800bd8e528a2aa2e6bceecb6",
+    "char_count": 54,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s238",
+    "source_url": "https://www.aging-us.com/article/100451/pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s239",
+    "source_url": "https://www.aging-us.com/article/100461/pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s240",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/3517935",
+    "parsed": true,
+    "text_hash": "69de226b50d70592f78169c99516fc18c59675ae18f1475f0b34d98c9bb71828",
+    "char_count": 11338,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s241",
+    "source_url": "https://www.aging-us.com/article/100496/pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s242",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC3517941",
+    "parsed": true,
+    "text_hash": "312681809c64a0abf2c4d6cd27b0f2ae7770ded1727160f77333a5bda76cac23",
+    "char_count": 26363,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s243",
+    "source_url": "https://doi.org/10.18632/aging.100533",
+    "parsed": true,
+    "text_hash": "b9f9af99b919589c74b177edd9e7dc316eae0f3068919206a3fdd80e4ade4728",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s244",
+    "source_url": "https://doi.org/10.18632/aging.100576",
+    "parsed": true,
+    "text_hash": "db6959d03e61b1ccec687de28be24c6e022b85dc26dcaf8bc5399d5d4d5b638c",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s245",
+    "source_url": "https://doi.org/10.18632/aging.100619",
+    "parsed": true,
+    "text_hash": "a98b2af6cb3e2597c14e39f6cac491cbaaefd0e1d1cd009725ea1809617c18a2",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s246",
+    "source_url": "https://doi.org/10.18632/aging.100633",
+    "parsed": true,
+    "text_hash": "586795fbe576f31c9235a526252742f208af999cef8ccf29145a6ab5363ec2e2",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s247",
+    "source_url": "https://www.aging-us.com/article/100688/pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s248",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/5559174",
+    "parsed": true,
+    "text_hash": "75cb3b18eb84e40211fb8f164bd9f4ae221fdbd7af04228d857298cf71d6923b",
+    "char_count": 11337,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s249",
+    "source_url": "https://doi.org/10.18632/aging.101289",
+    "parsed": true,
+    "text_hash": "f3f94247c3c444766de2975c84f666d4a12fd9e5f7da003778c0662ca9687fd3",
+    "char_count": 63993,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s250",
+    "source_url": "http://europepmc.org/pmc/articles/PMC5892694",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s251",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/6339782",
+    "parsed": true,
+    "text_hash": "005348265fb5e4259063a1fb0492571fea8aeb34a2bd94cc4fc0a976b6675de7",
+    "char_count": 11337,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s252",
+    "source_url": "http://europepmc.org/pmc/articles/PMC6382423",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s253",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/7585102",
+    "parsed": true,
+    "text_hash": "3c447b07947dc478f75596bc6c31958c5c1bdba9f4afd16fc362cb34dc454048",
+    "char_count": 11338,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s254",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/7906135",
+    "parsed": true,
+    "text_hash": "fd03c1dca76fa5a45bb1f1b8db76d5c56a57e21cf2be8bce89e10fcc018116d3",
+    "char_count": 11338,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s255",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC9004569",
+    "parsed": true,
+    "text_hash": "2eaa9ba80e61f97bae514a4d8d974ebb8342ada609566f13f96b3a6a7d5e4e01",
+    "char_count": 34758,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s256",
+    "source_url": "https://www.aging-us.com/article/204354/pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s257",
+    "source_url": "http://www.oncotarget.com/index.php?journal=oncotarget&page=article&op=download&path%5B%5D=13919&path%5B%5D=44345",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s258",
+    "source_url": "https://www.oncotarget.com/article/28049/pdf/",
+    "parsed": true,
+    "text_hash": "8f0425dc52365e05a52833e143ed79ecff1d409046a3668b0cd8b8c436f8b063",
+    "char_count": 74659,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s259",
+    "source_url": "https://www.oncotarget.com/article/4602/pdf/",
+    "parsed": true,
+    "text_hash": "24f13caa1a8394c20c407b1feb26bd55e8f6f071dc86245b59acc3a46a710076",
+    "char_count": 46709,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s260",
+    "source_url": "https://www.oncotarget.com/article/5180/pdf/",
+    "parsed": true,
+    "text_hash": "51f95c6eb85437a90453a530cae2ae9f5984e3c6e3f90686ca2767a2bc674d64",
+    "char_count": 28631,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s261",
+    "source_url": "http://www.oncotarget.com/index.php?journal=oncotarget&page=article&op=download&path%5B%5D=8729&path%5B%5D=26263",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s262",
+    "source_url": "https://doi.org/10.21315/mjms2021.28.4.2",
+    "parsed": true,
+    "text_hash": "ed90350c1486dcc444fe8f734aca5a9870c14045f2e8e43e27ab3e85c1797e69",
+    "char_count": 35985,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s263",
+    "source_url": "https://www.dovepress.com/article/download/114084",
+    "parsed": true,
+    "text_hash": "30fcfa8b18059f62f1ccafd85210b6dc7f5a0575cc99409d4903369f5d8e3bd9",
+    "char_count": 77026,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s265",
+    "source_url": "http://www.eurekaselect.com/article/84604",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s266",
+    "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10503466/pdf/epi-15-741.pdf",
+    "parsed": true,
+    "text_hash": "585b59ecf78f616a3715fd0c4750397c548a97d4800bd8e528a2aa2e6bceecb6",
+    "char_count": 54,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s268",
+    "source_url": "https://www.frontiersin.org/articles/10.3389/fgene.2015.00247/pdf",
+    "parsed": true,
+    "text_hash": "db20bccaf7bad65c3a00978f586eda565d41ab7fa457778bbb38e1ab23536fd4",
+    "char_count": 37179,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s269",
+    "source_url": "https://www.frontiersin.org/articles/10.3389/fnmol.2014.00083/pdf",
+    "parsed": true,
+    "text_hash": "42eec9914187a7656667c1ff0f851387839b69fa06d8d76f00fcfea32635fe8c",
+    "char_count": 75524,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s270",
+    "source_url": "https://doi.org/10.3389/fragi.2021.738512",
+    "parsed": true,
+    "text_hash": "19070ae74df2393de38be86d1931a40c9e7a9de0a57b65e6172438ae1f42e48b",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s271",
+    "source_url": "https://www.mdpi.com/2073-4409/12/7/993/pdf?version=1679640717",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s272",
+    "source_url": "https://www.mdpi.com/1422-0067/20/11/2774/pdf?version=1559795042",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s273",
+    "source_url": "https://www.mdpi.com/1422-0067/21/23/8890/pdf?version=1606212297",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s274",
+    "source_url": "https://www.mdpi.com/1648-9144/59/8/1474/pdf?version=1692243845",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s275",
+    "source_url": "https://www.tandfonline.com/doi/pdf/10.3402/pba.v5.28743?needAccess=true",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s276",
+    "source_url": "https://www.tandfonline.com/doi/pdf/10.3402/pba.v6.31688?needAccess=true",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s277",
+    "source_url": "https://www.tandfonline.com/doi/pdf/10.3402/pba.v6.31793?needAccess=true",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s278",
+    "source_url": "https://www.jimmunol.org/content/jimmunol/193/2/757.full.pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s279",
+    "source_url": "https://www.tandfonline.com/doi/pdf/10.4161/15384101.2014.949150?needAccess=true",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s280",
+    "source_url": "https://www.tandfonline.com/doi/pdf/10.4161/cbt.26947?needAccess=true",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s281",
+    "source_url": "https://www.tandfonline.com/doi/pdf/10.4161/cbt.28164?needAccess=true",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s282",
+    "source_url": "https://www.tandfonline.com/doi/pdf/10.4161/cc.10.24.18486?needAccess=true",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s283",
+    "source_url": "https://www.tandfonline.com/doi/pdf/10.4161/cc.11.1.18736?needAccess=true",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s284",
+    "source_url": "https://www.tandfonline.com/doi/pdf/10.4161/cc.11.5.19607?needAccess=true",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s285",
+    "source_url": "https://www.tandfonline.com/doi/pdf/10.4161/cc.25512?needAccess=true",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s286",
+    "source_url": "https://doi.org/10.5483/bmbrep.2019.52.1.299",
+    "parsed": true,
+    "text_hash": "2ca2ff78c7cc5fc38b39e320ffb213df374bb36c74bc571feb3f4fcd804b01e9",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s287",
+    "source_url": "http://wjmh.org/Synapse/Data/PDFData/2074WJMH/wjmh-42-29.pdf",
+    "parsed": true,
+    "text_hash": "5aa9687e0c8e14b4638e6638e8d93c295a5fb1b72bb0079a7c3cc3b6ea664a68",
+    "char_count": 46953,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s288",
+    "source_url": "https://doi.org/10.7554/elife.16351",
+    "parsed": true,
+    "text_hash": "4a193989ace1d7debebbca89c01190f0ec38776b96a6ef6bbc1113df6f4328bf",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s289",
+    "source_url": "https://doi.org/10.7554/elife.32213",
+    "parsed": true,
+    "text_hash": "5a1381a0cee9ddb9ccc2521fa85dff467dc14c4afc106216145d798f5de2516d",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s290",
+    "source_url": "https://doi.org/10.7554/elife.34985",
+    "parsed": true,
+    "text_hash": "34a179159fa8403256a744b6fd181888a6fba52e10049d3ff63b9b3c0f8bc17a",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s291",
+    "source_url": "https://doi.org/10.7554/elife.54318",
+    "parsed": true,
+    "text_hash": "cb6852dea4fbc2d608529f07b01da4b12c1f58c9d5b29603fb48e3502a094e31",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s292",
+    "source_url": "https://doi.org/10.7554/elife.56177",
+    "parsed": true,
+    "text_hash": "d8e49eaabe435cff98eb518094aac1ddd1974e9d5a64efd8bf1eb365d2ac95d3",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s293",
+    "source_url": "https://doi.org/10.7554/elife.75250",
+    "parsed": true,
+    "text_hash": "22e0e3469d027163b6406a43b1c598e90b9bd01dc7b115fd4bff7027fdff2e49",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s294",
+    "source_url": "https://doi.org/10.7554/elife.82728",
+    "parsed": true,
+    "text_hash": "a74263a3f52d118932562f7b7e71dd3781bead726003e379f2863f594ad38935",
+    "char_count": 80000,
+    "failure_reason": ""
+  }
+]

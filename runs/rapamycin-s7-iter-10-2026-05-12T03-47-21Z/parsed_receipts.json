@@ -1,0 +1,66 @@
+[
+  {
+    "study_id": "s001",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC12842240",
+    "parsed": true,
+    "text_hash": "8ad30383c6bfea4923c41cd067442e601934272e4b0ccf92e6d8324e3244991d",
+    "char_count": 10282,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s002",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/acn3.50846",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s003",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/ctm2.1071",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s005",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/hep.26174",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s007",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/jcsm.12505",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s009",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/path.6009",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s010",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/prp2.1091",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s012",
+    "source_url": "https://link.springer.com/content/pdf/10.1007/s10068-017-0252-6.pdf",
+    "parsed": true,
+    "text_hash": "84316402845e8826ab0bc5bd00a43dc17a6582a1e03cdb43741354d9e87c5146",
+    "char_count": 10689,
+    "failure_reason": ""
+  }
+]
