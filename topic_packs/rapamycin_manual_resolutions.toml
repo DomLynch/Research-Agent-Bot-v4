@@ -1,80 +1,94 @@
-# Manual sentinel overrides for the rapamycin topic.
+# Manual sentinel-status overlay for the rapamycin topic.
 #
-# These take effect AFTER the auto-judge ladder + include-contract demotion
-# (Sprint 7.8) in the orchestrator. Use sparingly: the human reviewer is
-# overriding the deterministic merge, so every override must be defensible
-# by the verbatim evidence_quote in this file.
+# Sprint 7.11.1: status-only. These records cannot create primary
+# inclusion. The universal evidence contract (agent/include_contract.py)
+# is the sole gate of the primary-effect set, applied uniformly to every
+# paper including sentinels. Manuals here only:
+#   - resolved_available    -> "paper exists; system should retrieve"
+#                              (sentinel gate stays WARN until contract-pass)
+#   - resolved_unavailable  -> "paper exists but bytes cannot be retrieved"
+#                              (sentinel gate counts as resolved)
+#   - resolved_excluded     -> "human says exclude from primary corpus"
+#                              (paper is subtracted from primary set)
+#   - needs_review          -> "ambiguous; requires human inspection"
+#
+# A manual cannot say "include". If a sentinel is critical but the
+# system can't get the bytes, that's a SYSTEM BUG (retrieval / parser
+# needs fixing), not a license to launder the paper into the corpus.
 
 [[resolutions]]
 doi = "10.1038/nature08221"
 pmid = "19587680"
-decision = "include"
-lane = "direct_lifespan"
+status = "resolved_available"
 reason = """
-Foundational primary mouse rapamycin lifespan study (NIA-ITP). The
-auto-judge intermittently fails to read this paper because NCBI's PMC
-service returns a reCAPTCHA challenge under concurrent load, and the
-publisher Unpaywall URL (Nature) is paywalled-OA. The paper itself is
-unambiguously eligible per pre-specified PICO; manual override is the
-correct path until a stable OA mirror is wired.
+Harrison 2009 (Nature) — foundational NIA-ITP rapamycin lifespan study.
+The paper exists and is canonical; verified by the reviewer against
+PubMed metadata. Auto-retrieval intermittently fails because NCBI's PMC
+service returns a reCAPTCHA challenge under concurrent load and the
+publisher Unpaywall URL (Nature) is paywalled-OA. This is a documented
+retrieval-layer gap, NOT a license to manually include the paper —
+the engine must fetch verified bytes for the universal contract to
+pass.
 """
 evidence_quote = """
 Here we report that rapamycin, an inhibitor of the mTOR pathway, extends median and maximal lifespan of both male and female mice when fed beginning at 600 days of age. On the basis of age at 90% mortality, rapamycin led to an increase of 14% for females and 9% for males.
 """
 reviewer = "human-dom"
+action_required = "wire stable OA mirror or supply verified Nature PDF; until then sentinel gate must surface this as WARN"
 
 [[resolutions]]
 doi = "10.1093/gerona/glq178"
 pmid = "20974732"
-decision = "unavailable"
-lane = ""  # unavailable = no lane; documented retrieval limitation
+status = "resolved_unavailable"
 reason = """
-Miller 2011 NIA-ITP follow-up. Located via PMC + Unpaywall but neither
-serves the full text accessibly: PMC strip yields ~4000 chars (abstract
-+ metadata envelope only); Unpaywall URL routes to academic.oup.com
-which 403s without an institutional auth handshake. Documented
-retrieval-layer gap; the paper exists and is canonical but cannot be
-extracted in this run. Sentinel gate counts this as validly-resolved
-(WARN), not as a primary-corpus include.
+Miller 2011 NIA-ITP follow-up. PMC strip yields ~4000 chars (abstract +
+metadata envelope only); Unpaywall routes to academic.oup.com which
+403s without institutional auth. Bytes are genuinely unavailable on the
+open web from this retrieval stack. Documenting as resolved_unavailable
+so the sentinel-recall gate can stop reporting this as an unresolved
+miss; it remains excluded from the primary corpus because the universal
+contract cannot pass on bytes that don't exist.
 """
 evidence_quote = ""
 reviewer = "human-dom"
+action_required = "supply institutional auth or licensed OUP feed"
 
 [[resolutions]]
 doi = "10.7554/elife.16351"
 pmid = "27549339"
-decision = "include"
-lane = "direct_lifespan"
+status = "resolved_available"
 reason = """
-Bitto 2016 transient-rapamycin study (eLife, OA). Auto-judge has
-sometimes landed this as include conf 1.00 (iter-13, iter-15) and
-sometimes as unclear conf 0.50 (iter-16) depending on variance check
-and prompt phrasing. The paper is unambiguously eligible per
-pre-specified PICO; manual override locks the verdict.
+Bitto 2016 transient-rapamycin study (eLife, OA). The auto-judge has
+intermittently landed this as include conf 1.00 and sometimes as
+unclear conf 0.50 depending on prompt variance. When the auto-judge
+contract-passes Bitto with mouse/intervention/control/endpoint quotes
+extracted from the parsed bytes, it joins the primary corpus normally.
+This manual asserts paper availability for sentinel-recall accounting
+only; it does NOT promote the paper into the corpus.
 """
 evidence_quote = """
 A brief 3-month treatment of middle-aged mice with the mTOR inhibitor rapamycin produced an immediate, persistent improvement in healthspan and increased survival, with adult-onset transient rapamycin treatment significantly extending median and maximum lifespan in male mice.
 """
 reviewer = "human-dom"
+action_required = "judge prompt stabilisation so this paper passes the universal contract reliably"
 
-# --- Sprint 7.11 paper-level demotions ------------------------------------
-# Papers that pass the strict_a_core quote-audit (mouse + rapamycin +
-# control + endpoint all appear somewhere in their quotes) but are NOT
-# primary lifespan-extension studies on inspection. Demoted to
-# secondary_molecular so the pooled effect calc doesn't ingest them.
+# --- paper-level exclusions: off-topic Lane-A auto-includes -------------
+# Papers whose auto-judge quotes pass the universal contract because all
+# four signals (mouse + intervention + control + endpoint) appear
+# somewhere in the quotes, but inspection shows the paper is NOT a
+# primary lifespan-extension study. Manual exclusion is conservative —
+# subtracting from the corpus is always allowed; adding is not.
 
 [[resolutions]]
 doi = "10.1038/s41421-023-00595-3"
 pmid = "37848438"
-decision = "include"
-lane = "secondary_molecular"
+status = "resolved_excluded"
 reason = """
 Off-topic for primary lifespan corpus. Paper studies metformin-driven
-nephrotoxicity in acute kidney injury (AKI); rapamycin only appears as
+nephrotoxicity in acute kidney injury (AKI); rapamycin appears only as
 one of several comparator drugs tested for protective effect against
 I/R-induced renal damage. The "100% survival" quoted refers to AKI
-survival over days, not lifespan extension. Belongs in secondary
-contextual lane, not A-core.
+survival over days, not lifespan extension.
 """
 evidence_quote = """
 we treated mice with AKI induced by renal ischemia-reperfusion (I/R) with different drugs alone. Notably, nicotinamide, resveratrol, rapamycin, and senolytics, but not metformin, showed some to no protective effects on AKI based on various readouts of renal health and function
@@ -84,14 +98,12 @@ reviewer = "human-dom"
 [[resolutions]]
 doi = "10.18632/aging.100576"
 pmid = "23929887"
-decision = "include"
-lane = "secondary_molecular"
+status = "resolved_excluded"
 reason = """
 Side-effect / mechanism study, not a primary lifespan-extension trial.
 The paper uses rapamycin at "lifespan-extending doses" to ask whether
 muscle mitochondrial content / endurance are compromised. Lifespan is
-referenced as a known prior result, not measured here. Endurance and
-mitochondrial assays are the primary outcomes. Belongs in C-contextual.
+referenced as a known prior result, not measured here.
 """
 evidence_quote = """
 Therefore, we tested whether rapamycin, at the same doses used to extend lifespan, affects mitochondrial function in skeletal muscle.
@@ -101,14 +113,12 @@ reviewer = "human-dom"
 [[resolutions]]
 doi = "10.2147/dddt.s594895"
 pmid = "42011226"
-decision = "include"
-lane = "secondary_molecular"
+status = "resolved_excluded"
 reason = """
 SRN-901 (a novel compound) is the primary intervention; rapamycin is a
 positive-control comparator. Per pre-specified PICO ("primary
-intervention = rapamycin/sirolimus, must be the experimental arm under
-study"), this is a secondary/comparator usage, not a primary rapamycin
-lifespan trial. Belongs in C-contextual.
+intervention = rapamycin/sirolimus"), this is comparator usage, not a
+primary rapamycin trial.
 """
 evidence_quote = """
 While rapamycin increased lifespan in adult mice, nicotinamide mononucleotide (NMN), and nicotinamide riboside (NR) did not show significant differences in median lifespan compared to placebo.

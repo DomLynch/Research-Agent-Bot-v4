@@ -37,7 +37,7 @@ from agent.evidence_state import EvidenceState
 from agent.full_text_fetch import fetch_full_text_receipts
 from agent.full_text_parse import ParsedFullText, parse_full_texts
 from agent.include_contract import demote_failed_includes
-from agent.manual_resolution import apply_manual_resolutions, load_manual_resolutions
+from agent.manual_resolution import build_manual_status_overlay, load_manual_resolutions
 from agent.results_compiler import compile_all
 from agent.results_contract import validate_results_text
 from agent.results_writer import write_results_section
@@ -234,24 +234,24 @@ async def main() -> int:
     if demoted:
         print(f"[s7] include contract demoted {demoted} include(s) to unclear")
 
-    # Sprint 7.10 - manual sentinel overrides. Loaded from
-    # topic_packs/<topic>_manual_resolutions.toml. Replaces auto-judge
-    # receipts for any candidate matched by DOI or PMID. The override
-    # is the top of the stack: judge proposes, code disposes, HUMAN
-    # has final say on sentinels.
+    # Sprint 7.11.1 - manual sentinel-status overlay. Loaded from
+    # topic_packs/<topic>_manual_resolutions.toml. Manuals can only
+    # resolve sentinel STATUS (resolved_available / resolved_unavailable
+    # / resolved_excluded / needs_review). They do NOT mutate eligibility
+    # receipts and cannot promote a paper into primary inclusion. The
+    # universal evidence contract (already run above by demote_failed
+    # _includes) is the sole gate of the primary-effect corpus.
     manual_resolutions = load_manual_resolutions(args.topic)
+    manual_overlay = build_manual_status_overlay(manual_resolutions, candidates)
     if manual_resolutions:
-        new_receipts, applied = apply_manual_resolutions(
-            tuple(eligibility_receipts), candidates, manual_resolutions,
-        )
-        eligibility_receipts = list(new_receipts)
-        unmatched = len(manual_resolutions) - len(applied)
+        unmatched = len(manual_resolutions) - len(manual_overlay)
         print(
-            f"[s7] manual overrides applied: {len(applied)} matched, "
+            f"[s7] manual status overlay: {len(manual_overlay)} matched, "
             f"{unmatched} declared-but-unmatched"
         )
 
-    # Recount decisions after contract demotion + manual overrides.
+    # Recount decisions after contract demotion. Manual overlay does not
+    # change decision counts; it only resolves sentinel status downstream.
     decision_counts = Counter(r.decision for r in eligibility_receipts)
 
     # Sprint-7 strictness: assemble EvidenceState with parsed_receipts so the
@@ -265,7 +265,9 @@ async def main() -> int:
         parsed_receipts=parsed_receipts,
         eligibility_receipts=tuple(eligibility_receipts),
     )
-    packets = compile_all(state, moderators=(), pack=pack)
+    packets = compile_all(
+        state, moderators=(), pack=pack, manual_overlay=manual_overlay,
+    )
     results_text = write_results_section(packets)
     violations = validate_results_text(results_text, packets)
 

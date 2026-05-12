@@ -22,6 +22,7 @@ from types import MappingProxyType
 
 from agent.effect_sizes import EffectSizeRecord
 from agent.evidence_state import EvidenceState
+from agent.manual_resolution import ManualResolutionReceipt
 from agent.results_packets import ResultsPacket
 from agent.sentinel_recall import audit_sentinel_recall
 from agent.topic_pack import TopicPack
@@ -43,10 +44,11 @@ PacketLike = InformationalPacket | ResultsPacket
 
 def compile_sentinel_recall(
     state: EvidenceState, pack: TopicPack,
+    manual_overlay: dict[str, ManualResolutionReceipt] | None = None,
 ) -> InformationalPacket | None:
     if not (pack.sentinel_primary or pack.sentinel_prior_meta):
         return None
-    r = audit_sentinel_recall(state, pack)
+    r = audit_sentinel_recall(state, pack, manual_overlay=manual_overlay)
     counts: dict[str, int] = {
         "expected_primary": r.expected_primary,
         "retrieved_primary": r.retrieved_primary,
@@ -60,14 +62,16 @@ def compile_sentinel_recall(
     notes: tuple[str, ...] = tuple(
         f"{s.role}:{s.sentinel_id}:"
         f"{'retrieved' if s.retrieved else 'missing'}/"
-        f"{'candidate' if s.candidate else 'no-candidate'}"
+        f"{'candidate' if s.candidate else 'no-candidate'}/"
+        f"{s.eligibility}"
         for s in r.statuses
     )
     return InformationalPacket(
         packet_id="sentinel_recall",
         description=(
-            "Sentinel-paper audit: canonical anchors must be retrieved; "
-            "primary sentinels also expected to enter candidate set."
+            "Sentinel-paper audit: canonical anchors must be retrieved + "
+            "auto-contract-pass; manuals can only resolve sentinel STATUS, "
+            "they cannot launder unresolved evidence into the corpus."
         ),
         counts=MappingProxyType(counts),
         notes=notes,
@@ -204,15 +208,19 @@ def compile_all(
     *,
     moderators: tuple[str, ...] = (),
     pack: TopicPack | None = None,
+    manual_overlay: dict[str, ManualResolutionReceipt] | None = None,
 ) -> list[PacketLike]:
     """Run all compilers. Skips packets that lack evidence.
 
     When `pack` is provided and declares sentinels, also runs the recall
-    audit and emits a `sentinel_recall` packet.
+    audit and emits a `sentinel_recall` packet. `manual_overlay` is the
+    status-only sentinel overlay (see agent.manual_resolution).
     """
     packets: list[PacketLike] = [compile_study_selection(state)]
     if pack is not None:
-        sentinel_pkt = compile_sentinel_recall(state, pack)
+        sentinel_pkt = compile_sentinel_recall(
+            state, pack, manual_overlay=manual_overlay,
+        )
         if sentinel_pkt is not None:
             packets.append(sentinel_pkt)
     corpus = compile_corpus_characteristics(state)
