@@ -119,9 +119,27 @@ async def _inject_sentinels(
 
 def _register_default_sources() -> None:
     """Lazy bind of in-tree sources to avoid circular imports."""
+    from agent.retrieval.biorxiv import BioRxivSource
+    from agent.retrieval.core import COREsource
+    from agent.retrieval.crossref import CrossrefSource
+    from agent.retrieval.ctgov import ClinicalTrialsGovSource
+    from agent.retrieval.europepmc import EuropePMCSource
+    from agent.retrieval.openalex import OpenAlexSource
+    from agent.retrieval.osf import OSFSource
     from agent.retrieval.pubmed import PubMedSource
+    from agent.retrieval.researka import ResearkaSource
+    from agent.retrieval.semantic_scholar import SemanticScholarSource
 
     register("pubmed", PubMedSource)
+    register("crossref", CrossrefSource)
+    register("openalex", OpenAlexSource)
+    register("europepmc", EuropePMCSource)
+    register("semantic_scholar", SemanticScholarSource)
+    register("core", COREsource)
+    register("biorxiv", BioRxivSource)
+    register("osf", OSFSource)
+    register("ctgov", ClinicalTrialsGovSource)
+    register("researka", ResearkaSource)
 
 
 _register_default_sources()
