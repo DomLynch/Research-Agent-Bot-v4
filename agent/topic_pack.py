@@ -48,6 +48,7 @@ class TopicPack:
     sentinel_prior_meta: tuple[str, ...]
     non_mouse_species_terms: tuple[str, ...]
     secondary_design_quote_markers: tuple[str, ...]
+    genotype_modified_strain_markers: tuple[str, ...] = ()
     references_bibliography: Mapping[str, str] = field(
         default_factory=lambda: MappingProxyType({}),
     )

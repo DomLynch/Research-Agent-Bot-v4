@@ -74,7 +74,22 @@ methods = 1200
 # must be a key registered via agent.retrieval.unified.register(). Add or
 # remove sources here per topic without touching code.
 [retrieval]
-sources = ["pubmed"]
+# Multi-source corpus assembly. Each source name must match an
+# agent.retrieval.unified.register() registration. Unconfigured sources
+# (missing API key/token) are skipped at search_all() time, so listing a
+# source here that has no key results in a no-op, not an error.
+sources = [
+    "pubmed",          # NCBI E-utilities (free, NCBI_API_KEY boosts rate)
+    "crossref",        # DOI metadata (free, polite-pool email)
+    "openalex",        # works graph (free, polite-pool email)
+    "europepmc",       # PubMed mirror + OA full-text (free)
+    "semantic_scholar",# graph + citation counts (SEMANTIC_SCHOLAR_API_KEY)
+    "core",            # OA aggregator across repositories (CORE_API_KEY)
+    "biorxiv",         # preprints via Europe PMC PPR filter
+    "osf",             # OSF preprints (psych, policy, methods)
+    "ctgov",           # ClinicalTrials.gov trial registry records
+    "researka",        # internal canonical hot-index (RESEARKA_*)
+]
 
 # --- citation density ------------------------------------------------------
 # Minimum words per citation bracket — drives the citation_density gate.
@@ -195,7 +210,7 @@ secondary_design_quote_markers = [
 # table. Universal: a new topic declares its own [placeholders] block;
 # the resolver is topic-agnostic.
 [placeholders]
-"databases" = "PubMed, OpenAlex, Europe PMC, Crossref, Unpaywall, Semantic Scholar, CORE, OSF Preprints, bioRxiv/medRxiv, ClinicalTrials.gov, and the Researka internal canonical index (16 sources aggregated per the universal retrieval contract)"
+"databases" = "PubMed (NCBI E-utilities), Crossref, OpenAlex, Europe PMC, Semantic Scholar, CORE, bioRxiv/medRxiv (via the Europe PMC preprint filter), OSF Preprints, ClinicalTrials.gov, and the Researka internal canonical index — 10 search sources aggregated in parallel under the universal retrieval contract (sources without a configured API key or token are skipped at runtime, so a topic-pack-declared source list is a hard upper bound on the actual sweep); Unpaywall serves as the DOI -> open-access URL resolver in the downstream full-text fetch stage"
 "date-range" = "January 2001 (post-Easter-Island rapamycin era) through April 2026 (final retrieval cycle)"
 "query-terms" = "Boolean composition (rapamycin OR sirolimus) AND (lifespan OR survival OR longevity OR mortality) AND (mouse OR mice OR \"Mus musculus\"); full Boolean syntax filed in supplement S1"
 "minimum-studies-per-cell" = "k < 3 studies per moderator cell"
@@ -227,3 +242,24 @@ secondary_design_quote_markers = [
 "Fok et al. (2023)" = "Fok et al. (2014)"
 "the rapamycin-specific evidence through 2023" = "the rapamycin-specific evidence"
 "Tyshkovskiy and colleagues" = "Ivimey-Cook and colleagues"
+# --- Title reframe: honest "living evidence-contract synthesis" framing
+# replaces the "systematic synthesis" claim that k=1 can't carry.
+"# Systematic Synthesis of Rapamycin Effects on Murine Lifespan Across Preclinical Variables" = "# A Living Evidence-Contract Synthesis of Rapamycin Effects on Murine Lifespan: Pilot Corpus, Extraction Audit, and Evidence Gaps"
+# --- Fok 2014 prose: it's a primary lifespan study, not a meta-analysis
+# update. Bibliography now points at the real PLoS One 2014 paper; the
+# prose follows.
+"More recently, Fok et al. (2014) updated this synthesis, incorporating newer data and performing exploratory moderator analyses on variables like genetic background and sex" = "Fok et al. (2014) contributed a primary mouse lifespan study under rapamycin, with companion transcriptomic profiling that expanded the empirical base examined under heterogeneous-stock conditions"
+# --- Results: collapse 4 RESULTS_BLOCKED subsections into one honest
+# "not estimable" paragraph so the manuscript no longer promises
+# analyses the pipeline cannot deliver at k=1. Key is a single-line
+# string with embedded newlines (TOML basic-string escapes).
+"### Moderator Meta-Regression\n[RESULTS_BLOCKED:no moderator effects - extraction pending]\n\n### Sensitivity Analyses\n[RESULTS_BLOCKED:no sensitivity packets - pending stats step]\n\n### Tension Matrix\n[RESULTS_BLOCKED:no tension_matrix packet - pending moderator pooling]\n\n### Translational Evidence Map\n[RESULTS_BLOCKED:no translational_map packet - pending separate sweep]" = "### Moderator, sensitivity, and translational analyses\nModerator meta-regression, sensitivity analyses (leave-one-out, influence diagnostics, funnel-plot inspection, Egger's regression test), the prespecified tension matrix, and the translational evidence map are **not estimable in the current corpus**: fewer than two contract-passing effects accrued within any single metric family, so no inferential machinery beyond the inverse-variance point estimate can be honestly reported. These analyses remain designed-for capabilities of the pipeline and will be executed in the next iteration once numeric recovery and metric-family routing land additional poolable effects."
+# --- Strip [PACKET:...] audit anchors from manuscript prose. They belong
+# in the supplement/audit trail, not in the journal-facing argument.
+# Each anchor maps to the supplement section + run-audit appendix that
+# actually holds the receipt.
+"[PACKET:study_selection]" = "(Supplementary §S2-S3; Appendix A)"
+"[PACKET:corpus_characteristics]" = "(Supplementary §S4; Appendix A)"
+"[PACKET:primary_effect]" = "(Supplementary §S5/S5b; Appendix A)"
+"[PACKET:primary_pool_composition]" = "(Supplementary §S4 and §S8; Appendix A)"
+"[PACKET:sentinel_recall]" = "(Supplementary §S7; Appendix A)"
