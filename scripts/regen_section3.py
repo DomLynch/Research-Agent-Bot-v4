@@ -1,14 +1,21 @@
-"""Sprint 7.11 - regenerate Section 3 from a frozen run dir.
+"""Sprint 7.11 / 7.11.2 - regenerate run-dir artifacts in canonical form.
 
-Rebuilds `main_draft.md` against the POST-override state of an existing
-run, so the prose reflects:
-  - manual_resolutions.toml as it stands today (sentinel gate may have
-    moved from WARN to PASS since the run was originally written)
-  - the strict A-core split (3-bucket strict primary set)
-  - the same PRISMA flow counts the run was frozen with
+Rebuilds the canonical view of an iter-N run against today's
+universal-contract code so the bundle is internally consistent:
 
-No retrieval, no LLM. Pure deterministic re-render of packets from
-frozen JSON. Universal: topic-pack-driven; no biomedical literals here.
+  - main_draft.md
+        Section 3 with truthful sentinel gate level and the
+        "auto-eligible / strict-A-core selected for extraction" split.
+  - eligibility_receipts.json
+        Post-contract canonical receipts: any receipt whose
+        rule_decision was "manual-override" (legacy 7.10 path) is
+        reverted to a neutral "unclear" state because manuals no
+        longer mutate receipts as of 7.11.1.
+  - eligibility_receipts.legacy-pre-7.11.1.json
+        One-time backup of the pre-canonicalization file so the
+        previous state stays auditable.
+
+No retrieval, no LLM. Pure deterministic re-render. Topic-pack-driven.
 """
 from __future__ import annotations
 
