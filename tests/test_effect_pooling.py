@@ -123,6 +123,81 @@ def test_compile_pool_keeps_modal_metric_only() -> None:
     assert len(outcomes) == 2
 
 
+def _pack_lifespan() -> TopicPack:
+    """Test pack whose endpoint vocabulary covers both median_lifespan
+    AND max/90th-percentile lifespan tokens, mirroring the rapamycin
+    pack's full endpoint family."""
+    return TopicPack(
+        topic="t", display_name="T", primary_system="",
+        preferred_terms=("mouse",), discouraged_terms=(),
+        endpoint="lifespan", cite_role_default="", cite_roles_allowed=(),
+        anchors=MappingProxyType({}), length_caps=MappingProxyType({}),
+        min_words_per_citation=0,
+        outcome_nouns_extra=(), direction_verbs_extra=(), subjects_extra=(),
+        primary_interventions=("rapamycin",),
+        translational_only_interventions=(), retrieval_sources=(),
+        eligibility_endpoint_terms=(
+            "median_lifespan", "lifespan", "survival", "maximum_lifespan",
+        ),
+        eligibility_control_terms=("control", "vehicle"),
+        eligibility_exclude_design_terms=(),
+        eligibility_combination_terms=(),
+        eligibility_min_text_chars=0,
+        sentinel_primary=(), sentinel_prior_meta=(),
+        non_mouse_species_terms=(), secondary_design_quote_markers=(),
+    )
+
+
+def test_compute_effect_separates_max_or_percentile_from_median() -> None:
+    """Harrison-style 90th-percentile values must not be labelled
+    log_median_ratio; compile_pool's modal-metric filter relies on the
+    label to keep incompatible families apart."""
+    pack = _pack_lifespan()
+    r_median = _r(
+        study_id="med", metric="median_lifespan_days",
+        treated_value=1100.0, control_value=900.0,
+        treated_n=120, control_n=118,
+    )
+    r_p90 = _r(
+        study_id="p90", metric="maximum_lifespan_90th_percentile_days",
+        treated_value=1245.0, control_value=1094.0,
+        treated_n=80, control_n=80,
+    )
+    pair_m = compute_effect(r_median, pack)
+    pair_p = compute_effect(r_p90, pack)
+    assert pair_m is not None and pair_p is not None
+    assert pair_m[1].metric == "log_median_ratio"
+    assert pair_p[1].metric == "log_max_or_percentile_lifespan_ratio"
+
+
+def test_compile_pool_separates_median_from_90th_percentile() -> None:
+    """Two papers with the same numerics but different reported metrics
+    are pooled as the modal metric only; the other one is skipped."""
+    pack = _pack_lifespan()
+    receipts = (
+        _r(
+            study_id="med1", metric="median_lifespan_days",
+            treated_value=1100, control_value=900,
+            treated_n=120, control_n=118,
+        ),
+        _r(
+            study_id="med2", metric="median_lifespan_months",
+            treated_value=33, control_value=27,
+            treated_n=40, control_n=40,
+        ),
+        _r(
+            study_id="p90", metric="maximum_lifespan_90th_percentile_days",
+            treated_value=1245, control_value=1094,
+            treated_n=80, control_n=80,
+        ),
+    )
+    outcomes, effects, skipped = compile_pool(receipts, pack)
+    # Median metric is modal (2 vs 1); p90 is skipped, not pooled in.
+    assert {e.metric for e in effects} == {"log_median_ratio"}
+    assert {o.study_id for o in outcomes} == {"med1", "med2"}
+    assert "p90" in skipped
+
+
 def test_compile_pool_records_failures() -> None:
     receipts = (
         _r(study_id="ok", metric="median_lifespan",
