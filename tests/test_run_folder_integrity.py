@@ -129,6 +129,32 @@ def test_supplement_md_receipts_list_matches_filesystem() -> None:
     )
 
 
+def test_rendered_files_do_not_reference_absent_local_run_files() -> None:
+    """Sprint 12.8 — universal generalisation of the S9-list check.
+
+    Any bare backticked `.json` / `.md` filename in the rendered paper
+    or supplement is a run-folder-local claim. It must exist. Paths
+    containing `/` are documentation / source pointers (e.g.
+    `topic_packs/<topic>.toml`, `agent/`, `scripts/`), not packaged
+    run-file claims, so they are outside this check.
+    """
+    present = {f.name for f in _RUNS_LATEST.iterdir() if f.is_file()}
+    missing: set[str] = set()
+    for fname in ("paper.md", "supplement.md"):
+        body = _read_body(fname)
+        for token in re.findall(r"`([^`]+)`", body):
+            if "/" in token:
+                continue
+            if token in {"paper.md", "supplement.md"}:
+                continue
+            if token.endswith((".json", ".md")) and token not in present:
+                missing.add(token)
+    assert not missing, (
+        f"rendered artifact references absent local run file(s): "
+        f"{sorted(missing)}"
+    )
+
+
 def test_paper_folder_canonical_outputs_exist() -> None:
     """Canonical paper-folder shape: paper.md + supplement.md + the
     4 JSON receipts that supplement's S9 cross-references."""

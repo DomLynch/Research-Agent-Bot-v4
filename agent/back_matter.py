@@ -51,6 +51,21 @@ class BackMatter:
         )) + "\n"
 
 
+_NEUTRAL_ETHICS = (
+    "This synthesis re-analyses previously published data. No new "
+    "primary data collection was conducted. Per-study ethical and "
+    "licensing statements remain with the original publications cited "
+    "herein."
+)
+_NEUTRAL_CONFLICTS = (
+    "The operator declares no financial conflicts of interest related "
+    "to the subject matter of this synthesis or to the cited primary "
+    "studies. The pipeline is open-source and reusable across topics; "
+    "no commercial relationship influenced the eligibility rules or "
+    "the manuscript framing for the present synthesis."
+)
+
+
 def build_back_matter(
     pack: TopicPack,
     settings: Settings,
@@ -61,8 +76,12 @@ def build_back_matter(
 ) -> BackMatter:
     """Compose back-matter prose from pipeline-known facts.
 
-    Universal: no domain-specific ethics literals live here. Topic packs can
-    provide a precise ethics statement; otherwise the fallback is neutral.
+    Universal: no biomedical literals. The ethics and conflicts lines
+    come from `pack.ethics_statement` / `pack.conflicts_statement`
+    (animal-research framing for a mouse-lifespan pack, human-subjects
+    framing for a clinical pack); packs that omit those fields fall
+    through to neutral previously-published-data wording so a climate
+    or social-science pack still renders a coherent back-matter block.
     """
     sources = ", ".join(pack.retrieval_sources) or "(none declared)"
     run_ref = run_dir_name or "(run directory not specified)"
@@ -81,9 +100,10 @@ def build_back_matter(
         "`primary_effect_input_set_strict.json`, `effect_extractions.json`, "
         "`effect_pool.json`, `extraction_crosscheck.json`) so downstream "
         "reviewers can re-validate without re-running the LLM stack. "
-        "Manual full-text injections (when used to recover sentinel "
-        "papers the auto retrieval cannot reach) are recorded with "
-        "SHA-256 hashes in `manual_full_text_audit.json`."
+        "When manual full-text injections are used to recover sentinel "
+        "papers the auto retrieval cannot reach, per-injection SHA-256 "
+        "hashes are recorded in a manual-full-text audit sidecar in "
+        "the same run directory."
     )
     ai_use = (
         f"This manuscript was assembled by an automated synthesis "
@@ -99,12 +119,7 @@ def build_back_matter(
         "every direct quote in the receipts is bound to a verbatim "
         "evidence_quote field and traceable to its source paper."
     )
-    ethics = pack.ethics_statement.strip() or (
-        "This synthesis re-analyses previously published data. No "
-        "new primary data collection was conducted. Per-study "
-        "ethical and licensing statements remain with the original "
-        "publications cited herein."
-    )
+    ethics = pack.ethics_statement.strip() or _NEUTRAL_ETHICS
     author_contributions = (
         f"The synthesis pipeline (retrieval, screening, eligibility "
         "adjudication, full-text parsing, effect extraction, pooling, "
@@ -117,14 +132,7 @@ def build_back_matter(
         "the AI-Use Disclosure under the constraints of the universal "
         "evidence contract."
     )
-    conflicts = (
-        "The operator declares no financial conflicts of interest "
-        "related to the intervention, system, endpoint, or cited "
-        "primary studies. The pipeline is "
-        "open-source and reusable across topics; no commercial "
-        "relationship influenced the eligibility rules or the "
-        "manuscript framing for the present synthesis."
-    )
+    conflicts = pack.conflicts_statement.strip() or _NEUTRAL_CONFLICTS
     funding = (
         "No external funding was received for this synthesis. The "
         "computational cost of the language-model calls was borne "

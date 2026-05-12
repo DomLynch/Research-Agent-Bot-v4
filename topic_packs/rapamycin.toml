@@ -250,9 +250,6 @@ genotype_modified_strain_markers = [
 "MODERATOR_P:genetic_background" = "genetic background"
 "MODERATOR_P:treatment_initiation_age" = "age at treatment initiation"
 
-[back_matter]
-ethics_statement = "This synthesis re-analyses published animal-research data. No new experiments on living animals were conducted. The included primary studies are responsible for their own institutional animal-care and ethical approvals; reviewers are referred to the primary references in this manuscript for those statements. The synthesis itself does not require additional ethical approval."
-
 # --- methods honesty rewrites ---------------------------------------------
 # agent/methods_honesty.py applies these substitutions to the manuscript
 # body so the writer's borrowed-from-template overclaim verbs match what
@@ -330,3 +327,13 @@ ethics_statement = "This synthesis re-analyses published animal-research data. N
 # scripts/build_supplement.py (the S5c prose lives there, not in
 # paper.md body, so methods_honesty_rewrites can't reach it). Kept the
 # comment block so future edits remember the architectural split.
+
+# --- back-matter prose ----------------------------------------------------
+# Pack-supplied ethics + conflicts paragraphs. agent/back_matter.py renders
+# pack.ethics_statement / pack.conflicts_statement verbatim and falls
+# through to neutral previously-published-data wording when a pack omits
+# them. Animal/human/clinical framing lives here (data), not in core code,
+# per the universal-no-hardcoding rule.
+[back_matter]
+ethics_statement = """This synthesis re-analyses published animal-research data. No new experiments on living animals were conducted. The included primary studies are responsible for their own institutional animal-care and ethical approvals; reviewers are referred to the primary references in this manuscript for those statements. The synthesis itself does not require additional ethical approval."""
+conflicts_statement = """The operator declares no financial conflicts of interest related to mTOR-pathway pharmacology, geroprotective interventions, or the cited primary studies. The pipeline is open-source and reusable across topics; no commercial relationship influenced the eligibility rules or the manuscript framing for the present synthesis."""

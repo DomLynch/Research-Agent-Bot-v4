@@ -2,7 +2,10 @@
 
 Cover:
   - all six sections render and join into `as_markdown()`
-  - ethics statement is topic-pack supplied, with a neutral fallback
+  - ethics + conflicts statements are pack-driven (no domain routing
+    in core code): when `pack.ethics_statement` / `pack.conflicts_statement`
+    are supplied they appear verbatim; otherwise the rendered prose
+    falls through to the neutral previously-published-data wording
   - data/code line wires in retrieval sources and run-dir/repo refs
   - AI-use line names both writer + judge model strings
 """
@@ -30,7 +33,12 @@ def _empty_settings() -> Settings:
     )
 
 
-def _pack(primary_system: str, *, ethics_statement: str = "") -> TopicPack:
+def _pack(
+    primary_system: str = "",
+    *,
+    ethics_statement: str = "",
+    conflicts_statement: str = "",
+) -> TopicPack:
     return TopicPack(
         topic="t", display_name="T", primary_system=primary_system,
         preferred_terms=(), discouraged_terms=(),
@@ -51,6 +59,7 @@ def _pack(primary_system: str, *, ethics_statement: str = "") -> TopicPack:
         secondary_design_quote_markers=(),
         references_bibliography=MappingProxyType({}),
         ethics_statement=ethics_statement,
+        conflicts_statement=conflicts_statement,
     )
 
 
@@ -91,24 +100,43 @@ def test_ai_use_names_both_models() -> None:
     assert "google/gemma-4-31b-it" in bm.ai_use_disclosure
 
 
-def test_ethics_uses_topic_pack_statement() -> None:
+def test_ethics_uses_pack_supplied_statement_verbatim() -> None:
+    """When the pack supplies an ethics paragraph (e.g. animal-research
+    framing for a mouse-lifespan pack, human-subjects framing for a
+    clinical pack), back_matter renders it verbatim — no domain
+    routing in core code."""
+    custom = ("This synthesis re-analyses published animal-research "
+              "data. Reviewers are referred to the primary references.")
     bm = build_back_matter(
-        _pack("system", ethics_statement="Pack-specific ethics text."),
-        _empty_settings(),
+        _pack("mouse", ethics_statement=custom), _empty_settings(),
     )
-    assert bm.ethics_statement == "Pack-specific ethics text."
+    assert bm.ethics_statement == custom
 
 
-def test_ethics_statement_strips_topic_pack_whitespace() -> None:
-    bm = build_back_matter(
-        _pack("system", ethics_statement="  Pack ethics.  "),
-        _empty_settings(),
-    )
-    assert bm.ethics_statement == "Pack ethics."
-
-
-def test_ethics_fallback_is_neutral_for_unspecified_pack() -> None:
+def test_ethics_falls_through_to_neutral_when_pack_omits_it() -> None:
+    """Packs that don't declare ethics_statement (e.g. a fresh
+    climate-time-series pack) get the neutral previously-published-data
+    fallback — no animal/human framing leaks from core code."""
     bm = build_back_matter(_pack("climate-time-series"), _empty_settings())
     assert "previously published data" in bm.ethics_statement
-    assert "animal-research" not in bm.ethics_statement
-    assert "human-subjects" not in bm.ethics_statement
+    assert "animal" not in bm.ethics_statement.lower()
+    assert "human-subjects" not in bm.ethics_statement.lower()
+
+
+def test_conflicts_uses_pack_supplied_statement_verbatim() -> None:
+    custom = ("The operator declares no financial conflicts of "
+              "interest related to mTOR-pathway pharmacology.")
+    bm = build_back_matter(
+        _pack("mouse", conflicts_statement=custom), _empty_settings(),
+    )
+    assert bm.conflicts_of_interest == custom
+
+
+def test_conflicts_falls_through_to_neutral_when_pack_omits_it() -> None:
+    """Packs that don't declare conflicts_statement get a domain-
+    agnostic neutral paragraph — no biomedical literals leak from
+    core code."""
+    bm = build_back_matter(_pack("climate-time-series"), _empty_settings())
+    assert "subject matter of this synthesis" in bm.conflicts_of_interest
+    assert "mTOR" not in bm.conflicts_of_interest
+    assert "geroprotective" not in bm.conflicts_of_interest
