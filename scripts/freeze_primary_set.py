@@ -27,7 +27,11 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from agent.include_contract import classify_lane, strict_a_core_check
+from agent.include_contract import (
+    classify_lane,
+    has_genotype_modified_strain,
+    strict_a_core_check,
+)
 from agent.manual_resolution import build_manual_status_overlay, load_manual_resolutions
 from agent.screening import CandidateStudy
 from agent.topic_pack import load_topic_pack
@@ -179,9 +183,28 @@ def main() -> int:
         if strict_reasons:
             strict_demote_reasons[sid] = strict_reasons
         if lane == "A_direct_lifespan" and strict_ok:
-            strict_a.append({**study_entry, "strict_a_core": True})
+            # A-core entry — but if quotes signal a genotype-modified
+            # strain (BMAL1-/-, transgenic, etc.) move it to the
+            # B_disease_model_survival sensitivity lane so the headline
+            # primary estimate isn't carried by a disease-model genotype.
+            if has_genotype_modified_strain(quotes, pack):
+                strict_b.append({
+                    **study_entry, "strict_a_core": False,
+                    "demoted_from": "A_direct_lifespan",
+                    "demote_reasons": ["genotype-modified strain (sensitivity)"],
+                })
+                strict_demote_reasons[sid] = (
+                    "genotype-modified strain (sensitivity)",
+                )
+            else:
+                strict_a.append({**study_entry, "strict_a_core": True})
         elif lane == "A_direct_lifespan" and not strict_ok:
-            strict_c.append({
+            # Failed strict A-core gate. Genotype-modified studies still
+            # have inferential value -> route to B; everything else to C.
+            demote_bucket = (
+                strict_b if has_genotype_modified_strain(quotes, pack) else strict_c
+            )
+            demote_bucket.append({
                 **study_entry, "strict_a_core": False,
                 "demoted_from": "A_direct_lifespan",
                 "demote_reasons": list(strict_reasons),

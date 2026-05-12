@@ -171,6 +171,26 @@ def strict_a_core_check(
     return not reasons, tuple(reasons)
 
 
+def has_genotype_modified_strain(
+    evidence_quotes: tuple[str, ...], pack: TopicPack,
+) -> bool:
+    """True if any quote mentions a genotype-modified-strain marker.
+
+    Used by freeze_primary_set to route demoted-from-A_core studies into
+    the B_disease_model_survival sensitivity lane (preserving their
+    inferential value) rather than C_secondary_contextual (which is for
+    omics / off-design demotions). Universal: marker list lives in the
+    topic pack under [strict_a_core] genotype_modified_strain_markers.
+    """
+    markers = pack.genotype_modified_strain_markers
+    if not markers:
+        return False
+    quotes = tuple(q.casefold() for q in evidence_quotes)
+    return any(
+        any(m.casefold() in q for m in markers if m) for q in quotes
+    )
+
+
 def classify_lane(
     candidate_title: str, parsed_char_count: int,
     decision: str | None, pack: TopicPack,

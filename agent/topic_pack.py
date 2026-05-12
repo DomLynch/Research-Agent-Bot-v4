@@ -114,6 +114,9 @@ def load_topic_pack(topic: str, *, pack_dir: Path | None = None) -> TopicPack | 
         secondary_design_quote_markers=tuple(
             strict.get("secondary_design_quote_markers", [])
         ),
+        genotype_modified_strain_markers=tuple(
+            strict.get("genotype_modified_strain_markers", [])
+        ),
         references_bibliography=MappingProxyType(dict(
             raw.get("references", {}).get("bibliography", {})
         )),

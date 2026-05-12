@@ -173,6 +173,19 @@ secondary_design_quote_markers = [
     "fatty acid pattern", "fatty-acid pattern",
     "endolysosom", "s6k", "akt-mtorc2",
 ]
+# Sprint 11.3 / two-lane primary effect: studies whose evidence quotes
+# name a genotype-modified strain (knockout / transgenic / homozygous
+# deletion) are moved out of A-core into the B_disease_model_survival
+# sensitivity lane so the headline primary estimate is not carried by a
+# disease-model genotype (BMAL1-/-, IGF1R-deficient, etc.). Distinct
+# from the omics secondary_design list — these papers ARE primary
+# lifespan studies, just on a non-wild-type genetic background.
+genotype_modified_strain_markers = [
+    "bmal1−/−", "bmal1-/-", "bmal1 knockout", "bmal1-knockout",
+    "knockout", "transgenic", "deficient", "-deficient",
+    "homozygous deletion", "−/−", "-/-",
+    "tg(",  # transgenic notation
+]
 
 # --- bibliography ----------------------------------------------------------
 # Full bibliographic entries for the keys listed in [anchors] above.
