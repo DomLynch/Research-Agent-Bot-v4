@@ -37,16 +37,23 @@ def adjudicate(
     proposal: EligibilityProposal,
     parsed: ParsedFullText,
 ) -> EligibilityReceipt:
-    merged: dict[str, bool] = dict(triage.mandatory_fields)
-    for k, v in proposal.eligibility_fields.items():
-        merged[k] = bool(v)
-    # OR semantics on hard excluders: LLM cannot whitewash a rule-detected flag.
-    rapalog = bool(
-        triage.mandatory_fields.get("rapalog_only_intervention", False)
-        or proposal.eligibility_fields.get("rapalog_only_intervention", False)
-    )
-    combo_only = bool(proposal.eligibility_fields.get("combination_only_no_isolated_arm", False))
-    merged["rapalog_only_intervention"] = rapalog
+    # Symmetric OR-merge for ALL mandatory inclusion fields: if EITHER the
+    # deterministic Pass-1 rule OR the Pass-2 judge finds positive evidence,
+    # treat the field as satisfied. Reason: Gemma was rejecting Harrison-2009
+    # because the Nature abstract opens with "mammalian species" framing;
+    # the judge set species_match=False even though the title is "...in mice"
+    # and the rule had already matched. OR-merge respects the rule's title
+    # match without letting the judge whitewash it.
+    merged: dict[str, bool] = {}
+    all_keys = set(triage.mandatory_fields) | set(proposal.eligibility_fields)
+    for k in all_keys:
+        merged[k] = bool(
+            triage.mandatory_fields.get(k, False)
+            or proposal.eligibility_fields.get(k, False)
+        )
+    # Hard excluders also OR-merge (preserves existing behavior).
+    rapalog = bool(merged.get("rapalog_only_intervention", False))
+    combo_only = bool(merged.get("combination_only_no_isolated_arm", False))
     judge_reviewer = JUDGE_REVIEWER if not proposal.parse_error else RULE_REVIEWER
 
     if triage.label == "exclude_likely":

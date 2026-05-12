@@ -38,9 +38,33 @@ _EXTRA_FIELDS: tuple[str, ...] = (
 _SYSTEM_PROMPT = (
     "You are a strict systematic-review eligibility judge. You ALWAYS return "
     "valid JSON matching the schema given by the user. You NEVER add prose "
-    "outside the JSON. If evidence is missing or ambiguous, return "
-    "decision='unclear' with low confidence. Quote verbatim from the paper "
-    "text only - never paraphrase a quote."
+    "outside the JSON. Quote verbatim from the paper text only - never "
+    "paraphrase a quote.\n\n"
+    "READING DISCIPLINE - decide each mandatory field based on the ACTUAL "
+    "STUDY SYSTEM (what was experimentally treated, measured, or reported), "
+    "NOT framing words in the introduction. Papers routinely open with "
+    "broad contextual phrases ('mammalian aging', 'vertebrate models', "
+    "'cellular pathways in eukaryotes') before disclosing their actual "
+    "experimental subject in later sentences or the title. Use the title "
+    "and the Methods/Results passages, not just the first paragraph of the "
+    "abstract. If the title or any concrete sentence names the criterion "
+    "term (e.g. 'mice', 'rapamycin', 'lifespan'), set the corresponding "
+    "field to true even if introduction sentences use broader category "
+    "words. Only set decision='unclear' with low confidence when the "
+    "ACTUAL study system is genuinely ambiguous in the parsed text."
+)
+
+# Variant B prompt: paragraph-first reasoning, then JSON.
+# Used by judge_eligibility_with_variance() to cross-check Variant A.
+_SYSTEM_PROMPT_REASONING_FIRST = (
+    "You are a strict systematic-review eligibility judge. Write ONE "
+    "concise paragraph (max 6 sentences) explaining whether the paper "
+    "meets the criteria, anchored to the title and the Methods/Results "
+    "passages. Then output a JSON object on the line after the paragraph, "
+    "matching the schema the user provides. Use the title and concrete "
+    "experimental sentences to determine each field - do not be misled "
+    "by broad framing words ('mammalian', 'vertebrate', 'eukaryotic') "
+    "that appear before the actual study system is named."
 )
 
 
@@ -136,20 +160,15 @@ def _normalise(obj: dict[str, Any]) -> tuple[
     return decision, conf, reasons, quotes, fields
 
 
-def judge_eligibility(
-    candidate: CandidateStudy, parsed: ParsedFullText,
-    triage: EligibilityTriage, pack: TopicPack, settings: Settings,
+def _call_with_prompt(
+    candidate: CandidateStudy, parsed: ParsedFullText, triage: EligibilityTriage,
+    pack: TopicPack, settings: Settings, *, system_prompt: str,
 ) -> EligibilityProposal:
-    """Single Gemma 4 31B call via OpenRouter; fail-soft to decision='unclear'.
-
-    Model is fixed to settings.judge_model (Gemma) - the documented
-    2-model stack from AGENTS.md. No per-call model override.
-    """
     model = settings.judge_model
     if not parsed.text.strip():
         return _empty(candidate.study_id, model, "", "parsed text empty")
     messages = [
-        {"role": "system", "content": _SYSTEM_PROMPT},
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": _build_user_prompt(candidate, parsed, triage, pack)},
     ]
     try:
@@ -165,4 +184,52 @@ def judge_eligibility(
         reasons=reasons, evidence_quotes=quotes,
         eligibility_fields=MappingProxyType(fields), model=resp.model,
         raw_response=resp.content,
+    )
+
+
+def judge_eligibility(
+    candidate: CandidateStudy, parsed: ParsedFullText,
+    triage: EligibilityTriage, pack: TopicPack, settings: Settings,
+) -> EligibilityProposal:
+    """Single Gemma 4 31B call via OpenRouter; fail-soft to decision='unclear'.
+
+    Model is fixed to settings.judge_model (Gemma) - the documented
+    2-model stack from AGENTS.md. No per-call model override.
+    """
+    return _call_with_prompt(
+        candidate, parsed, triage, pack, settings,
+        system_prompt=_SYSTEM_PROMPT,
+    )
+
+
+def judge_eligibility_with_variance(
+    candidate: CandidateStudy, parsed: ParsedFullText,
+    triage: EligibilityTriage, pack: TopicPack, settings: Settings,
+) -> EligibilityProposal:
+    """Two Gemma calls with different prompt phrasings; consensus or
+    'unclear' on disagreement. Catches prompt-phrasing sensitivity that
+    a single roll can hide. Doubles LLM cost per candidate."""
+    a = _call_with_prompt(
+        candidate, parsed, triage, pack, settings,
+        system_prompt=_SYSTEM_PROMPT,
+    )
+    b = _call_with_prompt(
+        candidate, parsed, triage, pack, settings,
+        system_prompt=_SYSTEM_PROMPT_REASONING_FIRST,
+    )
+    if a.decision == b.decision:
+        # Agreement: return the higher-confidence proposal so the merge
+        # step sees the strongest signal.
+        return a if a.confidence >= b.confidence else b
+    # Disagreement: downgrade to unclear with a reason that explains the split.
+    reasons = (
+        f"variance check: variant A said {a.decision} (conf {a.confidence:.2f}); "
+        f"variant B said {b.decision} (conf {b.confidence:.2f})",
+    )
+    return EligibilityProposal(
+        study_id=candidate.study_id, decision="unclear", confidence=0.0,
+        reasons=reasons, evidence_quotes=a.evidence_quotes or b.evidence_quotes,
+        eligibility_fields=MappingProxyType({}), model=a.model,
+        raw_response=(a.raw_response + "\n---variant-B---\n" + b.raw_response),
+        parse_error="variance disagreement",
     )

@@ -10,6 +10,7 @@ from agent.eligibility_judge import (
     _parse_json,
     _strip_fence,
     judge_eligibility,
+    judge_eligibility_with_variance,
 )
 from agent.eligibility_rules import EligibilityTriage
 from agent.full_text_parse import ParsedFullText
@@ -158,3 +159,43 @@ def test_judge_fail_soft_on_bad_json(monkeypatch: Any) -> None:
     out = judge_eligibility(_candidate(), _parsed(), _triage(), _pack(), _settings())
     assert out.decision == "unclear"
     assert "json parse failed" in out.parse_error
+
+
+def _llm_response(decision: str, conf: float, content_suffix: str = "") -> LLMResponse:
+    body = (
+        '{"decision":"' + decision + '","confidence":' + str(conf) +
+        ',"reasons":["r"],"evidence_quotes":["q"],'
+        '"eligibility_fields":{"species_match":true}}'
+    )
+    return LLMResponse(
+        content=body + content_suffix, model="google/gemma-4-31b-it",
+        prompt_tokens=10, completion_tokens=10,
+    )
+
+
+def test_variance_check_consensus_returns_higher_confidence(monkeypatch: Any) -> None:
+    calls = [_llm_response("include", 0.80), _llm_response("include", 0.90, " ")]
+    monkeypatch.setattr(
+        "agent.eligibility_judge.call_judge",
+        lambda *_, **__: calls.pop(0),
+    )
+    out = judge_eligibility_with_variance(
+        _candidate(), _parsed(), _triage(), _pack(), _settings(),
+    )
+    assert out.decision == "include"
+    assert out.confidence == 0.90
+
+
+def test_variance_check_disagreement_downgrades_to_unclear(monkeypatch: Any) -> None:
+    calls = [_llm_response("include", 0.85), _llm_response("exclude", 0.80)]
+    monkeypatch.setattr(
+        "agent.eligibility_judge.call_judge",
+        lambda *_, **__: calls.pop(0),
+    )
+    out = judge_eligibility_with_variance(
+        _candidate(), _parsed(), _triage(), _pack(), _settings(),
+    )
+    assert out.decision == "unclear"
+    assert out.confidence == 0.0
+    assert "variance check" in out.reasons[0]
+    assert out.parse_error == "variance disagreement"
