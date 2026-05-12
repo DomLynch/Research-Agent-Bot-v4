@@ -45,4 +45,4 @@ Topic: rapamycin
 
 ## Quality flags
 
-- 2 primary sentinel(s) UNRESOLVED (no auto verdict + no manual record): ['10.1038/nature08221', '10.7554/elife.16351']
+- (none)

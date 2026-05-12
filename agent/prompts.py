@@ -290,3 +290,87 @@ def writer_title_abstract_intro(
         {"role": "system", "content": system},
         {"role": "user", "content": _user_request(topic, specs)},
     ]
+
+
+def writer_discussion(
+    topic: str, pack: TopicPack | None = None,
+) -> list[dict[str, str]]:
+    """Section 6: Discussion + Limitations + Conclusion as one bundle.
+
+    Designed for the universal-evidence-contract pipeline where Results
+    may legitimately carry [RESULTS_BLOCKED:...] markers or a k=1
+    single-study extracted effect. Voice is interpretive and humble:
+    contextualise the corpus, do not over-claim a pooled finding that
+    the receipts do not support.
+    """
+    specs = [
+        (
+            "DISCUSSION",
+            "600-900 words across 4-5 paragraphs. FORBIDDEN OVERCLAIMS: "
+            "do NOT state a pooled effect size, hazard ratio, or percent "
+            "extension unless the Results section has it under "
+            "[PACKET:primary_effect] with k_studies >= 2. Do NOT claim "
+            "external registration or invent author-team activities. "
+            "Honest interpretive voice. Structure:\n"
+            "(a) one paragraph restating the question and what the corpus "
+            "as currently extracted does and does NOT support; reference "
+            "[PACKET:primary_effect] / [PACKET:primary_pool_composition] "
+            "rather than asserting numbers in prose;\n"
+            "(b) one paragraph comparing to prior syntheses (cite by "
+            "[CIT:<key>|prior-meta-analysis] from the topic-pack anchor "
+            "list); note alignment or divergence without asserting which "
+            "is correct when k is too small;\n"
+            "(c) one paragraph on biologically-plausible mechanisms drawn "
+            "from [CIT:<key>|mechanism-review] anchors. Mechanism prose "
+            "is background, not a finding of this analysis;\n"
+            "(d) one paragraph on the boundary conditions the design was "
+            "specified to test (strain, sex, dose, timing, route, "
+            "pathogen status) — frame them as currently underdetermined "
+            "given corpus size, not as resolved subgroup effects;\n"
+            "(e) one paragraph on translational considerations: cite "
+            "[CIT:<key>|clinical-trial] anchors as adjacent evidence, "
+            "explicitly state translational interventions are NOT in the "
+            "primary corpus, and note analog separation.\n"
+            "Use [PACKET:...] anchors when referencing Results numerics. "
+            "Use [CIT:<key>|<role>] anchors when referencing specific "
+            "prior work. Do not paraphrase numbers from Results into the "
+            "Discussion."
+        ),
+        (
+            "LIMITATIONS",
+            "200-400 words, one paragraph. State the specific limitations "
+            "that follow from THIS pipeline's outputs:\n"
+            "- corpus size and sentinel-recall gate status (reference "
+            "  [PACKET:sentinel_recall]);\n"
+            "- the k_studies count from [PACKET:primary_effect] and what "
+            "  it implies for inference;\n"
+            "- the metric-family discipline (e.g. 90th-percentile lifespan "
+            "  ratios are pooled separately from median-lifespan ratios, "
+            "  so cross-family inference is not made);\n"
+            "- automated risk-of-bias adjudication without explicit human "
+            "  arbitration;\n"
+            "- any manual full-text overrides recorded in "
+            "  [PACKET:study_selection] context (manual injection is "
+            "  documented source recovery, not eligibility override).\n"
+            "Honest voice. Do NOT use vague journal stock phrases like "
+            "'further research is needed'; name SPECIFIC missing data "
+            "(e.g. 'sample sizes were not recoverable from the visible "
+            "excerpt for s230 and s235')."
+        ),
+        (
+            "CONCLUSION",
+            "120-180 words, one paragraph. One-sentence statement of what "
+            "the corpus currently supports, calibrated by k. One sentence "
+            "on what would change the conclusion (additional contract-"
+            "passing studies, sentinel repair, etc.). One sentence on the "
+            "broader interpretive frame. Do NOT introduce new claims or "
+            "citations not already in the Introduction / Discussion."
+        ),
+    ]
+    system = SYSTEM_WRITER
+    if pack:
+        system = SYSTEM_WRITER + "\n\n" + _topic_pack_block(pack)
+    return [
+        {"role": "system", "content": system},
+        {"role": "user", "content": _user_request(topic, specs)},
+    ]
