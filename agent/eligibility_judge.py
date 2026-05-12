@@ -229,17 +229,23 @@ def judge_eligibility_with_variance(
     candidate: CandidateStudy, parsed: ParsedFullText,
     triage: EligibilityTriage, pack: TopicPack, settings: Settings,
 ) -> EligibilityProposal:
-    """Two Gemma calls with different prompt phrasings; consensus or
-    'unclear' on disagreement. Catches prompt-phrasing sensitivity that
-    a single roll can hide. Doubles LLM cost per candidate."""
-    a = _call_with_prompt(
-        candidate, parsed, triage, pack, settings,
-        system_prompt=_SYSTEM_PROMPT,
-    )
-    b = _call_with_prompt(
-        candidate, parsed, triage, pack, settings,
-        system_prompt=_SYSTEM_PROMPT_REASONING_FIRST,
-    )
+    """Two parallel Gemma calls with different prompt phrasings; consensus
+    or 'unclear' on disagreement. The two HTTP calls run concurrently in a
+    local ThreadPoolExecutor so total wall-clock matches a single judge
+    pass instead of doubling. Doubles LLM cost but not wall-clock."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    with ThreadPoolExecutor(max_workers=2) as ex:
+        fut_a = ex.submit(
+            _call_with_prompt, candidate, parsed, triage, pack, settings,
+            system_prompt=_SYSTEM_PROMPT,
+        )
+        fut_b = ex.submit(
+            _call_with_prompt, candidate, parsed, triage, pack, settings,
+            system_prompt=_SYSTEM_PROMPT_REASONING_FIRST,
+        )
+        a = fut_a.result()
+        b = fut_b.result()
     if a.decision == b.decision:
         # Agreement: return the higher-confidence proposal so the merge
         # step sees the strongest signal.
