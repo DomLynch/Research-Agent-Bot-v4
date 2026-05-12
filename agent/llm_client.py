@@ -128,16 +128,22 @@ def call_writer(
     messages: list[dict[str, str]],
     *,
     temperature: float = 0.3,
-    max_tokens: int | None = 16384,
+    max_tokens: int | None = 8192,
 ) -> LLMResponse:
     """Single MiMo chat call. Raises if writer not configured.
 
-    max_tokens defaults to 16384 — well above any single-section budget
-    (Title + Abstract + 1k-word Introduction is ~2000 tokens; full
-    Methods is ~1600 tokens; the cap is generous so legitimate long
-    generations never hit it). Callers can pass None for unbounded.
-    The hardened client also retries up to 3 times on transient
-    network failures or HTTP 429 / 5xx.
+    max_tokens defaults to 8192 — 4-5x any single section's natural
+    budget (Title + Abstract + 1k-word Introduction is ~2000 tokens;
+    full Methods is ~1600 tokens). Empirically, MiMo v2.5 Pro generates
+    pathologically (returns empty content while reporting full
+    completion_tokens) when max_tokens is set to the model's full output
+    capacity (e.g. 16384), so 8192 is the calibrated headroom point.
+    Callers can pass None for unbounded. The hardened client also
+    retries up to 3 times on transient network failures or HTTP
+    429 / 5xx.
+
+    Raises RuntimeError if MiMo returns empty content (the pathological
+    case) so callers don't silently write zero-byte drafts.
     """
     if not settings.writer_configured:
         raise RuntimeError("Writer not configured: set MIMO_API_KEY and MIMO_BASE_URL")
