@@ -7,7 +7,7 @@ Of 502 records identified through systematic database search, 502 were screened 
 Sentinel-paper recall audit (gate: WARN): 3/3 canonical primary-study anchors retrieved, 3 promoted to candidate set, 0 contract-passed include; 1/1 prior meta-analysis anchors retrieved. 2 primary sentinel(s) located but retrieval/parser did not yield contract-passing evidence — system-level gap. [PACKET:sentinel_recall]
 
 ### Corpus Characteristics
-The 22 eligible studies span publication years 2011-2026 and 15 distinct venues [PACKET:corpus_characteristics].
+The 22 auto-eligible records span publication years 2011-2026 and 15 distinct venues; after strict A-core auditing, 6 records remain eligible for primary-effect extraction [PACKET:corpus_characteristics].
 
 ### Primary Pooled Effect
 [RESULTS_BLOCKED:no EffectSizeRecord - effect-extraction step pending]
