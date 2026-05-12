@@ -128,29 +128,63 @@ def call_writer(
     messages: list[dict[str, str]],
     *,
     temperature: float = 0.3,
-    max_tokens: int | None = 16384,
+    max_tokens: int | None = 4000,
 ) -> LLMResponse:
     """Single MiMo chat call. Raises if writer not configured.
 
-    max_tokens defaults to 16384 — well above any single-section budget
-    (Title + Abstract + 1k-word Introduction is ~2000 tokens; full
-    Methods is ~1600 tokens; the cap is generous so legitimate long
-    generations never hit it). Callers can pass None for unbounded.
-    The hardened client also retries up to 3 times on transient
-    network failures or HTTP 429 / 5xx.
+    max_tokens defaults to 4000. EMPIRICAL CALIBRATION: MiMo v2.5 Pro
+    has a server-side pathology where setting max_tokens >= ~6000
+    triggers "runaway" generation — completion_tokens reaches the cap
+    and content comes back empty. Probed live on 2026-05-12:
+
+        4000 -> OK, 1561 completion, 6144-char content (45s)
+        6000 -> FAIL, 6000 completion, empty content (109s)
+        8192 -> FAIL, 8192 completion, empty content
+        16384 -> FAIL, 16384 completion, empty content
+
+    Natural single-section output is ~1500-2000 tokens, so 4000 gives
+    2-3x headroom while staying under the pathology trigger. Callers
+    can pass None for unbounded (MiMo's own stop logic), or a higher
+    value if they have characterised a specific prompt.
+
+    The hardened client retries up to 3 times on transient network
+    failures or HTTP 429 / 5xx. RuntimeError is raised if MiMo returns
+    empty content with non-zero completion_tokens — the pathological
+    case caught above — so callers do not silently write zero-byte
+    drafts.
     """
     if not settings.writer_configured:
         raise RuntimeError("Writer not configured: set MIMO_API_KEY and MIMO_BASE_URL")
-    data = _post_chat(
-        base_url=settings.mimo_base_url,
-        api_key=settings.mimo_api_key,
-        model=settings.mimo_model,
-        messages=messages,
-        read_timeout_sec=settings.mimo_timeout_sec,
-        temperature=temperature,
-        max_tokens=max_tokens,
+    # MiMo v2.5 Pro has an intermittent server-side bug: sometimes it
+    # generates up to max_tokens and returns empty content. Same prompt,
+    # same params, different attempts -> sometimes content, sometimes
+    # empty. Retry that case as a transient failure; raise only when
+    # all attempts in a row are runaway.
+    last_response: LLMResponse | None = None
+    for attempt in range(4):  # 1 initial + 3 retries
+        data = _post_chat(
+            base_url=settings.mimo_base_url,
+            api_key=settings.mimo_api_key,
+            model=settings.mimo_model,
+            messages=messages,
+            read_timeout_sec=settings.mimo_timeout_sec,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        last_response = _extract(data, settings.mimo_model)
+        if last_response.content.strip():
+            return last_response
+        if last_response.completion_tokens == 0:
+            return last_response  # degenerate but not pathological
+        if attempt < 3:
+            time.sleep(5.0 * (attempt + 1))  # 5s, 10s, 15s
+    assert last_response is not None
+    raise RuntimeError(
+        f"writer returned empty content on all 4 attempts; "
+        f"last completion_tokens={last_response.completion_tokens}. "
+        f"This is the MiMo runaway pathology — try a smaller "
+        f"max_tokens or shorten the prompt."
     )
-    return _extract(data, settings.mimo_model)
 
 
 def call_judge(
