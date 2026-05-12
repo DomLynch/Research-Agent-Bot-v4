@@ -99,9 +99,24 @@ def test_low_confidence_yields_unclear() -> None:
     assert "low judge confidence" in r.reason
 
 
-def test_missing_mandatory_field_yields_unclear() -> None:
+def test_or_merge_unclear_only_when_both_rule_and_judge_miss_field() -> None:
+    # Sprint 7.7: rule says True (title scan), judge says False (abstract
+    # framing fooled it) - OR-merge keeps True. The Harrison-2009 rescue.
     r = adjudicate(
         _triage("eligible_likely"),
+        _proposal(fields={"endpoint_present": False}),
+        _parsed(),
+    )
+    assert r.decision == "include", "rule positive should override judge negative"
+
+
+def test_missing_mandatory_field_yields_unclear_when_neither_finds_it() -> None:
+    # Both rule AND judge miss endpoint_present -> unclear is correct.
+    triage_no_endpoint = _triage(
+        "unclear", fields={"endpoint_present": False},
+    )
+    r = adjudicate(
+        triage_no_endpoint,
         _proposal(fields={"endpoint_present": False}),
         _parsed(),
     )
