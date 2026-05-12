@@ -37,13 +37,13 @@ The tension-matrix construction will use the moderator combinations to define an
 ## Results
 
 ### Study Selection
-Of 502 records identified through systematic database search, 502 were screened at title/abstract level; 298 were flagged as candidate records for full-text retrieval. Open-access full-text availability was located for 257 candidates; full-text content was parsed for 69 of these. Pre-specified eligibility adjudication was applied to 69 records, yielding 3 auto-eligible records (universal evidence contract passed), 62 excluded, 4 flagged for manual review of low-confidence or rule-judge conflicts; the subset of strict A-core records is the canonical input for primary-effect extraction [PACKET:study_selection].
+Of 502 records identified through systematic database search, 502 were screened at title/abstract level; 298 were flagged as candidate records for full-text retrieval. Open-access full-text availability was located for 256 candidates; full-text content was parsed for 75 of these. Pre-specified eligibility adjudication was applied to 75 records, yielding 8 auto-eligible records (universal evidence contract passed), 60 excluded, 7 flagged for manual review of low-confidence or rule-judge conflicts; the subset of strict A-core records is the canonical input for primary-effect extraction [PACKET:study_selection].
 
 ### Sentinel Recall Audit
-Sentinel-paper recall audit (gate: WARN): 3/3 canonical primary-study anchors retrieved, 3 promoted to candidate set, 0 contract-passed include; 1/1 prior meta-analysis anchors retrieved. 1 primary sentinel(s) located but retrieval/parser did not yield contract-passing evidence — system-level gap. [PACKET:sentinel_recall]
+Sentinel-paper recall audit (gate: PASS): 3/3 canonical primary-study anchors retrieved, 3 promoted to candidate set, 2 contract-passed include; 1/1 prior meta-analysis anchors retrieved. [PACKET:sentinel_recall]
 
 ### Corpus Characteristics
-The 3 auto-eligible records span publication years 2014-2022 and 3 distinct venues; after strict A-core auditing, 1 record remains eligible for primary-effect extraction [PACKET:corpus_characteristics].
+The 8 auto-eligible records span publication years 2009-2024 and 7 distinct venues; after strict A-core auditing, 4 records remain eligible for primary-effect extraction [PACKET:corpus_characteristics].
 
 ### Primary Pooled Effect
 The single-study extracted effect (log_median_ratio) was 0.388 (95% CI -0.032 to 0.808; back-transformed ratio 1.474; k_studies=1, k_effects=1) [PACKET:primary_effect].
@@ -62,46 +62,67 @@ The single-study extracted effect (log_median_ratio) was 0.388 (95% CI -0.032 to
 
 ### Primary Pool Composition
 
-After applying the strict A-core evidence-quote audit, 1 study forms the primary direct-lifespan corpus, 1 study populates the disease-model survival sensitivity lane, and 1 study is retained as secondary/contextual (of which 1 was demoted from the auto-judge direct-lifespan lane because their evidence quotes failed the per-quote mouse/intervention/control/endpoint audit) [PACKET:primary_pool_composition].
+After applying the strict A-core evidence-quote audit, 4 studies form the primary direct-lifespan corpus, 2 studies populate the disease-model survival sensitivity lane, and 2 studies are retained as secondary/contextual (of which 1 was demoted from the auto-judge direct-lifespan lane because their evidence quotes failed the per-quote mouse/intervention/control/endpoint audit) [PACKET:primary_pool_composition].
 
-Strict A-core records selected for primary extraction (1): s246 [PACKET:primary_pool_composition].
+Strict A-core records selected for primary extraction (4): s086, s230, s235, s246 [PACKET:primary_pool_composition].
 
 ## Appendix A — Run audit (auto-generated from receipts)
 
-This paper was assembled by the universal evidence contract pipeline. The
-counts and effect estimates below come directly from the receipts filed
-alongside this document; the prose above does NOT mint new numbers.
+This paper was assembled by the universal evidence contract pipeline.
+The counts and effect estimates below come directly from the receipts
+filed alongside this document; the prose above does NOT mint new
+numbers.
 
 - topic: rapamycin
-- run_id: 19
+- run_id: 20
 - retrieval hits: 502
 - title/abstract candidates: 298
-- open-access full-text located: 257
-- parsed-with-text: 69
-- final eligibility decisions: {'include': 3, 'exclude': 62, 'unclear': 4, 'unavailable': 0}
+- open-access full-text located: 256
+- parsed-with-text: 75
+- manual full-text overrides applied: Harrison 2009 (s086), Bitto 2016 (s288)
+- final eligibility decisions: {'include': 8, 'exclude': 60, 'unclear': 7, 'unavailable': 0}
 - contract violations: 0
 - judge model: google/gemma-4-31b-it
 
-### Strict A-core (canonical primary-effect input, k_studies = 1)
+### Strict A-core (canonical primary-effect input, k_studies = 4)
 
+- s086: Rapamycin fed late in life extends lifespan in genetically heterogeneous mice. (2009, Nature; DOI 10.1038/nature08221)
+- s230: Health Effects of Long-Term Rapamycin Treatment: The Impact on Mouse Health of Enteric Rapamycin Treatment from Four Months of Age throughout Life. (2015, PloS one; DOI 10.1371/journal.pone.0126644)
+- s235: Transient rapamycin treatment during developmental stage extends lifespan in Mus musculus and Drosophila melanogaster. (2022, EMBO reports; DOI 10.15252/embr.202255299)
 - s246: BMAL1-dependent regulation of the mTOR signaling pathway delays aging. (2014, Aging; DOI 10.18632/aging.100633)
 
 ### Effect extraction receipts
 
-- s246: status=extracted, metric=median_lifespan_months, treated_value=11.5, control_value=7.8, treated_n=31, control_n=73, hazard_ratio=None, percent_change=50.0
+- s086: status=extracted, metric=maximum_lifespan_90th_percentile_days, treated_value=1245.0, control_value=1094.0, treated_n=None, control_n=None, hazard_ratio=None, percent_change=14.0, moderators={'sex': 'female'}
+  - quote: "For females pooled across sites, the 95% confidence interval for controls goes up to 1136 days, and the estimate for 90th percentile survival for the rapamycin-treated mice is 1245 days."
+- s230: status=no_numerics, metric=survival, treated_value=None, control_value=None, treated_n=None, control_n=None, hazard_ratio=None, percent_change=None, moderators={}
+  - quote: "Consistent with our previous findings, survival of both males and females was modestly enhanced in YF animals [35]."
+- s235: status=extracted, metric=median_lifespan, treated_value=None, control_value=None, treated_n=None, control_n=None, hazard_ratio=None, percent_change=9.6, moderators={'sex': 'both'}
+  - quote: "Combined data from both sexes showed a 9.6% increase in median lifespan in P4‐P30 rapamycin‐treated mice compared with control mice (treated with ethanol)"
+- s246: status=extracted, metric=median_lifespan_months, treated_value=11.5, control_value=7.8, treated_n=31, control_n=73, hazard_ratio=None, percent_change=50.0, moderators={'dose': '0.5mg/kg daily', 'strain': 'Bmal1−/−'}
+  - quote: "Kaplan-Meyer survival curves of Bmal1−/− mice treated with water (N = 73) or Rapatar in drinking水 (N = 31). The difference between the survival curves is statistically significant according to logrank test."
   - quote: "The median lifespan of untreated mice is 7.8 months and median lifespan of the Rapatar-treated mice is 11.5 months, thus the treatment increased the median lifespan by 50%."
 
 ### Pooled effect (from contract-passing receipts)
 
 - s246: metric=log_median_ratio, estimate=0.3882, SE=0.2144, 95% CI [-0.0319, 0.8084]
+- skipped (no pooling numerics): ['s086', 's230', 's235']
 
 ## Appendix B — Honest limitations of this draft
 
 - Discussion / Conclusion / Limitations / References sections have no
   writer yet; out of scope for this pipeline pass.
-- Sentinel-recall gate is WARN: Harrison 2009 / Bitto 2016 retrieval
-  gaps remain. Miller 2011 is manually resolved as unavailable.
-- k_studies = 1 for the primary effect; single-study extracted effect,
-  not a pooled meta-analysis.
+- Sentinel-recall gate is PASS as of Sprint 9: Harrison 2009 and
+  Bitto 2016 were recovered via manual full-text injection from PMC,
+  and Miller 2011 is manually resolved as unavailable. The injection
+  is auditable: the verbatim PMC bytes live in
+  topic_packs/manual_full_text/rapamycin/.
+- Strict A-core now contains 4 records (s086 Harrison 2009, s230 long-
+  term rapamycin treatment, s235 transient developmental rapamycin,
+  s246 BMAL1 mTOR aging). 2 receipts pass the extraction contract.
+- Inverse-variance pool still has k_studies = 1 because three of the
+  four receipts (s086, s230, s235) lack sample sizes; the pipeline
+  reports this as a single-study extracted effect, not a pooled
+  meta-analysis. Future passes can recover sample sizes from tables.
 - Risk-of-bias adjudication is automated; pre-publication submission
   requires explicit human review.

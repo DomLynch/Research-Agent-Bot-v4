@@ -2,16 +2,23 @@
   "_doc": "Sprint 8 pooled effect-size records. Inverse-variance pooling consumes this file; main_draft.md Primary Pooled Effect renders from the resulting packet.",
   "topic": "rapamycin",
   "run_id": "latest",
-  "frozen_at_utc": "2026-05-12T10:23:17+00:00",
+  "frozen_at_utc": "2026-05-12T13:22:16+00:00",
   "k_outcomes": 1,
   "k_effects": 1,
-  "skipped_study_ids": [],
+  "skipped_study_ids": [
+    "s086",
+    "s230",
+    "s235"
+  ],
   "outcomes": [
     {
       "study_id": "s246",
       "outcome_id": "s246.primary",
       "metric_name": "log_median_ratio",
-      "moderators": {},
+      "moderators": {
+        "dose": "0.5mg/kg daily",
+        "strain": "Bmal1\u2212/\u2212"
+      },
       "treated_value": 11.5,
       "control_value": 7.8,
       "treated_n": 31,
@@ -28,7 +35,10 @@
       "se": 0.21437512601305994,
       "ci_low": -0.0319442244931748,
       "ci_high": 0.8083908278404915,
-      "moderators": {}
+      "moderators": {
+        "dose": "0.5mg/kg daily",
+        "strain": "Bmal1\u2212/\u2212"
+      }
     }
   ]
 }
