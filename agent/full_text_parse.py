@@ -117,6 +117,24 @@ async def parse_one(
         kind: SourceKind = "pmc-xml"
         source_url = f"{_EFETCH_PMC}?db=pmc&id={receipt.reason}"
         text = _strip(raw) if raw else ""
+        # Sprint 7.9: PMC sometimes returns abstract-only XML (Miller-2011
+        # at 4041 chars). When the strip is too thin and an Unpaywall PDF
+        # was located, fall back to it and use the longer body.
+        if len(text) < 5000 and receipt.fallback_url:
+            fb_raw, fb_kind, fb_err = await _fetch_html_or_pdf(
+                receipt.fallback_url, client=client,
+            )
+            if fb_kind == "pdf" and fb_raw:
+                fb_text = _WS_RE.sub(" ", fb_raw).strip()[:_MAX_CHARS]
+            elif fb_raw:
+                fb_text = _strip(fb_raw)
+            else:
+                fb_text = ""
+            if len(fb_text) > len(text):
+                text = fb_text
+                kind = "pdf" if fb_kind == "pdf" else "html"
+                source_url = receipt.fallback_url
+                err = fb_err if not fb_text else ""
     elif receipt.source == "Unpaywall":
         raw, kind_hint, err = await _fetch_html_or_pdf(receipt.reason, client=client)
         source_url = receipt.reason
