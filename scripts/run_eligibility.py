@@ -130,18 +130,22 @@ async def main() -> int:
     parsed_by_id: dict[str, ParsedFullText] = {d.study_id: d for d in parsed_docs}
     print(f"[s7] parsed {sum(1 for r in parsed_receipts if r.parsed)}/{len(parsed_receipts)} full texts")
 
+    # Incremental checkpoint: write each receipt as it lands so a hang or
+    # kill mid-loop doesn't lose all the LLM spend. Final compile step
+    # overwrites with the complete file.
+    checkpoint_path = out_dir / "eligibility_receipts.partial.jsonl"
     eligibility_receipts: list[EligibilityReceipt] = []
     label_counts: Counter[str] = Counter()
     decision_counts: Counter[str] = Counter()
     skipped_parse_failed = 0
-    for ft_r in located_receipts:
+    judge_eligible_count = sum(
+        1 for ft_r in located_receipts
+        if parsed_by_id[ft_r.study_id].text.strip()
+    )
+    print(f"[s7] starting judge loop on {judge_eligible_count} parsed candidates...")
+    for i, ft_r in enumerate(located_receipts, 1):
         candidate = by_id[ft_r.study_id]
         parsed_doc = parsed_by_id[ft_r.study_id]
-        # Parsing failed for this OA-located candidate. Per validator, an
-        # eligibility receipt requires parsed=True; the honest state for a
-        # parse-failed candidate is "no decision made", recorded as the
-        # ABSENCE of an eligibility receipt and a populated parsed_receipt
-        # with parsed=False + failure_reason.
         if not parsed_doc.text.strip():
             skipped_parse_failed += 1
             continue
@@ -154,6 +158,16 @@ async def main() -> int:
         receipt = adjudicate(tri, proposal, parsed_doc)
         decision_counts[receipt.decision] += 1
         eligibility_receipts.append(receipt)
+        # Append-one-line JSON checkpoint + flush. Cheap + crash-safe.
+        with checkpoint_path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(_receipt_dict(receipt)) + "\n")
+            fh.flush()
+        if i % 10 == 0:
+            print(
+                f"[s7]   ... {i}/{len(located_receipts)} processed; "
+                f"decisions so far: {dict(decision_counts)}",
+                flush=True,
+            )
     if skipped_parse_failed:
         print(
             f"[s7] skipped {skipped_parse_failed} candidates with parse failures "

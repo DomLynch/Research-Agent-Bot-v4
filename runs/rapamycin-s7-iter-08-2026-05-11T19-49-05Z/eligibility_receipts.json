@@ -1,0 +1,107 @@
+[
+  {
+    "study_id": "s001",
+    "decision": "exclude",
+    "reason": "Pass-1 hard excluder: text matches review / non-primary design markers",
+    "reviewer": "rule-triage",
+    "confidence": 0.0,
+    "mandatory_fields": {
+      "species_match": false,
+      "intervention_match": false,
+      "endpoint_present": true,
+      "control_present": true,
+      "primary_research_design": false,
+      "rapalog_only_intervention": false,
+      "parsed_text_adequate": true
+    },
+    "evidence_quotes": [],
+    "judge_model": "(dry-run)",
+    "rule_decision": "exclude_likely",
+    "source_text_hash": "8ad30383c6bfea4923c41cd067442e601934272e4b0ccf92e6d8324e3244991d",
+    "timestamp_utc": "2026-05-11T19:49:36+00:00"
+  },
+  {
+    "study_id": "s002",
+    "decision": "exclude",
+    "reason": "Pass-1 hard excluder: text matches review / non-primary design markers",
+    "reviewer": "rule-triage",
+    "confidence": 0.0,
+    "mandatory_fields": {
+      "species_match": true,
+      "intervention_match": true,
+      "endpoint_present": true,
+      "control_present": true,
+      "primary_research_design": false,
+      "rapalog_only_intervention": false,
+      "parsed_text_adequate": true
+    },
+    "evidence_quotes": [],
+    "judge_model": "(dry-run)",
+    "rule_decision": "exclude_likely",
+    "source_text_hash": "b49a8d0d72b4bd646df4c8691fc9041571894301a51482ffaa02930cf16c5ed1",
+    "timestamp_utc": "2026-05-11T19:49:36+00:00"
+  },
+  {
+    "study_id": "s003",
+    "decision": "exclude",
+    "reason": "Pass-1 hard excluder: text matches review / non-primary design markers",
+    "reviewer": "rule-triage",
+    "confidence": 0.0,
+    "mandatory_fields": {
+      "species_match": true,
+      "intervention_match": true,
+      "endpoint_present": true,
+      "control_present": true,
+      "primary_research_design": false,
+      "rapalog_only_intervention": false,
+      "parsed_text_adequate": true
+    },
+    "evidence_quotes": [],
+    "judge_model": "(dry-run)",
+    "rule_decision": "exclude_likely",
+    "source_text_hash": "7c09cfac522a393a4e648a0b5184e8a5d2d21ebeaa918ccdc114ee7880f528ff",
+    "timestamp_utc": "2026-05-11T19:49:36+00:00"
+  },
+  {
+    "study_id": "s004",
+    "decision": "exclude",
+    "reason": "Pass-1 hard excluder: text matches review / non-primary design markers",
+    "reviewer": "rule-triage",
+    "confidence": 0.0,
+    "mandatory_fields": {
+      "species_match": true,
+      "intervention_match": false,
+      "endpoint_present": true,
+      "control_present": true,
+      "primary_research_design": false,
+      "rapalog_only_intervention": false,
+      "parsed_text_adequate": true
+    },
+    "evidence_quotes": [],
+    "judge_model": "(dry-run)",
+    "rule_decision": "exclude_likely",
+    "source_text_hash": "2666bca00e9d6cf11bf23df53bbc930fc3550b99bfedfbf4852146a44d46e287",
+    "timestamp_utc": "2026-05-11T19:49:36+00:00"
+  },
+  {
+    "study_id": "s005",
+    "decision": "exclude",
+    "reason": "Pass-1 hard excluder: text matches review / non-primary design markers",
+    "reviewer": "rule-triage",
+    "confidence": 0.0,
+    "mandatory_fields": {
+      "species_match": true,
+      "intervention_match": false,
+      "endpoint_present": false,
+      "control_present": true,
+      "primary_research_design": false,
+      "rapalog_only_intervention": false,
+      "parsed_text_adequate": true
+    },
+    "evidence_quotes": [],
+    "judge_model": "(dry-run)",
+    "rule_decision": "exclude_likely",
+    "source_text_hash": "c49940d136ae04276fdf9796a4fa151b6abcd3162f5849f4abfaee4f26038102",
+    "timestamp_utc": "2026-05-11T19:49:36+00:00"
+  }
+]
