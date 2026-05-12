@@ -366,6 +366,17 @@ def build(pd: Path, topic: str, *, qa_report_path: Path | None = None) -> str:
         and f.name not in {"paper.md", "supplement.md"}
     )
     receipts_md = ", ".join(f"`{n}`" for n in visible_receipts) or "(none)"
+    manual_audit_note = (
+        "- Manual full-text overrides (if any): "
+        "`topic_packs/manual_full_text/" f"{pack.topic}/`"
+        " with per-injection SHA-256 hashes in "
+        "`manual_full_text_audit.json`."
+        if (pd / "manual_full_text_audit.json").exists()
+        else
+        "- Manual full-text overrides (if any): "
+        "`topic_packs/manual_full_text/" f"{pack.topic}/`. No "
+        "manual-full-text audit sidecar is packaged in this final paper folder."
+    )
     parts += [
         "- Pipeline source: see the project repository under "
         "`agent/`, `scripts/`, and `tests/`. All counts and effect "
@@ -375,10 +386,7 @@ def build(pd: Path, topic: str, *, qa_report_path: Path | None = None) -> str:
         "- Topic pack: `topic_packs/" f"{pack.topic}.toml`"
         " (search vocabulary, sentinels, anchors, bibliography, "
         "strict A-core terms).",
-        "- Manual full-text overrides (if any): "
-        "`topic_packs/manual_full_text/" f"{pack.topic}/`"
-        " (per-injection SHA-256 hashes are recorded in "
-        "`manual_full_text_audit.json` when present in the run dir).",
+        manual_audit_note,
         f"- Receipts present in this folder: {receipts_md}.",
         "",
     ]
