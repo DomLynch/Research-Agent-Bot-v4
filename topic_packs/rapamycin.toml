@@ -172,8 +172,8 @@ secondary_design_quote_markers = [
 "strong-2016-rapamycin" = "Strong R, Miller RA, Antebi A, et al. Longer lifespan in male mice treated with a weakly estrogenic agonist, an antioxidant, an alpha-glucosidase inhibitor or a Nrf2-inducer. Aging Cell. 2016;15(5):872-884. doi:10.1111/acel.12496."
 "bitto-2016-rapamycin" = "Bitto A, Ito TK, Pineda VV, et al. Transient rapamycin treatment can increase lifespan and healthspan in middle-aged mice. eLife. 2016;5:e16351. doi:10.7554/eLife.16351."
 "swindell-2017-meta" = "Swindell WR. Meta-analysis of 29 experiments evaluating the effects of rapamycin on life span in the laboratory mouse. J Gerontol A Biol Sci Med Sci. 2017;72(8):1024-1032. doi:10.1093/gerona/glw153."
-"fok-2023-meta-rapamycin" = "Fok WC, Chen Y, Bokov A, et al. Mice fed rapamycin have an increase in lifespan associated with major changes in the liver transcriptome. Aging Cell. 2023 (cited per topic-pack key; verify DOI before publication)."
-"tyshkovskiy-2025-vertebrate-meta" = "Tyshkovskiy A, et al. A vertebrate cross-species meta-analysis of lifespan-extending interventions including rapamycin. 2025 (cited per topic-pack key; verify DOI before publication)."
+"fok-2023-meta-rapamycin" = "Fok WC, Chen Y, Bokov A, et al. Mice fed rapamycin have an increase in lifespan associated with major changes in the liver transcriptome. PLoS One. 2014;9(1):e83988. doi:10.1371/journal.pone.0083988."
+"tyshkovskiy-2025-vertebrate-meta" = "Ivimey-Cook ER, Tyshkovskiy A, et al. Rapamycin, not metformin, mirrors dietary restriction-driven lifespan extension in vertebrates: a meta-analysis. Aging Cell. 2025. doi:10.1111/acel.70131."
 "lamming-2013-mtor" = "Lamming DW, Ye L, Sabatini DM, Baur JA. Rapalogs and mTOR inhibitors as anti-aging therapeutics. J Clin Invest. 2013;123(3):980-989. doi:10.1172/JCI64099."
 "saxton-2017-mtor" = "Saxton RA, Sabatini DM. mTOR signaling in growth, metabolism, and disease. Cell. 2017;168(6):960-976. doi:10.1016/j.cell.2017.02.004."
 "arriola-apelo-2016-review" = "Arriola Apelo SI, Lamming DW. Rapamycin: an InhibiTOR of aging emerges from the soil of Easter Island. J Gerontol A Biol Sci Med Sci. 2016;71(7):841-849. doi:10.1093/gerona/glw090."
@@ -187,3 +187,43 @@ secondary_design_quote_markers = [
 "viechtbauer-2010-metafor" = "Viechtbauer W. Conducting meta-analyses in R with the metafor package. J Stat Softw. 2010;36(3):1-48. doi:10.18637/jss.v036.i03."
 "higgins-2003-i2" = "Higgins JPT, Thompson SG, Deeks JJ, Altman DG. Measuring inconsistency in meta-analyses. BMJ. 2003;327(7414):557-560. doi:10.1136/bmj.327.7414.557."
 "hartung-knapp" = "IntHout J, Ioannidis JPA, Borm GF. The Hartung-Knapp-Sidik-Jonkman method for random effects meta-analysis is straightforward and considerably outperforms the standard DerSimonian-Laird method. BMC Med Res Methodol. 2014;14:25. doi:10.1186/1471-2288-14-25."
+
+# --- prose placeholders ----------------------------------------------------
+# Values substituted into the manuscript by agent/placeholder_resolver.py
+# for every [PLACEHOLDER:<key>] marker. The three pipeline-derived counts
+# ([N_SCREENED], [N_ACCEPTED], [K_STUDIES]) come from receipts, not this
+# table. Universal: a new topic declares its own [placeholders] block;
+# the resolver is topic-agnostic.
+[placeholders]
+"databases" = "PubMed, OpenAlex, Europe PMC, Crossref, Unpaywall, Semantic Scholar, CORE, OSF Preprints, bioRxiv/medRxiv, ClinicalTrials.gov, and the Researka internal canonical index (16 sources aggregated per the universal retrieval contract)"
+"date-range" = "January 2001 (post-Easter-Island rapamycin era) through April 2026 (final retrieval cycle)"
+"query-terms" = "Boolean composition (rapamycin OR sirolimus) AND (lifespan OR survival OR longevity OR mortality) AND (mouse OR mice OR \"Mus musculus\"); full Boolean syntax filed in supplement S1"
+"minimum-studies-per-cell" = "k < 3 studies per moderator cell"
+# Moderator-label slots — the writer emits [MODERATOR_P:<key>] markers
+# which the resolver substitutes from this table (`MODERATOR_P:<key>` is
+# the full lookup key). Adding a new moderator = adding an entry here.
+"MODERATOR_P:intervention" = "intervention identity"
+"MODERATOR_P:dose" = "dose level"
+"MODERATOR_P:sex" = "biological sex"
+"MODERATOR_P:genetic_background" = "genetic background"
+"MODERATOR_P:treatment_initiation_age" = "age at treatment initiation"
+
+# --- methods honesty rewrites ---------------------------------------------
+# agent/methods_honesty.py applies these substitutions to the manuscript
+# body so the writer's borrowed-from-template overclaim verbs match what
+# the pipeline actually performed. The right-hand side acknowledges
+# automation + flags planned (pre-publication) work explicitly. Universal:
+# adding a new topic = declaring its own rewrite table.
+#
+# Replacement runs longest-source-first so overlapping shorter phrases do
+# not clobber longer ones.
+[methods_honesty_rewrites]
+"The present systematic review and meta-analysis is designed to provide a more granular mapping of this heterogeneity." = "The present living evidence-contract synthesis is designed to provide a more granular mapping of this heterogeneity once the contract-passing pool accrues k>=2 effects per metric family; the current iteration reports a four-study strict A-core corpus and a single inverse-variance-poolable median-lifespan effect."
+"The analysis will employ mixed-effects meta-regression models to partition variance in the standardized mean difference (SMD) of lifespan extension between studies." = "Mixed-effects meta-regression to partition SMD variance is a designed-for capability of the pipeline; it is reported only once k>=2 contract-passing effects per metric family accrue."
+"Extraction will be performed with independent dual extraction; disagreements will be resolved by consensus or, if necessary, by consulting a third party." = "Extraction is performed by a single automated pass over parsed full text under the universal evidence contract; every extraction (study_id, metric, treated/control values, n, evidence quotes, model, timestamps) is filed in `effect_extractions.json`. Independent dual extraction and third-party adjudication are planned for the pre-publication step."
+"Risk of bias for each included animal-intervention study will be assessed using the SYRCLE risk-of-bias tool [CIT:hooijmans-2014-syrcle|method-citation]. Domains include sequence generation, baseline characteristics, allocation concealment, random housing, blinding of caregivers and outcome assessors, incomplete outcome data, and selective outcome reporting. Each domain will be rated as low, high, or unclear risk of bias. Disagreements in assessment will be resolved through discussion." = "Risk of bias for each included animal-intervention study is captured automatically by the universal evidence contract (parsed-text adequacy, char-count floor, ≥2 non-title evidence quotes, endpoint coverage, intervention/control coverage); a full per-domain SYRCLE adjudication [CIT:hooijmans-2014-syrcle|method-citation] over sequence generation, baseline characteristics, allocation concealment, random housing, blinding, incomplete outcome data, and selective outcome reporting is planned for the pre-publication step."
+"The statistical synthesis will employ a multi-level random-effects meta-regression model. The model will include random intercepts for study-ID and outcome-measure-within-study to account for dependency. Fixed-effects terms will include the pre-specified moderators. The restricted maximum likelihood (REML) estimator will be used for between-study variance, with the Hartung-Knapp adjustment for confidence intervals to address potential small-sample bias [CIT:hartung-knapp|method-citation]. The analysis will be conducted in R using the metafor package [CIT:viechtbauer-2010-metafor|method-citation]. Heterogeneity will be quantified using the I² statistic and prediction intervals [CIT:higgins-2003-i2|method-citation]." = "The pipeline implements an inverse-variance random-effects pool over contract-passing effects within a single metric family; the multi-level random-effects meta-regression (random intercepts for study-ID and outcome-measure-within-study, REML between-study variance, Hartung-Knapp adjustment [CIT:hartung-knapp|method-citation], metafor in R [CIT:viechtbauer-2010-metafor|method-citation], I² and prediction intervals [CIT:higgins-2003-i2|method-citation]) is the designed-for analysis that is reported once k>=2 contract-passing effects accrue per metric family."
+"Sensitivity analyses will include leave-one-out analysis, influence diagnostics (e.g., Cook's distance), and the inspection of funnel plots for asymmetry, with Egger's regression test to formally assess publication bias [CIT:egger-1997-funnel|method-citation]." = "Sensitivity analyses (leave-one-out, influence diagnostics including Cook's distance, funnel-plot inspection for asymmetry, and Egger's regression test for publication bias [CIT:egger-1997-funnel|method-citation]) are planned once k>=2 contract-passing effects accrue; the current iteration reports only the inverse-variance point estimate with its analytical confidence interval."
+"Fok et al. (2023)" = "Fok et al. (2014)"
+"the rapamycin-specific evidence through 2023" = "the rapamycin-specific evidence"
+"Tyshkovskiy and colleagues" = "Ivimey-Cook and colleagues"
