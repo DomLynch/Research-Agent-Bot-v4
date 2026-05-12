@@ -24,7 +24,7 @@ Counts and effect estimates are **deterministic** from JSON receipts; the writer
 
 ---
 
-## 2. Current state (2026-05-12, post-Sprint 12.2)
+## 2. Current state (2026-05-12, post-Sprint 12.8)
 
 ### Pool & corpus
 
@@ -40,24 +40,24 @@ PRISMA-style funnel: 502 records identified → 298 candidates → 256 OA full-t
 
 | Check | Result |
 |---|---|
-| **pytest** | 347 / 347 pass (0 failing) |
+| **pytest** | 366 / 366 pass (0 failing) |
 | **ruff** | clean (47 source files) |
 | **mypy --strict** | clean (47 source files) |
-| **LOC gate** | `agent/` = 6,760 / 7,500 (margin 740) |
-| **Tri-sync** | macbook = origin/main = VPS (`brain-vps`) — all aligned |
+| **LOC gate** | `agent/` = 6,880 / 7,500 (margin 620) |
+| **Tri-sync** | macbook = origin/main aligned (3f86d07); VPS sync per operator workflow |
 
 ### Final paper folder
 
-`runs/latest/` symlinks to `runs/rapamycin-paper-2026-05-12T18-52-59Z/`:
+`runs/latest/` symlinks to `runs/rapamycin-paper-2026-05-12T19-44-52Z/`:
 
 ```
-paper.md                                  36,177 bytes
-supplement.md                             10,549 bytes
+paper.md                                  37,495 bytes
+supplement.md                              7,024 bytes
 extraction_crosscheck.json                 1,731 bytes  (Researka audit sidecar)
-eligibility_summary.json                   PRISMA counts
-primary_effect_input_set_strict.json       A/B/C lane structure
-effect_extractions.json                    6 receipts, 4 contract-pass
-effect_pool.json                           A-core k=2 + B sensitivity k=1 + pooled summary
+eligibility_summary.json                     618 bytes  PRISMA counts
+primary_effect_input_set_strict.json       2,436 bytes  A/B/C lane structure
+effect_extractions.json                    5,668 bytes  6 receipts, 4 contract-pass
+effect_pool.json                           2,663 bytes  A-core k=2 + B sensitivity k=1 + pooled summary
 ```
 
 ---
