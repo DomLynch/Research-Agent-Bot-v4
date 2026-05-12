@@ -62,6 +62,7 @@ def _pack() -> TopicPack:
         eligibility_combination_terms=(),
         eligibility_min_text_chars=2000,
         sentinel_primary=(), sentinel_prior_meta=(),
+        non_mouse_species_terms=(), secondary_design_quote_markers=(),
     )
 
 

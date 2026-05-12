@@ -27,7 +27,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from agent.include_contract import classify_lane
+from agent.include_contract import classify_lane, strict_a_core_check
 from agent.manual_resolution import load_manual_resolutions
 from agent.retrieval.base import normalize_doi
 from agent.topic_pack import load_topic_pack
@@ -133,6 +133,14 @@ def main() -> int:
     counts = {"A_direct_lifespan": 0, "B_disease_model_survival": 0,
               "C_secondary_molecular": 0, "D_review_background": 0,
               "E_exclude": 0}
+    # Sprint 7.11: strict-A bucket collects evidence-quote-audited primaries;
+    # B keeps disease-model survival; C_secondary_contextual collects every
+    # paper demoted out of A by the strict gate plus all originally Lane-C
+    # secondary-molecular includes.
+    strict_a: list[dict[str, Any]] = []
+    strict_b: list[dict[str, Any]] = []
+    strict_c: list[dict[str, Any]] = []
+    strict_demote_reasons: dict[str, tuple[str, ...]] = {}
     for r in elig:
         if r["decision"] != "include":
             continue
@@ -151,20 +159,43 @@ def main() -> int:
         effective_decision = "include" if contract_ok else "unclear"
         lane = _resolve_lane(cand, parsed_rec, effective_decision)
         counts[lane] = counts.get(lane, 0) + 1
+        study_entry = {
+            "study_id": sid,
+            "title": cand.get("title"),
+            "doi": cand.get("doi"),
+            "pmid": cand.get("pmid"),
+            "year": cand.get("year"),
+            "venue": cand.get("venue"),
+            "lane": lane,
+            "char_count": parsed_rec.get("char_count", 0),
+            "evidence_quotes": r.get("evidence_quotes", []),
+            "contract_pass": contract_ok,
+            "manual_override": is_manual,
+        }
         if lane in accept_lanes:
-            studies.append({
-                "study_id": sid,
-                "title": cand.get("title"),
-                "doi": cand.get("doi"),
-                "pmid": cand.get("pmid"),
-                "year": cand.get("year"),
-                "venue": cand.get("venue"),
-                "lane": lane,
-                "char_count": parsed_rec.get("char_count", 0),
-                "evidence_quotes": r.get("evidence_quotes", []),
-                "contract_pass": contract_ok,
-                "manual_override": is_manual,
+            studies.append(study_entry)
+        # Strict 3-bucket assignment runs over EVERY include receipt, not
+        # just the lanes the legacy script accepts. Manual overrides skip
+        # the strict gate by the same human-is-evidence principle.
+        quotes = tuple(r.get("evidence_quotes", []))
+        strict_ok, strict_reasons = (
+            (True, ()) if is_manual
+            else strict_a_core_check(r["decision"], quotes, pack)
+        )
+        if strict_reasons:
+            strict_demote_reasons[sid] = strict_reasons
+        if lane == "A_direct_lifespan" and strict_ok:
+            strict_a.append({**study_entry, "strict_a_core": True})
+        elif lane == "A_direct_lifespan" and not strict_ok:
+            strict_c.append({
+                **study_entry, "strict_a_core": False,
+                "demoted_from": "A_direct_lifespan",
+                "demote_reasons": list(strict_reasons),
             })
+        elif lane == "B_disease_model_survival":
+            strict_b.append(study_entry)
+        elif lane == "C_secondary_molecular":
+            strict_c.append({**study_entry, "demoted_from": None})
 
     out = {
         "topic": args.topic,
@@ -181,6 +212,27 @@ def main() -> int:
     print(f"[freeze] frozen {len(studies)} studies in primary set "
           f"({'+ Lane B' if args.include_lane_b else 'Lane A only'})")
     print(f"[freeze] wrote {target}")
+
+    strict_out = {
+        "topic": args.topic,
+        "run_id": rd.name,
+        "frozen_at_utc": dt.datetime.now(tz=dt.UTC).isoformat(timespec="seconds"),
+        "bucket_counts": {
+            "A_core_direct_lifespan": len(strict_a),
+            "B_disease_model_survival": len(strict_b),
+            "C_secondary_contextual": len(strict_c),
+        },
+        "demote_reasons": {sid: list(rs) for sid, rs in strict_demote_reasons.items()},
+        "A_core_direct_lifespan": strict_a,
+        "B_disease_model_survival": strict_b,
+        "C_secondary_contextual": strict_c,
+    }
+    strict_target = rd / "primary_effect_input_set_strict.json"
+    strict_target.write_text(json.dumps(strict_out, indent=2), encoding="utf-8")
+    print(f"[freeze] strict buckets: A={len(strict_a)} B={len(strict_b)} "
+          f"C={len(strict_c)} (demoted from A: "
+          f"{sum(1 for s in strict_c if s.get('demoted_from') == 'A_direct_lifespan')})")
+    print(f"[freeze] wrote {strict_target}")
     return 0
 
 

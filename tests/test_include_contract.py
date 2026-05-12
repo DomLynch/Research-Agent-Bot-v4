@@ -7,6 +7,7 @@ from agent.include_contract import (
     MIN_CHARS,
     classify_lane,
     demote_failed_includes,
+    strict_a_core_check,
     validate_include,
 )
 from agent.screening import EligibilityReceipt, ParsedFullTextReceipt
@@ -29,6 +30,7 @@ def _pack() -> TopicPack:
         eligibility_combination_terms=(),
         eligibility_min_text_chars=2000,
         sentinel_primary=(), sentinel_prior_meta=(),
+        non_mouse_species_terms=(), secondary_design_quote_markers=(),
     )
 
 
@@ -140,6 +142,76 @@ def test_classify_lane_handles_unclear_decision() -> None:
     assert classify_lane(
         "Rapamycin lifespan in mice", 50_000, "unclear", _pack(),
     ) == "E_exclude"
+
+
+def _pack_strict() -> TopicPack:
+    """Pack with non-mouse-species + secondary-design markers populated."""
+    return TopicPack(
+        topic="t", display_name="T", primary_system="",
+        preferred_terms=("mouse", "mice"), discouraged_terms=(),
+        endpoint="", cite_role_default="", cite_roles_allowed=(),
+        anchors=MappingProxyType({}), length_caps=MappingProxyType({}),
+        min_words_per_citation=0,
+        outcome_nouns_extra=(), direction_verbs_extra=(), subjects_extra=(),
+        primary_interventions=("rapamycin",),
+        translational_only_interventions=(), retrieval_sources=(),
+        eligibility_endpoint_terms=("lifespan", "survival"),
+        eligibility_control_terms=("control", "vehicle"),
+        eligibility_exclude_design_terms=("review",),
+        eligibility_combination_terms=(),
+        eligibility_min_text_chars=2000,
+        sentinel_primary=(), sentinel_prior_meta=(),
+        non_mouse_species_terms=("c. elegans", "drosophila"),
+        secondary_design_quote_markers=("proteomic", "dirac"),
+    )
+
+
+def test_strict_a_core_passes_when_quotes_cover_all_four_signals() -> None:
+    quotes = (
+        "We treated mice with rapamycin and measured median lifespan.",
+        "Vehicle control animals were monitored alongside survival curves.",
+    )
+    ok, reasons = strict_a_core_check("include", quotes, _pack_strict())
+    assert ok
+    assert reasons == ()
+
+
+def test_strict_a_core_demotes_only_non_mouse_quotes() -> None:
+    # Quotes about rapamycin extending lifespan in C. elegans / Drosophila
+    # only - no mouse evidence.
+    quotes = (
+        "Rapamycin extended C. elegans lifespan by 30 percent with control comparison.",
+        "Drosophila survival was similarly extended in vehicle-controlled trials.",
+    )
+    ok, reasons = strict_a_core_check("include", quotes, _pack_strict())
+    assert not ok
+    assert any("non-mouse" in r for r in reasons)
+    assert any("mouse" in r for r in reasons)
+
+
+def test_strict_a_core_demotes_secondary_marker_quotes() -> None:
+    quotes = (
+        "We treated mice with rapamycin and measured median lifespan.",
+        "DIRAC analysis of liver proteomic signatures versus control samples.",
+    )
+    ok, reasons = strict_a_core_check("include", quotes, _pack_strict())
+    assert not ok
+    assert any("secondary" in r for r in reasons)
+
+
+def test_strict_a_core_rejects_non_include_decision() -> None:
+    ok, reasons = strict_a_core_check("unclear", (), _pack_strict())
+    assert not ok
+    assert any("decision" in r for r in reasons)
+
+
+def test_strict_a_core_missing_each_field_lists_it() -> None:
+    # Only quotes mention mouse + rapamycin (no control, no endpoint).
+    quotes = ("We treated mice with rapamycin in this experiment.",)
+    ok, reasons = strict_a_core_check("include", quotes, _pack_strict())
+    assert not ok
+    assert any("control" in r for r in reasons)
+    assert any("lifespan/survival" in r for r in reasons)
 
 
 def test_demote_failed_includes_rewrites_decision_to_unclear() -> None:
