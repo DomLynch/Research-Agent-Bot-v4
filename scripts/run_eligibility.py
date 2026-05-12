@@ -117,6 +117,19 @@ async def main() -> int:
         candidates = candidates[: args.limit]
         print(f"[s7] limited to first {len(candidates)} for adjudication")
 
+    # Persist the study_id -> {title, year, venue, doi, pmid} map so the
+    # downstream Corpus QA tool can audit sentinels without re-running search.
+    (out_dir / "candidates.json").write_text(
+        json.dumps(
+            [
+                {"study_id": c.study_id, "hit_key": c.hit_key, "title": c.title,
+                 "year": c.year, "venue": c.venue, "doi": c.doi, "pmid": c.pmid}
+                for c in candidates
+            ], indent=2,
+        ),
+        encoding="utf-8",
+    )
+
     ft_receipts = await fetch_full_text_receipts(candidates, settings=settings)
     print(
         f"[s7] OA availability: "
