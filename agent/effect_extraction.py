@@ -128,6 +128,14 @@ def build_extraction_prompt(
         "  both in days, or both in months). Convert to days if the paper "
         "  reports months/weeks; record the original unit's name in the "
         "  metric field (e.g. metric=\"median_lifespan_days\").\n"
+        "- SAMPLE SIZES ARE REQUIRED when you report any treated_value, "
+        "  control_value, hazard_ratio, or percent_change. Hunt for n_T and "
+        "  n_C anywhere in the excerpt — Methods, Table 1, figure captions, "
+        "  Results section. Phrases like 'n = 30 mice', '30 male and 28 "
+        "  female', 'each group contained 24 animals', or cohort sizes in "
+        "  Methods all qualify. If you genuinely cannot find them, leave "
+        "  null AND add a one-sentence note in failure_reason such as "
+        "  'sample sizes not stated in the excerpt'.\n"
         "- Do not output any prose outside the JSON object."
     )
     return [
