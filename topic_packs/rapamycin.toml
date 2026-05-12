@@ -202,11 +202,11 @@ secondary_design_quote_markers = [
 # Moderator-label slots — the writer emits [MODERATOR_P:<key>] markers
 # which the resolver substitutes from this table (`MODERATOR_P:<key>` is
 # the full lookup key). Adding a new moderator = adding an entry here.
-"MODERATOR_P:intervention" = "intervention identity (rapamycin vs sirolimus)"
-"MODERATOR_P:dose" = "dose level (mg/kg/day or dietary ppm)"
-"MODERATOR_P:sex" = "biological sex (male, female, mixed)"
-"MODERATOR_P:genetic_background" = "genetic background (inbred strain, hybrid, other)"
-"MODERATOR_P:treatment_initiation_age" = "age at treatment initiation (young, adult, aged)"
+"MODERATOR_P:intervention" = "intervention identity"
+"MODERATOR_P:dose" = "dose level"
+"MODERATOR_P:sex" = "biological sex"
+"MODERATOR_P:genetic_background" = "genetic background"
+"MODERATOR_P:treatment_initiation_age" = "age at treatment initiation"
 
 # --- methods honesty rewrites ---------------------------------------------
 # agent/methods_honesty.py applies these substitutions to the manuscript
