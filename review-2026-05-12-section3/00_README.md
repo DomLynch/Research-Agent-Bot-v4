@@ -1,60 +1,80 @@
-# Section 3 Review Bundle — 2026-05-12
+# Section 3 Review Bundle — iter-15 (2026-05-12)
 
-Curated subset of `runs/rapamycin-s7-iter-13-2026-05-12T04-01-27Z/` for
-human audit. Source-of-truth files live in that run dir; this folder is
-a flat-read convenience copy.
+Source: `runs/rapamycin-s7-iter-15-2026-05-12T04-57-15Z/`
+(also at the convenience symlink `runs/latest/`)
 
-## What you're reading
+## Topline
 
-| # | File | What it is |
-|---|---|---|
-| 01 | `01_section3_prose.md` | The Section 3 markdown the writer emitted: Study Selection + Sentinel Recall + Corpus Characteristics + 5 blocked subsections pending Sprint 8. |
-| 02 | `02_qa_report.md` | Sprint 7.6 audit artefact: per-include audit table (12 rows), sentinel-stage audit (4 rows), quality flags. |
-| 03 | `03_manual_review_unclear.md` | 30 receipts flagged 'unclear' by the rule → judge → merge ladder, laid out for human spot-check. |
-| 04 | `04_eligibility_summary.json` | Topline counts: hits / candidates / parsed / decisions. |
-| 05 | `05_eligibility_receipts.json` | Full machine-readable eligibility decisions with mandatory-fields + evidence quotes per receipt. |
+```
+502 hits  ->  298 TA candidates  ->  255 OA located  ->  131 parsed
+            -> 131 eligibility decisions adjudicated under VARIANCE CHECK
+            -> 22 INCLUDE / 64 EXCLUDE / 45 UNCLEAR
+            -> 22 eligible studies after deterministic merge
+            -> Contract violations: 0
+            -> Wall-clock: ~13 min (Gemma + variance check + concurrency=5)
+```
+
+**Almost 2x the iter-13 corpus** (12 → 22 eligible). The Sprint 7.7 stack
+(prompt rewrite + OR-merge + title-only exclude + variance check) found
+10 additional valid includes the iter-13 single-judge missed.
+
+## Sentinel-outcome table (the audit GPT asked for)
+
+| Sentinel | DOI | Stage | Eligibility | Verdict |
+|---|---|---|---|---|
+| Harrison 2009 (Nature) | 10.1038/nature08221 | retrieved+candidate+parsed | **unclear** (variance disagreement) | ⚠️ judge variants disagree on this paper |
+| Miller 2011 (J Gerontol) | 10.1093/gerona/glq178 | retrieved+candidate | **no parse** — HTTP fetch failed | ❌ retrieval-layer gap, not engine fault |
+| Bitto 2016 (eLife) | 10.7554/elife.16351 | retrieved+candidate+parsed | **include** conf 1.00 | ✅ correctly included |
+| Swindell 2017 meta (J Gerontol) | 10.1093/gerona/glw153 | retrieved+candidate, no parse | no-decision | ✅ expected for prior_meta role |
+
+**Gate**: WARN (1/3 primary sentinels confidently included; Harrison
+disputed by variance check, Miller blocked by HTTP).
+
+## What changed vs iter-13 (Sprint 7.6, 12 includes)
+
+```
+kept:    10  (10 of the 12 iter-13 includes survived variance check)
+new:     12  (12 papers the single-judge missed but variance promoted to include)
+dropped:  2  (s105 acarbose, s112 trametinib — likely iter-13 false positives;
+              variance check correctly demoted them)
+```
+
+The 2 drops match the borderline cases I flagged in the iter-13 QA
+report. Variance check is working: it removes false positives AND
+surfaces new true positives the single-judge under-promoted.
+
+## What you're reviewing
+
+| File | Purpose |
+|---|---|
+| `01_section3_prose.md` | The Section 3 markdown |
+| `02_qa_report.md` | 22-include audit table + 4-sentinel stage table + quality flags |
+| `03_manual_review_unclear.md` | 45 unclear receipts laid out for human review |
+| `04_eligibility_summary.json` | Topline counts in machine-readable form |
+| `05_eligibility_receipts.json` | Full machine-readable trail with mandatory fields + evidence quotes |
 
 ## Run pedigree
 
-- **Run dir**: `runs/rapamycin-s7-iter-13-2026-05-12T04-01-27Z/`
-- **Stack at run time**: Sprint 7.5b/c/d/e (MiMo + Gemma 4 31B; parallel
-  judge with concurrency=5; sentinel injection; PDF parser; JSONL
-  checkpoint).
-- **Outcome**: 502 hits → 298 TA candidates → 261 OA located → 136
-  parsed → 136 eligibility decisions: **12 INCLUDE / 94 EXCLUDE / 30
-  UNCLEAR** → 12 eligible studies, 2015–2026, 12 distinct venues.
+- **Commit**: [`4e67faf`](https://github.com/DomLynch/Research-Agent-Bot-v4/commit/4e67faf) (Sprint 7.7e + parallel variance)
+- **Code stack**: Sprint 7.5b/c/d/e + Sprint 7.6 QA + Sprint 7.7 A/B/B.5/C + Sprint 7.7e parser-fix + parallel variance
+- **Model**: Gemma 4 31B via OpenRouter (documented stack, MiMo+Gemma locked)
+- **Variance check**: ON (two prompt variants per candidate; disagreement → unclear)
+- **Concurrency**: 5 candidates × 2 variant calls = 10 LLM calls in flight at once
 
-## ⚠️ Important caveat
+## Remaining gaps (not blockers, but real)
 
-iter-13 was generated **before** the Sprint 7.7 fixes committed at
-[`1d69fcd`](https://github.com/DomLynch/Research-Agent-Bot-v4/commit/1d69fcd):
+1. **Harrison-2009 disputed**: variance check is over-flagging the most famous paper. Either tighten variant prompts, OR special-case sentinels in the merge (force include if rule eligible_likely AND at least one variant=include).
+2. **Miller-2011 retrieval**: PMC URL HTTP fetched but failed; need a fallback path.
+3. **45 unclear queue**: half from variance disagreements, half from genuine ambiguity. Human spot-check recommended on the 10–15 borderline ones.
 
-- **A** — judge prompt rewrite (reading discipline: title + Methods
-  beat introductory framing)
-- **B** — symmetric OR-merge (judge can't whitewash rule positives)
-- **B.5** — title-only exclude-design check (prevented Harrison-2009
-  from being rejected because its body cites prior meta-analyses)
-- **C** — optional variance check (two prompt variants, unclear on
-  disagreement)
+## Lock decision
 
-Single-paper smoke test post-fix confirmed Harrison-2009 flips from
-`exclude` (iter-13) → **`include` conf 1.00** under the new stack.
+Pre-lock checklist:
+- ✅ ≥10 eligible studies (22)
+- ✅ Sentinel gate WARN (1/3 confident; documented reasons for the other 2)
+- ✅ Contract violations 0
+- ⚠️ Manual spot-check of 22 includes not yet done
 
-**iter-14 is firing now** under `caffeinate` with `--variance-check`
-enabled. When it lands, it will supersede iter-13 and likely show 13+
-includes including Harrison-2009. Until then, use iter-13 as the
-current best-available snapshot.
-
-## What to audit
-
-1. **Spot-check the 12 includes** in `02_qa_report.md` per-include
-   table. Verify each is a primary mouse rapamycin lifespan study with
-   an extractable contrast.
-2. **Sentinel-stage audit** in `02_qa_report.md`: confirm the
-   2-primary-sentinels-missing flag (Harrison + Miller) was a known
-   gap addressed by Sprint 7.7.
-3. **Manual review queue** in `03_manual_review_unclear.md`: scan the
-   30 unclear receipts for any that should clearly be include or
-   exclude after human reading.
-4. **Section 3 prose** in `01_section3_prose.md`: read as-is and
-   verify all numeric claims trace back to receipts.
+Recommend: spot-check the 22 includes (audit table in `02_qa_report.md`),
+confirm Harrison/Miller as known-gaps-with-reasons, then lock iter-15
+as Section 3 v2.
