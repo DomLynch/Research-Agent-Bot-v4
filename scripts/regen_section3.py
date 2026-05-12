@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.evidence_state import EvidenceState
 from agent.manual_resolution import apply_manual_resolutions, load_manual_resolutions
-from agent.results_compiler import compile_all
+from agent.results_compiler import InformationalPacket, compile_all
 from agent.results_writer import write_results_section
 from agent.retrieval.base import PaperHit
 from agent.screening import (
@@ -172,48 +172,12 @@ def main() -> int:
         )
         for c in candidates
     )
-    # Manual-override receipts can exist for studies that never parsed
-    # (Miller 2011 is canonical: paywall + 403 = no bytes = no parse).
-    # The chain validator requires every eligibility receipt to point to
-    # a parsed=True ParsedFullTextReceipt. For each manual override that
-    # has either no parsed receipt or a parsed=False one, swap in a
-    # parsed=True stub marked source_url="manual-reconstruction" so the
-    # chain validates while keeping the audit trail honest about how the
-    # bytes were sourced (i.e. via the human, not the parser).
-    manual_ids = {
-        r.study_id for r in eligibility
-        if r.reviewer.startswith("human-") or r.rule_decision == "manual-override"
-    }
-    rebuilt: list[ParsedFullTextReceipt] = []
-    for p in parsed_receipts:
-        if p.study_id in manual_ids and not p.parsed:
-            rebuilt.append(ParsedFullTextReceipt(
-                study_id=p.study_id, source_url="manual-reconstruction",
-                parsed=True, text_hash="", char_count=0,
-                failure_reason="manual override - bytes not parsed",
-            ))
-        else:
-            rebuilt.append(p)
-    parsed_ids = {p.study_id for p in rebuilt}
-    extra_parsed = [
-        ParsedFullTextReceipt(
-            study_id=sid, source_url="manual-reconstruction",
-            parsed=True, text_hash="", char_count=0,
-            failure_reason="manual override - bytes not parsed",
-        )
-        for sid in manual_ids if sid not in parsed_ids
-    ]
-    parsed_receipts = tuple(rebuilt) + tuple(extra_parsed)
-    n_swapped = sum(
-        1 for p in parsed_receipts if p.source_url == "manual-reconstruction"
-    )
-    if n_swapped:
-        print(f"[regen] swapped {n_swapped} parsed stubs for manual overrides")
-
     # Every parsed receipt implies retrieval succeeded (bytes were located
     # before being handed to the parser), even when the parse itself
     # failed. Keep retrieved=True so validate_parsed_receipts accepts the
-    # chain.
+    # chain. Manual-override receipts without a parsed receipt are
+    # allowed by validate_eligibility_receipts as of Sprint 7.10b — the
+    # human is the evidence — so we do not fabricate parsed stubs here.
     full_text = tuple(
         FullTextReceipt(
             study_id=p.study_id, retrieved=True,
@@ -233,6 +197,37 @@ def main() -> int:
     )
 
     packets = compile_all(state, pack=pack)
+
+    # Replace study_selection counts with frozen-run summary values where
+    # the reconstruction can't fully recover the real retrieval-stage
+    # counts (k_hits=502 vs. reconstructed=298, full_text_located=257 vs.
+    # reconstructed from parsed receipts).
+    summary_path = rd / "eligibility_summary.json"
+    if summary_path.exists():
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        for i, p in enumerate(packets):
+            if isinstance(p, InformationalPacket) and p.packet_id == "study_selection":
+                c = dict(p.counts)
+                c["identified"] = int(summary.get("k_hits", c.get("identified", 0)))
+                c["screened_title_abstract"] = c["identified"]
+                c["candidates_after_title_abstract"] = int(
+                    summary.get("k_candidates", c.get("candidates_after_title_abstract", 0))
+                )
+                c["full_text_availability_located"] = int(
+                    summary.get("k_full_text_located", c.get("full_text_availability_located", 0))
+                )
+                c["full_text_parsed"] = int(
+                    summary.get("k_parsed_with_text", c.get("full_text_parsed", 0))
+                )
+                packets[i] = InformationalPacket(
+                    packet_id=p.packet_id,
+                    description=p.description,
+                    counts=MappingProxyType(c),
+                    notes=p.notes,
+                    source_study_ids=p.source_study_ids,
+                )
+                break
+
     body = write_results_section(packets)
     body = body.rstrip() + "\n\n" + _render_primary_pool_block(strict)
 
