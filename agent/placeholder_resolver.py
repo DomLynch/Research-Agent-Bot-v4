@@ -1,25 +1,31 @@
 """Resolve count + topic-pack-driven placeholder markers.
 
-The writer emits four classes of placeholder in body prose:
+The writer emits several classes of placeholder in body prose:
 
   [N_SCREENED]            -> eligibility_summary.k_hits
   [N_ACCEPTED]            -> eligibility_summary.k_eligible
   [K_STUDIES]             -> length of strict A-core (canonical primary set)
+  [STRICT_A_CORE_COUNT]   -> len(strict.A_core_direct_lifespan) — alias
+  [STRICT_A_CORE_IDS]     -> comma-joined study_ids from strict A-core
+  [K_POOLABLE]            -> len(pool.effects) — contract-passing pool size
+  [INCOMPLETE_RECOVERY_IDS] -> comma-joined study_ids whose extraction
+                              status != "extracted" (parse_failed,
+                              no_numerics, llm_refused, etc.)
   [PLACEHOLDER:<key>]     -> topic_pack.placeholders["<key>"]
   [MODERATOR_P:<key>]     -> topic_pack.placeholders["MODERATOR_P:<key>"]
 
-The first three are pipeline-derived counts; the latter two are topic-pack
-values (databases, date-range, query syntax, threshold parameters, and
-moderator labels). All five resolve deterministically against receipts +
-topic-pack data — no LLM, no invention. Unknown tokens are surfaced as
-`[<token>][UNRESOLVED]` so the auditor sees the gap rather than silent
-omission. `[CIT:...]` and `[PACKET:...]` markers are intentionally left
-alone — citations are handled by `reference_resolver`, and packet anchors
-are audit references the manuscript keeps verbatim.
+The count tokens + corpus-derived tokens are pipeline-derived; the
+PLACEHOLDER / MODERATOR_P families are topic-pack values. All resolve
+deterministically against receipts + topic-pack data — no LLM, no
+invention. Unknown tokens are surfaced as `[<token>][UNRESOLVED]` so
+the auditor sees the gap rather than silent omission. `[CIT:...]` and
+`[PACKET:...]` markers are intentionally left alone — citations are
+handled by `reference_resolver`, and packet anchors are audit
+references the manuscript keeps verbatim.
 
-Universal: this module is topic-agnostic. Adding a new domain or a new
-moderator label = adding an entry to that topic's `[placeholders]` block.
-No code change.
+Universal: this module is topic-agnostic. The corpus-derived tokens
+(STRICT_A_CORE_*, K_POOLABLE, INCOMPLETE_RECOVERY_IDS) compute from
+receipts only — adding a new domain = adding receipts; no code change.
 """
 from __future__ import annotations
 
@@ -32,6 +38,8 @@ from agent.topic_pack import TopicPack
 
 _TOKEN_RE = re.compile(
     r"\[(N_SCREENED|N_ACCEPTED|K_STUDIES"
+    r"|STRICT_A_CORE_COUNT|STRICT_A_CORE_IDS"
+    r"|K_POOLABLE|INCOMPLETE_RECOVERY_IDS"
     r"|PLACEHOLDER:[a-zA-Z0-9_\-]+"
     r"|MODERATOR_P:[a-zA-Z0-9_\-]+)\]"
 )
