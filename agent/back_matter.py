@@ -51,6 +51,21 @@ class BackMatter:
         )) + "\n"
 
 
+_NEUTRAL_ETHICS = (
+    "This synthesis re-analyses previously published data. No new "
+    "primary data collection was conducted. Per-study ethical and "
+    "licensing statements remain with the original publications cited "
+    "herein."
+)
+_NEUTRAL_CONFLICTS = (
+    "The operator declares no financial conflicts of interest related "
+    "to the subject matter of this synthesis or to the cited primary "
+    "studies. The pipeline is open-source and reusable across topics; "
+    "no commercial relationship influenced the eligibility rules or "
+    "the manuscript framing for the present synthesis."
+)
+
+
 def build_back_matter(
     pack: TopicPack,
     settings: Settings,
@@ -61,11 +76,12 @@ def build_back_matter(
 ) -> BackMatter:
     """Compose back-matter prose from pipeline-known facts.
 
-    Universal: no biomedical literals. The ethics line is driven by
-    `pack.primary_system` (e.g. 'mouse') and the discouraged-terms list
-    so a climate or social-science pack produces an ethics statement
-    appropriate to its domain — or omits the animal-research clause
-    entirely.
+    Universal: no biomedical literals. The ethics line is supplied by
+    `pack.ethics_statement` (e.g. an animal-research framing for a
+    mouse-lifespan pack, a human-subjects framing for a clinical pack);
+    packs that omit the field fall through to a neutral previously-
+    published-data statement so a climate or social-science pack still
+    renders a coherent ethics block.
     """
     sources = ", ".join(pack.retrieval_sources) or "(none declared)"
     run_ref = run_dir_name or "(run directory not specified)"
@@ -102,32 +118,7 @@ def build_back_matter(
         "every direct quote in the receipts is bound to a verbatim "
         "evidence_quote field and traceable to its source paper."
     )
-    if pack.primary_system in {"mouse", "mice", "murine", "rat", "rats"}:
-        ethics = (
-            "This synthesis re-analyses published animal-research "
-            "data. No new experiments on living animals were conducted. "
-            "The included primary studies are responsible for their own "
-            "institutional animal-care and ethical approvals; reviewers "
-            "are referred to the primary references in this manuscript "
-            "for those statements. The synthesis itself does not require "
-            "additional ethical approval."
-        )
-    elif pack.primary_system in {"human", "humans", "patient", "patients"}:
-        ethics = (
-            "This synthesis re-analyses published human-subjects data. "
-            "No new human-subjects experiments were conducted. The "
-            "included primary studies are responsible for their own "
-            "institutional review board approvals and participant "
-            "consent; reviewers are referred to the primary references "
-            "for those statements."
-        )
-    else:
-        ethics = (
-            "This synthesis re-analyses previously published data. No "
-            "new primary data collection was conducted. Per-study "
-            "ethical and licensing statements remain with the original "
-            "publications cited herein."
-        )
+    ethics = pack.ethics_statement.strip() or _NEUTRAL_ETHICS
     author_contributions = (
         f"The synthesis pipeline (retrieval, screening, eligibility "
         "adjudication, full-text parsing, effect extraction, pooling, "
@@ -140,14 +131,7 @@ def build_back_matter(
         "the AI-Use Disclosure under the constraints of the universal "
         "evidence contract."
     )
-    conflicts = (
-        "The operator declares no financial conflicts of interest "
-        "related to mTOR-pathway pharmacology, geroprotective "
-        "interventions, or the cited primary studies. The pipeline is "
-        "open-source and reusable across topics; no commercial "
-        "relationship influenced the eligibility rules or the "
-        "manuscript framing for the present synthesis."
-    )
+    conflicts = pack.conflicts_statement.strip() or _NEUTRAL_CONFLICTS
     funding = (
         "No external funding was received for this synthesis. The "
         "computational cost of the language-model calls was borne "
