@@ -56,13 +56,15 @@ def main() -> int:
 
     s1 = _latest_bundle(args.topic, "s1")
     s2 = _latest_bundle(args.topic, "s2")
+    s6 = _latest_bundle(args.topic, "s6")
     s7 = args.target_s7.resolve() if args.target_s7 else _latest_bundle(args.topic, "s7")
 
     title_abs_intro = _read(s1).rstrip()
     methods = _read(s2).rstrip()
+    discussion = _read(s6).rstrip()
     results = _read(s7).rstrip()
 
-    if not (title_abs_intro or methods or results):
+    if not (title_abs_intro or methods or discussion or results):
         print("ERROR: no section bundles found; run draft_main.py + build_results.py first")
         return 2
 
@@ -90,6 +92,14 @@ def main() -> int:
             "[SECTIONS_PENDING:results — re-run run_eligibility.py "
             "+ freeze + regen_section3 to populate.]"
         )
+    if discussion:
+        parts.append(discussion)
+    else:
+        parts.append(
+            "[SECTIONS_PENDING:discussion — re-run draft_main.py "
+            "--section discussion to populate (writes Discussion + "
+            "Limitations + Conclusion in one bundle).]"
+        )
     body = "\n\n".join(parts) + "\n"
 
     stamp = dt.datetime.now(tz=dt.UTC).isoformat(timespec="seconds")
@@ -97,6 +107,7 @@ def main() -> int:
         "<!-- AUTO-STITCHED — do not edit by hand. Bundles used:\n"
         f"  s1: {s1.name if s1 else '(none)'}\n"
         f"  s2: {s2.name if s2 else '(none)'}\n"
+        f"  s6: {s6.name if s6 else '(none)'}\n"
         f"  s7: {s7.name if s7 else '(none)'}\n"
         f"  stamped: {stamp}\n"
         "-->\n\n"

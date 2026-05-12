@@ -21,13 +21,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.claim_gates import run_all_gates
 from agent.llm_client import call_writer
-from agent.prompts import writer_methods, writer_title_abstract_intro
+from agent.prompts import (
+    writer_discussion,
+    writer_methods,
+    writer_title_abstract_intro,
+)
 from agent.settings import load_settings
 from agent.topic_pack import load_topic_pack
 
 _SECTION_PROMPTS = {
     "title_abstract_intro": (writer_title_abstract_intro, ["TITLE", "ABSTRACT", "INTRODUCTION"]),
     "methods": (writer_methods, ["METHODS"]),
+    "discussion": (writer_discussion, ["DISCUSSION", "LIMITATIONS", "CONCLUSION"]),
 }
 
 _SECTION_RE = re.compile(r"^===\s*([A-Z][A-Z0-9 \-]*?)\s*===\s*$", re.MULTILINE)
@@ -86,7 +91,12 @@ def main() -> int:
         return 2
 
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
-    section_short = "s1" if args.section == "title_abstract_intro" else "s2"
+    _section_short_map = {
+        "title_abstract_intro": "s1",
+        "methods": "s2",
+        "discussion": "s6",
+    }
+    section_short = _section_short_map.get(args.section, "sX")
     run_id = f"{args.topic}-{section_short}-iter-{args.iter:02d}-{ts}"
     out_dir = Path(settings.runs_dir) / run_id
     out_dir.mkdir(parents=True, exist_ok=True)

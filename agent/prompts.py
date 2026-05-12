@@ -138,26 +138,15 @@ def writer_methods(
             "claims. The prompt is DOMAIN-NEUTRAL: select the right tool for "
             "the topic and the study designs in scope; the topic-pack anchors "
             "are the only source of specific method-citation keys.\n\n"
-            "FORBIDDEN OVERCLAIMS (must not appear unless the user has "
-            "explicitly provided a registration record in TOPIC-PACK "
-            "CONSTRAINTS):\n"
-            "- Do NOT claim the protocol is registered in PROSPERO, OSF, or "
-            "  any other registry.\n"
-            "- Do NOT claim dual-reviewer extraction, dual-reviewer risk-of-"
-            "  bias adjudication, or third-reviewer arbitration — those are "
-            "  operational facts about a team you do not have. Use planned-"
-            "  protocol voice ('will be extracted', 'will be assessed') "
-            "  without naming staffing.\n"
-            "- Do NOT claim a search has been executed or a date range "
-            "  finalised; describe the search strategy in planning voice and "
-            "  leave dates / databases as [PLACEHOLDER:...] until the "
-            "  retrieval step has filled them in.\n"
-            "If the topic pack contains a key named 'registration_id' in its "
-            "method-citation anchors, you may cite it; otherwise the protocol "
-            "is implemented in this pipeline only and must be described as "
-            "such ('this synthesis was implemented using a reproducible "
-            "evidence-contract pipeline and is reported against PRISMA 2020 "
-            "where applicable').\n\n"
+            "FORBIDDEN OVERCLAIMS (unless TOPIC-PACK CONSTRAINTS supplies "
+            "a registration_id anchor): no PROSPERO/OSF/registry claim; "
+            "no dual-reviewer / third-reviewer staffing claim — use "
+            "planned-protocol voice ('will be extracted/assessed') without "
+            "naming staffing; no claim a search has executed or dates are "
+            "finalised — leave [PLACEHOLDER:databases / date-range / "
+            "query-terms]. Honest framing for this pipeline: 'implemented "
+            "using a reproducible evidence-contract pipeline, reported "
+            "against PRISMA 2020 where applicable'.\n\n"
             "Components, in order:\n"
             "1. SEARCH STRATEGY — databases that will be queried, search-date "
             "range, query-term shape. Cite the topic-pack-supplied reporting "
@@ -281,6 +270,70 @@ def writer_title_abstract_intro(
             "or other structured slot. If you produce less than 800 words for the "
             "Introduction, expand with additional landscape detail, additional "
             "moderator-specific gap analysis, and additional non-goals.",
+        ),
+    ]
+    system = SYSTEM_WRITER
+    if pack:
+        system = SYSTEM_WRITER + "\n\n" + _topic_pack_block(pack)
+    return [
+        {"role": "system", "content": system},
+        {"role": "user", "content": _user_request(topic, specs)},
+    ]
+
+
+def writer_discussion(
+    topic: str, pack: TopicPack | None = None,
+) -> list[dict[str, str]]:
+    """Section 6: Discussion + Limitations + Conclusion as one bundle.
+
+    Voice is interpretive and humble; do not over-claim a pooled finding
+    that the receipts do not support.
+    """
+    specs = [
+        (
+            "DISCUSSION",
+            "600-900 words across 4-5 paragraphs. FORBIDDEN OVERCLAIMS: "
+            "do NOT state a pooled effect size, HR, or percent extension "
+            "unless [PACKET:primary_effect] has k_studies >= 2. No "
+            "external-registration or author-team claims. Structure: "
+            "(a) restate question + what the corpus does/does-not support, "
+            "referencing [PACKET:primary_effect] / "
+            "[PACKET:primary_pool_composition]; "
+            "(b) compare to prior syntheses with "
+            "[CIT:<key>|prior-meta-analysis] anchors — note alignment vs "
+            "divergence without picking a winner when k is small; "
+            "(c) mechanism background from "
+            "[CIT:<key>|mechanism-review] anchors, NOT a finding here; "
+            "(d) boundary conditions (strain, sex, dose, timing, route, "
+            "pathogen status) framed as currently underdetermined; "
+            "(e) translational considerations citing "
+            "[CIT:<key>|clinical-trial] anchors; state explicitly that "
+            "translational interventions are NOT in the primary corpus. "
+            "Use [PACKET:...] for numeric references; [CIT:<key>|<role>] "
+            "for prior work. Do not paraphrase Results numbers into prose."
+        ),
+        (
+            "LIMITATIONS",
+            "200-400 words, one paragraph. Name SPECIFIC limitations from "
+            "this pipeline's outputs: corpus size + sentinel-recall gate "
+            "([PACKET:sentinel_recall]); k_studies from "
+            "[PACKET:primary_effect] and its inference implications; "
+            "metric-family discipline (90th-percentile vs median ratios "
+            "are pooled separately, no cross-family inference); automated "
+            "risk-of-bias adjudication without explicit human arbitration; "
+            "any manual full-text overrides ([PACKET:study_selection]) — "
+            "documented source recovery, not eligibility override. Do NOT "
+            "use vague 'further research is needed' filler; name the "
+            "specific missing data."
+        ),
+        (
+            "CONCLUSION",
+            "120-180 words, one paragraph. One sentence on what the corpus "
+            "currently supports (calibrated by k). One sentence on what "
+            "would change the conclusion (more contract-passing studies, "
+            "sentinel repair). One sentence on the broader interpretive "
+            "frame. No new claims or citations not already in "
+            "Introduction / Discussion."
         ),
     ]
     system = SYSTEM_WRITER
