@@ -105,7 +105,7 @@ class EligibilityReceipt:
     legacy callers passing only study_id/decision/reason still work."""
 
     study_id: str
-    decision: Literal["include", "exclude", "unclear"]
+    decision: Literal["include", "exclude", "unclear", "unavailable"]
     reason: str
     reviewer: str = ""
     confidence: float = 0.0
