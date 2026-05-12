@@ -70,14 +70,16 @@ class ExtractionReceipt:
 
 def build_extraction_prompt(
     pack: TopicPack, study_id: str, title: str, parsed_text: str, *,
-    excerpt_chars: int = 12000,
+    excerpt_chars: int = 60000,
 ) -> list[dict[str, str]]:
     """Compose a writer-LLM prompt that pre-specifies the topic-pack's
     extraction fields. Returns OpenAI-style {role, content} messages.
 
     The pack drives the metric list, the moderator vocabulary, and the
     intervention/control terms used in the evidence-quote requirement.
-    No biomedical literals here.
+    The excerpt window is large by default (60k chars) because raw
+    numerics live in Results / Tables which typically sit deep in the
+    document. No biomedical literals.
     """
     endpoint = pack.endpoint or "primary endpoint"
     metrics = ", ".join(pack.eligibility_endpoint_terms) or endpoint
@@ -89,7 +91,9 @@ def build_extraction_prompt(
         "JSON matching the schema below. Never invent numbers. If a field "
         "is not stated in the excerpt, emit null for that field. If no "
         "numeric effect for the primary metric is available, set status="
-        '"no_numerics" with a one-sentence failure_reason.'
+        '"no_numerics" with a one-sentence failure_reason. Look hard at '
+        "Results, Methods, and Tables sections; raw values usually live "
+        "there, not in the abstract."
     )
     user = (
         f"Paper: {study_id} - {title}\n\n"
@@ -120,6 +124,10 @@ def build_extraction_prompt(
         "- Treated group must use one of the primary interventions; control "
         "  must match the control vocabulary. If unclear, status=no_numerics.\n"
         "- Evidence quotes must be VERBATIM from the excerpt, not paraphrased.\n"
+        "- treated_value and control_value must be in the SAME unit (e.g. "
+        "  both in days, or both in months). Convert to days if the paper "
+        "  reports months/weeks; record the original unit's name in the "
+        "  metric field (e.g. metric=\"median_lifespan_days\").\n"
         "- Do not output any prose outside the JSON object."
     )
     return [

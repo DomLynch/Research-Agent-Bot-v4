@@ -10,7 +10,7 @@ Sentinel-paper recall audit (gate: WARN): 3/3 canonical primary-study anchors re
 The 5 auto-eligible records span publication years 2012-2023 and 4 distinct venues; after strict A-core auditing, 1 record remains eligible for primary-effect extraction [PACKET:corpus_characteristics].
 
 ### Primary Pooled Effect
-The pooled estimate (log_median_ratio) was 0.388 (95% CI -0.032 to 0.808; back-transformed ratio 1.474; k_studies=1, k_effects=1) [PACKET:primary_effect].
+[RESULTS_BLOCKED:no EffectSizeRecord - effect-extraction step pending]
 
 ### Moderator Meta-Regression
 [RESULTS_BLOCKED:no moderator effects - extraction pending]
@@ -26,6 +26,6 @@ The pooled estimate (log_median_ratio) was 0.388 (95% CI -0.032 to 0.808; back-t
 
 ### Primary Pool Composition
 
-After applying the strict A-core evidence-quote audit, 1 study forms the primary direct-lifespan corpus, 2 studies populate the disease-model survival sensitivity lane, and 2 studies are retained as secondary/contextual (of which 1 was demoted from the auto-judge direct-lifespan lane because their evidence quotes failed the per-quote mouse/intervention/control/endpoint audit) [PACKET:primary_pool_composition].
+After applying the strict A-core evidence-quote audit, 1 study form the primary direct-lifespan corpus, 2 studies populate the disease-model survival sensitivity lane, and 2 studies are retained as secondary/contextual (of which 1 was demoted from the auto-judge direct-lifespan lane because their evidence quotes failed the per-quote mouse/intervention/control/endpoint audit) [PACKET:primary_pool_composition].
 
 Strict A-core records selected for primary extraction (1): s246 [PACKET:primary_pool_composition].

@@ -124,17 +124,21 @@ def _render_primary_pool_block(strict: dict[str, Any]) -> str:
         if s.get("demoted_from") == "A_direct_lifespan"
     )
 
-    def _w(n: int) -> str:
+    def _noun(n: int) -> str:
         return "study" if n == 1 else "studies"
+    a_verb = "forms" if a == 1 else "form"
+    b_verb = "populates" if b == 1 else "populate"
+    c_verb = "is" if c == 1 else "are"
+    demote_verb = "was" if demoted_a == 1 else "were"
     lines = [
         "### Primary Pool Composition",
         "",
         (
             f"After applying the strict A-core evidence-quote audit, "
-            f"{a} {_w(a)} form the primary direct-lifespan corpus, "
-            f"{b} {_w(b)} populate the disease-model survival sensitivity "
-            f"lane, and {c} {_w(c)} are retained as secondary/contextual "
-            f"(of which {demoted_a} {'was' if demoted_a == 1 else 'were'} "
+            f"{a} {_noun(a)} {a_verb} the primary direct-lifespan corpus, "
+            f"{b} {_noun(b)} {b_verb} the disease-model survival "
+            f"sensitivity lane, and {c} {_noun(c)} {c_verb} retained as "
+            f"secondary/contextual (of which {demoted_a} {demote_verb} "
             f"demoted from the auto-judge direct-lifespan lane because "
             f"their evidence quotes failed the per-quote "
             f"mouse/intervention/control/endpoint audit) "
