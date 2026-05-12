@@ -69,10 +69,27 @@ def main() -> int:
     parts: list[str] = []
     if title_abs_intro:
         parts.append(title_abs_intro)
+    else:
+        parts.append(
+            "[SECTIONS_PENDING:title_abstract_intro — writer LLM call has "
+            "not completed for this run; re-run "
+            "`python3 scripts/draft_main.py --topic <topic> --iter <N> "
+            "--section title_abstract_intro` to populate.]"
+        )
     if methods:
         parts.append(methods)
+    else:
+        parts.append(
+            "[SECTIONS_PENDING:methods — re-run draft_main.py "
+            "--section methods to populate.]"
+        )
     if results:
         parts.append(results)
+    else:
+        parts.append(
+            "[SECTIONS_PENDING:results — re-run run_eligibility.py "
+            "+ freeze + regen_section3 to populate.]"
+        )
     body = "\n\n".join(parts) + "\n"
 
     stamp = dt.datetime.now(tz=dt.UTC).isoformat(timespec="seconds")
