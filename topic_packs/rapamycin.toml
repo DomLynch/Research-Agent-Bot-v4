@@ -250,9 +250,6 @@ genotype_modified_strain_markers = [
 "MODERATOR_P:genetic_background" = "genetic background"
 "MODERATOR_P:treatment_initiation_age" = "age at treatment initiation"
 
-[back_matter]
-ethics_statement = "This synthesis re-analyses published animal-research data. No new experiments on living animals were conducted. The included primary studies are responsible for their own institutional animal-care and ethical approvals; reviewers are referred to the primary references in this manuscript for those statements. The synthesis itself does not require additional ethical approval."
-
 # --- methods honesty rewrites ---------------------------------------------
 # agent/methods_honesty.py applies these substitutions to the manuscript
 # body so the writer's borrowed-from-template overclaim verbs match what
