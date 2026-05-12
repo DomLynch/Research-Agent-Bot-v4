@@ -213,13 +213,18 @@ def build(pd: Path, topic: str, *, qa_report_path: Path | None = None) -> str:
         parts += [
             "### S5c — Researka Canonical-Fact Cross-Check",
             "",
-            "Third-party-validation overlay. For every extraction receipt "
-            f"with `percent_change` numerics, the Researka Tier 2 facts "
-            f"index (POST `/api/v1/tier2/facts/search`) was queried and "
-            f"filtered to facts whose paper DOI matches the receipt. The "
-            f"verdict is computed against a "
+            "Audit-scaffold overlay (the validation outcome itself is "
+            "reported in the verdict table below). For every extraction "
+            "receipt with `percent_change` numerics, the Researka Tier 2 "
+            "facts index (POST `/api/v1/tier2/facts/search`) was queried "
+            "and filtered to facts whose paper DOI matches the receipt. "
+            "The verdict is computed against a "
             f"{crosscheck.get('tolerance_percent', 25.0):.0f}% tolerance "
-            "band on the canonical %-value.",
+            "band on the canonical %-value. Independent validation is "
+            "credited only when the verdict is `matched`; absent that, "
+            "extraction numerics remain supported by receipt-level "
+            "evidence quotes (S5) rather than canonical-fact "
+            "confirmation.",
             "",
         ]
         rows = [

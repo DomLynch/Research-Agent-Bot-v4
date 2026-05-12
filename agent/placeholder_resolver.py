@@ -1,25 +1,31 @@
 """Resolve count + topic-pack-driven placeholder markers.
 
-The writer emits four classes of placeholder in body prose:
+The writer emits several classes of placeholder in body prose:
 
   [N_SCREENED]            -> eligibility_summary.k_hits
   [N_ACCEPTED]            -> eligibility_summary.k_eligible
   [K_STUDIES]             -> length of strict A-core (canonical primary set)
+  [STRICT_A_CORE_COUNT]   -> len(strict.A_core_direct_lifespan) — alias
+  [STRICT_A_CORE_IDS]     -> comma-joined study_ids from strict A-core
+  [K_POOLABLE]            -> len(pool.effects) — contract-passing pool size
+  [INCOMPLETE_RECOVERY_IDS] -> comma-joined study_ids whose extraction
+                              status != "extracted" (parse_failed,
+                              no_numerics, llm_refused, etc.)
   [PLACEHOLDER:<key>]     -> topic_pack.placeholders["<key>"]
   [MODERATOR_P:<key>]     -> topic_pack.placeholders["MODERATOR_P:<key>"]
 
-The first three are pipeline-derived counts; the latter two are topic-pack
-values (databases, date-range, query syntax, threshold parameters, and
-moderator labels). All five resolve deterministically against receipts +
-topic-pack data — no LLM, no invention. Unknown tokens are surfaced as
-`[<token>][UNRESOLVED]` so the auditor sees the gap rather than silent
-omission. `[CIT:...]` and `[PACKET:...]` markers are intentionally left
-alone — citations are handled by `reference_resolver`, and packet anchors
-are audit references the manuscript keeps verbatim.
+The count tokens + corpus-derived tokens are pipeline-derived; the
+PLACEHOLDER / MODERATOR_P families are topic-pack values. All resolve
+deterministically against receipts + topic-pack data — no LLM, no
+invention. Unknown tokens are surfaced as `[<token>][UNRESOLVED]` so
+the auditor sees the gap rather than silent omission. `[CIT:...]` and
+`[PACKET:...]` markers are intentionally left alone — citations are
+handled by `reference_resolver`, and packet anchors are audit
+references the manuscript keeps verbatim.
 
-Universal: this module is topic-agnostic. Adding a new domain or a new
-moderator label = adding an entry to that topic's `[placeholders]` block.
-No code change.
+Universal: this module is topic-agnostic. The corpus-derived tokens
+(STRICT_A_CORE_*, K_POOLABLE, INCOMPLETE_RECOVERY_IDS) compute from
+receipts only — adding a new domain = adding receipts; no code change.
 """
 from __future__ import annotations
 
@@ -32,6 +38,8 @@ from agent.topic_pack import TopicPack
 
 _TOKEN_RE = re.compile(
     r"\[(N_SCREENED|N_ACCEPTED|K_STUDIES"
+    r"|STRICT_A_CORE_COUNT|STRICT_A_CORE_IDS"
+    r"|K_POOLABLE|INCOMPLETE_RECOVERY_IDS"
     r"|PLACEHOLDER:[a-zA-Z0-9_\-]+"
     r"|MODERATOR_P:[a-zA-Z0-9_\-]+)\]"
 )
@@ -50,18 +58,70 @@ def resolve_placeholders(
     summary: Mapping[str, Any],
     strict: Mapping[str, Any],
     pack: TopicPack,
+    extractions: Mapping[str, Any] | None = None,
+    pool: Mapping[str, Any] | None = None,
 ) -> ResolvedPlaceholders:
-    """Substitute count + topic-pack placeholders.
+    """Substitute count + topic-pack + corpus-derived placeholders.
 
-    `summary` is the parsed `eligibility_summary.json`; `strict` is the parsed
-    `primary_effect_input_set_strict.json`. Missing values short-circuit to
-    `[UNRESOLVED]` so the auditor can see the gap.
+    `summary` is the parsed `eligibility_summary.json`; `strict` is the
+    parsed `primary_effect_input_set_strict.json`. `extractions` and
+    `pool` are optional — when supplied, the corpus-derived tokens
+    (STRICT_A_CORE_IDS, K_POOLABLE, INCOMPLETE_RECOVERY_IDS) resolve
+    from real receipts; when None, those tokens surface as UNRESOLVED.
+    Missing values short-circuit to `[UNRESOLVED]` so the auditor sees
+    the gap.
     """
-    a_core = strict.get("A_core_direct_lifespan", []) or []
+    a_core_list = strict.get("A_core_direct_lifespan", []) or []
+    if not isinstance(a_core_list, list):
+        a_core_list = []
+    a_core_ids = [
+        str(s.get("study_id", "")) for s in a_core_list
+        if isinstance(s, dict) and s.get("study_id")
+    ]
+    pool_effects = (pool or {}).get("effects", []) or []
+    if not isinstance(pool_effects, list):
+        pool_effects = []
+    extr_receipts = (extractions or {}).get("receipts", []) or []
+    if not isinstance(extr_receipts, list):
+        extr_receipts = []
+    # "Incomplete recovery" = any study that DIDN'T contribute to the
+    # pool. That's the union of:
+    #   - parse_failed / no_numerics / llm_refused receipts (no numerics)
+    #   - extracted receipts that the pool compiler skipped (e.g. wrong
+    #     metric family — off-modal-metric demotion)
+    # pool.skipped_study_ids is the canonical "no contribution" list
+    # produced by compile_pool; we fall back to status-based detection
+    # when no pool was supplied.
+    pool_skipped: list[str] = []
+    if pool is not None:
+        raw_skip = pool.get("skipped_study_ids") or []
+        if isinstance(raw_skip, list):
+            pool_skipped = [str(s) for s in raw_skip if s]
+    status_failed = [
+        str(r.get("study_id", "")) for r in extr_receipts
+        if isinstance(r, dict)
+        and r.get("study_id")
+        and r.get("status") not in {"extracted"}
+    ]
+    # Deduplicate while preserving first-seen order from pool_skipped
+    # (pool order is more meaningful than receipt order for the prose).
+    seen: set[str] = set()
+    incomplete_ids: list[str] = []
+    for sid in [*pool_skipped, *status_failed]:
+        if sid and sid not in seen:
+            seen.add(sid)
+            incomplete_ids.append(sid)
     counts: dict[str, str] = {
         "N_SCREENED": _str_or_empty(summary.get("k_hits")),
         "N_ACCEPTED": _str_or_empty(summary.get("k_eligible")),
-        "K_STUDIES": str(len(a_core)) if isinstance(a_core, list) else "",
+        "K_STUDIES": str(len(a_core_list)),
+        "STRICT_A_CORE_COUNT": str(len(a_core_list)),
+        "STRICT_A_CORE_IDS": ", ".join(a_core_ids) if a_core_ids else "",
+        "K_POOLABLE": str(len(pool_effects)) if pool is not None else "",
+        "INCOMPLETE_RECOVERY_IDS": (
+            ", ".join(incomplete_ids) if incomplete_ids
+            else ("(none)" if extractions is not None else "")
+        ),
     }
 
     resolved: list[str] = []

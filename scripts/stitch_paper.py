@@ -150,9 +150,20 @@ def stitch(
     raw_body = "\n\n".join([intro, methods, results, discussion]) + "\n"
 
     summary, strict, extr, pool = _load_receipts(s7)
-    ph = resolve_placeholders(raw_body, summary=summary, strict=strict, pack=pack)
+    # Pass 1: resolve raw writer-emitted count + topic-pack placeholders.
+    ph = resolve_placeholders(
+        raw_body, summary=summary, strict=strict, pack=pack,
+        extractions=extr, pool=pool,
+    )
+    # Honesty rewrites may inject NEW corpus-derived tokens (e.g.
+    # [STRICT_A_CORE_IDS], [INCOMPLETE_RECOVERY_IDS]) into the body.
     hon = apply_honesty_rewrites(ph.body, pack)
-    with_table = _inject_study_table(hon.body, strict, extr, pool)
+    # Pass 2: resolve any tokens introduced by honesty rewrites.
+    ph2 = resolve_placeholders(
+        hon.body, summary=summary, strict=strict, pack=pack,
+        extractions=extr, pool=pool,
+    )
+    with_table = _inject_study_table(ph2.body, strict, extr, pool)
     resolved = resolve_citations(with_table, pack)
 
     if target is None:
