@@ -1,6 +1,6 @@
-# Manual Review Queue - rapamycin-s7-iter-17-2026-05-12T05-44-57Z
+# Manual Review Queue - latest
 
-7 receipts flagged 'unclear' by the rule -> judge -> deterministic merge. Sorted by study_id.
+9 receipts flagged 'unclear' by the rule -> judge -> deterministic merge. Sorted by study_id.
 
 ### s069 - Intermittent rapamycin feeding recapitulates some effects of continuous treatment while maintaining...
 - year: 2024  venue: Molecular metabolism
@@ -21,6 +21,16 @@
 - merge reason: low judge confidence 0.00; missing mandatory: species_match, endpoint_present, control_present
 - evidence quotes (first 3):
     - (none)
+
+### s086 - Rapamycin fed late in life extends lifespan in genetically heterogeneous mice.
+- year: 2009  venue: Nature
+- doi: 10.1038/nature08221  pmid: 19587680
+- confidence: 1.00
+- rule_decision:   reviewer: include-contract
+- missing mandatory: (none)
+- merge reason: include_contract failed: parsed_text_adequate=False; only 1 non-title evidence quote(s); need >= 2
+- evidence quotes (first 3):
+    - Here we report that rapamycin, an inhibitor of the mTOR pathway, extends median and maximal lifespan of both male and female mice when fed beginning at 600 days of age. On the basis of age at 90% mor...
 
 ### s113 - Stress granule clearance mediated by V-ATPase-interacting protein NCOA7 mitigates ovarian aging.
 - year: 2025  venue: Nature aging
@@ -65,6 +75,16 @@
 - evidence quotes (first 3):
     - Beginning at 9 weeks of age until death, we fed Rb1 +/− mice a diet without or with eRapa at 14 mg/kg food, which results in an approximate dose of 2.24 mg/kg body weight per day, and yielded rapamyc...
     - Surprisingly, we found that eRapa dramatically extended life span of both female and male Rb1 +/− mice, and slowed the appearance and growth of pituitary and decreased the incidence of thyroid tumors...
+
+### s288 - Transient rapamycin treatment can increase lifespan and healthspan in middle-aged mice.
+- year: 2016  venue: eLife
+- doi: 10.7554/elife.16351  pmid: 27549339
+- confidence: 1.00
+- rule_decision:   reviewer: include-contract
+- missing mandatory: (none)
+- merge reason: include_contract failed: parsed_text_adequate=False; only 1 non-title evidence quote(s); need >= 2
+- evidence quotes (first 3):
+    - A brief 3-month treatment of middle-aged mice with the mTOR inhibitor rapamycin produced an immediate, persistent improvement in healthspan and increased survival, with adult-onset transient rapamyci...
 
 ### s291 - Rapamycin rejuvenates oral health in aging mice.
 - year: 2020  venue: eLife

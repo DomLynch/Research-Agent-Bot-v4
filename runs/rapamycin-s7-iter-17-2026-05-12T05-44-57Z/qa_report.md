@@ -1,4 +1,4 @@
-# Corpus QA Report - rapamycin-s7-iter-17-2026-05-12T05-44-57Z
+# Corpus QA Report - latest
 
 Topic: rapamycin
 
@@ -6,16 +6,15 @@ Topic: rapamycin
 - candidates: 298
 - parsed (parsed=True): 139
 - eligibility decisions: 140
-  - include: 24
+  - include: 22
   - exclude: 108
-  - unclear: 7
+  - unclear: 9
 - declared sentinels: 4 (3 primary + 1 prior_meta)
 
 ## Per-include audit
 
 | study_id | lane | title | yr | spec | interv | endp | ctrl | conf | chars | first evidence quote |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| s086 | A | Rapamycin fed late in life extends lifespan in genetically ... | 2009 | no | no | no | no | 1.00 | 11337 | Here we report that rapamycin, an inhibitor of the mTOR pathway, extends median and maxim... |
 | s092 | A | Metformin potentiates nephrotoxicity by promoting NETosis i... | 2023 | yes | yes | yes | yes | 1.00 | 76604 | we treated mice with AKI induced by renal ischemia-reperfusion (I/R) with different drugs... |
 | s094 | A | The mTOR pathway is necessary for survival of mice with sho... | 2020 | yes | yes | yes | yes | 1.00 | 80000 | 3-month-old wild type and second-generation telomerase-deﬁcient mice (G2 Terc−/−) in a C5... |
 | s099 | A | High-content screening identifies ganoderic acid A as a sen... | 2025 | yes | yes | yes | yes | 1.00 | 80000 | As expected, rapamycin (100 μM) signiﬁcantly extended the median (12%) and maximum lifesp... |
@@ -38,17 +37,25 @@ Topic: rapamycin
 | s263 | A | SRN-901, a Novel Longevity Drug, Extends Lifespan and Healt... | 2026 | yes | yes | yes | yes | 1.00 | 77026 | Rapamycin was mixed in food with a concentration of 14.4 ppm. |
 | s268 | A | Dose-dependent effects of mTOR inhibition on weight and mit... | 2015 | yes | yes | yes | yes | 1.00 | 37179 | we compared the effects of dietary rapamycin at doses ranging from 14 to 378 PPM on devel... |
 | s282 | B | Rapamycin increases lifespan and inhibits spontaneous tumor... | 2011 | yes | yes | yes | yes | 1.00 | 80000 | Daily administration of rapamycin, an inhibitor of the nutrient sensing mechanistic targe... |
-| s288 | A | Transient rapamycin treatment can increase lifespan and hea... | 2016 | no | no | no | no | 1.00 | 80000 | A brief 3-month treatment of middle-aged mice with the mTOR inhibitor rapamycin produced ... |
 
 ## Sentinel-stage audit
 
 | sentinel_id | role | stage | parsed? | elig | conf | reason / failure |
 | --- | --- | --- | --- | --- | --- | --- |
-| 10.1038/nature08221 | primary | retrieved+candidate | yes | include | 1.00 | manual override (include): Foundational primary mouse rapamycin lifespan study (NIA-ITP).... |
+| 10.1038/nature08221 | primary | retrieved+candidate | yes | unclear | 1.00 | include_contract failed: parsed_text_adequate=False; only 1 non-title evidence quote(s); ... |
 | 10.1093/gerona/glq178 | primary | retrieved+candidate | no | unavailable | 1.00 | manual override (unavailable): Miller 2011 NIA-ITP follow-up. Located via PMC + Unpaywall... |
-| 10.7554/elife.16351 | primary | retrieved+candidate | yes | include | 1.00 | manual override (include): Bitto 2016 transient-rapamycin study (eLife, OA). Auto-judge h... |
+| 10.7554/elife.16351 | primary | retrieved+candidate | yes | unclear | 1.00 | include_contract failed: parsed_text_adequate=False; only 1 non-title evidence quote(s); ... |
 | 10.1093/gerona/glw153 | prior_meta | retrieved+candidate | no | no-parse | - | no parsed receipt |
+
+## Sentinel resolution status (manual overlay)
+
+| sentinel_id | role | study_id | auto_decision | manual_status | action_required |
+| --- | --- | --- | --- | --- | --- |
+| 10.1038/nature08221 | primary | s086 | unclear | resolved_available_pending_contract | wire stable OA mirror or supply verified Nature PDF; until ... |
+| 10.1093/gerona/glq178 | primary | s126 | unavailable | resolved_unavailable | supply institutional auth or licensed OUP feed |
+| 10.7554/elife.16351 | primary | s288 | unclear | resolved_available_pending_contract | judge prompt stabilisation so this paper passes the univers... |
+| 10.1093/gerona/glw153 | prior_meta | s136 | no-receipt | (no manual record) |  |
 
 ## Quality flags
 
-- (none)
+- sentinel contract gaps remain: 2 primary sentinel(s) resolved_available_pending_contract (['10.1038/nature08221', '10.7554/elife.16351']); retrieval/parser must fix before the universal contract can pass.

@@ -347,18 +347,33 @@ def main() -> int:
     if high_conf_partial:
         flags.append(f"- {len(high_conf_partial)} include(s) with conf>=0.99 but "
                      "missing >=1 mandatory field - judge over-confidence smell.")
-    # Primary sentinels are 'resolved' if their row landed include OR
-    # unavailable (manual override with documented retrieval limitation).
+    # Sprint 7.11.2: pending-contract primary sentinels are a documented
+    # SYSTEM-LEVEL GAP (retrieval/parser owes work). They are surfaced
+    # here so the report can't quietly read "Quality flags: none" while
+    # canonical sentinels are still unresolved.
+    if pending_primaries:
+        flags.append(
+            f"- sentinel contract gaps remain: {len(pending_primaries)} "
+            f"primary sentinel(s) resolved_available_pending_contract "
+            f"({pending_primaries}); retrieval/parser must fix before "
+            f"the universal contract can pass."
+        )
+    # Hard miss: primary sentinel where neither auto nor manual reaches
+    # a final state.
     sentinel_misses = [
         s for s, role in pack_sentinels.items() if role == "primary"
         and not any(
-            row[0] == s and row[4] in ("include", "unavailable")
-            for row in sentinel_rows
+            row[0] == s and row[4] in (
+                "include", "unavailable",
+                "resolved_available_pending_contract",
+                "resolved_unavailable", "resolved_excluded",
+            )
+            for row in overlay_rows
         )
     ]
     if sentinel_misses:
         flags.append(f"- {len(sentinel_misses)} primary sentinel(s) UNRESOLVED "
-                     f"(neither included nor unavailable-with-reason): {sentinel_misses}")
+                     f"(no auto verdict + no manual record): {sentinel_misses}")
     if not flags:
         flags.append("- (none)")
     qa.append("\n".join(flags))

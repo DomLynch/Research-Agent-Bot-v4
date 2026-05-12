@@ -190,6 +190,26 @@ def main() -> int:
     if demoted:
         print(f"[regen] universal contract demoted {demoted} include(s) to unclear")
 
+    # Sprint 7.11.2 canonicalisation: contract-demoted receipts carry a
+    # vestigial rule_decision="manual-override" tag from the legacy 7.10
+    # path. Strip it; the auto pipeline owns the verdict now, not a
+    # manual reviewer. "unavailable" receipts keep their tag because
+    # that's the canonical manual-status path.
+    eligibility = tuple(
+        EligibilityReceipt(
+            study_id=r.study_id, decision=r.decision, reason=r.reason,
+            reviewer=r.reviewer, confidence=r.confidence,
+            mandatory_fields=r.mandatory_fields,
+            evidence_quotes=r.evidence_quotes, judge_model=r.judge_model,
+            rule_decision="",
+            source_text_hash=r.source_text_hash,
+            timestamp_utc=r.timestamp_utc,
+        )
+        if r.rule_decision == "manual-override" and r.decision != "unavailable"
+        else r
+        for r in eligibility
+    )
+
     # Manual_resolutions are a status-only overlay. They do NOT mutate
     # eligibility receipts and cannot promote a paper into primary
     # inclusion; that is the universal contract's job. The overlay

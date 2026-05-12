@@ -1,7 +1,9 @@
 {
+  "_doc": "Legacy lane-classifier-only view (kept for audit). Sprint 8 effect-size extraction MUST consume primary_effect_input_set_strict.json instead \u2014 that file applies the universal evidence contract uniformly.",
+  "canonical_for_sprint_8": false,
   "topic": "rapamycin",
   "run_id": "latest",
-  "frozen_at_utc": "2026-05-12T07:05:36+00:00",
+  "frozen_at_utc": "2026-05-12T07:44:57+00:00",
   "lane_counts": {
     "A_direct_lifespan": 12,
     "B_disease_model_survival": 4,

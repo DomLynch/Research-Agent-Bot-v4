@@ -195,6 +195,13 @@ def main() -> int:
             })
 
     out = {
+        "_doc": (
+            "Legacy lane-classifier-only view (kept for audit). "
+            "Sprint 8 effect-size extraction MUST consume "
+            "primary_effect_input_set_strict.json instead — that file "
+            "applies the universal evidence contract uniformly."
+        ),
+        "canonical_for_sprint_8": False,
         "topic": args.topic,
         "run_id": rd.name,
         "frozen_at_utc": dt.datetime.now(tz=dt.UTC).isoformat(timespec="seconds"),
@@ -213,6 +220,14 @@ def main() -> int:
     print(f"[freeze] wrote {target}")
 
     strict_out = {
+        "_doc": (
+            "CANONICAL input for Sprint 8 effect-size extraction. "
+            "A_core_direct_lifespan = strict universal-contract pass. "
+            "B_disease_model_survival = sensitivity lane. "
+            "C_secondary_contextual = demoted by quote audit or "
+            "manual exclusion."
+        ),
+        "canonical_for_sprint_8": True,
         "topic": args.topic,
         "run_id": rd.name,
         "frozen_at_utc": dt.datetime.now(tz=dt.UTC).isoformat(timespec="seconds"),
