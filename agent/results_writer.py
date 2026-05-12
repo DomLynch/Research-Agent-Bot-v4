@@ -88,10 +88,12 @@ def _render_study_selection(p: InformationalPacket) -> str:
         f"{prefix} Open-access full-text availability was located for "
         f"{availability} candidates; full-text content was parsed for "
         f"{parsed} of these. Pre-specified eligibility adjudication was "
-        f"applied to {decisions} parsed records, yielding {included} included, "
+        f"applied to {decisions} parsed records, yielding {included} "
+        f"auto-eligible records (universal evidence contract passed), "
         f"{excluded} excluded, and {unclear} flagged for manual review of "
-        f"low-confidence or rule-judge conflicts for the primary pooled "
-        f"analysis [PACKET:study_selection]."
+        f"low-confidence or rule-judge conflicts; the subset of strict "
+        f"A-core records is the canonical input for primary-effect "
+        f"extraction [PACKET:study_selection]."
     )
 
 

@@ -25,7 +25,9 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.include_contract import classify_lane
+from agent.manual_resolution import build_manual_status_overlay, load_manual_resolutions
 from agent.retrieval.base import normalize_doi
+from agent.screening import CandidateStudy
 from agent.topic_pack import load_topic_pack
 
 
@@ -258,6 +260,46 @@ def main() -> int:
     include_rows = _per_include_rows(elig, parsed_by_id, cand_by_id, pack)
     decisions = Counter(r["decision"] for r in elig)
 
+    # Sprint 7.11.2: surface the manual_status_overlay so the report
+    # categorises each sentinel as resolved_available_pending_contract /
+    # resolved_unavailable / resolved_excluded / needs_review instead of
+    # blindly accepting "include with reviewer=human-dom".
+    overlay_cands = tuple(
+        CandidateStudy(
+            study_id=c["study_id"], hit_key=c.get("hit_key", ""),
+            title=c.get("title", ""), year=c.get("year"), venue=c.get("venue"),
+            pmid=c.get("pmid"), doi=c.get("doi"),
+        )
+        for c in cands
+    )
+    overlay = build_manual_status_overlay(
+        load_manual_resolutions(args.topic), overlay_cands,
+    )
+    overlay_rows: list[list[str]] = []
+    pending_primaries: list[str] = []
+    for sid, role in pack_sentinels.items():
+        cand_row = next(
+            (c for c in cands if (c.get("doi") and normalize_doi(c["doi"]) == (normalize_doi(sid) or ""))
+             or (c.get("pmid") and str(c["pmid"]) == sid)),
+            None,
+        )
+        cand_id = cand_row["study_id"] if cand_row else ""
+        elig_row = elig_by_id.get(cand_id, {}) if cand_id else {}
+        auto_decision = str(elig_row.get("decision", "no-receipt"))
+        manual = overlay.get(cand_id) if cand_id else None
+        if manual is None:
+            status = "(no manual record)"
+        elif manual.status == "resolved_available" and auto_decision != "include":
+            status = "resolved_available_pending_contract"
+        else:
+            status = manual.status
+        if role == "primary" and status == "resolved_available_pending_contract":
+            pending_primaries.append(sid)
+        overlay_rows.append([
+            sid, role, cand_id or "-", auto_decision, status,
+            _truncate(manual.action_required if manual else "", 60),
+        ])
+
     qa = [
         f"# Corpus QA Report - {rd.name}\n",
         f"Topic: {args.topic}\n",
@@ -282,6 +324,12 @@ def main() -> int:
             ["sentinel_id", "role", "stage", "parsed?", "elig", "conf", "reason / failure"],
             sentinel_rows,
         ) if sentinel_rows else "_(no sentinels declared)_",
+        "\n## Sentinel resolution status (manual overlay)\n",
+        _md_table(
+            ["sentinel_id", "role", "study_id", "auto_decision",
+             "manual_status", "action_required"],
+            overlay_rows,
+        ) if overlay_rows else "_(no sentinels declared)_",
         "\n## Quality flags\n",
     ]
     flags: list[str] = []

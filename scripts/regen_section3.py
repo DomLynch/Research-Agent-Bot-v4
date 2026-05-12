@@ -85,6 +85,22 @@ def _eligibility_from_dict(d: dict[str, Any]) -> EligibilityReceipt:
     )
 
 
+def _receipt_to_dict(r: EligibilityReceipt) -> dict[str, Any]:
+    return {
+        "study_id": r.study_id,
+        "decision": r.decision,
+        "reason": r.reason,
+        "reviewer": r.reviewer,
+        "confidence": r.confidence,
+        "mandatory_fields": dict(r.mandatory_fields),
+        "evidence_quotes": list(r.evidence_quotes),
+        "judge_model": r.judge_model,
+        "rule_decision": r.rule_decision,
+        "source_text_hash": r.source_text_hash,
+        "timestamp_utc": r.timestamp_utc,
+    }
+
+
 def _hit_stub(c: CandidateStudy) -> PaperHit:
     """Reconstruct a minimal PaperHit so sentinel recall + study selection
     counts work. The candidate already carries the identifiers we need
@@ -124,7 +140,8 @@ def _render_primary_pool_block(strict: dict[str, Any]) -> str:
     a_ids = [s["study_id"] for s in strict.get("A_core_direct_lifespan", [])]
     if a_ids:
         lines.append(
-            "Strict A-core study IDs: " + ", ".join(sorted(a_ids))
+            f"Strict A-core records selected for primary extraction "
+            f"({len(a_ids)}): " + ", ".join(sorted(a_ids))
             + " [PACKET:primary_pool_composition]."
         )
         lines.append("")
@@ -257,6 +274,22 @@ def main() -> int:
 
     out = args.out or (rd / "main_draft.md")
     out.write_text(body, encoding="utf-8")
+
+    # Sprint 7.11.2 canonicalisation: rotate the legacy receipts file
+    # (only on the first regen for this run) and write the post-contract
+    # state as canonical. Stamps each demoted receipt with reviewer=
+    # "include-contract" + reason naming the violations.
+    legacy_path = rd / "eligibility_receipts.legacy-pre-7.11.1.json"
+    receipts_path = rd / "eligibility_receipts.json"
+    if not legacy_path.exists():
+        legacy_path.write_text(json.dumps(elig_raw, indent=2), encoding="utf-8")
+        print(f"[regen] rotated legacy -> {legacy_path}")
+    receipts_path.write_text(
+        json.dumps([_receipt_to_dict(r) for r in eligibility], indent=2),
+        encoding="utf-8",
+    )
+    print(f"[regen] wrote canonical {receipts_path}")
+
     timestamp = dt.datetime.now(tz=dt.UTC).isoformat(timespec="seconds")
     print(
         f"[regen] {state.k_eligibility_included} include / "
