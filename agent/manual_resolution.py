@@ -42,6 +42,10 @@ from agent.screening import CandidateStudy, EligibilityReceipt
 _PACK_DIR = Path(__file__).resolve().parent.parent / "topic_packs"
 
 ManualDecision = Literal["include", "exclude", "unavailable", "secondary"]
+ManualLane = Literal[
+    "direct_lifespan", "disease_model_survival",
+    "secondary_molecular", "healthspan_only", "exclude", "",
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,6 +58,7 @@ class ManualResolutionReceipt:
     reason: str
     evidence_quote: str
     reviewer: str
+    lane: ManualLane = ""  # optional - when set, freeze_primary_set honors it
 
 
 def load_manual_resolutions(
