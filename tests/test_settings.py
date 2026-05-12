@@ -40,7 +40,7 @@ def test_defaults_when_env_missing(monkeypatch: pytest.MonkeyPatch) -> None:
     assert s.daily_cost_cap_usd == 25.0
     assert s.bot_enabled is True
     assert s.runs_dir == "runs"
-    assert s.loc_ceiling == 5000
+    assert s.loc_ceiling == 7500
 
 
 def test_writer_configured_property(monkeypatch: pytest.MonkeyPatch) -> None:

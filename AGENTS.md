@@ -2,18 +2,23 @@
 
 ## Purpose
 Research Agent Bot v4 (`synthesis-lite`) produces AAA-grade, source-grounded
-research papers in ≤3,000 LOC core. Main manuscript = argument. Supplement =
-audit. Compiler = truth. LLM = prose. Contract = enforcement.
+research papers in a deliberately small core. Main manuscript = argument.
+Supplement = audit. Compiler = truth. LLM = prose. Contract = enforcement.
 
 **No LLM owns truth. No literal owns topic. No gate owns more than its rule.
 No section owns evidence outside its packet.**
 
-## Current State — 2026-05-11
-- Sprint: 1 of 3 — Evidence engine + state
-- Build mode: sequential, one step at a time, verify before advancing
-- LOC ceiling: 3,000 in `agent/` (hard gate, `scripts/loc_gate.sh`)
-- Greenfield repo. No fork from v06. Doctrine and topic_pack TOML are inherited;
-  code is rewritten from scratch.
+## Current State — 2026-05-12 (Sprint 11.1)
+- LOC ceiling: **7,500 in `agent/`** (hard gate, `scripts/loc_gate.sh`).
+  History: 3,000 (initial) → 5,000 (Sprint 6 truth patch) → 7,500
+  (Sprint 11.1 manuscript completion). Every module under the higher cap
+  must delete or prevent a fake-evidence failure mode (typed contract,
+  validator, receipt, provenance) — not buy prose polish or speculative
+  abstraction.
+- Universal-no-hardcoding: no biomedical literals in `agent/`; topic
+  packs supply domain vocabulary, anchors, sentinels, eligibility terms,
+  metric families.
+- Build mode: sequential sprints, verify before advancing.
 
 ## Hard Rule
 ```text
