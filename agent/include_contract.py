@@ -114,19 +114,30 @@ def classify_lane(
 ) -> Lane:
     """Assign a corpus lane based on title heuristics + decision string.
     Lanes are mutually exclusive and ordered by primary-pool priority.
-    Accepts the decision as a plain string so callers (orchestrator or
-    corpus_qa reading JSON) don't need to reconstruct an EligibilityReceipt.
+
+    Hard gates (checked before title heuristics):
+      - decision in {exclude, unclear}   -> E
+      - parsed_char_count < MIN_CHARS    -> E (prevents 54-char "parses"
+        from landing in any primary lane via a title-keyword match)
+
+    Title heuristics (in priority order):
+      - review/meta-analysis terms       -> D
+      - secondary-molecular markers      -> C
+      - disease-model markers            -> B
+      - default for confirmed includes   -> A
     """
+    if decision in {"exclude", "unclear"}:
+        return "E_exclude"
+    if parsed_char_count < MIN_CHARS:
+        return "E_exclude"
     title = (candidate_title or "").casefold()
     if any(t in title for t in _REVIEW_TITLE_TERMS):
         return "D_review_background"
-    if decision in {"exclude", "unclear"}:
-        return "E_exclude"
     if any(t in title for t in _SECONDARY_MOLECULAR_TITLE_TERMS):
         return "C_secondary_molecular"
     if any(t in title for t in _DISEASE_MODEL_TITLE_TERMS):
         return "B_disease_model_survival"
-    if decision == "include" and parsed_char_count >= MIN_CHARS:
+    if decision == "include":
         return "A_direct_lifespan"
     return "E_exclude"
 

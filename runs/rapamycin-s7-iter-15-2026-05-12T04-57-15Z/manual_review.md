@@ -1,4 +1,4 @@
-# Manual Review Queue - rapamycin-s7-iter-15-2026-05-12T04-57-15Z
+# Manual Review Queue - latest
 
 45 receipts flagged 'unclear' by the rule -> judge -> deterministic merge. Sorted by study_id.
 

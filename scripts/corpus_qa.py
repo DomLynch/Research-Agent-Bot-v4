@@ -69,8 +69,50 @@ def _truncate(s: str, n: int = 90) -> str:
     return s if len(s) <= n else s[: n - 1] + "..."
 
 
+def _passes_contract(
+    receipt: dict[str, Any], parsed: dict[str, Any], title: str, pack: Any,
+) -> bool:
+    """Dict-based mirror of agent.include_contract.validate_include so
+    corpus_qa can retro-apply the contract to legacy JSON receipts without
+    reconstructing EligibilityReceipt objects. Hard rules:
+      - parsed_text_adequate True
+      - char_count >= 5000
+      - >= 2 non-title-duplicate evidence quotes
+      - >= 1 quote containing an endpoint term
+      - >= 1 quote containing an intervention or control term
+    """
+    from agent.include_contract import MIN_CHARS, MIN_EVIDENCE_QUOTES
+    if not receipt.get("mandatory_fields", {}).get("parsed_text_adequate", False):
+        return False
+    if int(parsed.get("char_count", 0)) < MIN_CHARS:
+        return False
+    quotes = receipt.get("evidence_quotes") or []
+    norm_t = "".join(c for c in (title or "").casefold() if c.isalnum())
+    non_title: list[str] = []
+    for q in quotes:
+        norm_q = "".join(c for c in q.casefold() if c.isalnum())
+        if norm_t and (norm_q == norm_t or norm_q == norm_t[: len(norm_q)]):
+            continue
+        non_title.append(q)
+    if len(non_title) < MIN_EVIDENCE_QUOTES:
+        return False
+    endpoint_terms = tuple(getattr(pack, "eligibility_endpoint_terms", ()))
+    methods_terms = (
+        tuple(getattr(pack, "primary_interventions", ()))
+        + tuple(getattr(pack, "eligibility_control_terms", ()))
+    )
+    if endpoint_terms and not any(
+        any(t.casefold() in q.casefold() for t in endpoint_terms if t) for q in quotes
+    ):
+        return False
+    return not methods_terms or any(
+        any(t.casefold() in q.casefold() for t in methods_terms if t) for q in quotes
+    )
+
+
 def _per_include_rows(
-    receipts: list[dict[str, Any]], parsed_by_id: dict[str, dict[str, Any]], cand_by_id: dict[str, dict[str, Any]],
+    receipts: list[dict[str, Any]], parsed_by_id: dict[str, dict[str, Any]],
+    cand_by_id: dict[str, dict[str, Any]], pack: Any,
 ) -> list[list[str]]:
     rows: list[list[str]] = []
     for r in receipts:
@@ -81,18 +123,22 @@ def _per_include_rows(
         parsed = parsed_by_id.get(sid, {})
         fields = r.get("mandatory_fields", {})
         evidence = r.get("evidence_quotes") or [""]
+        lane = classify_lane(
+            cand.get("title", ""), parsed.get("char_count", 0),
+            r.get("decision"), pack,
+        )
         rows.append([
             sid,
-            _truncate(cand.get("title", "?"), 70),
+            lane.split("_", 1)[0],  # short label: A/B/C/D/E
+            _truncate(cand.get("title", "?"), 60),
             str(cand.get("year") or "?"),
-            cand.get("venue") or "?",
             "yes" if fields.get("species_match") else "no",
             "yes" if fields.get("intervention_match") else "no",
             "yes" if fields.get("endpoint_present") else "no",
             "yes" if fields.get("control_present") else "no",
             f"{r['confidence']:.2f}",
             f"{parsed.get('char_count', 0)}",
-            _truncate(evidence[0], 110),
+            _truncate(evidence[0], 90),
         ])
     return rows
 
@@ -184,12 +230,28 @@ def main() -> int:
     parsed_by_id = {p["study_id"]: p for p in parsed}
     elig_by_id = {r["study_id"]: r for r in elig}
 
+    # Sprint 7.8: apply the include contract retroactively when reading
+    # legacy runs (iter-15 was generated before the contract landed). Any
+    # include that fails the contract is shown as 'unclear' in the audit
+    # so the report reflects what the post-contract pipeline would emit.
+    demoted_ids: set[str] = set()
+    for r in elig:
+        if r.get("decision") != "include":
+            continue
+        sid = r["study_id"]
+        parsed_rec = parsed_by_id.get(sid, {})
+        cand_rec = cand_by_id.get(sid, {})
+        if not _passes_contract(r, parsed_rec, cand_rec.get("title", ""), pack):
+            r["decision"] = "unclear"
+            r["reason"] = "include_contract retro-demoted: " + r.get("reason", "")
+            demoted_ids.add(sid)
+
     pack_sentinels: dict[str, str] = {
         **{s: "primary" for s in pack.sentinel_primary},
         **{s: "prior_meta" for s in pack.sentinel_prior_meta},
     }
     sentinel_rows = _sentinel_rows(pack_sentinels, cands, parsed_by_id, elig_by_id)
-    include_rows = _per_include_rows(elig, parsed_by_id, cand_by_id)
+    include_rows = _per_include_rows(elig, parsed_by_id, cand_by_id, pack)
     decisions = Counter(r["decision"] for r in elig)
 
     qa = [
@@ -207,7 +269,7 @@ def main() -> int:
         f"{sum(1 for v in pack_sentinels.values() if v == 'prior_meta')} prior_meta)\n",
         "## Per-include audit\n",
         _md_table(
-            ["study_id", "title", "yr", "venue", "spec", "interv", "endp", "ctrl",
+            ["study_id", "lane", "title", "yr", "spec", "interv", "endp", "ctrl",
              "conf", "chars", "first evidence quote"],
             include_rows,
         ) if include_rows else "_(no includes)_",
