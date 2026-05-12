@@ -58,6 +58,21 @@ Full receipts (decision, reviewer, confidence, mandatory fields, evidence quotes
 Skipped (no inverse-variance numerics): `s086`, `s230`, `s288`
 
 
+### S5c — Researka Canonical-Fact Cross-Check
+
+Third-party-validation overlay. For every extraction receipt with `percent_change` numerics, the Researka Tier 2 facts index (POST `/api/v1/tier2/facts/search`) was queried and filtered to facts whose paper DOI matches the receipt. The verdict is computed against a 25% tolerance band on the canonical %-value.
+
+| study_id | doi | verdict | receipt% | best_match_fact_id | Δ% |
+| --- | --- | --- | --- | --- | --- |
+| s086 | 10.1038/nature08221 | no_canonical_fact | 14.0% | — | — |
+| s126 | 10.1093/gerona/glq178 | no_canonical_fact | 10.0% | — | — |
+| s230 | 10.1371/journal.pone.0126644 | no_receipt_numerics | — | — | — |
+| s235 | 10.15252/embr.202255299 | no_canonical_fact | 9.6% | — | — |
+| s246 | 10.18632/aging.100633 | no_canonical_fact | 50.0% | — | — |
+| s288 | 10.7554/eLife.16351 | no_receipt_numerics | — | — | — |
+
+Crosscheck distribution: matched=0, discrepant=0, no_canonical_fact=4, no_receipt_numerics=2.
+
 ## S6 — Risk-of-Bias Notes
 
 Automated rule-based screen per the pre-specified eligibility ladder (rule_triage → LLM judge → deterministic merge → include-contract). The universal evidence contract requires (a) parsed_text_adequate, (b) char_count above the topic-pack minimum, (c) at least two non-title evidence quotes, (d) endpoint-term coverage, and (e) intervention or control term coverage. Strict A-core additionally demands quote-level evidence that the CURRENT experiment used the preferred species + primary intervention + control + endpoint. Each demotion is recorded with its violation list in `primary_effect_input_set_strict.json`. **A pre-publication submission would require an explicit human risk-of-bias adjudication step** (e.g. SYRCLE for animal studies, Cochrane RoB 2 for human RCTs) on top of this automated screen.
