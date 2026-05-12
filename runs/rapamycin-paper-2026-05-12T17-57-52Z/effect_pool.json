@@ -1,17 +1,36 @@
 {
-  "_doc": "Sprint 8 pooled effect-size records. Inverse-variance pooling consumes this file; main_draft.md Primary Pooled Effect renders from the resulting packet.",
+  "_doc": "Sprint 11.5 inverse-variance pool, two-lane. effects = A-core wild-type primary. sensitivity_effects = B disease-model / genotype-modified.",
   "topic": "rapamycin",
-  "run_id": "sprint115-reextract",
-  "frozen_at_utc": "2026-05-12T17:54:14+00:00",
-  "k_outcomes": 2,
   "k_effects": 2,
+  "k_effects_sensitivity": 1,
   "skipped_study_ids": [
     "s086",
     "s230",
-    "s288",
-    "s126"
+    "s288"
   ],
+  "pooled_a_core_summary": {
+    "k": 2,
+    "metric": "log_median_ratio",
+    "estimate": 0.10407706844811945,
+    "se": 0.07686849349891604,
+    "ci_low": -0.046582410355607284,
+    "ci_high": 0.2547365472518462,
+    "median_ratio_back": 1.1096859733960214
+  },
   "outcomes": [
+    {
+      "study_id": "s126",
+      "outcome_id": "s126.primary",
+      "metric_name": "log_median_ratio",
+      "moderators": {
+        "sex": "male"
+      },
+      "treated_value": 913.0,
+      "control_value": 822.0,
+      "treated_n": 318,
+      "control_n": 313,
+      "raw_unit": "median_lifespan_days"
+    },
     {
       "study_id": "s235",
       "outcome_id": "s235.primary",
@@ -40,6 +59,19 @@
   ],
   "effects": [
     {
+      "study_id": "s126",
+      "outcome_id": "s126.primary",
+      "metric": "log_median_ratio",
+      "estimate": 0.10499548553878858,
+      "se": 0.07962124256104053,
+      "ci_low": -0.051059282285178545,
+      "ci_high": 0.2610502533627557,
+      "moderators": {
+        "sex": "male"
+      },
+      "lane": "A_core_direct_lifespan"
+    },
+    {
       "study_id": "s235",
       "outcome_id": "s235.primary",
       "metric": "log_median_ratio",
@@ -47,8 +79,11 @@
       "se": 0.29488391230979427,
       "ci_low": -0.4864822748829818,
       "ci_high": 0.6694414206119468,
-      "moderators": {}
-    },
+      "moderators": {},
+      "lane": "A_core_direct_lifespan"
+    }
+  ],
+  "sensitivity_effects": [
     {
       "study_id": "s246",
       "outcome_id": "s246.primary",
@@ -60,7 +95,8 @@
       "moderators": {
         "strain": "Bmal1\u2212/\u2212",
         "dose": "0.5mg/kg"
-      }
+      },
+      "lane": "B_disease_model_survival"
     }
   ]
 }

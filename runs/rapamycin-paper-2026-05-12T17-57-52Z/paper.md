@@ -1,9 +1,11 @@
-<!-- AUTO-STITCHED Sprint 11.4 — re-extracted + two-lane split + dynamic Appendix A + Fok claim deleted + study table.
-  A-core pool: k=1, B sensitivity pool: k=1
+<!-- AUTO-STITCHED Sprint 11.5 — re-extracted 6 sentinels, median-family preference, two-lane pool.
+  A-core pool: k=2 log_median_ratio (s126 Miller 2011 + s235 Hu 2022, wild-type)
+  B sensitivity pool: k=1 (s246 BMAL1-/-)
+  pooled A-core: est=0.1041, CI [-0.0466,0.2547]
   placeholders: 12 resolved
   honesty rewrites: 18 applied
   citations: 19 resolved
-  stamped: 2026-05-12T17:33:38+00:00
+  stamped: 2026-05-12T17:57:52+00:00
 -->
 
 
@@ -11,7 +13,7 @@
 
 ## Abstract
 
-To what extent does rapamycin consistently extend lifespan in murine models, and what study-level factors moderate this effect? Prior syntheses have identified a generally positive effect but report substantial heterogeneity, with uncertainty remaining about the precise roles of genetic background, sex, dose, and treatment timing [1] [2]. The present living evidence-contract synthesis is designed to provide a more granular mapping of this heterogeneity once the contract-passing pool accrues k>=2 effects per metric family; the current iteration reports a four-study strict A-core corpus and a single inverse-variance-poolable median-lifespan effect. The corpus was assembled through a reproducible-pipeline search and screening process (no external registry record claimed), yielding 502 identified records, which after title/abstract and full-text screening resulted in 8 independent studies meeting inclusion criteria for the 4 distinct experiments included in the quantitative synthesis. Mixed-effects meta-regression to partition SMD variance is a designed-for capability of the pipeline; it is reported only once k>=2 contract-passing effects per metric family accrue. This framework is specified to test the moderating influence of murine strain, sex, drug dose, route of administration, and age at treatment initiation. A central component of this work is the construction of a tension matrix to evaluate consistency of effects across these key subgroups. The research questions guiding the moderator analysis are: Do effects differ between inbred and outbred strains? Is there evidence for sex-specific efficacy? Does the dose-response relationship plateau or attenuate? Does the timing of intervention initiation—whether in early, middle, or later life—alter the magnitude of the effect? The implications of the planned findings are intended to inform the design of future primary studies by identifying critical sources of variability and potential knowledge gaps, thereby strengthening the translational evidence base.
+To what extent does rapamycin consistently extend lifespan in murine models, and what study-level factors moderate this effect? Prior syntheses have identified a generally positive effect but report substantial heterogeneity, with uncertainty remaining about the precise roles of genetic background, sex, dose, and treatment timing [1] [2]. The present living evidence-contract synthesis is designed to provide a more granular mapping of this heterogeneity once the contract-passing pool accrues k>=2 effects per metric family; the current iteration reports a four-study strict A-core corpus and a single inverse-variance-poolable median-lifespan effect. The corpus was assembled through a reproducible-pipeline search and screening process (no external registry record claimed), yielding 502 identified records, which after title/abstract and full-text screening resulted in 8 independent studies meeting inclusion criteria for the 3 distinct experiments included in the quantitative synthesis. Mixed-effects meta-regression to partition SMD variance is a designed-for capability of the pipeline; it is reported only once k>=2 contract-passing effects per metric family accrue. This framework is specified to test the moderating influence of murine strain, sex, drug dose, route of administration, and age at treatment initiation. A central component of this work is the construction of a tension matrix to evaluate consistency of effects across these key subgroups. The research questions guiding the moderator analysis are: Do effects differ between inbred and outbred strains? Is there evidence for sex-specific efficacy? Does the dose-response relationship plateau or attenuate? Does the timing of intervention initiation—whether in early, middle, or later life—alter the magnitude of the effect? The implications of the planned findings are intended to inform the design of future primary studies by identifying critical sources of variability and potential knowledge gaps, thereby strengthening the translational evidence base.
 
 ## Introduction
 
@@ -72,10 +74,9 @@ Per-study extraction summary across the strict A-core corpus. Fields are taken v
 
 | Study | Strain / model | Sex | Dose | Age started | Metric | Treated | Control | n_T | n_C | In pool? | Reason |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| s086 | — | — | — | — | — | — | — | — | — | No | no inverse-variance numerics |
-| s230 | — | — | — | — | — | — | — | — | — | No | no inverse-variance numerics |
-| s235 | — | — | — | — | — | — | — | — | — | No | no inverse-variance numerics |
-| s288 | — | male | — | — | median_lifespan_days | 1054.0 | 925.0 | 17 | 18 | Yes | — |
+| s126 | — | male | — | — | median_lifespan_days | 913.0 | 822.0 | 318 | 313 | Yes | — |
+| s235 | — | — | — | — | median_lifespan_days | 938.0 | 856.0 | 23 | 23 | Yes | — |
+| s288 | — | — | — | — | — | — | — | — | — | No | no inverse-variance numerics |
 
 ## Discussion
 
@@ -114,30 +115,31 @@ numbers.
 - contract violations: 0
 - judge model: `google/gemma-4-31b-it`
 
-### Strict A-core (k_studies = 4)
+### Strict A-core (k_studies = 3)
 
-- s086: Rapamycin fed late in life extends lifespan in genetically heterogeneous mice. (2009, Nature; DOI 10.1038/nature08221)
-- s230: Health Effects of Long-Term Rapamycin Treatment: The Impact on Mouse Health of Enteric Rapamycin Treatment from Four Months of Age throughout Life. (2015, PloS one; DOI 10.1371/journal.pone.0126644)
-- s235: Transient rapamycin treatment during developmental stage extends lifespan in Mus musculus and Drosophila melanogaster. (2022, EMBO reports; DOI 10.15252/embr.202255299)
-- s288: Transient rapamycin treatment can increase lifespan and healthspan in middle-aged mice. (2016, eLife; DOI 10.7554/elife.16351)
+- s126: Rapamycin, but not resveratrol or simvastatin, extends life span of genetically heterogeneous mice (2011, J Gerontol A; DOI 10.1093/gerona/glq178)
+- s235: Transient rapamycin treatment during developmental stage extends lifespan (2022, EMBO Reports; DOI 10.15252/embr.202255299)
+- s288: Transient rapamycin treatment can increase lifespan and healthspan in middle-aged mice (2016, eLife; DOI 10.7554/eLife.16351)
 
 ### Effect extraction receipts
 
-- s086: status=parse_failed, metric=, treated_value=None, control_value=None, treated_n=None, control_n=None, moderators={}
+- s086: status=extracted, metric=maximum_lifespan, treated_value=1245.0, control_value=1094.0, treated_n=None, control_n=None, moderators={'sex': 'female'}
+- s126: status=extracted, metric=median_lifespan_days, treated_value=913.0, control_value=822.0, treated_n=318, control_n=313, moderators={'sex': 'male'}
 - s230: status=parse_failed, metric=, treated_value=None, control_value=None, treated_n=None, control_n=None, moderators={}
-- s235: status=parse_failed, metric=, treated_value=None, control_value=None, treated_n=None, control_n=None, moderators={}
-- s246: status=extracted, metric=median_lifespan_days, treated_value=345.0, control_value=234.0, treated_n=31, control_n=73, moderators={}
-- s288: status=extracted, metric=median_lifespan_days, treated_value=1054.0, control_value=925.0, treated_n=17, control_n=18, moderators={'sex': 'male'}
+- s235: status=extracted, metric=median_lifespan_days, treated_value=938.0, control_value=856.0, treated_n=23, control_n=23, moderators={}
+- s246: status=extracted, metric=median_lifespan_days, treated_value=350.03, control_value=237.41, treated_n=31, control_n=73, moderators={'strain': 'Bmal1−/−', 'dose': '0.5mg/kg'}
+- s288: status=parse_failed, metric=, treated_value=None, control_value=None, treated_n=None, control_n=None, moderators={}
 
 ### Primary pool (A-core, wild-type direct-lifespan)
 
-- s288: metric=log_median_ratio, estimate=0.1306, SE=0.3382, 95% CI [-0.5323, 0.7934]
+- s126: metric=log_median_ratio, estimate=0.1050, SE=0.0796, 95% CI [-0.0511, 0.2611]
+- s235: metric=log_median_ratio, estimate=0.0915, SE=0.2949, 95% CI [-0.4865, 0.6694]
 
 ### Sensitivity pool (B disease-model / genotype-modified)
 
 - s246: metric=log_median_ratio, estimate=0.3882, SE=0.2144, 95% CI [-0.0319, 0.8084]
 
-- skipped (no inverse-variance numerics): ['s086', 's230', 's235']
+- skipped (no inverse-variance numerics): ['s086', 's230', 's288']
 
 ## References
 
@@ -163,7 +165,7 @@ numbers.
 
 ## Data and Code Availability
 
-All raw retrieval hits, screening receipts, parsed full-text bodies (where available), eligibility receipts, effect extraction receipts, the strict A-core primary-effect input set, and the rendered manuscript are filed under the run directory `runs/rapamycin-paper-2026-05-12T17-33-38Z` and are version-controlled in `https://github.com/DomLynch/Research-Agent-Bot-v4`. Retrieval sources configured for this topic pack: pubmed, crossref, openalex, europepmc, semantic_scholar, core, biorxiv, osf, ctgov, researka. The reproducibility contract is auditable: every count and effect estimate in the manuscript carries a [PACKET:...] anchor pointing at a JSON receipt that downstream reviewers can re-validate without re-running the LLM stack. Manual full-text injections (when used to recover sentinel papers the auto retrieval cannot reach) are recorded with SHA-256 hashes in `manual_full_text_audit.json`.
+All raw retrieval hits, screening receipts, parsed full-text bodies (where available), eligibility receipts, effect extraction receipts, the strict A-core primary-effect input set, and the rendered manuscript are filed under the run directory `runs/rapamycin-paper-2026-05-12T17-57-52Z` and are version-controlled in `https://github.com/DomLynch/Research-Agent-Bot-v4`. Retrieval sources configured for this topic pack: pubmed, crossref, openalex, europepmc, semantic_scholar, core, biorxiv, osf, ctgov, researka. The reproducibility contract is auditable: every count and effect estimate in the manuscript carries a [PACKET:...] anchor pointing at a JSON receipt that downstream reviewers can re-validate without re-running the LLM stack. Manual full-text injections (when used to recover sentinel papers the auto retrieval cannot reach) are recorded with SHA-256 hashes in `manual_full_text_audit.json`.
 
 ## AI-Use and Automation Disclosure
 
