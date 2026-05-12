@@ -135,6 +135,22 @@ def test_supplement_pulls_counts_from_eligibility_summary(tmp_path: Path) -> Non
     assert "google/gemma-4-31b-it" in out
 
 
+def test_supplement_does_not_claim_absent_eligibility_receipts(tmp_path: Path) -> None:
+    pd = _write_fixture_run_dir(tmp_path)
+    with patch("scripts.build_supplement.load_topic_pack", return_value=_pack()):
+        out = build(pd, "rapamycin")
+    assert "`eligibility_receipts.json` alongside this supplement" not in out
+    assert "not packaged in this final paper folder" in out
+
+
+def test_supplement_sentinel_text_points_to_embedded_s10_when_qa_loaded(tmp_path: Path) -> None:
+    pd = _write_fixture_run_dir(tmp_path)
+    with patch("scripts.build_supplement.load_topic_pack", return_value=_pack()):
+        out = build(pd, "rapamycin")
+    assert "rendered below in S10 from the upstream QA report" in out
+    assert "is rendered in `qa_report.md`" not in out
+
+
 def test_supplement_strict_a_core_table_lists_study(tmp_path: Path) -> None:
     pd = _write_fixture_run_dir(tmp_path)
     with patch("scripts.build_supplement.load_topic_pack", return_value=_pack()):

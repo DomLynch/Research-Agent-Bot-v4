@@ -191,6 +191,43 @@ def test_handover_doc_exists_and_is_not_stale() -> None:
         )
 
 
+def test_paper_md_remaining_a_core_prose_lists_only_unpoolable_a_core() -> None:
+    """Sprint 12.7 regression: 'the remaining A-core record(s) X are
+    retained ... but not yet poolable' must list IDs from A_core \\
+    pool.effects, never C-lane records. Earlier rewrite incorrectly
+    used pool.skipped_study_ids (= A_core_not_pooled union C-lane)
+    for this slot — the reviewer caught it."""
+    import json
+    body = _read_body("paper.md")
+    strict = json.loads(_read("primary_effect_input_set_strict.json"))
+    pool = json.loads(_read("effect_pool.json"))
+    a_core = {str(r.get("study_id", "")) for r in
+              (strict.get("A_core_direct_lifespan") or [])}
+    pooled = {str(e.get("study_id", "")) for e in
+              (pool.get("effects") or [])}
+    a_core_not_pooled = a_core - pooled
+    # Match "remaining A-core record(s) X, Y, Z is/are retained" — be
+    # permissive about phrasing so future re-wordings still get caught.
+    for m in re.finditer(
+        r"remaining A-core record\(?s?\)?\s*[—-]?\s*([^—,;)\n]+(?:,\s*[^—,;)\n]+)*)",
+        body,
+    ):
+        listed_raw = m.group(1)
+        listed = [
+            x.strip().strip("—") for x in re.split(r",\s*", listed_raw)
+            if x.strip() and re.match(r"^s\d{2,4}$", x.strip())
+        ]
+        if not listed:
+            continue
+        leaked = [x for x in listed if x not in a_core_not_pooled]
+        assert not leaked, (
+            f"'remaining A-core records' prose names IDs not in "
+            f"A_core \\\\ pool.effects: {leaked} "
+            f"(A_core: {sorted(a_core)}; pooled: {sorted(pooled)}; "
+            f"A_core_not_pooled: {sorted(a_core_not_pooled)})"
+        )
+
+
 def test_paper_md_pool_prose_names_only_pool_effect_ids() -> None:
     """Sprint 12.6 regression: prose that introduces the inverse-variance
     pool must name only studies in `pool.effects`, never the full A-core.
