@@ -51,6 +51,12 @@ class TopicPack:
     references_bibliography: Mapping[str, str] = field(
         default_factory=lambda: MappingProxyType({}),
     )
+    placeholders: Mapping[str, str] = field(
+        default_factory=lambda: MappingProxyType({}),
+    )
+    methods_honesty_rewrites: Mapping[str, str] = field(
+        default_factory=lambda: MappingProxyType({}),
+    )
 
     @property
     def has_scope_rules(self) -> bool:
@@ -109,5 +115,9 @@ def load_topic_pack(topic: str, *, pack_dir: Path | None = None) -> TopicPack | 
         ),
         references_bibliography=MappingProxyType(dict(
             raw.get("references", {}).get("bibliography", {})
+        )),
+        placeholders=MappingProxyType(dict(raw.get("placeholders", {}))),
+        methods_honesty_rewrites=MappingProxyType(dict(
+            raw.get("methods_honesty_rewrites", {})
         )),
     )
