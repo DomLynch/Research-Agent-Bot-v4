@@ -51,5 +51,4 @@ Topic: rapamycin
 
 ## Quality flags
 
-- 2 include(s) with conf>=0.99 but missing >=1 mandatory field - judge over-confidence smell.
-- 1 primary sentinel(s) did NOT land as include: ['10.1093/gerona/glq178']
+- (none)
