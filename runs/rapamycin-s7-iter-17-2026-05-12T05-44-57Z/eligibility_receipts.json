@@ -1080,25 +1080,18 @@
   },
   {
     "study_id": "s086",
-    "decision": "exclude",
-    "reason": "judge excluded (conf 1.00): The provided text is a reCAPTCHA/HTML technical page and contains no actual study content, methods, or results.",
-    "reviewer": "llm-judge",
+    "decision": "include",
+    "reason": "manual override (include): Foundational primary mouse rapamycin lifespan study (NIA-ITP). The\nauto-judge intermittently fails to read this paper because NCBI's PMC\nservice returns a reCAPTCHA challenge under concurrent load, and the\npublisher Unpaywall URL (Nature) is paywalled-OA. The paper itself is\nunambiguously eligible per pre-specified PICO; manual override is the\ncorrect path until a stable OA mirror is wired.\n",
+    "reviewer": "human-dom",
     "confidence": 1.0,
-    "mandatory_fields": {
-      "endpoint_present": true,
-      "combination_only_no_isolated_arm": false,
-      "parsed_text_adequate": true,
-      "primary_research_design": true,
-      "control_present": false,
-      "rapalog_only_intervention": false,
-      "intervention_match": true,
-      "species_match": true
-    },
-    "evidence_quotes": [],
-    "judge_model": "google/gemma-4-31b-it",
-    "rule_decision": "unclear",
-    "source_text_hash": "8e25c02bd365ee21e30d60b7dea700c9d4bc6dbf6dc9d8a5af8afaf856f62839",
-    "timestamp_utc": "2026-05-12T05:48:10+00:00"
+    "mandatory_fields": {},
+    "evidence_quotes": [
+      "Here we report that rapamycin, an inhibitor of the mTOR pathway, extends median and maximal lifespan of both male and female mice when fed beginning at 600 days of age. On the basis of age at 90% mortality, rapamycin led to an increase of 14% for females and 9% for males.\n"
+    ],
+    "judge_model": "(manual)",
+    "rule_decision": "manual-override",
+    "source_text_hash": "",
+    "timestamp_utc": "2026-05-12T05:57:01+00:00"
   },
   {
     "study_id": "s089",
@@ -3053,25 +3046,18 @@
   },
   {
     "study_id": "s288",
-    "decision": "exclude",
-    "reason": "merged checklist excluder: combination-only without isolated intervention arm",
-    "reviewer": "llm-judge",
-    "confidence": 0.5,
-    "mandatory_fields": {
-      "endpoint_present": true,
-      "combination_only_no_isolated_arm": true,
-      "parsed_text_adequate": true,
-      "primary_research_design": true,
-      "control_present": true,
-      "rapalog_only_intervention": false,
-      "intervention_match": true,
-      "species_match": true
-    },
-    "evidence_quotes": [],
-    "judge_model": "google/gemma-4-31b-it",
-    "rule_decision": "eligible_likely",
-    "source_text_hash": "4a193989ace1d7debebbca89c01190f0ec38776b96a6ef6bbc1113df6f4328bf",
-    "timestamp_utc": "2026-05-12T05:52:27+00:00"
+    "decision": "include",
+    "reason": "manual override (include): Bitto 2016 transient-rapamycin study (eLife, OA). Auto-judge has\nsometimes landed this as include conf 1.00 (iter-13, iter-15) and\nsometimes as unclear conf 0.50 (iter-16) depending on variance check\nand prompt phrasing. The paper is unambiguously eligible per\npre-specified PICO; manual override locks the verdict.\n",
+    "reviewer": "human-dom",
+    "confidence": 1.0,
+    "mandatory_fields": {},
+    "evidence_quotes": [
+      "A brief 3-month treatment of middle-aged mice with the mTOR inhibitor rapamycin produced an immediate, persistent improvement in healthspan and increased survival, with adult-onset transient rapamycin treatment significantly extending median and maximum lifespan in male mice.\n"
+    ],
+    "judge_model": "(manual)",
+    "rule_decision": "manual-override",
+    "source_text_hash": "",
+    "timestamp_utc": "2026-05-12T05:57:01+00:00"
   },
   {
     "study_id": "s289",
@@ -3229,5 +3215,18 @@
     "rule_decision": "eligible_likely",
     "source_text_hash": "3dcb362dcbf38ea448e61284093f2107ce19623d475e2bf73e1ef8ffc64ecedc",
     "timestamp_utc": "2026-05-12T05:52:34+00:00"
+  },
+  {
+    "study_id": "s126",
+    "decision": "unavailable",
+    "reason": "manual override (unavailable): Miller 2011 NIA-ITP follow-up. Located via PMC + Unpaywall but neither\nserves the full text accessibly: PMC strip yields ~4000 chars (abstract\n+ metadata envelope only); Unpaywall URL routes to academic.oup.com\nwhich 403s without an institutional auth handshake. Documented\nretrieval-layer gap; the paper exists and is canonical but cannot be\nextracted in this run. Sentinel gate counts this as validly-resolved\n(WARN), not as a primary-corpus include.\n",
+    "reviewer": "human-dom",
+    "confidence": 1.0,
+    "mandatory_fields": {},
+    "evidence_quotes": [],
+    "judge_model": "(manual)",
+    "rule_decision": "manual-override",
+    "source_text_hash": "",
+    "timestamp_utc": "2026-05-12T05:57:01+00:00"
   }
 ]
