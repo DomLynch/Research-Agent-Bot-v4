@@ -112,21 +112,31 @@ def _render_sentinel_recall(p: InformationalPacket) -> str:
     pri_inc = c.get("included_primary", 0)
     meta_n = c.get("expected_prior_meta", 0)
     meta_r = c.get("retrieved_prior_meta", 0)
-    # Three-level gate: PASS only if every primary sentinel is included;
-    # WARN if retrieved but not confirmed-included; FAIL recorded in
-    # counts via gate_passes=0 plus the included<retrieved gap.
+    # Three-level gate: PASS only if every primary sentinel is auto-
+    # contract-passed OR manually marked resolved_unavailable/excluded;
+    # WARN if retrieved but unresolved (system retrieval/parser owes
+    # work); FAIL if any primary was never retrieved at all.
     if c.get("gate_passes", 0):
         gate = "PASS"
     elif pri_r < pri_n:
         gate = "FAIL"
     else:
         gate = "WARN"
+    # Surface unresolved-pending sentinels in the audit line so the
+    # prose doesn't pretend everything is fine; these are system-bug
+    # surface area (retrieval/parser owes the bytes).
+    pending = [n for n in p.notes if "resolved_available_pending" in n]
+    pending_note = (
+        f" {len(pending)} primary sentinel(s) located but retrieval/parser"
+        " did not yield contract-passing evidence — system-level gap."
+        if pending else ""
+    )
     return (
         f"Sentinel-paper recall audit (gate: {gate}): "
         f"{pri_r}/{pri_n} canonical primary-study anchors retrieved, "
-        f"{pri_c} promoted to candidate set, {pri_inc} confirmed-included; "
-        f"{meta_r}/{meta_n} prior meta-analysis anchors retrieved "
-        f"[PACKET:sentinel_recall]."
+        f"{pri_c} promoted to candidate set, {pri_inc} contract-passed include; "
+        f"{meta_r}/{meta_n} prior meta-analysis anchors retrieved.{pending_note} "
+        f"[PACKET:sentinel_recall]"
     )
 
 

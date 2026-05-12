@@ -23,6 +23,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.evidence_state import EvidenceState
+from agent.include_contract import demote_failed_includes
 from agent.manual_resolution import build_manual_status_overlay, load_manual_resolutions
 from agent.results_compiler import InformationalPacket, compile_all
 from agent.results_writer import write_results_section
@@ -150,10 +151,25 @@ def main() -> int:
     parsed_receipts = tuple(_parsed_from_dict(p) for p in parsed_raw)
     eligibility = tuple(_eligibility_from_dict(r) for r in elig_raw)
 
-    # Sprint 7.11.1: manual_resolutions are a status-only overlay. They
-    # do NOT mutate eligibility receipts and cannot promote a paper into
-    # primary inclusion; that is the universal contract's job. The
-    # overlay informs the sentinel-recall packet so the prose can say
+    # Sprint 7.11.1: re-apply the universal evidence contract to the
+    # frozen receipts. Iter-17 was written with the old "manual override
+    # bypasses contract" path, so Harrison/Bitto receipts ship with
+    # decision=include despite carrying only 1 evidence quote. The new
+    # contract rejects that and demotes them to unclear; without this
+    # re-apply step the sentinel gate would falsely report PASS.
+    parsed_by_id = {p.study_id: p for p in parsed_receipts}
+    titles_by_id = {c.study_id: c.title for c in candidates}
+    eligibility, contract_results = demote_failed_includes(
+        eligibility, parsed_by_id, titles_by_id, pack,
+    )
+    demoted = sum(1 for v in contract_results.values() if v.violations)
+    if demoted:
+        print(f"[regen] universal contract demoted {demoted} include(s) to unclear")
+
+    # Manual_resolutions are a status-only overlay. They do NOT mutate
+    # eligibility receipts and cannot promote a paper into primary
+    # inclusion; that is the universal contract's job. The overlay
+    # informs the sentinel-recall packet so the prose can say
     # "WARN: sentinel located but retrieval/parser failed" instead of
     # silently treating manual entries as auto-includes.
     resolutions = load_manual_resolutions(args.topic)
@@ -197,7 +213,7 @@ def main() -> int:
         eligibility_receipts=eligibility,
     )
 
-    packets = compile_all(state, pack=pack)
+    packets = compile_all(state, pack=pack, manual_overlay=manual_overlay)
 
     # Replace study_selection counts with frozen-run summary values where
     # the reconstruction can't fully recover the real retrieval-stage
