@@ -259,6 +259,21 @@ def main() -> int:
 
     packets = compile_all(state, pack=pack, manual_overlay=manual_overlay)
 
+    # Inject strict A-core count into the corpus_characteristics packet
+    # so the prose can distinguish "22 auto-eligible records" from "6
+    # strict A-core records selected for primary-effect extraction".
+    strict_a_count = len(strict.get("A_core_direct_lifespan", []))
+    for i, p in enumerate(packets):
+        if isinstance(p, InformationalPacket) and p.packet_id == "corpus_characteristics":
+            c = dict(p.counts)
+            c["strict_a_core"] = strict_a_count
+            packets[i] = InformationalPacket(
+                packet_id=p.packet_id, description=p.description,
+                counts=MappingProxyType(c), notes=p.notes,
+                source_study_ids=p.source_study_ids,
+            )
+            break
+
     # Replace study_selection counts with frozen-run summary values where
     # the reconstruction can't fully recover the real retrieval-stage
     # counts (k_hits=502 vs. reconstructed=298, full_text_located=257 vs.

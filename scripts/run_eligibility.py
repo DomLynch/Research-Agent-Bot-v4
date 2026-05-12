@@ -163,6 +163,16 @@ async def main() -> int:
     parsed_by_id: dict[str, ParsedFullText] = {d.study_id: d for d in parsed_docs}
     print(f"[s7] parsed {sum(1 for r in parsed_receipts if r.parsed)}/{len(parsed_receipts)} full texts")
 
+    # Sprint 7.11.2c / Sprint 8 prep: persist the parsed text bodies so
+    # downstream extraction can read the exact bytes the judge saw
+    # without re-fetching from NCBI/Unpaywall. text_hash in
+    # parsed_receipts.json continues to provide tamper detection.
+    parsed_text_dir = out_dir / "parsed_text"
+    parsed_text_dir.mkdir(exist_ok=True)
+    for d in parsed_docs:
+        if d.text:
+            (parsed_text_dir / f"{d.study_id}.txt").write_text(d.text, encoding="utf-8")
+
     # Parallel judge loop: asyncio.to_thread wraps the sync HTTP call so
     # up to JUDGE_CONCURRENCY runs go through OpenRouter concurrently.
     # Each receipt appends to eligibility_receipts.partial.jsonl under a
