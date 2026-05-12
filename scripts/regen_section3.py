@@ -29,6 +29,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from agent.effect_sizes import EffectSizeRecord, ExtractedOutcome
 from agent.evidence_state import EvidenceState
 from agent.include_contract import demote_failed_includes
 from agent.manual_resolution import build_manual_status_overlay, load_manual_resolutions
@@ -122,17 +123,21 @@ def _render_primary_pool_block(strict: dict[str, Any]) -> str:
         1 for s in strict.get("C_secondary_contextual", [])
         if s.get("demoted_from") == "A_direct_lifespan"
     )
+
+    def _w(n: int) -> str:
+        return "study" if n == 1 else "studies"
     lines = [
         "### Primary Pool Composition",
         "",
         (
             f"After applying the strict A-core evidence-quote audit, "
-            f"{a} studies form the primary direct-lifespan corpus, "
-            f"{b} studies populate the disease-model survival sensitivity "
-            f"lane, and {c} studies are retained as secondary/contextual "
-            f"(of which {demoted_a} were demoted from the auto-judge "
-            f"direct-lifespan lane because their evidence quotes failed "
-            f"the per-quote mouse/intervention/control/endpoint audit) "
+            f"{a} {_w(a)} form the primary direct-lifespan corpus, "
+            f"{b} {_w(b)} populate the disease-model survival sensitivity "
+            f"lane, and {c} {_w(c)} are retained as secondary/contextual "
+            f"(of which {demoted_a} {'was' if demoted_a == 1 else 'were'} "
+            f"demoted from the auto-judge direct-lifespan lane because "
+            f"their evidence quotes failed the per-quote "
+            f"mouse/intervention/control/endpoint audit) "
             f"[PACKET:primary_pool_composition]."
         ),
         "",
@@ -247,6 +252,39 @@ def main() -> int:
         for p in parsed_receipts
     )
 
+    # Sprint 8 pooling: if extract_effects has produced effect_pool.json,
+    # rehydrate the outcomes + effects so EvidenceState carries them and
+    # compile_primary_effect can render the Primary Pooled Effect section.
+    pool_path = rd / "effect_pool.json"
+    outcomes: tuple[ExtractedOutcome, ...] = ()
+    effects: tuple[EffectSizeRecord, ...] = ()
+    if pool_path.exists():
+        pool = json.loads(pool_path.read_text(encoding="utf-8"))
+        outcomes = tuple(
+            ExtractedOutcome(
+                study_id=o["study_id"], outcome_id=o["outcome_id"],
+                metric_name=o["metric_name"],
+                moderators=ExtractedOutcome.freeze_moderators(o.get("moderators", {})),
+                treated_value=o.get("treated_value"),
+                control_value=o.get("control_value"),
+                treated_n=o.get("treated_n"),
+                control_n=o.get("control_n"),
+                raw_unit=str(o.get("raw_unit", "")),
+            )
+            for o in pool.get("outcomes", [])
+        )
+        effects = tuple(
+            EffectSizeRecord(
+                study_id=e["study_id"], outcome_id=e["outcome_id"],
+                metric=e["metric"], estimate=float(e["estimate"]),
+                se=e.get("se"), ci_low=e.get("ci_low"), ci_high=e.get("ci_high"),
+                moderators=ExtractedOutcome.freeze_moderators(e.get("moderators", {})),
+            )
+            for e in pool.get("effects", [])
+        )
+        if effects:
+            print(f"[regen] loaded {len(effects)} pooled effect record(s) from {pool_path}")
+
     state = EvidenceState.build(
         topic=args.topic,
         hits=hits,
@@ -255,6 +293,8 @@ def main() -> int:
         full_text_receipts=full_text,
         parsed_receipts=parsed_receipts,
         eligibility_receipts=eligibility,
+        outcomes=outcomes,
+        effects=effects,
     )
 
     packets = compile_all(state, pack=pack, manual_overlay=manual_overlay)

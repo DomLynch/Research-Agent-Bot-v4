@@ -37,6 +37,7 @@ from agent.effect_extraction import (
     receipt_from_response,
     validate_extraction,
 )
+from agent.effect_pooling import compile_pool
 from agent.llm_client import call_writer
 from agent.settings import load_settings
 from agent.topic_pack import load_topic_pack
@@ -213,6 +214,18 @@ def main() -> int:
                 all_receipts.append(json.loads(line))
 
     out_path = rd / "effect_extractions.json"
+    receipts_rehydrated = tuple(
+        receipt_from_response(
+            r, study_id=r["study_id"],
+            text_hash=r.get("text_hash", ""),
+            reviewer=r.get("reviewer", ""),
+            timestamp_utc=r.get("timestamp_utc", ""),
+        )
+        for r in all_receipts
+    )
+    k_contract_passing = sum(
+        1 for r in receipts_rehydrated if validate_extraction(r, pack).passes
+    )
     out_path.write_text(
         json.dumps({
             "_doc": (
@@ -225,26 +238,65 @@ def main() -> int:
             "run_id": rd.name,
             "frozen_at_utc": _now_utc(),
             "k_records": len(all_receipts),
-            "k_contract_passing": sum(
-                1 for r in all_receipts
-                if validate_extraction(
-                    receipt_from_response(
-                        r, study_id=r["study_id"],
-                        text_hash=r.get("text_hash", ""),
-                        reviewer=r.get("reviewer", ""),
-                        timestamp_utc=r.get("timestamp_utc", ""),
-                    ),
-                    pack,
-                ).passes
-            ),
+            "k_contract_passing": k_contract_passing,
             "receipts": all_receipts,
         }, indent=2),
         encoding="utf-8",
     )
+
+    # Sprint 8 pooling: convert contract-passing receipts to
+    # (ExtractedOutcome, EffectSizeRecord) pairs and write to disk so
+    # regen_section3 can render the primary-effect prose. Receipts that
+    # lack pooling numerics are recorded as skipped with reason.
+    outcomes, effects, skipped_ids = compile_pool(receipts_rehydrated, pack)
+    pool_path = rd / "effect_pool.json"
+    pool_path.write_text(
+        json.dumps({
+            "_doc": (
+                "Sprint 8 pooled effect-size records. Inverse-variance "
+                "pooling consumes this file; main_draft.md Primary Pooled "
+                "Effect renders from the resulting packet."
+            ),
+            "topic": args.topic,
+            "run_id": rd.name,
+            "frozen_at_utc": _now_utc(),
+            "k_outcomes": len(outcomes),
+            "k_effects": len(effects),
+            "skipped_study_ids": list(skipped_ids),
+            "outcomes": [
+                {
+                    "study_id": o.study_id, "outcome_id": o.outcome_id,
+                    "metric_name": o.metric_name,
+                    "moderators": dict(o.moderators),
+                    "treated_value": o.treated_value,
+                    "control_value": o.control_value,
+                    "treated_n": o.treated_n, "control_n": o.control_n,
+                    "raw_unit": o.raw_unit,
+                }
+                for o in outcomes
+            ],
+            "effects": [
+                {
+                    "study_id": e.study_id, "outcome_id": e.outcome_id,
+                    "metric": e.metric, "estimate": e.estimate,
+                    "se": e.se, "ci_low": e.ci_low, "ci_high": e.ci_high,
+                    "moderators": dict(e.moderators),
+                }
+                for e in effects
+            ],
+        }, indent=2),
+        encoding="utf-8",
+    )
+
     dt_secs = time.time() - t0
     print(
         f"[extract] wrote {out_path} "
-        f"({len(all_receipts)} records, {dt_secs:.1f}s)"
+        f"({len(all_receipts)} records, {k_contract_passing} contract-pass, "
+        f"{dt_secs:.1f}s)"
+    )
+    print(
+        f"[extract] wrote {pool_path} "
+        f"({len(effects)} pooling-ready effects, {len(skipped_ids)} skipped)"
     )
     return 0
 
