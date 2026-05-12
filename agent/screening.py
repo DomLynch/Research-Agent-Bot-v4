@@ -200,11 +200,11 @@ def validate_eligibility_receipts(
     callers pass parsed_receipts the empty-tuple shortcut becomes dead code
     and should be removed.
 
-    Sprint 7.10b: manual-override receipts (reviewer startswith 'human-'
-    or rule_decision='manual-override') bypass the parsed-required check.
-    The human reviewer IS the evidence — Miller 2011 can be declared
-    'unavailable' even when the parser failed to fetch the bytes, because
-    the human has stamped a final state with a reason."""
+    Sprint 7.11.1: only one exemption remains - "unavailable" receipts
+    can be issued without a parsed=True receipt, because "unavailable" is
+    the canonical state for documenting a retrieval gap. Manual overrides
+    are no longer routed through this validator (they're a separate
+    overlay; see agent/manual_resolution.py)."""
     study_ids = {s.study_id for s in candidates}
     retrieved = {r.study_id for r in ft_receipts if r.retrieved}
     parsed_ok = {r.study_id for r in parsed_receipts if r.parsed}
@@ -214,7 +214,7 @@ def validate_eligibility_receipts(
             raise EvidenceLinkError(
                 f"EligibilityReceipt references unknown study_id {r.study_id!r}"
             )
-        if r.reviewer.startswith("human-") or r.rule_decision == "manual-override":
+        if r.decision == "unavailable":
             continue
         if use_parsed:
             if r.study_id not in parsed_ok:

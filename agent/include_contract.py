@@ -75,30 +75,24 @@ def _is_title_quote(quote: str, title: str) -> bool:
     return bool(norm_t) and (norm_q == norm_t or norm_q == norm_t[:len(norm_q)])
 
 
-def _is_manual_override(receipt: EligibilityReceipt) -> bool:
-    return bool(
-        receipt.reviewer.startswith("human-")
-        or receipt.rule_decision == "manual-override"
-    )
-
-
 def validate_include(
     receipt: EligibilityReceipt,
     parsed: ParsedFullTextReceipt | None,
     candidate_title: str,
     pack: TopicPack,
 ) -> ContractResult:
-    """Re-check an include verdict against hard rules. Returns
-    ContractResult(passes=False, violations=...) for any fail; the caller
-    is expected to demote the receipt to unclear if passes is False.
+    """Re-check an include verdict against the universal evidence
+    contract. Returns ContractResult(passes=False, violations=...) for
+    any fail; the caller is expected to demote the receipt to unclear if
+    passes is False.
 
-    Sprint 7.10b: manual overrides BYPASS the contract. A human reviewer
-    declaring include for a sentinel is the top of the stack; the
-    parsed_text_adequate / char_count / quote-count rules don't apply
-    because the human IS the evidence."""
+    Sprint 7.11.1: NO manual-override bypass. Every primary-pool include
+    must pass the same universal contract — sentinels included. A human
+    reviewer cannot launder unresolved evidence into the primary corpus;
+    they can only resolve sentinel STATUS via the manual_resolution
+    overlay channel (see agent/manual_resolution.py).
+    """
     if receipt.decision != "include":
-        return ContractResult(passes=True, violations=())
-    if _is_manual_override(receipt):
         return ContractResult(passes=True, violations=())
     violations: list[str] = []
     if not receipt.mandatory_fields.get("parsed_text_adequate", False):
