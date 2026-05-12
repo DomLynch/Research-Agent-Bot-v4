@@ -3,12 +3,21 @@
 Writer: MiMo v2.5 Pro (Xiaomi OpenAI-compatible endpoint)
 Judge / editor: Gemma 4 31B via OpenRouter
 
-Both speak OpenAI chat-completions JSON. Minimal here — one request, one
-response, no streaming. Retry/correction policy lives upstream in the
-orchestrator; here we only translate HTTP to a typed LLMResponse.
+Both speak OpenAI chat-completions JSON.
+
+Sprint 8.1c hardening:
+  - Split timeouts: connect fails fast (15s) so dead endpoints surface
+    quickly; read is generous (the read_timeout argument) so a slow
+    server token stream does not abort a real generation.
+  - One automatic retry on ReadTimeout / ConnectError / RemoteProtocolError
+    with short backoff. This catches transient network blips without
+    re-running the orchestrator from scratch.
+  - max_tokens is now plumbed through so generations cannot run forever;
+    the orchestrator picks a per-section budget.
 """
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from typing import Any, cast
 
@@ -25,15 +34,23 @@ class LLMResponse:
     completion_tokens: int
 
 
+_RETRIABLE_EXCS = (
+    httpx.ReadTimeout, httpx.ConnectTimeout, httpx.ConnectError,
+    httpx.RemoteProtocolError, httpx.PoolTimeout,
+)
+
+
 def _post_chat(
     *,
     base_url: str,
     api_key: str,
     model: str,
     messages: list[dict[str, str]],
-    timeout_sec: float,
+    read_timeout_sec: float,
     temperature: float,
+    max_tokens: int | None = None,
     extra_headers: dict[str, str] | None = None,
+    max_retries: int = 1,
 ) -> dict[str, Any]:
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -41,11 +58,31 @@ def _post_chat(
     }
     if extra_headers:
         headers.update(extra_headers)
-    payload = {"model": model, "messages": messages, "temperature": temperature}
-    with httpx.Client(timeout=timeout_sec) as client:
-        r = client.post(f"{base_url.rstrip('/')}/chat/completions", json=payload, headers=headers)
-        r.raise_for_status()
-        return cast(dict[str, Any], r.json())
+    payload: dict[str, Any] = {
+        "model": model, "messages": messages, "temperature": temperature,
+    }
+    if max_tokens is not None:
+        payload["max_tokens"] = max_tokens
+    timeout = httpx.Timeout(
+        connect=15.0, read=read_timeout_sec, write=60.0, pool=10.0,
+    )
+    last_exc: Exception | None = None
+    for attempt in range(max_retries + 1):
+        try:
+            with httpx.Client(timeout=timeout) as client:
+                r = client.post(
+                    f"{base_url.rstrip('/')}/chat/completions",
+                    json=payload, headers=headers,
+                )
+                r.raise_for_status()
+                return cast(dict[str, Any], r.json())
+        except _RETRIABLE_EXCS as e:
+            last_exc = e
+            if attempt >= max_retries:
+                break
+            time.sleep(2.0 * (attempt + 1))  # 2s, 4s backoff
+    assert last_exc is not None
+    raise last_exc
 
 
 def _extract(data: dict[str, Any], model: str) -> LLMResponse:
@@ -65,8 +102,14 @@ def call_writer(
     messages: list[dict[str, str]],
     *,
     temperature: float = 0.3,
+    max_tokens: int | None = 4000,
 ) -> LLMResponse:
-    """Single MiMo chat call. Raises if writer not configured."""
+    """Single MiMo chat call. Raises if writer not configured.
+
+    max_tokens defaults to 4000 (enough for Title + Abstract + 1k-word
+    Introduction). Callers can pass None for unbounded. The hardened
+    client also retries once on transient network failures.
+    """
     if not settings.writer_configured:
         raise RuntimeError("Writer not configured: set MIMO_API_KEY and MIMO_BASE_URL")
     data = _post_chat(
@@ -74,8 +117,9 @@ def call_writer(
         api_key=settings.mimo_api_key,
         model=settings.mimo_model,
         messages=messages,
-        timeout_sec=settings.mimo_timeout_sec,
+        read_timeout_sec=settings.mimo_timeout_sec,
         temperature=temperature,
+        max_tokens=max_tokens,
     )
     return _extract(data, settings.mimo_model)
 
@@ -101,7 +145,7 @@ def call_judge(
         api_key=settings.openrouter_api_key,
         model=settings.judge_model,
         messages=messages,
-        timeout_sec=min(60.0, settings.mimo_timeout_sec),
+        read_timeout_sec=min(60.0, settings.mimo_timeout_sec),
         temperature=temperature,
         extra_headers={"HTTP-Referer": "https://research-agent-bot-v4.local"},
     )
