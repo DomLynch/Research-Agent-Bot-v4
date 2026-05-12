@@ -39,6 +39,7 @@ from agent.topic_pack import TopicPack
 _TOKEN_RE = re.compile(
     r"\[(N_SCREENED|N_ACCEPTED|K_STUDIES"
     r"|STRICT_A_CORE_COUNT|STRICT_A_CORE_IDS"
+    r"|B_LANE_COUNT|B_LANE_IDS|C_LANE_COUNT|C_LANE_IDS"
     r"|K_POOLABLE|INCOMPLETE_RECOVERY_IDS"
     r"|PLACEHOLDER:[a-zA-Z0-9_\-]+"
     r"|MODERATOR_P:[a-zA-Z0-9_\-]+)\]"
@@ -71,13 +72,18 @@ def resolve_placeholders(
     Missing values short-circuit to `[UNRESOLVED]` so the auditor sees
     the gap.
     """
-    a_core_list = strict.get("A_core_direct_lifespan", []) or []
-    if not isinstance(a_core_list, list):
-        a_core_list = []
-    a_core_ids = [
-        str(s.get("study_id", "")) for s in a_core_list
-        if isinstance(s, dict) and s.get("study_id")
-    ]
+    def _lane_ids(key: str) -> tuple[list[dict[str, Any]], list[str]]:
+        raw = strict.get(key, []) or []
+        items = raw if isinstance(raw, list) else []
+        ids = [
+            str(s.get("study_id", "")) for s in items
+            if isinstance(s, dict) and s.get("study_id")
+        ]
+        return items, ids
+
+    a_core_list, a_core_ids = _lane_ids("A_core_direct_lifespan")
+    b_lane_list, b_lane_ids = _lane_ids("B_disease_model_survival")
+    c_lane_list, c_lane_ids = _lane_ids("C_secondary_contextual")
     pool_effects = (pool or {}).get("effects", []) or []
     if not isinstance(pool_effects, list):
         pool_effects = []
@@ -117,6 +123,10 @@ def resolve_placeholders(
         "K_STUDIES": str(len(a_core_list)),
         "STRICT_A_CORE_COUNT": str(len(a_core_list)),
         "STRICT_A_CORE_IDS": ", ".join(a_core_ids) if a_core_ids else "",
+        "B_LANE_COUNT": str(len(b_lane_list)),
+        "B_LANE_IDS": ", ".join(b_lane_ids) if b_lane_ids else "(none)",
+        "C_LANE_COUNT": str(len(c_lane_list)),
+        "C_LANE_IDS": ", ".join(c_lane_ids) if c_lane_ids else "(none)",
         "K_POOLABLE": str(len(pool_effects)) if pool is not None else "",
         "INCOMPLETE_RECOVERY_IDS": (
             ", ".join(incomplete_ids) if incomplete_ids

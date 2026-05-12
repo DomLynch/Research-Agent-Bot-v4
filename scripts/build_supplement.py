@@ -361,7 +361,22 @@ def build(pd: Path, topic: str, *, qa_report_path: Path | None = None) -> str:
     ]
 
     if qa:
-        parts += ["## S10 — QA Report (verbatim)", "", qa, ""]
+        parts += [
+            "## S10 — QA Report (verbatim, from upstream eligibility run)",
+            "",
+            "_Frozen receipt from the upstream `corpus_qa.py` step that_"
+            "_produced the eligibility decisions. Lane labels in this_"
+            "_block reflect the iteration that emitted the QA report and_"
+            "_may pre-date later lane reassignments (e.g. genotype-_"
+            "_modified routing to the B sensitivity lane, sentinel-_"
+            "_recovery promotions). The **canonical current lane_"
+            "_assignment is S4 + S8 + `primary_effect_input_set_strict.json`**._"
+            "_Discrepancies between S10 and S4/S8 indicate the canonical_"
+            "_pipeline state has advanced beyond the original QA snapshot._",
+            "",
+            qa,
+            "",
+        ]
 
     return "\n".join(parts) + "\n"
 

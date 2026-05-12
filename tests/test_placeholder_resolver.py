@@ -120,6 +120,32 @@ def test_unknown_moderator_p_surfaces_unresolved() -> None:
     assert out.unresolved == ("MODERATOR_P:not-in-pack",)
 
 
+def test_lane_tokens_resolve_a_b_c_counts_and_ids() -> None:
+    """Sprint 12.3 universal lane tokens: B + C count/ids alongside A-core."""
+    strict = {
+        "A_core_direct_lifespan": [{"study_id": "s126"}, {"study_id": "s235"}],
+        "B_disease_model_survival": [{"study_id": "s246"}],
+        "C_secondary_contextual": [{"study_id": "s086"}, {"study_id": "s230"}],
+    }
+    body = (
+        "A=[STRICT_A_CORE_COUNT] ([STRICT_A_CORE_IDS]); "
+        "B=[B_LANE_COUNT] ([B_LANE_IDS]); "
+        "C=[C_LANE_COUNT] ([C_LANE_IDS])."
+    )
+    out = resolve_placeholders(body, summary={}, strict=strict, pack=_pack({}))
+    assert out.body == (
+        "A=2 (s126, s235); B=1 (s246); C=2 (s086, s230)."
+    )
+
+
+def test_empty_b_c_lanes_render_none() -> None:
+    """Honest framing when a lane is empty — '(none)' not a blank gap."""
+    strict = {"A_core_direct_lifespan": [{"study_id": "s126"}]}
+    body = "B=[B_LANE_IDS]; C=[C_LANE_IDS]"
+    out = resolve_placeholders(body, summary={}, strict=strict, pack=_pack({}))
+    assert out.body == "B=(none); C=(none)"
+
+
 def test_strict_a_core_count_and_ids_resolve_from_receipts() -> None:
     """Universal corpus tokens: counts + comma-joined IDs from strict.json."""
     strict = {"A_core_direct_lifespan": [
