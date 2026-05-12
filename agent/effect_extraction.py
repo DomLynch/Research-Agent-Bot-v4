@@ -127,7 +127,10 @@ def build_extraction_prompt(
         "- treated_value and control_value must be in the SAME unit (e.g. "
         "  both in days, or both in months). Convert to days if the paper "
         "  reports months/weeks; record the original unit's name in the "
-        "  metric field (e.g. metric=\"median_lifespan_days\").\n"
+        "  metric field (e.g. metric=\"median_lifespan_days\"). When you "
+        "  report a numeric effect, also fill treated_n and control_n if "
+        "  the excerpt states them (Methods, Table 1, figure captions); "
+        "  otherwise leave null without padding the prompt.\n"
         "- Do not output any prose outside the JSON object."
     )
     return [
