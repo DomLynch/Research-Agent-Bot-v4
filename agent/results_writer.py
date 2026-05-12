@@ -104,10 +104,16 @@ def _render_study_selection(p: InformationalPacket) -> str:
 
 def _render_corpus(p: InformationalPacket) -> str:
     c = p.counts
+    strict_k = c.get("strict_a_core", 0)
+    strict_clause = (
+        f"; after strict A-core auditing, {strict_k} records remain "
+        f"eligible for primary-effect extraction" if strict_k else ""
+    )
     return (
-        f"The {c.get('eligible', 0)} eligible studies span publication years "
-        f"{c.get('year_min', 0)}-{c.get('year_max', 0)} and {c.get('distinct_venues', 0)} "
-        f"distinct venues [PACKET:corpus_characteristics]."
+        f"The {c.get('eligible', 0)} auto-eligible records span publication years "
+        f"{c.get('year_min', 0)}-{c.get('year_max', 0)} and "
+        f"{c.get('distinct_venues', 0)} distinct venues"
+        f"{strict_clause} [PACKET:corpus_characteristics]."
     )
 
 
