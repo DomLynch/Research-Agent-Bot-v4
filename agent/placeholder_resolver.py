@@ -84,12 +84,33 @@ def resolve_placeholders(
     extr_receipts = (extractions or {}).get("receipts", []) or []
     if not isinstance(extr_receipts, list):
         extr_receipts = []
-    incomplete_ids = [
+    # "Incomplete recovery" = any study that DIDN'T contribute to the
+    # pool. That's the union of:
+    #   - parse_failed / no_numerics / llm_refused receipts (no numerics)
+    #   - extracted receipts that the pool compiler skipped (e.g. wrong
+    #     metric family — off-modal-metric demotion)
+    # pool.skipped_study_ids is the canonical "no contribution" list
+    # produced by compile_pool; we fall back to status-based detection
+    # when no pool was supplied.
+    pool_skipped: list[str] = []
+    if pool is not None:
+        raw_skip = pool.get("skipped_study_ids") or []
+        if isinstance(raw_skip, list):
+            pool_skipped = [str(s) for s in raw_skip if s]
+    status_failed = [
         str(r.get("study_id", "")) for r in extr_receipts
         if isinstance(r, dict)
         and r.get("study_id")
         and r.get("status") not in {"extracted"}
     ]
+    # Deduplicate while preserving first-seen order from pool_skipped
+    # (pool order is more meaningful than receipt order for the prose).
+    seen: set[str] = set()
+    incomplete_ids: list[str] = []
+    for sid in [*pool_skipped, *status_failed]:
+        if sid and sid not in seen:
+            seen.add(sid)
+            incomplete_ids.append(sid)
     counts: dict[str, str] = {
         "N_SCREENED": _str_or_empty(summary.get("k_hits")),
         "N_ACCEPTED": _str_or_empty(summary.get("k_eligible")),
