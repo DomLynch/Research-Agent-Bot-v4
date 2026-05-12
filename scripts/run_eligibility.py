@@ -159,6 +159,25 @@ async def main() -> int:
     # the honest state for everything else, recorded as missing receipts.
     located_receipts = tuple(r for r in ft_receipts if r.retrieved)
     parsed_docs = await parse_full_texts(located_receipts, settings=settings)
+
+    # Sprint 9 corpus recovery: apply manual full-text overrides for any
+    # candidate the operator has supplied bytes for under
+    # `topic_packs/manual_full_text/<topic>/`. The hook is keyed by DOI
+    # or PMID and recovers sentinel papers the auto pipeline cannot
+    # reach (Nature paywall / OUP auth / abstract-only PMC strip).
+    from agent.full_text_parse import (
+        apply_manual_overrides,
+        load_manual_full_text_overrides,
+    )
+    cand_doi_pmid: dict[str, tuple[str, str]] = {
+        c.study_id: (c.doi or "", c.pmid or "") for c in candidates
+    }
+    overrides = load_manual_full_text_overrides(args.topic, cand_doi_pmid)
+    if overrides:
+        parsed_docs = apply_manual_overrides(parsed_docs, overrides)
+        print(f"[s7] applied {len(overrides)} manual full-text override(s): "
+              f"{sorted(overrides)}")
+
     parsed_receipts: tuple[ParsedFullTextReceipt, ...] = tuple(d.to_receipt() for d in parsed_docs)
     parsed_by_id: dict[str, ParsedFullText] = {d.study_id: d for d in parsed_docs}
     print(f"[s7] parsed {sum(1 for r in parsed_receipts if r.parsed)}/{len(parsed_receipts)} full texts")
