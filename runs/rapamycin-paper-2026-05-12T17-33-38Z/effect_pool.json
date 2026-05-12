@@ -1,0 +1,68 @@
+{
+  "_doc": "Sprint 11.4: two-lane pool. effects = A-core wild-type primary; sensitivity_effects = B disease-model / genotype-modified records. The headline k is len(effects); k including sensitivity is k_effects + k_effects_sensitivity.",
+  "topic": "rapamycin",
+  "run_id": "sprint114-reextract",
+  "frozen_at_utc": "2026-05-12T17:28:22+00:00",
+  "k_outcomes": 2,
+  "k_effects": 1,
+  "skipped_study_ids": [
+    "s086",
+    "s230",
+    "s235"
+  ],
+  "outcomes": [
+    {
+      "study_id": "s246",
+      "outcome_id": "s246.primary",
+      "metric_name": "log_median_ratio",
+      "moderators": {},
+      "treated_value": 345.0,
+      "control_value": 234.0,
+      "treated_n": 31,
+      "control_n": 73,
+      "raw_unit": "median_lifespan_days"
+    },
+    {
+      "study_id": "s288",
+      "outcome_id": "s288.primary",
+      "metric_name": "log_median_ratio",
+      "moderators": {
+        "sex": "male"
+      },
+      "treated_value": 1054.0,
+      "control_value": 925.0,
+      "treated_n": 17,
+      "control_n": 18,
+      "raw_unit": "median_lifespan_days"
+    }
+  ],
+  "effects": [
+    {
+      "study_id": "s288",
+      "outcome_id": "s288.primary",
+      "metric": "log_median_ratio",
+      "estimate": 0.13055399158888237,
+      "se": 0.33819977079726155,
+      "ci_low": -0.5323053787534514,
+      "ci_high": 0.7934133619312161,
+      "moderators": {
+        "sex": "male"
+      },
+      "lane": "A_core_direct_lifespan"
+    }
+  ],
+  "k_effects_sensitivity": 1,
+  "sensitivity_effects": [
+    {
+      "study_id": "s246",
+      "outcome_id": "s246.primary",
+      "metric": "log_median_ratio",
+      "estimate": 0.38822330167365837,
+      "se": 0.21437512601305994,
+      "ci_low": -0.0319442244931748,
+      "ci_high": 0.8083908278404915,
+      "moderators": {},
+      "lane": "B_disease_model_survival"
+    }
+  ]
+}

@@ -274,8 +274,21 @@ genotype_modified_strain_markers = [
 "# Systematic Synthesis of Rapamycin Effects on Murine Lifespan Across Preclinical Variables" = "# A Living Evidence-Contract Synthesis of Rapamycin Effects on Murine Lifespan: Pilot Corpus, Extraction Audit, and Evidence Gaps"
 # --- Fok 2014 prose: it's a primary lifespan study, not a meta-analysis
 # update. Bibliography now points at the real PLoS One 2014 paper; the
-# prose follows.
-"More recently, Fok et al. (2014) updated this synthesis, incorporating newer data and performing exploratory moderator analyses on variables like genetic background and sex" = "Fok et al. (2014) contributed a primary mouse lifespan study under rapamycin, with companion transcriptomic profiling that expanded the empirical base examined under heterogeneous-stock conditions"
+# prose follows. NOTE source phrase must match the ORIGINAL raw body
+# ("(2023)") — the [N]/(year) substitution upstream is bypassed because
+# methods_honesty_rewrites runs against the writer's untransformed prose.
+"More recently, Fok et al. (2023) updated this synthesis, incorporating newer data and performing exploratory moderator analyses on variables like genetic background and sex" = "Fok et al. (2014) contributed a primary mouse lifespan study under rapamycin with companion liver-transcriptome profiling, expanding the empirical base examined under heterogeneous-stock conditions"
+# --- Delete the Discussion Fok meta-analysis comparison sentence. Fok
+# (2014) is a primary study; the prior prose claimed a synthesis-to-
+# synthesis comparison that the bibliography never supported. Remove
+# entirely; Swindell remains as the prior meta-analysis comparator.
+"Fok and colleagues [CIT:fok-2023-meta-rapamycin|prior-meta-analysis] updated the rapamycin-specific evidence through 2023, applying standardized extraction criteria and examining sex as a moderator; their pooled estimate fell within the confidence interval reported under [PACKET:primary_effect], though differences in inclusion rules and effect-size metric preclude a direct numerical comparison. " = ""
+# --- Two-lane k=1 honesty: prose said "pooled effect" while the actual
+# A-core pool is one study (s288, Bitto 2016 wild-type C57BL/6 transient
+# rapamycin). Replace overclaim with "single contract-passing extracted
+# effect" wherever the prose names the A-core headline.
+"the pooled effect derived from that pool is reported under [PACKET:primary_effect]" = "the single contract-passing extracted effect derived from that A-core pool (k=1) is reported under (Supplementary §S5/S5b; Appendix A), with the BMAL1-/- genotype-modified record carried in the separate sensitivity lane"
+"The current synthesis provides a pooled estimate of rapamycin and sirolimus effects on mouse lifespan based on the k studies specified in [PACKET:primary_effect]" = "The current synthesis provides one A-core contract-passing inverse-variance point estimate (Bitto 2016 transient rapamycin, wild-type middle-aged C57BL/6) plus one B-lane sensitivity record (BMAL1-/-, disease-model genotype) drawn from the k studies specified in (Supplementary §S5/S5b; Appendix A)"
 # --- Results: collapse 4 RESULTS_BLOCKED subsections into one honest
 # "not estimable" paragraph so the manuscript no longer promises
 # analyses the pipeline cannot deliver at k=1. Key is a single-line

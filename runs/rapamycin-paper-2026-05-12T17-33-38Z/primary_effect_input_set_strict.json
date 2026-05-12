@@ -1,13 +1,13 @@
 {
-  "_doc": "CANONICAL input for Sprint 8 effect-size extraction. A_core_direct_lifespan = strict universal-contract pass. B_disease_model_survival = sensitivity lane. C_secondary_contextual = demoted by quote audit or manual exclusion.",
+  "_doc": "Sprint 11.4 canonical: A-core = wild-type direct-lifespan extraction corpus; B = disease-model / genotype-modified sensitivity (incl. BMAL1-/- s246 moved from A per the new genotype routing); C = secondary/contextual.",
   "canonical_for_sprint_8": true,
   "topic": "rapamycin",
   "run_id": "latest",
   "frozen_at_utc": "2026-05-12T13:06:26+00:00",
   "bucket_counts": {
     "A_core_direct_lifespan": 4,
-    "B_disease_model_survival": 2,
-    "C_secondary_contextual": 2
+    "B_disease_model_survival": 3,
+    "C_secondary_contextual": 1
   },
   "demote_reasons": {
     "s105": [
@@ -21,6 +21,9 @@
     ],
     "s288": [
       "no quote names a primary intervention term"
+    ],
+    "s246": [
+      "genotype-modified strain (sensitivity)"
     ]
   },
   "A_core_direct_lifespan": [
@@ -76,21 +79,26 @@
       "strict_a_core": true
     },
     {
-      "study_id": "s246",
-      "title": "BMAL1-dependent regulation of the mTOR signaling pathway delays aging.",
-      "doi": "10.18632/aging.100633",
-      "pmid": "24481314",
-      "year": 2014,
-      "venue": "Aging",
+      "study_id": "s288",
+      "title": "Transient rapamycin treatment can increase lifespan and healthspan in middle-aged mice.",
+      "doi": "10.7554/elife.16351",
+      "pmid": "27549339",
+      "year": 2016,
+      "venue": "eLife",
       "lane": "A_direct_lifespan",
       "char_count": 80000,
       "evidence_quotes": [
-        "treatment with the mTORC1 inhibitor rapamycin increased lifespan of Bmal1\u2212/\u2212 mice by 50%",
-        "we decided to compare activity of mTOR signaling in cells isolated from wild type and BMAL1-deficient mice"
+        "we set out to investigate whether a single three-month treatment regimen can extend lifespan and healthspan in C57BL/6JNia mice starting at 20\u201321 months of age.",
+        "After receiving the lower dose, both male and female mice lived about 50% longer than untreated mice, and showed improvements in their muscle strength and motor coordination."
       ],
       "contract_pass": true,
       "manually_excluded": false,
-      "strict_a_core": true
+      "strict_a_core": false,
+      "demoted_from": "A_direct_lifespan",
+      "demote_reasons": [
+        "no quote names a primary intervention term"
+      ],
+      "manual_promote_for_extraction": true
     }
   ],
   "B_disease_model_survival": [
@@ -125,6 +133,27 @@
       ],
       "contract_pass": true,
       "manually_excluded": false
+    },
+    {
+      "study_id": "s246",
+      "title": "BMAL1-dependent regulation of the mTOR signaling pathway delays aging.",
+      "doi": "10.18632/aging.100633",
+      "pmid": "24481314",
+      "year": 2014,
+      "venue": "Aging",
+      "lane": "A_direct_lifespan",
+      "char_count": 80000,
+      "evidence_quotes": [
+        "treatment with the mTORC1 inhibitor rapamycin increased lifespan of Bmal1\u2212/\u2212 mice by 50%",
+        "we decided to compare activity of mTOR signaling in cells isolated from wild type and BMAL1-deficient mice"
+      ],
+      "contract_pass": true,
+      "manually_excluded": false,
+      "strict_a_core": false,
+      "demoted_from": "A_direct_lifespan",
+      "demote_reasons": [
+        "genotype-modified strain (sensitivity)"
+      ]
     }
   ],
   "C_secondary_contextual": [
@@ -146,27 +175,6 @@
       "demoted_from": null,
       "demote_reasons": [
         "manual:resolved_excluded: Side-effect / mechanism study, not a primary lifespan-extension trial.\nThe paper uses rapamycin at \"lifespan-extending doses\" to ask whether\nmuscle mitochondrial content / endurance are compromised. Lifespan is\nreferenced as a known prior result, not measured here.\n"
-      ]
-    },
-    {
-      "study_id": "s288",
-      "title": "Transient rapamycin treatment can increase lifespan and healthspan in middle-aged mice.",
-      "doi": "10.7554/elife.16351",
-      "pmid": "27549339",
-      "year": 2016,
-      "venue": "eLife",
-      "lane": "A_direct_lifespan",
-      "char_count": 80000,
-      "evidence_quotes": [
-        "we set out to investigate whether a single three-month treatment regimen can extend lifespan and healthspan in C57BL/6JNia mice starting at 20\u201321 months of age.",
-        "After receiving the lower dose, both male and female mice lived about 50% longer than untreated mice, and showed improvements in their muscle strength and motor coordination."
-      ],
-      "contract_pass": true,
-      "manually_excluded": false,
-      "strict_a_core": false,
-      "demoted_from": "A_direct_lifespan",
-      "demote_reasons": [
-        "no quote names a primary intervention term"
       ]
     }
   ]

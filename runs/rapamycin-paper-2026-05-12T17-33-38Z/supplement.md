@@ -34,24 +34,25 @@ Full receipts (decision, reviewer, confidence, mandatory fields, evidence quotes
 | s086 | Rapamycin fed late in life extends lifespan in genetically heterogene... | 2009 | Nature | 10.1038/nature08221 |
 | s230 | Health Effects of Long-Term Rapamycin Treatment: The Impact on Mouse ... | 2015 | PloS one | 10.1371/journal.pone.0126644 |
 | s235 | Transient rapamycin treatment during developmental stage extends life... | 2022 | EMBO reports | 10.15252/embr.202255299 |
-| s246 | BMAL1-dependent regulation of the mTOR signaling pathway delays aging. | 2014 | Aging | 10.18632/aging.100633 |
+| s288 | Transient rapamycin treatment can increase lifespan and healthspan in... | 2016 | eLife | 10.7554/elife.16351 |
 
 
-## S5 — Effect Extraction Receipts (n = 4)
+## S5 — Effect Extraction Receipts (n = 5)
 
 | study_id | status | metric | T_value | C_value | n_T | n_C | HR | % |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| s086 | extracted | maximum_lifespan_90th_percent... | 1245.0 | 1094.0 | None | None | None | 14.0 |
-| s230 | no_numerics | survival | None | None | None | None | None | None |
-| s235 | extracted | median_lifespan | None | None | None | None | None | 9.6 |
-| s246 | extracted | median_lifespan_months | 11.5 | 7.8 | 31 | 73 | None | 50.0 |
+| s086 | parse_failed |  | None | None | None | None | None | None |
+| s230 | parse_failed |  | None | None | None | None | None | None |
+| s235 | parse_failed |  | None | None | None | None | None | None |
+| s246 | extracted | median_lifespan_days | 345.0 | 234.0 | 31 | 73 | None | 50.0 |
+| s288 | extracted | median_lifespan_days | 1054.0 | 925.0 | 17 | 18 | None | 14.0 |
 
 
 ### S5b — Inverse-variance pool (k_effects = 1, skipped = 3)
 
 | study_id | metric | estimate | SE | CI_low | CI_high |
 | --- | --- | --- | --- | --- | --- |
-| s246 | log_median_ratio | 0.3882 | 0.2144 | -0.0319 | 0.8084 |
+| s288 | log_median_ratio | 0.1306 | 0.3382 | -0.5323 | 0.7934 |
 
 Skipped (no inverse-variance numerics): `s086`, `s230`, `s235`
 
@@ -71,7 +72,6 @@ Per-sentinel resolution (auto verdict + manual status overlay) is rendered in `q
 | study_id | title | demoted_from | reasons |
 | --- | --- | --- | --- |
 | s244 | Rapamycin doses sufficient to extend lifespan do not compro... | originally C | manual:resolved_excluded: Side-effect / mechanism study, not a primary lifespan... |
-| s288 | Transient rapamycin treatment can increase lifespan and hea... | A_direct_lifespan | no quote names a primary intervention term |
 
 
 ## S9 — Code and Data Availability
