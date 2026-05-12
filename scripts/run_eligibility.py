@@ -36,6 +36,7 @@ from agent.eligibility_rules import triage
 from agent.evidence_state import EvidenceState
 from agent.full_text_fetch import fetch_full_text_receipts
 from agent.full_text_parse import ParsedFullText, parse_full_texts
+from agent.include_contract import demote_failed_includes
 from agent.results_compiler import compile_all
 from agent.results_contract import validate_results_text
 from agent.results_writer import write_results_section
@@ -216,6 +217,23 @@ async def main() -> int:
             f"[s7] skipped {skipped_parse_failed} candidates with parse failures "
             f"(no eligibility decision possible)"
         )
+
+    # Sprint 7.8 - include contract: post-merge "supreme court" that
+    # demotes any include with insufficient parse, missing evidence, or
+    # only-title quotes back to unclear. Fixes the iter-15 s237 bug where
+    # a 54-char parse passed the merge because parsed_text_adequate is
+    # not in MANDATORY_KEYS.
+    titles_by_id = {c.study_id: c.title for c in candidates}
+    parsed_by_receipt = {r.study_id: r for r in parsed_receipts}
+    contracted_receipts, contract_results = demote_failed_includes(
+        tuple(eligibility_receipts), parsed_by_receipt, titles_by_id, pack,
+    )
+    eligibility_receipts = list(contracted_receipts)
+    demoted = sum(1 for v in contract_results.values() if v.violations)
+    if demoted:
+        print(f"[s7] include contract demoted {demoted} include(s) to unclear")
+    # Recount decisions after contract demotion for the summary.
+    decision_counts = Counter(r.decision for r in eligibility_receipts)
 
     # Sprint-7 strictness: assemble EvidenceState with parsed_receipts so the
     # eligibility validator can prove every include has a parsed=True receipt.

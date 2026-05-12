@@ -51,6 +51,7 @@ def compile_sentinel_recall(
         "expected_primary": r.expected_primary,
         "retrieved_primary": r.retrieved_primary,
         "candidate_primary": r.candidate_primary,
+        "included_primary": r.included_primary,
         "expected_prior_meta": r.expected_prior_meta,
         "retrieved_prior_meta": r.retrieved_prior_meta,
         "candidate_prior_meta": r.candidate_prior_meta,
