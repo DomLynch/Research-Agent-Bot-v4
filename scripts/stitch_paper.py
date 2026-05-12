@@ -1,36 +1,48 @@
-"""Sprint 8.1 - stitch section bundles into one paper_draft.md.
+"""Sprint 11.1 — stitch section bundles into one publish-ready paper.md.
 
-The pipeline currently writes three independent section bundles:
+The pipeline writes section bundles into independent run directories:
 
-  runs/<topic>-s1-iter-NN-<ts>/main_draft.md  Title + Abstract + Introduction
-  runs/<topic>-s2-iter-NN-<ts>/main_draft.md  Methods
-  runs/<topic>-s7-iter-NN-<ts>/main_draft.md  Section 3 Results
-                                              (study_selection -> sentinel ->
-                                              corpus -> primary effect -> ...)
+  runs/<topic>-s1-iter-NN-<ts>/main_draft.md   Title + Abstract + Introduction
+  runs/<topic>-s2-iter-NN-<ts>/main_draft.md   Methods
+  runs/<topic>-s6-iter-NN-<ts>/main_draft.md   Discussion + Limitations + Conclusion
+  runs/<topic>-s7-iter-NN-<ts>/main_draft.md   Results (study selection -> primary
+                                                effect -> heterogeneity -> sensitivity)
 
-Each bundle is auto-generated; their wiring is otherwise independent. This
-stitcher concatenates the most recent bundle of each kind (by run_dir name,
-which embeds the ISO timestamp) into a single Markdown file and writes it
-into the s7 run dir as paper_draft.md, so the canonical run-dir bundle holds
-the complete draft alongside its receipts.
+This stitcher composes the canonical publish-ready manuscript:
 
-No LLM, no retrieval, no judging. Pure file IO. Topic-agnostic.
+  1. Concatenate s1 + s2 + s7 + s6 bundles in journal order.
+  2. Run `resolve_citations` over the body so [CIT:<key>|<role>] markers
+     become [N] inline + a numbered References section sourced from the
+     topic-pack bibliography. Unknown anchors surface as [UNRESOLVED].
+  3. Append the honest back-matter sections (Data and Code Availability,
+     AI-Use Disclosure, Ethics, Author Contributions, Conflicts of
+     Interest, Funding) built from pipeline-known facts.
+
+No LLM, no retrieval. Pure file IO + deterministic transforms. Universal:
+the bibliography and ethics framing come from the topic pack, not code.
 
 Usage:
     python scripts/stitch_paper.py --topic rapamycin
-    python scripts/stitch_paper.py --topic rapamycin --target-s7 runs/latest
+    python scripts/stitch_paper.py --topic rapamycin --target runs/<paper-dir>
 """
 from __future__ import annotations
 
 import argparse
 import datetime as dt
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from agent.back_matter import build_back_matter
+from agent.reference_resolver import resolve_citations
+from agent.settings import load_settings
+from agent.topic_pack import load_topic_pack
 
 _RUNS = Path(__file__).resolve().parent.parent / "runs"
 
 
 def _latest_bundle(topic: str, section_short: str) -> Path | None:
-    """Return the lexicographically-latest <topic>-<short>-iter-NN-<ts> dir."""
     candidates = sorted(
         _RUNS.glob(f"{topic}-{section_short}-iter-*"), reverse=True,
     )
@@ -44,85 +56,107 @@ def _read(path: Path | None) -> str:
     return f.read_text(encoding="utf-8") if f.exists() else ""
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--topic", default="rapamycin")
-    parser.add_argument(
-        "--target-s7", type=Path, default=None,
-        help="Path to the s7 (Results) run dir. Defaults to latest by name.",
+def _pending(label: str, hint: str) -> str:
+    return f"[SECTIONS_PENDING:{label} — {hint}]"
+
+
+def stitch(
+    topic: str,
+    *,
+    target: Path | None = None,
+    repository_url: str = "",
+) -> Path:
+    pack = load_topic_pack(topic)
+    if pack is None:
+        raise RuntimeError(f"no topic pack: {topic}")
+    settings = load_settings()
+
+    s1 = _latest_bundle(topic, "s1")
+    s2 = _latest_bundle(topic, "s2")
+    s6 = _latest_bundle(topic, "s6")
+    s7 = _latest_bundle(topic, "s7")
+
+    intro = _read(s1).rstrip() or _pending(
+        "title_abstract_intro",
+        "run draft_main.py --section title_abstract_intro",
     )
-    parser.add_argument("--out", type=Path, default=None)
-    args = parser.parse_args()
+    methods = _read(s2).rstrip() or _pending(
+        "methods", "run draft_main.py --section methods",
+    )
+    results = _read(s7).rstrip() or _pending(
+        "results",
+        "run run_eligibility.py + freeze_primary_set.py + regen_section3.py",
+    )
+    discussion = _read(s6).rstrip() or _pending(
+        "discussion", "run draft_main.py --section discussion",
+    )
 
-    s1 = _latest_bundle(args.topic, "s1")
-    s2 = _latest_bundle(args.topic, "s2")
-    s6 = _latest_bundle(args.topic, "s6")
-    s7 = args.target_s7.resolve() if args.target_s7 else _latest_bundle(args.topic, "s7")
+    body = "\n\n".join([intro, methods, results, discussion]) + "\n"
+    resolved = resolve_citations(body, pack)
 
-    title_abs_intro = _read(s1).rstrip()
-    methods = _read(s2).rstrip()
-    discussion = _read(s6).rstrip()
-    results = _read(s7).rstrip()
+    if target is None:
+        stamp = dt.datetime.now(tz=dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
+        target = _RUNS / f"{topic}-paper-{stamp}"
+    target.mkdir(parents=True, exist_ok=True)
 
-    if not (title_abs_intro or methods or discussion or results):
-        print("ERROR: no section bundles found; run draft_main.py + build_results.py first")
-        return 2
+    back_matter = build_back_matter(
+        pack, settings,
+        run_dir_name=str(target.relative_to(target.parent.parent))
+            if target.is_relative_to(target.parent.parent) else target.name,
+        repository_url=repository_url,
+        operator_handle="human-operator",
+    )
 
-    parts: list[str] = []
-    if title_abs_intro:
-        parts.append(title_abs_intro)
-    else:
-        parts.append(
-            "[SECTIONS_PENDING:title_abstract_intro — writer LLM call has "
-            "not completed for this run; re-run "
-            "`python3 scripts/draft_main.py --topic <topic> --iter <N> "
-            "--section title_abstract_intro` to populate.]"
-        )
-    if methods:
-        parts.append(methods)
-    else:
-        parts.append(
-            "[SECTIONS_PENDING:methods — re-run draft_main.py "
-            "--section methods to populate.]"
-        )
-    if results:
-        parts.append(results)
-    else:
-        parts.append(
-            "[SECTIONS_PENDING:results — re-run run_eligibility.py "
-            "+ freeze + regen_section3 to populate.]"
-        )
-    if discussion:
-        parts.append(discussion)
-    else:
-        parts.append(
-            "[SECTIONS_PENDING:discussion — re-run draft_main.py "
-            "--section discussion to populate (writes Discussion + "
-            "Limitations + Conclusion in one bundle).]"
-        )
-    body = "\n\n".join(parts) + "\n"
-
-    stamp = dt.datetime.now(tz=dt.UTC).isoformat(timespec="seconds")
+    stamp_iso = dt.datetime.now(tz=dt.UTC).isoformat(timespec="seconds")
     header = (
         "<!-- AUTO-STITCHED — do not edit by hand. Bundles used:\n"
         f"  s1: {s1.name if s1 else '(none)'}\n"
         f"  s2: {s2.name if s2 else '(none)'}\n"
         f"  s6: {s6.name if s6 else '(none)'}\n"
         f"  s7: {s7.name if s7 else '(none)'}\n"
-        f"  stamped: {stamp}\n"
+        f"  citations resolved: {len(resolved.citations_used)} "
+        f"(unresolved: {len(resolved.unresolved)})\n"
+        f"  stamped: {stamp_iso}\n"
         "-->\n\n"
     )
-    body = header + body
 
-    if args.out is not None:
-        target = args.out
-    elif s7 is not None:
-        target = s7 / "paper_draft.md"
-    else:
-        target = _RUNS / "paper_draft.md"
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(body, encoding="utf-8")
-    print(f"[stitch] wrote {target} (s1={bool(s1)} s2={bool(s2)} s7={bool(s7)})")
+    parts: list[str] = [header, resolved.body.rstrip()]
+    if resolved.references_section:
+        parts.append("")
+        parts.append(resolved.references_section.rstrip())
+    parts.append("")
+    parts.append(back_matter.as_markdown().rstrip())
+
+    out = "\n".join(parts) + "\n"
+    target_path = target / "paper.md"
+    target_path.write_text(out, encoding="utf-8")
+    print(
+        f"[stitch] wrote {target_path} "
+        f"(cites_used={len(resolved.citations_used)}, "
+        f"unresolved={len(resolved.unresolved)})"
+    )
+    return target_path
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--topic", default="rapamycin")
+    parser.add_argument(
+        "--target", type=Path, default=None,
+        help="Destination paper-folder. Defaults to "
+             "runs/<topic>-paper-<utc-stamp>.",
+    )
+    parser.add_argument(
+        "--repository-url", default="",
+        help="Public repository URL for the Data and Code Availability "
+             "back-matter section.",
+    )
+    args = parser.parse_args()
+    stitch(
+        args.topic,
+        target=args.target,
+        repository_url=args.repository_url,
+    )
     return 0
 
 
