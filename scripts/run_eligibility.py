@@ -18,6 +18,7 @@ import argparse
 import asyncio
 import datetime as dt
 import json
+import os
 import sys
 from collections import Counter
 from pathlib import Path
@@ -39,6 +40,10 @@ from agent.screening import CandidateStudy, EligibilityReceipt, ParsedFullTextRe
 from agent.screening_rules import build_candidate_studies, screen_hits
 from agent.settings import load_settings
 from agent.topic_pack import TopicPack, load_topic_pack
+
+# Concurrency for the parallel judge loop. 5 keeps under OpenRouter's
+# per-second cap while still cutting wall-clock ~5x.
+JUDGE_CONCURRENCY = int(os.environ.get("JUDGE_CONCURRENCY", "5"))
 
 
 def _query(pack: TopicPack) -> str:
@@ -130,44 +135,56 @@ async def main() -> int:
     parsed_by_id: dict[str, ParsedFullText] = {d.study_id: d for d in parsed_docs}
     print(f"[s7] parsed {sum(1 for r in parsed_receipts if r.parsed)}/{len(parsed_receipts)} full texts")
 
-    # Incremental checkpoint: write each receipt as it lands so a hang or
-    # kill mid-loop doesn't lose all the LLM spend. Final compile step
-    # overwrites with the complete file.
+    # Parallel judge loop: asyncio.to_thread wraps the sync HTTP call so
+    # up to JUDGE_CONCURRENCY runs go through OpenRouter concurrently.
+    # Each receipt appends to eligibility_receipts.partial.jsonl under a
+    # lock; a kill mid-loop preserves all completed work.
     checkpoint_path = out_dir / "eligibility_receipts.partial.jsonl"
-    eligibility_receipts: list[EligibilityReceipt] = []
     label_counts: Counter[str] = Counter()
     decision_counts: Counter[str] = Counter()
-    skipped_parse_failed = 0
-    judge_eligible_count = sum(
+    skipped_parse_failed = sum(
         1 for ft_r in located_receipts
+        if not parsed_by_id[ft_r.study_id].text.strip()
+    )
+    parsed_subset = tuple(
+        ft_r for ft_r in located_receipts
         if parsed_by_id[ft_r.study_id].text.strip()
     )
-    print(f"[s7] starting judge loop on {judge_eligible_count} parsed candidates...")
-    for i, ft_r in enumerate(located_receipts, 1):
-        candidate = by_id[ft_r.study_id]
-        parsed_doc = parsed_by_id[ft_r.study_id]
-        if not parsed_doc.text.strip():
-            skipped_parse_failed += 1
-            continue
+    print(f"[s7] judge loop: {len(parsed_subset)} parsed candidates, concurrency={JUDGE_CONCURRENCY}")
+    sem = asyncio.Semaphore(JUDGE_CONCURRENCY)
+    write_lock = asyncio.Lock()
+    progress = {"done": 0}
+
+    async def adjudicate_one(ft_r: object) -> EligibilityReceipt:
+        candidate = by_id[ft_r.study_id]  # type: ignore[attr-defined]
+        parsed_doc = parsed_by_id[ft_r.study_id]  # type: ignore[attr-defined]
         tri = triage(candidate, parsed_doc, pack)
-        label_counts[tri.label] += 1
-        proposal = (
-            _dry_proposal(candidate.study_id) if args.dry_run
-            else judge_eligibility(candidate, parsed_doc, tri, pack, settings)
-        )
-        receipt = adjudicate(tri, proposal, parsed_doc)
-        decision_counts[receipt.decision] += 1
-        eligibility_receipts.append(receipt)
-        # Append-one-line JSON checkpoint + flush. Cheap + crash-safe.
-        with checkpoint_path.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps(_receipt_dict(receipt)) + "\n")
-            fh.flush()
-        if i % 10 == 0:
-            print(
-                f"[s7]   ... {i}/{len(located_receipts)} processed; "
-                f"decisions so far: {dict(decision_counts)}",
-                flush=True,
+        async with sem:
+            proposal = (
+                _dry_proposal(candidate.study_id) if args.dry_run
+                else await asyncio.to_thread(
+                    judge_eligibility, candidate, parsed_doc, tri, pack, settings,
+                )
             )
+        receipt = adjudicate(tri, proposal, parsed_doc)
+        async with write_lock:
+            label_counts[tri.label] += 1
+            decision_counts[receipt.decision] += 1
+            with checkpoint_path.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(_receipt_dict(receipt)) + "\n")
+                fh.flush()
+            progress["done"] += 1
+            if progress["done"] % 10 == 0:
+                print(
+                    f"[s7]   ... {progress['done']}/{len(parsed_subset)} done; "
+                    f"decisions: {dict(decision_counts)}",
+                    flush=True,
+                )
+        return receipt
+
+    eligibility_receipts = list(
+        await asyncio.gather(*(adjudicate_one(ft_r) for ft_r in parsed_subset))
+    )
     if skipped_parse_failed:
         print(
             f"[s7] skipped {skipped_parse_failed} candidates with parse failures "
