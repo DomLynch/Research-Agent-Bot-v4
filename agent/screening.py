@@ -74,6 +74,9 @@ class FullTextReceipt:
     retrieved: bool
     source: str = ""
     reason: str = ""
+    # Optional fallback URL (e.g. Unpaywall PDF) used when the primary
+    # source parses to too-little text. Empty string = no fallback.
+    fallback_url: str = ""
 
 
 @dataclass(frozen=True, slots=True)

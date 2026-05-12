@@ -78,16 +78,28 @@ async def fetch_full_text_receipt(
     client: httpx.AsyncClient,
     settings: Settings,
 ) -> FullTextReceipt:
-    """Try PMC (PMID-based), then Unpaywall (DOI-based). Fail soft."""
+    """Try PMC (PMID-based), then Unpaywall (DOI-based). Fail soft.
+
+    Sprint 7.9: when PMC succeeds we ALSO look up Unpaywall (if DOI
+    available) and stash the OA URL as `fallback_url`. parse_one() uses
+    the fallback when PMC parses to too-little text - older articles
+    often have abstract-only PMC envelopes but a full PDF available via
+    Unpaywall (e.g. Miller-2011)."""
+    pmc_id = None
     if study.pmid:
         pmc_id = await _pmc_lookup(
             study.pmid, client=client, api_key=settings.ncbi_api_key
         )
-        if pmc_id:
-            return FullTextReceipt(
-                study_id=study.study_id, retrieved=True, source="PMC",
-                reason=pmc_id,
-            )
+    if pmc_id:
+        fallback = ""
+        if study.doi:
+            fallback = await _unpaywall_lookup(
+                study.doi, client=client, email=settings.unpaywall_email,
+            ) or ""
+        return FullTextReceipt(
+            study_id=study.study_id, retrieved=True, source="PMC",
+            reason=pmc_id, fallback_url=fallback,
+        )
     if study.doi:
         oa_url = await _unpaywall_lookup(
             study.doi, client=client, email=settings.unpaywall_email,

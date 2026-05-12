@@ -27,6 +27,24 @@ _EFETCH_PMC = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
 _MAX_CHARS = 80_000
 _TAG_RE = re.compile(r"<[^>]+>")
 _WS_RE = re.compile(r"\s+")
+# Sprint 7.9: detect non-paper content that PMC / publisher sites sometimes
+# return under load (rate-limit reCAPTCHA, JS redirects, paywalls). Any of
+# these in the first few hundred chars means the "parse" is junk and
+# parse_one should treat it as failure + try the Unpaywall fallback.
+_JUNK_MARKERS = (
+    "recaptcha",
+    "robot check",
+    "are you a human",
+    "redirecting var timerstart",
+    "access denied",
+    "request blocked",
+    "we apologize for the inconvenience",
+)
+
+
+def _looks_like_junk(text: str) -> bool:
+    head = text[:1500].casefold()
+    return any(m in head for m in _JUNK_MARKERS)
 
 SourceKind = Literal["pmc-xml", "html", "pdf", "unsupported"]
 
@@ -117,6 +135,28 @@ async def parse_one(
         kind: SourceKind = "pmc-xml"
         source_url = f"{_EFETCH_PMC}?db=pmc&id={receipt.reason}"
         text = _strip(raw) if raw else ""
+        # Sprint 7.9: NCBI under load returns a reCAPTCHA / "Redirecting"
+        # page instead of real XML; PMC also sometimes returns abstract-
+        # only envelopes (Miller-2011 at 4041 chars). In either case the
+        # PMC parse is unusable - drop it so the Unpaywall fallback fires.
+        if _looks_like_junk(text):
+            text = ""
+            err = "pmc returned junk content (reCAPTCHA/redirect/blocked)"
+        if len(text) < 5000 and receipt.fallback_url:
+            fb_raw, fb_kind, fb_err = await _fetch_html_or_pdf(
+                receipt.fallback_url, client=client,
+            )
+            if fb_kind == "pdf" and fb_raw:
+                fb_text = _WS_RE.sub(" ", fb_raw).strip()[:_MAX_CHARS]
+            elif fb_raw:
+                fb_text = _strip(fb_raw)
+            else:
+                fb_text = ""
+            if len(fb_text) > len(text):
+                text = fb_text
+                kind = "pdf" if fb_kind == "pdf" else "html"
+                source_url = receipt.fallback_url
+                err = fb_err if not fb_text else ""
     elif receipt.source == "Unpaywall":
         raw, kind_hint, err = await _fetch_html_or_pdf(receipt.reason, client=client)
         source_url = receipt.reason
