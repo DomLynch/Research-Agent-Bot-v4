@@ -1,0 +1,31 @@
+{
+  "summary": {
+    "total": 4,
+    "by_gate": {
+      "evidence_slot": 3,
+      "novelty_claim": 1
+    }
+  },
+  "violations": [
+    {
+      "gate": "evidence_slot",
+      "location": "ABSTRACT",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'Does the timing of intervention initiation\u2014whether in early, middle, or later life\u2014alter the magnitude of the effect?'"
+    },
+    {
+      "gate": "evidence_slot",
+      "location": "INTRODUCTION",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'These works collectively establish that rapamycin generally extends murine lifespan, but they also note that a significant portion of the\u2026'"
+    },
+    {
+      "gate": "evidence_slot",
+      "location": "INTRODUCTION",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'For instance, if the planned moderator analysis indicates significant effect modification by age at treatment, it would justify a new gen\u2026'"
+    },
+    {
+      "gate": "novelty_claim",
+      "location": "INTRODUCTION",
+      "message": "Forbidden novelty phrase 'seminal meta-analysis': 'The seminal meta-analysis by Swindell (2017) aggregated early studies and confirmed a statistically significant average increase in murin\u2026'"
+    }
+  ]
+}

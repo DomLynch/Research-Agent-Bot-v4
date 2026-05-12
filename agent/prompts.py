@@ -224,7 +224,15 @@ def writer_methods(
 def writer_title_abstract_intro(
     topic: str, pack: TopicPack | None = None
 ) -> list[dict[str, str]]:
-    """Iteration prompt: produce Title + Abstract + Introduction only (pre-results)."""
+    """Iteration prompt: produce Title + Abstract + Introduction only (pre-results).
+
+    FORBIDDEN OVERCLAIMS apply to every sub-section in this prompt and the
+    writer_methods prompt: no claim of formal registration (PROSPERO, OSF,
+    etc.) and no claim of dual-reviewer / third-reviewer staffing unless
+    the topic pack supplies a registration_id anchor. Honest wording for
+    this pipeline is "implemented-protocol" / "reproducible-pipeline" /
+    "this synthesis uses an automated extraction pipeline".
+    """
     specs = [
         (
             "TITLE",
@@ -233,7 +241,8 @@ def writer_title_abstract_intro(
             "'only when Y', 'fails to Z') because the analysis has not yet run. "
             "Use neutral, design-descriptive framing such as 'Heterogeneous Effects "
             "of X by Y, Z, and Treatment Timing' or 'Systematic Synthesis of X "
-            "Across Y'. Reject generic 'a review of …' framings.",
+            "Across Y'. Reject generic 'a review of …' framings. Do NOT use the "
+            "word 'pre-registered' or 'registered'.",
         ),
         (
             "ABSTRACT",
