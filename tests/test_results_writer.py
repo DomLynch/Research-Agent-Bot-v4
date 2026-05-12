@@ -152,6 +152,24 @@ def test_writer_renders_primary_effect_when_available() -> None:
     assert "0.110" in text
     assert "95% CI 0.070 to 0.150" in text
     assert "[PACKET:primary_effect]" in text
+    assert "pooled estimate" in text  # k_studies=12 -> pooled wording
+
+
+def test_writer_uses_single_study_wording_when_k_is_one() -> None:
+    """Sprint 8.1: do not call a k=1 'pool' a pooled estimate."""
+    singleton = ResultsPacket(
+        packet_id="primary_effect", description="x",
+        k_studies=1, k_effects=1, metric="log_median_ratio",
+        moderator_levels={},
+        source_effect_ids=(("s246", "o1"),),
+        estimate=0.388, se=0.214, ci_low=-0.032, ci_high=0.808,
+    )
+    text = write_results_section([
+        _study_selection_packet(), _corpus_packet(), singleton,
+    ])
+    assert "single-study extracted effect" in text
+    assert "pooled estimate" not in text
+    assert "k_studies=1" in text
 
 
 def test_writer_output_passes_contract_when_packets_exist() -> None:

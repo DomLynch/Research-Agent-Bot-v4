@@ -161,6 +161,10 @@ def _render_effect(p: ResultsPacket) -> str:
             f"[RESULTS_BLOCKED:packet {p.packet_id} has no estimate - "
             f"upstream stats step pending]"
         )
+    # Sprint 8.1: do not overclaim. A single-study "pool" is not a pooled
+    # meta-analysis; the language must reflect that until k_studies >= 2.
+    is_pooled = p.k_studies >= 2
+    label = "pooled estimate" if is_pooled else "single-study extracted effect"
     # Sprint 8: log-scale metrics (log_hazard_ratio, log_median_ratio)
     # also report the back-transformed ratio so the prose is readable
     # without forcing readers to mentally exponentiate; the log-scale
@@ -169,14 +173,14 @@ def _render_effect(p: ResultsPacket) -> str:
         import math as _math
         ratio = _math.exp(p.estimate)
         return (
-            f"The pooled estimate ({p.metric}) was {p.estimate:.3f} "
+            f"The {label} ({p.metric}) was {p.estimate:.3f} "
             f"(95% CI {p.ci_low:.3f} to {p.ci_high:.3f}; "
             f"back-transformed ratio {ratio:.3f}; "
             f"k_studies={p.k_studies}, k_effects={p.k_effects}) "
             f"[PACKET:{p.packet_id}]."
         )
     return (
-        f"The pooled estimate ({p.metric}) was {p.estimate:.3f} "
+        f"The {label} ({p.metric}) was {p.estimate:.3f} "
         f"(95% CI {p.ci_low:.3f} to {p.ci_high:.3f}; k_studies={p.k_studies}, "
         f"k_effects={p.k_effects}) [PACKET:{p.packet_id}]."
     )
