@@ -1,0 +1,479 @@
+{
+  "topic": "rapamycin",
+  "run_id": "latest",
+  "frozen_at_utc": "2026-05-12T06:48:03+00:00",
+  "bucket_counts": {
+    "A_core_direct_lifespan": 8,
+    "B_disease_model_survival": 4,
+    "C_secondary_contextual": 12
+  },
+  "demote_reasons": {
+    "s099": [
+      "no quote names a mouse term",
+      "no quote names a control term",
+      "quotes mention only non-mouse species"
+    ],
+    "s103": [
+      "no quote names a primary intervention term"
+    ],
+    "s105": [
+      "no quote names a control term"
+    ],
+    "s107": [
+      "no quote names a control term"
+    ],
+    "s109": [
+      "no quote names a control term"
+    ],
+    "s112": [
+      "no quote names a control term"
+    ],
+    "s218": [
+      "no quote names a mouse term",
+      "no quote names a control term"
+    ],
+    "s219": [
+      "quotes signal secondary/omics design"
+    ],
+    "s259": [
+      "no quote names a primary intervention term"
+    ],
+    "s282": [
+      "no quote names a control term"
+    ]
+  },
+  "A_core_direct_lifespan": [
+    {
+      "study_id": "s086",
+      "title": "Rapamycin fed late in life extends lifespan in genetically heterogeneous mice.",
+      "doi": "10.1038/nature08221",
+      "pmid": "19587680",
+      "year": 2009,
+      "venue": "Nature",
+      "lane": "A_direct_lifespan",
+      "char_count": 11337,
+      "evidence_quotes": [
+        "Here we report that rapamycin, an inhibitor of the mTOR pathway, extends median and maximal lifespan of both male and female mice when fed beginning at 600 days of age. On the basis of age at 90% mortality, rapamycin led to an increase of 14% for females and 9% for males.\n"
+      ],
+      "contract_pass": true,
+      "manual_override": true,
+      "strict_a_core": true
+    },
+    {
+      "study_id": "s094",
+      "title": "The mTOR pathway is necessary for survival of mice with short telomeres.",
+      "doi": "10.1038/s41467-020-14962-1",
+      "pmid": "32127537",
+      "year": 2020,
+      "venue": "Nature communications",
+      "lane": "A_direct_lifespan",
+      "char_count": 80000,
+      "evidence_quotes": [
+        "3-month-old wild type and second-generation telomerase-de\ufb01cient mice (G2 Terc\u2212/\u2212) in a C57BL/6 genetic background14 were fed with either control chow or chow- containing encapsulated rapamycin at 42 ppm (mg of drug per kg of food)31.",
+        "We found that rapamycin treatment increased median longevity of wild-type mice (Terc+/+) by 39%, resulting in a median longevity of 26.5 months in rapamycin-fed Terc+/+ mice compared to only 19 months in the control-fed cohorts (Fig. 1b)."
+      ],
+      "contract_pass": true,
+      "manual_override": false,
+      "strict_a_core": true
+    },
+    {
+      "study_id": "s207",
+      "title": "Rapamycin extends murine lifespan but has limited effects on aging.",
+      "doi": "10.1172/jci67674",
+      "pmid": "23863708",
+      "year": 2013,
+      "venue": "The Journal of clinical investigation",
+      "lane": "A_direct_lifespan",
+      "char_count": 80000,
+      "evidence_quotes": [
+        "we performed to determine whether rapamycin slows the rate of aging in male C57BL/6J mice.",
+        "Survival analysis applied to all treated cohorts, and lifespan extension by rapamycin was demonstrated relative to corresponding vehicle controls (Figure 1), confirming previously reported longevity effects (8\u201311)."
+      ],
+      "contract_pass": true,
+      "manual_override": false,
+      "strict_a_core": true
+    },
+    {
+      "study_id": "s230",
+      "title": "Health Effects of Long-Term Rapamycin Treatment: The Impact on Mouse Health of Enteric Rapamycin Treatment from Four Months of Age throughout Life.",
+      "doi": "10.1371/journal.pone.0126644",
+      "pmid": "25978367",
+      "year": 2015,
+      "venue": "PloS one",
+      "lane": "A_direct_lifespan",
+      "char_count": 54842,
+      "evidence_quotes": [
+        "At four months of age 160 mice, 80 animals per sex, began receiving mouse chow (Purina 5LG6) containing either microencapsulated rapamycin (14 ppm) or empty capsules (eudragit = control), (n = 40 animals per sex and treatment group).",
+        "Consistent with our previous findings, survival of both males and females was modestly enhanced in YF animals [35]."
+      ],
+      "contract_pass": true,
+      "manual_override": false,
+      "strict_a_core": true
+    },
+    {
+      "study_id": "s235",
+      "title": "Transient rapamycin treatment during developmental stage extends lifespan in Mus musculus and Drosophila melanogaster.",
+      "doi": "10.15252/embr.202255299",
+      "pmid": "35796299",
+      "year": 2022,
+      "venue": "EMBO reports",
+      "lane": "A_direct_lifespan",
+      "char_count": 80000,
+      "evidence_quotes": [
+        "Rapamycin (10 mg/kg) was administered daily in two distinct temporal windows, from postnatal day 4 to postnatal day 30 (P4\u2010P30), or from postnatal day 30 to postnatal day 60 (P30\u2010P60)",
+        "Combined data from both sexes showed a 9.6% increase in median lifespan in P4\u2010P30 rapamycin\u2010treated mice compared with control mice (treated with ethanol)"
+      ],
+      "contract_pass": true,
+      "manual_override": false,
+      "strict_a_core": true
+    },
+    {
+      "study_id": "s246",
+      "title": "BMAL1-dependent regulation of the mTOR signaling pathway delays aging.",
+      "doi": "10.18632/aging.100633",
+      "pmid": "24481314",
+      "year": 2014,
+      "venue": "Aging",
+      "lane": "A_direct_lifespan",
+      "char_count": 80000,
+      "evidence_quotes": [
+        "treatment with the mTORC1 inhibitor rapamycin increased lifespan of Bmal1\u2212/\u2212 mice by 50%",
+        "we decided to compare activity of mTOR signaling in cells isolated from wild type and BMAL1-deficient mice"
+      ],
+      "contract_pass": true,
+      "manual_override": false,
+      "strict_a_core": true
+    },
+    {
+      "study_id": "s268",
+      "title": "Dose-dependent effects of mTOR inhibition on weight and mitochondrial disease in mice.",
+      "doi": "10.3389/fgene.2015.00247",
+      "pmid": "26257774",
+      "year": 2015,
+      "venue": "Frontiers in genetics",
+      "lane": "A_direct_lifespan",
+      "char_count": 37179,
+      "evidence_quotes": [
+        "we compared the effects of dietary rapamycin at doses ranging from 14 to 378 PPM on developmental weight in control and Ndufs4 knockout mice and on health and survival in the Ndufs4 knockout model.",
+        "The highest oral dose, approximately 27-times the dose shown to extend murine lifespan, increased survival in Ndufs4 knockout mice similarly to daily rapamycin injection without observable adverse effects."
+      ],
+      "contract_pass": true,
+      "manual_override": false,
+      "strict_a_core": true
+    },
+    {
+      "study_id": "s288",
+      "title": "Transient rapamycin treatment can increase lifespan and healthspan in middle-aged mice.",
+      "doi": "10.7554/elife.16351",
+      "pmid": "27549339",
+      "year": 2016,
+      "venue": "eLife",
+      "lane": "A_direct_lifespan",
+      "char_count": 80000,
+      "evidence_quotes": [
+        "A brief 3-month treatment of middle-aged mice with the mTOR inhibitor rapamycin produced an immediate, persistent improvement in healthspan and increased survival, with adult-onset transient rapamycin treatment significantly extending median and maximum lifespan in male mice.\n"
+      ],
+      "contract_pass": true,
+      "manual_override": true,
+      "strict_a_core": true
+    }
+  ],
+  "B_disease_model_survival": [
+    {
+      "study_id": "s101",
+      "title": "Premature recruitment of oocyte pool and increased mTOR activity in Fmr1 knockout mice and reversal of phenotype with rapamycin.",
+      "doi": "10.1038/s41598-017-18598-y",
+      "pmid": "29330421",
+      "year": 2018,
+      "venue": "Scientific reports",
+      "lane": "B_disease_model_survival",
+      "char_count": 25804,
+      "evidence_quotes": [
+        "Breeding, histologic and mTOR signaling data were obtained at multiple time points in KO and wild type (WT) mice fed a control or rapamycin (mTOR inhibitor) diet.",
+        "Reversal of phenotypes and protein levels in rapamycin-treated KO mice, as well as increased reproductive lifespan of rapamycin-fed WT mice, suggest the mTOR pathway as a potential therapeutic target."
+      ],
+      "contract_pass": true,
+      "manual_override": false
+    },
+    {
+      "study_id": "s105",
+      "title": "Acarbose suppresses symptoms of mitochondrial disease in a mouse model of Leigh syndrome.",
+      "doi": "10.1038/s42255-023-00815-w",
+      "pmid": "37365290",
+      "year": 2023,
+      "venue": "Nature metabolism",
+      "lane": "B_disease_model_survival",
+      "char_count": 80000,
+      "evidence_quotes": [
+        "Rapamycin, a drug that increases lifespan and health during normative ageing, also increases survival and reduces neurological symptoms in a mouse model of the severe mitochondrial disease Leigh syndrome.",
+        "Furthermore, rapamycin and acarbose have additive effects in delaying neurological symptoms and increasing maximum lifespan in Ndufs4 \u2212/\u2212 mice."
+      ],
+      "contract_pass": true,
+      "manual_override": false
+    },
+    {
+      "study_id": "s242",
+      "title": "Rapamycin extends lifespan and delays tumorigenesis in heterozygous p53+/- mice.",
+      "doi": "10.18632/aging.100498",
+      "pmid": "23123616",
+      "year": 2012,
+      "venue": "Aging",
+      "lane": "B_disease_model_survival",
+      "char_count": 26363,
+      "evidence_quotes": [
+        "Mice of the first group (n=37) were given rapamycin in drinking water (approximately 1.5 mg/kg per day), whereas mice of the second group (n=38) were given tap water without rapamycin and served as control.",
+        "In rapamycin-treated mice, the mean lifespan was 410 days and lifespan of the last 10% of survivals could not be determined (Fig. 1 A )."
+      ],
+      "contract_pass": true,
+      "manual_override": false
+    },
+    {
+      "study_id": "s282",
+      "title": "Rapamycin increases lifespan and inhibits spontaneous tumorigenesis in inbred female mice.",
+      "doi": "10.4161/cc.10.24.18486",
+      "pmid": "22107964",
+      "year": 2011,
+      "venue": "Cell cycle (Georgetown, Tex.)",
+      "lane": "B_disease_model_survival",
+      "char_count": 80000,
+      "evidence_quotes": [
+        "Daily administration of rapamycin, an inhibitor of the nutrient sensing mechanistic target of rapamycin complex I (mTORC1), rescues multiple manifestations of mitochondrial disease in Ndufs4 \u2212/\u2212 mice, including neurological symptoms, accumulation of glycolytic intermediates and lactate, loss of body fat, aberrant nutrient and growth factor signalling, and survival",
+        "Furthermore, rapamycin and acarbose have additive effects in delaying neurological symptoms and increasing maximum lifespan in Ndufs4 \u2212/\u2212 mice."
+      ],
+      "contract_pass": true,
+      "manual_override": false
+    }
+  ],
+  "C_secondary_contextual": [
+    {
+      "study_id": "s092",
+      "title": "Metformin potentiates nephrotoxicity by promoting NETosis in response to renal ferroptosis.",
+      "doi": "10.1038/s41421-023-00595-3",
+      "pmid": "37848438",
+      "year": 2023,
+      "venue": "Cell discovery",
+      "lane": "C_secondary_molecular",
+      "char_count": 76604,
+      "evidence_quotes": [
+        "we treated mice with AKI induced by renal ischemia-reperfusion (I/R) with different drugs alone. Notably, nicotinamide, resveratrol, rapamycin, and senolytics, but not metformin, showed some to no protective effects on AKI based on various readouts of renal health and func- tion",
+        "a higher dose of metformin (200 mg/kg) resulted in 100% lethality of I/R mice while the untreated I/R mice showed 100% survival"
+      ],
+      "contract_pass": true,
+      "manual_override": false,
+      "demoted_from": null
+    },
+    {
+      "study_id": "s099",
+      "title": "High-content screening identifies ganoderic acid A as a senotherapeutic to prevent cellular senescence and extend healthspan in preclinical models.",
+      "doi": "10.1038/s41467-025-58188-5",
+      "pmid": "40128218",
+      "year": 2025,
+      "venue": "Nature communications",
+      "lane": "A_direct_lifespan",
+      "char_count": 80000,
+      "evidence_quotes": [
+        "As expected, rapamycin (100 \u03bcM) signi\ufb01cantly extended the median (12%) and maximum lifespan (25%) of C. elegans (Fig. 2e).",
+        "Upon stimulating aged worms at 30 \u00b0C, treatments with rapamycin and GAA extended the mean lifespan by 23% and 35% and the maximum lifespan by 9% and 12% respectively, compared to those treated with DMSO treatment (Fig. 2f)."
+      ],
+      "contract_pass": true,
+      "manual_override": false,
+      "strict_a_core": false,
+      "demoted_from": "A_direct_lifespan",
+      "demote_reasons": [
+        "no quote names a mouse term",
+        "no quote names a control term",
+        "quotes mention only non-mouse species"
+      ]
+    },
+    {
+      "study_id": "s103",
+      "title": "Lifespan-extending interventions induce consistent patterns of fatty acid oxidation in mouse livers.",
+      "doi": "10.1038/s42003-023-05128-y",
+      "pmid": "37481675",
+      "year": 2023,
+      "venue": "Communications biology",
+      "lane": "A_direct_lifespan",
+      "char_count": 80000,
+      "evidence_quotes": [
+        "In this LC-M001 experiment, 48 mice were either untreated (Control) or subjected to one of three lifespan- extending drug treatments (ACA, 17aE2, or Rapa)",
+        "ACA, 17aE2, and Rapa showed signi\ufb01cantly higher RCI median in the examined modules compared to Control (Fig. 2a, Supplementary Fig. 1a), suggesting general tightening of module pro\ufb01les by each of these lifespan-extending interventions."
+      ],
+      "contract_pass": true,
+      "manual_override": false,
+      "strict_a_core": false,
+      "demoted_from": "A_direct_lifespan",
+      "demote_reasons": [
+        "no quote names a primary intervention term"
+      ]
+    },
+    {
+      "study_id": "s107",
+      "title": "Long-lasting geroprotection from brief rapamycin treatment in early adulthood by persistently increased intestinal autophagy.",
+      "doi": "10.1038/s43587-022-00278-w",
+      "pmid": "37118497",
+      "year": 2022,
+      "venue": "Nature aging",
+      "lane": "A_direct_lifespan",
+      "char_count": 80000,
+      "evidence_quotes": [
+        "In mice, a 3-month, early treatment also induced a memory effect, with maintenance similar to chronic treatment, of lysozyme distribution, Man2B1 level in intestinal crypts, Paneth cell architecture and gut barrier function, even 6 months after rapamycin was withdrawn.",
+        "In Drosophila, a brief, early rapamycin treatment of adults extended lifespan and attenuated age-related decline in the intestine to the same degree as lifelong dosing."
+      ],
+      "contract_pass": true,
+      "manual_override": false,
+      "strict_a_core": false,
+      "demoted_from": "A_direct_lifespan",
+      "demote_reasons": [
+        "no quote names a control term"
+      ]
+    },
+    {
+      "study_id": "s109",
+      "title": "Inhibition of S6K lowers age-related inflammation and increases lifespan through the endolysosomal system.",
+      "doi": "10.1038/s43587-024-00578-3",
+      "pmid": "38413780",
+      "year": 2024,
+      "venue": "Nature aging",
+      "lane": "A_direct_lifespan",
+      "char_count": 80000,
+      "evidence_quotes": [
+        "Rapamycin treatment also elevated Syntaxin 12/13 levels in mouse liver and prevented age-related increase in noncanonical NF-\u03baB signaling",
+        "Suppression of TORC1 signaling genetically or pharmacologically by the US Food and Drug Administration-licensed drug rapamycin (Rapa), promotes lifespan and healthspan in various model organisms including nematode worms, fruit flies and mice"
+      ],
+      "contract_pass": true,
+      "manual_override": false,
+      "strict_a_core": false,
+      "demoted_from": "A_direct_lifespan",
+      "demote_reasons": [
+        "no quote names a control term"
+      ]
+    },
+    {
+      "study_id": "s112",
+      "title": "The geroprotectors trametinib and rapamycin combine additively to extend mouse healthspan and lifespan.",
+      "doi": "10.1038/s43587-025-00876-4",
+      "pmid": "40437307",
+      "year": 2025,
+      "venue": "Nature aging",
+      "lane": "A_direct_lifespan",
+      "char_count": 80000,
+      "evidence_quotes": [
+        "We measured the survival of mice on diets contain- ing only rapamycin (42 mg kg\u20131), the dose so far inducing the largest increase in longevity20, or both rapamycin (42 mg kg\u20131) and trametinib (1.44 mg kg\u20131).",
+        "intermittent rapamycin treatment extended lifespan in both sexes to a similar extent (P < 0.0001, log-rank test; P = 0.2481 for the sex\u2013drug interaction, Cox proportional hazard) with an increase in median and maximum lifespan of 17.4% and 16.5%, respectively, in female mice (Fig. 2b) and 16.6% and 18.3%, respectively, in male mice (Fig. 2c)."
+      ],
+      "contract_pass": true,
+      "manual_override": false,
+      "strict_a_core": false,
+      "demoted_from": "A_direct_lifespan",
+      "demote_reasons": [
+        "no quote names a control term"
+      ]
+    },
+    {
+      "study_id": "s218",
+      "title": "Diverse interventions that extend mouse lifespan suppress shared age-associated epigenetic changes at critical gene regulatory regions.",
+      "doi": "10.1186/s13059-017-1185-3",
+      "pmid": "28351383",
+      "year": 2017,
+      "venue": "Genome biology",
+      "lane": "C_secondary_molecular",
+      "char_count": 69871,
+      "evidence_quotes": [
+        "One cohort was given encapsulated rapamycin (42 parts per million (ppm)) from 4 months of age",
+        "Dietary and drug interventions that extend lifespan include calorie restriction (CR) and the mTOR inhibitor rapamycin"
+      ],
+      "contract_pass": true,
+      "manual_override": false,
+      "demoted_from": null
+    },
+    {
+      "study_id": "s219",
+      "title": "Epigenetic aging signatures in mice livers are slowed by dwarfism, calorie restriction and rapamycin treatment.",
+      "doi": "10.1186/s13059-017-1186-2",
+      "pmid": "28351423",
+      "year": 2017,
+      "venue": "Genome biology",
+      "lane": "C_secondary_molecular",
+      "char_count": 51704,
+      "evidence_quotes": [
+        "we analyzed 28 additional methylomes from mice subjected to lifespan-extending conditions, including Prop1df/df dwarfism, calorie restriction or dietary rapamycin.",
+        "We found that mice treated with these lifespan-extending interventions were significantly younger in epigenetic age than their untreated, wild-type age-matched controls."
+      ],
+      "contract_pass": true,
+      "manual_override": false,
+      "demoted_from": null
+    },
+    {
+      "study_id": "s227",
+      "title": "Mice fed rapamycin have an increase in lifespan associated with major changes in the liver transcriptome.",
+      "doi": "10.1371/journal.pone.0083988",
+      "pmid": "24409289",
+      "year": 2014,
+      "venue": "PloS one",
+      "lane": "C_secondary_molecular",
+      "char_count": 67976,
+      "evidence_quotes": [
+        "Two dietary regimens were used in this study: mice fed a commercial chow, LabDiet 5LG6-JL (LabDiet, St. Louis, MO), with Eudragit capsule (control) or 14 ppm encapsulated rapamycin (Rapa) in the food",
+        "Rapamycin was found to increase (11% to 16%) the lifespan of male and female C57BL/6J mice most likely by reducing the increase in the hazard for mortality (i.e., the rate of aging) term in the Gompertz mortality analysis."
+      ],
+      "contract_pass": true,
+      "manual_override": false,
+      "demoted_from": null
+    },
+    {
+      "study_id": "s244",
+      "title": "Rapamycin doses sufficient to extend lifespan do not compromise muscle mitochondrial content or endurance.",
+      "doi": "10.18632/aging.100576",
+      "pmid": "23929887",
+      "year": 2013,
+      "venue": "Aging",
+      "lane": "C_secondary_molecular",
+      "char_count": 80000,
+      "evidence_quotes": [
+        "Therefore, we tested whether rapamycin, at the same doses used to extend lifespan, affects mitochondrial function in skeletal muscle.",
+        "In agreement with the lack of change in mitochondrial components, rapamycin-treated mice had endurance equivalent to that of untreated controls, and isolated, permeabilized muscle fibers displayed similar rates of oxygen consumption."
+      ],
+      "contract_pass": true,
+      "manual_override": false,
+      "demoted_from": null
+    },
+    {
+      "study_id": "s259",
+      "title": "p53 and rapamycin are additive.",
+      "doi": "10.18632/oncotarget.4602",
+      "pmid": "26158292",
+      "year": 2015,
+      "venue": "Oncotarget",
+      "lane": "A_direct_lifespan",
+      "char_count": 46709,
+      "evidence_quotes": [
+        "Mice were fed chow containing empty Eudragit capsules (control) or capsules containing 14 ppm eRapa, the concentration previously shown to extend lifespan, delay tumor-related death, retard a number of age-related pathologies, and improve cerebral function",
+        "eRapa extended the median survival of p53+/- (520 to 582 days, p=0.0522) and p53+/+ mice (681 to 802.5 days, p=0.0013)."
+      ],
+      "contract_pass": true,
+      "manual_override": false,
+      "strict_a_core": false,
+      "demoted_from": "A_direct_lifespan",
+      "demote_reasons": [
+        "no quote names a primary intervention term"
+      ]
+    },
+    {
+      "study_id": "s263",
+      "title": "SRN-901, a Novel Longevity Drug, Extends Lifespan and Healthspan by Targeting Multiple Aging Pathways.",
+      "doi": "10.2147/dddt.s594895",
+      "pmid": "42011226",
+      "year": 2026,
+      "venue": "Drug design, development and therapy",
+      "lane": "C_secondary_molecular",
+      "char_count": 77026,
+      "evidence_quotes": [
+        "Rapamycin was mixed in food with a concentration of 14.4 ppm.",
+        "While rapamycin increased lifespan in adult mice, nicotinamide mononucleotide (NMN), and nicotinamide riboside (NR) did not show significant differences in median lifespan compared to placebo."
+      ],
+      "contract_pass": true,
+      "manual_override": false,
+      "demoted_from": null
+    }
+  ]
+}

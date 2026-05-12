@@ -1,18 +1,18 @@
 {
   "topic": "rapamycin",
-  "run_id": "rapamycin-s7-iter-17-2026-05-12T05-44-57Z",
-  "frozen_at_utc": "2026-05-12T05:57:01+00:00",
+  "run_id": "latest",
+  "frozen_at_utc": "2026-05-12T06:48:03+00:00",
   "lane_counts": {
-    "A_direct_lifespan": 17,
+    "A_direct_lifespan": 14,
     "B_disease_model_survival": 4,
-    "C_secondary_molecular": 3,
+    "C_secondary_molecular": 6,
     "D_review_background": 0,
     "E_exclude": 0
   },
   "accepted_lanes": [
     "A_direct_lifespan"
   ],
-  "k_studies_frozen": 17,
+  "k_studies_frozen": 14,
   "studies": [
     {
       "study_id": "s086",
@@ -28,22 +28,6 @@
       ],
       "contract_pass": true,
       "manual_override": true
-    },
-    {
-      "study_id": "s092",
-      "title": "Metformin potentiates nephrotoxicity by promoting NETosis in response to renal ferroptosis.",
-      "doi": "10.1038/s41421-023-00595-3",
-      "pmid": "37848438",
-      "year": 2023,
-      "venue": "Cell discovery",
-      "lane": "A_direct_lifespan",
-      "char_count": 76604,
-      "evidence_quotes": [
-        "we treated mice with AKI induced by renal ischemia-reperfusion (I/R) with different drugs alone. Notably, nicotinamide, resveratrol, rapamycin, and senolytics, but not metformin, showed some to no protective effects on AKI based on various readouts of renal health and func- tion",
-        "a higher dose of metformin (200 mg/kg) resulted in 100% lethality of I/R mice while the untreated I/R mice showed 100% survival"
-      ],
-      "contract_pass": true,
-      "manual_override": false
     },
     {
       "study_id": "s094",
@@ -190,22 +174,6 @@
       "manual_override": false
     },
     {
-      "study_id": "s244",
-      "title": "Rapamycin doses sufficient to extend lifespan do not compromise muscle mitochondrial content or endurance.",
-      "doi": "10.18632/aging.100576",
-      "pmid": "23929887",
-      "year": 2013,
-      "venue": "Aging",
-      "lane": "A_direct_lifespan",
-      "char_count": 80000,
-      "evidence_quotes": [
-        "Therefore, we tested whether rapamycin, at the same doses used to extend lifespan, affects mitochondrial function in skeletal muscle.",
-        "In agreement with the lack of change in mitochondrial components, rapamycin-treated mice had endurance equivalent to that of untreated controls, and isolated, permeabilized muscle fibers displayed similar rates of oxygen consumption."
-      ],
-      "contract_pass": true,
-      "manual_override": false
-    },
-    {
       "study_id": "s246",
       "title": "BMAL1-dependent regulation of the mTOR signaling pathway delays aging.",
       "doi": "10.18632/aging.100633",
@@ -233,22 +201,6 @@
       "evidence_quotes": [
         "Mice were fed chow containing empty Eudragit capsules (control) or capsules containing 14 ppm eRapa, the concentration previously shown to extend lifespan, delay tumor-related death, retard a number of age-related pathologies, and improve cerebral function",
         "eRapa extended the median survival of p53+/- (520 to 582 days, p=0.0522) and p53+/+ mice (681 to 802.5 days, p=0.0013)."
-      ],
-      "contract_pass": true,
-      "manual_override": false
-    },
-    {
-      "study_id": "s263",
-      "title": "SRN-901, a Novel Longevity Drug, Extends Lifespan and Healthspan by Targeting Multiple Aging Pathways.",
-      "doi": "10.2147/dddt.s594895",
-      "pmid": "42011226",
-      "year": 2026,
-      "venue": "Drug design, development and therapy",
-      "lane": "A_direct_lifespan",
-      "char_count": 77026,
-      "evidence_quotes": [
-        "Rapamycin was mixed in food with a concentration of 14.4 ppm.",
-        "While rapamycin increased lifespan in adult mice, nicotinamide mononucleotide (NMN), and nicotinamide riboside (NR) did not show significant differences in median lifespan compared to placebo."
       ],
       "contract_pass": true,
       "manual_override": false
