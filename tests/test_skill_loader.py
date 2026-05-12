@@ -58,3 +58,43 @@ def test_load_skill_caches_results() -> None:
     a = load_skill("system_writer")
     b = load_skill("system_writer")
     assert a is b
+
+
+def test_all_seven_writer_section_skills_exist_and_carry_their_invariants() -> None:
+    """Sprint 11.6 + 12.1: every writer-section .md skill that
+    agent/prompts.py loads must exist and preserve the content
+    invariants from the original Python literals."""
+    cases: tuple[tuple[str, tuple[str, ...]], ...] = (
+        ("writer_section_methods", (
+            "800-1,200 words", "SEARCH STRATEGY", "TENSION-MATRIX CONSTRUCTION",
+            "FORBIDDEN OVERCLAIMS", "[CIT:", "[PLACEHOLDER:databases]",
+        )),
+        ("writer_section_title", (
+            "at most 15 words", "moderator-specific conclusion",
+            "pre-registered",
+        )),
+        ("writer_section_abstract", (
+            "250-300 words", "[N_SCREENED]", "[N_ACCEPTED]", "[K_STUDIES]",
+            "FORBIDDEN: do NOT say 'pre-registered'",
+        )),
+        ("writer_section_introduction", (
+            "HARD FLOOR: 800 words", "HARD CEILING: 1,000 words",
+            "prior synthesis landscape",
+        )),
+        ("writer_section_discussion", (
+            "600-900 words", "FORBIDDEN OVERCLAIMS",
+            "[CIT:<key>|prior-meta-analysis]",
+            "[CIT:<key>|mechanism-review]",
+        )),
+        ("writer_section_limitations", (
+            "200-400 words", "metric-family discipline",
+            "[PACKET:sentinel_recall]",
+        )),
+        ("writer_section_conclusion", (
+            "120-180 words", "calibrated by k",
+        )),
+    )
+    for name, invariants in cases:
+        body = load_skill(name)
+        for needle in invariants:
+            assert needle in body, f"{name}: missing invariant {needle!r}"

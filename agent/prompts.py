@@ -126,54 +126,9 @@ def writer_title_abstract_intro(
     "this synthesis uses an automated extraction pipeline".
     """
     specs = [
-        (
-            "TITLE",
-            "One line, no period, at most 15 words. The title must NOT assert a "
-            "moderator-specific conclusion (e.g. 'but Effects Diminish With X', "
-            "'only when Y', 'fails to Z') because the analysis has not yet run. "
-            "Use neutral, design-descriptive framing such as 'Heterogeneous Effects "
-            "of X by Y, Z, and Treatment Timing' or 'Systematic Synthesis of X "
-            "Across Y'. Reject generic 'a review of …' framings. Do NOT use the "
-            "word 'pre-registered' or 'registered'.",
-        ),
-        (
-            "ABSTRACT",
-            "250-300 words total, unlabeled paragraphs covering, in order. "
-            "FORBIDDEN: do NOT say 'pre-registered', 'registered in PROSPERO', "
-            "'dual reviewer', or any other claim about external registration "
-            "or human-team staffing. Honest framing is 'implemented through a "
-            "reproducible evidence-contract pipeline'. "
-            "(1) the precise research question. Open with an EXPLICIT interrogative "
-            "framing ('How consistent is the effect of X on Y across …?', 'To what "
-            "extent does …?'). Do NOT open with an implicit empirical assertion like "
-            "'X consistently extends Y' — that triggers the evidence-slot gate. "
-            "Briefly note why prior syntheses leave the question open; cite them with "
-            "[CIT:]. "
-            "(2) corpus shape and screening counts as bracketed placeholders "
-            "([N_SCREENED]/[N_ACCEPTED]/[K_STUDIES]) — do not invent counts; "
-            "(3) the planned analysis (mixed-effects models, moderator tests, "
-            "tension matrix), NOT aggregate findings; "
-            "(4) the design's pre-specified boundary conditions to interrogate "
-            "(e.g. sex x strain x dose x timing) — framed as questions, not answers; "
-            "(5) the next-study implication that would strengthen or refute findings "
-            "produced by the planned analysis. Do NOT state aggregate effect sizes "
-            "or moderator outcomes; use slots or pre-results framing throughout.",
-        ),
-        (
-            "INTRODUCTION",
-            "HARD FLOOR: 800 words minimum. HARD CEILING: 1,000 words. Across 4-6 "
-            "paragraphs covering: (a) significance of the research question; (b) the "
-            "prior synthesis landscape and its specific gaps — prior meta-analyses "
-            "MUST be named by author + year + [CIT:] and their contribution "
-            "acknowledged, never erased; (c) the contribution of THIS paper distinct "
-            "from prior syntheses (extension, refinement, or stress-test); (d) scope "
-            "and explicit non-goals. Cite prior work with [CIT:<keyword>] placeholders. "
-            "Every empirical sentence — INCLUDING paragraph topic sentences and "
-            "between-paragraph summary sentences — must contain at least one [CIT:] "
-            "or other structured slot. If you produce less than 800 words for the "
-            "Introduction, expand with additional landscape detail, additional "
-            "moderator-specific gap analysis, and additional non-goals.",
-        ),
+        ("TITLE", load_skill("writer_section_title")),
+        ("ABSTRACT", load_skill("writer_section_abstract")),
+        ("INTRODUCTION", load_skill("writer_section_introduction")),
     ]
     system = SYSTEM_WRITER
     if pack:
@@ -193,51 +148,9 @@ def writer_discussion(
     that the receipts do not support.
     """
     specs = [
-        (
-            "DISCUSSION",
-            "600-900 words across 4-5 paragraphs. FORBIDDEN OVERCLAIMS: "
-            "do NOT state a pooled effect size, HR, or percent extension "
-            "unless [PACKET:primary_effect] has k_studies >= 2. No "
-            "external-registration or author-team claims. Structure: "
-            "(a) restate question + what the corpus does/does-not support, "
-            "referencing [PACKET:primary_effect] / "
-            "[PACKET:primary_pool_composition]; "
-            "(b) compare to prior syntheses with "
-            "[CIT:<key>|prior-meta-analysis] anchors — note alignment vs "
-            "divergence without picking a winner when k is small; "
-            "(c) mechanism background from "
-            "[CIT:<key>|mechanism-review] anchors, NOT a finding here; "
-            "(d) boundary conditions (strain, sex, dose, timing, route, "
-            "pathogen status) framed as currently underdetermined; "
-            "(e) translational considerations citing "
-            "[CIT:<key>|clinical-trial] anchors; state explicitly that "
-            "translational interventions are NOT in the primary corpus. "
-            "Use [PACKET:...] for numeric references; [CIT:<key>|<role>] "
-            "for prior work. Do not paraphrase Results numbers into prose."
-        ),
-        (
-            "LIMITATIONS",
-            "200-400 words, one paragraph. Name SPECIFIC limitations from "
-            "this pipeline's outputs: corpus size + sentinel-recall gate "
-            "([PACKET:sentinel_recall]); k_studies from "
-            "[PACKET:primary_effect] and its inference implications; "
-            "metric-family discipline (90th-percentile vs median ratios "
-            "are pooled separately, no cross-family inference); automated "
-            "risk-of-bias adjudication without explicit human arbitration; "
-            "any manual full-text overrides ([PACKET:study_selection]) — "
-            "documented source recovery, not eligibility override. Do NOT "
-            "use vague 'further research is needed' filler; name the "
-            "specific missing data."
-        ),
-        (
-            "CONCLUSION",
-            "120-180 words, one paragraph. One sentence on what the corpus "
-            "currently supports (calibrated by k). One sentence on what "
-            "would change the conclusion (more contract-passing studies, "
-            "sentinel repair). One sentence on the broader interpretive "
-            "frame. No new claims or citations not already in "
-            "Introduction / Discussion."
-        ),
+        ("DISCUSSION", load_skill("writer_section_discussion")),
+        ("LIMITATIONS", load_skill("writer_section_limitations")),
+        ("CONCLUSION", load_skill("writer_section_conclusion")),
     ]
     system = SYSTEM_WRITER
     if pack:
