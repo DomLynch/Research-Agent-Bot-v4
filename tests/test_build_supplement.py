@@ -119,7 +119,7 @@ def test_supplement_renders_all_canonical_blocks(tmp_path: Path) -> None:
         "## S7 — Sentinel Recall Audit",
         "## S8 — Excluded / Demoted Studies",
         "## S9 — Code and Data Availability",
-        "## S10 — QA Report (verbatim)",
+        "## S10 — QA Report (verbatim, from upstream eligibility run)",
     ):
         assert header in out, f"missing header: {header}"
 

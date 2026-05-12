@@ -1,9 +1,9 @@
-<!-- AUTO-STITCHED Sprint 12.2 — universal corpus-prose tokens + k-threshold honesty + Researka audit-scaffold framing.
+<!-- AUTO-STITCHED Sprint 12.3 — A/B/C lane composition + S10 caveat + back-matter receipt-reference fix.
   ph pass-1: 12 resolved
-  honesty: 23 applied
-  ph pass-2 (corpus tokens): 6 resolved
+  honesty: 24 applied
+  ph pass-2 (corpus tokens): 12 resolved
   citations: 19
-  stamped: 2026-05-12T18:52:59+00:00
+  stamped: 2026-05-12T19:09:11+00:00
 -->
 
 
@@ -62,7 +62,7 @@ Moderator meta-regression, sensitivity analyses (leave-one-out, influence diagno
 
 ### Primary Pool Composition
 
-After applying the strict A-core evidence-quote audit, 4 studies form the primary direct-lifespan corpus, 2 studies populate the disease-model survival sensitivity lane, and 2 studies are retained as secondary/contextual (of which 1 was demoted from the auto-judge direct-lifespan lane because their evidence quotes failed the per-quote mouse/intervention/control/endpoint audit) (Supplementary §S4 and §S8; Appendix A).
+After applying the strict A-core evidence-quote audit, 3 studies form the wild-type direct-lifespan A-core corpus (s126, s235, s288), 1 study/studies populate the genotype-modified / disease-model survival B sensitivity lane (s246), and 2 studies are retained as secondary / contextual or off-metric records (s086, s230) (Supplementary §S4 and §S8; Appendix A).
 
 Strict A-core records selected for primary extraction (3): s126, s235, s288 (Supplementary §S4 and §S8; Appendix A).
 
@@ -163,7 +163,7 @@ numbers.
 
 ## Data and Code Availability
 
-All raw retrieval hits, screening receipts, parsed full-text bodies (where available), eligibility receipts, effect extraction receipts, the strict A-core primary-effect input set, and the rendered manuscript are filed under the run directory `runs/rapamycin-paper-2026-05-12T18-52-59Z` and are version-controlled in `https://github.com/DomLynch/Research-Agent-Bot-v4`. Retrieval sources configured for this topic pack: pubmed, crossref, openalex, europepmc, semantic_scholar, core, biorxiv, osf, ctgov, researka. The reproducibility contract is auditable: every count and effect estimate in the manuscript carries a [PACKET:...] anchor pointing at a JSON receipt that downstream reviewers can re-validate without re-running the LLM stack. Manual full-text injections (when used to recover sentinel papers the auto retrieval cannot reach) are recorded with SHA-256 hashes in `manual_full_text_audit.json`.
+All raw retrieval hits, screening receipts, parsed full-text bodies (where available), eligibility receipts, effect extraction receipts, the strict A-core primary-effect input set, and the rendered manuscript are filed under the run directory `runs/rapamycin-paper-2026-05-12T19-09-11Z` and are version-controlled in `https://github.com/DomLynch/Research-Agent-Bot-v4`. Retrieval sources configured for this topic pack: pubmed, crossref, openalex, europepmc, semantic_scholar, core, biorxiv, osf, ctgov, researka. The reproducibility contract is auditable: every count and effect estimate in the manuscript carries a Supplementary §S{N} / Appendix A cross-reference that points at the corresponding JSON receipt (`eligibility_summary.json`, `primary_effect_input_set_strict.json`, `effect_extractions.json`, `effect_pool.json`, `extraction_crosscheck.json`) so downstream reviewers can re-validate without re-running the LLM stack. Manual full-text injections (when used to recover sentinel papers the auto retrieval cannot reach) are recorded with SHA-256 hashes in `manual_full_text_audit.json`.
 
 ## AI-Use and Automation Disclosure
 
