@@ -49,18 +49,20 @@ Wall-clock ≤ 10 min. Cost ≤ $0.50/run (MiMo + Gemma).
 12. ⬜ Tests (unit + golden) + supplement plugins + cutover validation
 
 ## Current Step
-**Step 1 — Foundation. In progress.**
+**Sprint 12.8 — pack-driven back-matter + supplement filesystem honesty.**
+The staged rapamycin render path is operational; the active gate is final-folder
+integrity plus full unit/static checks. Sprint 13 backlog: single-command
+runner, corpus expansion (s288 retry, s086 median-family recovery), and
+multi-topic cutover.
 
-## Definition of Done (Step 1)
-- [ ] `Settings` dataclass loads `.env` cleanly
-- [ ] MiMo + OpenRouter + Researka URL/token + NCBI/SS/CORE/Crossref/Unpaywall
-      keys all wired
-- [ ] `pytest tests/test_settings.py` green
-- [ ] `scripts/loc_gate.sh` passes (foundation LOC well under 3,000)
-- [ ] `ruff check agent tests` clean
-- [ ] `mypy agent` clean
-- [ ] `.env` populated (not committed); `.env.example` documented
-- [ ] AGENTS.md + PROJECT_STATE.md locked
+## Definition of Done (Current Gate)
+- [ ] Fresh `runs/latest` contains `paper.md`, `supplement.md`, and the
+      canonical JSON receipt sidecars named in the paper.
+- [ ] `pytest tests/test_run_folder_integrity.py` passes.
+- [ ] `pytest -q`, `ruff check agent tests`, and `mypy agent` pass.
+- [ ] No rendered manuscript/supplement prose claims absent run-folder files.
+- [ ] AGENTS.md, PROJECT_STATE.md, and HANDOVER.md match the current runner and
+      artifact shape.
 
 ## Decisions Locked
 - 2 models only (MiMo writer / Gemma judge+editor)

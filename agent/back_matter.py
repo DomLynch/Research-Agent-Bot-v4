@@ -100,9 +100,10 @@ def build_back_matter(
         "`primary_effect_input_set_strict.json`, `effect_extractions.json`, "
         "`effect_pool.json`, `extraction_crosscheck.json`) so downstream "
         "reviewers can re-validate without re-running the LLM stack. "
-        "Manual full-text injections (when used to recover sentinel "
-        "papers the auto retrieval cannot reach) are recorded with "
-        "SHA-256 hashes in `manual_full_text_audit.json`."
+        "When manual full-text injections are used to recover sentinel "
+        "papers the auto retrieval cannot reach, per-injection SHA-256 "
+        "hashes are recorded in a manual-full-text audit sidecar in "
+        "the same run directory."
     )
     ai_use = (
         f"This manuscript was assembled by an automated synthesis "

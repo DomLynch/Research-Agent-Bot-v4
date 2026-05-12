@@ -8,7 +8,7 @@ Supplement = audit. Compiler = truth. LLM = prose. Contract = enforcement.
 **No LLM owns truth. No literal owns topic. No gate owns more than its rule.
 No section owns evidence outside its packet.**
 
-## Current State — 2026-05-12 (Sprint 11.1)
+## Current State — 2026-05-12 (Sprint 12.8)
 - LOC ceiling: **7,500 in `agent/`** (hard gate, `scripts/loc_gate.sh`).
   History: 3,000 (initial) → 5,000 (Sprint 6 truth patch) → 7,500
   (Sprint 11.1 manuscript completion). Every module under the higher cap
@@ -17,8 +17,10 @@ No section owns evidence outside its packet.**
   abstraction.
 - Universal-no-hardcoding: no biomedical literals in `agent/`; topic
   packs supply domain vocabulary, anchors, sentinels, eligibility terms,
-  metric families.
+  metric families, ethics + conflicts back-matter prose.
 - Build mode: sequential sprints, verify before advancing.
+- Current quality gate: `tests/test_run_folder_integrity.py` must pass
+  against `runs/latest` before any manuscript is described as AAA-clean.
 
 ## Hard Rule
 ```text
