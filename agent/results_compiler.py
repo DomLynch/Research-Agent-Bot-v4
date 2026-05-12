@@ -79,6 +79,9 @@ def compile_sentinel_recall(
 
 
 def compile_study_selection(state: EvidenceState) -> InformationalPacket:
+    n_unavailable = sum(
+        1 for r in state.eligibility_receipts if r.decision == "unavailable"
+    )
     counts: dict[str, int] = {
         "identified": state.k_hits,
         "screened_title_abstract": sum(1 for r in state.receipts if r.stage == "title-abstract"),
@@ -89,6 +92,7 @@ def compile_study_selection(state: EvidenceState) -> InformationalPacket:
         "eligibility_included": state.k_eligibility_included,
         "eligibility_excluded": state.k_eligibility_excluded,
         "eligibility_unclear": state.k_eligibility_unclear,
+        "eligibility_unavailable": n_unavailable,
         "eligible_after_full_text": state.k_eligible,
     }
     return InformationalPacket(
