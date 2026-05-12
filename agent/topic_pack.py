@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import tomllib
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
 
@@ -48,7 +48,9 @@ class TopicPack:
     sentinel_prior_meta: tuple[str, ...]
     non_mouse_species_terms: tuple[str, ...]
     secondary_design_quote_markers: tuple[str, ...]
-    references_bibliography: Mapping[str, str] = MappingProxyType({})
+    references_bibliography: Mapping[str, str] = field(
+        default_factory=lambda: MappingProxyType({}),
+    )
 
     @property
     def has_scope_rules(self) -> bool:
