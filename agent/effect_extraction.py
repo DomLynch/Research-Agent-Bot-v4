@@ -85,6 +85,17 @@ def build_extraction_prompt(
     metrics = ", ".join(pack.eligibility_endpoint_terms) or endpoint
     interventions = ", ".join(pack.primary_interventions) or "the intervention"
     controls = ", ".join(pack.eligibility_control_terms) or "the comparator"
+    preferred_families = ", ".join(pack.preferred_metric_families)
+    preference_clause = (
+        f" When multiple metric families are reported in the same paper "
+        f"(e.g. median lifespan AND 90th-percentile lifespan), PREFER one of "
+        f"the families [{preferred_families}] over alternatives so the result "
+        f"can be inverse-variance-pooled with other studies in the same "
+        f"family. Record the preferred-family metric in the metric field; "
+        f"if the preferred family is genuinely not in the paper, fall back "
+        f"to whatever the paper reports."
+        if preferred_families else ""
+    )
     excerpt = parsed_text[:excerpt_chars]
     system = (
         "You extract effect-size data from one research paper. Output ONLY "
@@ -94,6 +105,12 @@ def build_extraction_prompt(
         '"no_numerics" with a one-sentence failure_reason. Look hard at '
         "Results, Methods, and Tables sections; raw values usually live "
         "there, not in the abstract."
+        + preference_clause
+        + " Sample-size recovery is critical for inverse-variance pooling: "
+        "scan the Methods, Table 1 (cohort table), figure legends, and "
+        "survival-analysis sections for treated_n and control_n. Only "
+        "leave these null when the paper genuinely does not report them; "
+        "do not skip a manual scan."
     )
     user = (
         f"Paper: {study_id} - {title}\n\n"

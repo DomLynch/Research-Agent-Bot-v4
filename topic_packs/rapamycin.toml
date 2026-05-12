@@ -117,6 +117,20 @@ subjects_extra        = ["mice", "animals"]
 # parsed full-text + title for these keyword groups. Pass 2 (LLM judge) sees
 # the same lists in its prompt so its mandatory-fields checklist matches.
 # Universal: add a `[eligibility]` block per topic pack; no code change.
+# --- extraction prompt steering -------------------------------------------
+# Preferred metric families ordered by inverse-variance-pool compatibility.
+# When a paper reports multiple metric families (e.g. both median and
+# 90th-percentile lifespan), the extraction prompt asks the writer to
+# pick from this list so studies aggregate within a single family.
+# Universal: each topic pack declares its own preferred families.
+[extraction]
+preferred_metric_families = [
+    "median_lifespan",
+    "median_survival",
+    "median_lifespan_days",
+    "median_lifespan_months",
+]
+
 [eligibility]
 endpoint_terms       = ["lifespan", "survival", "longevity", "mortality",
                         "median survival", "maximum lifespan", "kaplan-meier",

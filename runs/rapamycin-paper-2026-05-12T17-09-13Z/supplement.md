@@ -5,7 +5,7 @@ Auto-generated from the run-directory receipts that accompany the main manuscrip
 ## S1 — Search Strategy
 
 - **Topic pack**: `rapamycin` (Rapamycin)
-- **Retrieval sources**: pubmed
+- **Retrieval sources**: pubmed, crossref, openalex, europepmc, semantic_scholar, core, biorxiv, osf, ctgov, researka
 - **Primary interventions (PICO `E`)**: rapamycin, sirolimus
 - **Translational-only interventions** (excluded from primary corpus; retained for sensitivity layer): everolimus, rtb101, rapalog, rapalogs
 - **Endpoint vocabulary**: lifespan, survival, longevity, mortality, median survival, maximum lifespan, kaplan-meier, log-rank
