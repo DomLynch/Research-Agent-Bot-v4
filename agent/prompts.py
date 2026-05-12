@@ -98,101 +98,12 @@ def writer_methods(
 
     Universal structure: search strategy, eligibility, extraction, moderator
     coding, quality assessment, statistical synthesis, sensitivity analyses,
-    tension-matrix construction. Topic-pack injects scope vocabulary, the
-    moderator list, length caps, primary vs translational-only interventions,
-    and method-citation anchors. The prompt is domain-agnostic: it instructs
-    the writer to select the framework appropriate to the study designs in
-    scope (animal vs human RCT vs observational vs non-clinical), citing the
-    anchor that matches.
+    tension-matrix construction. The user-prompt spec body lives in
+    `topic_packs/skills/writer_section_methods.md` (ARIS Markdown-skill
+    pattern); topic-pack injects scope vocabulary + anchor keys via the
+    `_topic_pack_block(pack)` system-prompt addendum.
     """
-    specs = [
-        (
-            "METHODS",
-            "800-1,200 words. Write an implemented-protocol Methods section "
-            "as ordered paragraphs (no markdown headers), one paragraph per "
-            "component below. Each paragraph must contain at least one "
-            "[CIT:<method-key>|method-citation] anchor drawn from the topic "
-            "pack's anchor list (shown in the TOPIC-PACK CONSTRAINTS block "
-            "above), OR a [PLACEHOLDER:...] slot when the operational detail "
-            "is not yet pinned. Use planned-analysis voice ('will be', 'is "
-            "designed to', 'pre-specifies') throughout — no retrospective "
-            "claims. The prompt is DOMAIN-NEUTRAL: select the right tool for "
-            "the topic and the study designs in scope; the topic-pack anchors "
-            "are the only source of specific method-citation keys.\n\n"
-            "FORBIDDEN OVERCLAIMS (must not appear unless the user has "
-            "explicitly provided a registration record in TOPIC-PACK "
-            "CONSTRAINTS):\n"
-            "- Do NOT claim the protocol is registered in PROSPERO, OSF, "
-            "  or any other external registry.\n"
-            "- Do NOT claim dual-reviewer extraction, dual-reviewer risk-"
-            "  of-bias adjudication, or third-reviewer arbitration — those "
-            "  are operational facts about a team you do not have. Use "
-            "  planned-protocol voice ('will be extracted', 'will be "
-            "  assessed') without naming staffing.\n"
-            "- Do NOT claim a search has been executed or a date range "
-            "  finalised; describe the search strategy in planning voice "
-            "  and leave dates / databases as [PLACEHOLDER:...] until the "
-            "  retrieval step has filled them in.\n"
-            "If the topic pack contains a key named 'registration_id' in "
-            "its method-citation anchors, you may cite it; otherwise the "
-            "protocol is implemented in this pipeline only and must be "
-            "described as such ('this synthesis was implemented using a "
-            "reproducible evidence-contract pipeline and is reported "
-            "against PRISMA 2020 where applicable').\n\n"
-            "Components, in order:\n"
-            "1. SEARCH STRATEGY — databases that will be queried, search-date "
-            "range, query-term shape. Cite the topic-pack-supplied reporting "
-            "framework appropriate to the domain. Use [PLACEHOLDER:databases], "
-            "[PLACEHOLDER:date-range], [PLACEHOLDER:query-terms] when not pinned.\n"
-            "2. ELIGIBILITY — inclusion and exclusion criteria framed in "
-            "PICO/PECO terms appropriate to the domain. If the topic pack "
-            "lists PRIMARY interventions, the eligibility statement must "
-            "restrict the primary pooled corpus to those names. If the topic "
-            "pack lists TRANSLATIONAL-ONLY interventions, they are explicitly "
-            "excluded from the primary pooled analysis and are retained only "
-            "for a pre-specified translational sensitivity layer. Scope "
-            "vocabulary must match the topic pack's preferred_terms exactly "
-            "(do not broaden, e.g. from a specific subject term to a parent "
-            "category).\n"
-            "3. DATA EXTRACTION — variables extracted from each included "
-            "study; independent dual extraction; disagreement-resolution "
-            "rule. Variables should be extracted in their ORIGINAL reported "
-            "units; any categorization is pre-specified and accompanied by "
-            "explicit conversion-assumption justification, with original-unit "
-            "sensitivity checks to avoid artificial precision.\n"
-            "4. MODERATOR CODING — the pre-specified moderators (drawn from "
-            "topic-pack scope), their levels, and the rationale for each. "
-            "Use [MODERATOR_P:<name>] for each. Do NOT introduce arbitrary "
-            "numeric thresholds (e.g. arbitrary dose / concentration / "
-            "magnitude breakpoints); use original-unit extraction with "
-            "post-hoc category sensitivity.\n"
-            "5. RISK-OF-BIAS / QUALITY — select the bias-assessment framework "
-            "appropriate to the study designs in scope, citing the matching "
-            "topic-pack method-citation anchor. The choice must match the "
-            "designs the topic actually covers — different anchors apply to "
-            "animal-intervention studies, human RCTs, non-randomized "
-            "observational designs, and non-clinical empirical work. State "
-            "the arbitration rule for discordant assessments.\n"
-            "6. STATISTICAL SYNTHESIS — multi-level mixed-effects "
-            "meta-regression specification: random-effects structure "
-            "(study-ID, outcome-within-study), fixed-effects predictors "
-            "(the coded moderators), variance estimator, degrees-of-freedom "
-            "correction, and software / package. Cite the topic-pack-supplied "
-            "method-citation anchors for each component (estimator, software, "
-            "small-sample adjustment).\n"
-            "7. SENSITIVITY ANALYSES — leave-one-out, influence diagnostics, "
-            "publication-bias diagnostics, and heterogeneity quantification. "
-            "Cite the topic-pack method anchors for each diagnostic. If the "
-            "topic pack lists translational-only interventions, the "
-            "sensitivity layer must include a translational evidence map "
-            "that examines analog evidence at appropriate endpoints WITHOUT "
-            "pooling it with the primary corpus.\n"
-            "8. TENSION-MATRIX CONSTRUCTION — how moderator combinations "
-            "define cells, which cells are plotted, how sparsely-populated "
-            "cells are flagged, and how the matrix feeds back into the "
-            "moderator interpretation and future-study recommendations.",
-        ),
-    ]
+    specs = [("METHODS", load_skill("writer_section_methods"))]
     system = SYSTEM_WRITER
     if pack:
         system = SYSTEM_WRITER + "\n\n" + _topic_pack_block(pack)
@@ -215,54 +126,9 @@ def writer_title_abstract_intro(
     "this synthesis uses an automated extraction pipeline".
     """
     specs = [
-        (
-            "TITLE",
-            "One line, no period, at most 15 words. The title must NOT assert a "
-            "moderator-specific conclusion (e.g. 'but Effects Diminish With X', "
-            "'only when Y', 'fails to Z') because the analysis has not yet run. "
-            "Use neutral, design-descriptive framing such as 'Heterogeneous Effects "
-            "of X by Y, Z, and Treatment Timing' or 'Systematic Synthesis of X "
-            "Across Y'. Reject generic 'a review of …' framings. Do NOT use the "
-            "word 'pre-registered' or 'registered'.",
-        ),
-        (
-            "ABSTRACT",
-            "250-300 words total, unlabeled paragraphs covering, in order. "
-            "FORBIDDEN: do NOT say 'pre-registered', 'registered in PROSPERO', "
-            "'dual reviewer', or any other claim about external registration "
-            "or human-team staffing. Honest framing is 'implemented through a "
-            "reproducible evidence-contract pipeline'. "
-            "(1) the precise research question. Open with an EXPLICIT interrogative "
-            "framing ('How consistent is the effect of X on Y across …?', 'To what "
-            "extent does …?'). Do NOT open with an implicit empirical assertion like "
-            "'X consistently extends Y' — that triggers the evidence-slot gate. "
-            "Briefly note why prior syntheses leave the question open; cite them with "
-            "[CIT:]. "
-            "(2) corpus shape and screening counts as bracketed placeholders "
-            "([N_SCREENED]/[N_ACCEPTED]/[K_STUDIES]) — do not invent counts; "
-            "(3) the planned analysis (mixed-effects models, moderator tests, "
-            "tension matrix), NOT aggregate findings; "
-            "(4) the design's pre-specified boundary conditions to interrogate "
-            "(e.g. sex x strain x dose x timing) — framed as questions, not answers; "
-            "(5) the next-study implication that would strengthen or refute findings "
-            "produced by the planned analysis. Do NOT state aggregate effect sizes "
-            "or moderator outcomes; use slots or pre-results framing throughout.",
-        ),
-        (
-            "INTRODUCTION",
-            "HARD FLOOR: 800 words minimum. HARD CEILING: 1,000 words. Across 4-6 "
-            "paragraphs covering: (a) significance of the research question; (b) the "
-            "prior synthesis landscape and its specific gaps — prior meta-analyses "
-            "MUST be named by author + year + [CIT:] and their contribution "
-            "acknowledged, never erased; (c) the contribution of THIS paper distinct "
-            "from prior syntheses (extension, refinement, or stress-test); (d) scope "
-            "and explicit non-goals. Cite prior work with [CIT:<keyword>] placeholders. "
-            "Every empirical sentence — INCLUDING paragraph topic sentences and "
-            "between-paragraph summary sentences — must contain at least one [CIT:] "
-            "or other structured slot. If you produce less than 800 words for the "
-            "Introduction, expand with additional landscape detail, additional "
-            "moderator-specific gap analysis, and additional non-goals.",
-        ),
+        ("TITLE", load_skill("writer_section_title")),
+        ("ABSTRACT", load_skill("writer_section_abstract")),
+        ("INTRODUCTION", load_skill("writer_section_introduction")),
     ]
     system = SYSTEM_WRITER
     if pack:
@@ -282,51 +148,9 @@ def writer_discussion(
     that the receipts do not support.
     """
     specs = [
-        (
-            "DISCUSSION",
-            "600-900 words across 4-5 paragraphs. FORBIDDEN OVERCLAIMS: "
-            "do NOT state a pooled effect size, HR, or percent extension "
-            "unless [PACKET:primary_effect] has k_studies >= 2. No "
-            "external-registration or author-team claims. Structure: "
-            "(a) restate question + what the corpus does/does-not support, "
-            "referencing [PACKET:primary_effect] / "
-            "[PACKET:primary_pool_composition]; "
-            "(b) compare to prior syntheses with "
-            "[CIT:<key>|prior-meta-analysis] anchors — note alignment vs "
-            "divergence without picking a winner when k is small; "
-            "(c) mechanism background from "
-            "[CIT:<key>|mechanism-review] anchors, NOT a finding here; "
-            "(d) boundary conditions (strain, sex, dose, timing, route, "
-            "pathogen status) framed as currently underdetermined; "
-            "(e) translational considerations citing "
-            "[CIT:<key>|clinical-trial] anchors; state explicitly that "
-            "translational interventions are NOT in the primary corpus. "
-            "Use [PACKET:...] for numeric references; [CIT:<key>|<role>] "
-            "for prior work. Do not paraphrase Results numbers into prose."
-        ),
-        (
-            "LIMITATIONS",
-            "200-400 words, one paragraph. Name SPECIFIC limitations from "
-            "this pipeline's outputs: corpus size + sentinel-recall gate "
-            "([PACKET:sentinel_recall]); k_studies from "
-            "[PACKET:primary_effect] and its inference implications; "
-            "metric-family discipline (90th-percentile vs median ratios "
-            "are pooled separately, no cross-family inference); automated "
-            "risk-of-bias adjudication without explicit human arbitration; "
-            "any manual full-text overrides ([PACKET:study_selection]) — "
-            "documented source recovery, not eligibility override. Do NOT "
-            "use vague 'further research is needed' filler; name the "
-            "specific missing data."
-        ),
-        (
-            "CONCLUSION",
-            "120-180 words, one paragraph. One sentence on what the corpus "
-            "currently supports (calibrated by k). One sentence on what "
-            "would change the conclusion (more contract-passing studies, "
-            "sentinel repair). One sentence on the broader interpretive "
-            "frame. No new claims or citations not already in "
-            "Introduction / Discussion."
-        ),
+        ("DISCUSSION", load_skill("writer_section_discussion")),
+        ("LIMITATIONS", load_skill("writer_section_limitations")),
+        ("CONCLUSION", load_skill("writer_section_conclusion")),
     ]
     system = SYSTEM_WRITER
     if pack:
