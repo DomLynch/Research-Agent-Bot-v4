@@ -60,7 +60,7 @@ Skipped (no inverse-variance numerics): `s086`, `s230`, `s288`
 
 ### S5c — Researka Canonical-Fact Cross-Check
 
-Third-party-validation overlay. For every extraction receipt with `percent_change` numerics, the Researka Tier 2 facts index (POST `/api/v1/tier2/facts/search`) was queried and filtered to facts whose paper DOI matches the receipt. The verdict is computed against a 25% tolerance band on the canonical %-value.
+Audit-scaffold overlay (the validation outcome itself is reported in the verdict table below). For every extraction receipt with `percent_change` numerics, the Researka Tier 2 facts index (POST `/api/v1/tier2/facts/search`) was queried and filtered to facts whose paper DOI matches the receipt. The verdict is computed against a 25% tolerance band on the canonical %-value. Independent validation is credited only when the verdict is `matched`; absent that, extraction numerics remain supported by receipt-level evidence quotes (S5) rather than canonical-fact confirmation.
 
 | study_id | doi | verdict | receipt% | best_match_fact_id | Δ% |
 | --- | --- | --- | --- | --- | --- |
