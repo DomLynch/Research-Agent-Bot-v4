@@ -164,3 +164,101 @@ def test_post_chat_omits_max_tokens_when_none(install_transport: Any) -> None:
     install_transport(handler)
     _post(max_tokens=None)
     assert "max_tokens" not in captured
+
+
+def _writer_test_settings() -> Any:
+    from agent.settings import Settings
+    return Settings(
+        mimo_api_key="k", mimo_base_url="http://mock/v1",
+        mimo_model="m", mimo_timeout_sec=5.0,
+        openrouter_api_key="", openrouter_base_url="",
+        judge_model="m", writer_max_retries=0,
+        researka_database_url="", researka_database_token="",
+        ncbi_api_key="", semantic_scholar_api_key="",
+        core_api_key="", crossref_polite_email="", unpaywall_email="",
+        bot_enabled=False, daily_cost_cap_usd=0.0, runs_dir="runs",
+    )
+
+
+def test_call_writer_retries_on_runaway_then_succeeds(
+    install_transport: Any, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """MiMo pathology is intermittent: same prompt, sometimes runaway,
+    sometimes real content. call_writer retries on empty content and
+    returns the first non-empty response."""
+    from agent.llm_client import call_writer
+    monkeypatch.setattr("agent.llm_client.time.sleep", lambda _s: None)
+    attempts: list[int] = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        attempts.append(1)
+        if len(attempts) < 3:
+            return httpx.Response(200, json={
+                "choices": [{"message": {"content": ""}}],
+                "usage": {"prompt_tokens": 100, "completion_tokens": 4000},
+            })
+        return _ok_response()
+
+    install_transport(handler)
+    resp = call_writer(
+        _writer_test_settings(),
+        [{"role": "user", "content": "hi"}], max_tokens=10,
+    )
+    assert resp.content == "ok"
+    assert len(attempts) == 3
+
+
+def test_call_writer_raises_after_all_runaway_attempts(
+    install_transport: Any, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from agent.llm_client import call_writer
+    monkeypatch.setattr("agent.llm_client.time.sleep", lambda _s: None)
+    attempts: list[int] = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        attempts.append(1)
+        return httpx.Response(200, json={
+            "choices": [{"message": {"content": ""}}],
+            "usage": {"prompt_tokens": 100, "completion_tokens": 4000},
+        })
+
+    install_transport(handler)
+    with pytest.raises(RuntimeError, match="runaway pathology"):
+        call_writer(
+            _writer_test_settings(),
+            [{"role": "user", "content": "hi"}], max_tokens=10,
+        )
+    assert len(attempts) == 4  # 1 initial + 3 retries
+
+
+def test_call_writer_allows_empty_content_with_zero_completion(
+    install_transport: Any,
+) -> None:
+    """If MiMo returns empty content with 0 completion tokens (e.g. it
+    chose to say nothing in a degenerate case), we let it through —
+    the gate is specifically the runaway pattern."""
+    from agent.llm_client import call_writer
+    from agent.settings import Settings
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"message": {"content": ""}}],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 0},
+            },
+        )
+
+    install_transport(handler)
+    settings = Settings(
+        mimo_api_key="k", mimo_base_url="http://mock/v1",
+        mimo_model="m", mimo_timeout_sec=5.0,
+        openrouter_api_key="", openrouter_base_url="",
+        judge_model="m", writer_max_retries=0,
+        researka_database_url="", researka_database_token="",
+        ncbi_api_key="", semantic_scholar_api_key="",
+        core_api_key="", crossref_polite_email="", unpaywall_email="",
+        bot_enabled=False, daily_cost_cap_usd=0.0, runs_dir="runs",
+    )
+    resp = call_writer(settings, [{"role": "user", "content": "hi"}], max_tokens=10)
+    assert resp.content == ""
