@@ -275,16 +275,84 @@ async def test_researka_skips_when_unconfigured() -> None:
 
 
 @pytest.mark.asyncio
-async def test_researka_parses_results_envelope() -> None:
-    body = {"results": [{
-        "title": "Rapamycin lifespan study",
-        "abstract": "We tested...",
-        "doi": "10.1038/nature08221",
-        "pmid": "19587680",
-        "year": 2009,
-        "venue": "Nature",
-        "url": "https://example.test/article",
-    }]}
+async def test_researka_parses_three_lane_response() -> None:
+    """Verified API shape: POST /api/v1/search returns three lanes
+    (established/discovery/semantic). Each lane contributes hits tagged
+    with `researka:<lane>` so downstream auditors can see provenance."""
+    body = {
+        "established": [{
+            "title": "Rapamycin lifespan study (established)",
+            "doi": "10.1038/nature08221", "pmid": "19587680",
+            "year": 2009, "venue": "Nature",
+            "abstract": "Established corpus...",
+        }],
+        "discovery": [{
+            "title": "Newer rapamycin work (discovery)",
+            "doi": "10.1101/2024.01.01", "year": 2024,
+            "venue": "bioRxiv",
+        }],
+        "semantic": [{
+            "title": "Similar by vector (semantic)",
+            "paper_id": "10.7554/elife.16351",  # paper_id is an alt DOI key
+            "year": 2016, "venue": "eLife",
+        }],
+    }
+    captured: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["method"] = request.method
+        captured["path"] = request.url.path
+        captured["token"] = request.headers.get("X-Researka-Token", "")
+        captured["body"] = json.loads(request.content)
+        return httpx.Response(200, json=body)
+
+    async with httpx.AsyncClient(transport=_mock(handler)) as client:
+        hits = await ResearkaSource(
+            _settings_with(
+                researka_database_url="https://database.researka.org",
+                researka_database_token="my-agent-token",
+            ),
+        ).search("rapamycin lifespan", client=client)
+
+    # Verify wire-protocol: POST, X-Researka-Token header, per-lane budgets.
+    assert captured["method"] == "POST"
+    assert captured["path"] == "/api/v1/search"
+    assert captured["token"] == "my-agent-token"
+    assert captured["body"]["query"] == "rapamycin lifespan"
+    assert "established_k" in captured["body"]
+    assert "discovery_k" in captured["body"]
+    assert "semantic_k" in captured["body"]
+
+    # All three lanes merge into one flat list, tagged for provenance.
+    by_source = {h.source for h in hits}
+    assert by_source == {
+        "researka:established", "researka:discovery", "researka:semantic",
+    }
+    dois = {h.doi for h in hits}
+    assert "10.1038/nature08221" in dois
+    assert "10.7554/elife.16351" in dois  # paper_id fallback worked
+
+
+@pytest.mark.asyncio
+async def test_researka_401_returns_empty_not_raise() -> None:
+    """Token rejection should not sink the unified sweep — empty list."""
+    async with httpx.AsyncClient(transport=_mock(
+        lambda r: httpx.Response(401, json={"detail": "invalid token"}))
+    ) as client:
+        hits = await ResearkaSource(
+            _settings_with(
+                researka_database_url="https://database.researka.org",
+                researka_database_token="bad-token",
+            ),
+        ).search("x", client=client)
+    assert hits == []
+
+
+@pytest.mark.asyncio
+async def test_researka_partial_lane_response_handles_missing_keys() -> None:
+    """Server may return only one or two lanes (e.g. cold cache, narrow
+    query). Adapter should not raise; should return whatever is present."""
+    body = {"established": [{"title": "T", "doi": "10.1/x"}]}  # no discovery/semantic
     async with httpx.AsyncClient(transport=_mock(
         lambda r: httpx.Response(200, json=body))
     ) as client:
@@ -294,25 +362,5 @@ async def test_researka_parses_results_envelope() -> None:
                 researka_database_token="t",
             ),
         ).search("x", client=client)
-    assert hits[0].doi == "10.1038/nature08221"
-    assert hits[0].pmid == "19587680"
-
-
-@pytest.mark.asyncio
-async def test_researka_tolerates_alt_envelope_shapes() -> None:
-    """Server might use {hits:[...]}, {data:[...]}, or a bare list."""
-    for envelope in (
-        {"hits": [{"title": "T", "doi": "10.1/x"}]},
-        {"data": [{"title": "T", "doi": "10.1/x"}]},
-        [{"title": "T", "doi": "10.1/x"}],
-    ):
-        async with httpx.AsyncClient(transport=_mock(
-            lambda r, e=envelope: httpx.Response(200, content=json.dumps(e).encode()))
-        ) as client:
-            hits = await ResearkaSource(
-                _settings_with(
-                    researka_database_url="https://database.researka.org",
-                    researka_database_token="t",
-                ),
-            ).search("x", client=client)
-        assert hits[0].doi == "10.1/x"
+    assert len(hits) == 1
+    assert hits[0].source == "researka:established"
