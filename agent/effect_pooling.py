@@ -79,9 +79,16 @@ def compute_effect(
         se = math.sqrt(1.0 / t_n + 1.0 / c_n)
         ci_low = log_ratio - _Z_95 * se
         ci_high = log_ratio + _Z_95 * se
+        # Metric family discipline: derive the pooled metric name from
+        # the receipt's metric so 90th-percentile-lifespan values aren't
+        # pooled with median-lifespan values under a single
+        # "log_median_ratio" label. The pool compiler still groups by
+        # modal metric name, so different families end up in different
+        # buckets automatically.
+        outcome_metric = _log_ratio_metric_name(receipt.metric)
         outcome = ExtractedOutcome(
             study_id=receipt.study_id, outcome_id=outcome_id,
-            metric_name="log_median_ratio",
+            metric_name=outcome_metric,
             moderators=ExtractedOutcome.freeze_moderators(receipt.moderators),
             treated_value=t_val, control_value=c_val,
             treated_n=t_n, control_n=c_n,
@@ -89,12 +96,29 @@ def compute_effect(
         )
         return outcome, EffectSizeRecord(
             study_id=receipt.study_id, outcome_id=outcome_id,
-            metric="log_median_ratio",
+            metric=outcome_metric,
             estimate=log_ratio, se=se, ci_low=ci_low, ci_high=ci_high,
             moderators=ExtractedOutcome.freeze_moderators(receipt.moderators),
         )
 
     return None
+
+
+def _log_ratio_metric_name(receipt_metric: str) -> str:
+    """Map a receipt-level metric (e.g. "median_lifespan_days",
+    "maximum_lifespan_90th_percentile_days") to a pooled log-ratio
+    label that keeps incompatible measurement families apart.
+
+    Universal: works off topic-pack vocabulary tokens (median, mean,
+    max, 90th, percentile, survival, mortality, hazard). No biomedical
+    literals beyond those neutral tokens; any topic that uses
+    different measurement families would extend the token list here."""
+    m = receipt_metric.casefold()
+    if "90th" in m or "percentile" in m or "max" in m:
+        return "log_max_or_percentile_lifespan_ratio"
+    if "mean" in m and "median" not in m:
+        return "log_mean_lifespan_ratio"
+    return "log_median_ratio"
 
 
 def compile_pool(
