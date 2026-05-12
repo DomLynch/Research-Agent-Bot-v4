@@ -165,6 +165,30 @@ def test_handover_doc_exists_and_is_not_stale() -> None:
         )
 
 
+def test_paper_md_pool_prose_names_only_pool_effect_ids() -> None:
+    """Sprint 12.6 regression: prose that introduces the inverse-variance
+    pool must name only studies in `pool.effects`, never the full A-core.
+    A-core that didn't contribute (parse_failed / off-modal-metric /
+    no_numerics) appearing as a 'pooled study' is the bug the reviewer
+    caught — pool IDs vs A-core IDs are different sets."""
+    import json
+    body = _read_body("paper.md")
+    pool = json.loads(_read("effect_pool.json"))
+    pool_ids = [str(e.get("study_id", "")) for e in pool.get("effects", [])]
+    skipped = [str(s) for s in (pool.get("skipped_study_ids") or [])]
+    # Find every sentence that asserts a "contract-passing studies: X, Y, Z"
+    # claim. Each listed ID must be in pool.effects, not pool.skipped.
+    for m in re.finditer(
+        r"contract-passing studies:\s*([^;)\n]+)", body,
+    ):
+        listed = [x.strip() for x in m.group(1).split(",") if x.strip()]
+        leaked = [x for x in listed if x in skipped]
+        assert not leaked, (
+            f"pool prose lists skipped study/studies as pool contributors: "
+            f"{leaked} (real pool: {pool_ids}; skipped: {skipped})"
+        )
+
+
 def test_paper_md_lane_counts_match_strict_receipt() -> None:
     """Universal cross-check: the A/B/C lane composition sentence in
     the body must reference the same counts as the strict receipt."""
