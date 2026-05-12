@@ -43,9 +43,26 @@ _TOKEN_RE = re.compile(
     r"|K_POOLABLE|INCOMPLETE_RECOVERY_IDS"
     r"|POOL_ESTIMATE|POOL_CI_LOW|POOL_CI_HIGH"
     r"|POOL_RATIO_BACK|POOL_PERCENT_EXT"
+    # Count-aware noun-agreement: e.g. [B_LANE_COUNT:study] -> "1 study"
+    # at n=1 or "3 studies" at n=3. Universal English pluralisation.
+    r"|A_CORE_COUNT:[a-z]+|B_LANE_COUNT:[a-z]+|C_LANE_COUNT:[a-z]+"
+    r"|K_POOLABLE_COUNT:[a-z]+"
     r"|PLACEHOLDER:[a-zA-Z0-9_\-]+"
     r"|MODERATOR_P:[a-zA-Z0-9_\-]+)\]"
 )
+
+
+def _pluralise(noun: str, n: int) -> str:
+    """Universal English pluralisation: study -> studies, record -> records,
+    effect -> effects, etc. Used by [<LANE>_COUNT:<noun>] tokens for
+    grammatical agreement (count + noun) in receipt-driven prose."""
+    if n == 1:
+        return noun
+    if noun.endswith("y") and (len(noun) < 2 or noun[-2] not in "aeiou"):
+        return noun[:-1] + "ies"
+    if noun.endswith(("s", "x", "z", "ch", "sh")):
+        return noun + "es"
+    return noun + "s"
 
 
 @dataclass(frozen=True, slots=True)
@@ -173,8 +190,24 @@ def resolve_placeholders(
     resolved: list[str] = []
     unresolved: list[str] = []
 
+    # Count-aware noun-agreement counts keyed by lane.
+    lane_counts: dict[str, int] = {
+        "A_CORE_COUNT": len(a_core_list),
+        "B_LANE_COUNT": len(b_lane_list),
+        "C_LANE_COUNT": len(c_lane_list),
+        "K_POOLABLE_COUNT": len(pool_effects) if pool is not None else 0,
+    }
+
     def _sub(match: re.Match[str]) -> str:
         token = match.group(1)
+        # Count-aware noun-agreement: e.g. "B_LANE_COUNT:study".
+        for prefix, n in lane_counts.items():
+            cf_prefix = f"{prefix}:"
+            if token.startswith(cf_prefix):
+                noun = token[len(cf_prefix):]
+                if noun:
+                    resolved.append(token)
+                    return f"{n} {_pluralise(noun, n)}"
         if token in counts:
             val = counts[token]
             if val:
