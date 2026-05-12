@@ -27,6 +27,7 @@ def test_load_rapamycin_pack_from_default_dir() -> None:
     assert pack.length_caps["abstract"] == 300
     assert pack.length_caps["introduction"] == 1000
     assert pack.min_words_per_citation == 45
+    assert "animal-research data" in pack.ethics_statement
 
 
 def test_load_missing_pack_returns_none(tmp_path: Path) -> None:

@@ -176,7 +176,7 @@ def stitch(
         run_dir_name=str(target.relative_to(target.parent.parent))
             if target.is_relative_to(target.parent.parent) else target.name,
         repository_url=repository_url,
-        operator_handle="human-operator",
+        operator_handle="the operator",
     )
 
     stamp_iso = dt.datetime.now(tz=dt.UTC).isoformat(timespec="seconds")

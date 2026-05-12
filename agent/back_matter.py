@@ -119,8 +119,8 @@ def build_back_matter(
     )
     conflicts = (
         "The operator declares no financial conflicts of interest "
-        "related to mTOR-pathway pharmacology, geroprotective "
-        "interventions, or the cited primary studies. The pipeline is "
+        "related to the intervention, system, endpoint, or cited "
+        "primary studies. The pipeline is "
         "open-source and reusable across topics; no commercial "
         "relationship influenced the eligibility rules or the "
         "manuscript framing for the present synthesis."
