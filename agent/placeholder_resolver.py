@@ -41,6 +41,8 @@ _TOKEN_RE = re.compile(
     r"|STRICT_A_CORE_COUNT|STRICT_A_CORE_IDS"
     r"|B_LANE_COUNT|B_LANE_IDS|C_LANE_COUNT|C_LANE_IDS"
     r"|K_POOLABLE|INCOMPLETE_RECOVERY_IDS"
+    r"|POOL_ESTIMATE|POOL_CI_LOW|POOL_CI_HIGH"
+    r"|POOL_RATIO_BACK|POOL_PERCENT_EXT"
     r"|PLACEHOLDER:[a-zA-Z0-9_\-]+"
     r"|MODERATOR_P:[a-zA-Z0-9_\-]+)\]"
 )
@@ -117,6 +119,39 @@ def resolve_placeholders(
         if sid and sid not in seen:
             seen.add(sid)
             incomplete_ids.append(sid)
+    # Pool point-estimate tokens — derived from the meta-analytic summary
+    # that compile_pool produces (or a callers can supply equivalent).
+    # Universal: every topic's pool emits the same numeric shape, so the
+    # tokens drift with the receipts and never with the topic.
+    import math
+    pool_summary = (pool or {}).get("pooled_a_core_summary")
+    if isinstance(pool_summary, dict):
+        try:
+            est = float(pool_summary.get("estimate", 0.0))
+            ci_low = float(pool_summary.get("ci_low", 0.0))
+            ci_high = float(pool_summary.get("ci_high", 0.0))
+            ratio_back = float(
+                pool_summary.get("median_ratio_back") or math.exp(est)
+            )
+            pct_ext = (ratio_back - 1.0) * 100.0
+            pool_tokens: dict[str, str] = {
+                "POOL_ESTIMATE": f"{est:.3f}",
+                "POOL_CI_LOW": f"{ci_low:.3f}",
+                "POOL_CI_HIGH": f"{ci_high:.3f}",
+                "POOL_RATIO_BACK": f"{ratio_back:.2f}",
+                "POOL_PERCENT_EXT": f"~{pct_ext:.0f}%",
+            }
+        except (TypeError, ValueError):
+            pool_tokens = dict.fromkeys(
+                ("POOL_ESTIMATE", "POOL_CI_LOW", "POOL_CI_HIGH",
+                 "POOL_RATIO_BACK", "POOL_PERCENT_EXT"), "",
+            )
+    else:
+        pool_tokens = dict.fromkeys(
+            ("POOL_ESTIMATE", "POOL_CI_LOW", "POOL_CI_HIGH",
+             "POOL_RATIO_BACK", "POOL_PERCENT_EXT"), "",
+        )
+
     counts: dict[str, str] = {
         "N_SCREENED": _str_or_empty(summary.get("k_hits")),
         "N_ACCEPTED": _str_or_empty(summary.get("k_eligible")),
@@ -132,6 +167,7 @@ def resolve_placeholders(
             ", ".join(incomplete_ids) if incomplete_ids
             else ("(none)" if extractions is not None else "")
         ),
+        **pool_tokens,
     }
 
     resolved: list[str] = []
