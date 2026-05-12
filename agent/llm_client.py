@@ -94,12 +94,14 @@ def call_judge(
     """
     if not settings.judge_configured:
         raise RuntimeError("Judge not configured: set OPENROUTER_API_KEY")
+    # Judge calls are short. Cap at 60s to fail fast on dead connections;
+    # the writer can still use the longer mimo_timeout_sec for prose runs.
     data = _post_chat(
         base_url=settings.openrouter_base_url,
         api_key=settings.openrouter_api_key,
         model=settings.judge_model,
         messages=messages,
-        timeout_sec=settings.mimo_timeout_sec,
+        timeout_sec=min(60.0, settings.mimo_timeout_sec),
         temperature=temperature,
         extra_headers={"HTTP-Referer": "https://research-agent-bot-v4.local"},
     )
