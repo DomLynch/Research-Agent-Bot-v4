@@ -46,10 +46,31 @@ def compute_effect(
 
     outcome_id = f"{receipt.study_id}.primary"
 
+    # Sprint 11.5: when the topic pack declares preferred_metric_families
+    # and the receipt provides matching median/mean values + sample sizes,
+    # prefer that path over hazard_ratio so the effect stays in the family
+    # of the larger pool. A study reporting BOTH HR and absolute medians
+    # carries more info via the absolute path (it preserves control
+    # baseline + per-arm n), and matching the pack family avoids dropping
+    # the study to "off-modal-metric" in compile_pool.
+    t_val_pre = receipt.treated_value
+    c_val_pre = receipt.control_value
+    t_n_pre = receipt.treated_n
+    c_n_pre = receipt.control_n
+    metric_pre = (receipt.metric or "").casefold()
+    prefer_absolute = bool(
+        pack.preferred_metric_families
+        and t_val_pre and c_val_pre and t_n_pre and c_n_pre
+        and any(fam.casefold() in metric_pre
+                for fam in pack.preferred_metric_families if fam)
+    )
+
     hr = receipt.hazard_ratio
     hr_lo = receipt.hazard_ratio_ci_low
     hr_hi = receipt.hazard_ratio_ci_high
-    if hr is not None and hr > 0 and hr_lo and hr_hi and hr_lo > 0 and hr_hi > 0:
+    if (not prefer_absolute
+            and hr is not None and hr > 0
+            and hr_lo and hr_hi and hr_lo > 0 and hr_hi > 0):
         log_hr = math.log(hr)
         se = (math.log(hr_hi) - math.log(hr_lo)) / (2 * _Z_95)
         ci_low = log_hr - _Z_95 * se

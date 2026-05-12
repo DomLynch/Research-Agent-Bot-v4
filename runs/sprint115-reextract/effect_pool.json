@@ -1,0 +1,66 @@
+{
+  "_doc": "Sprint 8 pooled effect-size records. Inverse-variance pooling consumes this file; main_draft.md Primary Pooled Effect renders from the resulting packet.",
+  "topic": "rapamycin",
+  "run_id": "sprint115-reextract",
+  "frozen_at_utc": "2026-05-12T17:54:14+00:00",
+  "k_outcomes": 2,
+  "k_effects": 2,
+  "skipped_study_ids": [
+    "s086",
+    "s230",
+    "s288",
+    "s126"
+  ],
+  "outcomes": [
+    {
+      "study_id": "s235",
+      "outcome_id": "s235.primary",
+      "metric_name": "log_median_ratio",
+      "moderators": {},
+      "treated_value": 938.0,
+      "control_value": 856.0,
+      "treated_n": 23,
+      "control_n": 23,
+      "raw_unit": "median_lifespan_days"
+    },
+    {
+      "study_id": "s246",
+      "outcome_id": "s246.primary",
+      "metric_name": "log_median_ratio",
+      "moderators": {
+        "strain": "Bmal1\u2212/\u2212",
+        "dose": "0.5mg/kg"
+      },
+      "treated_value": 350.03,
+      "control_value": 237.41,
+      "treated_n": 31,
+      "control_n": 73,
+      "raw_unit": "median_lifespan_days"
+    }
+  ],
+  "effects": [
+    {
+      "study_id": "s235",
+      "outcome_id": "s235.primary",
+      "metric": "log_median_ratio",
+      "estimate": 0.09147957286448251,
+      "se": 0.29488391230979427,
+      "ci_low": -0.4864822748829818,
+      "ci_high": 0.6694414206119468,
+      "moderators": {}
+    },
+    {
+      "study_id": "s246",
+      "outcome_id": "s246.primary",
+      "metric": "log_median_ratio",
+      "estimate": 0.38823026080833756,
+      "se": 0.21437512601305994,
+      "ci_low": -0.031937265358495615,
+      "ci_high": 0.8083977869751707,
+      "moderators": {
+        "strain": "Bmal1\u2212/\u2212",
+        "dose": "0.5mg/kg"
+      }
+    }
+  ]
+}

@@ -1,0 +1,111 @@
+{
+  "_doc": "Sprint 11.5 EXTRACTION-SCOPE A-core: all 6 sentinel candidates. Post-extraction the genotype routing moves s246 to B.",
+  "canonical_for_sprint_8": true,
+  "topic": "rapamycin",
+  "run_id": "latest",
+  "frozen_at_utc": "2026-05-12T13:06:26+00:00",
+  "bucket_counts": {
+    "A_core_direct_lifespan": 4,
+    "B_disease_model_survival": 3,
+    "C_secondary_contextual": 1
+  },
+  "demote_reasons": {
+    "s105": [
+      "no quote names a control term"
+    ],
+    "s237": [
+      "no quote names a mouse term"
+    ],
+    "s244": [
+      "manual:resolved_excluded: Side-effect / mechanism study, not a primary lifespan-extension trial.\nThe paper uses rapamycin at \"lifespan-extending doses\" to ask whether\nmuscle mitochondrial content / endurance are compromised. Lifespan is\nreferenced as a known prior result, not measured here.\n"
+    ],
+    "s288": [
+      "no quote names a primary intervention term"
+    ],
+    "s246": [
+      "genotype-modified strain (sensitivity)"
+    ]
+  },
+  "A_core_direct_lifespan": [
+    {
+      "study_id": "s086",
+      "title": "Rapamycin fed late in life extends lifespan in genetically heterogeneous mice",
+      "year": 2009,
+      "venue": "Nature",
+      "doi": "10.1038/nature08221",
+      "lane": "A_direct_lifespan",
+      "char_count": 0,
+      "evidence_quotes": [],
+      "contract_pass": true,
+      "manually_excluded": false,
+      "strict_a_core": true
+    },
+    {
+      "study_id": "s126",
+      "title": "Rapamycin, but not resveratrol or simvastatin, extends life span of genetically heterogeneous mice",
+      "year": 2011,
+      "venue": "J Gerontol A",
+      "doi": "10.1093/gerona/glq178",
+      "lane": "A_direct_lifespan",
+      "char_count": 0,
+      "evidence_quotes": [],
+      "contract_pass": true,
+      "manually_excluded": false,
+      "strict_a_core": true
+    },
+    {
+      "study_id": "s230",
+      "title": "Health Effects of Long-Term Rapamycin Treatment",
+      "year": 2015,
+      "venue": "PLoS One",
+      "doi": "10.1371/journal.pone.0126644",
+      "lane": "A_direct_lifespan",
+      "char_count": 0,
+      "evidence_quotes": [],
+      "contract_pass": true,
+      "manually_excluded": false,
+      "strict_a_core": true
+    },
+    {
+      "study_id": "s235",
+      "title": "Transient rapamycin treatment during developmental stage extends lifespan",
+      "year": 2022,
+      "venue": "EMBO Reports",
+      "doi": "10.15252/embr.202255299",
+      "lane": "A_direct_lifespan",
+      "char_count": 0,
+      "evidence_quotes": [],
+      "contract_pass": true,
+      "manually_excluded": false,
+      "strict_a_core": true
+    },
+    {
+      "study_id": "s246",
+      "title": "BMAL1-dependent regulation of the mTOR signaling pathway delays aging",
+      "year": 2014,
+      "venue": "Aging",
+      "doi": "10.18632/aging.100633",
+      "lane": "A_direct_lifespan",
+      "char_count": 0,
+      "evidence_quotes": [],
+      "contract_pass": true,
+      "manually_excluded": false,
+      "strict_a_core": true
+    },
+    {
+      "study_id": "s288",
+      "title": "Transient rapamycin treatment can increase lifespan and healthspan in middle-aged mice",
+      "year": 2016,
+      "venue": "eLife",
+      "doi": "10.7554/eLife.16351",
+      "lane": "A_direct_lifespan",
+      "char_count": 0,
+      "evidence_quotes": [],
+      "contract_pass": true,
+      "manually_excluded": false,
+      "strict_a_core": true
+    }
+  ],
+  "B_disease_model_survival": [],
+  "C_secondary_contextual": []
+}

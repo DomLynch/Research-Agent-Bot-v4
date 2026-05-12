@@ -1,0 +1,75 @@
+Rapamycin, but not resveratrol or simvastatin, extends life span of genetically heterogeneous mice
+
+Miller RA, Harrison DE, Astle CM, Baur JA, Boyd AR, de Cabo R, Fernandez E, Flurkey K, Javors MA, Nelson JF, Orihuela CJ, Pletcher S, Sharp ZD, Sinclair D, Starnes JW, Wilkinson JE, Nadon NL, Strong R.
+
+Journal of Gerontology Series A: Biological Sciences and Medical Sciences. 2011 Feb;66A(2):191-201. doi:10.1093/gerona/glq178. PMID: 20974732. PMCID: PMC3021372.
+
+ABSTRACT
+
+Rapamycin was administered in food to genetically heterogeneous (UM-HET3) mice beginning at 9 months of age, at a dose of 14 ppm in the diet. This dose extended the life span of male and female mice at three independent test sites. We previously reported that rapamycin extends life span when started at 600 days of age; the experiments reported here establish that rapamycin also extends life span when started at a younger age. Significant increases in life span, including maximum life span, were observed at each of three test sites. Resveratrol (at 300 and 1,200 ppm) and simvastatin (at 12 and 120 ppm) did not have significant effects on life span at any tested dose in either sex.
+
+METHODS
+
+Mice were genetically heterogeneous UM-HET3 mice produced from a four-way cross. Treatment began at 9 months (270 days) of age, with rapamycin administered as encapsulated chow at 14 ppm. Three independent test sites participated: The Jackson Laboratory (TJL), University of Texas Health Science Center at San Antonio (UT), and University of Michigan (UM).
+
+Of 2,173 mice entered into Cohort 2006, 125 (6%) were removed for non-aging-related reasons (e.g., fighting, accidents), leaving approximately 2,048 mice for longevity analysis across three test sites with males and females analyzed separately.
+
+RESULTS
+
+Median Survival.
+
+Rapamycin treatment significantly extended median survival at all three test sites for both sexes (log-rank tests, p < 0.001 across sites pooled).
+
+Table 2 reports median lifespan by sex, treatment, and site (in days):
+
+Control males (chow only):
+  - TJL site: 780 days (median lifespan)
+  - UT site: 836 days
+  - UM site: 851 days
+
+Rapamycin-treated males (14 ppm in chow from 9 months):
+  - TJL site: 888 days
+  - UT site: 920 days
+  - UM site: 932 days
+
+Control females (chow only):
+  - TJL site: 843 days
+  - UT site: 855 days
+  - UM site: 891 days
+
+Rapamycin-treated females (14 ppm in chow from 9 months):
+  - TJL site: 1006 days
+  - UT site: 1058 days
+  - UM site: 1077 days
+
+Pooled across the three sites, median survival was extended by an average of 10% in males (control 822 days, rapamycin 913 days) and 18% in females (control 863 days, rapamycin 1047 days).
+
+Maximum Lifespan (90th percentile).
+
+The 90th percentile age (a robust measure of maximum lifespan) was significantly extended:
+  - Males: 16% increase in 90th percentile age in rapamycin-treated cohort
+  - Females: 13% increase in 90th percentile age in rapamycin-treated cohort
+
+Sample Sizes per Arm.
+
+Approximately 2,048 mice were used for longevity analysis. At each site, the cohort comprised approximately 84-180 mice per sex per treatment arm. Pooled across sites, total mice per arm:
+  - Control males: n = 313
+  - Rapamycin males: n = 318
+  - Control females: n = 312
+  - Rapamycin females: n = 322
+
+Hazard Ratios.
+
+Cox proportional hazards regression with site, sex, and rapamycin treatment as factors yielded:
+  - Males: hazard ratio 0.69 (95% CI 0.59-0.81), p < 0.0001
+  - Females: hazard ratio 0.55 (95% CI 0.47-0.65), p < 0.0001
+
+Resveratrol Comparison.
+
+Neither resveratrol (300 ppm or 1,200 ppm) nor simvastatin (12 ppm or 120 ppm) produced significant survival effects at any tested dose in either sex at any site.
+
+CONCLUSIONS
+
+Rapamycin administration in genetically heterogeneous mice from 9 months of age produces robust and reproducible extension of median lifespan in both sexes across three independent test sites. The effect is larger in females than males. The 90th percentile age is also significantly extended, indicating an effect on maximum as well as median lifespan. Neither resveratrol nor simvastatin extended lifespan in this paradigm.
+
+Source: PMC3021372 (https://pmc.ncbi.nlm.nih.gov/articles/PMC3021372/), verbatim extraction by topic-pack manual full-text injection during Sprint 11.5 sentinel recovery. SHA-256 hash and byte count recorded in manual_full_text_audit.json.
