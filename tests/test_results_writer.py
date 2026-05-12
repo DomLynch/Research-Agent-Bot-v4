@@ -64,7 +64,7 @@ def test_writer_renders_eligibility_breakdown_when_decisions_made() -> None:
     pkt = _selection_with(parsed=45, decisions=45, inc=18, exc=20, unc=7)
     text = write_results_section([pkt])
     assert "full-text content was parsed for 45 of these" in text
-    assert "applied to 45 parsed records" in text
+    assert "applied to 45 records" in text
     assert "18 auto-eligible records" in text
     assert "20 excluded" in text
     assert "7 flagged for manual review" in text

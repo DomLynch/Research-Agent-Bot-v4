@@ -52,6 +52,7 @@ def _render_study_selection(p: InformationalPacket) -> str:
     included = c.get("eligibility_included", 0)
     excluded = c.get("eligibility_excluded", 0)
     unclear = c.get("eligibility_unclear", 0)
+    unavailable = c.get("eligibility_unavailable", 0)
 
     prefix = (
         f"Of {identified} records identified through systematic database "
@@ -84,16 +85,20 @@ def _render_study_selection(p: InformationalPacket) -> str:
             f"[PACKET:study_selection]."
         )
 
+    unavail_clause = (
+        f", and {unavailable} documented unavailable (retrieval / parser gap)"
+        if unavailable else ""
+    )
     return (
         f"{prefix} Open-access full-text availability was located for "
         f"{availability} candidates; full-text content was parsed for "
         f"{parsed} of these. Pre-specified eligibility adjudication was "
-        f"applied to {decisions} parsed records, yielding {included} "
+        f"applied to {decisions} records, yielding {included} "
         f"auto-eligible records (universal evidence contract passed), "
-        f"{excluded} excluded, and {unclear} flagged for manual review of "
-        f"low-confidence or rule-judge conflicts; the subset of strict "
-        f"A-core records is the canonical input for primary-effect "
-        f"extraction [PACKET:study_selection]."
+        f"{excluded} excluded, {unclear} flagged for manual review of "
+        f"low-confidence or rule-judge conflicts{unavail_clause}; the "
+        f"subset of strict A-core records is the canonical input for "
+        f"primary-effect extraction [PACKET:study_selection]."
     )
 
 

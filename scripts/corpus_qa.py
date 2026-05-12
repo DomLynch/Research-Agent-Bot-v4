@@ -119,7 +119,9 @@ def _passes_contract(
 def _per_include_rows(
     receipts: list[dict[str, Any]], parsed_by_id: dict[str, dict[str, Any]],
     cand_by_id: dict[str, dict[str, Any]], pack: Any,
+    strict_lane_by_id: dict[str, str] | None = None,
 ) -> list[list[str]]:
+    strict_lane_by_id = strict_lane_by_id or {}
     rows: list[list[str]] = []
     for r in receipts:
         if r["decision"] != "include":
@@ -129,13 +131,20 @@ def _per_include_rows(
         parsed = parsed_by_id.get(sid, {})
         fields = r.get("mandatory_fields", {})
         evidence = r.get("evidence_quotes") or [""]
-        lane = classify_lane(
-            cand.get("title", ""), parsed.get("char_count", 0),
-            r.get("decision"), pack,
-        )
+        # Sprint 7.11.2: pull the post-overlay lane from the strict
+        # bucket file when available; fall back to the heuristic
+        # classifier for legacy runs without a strict file. This is the
+        # difference between showing s092 as "A" (legacy classifier) vs
+        # "C" (after manual resolved_excluded subtraction).
+        lane_letter = strict_lane_by_id.get(sid)
+        if lane_letter is None:
+            lane_letter = classify_lane(
+                cand.get("title", ""), parsed.get("char_count", 0),
+                r.get("decision"), pack,
+            ).split("_", 1)[0]
         rows.append([
             sid,
-            lane.split("_", 1)[0],  # short label: A/B/C/D/E
+            lane_letter,
             _truncate(cand.get("title", "?"), 60),
             str(cand.get("year") or "?"),
             "yes" if fields.get("species_match") else "no",
@@ -257,7 +266,24 @@ def main() -> int:
         **{s: "prior_meta" for s in pack.sentinel_prior_meta},
     }
     sentinel_rows = _sentinel_rows(pack_sentinels, cands, parsed_by_id, elig_by_id)
-    include_rows = _per_include_rows(elig, parsed_by_id, cand_by_id, pack)
+
+    # Sprint 7.11.2: read primary_effect_input_set_strict.json (if present)
+    # so the per-include lane column reflects the post-overlay 3-bucket
+    # split instead of the legacy lane classifier. Without this, s092 /
+    # s244 / s263 (manually resolved_excluded) still display as Lane A.
+    strict_path = rd / "primary_effect_input_set_strict.json"
+    strict_lane_by_id: dict[str, str] = {}
+    if strict_path.exists():
+        strict = json.loads(strict_path.read_text(encoding="utf-8"))
+        for s in strict.get("A_core_direct_lifespan", []):
+            strict_lane_by_id[s["study_id"]] = "A"
+        for s in strict.get("B_disease_model_survival", []):
+            strict_lane_by_id[s["study_id"]] = "B"
+        for s in strict.get("C_secondary_contextual", []):
+            strict_lane_by_id[s["study_id"]] = "C"
+    include_rows = _per_include_rows(
+        elig, parsed_by_id, cand_by_id, pack, strict_lane_by_id,
+    )
     decisions = Counter(r["decision"] for r in elig)
 
     # Sprint 7.11.2: surface the manual_status_overlay so the report
@@ -310,6 +336,7 @@ def main() -> int:
         f"  - include: {decisions.get('include', 0)}",
         f"  - exclude: {decisions.get('exclude', 0)}",
         f"  - unclear: {decisions.get('unclear', 0)}",
+        f"  - unavailable: {decisions.get('unavailable', 0)}",
         f"- declared sentinels: {len(pack_sentinels)} "
         f"({sum(1 for v in pack_sentinels.values() if v == 'primary')} primary + "
         f"{sum(1 for v in pack_sentinels.values() if v == 'prior_meta')} prior_meta)\n",
