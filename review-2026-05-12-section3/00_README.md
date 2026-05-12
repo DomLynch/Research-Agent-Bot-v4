@@ -1,80 +1,81 @@
-# Section 3 Review Bundle — iter-15 (2026-05-12)
+# Section 3 Review Bundle - iter-15 + Sprint 7.8 post-contract analysis
 
-Source: `runs/rapamycin-s7-iter-15-2026-05-12T04-57-15Z/`
-(also at the convenience symlink `runs/latest/`)
+Source: `runs/latest/` (-> `runs/rapamycin-s7-iter-15-...`)
+QA report regenerated 2026-05-12 with Sprint 7.8 include-contract applied
+retroactively. The on-disk `eligibility_receipts.json` still shows 22
+includes (pre-contract); the QA report shows the 16 that pass the new
+contract.
 
-## Topline
+## Sprint 7.8 changes
 
-```
-502 hits  ->  298 TA candidates  ->  255 OA located  ->  131 parsed
-            -> 131 eligibility decisions adjudicated under VARIANCE CHECK
-            -> 22 INCLUDE / 64 EXCLUDE / 45 UNCLEAR
-            -> 22 eligible studies after deterministic merge
-            -> Contract violations: 0
-            -> Wall-clock: ~13 min (Gemma + variance check + concurrency=5)
-```
+A. include_contract.py - hard gates that demote any "include" to "unclear"
+   when:
+     parsed_text_adequate = False, OR
+     char_count < 5000, OR
+     < 2 non-title evidence quotes, OR
+     no quote contains an endpoint term, OR
+     no quote contains an intervention/control term.
 
-**Almost 2x the iter-13 corpus** (12 → 22 eligible). The Sprint 7.7 stack
-(prompt rewrite + OR-merge + title-only exclude + variance check) found
-10 additional valid includes the iter-13 single-judge missed.
+B. Sentinel gate now 3-level: PASS / WARN / FAIL based on eligibility
+   outcome (not just retrieval). PASS requires every primary sentinel
+   to be CONFIRMED-INCLUDED. WARN if retrieved but unresolved. FAIL if
+   any primary is not retrieved or actively excluded.
 
-## Sentinel-outcome table (the audit GPT asked for)
+C. Lane classifier (A/B/C/D/E) with hard gates first (decision +
+   char_count) before title heuristics. s237's 54-char "parse" now
+   lands in E regardless of disease-model title terms.
 
-| Sentinel | DOI | Stage | Eligibility | Verdict |
-|---|---|---|---|---|
-| Harrison 2009 (Nature) | 10.1038/nature08221 | retrieved+candidate+parsed | **unclear** (variance disagreement) | ⚠️ judge variants disagree on this paper |
-| Miller 2011 (J Gerontol) | 10.1093/gerona/glq178 | retrieved+candidate | **no parse** — HTTP fetch failed | ❌ retrieval-layer gap, not engine fault |
-| Bitto 2016 (eLife) | 10.7554/elife.16351 | retrieved+candidate+parsed | **include** conf 1.00 | ✅ correctly included |
-| Swindell 2017 meta (J Gerontol) | 10.1093/gerona/glw153 | retrieved+candidate, no parse | no-decision | ✅ expected for prior_meta role |
+D. Judge prompt asks for >= 2 quotes (1 methods + 1 results); should
+   prevent the title-only-quote Bitto-style demotion in future runs.
 
-**Gate**: WARN (1/3 primary sentinels confidently included; Harrison
-disputed by variance check, Miller blocked by HTTP).
+## Post-contract corpus snapshot
 
-## What changed vs iter-13 (Sprint 7.6, 12 includes)
+iter-15 originally: 22 INCLUDE / 64 EXCLUDE / 45 UNCLEAR
+After Sprint 7.8 contract: 16 INCLUDE / 64 EXCLUDE / 51 UNCLEAR
 
-```
-kept:    10  (10 of the 12 iter-13 includes survived variance check)
-new:     12  (12 papers the single-judge missed but variance promoted to include)
-dropped:  2  (s105 acarbose, s112 trametinib — likely iter-13 false positives;
-              variance check correctly demoted them)
-```
+The 6 demoted includes were mostly Gemma being lazy with quotes (only
+the title, or missing intervention/endpoint anchors). Includes that
+SURVIVED the contract:
 
-The 2 drops match the borderline cases I flagged in the iter-13 QA
-report. Variance check is working: it removes false positives AND
-surfaces new true positives the single-judge under-promoted.
+  Lane A (direct lifespan, primary pool eligible):  8
+  Lane B (disease-model survival, gated entry):     3
+  Lane C (secondary molecular, context only):       5
+
+Lane A papers are the primary-effect-extraction candidates for Sprint 8.
+
+## Sentinel-outcome table (Sprint 7.8 honest)
+
+| Sentinel | Outcome | Lane / Reason |
+|---|---|---|
+| Harrison 2009 (Nature) | unclear (variance disagreement) | -- judge variants disagreed |
+| Miller 2011 (J Gerontol) | no-decision (HTTP fetch failed) | -- retrieval-layer gap |
+| Bitto 2016 (eLife) | included by judge, DEMOTED by contract (only 1 title quote) | E -- judge laziness |
+| Swindell 2017 meta | no-parse | expected for prior_meta |
+
+Old gate said PASS based on retrieval alone. New gate says WARN: 3/3
+retrieved, but only 1 confirmed-included (Bitto, before contract
+demotion). Post-contract: 0 confirmed primary sentinels. Gate FAIL.
 
 ## What you're reviewing
 
 | File | Purpose |
 |---|---|
-| `01_section3_prose.md` | The Section 3 markdown |
-| `02_qa_report.md` | 22-include audit table + 4-sentinel stage table + quality flags |
-| `03_manual_review_unclear.md` | 45 unclear receipts laid out for human review |
-| `04_eligibility_summary.json` | Topline counts in machine-readable form |
-| `05_eligibility_receipts.json` | Full machine-readable trail with mandatory fields + evidence quotes |
-
-## Run pedigree
-
-- **Commit**: [`4e67faf`](https://github.com/DomLynch/Research-Agent-Bot-v4/commit/4e67faf) (Sprint 7.7e + parallel variance)
-- **Code stack**: Sprint 7.5b/c/d/e + Sprint 7.6 QA + Sprint 7.7 A/B/B.5/C + Sprint 7.7e parser-fix + parallel variance
-- **Model**: Gemma 4 31B via OpenRouter (documented stack, MiMo+Gemma locked)
-- **Variance check**: ON (two prompt variants per candidate; disagreement → unclear)
-- **Concurrency**: 5 candidates × 2 variant calls = 10 LLM calls in flight at once
-
-## Remaining gaps (not blockers, but real)
-
-1. **Harrison-2009 disputed**: variance check is over-flagging the most famous paper. Either tighten variant prompts, OR special-case sentinels in the merge (force include if rule eligible_likely AND at least one variant=include).
-2. **Miller-2011 retrieval**: PMC URL HTTP fetched but failed; need a fallback path.
-3. **45 unclear queue**: half from variance disagreements, half from genuine ambiguity. Human spot-check recommended on the 10–15 borderline ones.
+| 01_section3_prose.md     | iter-15 prose (still pre-Sprint 7.8; mentions PASS) |
+| 02_qa_report.md          | post-contract truth: 16 includes, lane-classified |
+| 03_manual_review_unclear.md | 51 unclear receipts to spot-check |
+| 04_eligibility_summary.json | pre-contract topline |
+| 05_eligibility_receipts.json | pre-contract receipts |
 
 ## Lock decision
 
 Pre-lock checklist:
-- ✅ ≥10 eligible studies (22)
-- ✅ Sentinel gate WARN (1/3 confident; documented reasons for the other 2)
-- ✅ Contract violations 0
-- ⚠️ Manual spot-check of 22 includes not yet done
+- 16 lane-classified includes survive contract (8 in primary lane A)
+- Sentinel gate honest: WARN (or FAIL post-contract); Harrison + Miller
+  documented gaps
+- Contract violations: 0
+- s237 false-positive: caught by contract -> lane E
 
-Recommend: spot-check the 22 includes (audit table in `02_qa_report.md`),
-confirm Harrison/Miller as known-gaps-with-reasons, then lock iter-15
-as Section 3 v2.
+Recommend: run iter-16 (Sprint 7.8 stack live) to regenerate prose with
+the new gate text + commit the demotion natively. Then spot-check the
+8 Lane-A includes and decide whether to lock Section 3 v3 or fix Harrison
++ Miller first.

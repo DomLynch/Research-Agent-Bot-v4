@@ -1,6 +1,6 @@
 # Manual Review Queue - latest
 
-45 receipts flagged 'unclear' by the rule -> judge -> deterministic merge. Sorted by study_id.
+51 receipts flagged 'unclear' by the rule -> judge -> deterministic merge. Sorted by study_id.
 
 ### s020 - Extending lifespan by modulating the growth hormone/insulin-like growth factor-1 axis: coming of ag...
 - year: 2021  venue: Pituitary
@@ -11,6 +11,18 @@
 - merge reason: proposal parse error: variance disagreement; low judge confidence 0.00; missing mandatory: intervention_match, control_present
 - evidence quotes (first 3):
     - (none)
+
+### s026 - Four anti-aging drugs and calorie-restricted diet produce parallel effects in fat, brain, muscle, m...
+- year: 2023  venue: GeroScience
+- doi: 10.1007/s11357-023-00770-0  pmid: 36920743
+- confidence: 1.00
+- rule_decision: unclear  reviewer: llm-judge
+- missing mandatory: combination_only_no_isolated_arm, rapalog_only_intervention
+- merge reason: include_contract retro-demoted: judge included (conf 1.00); mandatory fields confirmed
+- evidence quotes (first 3):
+    - Four anti-aging drugs and calorie-restricted diet produce parallel effects in fat, brain, muscle, macrophages, and plasma of young mice
+    - Average and maximal lifespan can be increased in mice, in one or both sexes, by four drugs: rapamycin, acarbose, 17a-estradiol, and canagliflozin.
+    - Original Article
 
 ### s027 - Rapamycin restores peripheral blood flow in aged mice and in mouse models of atherosclerosis and Al...
 - year: 2023  venue: GeroScience
@@ -282,6 +294,18 @@
     - Comparing the hepatic proteome and transcriptome of Rapa-treated mice with the transcriptome of S6K1- deficient mice showed alleviated immune processes in the aged liver
     - Suppression of TORC1 signaling genetically or pharmacologically by the US Food and Drug Administration-licensed drug rapamycin (Rapa), promotes lifespan and healthspan in various model organisms incl...
 
+### s115 - Effects of rapamycin on growth hormone receptor knockout mice.
+- year: 2018  venue: Proceedings of the National Academy of Sciences of the United States of America
+- doi: 10.1073/pnas.1717065115  pmid: 29378959
+- confidence: 1.00
+- rule_decision: eligible_likely  reviewer: llm-judge
+- missing mandatory: combination_only_no_isolated_arm, rapalog_only_intervention
+- merge reason: include_contract retro-demoted: judge included (conf 1.00); mandatory fields confirmed
+- evidence quotes (first 3):
+    - Effects of rapamycin on growth hormone receptor knockout mice
+    - rapamycin (an inhibitor of mTOR) was used in GHR-KO (growth hormone receptor knockout) mice
+    - We found that rapamycin extended life span in control normal (N) mice, whereas it had the opposite effect in GHR-KO mice.
+
 ### s121 - Healthy Aging Interventions Reduce Repetitive Element Transcripts.
 - year: 2021  venue: The journals of gerontology. Series A, Biological sciences and medical sciences
 - doi: 10.1093/gerona/glaa302  pmid: 33257951
@@ -375,6 +399,36 @@
     - we measured the changes in liver gene expression induced by rapamycin (14 ppm)
     - we compared male and female mice with respect to the expression of several genes involved in pathways that are known to play a role in longevity
 
+### s231 - The effect of a ketogenic diet and synergy with rapamycin in a mouse model of breast cancer.
+- year: 2020  venue: PloS one
+- doi: 10.1371/journal.pone.0233662  pmid: 33270630
+- confidence: 1.00
+- rule_decision: eligible_likely  reviewer: llm-judge
+- missing mandatory: combination_only_no_isolated_arm, rapalog_only_intervention
+- merge reason: include_contract retro-demoted: judge included (conf 1.00); mandatory fields confirmed
+- evidence quotes (first 3):
+    - The effect of a ketogenic diet and synergy with rapamycin in a mouse model of breast cancer.
+
+### s235 - Transient rapamycin treatment during developmental stage extends lifespan in Mus musculus and Droso...
+- year: 2022  venue: EMBO reports
+- doi: 10.15252/embr.202255299  pmid: 35796299
+- confidence: 1.00
+- rule_decision: unclear  reviewer: llm-judge
+- missing mandatory: combination_only_no_isolated_arm, rapalog_only_intervention
+- merge reason: include_contract retro-demoted: judge included (conf 1.00); mandatory fields confirmed
+- evidence quotes (first 3):
+    - Transient rapamycin treatment during developmental stage extends lifespan in Mus musculus and Drosophila melanogaster.
+
+### s237 - Rapamycin Reduces Carcinogenesis and Enhances Survival in Mice when Administered after Nonlethal To...
+- year: 2024  venue: Radiation research
+- doi: 10.1667/rade-24-00111.1  pmid: 39142650
+- confidence: 1.00
+- rule_decision: unclear  reviewer: llm-judge
+- missing mandatory: parsed_text_adequate, combination_only_no_isolated_arm, rapalog_only_intervention
+- merge reason: include_contract retro-demoted: judge included (conf 1.00); mandatory fields confirmed
+- evidence quotes (first 3):
+    - Rapamycin Reduces Carcinogenesis and Enhances Survival in Mice when Administered after Nonlethal Total-Body Irradiation.
+
 ### s240 - Rapamycin as longevity enhancer and cancer preventative agent in the context of p53 deficiency.
 - year: 2012  venue: Aging
 - doi: 10.18632/aging.100494  pmid: 23128359
@@ -437,6 +491,16 @@
 - merge reason: proposal parse error: variance disagreement; low judge confidence 0.00
 - evidence quotes (first 3):
     - (none)
+
+### s288 - Transient rapamycin treatment can increase lifespan and healthspan in middle-aged mice.
+- year: 2016  venue: eLife
+- doi: 10.7554/elife.16351  pmid: 27549339
+- confidence: 1.00
+- rule_decision: eligible_likely  reviewer: llm-judge
+- missing mandatory: combination_only_no_isolated_arm, rapalog_only_intervention
+- merge reason: include_contract retro-demoted: judge included (conf 1.00); mandatory fields confirmed
+- evidence quotes (first 3):
+    - Transient rapamycin treatment can increase lifespan and healthspan in middle-aged mice.
 
 ### s289 - Selective eradication of cancer displaying hyperactive Akt by exploiting the metabolic consequences...
 - year: 2018  venue: eLife
