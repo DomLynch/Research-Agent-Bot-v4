@@ -1,0 +1,55 @@
+# Manual sentinel overrides for the rapamycin topic.
+#
+# These take effect AFTER the auto-judge ladder + include-contract demotion
+# (Sprint 7.8) in the orchestrator. Use sparingly: the human reviewer is
+# overriding the deterministic merge, so every override must be defensible
+# by the verbatim evidence_quote in this file.
+
+[[resolutions]]
+doi = "10.1038/nature08221"
+pmid = "19587680"
+decision = "include"
+reason = """
+Foundational primary mouse rapamycin lifespan study (NIA-ITP). The
+auto-judge intermittently fails to read this paper because NCBI's PMC
+service returns a reCAPTCHA challenge under concurrent load, and the
+publisher Unpaywall URL (Nature) is paywalled-OA. The paper itself is
+unambiguously eligible per pre-specified PICO; manual override is the
+correct path until a stable OA mirror is wired.
+"""
+evidence_quote = """
+Here we report that rapamycin, an inhibitor of the mTOR pathway, extends median and maximal lifespan of both male and female mice when fed beginning at 600 days of age. On the basis of age at 90% mortality, rapamycin led to an increase of 14% for females and 9% for males.
+"""
+reviewer = "human-dom"
+
+[[resolutions]]
+doi = "10.1093/gerona/glq178"
+pmid = "20974732"
+decision = "unavailable"
+reason = """
+Miller 2011 NIA-ITP follow-up. Located via PMC + Unpaywall but neither
+serves the full text accessibly: PMC strip yields ~4000 chars (abstract
++ metadata envelope only); Unpaywall URL routes to academic.oup.com
+which 403s without an institutional auth handshake. Documented
+retrieval-layer gap; the paper exists and is canonical but cannot be
+extracted in this run. Sentinel gate counts this as validly-resolved
+(WARN), not as a primary-corpus include.
+"""
+evidence_quote = ""
+reviewer = "human-dom"
+
+[[resolutions]]
+doi = "10.7554/elife.16351"
+pmid = "27549339"
+decision = "include"
+reason = """
+Bitto 2016 transient-rapamycin study (eLife, OA). Auto-judge has
+sometimes landed this as include conf 1.00 (iter-13, iter-15) and
+sometimes as unclear conf 0.50 (iter-16) depending on variance check
+and prompt phrasing. The paper is unambiguously eligible per
+pre-specified PICO; manual override locks the verdict.
+"""
+evidence_quote = """
+A brief 3-month treatment of middle-aged mice with the mTOR inhibitor rapamycin produced an immediate, persistent improvement in healthspan and increased survival, with adult-onset transient rapamycin treatment significantly extending median and maximum lifespan in male mice.
+"""
+reviewer = "human-dom"

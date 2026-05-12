@@ -27,7 +27,8 @@ Role = Literal["primary", "prior_meta"]
 
 
 EligibilityOutcome = Literal[
-    "included", "excluded", "unclear", "no_parse", "no_oa", "not_retrieved",
+    "included", "excluded", "unclear", "unavailable",
+    "no_parse", "no_oa", "not_retrieved",
 ]
 
 
@@ -131,6 +132,8 @@ def _sentinel_eligibility(
         return "included"
     if elig.decision == "exclude":
         return "excluded"
+    if elig.decision == "unavailable":
+        return "unavailable"
     return "unclear"
 
 

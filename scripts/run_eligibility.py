@@ -37,6 +37,7 @@ from agent.evidence_state import EvidenceState
 from agent.full_text_fetch import fetch_full_text_receipts
 from agent.full_text_parse import ParsedFullText, parse_full_texts
 from agent.include_contract import demote_failed_includes
+from agent.manual_resolution import apply_manual_resolutions, load_manual_resolutions
 from agent.results_compiler import compile_all
 from agent.results_contract import validate_results_text
 from agent.results_writer import write_results_section
@@ -232,7 +233,25 @@ async def main() -> int:
     demoted = sum(1 for v in contract_results.values() if v.violations)
     if demoted:
         print(f"[s7] include contract demoted {demoted} include(s) to unclear")
-    # Recount decisions after contract demotion for the summary.
+
+    # Sprint 7.10 - manual sentinel overrides. Loaded from
+    # topic_packs/<topic>_manual_resolutions.toml. Replaces auto-judge
+    # receipts for any candidate matched by DOI or PMID. The override
+    # is the top of the stack: judge proposes, code disposes, HUMAN
+    # has final say on sentinels.
+    manual_resolutions = load_manual_resolutions(args.topic)
+    if manual_resolutions:
+        new_receipts, applied = apply_manual_resolutions(
+            tuple(eligibility_receipts), candidates, manual_resolutions,
+        )
+        eligibility_receipts = list(new_receipts)
+        unmatched = len(manual_resolutions) - len(applied)
+        print(
+            f"[s7] manual overrides applied: {len(applied)} matched, "
+            f"{unmatched} declared-but-unmatched"
+        )
+
+    # Recount decisions after contract demotion + manual overrides.
     decision_counts = Counter(r.decision for r in eligibility_receipts)
 
     # Sprint-7 strictness: assemble EvidenceState with parsed_receipts so the
