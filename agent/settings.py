@@ -79,7 +79,7 @@ class Settings:
 
     runs_dir: str
 
-    loc_ceiling: int = 5000
+    loc_ceiling: int = 7500
 
     @property
     def writer_configured(self) -> bool:
