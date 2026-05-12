@@ -57,16 +57,19 @@ def test_no_sentinels_yields_no_packet() -> None:
     assert compile_sentinel_recall(state, pack) is None
 
 
-def test_all_primary_sentinels_retrieved_passes_gate() -> None:
+def test_all_primary_sentinels_retrieved_promotes_warn_until_included() -> None:
+    # Sprint 7.8: retrieval alone is no longer enough for PASS;
+    # primaries must also land as INCLUDED in eligibility.
     h1 = _hit("10.1038/nature08221")
     h2 = _hit("10.1111/acel.12476")
     state = _state_with((h1, h2), frozenset({h1.dedupe_key, h2.dedupe_key}))
     pack = _pack(primary=("10.1038/nature08221", "10.1111/acel.12476"))
     r = audit_sentinel_recall(state, pack)
-    assert r.gate_passes
-    assert r.expected_primary == 2
+    assert r.gate_level == "WARN", "retrieved+candidate but no eligibility include -> WARN"
+    assert not r.gate_passes
     assert r.retrieved_primary == 2
     assert r.candidate_primary == 2
+    assert r.included_primary == 0
 
 
 def test_missing_primary_sentinel_fails_gate() -> None:
@@ -79,13 +82,15 @@ def test_missing_primary_sentinel_fails_gate() -> None:
     assert r.expected_primary == 2
 
 
-def test_prior_meta_retrieved_but_not_candidate_is_ok() -> None:
+def test_prior_meta_retrieved_but_not_candidate_records_retrieval() -> None:
+    # Sprint 7.8: with no primary sentinels declared, gate is WARN (not
+    # vacuously PASS) because no primary include has been confirmed. The
+    # retrieved/candidate counters still work for prior_meta tracking.
     h1 = _hit("10.1111/acel.12674")
-    # Retrieved (in hits) but NOT promoted to candidate
     state = _state_with((h1,), frozenset())
     pack = _pack(prior_meta=("10.1111/acel.12674",))
     r = audit_sentinel_recall(state, pack)
-    assert r.gate_passes  # primary expectations are 0/0
+    assert r.gate_level == "WARN"  # no primaries to confirm -> WARN
     assert r.retrieved_prior_meta == 1
     assert r.candidate_prior_meta == 0
 
@@ -107,6 +112,8 @@ def test_pmid_only_sentinel_matches_by_pmid() -> None:
 
 
 def test_compile_sentinel_recall_packet_shape() -> None:
+    # Sprint 7.8: gate is WARN when primary is retrieved but no
+    # eligibility receipt confirms inclusion.
     h1 = _hit("10.1038/nature08221")
     state = _state_with((h1,), frozenset({h1.dedupe_key}))
     pack = _pack(primary=("10.1038/nature08221",), prior_meta=("10.1111/acel.12674",))
@@ -115,5 +122,6 @@ def test_compile_sentinel_recall_packet_shape() -> None:
     assert pkt.packet_id == "sentinel_recall"
     assert pkt.counts["retrieved_primary"] == 1
     assert pkt.counts["retrieved_prior_meta"] == 0
-    assert pkt.counts["gate_passes"] == 1
+    assert pkt.counts["gate_passes"] == 0  # no eligibility -> WARN
+    assert pkt.counts["included_primary"] == 0
     assert any("primary:" in n for n in pkt.notes)

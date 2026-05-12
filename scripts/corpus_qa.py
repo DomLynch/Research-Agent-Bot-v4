@@ -24,6 +24,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from agent.include_contract import classify_lane
 from agent.retrieval.base import normalize_doi
 from agent.topic_pack import load_topic_pack
 

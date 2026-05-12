@@ -110,20 +110,23 @@ def validate_include(
 
 def classify_lane(
     candidate_title: str, parsed_char_count: int,
-    receipt: EligibilityReceipt | None, pack: TopicPack,
+    decision: str | None, pack: TopicPack,
 ) -> Lane:
-    """Assign a corpus lane based on title heuristics + receipt state.
-    Lanes are mutually exclusive and ordered by primary-pool priority."""
+    """Assign a corpus lane based on title heuristics + decision string.
+    Lanes are mutually exclusive and ordered by primary-pool priority.
+    Accepts the decision as a plain string so callers (orchestrator or
+    corpus_qa reading JSON) don't need to reconstruct an EligibilityReceipt.
+    """
     title = (candidate_title or "").casefold()
     if any(t in title for t in _REVIEW_TITLE_TERMS):
         return "D_review_background"
-    if receipt and receipt.decision in {"exclude", "unclear"}:
+    if decision in {"exclude", "unclear"}:
         return "E_exclude"
     if any(t in title for t in _SECONDARY_MOLECULAR_TITLE_TERMS):
         return "C_secondary_molecular"
     if any(t in title for t in _DISEASE_MODEL_TITLE_TERMS):
         return "B_disease_model_survival"
-    if receipt and receipt.decision == "include" and parsed_char_count >= MIN_CHARS:
+    if decision == "include" and parsed_char_count >= MIN_CHARS:
         return "A_direct_lifespan"
     return "E_exclude"
 

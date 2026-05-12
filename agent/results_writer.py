@@ -109,13 +109,22 @@ def _render_sentinel_recall(p: InformationalPacket) -> str:
     pri_n = c.get("expected_primary", 0)
     pri_r = c.get("retrieved_primary", 0)
     pri_c = c.get("candidate_primary", 0)
+    pri_inc = c.get("included_primary", 0)
     meta_n = c.get("expected_prior_meta", 0)
     meta_r = c.get("retrieved_prior_meta", 0)
-    status = "PASS" if c.get("gate_passes", 0) else "FAIL"
+    # Three-level gate: PASS only if every primary sentinel is included;
+    # WARN if retrieved but not confirmed-included; FAIL recorded in
+    # counts via gate_passes=0 plus the included<retrieved gap.
+    if c.get("gate_passes", 0):
+        gate = "PASS"
+    elif pri_r < pri_n:
+        gate = "FAIL"
+    else:
+        gate = "WARN"
     return (
-        f"Sentinel-paper recall audit (gate: {status}): "
-        f"{pri_r}/{pri_n} canonical primary-study anchors retrieved "
-        f"({pri_c} promoted to candidate set); "
+        f"Sentinel-paper recall audit (gate: {gate}): "
+        f"{pri_r}/{pri_n} canonical primary-study anchors retrieved, "
+        f"{pri_c} promoted to candidate set, {pri_inc} confirmed-included; "
         f"{meta_r}/{meta_n} prior meta-analysis anchors retrieved "
         f"[PACKET:sentinel_recall]."
     )
