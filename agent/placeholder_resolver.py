@@ -58,18 +58,49 @@ def resolve_placeholders(
     summary: Mapping[str, Any],
     strict: Mapping[str, Any],
     pack: TopicPack,
+    extractions: Mapping[str, Any] | None = None,
+    pool: Mapping[str, Any] | None = None,
 ) -> ResolvedPlaceholders:
-    """Substitute count + topic-pack placeholders.
+    """Substitute count + topic-pack + corpus-derived placeholders.
 
-    `summary` is the parsed `eligibility_summary.json`; `strict` is the parsed
-    `primary_effect_input_set_strict.json`. Missing values short-circuit to
-    `[UNRESOLVED]` so the auditor can see the gap.
+    `summary` is the parsed `eligibility_summary.json`; `strict` is the
+    parsed `primary_effect_input_set_strict.json`. `extractions` and
+    `pool` are optional — when supplied, the corpus-derived tokens
+    (STRICT_A_CORE_IDS, K_POOLABLE, INCOMPLETE_RECOVERY_IDS) resolve
+    from real receipts; when None, those tokens surface as UNRESOLVED.
+    Missing values short-circuit to `[UNRESOLVED]` so the auditor sees
+    the gap.
     """
-    a_core = strict.get("A_core_direct_lifespan", []) or []
+    a_core_list = strict.get("A_core_direct_lifespan", []) or []
+    if not isinstance(a_core_list, list):
+        a_core_list = []
+    a_core_ids = [
+        str(s.get("study_id", "")) for s in a_core_list
+        if isinstance(s, dict) and s.get("study_id")
+    ]
+    pool_effects = (pool or {}).get("effects", []) or []
+    if not isinstance(pool_effects, list):
+        pool_effects = []
+    extr_receipts = (extractions or {}).get("receipts", []) or []
+    if not isinstance(extr_receipts, list):
+        extr_receipts = []
+    incomplete_ids = [
+        str(r.get("study_id", "")) for r in extr_receipts
+        if isinstance(r, dict)
+        and r.get("study_id")
+        and r.get("status") not in {"extracted"}
+    ]
     counts: dict[str, str] = {
         "N_SCREENED": _str_or_empty(summary.get("k_hits")),
         "N_ACCEPTED": _str_or_empty(summary.get("k_eligible")),
-        "K_STUDIES": str(len(a_core)) if isinstance(a_core, list) else "",
+        "K_STUDIES": str(len(a_core_list)),
+        "STRICT_A_CORE_COUNT": str(len(a_core_list)),
+        "STRICT_A_CORE_IDS": ", ".join(a_core_ids) if a_core_ids else "",
+        "K_POOLABLE": str(len(pool_effects)) if pool is not None else "",
+        "INCOMPLETE_RECOVERY_IDS": (
+            ", ".join(incomplete_ids) if incomplete_ids
+            else ("(none)" if extractions is not None else "")
+        ),
     }
 
     resolved: list[str] = []

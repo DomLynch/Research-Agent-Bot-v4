@@ -120,6 +120,65 @@ def test_unknown_moderator_p_surfaces_unresolved() -> None:
     assert out.unresolved == ("MODERATOR_P:not-in-pack",)
 
 
+def test_strict_a_core_count_and_ids_resolve_from_receipts() -> None:
+    """Universal corpus tokens: counts + comma-joined IDs from strict.json."""
+    strict = {"A_core_direct_lifespan": [
+        {"study_id": "s126"}, {"study_id": "s235"}, {"study_id": "s288"},
+    ]}
+    body = (
+        "After strict A-core auditing, [STRICT_A_CORE_COUNT] records remain "
+        "eligible ([STRICT_A_CORE_IDS])."
+    )
+    out = resolve_placeholders(body, summary={}, strict=strict, pack=_pack({}))
+    assert out.body == (
+        "After strict A-core auditing, 3 records remain eligible "
+        "(s126, s235, s288)."
+    )
+    assert set(out.resolved) == {"STRICT_A_CORE_COUNT", "STRICT_A_CORE_IDS"}
+
+
+def test_k_poolable_resolves_from_pool_when_supplied() -> None:
+    pool = {"effects": [{"study_id": "s126"}, {"study_id": "s235"}]}
+    body = "Inverse-variance pool currently contains [K_POOLABLE] effects."
+    out = resolve_placeholders(
+        body, summary={}, strict={}, pack=_pack({}), pool=pool,
+    )
+    assert out.body == "Inverse-variance pool currently contains 2 effects."
+
+
+def test_incomplete_recovery_ids_lists_non_extracted_studies() -> None:
+    extractions = {"receipts": [
+        {"study_id": "s086", "status": "extracted"},
+        {"study_id": "s230", "status": "parse_failed"},
+        {"study_id": "s288", "status": "parse_failed"},
+        {"study_id": "s126", "status": "extracted"},
+    ]}
+    body = "Sample-size recovery incomplete for [INCOMPLETE_RECOVERY_IDS]."
+    out = resolve_placeholders(
+        body, summary={}, strict={}, pack=_pack({}), extractions=extractions,
+    )
+    assert out.body == "Sample-size recovery incomplete for s230, s288."
+
+
+def test_incomplete_recovery_renders_none_when_all_extracted() -> None:
+    extractions = {"receipts": [
+        {"study_id": "s126", "status": "extracted"},
+        {"study_id": "s235", "status": "extracted"},
+    ]}
+    out = resolve_placeholders(
+        "Incomplete: [INCOMPLETE_RECOVERY_IDS].", summary={}, strict={},
+        pack=_pack({}), extractions=extractions,
+    )
+    assert out.body == "Incomplete: (none)."
+
+
+def test_corpus_tokens_unresolved_when_receipts_missing() -> None:
+    body = "k=[K_POOLABLE] missing=[INCOMPLETE_RECOVERY_IDS]"
+    out = resolve_placeholders(body, summary={}, strict={}, pack=_pack({}))
+    assert "[K_POOLABLE][UNRESOLVED]" in out.body
+    assert "[INCOMPLETE_RECOVERY_IDS][UNRESOLVED]" in out.body
+
+
 def test_packet_and_cit_markers_are_left_alone() -> None:
     """[PACKET:...] are audit anchors; [CIT:...] are citation markers.
 
