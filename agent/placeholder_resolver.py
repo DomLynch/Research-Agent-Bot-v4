@@ -218,6 +218,7 @@ def resolve_placeholders(
         "B_LANE_COUNT": len(b_lane_list),
         "C_LANE_COUNT": len(c_lane_list),
         "K_POOLABLE_COUNT": len(pool_effects) if pool is not None else 0,
+        "POOL_EFFECT_COUNT": len(pool_effect_ids) if pool is not None else 0,
     }
 
     def _sub(match: re.Match[str]) -> str:
