@@ -1,4 +1,4 @@
-"""Sprint 11.1 — stitch section bundles into one publish-ready paper.md.
+"""Sprint 11.2 — stitch section bundles into one publish-ready paper.md.
 
 The pipeline writes section bundles into independent run directories:
 
@@ -11,15 +11,23 @@ The pipeline writes section bundles into independent run directories:
 This stitcher composes the canonical publish-ready manuscript:
 
   1. Concatenate s1 + s2 + s7 + s6 bundles in journal order.
-  2. Run `resolve_citations` over the body so [CIT:<key>|<role>] markers
+  2. Resolve [N_SCREENED] / [N_ACCEPTED] / [K_STUDIES] count placeholders
+     from receipts and [PLACEHOLDER:<key>] markers from the topic-pack
+     `[placeholders]` table.
+  3. Apply the topic-pack `[methods_honesty_rewrites]` table so writer
+     overclaim verbs (dual extraction, full SYRCLE adjudication, Egger's
+     test, leave-one-out, etc.) are rewritten to the honest tense that
+     matches what the pipeline actually executed.
+  4. Run `resolve_citations` over the body so [CIT:<key>|<role>] markers
      become [N] inline + a numbered References section sourced from the
      topic-pack bibliography. Unknown anchors surface as [UNRESOLVED].
-  3. Append the honest back-matter sections (Data and Code Availability,
+  5. Append the honest back-matter sections (Data and Code Availability,
      AI-Use Disclosure, Ethics, Author Contributions, Conflicts of
      Interest, Funding) built from pipeline-known facts.
 
 No LLM, no retrieval. Pure file IO + deterministic transforms. Universal:
-the bibliography and ethics framing come from the topic pack, not code.
+every domain choice (placeholders, honesty rewrites, bibliography,
+ethics framing) lives in the topic pack, not in code.
 
 Usage:
     python scripts/stitch_paper.py --topic rapamycin
@@ -35,6 +43,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.back_matter import build_back_matter
+from agent.methods_honesty import apply_honesty_rewrites
+from agent.placeholder_resolver import resolve_placeholders
 from agent.reference_resolver import resolve_citations
 from agent.settings import load_settings
 from agent.topic_pack import load_topic_pack
@@ -58,6 +68,27 @@ def _read(path: Path | None) -> str:
 
 def _pending(label: str, hint: str) -> str:
     return f"[SECTIONS_PENDING:{label} — {hint}]"
+
+
+def _load_receipts(run_dir: Path | None) -> tuple[dict[str, object], dict[str, object]]:
+    """Pull eligibility_summary + strict A-core JSON from the s7 run dir.
+
+    The Results bundle (s7) carries the canonical receipts the placeholder
+    resolver substitutes from. Empty dicts mean the corresponding tokens
+    surface as `[UNRESOLVED]` rather than being silently dropped.
+    """
+    if run_dir is None:
+        return {}, {}
+    import json
+    summary_path = run_dir / "eligibility_summary.json"
+    strict_path = run_dir / "primary_effect_input_set_strict.json"
+    summary: dict[str, object] = {}
+    strict: dict[str, object] = {}
+    if summary_path.exists():
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    if strict_path.exists():
+        strict = json.loads(strict_path.read_text(encoding="utf-8"))
+    return summary, strict
 
 
 def stitch(
@@ -91,8 +122,12 @@ def stitch(
         "discussion", "run draft_main.py --section discussion",
     )
 
-    body = "\n\n".join([intro, methods, results, discussion]) + "\n"
-    resolved = resolve_citations(body, pack)
+    raw_body = "\n\n".join([intro, methods, results, discussion]) + "\n"
+
+    summary, strict = _load_receipts(s7)
+    ph = resolve_placeholders(raw_body, summary=summary, strict=strict, pack=pack)
+    hon = apply_honesty_rewrites(ph.body, pack)
+    resolved = resolve_citations(hon.body, pack)
 
     if target is None:
         stamp = dt.datetime.now(tz=dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
@@ -114,6 +149,9 @@ def stitch(
         f"  s2: {s2.name if s2 else '(none)'}\n"
         f"  s6: {s6.name if s6 else '(none)'}\n"
         f"  s7: {s7.name if s7 else '(none)'}\n"
+        f"  placeholders resolved: {len(ph.resolved)} "
+        f"(unresolved: {len(ph.unresolved)})\n"
+        f"  honesty rewrites applied: {len(hon.rewrites_applied)}\n"
         f"  citations resolved: {len(resolved.citations_used)} "
         f"(unresolved: {len(resolved.unresolved)})\n"
         f"  stamped: {stamp_iso}\n"
@@ -132,8 +170,10 @@ def stitch(
     target_path.write_text(out, encoding="utf-8")
     print(
         f"[stitch] wrote {target_path} "
-        f"(cites_used={len(resolved.citations_used)}, "
-        f"unresolved={len(resolved.unresolved)})"
+        f"(ph_resolved={len(ph.resolved)}, ph_unresolved={len(ph.unresolved)}, "
+        f"honesty_rewrites={len(hon.rewrites_applied)}, "
+        f"cites_used={len(resolved.citations_used)}, "
+        f"cites_unresolved={len(resolved.unresolved)})"
     )
     return target_path
 
