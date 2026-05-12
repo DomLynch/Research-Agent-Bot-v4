@@ -1,11 +1,14 @@
-<!-- AUTO-STITCHED — do not edit by hand. Bundles used:
-  s1: (none)
-  s2: rapamycin-s2-iter-01-2026-05-12T11-00-49Z
-  s7: rapamycin-s7-iter-19-2026-05-12T10-16-47Z
-  stamped: 2026-05-12T11:11:39+00:00
--->
+# Rapamycin and Murine Lifespan: A Living Universal-Contract Synthesis
 
-[SECTIONS_PENDING:title_abstract_intro — writer LLM call has not completed for this run; re-run `python3 scripts/draft_main.py --topic <topic> --iter <N> --section title_abstract_intro` to populate.]
+[SECTIONS_PENDING:title_abstract_intro — writer LLM (MiMo v2.5 Pro) timed out 3 consecutive times at the 5-minute server-side ReadTimeout while generating the title/abstract/introduction prompt. Re-run `python3 scripts/draft_main.py --topic rapamycin --iter 1 --section title_abstract_intro` when the writer endpoint is responsive, then run `scripts/stitch_paper.py` to re-knit this file.]
+
+## Abstract
+
+[SECTIONS_PENDING:abstract — covered by the same writer timeout above.]
+
+## Introduction
+
+[SECTIONS_PENDING:introduction — covered by the same writer timeout above.]
 
 ## Methods
 
@@ -56,3 +59,43 @@ The single-study extracted effect (log_median_ratio) was 0.388 (95% CI -0.032 to
 After applying the strict A-core evidence-quote audit, 1 study forms the primary direct-lifespan corpus, 1 study populates the disease-model survival sensitivity lane, and 1 study is retained as secondary/contextual (of which 1 was demoted from the auto-judge direct-lifespan lane because their evidence quotes failed the per-quote mouse/intervention/control/endpoint audit) [PACKET:primary_pool_composition].
 
 Strict A-core records selected for primary extraction (1): s246 [PACKET:primary_pool_composition].
+
+## Appendix A — Run audit (auto-generated from receipts)
+
+This paper was assembled by the universal evidence contract pipeline. The
+following counts and effect estimates come directly from the receipts
+filed alongside this document; the prose above does NOT mint new numbers.
+
+- topic: rapamycin
+- run_id: 19
+- retrieval hits: 502
+- title/abstract candidates: 298
+- open-access full-text located: 257
+- parsed-with-text: 69
+- final eligibility decisions: {'include': 3, 'exclude': 62, 'unclear': 4, 'unavailable': 0}
+- contract violations: 0
+- judge model: google/gemma-4-31b-it
+
+### Strict A-core (canonical primary-effect input, k_studies = 1)
+
+- s246: BMAL1-dependent regulation of the mTOR signaling pathway delays aging. (2014, Aging; DOI 10.18632/aging.100633)
+
+### Effect extraction receipts
+
+- s246: status=extracted, metric=median_lifespan_months, treated_value=11.5, control_value=7.8, treated_n=31, control_n=73, hazard_ratio=None, percent_change=50.0
+  - quote: "The median lifespan of untreated mice is 7.8 months and median lifespan of the Rapatar-treated mice is 11.5 months, thus the treatment increased the median lifespan by 50%."
+
+### Pooled effect (from contract-passing receipts)
+
+- s246: metric=log_median_ratio, estimate=0.3882, SE=0.2144, 95% CI [-0.0319, 0.8084]
+
+## Appendix B — Honest limitations of this draft
+
+- Title / Abstract / Introduction not rendered (writer LLM timed out).
+- Discussion / Conclusion / Limitations / References sections have no
+  writer yet; they are out of scope for this pipeline pass.
+- Sentinel-recall gate is WARN: Harrison 2009 / Bitto 2016 / Miller 2011
+  remain retrieval-pipeline gaps; the universal contract refused to
+  launder them into the corpus.
+- k_studies = 1 for the primary effect; the engine reports this as a
+  single-study extracted effect, not a pooled meta-analysis estimate.
