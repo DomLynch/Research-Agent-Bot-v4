@@ -100,7 +100,7 @@ Per-sentinel resolution (auto verdict + manual status overlay) is rendered in `q
 
 ## S10 — QA Report (verbatim, from upstream eligibility run)
 
-_Frozen receipt from the upstream `corpus_qa.py` step that__produced the eligibility decisions. Lane labels in this__block reflect the iteration that emitted the QA report and__may pre-date later lane reassignments (e.g. genotype-__modified routing to the B sensitivity lane, sentinel-__recovery promotions). The **canonical current lane__assignment is S4 + S8 + `primary_effect_input_set_strict.json`**.__Discrepancies between S10 and S4/S8 indicate the canonical__pipeline state has advanced beyond the original QA snapshot._
+_Frozen receipt from the upstream `corpus_qa.py` step that produced the eligibility decisions. Lane labels in this block reflect the iteration that emitted the QA report and may pre-date later lane reassignments (e.g. genotype-modified routing to the B sensitivity lane, sentinel-recovery promotions). The canonical current lane assignment is S4 + S8 + `primary_effect_input_set_strict.json`. Discrepancies between S10 and S4/S8 indicate the canonical pipeline state has advanced beyond the original QA snapshot._
 
 # Corpus QA Report - latest
 

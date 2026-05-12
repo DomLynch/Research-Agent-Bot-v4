@@ -41,12 +41,16 @@ _TOKEN_RE = re.compile(
     r"|STRICT_A_CORE_COUNT|STRICT_A_CORE_IDS"
     r"|B_LANE_COUNT|B_LANE_IDS|C_LANE_COUNT|C_LANE_IDS"
     r"|K_POOLABLE|INCOMPLETE_RECOVERY_IDS"
+    # Sprint 12.6: pool-effect tokens (what's IN the pool, not just
+    # A-core). Critical to keep pool prose from naming A-core members
+    # that aren't actually contributing effects.
+    r"|POOL_EFFECT_IDS|POOL_EFFECT_COUNT|SKIPPED_IDS"
     r"|POOL_ESTIMATE|POOL_CI_LOW|POOL_CI_HIGH"
     r"|POOL_RATIO_BACK|POOL_PERCENT_EXT"
     # Count-aware noun-agreement: e.g. [B_LANE_COUNT:study] -> "1 study"
     # at n=1 or "3 studies" at n=3. Universal English pluralisation.
     r"|A_CORE_COUNT:[a-z]+|B_LANE_COUNT:[a-z]+|C_LANE_COUNT:[a-z]+"
-    r"|K_POOLABLE_COUNT:[a-z]+"
+    r"|K_POOLABLE_COUNT:[a-z]+|POOL_EFFECT_COUNT:[a-z]+"
     r"|PLACEHOLDER:[a-zA-Z0-9_\-]+"
     r"|MODERATOR_P:[a-zA-Z0-9_\-]+)\]"
 )
@@ -106,6 +110,15 @@ def resolve_placeholders(
     pool_effects = (pool or {}).get("effects", []) or []
     if not isinstance(pool_effects, list):
         pool_effects = []
+    pool_effect_ids = [
+        str(e.get("study_id", "")) for e in pool_effects
+        if isinstance(e, dict) and e.get("study_id")
+    ]
+    pool_skipped_ids: list[str] = []
+    if pool is not None:
+        raw_skip = pool.get("skipped_study_ids") or []
+        if isinstance(raw_skip, list):
+            pool_skipped_ids = [str(s) for s in raw_skip if s]
     extr_receipts = (extractions or {}).get("receipts", []) or []
     if not isinstance(extr_receipts, list):
         extr_receipts = []
@@ -180,6 +193,15 @@ def resolve_placeholders(
         "C_LANE_COUNT": str(len(c_lane_list)),
         "C_LANE_IDS": ", ".join(c_lane_ids) if c_lane_ids else "(none)",
         "K_POOLABLE": str(len(pool_effects)) if pool is not None else "",
+        # Pool-effect tokens — only studies that actually contributed to
+        # the inverse-variance pool (NOT the full A-core list). Critical
+        # to keep pool prose from naming parse_failed / off-modal studies.
+        "POOL_EFFECT_IDS": ", ".join(pool_effect_ids) if pool_effect_ids else "(none)",
+        "POOL_EFFECT_COUNT": str(len(pool_effect_ids)) if pool is not None else "",
+        "SKIPPED_IDS": (
+            ", ".join(pool_skipped_ids) if pool_skipped_ids
+            else ("(none)" if pool is not None else "")
+        ),
         "INCOMPLETE_RECOVERY_IDS": (
             ", ".join(incomplete_ids) if incomplete_ids
             else ("(none)" if extractions is not None else "")
@@ -196,6 +218,7 @@ def resolve_placeholders(
         "B_LANE_COUNT": len(b_lane_list),
         "C_LANE_COUNT": len(c_lane_list),
         "K_POOLABLE_COUNT": len(pool_effects) if pool is not None else 0,
+        "POOL_EFFECT_COUNT": len(pool_effect_ids) if pool is not None else 0,
     }
 
     def _sub(match: re.Match[str]) -> str:
