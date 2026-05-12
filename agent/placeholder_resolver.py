@@ -1,20 +1,25 @@
-"""Resolve [N_SCREENED] / [N_ACCEPTED] / [K_STUDIES] / [PLACEHOLDER:<key>] markers.
+"""Resolve count + topic-pack-driven placeholder markers.
 
 The writer emits four classes of placeholder in body prose:
 
   [N_SCREENED]            -> eligibility_summary.k_hits
   [N_ACCEPTED]            -> eligibility_summary.k_eligible
   [K_STUDIES]             -> length of strict A-core (canonical primary set)
-  [PLACEHOLDER:<key>]     -> topic_pack.placeholders[<key>]
+  [PLACEHOLDER:<key>]     -> topic_pack.placeholders["<key>"]
+  [MODERATOR_P:<key>]     -> topic_pack.placeholders["MODERATOR_P:<key>"]
 
-The first three are pipeline-derived counts; the fourth is a topic-pack value
-(databases, date-range, query syntax, threshold parameters). All four are
-resolved deterministically against receipts + topic-pack data — no LLM, no
-invention. Unknown tokens are surfaced as `[<token>][UNRESOLVED]` so the
-auditor sees the gap rather than silent omission.
+The first three are pipeline-derived counts; the latter two are topic-pack
+values (databases, date-range, query syntax, threshold parameters, and
+moderator labels). All five resolve deterministically against receipts +
+topic-pack data — no LLM, no invention. Unknown tokens are surfaced as
+`[<token>][UNRESOLVED]` so the auditor sees the gap rather than silent
+omission. `[CIT:...]` and `[PACKET:...]` markers are intentionally left
+alone — citations are handled by `reference_resolver`, and packet anchors
+are audit references the manuscript keeps verbatim.
 
-Universal: this module is topic-agnostic. Adding a new domain = adding
-`[placeholders]` entries to that topic's TOML. No code change.
+Universal: this module is topic-agnostic. Adding a new domain or a new
+moderator label = adding an entry to that topic's `[placeholders]` block.
+No code change.
 """
 from __future__ import annotations
 
@@ -26,7 +31,9 @@ from typing import Any
 from agent.topic_pack import TopicPack
 
 _TOKEN_RE = re.compile(
-    r"\[(N_SCREENED|N_ACCEPTED|K_STUDIES|PLACEHOLDER:[a-zA-Z0-9_\-]+)\]"
+    r"\[(N_SCREENED|N_ACCEPTED|K_STUDIES"
+    r"|PLACEHOLDER:[a-zA-Z0-9_\-]+"
+    r"|MODERATOR_P:[a-zA-Z0-9_\-]+)\]"
 )
 
 
@@ -75,6 +82,15 @@ def resolve_placeholders(
             if key in pack.placeholders:
                 resolved.append(token)
                 return pack.placeholders[key]
+            if token not in unresolved:
+                unresolved.append(token)
+            return match.group(0) + "[UNRESOLVED]"
+        if token.startswith("MODERATOR_P:"):
+            # MODERATOR_P keys are stored verbatim (prefix + name) so a
+            # single `[placeholders]` table covers both families.
+            if token in pack.placeholders:
+                resolved.append(token)
+                return pack.placeholders[token]
             if token not in unresolved:
                 unresolved.append(token)
             return match.group(0) + "[UNRESOLVED]"

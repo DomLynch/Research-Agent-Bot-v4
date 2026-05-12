@@ -99,3 +99,36 @@ def test_no_placeholders_in_body_returns_unchanged() -> None:
     assert out.body == body
     assert out.resolved == ()
     assert out.unresolved == ()
+
+
+def test_moderator_p_resolves_from_placeholders_table() -> None:
+    body = "Moderators: [MODERATOR_P:sex] and [MODERATOR_P:dose]."
+    pack = _pack({
+        "MODERATOR_P:sex": "biological sex",
+        "MODERATOR_P:dose": "dose level (mg/kg)",
+    })
+    out = resolve_placeholders(body, summary={}, strict={}, pack=pack)
+    assert out.body == "Moderators: biological sex and dose level (mg/kg)."
+    assert set(out.resolved) == {"MODERATOR_P:sex", "MODERATOR_P:dose"}
+    assert out.unresolved == ()
+
+
+def test_unknown_moderator_p_surfaces_unresolved() -> None:
+    body = "[MODERATOR_P:not-in-pack] should surface."
+    out = resolve_placeholders(body, summary={}, strict={}, pack=_pack({}))
+    assert "[MODERATOR_P:not-in-pack][UNRESOLVED]" in out.body
+    assert out.unresolved == ("MODERATOR_P:not-in-pack",)
+
+
+def test_packet_and_cit_markers_are_left_alone() -> None:
+    """[PACKET:...] are audit anchors; [CIT:...] are citation markers.
+
+    Neither belongs to the placeholder family; the resolver must not touch
+    them or downstream handlers (reference_resolver, packet auditor) get
+    silently broken.
+    """
+    body = "See [PACKET:primary_effect] and [CIT:harrison-2009|primary-study]."
+    out = resolve_placeholders(body, summary={}, strict={}, pack=_pack({}))
+    assert out.body == body
+    assert out.resolved == ()
+    assert out.unresolved == ()
