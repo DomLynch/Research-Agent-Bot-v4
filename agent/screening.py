@@ -198,7 +198,13 @@ def validate_eligibility_receipts(
     callers that haven't yet wired Sprint 7 plumbing), the old retrieved-only
     check applies and a warning-equivalent path is preserved. Once all
     callers pass parsed_receipts the empty-tuple shortcut becomes dead code
-    and should be removed."""
+    and should be removed.
+
+    Sprint 7.11.1: only one exemption remains - "unavailable" receipts
+    can be issued without a parsed=True receipt, because "unavailable" is
+    the canonical state for documenting a retrieval gap. Manual overrides
+    are no longer routed through this validator (they're a separate
+    overlay; see agent/manual_resolution.py)."""
     study_ids = {s.study_id for s in candidates}
     retrieved = {r.study_id for r in ft_receipts if r.retrieved}
     parsed_ok = {r.study_id for r in parsed_receipts if r.parsed}
@@ -208,6 +214,8 @@ def validate_eligibility_receipts(
             raise EvidenceLinkError(
                 f"EligibilityReceipt references unknown study_id {r.study_id!r}"
             )
+        if r.decision == "unavailable":
+            continue
         if use_parsed:
             if r.study_id not in parsed_ok:
                 raise EvidenceLinkError(

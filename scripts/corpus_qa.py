@@ -25,7 +25,9 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.include_contract import classify_lane
+from agent.manual_resolution import build_manual_status_overlay, load_manual_resolutions
 from agent.retrieval.base import normalize_doi
+from agent.screening import CandidateStudy
 from agent.topic_pack import load_topic_pack
 
 
@@ -81,15 +83,11 @@ def _passes_contract(
       - >= 1 quote containing an endpoint term
       - >= 1 quote containing an intervention or control term
 
-    Sprint 7.10b: manual overrides BYPASS the contract (human is the
-    evidence, see agent.include_contract._is_manual_override).
+    Sprint 7.11.1: NO manual bypass. The universal evidence contract
+    is the sole gate; manuals can only resolve sentinel status, never
+    launder unresolved evidence into the corpus.
     """
     from agent.include_contract import MIN_CHARS, MIN_EVIDENCE_QUOTES
-    if (
-        receipt.get("reviewer", "").startswith("human-")
-        or receipt.get("rule_decision") == "manual-override"
-    ):
-        return True
     if not receipt.get("mandatory_fields", {}).get("parsed_text_adequate", False):
         return False
     if int(parsed.get("char_count", 0)) < MIN_CHARS:
@@ -121,7 +119,9 @@ def _passes_contract(
 def _per_include_rows(
     receipts: list[dict[str, Any]], parsed_by_id: dict[str, dict[str, Any]],
     cand_by_id: dict[str, dict[str, Any]], pack: Any,
+    strict_lane_by_id: dict[str, str] | None = None,
 ) -> list[list[str]]:
+    strict_lane_by_id = strict_lane_by_id or {}
     rows: list[list[str]] = []
     for r in receipts:
         if r["decision"] != "include":
@@ -131,13 +131,20 @@ def _per_include_rows(
         parsed = parsed_by_id.get(sid, {})
         fields = r.get("mandatory_fields", {})
         evidence = r.get("evidence_quotes") or [""]
-        lane = classify_lane(
-            cand.get("title", ""), parsed.get("char_count", 0),
-            r.get("decision"), pack,
-        )
+        # Sprint 7.11.2: pull the post-overlay lane from the strict
+        # bucket file when available; fall back to the heuristic
+        # classifier for legacy runs without a strict file. This is the
+        # difference between showing s092 as "A" (legacy classifier) vs
+        # "C" (after manual resolved_excluded subtraction).
+        lane_letter = strict_lane_by_id.get(sid)
+        if lane_letter is None:
+            lane_letter = classify_lane(
+                cand.get("title", ""), parsed.get("char_count", 0),
+                r.get("decision"), pack,
+            ).split("_", 1)[0]
         rows.append([
             sid,
-            lane.split("_", 1)[0],  # short label: A/B/C/D/E
+            lane_letter,
             _truncate(cand.get("title", "?"), 60),
             str(cand.get("year") or "?"),
             "yes" if fields.get("species_match") else "no",
@@ -259,8 +266,65 @@ def main() -> int:
         **{s: "prior_meta" for s in pack.sentinel_prior_meta},
     }
     sentinel_rows = _sentinel_rows(pack_sentinels, cands, parsed_by_id, elig_by_id)
-    include_rows = _per_include_rows(elig, parsed_by_id, cand_by_id, pack)
+
+    # Sprint 7.11.2: read primary_effect_input_set_strict.json (if present)
+    # so the per-include lane column reflects the post-overlay 3-bucket
+    # split instead of the legacy lane classifier. Without this, s092 /
+    # s244 / s263 (manually resolved_excluded) still display as Lane A.
+    strict_path = rd / "primary_effect_input_set_strict.json"
+    strict_lane_by_id: dict[str, str] = {}
+    if strict_path.exists():
+        strict = json.loads(strict_path.read_text(encoding="utf-8"))
+        for s in strict.get("A_core_direct_lifespan", []):
+            strict_lane_by_id[s["study_id"]] = "A"
+        for s in strict.get("B_disease_model_survival", []):
+            strict_lane_by_id[s["study_id"]] = "B"
+        for s in strict.get("C_secondary_contextual", []):
+            strict_lane_by_id[s["study_id"]] = "C"
+    include_rows = _per_include_rows(
+        elig, parsed_by_id, cand_by_id, pack, strict_lane_by_id,
+    )
     decisions = Counter(r["decision"] for r in elig)
+
+    # Sprint 7.11.2: surface the manual_status_overlay so the report
+    # categorises each sentinel as resolved_available_pending_contract /
+    # resolved_unavailable / resolved_excluded / needs_review instead of
+    # blindly accepting "include with reviewer=human-dom".
+    overlay_cands = tuple(
+        CandidateStudy(
+            study_id=c["study_id"], hit_key=c.get("hit_key", ""),
+            title=c.get("title", ""), year=c.get("year"), venue=c.get("venue"),
+            pmid=c.get("pmid"), doi=c.get("doi"),
+        )
+        for c in cands
+    )
+    overlay = build_manual_status_overlay(
+        load_manual_resolutions(args.topic), overlay_cands,
+    )
+    overlay_rows: list[list[str]] = []
+    pending_primaries: list[str] = []
+    for sid, role in pack_sentinels.items():
+        cand_row = next(
+            (c for c in cands if (c.get("doi") and normalize_doi(c["doi"]) == (normalize_doi(sid) or ""))
+             or (c.get("pmid") and str(c["pmid"]) == sid)),
+            None,
+        )
+        cand_id = cand_row["study_id"] if cand_row else ""
+        elig_row = elig_by_id.get(cand_id, {}) if cand_id else {}
+        auto_decision = str(elig_row.get("decision", "no-receipt"))
+        manual = overlay.get(cand_id) if cand_id else None
+        if manual is None:
+            status = "(no manual record)"
+        elif manual.status == "resolved_available" and auto_decision != "include":
+            status = "resolved_available_pending_contract"
+        else:
+            status = manual.status
+        if role == "primary" and status == "resolved_available_pending_contract":
+            pending_primaries.append(sid)
+        overlay_rows.append([
+            sid, role, cand_id or "-", auto_decision, status,
+            _truncate(manual.action_required if manual else "", 60),
+        ])
 
     qa = [
         f"# Corpus QA Report - {rd.name}\n",
@@ -272,6 +336,7 @@ def main() -> int:
         f"  - include: {decisions.get('include', 0)}",
         f"  - exclude: {decisions.get('exclude', 0)}",
         f"  - unclear: {decisions.get('unclear', 0)}",
+        f"  - unavailable: {decisions.get('unavailable', 0)}",
         f"- declared sentinels: {len(pack_sentinels)} "
         f"({sum(1 for v in pack_sentinels.values() if v == 'primary')} primary + "
         f"{sum(1 for v in pack_sentinels.values() if v == 'prior_meta')} prior_meta)\n",
@@ -286,6 +351,12 @@ def main() -> int:
             ["sentinel_id", "role", "stage", "parsed?", "elig", "conf", "reason / failure"],
             sentinel_rows,
         ) if sentinel_rows else "_(no sentinels declared)_",
+        "\n## Sentinel resolution status (manual overlay)\n",
+        _md_table(
+            ["sentinel_id", "role", "study_id", "auto_decision",
+             "manual_status", "action_required"],
+            overlay_rows,
+        ) if overlay_rows else "_(no sentinels declared)_",
         "\n## Quality flags\n",
     ]
     flags: list[str] = []
@@ -296,8 +367,6 @@ def main() -> int:
     high_conf_partial = [
         r for r in elig
         if r["decision"] == "include" and r["confidence"] >= 0.99
-        and not (r.get("reviewer", "").startswith("human-")
-                 or r.get("rule_decision") == "manual-override")
         and not all(r["mandatory_fields"].get(k, False) for k in
                     ("species_match", "intervention_match", "endpoint_present",
                      "control_present", "primary_research_design"))
@@ -305,18 +374,33 @@ def main() -> int:
     if high_conf_partial:
         flags.append(f"- {len(high_conf_partial)} include(s) with conf>=0.99 but "
                      "missing >=1 mandatory field - judge over-confidence smell.")
-    # Primary sentinels are 'resolved' if their row landed include OR
-    # unavailable (manual override with documented retrieval limitation).
+    # Sprint 7.11.2: pending-contract primary sentinels are a documented
+    # SYSTEM-LEVEL GAP (retrieval/parser owes work). They are surfaced
+    # here so the report can't quietly read "Quality flags: none" while
+    # canonical sentinels are still unresolved.
+    if pending_primaries:
+        flags.append(
+            f"- sentinel contract gaps remain: {len(pending_primaries)} "
+            f"primary sentinel(s) resolved_available_pending_contract "
+            f"({pending_primaries}); retrieval/parser must fix before "
+            f"the universal contract can pass."
+        )
+    # Hard miss: primary sentinel where neither auto nor manual reaches
+    # a final state.
     sentinel_misses = [
         s for s, role in pack_sentinels.items() if role == "primary"
         and not any(
-            row[0] == s and row[4] in ("include", "unavailable")
-            for row in sentinel_rows
+            row[0] == s and row[4] in (
+                "include", "unavailable",
+                "resolved_available_pending_contract",
+                "resolved_unavailable", "resolved_excluded",
+            )
+            for row in overlay_rows
         )
     ]
     if sentinel_misses:
         flags.append(f"- {len(sentinel_misses)} primary sentinel(s) UNRESOLVED "
-                     f"(neither included nor unavailable-with-reason): {sentinel_misses}")
+                     f"(no auto verdict + no manual record): {sentinel_misses}")
     if not flags:
         flags.append("- (none)")
     qa.append("\n".join(flags))

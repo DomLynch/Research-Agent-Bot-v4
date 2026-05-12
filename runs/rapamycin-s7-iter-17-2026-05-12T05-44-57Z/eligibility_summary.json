@@ -12,12 +12,20 @@
     "exclude_likely": 2
   },
   "final_decisions": {
-    "exclude": 110,
-    "unclear": 7,
-    "include": 22
+    "include": 22,
+    "exclude": 108,
+    "unclear": 9,
+    "unavailable": 1
   },
   "k_eligible": 22,
   "contract_violations": 0,
   "dry_run": false,
-  "judge_model": "google/gemma-4-31b-it"
+  "judge_model": "google/gemma-4-31b-it",
+  "final_decisions_legacy_run_time": {
+    "include": 22,
+    "exclude": 108,
+    "unclear": 9,
+    "unavailable": 1
+  },
+  "canonicalized_at_utc": "2026-05-12T09:14:06+00:00"
 }

@@ -46,6 +46,8 @@ class TopicPack:
     eligibility_min_text_chars: int
     sentinel_primary: tuple[str, ...]
     sentinel_prior_meta: tuple[str, ...]
+    non_mouse_species_terms: tuple[str, ...]
+    secondary_design_quote_markers: tuple[str, ...]
 
     @property
     def has_scope_rules(self) -> bool:
@@ -72,6 +74,7 @@ def load_topic_pack(topic: str, *, pack_dir: Path | None = None) -> TopicPack | 
     triggers = raw.get("empirical_triggers", {})
     elig = raw.get("eligibility", {})
     sentinels = raw.get("sentinel_recall", {})
+    strict = raw.get("strict_a_core", {})
     return TopicPack(
         topic=str(raw.get("topic", topic)),
         display_name=str(raw.get("display_name", topic.title())),
@@ -97,4 +100,8 @@ def load_topic_pack(topic: str, *, pack_dir: Path | None = None) -> TopicPack | 
         eligibility_min_text_chars=int(elig.get("min_text_chars", 2000)),
         sentinel_primary=tuple(sentinels.get("primary", [])),
         sentinel_prior_meta=tuple(sentinels.get("prior_meta", [])),
+        non_mouse_species_terms=tuple(strict.get("non_mouse_species_terms", [])),
+        secondary_design_quote_markers=tuple(
+            strict.get("secondary_design_quote_markers", [])
+        ),
     )

@@ -75,30 +75,24 @@ def _is_title_quote(quote: str, title: str) -> bool:
     return bool(norm_t) and (norm_q == norm_t or norm_q == norm_t[:len(norm_q)])
 
 
-def _is_manual_override(receipt: EligibilityReceipt) -> bool:
-    return bool(
-        receipt.reviewer.startswith("human-")
-        or receipt.rule_decision == "manual-override"
-    )
-
-
 def validate_include(
     receipt: EligibilityReceipt,
     parsed: ParsedFullTextReceipt | None,
     candidate_title: str,
     pack: TopicPack,
 ) -> ContractResult:
-    """Re-check an include verdict against hard rules. Returns
-    ContractResult(passes=False, violations=...) for any fail; the caller
-    is expected to demote the receipt to unclear if passes is False.
+    """Re-check an include verdict against the universal evidence
+    contract. Returns ContractResult(passes=False, violations=...) for
+    any fail; the caller is expected to demote the receipt to unclear if
+    passes is False.
 
-    Sprint 7.10b: manual overrides BYPASS the contract. A human reviewer
-    declaring include for a sentinel is the top of the stack; the
-    parsed_text_adequate / char_count / quote-count rules don't apply
-    because the human IS the evidence."""
+    Sprint 7.11.1: NO manual-override bypass. Every primary-pool include
+    must pass the same universal contract — sentinels included. A human
+    reviewer cannot launder unresolved evidence into the primary corpus;
+    they can only resolve sentinel STATUS via the manual_resolution
+    overlay channel (see agent/manual_resolution.py).
+    """
     if receipt.decision != "include":
-        return ContractResult(passes=True, violations=())
-    if _is_manual_override(receipt):
         return ContractResult(passes=True, violations=())
     violations: list[str] = []
     if not receipt.mandatory_fields.get("parsed_text_adequate", False):
@@ -120,6 +114,61 @@ def validate_include(
     if methods_terms and not any(_quote_has_term(q, methods_terms) for q in quotes):
         violations.append("no evidence quote contains intervention or control term")
     return ContractResult(passes=not violations, violations=tuple(violations))
+
+
+def strict_a_core_check(
+    decision: str,
+    evidence_quotes: tuple[str, ...],
+    pack: TopicPack,
+) -> tuple[bool, tuple[str, ...]]:
+    """Per-quote evidence audit for the A-core primary pool.
+
+    A paper earns A-core only if its evidence quotes affirmatively
+    demonstrate the CURRENT EXPERIMENT (not background or prior
+    literature) used:
+      - preferred species (mouse/murine)
+      - primary intervention (rapamycin/sirolimus)
+      - control arm
+      - lifespan/survival endpoint
+    Demote triggers:
+      - any quote mentions only non-mouse species terms without a
+        matching mouse term in the same quote (e.g. 'rapamycin
+        extended C. elegans lifespan' but no mouse quote elsewhere)
+      - any quote contains an omics/secondary-analysis marker that
+        signals the paper is a downstream profile, not a primary
+        lifespan study
+
+    Returns (passes, demote_reasons). Caller routes failures to
+    C_secondary_molecular instead of A_direct_lifespan."""
+    if decision != "include":
+        return False, ("decision != include",)
+    quotes = tuple(q.casefold() for q in evidence_quotes)
+
+    def _any(terms: tuple[str, ...]) -> bool:
+        return any(any(t.casefold() in q for t in terms if t) for q in quotes)
+
+    has_mouse = _any(pack.preferred_terms)
+    has_intervention = _any(pack.primary_interventions)
+    has_control = _any(pack.eligibility_control_terms)
+    has_endpoint = _any(pack.eligibility_endpoint_terms)
+    has_non_mouse = _any(pack.non_mouse_species_terms)
+    has_secondary_marker = _any(pack.secondary_design_quote_markers)
+
+    reasons: list[str] = []
+    if not has_mouse:
+        reasons.append("no quote names a mouse term")
+    if not has_intervention:
+        reasons.append("no quote names a primary intervention term")
+    if not has_control:
+        reasons.append("no quote names a control term")
+    if not has_endpoint:
+        reasons.append("no quote names a lifespan/survival term")
+    if has_non_mouse and not has_mouse:
+        reasons.append("quotes mention only non-mouse species")
+    if has_secondary_marker:
+        reasons.append("quotes signal secondary/omics design")
+
+    return not reasons, tuple(reasons)
 
 
 def classify_lane(

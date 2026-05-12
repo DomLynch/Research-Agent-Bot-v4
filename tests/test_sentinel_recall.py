@@ -25,6 +25,7 @@ def _pack(primary: tuple[str, ...] = (), prior_meta: tuple[str, ...] = ()) -> To
         eligibility_exclude_design_terms=(), eligibility_combination_terms=(),
         eligibility_min_text_chars=0,
         sentinel_primary=primary, sentinel_prior_meta=prior_meta,
+        non_mouse_species_terms=(), secondary_design_quote_markers=(),
     )
 
 

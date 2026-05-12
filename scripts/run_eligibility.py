@@ -37,7 +37,7 @@ from agent.evidence_state import EvidenceState
 from agent.full_text_fetch import fetch_full_text_receipts
 from agent.full_text_parse import ParsedFullText, parse_full_texts
 from agent.include_contract import demote_failed_includes
-from agent.manual_resolution import apply_manual_resolutions, load_manual_resolutions
+from agent.manual_resolution import build_manual_status_overlay, load_manual_resolutions
 from agent.results_compiler import compile_all
 from agent.results_contract import validate_results_text
 from agent.results_writer import write_results_section
@@ -163,6 +163,16 @@ async def main() -> int:
     parsed_by_id: dict[str, ParsedFullText] = {d.study_id: d for d in parsed_docs}
     print(f"[s7] parsed {sum(1 for r in parsed_receipts if r.parsed)}/{len(parsed_receipts)} full texts")
 
+    # Sprint 7.11.2c / Sprint 8 prep: persist the parsed text bodies so
+    # downstream extraction can read the exact bytes the judge saw
+    # without re-fetching from NCBI/Unpaywall. text_hash in
+    # parsed_receipts.json continues to provide tamper detection.
+    parsed_text_dir = out_dir / "parsed_text"
+    parsed_text_dir.mkdir(exist_ok=True)
+    for d in parsed_docs:
+        if d.text:
+            (parsed_text_dir / f"{d.study_id}.txt").write_text(d.text, encoding="utf-8")
+
     # Parallel judge loop: asyncio.to_thread wraps the sync HTTP call so
     # up to JUDGE_CONCURRENCY runs go through OpenRouter concurrently.
     # Each receipt appends to eligibility_receipts.partial.jsonl under a
@@ -234,24 +244,24 @@ async def main() -> int:
     if demoted:
         print(f"[s7] include contract demoted {demoted} include(s) to unclear")
 
-    # Sprint 7.10 - manual sentinel overrides. Loaded from
-    # topic_packs/<topic>_manual_resolutions.toml. Replaces auto-judge
-    # receipts for any candidate matched by DOI or PMID. The override
-    # is the top of the stack: judge proposes, code disposes, HUMAN
-    # has final say on sentinels.
+    # Sprint 7.11.1 - manual sentinel-status overlay. Loaded from
+    # topic_packs/<topic>_manual_resolutions.toml. Manuals can only
+    # resolve sentinel STATUS (resolved_available / resolved_unavailable
+    # / resolved_excluded / needs_review). They do NOT mutate eligibility
+    # receipts and cannot promote a paper into primary inclusion. The
+    # universal evidence contract (already run above by demote_failed
+    # _includes) is the sole gate of the primary-effect corpus.
     manual_resolutions = load_manual_resolutions(args.topic)
+    manual_overlay = build_manual_status_overlay(manual_resolutions, candidates)
     if manual_resolutions:
-        new_receipts, applied = apply_manual_resolutions(
-            tuple(eligibility_receipts), candidates, manual_resolutions,
-        )
-        eligibility_receipts = list(new_receipts)
-        unmatched = len(manual_resolutions) - len(applied)
+        unmatched = len(manual_resolutions) - len(manual_overlay)
         print(
-            f"[s7] manual overrides applied: {len(applied)} matched, "
+            f"[s7] manual status overlay: {len(manual_overlay)} matched, "
             f"{unmatched} declared-but-unmatched"
         )
 
-    # Recount decisions after contract demotion + manual overrides.
+    # Recount decisions after contract demotion. Manual overlay does not
+    # change decision counts; it only resolves sentinel status downstream.
     decision_counts = Counter(r.decision for r in eligibility_receipts)
 
     # Sprint-7 strictness: assemble EvidenceState with parsed_receipts so the
@@ -265,7 +275,9 @@ async def main() -> int:
         parsed_receipts=parsed_receipts,
         eligibility_receipts=tuple(eligibility_receipts),
     )
-    packets = compile_all(state, moderators=(), pack=pack)
+    packets = compile_all(
+        state, moderators=(), pack=pack, manual_overlay=manual_overlay,
+    )
     results_text = write_results_section(packets)
     violations = validate_results_text(results_text, packets)
 
@@ -285,6 +297,19 @@ async def main() -> int:
         encoding="utf-8",
     )
     (out_dir / "main_draft.md").write_text(results_text, encoding="utf-8")
+    if manual_overlay:
+        (out_dir / "manual_status_overlay.json").write_text(
+            json.dumps([
+                {
+                    "study_id": sid, "doi": r.doi, "pmid": r.pmid,
+                    "status": r.status, "reason": r.reason,
+                    "evidence_quote": r.evidence_quote, "reviewer": r.reviewer,
+                    "action_required": r.action_required,
+                }
+                for sid, r in manual_overlay.items()
+            ], indent=2),
+            encoding="utf-8",
+        )
     summary = {
         "topic": args.topic,
         "iter": args.iter,

@@ -1080,16 +1080,16 @@
   },
   {
     "study_id": "s086",
-    "decision": "unclear",
-    "reason": "include_contract failed: parsed_text_adequate=False; only 1 non-title evidence quote(s); need >= 2",
-    "reviewer": "include-contract",
+    "decision": "include",
+    "reason": "manual override (include): Foundational primary mouse rapamycin lifespan study (NIA-ITP). The\nauto-judge intermittently fails to read this paper because NCBI's PMC\nservice returns a reCAPTCHA challenge under concurrent load, and the\npublisher Unpaywall URL (Nature) is paywalled-OA. The paper itself is\nunambiguously eligible per pre-specified PICO; manual override is the\ncorrect path until a stable OA mirror is wired.\n",
+    "reviewer": "human-dom",
     "confidence": 1.0,
     "mandatory_fields": {},
     "evidence_quotes": [
       "Here we report that rapamycin, an inhibitor of the mTOR pathway, extends median and maximal lifespan of both male and female mice when fed beginning at 600 days of age. On the basis of age at 90% mortality, rapamycin led to an increase of 14% for females and 9% for males.\n"
     ],
     "judge_model": "(manual)",
-    "rule_decision": "",
+    "rule_decision": "manual-override",
     "source_text_hash": "",
     "timestamp_utc": "2026-05-12T05:57:01+00:00"
   },
@@ -3046,16 +3046,16 @@
   },
   {
     "study_id": "s288",
-    "decision": "unclear",
-    "reason": "include_contract failed: parsed_text_adequate=False; only 1 non-title evidence quote(s); need >= 2",
-    "reviewer": "include-contract",
+    "decision": "include",
+    "reason": "manual override (include): Bitto 2016 transient-rapamycin study (eLife, OA). Auto-judge has\nsometimes landed this as include conf 1.00 (iter-13, iter-15) and\nsometimes as unclear conf 0.50 (iter-16) depending on variance check\nand prompt phrasing. The paper is unambiguously eligible per\npre-specified PICO; manual override locks the verdict.\n",
+    "reviewer": "human-dom",
     "confidence": 1.0,
     "mandatory_fields": {},
     "evidence_quotes": [
       "A brief 3-month treatment of middle-aged mice with the mTOR inhibitor rapamycin produced an immediate, persistent improvement in healthspan and increased survival, with adult-onset transient rapamycin treatment significantly extending median and maximum lifespan in male mice.\n"
     ],
     "judge_model": "(manual)",
-    "rule_decision": "",
+    "rule_decision": "manual-override",
     "source_text_hash": "",
     "timestamp_utc": "2026-05-12T05:57:01+00:00"
   },

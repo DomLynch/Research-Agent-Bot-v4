@@ -1,64 +1,90 @@
-"""Sprint 7.10 - manual sentinel overrides.
+"""Sprint 7.11.1 - Manual resolution overlay (status-only, no inclusion power).
 
-The auto-judge ladder will sometimes fail on a paper that the human
-reviewer KNOWS belongs in the corpus (foundational sentinel buried by
-NCBI rate-limit reCAPTCHA, paywalled-OA gap, etc.). This module lets
-the user declare those overrides in a topic-pack TOML file:
+The universal-engine rule: a manual entry can RESOLVE sentinel status
+(retrieved/available/excluded/needs_review), but it cannot CREATE primary
+inclusion. Primary inclusion is the sole gate of
+`agent.include_contract.EvidenceEligibilityContract`:
 
-    topic_packs/<topic>_manual_resolutions.toml
+    can_enter_primary_effect_set = (
+        evidence_artifact_present
+        AND source_hash_or_pointer_present
+        AND domain_fields_complete
+        AND comparator_present
+        AND endpoint_present
+        AND current_study_quote_present
+        AND extraction_field_present
+    )
 
-Each [[resolutions]] block requires:
-    doi (or pmid) - identifier to match
-    decision - "include" | "exclude" | "unavailable" | "secondary"
-    reason - free-text justification (becomes EligibilityReceipt.reason)
-    evidence_quote - verbatim quote from the paper (for audit trail)
-    reviewer - user identifier (e.g. "human-dom")
+That contract applies to every paper, including sentinels. A sentinel
+that the system failed to retrieve is a SYSTEM BUG (retrieval/parser
+needs fixing), not a license to manually launder it into the corpus.
 
-Application semantics (run AFTER the contract demotion in the
-orchestrator):
-    - If a manual resolution matches a candidate (by DOI or PMID), the
-      auto-judge receipt is REPLACED by a synthetic receipt with
-      reviewer set to the declared reviewer.
-    - "secondary" maps to decision='exclude' in the receipt (so it
-      doesn't enter the primary pool) but the reason names secondary
-      so freeze_primary_set / lane classifier can route it correctly.
-    - Universal: no biomedical literals; all data comes from the TOML.
+Symmetry:
+    - Manuals MAY exclude (status='resolved_excluded') because exclusion
+      is conservative.
+    - Manuals MAY mark unavailable (status='resolved_unavailable') so the
+      sentinel-recall gate can recognise documented retrieval gaps as
+      resolved rather than as unresolved misses.
+    - Manuals MAY flag for human review (status='needs_review').
+    - Manuals MAY assert availability (status='resolved_available') so
+      the sentinel-recall gate can WARN with "system bug" framing rather
+      than FAIL with "not retrieved" — but availability does NOT confer
+      primary-corpus membership.
 
-LLM proposes, code disposes, HUMAN overrides. The override is the
-top of the stack.
+TOML schema (`topic_packs/<topic>_manual_resolutions.toml`):
+
+    [[resolutions]]
+    doi = "..."
+    pmid = "..."
+    status = "resolved_available" | "resolved_unavailable" |
+             "resolved_excluded" | "needs_review"
+    reason = "..."
+    evidence_quote = "..."     # optional audit-only quote
+    reviewer = "human-..."
+    action_required = "..."    # optional remediation hint
 """
 from __future__ import annotations
 
-import datetime as dt
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
-from types import MappingProxyType
 from typing import Literal
 
 from agent.retrieval.base import normalize_doi
-from agent.screening import CandidateStudy, EligibilityReceipt
+from agent.screening import CandidateStudy
 
 _PACK_DIR = Path(__file__).resolve().parent.parent / "topic_packs"
 
-ManualDecision = Literal["include", "exclude", "unavailable", "secondary"]
-ManualLane = Literal[
-    "direct_lifespan", "disease_model_survival",
-    "secondary_molecular", "healthspan_only", "exclude", "",
+ManualStatus = Literal[
+    "resolved_available",
+    "resolved_unavailable",
+    "resolved_excluded",
+    "needs_review",
 ]
+
+_VALID_STATUSES: frozenset[str] = frozenset(
+    ("resolved_available", "resolved_unavailable",
+     "resolved_excluded", "needs_review")
+)
 
 
 @dataclass(frozen=True, slots=True)
 class ManualResolutionReceipt:
-    """One human-declared override for a sentinel or known-relevant paper."""
+    """One human-declared sentinel-status assertion.
+
+    Crucially: this record has no `decision` field and no `lane` field.
+    It cannot mint an EligibilityReceipt and cannot promote a paper into
+    the primary-effect set. It only resolves SENTINEL STATUS for the
+    recall audit and (when status='resolved_excluded') subtracts from the
+    primary corpus."""
 
     doi: str
     pmid: str
-    decision: ManualDecision
+    status: ManualStatus
     reason: str
     evidence_quote: str
     reviewer: str
-    lane: ManualLane = ""  # optional - when set, freeze_primary_set honors it
+    action_required: str = ""
 
 
 def load_manual_resolutions(
@@ -72,14 +98,20 @@ def load_manual_resolutions(
     raw = tomllib.loads(path.read_text(encoding="utf-8"))
     out: list[ManualResolutionReceipt] = []
     for entry in raw.get("resolutions", []):
+        status = str(entry.get("status", "needs_review"))
+        if status not in _VALID_STATUSES:
+            raise ValueError(
+                f"manual_resolutions: invalid status {status!r} "
+                f"(must be one of {sorted(_VALID_STATUSES)})"
+            )
         out.append(ManualResolutionReceipt(
             doi=str(entry.get("doi", "")).strip(),
             pmid=str(entry.get("pmid", "")).strip(),
-            decision=str(entry.get("decision", "exclude")),  # type: ignore[arg-type]
+            status=status,  # type: ignore[arg-type]
             reason=str(entry.get("reason", "")),
             evidence_quote=str(entry.get("evidence_quote", "")),
             reviewer=str(entry.get("reviewer", "human")),
-            lane=str(entry.get("lane", "")),  # type: ignore[arg-type]
+            action_required=str(entry.get("action_required", "")),
         ))
     return tuple(out)
 
@@ -96,54 +128,18 @@ def _lookup_study_id(
     return None
 
 
-def _now_utc() -> str:
-    return dt.datetime.now(tz=dt.UTC).isoformat(timespec="seconds")
-
-
-def apply_manual_resolutions(
-    receipts: tuple[EligibilityReceipt, ...],
-    candidates: tuple[CandidateStudy, ...],
+def build_manual_status_overlay(
     resolutions: tuple[ManualResolutionReceipt, ...],
-) -> tuple[tuple[EligibilityReceipt, ...], tuple[str, ...]]:
-    """Replace auto-judged receipts for any candidate matched by a
-    manual resolution. Returns (new_receipts, applied_study_ids).
+    candidates: tuple[CandidateStudy, ...],
+) -> dict[str, ManualResolutionReceipt]:
+    """Index manual resolutions by candidate study_id. Returns a dict
+    so downstream code can ask `overlay.get(study_id)` without iterating.
 
-    A resolution that doesn't match any candidate is silently skipped
-    (caller / orchestrator is responsible for logging the miss)."""
-    by_id: dict[str, EligibilityReceipt] = {r.study_id: r for r in receipts}
-    applied: list[str] = []
+    Resolutions that don't match any candidate are silently skipped; the
+    caller (orchestrator) is responsible for logging the miss."""
+    overlay: dict[str, ManualResolutionReceipt] = {}
     for res in resolutions:
-        study_id = _lookup_study_id(res, candidates)
-        if study_id is None:
-            continue
-        receipt_decision: Literal["include", "exclude", "unclear", "unavailable"]
-        if res.decision == "secondary":
-            receipt_decision = "exclude"
-            reason = f"manual override (secondary lane): {res.reason}"
-        elif res.decision == "unavailable":
-            receipt_decision = "unavailable"
-            reason = f"manual override (unavailable): {res.reason}"
-        else:
-            receipt_decision = res.decision
-            reason = f"manual override ({res.decision}): {res.reason}"
-        by_id[study_id] = EligibilityReceipt(
-            study_id=study_id,
-            decision=receipt_decision,
-            reason=reason,
-            reviewer=res.reviewer,
-            confidence=1.0,
-            mandatory_fields=MappingProxyType({}),
-            evidence_quotes=(res.evidence_quote,) if res.evidence_quote else (),
-            judge_model="(manual)",
-            rule_decision="manual-override",
-            source_text_hash="",
-            timestamp_utc=_now_utc(),
-        )
-        applied.append(study_id)
-    new_receipts = tuple(by_id[r.study_id] for r in receipts)
-    # Add any new manual receipts for candidates that had no prior receipt
-    existing_ids = {r.study_id for r in receipts}
-    for sid in applied:
-        if sid not in existing_ids:
-            new_receipts = (*new_receipts, by_id[sid])
-    return new_receipts, tuple(applied)
+        sid = _lookup_study_id(res, candidates)
+        if sid is not None:
+            overlay[sid] = res
+    return overlay

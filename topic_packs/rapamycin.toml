@@ -133,3 +133,28 @@ primary = [
 prior_meta = [
     "10.1093/gerona/glw153",   # Swindell 2017, J Gerontol - meta of 29 rapamycin experiments
 ]
+
+# --- strict A-core gate (Sprint 7.11) --------------------------------------
+# Quote-content rules that demote auto-judge includes out of A-core into
+# secondary/contextual lanes. A paper earns A-core only if its evidence
+# quotes affirmatively demonstrate the CURRENT experiment used the
+# preferred species + primary intervention + control + endpoint, AND no
+# quote signals a secondary-omics or non-mouse-only design.
+[strict_a_core]
+non_mouse_species_terms = [
+    "c. elegans", "caenorhabditis", "drosophila", "fruit fly", "d. melanogaster",
+    "saccharomyces", "yeast",
+    "marmoset", "rhesus", "primate", "monkey",
+    "human subjects", "human patients", "clinical trial",
+    "zebrafish",
+]
+# Quote-content markers that signal a secondary/omics design rather than
+# a primary lifespan-extension study. If ANY quote contains one, the
+# paper is demoted from A-core to C_secondary_molecular.
+secondary_design_quote_markers = [
+    "proteomic", "transcriptomic", "metabolomic", "lipidomic",
+    "methylation", "methylome", "epigenetic",
+    "dirac", "atlas", "signature", "biomarker",
+    "fatty acid pattern", "fatty-acid pattern",
+    "endolysosom", "s6k", "akt-mtorc2",
+]
