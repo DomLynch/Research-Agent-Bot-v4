@@ -1,0 +1,114 @@
+[
+  {
+    "study_id": "s002",
+    "source_url": "https://doi.org/10.1002/biof.2154",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s003",
+    "source_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/dmrr.2636",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s007",
+    "source_url": "https://link.springer.com/content/pdf/10.1007/s11357-013-9572-5.pdf",
+    "parsed": true,
+    "text_hash": "d976cfafdd3c56df4660a1774dce116759001b36ff64d91b021cc8cd572d157e",
+    "char_count": 24911,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s008",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/8110668",
+    "parsed": true,
+    "text_hash": "aa59ae8ffb074e8a0beb2b82fb2bc0187a0cb857fdfcde2946abbc3b502c842e",
+    "char_count": 11337,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s009",
+    "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10400751/pdf/11357_2023_Article_803.pdf",
+    "parsed": true,
+    "text_hash": "fcec91509759ad995c2cd14bcb26b2720993faf61c29d379b270d442d92290eb",
+    "char_count": 4,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s010",
+    "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11009201/pdf/11357_2024_Article_1067.pdf",
+    "parsed": true,
+    "text_hash": "fcec91509759ad995c2cd14bcb26b2720993faf61c29d379b270d442d92290eb",
+    "char_count": 4,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s011",
+    "source_url": "https://link.springer.com/content/pdf/10.1007/s11357-024-01161-9.pdf",
+    "parsed": true,
+    "text_hash": "77b95194915c9aad3e79759f16046103ff0e7ca1bb8097c57c5a198fc0d93690",
+    "char_count": 38543,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s012",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC12689421",
+    "parsed": true,
+    "text_hash": "bdcec1c5a2e3f82175e88fbba643a100dc607ee8ff8bbcd71485e7ae0abac71b",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s013",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/6895294",
+    "parsed": true,
+    "text_hash": "1b0f316da4ac268e25072f3e36e709b87b661d4999e4f4762046d6a4b48127ef",
+    "char_count": 11337,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s015",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC12013696",
+    "parsed": true,
+    "text_hash": "96f0b7c76201a1e324bd1982890c1cc00b2e8a388396383e45c7f24e46700435",
+    "char_count": 37555,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s016",
+    "source_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/3356510",
+    "parsed": true,
+    "text_hash": "d13d4398095c5ec2a4b58f527571c25ccf4a8c0678d6a008dbd21965bfbd0986",
+    "char_count": 11336,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s019",
+    "source_url": "http://www.cell.com/article/S155041311200366X/pdf",
+    "parsed": false,
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "char_count": 0,
+    "failure_reason": "html fetch failed: HTTPStatusError"
+  },
+  {
+    "study_id": "s022",
+    "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC4095988",
+    "parsed": true,
+    "text_hash": "207ce149c8ac0c4ba97610d00baa6b2470298378aa0422a6eda28436668d4543",
+    "char_count": 80000,
+    "failure_reason": ""
+  },
+  {
+    "study_id": "s023",
+    "source_url": "https://doi.org/10.1016/j.ctro.2024.100875",
+    "parsed": true,
+    "text_hash": "0680e63f2caa47bd9787d20708cc46942fc8bf3a67f54315bd0401932b2ca321",
+    "char_count": 881,
+    "failure_reason": ""
+  }
+]
