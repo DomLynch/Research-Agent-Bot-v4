@@ -52,6 +52,15 @@ _UNIVERSAL_REWRITES: dict[str, str] = {
         "Eligibility screening followed",
     "Data extraction will capture":
         "Data extraction captured",
+    # --- Sprint 30: dual-agent extraction wording -----------------------
+    # Writer template emits "single LLM pass" — inaccurate after Sprints
+    # 28 + 29 wired MiMo Pass-A + Gemma Pass-B + MiMo (with-fallback)
+    # adjudicator. Universal: applies to every topic that runs the
+    # canonical extract_effects.py pipeline.
+    "Effect extraction is performed by a single LLM pass per paper, with a Researka Tier-2 canonical-fact cross-check overlay for numeric precision.":
+        "Effect extraction is performed via independent dual-agent review: a primary MiMo pass and a strict-verify Gemma pass on the same parsed text, with deterministic field-level disagreement detection and MiMo-with-Gemma-fallback adjudication. A Researka Tier-2 canonical-fact cross-check overlay provides downstream numeric-precision validation; the per-study agent-review state is filed in `dual_agent_extraction_audit.json`.",
+    "Effect extraction was performed by a single LLM pass per paper":
+        "Effect extraction was performed via independent dual-agent review (MiMo Pass-A + Gemma Pass-B with adjudicated disagreement resolution)",
     # --- Methods overclaim verbs --------------------------------------
     "Extraction will be performed with independent dual extraction; disagreements will be resolved by consensus or, if necessary, by consulting a third party.":
         "Extraction is performed by a single automated pass over parsed full text under the universal evidence contract; every extraction (study_id, metric, treated/control values, n, evidence quotes, model, timestamps) is filed in `effect_extractions.json`. Independent dual extraction and third-party adjudication are planned for the pre-publication step.",

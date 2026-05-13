@@ -48,14 +48,21 @@ def _parse_reviewer(rv: str) -> tuple[str, str | None, str | None, tuple[str, ..
     if "disagreements=" in rv:
         suffix = rv.split("disagreements=", 1)[1]
         disagreed = tuple(s.strip() for s in suffix.split(",") if s.strip())
+    # Sprint 30: both `agreed:<model_b>` and `adjudicated:<model_b>` and
+    # `adjudicator-failed:<model_b>` carry Pass-B's Gemma model id in the
+    # `:model` slot. Adjudicated tag adds a `;adjudicator=<model>`
+    # segment with the resolver's model (not surfaced as extractor_b).
+    def _model_b_after(prefix: str) -> str | None:
+        if prefix + ":" not in rv:
+            return None
+        return rv.split(prefix + ":", 1)[1].split(";")[0]
+
     if "dual-pass-agreed" in rv:
-        model_b = rv.split("dual-pass-agreed:", 1)[1].split(";")[0] if ":" in rv else None
-        return "agent_agreed", "mimo", model_b, ()
-    if "dual-pass-adjudicated" in rv:
-        model_c = rv.split("dual-pass-adjudicated:", 1)[1].split(";")[0] if ":" in rv else None
-        return "agent_adjudicated", "mimo", model_c, disagreed
+        return "agent_agreed", "mimo", _model_b_after("dual-pass-agreed"), ()
     if "dual-pass-adjudicator-failed" in rv:
-        return "agent_disputed", "mimo", None, disagreed
+        return "agent_disputed", "mimo", _model_b_after("dual-pass-adjudicator-failed"), disagreed
+    if "dual-pass-adjudicated" in rv:
+        return "agent_adjudicated", "mimo", _model_b_after("dual-pass-adjudicated"), disagreed
     if "dual-pass-pass-b-failed" in rv:
         return "pass_b_failed", "mimo", None, ()
     if rv == "extract-cli":

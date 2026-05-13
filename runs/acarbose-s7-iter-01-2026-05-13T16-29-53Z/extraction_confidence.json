@@ -9,7 +9,7 @@
       "confidence": 0.7,
       "needs_human_audit": false,
       "reason": "passes disagreed; adjudicator resolved with quotes",
-      "reviewer": "mimo-dual-pass-adjudicated:mimo-v2.5-pro;disagreements=metric,treated_n,control_n"
+      "reviewer": "mimo-dual-pass-adjudicated:google/gemma-4-31b-it;adjudicator=mimo-v2.5-pro;disagreements=metric"
     }
   ]
 }

@@ -10,14 +10,14 @@
       "study_id": "s043",
       "status": "agent_adjudicated",
       "extractor_a": "mimo",
-      "extractor_b": "mimo-v2.5-pro",
+      "extractor_b": "google/gemma-4-31b-it",
       "field_agreement": {
         "status": true,
         "metric": false,
         "treated_value": true,
         "control_value": true,
-        "treated_n": false,
-        "control_n": false,
+        "treated_n": true,
+        "control_n": true,
         "hazard_ratio": true,
         "hazard_ratio_ci_low": true,
         "hazard_ratio_ci_high": true,
@@ -25,7 +25,7 @@
       },
       "confidence_score": 0.7,
       "blocking_flags": [],
-      "reviewer": "mimo-dual-pass-adjudicated:mimo-v2.5-pro;disagreements=metric,treated_n,control_n"
+      "reviewer": "mimo-dual-pass-adjudicated:google/gemma-4-31b-it;adjudicator=mimo-v2.5-pro;disagreements=metric"
     }
   ]
 }

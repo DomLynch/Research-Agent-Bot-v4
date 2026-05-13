@@ -55,6 +55,33 @@ def test_parse_reviewer_recognises_adjudicator_failed() -> None:
     assert disagreed == ("hazard_ratio",)
 
 
+def test_parse_reviewer_adjudicated_carries_pass_b_model_id_not_adjudicator() -> None:
+    """Sprint 30: the `:model` slot in the adjudicated tag is Pass-B's
+    Gemma model id (so extractor_b attribution is correct). The
+    adjudicator's model lives in a separate `;adjudicator=` segment."""
+    status, ext_a, ext_b, disagreed = _parse_reviewer(
+        "mimo-dual-pass-adjudicated:google/gemma-4-31b-it;"
+        "adjudicator=mimo-v2.5-pro;disagreements=treated_n,control_n"
+    )
+    assert status == "agent_adjudicated"
+    assert ext_a == "mimo"
+    assert ext_b == "google/gemma-4-31b-it"  # Pass-B, NOT adjudicator
+    assert set(disagreed) == {"treated_n", "control_n"}
+
+
+def test_parse_reviewer_adjudicator_failed_carries_pass_b_model_id() -> None:
+    """Sprint 30: same fidelity on the adjudicator-failed path — Pass-B's
+    model survives in the `:model` slot even when the adjudicator dies."""
+    status, ext_a, ext_b, disagreed = _parse_reviewer(
+        "mimo-dual-pass-adjudicator-failed:google/gemma-4-31b-it;"
+        "disagreements=metric"
+    )
+    assert status == "agent_disputed"
+    assert ext_a == "mimo"
+    assert ext_b == "google/gemma-4-31b-it"
+    assert disagreed == ("metric",)
+
+
 def test_parse_reviewer_recognises_pass_b_failed() -> None:
     status, a, b, _ = _parse_reviewer("mimo-dual-pass-pass-b-failed")
     assert status == "pass_b_failed"
