@@ -262,3 +262,106 @@ def test_call_writer_allows_empty_content_with_zero_completion(
     )
     resp = call_writer(settings, [{"role": "user", "content": "hi"}], max_tokens=10)
     assert resp.content == ""
+
+
+# -----------------------------------------------------------------------------
+# Sprint 14 — MiMo → Gemma writer fallback for the runaway pathology.
+# -----------------------------------------------------------------------------
+
+
+def _fallback_settings() -> Any:
+    """Settings wired for both the MiMo writer endpoint and the OpenRouter
+    Gemma fallback endpoint. Both point at the in-process MockTransport;
+    request URL distinguishes which handler answers."""
+    from agent.settings import Settings
+    return Settings(
+        mimo_api_key="k", mimo_base_url="http://mock-mimo/v1",
+        mimo_model="mimo-test", mimo_timeout_sec=5.0,
+        openrouter_api_key="orkey", openrouter_base_url="http://mock-or/api/v1",
+        judge_model="gemma-test", writer_max_retries=0,
+        researka_database_url="", researka_database_token="",
+        ncbi_api_key="", semantic_scholar_api_key="",
+        core_api_key="", crossref_polite_email="", unpaywall_email="",
+        bot_enabled=False, daily_cost_cap_usd=0.0, runs_dir="runs",
+    )
+
+
+def test_call_writer_with_fallback_returns_mimo_when_healthy(
+    install_transport: Any, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Healthy MiMo: fallback is a no-op pass-through; response.model is
+    the bare MiMo model id (no 'fallback' tag)."""
+    from agent.llm_client import call_writer_with_fallback
+    monkeypatch.setattr("agent.llm_client.time.sleep", lambda _s: None)
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        return _ok_response()
+
+    install_transport(handler)
+    resp = call_writer_with_fallback(
+        _fallback_settings(),
+        [{"role": "user", "content": "hi"}], max_tokens=10,
+    )
+    assert resp.content == "ok"
+    assert resp.model == "mimo-test"
+    assert "fallback" not in resp.model
+
+
+def test_call_writer_with_fallback_swaps_to_gemma_on_runaway(
+    install_transport: Any, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """MiMo runs away on all 4 attempts → call_judge is invoked → response
+    is the Gemma reply, with `model` tagged `mimo-runaway-fallback:...`."""
+    from agent.llm_client import call_writer_with_fallback
+    monkeypatch.setattr("agent.llm_client.time.sleep", lambda _s: None)
+    mimo_calls: list[int] = []
+    gemma_calls: list[int] = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        url = str(req.url)
+        if "mock-mimo" in url:
+            mimo_calls.append(1)
+            return httpx.Response(200, json={
+                "choices": [{"message": {"content": ""}}],
+                "usage": {"prompt_tokens": 100, "completion_tokens": 4000},
+            })
+        gemma_calls.append(1)
+        return httpx.Response(200, json={
+            "choices": [{"message": {"content": "gemma-fallback-prose"}}],
+            "usage": {"prompt_tokens": 100, "completion_tokens": 200},
+        })
+
+    install_transport(handler)
+    resp = call_writer_with_fallback(
+        _fallback_settings(),
+        [{"role": "user", "content": "hi"}], max_tokens=10,
+    )
+    assert resp.content == "gemma-fallback-prose"
+    assert resp.model == "mimo-runaway-fallback:gemma-test"
+    assert len(mimo_calls) == 4  # 1 + 3 retries
+    assert len(gemma_calls) == 1
+
+
+def test_call_writer_with_fallback_propagates_non_runaway_runtime_errors(
+    install_transport: Any, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A RuntimeError that isn't the MiMo-runaway pathology (e.g. writer
+    not configured) must propagate — never silently swap to Gemma for a
+    real config / network failure."""
+    from agent.llm_client import call_writer_with_fallback
+    from agent.settings import Settings
+    monkeypatch.setattr("agent.llm_client.time.sleep", lambda _s: None)
+    settings = Settings(
+        mimo_api_key="",  # writer not configured
+        mimo_base_url="", mimo_model="m", mimo_timeout_sec=5.0,
+        openrouter_api_key="orkey", openrouter_base_url="http://mock-or/api/v1",
+        judge_model="g", writer_max_retries=0,
+        researka_database_url="", researka_database_token="",
+        ncbi_api_key="", semantic_scholar_api_key="",
+        core_api_key="", crossref_polite_email="", unpaywall_email="",
+        bot_enabled=False, daily_cost_cap_usd=0.0, runs_dir="runs",
+    )
+    with pytest.raises(RuntimeError, match="Writer not configured"):
+        call_writer_with_fallback(
+            settings, [{"role": "user", "content": "hi"}], max_tokens=10,
+        )
