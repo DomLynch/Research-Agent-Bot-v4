@@ -167,7 +167,18 @@ def _parse_item(item: Any, *, lane: str) -> PaperHit | None:
     title = clean_text(item.get("title"), limit=500)
     if not title:
         return None
-    doi = normalize_doi(item.get("doi") or item.get("paper_id"))
+    # `paper_id` is an alt DOI key on the legacy 3-lane response; `id` on
+    # the Sprint-12.9.B /api/v1/papers/topic response carries a DOI.
+    doi = normalize_doi(
+        item.get("doi") or item.get("paper_id") or item.get("id")
+    )
+    # Venue lookup spans both response shapes:
+    #   - legacy 3-lane: `venue` or `journal`
+    #   - new /papers/topic: `journal_name`
+    venue = clean_text(
+        item.get("venue") or item.get("journal") or item.get("journal_name"),
+        limit=200,
+    ) or None
     return PaperHit(
         source=f"researka:{lane}",
         title=title,
@@ -177,5 +188,5 @@ def _parse_item(item: Any, *, lane: str) -> PaperHit | None:
         or (f"https://doi.org/{doi}" if doi else ""),
         doi=doi,
         pmid=clean_text(item.get("pmid"), limit=32) or None,
-        venue=clean_text(item.get("venue") or item.get("journal"), limit=200) or None,
+        venue=venue,
     )
