@@ -34,22 +34,27 @@ class ResearkaSource:
     def __init__(self, settings: Settings) -> None:
         self._base = settings.researka_database_url.rstrip("/")
         self._token = settings.researka_database_token.strip()
+        # Sprint 12.9: Researka-as-primary-spine bumps the per-call budget
+        # so the spine has 3x the candidates the legacy retmax=100 default
+        # produced. Override via `RESEARKA_SPINE_RETMAX` env var if needed.
+        self._spine_retmax = int(settings.researka_spine_retmax)
 
     @property
     def configured(self) -> bool:
         return bool(self._base) and bool(self._token)
 
     async def search(
-        self, query: str, *, client: httpx.AsyncClient, retmax: int = 100,
+        self, query: str, *, client: httpx.AsyncClient, retmax: int | None = None,
     ) -> list[PaperHit]:
         if not self.configured:
             return []
         # The API takes per-lane caps. Split retmax 4:1:5 so the bulk of
         # the budget goes to the high-precision `established` + semantic
         # lanes, with a slimmer `discovery` allowance.
-        established_k = max(1, retmax * 4 // 10)
-        discovery_k = max(1, retmax // 10)
-        semantic_k = max(1, retmax * 5 // 10)
+        budget = int(retmax) if retmax is not None else self._spine_retmax
+        established_k = max(1, budget * 4 // 10)
+        discovery_k = max(1, budget // 10)
+        semantic_k = max(1, budget * 5 // 10)
         body = {
             "query": clean_text(query, limit=1024),
             "established_k": established_k,

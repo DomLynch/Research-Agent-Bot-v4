@@ -80,6 +80,15 @@ class Settings:
     runs_dir: str
 
     loc_ceiling: int = 7500
+    # Sprint 12.9 Researka-as-primary-spine flags. When `researka_spine_trust`
+    # is true, the eligibility pipeline short-circuits the LLM judge for
+    # candidates tagged with a "researka:*" source (trusting the Tier-1
+    # curation); the universal evidence contract still gates final include.
+    # `researka_spine_retmax` is the per-call total budget across Researka's
+    # three lanes (established/discovery/semantic) — bumped from the default
+    # 100 to give the spine more candidates to draw from.
+    researka_spine_trust: bool = True
+    researka_spine_retmax: int = 300
 
     @property
     def writer_configured(self) -> bool:
@@ -115,4 +124,6 @@ def load_settings() -> Settings:
         bot_enabled=_bool("BOT_ENABLED", True),
         daily_cost_cap_usd=_float("DAILY_COST_CAP_USD", 25.0),
         runs_dir=_env("RUNS_DIR", "runs"),
+        researka_spine_trust=_env("RESEARKA_SPINE_TRUST", "true").lower() != "false",
+        researka_spine_retmax=_int("RESEARKA_SPINE_RETMAX", 300),
     )
