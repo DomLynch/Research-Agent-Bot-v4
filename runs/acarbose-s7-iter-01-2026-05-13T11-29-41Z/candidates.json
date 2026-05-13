@@ -1,0 +1,398 @@
+[
+  {
+    "study_id": "s001",
+    "hit_key": "doi:10.1002/advs.202509444",
+    "title": "Integrative Omics Reveal Female-Specific Benefits of p16",
+    "year": 2026,
+    "venue": "Advanced science (Weinheim, Baden-Wurttemberg, Germany)",
+    "doi": "10.1002/advs.202509444",
+    "pmid": "41168880"
+  },
+  {
+    "study_id": "s002",
+    "hit_key": "doi:10.1007/978-3-642-73583-7_12",
+    "title": "A Preclinical Study on the Effects of Acarbose on Mice Rendered Obese with Gold Thioglucose",
+    "year": 1988,
+    "venue": "Acarbose for the Treatment of Diabetes Mellitus",
+    "doi": "10.1007/978-3-642-73583-7_12",
+    "pmid": null
+  },
+  {
+    "study_id": "s003",
+    "hit_key": "doi:10.1007/978-3-642-73583-7_16",
+    "title": "Effects of Acarbose on Experimental Diabetic Nephropathy, Metabolic Control, and Intestinal Glycosidase Activity in Normal and Genetically Diabetic Mice",
+    "year": 1988,
+    "venue": "Acarbose for the Treatment of Diabetes Mellitus",
+    "doi": "10.1007/978-3-642-73583-7_16",
+    "pmid": null
+  },
+  {
+    "study_id": "s004",
+    "hit_key": "doi:10.1007/s11357-023-00770-0",
+    "title": "Four anti-aging drugs and calorie-restricted diet produce parallel effects in fat, brain, muscle, macrophages, and plasma of young mice.",
+    "year": 2023,
+    "venue": "GeroScience",
+    "doi": "10.1007/s11357-023-00770-0",
+    "pmid": "36920743"
+  },
+  {
+    "study_id": "s005",
+    "hit_key": "doi:10.1007/s11357-023-00917-z",
+    "title": "Proteomic changes induced by longevity-promoting interventions in mice.",
+    "year": 2024,
+    "venue": "GeroScience",
+    "doi": "10.1007/s11357-023-00917-z",
+    "pmid": "37653270"
+  },
+  {
+    "study_id": "s006",
+    "hit_key": "doi:10.1007/s11357-024-01198-w",
+    "title": "A cocktail of rapamycin, acarbose, and phenylbutyrate prevents age-related cognitive decline in mice by targeting multiple aging pathways.",
+    "year": 2024,
+    "venue": null,
+    "doi": "10.1007/s11357-024-01198-w",
+    "pmid": "38755466"
+  },
+  {
+    "study_id": "s007",
+    "hit_key": "doi:10.1007/s11357-024-01337-3",
+    "title": "Acarbose ameliorates Western diet-induced metabolic and cognitive impairments in the 3xTg mouse model of Alzheimer's disease.",
+    "year": 2025,
+    "venue": "GeroScience",
+    "doi": "10.1007/s11357-024-01337-3",
+    "pmid": "39271570"
+  },
+  {
+    "study_id": "s008",
+    "hit_key": "doi:10.1007/s11357-024-01466-9",
+    "title": "Downregulation of the NF-\u03baB protein p65 is a shared phenotype among most anti-aging interventions.",
+    "year": 2025,
+    "venue": "GeroScience",
+    "doi": "10.1007/s11357-024-01466-9",
+    "pmid": "39666139"
+  },
+  {
+    "study_id": "s009",
+    "hit_key": "doi:10.1016/j.intimp.2016.02.001",
+    "title": "Oral administration of acarbose ameliorates imiquimod-induced psoriasis-like dermatitis in a mouse model",
+    "year": 2016,
+    "venue": "International Immunopharmacology",
+    "doi": "10.1016/j.intimp.2016.02.001",
+    "pmid": null
+  },
+  {
+    "study_id": "s010",
+    "hit_key": "doi:10.1016/j.lfs.2023.121904",
+    "title": "Canagliflozin shares common mTOR and MAPK signaling mechanisms with other lifespan extension treatments.",
+    "year": 2023,
+    "venue": "Life sciences",
+    "doi": "10.1016/j.lfs.2023.121904",
+    "pmid": "37406767"
+  },
+  {
+    "study_id": "s011",
+    "hit_key": "doi:10.1038/s41598-022-11229-1",
+    "title": "Short term treatment with a cocktail of rapamycin, acarbose and phenylbutyrate delays aging phenotypes in mice.",
+    "year": 2022,
+    "venue": "Scientific reports",
+    "doi": "10.1038/s41598-022-11229-1",
+    "pmid": "35508491"
+  },
+  {
+    "study_id": "s012",
+    "hit_key": "doi:10.1038/s42003-023-05128-y",
+    "title": "Lifespan-extending interventions induce consistent patterns of fatty acid oxidation in mouse livers.",
+    "year": 2023,
+    "venue": "Communications biology",
+    "doi": "10.1038/s42003-023-05128-y",
+    "pmid": "37481675"
+  },
+  {
+    "study_id": "s013",
+    "hit_key": "doi:10.1038/s42255-023-00815-w",
+    "title": "Acarbose suppresses symptoms of mitochondrial disease in a mouse model of Leigh syndrome.",
+    "year": 2023,
+    "venue": "Nature metabolism",
+    "doi": "10.1038/s42255-023-00815-w",
+    "pmid": "37365290"
+  },
+  {
+    "study_id": "s014",
+    "hit_key": "doi:10.1080/20010001.2019.1657756",
+    "title": "Evaluation of the pharmacokinetics of metformin and acarbose in the common marmoset.",
+    "year": 2019,
+    "venue": "Pathobiology of aging & age related diseases",
+    "doi": "10.1080/20010001.2019.1657756",
+    "pmid": "31497263"
+  },
+  {
+    "study_id": "s015",
+    "hit_key": "doi:10.1093/gerona/glaa302",
+    "title": "Healthy Aging Interventions Reduce Repetitive Element Transcripts.",
+    "year": 2021,
+    "venue": "The journals of gerontology. Series A, Biological sciences and medical sciences",
+    "doi": "10.1093/gerona/glaa302",
+    "pmid": "33257951"
+  },
+  {
+    "study_id": "s016",
+    "hit_key": "doi:10.1093/gerona/glac221",
+    "title": "Early or Late-Life Treatment With Acarbose or Rapamycin Improves Physical Performance and Affects Cardiac Structure in Aging Mice.",
+    "year": 2023,
+    "venue": "The journals of gerontology. Series A, Biological sciences and medical sciences",
+    "doi": "10.1093/gerona/glac221",
+    "pmid": "36342748"
+  },
+  {
+    "study_id": "s017",
+    "hit_key": "doi:10.1093/gerona/glx127",
+    "title": "Sex-dependent Differences in Liver and Gut Metabolomic Profiles With Acarbose and Calorie Restriction in C57BL/6 Mice.",
+    "year": 2018,
+    "venue": "The journals of gerontology. Series A, Biological sciences and medical sciences",
+    "doi": "10.1093/gerona/glx127",
+    "pmid": "28651373"
+  },
+  {
+    "study_id": "s018",
+    "hit_key": "doi:10.1093/gerona/glz177",
+    "title": "Life-span Extension Drug Interventions Affect Adipose Tissue Inflammation in Aging.",
+    "year": 2020,
+    "venue": "The journals of gerontology. Series A, Biological sciences and medical sciences",
+    "doi": "10.1093/gerona/glz177",
+    "pmid": "31353414"
+  },
+  {
+    "study_id": "s019",
+    "hit_key": "doi:10.1093/geroni/igaa057.3271",
+    "title": "Acarbose suppresses symptoms of mitochondrial disease in a mouse model of Leigh Syndrome",
+    "year": 2020,
+    "venue": "Innovation in Aging",
+    "doi": "10.1093/geroni/igaa057.3271",
+    "pmid": null
+  },
+  {
+    "study_id": "s020",
+    "hit_key": "doi:10.1101/2020.05.23.112763",
+    "title": "Canagliflozin Extends Lifespan in Genetically Heterogeneous Male But Not Female Mice",
+    "year": 2020,
+    "venue": "preprint",
+    "doi": "10.1101/2020.05.23.112763",
+    "pmid": null
+  },
+  {
+    "study_id": "s021",
+    "hit_key": "doi:10.1101/2022.01.31.478591",
+    "title": "Acarbose suppresses symptoms of mitochondrial disease in a mouse model of Leigh Syndrome",
+    "year": 2022,
+    "venue": null,
+    "doi": "10.1101/2022.01.31.478591",
+    "pmid": null
+  },
+  {
+    "study_id": "s022",
+    "hit_key": "doi:10.1101/2024.06.27.600472",
+    "title": "Acarbose ameliorates Western diet-induced metabolic and cognitive impairments in the 3xTg mouse model of Alzheimer's disease.",
+    "year": 2024,
+    "venue": "bioRxiv : the preprint server for biology",
+    "doi": "10.1101/2024.06.27.600472",
+    "pmid": "39005334"
+  },
+  {
+    "study_id": "s023",
+    "hit_key": "doi:10.1101/311456",
+    "title": "Changes in the gut microbiota and fermentation products associated with enhanced longevity in acarbose-treated mice",
+    "year": 2018,
+    "venue": "preprint",
+    "doi": "10.1101/311456",
+    "pmid": null
+  },
+  {
+    "study_id": "s024",
+    "hit_key": "doi:10.1111/acel.12170",
+    "title": "Acarbose, 17-\u03b1-estradiol, and nordihydroguaiaretic acid extend mouse lifespan preferentially in males.",
+    "year": 2014,
+    "venue": "Aging cell",
+    "doi": "10.1111/acel.12170",
+    "pmid": "24245565"
+  },
+  {
+    "study_id": "s025",
+    "hit_key": "doi:10.1111/acel.12264",
+    "title": "ATF4 activity: a common feature shared by many kinds of slow-aging mice.",
+    "year": 2014,
+    "venue": "Aging cell",
+    "doi": "10.1111/acel.12264",
+    "pmid": "25156122"
+  },
+  {
+    "study_id": "s026",
+    "hit_key": "doi:10.1111/acel.12496",
+    "title": "Longer lifespan in male mice treated with a weakly estrogenic agonist, an antioxidant, an \u03b1-glucosidase inhibitor or a Nrf2-inducer.",
+    "year": 2016,
+    "venue": "Aging cell",
+    "doi": "10.1111/acel.12496",
+    "pmid": "27312235"
+  },
+  {
+    "study_id": "s027",
+    "hit_key": "doi:10.1111/acel.12590",
+    "title": "Anti-aging drugs reduce hypothalamic inflammation in a sex-specific manner.",
+    "year": 2017,
+    "venue": "Aging cell",
+    "doi": "10.1111/acel.12590",
+    "pmid": "28544365"
+  },
+  {
+    "study_id": "s028",
+    "hit_key": "doi:10.1111/acel.12656",
+    "title": "Sex differences in lifespan extension with acarbose and 17-\u03b1 estradiol: gonadal hormones underlie male-specific improvements in glucose tolerance and mTORC2 signaling.",
+    "year": 2017,
+    "venue": "Aging cell",
+    "doi": "10.1111/acel.12656",
+    "pmid": "28834262"
+  },
+  {
+    "study_id": "s029",
+    "hit_key": "doi:10.1111/acel.12898",
+    "title": "Acarbose improves health and lifespan in aging HET3 mice.",
+    "year": 2019,
+    "venue": "Aging cell",
+    "doi": "10.1111/acel.12898",
+    "pmid": "30688027"
+  },
+  {
+    "study_id": "s030",
+    "hit_key": "doi:10.1111/acel.13088",
+    "title": "Acarbose improved survival for Apc",
+    "year": 2020,
+    "venue": "Aging cell",
+    "doi": "10.1111/acel.13088",
+    "pmid": "31903726"
+  },
+  {
+    "study_id": "s031",
+    "hit_key": "doi:10.1111/acel.13345",
+    "title": "Cap-independent translation: A shared mechanism for lifespan extension by rapamycin, acarbose, and 17\u03b1-estradiol.",
+    "year": 2021,
+    "venue": "Aging cell",
+    "doi": "10.1111/acel.13345",
+    "pmid": "33742521"
+  },
+  {
+    "study_id": "s032",
+    "hit_key": "doi:10.1111/acel.13724",
+    "title": "Lifespan benefits for the combination of rapamycin plus acarbose and for captopril in genetically heterogeneous mice.",
+    "year": 2022,
+    "venue": "Aging cell",
+    "doi": "10.1111/acel.13724",
+    "pmid": "36179270"
+  },
+  {
+    "study_id": "s033",
+    "hit_key": "doi:10.1111/acel.14465",
+    "title": "Drug-Based Lifespan Extension in Mice Strongly Affects Lipids Across Six Organs.",
+    "year": 2025,
+    "venue": "Aging cell",
+    "doi": "10.1111/acel.14465",
+    "pmid": "40129070"
+  },
+  {
+    "study_id": "s034",
+    "hit_key": "doi:10.1136/openhrt-2014-000205",
+    "title": "Acarbose, lente carbohydrate, and prebiotics promote metabolic health and longevity by stimulating intestinal production of GLP-1.",
+    "year": 2015,
+    "venue": "Open heart",
+    "doi": "10.1136/openhrt-2014-000205",
+    "pmid": "25685364"
+  },
+  {
+    "study_id": "s035",
+    "hit_key": "doi:10.1172/jci.insight.140019",
+    "title": "Canagliflozin extends life span in genetically heterogeneous male but not female mice.",
+    "year": 2020,
+    "venue": "JCI insight",
+    "doi": "10.1172/jci.insight.140019",
+    "pmid": "32990681"
+  },
+  {
+    "study_id": "s036",
+    "hit_key": "doi:10.1186/s12866-019-1494-7",
+    "title": "Changes in the gut microbiome and fermentation products concurrent with enhanced longevity in acarbose-treated mice.",
+    "year": 2019,
+    "venue": "BMC microbiology",
+    "doi": "10.1186/s12866-019-1494-7",
+    "pmid": "31195972"
+  },
+  {
+    "study_id": "s037",
+    "hit_key": "doi:10.1186/s12979-022-00264-1",
+    "title": "Rapamycin, Acarbose and 17\u03b1-estradiol share common mechanisms regulating the MAPK pathways involved in intracellular signaling and inflammation.",
+    "year": 2022,
+    "venue": "Immunity & ageing : I & A",
+    "doi": "10.1186/s12979-022-00264-1",
+    "pmid": "35105357"
+  },
+  {
+    "study_id": "s038",
+    "hit_key": "doi:10.14336/ad.2022.0117",
+    "title": "Extension of the Life Span by Acarbose: Is It Mediated by the Gut Microbiota?",
+    "year": 2022,
+    "venue": "Aging and disease",
+    "doi": "10.14336/ad.2022.0117",
+    "pmid": "35855337"
+  },
+  {
+    "study_id": "s039",
+    "hit_key": "doi:10.1515/hmbci-2015-0057",
+    "title": "Practical prospects for boosting hepatic production of the \"pro-longevity\" hormone FGF21.",
+    "year": 2015,
+    "venue": "Hormone molecular biology and clinical investigation",
+    "doi": "10.1515/hmbci-2015-0057",
+    "pmid": "26741352"
+  },
+  {
+    "study_id": "s040",
+    "hit_key": "doi:10.31491/apt.2021.06.060",
+    "title": "The antidiabetic drug acarbose suppresses age-related lesions in C57BL/6 mice in an organ dependent manner.",
+    "year": 2021,
+    "venue": "Aging pathobiology and therapeutics",
+    "doi": "10.31491/apt.2021.06.060",
+    "pmid": "35083454"
+  },
+  {
+    "study_id": "s041",
+    "hit_key": "doi:10.31491/apt.2022.06.086",
+    "title": "Pharmaceutical interventions to slow human aging. Are we ready for cocktails?",
+    "year": 2022,
+    "venue": null,
+    "doi": "10.31491/apt.2022.06.086",
+    "pmid": "36082207"
+  },
+  {
+    "study_id": "s042",
+    "hit_key": "doi:10.4093/dmj.2024.0339",
+    "title": "Anti-Senescence Effect of Inhibiting Sodium-Glucose Cotransporter 2 and \u03b1-Glucosidase in a Type 2 Diabetes Mellitus Animal Model.",
+    "year": 2025,
+    "venue": "Diabetes & metabolism journal",
+    "doi": "10.4093/dmj.2024.0339",
+    "pmid": "40403762"
+  },
+  {
+    "study_id": "s043",
+    "hit_key": "doi:10.64898/2026.04.28.721469",
+    "title": "Acarbose improves cognitive function in a mouse model of normal aging but not Alzheimer's disease.",
+    "year": 2026,
+    "venue": "bioRxiv : the preprint server for biology",
+    "doi": "10.64898/2026.04.28.721469",
+    "pmid": "42094534"
+  },
+  {
+    "study_id": "s044",
+    "hit_key": "title:leveraging the ndufs4-/- mouse as a platform for testing longevity interventions:2022",
+    "title": "LEVERAGING THE NDUFS4-/- MOUSE AS A PLATFORM FOR TESTING LONGEVITY INTERVENTIONS",
+    "year": 2022,
+    "venue": null,
+    "doi": null,
+    "pmid": null
+  }
+]
