@@ -1,0 +1,15 @@
+{
+  "summary": {
+    "total": 1,
+    "by_gate": {
+      "evidence_slot": 1
+    }
+  },
+  "violations": [
+    {
+      "gate": "evidence_slot",
+      "location": "METHODS",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'Extracted variables included the effect size, sample sizes, and the specific metric in original reported units.'"
+    }
+  ]
+}

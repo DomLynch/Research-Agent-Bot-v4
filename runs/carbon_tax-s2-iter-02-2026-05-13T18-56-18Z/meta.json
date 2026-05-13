@@ -1,0 +1,18 @@
+{
+  "topic": "carbon_tax",
+  "iteration": 2,
+  "timestamp_utc": "2026-05-13T18-56-18Z",
+  "model": "mimo-v2.5-pro",
+  "prompt_tokens": 3467,
+  "completion_tokens": 2261,
+  "section_key": "methods",
+  "sections_requested": [
+    "METHODS"
+  ],
+  "sections_parsed": [
+    "METHODS"
+  ],
+  "parse_ok": true,
+  "gate_violations": 0,
+  "gates_by_type": {}
+}

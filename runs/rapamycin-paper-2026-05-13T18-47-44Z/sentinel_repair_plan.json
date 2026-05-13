@@ -1,0 +1,17 @@
+{
+  "clean": false,
+  "k_repair_needed": 1,
+  "entries": [
+    {
+      "sentinel_id": "10.1093/gerona/glw153",
+      "role": "prior_meta",
+      "failure_mode": "no_oa",
+      "bibliography_entry": "Swindell WR. Meta-analysis of 29 experiments evaluating the effects of rapamycin on life span in the laboratory mouse. J Gerontol A Biol Sci Med Sci. 2017;72(8):1024-1032. doi:10.1093/gerona/glw153.",
+      "recommended_actions": [
+        "europe-pmc-full-text",
+        "publisher-direct",
+        "manual-pdf-upload"
+      ]
+    }
+  ]
+}

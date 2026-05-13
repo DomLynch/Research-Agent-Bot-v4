@@ -1,0 +1,54 @@
+[
+  {
+    "study_id": "s098",
+    "topic": "rapamycin",
+    "doi": "10.1038/nature08221",
+    "pmid": "19587680",
+    "source_name": "manual_full_text",
+    "source_path": "topic_packs/manual_full_text/rapamycin/10.1038-nature08221.txt",
+    "file_hash_sha256": "0cc965049100615bcd63e163f2a332384ea9a55900963d1e5a9e14b29b8e00f2",
+    "byte_count": 33468,
+    "retrieved_by": "human-operator",
+    "timestamp_utc": "2026-05-13T18:05:09+00:00",
+    "reason": "auto retrieval (PMC/Unpaywall) failed or returned junk for this sentinel; verbatim full-text supplied by operator under manual_full_text/."
+  },
+  {
+    "study_id": "s142",
+    "topic": "rapamycin",
+    "doi": "10.1093/gerona/glq178",
+    "pmid": "20974732",
+    "source_name": "manual_full_text",
+    "source_path": "topic_packs/manual_full_text/rapamycin/10.1093-gerona-glq178.txt",
+    "file_hash_sha256": "b2d1dcbd2935357fabf221332edfa8eecf2f10b9dfd5cc995a219a03491f6911",
+    "byte_count": 4391,
+    "retrieved_by": "human-operator",
+    "timestamp_utc": "2026-05-13T18:05:09+00:00",
+    "reason": "auto retrieval (PMC/Unpaywall) failed or returned junk for this sentinel; verbatim full-text supplied by operator under manual_full_text/."
+  },
+  {
+    "study_id": "s284",
+    "topic": "rapamycin",
+    "doi": "10.15252/embr.202255299",
+    "pmid": "35796299",
+    "source_name": "manual_full_text",
+    "source_path": "topic_packs/manual_full_text/rapamycin/10.15252-embr.202255299.txt",
+    "file_hash_sha256": "5301b0b1e3e53ddf42094b5b370d3634181acf3499291bb59e651e7db2965773",
+    "byte_count": 4067,
+    "retrieved_by": "human-operator",
+    "timestamp_utc": "2026-05-13T18:05:09+00:00",
+    "reason": "auto retrieval (PMC/Unpaywall) failed or returned junk for this sentinel; verbatim full-text supplied by operator under manual_full_text/."
+  },
+  {
+    "study_id": "s355",
+    "topic": "rapamycin",
+    "doi": "10.7554/elife.16351",
+    "pmid": "27549339",
+    "source_name": "manual_full_text",
+    "source_path": "topic_packs/manual_full_text/rapamycin/10.7554-elife.16351.txt",
+    "file_hash_sha256": "b08668c0e5db7c191c1f534a68c643c72f55b2996e7053a5b1f090750685c1ee",
+    "byte_count": 80239,
+    "retrieved_by": "human-operator",
+    "timestamp_utc": "2026-05-13T18:05:09+00:00",
+    "reason": "auto retrieval (PMC/Unpaywall) failed or returned junk for this sentinel; verbatim full-text supplied by operator under manual_full_text/."
+  }
+]

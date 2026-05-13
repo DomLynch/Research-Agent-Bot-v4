@@ -1,0 +1,22 @@
+{
+  "topic": "carbon_tax",
+  "iteration": 2,
+  "timestamp_utc": "2026-05-13T19-01-04Z",
+  "model": "mimo-runaway-fallback:google/gemma-4-31b-it",
+  "prompt_tokens": 2426,
+  "completion_tokens": 1479,
+  "section_key": "title_abstract_intro",
+  "sections_requested": [
+    "TITLE",
+    "ABSTRACT",
+    "INTRODUCTION"
+  ],
+  "sections_parsed": [
+    "ABSTRACT",
+    "INTRODUCTION",
+    "TITLE"
+  ],
+  "parse_ok": true,
+  "gate_violations": 0,
+  "gates_by_type": {}
+}

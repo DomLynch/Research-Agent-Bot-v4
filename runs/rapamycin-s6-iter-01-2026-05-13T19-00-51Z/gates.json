@@ -1,0 +1,15 @@
+{
+  "summary": {
+    "total": 1,
+    "by_gate": {
+      "evidence_slot": 1
+    }
+  },
+  "violations": [
+    {
+      "gate": "evidence_slot",
+      "location": "LIMITATIONS",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: \"The pipeline's metric-family discipline\u2014pooling 90th-percentile ratios and median ratios separately, without cross-family inference\u2014conse\u2026\""
+    }
+  ]
+}

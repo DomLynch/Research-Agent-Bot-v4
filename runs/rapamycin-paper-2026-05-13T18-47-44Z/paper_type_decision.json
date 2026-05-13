@@ -1,0 +1,21 @@
+{
+  "name": "scoping-review",
+  "rationale": "L4 \u2014 primary set exists but no parseable pool (0 effects); narrative synthesis only.",
+  "recommended_sections": [
+    "Title",
+    "Abstract",
+    "Introduction",
+    "Methods",
+    "Study Selection",
+    "Study Characteristics",
+    "Narrative Synthesis",
+    "Discussion",
+    "Limitations",
+    "Conclusion"
+  ],
+  "forbidden_claims": [
+    "do not pool effects across studies",
+    "do not claim heterogeneity has been quantified",
+    "do not claim certainty-of-evidence grading"
+  ]
+}

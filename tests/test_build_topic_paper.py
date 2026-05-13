@@ -36,6 +36,26 @@ class _FakeProc:
     def __init__(self, returncode: int = 0) -> None:
         self.returncode = returncode
 
+    def wait(self) -> int:
+        """Mimic subprocess.Popen.wait() for Sprint 36 parallel block."""
+        return self.returncode
+
+
+def _install_subprocess_mocks(
+    monkeypatch: pytest.MonkeyPatch, calls: list[list[str]],
+    *, fail_at: int | None = None,
+) -> None:
+    """Sprint 36: parallel runner uses subprocess.Popen for the draft
+    block; sequential runner uses subprocess.run. Patch both so tests
+    don't spawn real processes regardless of code path."""
+    def fake_proc(cmd: list[str], **_: Any) -> _FakeProc:
+        calls.append([str(c) for c in cmd])
+        rc = 1 if fail_at is not None and len(calls) == fail_at else 0
+        return _FakeProc(rc)
+
+    monkeypatch.setattr(subprocess, "run", fake_proc)
+    monkeypatch.setattr(subprocess, "Popen", fake_proc)
+
 
 def _install_runs(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, topic: str) -> Path:
     """Seed tmp_path with an s7 dir and a paper dir so the runner's
@@ -53,32 +73,30 @@ def test_build_runs_all_nine_stages_in_order(
 ) -> None:
     _install_runs(monkeypatch, tmp_path, "rapamycin")
     calls: list[list[str]] = []
-
-    def fake_run(cmd: list[str], **_: Any) -> _FakeProc:
-        calls.append([str(c) for c in cmd])
-        return _FakeProc(0)
-
-    monkeypatch.setattr(subprocess, "run", fake_run)
+    _install_subprocess_mocks(monkeypatch, calls)
     _RUNNER.build("rapamycin", iter_n=1)
     stage_scripts = [Path(c[1]).name for c in calls]
-    assert stage_scripts == [
+    # Sprint 36: draft stages now run in parallel (intro / methods /
+    # discussion / results), so their order within the parallel block
+    # is non-deterministic. Lock the sequence of UNIQUE stages instead.
+    assert stage_scripts[0:3] == [
         "run_eligibility.py", "freeze_primary_set.py", "extract_effects.py",
-        "draft_main.py", "draft_main.py", "build_results.py",
-        "draft_main.py", "stitch_paper.py", "build_supplement.py",
     ]
+    parallel_block = set(stage_scripts[3:-2])
+    assert parallel_block == {"draft_main.py", "build_results.py"}
+    assert stage_scripts[-2:] == ["stitch_paper.py", "build_supplement.py"]
+    # 3 draft_main.py invocations (intro, methods, discussion).
+    assert stage_scripts.count("draft_main.py") == 3
 
 
 def test_build_halts_on_nonzero_exit(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
 ) -> None:
+    """Sequential stages (eligibility, freeze, extract, stitch,
+    supplement) halt the pipeline on non-zero exit."""
     _install_runs(monkeypatch, tmp_path, "rapamycin")
     calls: list[list[str]] = []
-
-    def fake_run(cmd: list[str], **_: Any) -> _FakeProc:
-        calls.append([str(c) for c in cmd])
-        return _FakeProc(1 if len(calls) == 2 else 0)  # freeze fails
-
-    monkeypatch.setattr(subprocess, "run", fake_run)
+    _install_subprocess_mocks(monkeypatch, calls, fail_at=2)  # freeze fails
     with pytest.raises(RuntimeError, match=r"stage 'freeze' exited 1"):
         _RUNNER.build("rapamycin", iter_n=1)
     assert len(calls) == 2  # halt after the failing stage
@@ -89,12 +107,7 @@ def test_build_skip_set_bypasses_named_stages(
 ) -> None:
     _install_runs(monkeypatch, tmp_path, "carbon_tax")
     calls: list[list[str]] = []
-
-    def fake_run(cmd: list[str], **_: Any) -> _FakeProc:
-        calls.append([str(c) for c in cmd])
-        return _FakeProc(0)
-
-    monkeypatch.setattr(subprocess, "run", fake_run)
+    _install_subprocess_mocks(monkeypatch, calls)
     _RUNNER.build(
         "carbon_tax", iter_n=2,
         skip={"eligibility", "freeze", "extract", "supplement"},
@@ -104,7 +117,7 @@ def test_build_skip_set_bypasses_named_stages(
     assert "freeze_primary_set.py" not in scripts
     assert "extract_effects.py" not in scripts
     assert "build_supplement.py" not in scripts
-    # but the drafting + stitching stages still ran
+    # the drafting + stitching stages still ran (parallel + stitch)
     assert scripts.count("draft_main.py") == 3
     assert "stitch_paper.py" in scripts
 
@@ -113,10 +126,7 @@ def test_build_rejects_unknown_skip_stage(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
 ) -> None:
     _install_runs(monkeypatch, tmp_path, "rapamycin")
-    monkeypatch.setattr(
-        subprocess, "run",
-        lambda *_a, **_kw: _FakeProc(0),  # pragma: no cover — never reached
-    )
+    _install_subprocess_mocks(monkeypatch, [])
     with pytest.raises(ValueError, match=r"unknown stage"):
         _RUNNER.build("rapamycin", skip={"polish_writer"})
 
@@ -130,6 +140,31 @@ def test_build_raises_when_eligibility_produces_no_s7_dir(
     runs = tmp_path / "runs"
     runs.mkdir()  # no s7 dir seeded
     monkeypatch.setattr(_RUNNER, "_RUNS", runs)
-    monkeypatch.setattr(subprocess, "run", lambda *_a, **_kw: _FakeProc(0))
+    _install_subprocess_mocks(monkeypatch, [])
     with pytest.raises(RuntimeError, match=r"no runs/.*s7-iter"):
+        _RUNNER.build("rapamycin", iter_n=1)
+
+
+def test_build_parallel_block_raises_on_any_stage_failure(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    """Sprint 36: the parallel-draft block must raise if ANY of the
+    concurrent stages return non-zero. We rig a Popen mock that fails
+    only on the third call (= 1st parallel stage after sequential
+    eligibility + freeze + extract)."""
+    _install_runs(monkeypatch, tmp_path, "rapamycin")
+    calls: list[list[str]] = []
+
+    def fake_run(cmd: list[str], **_: Any) -> _FakeProc:
+        calls.append([str(c) for c in cmd])
+        return _FakeProc(0)  # sequential stages all OK
+
+    def fake_popen(cmd: list[str], **_: Any) -> _FakeProc:
+        calls.append([str(c) for c in cmd])
+        # First parallel-block call fails — every other returns 0.
+        return _FakeProc(1 if len(calls) == 4 else 0)
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    with pytest.raises(RuntimeError, match=r"parallel stages failed"):
         _RUNNER.build("rapamycin", iter_n=1)

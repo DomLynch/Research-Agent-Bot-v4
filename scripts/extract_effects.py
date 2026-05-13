@@ -22,8 +22,11 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import sys
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any
@@ -269,65 +272,69 @@ def main() -> int:
             )
             return 5
 
-    receipts: list[ExtractionReceipt] = []
-    t0 = time.time()
-    for entry in a_core:
+    # Sprint 36: per-study extraction runs in parallel via
+    # ThreadPoolExecutor. Each study's Pass-A + dual-pass is independent
+    # so we can bound on EXTRACT_CONCURRENCY (default 3) — well within
+    # MiMo + OpenRouter QPS limits. Cuts k=4 extract from ~10 min
+    # sequential to ~3-4 min parallel; scales with k.
+    def _extract_one(entry: dict[str, Any]) -> ExtractionReceipt:
         sid = entry["study_id"]
-        if sid in done_ids:
-            continue
         title = entry.get("title") or ""
         text_path = parsed_text_dir / f"{sid}.txt"
         parsed_text = _read_text(text_path)
         if not parsed_text:
-            r = _placeholder_receipt(
+            return _placeholder_receipt(
                 sid, f"no persisted parsed text at {text_path}; "
                 f"re-run run_eligibility.py to repopulate parsed_text/",
             )
-        elif args.dry_run:
-            r = _dry_run_receipt(sid)
-        else:
-            assert settings is not None
-            messages = build_extraction_prompt(pack, sid, title, parsed_text)
-            # One transient retry at slightly higher temperature when the
-            # first attempt fails to return parseable JSON (observed on
-            # large excerpts where MIMO occasionally returns a non-JSON
-            # refusal or empty content at temp=0). Determinism break costs
-            # one extra call only when the first fails.
-            r = _placeholder_receipt(sid, "extraction not yet attempted")
-            for attempt, temp in ((1, args.temperature), (2, max(args.temperature, 0.2))):
-                try:
-                    resp = call_writer(settings, messages, temperature=temp)
-                    parsed = parse_extraction_response(resp.content)
-                    text_hash = parsed_receipts.get(sid, {}).get("text_hash", "")
-                    r = receipt_from_response(
-                        parsed, study_id=sid, text_hash=text_hash,
-                        reviewer=f"mimo:{resp.model}", timestamp_utc=_now_utc(),
-                    )
-                    break
-                except (ValueError, OSError, RuntimeError) as e:
-                    if attempt == 2:
-                        r = _placeholder_receipt(
-                            sid, f"extraction error after 2 attempts: {e}",
-                        )
-            # Sprint 12.9 Task C: dual-pass extraction. After the primary
-            # pass (above) lands an extracted receipt, run an independent
-            # strict-verify pass and adjudicate any pool-critical
-            # disagreement. Skip when Pass-A already failed (no benefit)
-            # or when the operator opted out via EXTRACTION_DUAL_PASS=false.
-            if (settings.extraction_dual_pass and r.status == "extracted"):
-                r = _run_dual_pass(
-                    primary=r, pack=pack, study_id=sid, title=title,
-                    parsed_text=parsed_text, settings=settings,
-                    text_hash=parsed_receipts.get(sid, {}).get("text_hash", ""),
-                    temperature=args.temperature,
+        if args.dry_run:
+            return _dry_run_receipt(sid)
+        assert settings is not None
+        messages = build_extraction_prompt(pack, sid, title, parsed_text)
+        r = _placeholder_receipt(sid, "extraction not yet attempted")
+        for attempt, temp in ((1, args.temperature), (2, max(args.temperature, 0.2))):
+            try:
+                resp = call_writer(settings, messages, temperature=temp)
+                parsed = parse_extraction_response(resp.content)
+                text_hash = parsed_receipts.get(sid, {}).get("text_hash", "")
+                r = receipt_from_response(
+                    parsed, study_id=sid, text_hash=text_hash,
+                    reviewer=f"mimo:{resp.model}", timestamp_utc=_now_utc(),
                 )
-        receipts.append(r)
-        with checkpoint.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps(_receipt_to_dict(r)) + "\n")
-            fh.flush()
-        contract = validate_extraction(r, pack)
-        flag = "PASS" if contract.passes else f"FAIL({len(contract.violations)})"
-        print(f"[extract] {sid:>6}  status={r.status:<13} contract={flag}")
+                break
+            except (ValueError, OSError, RuntimeError) as e:
+                if attempt == 2:
+                    r = _placeholder_receipt(
+                        sid, f"extraction error after 2 attempts: {e}",
+                    )
+        if settings.extraction_dual_pass and r.status == "extracted":
+            r = _run_dual_pass(
+                primary=r, pack=pack, study_id=sid, title=title,
+                parsed_text=parsed_text, settings=settings,
+                text_hash=parsed_receipts.get(sid, {}).get("text_hash", ""),
+                temperature=args.temperature,
+            )
+        return r
+
+    pending = [e for e in a_core if e["study_id"] not in done_ids]
+    receipts: list[ExtractionReceipt] = []
+    t0 = time.time()
+    workers = int(os.environ.get("EXTRACT_CONCURRENCY", "3"))
+    workers = max(1, min(workers, len(pending) or 1))
+    checkpoint_lock = threading.Lock()
+    print(f"[extract] processing {len(pending)} study/studies "
+          f"in {workers} parallel worker(s)")
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        futures = {ex.submit(_extract_one, e): e["study_id"] for e in pending}
+        for fut in as_completed(futures):
+            r = fut.result()
+            receipts.append(r)
+            with checkpoint_lock, checkpoint.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(_receipt_to_dict(r)) + "\n")
+                fh.flush()
+            contract = validate_extraction(r, pack)
+            flag = "PASS" if contract.passes else f"FAIL({len(contract.violations)})"
+            print(f"[extract] {r.study_id:>6}  status={r.status:<13} contract={flag}")
 
     # Merge with prior checkpoint receipts (resume case).
     all_receipts: list[dict[str, Any]] = []

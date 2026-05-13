@@ -1,0 +1,13 @@
+{
+  "topic": "rapamycin",
+  "k_hits": 1004,
+  "k_screened": 1004,
+  "k_candidates": 378,
+  "k_eligible": 0,
+  "k_outcomes": 0,
+  "k_effects": 0,
+  "k_packets": 1,
+  "packet_ids": [
+    "study_selection"
+  ]
+}

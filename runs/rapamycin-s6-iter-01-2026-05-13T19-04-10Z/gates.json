@@ -1,0 +1,15 @@
+{
+  "summary": {
+    "total": 1,
+    "by_gate": {
+      "evidence_slot": 1
+    }
+  },
+  "violations": [
+    {
+      "gate": "evidence_slot",
+      "location": "DISCUSSION",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'Critical boundary conditions that moderate the lifespan effect\u2014including murine genetic background, sex, administered dose, treatment tim\u2026'"
+    }
+  ]
+}

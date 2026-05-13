@@ -1,0 +1,25 @@
+{
+  "summary": {
+    "total": 3,
+    "by_gate": {
+      "scope_consistency": 3
+    }
+  },
+  "violations": [
+    {
+      "gate": "scope_consistency",
+      "location": "INTRODUCTION",
+      "message": "Discouraged scope term 'vertebrate'; prefer ['murine', 'mouse', 'mice']: '\u2026to include a broader range of vertebrate models, providing a high-leve\u2026'"
+    },
+    {
+      "gate": "scope_consistency",
+      "location": "INTRODUCTION",
+      "message": "Discouraged scope term 'rodent'; prefer ['murine', 'mouse', 'mice']: '\u2026, the analysis excludes other rodent species, such as rats, to avo\u2026'"
+    },
+    {
+      "gate": "scope_consistency",
+      "location": "INTRODUCTION",
+      "message": "Discouraged scope term 'rats'; prefer ['murine', 'mouse', 'mice']: '\u2026other rodent species, such as rats, to avoid the confounding eff\u2026'"
+    }
+  ]
+}

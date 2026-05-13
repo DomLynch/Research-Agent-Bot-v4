@@ -1,0 +1,3 @@
+=== DISCUSSION ===
+
+This scoping review mapped the available evidence on rapamycin (sirolimus) administration and murine lifespan outcomes. [PACKET:primary_effect] reports k_studies = 0 contract-passing effects within the primary corpus after automated adjudication, precluding quantitative pooling at this iteration. The pipeline's universal evidence-contract gate requires parsed-text adequacy, minimum character counts, at least two non-title evidence quotes, and verified endpoint plus intervention–control coverage; its A-core per-quote audit further demands that quotes affirm the declared murine study system

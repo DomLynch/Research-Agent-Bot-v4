@@ -1,0 +1,31 @@
+{
+  "summary": {
+    "total": 4,
+    "by_gate": {
+      "evidence_slot": 1,
+      "scope_consistency": 3
+    }
+  },
+  "violations": [
+    {
+      "gate": "evidence_slot",
+      "location": "INTRODUCTION",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'Understanding the precise boundary conditions under which rapamycin extends lifespan is essential for translating these findings from con\u2026'"
+    },
+    {
+      "gate": "scope_consistency",
+      "location": "INTRODUCTION",
+      "message": "Discouraged scope term 'vertebrate'; prefer ['murine', 'mouse', 'mice']: '\u2026to include a broader range of vertebrate species, providing a high-lev\u2026'"
+    },
+    {
+      "gate": "scope_consistency",
+      "location": "INTRODUCTION",
+      "message": "Discouraged scope term 'mammalian'; prefer ['murine', 'mouse', 'mice']: '\u2026, the analysis excludes other mammalian or vertebrate species, focusi\u2026'"
+    },
+    {
+      "gate": "scope_consistency",
+      "location": "INTRODUCTION",
+      "message": "Discouraged scope term 'vertebrate'; prefer ['murine', 'mouse', 'mice']: '\u2026s excludes other mammalian or vertebrate species, focusing exclusively\u2026'"
+    }
+  ]
+}

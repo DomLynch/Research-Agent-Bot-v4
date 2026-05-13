@@ -1,0 +1,20 @@
+{
+  "summary": {
+    "total": 2,
+    "by_gate": {
+      "evidence_slot": 2
+    }
+  },
+  "violations": [
+    {
+      "gate": "evidence_slot",
+      "location": "DISCUSSION",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'Therefore, the present iteration does not report a pooled effect size, hazard ratio, or percent extension.'"
+    },
+    {
+      "gate": "evidence_slot",
+      "location": "DISCUSSION",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'Several boundary conditions likely moderate the observed effect of a carbon tax, yet their influence remains underdetermined in the curre\u2026'"
+    }
+  ]
+}

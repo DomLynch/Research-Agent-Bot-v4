@@ -1,0 +1,41 @@
+{
+  "summary": {
+    "total": 6,
+    "by_gate": {
+      "evidence_slot": 5,
+      "scope_consistency": 1
+    }
+  },
+  "violations": [
+    {
+      "gate": "evidence_slot",
+      "location": "DISCUSSION",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'Therefore, the corpus provides narrative but not pooled quantitative support for the hypothesis that rapamycin intervention alters murine\u2026'"
+    },
+    {
+      "gate": "evidence_slot",
+      "location": "DISCUSSION",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'Any interpretation of effect size or consistency from the primary corpus must be tempered by this low study count.'"
+    },
+    {
+      "gate": "evidence_slot",
+      "location": "DISCUSSION",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'The alignment with prior syntheses regarding the direction of a lifespan effect cannot be formally tested here due to the small k, but th\u2026'"
+    },
+    {
+      "gate": "evidence_slot",
+      "location": "DISCUSSION",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'The pipeline is designed for moderator analysis via mixed-effects meta-regression, but this capability is deferred until a larger corpus \u2026'"
+    },
+    {
+      "gate": "evidence_slot",
+      "location": "CONCLUSION",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'The current evidence corpus mapped by this automated pipeline supports a narrative pattern consistent with prior reports that rapamycin a\u2026'"
+    },
+    {
+      "gate": "scope_consistency",
+      "location": "DISCUSSION",
+      "message": "Discouraged scope term 'vertebrate'; prefer ['murine', 'mouse', 'mice']: '\u2026gevity  . A more recent cross-vertebrate meta-analysis also includes m\u2026'"
+    }
+  ]
+}

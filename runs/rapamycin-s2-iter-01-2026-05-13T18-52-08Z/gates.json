@@ -1,0 +1,26 @@
+{
+  "summary": {
+    "total": 3,
+    "by_gate": {
+      "evidence_slot": 2,
+      "length": 1
+    }
+  },
+  "violations": [
+    {
+      "gate": "evidence_slot",
+      "location": "METHODS",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'Outcome: reported lifespan data in the form of median survival, mean lifespan, hazard ratio, or percent change in survival relative to co\u2026'"
+    },
+    {
+      "gate": "evidence_slot",
+      "location": "METHODS",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'From each included paper the pipeline extracts: the reported effect size (percent change in median lifespan, mean lifespan difference, or\u2026'"
+    },
+    {
+      "gate": "length",
+      "location": "METHODS",
+      "message": "METHODS is 1319 words (cap 1200)"
+    }
+  ]
+}
