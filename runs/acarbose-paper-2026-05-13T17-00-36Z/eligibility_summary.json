@@ -1,0 +1,22 @@
+{
+  "topic": "acarbose",
+  "iter": 1,
+  "timestamp_utc": "2026-05-13T16-29-53Z",
+  "k_hits": 592,
+  "k_candidates": 51,
+  "k_full_text_located": 45,
+  "k_parsed_with_text": 21,
+  "triage_labels": {
+    "unclear": 9,
+    "eligible_likely": 12
+  },
+  "final_decisions": {
+    "exclude": 13,
+    "unclear": 3,
+    "include": 5
+  },
+  "k_eligible": 5,
+  "contract_violations": 0,
+  "dry_run": false,
+  "judge_model": "google/gemma-4-31b-it"
+}

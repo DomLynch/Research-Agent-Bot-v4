@@ -1,0 +1,31 @@
+{
+  "k_total": 1,
+  "k_agent_agreed": 0,
+  "k_agent_adjudicated": 1,
+  "k_single_pass": 0,
+  "k_blocking": 0,
+  "audit_threshold": 0.6,
+  "entries": [
+    {
+      "study_id": "s043",
+      "status": "agent_adjudicated",
+      "extractor_a": "mimo",
+      "extractor_b": "mimo-v2.5-pro",
+      "field_agreement": {
+        "status": true,
+        "metric": false,
+        "treated_value": true,
+        "control_value": true,
+        "treated_n": false,
+        "control_n": false,
+        "hazard_ratio": true,
+        "hazard_ratio_ci_low": true,
+        "hazard_ratio_ci_high": true,
+        "percent_change": true
+      },
+      "confidence_score": 0.7,
+      "blocking_flags": [],
+      "reviewer": "mimo-dual-pass-adjudicated:mimo-v2.5-pro;disagreements=metric,treated_n,control_n"
+    }
+  ]
+}

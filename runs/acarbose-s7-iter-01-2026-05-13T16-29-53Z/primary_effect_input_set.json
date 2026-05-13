@@ -1,0 +1,85 @@
+{
+  "_doc": "Legacy lane-classifier-only view (kept for audit). Sprint 8 effect-size extraction MUST consume primary_effect_input_set_strict.json instead \u2014 that file applies the universal evidence contract uniformly.",
+  "canonical_for_sprint_8": false,
+  "topic": "acarbose",
+  "run_id": "acarbose-s7-iter-01-2026-05-13T16-29-53Z",
+  "frozen_at_utc": "2026-05-13T16:31:16+00:00",
+  "lane_counts": {
+    "A_direct_lifespan": 4,
+    "B_disease_model_survival": 1,
+    "C_secondary_molecular": 0,
+    "D_review_background": 0,
+    "E_exclude": 0
+  },
+  "accepted_lanes": [
+    "A_direct_lifespan"
+  ],
+  "k_studies_frozen": 4,
+  "manual_exclusions": [],
+  "studies": [
+    {
+      "study_id": "s015",
+      "title": "Lifespan-extending interventions induce consistent patterns of fatty acid oxidation in mouse livers.",
+      "doi": "10.1038/s42003-023-05128-y",
+      "pmid": "37481675",
+      "year": 2023,
+      "venue": "Communications biology",
+      "lane": "A_direct_lifespan",
+      "char_count": 80000,
+      "evidence_quotes": [
+        "In this LC-M001 experiment, 48 mice were either untreated (Control) or subjected to one of three lifespan- extending drug treatments (ACA, 17aE2, or Rapa)",
+        "ACA, 17aE2, and Rapa showed signi\ufb01cantly higher RCI median in the examined modules compared to Control (Fig. 2a, Supplementary Fig. 1a), suggesting general tightening of module pro\ufb01les by each of these lifespan-extending interventions."
+      ],
+      "contract_pass": true,
+      "manually_excluded": false
+    },
+    {
+      "study_id": "s018",
+      "title": "Healthy Aging Interventions Reduce Repetitive Element Transcripts.",
+      "doi": "10.1093/gerona/glaa302",
+      "pmid": "33257951",
+      "year": 2021,
+      "venue": "The journals of gerontology. Series A, Biological sciences and medical sciences",
+      "lane": "A_direct_lifespan",
+      "char_count": 35315,
+      "evidence_quotes": [
+        "we analyze REs in RNA-seq datasets from mice subjected to robust healthspan- and lifespan-increasing interventions including calorie restriction, rapamycin, acarbose, 17-\u03b1-estradiol, and Protandim.",
+        "both long-term rapamycin and acarbose treatments were associated with a comparable, broad reduction in RE transcripts ( Figure 1B )"
+      ],
+      "contract_pass": true,
+      "manually_excluded": false
+    },
+    {
+      "study_id": "s037",
+      "title": "Acarbose improved survival for Apc",
+      "doi": "10.1111/acel.13088",
+      "pmid": "31903726",
+      "year": 2020,
+      "venue": "Aging cell",
+      "lane": "A_direct_lifespan",
+      "char_count": 54678,
+      "evidence_quotes": [
+        "we fed two doses of acarbose to Apc +/Min mice.",
+        "We found that ACA improved median survival of Apc +/Min mice by 15.2% (Figure 1 a, p = .045)"
+      ],
+      "contract_pass": true,
+      "manually_excluded": false
+    },
+    {
+      "study_id": "s043",
+      "title": "Changes in the gut microbiome and fermentation products concurrent with enhanced longevity in acarbose-treated mice.",
+      "doi": "10.1186/s12866-019-1494-7",
+      "pmid": "31195972",
+      "year": 2019,
+      "venue": "BMC microbiology",
+      "lane": "A_direct_lifespan",
+      "char_count": 80000,
+      "evidence_quotes": [
+        "we compared the fecal microbiome of mice treated with acarbose to control mice at three independent study sites.",
+        "Across all three sites, ACA increased the median male survival of the under- lying study population by 17% from 830 to 975 days (log-rank test P < 0.001, see Fig. 1)."
+      ],
+      "contract_pass": true,
+      "manually_excluded": false
+    }
+  ]
+}

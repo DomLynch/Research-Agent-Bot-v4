@@ -42,7 +42,7 @@ from agent.effect_extraction import (
     validate_extraction,
 )
 from agent.effect_pooling import compile_pool
-from agent.llm_client import call_judge, call_writer
+from agent.llm_client import call_judge, call_writer, call_writer_with_fallback
 from agent.settings import load_settings
 from agent.topic_pack import load_topic_pack
 
@@ -144,16 +144,24 @@ def _run_dual_pass(
     # Adjudicator call. Bounded to ONE attempt: if the adjudicator
     # itself fails to return parseable JSON, we keep Pass-A as the
     # default (it ran first and feeds the existing pool path).
+    # Sprint 29: route through call_writer_with_fallback so MiMo
+    # runaway on the adjudicator prompt automatically falls back to
+    # Gemma — same protection Sprint 14 wired on the primary writer.
     try:
         adj_msg = build_adjudicator_prompt(
             primary, pass_b, disagreements, parsed_text,
         )
-        adj_resp = call_writer(settings, adj_msg, temperature=temperature)
+        adj_resp = call_writer_with_fallback(settings, adj_msg, temperature=temperature)
         adj_parsed = parse_extraction_response(adj_resp.content)
         return receipt_from_response(
             adj_parsed, study_id=study_id, text_hash=text_hash,
+            # Sprint 30: the `:model_b` slot carries Pass-B's (Gemma)
+            # model id so the Sprint 27 dual_agent audit attributes
+            # extractor_b correctly. Adjudicator model is recorded in a
+            # separate `adjudicator=` segment.
             reviewer=(
-                f"mimo-dual-pass-adjudicated:{adj_resp.model};"
+                f"mimo-dual-pass-adjudicated:{b_resp.model};"
+                f"adjudicator={adj_resp.model};"
                 f"disagreements={','.join(disagreements)}"
             ),
             timestamp_utc=_now_utc(),
@@ -161,7 +169,7 @@ def _run_dual_pass(
     except (ValueError, OSError, RuntimeError):
         return _retag(
             primary, reviewer=(
-                f"mimo-dual-pass-adjudicator-failed;"
+                f"mimo-dual-pass-adjudicator-failed:{b_resp.model};"
                 f"disagreements={','.join(disagreements)}"
             ),
         )

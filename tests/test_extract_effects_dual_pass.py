@@ -241,14 +241,17 @@ def test_dual_pass_adjudicator_runs_when_passes_disagree(
         )
 
     monkeypatch.setattr(_EX, "call_judge", disagreeing_judge)
-    monkeypatch.setattr(_EX, "call_writer", adjudicating_writer)
+    # Sprint 29: the adjudicator now goes through call_writer_with_fallback
+    # so MiMo-runaway protection covers the adjudicator path too. Patch
+    # that name (not bare call_writer).
+    monkeypatch.setattr(_EX, "call_writer_with_fallback", adjudicating_writer)
 
     result = _EX._run_dual_pass(
         primary=_primary_receipt(), pack=_pack_stub(),
         study_id="s01", title="T", parsed_text="x",
         settings=_settings_stub(), text_hash="h", temperature=0.3,
     )
-    assert len(judge_calls) == 1   # Pass-B
-    assert len(writer_calls) == 1  # adjudicator
+    assert len(judge_calls) == 1   # Pass-B (Gemma)
+    assert len(writer_calls) == 1  # adjudicator (MiMo, via with-fallback wrapper)
     assert result.reviewer.startswith("mimo-dual-pass-adjudicated:")
     assert "disagreements=" in result.reviewer

@@ -1,0 +1,15 @@
+{
+  "k_total": 1,
+  "k_needs_audit": 0,
+  "mean_confidence": 0.7,
+  "audit_threshold": 0.6,
+  "entries": [
+    {
+      "study_id": "s043",
+      "confidence": 0.7,
+      "needs_human_audit": false,
+      "reason": "passes disagreed; adjudicator resolved with quotes",
+      "reviewer": "mimo-dual-pass-adjudicated:mimo-v2.5-pro;disagreements=metric,treated_n,control_n"
+    }
+  ]
+}

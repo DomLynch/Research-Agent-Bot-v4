@@ -1,0 +1,25 @@
+{
+  "topic": "acarbose",
+  "paper_dir_name": "acarbose-paper-2026-05-13T17-00-36Z",
+  "readiness_level": 4,
+  "readiness_label": "no-pooled-effects",
+  "cite_audit_clean": true,
+  "paper_type": "scoping-review",
+  "manual_audits_count": 0,
+  "studies": [
+    {
+      "study_id": "s043",
+      "metric": "median_survival_days",
+      "treated_value": 975.0,
+      "control_value": 830.0,
+      "treated_n": null,
+      "control_n": null,
+      "percent_change": 17.0,
+      "hazard_ratio": null,
+      "evidence_quotes": [],
+      "reviewer": "mimo-dual-pass-adjudicated:mimo-v2.5-pro;disagreements=metric,treated_n,control_n",
+      "extraction_status": "extracted"
+    }
+  ],
+  "claims": []
+}

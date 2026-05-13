@@ -1,0 +1,21 @@
+{
+  "summary": {
+    "total": 2,
+    "by_gate": {
+      "evidence_slot": 1,
+      "citation_density": 1
+    }
+  },
+  "violations": [
+    {
+      "gate": "evidence_slot",
+      "location": "ABSTRACT",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'Findings will indicate whether future research should prioritize high-dose titration in specific genetic backgrounds or if the effect is \u2026'"
+    },
+    {
+      "gate": "citation_density",
+      "location": "INTRODUCTION",
+      "message": "INTRODUCTION cites every 33.0 words (26 brackets / 857 words); minimum 45 words/bracket"
+    }
+  ]
+}
