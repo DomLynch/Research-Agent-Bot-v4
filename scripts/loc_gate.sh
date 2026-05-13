@@ -11,7 +11,10 @@
 # canonical anchor papers actionable instead of unspoken)
 # -> 7900 (Sprint 19 extraction confidence: derives per-study 0..1
 # confidence + needs_human_audit flag from dual-pass provenance —
-# prevents low-confidence extractions sliding into the pool silent).
+# prevents low-confidence extractions sliding into the pool silent)
+# -> 8000 (Sprint 20 manual-audit overlay: per-run JSON capturing
+# human decisions on flagged extractions + sentinels — turns Sprint
+# 18 + 19 fail-states into closable audit-trail items).
 # Every new module under the higher cap must delete or prevent a
 # fake-evidence failure mode (receipts, validators, provenance, typed
 # contracts), not buy prose polish or speculative abstraction.
