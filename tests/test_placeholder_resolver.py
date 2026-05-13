@@ -15,7 +15,11 @@ from agent.placeholder_resolver import resolve_placeholders
 from agent.topic_pack import TopicPack
 
 
-def _pack(placeholders: dict[str, str]) -> TopicPack:
+def _pack(
+    placeholders: dict[str, str],
+    *,
+    preferred_metric_families: tuple[str, ...] = (),
+) -> TopicPack:
     return TopicPack(
         topic="t", display_name="T", primary_system="",
         preferred_terms=(), discouraged_terms=(),
@@ -34,6 +38,7 @@ def _pack(placeholders: dict[str, str]) -> TopicPack:
         sentinel_primary=(), sentinel_prior_meta=(),
         non_mouse_species_terms=(),
         secondary_design_quote_markers=(),
+        preferred_metric_families=preferred_metric_families,
         references_bibliography=MappingProxyType({}),
         placeholders=MappingProxyType(placeholders),
         methods_honesty_rewrites=MappingProxyType({}),
@@ -233,6 +238,101 @@ def test_incomplete_recovery_renders_none_when_all_extracted() -> None:
         pack=_pack({}), extractions=extractions,
     )
     assert out.body == "Incomplete: (none)."
+
+
+def test_a_core_not_pooled_reasons_labels_each_id_with_its_own_reason() -> None:
+    """Sprint 12.8.3 — per-study skip reason must come from each
+    receipt, not a generic concatenated suffix. s288 has
+    status='parse_failed' and must be labelled 'parse_failed' alone —
+    never 'parse_failed / off-modal-metric / no_numerics' which would
+    falsely impute reasons that apply to other studies."""
+    strict = {"A_core_direct_lifespan": [
+        {"study_id": "s126"}, {"study_id": "s235"}, {"study_id": "s288"},
+    ]}
+    pool = {"effects": [{"study_id": "s126"}, {"study_id": "s235"}]}
+    extractions = {"receipts": [
+        {"study_id": "s126", "status": "extracted",
+         "metric": "median_lifespan_days",
+         "treated_n": 318, "control_n": 313},
+        {"study_id": "s235", "status": "extracted",
+         "metric": "median_lifespan_days",
+         "treated_n": 23, "control_n": 23},
+        {"study_id": "s288", "status": "parse_failed", "metric": ""},
+    ]}
+    out = resolve_placeholders(
+        "Unpoolable: [A_CORE_NOT_POOLED_REASONS].",
+        summary={}, strict=strict,
+        pack=_pack({}, preferred_metric_families=("median_lifespan",)),
+        extractions=extractions, pool=pool,
+    )
+    assert out.body == "Unpoolable: s288: parse_failed."
+
+
+def test_a_core_not_pooled_reasons_distinguishes_off_modal_from_parse_failed() -> None:
+    """If two unpooled A-core records exist with different reasons —
+    one parse_failed, one extracted-but-off-modal-metric — the prose
+    must report each accurately, not concatenate all possible reasons."""
+    strict = {"A_core_direct_lifespan": [
+        {"study_id": "sA"}, {"study_id": "sB"}, {"study_id": "sC"},
+    ]}
+    pool = {"effects": [{"study_id": "sA"}]}
+    extractions = {"receipts": [
+        {"study_id": "sA", "status": "extracted",
+         "metric": "median_lifespan_days",
+         "treated_n": 30, "control_n": 30},
+        {"study_id": "sB", "status": "parse_failed", "metric": ""},
+        {"study_id": "sC", "status": "extracted",
+         "metric": "maximum_lifespan",
+         "treated_n": 30, "control_n": 30},
+    ]}
+    out = resolve_placeholders(
+        "Unpoolable: [A_CORE_NOT_POOLED_REASONS].",
+        summary={}, strict=strict,
+        pack=_pack({}, preferred_metric_families=("median_lifespan",)),
+        extractions=extractions, pool=pool,
+    )
+    assert out.body == "Unpoolable: sB: parse_failed, sC: off-modal-metric."
+
+
+def test_a_core_not_pooled_reasons_flags_no_numerics_when_n_missing() -> None:
+    """An extracted receipt on a preferred metric family but missing
+    treated_n / control_n is unpoolable via inverse-variance — label
+    that as 'no_numerics', not 'off-modal-metric' (which describes a
+    different defect)."""
+    strict = {"A_core_direct_lifespan": [
+        {"study_id": "sX"}, {"study_id": "sY"},
+    ]}
+    pool = {"effects": [{"study_id": "sX"}]}
+    extractions = {"receipts": [
+        {"study_id": "sX", "status": "extracted",
+         "metric": "median_lifespan_days",
+         "treated_n": 30, "control_n": 30},
+        {"study_id": "sY", "status": "extracted",
+         "metric": "median_lifespan_days",
+         "treated_n": None, "control_n": None},
+    ]}
+    out = resolve_placeholders(
+        "Unpoolable: [A_CORE_NOT_POOLED_REASONS].",
+        summary={}, strict=strict,
+        pack=_pack({}, preferred_metric_families=("median_lifespan",)),
+        extractions=extractions, pool=pool,
+    )
+    assert out.body == "Unpoolable: sY: no_numerics."
+
+
+def test_a_core_not_pooled_reasons_renders_none_when_all_pooled() -> None:
+    """When every A-core record made it into the pool, the token
+    must render '(none)' — not leave the prose with a dangling label."""
+    strict = {"A_core_direct_lifespan": [
+        {"study_id": "s126"}, {"study_id": "s235"},
+    ]}
+    pool = {"effects": [{"study_id": "s126"}, {"study_id": "s235"}]}
+    out = resolve_placeholders(
+        "Unpoolable: [A_CORE_NOT_POOLED_REASONS].",
+        summary={}, strict=strict, pack=_pack({}),
+        extractions={"receipts": []}, pool=pool,
+    )
+    assert out.body == "Unpoolable: (none)."
 
 
 def test_corpus_tokens_unresolved_when_receipts_missing() -> None:
