@@ -73,7 +73,7 @@ def build_back_matter(
     run_dir: Path | None = None,
     run_dir_name: str = "",
     repository_url: str = "",
-    operator_handle: str = "the operator",
+    operator_handle: str = "The operator",
 ) -> BackMatter:
     """Compose back-matter prose from pipeline-known facts.
 
