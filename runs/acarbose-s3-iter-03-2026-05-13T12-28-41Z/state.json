@@ -1,0 +1,13 @@
+{
+  "topic": "acarbose",
+  "k_hits": 520,
+  "k_screened": 520,
+  "k_candidates": 44,
+  "k_eligible": 0,
+  "k_outcomes": 0,
+  "k_effects": 0,
+  "k_packets": 1,
+  "packet_ids": [
+    "study_selection"
+  ]
+}

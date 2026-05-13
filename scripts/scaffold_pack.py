@@ -121,8 +121,39 @@ def _render(
         bib_lines.append(
             f'"{_toml_str(key)}" = "{title}. {journal}. {year}. doi:{doi}."'
         )
-    anchors_block = "\n".join(anchor_lines) or "# (no anchor papers returned by curated index)"
-    bib_block = "\n".join(bib_lines) or "# (no bibliography entries auto-generated)"
+    # Universal method-citation anchors + bibliography. These are the
+    # systematic-review methodology citations every meta-analysis uses
+    # (PRISMA reporting framework, SYRCLE / Cochrane RoB tools, GRADE,
+    # Egger / Hartung-Knapp / metafor statistical methods). Without
+    # them, writer-emitted [CIT:...|method-citation] markers fail to
+    # resolve, leaving [UNRESOLVED] markers in the rendered Methods.
+    # Universal — every topic pack needs the same methodology anchors;
+    # the scaffold seeds them so an auto-generated pack is usable
+    # out of the box.
+    method_anchor_lines = [
+        '"page-2020-prisma" = "method-citation"',
+        '"hooijmans-2014-syrcle" = "method-citation"',
+        '"percie-du-sert-2020-arrive" = "method-citation"',
+        '"schunemann-grade" = "method-citation"',
+        '"egger-1997-funnel" = "method-citation"',
+        '"viechtbauer-2010-metafor" = "method-citation"',
+        '"higgins-2003-i2" = "method-citation"',
+        '"hartung-knapp" = "method-citation"',
+    ]
+    method_bib_lines = [
+        '"page-2020-prisma" = "Page MJ, McKenzie JE, Bossuyt PM, et al. The PRISMA 2020 statement. BMJ. 2021;372:n71. doi:10.1136/bmj.n71."',
+        '"hooijmans-2014-syrcle" = "Hooijmans CR, Rovers MM, de Vries RBM, et al. SYRCLE\'s risk of bias tool for animal studies. BMC Med Res Methodol. 2014;14:43. doi:10.1186/1471-2288-14-43."',
+        '"percie-du-sert-2020-arrive" = "Percie du Sert N, Hurst V, Ahluwalia A, et al. The ARRIVE guidelines 2.0. PLoS Biol. 2020;18(7):e3000410. doi:10.1371/journal.pbio.3000410."',
+        '"schunemann-grade" = "Schunemann HJ, Higgins JPT, Vist GE, et al. GRADE / Summary of findings tables. Cochrane Handbook for Systematic Reviews of Interventions. Wiley; 2019. doi:10.1002/9781119536604.ch14."',
+        '"egger-1997-funnel" = "Egger M, Davey Smith G, Schneider M, Minder C. Bias in meta-analysis detected by a simple, graphical test. BMJ. 1997;315(7109):629-634. doi:10.1136/bmj.315.7109.629."',
+        '"viechtbauer-2010-metafor" = "Viechtbauer W. Conducting meta-analyses in R with the metafor package. J Stat Softw. 2010;36(3):1-48. doi:10.18637/jss.v036.i03."',
+        '"higgins-2003-i2" = "Higgins JPT, Thompson SG, Deeks JJ, Altman DG. Measuring inconsistency in meta-analyses. BMJ. 2003;327(7414):557-560. doi:10.1136/bmj.327.7414.557."',
+        '"hartung-knapp" = "IntHout J, Ioannidis JPA, Borm GF. The Hartung-Knapp-Sidik-Jonkman method for random effects meta-analysis. BMC Med Res Methodol. 2014;14:25. doi:10.1186/1471-2288-14-25."',
+    ]
+    anchors_block = "\n".join((*anchor_lines, *method_anchor_lines)) \
+        if anchor_lines else "\n".join(method_anchor_lines)
+    bib_block = "\n".join((*bib_lines, *method_bib_lines)) \
+        if bib_lines else "\n".join(method_bib_lines)
 
     return f'''# Topic pack: {topic} — auto-generated draft (Sprint 12.9 Task D scaffold).
 # Edit before running the pipeline. The scaffold seeds the structural
@@ -205,13 +236,23 @@ secondary_design_quote_markers = [
 {bib_block}
 
 [placeholders]
-"databases" = "PubMed, Crossref, OpenAlex, Europe PMC, Semantic Scholar, CORE, bioRxiv/medRxiv, OSF Preprints, ClinicalTrials.gov, and the Researka tier-1 curated index"
-"date-range" = "(set this to your final retrieval window)"
-"query-terms" = "(record the exact Boolean composition used at retrieval time)"
+"databases" = "PubMed (NCBI E-utilities), Crossref, OpenAlex, Europe PMC, Semantic Scholar, CORE, bioRxiv/medRxiv (via Europe PMC PPR filter), OSF Preprints, ClinicalTrials.gov, and the Researka tier-1 curated index — 10 search sources aggregated in parallel under the universal retrieval contract"
+"date-range" = "search executed from publication-database inception through the pipeline run date; per-paper publication years are recorded in the bibliography"
+"query-terms" = "Boolean composition built at run time from pack vocabulary: ((primary_interventions) AND (endpoint_terms) AND (preferred_terms)); the exact executed query is logged in the s7 run directory's `eligibility_receipts.json` metadata"
 "minimum-studies-per-cell" = "k < 3 studies per moderator cell"
+"eligibility_min_text_chars" = "the topic pack's pre-specified parsed-text minimum (records below this floor are demoted to `unclear`)"
+# Universal MODERATOR_P defaults — cover the common moderator names the
+# writer drafts for any meta-analysis topic. Additional pack-specific
+# moderators can be added by the operator after the first render audit.
 "MODERATOR_P:dose" = "dose level"
 "MODERATOR_P:sex" = "biological sex"
+"MODERATOR_P:strain" = "genetic background / strain"
 "MODERATOR_P:treatment_initiation_age" = "age at treatment initiation"
+"MODERATOR_P:age_at_intervention_start" = "age at intervention start"
+"MODERATOR_P:route_of_administration" = "route of administration"
+"MODERATOR_P:diet_background" = "diet background"
+"MODERATOR_P:genetic_background" = "genetic background"
+"MODERATOR_P:intervention" = "intervention identity"
 
 # Empty initially; populate iteratively as render audits surface drift.
 [methods_honesty_rewrites]

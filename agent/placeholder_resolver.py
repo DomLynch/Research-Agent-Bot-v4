@@ -219,38 +219,43 @@ def resolve_placeholders(
         if sid and sid not in seen:
             seen.add(sid)
             incomplete_ids.append(sid)
-    # Pool point-estimate tokens — derived from the meta-analytic summary
-    # that compile_pool produces (or a callers can supply equivalent).
-    # Universal: every topic's pool emits the same numeric shape, so the
-    # tokens drift with the receipts and never with the topic.
+    # 12.9.E: POOL_* tokens accept legacy `pooled_a_core_summary` OR
+    # derive from canonical `effects[]` (k=1 pass-thru; k>=2 IV pool).
     import math
-    pool_summary = (pool or {}).get("pooled_a_core_summary")
-    if isinstance(pool_summary, dict):
+    _ps = (pool or {}).get("pooled_a_core_summary")
+    _keys = ("POOL_ESTIMATE", "POOL_CI_LOW", "POOL_CI_HIGH",
+             "POOL_RATIO_BACK", "POOL_PERCENT_EXT")
+    pool_tokens: dict[str, str] = dict.fromkeys(_keys, "")
+    _est: float | None = None
+    if isinstance(_ps, dict):
         try:
-            est = float(pool_summary.get("estimate", 0.0))
-            ci_low = float(pool_summary.get("ci_low", 0.0))
-            ci_high = float(pool_summary.get("ci_high", 0.0))
-            ratio_back = float(
-                pool_summary.get("median_ratio_back") or math.exp(est)
-            )
-            pct_ext = (ratio_back - 1.0) * 100.0
-            pool_tokens: dict[str, str] = {
-                "POOL_ESTIMATE": f"{est:.3f}",
-                "POOL_CI_LOW": f"{ci_low:.3f}",
-                "POOL_CI_HIGH": f"{ci_high:.3f}",
-                "POOL_RATIO_BACK": f"{ratio_back:.2f}",
-                "POOL_PERCENT_EXT": f"~{pct_ext:.0f}%",
-            }
+            _est = float(_ps.get("estimate", 0.0))
+            _ci_low = float(_ps.get("ci_low", 0.0))
+            _ci_high = float(_ps.get("ci_high", 0.0))
+            _ratio_back = float(_ps.get("median_ratio_back") or math.exp(_est))
         except (TypeError, ValueError):
-            pool_tokens = dict.fromkeys(
-                ("POOL_ESTIMATE", "POOL_CI_LOW", "POOL_CI_HIGH",
-                 "POOL_RATIO_BACK", "POOL_PERCENT_EXT"), "",
-            )
+            _est = None
     else:
-        pool_tokens = dict.fromkeys(
-            ("POOL_ESTIMATE", "POOL_CI_LOW", "POOL_CI_HIGH",
-             "POOL_RATIO_BACK", "POOL_PERCENT_EXT"), "",
-        )
+        _valid: list[tuple[float, float]] = [
+            (float(e["estimate"]), float(e.get("se") or 0.0))
+            for e in (pool_effects or ())
+            if isinstance(e, dict) and e.get("estimate") is not None
+            and isinstance(e.get("se"), int | float) and float(e["se"]) > 0
+        ]
+        if _valid:
+            if len(_valid) == 1:
+                _est, _se = _valid[0]
+            else:
+                _w = [1.0 / (s * s) for _, s in _valid]
+                _est = sum(w * e for w, (e, _) in zip(_w, _valid, strict=True)) / sum(_w)
+                _se = math.sqrt(1.0 / sum(_w))
+            _ci_low, _ci_high = _est - 1.96 * _se, _est + 1.96 * _se
+            _ratio_back = math.exp(_est)
+    if _est is not None:
+        pool_tokens = dict(zip(_keys, (
+            f"{_est:.3f}", f"{_ci_low:.3f}", f"{_ci_high:.3f}",
+            f"{_ratio_back:.2f}", f"~{(_ratio_back - 1.0) * 100.0:.0f}%",
+        ), strict=True))
 
     counts: dict[str, str] = {
         "N_SCREENED": _str_or_empty(summary.get("k_hits")),

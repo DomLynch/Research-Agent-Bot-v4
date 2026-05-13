@@ -1,0 +1,15 @@
+{
+  "summary": {
+    "total": 1,
+    "by_gate": {
+      "evidence_slot": 1
+    }
+  },
+  "violations": [
+    {
+      "gate": "evidence_slot",
+      "location": "METHODS",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'Variables extracted in their original reported units include effect-size numerics (median lifespan, mean lifespan, maximum lifespan, haza\u2026'"
+    }
+  ]
+}

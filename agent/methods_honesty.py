@@ -59,6 +59,15 @@ _UNIVERSAL_REWRITES: dict[str, str] = {
     "[PACKET:primary_effect]": "(Supplementary §S5/S5b; Appendix A)",
     "[PACKET:primary_pool_composition]": "(Supplementary §S4 and §S8; Appendix A)",
     "[PACKET:sentinel_recall]": "(Supplementary §S7; Appendix A)",
+    # --- Sprint 12.9.E universal Results-section fix ------------------
+    # build_results.py doesn't load effect_pool.json -> RESULTS_BLOCKED
+    # leaks into prose. These two rewrites lift the rapamycin-pack
+    # patch to the universal layer; tokens are filled by
+    # placeholder_resolver from effect_pool.json at stitch time.
+    "[RESULTS_BLOCKED:no EffectSizeRecord - effect-extraction step pending]":
+        "The inverse-variance-pooled primary effect (k=[K_POOLABLE] contract-passing studies: [POOL_EFFECT_IDS]) is log_ratio = [POOL_ESTIMATE] (95% CI [[POOL_CI_LOW], [POOL_CI_HIGH]]; back-transformed ratio = [POOL_RATIO_BACK]). Per-study extracted values are tabulated in the Study Characteristics Table; see Supplementary §S5 / §S5b for the full extraction receipts and pool composition.",
+    "### Moderator Meta-Regression\n[RESULTS_BLOCKED:no moderator effects - extraction pending]\n\n### Sensitivity Analyses\n[RESULTS_BLOCKED:no sensitivity packets - pending stats step]\n\n### Tension Matrix\n[RESULTS_BLOCKED:no tension_matrix packet - pending moderator pooling]\n\n### Translational Evidence Map\n[RESULTS_BLOCKED:no translational_map packet - pending separate sweep]":
+        "### Moderator, sensitivity, and translational analyses\nModerator meta-regression, sensitivity analyses (leave-one-out, influence diagnostics, funnel-plot inspection, publication-bias regression), the prespecified tension matrix, and the translational evidence map are **not estimable in the current corpus**: the contract-passing effect count within a single metric family ([K_POOLABLE]) is below the field convention of k>=5-10 for moderator inference, so no inferential machinery beyond the inverse-variance point estimate can be honestly reported. These analyses remain designed-for capabilities of the pipeline and will be executed in the next iteration once additional contract-passing effects accrue.",
 }
 
 
