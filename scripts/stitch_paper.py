@@ -43,6 +43,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.back_matter import build_back_matter
+from agent.maturity_router import select_paper_type
 from agent.methods_honesty import apply_honesty_rewrites
 from agent.placeholder_resolver import resolve_placeholders
 from agent.readiness import classify_readiness
@@ -254,6 +255,14 @@ def stitch(
     # via --allow-pending) keeps the deficit visible to reviewers.
     (target / "cite_audit.json").write_text(
         json.dumps(cite_audit.as_dict(), indent=2), encoding="utf-8",
+    )
+    # Sprint 23: paper-type decision from readiness + pool count. The
+    # writer-prompt builder + reviewer should both consult this to
+    # enforce evidence-ladder-appropriate prose (k=1 → scoping review,
+    # not meta-analysis claims).
+    paper_type = select_paper_type(readiness)
+    (target / "paper_type_decision.json").write_text(
+        json.dumps(paper_type.as_dict(), indent=2), encoding="utf-8",
     )
 
     print(
