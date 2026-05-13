@@ -76,7 +76,9 @@ class EvidenceReceipt:
     paper_dir_name: str
     readiness_level: int
     readiness_label: str
-    cite_audit_clean: bool
+    # None == cite_audit.json was absent (unknown), not False (defective).
+    # Honest tri-state prevents the silent "missing == broken" false-alarm.
+    cite_audit_clean: bool | None
     paper_type: str
     manual_audits_count: int
     studies: tuple[StudyCard, ...]
@@ -184,7 +186,8 @@ def bundle_research_object(
     """Read the canonical receipts in `paper_dir` and assemble an
     EvidenceReceipt. Missing receipts → defaults (never raises)."""
     readiness = _read_json(paper_dir / "readiness_report.json")
-    cite_audit = _read_json(paper_dir / "cite_audit.json")
+    cite_audit_path = paper_dir / "cite_audit.json"
+    cite_audit = _read_json(cite_audit_path)
     paper_type_doc = _read_json(paper_dir / "paper_type_decision.json")
     manual_audit = _read_json(paper_dir / "manual_audit.json")
     extractions = _read_json(paper_dir / "effect_extractions.json")
@@ -193,12 +196,19 @@ def bundle_research_object(
     audits_raw = manual_audit.get("audits") if isinstance(manual_audit.get("audits"), list) else []
     audits_count = len(audits_raw) if isinstance(audits_raw, list) else 0
 
+    # Honest tri-state: None == file absent (unknown); False == file
+    # present but defective; True == file present and clean.
+    if not cite_audit_path.exists():
+        clean: bool | None = None
+    else:
+        clean = bool(cite_audit.get("clean", False))
+
     return EvidenceReceipt(
         topic=topic or str(extractions.get("topic") or ""),
         paper_dir_name=paper_dir.name,
         readiness_level=_safe_int(readiness.get("level")) or 0,
         readiness_label=str(readiness.get("label") or ""),
-        cite_audit_clean=bool(cite_audit.get("clean", False)),
+        cite_audit_clean=clean,
         paper_type=str(paper_type_doc.get("name") or ""),
         manual_audits_count=audits_count,
         studies=_study_cards_from_extractions(extractions),

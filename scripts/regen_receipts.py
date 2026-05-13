@@ -30,7 +30,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.maturity_router import select_paper_type
 from agent.readiness import classify_readiness
+from agent.reference_resolver import ResolvedReferences, audit_citations
 from agent.research_object import bundle_research_object
+from agent.topic_pack import load_topic_pack
 
 
 def _read_json(path: Path) -> dict[str, object]:
@@ -43,8 +45,50 @@ def _read_json(path: Path) -> dict[str, object]:
         return {}
 
 
+def _regen_cite_audit(paper_dir: Path, topic: str) -> bool | None:
+    """Recover a structural cite_audit.json for a paper folder stitched
+    before Sprint 17 existed. Parses paper.md by splitting at the
+    `## References` heading and runs audit_citations against the
+    topic-pack bibliography. Returns clean=True/False, or None when
+    paper.md or the topic pack is missing."""
+    paper_md = paper_dir / "paper.md"
+    if not paper_md.exists() or not topic:
+        return None
+    pack = load_topic_pack(topic)
+    if pack is None:
+        return None
+    body = paper_md.read_text(encoding="utf-8")
+    refs_idx = body.find("## References")
+    if refs_idx < 0:
+        return None
+    pre_refs, refs_section = body[:refs_idx], body[refs_idx:]
+    # citations_used can't be recovered post-stitch (anchor keys are
+    # gone — only [N] remain), so dead-anchor reporting will list
+    # everything; that's expected for retroactive regen. The in-text-
+    # vs-reference-number cross-check is fully accurate.
+    fake = ResolvedReferences(
+        body=pre_refs, references_section=refs_section,
+        citations_used=(), unresolved=(),
+    )
+    audit = audit_citations(fake, pack)
+    # Drop dead_bibliography_anchors from clean signal because they're
+    # always non-empty in retroactive regen (citations_used is unknown).
+    structurally_clean = (
+        not audit.in_text_without_entry
+        and not audit.entry_without_in_text
+        and not audit.unresolved_anchors
+    )
+    payload = audit.as_dict()
+    payload["clean"] = structurally_clean
+    payload["_regenerated"] = "retroactive structural audit only — citations_used unknown"
+    (paper_dir / "cite_audit.json").write_text(
+        json.dumps(payload, indent=2), encoding="utf-8",
+    )
+    return structurally_clean
+
+
 def regen(paper_dir: Path, *, topic: str = "") -> dict[str, str]:
-    """Materialise the three sidecar receipts in `paper_dir`. Returns a
+    """Materialise the four sidecar receipts in `paper_dir`. Returns a
     dict mapping receipt-name → produced level/label for stdout."""
     summary = _read_json(paper_dir / "eligibility_summary.json")
     strict = _read_json(paper_dir / "primary_effect_input_set_strict.json")
@@ -61,6 +105,9 @@ def regen(paper_dir: Path, *, topic: str = "") -> dict[str, str]:
     (paper_dir / "paper_type_decision.json").write_text(
         json.dumps(paper_type.as_dict(), indent=2), encoding="utf-8",
     )
+    # cite_audit is produced FIRST so the research_object reader sees
+    # the freshly-written file when it reads cite_audit.json.
+    cite_clean = _regen_cite_audit(paper_dir, topic)
     research_object = bundle_research_object(paper_dir, topic=topic)
     (paper_dir / "research_object.json").write_text(
         json.dumps(research_object.as_dict(), indent=2), encoding="utf-8",
@@ -68,6 +115,7 @@ def regen(paper_dir: Path, *, topic: str = "") -> dict[str, str]:
     return {
         "readiness": f"L{readiness.level} {readiness.label}",
         "paper_type": paper_type.name,
+        "cite_audit_clean": str(cite_clean),
         "research_object_studies": str(len(research_object.studies)),
         "research_object_claims": str(len(research_object.claims)),
     }

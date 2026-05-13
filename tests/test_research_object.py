@@ -47,12 +47,16 @@ def _seed_full_paper(tmp_path: Path, *, topic: str = "rapamycin") -> Path:
              "reviewer": "mimo-only-primary"},
         ],
     })
+    # Canonical pool shape — pooled claim lives in pooled_a_core_summary
+    # (matches compile_pool / regen_section3 writer), NOT in `outcomes`
+    # which carries per-study records.
     _write(pd / "effect_pool.json", {
-        "outcomes": [
-            {"metric": "lifespan_days", "k": 3,
-             "pooled_effect": 8.5, "ci_low": 4.1, "ci_high": 12.9,
-             "i_squared": 22.0},
-        ],
+        "pooled_a_core_summary": {
+            "k": 3, "metric": "lifespan_days",
+            "estimate": 8.5, "se": 1.8,
+            "ci_low": 4.1, "ci_high": 12.9, "i_squared": 22.0,
+        },
+        "effects": [{"study_id": f"s{i:02d}"} for i in range(3)],
     })
     return pd
 
@@ -100,20 +104,94 @@ def test_claim_cards_carry_pooled_fields(tmp_path: Path) -> None:
     assert c.i_squared == 22.0
 
 
+def test_claim_cards_read_pooled_summary_not_outcomes_list(tmp_path: Path) -> None:
+    """GPT-auditor bug 2026-05-13: the bundler used to read
+    pool['outcomes'] expecting pooled-effect objects, but `outcomes`
+    holds per-study records. The pooled claim canonically lives in
+    `pooled_a_core_summary`. This test locks the fix.
+    """
+    pd = tmp_path / "lock-shape"
+    pd.mkdir()
+    _write(pd / "effect_pool.json", {
+        # Per-study records — should NOT be misread as claims.
+        "outcomes": [
+            {"study_id": "s01", "metric_name": "log_ratio",
+             "treated_value": 900.0, "control_value": 820.0},
+        ],
+        # The actual pooled claim.
+        "pooled_a_core_summary": {
+            "k": 2, "metric": "log_median_ratio",
+            "estimate": 0.104, "se": 0.077,
+            "ci_low": -0.047, "ci_high": 0.255,
+        },
+    })
+    er = bundle_research_object(pd)
+    # Exactly one claim — the pooled summary, not 1-per-outcome.
+    assert len(er.claims) == 1
+    c = er.claims[0]
+    assert c.k_effects == 2
+    assert c.metric == "log_median_ratio"
+    assert c.pooled_effect == 0.104
+    assert c.pooled_ci_low == -0.047
+    assert c.pooled_ci_high == 0.255
+
+
+def test_claim_cards_emit_two_when_sensitivity_summary_present(tmp_path: Path) -> None:
+    """When the pool carries both a primary and a sensitivity summary,
+    both surface as separate ClaimCards in first-defined order."""
+    pd = tmp_path / "two-summaries"
+    pd.mkdir()
+    _write(pd / "effect_pool.json", {
+        "pooled_a_core_summary": {"k": 2, "metric": "m", "estimate": 0.1,
+                                   "ci_low": 0.0, "ci_high": 0.2},
+        "pooled_sensitivity_summary": {"k": 3, "metric": "m", "estimate": 0.08,
+                                        "ci_low": -0.01, "ci_high": 0.17},
+    })
+    cards = bundle_research_object(pd).claims
+    assert len(cards) == 2
+    assert cards[0].k_effects == 2 and cards[0].pooled_effect == 0.1
+    assert cards[1].k_effects == 3 and cards[1].pooled_effect == 0.08
+
+
 def test_bundle_tolerates_missing_receipts(tmp_path: Path) -> None:
     """Empty paper folder → bundler returns a defaulted EvidenceReceipt
-    without raising."""
+    without raising. cite_audit_clean uses None (unknown) when the file
+    is absent — honest tri-state, never False (which would falsely
+    signal citation defects on a paper that simply hasn't been audited
+    yet)."""
     pd = tmp_path / "empty-paper"
     pd.mkdir()
     er = bundle_research_object(pd, topic="x")
     assert er.topic == "x"
     assert er.readiness_level == 0
     assert er.readiness_label == ""
-    assert er.cite_audit_clean is False
+    assert er.cite_audit_clean is None  # absent file -> unknown, not False
     assert er.paper_type == ""
     assert er.manual_audits_count == 0
     assert er.studies == ()
     assert er.claims == ()
+
+
+def test_bundle_cite_audit_tri_state_present_clean_dirty_absent(tmp_path: Path) -> None:
+    """Locks the tri-state contract:
+      - cite_audit.json absent          -> cite_audit_clean is None
+      - cite_audit.json clean=True      -> cite_audit_clean is True
+      - cite_audit.json clean=False     -> cite_audit_clean is False
+    """
+    pd_absent = tmp_path / "absent"
+    pd_absent.mkdir()
+    assert bundle_research_object(pd_absent).cite_audit_clean is None
+
+    pd_clean = tmp_path / "clean"
+    pd_clean.mkdir()
+    _write(pd_clean / "cite_audit.json", {"clean": True})
+    assert bundle_research_object(pd_clean).cite_audit_clean is True
+
+    pd_dirty = tmp_path / "dirty"
+    pd_dirty.mkdir()
+    _write(pd_dirty / "cite_audit.json", {"clean": False,
+                                          "unresolved_anchors": ["x"]})
+    assert bundle_research_object(pd_dirty).cite_audit_clean is False
 
 
 def test_bundle_tolerates_malformed_json(tmp_path: Path) -> None:
