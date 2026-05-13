@@ -121,6 +121,7 @@ def stitch(
     *,
     target: Path | None = None,
     repository_url: str = "",
+    allow_pending: bool = False,
 ) -> Path:
     pack = load_topic_pack(topic)
     if pack is None:
@@ -148,6 +149,24 @@ def stitch(
     )
 
     raw_body = "\n\n".join([intro, methods, results, discussion]) + "\n"
+
+    # Sprint 14 hard gate: refuse to stitch a paper.md that still carries
+    # SECTIONS_PENDING markers. The writer fallback chain (MiMo -> Gemma)
+    # should have eliminated these upstream; if any remain, the operator
+    # skipped a section. Default = fail loud; --allow-pending preserves
+    # the partial-staging workflow but logs the deficit.
+    if not allow_pending and "[SECTIONS_PENDING:" in raw_body:
+        missing = [
+            tok for tok, src in (
+                ("title_abstract_intro", s1), ("methods", s2),
+                ("results", s7), ("discussion", s6),
+            ) if src is None
+        ]
+        raise RuntimeError(
+            f"refusing to stitch paper.md with missing section(s): {missing}. "
+            f"Run scripts/draft_main.py for each section first, or pass "
+            f"--allow-pending to stage a partial draft."
+        )
 
     summary, strict, extr, pool = _load_receipts(s7)
     # Pass 1: resolve raw writer-emitted count + topic-pack placeholders.
@@ -228,11 +247,17 @@ def main() -> int:
         help="Public repository URL for the Data and Code Availability "
              "back-matter section.",
     )
+    parser.add_argument(
+        "--allow-pending", action="store_true",
+        help="Sprint 14: bypass the SECTIONS_PENDING hard gate. Use only "
+             "when intentionally staging a partial draft.",
+    )
     args = parser.parse_args()
     stitch(
         args.topic,
         target=args.target,
         repository_url=args.repository_url,
+        allow_pending=args.allow_pending,
     )
     return 0
 
