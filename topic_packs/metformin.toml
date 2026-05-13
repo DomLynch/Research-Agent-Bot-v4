@@ -1,0 +1,195 @@
+# Topic pack: metformin (biguanide) lifespan synthesis.
+# Topic-agnostic schema — every field is read by agent/topic_pack.py.
+# Sibling pack to rapamycin.toml: same mouse-lifespan system + endpoint,
+# different intervention vocabulary. Used to verify that all of agent/
+# is truly pack-driven (no biomedical literals leak from core code).
+
+topic = "metformin"
+display_name = "Metformin"
+
+[scope]
+primary_system = "mouse"
+preferred_terms = ["murine", "mouse", "mice"]
+discouraged_terms = ["mammalian", "vertebrate", "rodent", "rat", "rats"]
+endpoint = "lifespan"
+# Primary intervention names that count toward the pooled lifespan corpus.
+# Older biguanides (buformin, phenformin) are retained for translational
+# context but MUST NOT enter the primary pooled-effect analysis — phenformin
+# was withdrawn for lactic-acidosis, buformin has different pharmacology.
+primary_interventions = ["metformin"]
+translational_only_interventions = ["buformin", "phenformin", "biguanide", "biguanides"]
+
+[cite_roles]
+default = "literature-reference"
+allowed = [
+    "primary-study",
+    "prior-meta-analysis",
+    "narrative-review",
+    "systematic-review",
+    "mechanism-review",
+    "clinical-trial",
+    "protocol-registration",
+    "method-citation",
+    "literature-reference",
+]
+
+# --- anchor citations ------------------------------------------------------
+# Known prior metformin-lifespan work and their canonical roles.
+[anchors]
+"anisimov-2011-metformin"            = "primary-study"
+"martin-montalvo-2013-metformin"     = "primary-study"
+"strong-2016-itp-acarbose-met"       = "primary-study"
+"alfaras-2017-metformin"             = "primary-study"
+"chen-2022-metformin-meta"           = "prior-meta-analysis"
+"ivimey-cook-tyshkovskiy-2025-meta"  = "prior-meta-analysis"
+"barzilai-tame-2016-review"          = "narrative-review"
+"foretz-viollet-2014-mechanism"      = "mechanism-review"
+"madiraju-2014-metformin-mechanism"  = "mechanism-review"
+"crowley-2017-metformin-clinical"    = "clinical-trial"
+"page-2020-prisma"                   = "method-citation"
+"hooijmans-2014-syrcle"              = "method-citation"
+"percie-du-sert-2020-arrive"         = "method-citation"
+"schunemann-grade"                   = "method-citation"
+"egger-1997-funnel"                  = "method-citation"
+"viechtbauer-2010-metafor"           = "method-citation"
+"higgins-2003-i2"                    = "method-citation"
+"hartung-knapp"                      = "method-citation"
+
+[length_caps]
+abstract = 300
+introduction = 1000
+methods = 1200
+
+[retrieval]
+sources = [
+    "pubmed",
+    "crossref",
+    "openalex",
+    "europepmc",
+    "semantic_scholar",
+    "core",
+    "biorxiv",
+    "osf",
+    "ctgov",
+    "researka",
+]
+
+[density]
+min_words_per_citation = 45
+
+[empirical_triggers]
+outcome_nouns_extra   = ["lifespan", "survival", "longevity", "mortality",
+                         "burden", "incidence", "prevalence", "hazard",
+                         "extension"]
+direction_verbs_extra = ["extends", "extend", "prolongs", "prolong",
+                         "attenuates", "attenuate", "abolishes", "abolish"]
+subjects_extra        = ["mice", "animals"]
+
+[extraction]
+preferred_metric_families = [
+    "median_lifespan",
+    "median_survival",
+    "median_lifespan_days",
+    "median_lifespan_months",
+]
+
+[eligibility]
+endpoint_terms       = ["lifespan", "survival", "longevity", "mortality",
+                        "median survival", "maximum lifespan", "kaplan-meier",
+                        "log-rank"]
+control_terms        = ["control", "vehicle", "placebo", "untreated",
+                        "wild-type", "wild type"]
+exclude_design_terms = ["systematic review", "meta-analysis",
+                        "narrative review", "scoping review",
+                        "in vitro", "cell line", "cell culture",
+                        "case report", "editorial", "commentary"]
+combination_terms    = ["combined with", "combination with", "plus ",
+                        "co-treatment", "co-administered"]
+min_text_chars       = 2000
+
+[sentinel_recall]
+# Each DOI verified against PubMed. Canonical metformin mouse-lifespan
+# studies the retrieval pipeline must surface (or document as unavailable).
+primary = [
+    "10.1038/ncomms3192",          # Martin-Montalvo 2013, Nature Communications — metformin extends lifespan in mice
+    "10.1111/acel.12496",          # Strong 2016, Aging Cell — ITP cohort with acarbose / 17a-estradiol / metformin
+    "10.1111/acel.12880",          # Alfaras 2017, Aging Cell - low-dose metformin lifespan
+]
+prior_meta = [
+    "10.1111/acel.70131",          # Ivimey-Cook & Tyshkovskiy 2025, Aging Cell - vertebrate meta (metformin null vs rapamycin positive)
+]
+
+[strict_a_core]
+non_mouse_species_terms = [
+    "c. elegans", "caenorhabditis", "drosophila", "fruit fly", "d. melanogaster",
+    "saccharomyces", "yeast",
+    "marmoset", "rhesus", "primate", "monkey",
+    "human subjects", "human patients", "clinical trial",
+    "zebrafish",
+]
+secondary_design_quote_markers = [
+    "proteomic", "transcriptomic", "metabolomic", "lipidomic",
+    "methylation", "methylome", "epigenetic",
+    "dirac", "atlas", "signature", "biomarker",
+    "fatty acid pattern", "fatty-acid pattern",
+]
+genotype_modified_strain_markers = [
+    "knockout", "transgenic", "deficient", "-deficient",
+    "homozygous deletion", "−/−", "-/-",
+    "tg(",
+]
+
+# --- bibliography ----------------------------------------------------------
+# Full bibliographic entries for the keys listed in [anchors] above.
+[references.bibliography]
+"anisimov-2011-metformin" = "Anisimov VN, Berstein LM, Popovich IG, et al. If started early in life, metformin treatment increases life span and postpones tumors in female SHR mice. Aging (Albany NY). 2011;3(2):148-157. doi:10.18632/aging.100273."
+"martin-montalvo-2013-metformin" = "Martin-Montalvo A, Mercken EM, Mitchell SJ, et al. Metformin improves healthspan and lifespan in mice. Nat Commun. 2013;4:2192. doi:10.1038/ncomms3192."
+"strong-2016-itp-acarbose-met" = "Strong R, Miller RA, Antebi A, et al. Longer lifespan in male mice treated with a weakly estrogenic agonist, an antioxidant, an alpha-glucosidase inhibitor or a Nrf2-inducer. Aging Cell. 2016;15(5):872-884. doi:10.1111/acel.12496."
+"alfaras-2017-metformin" = "Alfaras I, Mitchell SJ, Mora H, et al. Health benefits of late-onset metformin treatment every other week in mice. NPJ Aging Mech Dis. 2017;3:16. doi:10.1038/s41514-017-0018-7."
+"chen-2022-metformin-meta" = "Chen S, Gan D, Lin S, et al. Metformin in aging and aging-related diseases: clinical applications and relevant mechanisms. Theranostics. 2022;12(6):2722-2740. doi:10.7150/thno.71360."
+"ivimey-cook-tyshkovskiy-2025-meta" = "Ivimey-Cook ER, Tyshkovskiy A, et al. Rapamycin, not metformin, mirrors dietary restriction-driven lifespan extension in vertebrates: a meta-analysis. Aging Cell. 2025. doi:10.1111/acel.70131."
+"barzilai-tame-2016-review" = "Barzilai N, Crandall JP, Kritchevsky SB, Espeland MA. Metformin as a tool to target aging. Cell Metab. 2016;23(6):1060-1065. doi:10.1016/j.cmet.2016.05.011."
+"foretz-viollet-2014-mechanism" = "Foretz M, Guigas B, Bertrand L, Pollak M, Viollet B. Metformin: from mechanisms of action to therapies. Cell Metab. 2014;20(6):953-966. doi:10.1016/j.cmet.2014.09.018."
+"madiraju-2014-metformin-mechanism" = "Madiraju AK, Erion DM, Rahimi Y, et al. Metformin suppresses gluconeogenesis by inhibiting mitochondrial glycerophosphate dehydrogenase. Nature. 2014;510(7506):542-546. doi:10.1038/nature13270."
+"crowley-2017-metformin-clinical" = "Crowley MJ, Diamantidis CJ, McDuffie JR, et al. Clinical outcomes of metformin use in populations with chronic kidney disease, congestive heart failure, or chronic liver disease: a systematic review. Ann Intern Med. 2017;166(3):191-200. doi:10.7326/M16-1901."
+"page-2020-prisma" = "Page MJ, McKenzie JE, Bossuyt PM, et al. The PRISMA 2020 statement: an updated guideline for reporting systematic reviews. BMJ. 2021;372:n71. doi:10.1136/bmj.n71."
+"hooijmans-2014-syrcle" = "Hooijmans CR, Rovers MM, de Vries RBM, et al. SYRCLE's risk of bias tool for animal studies. BMC Med Res Methodol. 2014;14:43. doi:10.1186/1471-2288-14-43."
+"percie-du-sert-2020-arrive" = "Percie du Sert N, Hurst V, Ahluwalia A, et al. The ARRIVE guidelines 2.0: Updated guidelines for reporting animal research. PLoS Biol. 2020;18(7):e3000410. doi:10.1371/journal.pbio.3000410."
+"schunemann-grade" = "Schunemann HJ, Higgins JPT, Vist GE, et al. Completing 'Summary of findings' tables and grading the certainty of the evidence. In: Cochrane Handbook for Systematic Reviews of Interventions. Wiley; 2019. doi:10.1002/9781119536604.ch14."
+"egger-1997-funnel" = "Egger M, Davey Smith G, Schneider M, Minder C. Bias in meta-analysis detected by a simple, graphical test. BMJ. 1997;315(7109):629-634. doi:10.1136/bmj.315.7109.629."
+"viechtbauer-2010-metafor" = "Viechtbauer W. Conducting meta-analyses in R with the metafor package. J Stat Softw. 2010;36(3):1-48. doi:10.18637/jss.v036.i03."
+"higgins-2003-i2" = "Higgins JPT, Thompson SG, Deeks JJ, Altman DG. Measuring inconsistency in meta-analyses. BMJ. 2003;327(7414):557-560. doi:10.1136/bmj.327.7414.557."
+"hartung-knapp" = "IntHout J, Ioannidis JPA, Borm GF. The Hartung-Knapp-Sidik-Jonkman method for random effects meta-analysis is straightforward and considerably outperforms the standard DerSimonian-Laird method. BMC Med Res Methodol. 2014;14:25. doi:10.1186/1471-2288-14-25."
+
+# --- prose placeholders ----------------------------------------------------
+[placeholders]
+"databases" = "PubMed (NCBI E-utilities), Crossref, OpenAlex, Europe PMC, Semantic Scholar, CORE, bioRxiv/medRxiv (via the Europe PMC preprint filter), OSF Preprints, ClinicalTrials.gov, and the Researka internal canonical index — 10 search sources aggregated in parallel under the universal retrieval contract; Unpaywall serves as the DOI -> open-access URL resolver"
+"date-range" = "January 2005 (post-Anisimov metformin-aging convergence) through May 2026 (final retrieval cycle)"
+"query-terms" = "Boolean composition metformin AND (lifespan OR survival OR longevity OR mortality) AND (mouse OR mice OR \"Mus musculus\"); full Boolean syntax filed in supplement S1"
+"minimum-studies-per-cell" = "k < 3 studies per moderator cell"
+"MODERATOR_P:intervention" = "intervention identity"
+"MODERATOR_P:dose" = "dose level"
+"MODERATOR_P:sex" = "biological sex"
+"MODERATOR_P:genetic_background" = "genetic background"
+"MODERATOR_P:treatment_initiation_age" = "age at treatment initiation"
+
+# --- methods honesty rewrites ---------------------------------------------
+# Universal rewrites first (target topic-agnostic strings). Topic-specific
+# corrective rewrites can be added iteratively after observing what the
+# writer drafts for metformin.
+[methods_honesty_rewrites]
+# Universal corpus-prose tokens (work on any topic whose receipts use the
+# project's standard schema).
+"after strict A-core auditing, 4 records remain eligible for primary-effect extraction" = "after strict A-core auditing, [STRICT_A_CORE_COUNT] records remain eligible for primary-effect extraction ([STRICT_A_CORE_IDS]; [K_POOLABLE] currently yield inverse-variance-poolable numerics)"
+"sample-size recovery was incomplete for certain studies (e.g., s230, s235), preventing inverse-variance weighting for those records" = "sample-size or metric recovery remains incomplete for [INCOMPLETE_RECOVERY_IDS], preventing inverse-variance weighting for those records"
+# Strip [PACKET:...] audit anchors from manuscript prose.
+"[PACKET:study_selection]" = "(Supplementary §S2-S3; Appendix A)"
+"[PACKET:corpus_characteristics]" = "(Supplementary §S4; Appendix A)"
+"[PACKET:primary_effect]" = "(Supplementary §S5/S5b; Appendix A)"
+"[PACKET:primary_pool_composition]" = "(Supplementary §S4 and §S8; Appendix A)"
+"[PACKET:sentinel_recall]" = "(Supplementary §S7; Appendix A)"
+
+# --- back-matter prose ----------------------------------------------------
+[back_matter]
+ethics_statement = """This synthesis re-analyses published animal-research data. No new experiments on living animals were conducted. The included primary studies are responsible for their own institutional animal-care and ethical approvals; reviewers are referred to the primary references in this manuscript for those statements. The synthesis itself does not require additional ethical approval."""
+conflicts_statement = """The operator declares no financial conflicts of interest related to metformin or biguanide pharmacology, geroprotective interventions, or the cited primary studies. The pipeline is open-source and reusable across topics; no commercial relationship influenced the eligibility rules or the manuscript framing for the present synthesis."""
