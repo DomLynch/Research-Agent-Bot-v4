@@ -89,6 +89,14 @@ class Settings:
     # 100 to give the spine more candidates to draw from.
     researka_spine_trust: bool = True
     researka_spine_retmax: int = 300
+    # Sprint 12.9 Task C: dual-pass extraction with LLM-adjudicated
+    # disagreements. When enabled, every extraction runs a primary pass
+    # + a strict-verify pass; pool-critical disagreements trigger an
+    # adjudicator call. Doubles LLM cost on the extraction step but
+    # rescues parse_failed / no_numerics cases and lets Methods honestly
+    # claim "dual independent extraction". Set EXTRACTION_DUAL_PASS=false
+    # to revert to single-pass.
+    extraction_dual_pass: bool = True
 
     @property
     def writer_configured(self) -> bool:
@@ -126,4 +134,5 @@ def load_settings() -> Settings:
         runs_dir=_env("RUNS_DIR", "runs"),
         researka_spine_trust=_env("RESEARKA_SPINE_TRUST", "true").lower() != "false",
         researka_spine_retmax=_int("RESEARKA_SPINE_RETMAX", 300),
+        extraction_dual_pass=_env("EXTRACTION_DUAL_PASS", "true").lower() != "false",
     )

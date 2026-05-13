@@ -247,6 +247,178 @@ class ExtractionContractResult:
     violations: tuple[str, ...]
 
 
+# --- Sprint 12.9 Task C: dual-pass extraction with LLM-adjudicated --------
+# disagreements. Two independent extraction passes (a primary + a strict-
+# verify variant) run on the same parsed text. A receipt comparator then
+# checks the pool-critical fields; if they disagree, an adjudicator LLM
+# call picks the right answer with explicit evidence-quote justification.
+# Net effect: rescues parse_failed / no_numerics cases (one pass misses,
+# the other catches), and lets Methods honestly claim "dual independent
+# extraction" — the audit panel asked for this in 12.8 review.
+#
+# Universal: every helper below reads only pack vocabulary + receipt
+# fields; no biomedical literals.
+
+# Fields that affect pooling. Disagreement on any of these fires the
+# adjudicator call. Non-pool fields (failure_reason, moderators) are
+# allowed to diverge between passes without invoking adjudication.
+_POOL_FIELDS: tuple[str, ...] = (
+    "status", "metric",
+    "treated_value", "control_value",
+    "treated_n", "control_n",
+    "hazard_ratio", "hazard_ratio_ci_low", "hazard_ratio_ci_high",
+    "percent_change",
+)
+# Numeric-field disagreement tolerance: receipts that differ by <2%
+# count as agreement (rounding / unit-conversion noise).
+_NUMERIC_TOLERANCE_PCT: float = 2.0
+
+
+def build_extraction_prompt_strict_verify(
+    pack: TopicPack, study_id: str, title: str, parsed_text: str, *,
+    excerpt_chars: int = 60000,
+) -> list[dict[str, str]]:
+    """Pass-B prompt: strict-verify variant. Same schema as Pass-A; the
+    system message tightens discipline so the model rejects any numeric
+    it can't tie to a verbatim sentence. Genuine numerics survive both
+    passes; LLM-imagined ones surface as disagreement for the
+    adjudicator. Universal — reads only pack vocabulary."""
+    base = build_extraction_prompt(
+        pack, study_id, title, parsed_text, excerpt_chars=excerpt_chars,
+    )
+    suffix = (
+        "\n\nSTRICT-VERIFY MODE (second independent extraction cross-"
+        "checking the first). Every numeric you emit MUST be tied to "
+        "one verbatim sentence in the excerpt. If the paper forces an "
+        "estimate, average, unit conversion, or graph inference, emit "
+        "null. Sample-size (treated_n, control_n) must be read off the "
+        "page, not derived. evidence_quotes MUST include one verbatim "
+        "sentence per non-null numeric."
+    )
+    return [
+        {"role": "system", "content": base[0]["content"] + suffix},
+        base[1],
+    ]
+
+
+def _close_enough(
+    a: float | int | None, b: float | int | None,
+) -> bool:
+    """Numeric agreement within `_NUMERIC_TOLERANCE_PCT`; two nulls
+    agree, null vs number disagree."""
+    if a is None and b is None:
+        return True
+    if a is None or b is None:
+        return False
+    a_f, b_f = float(a), float(b)
+    avg = (abs(a_f) + abs(b_f)) / 2.0
+    return a_f == b_f if avg == 0.0 else abs(a_f - b_f) / avg * 100.0 <= _NUMERIC_TOLERANCE_PCT
+
+
+def compare_receipts(
+    r1: ExtractionReceipt, r2: ExtractionReceipt,
+) -> tuple[str, ...]:
+    """Pool-critical fields that disagree between two passes. Empty
+    tuple == agreement. Numerics use `_NUMERIC_TOLERANCE_PCT` noise."""
+    out: list[str] = []
+    for f in _POOL_FIELDS:
+        v1, v2 = getattr(r1, f, None), getattr(r2, f, None)
+        if f in {"status", "metric"}:
+            if str(v1 or "").strip().casefold() != str(v2 or "").strip().casefold():
+                out.append(f)
+        elif not _close_enough(v1, v2):
+            out.append(f)
+    return tuple(out)
+
+
+def _avg2(a: float | int | None, b: float | int | None) -> float | None:
+    """Average two optional numerics; coalesce when one side is None."""
+    if a is None and b is None:
+        return None
+    if a is None:
+        return float(b) if b is not None else None
+    if b is None:
+        return float(a)
+    return (float(a) + float(b)) / 2.0
+
+
+def merge_agreed_receipts(
+    r1: ExtractionReceipt, r2: ExtractionReceipt, *, reviewer: str,
+) -> ExtractionReceipt:
+    """Merge two extraction passes that agree on pool-critical fields.
+    Numerics averaged when both non-null; evidence quotes unioned
+    (dedup by casefold)."""
+    seen: set[str] = set()
+    quotes_union: list[str] = []
+    for q in (*r1.evidence_quotes, *r2.evidence_quotes):
+        key = q.strip().casefold()
+        if key and key not in seen:
+            seen.add(key)
+            quotes_union.append(q)
+    n_t = _avg2(r1.treated_n, r2.treated_n)
+    n_c = _avg2(r1.control_n, r2.control_n)
+    return ExtractionReceipt(
+        study_id=r1.study_id, status=r1.status,
+        metric=r1.metric or r2.metric,
+        treated_value=_avg2(r1.treated_value, r2.treated_value),
+        control_value=_avg2(r1.control_value, r2.control_value),
+        treated_n=round(n_t) if n_t is not None else None,
+        control_n=round(n_c) if n_c is not None else None,
+        hazard_ratio=_avg2(r1.hazard_ratio, r2.hazard_ratio),
+        hazard_ratio_ci_low=_avg2(r1.hazard_ratio_ci_low, r2.hazard_ratio_ci_low),
+        hazard_ratio_ci_high=_avg2(r1.hazard_ratio_ci_high, r2.hazard_ratio_ci_high),
+        percent_change=_avg2(r1.percent_change, r2.percent_change),
+        moderators=r1.moderators or r2.moderators,
+        evidence_quotes=tuple(quotes_union),
+        failure_reason=r1.failure_reason or r2.failure_reason,
+        reviewer=reviewer,
+        text_hash=r1.text_hash, timestamp_utc=r1.timestamp_utc,
+    )
+
+
+def build_adjudicator_prompt(
+    r1: ExtractionReceipt, r2: ExtractionReceipt,
+    disagreements: tuple[str, ...], parsed_text: str, *,
+    excerpt_chars: int = 60000,
+) -> list[dict[str, str]]:
+    """Adjudicator prompt for pool-critical disagreements between two
+    extraction passes. May pick A's value, B's value, or null — may NOT
+    invent a number not in either pass. Universal: reads only field
+    names + parsed text; no biomedical literals."""
+    excerpt = parsed_text[:excerpt_chars]
+    pool_a = {f: getattr(r1, f, None) for f in _POOL_FIELDS}
+    pool_b = {f: getattr(r2, f, None) for f in _POOL_FIELDS}
+    disagree_lines = "\n".join(
+        f"  - {f}: pass-A={pool_a[f]!r} vs pass-B={pool_b[f]!r}"
+        for f in disagreements
+    )
+    system = (
+        "You are an extraction adjudicator. Two prior LLM extractions of "
+        "the same paper disagreed on one or more pool-critical fields. "
+        "Resolve each disagreement by pointing at the verbatim sentence "
+        "in the excerpt that supports the correct value. You MAY pick "
+        "pass-A's value, pass-B's value, or null (if neither is supported "
+        "by an explicit statement). You MAY NOT invent a number that is "
+        "not in either pass. Output ONLY the merged JSON receipt — same "
+        "schema as the primary extraction."
+    )
+    user = (
+        f"Paper: {r1.study_id}\n\n"
+        f"Pass-A receipt (permissive):\n{json.dumps(pool_a)}\n\n"
+        f"Pass-B receipt (strict-verify):\n{json.dumps(pool_b)}\n\n"
+        f"Disagreements on pool-critical fields:\n{disagree_lines}\n\n"
+        f"Excerpt (first {excerpt_chars} chars):\n---\n{excerpt}\n---\n\n"
+        "Emit a single merged JSON receipt (same schema as the primary "
+        "extraction). For each disagreed field, pick the value supported "
+        "by a verbatim sentence in the excerpt (or null) and include "
+        "that sentence in evidence_quotes."
+    )
+    return [
+        {"role": "system", "content": system},
+        {"role": "user", "content": user},
+    ]
+
+
 def validate_extraction(
     receipt: ExtractionReceipt, pack: TopicPack,
 ) -> ExtractionContractResult:
