@@ -177,10 +177,12 @@ genotype_modified_strain_markers = [
 # Generic systematic-review overclaim patches (dual extraction, full meta-
 # regression apparatus, leave-one-out/Egger, PACKET anchor strips) live in
 # agent/methods_honesty.py `_UNIVERSAL_REWRITES` and apply to every topic.
-# This pack adds only METFORMIN-SPECIFIC corrections discovered during
-# render audits — left empty on initial sprint; add entries when a real
-# rewrite need surfaces.
+# This pack adds only METFORMIN-SPECIFIC corrections. The lifespan-SMD
+# overclaim is biomedical-lifespan-specific (LHS names "lifespan
+# extension") so it lives in lifespan topic packs rather than the
+# universal baseline.
 [methods_honesty_rewrites]
+"The analysis will employ mixed-effects meta-regression models to partition variance in the standardized mean difference (SMD) of lifespan extension between studies." = "Mixed-effects meta-regression to partition SMD variance is a designed-for capability of the pipeline; an inverse-variance point estimate is reported at k>=2, while moderator meta-regression / leave-one-out / Egger's test follow the field convention of k>=5-10 contract-passing effects per metric family and are deferred until that threshold is met."
 
 # --- back-matter prose ----------------------------------------------------
 [back_matter]

@@ -43,8 +43,13 @@ _UNIVERSAL_REWRITES: dict[str, str] = {
         "The pipeline implements an inverse-variance random-effects pool over contract-passing effects within a single metric family; an inverse-variance point estimate is reported at k>=2. The full multi-level random-effects meta-regression (random intercepts for study-ID and outcome-measure-within-study, REML between-study variance, Hartung-Knapp adjustment [CIT:hartung-knapp|method-citation], metafor in R [CIT:viechtbauer-2010-metafor|method-citation], I² and prediction intervals [CIT:higgins-2003-i2|method-citation]) requires substantially larger k -- the field convention is typically k>=5-10 contract-passing effects per metric family before moderator inference is interpretable -- and is deferred until that threshold is met.",
     "Sensitivity analyses will include leave-one-out analysis, influence diagnostics (e.g., Cook's distance), and the inspection of funnel plots for asymmetry, with Egger's regression test to formally assess publication bias [CIT:egger-1997-funnel|method-citation].":
         "Sensitivity analyses (leave-one-out, influence diagnostics including Cook's distance, funnel-plot inspection for asymmetry, and Egger's regression test for publication bias [CIT:egger-1997-funnel|method-citation]) require a larger pool than the inverse-variance point estimate alone; the field convention is typically k>=5-10 contract-passing effects per metric family before these diagnostics are interpretable. The current iteration reports the inverse-variance point estimate but defers leave-one-out / influence / funnel / Egger until additional contract-passing effects accrue.",
-    "The analysis will employ mixed-effects meta-regression models to partition variance in the standardized mean difference (SMD) of lifespan extension between studies.":
-        "Mixed-effects meta-regression to partition SMD variance is a designed-for capability of the pipeline; an inverse-variance point estimate is reported at k>=2, while moderator meta-regression / leave-one-out / Egger's test follow the field convention of k>=5-10 contract-passing effects per metric family and are deferred until that threshold is met.",
+    # NOTE: a 5th methodology overclaim ("mixed-effects meta-regression
+    # models to partition variance in the SMD of <outcome> extension")
+    # is domain-specific (the writer fills <outcome> with the topic's
+    # endpoint, e.g. "lifespan extension" for ageing topics, "infection-
+    # incidence reduction" for vaccine topics). Topics declare their
+    # own variant in `pack.methods_honesty_rewrites` if they hit it;
+    # the truly-universal rewrites above already absorb the rest.
     # --- Strip [PACKET:...] audit anchors from manuscript prose -------
     # These anchors belong in the supplement / audit trail, not in the
     # journal-facing argument. Maps to the supplement section + run-
