@@ -119,6 +119,59 @@ async def _fetch_pmc_xml(
         return "", f"pmc fetch failed: {e.__class__.__name__}"
 
 
+async def _fetch_europepmc_xml(
+    pmcid: str, *, client: httpx.AsyncClient,
+) -> tuple[str, str]:
+    """Sprint 12.9 Task B — Europe PMC `fullTextXML` mirror.
+
+    Free, public, no-auth REST endpoint that mirrors PubMed Central full-
+    text. Used when NCBI's eutils PMC returns junk (reCAPTCHA / redirect)
+    or thin content; Europe PMC's parser sometimes serves a clean full
+    body where NCBI returns an abstract-only envelope under load.
+
+    Returns (raw_xml, error). Empty raw on any HTTP failure — the caller
+    keeps the previous fallback chain intact.
+    """
+    pid = pmcid.removeprefix("PMC")
+    try:
+        r = await client.get(
+            f"https://europepmc.org/europepmc/webservices/rest/PMC{pid}/fullTextXML",
+            timeout=20.0,
+        )
+        r.raise_for_status()
+        return r.text, ""
+    except httpx.HTTPError as e:
+        return "", f"europepmc fetch failed: {e.__class__.__name__}"
+
+
+def _pdf_retry_variants(url: str) -> tuple[str, ...]:
+    """Sprint 12.9 Task B — when an HTML parse comes back thin, the same
+    publisher URL often serves a PDF at a slightly different path. Try
+    a small, ordered set of pure URL transforms (no probing) and let
+    `_fetch_html_or_pdf` decide if any of them returned PDF bytes.
+
+    Universal: pure URL-shape heuristics, no biomedical or publisher-
+    specific literals. Order: most-likely-PDF-suffix variants first.
+    """
+    candidates: list[str] = []
+    low = url.lower()
+    if not low.endswith(".pdf"):
+        candidates.append(url + ".pdf")
+        candidates.append(url + ".full.pdf")
+    if "/abstract" in url:
+        candidates.append(url.replace("/abstract", "/pdf"))
+    if "/article/" in url and "/pdf/" not in url:
+        candidates.append(url.replace("/article/", "/pdf/"))
+    # Dedupe, preserve order.
+    seen: set[str] = set()
+    out: list[str] = []
+    for c in candidates:
+        if c != url and c not in seen:
+            seen.add(c)
+            out.append(c)
+    return tuple(out)
+
+
 async def _fetch_html_or_pdf(
     url: str, *, client: httpx.AsyncClient,
 ) -> tuple[str, str, str]:
@@ -155,10 +208,28 @@ async def parse_one(
         # Sprint 7.9: NCBI under load returns a reCAPTCHA / "Redirecting"
         # page instead of real XML; PMC also sometimes returns abstract-
         # only envelopes (Miller-2011 at 4041 chars). In either case the
-        # PMC parse is unusable - drop it so the Unpaywall fallback fires.
+        # PMC parse is unusable - drop it so the Europe-PMC / Unpaywall
+        # fallback chain fires.
         if _looks_like_junk(text):
             text = ""
             err = "pmc returned junk content (reCAPTCHA/redirect/blocked)"
+        # Sprint 12.9 Task B — Europe PMC mirror is the first fallback
+        # because it shares the PMC XML format (no source_kind change)
+        # and frequently serves what NCBI is rate-limiting / blocking.
+        if len(text) < 5000:
+            ep_raw, ep_err = await _fetch_europepmc_xml(
+                receipt.reason, client=client,
+            )
+            ep_text = _strip(ep_raw) if ep_raw else ""
+            if _looks_like_junk(ep_text):
+                ep_text = ""
+            if len(ep_text) > len(text):
+                text = ep_text
+                source_url = (
+                    f"https://europepmc.org/europepmc/webservices/rest/"
+                    f"PMC{receipt.reason.removeprefix('PMC')}/fullTextXML"
+                )
+                err = ep_err if not ep_text else ""
         if len(text) < 5000 and receipt.fallback_url:
             fb_raw, fb_kind, fb_err = await _fetch_html_or_pdf(
                 receipt.fallback_url, client=client,
@@ -184,6 +255,25 @@ async def parse_one(
         else:
             kind = "html"
             text = _strip(raw) if raw else ""
+        # Sprint 12.9 Task B — HTML strip came back thin or junk;
+        # try a small, ordered set of URL-shape PDF variants. Stops at
+        # the first successful PDF extraction. Pure URL transforms, no
+        # publisher-specific literals.
+        if (kind == "html" and (
+            len(text) < _THIN_PARSE_CHARS or _looks_like_junk(text)
+        )):
+            for variant in _pdf_retry_variants(receipt.reason):
+                v_raw, v_kind, v_err = await _fetch_html_or_pdf(
+                    variant, client=client,
+                )
+                if v_kind == "pdf" and v_raw:
+                    v_text = _WS_RE.sub(" ", v_raw).strip()[:_MAX_CHARS]
+                    if len(v_text) > len(text):
+                        text = v_text
+                        kind = "pdf"
+                        source_url = variant
+                        err = v_err if not v_text else ""
+                        break
     else:
         return ParsedFullText(
             study_id=receipt.study_id, source_url=receipt.reason,
