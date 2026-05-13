@@ -144,17 +144,26 @@ def test_render_is_universal_for_non_biomedical_vocab(tmp_path: Path) -> None:
     """Scaffold must work with arbitrary topic + intervention + species
     vocabulary — proves no biomedical literals are hardcoded in the
     render function. Here we feed a climate-style topic."""
+    # Climate fixture papers must NOT have "review" / "meta-analysis"
+    # / "clinical trial" / "rct" / "randomized" in their titles, or
+    # the Sprint 12.9.F _classify_role heuristic correctly flags them
+    # as reviews / clinical trials and excludes them from sentinels.
+    # Universality test: both fixtures are primary-study type and
+    # type-neutral title vocabulary — proving the classifier defaults
+    # cleanly even with non-biomedical inputs.
     climate_papers = [
         {
             "id": "10.1/climate-a", "doi": "10.1/climate-a",
             "title": "Carbon tax adoption and emissions trajectory",
             "journal_name": "Nature Climate", "publication_year": 2022,
+            "type": "article",
             "tier": 1, "topic_score": 0.98, "quality_score": 0.92,
         },
         {
             "id": "10.1/climate-b", "doi": "10.1/climate-b",
-            "title": "Subnational carbon pricing review",
+            "title": "Subnational carbon pricing in three regions",
             "journal_name": "Climate Policy", "publication_year": 2023,
+            "type": "article",
             "tier": 1, "topic_score": 0.95, "quality_score": 0.90,
         },
     ]
@@ -211,3 +220,84 @@ def test_render_handles_empty_curated_paper_list(tmp_path: Path) -> None:
                 "egger-1997-funnel", "viechtbauer-2010-metafor"):
         assert key in p.anchors
         assert key in p.references_bibliography
+
+
+def test_classify_role_maps_researka_type_to_cite_role() -> None:
+    """Sprint 12.9.F: paper-type classifier prevents reviews / mechanism
+    papers / clinical trials from masquerading as primary-study
+    anchors. Universal — uses Researka `type` field + title keywords
+    that span disciplines (no biomedical literals)."""
+    cr = _SCAFFOLD._classify_role
+    # Plain article -> primary-study (default).
+    assert cr({"type": "article", "title": "Acarbose extends mouse lifespan"}) == "primary-study"
+    # Researka type=review or "review" in title -> narrative-review.
+    assert cr({"type": "review", "title": "Comprehensive overview of metformin"}) == "narrative-review"
+    assert cr({"type": "article", "title": "Calorie restriction: a review"}) == "narrative-review"
+    # Mechanism / pathway / molecular review -> mechanism-review.
+    assert cr({"type": "review", "title": "mTOR pathway in aging: a mechanism review"}) == "mechanism-review"
+    assert cr({"type": "review", "title": "Molecular signaling in longevity"}) == "mechanism-review"
+    # Meta-analysis / systematic review -> prior-meta-analysis (wins
+    # over the "review" branch because the check runs first).
+    assert cr({"type": "review", "title": "Systematic review of rapamycin"}) == "prior-meta-analysis"
+    assert cr({"type": "article", "title": "Meta-analysis of mouse longevity drugs"}) == "prior-meta-analysis"
+    # Clinical trial / RCT -> clinical-trial (wins over default).
+    assert cr({"type": "article", "title": "Randomized controlled trial of metformin in adults"}) == "clinical-trial"
+    assert cr({"type": "article", "title": "TAME clinical trial: design"}) == "clinical-trial"
+    # Book chapter -> narrative-review (treated as review).
+    assert cr({"type": "book-chapter", "title": "Aging interventions: an overview"}) == "narrative-review"
+
+
+def test_sentinels_filtered_to_primary_studies_only(tmp_path: Path) -> None:
+    """Sprint 12.9.F: when the curated index returns a mix of primary
+    studies + reviews + mechanism papers, the scaffold's sentinel pool
+    excludes the non-primary types. Prevents the rapamycin-grade
+    sentinel-recall WARN that the acarbose first-run hit."""
+    mixed_papers = [
+        {
+            "id": "10.1/mech-1", "doi": "10.1/mech-1", "type": "article",
+            "title": "Cap-independent translation mechanism in aging",
+            "journal_name": "Aging Cell", "publication_year": 2020,
+            "tier": 1, "topic_score": 1.0,
+        },  # mechanism — should not be a sentinel
+        {
+            "id": "10.1/review-1", "doi": "10.1/review-1", "type": "review",
+            "title": "Overview of geroprotective compounds",
+            "journal_name": "Cell Metabolism", "publication_year": 2021,
+            "tier": 1, "topic_score": 0.95,
+        },  # narrative review — not a sentinel
+        {
+            "id": "10.1/primary-1", "doi": "10.1/primary-1", "type": "article",
+            "title": "Compound X extends median lifespan in C57BL/6 mice",
+            "journal_name": "Nature", "publication_year": 2009,
+            "tier": 1, "topic_score": 0.85,
+        },  # primary study — sentinel
+        {
+            "id": "10.1/primary-2", "doi": "10.1/primary-2", "type": "article",
+            "title": "Compound X dose-response in genetically heterogeneous mice",
+            "journal_name": "J Gerontol A", "publication_year": 2011,
+            "tier": 1, "topic_score": 0.83,
+        },  # primary study — sentinel
+    ]
+    out = _SCAFFOLD._render(
+        topic="compound_x", display_name="Compound X",
+        primary_interventions=["compound x"],
+        species_terms=["mouse"], endpoint="lifespan",
+        papers=mixed_papers, sentinel_n=3, anchor_n=10,
+    )
+    pack_path = tmp_path / "compound_x.toml"
+    pack_path.write_text(out, encoding="utf-8")
+    from agent.topic_pack import load_topic_pack
+    p = load_topic_pack("compound_x", pack_dir=tmp_path)
+    assert p is not None
+    # Despite the mechanism and review papers having the highest
+    # topic_score, only the primary articles end up as sentinels.
+    assert "10.1/primary-1" in p.sentinel_primary
+    assert "10.1/primary-2" in p.sentinel_primary
+    assert "10.1/mech-1" not in p.sentinel_primary
+    assert "10.1/review-1" not in p.sentinel_primary
+    # The mechanism + review papers DO appear as anchors, but with
+    # correct roles (not "primary-study").
+    mech_key = next(k for k in p.anchors if "cap-2020" in k.lower() or "cap" in k.lower())
+    rev_key = next(k for k in p.anchors if "overview" in k.lower())
+    assert p.anchors[mech_key] == "mechanism-review"
+    assert p.anchors[rev_key] == "narrative-review"

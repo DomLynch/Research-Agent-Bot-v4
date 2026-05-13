@@ -44,6 +44,34 @@ def _toml_str(s: str) -> str:
     return s.replace("\\", "\\\\").replace('"', '\\"')
 
 
+def _classify_role(paper: dict[str, Any]) -> str:
+    """Sprint 12.9.F: map Researka's `type` field + title keywords to
+    a cite-roles role. Universal — no biomedical literals; the
+    title-keyword heuristics match systematic-review + mechanism-paper
+    terminology that is universal across disciplines.
+
+    Mechanism keywords ("mechanism", "pathway", "signaling", "molecular",
+    "translation") fire regardless of `type` because many such papers
+    are tagged `type=article` but aren't primary endpoint studies —
+    they describe pathway-level biology, not direct intervention->
+    outcome data. Filtering them out of the sentinel pool prevents
+    the WARN gate that the acarbose first-run hit.
+    """
+    ptype = (paper.get("type") or "").strip().lower()
+    title_lc = (paper.get("title") or "").lower()
+    if "meta-analysis" in title_lc or "systematic review" in title_lc:
+        return "prior-meta-analysis"
+    if "clinical trial" in title_lc or "randomized" in title_lc or "rct" in title_lc:
+        return "clinical-trial"
+    if any(k in title_lc for k in (
+        "mechanism", "pathway", "signaling", "molecular", "translation",
+    )):
+        return "mechanism-review"
+    if ptype in {"review", "book-chapter"} or " review" in title_lc:
+        return "narrative-review"
+    return "primary-study"
+
+
 def _anchor_key(doi: str | None, year: int | None, title: str) -> str:
     """Build a stable anchor key from paper metadata. Format:
     `<first-noun-word>-<year>-<topic-hash>`. Universal — derived from
@@ -88,8 +116,26 @@ def _render(
     """Render a draft TOML using paper metadata for sentinels + anchors
     + bibliography. Sensible biomedical defaults fill the rest;
     operator hand-edits before the pipeline runs."""
-    sentinels = [p for p in papers[:sentinel_n] if p.get("doi")]
-    anchor_pool = [p for p in papers[sentinel_n: sentinel_n + anchor_n] if p.get("doi")]
+    # Sprint 12.9.F: sentinels MUST be primary-study type (not reviews
+    # / mechanism papers / book chapters). Researka's `type` field +
+    # title-keyword heuristics in `_classify_role` flag papers that
+    # mention the topic but aren't primary lifespan studies. Without
+    # this filter, the auto-pack picks top-topic-score papers
+    # regardless of whether they're primary studies, which causes
+    # the sentinel-recall gate to WARN (0/N pass) on rapamycin-grade
+    # topics. Anchors retain all paper types (the anchor block uses
+    # _classify_role to tag each with its actual role).
+    primary_pool = [
+        p for p in papers if p.get("doi") and _classify_role(p) == "primary-study"
+    ]
+    sentinels = primary_pool[:sentinel_n]
+    # Remaining slots fill anchors; mix primary studies + reviews +
+    # mechanism papers so the writer has the full anchor vocabulary.
+    sentinel_dois = {s["doi"] for s in sentinels}
+    anchor_pool = [
+        p for p in papers
+        if p.get("doi") and p["doi"] not in sentinel_dois
+    ][:anchor_n]
 
     interv_list = ", ".join(f'"{_toml_str(t)}"' for t in primary_interventions)
     species_list = ", ".join(f'"{_toml_str(t)}"' for t in species_terms)
@@ -109,11 +155,15 @@ def _render(
     )
 
     # Anchor + bibliography blocks share keys. Build them together.
+    # Each anchor's role is classified from the Researka response so
+    # mechanism-review / narrative-review / clinical-trial papers
+    # are NOT mislabelled as primary-study (Sprint 12.9.F fix).
     anchor_lines: list[str] = []
     bib_lines: list[str] = []
     for p in anchor_pool:
         key = _anchor_key(p.get("doi"), p.get("publication_year"), p.get("title") or "")
-        anchor_lines.append(f'"{_toml_str(key)}" = "primary-study"')
+        role = _classify_role(p)
+        anchor_lines.append(f'"{_toml_str(key)}" = "{role}"')
         title = _toml_str((p.get("title") or "").strip())
         journal = _toml_str((p.get("journal_name") or "").strip())
         year = p.get("publication_year") or "(n.d.)"
