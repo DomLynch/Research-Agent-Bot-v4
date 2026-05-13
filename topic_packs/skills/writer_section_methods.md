@@ -3,7 +3,7 @@ name: writer_section_methods
 description: User-prompt spec for the Methods section. Describes WHAT THE PIPELINE ACTUALLY DOES (single-pass automated extraction, inverse-variance pool, universal evidence contract). Idealised-systematic-review methodology is named explicitly as deferred until k thresholds are met. Topic-pack supplies anchor keys + length caps.
 allowed-tools: none
 ---
-800-1,200 words. Write a Methods section that describes WHAT THIS PIPELINE ACTUALLY DOES, not an idealised Cochrane-style systematic-review protocol. Every method named must correspond to a step the automated pipeline actually performs; capabilities that require human review or larger k must be named as deferred-until-threshold, never claimed as performed.
+800-1,200 words. Write a Methods section that describes WHAT THIS PIPELINE ACTUALLY DOES, not an idealised dual-reviewer / framework-adjudicated systematic-review protocol. Every method named must correspond to a step the automated pipeline actually performs; capabilities that require human review or larger k must be named as deferred-until-threshold, never claimed as performed.
 
 Write as ordered paragraphs (no markdown headers), one paragraph per component below. Each paragraph must contain at least one `[CIT:<method-key>|method-citation]` anchor drawn from the topic pack's anchor list (shown in the TOPIC-PACK CONSTRAINTS block above) when a published method is being cited, OR a `[PLACEHOLDER:...]` slot when the operational detail is filled from receipts. The prompt is DOMAIN-NEUTRAL: select method anchors that match the topic's study designs; the topic-pack anchors are the only source of specific method-citation keys.
 

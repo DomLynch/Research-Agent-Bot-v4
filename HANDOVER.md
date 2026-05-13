@@ -40,11 +40,11 @@ PRISMA-style funnel: 502 records identified → 298 candidates → 256 OA full-t
 
 | Check | Result |
 |---|---|
-| **pytest** | 366 / 366 pass (0 failing) |
+| **pytest** | 373 passed + 1 xfail (universal-lane-key refactor pending) |
 | **ruff** | clean (47 source files) |
 | **mypy --strict** | clean (47 source files) |
-| **LOC gate** | `agent/` = 6,880 / 7,500 (margin 620) |
-| **Tri-sync** | macbook = origin/main aligned (3f86d07); VPS sync per operator workflow |
+| **LOC gate** | `agent/` = 7,002 / 7,500 (margin 498) |
+| **Tri-sync** | macbook = origin/main aligned (Sprint 12.8.6); VPS sync per operator workflow |
 
 ### Final paper folder
 
