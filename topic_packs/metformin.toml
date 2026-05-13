@@ -174,20 +174,13 @@ genotype_modified_strain_markers = [
 "MODERATOR_P:treatment_initiation_age" = "age at treatment initiation"
 
 # --- methods honesty rewrites ---------------------------------------------
-# Universal rewrites first (target topic-agnostic strings). Topic-specific
-# corrective rewrites can be added iteratively after observing what the
-# writer drafts for metformin.
+# Generic systematic-review overclaim patches (dual extraction, full meta-
+# regression apparatus, leave-one-out/Egger, PACKET anchor strips) live in
+# agent/methods_honesty.py `_UNIVERSAL_REWRITES` and apply to every topic.
+# This pack adds only METFORMIN-SPECIFIC corrections discovered during
+# render audits — left empty on initial sprint; add entries when a real
+# rewrite need surfaces.
 [methods_honesty_rewrites]
-# Universal corpus-prose tokens (work on any topic whose receipts use the
-# project's standard schema).
-"after strict A-core auditing, 4 records remain eligible for primary-effect extraction" = "after strict A-core auditing, [STRICT_A_CORE_COUNT] records remain eligible for primary-effect extraction ([STRICT_A_CORE_IDS]; [K_POOLABLE] currently yield inverse-variance-poolable numerics)"
-"sample-size recovery was incomplete for certain studies (e.g., s230, s235), preventing inverse-variance weighting for those records" = "sample-size or metric recovery remains incomplete for [INCOMPLETE_RECOVERY_IDS], preventing inverse-variance weighting for those records"
-# Strip [PACKET:...] audit anchors from manuscript prose.
-"[PACKET:study_selection]" = "(Supplementary §S2-S3; Appendix A)"
-"[PACKET:corpus_characteristics]" = "(Supplementary §S4; Appendix A)"
-"[PACKET:primary_effect]" = "(Supplementary §S5/S5b; Appendix A)"
-"[PACKET:primary_pool_composition]" = "(Supplementary §S4 and §S8; Appendix A)"
-"[PACKET:sentinel_recall]" = "(Supplementary §S7; Appendix A)"
 
 # --- back-matter prose ----------------------------------------------------
 [back_matter]
