@@ -36,6 +36,22 @@ from agent.topic_pack import TopicPack
 # safety net if the writer slips. Each entry's LHS must match a phrase
 # the writer is likely to emit verbatim for any meta-analysis topic.
 _UNIVERSAL_REWRITES: dict[str, str] = {
+    # --- Future-tense intro overclaims (GPT-auditor catch 2026-05-13) --
+    # The writer template borrows future-tense framing from systematic-
+    # review protocols ("will be implemented", "will query", "will
+    # combine"). The pipeline has ALREADY run by the time the manuscript
+    # is stitched, so this prose is dishonest. Universal: any topic that
+    # picks up the writer template inherits the rewrite for free.
+    "This synthesis will be implemented":
+        "This synthesis was implemented",
+    "The search strategy will query":
+        "The search strategy queried",
+    "The query-term structure will combine":
+        "The query-term structure combined",
+    "Eligibility screening will follow":
+        "Eligibility screening followed",
+    "Data extraction will capture":
+        "Data extraction captured",
     # --- Methods overclaim verbs --------------------------------------
     "Extraction will be performed with independent dual extraction; disagreements will be resolved by consensus or, if necessary, by consulting a third party.":
         "Extraction is performed by a single automated pass over parsed full text under the universal evidence contract; every extraction (study_id, metric, treated/control values, n, evidence quotes, model, timestamps) is filed in `effect_extractions.json`. Independent dual extraction and third-party adjudication are planned for the pre-publication step.",
