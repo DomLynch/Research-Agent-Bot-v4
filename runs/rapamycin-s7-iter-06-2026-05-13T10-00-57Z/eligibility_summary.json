@@ -1,0 +1,23 @@
+{
+  "topic": "rapamycin",
+  "iter": 6,
+  "timestamp_utc": "2026-05-13T10-00-57Z",
+  "k_hits": 692,
+  "k_candidates": 341,
+  "k_full_text_located": 270,
+  "k_parsed_with_text": 147,
+  "triage_labels": {
+    "unclear": 66,
+    "eligible_likely": 79,
+    "exclude_likely": 2
+  },
+  "final_decisions": {
+    "exclude": 116,
+    "unclear": 10,
+    "include": 21
+  },
+  "k_eligible": 21,
+  "contract_violations": 0,
+  "dry_run": false,
+  "judge_model": "google/gemma-4-31b-it"
+}

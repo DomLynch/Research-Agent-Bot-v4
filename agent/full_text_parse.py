@@ -39,12 +39,29 @@ _JUNK_MARKERS = (
     "access denied",
     "request blocked",
     "we apologize for the inconvenience",
+    # Sprint 12.9 Task B — broadened junk detection so cookie / paywall
+    # splash pages no longer count as a successful parse and the
+    # Europe-PMC + PDF-retry fallback chain fires for them.
+    "subscribe to access this content",
+    "subscribe to read",
+    "purchase this article",
+    "cookie consent",
+    "please enable javascript",
+    "checking your browser",
+    "cloudflare",
+    "ddos protection",
 )
 
 
 def _looks_like_junk(text: str) -> bool:
     head = text[:1500].casefold()
     return any(m in head for m in _JUNK_MARKERS)
+
+
+# Sprint 12.9 Task B — minimum body length for a "parse counts as
+# adequate" verdict in the fallback ladder. Anything below this AND a
+# fallback URL exists triggers the PMC-mirror / PDF-retry chain.
+_THIN_PARSE_CHARS = 2000
 
 SourceKind = Literal["pmc-xml", "html", "pdf", "unsupported"]
 
