@@ -17,6 +17,7 @@ decision='unclear', confidence=0.0, parse_error filled.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
@@ -123,6 +124,68 @@ def _empty(study_id: str, model: str, raw: str, err: str) -> EligibilityProposal
         reasons=("judge proposal unavailable",), evidence_quotes=(),
         eligibility_fields=MappingProxyType({}), model=model,
         raw_response=raw, parse_error=err,
+    )
+
+
+def curated_proposal(
+    candidate: CandidateStudy,
+    parsed: ParsedFullText,
+    triage: EligibilityTriage,
+    pack: TopicPack,
+) -> EligibilityProposal:
+    """Sprint 12.9: synthesise an EligibilityProposal for a candidate whose
+    retrieval source is a curated index (currently Researka Tier-1).
+
+    Replaces the LLM judge call entirely for such candidates: the curated
+    index has already vetted topic-relevance, so we trust the Pass-1 rule
+    triage's mandatory_fields verdict and synthesise evidence_quotes from
+    the parsed text by pulling sentences that name a pack endpoint or
+    primary-intervention term. The universal evidence contract
+    (`include_contract.py`) still runs downstream and demotes any include
+    whose parsed text is actually insufficient — so curation trust never
+    bypasses receipt-level rigor.
+
+    Universal: reads only `pack.primary_interventions` +
+    `pack.eligibility_endpoint_terms` from the topic pack; no biomedical
+    literals in this function.
+    """
+    text = parsed.text or ""
+    # Sentence-ish split — period / newline boundaries. Cheap, no NLP dep.
+    sentences = re.split(r"(?<=[.!?])\s+|\n+", text)
+    needles = tuple(
+        t.lower() for t in
+        (*pack.primary_interventions, *pack.eligibility_endpoint_terms) if t
+    )
+    quotes: list[str] = []
+    for s in sentences:
+        s_clean = " ".join(s.split())
+        if not s_clean or len(s_clean) < 40:
+            continue
+        low = s_clean.lower()
+        if any(n in low for n in needles):
+            quotes.append(s_clean[:400])
+            if len(quotes) >= 2:
+                break
+    # If the rule triage already says all mandatory fields are satisfied,
+    # propose include; otherwise unclear and let the standard merge +
+    # contract gate decide. Confidence is deliberately below the 0.95
+    # band typical LLM-judge includes settle into — a curated short-
+    # circuit isn't more confident than a per-paper human-style review.
+    all_ok = all(triage.mandatory_fields.get(k, False) for k in MANDATORY_KEYS)
+    decision: JudgeDecision = "include" if all_ok else "unclear"
+    return EligibilityProposal(
+        study_id=candidate.study_id,
+        decision=decision,
+        confidence=0.85 if all_ok else 0.55,
+        reasons=(
+            f"curated source ({candidate.source}); LLM judge skipped per "
+            "Sprint 12.9 Researka-spine policy",
+        ),
+        evidence_quotes=tuple(quotes),
+        eligibility_fields=triage.mandatory_fields,
+        model=f"curated:{candidate.source or 'unknown'}",
+        raw_response="",
+        parse_error="",
     )
 
 
