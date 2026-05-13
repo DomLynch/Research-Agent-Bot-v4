@@ -187,6 +187,49 @@ def call_writer(
     )
 
 
+def call_writer_with_fallback(
+    settings: Settings,
+    messages: list[dict[str, str]],
+    *,
+    temperature: float = 0.3,
+    max_tokens: int | None = 4000,
+) -> LLMResponse:
+    """Sprint 14: 2-tier writer fallback for the MiMo runaway pathology.
+
+    Tries MiMo first (the canonical writer). When MiMo runs away on all
+    4 attempts, falls back to Gemma 4 31B via OpenRouter — the same
+    model that powers the judge. Gemma is a competent generalist for
+    prose, so a one-section fallback render keeps the paper from
+    shipping with `[SECTIONS_PENDING]` markers.
+
+    The fallback `LLMResponse.model` field is tagged
+    `mimo-runaway-fallback:<gemma_model_id>` so the run-folder audit
+    trail shows when the secondary writer was used (transparent
+    provenance — never silent substitution).
+
+    Non-MiMo-runaway RuntimeErrors propagate unchanged so genuine
+    config / network failures fail loudly. Gemma fallback failures also
+    propagate (the caller can then choose a deterministic skeleton).
+    """
+    try:
+        return call_writer(
+            settings, messages, temperature=temperature, max_tokens=max_tokens,
+        )
+    except RuntimeError as e:
+        if "MiMo runaway" not in str(e):
+            raise
+    # MiMo runaway -> Gemma. Note: model swap is logged via the response
+    # model field; the AI-Use Disclosure prose names both models so
+    # readers can see which one produced which section.
+    resp = call_judge(settings, messages, temperature=temperature)
+    return LLMResponse(
+        content=resp.content,
+        model=f"mimo-runaway-fallback:{resp.model}",
+        prompt_tokens=resp.prompt_tokens,
+        completion_tokens=resp.completion_tokens,
+    )
+
+
 def call_judge(
     settings: Settings,
     messages: list[dict[str, str]],

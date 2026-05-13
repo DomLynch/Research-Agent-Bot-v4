@@ -20,7 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.claim_gates import run_all_gates
-from agent.llm_client import call_writer
+from agent.llm_client import call_writer_with_fallback
 from agent.prompts import (
     writer_discussion,
     writer_methods,
@@ -107,7 +107,7 @@ def main() -> int:
     print(f"[draft] topic={args.topic} section={args.section} iter={args.iter} model={settings.mimo_model}")
     print(f"[draft] topic_pack={'loaded' if pack else 'none'}")
     print("[draft] calling writer…")
-    resp = call_writer(settings, messages)
+    resp = call_writer_with_fallback(settings, messages)
     print(f"[draft] tokens: prompt={resp.prompt_tokens} completion={resp.completion_tokens}")
 
     parsed = _parse_sections(resp.content)
