@@ -351,6 +351,21 @@ def main() -> int:
         encoding="utf-8",
     )
 
+    # Sprint 19: per-study extraction confidence + needs_human_audit
+    # flag, derived from the dual-pass reviewer provenance. Sidecar
+    # receipt so downstream human-audit + readiness layers can read it
+    # without touching ExtractionReceipt shape.
+    from agent.extraction_confidence import score_extractions
+    confidence_report = score_extractions(receipts_rehydrated)
+    (rd / "extraction_confidence.json").write_text(
+        json.dumps(confidence_report.as_dict(), indent=2), encoding="utf-8",
+    )
+    print(
+        f"[extract] confidence: k_total={confidence_report.k_total} "
+        f"k_needs_audit={confidence_report.k_needs_audit} "
+        f"mean={confidence_report.mean_confidence:.3f}"
+    )
+
     # Sprint 8 pooling: convert contract-passing receipts to
     # (ExtractedOutcome, EffectSizeRecord) pairs and write to disk so
     # regen_section3 can render the primary-effect prose. Receipts that
