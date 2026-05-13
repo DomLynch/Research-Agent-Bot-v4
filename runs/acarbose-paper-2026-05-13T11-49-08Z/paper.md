@@ -6,7 +6,7 @@
   placeholders resolved: 6 (unresolved: 4)
   honesty rewrites applied: 7
   citations resolved: 13 (unresolved: 0)
-  stamped: 2026-05-13T12:32:32+00:00
+  stamped: 2026-05-13T12:38:43+00:00
 -->
 
 
@@ -42,7 +42,7 @@ Sentinel-paper recall audit (gate: WARN): 3/3 canonical primary-study anchors re
 The 3 auto-eligible records span publication years 2019-2023 and 3 distinct venues (Supplementary §S4; Appendix A).
 
 ### Extracted Primary Effect
-The inverse-variance-pooled primary effect (k=1 contract-passing studies: s036) is log_ratio = [POOL_ESTIMATE][UNRESOLVED] (95% CI [[POOL_CI_LOW][UNRESOLVED], [POOL_CI_HIGH][UNRESOLVED]]; back-transformed ratio = [POOL_RATIO_BACK][UNRESOLVED]). Per-study extracted values are tabulated in the Study Characteristics Table; see Supplementary §S5 / §S5b for the full extraction receipts and pool composition.
+The inverse-variance-pooled primary effect (k=1 contract-passing studies: s036) is log_ratio = 0.161 (95% CI [-0.029, 0.351]; back-transformed ratio = 1.17). Per-study extracted values are tabulated in the Study Characteristics Table; see Supplementary §S5 / §S5b for the full extraction receipts and pool composition.
 
 ### Moderator, sensitivity, and translational analyses
 Moderator meta-regression, sensitivity analyses (leave-one-out, influence diagnostics, funnel-plot inspection, publication-bias regression), the prespecified tension matrix, and the translational evidence map are **not estimable in the current corpus**: the contract-passing effect count within a single metric family (1) is below the field convention of k>=5-10 for moderator inference, so no inferential machinery beyond the inverse-variance point estimate can be honestly reported. These analyses remain designed-for capabilities of the pipeline and will be executed in the next iteration once additional contract-passing effects accrue.
