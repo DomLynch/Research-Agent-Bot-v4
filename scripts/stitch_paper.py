@@ -73,6 +73,34 @@ def _pending(label: str, hint: str) -> str:
     return f"[SECTIONS_PENDING:{label} — {hint}]"
 
 
+_TERMINAL_PUNCT: frozenset[str] = frozenset(".!?:)]}`")
+
+
+def _ends_cleanly(section_body: str) -> bool:
+    """True iff the section's last non-blank line ends with a terminal-
+    punctuation character or a list/code-block closer. Used by the
+    Sprint 31 mid-sentence-truncation hard gate."""
+    for line in reversed(section_body.splitlines()):
+        stripped = line.rstrip()
+        if not stripped:
+            continue
+        return stripped[-1] in _TERMINAL_PUNCT
+    return True  # empty body — caught by a different gate (SECTIONS_PENDING)
+
+
+def _find_truncated_sections(
+    intro: str, methods: str, results: str, discussion: str,
+) -> list[str]:
+    """Return labels of sections that look truncated mid-sentence."""
+    return [
+        label for label, body in (
+            ("title_abstract_intro", intro), ("methods", methods),
+            ("results", results), ("discussion", discussion),
+        )
+        if "[SECTIONS_PENDING:" not in body and not _ends_cleanly(body)
+    ]
+
+
 def _load_receipts(
     run_dir: Path | None,
 ) -> tuple[dict[str, object], dict[str, object], dict[str, object], dict[str, object]]:
@@ -169,6 +197,21 @@ def stitch(
             f"Run scripts/draft_main.py for each section first, or pass "
             f"--allow-pending to stage a partial draft."
         )
+
+    # Sprint 31 hard gate: every drafted section must end in terminal
+    # punctuation (.!?:)]}` or a list/code-block closer). Mid-sentence
+    # truncation is a writer-side failure mode (max_tokens cap hit, JSON
+    # parse trimmed prose, etc.) and is desk-rejection grounds. Universal
+    # — check is content-shape only, no topic literals.
+    if not allow_pending:
+        truncated = _find_truncated_sections(intro, methods, results, discussion)
+        if truncated:
+            raise RuntimeError(
+                f"refusing to stitch paper.md with mid-sentence section "
+                f"truncation: {truncated}. Re-run the affected draft_main.py "
+                f"stage(s) (likely max_tokens too low for the prompt size), "
+                f"or pass --allow-pending to stage anyway."
+            )
 
     summary, strict, extr, pool = _load_receipts(s7)
     # Pass 1: resolve raw writer-emitted count + topic-pack placeholders.
