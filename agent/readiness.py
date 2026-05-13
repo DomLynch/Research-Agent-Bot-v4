@@ -51,11 +51,14 @@ def classify_readiness(
     pool: dict[str, object] | None,
 ) -> ReadinessReport:
     """Return the readiness level. Empty / None inputs never raise."""
+    # `effect_extractions.json` carries the list under the key "receipts"
+    # (matches extract_effects.py writer); legacy fixtures occasionally
+    # used "extractions" — accept both, prefer the canonical key.
     counts = {
         "k_eligible": _int(summary, "k_eligible"),
         "k_a_core": _count(strict, "A_core_direct_lifespan"),
         "k_b_lane": _count(strict, "B_disease_model_survival"),
-        "k_extractions": _count(extractions, "extractions"),
+        "k_extractions": _count(extractions, "receipts") or _count(extractions, "extractions"),
         "k_pool": _count(pool, "effects"),
     }
     k_e, k_a, k_p = counts["k_eligible"], counts["k_a_core"], counts["k_pool"]

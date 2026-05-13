@@ -152,20 +152,28 @@ def _study_cards_from_extractions(
 
 
 def _claim_cards_from_pool(pool: dict[str, object]) -> tuple[ClaimCard, ...]:
-    outcomes = pool.get("outcomes")
-    if not isinstance(outcomes, list):
-        return ()
+    """Read the inverse-variance pool summary from effect_pool.json.
+
+    Bug fix (GPT-auditor 2026-05-13): the previous reader looked for
+    pooled-effect fields inside `pool["outcomes"]`, but `outcomes` is the
+    per-study record list — the pooled claim itself lives in
+    `pool["pooled_a_core_summary"]` (canonical key written by
+    compile_pool / regen_section3) and optionally
+    `pool["pooled_sensitivity_summary"]` for the sensitivity pool.
+    Universal: keys are pool-writer-canonical, no domain literals.
+    """
     cards: list[ClaimCard] = []
-    for o in outcomes:
-        if not isinstance(o, dict):
+    for key in ("pooled_a_core_summary", "pooled_sensitivity_summary"):
+        s = pool.get(key)
+        if not isinstance(s, dict):
             continue
         cards.append(ClaimCard(
-            k_effects=_safe_int(o.get("k")) or 0,
-            pooled_effect=_safe_float(o.get("pooled_effect")),
-            pooled_ci_low=_safe_float(o.get("ci_low")),
-            pooled_ci_high=_safe_float(o.get("ci_high")),
-            i_squared=_safe_float(o.get("i_squared")),
-            metric=str(o.get("metric") or ""),
+            k_effects=_safe_int(s.get("k")) or 0,
+            pooled_effect=_safe_float(s.get("estimate")),
+            pooled_ci_low=_safe_float(s.get("ci_low")),
+            pooled_ci_high=_safe_float(s.get("ci_high")),
+            i_squared=_safe_float(s.get("i_squared")),
+            metric=str(s.get("metric") or ""),
         ))
     return tuple(cards)
 
