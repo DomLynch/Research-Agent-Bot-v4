@@ -32,7 +32,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.effect_extraction import (
     ExtractionReceipt,
+    build_adjudicator_prompt,
     build_extraction_prompt,
+    build_extraction_prompt_strict_verify,
+    compare_receipts,
+    merge_agreed_receipts,
     parse_extraction_response,
     receipt_from_response,
     validate_extraction,
@@ -90,6 +94,88 @@ def _dry_run_receipt(study_id: str) -> ExtractionReceipt:
         moderators=MappingProxyType({}),
         evidence_quotes=(), failure_reason="dry-run; LLM call skipped",
         reviewer="dry-run", text_hash="", timestamp_utc=_now_utc(),
+    )
+
+
+def _run_dual_pass(
+    *, primary: ExtractionReceipt, pack: Any, study_id: str, title: str,
+    parsed_text: str, settings: Any, text_hash: str, temperature: float,
+) -> ExtractionReceipt:
+    """Sprint 12.9 Task C orchestrator: run strict-verify Pass-B + adjudicate.
+
+    Inputs:
+      `primary`  — the Pass-A receipt (status='extracted').
+      Returns the dual-pass result with reviewer field tagged
+      'mimo-dual-pass-agreed' / 'mimo-dual-pass-adjudicated' / 'mimo-dual-pass-pass-b-failed'
+      depending on the outcome.
+
+    Bounded: at most two extra LLM calls (Pass-B + adjudicator). On any
+    Pass-B failure the function returns the primary receipt unchanged
+    (with the reviewer noting the dual-pass attempt) — never sinks the
+    extraction step.
+    """
+    # Pass-B: strict-verify variant of the same extraction prompt.
+    try:
+        b_msg = build_extraction_prompt_strict_verify(
+            pack, study_id, title, parsed_text,
+        )
+        b_resp = call_writer(settings, b_msg, temperature=temperature)
+        b_parsed = parse_extraction_response(b_resp.content)
+        pass_b = receipt_from_response(
+            b_parsed, study_id=study_id, text_hash=text_hash,
+            reviewer=f"mimo-strict:{b_resp.model}", timestamp_utc=_now_utc(),
+        )
+    except (ValueError, OSError, RuntimeError):
+        return _retag(primary, reviewer="mimo-dual-pass-pass-b-failed")
+    disagreements = compare_receipts(primary, pass_b)
+    if not disagreements:
+        return merge_agreed_receipts(
+            primary, pass_b, reviewer="mimo-dual-pass-agreed",
+        )
+    # Adjudicator call. Bounded to ONE attempt: if the adjudicator
+    # itself fails to return parseable JSON, we keep Pass-A as the
+    # default (it ran first and feeds the existing pool path).
+    try:
+        adj_msg = build_adjudicator_prompt(
+            primary, pass_b, disagreements, parsed_text,
+        )
+        adj_resp = call_writer(settings, adj_msg, temperature=temperature)
+        adj_parsed = parse_extraction_response(adj_resp.content)
+        return receipt_from_response(
+            adj_parsed, study_id=study_id, text_hash=text_hash,
+            reviewer=(
+                f"mimo-dual-pass-adjudicated:{adj_resp.model};"
+                f"disagreements={','.join(disagreements)}"
+            ),
+            timestamp_utc=_now_utc(),
+        )
+    except (ValueError, OSError, RuntimeError):
+        return _retag(
+            primary, reviewer=(
+                f"mimo-dual-pass-adjudicator-failed;"
+                f"disagreements={','.join(disagreements)}"
+            ),
+        )
+
+
+def _retag(receipt: ExtractionReceipt, *, reviewer: str) -> ExtractionReceipt:
+    """Return a copy of `receipt` with a new `reviewer` provenance
+    string. Used to record dual-pass attempts on the primary receipt
+    when Pass-B / adjudicator paths failed."""
+    return ExtractionReceipt(
+        study_id=receipt.study_id, status=receipt.status,
+        metric=receipt.metric,
+        treated_value=receipt.treated_value, control_value=receipt.control_value,
+        treated_n=receipt.treated_n, control_n=receipt.control_n,
+        hazard_ratio=receipt.hazard_ratio,
+        hazard_ratio_ci_low=receipt.hazard_ratio_ci_low,
+        hazard_ratio_ci_high=receipt.hazard_ratio_ci_high,
+        percent_change=receipt.percent_change,
+        moderators=receipt.moderators,
+        evidence_quotes=receipt.evidence_quotes,
+        failure_reason=receipt.failure_reason,
+        reviewer=reviewer,
+        text_hash=receipt.text_hash, timestamp_utc=receipt.timestamp_utc,
     )
 
 
@@ -206,6 +292,18 @@ def main() -> int:
                         r = _placeholder_receipt(
                             sid, f"extraction error after 2 attempts: {e}",
                         )
+            # Sprint 12.9 Task C: dual-pass extraction. After the primary
+            # pass (above) lands an extracted receipt, run an independent
+            # strict-verify pass and adjudicate any pool-critical
+            # disagreement. Skip when Pass-A already failed (no benefit)
+            # or when the operator opted out via EXTRACTION_DUAL_PASS=false.
+            if (settings.extraction_dual_pass and r.status == "extracted"):
+                r = _run_dual_pass(
+                    primary=r, pack=pack, study_id=sid, title=title,
+                    parsed_text=parsed_text, settings=settings,
+                    text_hash=parsed_receipts.get(sid, {}).get("text_hash", ""),
+                    temperature=args.temperature,
+                )
         receipts.append(r)
         with checkpoint.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(_receipt_to_dict(r)) + "\n")
