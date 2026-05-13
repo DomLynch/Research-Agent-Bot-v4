@@ -144,32 +144,11 @@ def select_paper_type(readiness: ReadinessReport) -> PaperType:
 
 
 def writer_preamble(paper_type: PaperType) -> str:
-    """Sprint 32 — render a writer-prompt preamble that carries the
-    PaperType's framing constraints into the LLM's system message.
-
-    Universal: every constraint is paper-type-canonical (no topic
-    literals). When draft_main.py injects this preamble, the writer
-    sees the paper-type contract BEFORE drafting prose — so a
-    scoping-review topic doesn't accidentally produce "quantitative
-    synthesis" titling.
-    """
-    if not paper_type.forbidden_claims and not paper_type.rationale:
+    """Sprint 32 — paper-type constraint prefix for the writer prompt.
+    Sprint 37: trimmed to ~200 chars (was 673) to keep MiMo below its
+    runaway threshold on intro/methods/discussion prompts. Carries the
+    paper-type name + forbidden_claims as a tight bullet list."""
+    if not paper_type.forbidden_claims:
         return ""
-    lines = [
-        f"PAPER-TYPE CONTRACT — this manuscript is a `{paper_type.name}` "
-        f"output, NOT a generic systematic review.",
-        f"Rationale: {paper_type.rationale}",
-        "",
-        "You MUST honor the following constraints when writing every "
-        "section (title, abstract, methods, results, discussion):",
-    ]
-    for claim in paper_type.forbidden_claims:
-        lines.append(f"  - {claim}")
-    lines.append("")
-    lines.append(
-        "If any prior writer-template phrase would violate one of these "
-        "constraints (e.g. 'quantitative synthesis' when k_pool=0; "
-        "'meta-analysis' when the paper-type is scoping-review), "
-        "substitute paper-type-appropriate wording."
-    )
-    return "\n".join(lines) + "\n"
+    bullets = "\n".join(f"- {c}" for c in paper_type.forbidden_claims)
+    return f"PAPER-TYPE={paper_type.name}. Constraints:\n{bullets}\n"

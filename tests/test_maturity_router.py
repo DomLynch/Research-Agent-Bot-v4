@@ -117,18 +117,16 @@ def test_l6_threshold_boundaries_exact() -> None:
 
 def test_writer_preamble_for_scoping_review_blocks_meta_wording() -> None:
     """The acarbose-style failure case: L4 paper auto-routed to
-    scoping-review. The preamble must explicitly forbid pooling and
-    meta-analytic claims so MiMo can't emit 'quantitative synthesis'
-    titles."""
+    scoping-review. The preamble (Sprint 37 trimmed form) must carry
+    the paper-type name + forbidden-pool constraint as a tight bullet
+    list — under ~250 chars so MiMo stays below its runaway threshold
+    on the intro/methods/discussion prompts."""
     from agent.maturity_router import writer_preamble
     pt = select_paper_type(_readiness(4, k_pool=0))
     p = writer_preamble(pt)
     assert "scoping-review" in p
     assert "do not pool effects across studies" in p
-    assert "PAPER-TYPE CONTRACT" in p
-    # Anti-hallucination guard: explicit substitution instruction.
-    assert "scoping-review" in p.lower()
-    assert "k_pool=0" in p.lower() or "quantitative synthesis" in p.lower()
+    assert len(p) < 300, f"preamble too long ({len(p)} chars) — MiMo runaway risk"
 
 
 def test_writer_preamble_for_l6_full_meta_has_no_blocking_constraints() -> None:
