@@ -1,0 +1,22 @@
+{
+  "topic": "metformin",
+  "iter": 3,
+  "timestamp_utc": "2026-05-13T06-25-58Z",
+  "k_hits": 485,
+  "k_candidates": 158,
+  "k_full_text_located": 107,
+  "k_parsed_with_text": 56,
+  "triage_labels": {
+    "unclear": 22,
+    "eligible_likely": 34
+  },
+  "final_decisions": {
+    "exclude": 48,
+    "include": 5,
+    "unclear": 3
+  },
+  "k_eligible": 5,
+  "contract_violations": 0,
+  "dry_run": false,
+  "judge_model": "google/gemma-4-31b-it"
+}

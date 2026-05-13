@@ -1,0 +1,33 @@
+{
+  "_doc": "Sprint 8 effect-extraction receipts. Each strict A-core record gets one receipt. Pooling reads only receipts that pass validate_extraction(); the rest are documented extraction failures.",
+  "topic": "metformin",
+  "run_id": "metformin-s7-iter-03-2026-05-13T06-25-58Z",
+  "frozen_at_utc": "2026-05-13T06:30:15+00:00",
+  "k_records": 1,
+  "k_contract_passing": 0,
+  "receipts": [
+    {
+      "study_id": "s049",
+      "status": "no_numerics",
+      "metric": "median_survival",
+      "treated_value": null,
+      "control_value": null,
+      "treated_n": 10,
+      "control_n": 10,
+      "hazard_ratio": null,
+      "hazard_ratio_ci_low": null,
+      "hazard_ratio_ci_high": null,
+      "percent_change": null,
+      "moderators": {
+        "dose": "200 mg/kg"
+      },
+      "evidence_quotes": [
+        "a higher dose of metformin (200 mg/kg) resulted in 100% lethality of I/R mice while the untreated I/R mice showed 100% survival (Fig. 1h)."
+      ],
+      "failure_reason": "The paper describes survival outcomes qualitatively but does not provide numeric effect sizes such as median survival times or hazard ratios.",
+      "reviewer": "mimo:mimo-v2.5-pro",
+      "text_hash": "09c9e05fa319013ba67ea616c30c2654182945266d5eb0975adb9d855e697feb",
+      "timestamp_utc": "2026-05-13T06:30:15+00:00"
+    }
+  ]
+}

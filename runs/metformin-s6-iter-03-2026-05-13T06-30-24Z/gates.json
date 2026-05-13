@@ -1,0 +1,20 @@
+{
+  "summary": {
+    "total": 2,
+    "by_gate": {
+      "evidence_slot": 2
+    }
+  },
+  "violations": [
+    {
+      "gate": "evidence_slot",
+      "location": "DISCUSSION",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'Boundary conditions that may moderate any potential effect are currently underdetermined in the evidence base.'"
+    },
+    {
+      "gate": "evidence_slot",
+      "location": "LIMITATIONS",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'The analysis therefore cannot detect modest effects or reliably explore heterogeneity.'"
+    }
+  ]
+}
