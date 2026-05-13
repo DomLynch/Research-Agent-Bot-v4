@@ -1,0 +1,17 @@
+{
+  "level": 5,
+  "label": "pilot-pool",
+  "reasons": [
+    "effect_pool.effects = 2 \u2014 pilot pool, below the k>=3 threshold for meta-analytic claims"
+  ],
+  "next_steps": [
+    "expand corpus; rerun eligibility + extraction with broader inclusion"
+  ],
+  "counts": {
+    "k_eligible": 8,
+    "k_a_core": 3,
+    "k_b_lane": 1,
+    "k_extractions": 0,
+    "k_pool": 2
+  }
+}

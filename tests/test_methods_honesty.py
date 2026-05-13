@@ -130,3 +130,40 @@ def test_multiple_rewrites_apply_in_order() -> None:
     assert "automated SYRCLE-style screen" in out.body
     assert "Egger's test (planned, k<10)" in out.body
     assert set(out.rewrites_applied) == {"SYRCLE risk-of-bias", "Egger's test"}
+
+
+def test_future_tense_intro_overclaims_rewritten_to_past_tense() -> None:
+    """GPT-auditor catch 2026-05-13: the Methods template borrows future-
+    tense framing from SR protocols, but the pipeline has already run
+    by stitch time. Universal rewrite fixes any topic that hits these
+    patterns — no domain literals required."""
+    body = (
+        "## Methods\n"
+        "This synthesis will be implemented using a reproducible pipeline. "
+        "The search strategy will query PubMed and Crossref. "
+        "The query-term structure will combine intervention terms with "
+        "outcome vocabulary. Eligibility screening will follow PRISMA-2020. "
+        "Data extraction will capture metric, n, and evidence quotes.\n"
+    )
+    out = apply_honesty_rewrites(body, _pack({}))
+    # None of these future-tense phrases should remain.
+    for phrase in (
+        "will be implemented", "will query", "will combine",
+        "will follow", "will capture",
+    ):
+        assert phrase not in out.body, f"future-tense leak: {phrase!r}"
+    # The honest past-tense replacements should be present.
+    assert "was implemented" in out.body
+    assert "queried" in out.body
+    assert "combined" in out.body
+    assert "followed" in out.body
+    assert "captured" in out.body
+    # All five rewrites must register in the audit trail.
+    expected = {
+        "This synthesis will be implemented",
+        "The search strategy will query",
+        "The query-term structure will combine",
+        "Eligibility screening will follow",
+        "Data extraction will capture",
+    }
+    assert expected.issubset(set(out.rewrites_applied))

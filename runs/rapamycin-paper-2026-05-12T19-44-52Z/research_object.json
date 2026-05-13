@@ -1,0 +1,128 @@
+{
+  "topic": "rapamycin",
+  "paper_dir_name": "rapamycin-paper-2026-05-12T19-44-52Z",
+  "readiness_level": 5,
+  "readiness_label": "pilot-pool",
+  "cite_audit_clean": false,
+  "paper_type": "pilot-meta-analysis",
+  "manual_audits_count": 0,
+  "studies": [
+    {
+      "study_id": "s086",
+      "metric": "maximum_lifespan",
+      "treated_value": 1245.0,
+      "control_value": 1094.0,
+      "treated_n": null,
+      "control_n": null,
+      "percent_change": 14.0,
+      "hazard_ratio": null,
+      "evidence_quotes": [
+        "Females, Rapa vs Control All sites 1094 (1136) 1245 14%"
+      ],
+      "reviewer": "mimo:mimo-v2.5-pro",
+      "extraction_status": "extracted"
+    },
+    {
+      "study_id": "s126",
+      "metric": "median_lifespan_days",
+      "treated_value": 913.0,
+      "control_value": 822.0,
+      "treated_n": 318,
+      "control_n": 313,
+      "percent_change": 10.0,
+      "hazard_ratio": 0.69,
+      "evidence_quotes": [
+        "Pooled across the three sites, median survival was extended by an average of 10% in males (control 822 days, rapamycin 913 days) and 18% in females (control 863 days, rapamycin 1047 days).",
+        "Pooled across sites, total mice per arm: Control males: n = 313, Rapamycin males: n = 318, Control females: n = 312, Rapamycin females: n = 322.",
+        "Cox proportional hazards regression with site, sex, and rapamycin treatment as factors yielded: - Males: hazard ratio 0.69 (95% CI 0.59-0.81), p < 0.0001"
+      ],
+      "reviewer": "mimo:mimo-v2.5-pro",
+      "extraction_status": "extracted"
+    },
+    {
+      "study_id": "s230",
+      "metric": "",
+      "treated_value": null,
+      "control_value": null,
+      "treated_n": null,
+      "control_n": null,
+      "percent_change": null,
+      "hazard_ratio": null,
+      "evidence_quotes": [],
+      "reviewer": "extract-cli",
+      "extraction_status": "parse_failed"
+    },
+    {
+      "study_id": "s235",
+      "metric": "median_lifespan_days",
+      "treated_value": 938.0,
+      "control_value": 856.0,
+      "treated_n": 23,
+      "control_n": 23,
+      "percent_change": 9.6,
+      "hazard_ratio": null,
+      "evidence_quotes": [
+        "Combined data from both sexes showed a 9.6% increase in median lifespan in P4-P30 rapamycin-treated mice compared with control mice (treated with ethanol vehicle).",
+        "Absolute median lifespan values (in days, derived from Kaplan-Meier curves): - Control (combined sexes), n = 23: median lifespan = 856 days - Rapamycin P4-P30 (combined sexes), n = 23: median lifespan = 938 days"
+      ],
+      "reviewer": "mimo:mimo-v2.5-pro",
+      "extraction_status": "extracted"
+    },
+    {
+      "study_id": "s246",
+      "metric": "median_lifespan_days",
+      "treated_value": 350.03,
+      "control_value": 237.41,
+      "treated_n": 31,
+      "control_n": 73,
+      "percent_change": 50.0,
+      "hazard_ratio": null,
+      "evidence_quotes": [
+        "treatment with the mTORC1 inhibitor rapamycin increased lifespan of Bmal1\u2212/\u2212 mice by 50%.",
+        "The median lifespan of untreated mice is 7.8 months and median lifespan of the Rapatar-treated mice is 11.5 months, thus the treatment increased the median lifespan by 50%.",
+        "31 Bmal1\u2212/\u2212 mice (both genders) were treated with rapatar and 73 Bmal1\u2212/\u2212 mice (both genders) treated with control solution were used for the longevity experiment."
+      ],
+      "reviewer": "mimo:mimo-v2.5-pro",
+      "extraction_status": "extracted"
+    },
+    {
+      "study_id": "s288",
+      "metric": "",
+      "treated_value": null,
+      "control_value": null,
+      "treated_n": null,
+      "control_n": null,
+      "percent_change": null,
+      "hazard_ratio": null,
+      "evidence_quotes": [],
+      "reviewer": "extract-cli",
+      "extraction_status": "parse_failed"
+    }
+  ],
+  "claims": [
+    {
+      "k_effects": 0,
+      "pooled_effect": null,
+      "pooled_ci_low": null,
+      "pooled_ci_high": null,
+      "i_squared": null,
+      "metric": ""
+    },
+    {
+      "k_effects": 0,
+      "pooled_effect": null,
+      "pooled_ci_low": null,
+      "pooled_ci_high": null,
+      "i_squared": null,
+      "metric": ""
+    },
+    {
+      "k_effects": 0,
+      "pooled_effect": null,
+      "pooled_ci_low": null,
+      "pooled_ci_high": null,
+      "i_squared": null,
+      "metric": ""
+    }
+  ]
+}
