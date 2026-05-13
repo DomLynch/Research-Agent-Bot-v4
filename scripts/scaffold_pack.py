@@ -138,6 +138,11 @@ def _render(
     ][:anchor_n]
 
     interv_list = ", ".join(f'"{_toml_str(t)}"' for t in primary_interventions)
+    # Sprint 12.9.G: bare CSV form for [PLACEHOLDER:primary_interventions]
+    # / [PLACEHOLDER:preferred_metric_families] strings the writer
+    # references inline (no TOML-array brackets).
+    interv_csv = ", ".join(_toml_str(t) for t in primary_interventions) or "(none declared)"
+    metric_fams_csv = f"median_{_toml_str(endpoint)}, median_survival"
     species_list = ", ".join(f'"{_toml_str(t)}"' for t in species_terms)
     endpoint_terms = [
         endpoint, "survival", "longevity", "mortality", "median survival",
@@ -295,14 +300,28 @@ secondary_design_quote_markers = [
 # writer drafts for any meta-analysis topic. Additional pack-specific
 # moderators can be added by the operator after the first render audit.
 "MODERATOR_P:dose" = "dose level"
+"MODERATOR_P:dose_range" = "dose range (low / moderate / high, post-hoc grouped)"
 "MODERATOR_P:sex" = "biological sex"
 "MODERATOR_P:strain" = "genetic background / strain"
+"MODERATOR_P:mouse_strain" = "genetic background / strain"
 "MODERATOR_P:treatment_initiation_age" = "age at treatment initiation"
 "MODERATOR_P:age_at_intervention_start" = "age at intervention start"
 "MODERATOR_P:route_of_administration" = "route of administration"
 "MODERATOR_P:diet_background" = "diet background"
+"MODERATOR_P:diet" = "diet background (standard chow / CR / HFD)"
 "MODERATOR_P:genetic_background" = "genetic background"
 "MODERATOR_P:intervention" = "intervention identity"
+"MODERATOR_P:intervention_form" = "intervention form / pharmaceutical analogue"
+"MODERATOR_P:lifespan_metric" = "lifespan metric (median / mean / 90th percentile)"
+# Sprint 12.9.G: scope-driven placeholders. The writer commonly
+# references these top-level pack fields via [PLACEHOLDER:<key>]
+# rather than the [scope]/[extraction] table; seed them here so the
+# placeholder resolver finds them. Values are filled from the
+# operator's CLI args by the render template.
+"primary_interventions" = "{interv_csv}"
+"translational_only_interventions" = "(none declared)"
+"translational_interventions" = "(none declared)"
+"preferred_metric_families" = "{metric_fams_csv}"
 
 # Empty initially; populate iteratively as render audits surface drift.
 [methods_honesty_rewrites]

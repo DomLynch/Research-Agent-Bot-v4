@@ -219,13 +219,11 @@ def resolve_placeholders(
         if sid and sid not in seen:
             seen.add(sid)
             incomplete_ids.append(sid)
-    # 12.9.E: POOL_* tokens accept legacy `pooled_a_core_summary` OR
-    # derive from canonical `effects[]` (k=1 pass-thru; k>=2 IV pool).
+    # 12.9.E/G: POOL_* from legacy summary OR effects[]; k=0 renders prose.
     import math
     _ps = (pool or {}).get("pooled_a_core_summary")
-    _keys = ("POOL_ESTIMATE", "POOL_CI_LOW", "POOL_CI_HIGH",
-             "POOL_RATIO_BACK", "POOL_PERCENT_EXT")
-    pool_tokens: dict[str, str] = dict.fromkeys(_keys, "")
+    _keys = ("POOL_ESTIMATE", "POOL_CI_LOW", "POOL_CI_HIGH", "POOL_RATIO_BACK", "POOL_PERCENT_EXT")
+    pool_tokens: dict[str, str] = dict(zip(_keys, ("not estimable", "—", "—", "—", "k=0"), strict=True))
     _est: float | None = None
     if isinstance(_ps, dict):
         try:
