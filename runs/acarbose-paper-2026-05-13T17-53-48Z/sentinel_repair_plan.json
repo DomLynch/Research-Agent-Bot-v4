@@ -1,0 +1,26 @@
+{
+  "clean": false,
+  "k_repair_needed": 2,
+  "entries": [
+    {
+      "sentinel_id": "10.1111/acel.13345",
+      "role": "primary",
+      "failure_mode": "unclear",
+      "bibliography_entry": "",
+      "recommended_actions": [
+        "verify-extraction-quotes",
+        "manual-judge-review"
+      ]
+    },
+    {
+      "sentinel_id": "10.1111/acel.12264",
+      "role": "primary",
+      "failure_mode": "no_parse",
+      "bibliography_entry": "",
+      "recommended_actions": [
+        "manual-pdf-override",
+        "europe-pmc-retry"
+      ]
+    }
+  ]
+}

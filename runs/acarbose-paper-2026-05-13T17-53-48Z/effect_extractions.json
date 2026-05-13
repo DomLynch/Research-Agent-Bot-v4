@@ -1,0 +1,31 @@
+{
+  "_doc": "Sprint 8 effect-extraction receipts. Each strict A-core record gets one receipt. Pooling reads only receipts that pass validate_extraction(); the rest are documented extraction failures.",
+  "topic": "acarbose",
+  "run_id": "acarbose-s7-iter-01-2026-05-13T16-29-53Z",
+  "frozen_at_utc": "2026-05-13T17:11:19+00:00",
+  "k_records": 1,
+  "k_contract_passing": 1,
+  "receipts": [
+    {
+      "study_id": "s043",
+      "status": "extracted",
+      "metric": "median_survival",
+      "treated_value": 975.0,
+      "control_value": 830.0,
+      "treated_n": null,
+      "control_n": null,
+      "hazard_ratio": null,
+      "hazard_ratio_ci_low": null,
+      "hazard_ratio_ci_high": null,
+      "percent_change": 17.0,
+      "moderators": {},
+      "evidence_quotes": [
+        "Across all three sites, ACA increased the median male survival of the underlying study population by 17% from 830 to 975 days (log-rank test P < 0.001, see Fig. 1)."
+      ],
+      "failure_reason": "",
+      "reviewer": "mimo-dual-pass-adjudicated:google/gemma-4-31b-it;adjudicator=mimo-v2.5-pro;disagreements=metric",
+      "text_hash": "eb50bd07f041a88a9aa93a846339080eb2cf7a2db75bb22c9f7f7e92375ec509",
+      "timestamp_utc": "2026-05-13T17:11:19+00:00"
+    }
+  ]
+}

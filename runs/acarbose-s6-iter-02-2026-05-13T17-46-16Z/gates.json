@@ -1,0 +1,15 @@
+{
+  "summary": {
+    "total": 1,
+    "by_gate": {
+      "evidence_slot": 1
+    }
+  },
+  "violations": [
+    {
+      "gate": "evidence_slot",
+      "location": "DISCUSSION",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'The available evidence describes the directionality of effects across the included records, but the lack of a parseable pool prevents the\u2026'"
+    }
+  ]
+}

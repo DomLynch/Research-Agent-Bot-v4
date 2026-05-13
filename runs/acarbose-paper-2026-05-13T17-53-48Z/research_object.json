@@ -1,0 +1,27 @@
+{
+  "topic": "acarbose",
+  "paper_dir_name": "acarbose-paper-2026-05-13T17-53-48Z",
+  "readiness_level": 4,
+  "readiness_label": "no-pooled-effects",
+  "cite_audit_clean": true,
+  "paper_type": "scoping-review",
+  "manual_audits_count": 0,
+  "studies": [
+    {
+      "study_id": "s043",
+      "metric": "median_survival",
+      "treated_value": 975.0,
+      "control_value": 830.0,
+      "treated_n": null,
+      "control_n": null,
+      "percent_change": 17.0,
+      "hazard_ratio": null,
+      "evidence_quotes": [
+        "Across all three sites, ACA increased the median male survival of the underlying study population by 17% from 830 to 975 days (log-rank test P < 0.001, see Fig. 1)."
+      ],
+      "reviewer": "mimo-dual-pass-adjudicated:google/gemma-4-31b-it;adjudicator=mimo-v2.5-pro;disagreements=metric",
+      "extraction_status": "extracted"
+    }
+  ],
+  "claims": []
+}
