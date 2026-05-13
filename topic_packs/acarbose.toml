@@ -3,6 +3,9 @@
 # fields; topic-specific overclaim corrections (methods_honesty_rewrites)
 # and the pack-specific back_matter prose still benefit from
 # hand-tuning after the first render audit.
+# Sprint 13 audit: dropped 8 domain-noise paper(s) from the
+# Researka candidate set (chemistry / pharmacology / paediatric / case
+# reports / commentaries — see _DOMAIN_NOISE_KEYWORDS).
 
 topic = "acarbose"
 display_name = "Acarbose"
@@ -25,17 +28,10 @@ allowed = [
 
 # Auto-generated from Researka topic-curated papers (next-tier after sentinels).
 [anchors]
-"heart-2016-6924" = "primary-study"
-"considerations-2019-2660" = "primary-study"
-"enhancement-2022-2064" = "primary-study"
-"glucosidase-2012-204p" = "primary-study"
-"topological-2022-9329" = "primary-study"
-"type-2013-2541" = "primary-study"
-"fluorinated-2024-7128" = "primary-study"
-"inhibition-2022-0383" = "primary-study"
-"gc-2019-6231" = "primary-study"
-"citrus-2022-6031" = "primary-study"
-"glucosidase-2012-1402" = "primary-study"
+"cap-2021-3345" = "mechanism-review"
+"heart-2016-6924" = "narrative-review"
+"considerations-2019-2660" = "narrative-review"
+"enhancement-2022-2064" = "clinical-trial"
 "page-2020-prisma" = "method-citation"
 "hooijmans-2014-syrcle" = "method-citation"
 "percie-du-sert-2020-arrive" = "method-citation"
@@ -80,9 +76,9 @@ min_text_chars = 2000
 # Auto-selected from top topic-scored curated papers.
 [sentinel_recall]
 primary = [
-    "10.1111/acel.13345",
     "10.1093/gerona/glaa302",
-    "10.1111/acel.12264"
+    "10.1111/acel.12264",
+    "10.1021/np300204p"
 ]
 prior_meta = []
 
@@ -98,17 +94,10 @@ secondary_design_quote_markers = [
 
 # Auto-generated bibliography from Researka curated papers.
 [references.bibliography]
+"cap-2021-3345" = "Cap‐independent translation: A shared mechanism for lifespan extension by rapamycin, acarbose, and 17α‐estradiol. Aging Cell. 2021. doi:10.1111/acel.13345."
 "heart-2016-6924" = "Heart Failure Considerations of Antihyperglycemic Medications for Type 2 Diabetes. Circulation Research. 2016. doi:10.1161/circresaha.116.306924."
 "considerations-2019-2660" = "Considerations when using alpha-glucosidase inhibitors in the treatment of type 2 diabetes. Expert Opinion on Pharmacotherapy. 2019. doi:10.1080/14656566.2019.1672660."
 "enhancement-2022-2064" = "Enhancement of Impaired Olfactory Neural Activation and Cognitive Capacity by Liraglutide, but Not Dapagliflozin or Acarbose, in Patients With Type 2 Diabetes: A 16-Week Randomized Parallel Comparative Study. Diabetes Care. 2022. doi:10.2337/dc21-2064."
-"glucosidase-2012-204p" = "α-Glucosidase Inhibitors from <i>Brickellia cavanillesii</i>. Journal of Natural Products. 2012. doi:10.1021/np300204p."
-"topological-2022-9329" = "Topological Indices of Novel Drugs Used in Diabetes Treatment and Their QSPR Modeling. Journal of Mathematics. 2022. doi:10.1155/2022/5209329."
-"type-2013-2541" = "Type 2 Diabetes Mellitus in Children and Adolescents. Pediatrics in Review. 2013. doi:10.1542/pir.34.12.541."
-"fluorinated-2024-7128" = "Fluorinated indeno-quinoxaline bearing thiazole moieties as hypoglycaemic agents targeting <i>α</i> -amylase, and <i>α</i> -glucosidase: synthesis, molecular docking, and ADMET studies. Journal of Enzyme Inhibition and Medicinal Chemistry. 2024. doi:10.1080/14756366.2024.2367128."
-"inhibition-2022-0383" = "Inhibition Mechanism of Components Isolated from Morus alba Branches on Diabetes and Diabetic Complications via Experimental and Molecular Docking Analyses. Antioxidants. 2022. doi:10.3390/antiox11020383."
-"gc-2019-6231" = "GC-MS Analysis and Inhibitory Evaluation of <i>Terminalia catappa</i> Leaf Extracts on Major Enzymes Linked to Diabetes. Evidence-based Complementary and Alternative Medicine. 2019. doi:10.1155/2019/6316231."
-"citrus-2022-6031" = "Citrus peel waste essential oil: Chemical composition along with anti‐amylase and anti‐glucosidase potential. International Journal of Food Science & Technology. 2022. doi:10.1111/ijfs.16031."
-"glucosidase-2012-1402" = "α-glucosidase inhibitory in vitro and antidiabetic activity in vivo of Osmanthus fragrans. Journal of Medicinal Plants Research. 2012. doi:10.5897/jmpr11.1402."
 "page-2020-prisma" = "Page MJ, McKenzie JE, Bossuyt PM, et al. The PRISMA 2020 statement. BMJ. 2021;372:n71. doi:10.1136/bmj.n71."
 "hooijmans-2014-syrcle" = "Hooijmans CR, Rovers MM, de Vries RBM, et al. SYRCLE's risk of bias tool for animal studies. BMC Med Res Methodol. 2014;14:43. doi:10.1186/1471-2288-14-43."
 "percie-du-sert-2020-arrive" = "Percie du Sert N, Hurst V, Ahluwalia A, et al. The ARRIVE guidelines 2.0. PLoS Biol. 2020;18(7):e3000410. doi:10.1371/journal.pbio.3000410."
@@ -128,14 +117,28 @@ secondary_design_quote_markers = [
 # writer drafts for any meta-analysis topic. Additional pack-specific
 # moderators can be added by the operator after the first render audit.
 "MODERATOR_P:dose" = "dose level"
+"MODERATOR_P:dose_range" = "dose range (low / moderate / high, post-hoc grouped)"
 "MODERATOR_P:sex" = "biological sex"
 "MODERATOR_P:strain" = "genetic background / strain"
+"MODERATOR_P:mouse_strain" = "genetic background / strain"
 "MODERATOR_P:treatment_initiation_age" = "age at treatment initiation"
 "MODERATOR_P:age_at_intervention_start" = "age at intervention start"
 "MODERATOR_P:route_of_administration" = "route of administration"
 "MODERATOR_P:diet_background" = "diet background"
+"MODERATOR_P:diet" = "diet background (standard chow / CR / HFD)"
 "MODERATOR_P:genetic_background" = "genetic background"
 "MODERATOR_P:intervention" = "intervention identity"
+"MODERATOR_P:intervention_form" = "intervention form / pharmaceutical analogue"
+"MODERATOR_P:lifespan_metric" = "lifespan metric (median / mean / 90th percentile)"
+# Sprint 12.9.G: scope-driven placeholders. The writer commonly
+# references these top-level pack fields via [PLACEHOLDER:<key>]
+# rather than the [scope]/[extraction] table; seed them here so the
+# placeholder resolver finds them. Values are filled from the
+# operator's CLI args by the render template.
+"primary_interventions" = "acarbose, alpha-glucosidase inhibitor"
+"translational_only_interventions" = "(none declared)"
+"translational_interventions" = "(none declared)"
+"preferred_metric_families" = "median_lifespan, median_survival"
 
 # Empty initially; populate iteratively as render audits surface drift.
 [methods_honesty_rewrites]

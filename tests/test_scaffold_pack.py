@@ -301,3 +301,132 @@ def test_sentinels_filtered_to_primary_studies_only(tmp_path: Path) -> None:
     rev_key = next(k for k in p.anchors if "overview" in k.lower())
     assert p.anchors[mech_key] == "mechanism-review"
     assert p.anchors[rev_key] == "narrative-review"
+
+
+def test_sprint13_domain_noise_papers_excluded_from_pack(tmp_path: Path) -> None:
+    """Sprint 13: papers whose titles match domain-noise keywords
+    (docking / plant extract / paediatric / pharmacokinetics / case
+    report / commentary / in vitro) are dropped from BOTH the sentinel
+    pool and the anchor list. Universal — these keywords describe
+    paper types (chemistry / pharmacology) that aren't primary
+    endpoint studies across any discipline."""
+    noisy_papers = [
+        {
+            "id": "10.1/noise-docking", "doi": "10.1/noise-docking",
+            "type": "article",
+            "title": "Molecular docking studies of compound X analogues",
+            "journal_name": "J Mol Docking", "publication_year": 2023,
+            "tier": 1, "topic_score": 1.0,
+        },
+        {
+            "id": "10.1/noise-extract", "doi": "10.1/noise-extract",
+            "type": "article",
+            "title": "Plant extract from Osmanthus as alpha-glucosidase inhibitor",
+            "journal_name": "J Med Plants", "publication_year": 2022,
+            "tier": 1, "topic_score": 0.98,
+        },
+        {
+            "id": "10.1/noise-paediatric", "doi": "10.1/noise-paediatric",
+            "type": "article",
+            "title": "Compound X in children and adolescents",
+            "journal_name": "Pediatrics Rev", "publication_year": 2020,
+            "tier": 1, "topic_score": 0.95,
+        },
+        {
+            "id": "10.1/clean-primary", "doi": "10.1/clean-primary",
+            "type": "article",
+            "title": "Compound X extends median lifespan in C57BL/6 mice",
+            "journal_name": "Nature", "publication_year": 2014,
+            "tier": 1, "topic_score": 0.80,
+        },
+    ]
+    out = _SCAFFOLD._render(
+        topic="compound_x", display_name="Compound X",
+        primary_interventions=["compound x"],
+        species_terms=["mouse"], endpoint="lifespan",
+        papers=noisy_papers, sentinel_n=3, anchor_n=15,
+    )
+    pack_path = tmp_path / "compound_x.toml"
+    pack_path.write_text(out, encoding="utf-8")
+    from agent.topic_pack import load_topic_pack
+    p = load_topic_pack("compound_x", pack_dir=tmp_path)
+    assert p is not None
+    # Only the clean primary study survives; the 3 noise papers are dropped
+    # from both sentinels AND anchors.
+    assert "10.1/clean-primary" in p.sentinel_primary
+    assert "10.1/noise-docking" not in p.sentinel_primary
+    assert "10.1/noise-extract" not in p.sentinel_primary
+    assert "10.1/noise-paediatric" not in p.sentinel_primary
+    # Anchors list excludes the noise too. Only paper-derived anchor
+    # is the clean primary (now the sentinel); rest are method anchors.
+    paper_anchor_keys = [k for k in p.anchors if not any(
+        k.startswith(m) for m in (
+            "page-2020", "hooijmans-2014", "percie-du-sert", "schunemann",
+            "egger-1997", "viechtbauer-2010", "higgins-2003", "hartung",
+        )
+    )]
+    for key in paper_anchor_keys:
+        bib = p.references_bibliography.get(key, "").lower()
+        assert "docking" not in bib
+        assert "plant extract" not in bib
+        assert "children and adolescents" not in bib
+
+
+def test_sprint13_zero_primary_studies_emits_corpus_repair_banner(
+    tmp_path: Path,
+) -> None:
+    """Sprint 13: when the curated index returns NO primary-study
+    sentinels (only reviews / mechanism papers / domain-noise), the
+    rendered pack carries a CORPUS REPAIR REQUIRED banner so the
+    operator knows to hand-curate sentinels before running the
+    pipeline."""
+    no_primary_papers = [
+        {
+            "id": "10.1/rev-1", "doi": "10.1/rev-1", "type": "review",
+            "title": "Overview of compound X",
+            "journal_name": "Pharmacol Rev", "publication_year": 2021,
+            "tier": 1, "topic_score": 1.0,
+        },
+        {
+            "id": "10.1/mech-1", "doi": "10.1/mech-1", "type": "article",
+            "title": "mTOR pathway in aging mechanism",
+            "journal_name": "Cell Metab", "publication_year": 2020,
+            "tier": 1, "topic_score": 0.95,
+        },
+    ]
+    out = _SCAFFOLD._render(
+        topic="compound_x", display_name="Compound X",
+        primary_interventions=["compound x"],
+        species_terms=["mouse"], endpoint="lifespan",
+        papers=no_primary_papers, sentinel_n=3, anchor_n=15,
+    )
+    assert "CORPUS REPAIR REQUIRED" in out
+    assert "auto-pack found 0 primary-study" in out
+    # Pack still loads cleanly so the operator can run/inspect it.
+    pack_path = tmp_path / "compound_x.toml"
+    pack_path.write_text(out, encoding="utf-8")
+    from agent.topic_pack import load_topic_pack
+    p = load_topic_pack("compound_x", pack_dir=tmp_path)
+    assert p is not None
+    assert p.sentinel_primary == ()
+
+
+def test_sprint13_clean_pack_omits_repair_banner(tmp_path: Path) -> None:
+    """A pack with primary-study sentinels available must NOT carry
+    the CORPUS REPAIR banner — only flagged packs do."""
+    clean_papers = [
+        {
+            "id": "10.1/primary-1", "doi": "10.1/primary-1",
+            "type": "article",
+            "title": "Compound X extends mouse lifespan",
+            "journal_name": "Nature", "publication_year": 2014,
+            "tier": 1, "topic_score": 0.90,
+        },
+    ]
+    out = _SCAFFOLD._render(
+        topic="compound_x", display_name="Compound X",
+        primary_interventions=["compound x"],
+        species_terms=["mouse"], endpoint="lifespan",
+        papers=clean_papers, sentinel_n=3, anchor_n=15,
+    )
+    assert "CORPUS REPAIR REQUIRED" not in out

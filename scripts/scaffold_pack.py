@@ -44,6 +44,35 @@ def _toml_str(s: str) -> str:
     return s.replace("\\", "\\\\").replace('"', '\\"')
 
 
+# Sprint 13: domain-noise title keywords. Papers matching ANY of these
+# fall out of the sentinel pool AND off the anchor list — they're
+# topic-related but never primary endpoint studies. Universal — these
+# patterns describe paper TYPES (in-vitro / chemistry / pharmacology
+# review) that cut across disciplines.
+_DOMAIN_NOISE_KEYWORDS: tuple[str, ...] = (
+    "docking", "in silico", "in vitro", "cell line", "cell culture",
+    "plant extract", "leaf extract", "essential oil", "natural product",
+    "chemical composition", "gc-ms analysis",
+    "enzyme kinetics", "kinetic inhibitor", "inhibitor synthesis",
+    "inhibitory evaluation", "inhibitory potential",
+    "structure-activity", "qsar", "qspr", "topological indices",
+    "pediatric", "children and adolescents",
+    "pharmacokinetics", "pharmacodynamics",
+    "case report", "case study", "letter to the editor",
+    "editorial", "commentary", "perspective",
+    "bibliometric", "scientometric",
+)
+
+
+def _is_domain_noise(paper: dict[str, Any]) -> bool:
+    """Sprint 13: reject papers whose titles match domain-noise
+    keywords. These are topically-related but don't represent primary
+    endpoint evidence (chemistry / pharmacology / paediatric clinical
+    / case reports / commentaries)."""
+    title_lc = (paper.get("title") or "").lower()
+    return any(kw in title_lc for kw in _DOMAIN_NOISE_KEYWORDS)
+
+
 def _classify_role(paper: dict[str, Any]) -> str:
     """Sprint 12.9.F: map Researka's `type` field + title keywords to
     a cite-roles role. Universal — no biomedical literals; the
@@ -116,26 +145,34 @@ def _render(
     """Render a draft TOML using paper metadata for sentinels + anchors
     + bibliography. Sensible biomedical defaults fill the rest;
     operator hand-edits before the pipeline runs."""
-    # Sprint 12.9.F: sentinels MUST be primary-study type (not reviews
-    # / mechanism papers / book chapters). Researka's `type` field +
-    # title-keyword heuristics in `_classify_role` flag papers that
-    # mention the topic but aren't primary lifespan studies. Without
-    # this filter, the auto-pack picks top-topic-score papers
-    # regardless of whether they're primary studies, which causes
-    # the sentinel-recall gate to WARN (0/N pass) on rapamycin-grade
-    # topics. Anchors retain all paper types (the anchor block uses
-    # _classify_role to tag each with its actual role).
+    # Sprint 12.9.F + Sprint 13: sentinels MUST be primary-study type
+    # AND not domain-noise (chemistry / pharmacology / paediatric /
+    # case reports / commentaries). Anchors exclude the same noise so
+    # the bibliography doesn't end up referencing docking studies or
+    # plant-extract pharmacology as primary lifespan evidence.
+    clean_papers = [p for p in papers if not _is_domain_noise(p)]
+    rejected_n = len(papers) - len(clean_papers)
     primary_pool = [
-        p for p in papers if p.get("doi") and _classify_role(p) == "primary-study"
+        p for p in clean_papers
+        if p.get("doi") and _classify_role(p) == "primary-study"
     ]
     sentinels = primary_pool[:sentinel_n]
-    # Remaining slots fill anchors; mix primary studies + reviews +
-    # mechanism papers so the writer has the full anchor vocabulary.
     sentinel_dois = {s["doi"] for s in sentinels}
     anchor_pool = [
-        p for p in papers
+        p for p in clean_papers
         if p.get("doi") and p["doi"] not in sentinel_dois
     ][:anchor_n]
+    # Sprint 13 sentinel-pass gate: if no primary-study sentinels could
+    # be selected, the pack is in CORPUS REPAIR territory — the
+    # operator needs to inject manual full-text overrides or hand-curate
+    # the [sentinel_recall.primary] DOIs before running the pipeline.
+    repair_banner = (
+        "\n# !!! CORPUS REPAIR REQUIRED — auto-pack found 0 primary-study\n"
+        "# sentinels in the curated index for this topic. The pipeline will\n"
+        "# run, but the sentinel-recall gate will WARN until the operator\n"
+        "# adds canonical primary-study DOIs to [sentinel_recall.primary].\n"
+        if not sentinels else ""
+    )
 
     interv_list = ", ".join(f'"{_toml_str(t)}"' for t in primary_interventions)
     # Sprint 12.9.G: bare CSV form for [PLACEHOLDER:primary_interventions]
@@ -215,7 +252,10 @@ def _render(
 # fields; topic-specific overclaim corrections (methods_honesty_rewrites)
 # and the pack-specific back_matter prose still benefit from
 # hand-tuning after the first render audit.
-
+# Sprint 13 audit: dropped {rejected_n} domain-noise paper(s) from the
+# Researka candidate set (chemistry / pharmacology / paediatric / case
+# reports / commentaries — see _DOMAIN_NOISE_KEYWORDS).
+{repair_banner}
 topic = "{_toml_str(topic)}"
 display_name = "{_toml_str(display_name)}"
 
