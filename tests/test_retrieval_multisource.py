@@ -349,6 +349,95 @@ async def test_researka_401_returns_empty_not_raise() -> None:
 
 
 @pytest.mark.asyncio
+async def test_researka_topic_endpoint_returns_curated_hits() -> None:
+    """Sprint 12.9.B: POST /api/v1/papers/topic — tier-1 curated paper
+    enumeration. Hits are tagged source='researka:topic' so the
+    eligibility-judge curated-proposal short-circuit (which fires for
+    any `researka:*` source) handles them automatically. Wire-protocol
+    verified: POST + X-Researka-Token + list[Paper] response."""
+    curated_body = [
+        {
+            "id": "10.1111/acel.12194",
+            "doi": "10.1111/acel.12194",
+            "pmid": "24489881",
+            "title": "Rapamycin-mediated lifespan increase in mice",
+            "abstract": "Median lifespan increased by 23-26%...",
+            "publication_year": 2014,
+            "journal_name": "Aging Cell",
+            "is_oa": True,
+            "tier": 1, "topic_score": 1.0, "quality_score": 0.62,
+        },
+    ]
+    captured_paths: list[str] = []
+    captured_bodies: list[dict[str, Any]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured_paths.append(request.url.path)
+        captured_bodies.append(json.loads(request.content))
+        if request.url.path == "/api/v1/papers/topic":
+            return httpx.Response(200, json=curated_body)
+        # Legacy /search endpoint — empty 3-lane response for this test.
+        return httpx.Response(200, json={
+            "established": [], "discovery": [], "semantic": [],
+        })
+
+    async with httpx.AsyncClient(transport=_mock(handler)) as client:
+        hits = await ResearkaSource(
+            _settings_with(
+                researka_database_url="https://database.researka.org",
+                researka_database_token="my-agent-token",
+            ),
+        ).search("rapamycin lifespan", client=client)
+
+    # Both endpoints get hit on every search() call — /papers/topic
+    # FIRST (curated spine), then /search (gap-fill).
+    assert "/api/v1/papers/topic" in captured_paths
+    assert "/api/v1/search" in captured_paths
+    topic_body = next(
+        b for p, b in zip(captured_paths, captured_bodies, strict=True)
+        if p == "/api/v1/papers/topic"
+    )
+    assert topic_body["topic"] == "rapamycin lifespan"
+    assert topic_body["limit"] > 0
+    assert topic_body["include_facts"] is False
+    # Curated paper materialised into the hit list with topic-lane tag.
+    assert len(hits) == 1
+    assert hits[0].source == "researka:topic"
+    assert hits[0].doi == "10.1111/acel.12194"
+    assert hits[0].year == 2014
+    assert hits[0].venue == "Aging Cell"
+
+
+@pytest.mark.asyncio
+async def test_researka_topic_endpoint_404_falls_back_silently() -> None:
+    """Older Researka installs without the new endpoint return 404. The
+    adapter must swallow that and let the legacy 3-lane /search call
+    still run — never sink the unified sweep on a missing endpoint."""
+    search_lane_body = {
+        "established": [{
+            "title": "Legacy 3-lane hit", "doi": "10.1/legacy", "year": 2020,
+        }],
+        "discovery": [], "semantic": [],
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/api/v1/papers/topic":
+            return httpx.Response(404, json={"detail": "endpoint not found"})
+        return httpx.Response(200, json=search_lane_body)
+
+    async with httpx.AsyncClient(transport=_mock(handler)) as client:
+        hits = await ResearkaSource(
+            _settings_with(
+                researka_database_url="https://database.researka.org",
+                researka_database_token="my-agent-token",
+            ),
+        ).search("x", client=client)
+    # Topic-endpoint 404 -> 0 topic hits; 3-lane /search still works.
+    assert len(hits) == 1
+    assert hits[0].source == "researka:established"
+
+
+@pytest.mark.asyncio
 async def test_researka_partial_lane_response_handles_missing_keys() -> None:
     """Server may return only one or two lanes (e.g. cold cache, narrow
     query). Adapter should not raise; should return whatever is present."""
