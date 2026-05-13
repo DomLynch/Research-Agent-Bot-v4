@@ -56,6 +56,12 @@ class CandidateStudy:
     screening_stage: ScreeningStage = "title_abstract_candidate"
     pmid: str | None = None
     doi: str | None = None
+    # Sprint 12.9: retrieval-source provenance (propagated from PaperHit.source).
+    # Format: "pubmed", "researka:established", etc. Empty for legacy callers.
+    # The eligibility pipeline reads this to short-circuit the LLM judge for
+    # Researka-curated hits (trust the Tier-1 curation; universal evidence
+    # contract still gates final include).
+    source: str = ""
 
     @property
     def is_eligible(self) -> bool:
