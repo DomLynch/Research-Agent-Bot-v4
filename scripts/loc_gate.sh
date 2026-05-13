@@ -26,7 +26,11 @@
 # -> 8500 (Sprint 23 maturity router: maps readiness + pool count to
 # a paper-type with explicit section list + forbidden-claims —
 # prevents the "k=1 paper claiming meta-analytic certainty" failure
-# mode by tying prose contract to evidence ladder).
+# mode by tying prose contract to evidence ladder)
+# -> 8700 (Sprint 24 Researka publishing object model: typed
+# EvidenceReceipt / ClaimCard / StudyCard schemas + bundler — turns
+# the existing per-receipt artifacts into a single typed upload unit
+# for Researka-style portals, locking the data contract).
 # Every new module under the higher cap must delete or prevent a
 # fake-evidence failure mode (receipts, validators, provenance, typed
 # contracts), not buy prose polish or speculative abstraction.
