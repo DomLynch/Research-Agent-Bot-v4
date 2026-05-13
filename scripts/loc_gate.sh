@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# LOC gate — fail if agent/ exceeds the 8,400 LOC ceiling.
+# LOC gate — fail if agent/ exceeds the 8,500 LOC ceiling.
 # Tests, docs, scripts, supplement plugins, and topic_pack TOML do not count.
 # Cap history: 3000 (initial) -> 5000 (Sprint-6 truth patch) -> 7500
 # (Sprint 11.1 manuscript completion: narrative writers + reference resolver
@@ -22,7 +22,11 @@
 # -> 8400 (Sprint 22 submission package: cover letter, title page,
 # PRISMA-2020 checklist, manifest bundle — prevents the "operator
 # submits without a checklist" failure mode that triggers desk
-# return at most synthesis journals).
+# return at most synthesis journals)
+# -> 8500 (Sprint 23 maturity router: maps readiness + pool count to
+# a paper-type with explicit section list + forbidden-claims —
+# prevents the "k=1 paper claiming meta-analytic certainty" failure
+# mode by tying prose contract to evidence ladder).
 # Every new module under the higher cap must delete or prevent a
 # fake-evidence failure mode (receipts, validators, provenance, typed
 # contracts), not buy prose polish or speculative abstraction.
