@@ -271,24 +271,29 @@ def test_a_core_not_pooled_reasons_labels_each_id_with_its_own_reason() -> None:
 def test_a_core_not_pooled_reasons_distinguishes_off_modal_from_parse_failed() -> None:
     """If two unpooled A-core records exist with different reasons —
     one parse_failed, one extracted-but-off-modal-metric — the prose
-    must report each accurately, not concatenate all possible reasons."""
+    must report each accurately, not concatenate all possible reasons.
+
+    Uses abstract metric names (`primary_metric`, `alternative_metric`)
+    rather than biomedical literals to prove the classifier is
+    metric-string-agnostic: any pack supplying ANY set of preferred
+    families gets the same off-modal-vs-on-modal discrimination."""
     strict = {"A_core_direct_lifespan": [
         {"study_id": "sA"}, {"study_id": "sB"}, {"study_id": "sC"},
     ]}
     pool = {"effects": [{"study_id": "sA"}]}
     extractions = {"receipts": [
         {"study_id": "sA", "status": "extracted",
-         "metric": "median_lifespan_days",
+         "metric": "primary_metric",
          "treated_n": 30, "control_n": 30},
         {"study_id": "sB", "status": "parse_failed", "metric": ""},
         {"study_id": "sC", "status": "extracted",
-         "metric": "maximum_lifespan",
+         "metric": "alternative_metric",
          "treated_n": 30, "control_n": 30},
     ]}
     out = resolve_placeholders(
         "Unpoolable: [A_CORE_NOT_POOLED_REASONS].",
         summary={}, strict=strict,
-        pack=_pack({}, preferred_metric_families=("median_lifespan",)),
+        pack=_pack({}, preferred_metric_families=("primary_metric",)),
         extractions=extractions, pool=pool,
     )
     assert out.body == "Unpoolable: sB: parse_failed, sC: off-modal-metric."
@@ -298,23 +303,27 @@ def test_a_core_not_pooled_reasons_flags_no_numerics_when_n_missing() -> None:
     """An extracted receipt on a preferred metric family but missing
     treated_n / control_n is unpoolable via inverse-variance — label
     that as 'no_numerics', not 'off-modal-metric' (which describes a
-    different defect)."""
+    different defect).
+
+    Uses abstract metric and study-ID literals — the classifier's
+    no-numerics branch fires from the absence of sample-size fields
+    in the receipt, never from anything topic-specific."""
     strict = {"A_core_direct_lifespan": [
         {"study_id": "sX"}, {"study_id": "sY"},
     ]}
     pool = {"effects": [{"study_id": "sX"}]}
     extractions = {"receipts": [
         {"study_id": "sX", "status": "extracted",
-         "metric": "median_lifespan_days",
+         "metric": "primary_metric",
          "treated_n": 30, "control_n": 30},
         {"study_id": "sY", "status": "extracted",
-         "metric": "median_lifespan_days",
+         "metric": "primary_metric",
          "treated_n": None, "control_n": None},
     ]}
     out = resolve_placeholders(
         "Unpoolable: [A_CORE_NOT_POOLED_REASONS].",
         summary={}, strict=strict,
-        pack=_pack({}, preferred_metric_families=("median_lifespan",)),
+        pack=_pack({}, preferred_metric_families=("primary_metric",)),
         extractions=extractions, pool=pool,
     )
     assert out.body == "Unpoolable: sY: no_numerics."
