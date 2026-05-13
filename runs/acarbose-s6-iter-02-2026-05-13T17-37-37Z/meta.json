@@ -1,0 +1,22 @@
+{
+  "topic": "acarbose",
+  "iteration": 2,
+  "timestamp_utc": "2026-05-13T17-37-37Z",
+  "model": "mimo-v2.5-pro",
+  "prompt_tokens": 2878,
+  "completion_tokens": 4000,
+  "section_key": "discussion",
+  "sections_requested": [
+    "DISCUSSION",
+    "LIMITATIONS",
+    "CONCLUSION"
+  ],
+  "sections_parsed": [
+    "DISCUSSION"
+  ],
+  "parse_ok": true,
+  "gate_violations": 1,
+  "gates_by_type": {
+    "evidence_slot": 1
+  }
+}

@@ -155,7 +155,12 @@ def main() -> int:
     print(f"[draft] topic={args.topic} section={args.section} iter={args.iter} model={settings.mimo_model}")
     print(f"[draft] topic_pack={'loaded' if pack else 'none'}")
     print("[draft] calling writer…")
-    resp = call_writer_with_fallback(settings, messages)
+    # Sprint 31 follow-up: discussion + methods sections frequently
+    # exceed the default 4000-token cap (acarbose discussion truncated
+    # mid-sentence on iter-2). Bump to 5000 — still well below the
+    # ~6000 MiMo runaway threshold (Sprint 14 calibration); the Sprint
+    # 14 Gemma fallback handles the rare runaway edge case.
+    resp = call_writer_with_fallback(settings, messages, max_tokens=5000)
     print(f"[draft] tokens: prompt={resp.prompt_tokens} completion={resp.completion_tokens}")
 
     parsed = _parse_sections(resp.content)
