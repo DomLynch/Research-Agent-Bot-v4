@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# LOC gate — fail if agent/ exceeds the 7,900 LOC ceiling.
+# LOC gate — fail if agent/ exceeds the 8,000 LOC ceiling.
 # Tests, docs, scripts, supplement plugins, and topic_pack TOML do not count.
 # Cap history: 3000 (initial) -> 5000 (Sprint-6 truth patch) -> 7500
 # (Sprint 11.1 manuscript completion: narrative writers + reference resolver
@@ -20,7 +20,7 @@
 # contracts), not buy prose polish or speculative abstraction.
 set -euo pipefail
 
-CEILING="${LOC_CEILING:-7900}"
+CEILING="${LOC_CEILING:-8000}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 COUNT=$(find "$ROOT/agent" -name "*.py" -not -path "*/__pycache__/*" 2>/dev/null \

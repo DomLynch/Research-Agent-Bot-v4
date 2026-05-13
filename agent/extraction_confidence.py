@@ -77,12 +77,16 @@ class ExtractionConfidenceReport:
 
 def score_extractions(
     receipts: Iterable[ExtractionReceipt],
+    *, audit_approved: frozenset[str] | None = None,
 ) -> ExtractionConfidenceReport:
-    """Score every receipt; flag low-confidence ones for human audit."""
+    """Score every receipt; flag low-confidence ones for human audit.
+    `audit_approved` is the set of study_ids the Sprint 20 manual_audit
+    overlay has explicitly approved — those clear their audit flag."""
+    approved = audit_approved or frozenset()
     entries = tuple(
         ExtractionConfidenceEntry(
             study_id=r.study_id, confidence=c,
-            needs_human_audit=c < _AUDIT_THRESHOLD,
+            needs_human_audit=(c < _AUDIT_THRESHOLD) and (r.study_id not in approved),
             reason=reason, reviewer=r.reviewer or "",
         )
         for r in receipts

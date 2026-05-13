@@ -64,14 +64,20 @@ def _biblio_for_id(sid: str, biblio: Mapping[str, str]) -> str:
 
 def compute_repair_plan(
     receipt: SentinelRecallReceipt, pack: TopicPack,
+    *, audit_resolved: frozenset[str] | None = None,
 ) -> SentinelRepairPlan:
     """Emit repair entries for sentinels that aren't terminal-good and
-    aren't manually resolved-to-final-state."""
+    aren't manually resolved-to-final-state. `audit_resolved` is the
+    set of sentinel ids the Sprint 20 manual_audit overlay has acted on
+    — those drop out so the plan only flags genuinely-open items."""
+    resolved = audit_resolved or frozenset()
     entries: list[SentinelRepairEntry] = []
     for st in receipt.statuses:
         if st.eligibility in _DONE:
             continue
         if st.manually_resolved and st.eligibility in {"excluded", "unavailable"}:
+            continue
+        if st.sentinel_id in resolved:
             continue
         entries.append(SentinelRepairEntry(
             sentinel_id=st.sentinel_id, role=st.role,
