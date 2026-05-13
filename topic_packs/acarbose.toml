@@ -123,10 +123,19 @@ secondary_design_quote_markers = [
 "date-range" = "search executed from publication-database inception through the pipeline run date; per-paper publication years are recorded in the bibliography"
 "query-terms" = "Boolean composition built at run time from pack vocabulary: ((primary_interventions) AND (endpoint_terms) AND (preferred_terms)); the exact executed query is logged in the s7 run directory's `eligibility_receipts.json` metadata"
 "minimum-studies-per-cell" = "k < 3 studies per moderator cell"
+"eligibility_min_text_chars" = "the topic pack's pre-specified parsed-text minimum (records below this floor are demoted to `unclear`)"
+# Universal MODERATOR_P defaults — cover the common moderator names the
+# writer drafts for any meta-analysis topic. Additional pack-specific
+# moderators can be added by the operator after the first render audit.
 "MODERATOR_P:dose" = "dose level"
 "MODERATOR_P:sex" = "biological sex"
 "MODERATOR_P:strain" = "genetic background / strain"
 "MODERATOR_P:treatment_initiation_age" = "age at treatment initiation"
+"MODERATOR_P:age_at_intervention_start" = "age at intervention start"
+"MODERATOR_P:route_of_administration" = "route of administration"
+"MODERATOR_P:diet_background" = "diet background"
+"MODERATOR_P:genetic_background" = "genetic background"
+"MODERATOR_P:intervention" = "intervention identity"
 
 # Empty initially; populate iteratively as render audits surface drift.
 [methods_honesty_rewrites]
