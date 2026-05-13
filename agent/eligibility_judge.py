@@ -152,20 +152,39 @@ def curated_proposal(
     text = parsed.text or ""
     # Sentence-ish split — period / newline boundaries. Cheap, no NLP dep.
     sentences = re.split(r"(?<=[.!?])\s+|\n+", text)
-    needles = tuple(
-        t.lower() for t in
-        (*pack.primary_interventions, *pack.eligibility_endpoint_terms) if t
+    # Build the four pack-vocab needle families. A high-quality evidence
+    # quote names two or more of these in one sentence (intervention +
+    # endpoint, or species + intervention) — that's what gives the
+    # downstream strict-A-core per-quote audit enough signal to verify
+    # the current experiment used the topic pack's declared system.
+    interv = tuple(t.lower() for t in pack.primary_interventions if t)
+    endpoint = tuple(t.lower() for t in pack.eligibility_endpoint_terms if t)
+    species = tuple(t.lower() for t in pack.preferred_terms if t)
+    control = tuple(t.lower() for t in pack.eligibility_control_terms if t)
+    families: tuple[tuple[str, ...], ...] = tuple(
+        fam for fam in (interv, endpoint, species, control) if fam
     )
-    quotes: list[str] = []
+
+    def family_hits(s: str) -> int:
+        return sum(any(n in s for n in fam) for fam in families)
+    # Two-pass: prefer sentences naming 2+ vocab families (higher per-
+    # quote signal); fall back to 1-family sentences only if we still
+    # need quotes. Keeps the strict-A-core gate alive on Researka hits.
+    candidates_strong: list[str] = []
+    candidates_weak: list[str] = []
     for s in sentences:
         s_clean = " ".join(s.split())
         if not s_clean or len(s_clean) < 40:
             continue
         low = s_clean.lower()
-        if any(n in low for n in needles):
-            quotes.append(s_clean[:400])
-            if len(quotes) >= 2:
-                break
+        hits = family_hits(low)
+        if hits >= 2:
+            candidates_strong.append(s_clean[:400])
+        elif hits == 1:
+            candidates_weak.append(s_clean[:400])
+        if len(candidates_strong) >= 2:
+            break
+    quotes = (candidates_strong + candidates_weak)[:2]
     # If the rule triage already says all mandatory fields are satisfied,
     # propose include; otherwise unclear and let the standard merge +
     # contract gate decide. Confidence is deliberately below the 0.95
