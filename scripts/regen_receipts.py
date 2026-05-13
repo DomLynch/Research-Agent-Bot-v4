@@ -89,14 +89,19 @@ def _regen_cite_audit(paper_dir: Path, topic: str) -> bool | None:
     return structurally_clean
 
 
-def _regen_dual_agent_audit(extractions: dict[str, object]) -> tuple[int, int, int, int]:
-    """Rehydrate ExtractionReceipt records from effect_extractions.json
-    and produce the Sprint 27 dual-agent audit payload.
-    Returns (k_total, agreed, adjudicated, single_pass) for the CLI log."""
+def _rehydrate_receipts(extractions: dict[str, object]) -> list[ExtractionReceipt]:
+    """Reconstruct ExtractionReceipt objects from the on-disk JSON. Used
+    for Sprint 27 dual-agent audit regeneration over historical folders."""
     raw = extractions.get("receipts") if isinstance(extractions.get("receipts"), list) else []
     if not isinstance(raw, list):
-        return 0, 0, 0, 0
+        return []
     from types import MappingProxyType
+
+    def _num(v: object) -> float | None:
+        return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
+    def _int(v: object) -> int | None:
+        return int(v) if isinstance(v, int) and not isinstance(v, bool) else None
 
     receipts: list[ExtractionReceipt] = []
     for r in raw:
@@ -107,14 +112,14 @@ def _regen_dual_agent_audit(extractions: dict[str, object]) -> tuple[int, int, i
             study_id=str(r.get("study_id") or ""),
             status=r.get("status") or "no_numerics",
             metric=str(r.get("metric") or ""),
-            treated_value=r.get("treated_value") if isinstance(r.get("treated_value"), (int, float)) else None,
-            control_value=r.get("control_value") if isinstance(r.get("control_value"), (int, float)) else None,
-            treated_n=r.get("treated_n") if isinstance(r.get("treated_n"), int) else None,
-            control_n=r.get("control_n") if isinstance(r.get("control_n"), int) else None,
-            hazard_ratio=r.get("hazard_ratio") if isinstance(r.get("hazard_ratio"), (int, float)) else None,
-            hazard_ratio_ci_low=r.get("hazard_ratio_ci_low") if isinstance(r.get("hazard_ratio_ci_low"), (int, float)) else None,
-            hazard_ratio_ci_high=r.get("hazard_ratio_ci_high") if isinstance(r.get("hazard_ratio_ci_high"), (int, float)) else None,
-            percent_change=r.get("percent_change") if isinstance(r.get("percent_change"), (int, float)) else None,
+            treated_value=_num(r.get("treated_value")),
+            control_value=_num(r.get("control_value")),
+            treated_n=_int(r.get("treated_n")),
+            control_n=_int(r.get("control_n")),
+            hazard_ratio=_num(r.get("hazard_ratio")),
+            hazard_ratio_ci_low=_num(r.get("hazard_ratio_ci_low")),
+            hazard_ratio_ci_high=_num(r.get("hazard_ratio_ci_high")),
+            percent_change=_num(r.get("percent_change")),
             moderators=MappingProxyType({}),
             evidence_quotes=tuple(str(q) for q in quotes) if isinstance(quotes, list) else (),
             failure_reason=str(r.get("failure_reason") or ""),
@@ -122,8 +127,7 @@ def _regen_dual_agent_audit(extractions: dict[str, object]) -> tuple[int, int, i
             text_hash=str(r.get("text_hash") or ""),
             timestamp_utc=str(r.get("timestamp_utc") or ""),
         ))
-    report = audit_extractions(receipts)
-    return report.k_total, report.k_agent_agreed, report.k_agent_adjudicated, report.k_single_pass
+    return receipts
 
 
 def regen(paper_dir: Path, *, topic: str = "") -> dict[str, str]:
@@ -148,36 +152,10 @@ def regen(paper_dir: Path, *, topic: str = "") -> dict[str, str]:
     # the freshly-written file when it reads cite_audit.json.
     cite_clean = _regen_cite_audit(paper_dir, topic)
 
-    # Sprint 27: dual-agent extraction audit. Rehydrate receipts from
-    # disk and re-emit the audit payload alongside.
-    raw = extr.get("receipts") if isinstance(extr.get("receipts"), list) else None
-    raw_list = raw if isinstance(raw, list) else []
-    from types import MappingProxyType
-    rehydrated: list[ExtractionReceipt] = []
-    for r in raw_list:
-        if not isinstance(r, dict):
-            continue
-        quotes = r.get("evidence_quotes") or ()
-        rehydrated.append(ExtractionReceipt(
-            study_id=str(r.get("study_id") or ""),
-            status=r.get("status") or "no_numerics",
-            metric=str(r.get("metric") or ""),
-            treated_value=r.get("treated_value") if isinstance(r.get("treated_value"), (int, float)) else None,
-            control_value=r.get("control_value") if isinstance(r.get("control_value"), (int, float)) else None,
-            treated_n=r.get("treated_n") if isinstance(r.get("treated_n"), int) else None,
-            control_n=r.get("control_n") if isinstance(r.get("control_n"), int) else None,
-            hazard_ratio=r.get("hazard_ratio") if isinstance(r.get("hazard_ratio"), (int, float)) else None,
-            hazard_ratio_ci_low=r.get("hazard_ratio_ci_low") if isinstance(r.get("hazard_ratio_ci_low"), (int, float)) else None,
-            hazard_ratio_ci_high=r.get("hazard_ratio_ci_high") if isinstance(r.get("hazard_ratio_ci_high"), (int, float)) else None,
-            percent_change=r.get("percent_change") if isinstance(r.get("percent_change"), (int, float)) else None,
-            moderators=MappingProxyType({}),
-            evidence_quotes=tuple(str(q) for q in quotes) if isinstance(quotes, list) else (),
-            failure_reason=str(r.get("failure_reason") or ""),
-            reviewer=str(r.get("reviewer") or ""),
-            text_hash=str(r.get("text_hash") or ""),
-            timestamp_utc=str(r.get("timestamp_utc") or ""),
-        ))
-    dual_agent = audit_extractions(rehydrated)
+    # Sprint 27: dual-agent extraction audit (parses reviewer-provenance
+    # tag → per-study agreement state). Rehydrate receipts from on-disk
+    # JSON, then run the audit.
+    dual_agent = audit_extractions(_rehydrate_receipts(extr))
     (paper_dir / "dual_agent_extraction_audit.json").write_text(
         json.dumps(dual_agent.as_dict(), indent=2), encoding="utf-8",
     )
