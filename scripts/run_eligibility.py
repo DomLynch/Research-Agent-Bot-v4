@@ -28,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.eligibility_judge import (
     EligibilityProposal,
+    curated_proposal,
     judge_eligibility,
     judge_eligibility_with_variance,
 )
@@ -251,13 +252,25 @@ async def main() -> int:
         candidate = by_id[ft_r.study_id]  # type: ignore[attr-defined]
         parsed_doc = parsed_by_id[ft_r.study_id]  # type: ignore[attr-defined]
         tri = triage(candidate, parsed_doc, pack)
+        # Sprint 12.9 Researka-as-spine: short-circuit the LLM judge for
+        # candidates retrieved via a curated index source (researka:*).
+        # The Pass-1 rule triage + post-merge universal evidence contract
+        # still gate final include; we only skip the costly OpenRouter
+        # call. Set RESEARKA_SPINE_TRUST=false to revert to LLM-judging
+        # every Researka hit.
+        is_curated = (
+            settings.researka_spine_trust
+            and candidate.source.startswith("researka:")
+        )
         async with sem:
-            proposal = (
-                _dry_proposal(candidate.study_id) if args.dry_run
-                else await asyncio.to_thread(
+            if args.dry_run:
+                proposal = _dry_proposal(candidate.study_id)
+            elif is_curated:
+                proposal = curated_proposal(candidate, parsed_doc, tri, pack)
+            else:
+                proposal = await asyncio.to_thread(
                     judge_fn, candidate, parsed_doc, tri, pack, settings,
                 )
-            )
         receipt = adjudicate(tri, proposal, parsed_doc)
         async with write_lock:
             label_counts[tri.label] += 1

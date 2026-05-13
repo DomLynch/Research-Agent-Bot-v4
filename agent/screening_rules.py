@@ -129,6 +129,7 @@ def build_candidate_studies(
                 screening_stage="title_abstract_candidate",
                 pmid=h.pmid,
                 doi=h.doi,
+                source=h.source,
             )
         )
     return tuple(candidates)

@@ -9,6 +9,7 @@ from agent.eligibility_judge import (
     _normalise,
     _parse_json,
     _strip_fence,
+    curated_proposal,
     judge_eligibility,
     judge_eligibility_with_variance,
 )
@@ -215,3 +216,83 @@ def test_variance_check_disagreement_downgrades_to_unclear(monkeypatch: Any) -> 
     assert out.confidence == 0.0
     assert "variance check" in out.reasons[0]
     assert out.parse_error == "variance disagreement"
+
+
+def _researka_candidate(lane: str = "established") -> CandidateStudy:
+    return CandidateStudy(
+        study_id="s1", hit_key="k1", title="rapamycin in mice", year=2020,
+        venue="Nature", doi="10.1/x", pmid="123",
+        source=f"researka:{lane}",
+    )
+
+
+def test_curated_proposal_short_circuits_llm_for_researka_hits() -> None:
+    """Sprint 12.9: a Researka-source candidate whose Pass-1 triage passes
+    all mandatory fields must produce an include proposal directly from
+    the rule triage + parsed-text scan, with no LLM call. The model
+    string records the curated-source provenance so the receipt is
+    auditable."""
+    out = curated_proposal(_researka_candidate(), _parsed(), _triage(), _pack())
+    assert out.decision == "include"
+    assert out.confidence > 0.0 and out.confidence < 0.95
+    assert out.model.startswith("curated:researka:")
+    assert out.parse_error == ""
+    # Evidence quotes were scraped from the parsed body, not invented.
+    assert all(q in _parsed().text for q in out.evidence_quotes)
+
+
+def test_curated_proposal_returns_unclear_when_triage_misses_a_field() -> None:
+    """Curation trust never overrides the deterministic rule triage. If
+    Pass-1 says a mandatory field is missing, the proposal is 'unclear'
+    so the downstream merge + universal evidence contract can demote it."""
+    missing_field = EligibilityTriage(
+        study_id="s1", label="unclear",
+        mandatory_fields=MappingProxyType({
+            "species_match": True, "intervention_match": True,
+            "endpoint_present": False,  # missing
+            "control_present": True, "primary_research_design": True,
+            "rapalog_only_intervention": False, "parsed_text_adequate": True,
+        }),
+        reasons=("endpoint missing",),
+    )
+    out = curated_proposal(_researka_candidate(), _parsed(), missing_field, _pack())
+    assert out.decision == "unclear"
+    assert out.confidence < 0.6
+
+
+def test_curated_proposal_is_universal_no_biomedical_literals_required() -> None:
+    """The curated-proposal helper reads ONLY pack.primary_interventions +
+    pack.eligibility_endpoint_terms when scanning the parsed text. A
+    pack with arbitrary non-biomedical vocabulary (e.g. a climate or
+    economics pack) gets the same short-circuit behavior with no code
+    changes."""
+    climate_pack = TopicPack(
+        topic="t", display_name="T", primary_system="",
+        preferred_terms=(), discouraged_terms=(),
+        endpoint="", cite_role_default="", cite_roles_allowed=(),
+        anchors=MappingProxyType({}), length_caps=MappingProxyType({}),
+        min_words_per_citation=0,
+        outcome_nouns_extra=(), direction_verbs_extra=(), subjects_extra=(),
+        primary_interventions=("policy_X",),
+        translational_only_interventions=(), retrieval_sources=(),
+        eligibility_endpoint_terms=("emissions_reduction",),
+        eligibility_control_terms=("baseline",),
+        eligibility_exclude_design_terms=(), eligibility_combination_terms=(),
+        eligibility_min_text_chars=0,
+        sentinel_primary=(), sentinel_prior_meta=(),
+        non_mouse_species_terms=(), secondary_design_quote_markers=(),
+    )
+    climate_text = (
+        "Adoption of policy_X across cities led to measurable "
+        "emissions_reduction over a five-year window relative to the "
+        "matched baseline cohort." * 100
+    )
+    parsed = ParsedFullText(
+        study_id="s1", source_url="u", source_kind="html",
+        text=climate_text, char_count=len(climate_text),
+        sha256="h", fetched_at_utc="t",
+    )
+    out = curated_proposal(_researka_candidate(), parsed, _triage(), climate_pack)
+    assert out.decision == "include"
+    # Quotes were pulled from the climate body, not biomedical literals.
+    assert any("policy_X" in q or "emissions_reduction" in q for q in out.evidence_quotes)

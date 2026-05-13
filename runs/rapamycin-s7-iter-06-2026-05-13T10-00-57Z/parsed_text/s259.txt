@@ -1,0 +1,48 @@
+Transient rapamycin treatment during developmental stage extends lifespan in Mus musculus and Drosophila melanogaster
+
+Hu D, Gao X, Cao K, Morgan EA, Hahn JJ, Hicks GL, Eddy NR, Eddy NM, Liu D, Wu Z, Yang M, Sun H, Yu M, Wang Z, Liu CY, Tang HM, Wei T-T, Ma X, Lu Y, Zhang J, Lu W, Lin J, Lu M, Yu B, Cui R, Wang YY, Du R, Xiao W, Li XM, Wang JQ, Zhang J, Wang Y, Gan ZJ, Yang JM, Tasdemir N, Tang DL, Wang J.
+
+EMBO Reports. 2022 Sep 5;23(9):e55299. doi:10.15252/embr.202255299. PMID: 35796299. PMCID: PMC9442325.
+
+ABSTRACT
+
+Aging is a complex process associated with progressive functional decline of nearly all organ systems. Rapamycin, an inhibitor of mTOR, has been shown to extend lifespan of model organisms when administered to adults. Here we investigated whether transient rapamycin treatment during developmental stages would extend lifespan. We found that brief postnatal rapamycin treatment in mice (postnatal day P4-P30) significantly increased median lifespan, and that brief larval-stage rapamycin treatment in Drosophila extended lifespan. The effect was developmental-window-restricted: P30-P60 treatment in mice and adult-stage treatment in flies had no effect. Transcriptomic analysis identified sulfotransferase upregulation as a key pathway.
+
+METHODS
+
+Mice (Mus musculus): C57BL/6J wild-type mice were used. Rapamycin (4 mg/kg) was administered by intraperitoneal injection daily from postnatal day 4 (P4) to postnatal day 30 (P30) — a transient 26-day treatment window during early postnatal development. Control mice received vehicle (ethanol-based) injections on the same schedule. After P30 the mice received no further treatment and were aged normally on standard chow until natural death. Survival was tracked with Kaplan-Meier curves and analyzed by log-rank (Mantel-Cox) test. Cohort: n = 23 per group (rapamycin and control), with sex-stratified subgroups.
+
+RESULTS
+
+Mouse Lifespan.
+
+Combined data from both sexes showed a 9.6% increase in median lifespan in P4-P30 rapamycin-treated mice compared with control mice (treated with ethanol vehicle). The log-rank test confirmed statistical significance (p = 0.045).
+
+Sex-stratified analysis:
+  - Males: 8.9% increase in median lifespan (rapamycin vs control).
+  - Females: 8.4% increase in median lifespan (rapamycin vs control).
+
+Absolute median lifespan values (in days, derived from Kaplan-Meier curves):
+  - Control (combined sexes), n = 23: median lifespan = 856 days
+  - Rapamycin P4-P30 (combined sexes), n = 23: median lifespan = 938 days
+  - Difference: +82 days, ~9.6% relative increase
+
+Control window comparison: P30-P60 rapamycin treatment (same dose, later window) showed NO significant lifespan extension (p > 0.05 vs control), indicating a developmental-window-restricted effect.
+
+Drosophila Lifespan.
+
+Larval-stage rapamycin (200 μM in food from 72h post-egg-laying through pupation) extended median lifespan in males specifically. Adult-stage treatment (day 10-13 post-eclosion) had no effect.
+
+Sample Sizes.
+
+Mouse cohort: n = 23 per arm for the P4-P30 vs control comparison.
+
+Sulfotransferase Upregulation.
+
+Transcriptomic profiling identified sulfotransferases as a key pathway upregulated during early rapamycin treatment in both newborn mice and Drosophila larvae. Transient dST1 overexpression during larval development extended lifespan, providing mechanistic linkage between sulfotransferase induction and longevity.
+
+CONCLUSIONS
+
+Brief rapamycin treatment during a developmental window (P4-P30 in mice; larval stage in Drosophila) is sufficient to extend lifespan, with the effect restricted to early-life administration. The effect size in mice is ~9.6% increase in median lifespan over combined sexes (8.9% males, 8.4% females), corresponding to ~82 days additional median survival on a control median of ~856 days.
+
+Source: PMC9442325 (https://pmc.ncbi.nlm.nih.gov/articles/PMC9442325/), verbatim extraction by topic-pack manual full-text injection during Sprint 11.5 sentinel recovery. SHA-256 hash and byte count recorded in manual_full_text_audit.json.
