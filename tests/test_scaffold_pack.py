@@ -127,7 +127,14 @@ def test_render_output_parses_as_loadable_topic_pack(tmp_path: Path) -> None:
     assert "mouse" in p.preferred_terms
     assert p.endpoint == "lifespan"
     assert "10.1038/nature08221" in p.sentinel_primary
-    assert len(p.anchors) == 2
+    # Sprint 12.9.E: every scaffolded pack now includes 8 universal
+    # method-citation anchors (PRISMA, SYRCLE, Cochrane GRADE, ARRIVE,
+    # Egger, metafor, I², Hartung-Knapp) so writer-emitted
+    # [CIT:|method-citation] markers resolve cleanly. Plus the 2
+    # paper-derived anchors from this fixture = 10 total.
+    assert len(p.anchors) == 10
+    assert "page-2020-prisma" in p.anchors  # universal method anchor
+    assert "rapamycin-2014-2194" in p.anchors  # paper-derived anchor
     # Each anchor must have a matching bibliography entry.
     for key in p.anchors:
         assert key in p.references_bibliography
@@ -195,4 +202,12 @@ def test_render_handles_empty_curated_paper_list(tmp_path: Path) -> None:
     p = load_topic_pack("brand_new_topic", pack_dir=tmp_path)
     assert p is not None
     assert p.sentinel_primary == ()
-    assert p.anchors == {}
+    # Sprint 12.9.E: scaffold always seeds 8 universal method-citation
+    # anchors so writer [CIT:|method-citation] markers resolve cleanly
+    # even when the curated index returns 0 papers for the topic. Paper-
+    # derived anchors are 0 in this case, but method anchors are 8.
+    assert len(p.anchors) == 8
+    for key in ("page-2020-prisma", "hooijmans-2014-syrcle",
+                "egger-1997-funnel", "viechtbauer-2010-metafor"):
+        assert key in p.anchors
+        assert key in p.references_bibliography

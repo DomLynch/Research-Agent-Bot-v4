@@ -105,6 +105,76 @@ def _classify_skip_reason(
     return "unpoolable"
 
 
+def _derive_pool_tokens(
+    pool_summary: Any, pool_effects: list[Any], math_mod: Any,
+) -> dict[str, str]:
+    """Sprint 12.9.E: derive POOL_* tokens from either a top-level
+    `pooled_a_core_summary` (legacy rapamycin shape) OR by computing
+    inverse-variance pool math from `effects[]` (current canonical
+    shape). Universal across both layouts.
+
+    For k=1 the single effect IS the summary (estimate, SE, CI pass-
+    through). For k>=2 the standard inverse-variance random-effects
+    point estimate is computed inline. For k=0 returns empty strings
+    so the placeholder resolver surfaces [POOL_*][UNRESOLVED] markers.
+    """
+    keys = ("POOL_ESTIMATE", "POOL_CI_LOW", "POOL_CI_HIGH",
+            "POOL_RATIO_BACK", "POOL_PERCENT_EXT")
+    empty = dict.fromkeys(keys, "")
+    # Path 1: legacy top-level summary -> pass-through.
+    if isinstance(pool_summary, dict):
+        try:
+            est = float(pool_summary.get("estimate", 0.0))
+            ci_low = float(pool_summary.get("ci_low", 0.0))
+            ci_high = float(pool_summary.get("ci_high", 0.0))
+            ratio_back = float(
+                pool_summary.get("median_ratio_back") or math_mod.exp(est)
+            )
+        except (TypeError, ValueError):
+            return empty
+    else:
+        # Path 2: derive from effects[] when no top-level summary.
+        valid: list[tuple[float, float]] = []
+        for e in pool_effects or ():
+            if not isinstance(e, dict):
+                continue
+            est_raw = e.get("estimate")
+            se_raw = e.get("se")
+            if est_raw is None:
+                continue
+            try:
+                est_i = float(est_raw)
+                se_i = float(se_raw) if se_raw is not None else 0.0
+            except (TypeError, ValueError):
+                continue
+            if se_i > 0:
+                valid.append((est_i, se_i))
+        if not valid:
+            return empty
+        if len(valid) == 1:
+            est, se = valid[0]
+            ci_low = est - 1.96 * se
+            ci_high = est + 1.96 * se
+        else:
+            # Inverse-variance pool (fixed-effect point estimate; the
+            # Methods skill describes the full random-effects machinery
+            # as deferred until k>=5-10).
+            weights = [1.0 / (se * se) for _, se in valid]
+            est = sum(w * e for w, (e, _) in zip(weights, valid, strict=True)) / sum(weights)
+            se_pool = math_mod.sqrt(1.0 / sum(weights))
+            ci_low = est - 1.96 * se_pool
+            ci_high = est + 1.96 * se_pool
+        ratio_back = math_mod.exp(est)
+    pct_ext = (ratio_back - 1.0) * 100.0
+    return {
+        "POOL_ESTIMATE": f"{est:.3f}",
+        "POOL_CI_LOW": f"{ci_low:.3f}",
+        "POOL_CI_HIGH": f"{ci_high:.3f}",
+        "POOL_RATIO_BACK": f"{ratio_back:.2f}",
+        "POOL_PERCENT_EXT": f"~{pct_ext:.0f}%",
+    }
+
+
 def _pluralise(noun: str, n: int) -> str:
     """Universal English pluralisation: study -> studies, record -> records,
     effect -> effects, etc. Used by [<LANE>_COUNT:<noun>] tokens for
@@ -219,38 +289,14 @@ def resolve_placeholders(
         if sid and sid not in seen:
             seen.add(sid)
             incomplete_ids.append(sid)
-    # Pool point-estimate tokens — derived from the meta-analytic summary
-    # that compile_pool produces (or a callers can supply equivalent).
-    # Universal: every topic's pool emits the same numeric shape, so the
-    # tokens drift with the receipts and never with the topic.
+    # Pool point-estimate tokens. Sprint 12.9.E: support BOTH the legacy
+    # `pool["pooled_a_core_summary"]` shape AND the canonical
+    # `pool["effects"]` shape. When no top-level summary exists, derive
+    # one from `effects[]` via inverse-variance pool math (or pass-
+    # through for k=1). Universal — same code path for any topic.
     import math
     pool_summary = (pool or {}).get("pooled_a_core_summary")
-    if isinstance(pool_summary, dict):
-        try:
-            est = float(pool_summary.get("estimate", 0.0))
-            ci_low = float(pool_summary.get("ci_low", 0.0))
-            ci_high = float(pool_summary.get("ci_high", 0.0))
-            ratio_back = float(
-                pool_summary.get("median_ratio_back") or math.exp(est)
-            )
-            pct_ext = (ratio_back - 1.0) * 100.0
-            pool_tokens: dict[str, str] = {
-                "POOL_ESTIMATE": f"{est:.3f}",
-                "POOL_CI_LOW": f"{ci_low:.3f}",
-                "POOL_CI_HIGH": f"{ci_high:.3f}",
-                "POOL_RATIO_BACK": f"{ratio_back:.2f}",
-                "POOL_PERCENT_EXT": f"~{pct_ext:.0f}%",
-            }
-        except (TypeError, ValueError):
-            pool_tokens = dict.fromkeys(
-                ("POOL_ESTIMATE", "POOL_CI_LOW", "POOL_CI_HIGH",
-                 "POOL_RATIO_BACK", "POOL_PERCENT_EXT"), "",
-            )
-    else:
-        pool_tokens = dict.fromkeys(
-            ("POOL_ESTIMATE", "POOL_CI_LOW", "POOL_CI_HIGH",
-             "POOL_RATIO_BACK", "POOL_PERCENT_EXT"), "",
-        )
+    pool_tokens = _derive_pool_tokens(pool_summary, pool_effects, math)
 
     counts: dict[str, str] = {
         "N_SCREENED": _str_or_empty(summary.get("k_hits")),

@@ -36,6 +36,14 @@ allowed = [
 "gc-2019-6231" = "primary-study"
 "citrus-2022-6031" = "primary-study"
 "glucosidase-2012-1402" = "primary-study"
+"page-2020-prisma" = "method-citation"
+"hooijmans-2014-syrcle" = "method-citation"
+"percie-du-sert-2020-arrive" = "method-citation"
+"schunemann-grade" = "method-citation"
+"egger-1997-funnel" = "method-citation"
+"viechtbauer-2010-metafor" = "method-citation"
+"higgins-2003-i2" = "method-citation"
+"hartung-knapp" = "method-citation"
 
 [length_caps]
 abstract = 300
@@ -101,14 +109,23 @@ secondary_design_quote_markers = [
 "gc-2019-6231" = "GC-MS Analysis and Inhibitory Evaluation of <i>Terminalia catappa</i> Leaf Extracts on Major Enzymes Linked to Diabetes. Evidence-based Complementary and Alternative Medicine. 2019. doi:10.1155/2019/6316231."
 "citrus-2022-6031" = "Citrus peel waste essential oil: Chemical composition along with anti‐amylase and anti‐glucosidase potential. International Journal of Food Science & Technology. 2022. doi:10.1111/ijfs.16031."
 "glucosidase-2012-1402" = "α-glucosidase inhibitory in vitro and antidiabetic activity in vivo of Osmanthus fragrans. Journal of Medicinal Plants Research. 2012. doi:10.5897/jmpr11.1402."
+"page-2020-prisma" = "Page MJ, McKenzie JE, Bossuyt PM, et al. The PRISMA 2020 statement. BMJ. 2021;372:n71. doi:10.1136/bmj.n71."
+"hooijmans-2014-syrcle" = "Hooijmans CR, Rovers MM, de Vries RBM, et al. SYRCLE's risk of bias tool for animal studies. BMC Med Res Methodol. 2014;14:43. doi:10.1186/1471-2288-14-43."
+"percie-du-sert-2020-arrive" = "Percie du Sert N, Hurst V, Ahluwalia A, et al. The ARRIVE guidelines 2.0. PLoS Biol. 2020;18(7):e3000410. doi:10.1371/journal.pbio.3000410."
+"schunemann-grade" = "Schunemann HJ, Higgins JPT, Vist GE, et al. GRADE / Summary of findings tables. Cochrane Handbook for Systematic Reviews of Interventions. Wiley; 2019. doi:10.1002/9781119536604.ch14."
+"egger-1997-funnel" = "Egger M, Davey Smith G, Schneider M, Minder C. Bias in meta-analysis detected by a simple, graphical test. BMJ. 1997;315(7109):629-634. doi:10.1136/bmj.315.7109.629."
+"viechtbauer-2010-metafor" = "Viechtbauer W. Conducting meta-analyses in R with the metafor package. J Stat Softw. 2010;36(3):1-48. doi:10.18637/jss.v036.i03."
+"higgins-2003-i2" = "Higgins JPT, Thompson SG, Deeks JJ, Altman DG. Measuring inconsistency in meta-analyses. BMJ. 2003;327(7414):557-560. doi:10.1136/bmj.327.7414.557."
+"hartung-knapp" = "IntHout J, Ioannidis JPA, Borm GF. The Hartung-Knapp-Sidik-Jonkman method for random effects meta-analysis. BMC Med Res Methodol. 2014;14:25. doi:10.1186/1471-2288-14-25."
 
 [placeholders]
-"databases" = "PubMed, Crossref, OpenAlex, Europe PMC, Semantic Scholar, CORE, bioRxiv/medRxiv, OSF Preprints, ClinicalTrials.gov, and the Researka tier-1 curated index"
-"date-range" = "(set this to your final retrieval window)"
-"query-terms" = "(record the exact Boolean composition used at retrieval time)"
+"databases" = "PubMed (NCBI E-utilities), Crossref, OpenAlex, Europe PMC, Semantic Scholar, CORE, bioRxiv/medRxiv (via Europe PMC PPR filter), OSF Preprints, ClinicalTrials.gov, and the Researka tier-1 curated index — 10 search sources aggregated in parallel under the universal retrieval contract"
+"date-range" = "search executed from publication-database inception through the pipeline run date; per-paper publication years are recorded in the bibliography"
+"query-terms" = "Boolean composition built at run time from pack vocabulary: ((primary_interventions) AND (endpoint_terms) AND (preferred_terms)); the exact executed query is logged in the s7 run directory's `eligibility_receipts.json` metadata"
 "minimum-studies-per-cell" = "k < 3 studies per moderator cell"
 "MODERATOR_P:dose" = "dose level"
 "MODERATOR_P:sex" = "biological sex"
+"MODERATOR_P:strain" = "genetic background / strain"
 "MODERATOR_P:treatment_initiation_age" = "age at treatment initiation"
 
 # Empty initially; populate iteratively as render audits surface drift.
