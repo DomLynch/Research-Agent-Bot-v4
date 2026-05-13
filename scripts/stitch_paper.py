@@ -46,7 +46,7 @@ from agent.back_matter import build_back_matter
 from agent.methods_honesty import apply_honesty_rewrites
 from agent.placeholder_resolver import resolve_placeholders
 from agent.readiness import classify_readiness
-from agent.reference_resolver import resolve_citations
+from agent.reference_resolver import audit_citations, resolve_citations
 from agent.settings import load_settings
 from agent.study_table import build_study_characteristics_table
 from agent.topic_pack import load_topic_pack
@@ -185,6 +185,20 @@ def stitch(
     )
     with_table = _inject_study_table(ph2.body, strict, extr, pool)
     resolved = resolve_citations(with_table, pack)
+    cite_audit = audit_citations(resolved, pack)
+    # Sprint 17 hard gate: refuse to stitch when citations don't reconcile.
+    # In-text [N] without a matching reference, or unresolved anchor keys,
+    # mean reviewers would see broken numbering or [UNRESOLVED] tags in
+    # the shipped paper. --allow-pending bypasses for staging workflows.
+    if not allow_pending and not cite_audit.clean:
+        raise RuntimeError(
+            f"refusing to stitch paper.md with citation defects: "
+            f"unresolved={list(cite_audit.unresolved_anchors)}, "
+            f"in_text_without_entry={list(cite_audit.in_text_without_entry)}, "
+            f"entry_without_in_text={list(cite_audit.entry_without_in_text)}. "
+            f"Fix the topic-pack bibliography or rerun the writer, or pass "
+            f"--allow-pending to stage anyway."
+        )
 
     if target is None:
         stamp = dt.datetime.now(tz=dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
@@ -235,6 +249,12 @@ def stitch(
     (target / "readiness_report.json").write_text(
         json.dumps(readiness.as_dict(), indent=2), encoding="utf-8",
     )
+    # Sprint 17: cite_audit.json captures the citation/reference sanity
+    # state — clean=True is journal-shippable; clean=False (only reachable
+    # via --allow-pending) keeps the deficit visible to reviewers.
+    (target / "cite_audit.json").write_text(
+        json.dumps(cite_audit.as_dict(), indent=2), encoding="utf-8",
+    )
 
     print(
         f"[stitch] wrote {target_path} "
@@ -242,6 +262,7 @@ def stitch(
         f"honesty_rewrites={len(hon.rewrites_applied)}, "
         f"cites_used={len(resolved.citations_used)}, "
         f"cites_unresolved={len(resolved.unresolved)}, "
+        f"cite_audit_clean={cite_audit.clean}, "
         f"readiness=L{readiness.level} {readiness.label})"
     )
     return target_path

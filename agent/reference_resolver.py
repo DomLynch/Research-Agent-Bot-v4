@@ -85,3 +85,56 @@ def resolve_citations(body: str, pack: TopicPack) -> ResolvedReferences:
         body=new_body, references_section=references_section,
         citations_used=tuple(order), unresolved=tuple(unresolved),
     )
+
+
+# Sprint 17 — universal citation/reference sanity gate.
+_INTEXT_N_RE = re.compile(r"\[(\d+)\]")
+_REFLINE_RE = re.compile(r"^(\d+)\.\s", re.MULTILINE)
+
+
+@dataclass(frozen=True, slots=True)
+class CiteAudit:
+    """Post-resolution audit of a stitched paper's citations."""
+    in_text_numbers: tuple[int, ...]      # every [N] in the body, in order
+    reference_numbers: tuple[int, ...]     # numbered entries in the section
+    in_text_without_entry: tuple[int, ...] # body cites with no matching ref
+    entry_without_in_text: tuple[int, ...] # refs not cited in body
+    unresolved_anchors: tuple[str, ...]    # carried from ResolvedReferences
+    dead_bibliography_anchors: tuple[str, ...]  # pack entries never cited
+
+    @property
+    def clean(self) -> bool:
+        return (
+            not self.in_text_without_entry
+            and not self.entry_without_in_text
+            and not self.unresolved_anchors
+        )
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "clean": self.clean,
+            "in_text_numbers": list(self.in_text_numbers),
+            "reference_numbers": list(self.reference_numbers),
+            "in_text_without_entry": list(self.in_text_without_entry),
+            "entry_without_in_text": list(self.entry_without_in_text),
+            "unresolved_anchors": list(self.unresolved_anchors),
+            "dead_bibliography_anchors": list(self.dead_bibliography_anchors),
+        }
+
+
+def audit_citations(resolved: ResolvedReferences, pack: TopicPack) -> CiteAudit:
+    """Cross-check that every [N] in the body has a matching numbered
+    entry in the references section (and vice-versa), and report
+    bibliography anchors that no body citation referenced."""
+    in_text = tuple(int(m.group(1)) for m in _INTEXT_N_RE.finditer(resolved.body))
+    ref_nums = tuple(int(m.group(1)) for m in _REFLINE_RE.finditer(resolved.references_section))
+    in_text_set, ref_set = set(in_text), set(ref_nums)
+    cited_keys = set(resolved.citations_used)
+    dead = tuple(k for k in pack.references_bibliography if k not in cited_keys)
+    return CiteAudit(
+        in_text_numbers=in_text, reference_numbers=ref_nums,
+        in_text_without_entry=tuple(sorted(in_text_set - ref_set)),
+        entry_without_in_text=tuple(sorted(ref_set - in_text_set)),
+        unresolved_anchors=resolved.unresolved,
+        dead_bibliography_anchors=dead,
+    )

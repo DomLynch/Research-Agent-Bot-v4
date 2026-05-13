@@ -54,3 +54,25 @@ def test_stitch_allow_pending_writes_partial_paper(
     body = out.read_text(encoding="utf-8")
     assert "[SECTIONS_PENDING:title_abstract_intro" in body
     assert "[SECTIONS_PENDING:methods" in body
+
+
+def test_stitch_allow_pending_emits_readiness_and_cite_audit_receipts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Sprints 16 + 17: every stitched paper folder must carry
+    readiness_report.json + cite_audit.json alongside paper.md, even
+    when --allow-pending is used (so reviewers see the L-level + cite
+    state on partial drafts too)."""
+    monkeypatch.setattr(_STITCH, "_RUNS", tmp_path)
+    target = tmp_path / "out"
+    _STITCH.stitch("rapamycin", target=target, allow_pending=True)
+    assert (target / "readiness_report.json").exists()
+    assert (target / "cite_audit.json").exists()
+    import json
+    readiness = json.loads((target / "readiness_report.json").read_text())
+    assert readiness["level"] == 1  # no receipts present
+    assert readiness["label"] == "scaffold"
+    cite_audit = json.loads((target / "cite_audit.json").read_text())
+    # No body cites and no resolved references when scaffolding empty
+    # → audit is structurally clean (no defects to flag).
+    assert cite_audit["clean"] is True
