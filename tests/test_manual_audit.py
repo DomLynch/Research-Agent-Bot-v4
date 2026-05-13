@@ -128,3 +128,90 @@ def test_entry_dataclass_is_frozen() -> None:
     except AttributeError:
         return
     raise AssertionError("ManualAuditEntry should be immutable")
+
+
+# -----------------------------------------------------------------------------
+# Integration: overlay clears flags in Sprint 18 + Sprint 19 sidecars.
+# -----------------------------------------------------------------------------
+
+
+def test_overlay_clears_extraction_audit_flag(tmp_path: Path) -> None:
+    """When the overlay approves a low-confidence extraction, the
+    Sprint 19 score_extractions() reports needs_human_audit=False."""
+    from types import MappingProxyType
+
+    from agent.effect_extraction import ExtractionReceipt
+    from agent.extraction_confidence import score_extractions
+
+    _write(tmp_path / "manual_audit.json", {"audits": [
+        {"kind": "extraction", "study_id": "s01", "action": "approve",
+         "reviewer": "dl"},
+    ]})
+    overlay = load_manual_audit(tmp_path)
+    r = ExtractionReceipt(
+        study_id="s01", status="extracted", metric="m",
+        treated_value=1.0, control_value=1.0, treated_n=10, control_n=10,
+        hazard_ratio=None, hazard_ratio_ci_low=None, hazard_ratio_ci_high=None,
+        percent_change=None, moderators=MappingProxyType({}),
+        evidence_quotes=(), failure_reason="",
+        reviewer="mimo-dual-pass-adjudicator-failed",  # 0.3 confidence
+        text_hash="h", timestamp_utc="t",
+    )
+    # Without overlay → flagged.
+    rep_no = score_extractions([r])
+    assert rep_no.entries[0].needs_human_audit is True
+    # With overlay approval → cleared.
+    rep_yes = score_extractions([r], audit_approved=overlay.approved_extractions())
+    assert rep_yes.entries[0].needs_human_audit is False
+    # Confidence value itself is unchanged — provenance is the truth.
+    assert rep_yes.entries[0].confidence == 0.3
+
+
+def test_overlay_clears_sentinel_repair_entry(tmp_path: Path) -> None:
+    """When the overlay records a sentinel action, the Sprint 18
+    repair plan no longer lists that sentinel."""
+    from types import MappingProxyType
+
+    from agent.sentinel_recall import SentinelRecallReceipt, SentinelStatus
+    from agent.sentinel_repair import compute_repair_plan
+    from agent.topic_pack import TopicPack
+
+    pack = TopicPack(
+        topic="t", display_name="T", primary_system="",
+        preferred_terms=(), discouraged_terms=(),
+        endpoint="", cite_role_default="", cite_roles_allowed=(),
+        anchors=MappingProxyType({}),
+        length_caps=MappingProxyType({}),
+        min_words_per_citation=0,
+        outcome_nouns_extra=(), direction_verbs_extra=(), subjects_extra=(),
+        primary_interventions=(), translational_only_interventions=(),
+        retrieval_sources=(),
+        eligibility_endpoint_terms=(),
+        eligibility_control_terms=(),
+        eligibility_exclude_design_terms=(),
+        eligibility_combination_terms=(),
+        eligibility_min_text_chars=0,
+        sentinel_primary=(), sentinel_prior_meta=(),
+        non_mouse_species_terms=(),
+        secondary_design_quote_markers=(),
+        references_bibliography=MappingProxyType({}),
+    )
+    r = SentinelRecallReceipt(
+        statuses=(
+            SentinelStatus("10.1/uploaded", "primary", False, False, "not_retrieved"),
+            SentinelStatus("10.2/open", "primary", False, False, "not_retrieved"),
+        ),
+        expected_primary=2, expected_prior_meta=0,
+        retrieved_primary=0, retrieved_prior_meta=0,
+        candidate_primary=0, candidate_prior_meta=0, included_primary=0,
+    )
+    _write(tmp_path / "manual_audit.json", {"audits": [
+        {"kind": "sentinel", "sentinel_id": "10.1/uploaded",
+         "action": "uploaded", "reviewer": "dl"},
+    ]})
+    overlay = load_manual_audit(tmp_path)
+    plan_no = compute_repair_plan(r, pack)
+    assert plan_no.k_repair_needed == 2
+    plan_yes = compute_repair_plan(r, pack, audit_resolved=overlay.resolved_sentinels())
+    assert plan_yes.k_repair_needed == 1
+    assert plan_yes.entries[0].sentinel_id == "10.2/open"
