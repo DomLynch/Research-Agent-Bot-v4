@@ -155,6 +155,31 @@ def test_rendered_files_do_not_reference_absent_local_run_files() -> None:
     )
 
 
+def test_rendered_files_contain_no_unresolved_merge_conflict_markers() -> None:
+    """Sprint 12.8.1 — an unresolved Git merge-conflict marker in the
+    rendered manuscript is an instant desk-reject from any journal and
+    a release-truth failure. This grep gate is the cheap last-line
+    defence: any `<<<<<<<`, `=======`, or `>>>>>>>` token literally
+    present in paper.md or supplement.md fails the build.
+
+    The pattern is matched only at line start so prose containing the
+    literal substring `=======` inside a code block or quoted equation
+    is not false-positive flagged.
+    """
+    markers = ("<<<<<<<", "=======", ">>>>>>>")
+    leftover: list[tuple[str, int, str]] = []
+    for fname in ("paper.md", "supplement.md"):
+        text = _read(fname)
+        for i, line in enumerate(text.splitlines(), start=1):
+            stripped = line.lstrip()
+            if any(stripped.startswith(m) for m in markers):
+                leftover.append((fname, i, line.rstrip()))
+    assert not leftover, (
+        "unresolved Git merge-conflict marker(s) in rendered artifact: "
+        f"{leftover}"
+    )
+
+
 def test_paper_folder_canonical_outputs_exist() -> None:
     """Canonical paper-folder shape: paper.md + supplement.md + the
     4 JSON receipts that supplement's S9 cross-references."""
