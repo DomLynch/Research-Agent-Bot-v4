@@ -366,6 +366,24 @@ def main() -> int:
         f"mean={confidence_report.mean_confidence:.3f}"
     )
 
+    # Sprint 27: dual-agent extraction audit. Parses the dual-pass
+    # reviewer-provenance tag into a per-study record showing per-field
+    # agreement state. Reframes "needs human audit" as "agent-review
+    # status" — the platform thesis is agent-to-agent adjudication, not
+    # human duplicate review.
+    from agent.dual_agent_audit import audit_extractions
+    dual_agent = audit_extractions(receipts_rehydrated)
+    (rd / "dual_agent_extraction_audit.json").write_text(
+        json.dumps(dual_agent.as_dict(), indent=2), encoding="utf-8",
+    )
+    print(
+        f"[extract] dual-agent: k_total={dual_agent.k_total} "
+        f"agreed={dual_agent.k_agent_agreed} "
+        f"adjudicated={dual_agent.k_agent_adjudicated} "
+        f"single_pass={dual_agent.k_single_pass} "
+        f"blocking={dual_agent.k_blocking}"
+    )
+
     # Sprint 8 pooling: convert contract-passing receipts to
     # (ExtractedOutcome, EffectSizeRecord) pairs and write to disk so
     # regen_section3 can render the primary-effect prose. Receipts that

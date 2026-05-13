@@ -28,6 +28,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from agent.dual_agent_audit import audit_extractions
+from agent.effect_extraction import ExtractionReceipt
 from agent.maturity_router import select_paper_type
 from agent.readiness import classify_readiness
 from agent.reference_resolver import ResolvedReferences, audit_citations
@@ -87,8 +89,45 @@ def _regen_cite_audit(paper_dir: Path, topic: str) -> bool | None:
     return structurally_clean
 
 
+def _regen_dual_agent_audit(extractions: dict[str, object]) -> tuple[int, int, int, int]:
+    """Rehydrate ExtractionReceipt records from effect_extractions.json
+    and produce the Sprint 27 dual-agent audit payload.
+    Returns (k_total, agreed, adjudicated, single_pass) for the CLI log."""
+    raw = extractions.get("receipts") if isinstance(extractions.get("receipts"), list) else []
+    if not isinstance(raw, list):
+        return 0, 0, 0, 0
+    from types import MappingProxyType
+
+    receipts: list[ExtractionReceipt] = []
+    for r in raw:
+        if not isinstance(r, dict):
+            continue
+        quotes = r.get("evidence_quotes") or ()
+        receipts.append(ExtractionReceipt(
+            study_id=str(r.get("study_id") or ""),
+            status=r.get("status") or "no_numerics",
+            metric=str(r.get("metric") or ""),
+            treated_value=r.get("treated_value") if isinstance(r.get("treated_value"), (int, float)) else None,
+            control_value=r.get("control_value") if isinstance(r.get("control_value"), (int, float)) else None,
+            treated_n=r.get("treated_n") if isinstance(r.get("treated_n"), int) else None,
+            control_n=r.get("control_n") if isinstance(r.get("control_n"), int) else None,
+            hazard_ratio=r.get("hazard_ratio") if isinstance(r.get("hazard_ratio"), (int, float)) else None,
+            hazard_ratio_ci_low=r.get("hazard_ratio_ci_low") if isinstance(r.get("hazard_ratio_ci_low"), (int, float)) else None,
+            hazard_ratio_ci_high=r.get("hazard_ratio_ci_high") if isinstance(r.get("hazard_ratio_ci_high"), (int, float)) else None,
+            percent_change=r.get("percent_change") if isinstance(r.get("percent_change"), (int, float)) else None,
+            moderators=MappingProxyType({}),
+            evidence_quotes=tuple(str(q) for q in quotes) if isinstance(quotes, list) else (),
+            failure_reason=str(r.get("failure_reason") or ""),
+            reviewer=str(r.get("reviewer") or ""),
+            text_hash=str(r.get("text_hash") or ""),
+            timestamp_utc=str(r.get("timestamp_utc") or ""),
+        ))
+    report = audit_extractions(receipts)
+    return report.k_total, report.k_agent_agreed, report.k_agent_adjudicated, report.k_single_pass
+
+
 def regen(paper_dir: Path, *, topic: str = "") -> dict[str, str]:
-    """Materialise the four sidecar receipts in `paper_dir`. Returns a
+    """Materialise the five sidecar receipts in `paper_dir`. Returns a
     dict mapping receipt-name → produced level/label for stdout."""
     summary = _read_json(paper_dir / "eligibility_summary.json")
     strict = _read_json(paper_dir / "primary_effect_input_set_strict.json")
@@ -108,6 +147,41 @@ def regen(paper_dir: Path, *, topic: str = "") -> dict[str, str]:
     # cite_audit is produced FIRST so the research_object reader sees
     # the freshly-written file when it reads cite_audit.json.
     cite_clean = _regen_cite_audit(paper_dir, topic)
+
+    # Sprint 27: dual-agent extraction audit. Rehydrate receipts from
+    # disk and re-emit the audit payload alongside.
+    raw = extr.get("receipts") if isinstance(extr.get("receipts"), list) else None
+    raw_list = raw if isinstance(raw, list) else []
+    from types import MappingProxyType
+    rehydrated: list[ExtractionReceipt] = []
+    for r in raw_list:
+        if not isinstance(r, dict):
+            continue
+        quotes = r.get("evidence_quotes") or ()
+        rehydrated.append(ExtractionReceipt(
+            study_id=str(r.get("study_id") or ""),
+            status=r.get("status") or "no_numerics",
+            metric=str(r.get("metric") or ""),
+            treated_value=r.get("treated_value") if isinstance(r.get("treated_value"), (int, float)) else None,
+            control_value=r.get("control_value") if isinstance(r.get("control_value"), (int, float)) else None,
+            treated_n=r.get("treated_n") if isinstance(r.get("treated_n"), int) else None,
+            control_n=r.get("control_n") if isinstance(r.get("control_n"), int) else None,
+            hazard_ratio=r.get("hazard_ratio") if isinstance(r.get("hazard_ratio"), (int, float)) else None,
+            hazard_ratio_ci_low=r.get("hazard_ratio_ci_low") if isinstance(r.get("hazard_ratio_ci_low"), (int, float)) else None,
+            hazard_ratio_ci_high=r.get("hazard_ratio_ci_high") if isinstance(r.get("hazard_ratio_ci_high"), (int, float)) else None,
+            percent_change=r.get("percent_change") if isinstance(r.get("percent_change"), (int, float)) else None,
+            moderators=MappingProxyType({}),
+            evidence_quotes=tuple(str(q) for q in quotes) if isinstance(quotes, list) else (),
+            failure_reason=str(r.get("failure_reason") or ""),
+            reviewer=str(r.get("reviewer") or ""),
+            text_hash=str(r.get("text_hash") or ""),
+            timestamp_utc=str(r.get("timestamp_utc") or ""),
+        ))
+    dual_agent = audit_extractions(rehydrated)
+    (paper_dir / "dual_agent_extraction_audit.json").write_text(
+        json.dumps(dual_agent.as_dict(), indent=2), encoding="utf-8",
+    )
+
     research_object = bundle_research_object(paper_dir, topic=topic)
     (paper_dir / "research_object.json").write_text(
         json.dumps(research_object.as_dict(), indent=2), encoding="utf-8",
@@ -116,6 +190,9 @@ def regen(paper_dir: Path, *, topic: str = "") -> dict[str, str]:
         "readiness": f"L{readiness.level} {readiness.label}",
         "paper_type": paper_type.name,
         "cite_audit_clean": str(cite_clean),
+        "dual_agent_total": str(dual_agent.k_total),
+        "dual_agent_agreed": str(dual_agent.k_agent_agreed),
+        "dual_agent_single_pass": str(dual_agent.k_single_pass),
         "research_object_studies": str(len(research_object.studies)),
         "research_object_claims": str(len(research_object.claims)),
     }
