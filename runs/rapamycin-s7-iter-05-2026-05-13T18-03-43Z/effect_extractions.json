@@ -1,0 +1,95 @@
+{
+  "_doc": "Sprint 8 effect-extraction receipts. Each strict A-core record gets one receipt. Pooling reads only receipts that pass validate_extraction(); the rest are documented extraction failures.",
+  "topic": "rapamycin",
+  "run_id": "rapamycin-s7-iter-05-2026-05-13T18-03-43Z",
+  "frozen_at_utc": "2026-05-13T18:18:14+00:00",
+  "k_records": 4,
+  "k_contract_passing": 0,
+  "receipts": [
+    {
+      "study_id": "s098",
+      "status": "parse_failed",
+      "metric": "",
+      "treated_value": null,
+      "control_value": null,
+      "treated_n": null,
+      "control_n": null,
+      "hazard_ratio": null,
+      "hazard_ratio_ci_low": null,
+      "hazard_ratio_ci_high": null,
+      "percent_change": null,
+      "moderators": {},
+      "evidence_quotes": [],
+      "failure_reason": "extraction error after 2 attempts: Expecting ',' delimiter: line 12 column 34 (char 300)",
+      "reviewer": "extract-cli",
+      "text_hash": "",
+      "timestamp_utc": "2026-05-13T18:14:48+00:00"
+    },
+    {
+      "study_id": "s246",
+      "status": "no_numerics",
+      "metric": "median_survival",
+      "treated_value": null,
+      "control_value": null,
+      "treated_n": 68,
+      "control_n": 68,
+      "hazard_ratio": null,
+      "hazard_ratio_ci_low": null,
+      "hazard_ratio_ci_high": null,
+      "percent_change": null,
+      "moderators": {
+        "sex": "male",
+        "strain": "C57BL/6J"
+      },
+      "evidence_quotes": [
+        "Survival analysis applied to all treated cohorts, and lifespan extension by rapamycin was demonstrated relative to corresponding vehicle controls (Figure 1), confirming previously reported longevity effects.",
+        "Survival curves were calculated for rapamycin- and vehicle-treated mice (all cohorts; n = 68 per group)."
+      ],
+      "failure_reason": "The paper reports lifespan extension but does not provide numeric values for treated and control median lifespans.",
+      "reviewer": "mimo:mimo-v2.5-pro",
+      "text_hash": "a1457ee22b22ba2ea4969f0623050ed3972acb0e7e53ab84f671a57f5edb4db7",
+      "timestamp_utc": "2026-05-13T18:15:29+00:00"
+    },
+    {
+      "study_id": "s279",
+      "status": "no_numerics",
+      "metric": "survival",
+      "treated_value": null,
+      "control_value": null,
+      "treated_n": null,
+      "control_n": null,
+      "hazard_ratio": null,
+      "hazard_ratio_ci_low": null,
+      "hazard_ratio_ci_high": null,
+      "percent_change": null,
+      "moderators": {},
+      "evidence_quotes": [
+        "survival of both males and females was modestly enhanced in YF animals [35].",
+        "Although survival was increased in both sexes [35]"
+      ],
+      "failure_reason": "The paper does not report numeric effect sizes for survival or lifespan; it only references enhancement from another study without providing median survival, hazard ratios, or other quantifiable data.",
+      "reviewer": "mimo:mimo-v2.5-pro",
+      "text_hash": "78731930cf1ca6a14fe3e5fac237d2ad069c05076ef8712ded0dec22875cf7c0",
+      "timestamp_utc": "2026-05-13T18:16:20+00:00"
+    },
+    {
+      "study_id": "s327",
+      "status": "extracted",
+      "metric": "survival",
+      "treated_value": 88.78,
+      "control_value": 48.53,
+      "treated_n": 6,
+      "control_n": 6,
+      "hazard_ratio": null,
+      "hazard_ratio_ci_low": null,
+      "hazard_ratio_ci_high": null,
+      "percent_change": null,
+      "moderators": {},
+      "evidence_quotes": [],
+      "failure_reason": "",
+      "reviewer": "mimo-dual-pass-adjudicated:google/gemma-4-31b-it;adjudicator=mimo-v2.5-pro;disagreements=treated_n,control_n",
+      "text_hash": "b90294c95f5e4e7a50402a97061dec89538cf75a66e8e4fe6fe53a731a97560d",
+      "timestamp_utc": "2026-05-13T18:18:14+00:00"
+    }
+  ]
+}

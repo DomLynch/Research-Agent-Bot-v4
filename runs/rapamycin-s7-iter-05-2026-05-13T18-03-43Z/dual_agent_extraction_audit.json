@@ -1,0 +1,103 @@
+{
+  "k_total": 4,
+  "k_agent_agreed": 0,
+  "k_agent_adjudicated": 1,
+  "k_single_pass": 2,
+  "k_blocking": 3,
+  "audit_threshold": 0.6,
+  "entries": [
+    {
+      "study_id": "s098",
+      "status": "placeholder",
+      "extractor_a": null,
+      "extractor_b": null,
+      "field_agreement": {
+        "status": false,
+        "metric": false,
+        "treated_value": false,
+        "control_value": false,
+        "treated_n": false,
+        "control_n": false,
+        "hazard_ratio": false,
+        "hazard_ratio_ci_low": false,
+        "hazard_ratio_ci_high": false,
+        "percent_change": false
+      },
+      "confidence_score": 0.0,
+      "blocking_flags": [
+        "extraction_status=no_numerics",
+        "no_dual_agent_review"
+      ],
+      "reviewer": "extract-cli"
+    },
+    {
+      "study_id": "s246",
+      "status": "single_pass",
+      "extractor_a": "mimo-v2.5-pro",
+      "extractor_b": null,
+      "field_agreement": {
+        "status": false,
+        "metric": false,
+        "treated_value": false,
+        "control_value": false,
+        "treated_n": false,
+        "control_n": false,
+        "hazard_ratio": false,
+        "hazard_ratio_ci_low": false,
+        "hazard_ratio_ci_high": false,
+        "percent_change": false
+      },
+      "confidence_score": 0.0,
+      "blocking_flags": [
+        "extraction_status=no_numerics",
+        "no_dual_agent_review"
+      ],
+      "reviewer": "mimo:mimo-v2.5-pro"
+    },
+    {
+      "study_id": "s279",
+      "status": "single_pass",
+      "extractor_a": "mimo-v2.5-pro",
+      "extractor_b": null,
+      "field_agreement": {
+        "status": false,
+        "metric": false,
+        "treated_value": false,
+        "control_value": false,
+        "treated_n": false,
+        "control_n": false,
+        "hazard_ratio": false,
+        "hazard_ratio_ci_low": false,
+        "hazard_ratio_ci_high": false,
+        "percent_change": false
+      },
+      "confidence_score": 0.0,
+      "blocking_flags": [
+        "extraction_status=no_numerics",
+        "no_dual_agent_review"
+      ],
+      "reviewer": "mimo:mimo-v2.5-pro"
+    },
+    {
+      "study_id": "s327",
+      "status": "agent_adjudicated",
+      "extractor_a": "mimo",
+      "extractor_b": "google/gemma-4-31b-it",
+      "field_agreement": {
+        "status": true,
+        "metric": true,
+        "treated_value": true,
+        "control_value": true,
+        "treated_n": false,
+        "control_n": false,
+        "hazard_ratio": true,
+        "hazard_ratio_ci_low": true,
+        "hazard_ratio_ci_high": true,
+        "percent_change": true
+      },
+      "confidence_score": 0.7,
+      "blocking_flags": [],
+      "reviewer": "mimo-dual-pass-adjudicated:google/gemma-4-31b-it;adjudicator=mimo-v2.5-pro;disagreements=treated_n,control_n"
+    }
+  ]
+}

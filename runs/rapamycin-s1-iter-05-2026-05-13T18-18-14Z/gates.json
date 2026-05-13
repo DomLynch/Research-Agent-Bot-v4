@@ -1,0 +1,27 @@
+{
+  "summary": {
+    "total": 3,
+    "by_gate": {
+      "evidence_slot": 1,
+      "scope_consistency": 1,
+      "citation_density": 1
+    }
+  },
+  "violations": [
+    {
+      "gate": "evidence_slot",
+      "location": "INTRODUCTION",
+      "message": "Empirical claim without [CIT:]/[N=]/[EFFECT=] slot: 'While the pipeline is designed for such capabilities, they are deferred in this iteration until the corpus accrues a larger number of con\u2026'"
+    },
+    {
+      "gate": "scope_consistency",
+      "location": "INTRODUCTION",
+      "message": "Discouraged scope term 'vertebrate'; prefer ['murine', 'mouse', 'mice']: '\u2026panded the scope to a broader vertebrate meta-analysis, providing a co\u2026'"
+    },
+    {
+      "gate": "citation_density",
+      "location": "INTRODUCTION",
+      "message": "INTRODUCTION cites every 34.5 words (23 brackets / 793 words); minimum 45 words/bracket"
+    }
+  ]
+}

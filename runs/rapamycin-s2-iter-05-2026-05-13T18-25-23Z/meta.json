@@ -1,0 +1,20 @@
+{
+  "topic": "rapamycin",
+  "iteration": 5,
+  "timestamp_utc": "2026-05-13T18-25-23Z",
+  "model": "mimo-runaway-fallback:google/gemma-4-31b-it",
+  "prompt_tokens": 4602,
+  "completion_tokens": 998,
+  "section_key": "methods",
+  "sections_requested": [
+    "METHODS"
+  ],
+  "sections_parsed": [
+    "METHODS"
+  ],
+  "parse_ok": true,
+  "gate_violations": 1,
+  "gates_by_type": {
+    "evidence_slot": 1
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "topic": "rapamycin",
+  "iteration": 5,
+  "timestamp_utc": "2026-05-13T18-33-06Z",
+  "model": "mimo-v2.5-pro",
+  "prompt_tokens": 3124,
+  "completion_tokens": 5000,
+  "section_key": "discussion",
+  "sections_requested": [
+    "DISCUSSION",
+    "LIMITATIONS",
+    "CONCLUSION"
+  ],
+  "sections_parsed": [
+    "DISCUSSION"
+  ],
+  "parse_ok": true,
+  "gate_violations": 1,
+  "gates_by_type": {
+    "evidence_slot": 1
+  }
+}

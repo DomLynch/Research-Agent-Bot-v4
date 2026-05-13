@@ -155,12 +155,23 @@ def main() -> int:
     print(f"[draft] topic={args.topic} section={args.section} iter={args.iter} model={settings.mimo_model}")
     print(f"[draft] topic_pack={'loaded' if pack else 'none'}")
     print("[draft] calling writer…")
-    # Sprint 31 follow-up: discussion + methods sections frequently
-    # exceed the default 4000-token cap (acarbose discussion truncated
-    # mid-sentence on iter-2). Bump to 5000 — still well below the
-    # ~6000 MiMo runaway threshold (Sprint 14 calibration); the Sprint
-    # 14 Gemma fallback handles the rare runaway edge case.
-    resp = call_writer_with_fallback(settings, messages, max_tokens=5000)
+    # Sprint 31 follow-up — section-aware max_tokens.
+    # Rapamycin iter-5 showed discussion hitting the 5000-token cap
+    # (richer corpus = longer discussion); acarbose intro completed at
+    # 1558 and methods at 998. Right-sized per section:
+    #   - title_abstract_intro: 4000 (bounded; never seen above 2k)
+    #   - methods: 4500 (template-shaped, never seen above 1k)
+    #   - discussion: 7000 (needs room for limitations + future work)
+    # 7000 IS above MiMo's ~6000 runaway threshold (Sprint 14 calibration),
+    # but call_writer_with_fallback automatically falls back to Gemma on
+    # runaway — Gemma handles the prompt cleanly. The cost is one
+    # fallback attempt (~30s) in the rare runaway case; the benefit is
+    # not truncating richer discussion prose.
+    _SECTION_MAX_TOKENS: dict[str, int] = {
+        "title_abstract_intro": 4000, "methods": 4500, "discussion": 7000,
+    }
+    max_tokens = _SECTION_MAX_TOKENS.get(args.section, 4000)
+    resp = call_writer_with_fallback(settings, messages, max_tokens=max_tokens)
     print(f"[draft] tokens: prompt={resp.prompt_tokens} completion={resp.completion_tokens}")
 
     parsed = _parse_sections(resp.content)

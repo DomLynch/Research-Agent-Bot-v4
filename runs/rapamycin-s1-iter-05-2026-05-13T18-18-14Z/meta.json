@@ -1,0 +1,26 @@
+{
+  "topic": "rapamycin",
+  "iteration": 5,
+  "timestamp_utc": "2026-05-13T18-18-14Z",
+  "model": "mimo-runaway-fallback:google/gemma-4-31b-it",
+  "prompt_tokens": 3357,
+  "completion_tokens": 1558,
+  "section_key": "title_abstract_intro",
+  "sections_requested": [
+    "TITLE",
+    "ABSTRACT",
+    "INTRODUCTION"
+  ],
+  "sections_parsed": [
+    "ABSTRACT",
+    "INTRODUCTION",
+    "TITLE"
+  ],
+  "parse_ok": true,
+  "gate_violations": 3,
+  "gates_by_type": {
+    "evidence_slot": 1,
+    "scope_consistency": 1,
+    "citation_density": 1
+  }
+}
