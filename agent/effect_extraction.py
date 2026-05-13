@@ -278,81 +278,57 @@ def build_extraction_prompt_strict_verify(
     pack: TopicPack, study_id: str, title: str, parsed_text: str, *,
     excerpt_chars: int = 60000,
 ) -> list[dict[str, str]]:
-    """Pass-B prompt: strict-verify variant of build_extraction_prompt.
-
-    Same JSON schema and field list as Pass-A, but the system message
-    instructs the model to REJECT any numeric it can't tie to a
-    verbatim sentence in the excerpt. Pass-A is permissive ("extract
-    what you can find"); Pass-B is strict ("reject if you'd have to
-    estimate"). Genuine extraction-grade numerics survive both passes;
-    LLM-imagined or paraphrased numerics surface as a disagreement
-    between Pass-A and Pass-B that the adjudicator catches.
-
-    Universal: reads only pack vocabulary; no biomedical literals.
-    """
-    base_messages = build_extraction_prompt(
+    """Pass-B prompt: strict-verify variant. Same schema as Pass-A; the
+    system message tightens discipline so the model rejects any numeric
+    it can't tie to a verbatim sentence. Genuine numerics survive both
+    passes; LLM-imagined ones surface as disagreement for the
+    adjudicator. Universal — reads only pack vocabulary."""
+    base = build_extraction_prompt(
         pack, study_id, title, parsed_text, excerpt_chars=excerpt_chars,
     )
-    strict_suffix = (
-        "\n\nSTRICT-VERIFY MODE (this is a second independent extraction "
-        "pass cross-checking the first). For each numeric you emit, you "
-        "MUST be able to point at one verbatim sentence in the excerpt "
-        "above that states that exact number. If the paper would force "
-        "you to estimate, average, convert units, or infer from a graph, "
-        "set that field to null. Prefer null over a number you cannot "
-        "tie to an explicit text statement. Sample-size (treated_n, "
-        "control_n) must be a number you can read directly off the page; "
-        "do not derive it from totals. evidence_quotes MUST include one "
-        "verbatim sentence per non-null numeric (so a reviewer can "
-        "verify each value)."
+    suffix = (
+        "\n\nSTRICT-VERIFY MODE (second independent extraction cross-"
+        "checking the first). Every numeric you emit MUST be tied to "
+        "one verbatim sentence in the excerpt. If the paper forces an "
+        "estimate, average, unit conversion, or graph inference, emit "
+        "null. Sample-size (treated_n, control_n) must be read off the "
+        "page, not derived. evidence_quotes MUST include one verbatim "
+        "sentence per non-null numeric."
     )
-    # Append to the system message (index 0). Preserves the original
-    # field schema in the user message verbatim — only the extraction
-    # discipline tightens.
     return [
-        {
-            "role": "system",
-            "content": base_messages[0]["content"] + strict_suffix,
-        },
-        base_messages[1],
+        {"role": "system", "content": base[0]["content"] + suffix},
+        base[1],
     ]
 
 
 def _close_enough(
-    a: float | int | None, b: float | int | None, *,
-    tolerance_pct: float = _NUMERIC_TOLERANCE_PCT,
+    a: float | int | None, b: float | int | None,
 ) -> bool:
-    """Numeric agreement within `tolerance_pct` percent. Two nulls
-    agree; one null and a number disagree."""
+    """Numeric agreement within `_NUMERIC_TOLERANCE_PCT`; two nulls
+    agree, null vs number disagree."""
     if a is None and b is None:
         return True
     if a is None or b is None:
         return False
     a_f, b_f = float(a), float(b)
-    if a_f == b_f == 0.0:
-        return True
     avg = (abs(a_f) + abs(b_f)) / 2.0
-    if avg == 0.0:
-        return a_f == b_f
-    return abs(a_f - b_f) / avg * 100.0 <= tolerance_pct
+    return a_f == b_f if avg == 0.0 else abs(a_f - b_f) / avg * 100.0 <= _NUMERIC_TOLERANCE_PCT
 
 
 def compare_receipts(
     r1: ExtractionReceipt, r2: ExtractionReceipt,
 ) -> tuple[str, ...]:
-    """Return tuple of pool-critical field names that disagree between
-    two extraction passes. Empty tuple == full agreement on poolable
-    state. Numeric fields use `_NUMERIC_TOLERANCE_PCT` for noise."""
-    disagreements: list[str] = []
-    for field in _POOL_FIELDS:
-        v1 = getattr(r1, field, None)
-        v2 = getattr(r2, field, None)
-        if field in {"status", "metric"}:
+    """Pool-critical fields that disagree between two passes. Empty
+    tuple == agreement. Numerics use `_NUMERIC_TOLERANCE_PCT` noise."""
+    out: list[str] = []
+    for f in _POOL_FIELDS:
+        v1, v2 = getattr(r1, f, None), getattr(r2, f, None)
+        if f in {"status", "metric"}:
             if str(v1 or "").strip().casefold() != str(v2 or "").strip().casefold():
-                disagreements.append(field)
+                out.append(f)
         elif not _close_enough(v1, v2):
-            disagreements.append(field)
-    return tuple(disagreements)
+            out.append(f)
+    return tuple(out)
 
 
 def _avg2(a: float | int | None, b: float | int | None) -> float | None:

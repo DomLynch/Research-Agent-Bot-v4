@@ -4,7 +4,11 @@ from __future__ import annotations
 from types import MappingProxyType
 
 from agent.effect_extraction import (
+    build_adjudicator_prompt,
     build_extraction_prompt,
+    build_extraction_prompt_strict_verify,
+    compare_receipts,
+    merge_agreed_receipts,
     parse_extraction_response,
     receipt_from_response,
     validate_extraction,
@@ -166,3 +170,110 @@ def test_contract_requires_evidence_quote() -> None:
     res = validate_extraction(r, _pack())
     assert not res.passes
     assert any("evidence quote" in v for v in res.violations)
+
+
+# --- Sprint 12.9 Task C: dual-pass extraction tests -----------------------
+
+
+def _r(study_id: str = "s1", **kw: object) -> object:
+    """Build an ExtractionReceipt via the parsed-dict path; tests
+    override individual fields via kw. Universal helper — no biomedical
+    literals beyond the rapamycin metric vocabulary kept consistent
+    with the rest of the test file."""
+    base: dict[str, object] = {
+        "status": "extracted", "metric": "median_lifespan",
+        "treated_value": 1000.0, "control_value": 900.0,
+        "treated_n": 30, "control_n": 30,
+        "evidence_quotes": ["The treated group survived 1000 days vs 900 days control."],
+    }
+    base.update(kw)
+    return receipt_from_response(
+        base, study_id=study_id, text_hash="h",
+        reviewer="mimo-test", timestamp_utc="t",
+    )
+
+
+def test_strict_verify_prompt_appends_discipline_to_system_message() -> None:
+    """Pass-B (strict-verify) keeps the Pass-A user message verbatim
+    but appends a stricter system suffix instructing the model to
+    reject any numeric not tied to a verbatim sentence."""
+    pack = _pack()
+    pass_a = build_extraction_prompt(pack, "s1", "Mock title", "Mouse text " * 200)
+    pass_b = build_extraction_prompt_strict_verify(pack, "s1", "Mock title", "Mouse text " * 200)
+    # User message identical (same field schema, same excerpt).
+    assert pass_a[1]["content"] == pass_b[1]["content"]
+    # System message DIVERGES — Pass-B has the strict-verify suffix.
+    assert len(pass_b[0]["content"]) > len(pass_a[0]["content"])
+    assert "STRICT-VERIFY MODE" in pass_b[0]["content"]
+
+
+def test_compare_receipts_agreement_returns_empty_tuple() -> None:
+    """Two passes returning the same pool-critical values agree
+    (numerics within the 2% noise tolerance)."""
+    a = _r(treated_value=1000.0, control_value=900.0)
+    b = _r(treated_value=1005.0, control_value=895.0)  # <1% noise
+    assert compare_receipts(a, b) == ()  # type: ignore[arg-type]
+
+
+def test_compare_receipts_flags_numeric_disagreement() -> None:
+    """Pool-critical numeric outside the tolerance band -> flagged."""
+    a = _r(treated_value=1000.0)
+    b = _r(treated_value=1500.0)  # 50% off
+    assert "treated_value" in compare_receipts(a, b)  # type: ignore[arg-type]
+
+
+def test_compare_receipts_flags_status_or_metric_change() -> None:
+    """Status and metric are exact-match (case-insensitive). A pass
+    that says 'no_numerics' while the other says 'extracted' is a
+    poolable-state disagreement; the adjudicator must arbitrate."""
+    a = _r(status="extracted")
+    b = _r(status="no_numerics", treated_value=None, control_value=None)
+    out = compare_receipts(a, b)  # type: ignore[arg-type]
+    assert "status" in out
+
+
+def test_merge_agreed_receipts_averages_numerics_and_unions_quotes() -> None:
+    """When two passes agree (within noise), the merged receipt
+    averages numerics, unions evidence quotes by casefold-dedup, and
+    tags reviewer with the dual-pass provenance string."""
+    a = _r(treated_value=1000.0, control_value=900.0,
+           evidence_quotes=["The treated group survived 1000 days."])
+    b = _r(treated_value=1004.0, control_value=898.0,
+           evidence_quotes=["The TREATED group survived 1000 days.", "Methods: 30 mice per arm."])
+    merged = merge_agreed_receipts(a, b, reviewer="mimo-dual-pass-agreed")  # type: ignore[arg-type]
+    assert merged.reviewer == "mimo-dual-pass-agreed"
+    assert merged.treated_value == 1002.0  # averaged
+    assert merged.control_value == 899.0
+    # Quotes unioned (casefold dedup; the duplicate "TREATED" form drops).
+    assert len(merged.evidence_quotes) == 2
+
+
+def test_adjudicator_prompt_lists_disagreements_and_pool_state() -> None:
+    """The adjudicator system message names the two-pass disagreement
+    inputs; the user message includes both pool dicts + disagreement
+    diff + the excerpt. Universal — no biomedical literals required."""
+    a = _r(treated_value=1000.0)
+    b = _r(treated_value=1500.0)
+    msgs = build_adjudicator_prompt(
+        a, b, ("treated_value",),  # type: ignore[arg-type]
+        "Excerpt body: the treated group survived 1000 days." * 5,
+    )
+    assert msgs[0]["role"] == "system"
+    assert "adjudicator" in msgs[0]["content"].lower()
+    assert "MAY NOT invent" in msgs[0]["content"]
+    user = msgs[1]["content"]
+    assert "Pass-A receipt" in user
+    assert "Pass-B receipt" in user
+    assert "treated_value" in user
+    assert "1000.0" in user and "1500.0" in user
+
+
+def test_compare_receipts_handles_one_null_one_value_as_disagreement() -> None:
+    """If Pass-A found a value and Pass-B didn't, that's a disagreement
+    — exactly the case where dual-pass rescues a parse_failed (one
+    pass succeeds, the other doesn't, adjudicator picks the supported
+    answer)."""
+    a = _r(treated_value=1000.0)
+    b = _r(treated_value=None)
+    out = compare_receipts(a, b)  # type: ignore[arg-type]
+    assert "treated_value" in out
