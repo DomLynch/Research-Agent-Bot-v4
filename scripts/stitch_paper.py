@@ -173,6 +173,7 @@ def stitch(
 
     back_matter = build_back_matter(
         pack, settings,
+        run_dir=target,
         run_dir_name=str(target.relative_to(target.parent.parent))
             if target.is_relative_to(target.parent.parent) else target.name,
         repository_url=repository_url,

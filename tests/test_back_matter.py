@@ -12,6 +12,7 @@ Cover:
 from __future__ import annotations
 
 from dataclasses import replace
+from pathlib import Path
 from types import MappingProxyType
 
 from agent.back_matter import build_back_matter
@@ -90,6 +91,31 @@ def test_data_and_code_wires_run_dir_repo_and_sources() -> None:
     assert "https://github.com/example/repo" in bm.data_and_code_availability
     assert "pubmed" in bm.data_and_code_availability
     assert "europe-pmc" in bm.data_and_code_availability
+
+
+def test_manual_audit_clause_absent_when_sidecar_not_packaged(tmp_path: Path) -> None:
+    """When the run dir does NOT contain `manual_full_text_audit.json`,
+    Data and Code Availability must say so explicitly — never claim a
+    sidecar is alongside that isn't there. Keeps paper.md aligned with
+    supplement.md S9 ("No manual-full-text audit sidecar is packaged...")
+    on runs without manual overrides."""
+    bm = build_back_matter(
+        _pack("mouse"), _empty_settings(), run_dir=tmp_path,
+    )
+    assert "No manual-full-text audit sidecar is packaged" in bm.data_and_code_availability
+    assert "upstream run directory" in bm.data_and_code_availability
+
+
+def test_manual_audit_clause_present_when_sidecar_packaged(tmp_path: Path) -> None:
+    """When `manual_full_text_audit.json` IS packaged in the run dir,
+    Data and Code Availability must name the sidecar's location
+    ("in this run directory")."""
+    (tmp_path / "manual_full_text_audit.json").write_text("[]", encoding="utf-8")
+    bm = build_back_matter(
+        _pack("mouse"), _empty_settings(), run_dir=tmp_path,
+    )
+    assert "in this run directory" in bm.data_and_code_availability
+    assert "No manual-full-text audit sidecar is packaged" not in bm.data_and_code_availability
 
 
 def test_ai_use_names_both_models() -> None:

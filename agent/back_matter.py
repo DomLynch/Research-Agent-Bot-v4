@@ -70,6 +70,7 @@ def build_back_matter(
     pack: TopicPack,
     settings: Settings,
     *,
+    run_dir: Path | None = None,
     run_dir_name: str = "",
     repository_url: str = "",
     operator_handle: str = "the operator",
@@ -86,6 +87,25 @@ def build_back_matter(
     sources = ", ".join(pack.retrieval_sources) or "(none declared)"
     run_ref = run_dir_name or "(run directory not specified)"
     repo_ref = repository_url or "(repository URL not configured)"
+    # Conditional manual-audit clause: only claim the sidecar is alongside
+    # this paper folder when the file actually exists. Keeps paper.md
+    # consistent with supplement.md S9 ("No manual-full-text audit
+    # sidecar is packaged...") on runs where no manual overrides ran.
+    manual_audit_present = bool(
+        run_dir and (run_dir / "manual_full_text_audit.json").exists()
+    )
+    manual_audit_clause = (
+        "When manual full-text injections are used to recover sentinel "
+        "papers the auto retrieval cannot reach, per-injection SHA-256 "
+        "hashes are recorded in a manual-full-text audit sidecar in "
+        "this run directory."
+        if manual_audit_present else
+        "No manual-full-text audit sidecar is packaged in this final "
+        "paper folder; when manual injections are used to recover "
+        "sentinel papers the auto retrieval cannot reach, per-injection "
+        "SHA-256 hashes are recorded in such a sidecar in the upstream "
+        "run directory."
+    )
     data_and_code = (
         "All raw retrieval hits, screening receipts, parsed full-text "
         "bodies (where available), eligibility receipts, effect "
@@ -100,10 +120,7 @@ def build_back_matter(
         "`primary_effect_input_set_strict.json`, `effect_extractions.json`, "
         "`effect_pool.json`, `extraction_crosscheck.json`) so downstream "
         "reviewers can re-validate without re-running the LLM stack. "
-        "When manual full-text injections are used to recover sentinel "
-        "papers the auto retrieval cannot reach, per-injection SHA-256 "
-        "hashes are recorded in a manual-full-text audit sidecar in "
-        "the same run directory."
+        f"{manual_audit_clause}"
     )
     ai_use = (
         f"This manuscript was assembled by an automated synthesis "
