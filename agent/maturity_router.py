@@ -141,3 +141,35 @@ def select_paper_type(readiness: ReadinessReport) -> PaperType:
             "do not run Egger's test (requires k>=10 per cochrane handbook)",
         ),
     )
+
+
+def writer_preamble(paper_type: PaperType) -> str:
+    """Sprint 32 — render a writer-prompt preamble that carries the
+    PaperType's framing constraints into the LLM's system message.
+
+    Universal: every constraint is paper-type-canonical (no topic
+    literals). When draft_main.py injects this preamble, the writer
+    sees the paper-type contract BEFORE drafting prose — so a
+    scoping-review topic doesn't accidentally produce "quantitative
+    synthesis" titling.
+    """
+    if not paper_type.forbidden_claims and not paper_type.rationale:
+        return ""
+    lines = [
+        f"PAPER-TYPE CONTRACT — this manuscript is a `{paper_type.name}` "
+        f"output, NOT a generic systematic review.",
+        f"Rationale: {paper_type.rationale}",
+        "",
+        "You MUST honor the following constraints when writing every "
+        "section (title, abstract, methods, results, discussion):",
+    ]
+    for claim in paper_type.forbidden_claims:
+        lines.append(f"  - {claim}")
+    lines.append("")
+    lines.append(
+        "If any prior writer-template phrase would violate one of these "
+        "constraints (e.g. 'quantitative synthesis' when k_pool=0; "
+        "'meta-analysis' when the paper-type is scoping-review), "
+        "substitute paper-type-appropriate wording."
+    )
+    return "\n".join(lines) + "\n"

@@ -249,6 +249,31 @@ def stitch(
         target = _RUNS / f"{topic}-paper-{stamp}"
     target.mkdir(parents=True, exist_ok=True)
 
+    # Sprint 33: stitch copies the canonical receipts from the s7 run
+    # directory into the paper folder so downstream consumers
+    # (build_supplement, regen_receipts, research_object) all read from
+    # the same place. Previously build_supplement read receipts from
+    # the paper folder and got empty values when stitch hadn't copied
+    # them — producing supplements that claimed 0 records even when
+    # eligibility found 500+. Universal: receipt filenames are
+    # canonical (no topic literals).
+    if s7 is not None:
+        import shutil as _sh
+        for _name in (
+            "eligibility_summary.json",
+            "primary_effect_input_set_strict.json",
+            "effect_extractions.json",
+            "effect_pool.json",
+            "extraction_confidence.json",
+            "dual_agent_extraction_audit.json",
+            "extraction_crosscheck.json",
+            "sentinel_repair_plan.json",
+            "manual_full_text_audit.json",
+        ):
+            _src = s7 / _name
+            if _src.exists():
+                _sh.copyfile(_src, target / _name)
+
     back_matter = build_back_matter(
         pack, settings,
         run_dir=target,

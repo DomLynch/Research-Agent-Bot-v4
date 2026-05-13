@@ -21,11 +21,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.claim_gates import run_all_gates
 from agent.llm_client import call_writer_with_fallback
+from agent.maturity_router import select_paper_type, writer_preamble
 from agent.prompts import (
     writer_discussion,
     writer_methods,
     writer_title_abstract_intro,
 )
+from agent.readiness import classify_readiness
 from agent.settings import load_settings
 from agent.topic_pack import load_topic_pack
 
@@ -36,6 +38,41 @@ _SECTION_PROMPTS = {
 }
 
 _SECTION_RE = re.compile(r"^===\s*([A-Z][A-Z0-9 \-]*?)\s*===\s*$", re.MULTILINE)
+
+
+def _writer_preamble_from_latest_s7(topic: str) -> str:
+    """Sprint 32 — build the paper-type-aware writer preamble from
+    receipts in the most recent `runs/<topic>-s7-iter-*` directory.
+
+    Empty string when no s7 dir exists yet (first iteration before
+    eligibility ran), or when receipt-loading fails — degrades to the
+    pre-Sprint-32 prompt unchanged. Universal: reads canonical
+    receipts only, no topic literals.
+    """
+    runs_dir = Path(__file__).resolve().parent.parent / "runs"
+    s7_dirs = sorted(runs_dir.glob(f"{topic}-s7-iter-*"), reverse=True)
+    if not s7_dirs:
+        return ""
+    s7 = s7_dirs[0]
+
+    def _load(name: str) -> dict[str, object]:
+        p = s7 / name
+        if not p.exists():
+            return {}
+        try:
+            loaded = json.loads(p.read_text(encoding="utf-8"))
+            return loaded if isinstance(loaded, dict) else {}
+        except (OSError, json.JSONDecodeError):
+            return {}
+
+    readiness = classify_readiness(
+        summary=_load("eligibility_summary.json"),
+        strict=_load("primary_effect_input_set_strict.json"),
+        extractions=_load("effect_extractions.json"),
+        pool=_load("effect_pool.json"),
+    )
+    paper_type = select_paper_type(readiness)
+    return writer_preamble(paper_type)
 
 
 def _parse_sections(raw: str) -> dict[str, str]:
@@ -104,6 +141,17 @@ def main() -> int:
     pack = load_topic_pack(args.topic)
     prompt_fn, order = _SECTION_PROMPTS[args.section]
     messages = prompt_fn(args.topic, pack)
+    # Sprint 32 — paper-type-aware writer preamble. Compute the engine
+    # state (readiness + paper-type) from the most recent s7 run dir
+    # and prepend the resulting framing constraints to the writer's
+    # system message. Universal: derives entirely from canonical
+    # receipts; no topic literals. When no s7 dir exists yet (first
+    # iteration before eligibility ran), the preamble is empty and
+    # behavior is identical to pre-Sprint-32.
+    preamble = _writer_preamble_from_latest_s7(args.topic)
+    if preamble and messages and messages[0].get("role") == "system":
+        messages[0]["content"] = preamble + "\n" + messages[0]["content"]
+        print(f"[draft] paper-type preamble injected ({len(preamble)} chars)")
     print(f"[draft] topic={args.topic} section={args.section} iter={args.iter} model={settings.mimo_model}")
     print(f"[draft] topic_pack={'loaded' if pack else 'none'}")
     print("[draft] calling writer…")

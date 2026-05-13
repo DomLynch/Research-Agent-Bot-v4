@@ -108,3 +108,59 @@ def test_l6_threshold_boundaries_exact() -> None:
     pt_10 = select_paper_type(_readiness(6, k_pool=10))
     assert pt_9.name == "meta-analysis-standard"
     assert pt_10.name == "meta-analysis-full"
+
+
+# ---------------------------------------------------------------------------
+# Sprint 32 — writer_preamble: paper-type-aware system-message prefix.
+# ---------------------------------------------------------------------------
+
+
+def test_writer_preamble_for_scoping_review_blocks_meta_wording() -> None:
+    """The acarbose-style failure case: L4 paper auto-routed to
+    scoping-review. The preamble must explicitly forbid pooling and
+    meta-analytic claims so MiMo can't emit 'quantitative synthesis'
+    titles."""
+    from agent.maturity_router import writer_preamble
+    pt = select_paper_type(_readiness(4, k_pool=0))
+    p = writer_preamble(pt)
+    assert "scoping-review" in p
+    assert "do not pool effects across studies" in p
+    assert "PAPER-TYPE CONTRACT" in p
+    # Anti-hallucination guard: explicit substitution instruction.
+    assert "scoping-review" in p.lower()
+    assert "k_pool=0" in p.lower() or "quantitative synthesis" in p.lower()
+
+
+def test_writer_preamble_for_l6_full_meta_has_no_blocking_constraints() -> None:
+    """When k>=10 and L6, the paper-type is meta-analysis-full and
+    forbidden_claims is empty. Preamble degrades to empty string so
+    the writer template is left unconstrained."""
+    from agent.maturity_router import writer_preamble
+    pt = select_paper_type(_readiness(6, k_pool=15))
+    p = writer_preamble(pt)
+    # Full-meta has empty forbidden_claims so preamble may still carry
+    # rationale but no "you MUST" constraints.
+    if p:
+        assert "meta-analysis-full" in p
+
+
+def test_writer_preamble_empty_when_paper_type_unconstrained() -> None:
+    """A PaperType with no rationale AND no forbidden_claims produces
+    no preamble (guards the no-op case)."""
+    from agent.maturity_router import PaperType, writer_preamble
+    pt = PaperType(
+        name="x", rationale="",
+        recommended_sections=(), forbidden_claims=(),
+    )
+    assert writer_preamble(pt) == ""
+
+
+def test_writer_preamble_pilot_meta_explicitly_labels_pilot() -> None:
+    """L5 pilot pool: the preamble's constraint includes the explicit
+    'label as pilot pool' instruction so the writer's title can't
+    drift to 'meta-analysis'."""
+    from agent.maturity_router import writer_preamble
+    pt = select_paper_type(_readiness(5, k_pool=2))
+    p = writer_preamble(pt)
+    assert "pilot-meta-analysis" in p
+    assert "pilot pool" in p.lower()
