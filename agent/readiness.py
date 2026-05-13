@@ -1,20 +1,9 @@
 """Sprint 16 — universal readiness classifier (L1..L6).
 
-Reads the four canonical receipt JSONs (eligibility_summary,
-primary_effect_input_set_strict, effect_extractions, effect_pool) and
-classifies the paper's evidence maturity on a 1..6 ladder:
-
-  L1 scaffold              — no pipeline run yet (no receipts present)
-  L2 no-eligible-studies   — pipeline ran but k_eligible = 0
-  L3 no-primary-set        — eligible studies exist but A-core empty
-  L4 no-pooled-effects     — A-core records exist but pool.effects empty
-  L5 pilot-pool            — pool.effects 1..2 (single-study / pilot)
-  L6 meta-analytic-pool    — pool.effects >= 3 (real synthesis ground)
-
-The output drives a one-glance reviewer signal: a journal-grade paper
-needs L6; an L3 paper means "writer prose without numeric backing —
-not shippable as evidence". Universal: every threshold reads a count
-field from the canonical receipts, no domain literals required.
+Classifies evidence maturity from the four canonical receipts:
+  L1 scaffold / L2 no-eligible-studies / L3 no-primary-set /
+  L4 no-pooled-effects / L5 pilot-pool / L6 meta-analytic-pool.
+Universal: thresholds read count fields, no domain literals.
 """
 from __future__ import annotations
 
@@ -32,28 +21,26 @@ class ReadinessReport:
     def as_dict(self) -> dict[str, object]:
         return {
             "level": self.level, "label": self.label,
-            "reasons": list(self.reasons),
-            "next_steps": list(self.next_steps),
+            "reasons": list(self.reasons), "next_steps": list(self.next_steps),
             "counts": dict(self.counts),
         }
 
 
-_LABELS: dict[int, str] = {
-    1: "scaffold",
-    2: "no-eligible-studies",
-    3: "no-primary-set",
-    4: "no-pooled-effects",
-    5: "pilot-pool",
-    6: "meta-analytic-pool",
-}
-
-
-def _count_list(d: dict[str, object] | None, key: str) -> int:
-    """Defensive list-length read; missing key / non-list -> 0."""
+def _count(d: dict[str, object] | None, key: str) -> int:
     if not d:
         return 0
     v = d.get(key)
     return len(v) if isinstance(v, list) else 0
+
+
+def _int(d: dict[str, object] | None, key: str) -> int:
+    if not d:
+        return 0
+    raw = d.get(key, 0)
+    try:
+        return int(raw) if isinstance(raw, (int, float, str)) else 0
+    except (TypeError, ValueError):
+        return 0
 
 
 def classify_readiness(
@@ -63,68 +50,44 @@ def classify_readiness(
     extractions: dict[str, object] | None,
     pool: dict[str, object] | None,
 ) -> ReadinessReport:
-    """Return the readiness level for the four receipts. Empty / None
-    inputs are treated as 0-count, never raise."""
-    raw_k = (summary or {}).get("k_eligible", 0)
-    k_eligible = int(raw_k) if isinstance(raw_k, (int, float, str)) else 0
-    k_a_core = _count_list(strict, "A_core_direct_lifespan")
-    k_b_lane = _count_list(strict, "B_disease_model_survival")
-    k_extractions = _count_list(extractions, "extractions")
-    k_pool = _count_list(pool, "effects")
+    """Return the readiness level. Empty / None inputs never raise."""
     counts = {
-        "k_eligible": k_eligible, "k_a_core": k_a_core, "k_b_lane": k_b_lane,
-        "k_extractions": k_extractions, "k_pool": k_pool,
+        "k_eligible": _int(summary, "k_eligible"),
+        "k_a_core": _count(strict, "A_core_direct_lifespan"),
+        "k_b_lane": _count(strict, "B_disease_model_survival"),
+        "k_extractions": _count(extractions, "extractions"),
+        "k_pool": _count(pool, "effects"),
     }
-
+    k_e, k_a, k_p = counts["k_eligible"], counts["k_a_core"], counts["k_pool"]
     if not summary and not strict and not pool:
-        return ReadinessReport(
-            level=1, label=_LABELS[1],
-            reasons=("no receipts present — pipeline has not run",),
-            next_steps=("run scripts/build_topic_paper.py --topic <T>",),
-            counts=counts,
-        )
-    if k_eligible == 0:
-        return ReadinessReport(
-            level=2, label=_LABELS[2],
-            reasons=("eligibility_summary.k_eligible = 0 — no study "
-                     "passed eligibility",),
-            next_steps=("review topic-pack inclusion_terms + sentinels; "
-                        "rerun eligibility with broader query",),
-            counts=counts,
-        )
-    if k_a_core == 0:
-        return ReadinessReport(
-            level=3, label=_LABELS[3],
-            reasons=(f"primary_effect_input_set_strict.A_core empty "
-                     f"({k_eligible} eligible but none survived the "
-                     f"A-core evidence-quote audit)",),
-            next_steps=("inspect strict-set demote_reasons; loosen evidence "
-                        "criteria via topic-pack if appropriate",),
-            counts=counts,
-        )
-    if k_pool == 0:
-        return ReadinessReport(
-            level=4, label=_LABELS[4],
-            reasons=(f"effect_pool.effects empty ({k_a_core} A-core records "
-                     f"but no parseable numeric effects)",),
-            next_steps=("rerun scripts/extract_effects.py; inspect "
-                        "skipped_study_ids for parse_failed reasons",),
-            counts=counts,
-        )
-    if k_pool < 3:
-        return ReadinessReport(
-            level=5, label=_LABELS[5],
-            reasons=(f"effect_pool.effects = {k_pool} — pilot pool, below "
-                     f"the k>=3 threshold for meta-analytic claims",),
-            next_steps=("expand corpus; rerun eligibility + extraction with "
-                        "broader inclusion or additional sources",),
-            counts=counts,
-        )
+        lvl, why, nxt = 1, "no receipts present — pipeline has not run", \
+            "run scripts/build_topic_paper.py --topic <T>"
+    elif k_e == 0:
+        lvl, why, nxt = 2, "eligibility_summary.k_eligible = 0", \
+            "review topic-pack inclusion_terms + sentinels; rerun eligibility"
+    elif k_a == 0:
+        lvl, why, nxt = 3, (
+            f"primary_effect_input_set_strict.A_core empty ({k_e} eligible "
+            f"but none survived the A-core evidence-quote audit)"
+        ), "inspect strict-set demote_reasons; loosen evidence criteria via pack"
+    elif k_p == 0:
+        lvl, why, nxt = 4, (
+            f"effect_pool.effects empty ({k_a} A-core records but no "
+            f"parseable numeric effects)"
+        ), "rerun extract_effects.py; inspect skipped_study_ids parse failures"
+    elif k_p < 3:
+        lvl, why, nxt = 5, (
+            f"effect_pool.effects = {k_p} — pilot pool, below the k>=3 "
+            f"threshold for meta-analytic claims"
+        ), "expand corpus; rerun eligibility + extraction with broader inclusion"
+    else:
+        lvl, why, nxt = 6, (
+            f"effect_pool.effects = {k_p} >= 3 — supports an inverse-variance "
+            f"pool with heterogeneity + sensitivity"
+        ), "ship; consider RoB adapter + pub-bias tests for journal uplift"
+    _labels = {1: "scaffold", 2: "no-eligible-studies", 3: "no-primary-set",
+               4: "no-pooled-effects", 5: "pilot-pool", 6: "meta-analytic-pool"}
     return ReadinessReport(
-        level=6, label=_LABELS[6],
-        reasons=(f"effect_pool.effects = {k_pool} >= 3 — supports an "
-                 f"inverse-variance pool with heterogeneity + sensitivity",),
-        next_steps=("ship; consider risk-of-bias adapter + publication-bias "
-                    "tests for journal-readiness uplift",),
-        counts=counts,
+        level=lvl, label=_labels[lvl],
+        reasons=(why,), next_steps=(nxt,), counts=counts,
     )

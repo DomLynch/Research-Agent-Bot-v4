@@ -45,6 +45,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from agent.back_matter import build_back_matter
 from agent.methods_honesty import apply_honesty_rewrites
 from agent.placeholder_resolver import resolve_placeholders
+from agent.readiness import classify_readiness
 from agent.reference_resolver import resolve_citations
 from agent.settings import load_settings
 from agent.study_table import build_study_characteristics_table
@@ -224,12 +225,24 @@ def stitch(
     out = "\n".join(parts) + "\n"
     target_path = target / "paper.md"
     target_path.write_text(out, encoding="utf-8")
+
+    # Sprint 16: emit readiness_report.json next to paper.md so the
+    # one-glance reviewer signal travels with every shipped artifact.
+    import json
+    readiness = classify_readiness(
+        summary=summary, strict=strict, extractions=extr, pool=pool,
+    )
+    (target / "readiness_report.json").write_text(
+        json.dumps(readiness.as_dict(), indent=2), encoding="utf-8",
+    )
+
     print(
         f"[stitch] wrote {target_path} "
         f"(ph_resolved={len(ph.resolved)}, ph_unresolved={len(ph.unresolved)}, "
         f"honesty_rewrites={len(hon.rewrites_applied)}, "
         f"cites_used={len(resolved.citations_used)}, "
-        f"cites_unresolved={len(resolved.unresolved)})"
+        f"cites_unresolved={len(resolved.unresolved)}, "
+        f"readiness=L{readiness.level} {readiness.label})"
     )
     return target_path
 
