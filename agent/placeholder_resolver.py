@@ -50,6 +50,12 @@ _TOKEN_RE = re.compile(
     # (which is the full pool.skipped, including C-lane records).
     r"|A_CORE_NOT_POOLED_IDS|A_CORE_NOT_POOLED_COUNT"
     r"|A_CORE_NOT_POOLED_COUNT:[a-z]+"
+    # Sprint 12.8.3: per-study skip-reason annotation. Derived from
+    # the extraction receipts + pack.preferred_metric_families so the
+    # prose never claims a record failed for a reason that doesn't
+    # apply to it (e.g. labelling s288 with off-modal-metric when the
+    # actual failure is parse_failed).
+    r"|A_CORE_NOT_POOLED_REASONS"
     r"|POOL_ESTIMATE|POOL_CI_LOW|POOL_CI_HIGH"
     r"|POOL_RATIO_BACK|POOL_PERCENT_EXT"
     # Count-aware noun-agreement: e.g. [B_LANE_COUNT:study] -> "1 study"
@@ -59,6 +65,44 @@ _TOKEN_RE = re.compile(
     r"|PLACEHOLDER:[a-zA-Z0-9_\-]+"
     r"|MODERATOR_P:[a-zA-Z0-9_\-]+)\]"
 )
+
+
+def _classify_skip_reason(
+    receipt: Mapping[str, Any], preferred_families: tuple[str, ...],
+) -> str:
+    """Derive a single per-receipt skip-reason label from the extraction
+    receipt + the pack's preferred metric families.
+
+    Universal: every topic's extractor emits the same receipt shape
+    (`status`, `metric`, `treated_n`, `control_n`), so the same
+    classifier maps any pack's receipts to one of the four labels.
+
+    Labels (priority order — earlier wins):
+      * 'parse_failed' / 'llm_refused' / 'no_extracted' — receipt
+        status said extraction never produced numerics
+      * 'off-modal-metric' — extraction succeeded but the chosen metric
+        family is outside the pack's preferred_metric_families list
+        (so the inverse-variance pool intentionally skipped it to
+        keep the pool within one metric family)
+      * 'no_numerics' — extraction succeeded on a preferred metric
+        family but the inverse-variance pool needs treated_n /
+        control_n and the receipt lacks either
+      * 'unpoolable' — fallback when none of the above fire
+    """
+    status = str(receipt.get("status", "") or "").strip()
+    if status and status != "extracted":
+        return status
+    metric = str(receipt.get("metric", "") or "").strip()
+    if (
+        preferred_families
+        and metric
+        and not any(metric.startswith(f) or f.startswith(metric)
+                    for f in preferred_families)
+    ):
+        return "off-modal-metric"
+    if receipt.get("treated_n") is None or receipt.get("control_n") is None:
+        return "no_numerics"
+    return "unpoolable"
 
 
 def _pluralise(noun: str, n: int) -> str:
@@ -125,6 +169,21 @@ def resolve_placeholders(
     a_core_not_pooled_ids = [
         sid for sid in a_core_ids if sid not in pool_effect_id_set
     ]
+    # Build per-study skip-reason annotation by looking up each
+    # unpooled A-core ID in the extraction receipts. Universal — the
+    # classifier reads the pack's preferred_metric_families to decide
+    # what counts as off-modal, so adding a new topic with a different
+    # metric vocabulary needs no code change.
+    receipts_by_id: dict[str, Mapping[str, Any]] = {
+        str(r.get("study_id", "")): r
+        for r in (extractions or {}).get("receipts", []) or []
+        if isinstance(r, dict) and r.get("study_id")
+    }
+    a_core_not_pooled_reasons_parts: list[str] = []
+    for sid in a_core_not_pooled_ids:
+        r = receipts_by_id.get(sid, {})
+        reason = _classify_skip_reason(r, pack.preferred_metric_families)
+        a_core_not_pooled_reasons_parts.append(f"{sid}: {reason}")
     pool_skipped_ids: list[str] = []
     if pool is not None:
         raw_skip = pool.get("skipped_study_ids") or []
@@ -219,6 +278,11 @@ def resolve_placeholders(
         ),
         "A_CORE_NOT_POOLED_COUNT": (
             str(len(a_core_not_pooled_ids)) if pool is not None else ""
+        ),
+        "A_CORE_NOT_POOLED_REASONS": (
+            ", ".join(a_core_not_pooled_reasons_parts)
+            if a_core_not_pooled_reasons_parts
+            else ("(none)" if pool is not None else "")
         ),
         "INCOMPLETE_RECOVERY_IDS": (
             ", ".join(incomplete_ids) if incomplete_ids
