@@ -42,7 +42,7 @@ from agent.effect_extraction import (
     validate_extraction,
 )
 from agent.effect_pooling import compile_pool
-from agent.llm_client import call_writer
+from agent.llm_client import call_judge, call_writer
 from agent.settings import load_settings
 from agent.topic_pack import load_topic_pack
 
@@ -103,34 +103,43 @@ def _run_dual_pass(
 ) -> ExtractionReceipt:
     """Sprint 12.9 Task C orchestrator: run strict-verify Pass-B + adjudicate.
 
+    Sprint 28 — Pass-B now routes through `call_judge` (Gemma 4 31B via
+    OpenRouter), not `call_writer` (MiMo). The dual-agent layer is
+    therefore cross-family (MiMo + Gemma), which is what the GPT-auditor
+    feedback called out as the platform differentiator. The merged-
+    agreed reviewer tag carries the Pass-B model id so Sprint 27's
+    dual_agent_audit can attribute `extractor_b` correctly.
+
     Inputs:
-      `primary`  — the Pass-A receipt (status='extracted').
+      `primary`  — the Pass-A (MiMo) receipt (status='extracted').
       Returns the dual-pass result with reviewer field tagged
-      'mimo-dual-pass-agreed' / 'mimo-dual-pass-adjudicated' / 'mimo-dual-pass-pass-b-failed'
-      depending on the outcome.
+      'mimo-dual-pass-agreed:<gemma_model>' / 'mimo-dual-pass-adjudicated' /
+      'mimo-dual-pass-pass-b-failed' depending on the outcome.
 
     Bounded: at most two extra LLM calls (Pass-B + adjudicator). On any
     Pass-B failure the function returns the primary receipt unchanged
     (with the reviewer noting the dual-pass attempt) — never sinks the
     extraction step.
     """
-    # Pass-B: strict-verify variant of the same extraction prompt.
+    # Pass-B: strict-verify variant of the same extraction prompt, routed
+    # through Gemma (call_judge) so the cross-check is cross-family.
     try:
         b_msg = build_extraction_prompt_strict_verify(
             pack, study_id, title, parsed_text,
         )
-        b_resp = call_writer(settings, b_msg, temperature=temperature)
+        b_resp = call_judge(settings, b_msg, temperature=temperature)
         b_parsed = parse_extraction_response(b_resp.content)
         pass_b = receipt_from_response(
             b_parsed, study_id=study_id, text_hash=text_hash,
-            reviewer=f"mimo-strict:{b_resp.model}", timestamp_utc=_now_utc(),
+            reviewer=f"dual-pass-b:{b_resp.model}", timestamp_utc=_now_utc(),
         )
     except (ValueError, OSError, RuntimeError):
         return _retag(primary, reviewer="mimo-dual-pass-pass-b-failed")
     disagreements = compare_receipts(primary, pass_b)
     if not disagreements:
         return merge_agreed_receipts(
-            primary, pass_b, reviewer="mimo-dual-pass-agreed",
+            primary, pass_b,
+            reviewer=f"mimo-dual-pass-agreed:{b_resp.model}",
         )
     # Adjudicator call. Bounded to ONE attempt: if the adjudicator
     # itself fails to return parseable JSON, we keep Pass-A as the
