@@ -44,6 +44,63 @@ def _toml_str(s: str) -> str:
     return s.replace("\\", "\\\\").replace('"', '\\"')
 
 
+# Sprint 13: domain-noise title keywords. Papers matching ANY of these
+# fall out of the sentinel pool AND off the anchor list — they're
+# topic-related but never primary endpoint studies. Universal — these
+# patterns describe paper TYPES (in-vitro / chemistry / pharmacology
+# review) that cut across disciplines.
+_DOMAIN_NOISE_KEYWORDS: tuple[str, ...] = (
+    "docking", "in silico", "in vitro", "cell line", "cell culture",
+    "plant extract", "leaf extract", "essential oil", "natural product",
+    "chemical composition", "gc-ms analysis",
+    "enzyme kinetics", "kinetic inhibitor", "inhibitor synthesis",
+    "inhibitory evaluation", "inhibitory potential",
+    "structure-activity", "qsar", "qspr", "topological indices",
+    "pediatric", "children and adolescents",
+    "pharmacokinetics", "pharmacodynamics",
+    "case report", "case study", "letter to the editor",
+    "editorial", "commentary", "perspective",
+    "bibliometric", "scientometric",
+)
+
+
+def _is_domain_noise(paper: dict[str, Any]) -> bool:
+    """Sprint 13: reject papers whose titles match domain-noise
+    keywords. These are topically-related but don't represent primary
+    endpoint evidence (chemistry / pharmacology / paediatric clinical
+    / case reports / commentaries)."""
+    title_lc = (paper.get("title") or "").lower()
+    return any(kw in title_lc for kw in _DOMAIN_NOISE_KEYWORDS)
+
+
+def _classify_role(paper: dict[str, Any]) -> str:
+    """Sprint 12.9.F: map Researka's `type` field + title keywords to
+    a cite-roles role. Universal — no biomedical literals; the
+    title-keyword heuristics match systematic-review + mechanism-paper
+    terminology that is universal across disciplines.
+
+    Mechanism keywords ("mechanism", "pathway", "signaling", "molecular",
+    "translation") fire regardless of `type` because many such papers
+    are tagged `type=article` but aren't primary endpoint studies —
+    they describe pathway-level biology, not direct intervention->
+    outcome data. Filtering them out of the sentinel pool prevents
+    the WARN gate that the acarbose first-run hit.
+    """
+    ptype = (paper.get("type") or "").strip().lower()
+    title_lc = (paper.get("title") or "").lower()
+    if "meta-analysis" in title_lc or "systematic review" in title_lc:
+        return "prior-meta-analysis"
+    if "clinical trial" in title_lc or "randomized" in title_lc or "rct" in title_lc:
+        return "clinical-trial"
+    if any(k in title_lc for k in (
+        "mechanism", "pathway", "signaling", "molecular", "translation",
+    )):
+        return "mechanism-review"
+    if ptype in {"review", "book-chapter"} or " review" in title_lc:
+        return "narrative-review"
+    return "primary-study"
+
+
 def _anchor_key(doi: str | None, year: int | None, title: str) -> str:
     """Build a stable anchor key from paper metadata. Format:
     `<first-noun-word>-<year>-<topic-hash>`. Universal — derived from
@@ -88,10 +145,41 @@ def _render(
     """Render a draft TOML using paper metadata for sentinels + anchors
     + bibliography. Sensible biomedical defaults fill the rest;
     operator hand-edits before the pipeline runs."""
-    sentinels = [p for p in papers[:sentinel_n] if p.get("doi")]
-    anchor_pool = [p for p in papers[sentinel_n: sentinel_n + anchor_n] if p.get("doi")]
+    # Sprint 12.9.F + Sprint 13: sentinels MUST be primary-study type
+    # AND not domain-noise (chemistry / pharmacology / paediatric /
+    # case reports / commentaries). Anchors exclude the same noise so
+    # the bibliography doesn't end up referencing docking studies or
+    # plant-extract pharmacology as primary lifespan evidence.
+    clean_papers = [p for p in papers if not _is_domain_noise(p)]
+    rejected_n = len(papers) - len(clean_papers)
+    primary_pool = [
+        p for p in clean_papers
+        if p.get("doi") and _classify_role(p) == "primary-study"
+    ]
+    sentinels = primary_pool[:sentinel_n]
+    sentinel_dois = {s["doi"] for s in sentinels}
+    anchor_pool = [
+        p for p in clean_papers
+        if p.get("doi") and p["doi"] not in sentinel_dois
+    ][:anchor_n]
+    # Sprint 13 sentinel-pass gate: if no primary-study sentinels could
+    # be selected, the pack is in CORPUS REPAIR territory — the
+    # operator needs to inject manual full-text overrides or hand-curate
+    # the [sentinel_recall.primary] DOIs before running the pipeline.
+    repair_banner = (
+        "\n# !!! CORPUS REPAIR REQUIRED — auto-pack found 0 primary-study\n"
+        "# sentinels in the curated index for this topic. The pipeline will\n"
+        "# run, but the sentinel-recall gate will WARN until the operator\n"
+        "# adds canonical primary-study DOIs to [sentinel_recall.primary].\n"
+        if not sentinels else ""
+    )
 
     interv_list = ", ".join(f'"{_toml_str(t)}"' for t in primary_interventions)
+    # Sprint 12.9.G: bare CSV form for [PLACEHOLDER:primary_interventions]
+    # / [PLACEHOLDER:preferred_metric_families] strings the writer
+    # references inline (no TOML-array brackets).
+    interv_csv = ", ".join(_toml_str(t) for t in primary_interventions) or "(none declared)"
+    metric_fams_csv = f"median_{_toml_str(endpoint)}, median_survival"
     species_list = ", ".join(f'"{_toml_str(t)}"' for t in species_terms)
     endpoint_terms = [
         endpoint, "survival", "longevity", "mortality", "median survival",
@@ -109,11 +197,15 @@ def _render(
     )
 
     # Anchor + bibliography blocks share keys. Build them together.
+    # Each anchor's role is classified from the Researka response so
+    # mechanism-review / narrative-review / clinical-trial papers
+    # are NOT mislabelled as primary-study (Sprint 12.9.F fix).
     anchor_lines: list[str] = []
     bib_lines: list[str] = []
     for p in anchor_pool:
         key = _anchor_key(p.get("doi"), p.get("publication_year"), p.get("title") or "")
-        anchor_lines.append(f'"{_toml_str(key)}" = "primary-study"')
+        role = _classify_role(p)
+        anchor_lines.append(f'"{_toml_str(key)}" = "{role}"')
         title = _toml_str((p.get("title") or "").strip())
         journal = _toml_str((p.get("journal_name") or "").strip())
         year = p.get("publication_year") or "(n.d.)"
@@ -160,7 +252,10 @@ def _render(
 # fields; topic-specific overclaim corrections (methods_honesty_rewrites)
 # and the pack-specific back_matter prose still benefit from
 # hand-tuning after the first render audit.
-
+# Sprint 13 audit: dropped {rejected_n} domain-noise paper(s) from the
+# Researka candidate set (chemistry / pharmacology / paediatric / case
+# reports / commentaries — see _DOMAIN_NOISE_KEYWORDS).
+{repair_banner}
 topic = "{_toml_str(topic)}"
 display_name = "{_toml_str(display_name)}"
 
@@ -245,14 +340,28 @@ secondary_design_quote_markers = [
 # writer drafts for any meta-analysis topic. Additional pack-specific
 # moderators can be added by the operator after the first render audit.
 "MODERATOR_P:dose" = "dose level"
+"MODERATOR_P:dose_range" = "dose range (low / moderate / high, post-hoc grouped)"
 "MODERATOR_P:sex" = "biological sex"
 "MODERATOR_P:strain" = "genetic background / strain"
+"MODERATOR_P:mouse_strain" = "genetic background / strain"
 "MODERATOR_P:treatment_initiation_age" = "age at treatment initiation"
 "MODERATOR_P:age_at_intervention_start" = "age at intervention start"
 "MODERATOR_P:route_of_administration" = "route of administration"
 "MODERATOR_P:diet_background" = "diet background"
+"MODERATOR_P:diet" = "diet background (standard chow / CR / HFD)"
 "MODERATOR_P:genetic_background" = "genetic background"
 "MODERATOR_P:intervention" = "intervention identity"
+"MODERATOR_P:intervention_form" = "intervention form / pharmaceutical analogue"
+"MODERATOR_P:lifespan_metric" = "lifespan metric (median / mean / 90th percentile)"
+# Sprint 12.9.G: scope-driven placeholders. The writer commonly
+# references these top-level pack fields via [PLACEHOLDER:<key>]
+# rather than the [scope]/[extraction] table; seed them here so the
+# placeholder resolver finds them. Values are filled from the
+# operator's CLI args by the render template.
+"primary_interventions" = "{interv_csv}"
+"translational_only_interventions" = "(none declared)"
+"translational_interventions" = "(none declared)"
+"preferred_metric_families" = "{metric_fams_csv}"
 
 # Empty initially; populate iteratively as render audits surface drift.
 [methods_honesty_rewrites]

@@ -1,0 +1,31 @@
+{
+  "_doc": "Sprint 8 effect-extraction receipts. Each strict A-core record gets one receipt. Pooling reads only receipts that pass validate_extraction(); the rest are documented extraction failures.",
+  "topic": "resveratrol",
+  "run_id": "resveratrol-s7-iter-01-2026-05-13T13-37-18Z",
+  "frozen_at_utc": "2026-05-13T13:45:07+00:00",
+  "k_records": 1,
+  "k_contract_passing": 0,
+  "receipts": [
+    {
+      "study_id": "s150",
+      "status": "no_numerics",
+      "metric": "median_lifespan",
+      "treated_value": null,
+      "control_value": null,
+      "treated_n": null,
+      "control_n": null,
+      "hazard_ratio": null,
+      "hazard_ratio_ci_low": null,
+      "hazard_ratio_ci_high": null,
+      "percent_change": null,
+      "moderators": {},
+      "evidence_quotes": [
+        "we were unable to evaluate effects of resveratrol on average or maximum lifespan."
+      ],
+      "failure_reason": "The study did not report numeric effect sizes for lifespan or survival metrics.",
+      "reviewer": "mimo:mimo-v2.5-pro",
+      "text_hash": "c5055a7e041699ef2857ed641ef763e13a549ebcf9118c12dfc28c639ecc2f7c",
+      "timestamp_utc": "2026-05-13T13:45:07+00:00"
+    }
+  ]
+}

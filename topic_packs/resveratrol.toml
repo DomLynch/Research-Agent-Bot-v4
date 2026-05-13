@@ -1,21 +1,18 @@
-# Topic pack: acarbose — auto-generated draft (Sprint 12.9 Task D scaffold).
+# Topic pack: resveratrol — auto-generated draft (Sprint 12.9 Task D scaffold).
 # Edit before running the pipeline. The scaffold seeds the structural
 # fields; topic-specific overclaim corrections (methods_honesty_rewrites)
 # and the pack-specific back_matter prose still benefit from
 # hand-tuning after the first render audit.
-# Sprint 13 audit: dropped 8 domain-noise paper(s) from the
-# Researka candidate set (chemistry / pharmacology / paediatric / case
-# reports / commentaries — see _DOMAIN_NOISE_KEYWORDS).
 
-topic = "acarbose"
-display_name = "Acarbose"
+topic = "resveratrol"
+display_name = "Resveratrol"
 
 [scope]
 primary_system = "mouse"
 preferred_terms = ["mouse", "mice", "murine"]
 discouraged_terms = []
 endpoint = "lifespan"
-primary_interventions = ["acarbose", "alpha-glucosidase inhibitor"]
+primary_interventions = ["resveratrol", "trans-resveratrol", "SRT501"]
 translational_only_interventions = []
 
 [cite_roles]
@@ -28,10 +25,21 @@ allowed = [
 
 # Auto-generated from Researka topic-curated papers (next-tier after sentinels).
 [anchors]
-"cap-2021-3345" = "mechanism-review"
-"heart-2016-6924" = "narrative-review"
-"considerations-2019-2660" = "narrative-review"
-"enhancement-2022-2064" = "clinical-trial"
+"health-2019-3429" = "narrative-review"
+"natural-2020-0407" = "narrative-review"
+"immunostimulatory-2013-0619" = "narrative-review"
+"akt-2022-8268" = "primary-study"
+"resveratrol-2020-3061" = "primary-study"
+"the-2019-0112" = "mechanism-review"
+"resveratrol-2018-1494" = "primary-study"
+"resveratrol-2014-u029" = "primary-study"
+"antioxidants-2016-2528" = "primary-study"
+"polydatin-2016-0082" = "primary-study"
+"the-2019-7907" = "narrative-review"
+"i-2017-7388" = "primary-study"
+"resveratrol-2015-5001" = "primary-study"
+"resveratrol-2018-0610" = "primary-study"
+"lumbar-2016-2414" = "primary-study"
 "page-2020-prisma" = "method-citation"
 "hooijmans-2014-syrcle" = "method-citation"
 "percie-du-sert-2020-arrive" = "method-citation"
@@ -76,9 +84,9 @@ min_text_chars = 2000
 # Auto-selected from top topic-scored curated papers.
 [sentinel_recall]
 primary = [
-    "10.1093/gerona/glaa302",
-    "10.1111/acel.12264",
-    "10.1021/np300204p"
+    "10.1158/0008-5472.can-09-3537",
+    "10.1155/2019/5921503",
+    "10.1093/gerona/glw151"
 ]
 prior_meta = []
 
@@ -94,10 +102,21 @@ secondary_design_quote_markers = [
 
 # Auto-generated bibliography from Researka curated papers.
 [references.bibliography]
-"cap-2021-3345" = "Cap‐independent translation: A shared mechanism for lifespan extension by rapamycin, acarbose, and 17α‐estradiol. Aging Cell. 2021. doi:10.1111/acel.13345."
-"heart-2016-6924" = "Heart Failure Considerations of Antihyperglycemic Medications for Type 2 Diabetes. Circulation Research. 2016. doi:10.1161/circresaha.116.306924."
-"considerations-2019-2660" = "Considerations when using alpha-glucosidase inhibitors in the treatment of type 2 diabetes. Expert Opinion on Pharmacotherapy. 2019. doi:10.1080/14656566.2019.1672660."
-"enhancement-2022-2064" = "Enhancement of Impaired Olfactory Neural Activation and Cognitive Capacity by Liraglutide, but Not Dapagliflozin or Acarbose, in Patients With Type 2 Diabetes: A 16-Week Randomized Parallel Comparative Study. Diabetes Care. 2022. doi:10.2337/dc21-2064."
+"health-2019-3429" = "Health Benefits of Polyphenols and Carotenoids in Age-Related Eye Diseases. Oxidative Medicine and Cellular Longevity. 2019. doi:10.1155/2019/9783429."
+"natural-2020-0407" = "Natural Drugs as a Treatment Strategy for Cardiovascular Disease through the Regulation of Oxidative Stress. Oxidative Medicine and Cellular Longevity. 2020. doi:10.1155/2020/5430407."
+"immunostimulatory-2013-0619" = "Immunostimulatory activity of lifespan-extending agents. Aging. 2013. doi:10.18632/aging.100619."
+"akt-2022-8268" = "Akt/mTOR Targeting Activity of Resveratrol Derivatives in Non-Small Lung Cancer. Molecules. 2022. doi:10.3390/molecules27238268."
+"resveratrol-2020-3061" = "Resveratrol attenuates doxorubicin-induced meiotic failure through inhibiting oxidative stress and apoptosis in mouse oocytes. Aging. 2020. doi:10.18632/aging.103061."
+"the-2019-0112" = "The resistant effect of SIRT1 in oxidative stress-induced senescence of rat nucleus pulposus cell is regulated by Akt-FoxO1 pathway. Bioscience Reports. 2019. doi:10.1042/bsr20190112."
+"resveratrol-2018-1494" = "Resveratrol increases resistance of mouse oocytes to postovulatory aging in vivo. Aging. 2018. doi:10.18632/aging.101494."
+"resveratrol-2014-u029" = "Resveratrol Encapsulated in Novel Fusogenic Liposomes Activates Nrf2 and Attenuates Oxidative Stress in Cerebromicrovascular Endothelial Cells From Aged Rats. The Journals of Gerontology Series A. 2014. doi:10.1093/gerona/glu029."
+"antioxidants-2016-2528" = "Antioxidants reveal an inverted U‐shaped dose‐response relationship between reactive oxygen species levels and the rate of aging in <i>Caenorhabditis elegans</i>. Aging Cell. 2016. doi:10.1111/acel.12528."
+"polydatin-2016-0082" = "Polydatin post-treatment alleviates myocardial ischaemia/reperfusion injury by promoting autophagic flux. Clinical Science. 2016. doi:10.1042/cs20160082."
+"the-2019-7907" = "The Effect of Resveratrol on Cellular Senescence in Normal and Cancer Cells: Focusing on Cancer and Age-Related Diseases. Nutrition and Cancer. 2019. doi:10.1080/01635581.2019.1597907."
+"i-2017-7388" = "<i>Trans</i>-scirpusin A showed antitumor effects via autophagy activation and apoptosis induction of colorectal cancer cells. Oncotarget. 2017. doi:10.18632/oncotarget.17388."
+"resveratrol-2015-5001" = "Resveratrol-induced mitochondrial synthesis and autophagy in oocytes derived from early antral follicles of aged cows. Journal of Reproduction and Development. 2015. doi:10.1262/jrd.2015-001."
+"resveratrol-2018-0610" = "Resveratrol Potently Counteracts Quercetin Starvation‐Induced Autophagy and Sensitizes HepG2 Cancer Cells to Apoptosis. Molecular Nutrition & Food Research. 2018. doi:10.1002/mnfr.201700610."
+"lumbar-2016-2414" = "Lumbar puncture-administered resveratrol inhibits STAT3 activation, enhancing autophagy and apoptosis in orthotopic rat glioblastomas. Oncotarget. 2016. doi:10.18632/oncotarget.12414."
 "page-2020-prisma" = "Page MJ, McKenzie JE, Bossuyt PM, et al. The PRISMA 2020 statement. BMJ. 2021;372:n71. doi:10.1136/bmj.n71."
 "hooijmans-2014-syrcle" = "Hooijmans CR, Rovers MM, de Vries RBM, et al. SYRCLE's risk of bias tool for animal studies. BMC Med Res Methodol. 2014;14:43. doi:10.1186/1471-2288-14-43."
 "percie-du-sert-2020-arrive" = "Percie du Sert N, Hurst V, Ahluwalia A, et al. The ARRIVE guidelines 2.0. PLoS Biol. 2020;18(7):e3000410. doi:10.1371/journal.pbio.3000410."
@@ -135,7 +154,7 @@ secondary_design_quote_markers = [
 # rather than the [scope]/[extraction] table; seed them here so the
 # placeholder resolver finds them. Values are filled from the
 # operator's CLI args by the render template.
-"primary_interventions" = "acarbose, alpha-glucosidase inhibitor"
+"primary_interventions" = "resveratrol, trans-resveratrol, SRT501"
 "translational_only_interventions" = "(none declared)"
 "translational_interventions" = "(none declared)"
 "preferred_metric_families" = "median_lifespan, median_survival"
