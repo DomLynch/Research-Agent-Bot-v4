@@ -396,6 +396,27 @@ async def main() -> int:
         json.dumps(summary, indent=2), encoding="utf-8",
     )
 
+    # Sprint 18: sentinel repair plan — actionable list of canonical
+    # anchor papers that the corpus failed to surface, with per-failure
+    # recommended next steps. Universal; reads from the audit receipt
+    # + topic pack. Always emitted when the pack declares sentinels so
+    # the operator never has to wonder "did we cover all the canon?"
+    if pack and (pack.sentinel_primary or pack.sentinel_prior_meta):
+        from agent.sentinel_recall import audit_sentinel_recall
+        from agent.sentinel_repair import compute_repair_plan
+        recall_receipt = audit_sentinel_recall(
+            state, pack, manual_overlay=manual_overlay,
+        )
+        repair_plan = compute_repair_plan(recall_receipt, pack)
+        (out_dir / "sentinel_repair_plan.json").write_text(
+            json.dumps(repair_plan.as_dict(), indent=2), encoding="utf-8",
+        )
+        print(
+            f"[s7] sentinel_repair_plan: "
+            f"clean={repair_plan.clean}, "
+            f"k_repair_needed={repair_plan.k_repair_needed}"
+        )
+
     print(f"[s7] triage labels: {dict(label_counts)}")
     print(f"[s7] final decisions: {dict(decision_counts)}")
     print(f"[s7] eligible studies after merge: {state.k_eligible}")
