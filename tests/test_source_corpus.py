@@ -183,3 +183,75 @@ def test_source_passage_dataclass_round_trip() -> None:
                       anchor_hits=2)
     assert p.tier == "pmc_fulltext"
     assert p.anchor_hits == 2
+    assert p.subgroup_top_score == 0.0  # default
+
+
+def test_subgroup_score_full_overlap_returns_one() -> None:
+    from agent.source_corpus import subgroup_score
+    assert subgroup_score(
+        "male middle-aged C57BL/6 mice", "rapamycin 8 mg/kg/day",
+        "Here we found that male middle-aged C57BL/6 mice "
+        "given rapamycin at 8 mg/kg/day showed an effect.",
+    ) == 1.0
+
+
+def test_subgroup_score_partial_overlap_proportional() -> None:
+    from agent.source_corpus import subgroup_score
+    # db tokens: {male, mice} (2). span has only 'mice'. score = 1/2 = 0.5
+    s = subgroup_score("male mice", "", "female mice were treated")
+    assert s == 0.5
+
+
+def test_subgroup_score_no_overlap_returns_zero() -> None:
+    from agent.source_corpus import subgroup_score
+    # Disjoint token sets — db has only "rats" / "drug" (>=2 char),
+    # span has none of them.
+    assert subgroup_score("rats", "drug",
+                          "humans were observed daily") == 0.0
+
+
+def test_subgroup_score_empty_db_returns_zero() -> None:
+    from agent.source_corpus import subgroup_score
+    assert subgroup_score("", "", "some span text") == 0.0
+
+
+def test_rank_spans_orders_by_subgroup_match() -> None:
+    from agent.source_corpus import rank_spans_by_subgroup
+    spans = [
+        "female mice showed effect at 14%",
+        "male middle-aged mice C57BL showed 9%",  # best for db pop
+        "in vitro cells showed 14%",
+    ]
+    ranked = rank_spans_by_subgroup(
+        spans, "male middle-aged C57BL/6 mice", "drug",
+    )
+    assert ranked[0][1].startswith("male middle-aged mice C57BL")
+    assert ranked[0][0] >= ranked[-1][0]  # sorted desc
+
+
+def test_get_best_source_picks_best_subgroup_span() -> None:
+    """Two PMC spans both anchor on 9% but only one matches male
+    subgroup; cascade should put the male-matching span first."""
+    def handler(req: httpx.Request) -> httpx.Response:
+        if "eutils.ncbi" in str(req.url):
+            return httpx.Response(200, text=(
+                "<p>In female C57 mice, the rate was 9%.</p>"
+                "<p>In male middle-aged C57BL/6 mice with rapamycin "
+                "8 mg/kg/day, the rate was 9% at the endpoint.</p>"
+            ))
+        return httpx.Response(200, json=[])
+    fact = {
+        "numeric_value": 9.0, "units": "%",
+        "source_paper": {"pmcid": "PMC1"},
+        "population": "male middle-aged C57BL/6 mice",
+        "intervention": "rapamycin 8 mg/kg/day",
+    }
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        out = get_best_source(
+            fact, abstract="no number here", client=c, settings=_settings(),
+        )
+    assert out.tier == "pmc_fulltext"
+    assert out.subgroup_top_score > 0.5  # strong match
+    # The best-ranked span must be the male-mice one (appears first)
+    first_chunk = out.text.split("---")[0]
+    assert "male" in first_chunk

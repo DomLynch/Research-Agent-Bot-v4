@@ -160,19 +160,31 @@ def get_best_source(
     settings: Settings, ncbi_api_key: str = "",
 ) -> SourcePassage:
     """Cascade abstract -> PMC OA -> Researka corpus; return the first
-    tier with numeric-anchor matches, else abstract as fallback."""
+    tier with numeric-anchor matches, spans pre-ranked by subgroup
+    match. Falls back to raw abstract if nothing anchors."""
     paper = fact.get("source_paper") or {}
     nv = fact.get("numeric_value")
     units = str(fact.get("units") or "")
     target = float(nv) if isinstance(nv, (int, float)) else None
+    pop = str(fact.get("population") or "")
+    intv = str(fact.get("intervention") or "")
+
+    def _build(spans: list[str], tier: str, full_len: int) -> SourcePassage:
+        if pop or intv:
+            ranked = rank_spans_by_subgroup(spans, pop, intv)
+            ordered = [s for _, s in ranked]
+            top = ranked[0][0] if ranked else 0.0
+        else:
+            ordered, top = spans, 0.0
+        return SourcePassage(
+            tier=tier, text="\n---\n".join(ordered[:5]),
+            full_length=full_len, anchor_hits=len(spans),
+            subgroup_top_score=top,
+        )
 
     abs_spans = extract_focused_spans(abstract, target, units)
     if abs_spans:
-        return SourcePassage(
-            tier="abstract",
-            text="\n---\n".join(abs_spans),
-            full_length=len(abstract), anchor_hits=len(abs_spans),
-        )
+        return _build(abs_spans, "abstract", len(abstract))
 
     pmcid = str(paper.get("pmcid") or "")
     if pmcid:
@@ -182,24 +194,16 @@ def get_best_source(
         if full:
             spans = extract_focused_spans(full, target, units)
             if spans:
-                return SourcePassage(
-                    tier="pmc_fulltext",
-                    text="\n---\n".join(spans),
-                    full_length=len(full), anchor_hits=len(spans),
-                )
+                return _build(spans, "pmc_fulltext", len(full))
 
     query = str(fact.get("canonical_phrase") or paper.get("title") or "")
     corpus = fetch_researka_corpus(query, client=client, settings=settings)
     if corpus:
         spans = extract_focused_spans(corpus, target, units)
         if spans:
-            return SourcePassage(
-                tier="researka_corpus",
-                text="\n---\n".join(spans),
-                full_length=len(corpus), anchor_hits=len(spans),
-            )
+            return _build(spans, "researka_corpus", len(corpus))
 
     return SourcePassage(
         tier="abstract", text=abstract, full_length=len(abstract),
-        anchor_hits=0,
+        anchor_hits=0, subgroup_top_score=0.0,
     )

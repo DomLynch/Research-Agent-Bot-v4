@@ -160,6 +160,9 @@ def verify_fact(
         "pmc_fulltext": "PMC FULL-TEXT (focused passages around target value)",
         "researka_corpus": "RESEARKA CORPUS PASSAGES",
     }.get(tier, "SOURCE TEXT")
+    if passage and passage.subgroup_top_score > 0:
+        tier_label += (f" — passages pre-sorted by DB-population match; "
+                       f"top span subgroup_score={passage.subgroup_top_score}")
     user = (
         f"FACT TO VERIFY:\n{_fact_summary(fact)}\n\n"
         f"{tier_label} (first 5000 chars):\n{text_to_judge[:5000]}\n\n"
