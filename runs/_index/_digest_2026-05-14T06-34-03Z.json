@@ -1,0 +1,17 @@
+{
+  "snapshot_utc": "2026-05-14T06-34-03Z",
+  "topics_inspected": 1,
+  "opportunities": [
+    {
+      "topic": "rapamycin",
+      "reason": "strong_mover",
+      "confidence_0_100": 38,
+      "delta_points": -32,
+      "claim_text": "rapamycin influences lifespan (per current evidence-contract corpus)",
+      "paper_type": "scoping-review",
+      "supporting_study_count": 0,
+      "snapshot_utc": "2026-05-14T06-13-51Z",
+      "priority": 100
+    }
+  ]
+}
