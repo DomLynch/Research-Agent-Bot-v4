@@ -145,12 +145,22 @@ def _fmt_value(fact: dict[str, Any]) -> str:
 
 
 def _render_md(topic: str, ts: str, top: list[tuple[int, dict[str, Any]]],
-               total_facts: int) -> str:
+               total_facts: int, tier: str) -> str:
+    if tier == "tier1_canonical":
+        source = (f"Researka DB Tier-1 canonical "
+                  f"(`GET /api/v1/topics/{topic}/facts`) — "
+                  "hand-curated, validated.")
+    else:
+        source = (f"Researka DB Tier-2 search "
+                  f"(`POST /api/v1/tier2/facts/search`, filter topic={topic}) "
+                  "— LLM-extracted, no Tier-1 canonical facts loaded for "
+                  "this topic yet; findings may be off-target (e.g. chemistry "
+                  "papers using the molecule name) until canonical curation.")
     lines = [
         f"# Top {len(top)} interesting findings — {topic}",
         "",
         f"**Snapshot:** {ts}",
-        f"**Source:** Researka DB · `GET /api/v1/topics/{topic}/facts`",
+        f"**Source:** {source}",
         f"**Facts inspected:** {total_facts}",
         "**Ranking:** validation * magnitude * precision * recency "
         "(deterministic, no LLM).",
@@ -217,14 +227,19 @@ def main() -> int:
     }, indent=2, ensure_ascii=False)
     claims_path.write_text(claims_text, encoding="utf-8")
 
+    tier = str((facts[0].get("_tier") if facts else "") or "none")
     md_path = out_dir / f"top_{args.top}.md"
-    md_text = _render_md(args.topic, ts, top, len(facts))
+    md_text = _render_md(args.topic, ts, top, len(facts), tier)
     md_path.write_text(md_text, encoding="utf-8")
 
     manifest = {
         "topic": args.topic, "snapshot_utc": ts, "top_n": args.top,
         "facts_inspected": len(facts), "aggregated_claims": len(aggregated),
-        "source": "researka_db · GET /api/v1/topics/{topic}/facts",
+        "data_tier": tier,
+        "source": ("researka_db GET /api/v1/topics/{topic}/facts"
+                   if tier == "tier1_canonical"
+                   else "researka_db POST /api/v1/tier2/facts/search "
+                   "(Tier-2 fallback; topic filter on response)"),
         "files": {
             "top_md": {"name": md_path.name, "sha256": _sha256(md_text)},
             "all_facts": {"name": raw_path.name, "sha256": _sha256(raw_text)},
