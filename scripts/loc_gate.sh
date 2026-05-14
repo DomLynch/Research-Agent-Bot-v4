@@ -51,12 +51,21 @@
 # paper. Prevents the "v3 writes a manuscript with no evidence-based
 # signal" failure mode by tying the trigger to receipt-derived
 # confidence + delta thresholds.)
+# -> 9500 (Sprint 46 DB-backed canonical claim feed:
+# agent/researka_claims.py pulls GET /api/v1/topics/{topic}/facts and
+# aggregates by canonical_phrase into gap-analyser-shaped claims with
+# confidence derived from k_supp + CI presence + validator state +
+# supersession. Replaces writer-receipt-derived snapshots, eliminating
+# the writer-bug-corrupts-trigger failure mode that motivated the
+# Sprints 14 / 26 / 32 / 37 patches — gap-analyser now reads from the
+# curated Researka source of truth, not from receipts a buggy writer
+# could poison.)
 # Every new module under the higher cap must delete or prevent a
 # fake-evidence failure mode (receipts, validators, provenance, typed
 # contracts), not buy prose polish or speculative abstraction.
 set -euo pipefail
 
-CEILING="${LOC_CEILING:-9400}"
+CEILING="${LOC_CEILING:-9500}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 COUNT=$(find "$ROOT/agent" -name "*.py" -not -path "*/__pycache__/*" 2>/dev/null \
