@@ -23,11 +23,13 @@ from typing import Any
 
 import httpx
 
-from agent.llm_client import call_judge
+from agent.llm_client import call_judge, call_writer_with_fallback
 from agent.settings import Settings
 
 _EUTILS = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
 _VERDICTS = ("survives", "dies", "needs_extraction")
+_JUDGES = ("gemma", "mimo")  # gemma = locked judge, mimo = locked writer
+                              # (independent of DB facts + abstracts either way)
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,10 +40,12 @@ class FactVerdict:
     source_quote: str
     reason: str
     pmid: str
+    judge: str = "gemma"  # which model produced this verdict
 
     def as_dict(self) -> dict[str, Any]:
         return {"fact_id": self.fact_id, "verdict": self.verdict,
                 "db_value": self.db_value, "pmid": self.pmid,
+                "judge": self.judge,
                 "source_quote": self.source_quote, "reason": self.reason}
 
 
@@ -113,25 +117,37 @@ def _parse_verdict(raw: str) -> dict[str, Any]:
 
 def verify_fact(
     fact: dict[str, Any], abstract: str, *, settings: Settings,
+    judge: str = "gemma",
 ) -> FactVerdict:
-    """Single Gemma call: does the abstract support the DB fact?"""
+    """Single LLM call: does the abstract support the DB fact?
+
+    judge='gemma' uses call_judge (locked judge model, smaller/faster).
+    judge='mimo'  uses call_writer_with_fallback (locked writer, stronger
+        nuance, Gemma fallback on runaway). MiMo did not generate either
+        the DB fact or the abstract, so there is no self-confirmation
+        bias either way — pick gemma for speed/cost, mimo for nuance.
+    """
     fact_id = str(fact.get("fact_id") or "")
     paper = fact.get("source_paper") or {}
     pmid = str(paper.get("pmid") or "")
     nv = fact.get("numeric_value")
     units = str(fact.get("units") or "")
     db_value = f"{nv}{units}" if nv is not None else "(no numeric)"
+    if judge not in _JUDGES:
+        judge = "gemma"
     if not abstract:
         return FactVerdict(
             fact_id=fact_id, verdict="needs_extraction",
             db_value=db_value, pmid=pmid, source_quote="",
-            reason="abstract_unavailable",
+            reason="abstract_unavailable", judge=judge,
         )
-    if not settings.judge_configured:
+    configured = (settings.writer_configured if judge == "mimo"
+                  else settings.judge_configured)
+    if not configured:
         return FactVerdict(
             fact_id=fact_id, verdict="needs_extraction",
             db_value=db_value, pmid=pmid, source_quote="",
-            reason="judge_not_configured",
+            reason=f"{judge}_not_configured", judge=judge,
         )
     user = (
         f"FACT TO VERIFY:\n{_fact_summary(fact)}\n\n"
@@ -156,12 +172,17 @@ def verify_fact(
         {"role": "user", "content": user},
     ]
     try:
-        resp = call_judge(settings, msgs, temperature=0.0)
+        if judge == "mimo":
+            resp = call_writer_with_fallback(
+                settings, msgs, temperature=0.0, max_tokens=1500,
+            )
+        else:
+            resp = call_judge(settings, msgs, temperature=0.0)
     except (RuntimeError, OSError, httpx.HTTPError) as e:
         return FactVerdict(
             fact_id=fact_id, verdict="needs_extraction",
             db_value=db_value, pmid=pmid, source_quote="",
-            reason=f"judge_call_failed:{type(e).__name__}",
+            reason=f"{judge}_call_failed:{type(e).__name__}", judge=judge,
         )
     parsed = _parse_verdict(resp.content)
     verdict = str(parsed.get("verdict") or "needs_extraction").lower()
@@ -170,16 +191,19 @@ def verify_fact(
     return FactVerdict(
         fact_id=fact_id, verdict=verdict, db_value=db_value, pmid=pmid,
         source_quote=str(parsed.get("source_quote") or "")[:400],
-        reason=str(parsed.get("reason") or "")[:400],
+        reason=str(parsed.get("reason") or "")[:400], judge=judge,
     )
 
 
 def run_source_audit(
     *, topic: str, snapshot_utc: str, facts: list[dict[str, Any]],
     settings: Settings, client: httpx.Client, ncbi_api_key: str = "",
+    judge: str = "gemma",
 ) -> SourceAuditReport:
     """Audit each fact against its source-paper abstract. Caches the
-    abstract per-PMID (siblings often share a paper). Never raises."""
+    abstract per-PMID (siblings share a paper, so one fetch per paper).
+    `judge` picks the comparator model: 'gemma' (default, fast) or
+    'mimo' (stronger nuance). Never raises."""
     cache: dict[str, str] = {}
     verdicts: list[FactVerdict] = []
     for f in facts:
@@ -192,7 +216,7 @@ def run_source_audit(
                 pmid, client=client, ncbi_api_key=ncbi_api_key,
             )
         verdicts.append(verify_fact(
-            f, cache.get(pmid, ""), settings=settings,
+            f, cache.get(pmid, ""), settings=settings, judge=judge,
         ))
     counts = {v: 0 for v in _VERDICTS}
     for vd in verdicts:
