@@ -28,10 +28,16 @@ from agent.source_audit import (
 )
 
 
-def _settings(judge: bool = True, writer: bool = True) -> Any:
+def _settings(judge: bool = True, writer: bool = True,
+              researka: bool = False) -> Any:
+    """MagicMock settings. researka=False (default) leaves the DB URL
+    + token empty so the corpus-search cascade short-circuits without
+    making real HTTP calls during unit tests."""
     s = MagicMock()
     s.judge_configured = judge
     s.writer_configured = writer
+    s.researka_database_url = "https://x" if researka else ""
+    s.researka_database_token = "tok" if researka else ""
     return s
 
 
@@ -235,6 +241,37 @@ def test_fact_summary_includes_value_and_population() -> None:
     assert "vaccine response" in s
     assert "20.0%" in s
     assert "elderly humans" in s
+
+
+def test_run_with_escalate_false_skips_pmc_fetch() -> None:
+    """escalate=False -> never calls get_best_source / PMC."""
+    facts = [_fact("f/a", pmid="1", nv=1.0)]
+    with (
+        patch("agent.source_audit.fetch_pubmed_abstract",
+              return_value="some abstract"),
+        patch("agent.source_audit.get_best_source") as mcascade,
+        patch("agent.source_audit.call_judge",
+              return_value=_mock_judge_resp('{"verdict": "survives"}')),
+    ):
+        rpt = run_source_audit(
+            topic="t", snapshot_utc="ts", facts=facts,
+            settings=_settings(), client=httpx.Client(), escalate=False,
+        )
+    assert not mcascade.called
+    assert rpt.facts_inspected == 1
+
+
+def test_verdict_carries_source_tier_and_anchor_hits() -> None:
+    """verdict.source_tier reflects whichever tier got the anchor."""
+    from agent.source_corpus import SourcePassage
+    p = SourcePassage(tier="pmc_fulltext", text="...52% in males...",
+                      full_length=12345, anchor_hits=2)
+    with patch("agent.source_audit.call_judge",
+               return_value=_mock_judge_resp('{"verdict": "dies"}')):
+        v = verify_fact(_fact("f/1", nv=52.0), abstract="ignored",
+                        settings=_settings(), passage=p)
+    assert v.source_tier == "pmc_fulltext"
+    assert v.anchor_hits == 2
 
 
 def test_as_dict_round_trip() -> None:
