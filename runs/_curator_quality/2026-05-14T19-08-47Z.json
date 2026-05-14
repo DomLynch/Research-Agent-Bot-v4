@@ -1,0 +1,41 @@
+{
+  "snapshot_utc": "2026-05-14T19-08-47Z",
+  "curators": [
+    {
+      "curator_id": "bootstrap-claude-opus-4-7-2026-05-09",
+      "facts_audited": 5,
+      "survives": 1,
+      "dies": 2,
+      "needs_extraction": 2,
+      "disagreement": 0,
+      "error_rate": 0.4,
+      "topics_touched": [
+        "rapamycin"
+      ]
+    },
+    {
+      "curator_id": "bootstrap-codex-gpt-5-2026-05-11",
+      "facts_audited": 1,
+      "survives": 0,
+      "dies": 0,
+      "needs_extraction": 1,
+      "disagreement": 0,
+      "error_rate": 0.0,
+      "topics_touched": [
+        "rapamycin"
+      ]
+    },
+    {
+      "curator_id": "bootstrap-claude-opus-4-7-2026-05-11",
+      "facts_audited": 1,
+      "survives": 1,
+      "dies": 0,
+      "needs_extraction": 0,
+      "disagreement": 0,
+      "error_rate": 0.0,
+      "topics_touched": [
+        "rapamycin"
+      ]
+    }
+  ]
+}
