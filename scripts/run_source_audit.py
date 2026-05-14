@@ -80,7 +80,6 @@ def _update_manifest(run_dir: Path, audit_md: str, audit_json: str) -> None:
                                 "sha256": _sha256(audit_md)}
     files["source_audit_json"] = {"name": "source_audit.json",
                                   "sha256": _sha256(audit_json)}
-    m["source_audit_model"] = "gemma-judge"
     manifest_path.write_text(json.dumps(m, indent=2), encoding="utf-8")
 
 
