@@ -19,6 +19,7 @@ from agent.settings import Settings
 _EUTILS = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
 _TAG = re.compile(r"<[^>]+>")
 _WS = re.compile(r"\s+")
+_TOKEN = re.compile(r"\w+")
 TIERS = ("abstract", "pmc_fulltext", "researka_corpus")
 
 
@@ -28,6 +29,7 @@ class SourcePassage:
     text: str           # focused span (or full text if no anchor matched)
     full_length: int    # bytes of original retrieved source (audit trail)
     anchor_hits: int    # how many numeric-anchor matches were found
+    subgroup_top_score: float = 0.0  # 0..1, best span's DB-population match
 
 
 def fetch_pmc_fulltext(
@@ -123,6 +125,34 @@ def extract_focused_spans(
         if len(out) >= max_spans:
             break
     return out
+
+
+def _tokenize(s: str) -> frozenset[str]:
+    return frozenset(t.lower() for t in _TOKEN.findall(s) if len(t) >= 2)
+
+
+def subgroup_score(
+    population: str, intervention: str, span: str,
+) -> float:
+    """Token-recall: fraction of DB population+intervention tokens
+    that appear in `span`. 0..1, higher = better population match.
+    Universal: word-char tokenization, no domain literals."""
+    db_tokens = _tokenize(f"{population} {intervention}")
+    if not db_tokens:
+        return 0.0
+    overlap = db_tokens & _tokenize(span)
+    return round(len(overlap) / len(db_tokens), 3)
+
+
+def rank_spans_by_subgroup(
+    spans: list[str], population: str, intervention: str,
+) -> list[tuple[float, str]]:
+    """Stable-sort spans by subgroup score desc; preserves original
+    order when scores tie."""
+    return sorted(
+        ((subgroup_score(population, intervention, s), s) for s in spans),
+        key=lambda p: p[0], reverse=True,
+    )
 
 
 def get_best_source(

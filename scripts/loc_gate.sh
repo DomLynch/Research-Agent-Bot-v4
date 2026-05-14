@@ -85,6 +85,17 @@
 # empirical calibration). Prevents the "silent lens loss when MiMo
 # truncates" failure mode the auditor caught on the noisy-topic
 # stress test.)
+# -> 10200 (Sprint 55 subgroup matcher: agent/source_corpus.py adds
+# _tokenize + subgroup_score + rank_spans_by_subgroup, deterministic
+# token-recall scoring of how well each focused span's surrounding
+# text matches the DB-stored population + intervention strings.
+# SourcePassage carries subgroup_top_score field. get_best_source
+# orders spans by subgroup match before handing to the LLM judge,
+# turning 'find the right paragraph yourself' into 'here's the
+# pre-ranked best paragraph'. Prevents the LLM-side subgroup-
+# hallucination failure mode where the judge could pick a passage
+# that matches the value but NOT the sex / strain / dose subgroup
+# the DB claim attributes to.)
 # -> 10150 (Sprint 54 source-cascade + focused-span retrieval:
 # agent/source_corpus.py adds the abstract -> PMC OA full-text ->
 # Researka corpus cascade plus regex numeric-anchor extraction with
@@ -116,7 +127,7 @@
 # contracts), not buy prose polish or speculative abstraction.
 set -euo pipefail
 
-CEILING="${LOC_CEILING:-10150}"
+CEILING="${LOC_CEILING:-10200}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 COUNT=$(find "$ROOT/agent" -name "*.py" -not -path "*/__pycache__/*" 2>/dev/null \
