@@ -28,9 +28,10 @@ from agent.source_audit import (
 )
 
 
-def _settings(judge: bool = True) -> Any:
+def _settings(judge: bool = True, writer: bool = True) -> Any:
     s = MagicMock()
     s.judge_configured = judge
+    s.writer_configured = writer
     return s
 
 
@@ -61,7 +62,7 @@ def test_judge_not_configured_returns_needs_extraction() -> None:
     v = verify_fact(_fact("f/1"), abstract="some text",
                     settings=_settings(judge=False))
     assert v.verdict == "needs_extraction"
-    assert v.reason == "judge_not_configured"
+    assert v.reason == "gemma_not_configured"
 
 
 def test_judge_runtime_error_returns_needs_extraction() -> None:
@@ -70,7 +71,39 @@ def test_judge_runtime_error_returns_needs_extraction() -> None:
         v = verify_fact(_fact("f/1"), abstract="some text",
                         settings=_settings())
     assert v.verdict == "needs_extraction"
-    assert v.reason.startswith("judge_call_failed:RuntimeError")
+    assert v.reason.startswith("gemma_call_failed:RuntimeError")
+
+
+def test_mimo_judge_uses_writer_path() -> None:
+    """judge='mimo' routes through call_writer_with_fallback, not call_judge."""
+    with (
+        patch("agent.source_audit.call_writer_with_fallback",
+              return_value=_mock_judge_resp(
+                  '{"verdict": "dies", "source_quote": "q", "reason": "r"}',
+                  model="mimo-v2.5-pro")) as mwriter,
+        patch("agent.source_audit.call_judge") as mjudge,
+    ):
+        v = verify_fact(_fact("f/x"), abstract="abs",
+                        settings=_settings(), judge="mimo")
+    assert mwriter.called and not mjudge.called
+    assert v.verdict == "dies" and v.judge == "mimo"
+
+
+def test_mimo_writer_not_configured_returns_needs_extraction() -> None:
+    v = verify_fact(_fact("f/1"), abstract="abs",
+                    settings=_settings(writer=False), judge="mimo")
+    assert v.verdict == "needs_extraction"
+    assert v.reason == "mimo_not_configured"
+
+
+def test_invalid_judge_falls_back_to_gemma() -> None:
+    with patch("agent.source_audit.call_judge",
+               return_value=_mock_judge_resp(
+                   '{"verdict": "survives"}')) as mjudge:
+        v = verify_fact(_fact("f/1"), abstract="abs",
+                        settings=_settings(), judge="claude")
+    assert mjudge.called  # invalid -> coerced to gemma
+    assert v.judge == "gemma"
 
 
 def test_dies_verdict_carries_through() -> None:

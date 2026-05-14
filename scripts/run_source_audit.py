@@ -88,6 +88,9 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run", type=Path, required=True,
                         help="Path to a runs/<topic>-evidence-<ts>/ folder")
+    parser.add_argument("--judge", choices=("gemma", "mimo"), default="gemma",
+                        help="Comparator model: gemma (fast/cheap, default) "
+                             "or mimo (stronger nuance, Gemma fallback)")
     parser.add_argument("--no-update-manifest", action="store_true")
     args = parser.parse_args()
     run_dir: Path = args.run
@@ -121,6 +124,7 @@ def main() -> int:
             topic=topic, snapshot_utc=snapshot_utc,
             facts=[f for f in facts if isinstance(f, dict)],
             settings=settings, client=client, ncbi_api_key=ncbi_key,
+            judge=args.judge,
         )
     audit_json = json.dumps(report.as_dict(), indent=2, ensure_ascii=False)
     audit_md = _render_md(report)

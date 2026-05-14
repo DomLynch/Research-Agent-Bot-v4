@@ -28,8 +28,7 @@ from agent.settings import Settings
 
 _EUTILS = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
 _VERDICTS = ("survives", "dies", "needs_extraction")
-_JUDGES = ("gemma", "mimo")  # gemma = locked judge, mimo = locked writer
-                              # (independent of DB facts + abstracts either way)
+_JUDGES = ("gemma", "mimo")  # locked stack; neither generated the inputs
 
 
 @dataclass(frozen=True, slots=True)
@@ -120,13 +119,8 @@ def verify_fact(
     judge: str = "gemma",
 ) -> FactVerdict:
     """Single LLM call: does the abstract support the DB fact?
-
-    judge='gemma' uses call_judge (locked judge model, smaller/faster).
-    judge='mimo'  uses call_writer_with_fallback (locked writer, stronger
-        nuance, Gemma fallback on runaway). MiMo did not generate either
-        the DB fact or the abstract, so there is no self-confirmation
-        bias either way — pick gemma for speed/cost, mimo for nuance.
-    """
+    judge='gemma' (default, fast) or 'mimo' (stronger nuance, Gemma
+    fallback on runaway). Neither generated the inputs."""
     fact_id = str(fact.get("fact_id") or "")
     paper = fact.get("source_paper") or {}
     pmid = str(paper.get("pmid") or "")
