@@ -73,12 +73,24 @@
 # may dominate headline magnitude". Tolerant JSON parser, returns
 # empty review with model='error:<reason>' on any failure so callers
 # never crash.)
+# -> 9750 (Sprint 50 tolerant JSON-truncation repair: live runs on
+# longevity + fasting topics revealed MiMo can run out of tokens
+# mid-stream — JSON ends inside an unclosed string and json.loads
+# fails, silently collapsing all lens/tensions/gaps/theses fields to
+# empty. _bracket_stack() + _try_repair_json() walk truncated text,
+# find cut points after closing brackets / before commas, close the
+# open bracket stack, and return the largest valid JSON prefix.
+# raw_response surfaced in as_dict() for forensic audit. max_tokens
+# bumped 3000 -> 4000 (MiMo runaway-safe ceiling per Sprint 14
+# empirical calibration). Prevents the "silent lens loss when MiMo
+# truncates" failure mode the auditor caught on the noisy-topic
+# stress test.)
 # Every new module under the higher cap must delete or prevent a
 # fake-evidence failure mode (receipts, validators, provenance, typed
 # contracts), not buy prose polish or speculative abstraction.
 set -euo pipefail
 
-CEILING="${LOC_CEILING:-9700}"
+CEILING="${LOC_CEILING:-9750}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 COUNT=$(find "$ROOT/agent" -name "*.py" -not -path "*/__pycache__/*" 2>/dev/null \

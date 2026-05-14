@@ -1,0 +1,37 @@
+{
+  "topic": "longevity",
+  "snapshot_utc": "2026-05-14T16-44-41Z",
+  "top_n": 5,
+  "facts_inspected": 36,
+  "aggregated_claims": 36,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "ranking": "deterministic: validation*magnitude*precision*recency",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "f8d7884cbd15e2fdef8ea5fb5ed1b40e413c8c94e601f573ecd73b47ac4f5cee"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "1dc8f04bb82e541a4152c38cb217c8a4ec9e9c6c9bd11a34783966ab30ffdde3"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "222670c59f3897e2b60fe174d6cb38a30965da096f66c8b471c35125073b3a9a"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "82abf0118ea2646121643e0ea769d56f48dcf12b10db4783d211e7f5a280b475"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "253163f77530ef348beee4bc29a13686fe39749d5683a9f9aa5a144ad3e9ca9d"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "1a233fd68568ea826c41ece8c8cc70ba47859b616b5bbb8787e70710dfb2d01f"
+    }
+  }
+}

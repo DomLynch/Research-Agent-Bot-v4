@@ -1,0 +1,61 @@
+{
+  "topic": "longevity",
+  "snapshot_utc": "2026-05-14T16-44-41Z",
+  "model": "mimo-v2.5-pro",
+  "lens": "The non-obvious convergence of genetic and regulatory mechanisms across taxa—from nematodes to ants—challenges the low heritability narrative in human longevity, suggesting that evolutionary trade-offs and conserved pathways like insulin/IGF-1 and Nrf2 may be masked by environmental buffering or epistatic interactions.",
+  "known_to_ignore": [
+    "Genetics and environment influence longevity",
+    "Longevity varies across species",
+    "Exercise and diet can extend lifespan"
+  ],
+  "tensions": [
+    "Between the low heritability of human longevity (<10% in fact 7) and strong genetic associations in model organisms (e.g., 41 FOXO3 SNPs in fact 4, daf-2 mutations in C. elegans in fact 11).",
+    "Between interventions effective in invertebrates (e.g., 22.29% lifespan extension with OLE in C. elegans in fact 17) and the lack of translated evidence in mammals.",
+    "Between ecological longevity data (e.g., honey-fed wasps in fact 20) and medical-focused human studies, raising questions about universal vs. species-specific mechanisms."
+  ],
+  "gaps": [
+    "Dose-response relationships and optimal timing for interventions like fibrates (fact 19) or calcium (fact 6) in mammalian models.",
+    "The interaction between pathogen resistance genes (84% overlap in fact 8) and lifespan in non-model vertebrates or humans.",
+    "Role of structural traits (e.g., pastern angles in horses in fact 9) in longevity across taxa, beyond traditional genetic pathways."
+  ],
+  "theses": [
+    {
+      "title": "Cross-species meta-analysis of insulin/IGF-1 pathway mutations: effect sizes from C. elegans to human translation barriers",
+      "paper_type": "meta-analysis-standard",
+      "novelty": 85,
+      "evidence_strength": 65,
+      "reviewer_risk": 75,
+      "opportunity_score": 73,
+      "rationale": "Synthesizes data from C. elegans (fact 11), mammals (fact 12), and human genetic studies (fact 4) to quantify lifespan extension and identify key factors limiting translation, leveraging high-citation sources like PNAS and Aging Cell."
+    },
+    {
+      "title": "Nrf2 signaling as a conserved regulator of maximum lifespan: a comparative analysis from invertebrates to mammals",
+      "paper_type": "scoping-review",
+      "novelty": 70,
+      "evidence_strength": 60,
+      "reviewer_risk": 50,
+      "opportunity_score": 84,
+      "rationale": "Compiles evidence from PNAS studies on Nrf2 correlation (facts 10, 23) and links it to evolutionary genetics (fact 13) to propose a mechanistic framework, filling a gap in cross-taxal reviews."
+    },
+    {
+      "title": "Reproductive trade-offs and longevity in social insects: implications for aging theory beyond model organisms",
+      "paper_type": "evidence-gap",
+      "novelty": 80,
+      "evidence_strength": 40,
+      "reviewer_risk": 60,
+      "opportunity_score": 53,
+      "rationale": "Focuses on the ant caste switch (fact 22 from Science) to explore life-history trade-offs, contrasting with human studies (fact 14) and offering novel insights into disposable soma theory."
+    }
+  ],
+  "reviewer_objections": [
+    "Inclusion of non-mammalian data (e.g., rose flowers in fact 6, wasps in fact 20) may not be directly relevant to human longevity interventions.",
+    "Heterogeneity in endpoints (e.g., post-capture longevity in fact 1 vs. human mortality risk in fact 14) limits cross-study comparability.",
+    "Potential bias toward positive results in model organism studies (e.g., C. elegans in facts 11, 17) may inflate effect sizes in meta-analyses."
+  ],
+  "next_extractions": [
+    "Human cohort studies with genetic data on FOXO3 and Nrf2 pathways, focusing on dose-response to environmental factors like diet or activity.",
+    "Intervention studies in mammals (e.g., mice or primates) with standardized doses for compounds like OLE or fibrates, linked to molecular markers.",
+    "Longitudinal data on structural traits (e.g., pastern angles) in livestock or companion animals to explore biomechanical longevity determinants."
+  ],
+  "raw_response": "{\n  \"lens\": \"The non-obvious convergence of genetic and regulatory mechanisms across taxa—from nematodes to ants—challenges the low heritability narrative in human longevity, suggesting that evolutionary trade-offs and conserved pathways like insulin/IGF-1 and Nrf2 may be masked by environmental buffering or epistatic interactions.\",\n  \"known_to_ignore\": [\"Genetics and environment influence longevity\", \"Longevity varies across species\", \"Exercise and diet can extend lifespan\"],\n  \"tensions\": [\n    \"Between the low heritability of human longevity (<10% in fact 7) and strong genetic associations in model organisms (e.g., 41 FOXO3 SNPs in fact 4, daf-2 mutations in C. elegans in fact 11).\",\n    \"Between interventions effective in invertebrates (e.g., 22.29% lifespan extension with OLE in C. elegans in fact 17) and the lack of translated evidence in mammals.\",\n    \"Between ecological longevity data (e.g., honey-fed wasps in fact 20) and medical-focused human studies, raising questions about universal vs. species-specific mechanisms.\"\n  ],\n  \"gaps\": [\n    \"Dose-response relationships and optimal timing for interventions like fibrates (fact 19) or calcium (fact 6) in mammalian models.\",\n    \"The interaction between pathogen resistance genes (84% overlap in fact 8) and lifespan in non-model vertebrates or humans.\",\n    \"Role of structural traits (e.g., pastern angles in horses in fact 9) in longevity across taxa, beyond traditional genetic pathways.\"\n  ],\n  \"theses\": [\n    {\n      \"title\": \"Cross-species meta-analysis of insulin/IGF-1 pathway mutations: effect sizes from C. elegans to human translation barriers\",\n      \"paper_type\": \"meta-analysis-standard\",\n      \"novelty\": 85,\n      \"evidence_strength\": 65,\n      \"reviewer_risk\": 75,\n      \"rationale\": \"Synthesizes data from C. elegans (fact 11), mammals (fact 12), and human genetic studies (fact 4) to quantify lifespan extension and identify key factors limiting translation, leveraging high-citation sources like PNAS and Aging Cell.\"\n    },\n    {\n      \"title\": \"Nrf2 signaling as a conserved regulator of maximum lifespan: a comparative analysis from invertebrates to mammals\",\n      \"paper_type\": \"scoping-review\",\n      \"novelty\": 70,\n      \"evidence_strength\": 60,\n      \"reviewer_risk\": 50,\n      \"rationale\": \"Compiles evidence from PNAS studies on Nrf2 correlation (facts 10, 23) and links it to evolutionary genetics (fact 13) to propose a mechanistic framework, filling a gap in cross-taxal reviews.\"\n    },\n    {\n      \"title\": \"Reproductive trade-offs and longevity in social insects: implications for aging theory beyond model organisms\",\n      \"paper_type\": \"evidence-gap\",\n      \"novelty\": 80,\n      \"evidence_strength\": 40,\n      \"reviewer_risk\": 60,\n      \"rationale\": \"Focuses on the ant caste switch (fact 22 from Science) to explore life-history trade-offs, contrasting with human studies (fact 14) and offering novel insights into disposable soma theory.\"\n    }\n  ],\n  \"reviewer_objections\": [\n    \"Inclusion of non-mammalian data (e.g., rose flowers in fact 6, wasps in fact 20) may not be directly relevant to human longevity interventions.\",\n    \"Heterogeneity in endpoints (e.g., post-capture longevity in fact 1 vs. human mortality risk in fact 14) limits cross-study comparability.\",\n    \"Potential bias toward positive results in model organism studies (e.g., C. elegans in facts 11, 17) may inflate effect sizes in meta-analyses.\"\n  ],\n  \"next_extractions\": [\n    \"Human cohort studies with genetic data on FOXO3 and Nrf2 pathways, focusing on dose-response to environmental factors like diet or activity.\",\n    \"Intervention studies in mammals (e.g., mice or primates) with standardized doses for compounds like OLE or fibrates, linked to molecular markers.\",\n    \"Longitudinal data on structural traits (e.g., pastern angles) in livestock or companion animals to explore biomechanical longevity determinants.\"\n  ]\n}"
+}
