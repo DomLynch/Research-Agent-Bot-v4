@@ -13,6 +13,8 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
+import httpx
+
 from agent.llm_client import call_writer_with_fallback
 from agent.settings import Settings
 
@@ -61,7 +63,8 @@ class FrontierReview:
                 "tensions": list(self.tensions), "gaps": list(self.gaps),
                 "theses": [t.as_dict() for t in self.theses],
                 "reviewer_objections": list(self.reviewer_objections),
-                "next_extractions": list(self.next_extractions)}
+                "next_extractions": list(self.next_extractions),
+                "raw_response": self.raw_response}
 
 
 _SCHEMA = """{
@@ -193,7 +196,7 @@ def run_frontier_review(
         resp = call_writer_with_fallback(
             settings, messages, temperature=0.4, max_tokens=max_tokens,
         )
-    except (RuntimeError, OSError) as e:
+    except (RuntimeError, OSError, httpx.HTTPError) as e:
         return _empty(topic, snapshot_utc, f"llm_call_failed:{type(e).__name__}")
     data = _parse(resp.content)
     theses_raw = data.get("theses", [])
