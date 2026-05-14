@@ -85,6 +85,20 @@
 # empirical calibration). Prevents the "silent lens loss when MiMo
 # truncates" failure mode the auditor caught on the noisy-topic
 # stress test.)
+# -> 10500 (Sprint 57 numeric-anchor parser + correction proposals:
+# agent/source_corpus.py adds NumericAnchor dataclass + extract_all_
+# anchors() that scans free text and emits structured (value, units,
+# span) tuples for every number found — universal regex, no domain
+# literals. agent/correction_proposer.py turns each 'dies' verdict
+# into a machine-actionable CorrectionProposal: current vs proposed
+# value, current vs proposed subgroup attribution, exact source-quote
+# evidence, confidence score. Proposals get written to
+# runs/<topic>-evidence-<ts>/corrections_proposed.json so the DB team
+# can ingest them as canonical correction patches. Closes the audit
+# loop: dies verdict -> structured proposal -> DB curator workflow.
+# Without this layer every 'dies' was a noisy red flag with no clear
+# fix path; now each one ships with the exact correction the DB
+# should apply.)
 # -> 10300 (Sprint 56 dual-judge consensus: agent/source_audit.py
 # adds judge='both' mode that runs Gemma AND MiMo on the same fact,
 # returns a consensus verdict with explicit agreement / disagreement
