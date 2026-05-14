@@ -1,0 +1,21 @@
+{
+  "topic": "rapamycin",
+  "snapshot_utc": "2026-05-14T06-13-51Z",
+  "movers": [
+    {
+      "topic": "rapamycin",
+      "claim_text": "rapamycin influences lifespan (per current evidence-contract corpus)",
+      "direction": "weakened",
+      "current_confidence": 38,
+      "previous_confidence": 70,
+      "delta_points": -32,
+      "new_supporting_studies": [],
+      "new_contradicting_studies": [
+        "s098",
+        "s246",
+        "s279",
+        "s327"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "topic": "rapamycin",
+  "snapshot_utc": "2026-05-14T06-13-37Z",
+  "paper_dir_name": "rapamycin-paper-2026-05-12T19-44-52Z",
+  "claims": [
+    {
+      "topic": "rapamycin",
+      "claim_text": "rapamycin influences lifespan (per current evidence-contract corpus)",
+      "confidence_0_100": 70,
+      "paper_type": "pilot-meta-analysis",
+      "readiness_level": 5,
+      "k_pool": 2,
+      "supporting_study_ids": [
+        "s126",
+        "s235"
+      ],
+      "contradicting_study_ids": [
+        "s086",
+        "s230",
+        "s288"
+      ],
+      "cite_audit_clean": true,
+      "mean_agent_confidence": 0.333
+    }
+  ]
+}
