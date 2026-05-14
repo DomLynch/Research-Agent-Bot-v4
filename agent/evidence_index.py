@@ -35,10 +35,17 @@ _MAX_SCORE = _W_K_POOL + _W_READINESS + _W_CITE_AUDIT + _W_DUAL_AGENT  # = 100
 @dataclass(frozen=True, slots=True)
 class ClaimAtom:
     """One atomic claim — typically the topic's primary intervention →
-    endpoint relationship — scored against current evidence."""
+    endpoint relationship — scored against current evidence.
+
+    Sprint 42: `score_breakdown` exposes the per-component contributions
+    that sum to `confidence_0_100`, so any reviewer can reconstruct the
+    score. Sprint 43: `publication_opportunity` flags claims that have
+    crossed the journal-grade threshold (confidence >= 70 AND k_pool >= 2)."""
     topic: str
     claim_text: str
     confidence_0_100: int
+    score_breakdown: tuple[tuple[str, int], ...]  # ordered (component, points)
+    publication_opportunity: bool
     paper_type: str
     readiness_level: int
     k_pool: int
@@ -51,6 +58,8 @@ class ClaimAtom:
         return {
             "topic": self.topic, "claim_text": self.claim_text,
             "confidence_0_100": self.confidence_0_100,
+            "score_breakdown": dict(self.score_breakdown),
+            "publication_opportunity": self.publication_opportunity,
             "paper_type": self.paper_type,
             "readiness_level": self.readiness_level, "k_pool": self.k_pool,
             "supporting_study_ids": list(self.supporting_study_ids),
@@ -103,9 +112,12 @@ def _confidence_from_receipts(
     *, readiness: dict[str, object], pool: dict[str, object],
     cite_audit_present: bool, cite_audit_clean: bool,
     dual_agent: dict[str, object],
-) -> tuple[int, float]:
+) -> tuple[int, float, tuple[tuple[str, int], ...]]:
     """Combine receipt-derived signals into a 0..100 confidence + mean
-    agent confidence. Universal weight table; no biomedical literals."""
+    agent confidence + per-component score breakdown. Universal weight
+    table; no biomedical literals. The breakdown is the GPT-auditor-
+    required transparency: any reviewer can reconstruct the score from
+    the four component points."""
     level = _safe_int(readiness, "level")
     k = _safe_int(pool, "k_effects")
     k_factor = min(k, 3) / 3.0
@@ -117,13 +129,19 @@ def _confidence_from_receipts(
         if isinstance(cs, (int, float)) and not isinstance(cs, bool):
             confs.append(float(cs))
     mean_conf = sum(confs) / len(confs) if confs else 0.0
-    score = round(
-        _W_K_POOL * k_factor
-        + _W_READINESS * (level / 6.0)
-        + (_W_CITE_AUDIT if cite_audit_present and cite_audit_clean else 0)
-        + _W_DUAL_AGENT * mean_conf,
+
+    k_points = round(_W_K_POOL * k_factor)
+    readiness_points = round(_W_READINESS * (level / 6.0))
+    cite_points = _W_CITE_AUDIT if cite_audit_present and cite_audit_clean else 0
+    agent_points = round(_W_DUAL_AGENT * mean_conf)
+    total = k_points + readiness_points + cite_points + agent_points
+    breakdown: tuple[tuple[str, int], ...] = (
+        ("k_pool", k_points),
+        ("readiness_level", readiness_points),
+        ("cite_audit_clean", cite_points),
+        ("mean_agent_confidence", agent_points),
     )
-    return int(max(0, min(_MAX_SCORE, score))), mean_conf
+    return int(max(0, min(_MAX_SCORE, total))), mean_conf, breakdown
 
 
 def compute_evidence_index(
@@ -147,7 +165,7 @@ def compute_evidence_index(
     paper_type_doc = _read_json(paper_dir / "paper_type_decision.json")
 
     cite_clean_signal = bool(cite_audit.get("clean", False))
-    score, mean_conf = _confidence_from_receipts(
+    score, mean_conf, breakdown = _confidence_from_receipts(
         readiness=readiness, pool=pool,
         cite_audit_present=cite_audit_path.exists(),
         cite_audit_clean=cite_clean_signal,
@@ -163,12 +181,21 @@ def compute_evidence_index(
         str(s) for s in _safe_list(pool, "skipped_study_ids") if s
     )
 
+    # Sprint 43: publication-opportunity flag. Simple, transparent rule
+    # — claim is journal-ready when confidence >= 70 AND k_pool >= 2.
+    # The threshold is intentionally conservative so the flag means
+    # something; a topic snapshot at L4 with k=0 will never fire it.
+    k_pool_count = _safe_int(pool, "k_effects")
+    pub_opportunity = score >= 70 and k_pool_count >= 2
+
     claim = ClaimAtom(
         topic=topic, claim_text=claim_text,
         confidence_0_100=score,
+        score_breakdown=breakdown,
+        publication_opportunity=pub_opportunity,
         paper_type=str(paper_type_doc.get("name") or "unknown"),
         readiness_level=_safe_int(readiness, "level"),
-        k_pool=_safe_int(pool, "k_effects"),
+        k_pool=k_pool_count,
         supporting_study_ids=supporting,
         contradicting_study_ids=contradicting,
         cite_audit_clean=(cite_clean_signal if cite_audit_path.exists() else None),

@@ -140,8 +140,14 @@ def test_index_as_dict_round_trips_through_json(tmp_path: Path) -> None:
 
 def _claim(text: str, *, conf: int = 50, supp: tuple[str, ...] = (),
             contra: tuple[str, ...] = ()) -> ClaimAtom:
+    """Sprint 42/43: ClaimAtom now also carries score_breakdown +
+    publication_opportunity. Tests default to a benign breakdown that
+    sums to `conf` and a derived pub-opportunity flag."""
     return ClaimAtom(
         topic="t", claim_text=text, confidence_0_100=conf,
+        score_breakdown=(("k_pool", 0), ("readiness_level", conf),
+                          ("cite_audit_clean", 0), ("mean_agent_confidence", 0)),
+        publication_opportunity=(conf >= 70 and len(supp) >= 2),
         paper_type="x", readiness_level=4, k_pool=0,
         supporting_study_ids=supp, contradicting_study_ids=contra,
         cite_audit_clean=True, mean_agent_confidence=0.0,
@@ -239,3 +245,84 @@ def test_index_confidence_scales_with_level_and_k(
     )
     idx = compute_evidence_index(pd, topic="rapamycin", snapshot_utc="t")
     assert idx.claims[0].confidence_0_100 >= expected_at_least
+
+
+# ----------------- Sprints 42-43: transparency + pub-opportunity -----
+
+
+def test_score_breakdown_sums_to_total(tmp_path: Path) -> None:
+    """GPT-auditor pushback: the 0..100 score must be reproducible from
+    its components. Test asserts the 4 component points sum to the
+    final confidence_0_100 — so any reviewer can audit the math."""
+    pd = _seed_paper(
+        tmp_path, "rapamycin",
+        level=5, k_pool=2, paper_type="pilot-meta-analysis",
+        cite_clean=True,
+        pool_effects=[{"study_id": "s01"}, {"study_id": "s02"}],
+        dual_agent_entries=[
+            {"study_id": "s01", "confidence_score": 1.0},
+            {"study_id": "s02", "confidence_score": 0.7},
+        ],
+    )
+    c = compute_evidence_index(pd, topic="rapamycin", snapshot_utc="t").claims[0]
+    breakdown = dict(c.score_breakdown)
+    assert set(breakdown) == {
+        "k_pool", "readiness_level", "cite_audit_clean", "mean_agent_confidence",
+    }
+    assert sum(breakdown.values()) == c.confidence_0_100
+
+
+def test_score_breakdown_present_in_json_round_trip(tmp_path: Path) -> None:
+    pd = _seed_paper(tmp_path, "rapamycin", level=4, k_pool=0,
+                      paper_type="scoping-review")
+    d = compute_evidence_index(pd, topic="rapamycin", snapshot_utc="t").as_dict()
+    claim_dict = d["claims"][0]  # type: ignore[index]
+    assert isinstance(claim_dict, dict)
+    assert "score_breakdown" in claim_dict
+    assert isinstance(claim_dict["score_breakdown"], dict)
+    assert sum(claim_dict["score_breakdown"].values()) == claim_dict["confidence_0_100"]
+
+
+def test_publication_opportunity_fires_when_confidence_and_k_qualify(
+    tmp_path: Path,
+) -> None:
+    """confidence >= 70 AND k_pool >= 2 → publication_opportunity=True."""
+    pd = _seed_paper(
+        tmp_path, "rapamycin",
+        level=6, k_pool=10, paper_type="meta-analysis-full",
+        pool_effects=[{"study_id": f"s{i:02d}"} for i in range(10)],
+        dual_agent_entries=[
+            {"study_id": f"s{i:02d}", "confidence_score": 1.0} for i in range(10)
+        ],
+    )
+    c = compute_evidence_index(pd, topic="rapamycin", snapshot_utc="t").claims[0]
+    assert c.publication_opportunity is True
+    assert c.confidence_0_100 >= 70 and c.k_pool >= 2
+
+
+def test_publication_opportunity_does_not_fire_for_scoping(
+    tmp_path: Path,
+) -> None:
+    """L4 scoping with k=0 — even with clean cite, the gate is below 70
+    or k<2, so the flag stays False."""
+    pd = _seed_paper(
+        tmp_path, "rapamycin",
+        level=4, k_pool=0, paper_type="scoping-review",
+        cite_clean=True,
+    )
+    c = compute_evidence_index(pd, topic="rapamycin", snapshot_utc="t").claims[0]
+    assert c.publication_opportunity is False
+
+
+def test_publication_opportunity_blocked_when_k_below_two(tmp_path: Path) -> None:
+    """Even at high confidence, k_pool < 2 keeps the flag False —
+    journal-grade gate refuses to fire on single-study evidence."""
+    pd = _seed_paper(
+        tmp_path, "rapamycin",
+        level=5, k_pool=1, paper_type="pilot-meta-analysis",
+        pool_effects=[{"study_id": "s01"}],
+        dual_agent_entries=[{"study_id": "s01", "confidence_score": 1.0}],
+    )
+    c = compute_evidence_index(pd, topic="rapamycin", snapshot_utc="t").claims[0]
+    assert c.k_pool == 1
+    assert c.publication_opportunity is False

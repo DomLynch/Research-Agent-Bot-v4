@@ -55,6 +55,11 @@ def _load_prior(topic_dir: Path) -> EvidenceIndex | None:
             topic=str(c.get("topic") or ""),
             claim_text=str(c.get("claim_text") or ""),
             confidence_0_100=int(c.get("confidence_0_100") or 0),
+            score_breakdown=tuple(
+                (str(k), int(v))
+                for k, v in (c.get("score_breakdown") or {}).items()
+            ),
+            publication_opportunity=bool(c.get("publication_opportunity", False)),
             paper_type=str(c.get("paper_type") or ""),
             readiness_level=int(c.get("readiness_level") or 0),
             k_pool=int(c.get("k_pool") or 0),
