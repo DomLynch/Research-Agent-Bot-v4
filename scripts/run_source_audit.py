@@ -87,9 +87,12 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run", type=Path, required=True,
                         help="Path to a runs/<topic>-evidence-<ts>/ folder")
-    parser.add_argument("--judge", choices=("gemma", "mimo"), default="gemma",
-                        help="Comparator model: gemma (fast/cheap, default) "
-                             "or mimo (stronger nuance, Gemma fallback)")
+    parser.add_argument("--judge", choices=("gemma", "mimo", "both"),
+                        default="gemma",
+                        help="Comparator model: gemma (default, fast/cheap), "
+                             "mimo (stronger nuance), or both (dual-judge "
+                             "consensus — agreement = high confidence, "
+                             "survives-vs-dies = 'disagreement' flag)")
     parser.add_argument("--no-update-manifest", action="store_true")
     args = parser.parse_args()
     run_dir: Path = args.run

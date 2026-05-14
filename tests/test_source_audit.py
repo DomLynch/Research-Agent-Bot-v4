@@ -22,10 +22,19 @@ from agent.source_audit import (
     SourceAuditReport,
     _fact_summary,
     _parse_verdict,
+    _reconcile,
     fetch_pubmed_abstract,
     run_source_audit,
     verify_fact,
 )
+
+
+def _v(verdict: str, judge: str = "gemma", reason: str = "r") -> FactVerdict:
+    """Compact FactVerdict factory for consensus tests."""
+    return FactVerdict(
+        fact_id="f/x", verdict=verdict, db_value="9.0%", pmid="123",
+        source_quote="q", reason=reason, judge=judge,
+    )
 
 
 def _settings(judge: bool = True, writer: bool = True,
@@ -272,6 +281,73 @@ def test_verdict_carries_source_tier_and_anchor_hits() -> None:
                         settings=_settings(), passage=p)
     assert v.source_tier == "pmc_fulltext"
     assert v.anchor_hits == 2
+
+
+def test_reconcile_same_verdict_high_confidence() -> None:
+    out = _reconcile(_v("dies", "gemma"), _v("dies", "mimo"))
+    assert out.verdict == "dies"
+    assert out.judge == "both"
+    assert out.secondary_verdict == "dies"
+    assert out.secondary_judge == "mimo"
+
+
+def test_reconcile_survives_disagrees_dies_flagged() -> None:
+    out = _reconcile(_v("survives", "gemma"), _v("dies", "mimo"))
+    assert out.verdict == "disagreement"
+    assert out.secondary_verdict == "dies"
+
+
+def test_reconcile_dies_plus_needs_extraction_promotes_to_dies() -> None:
+    out = _reconcile(_v("dies", "gemma"), _v("needs_extraction", "mimo"))
+    assert out.verdict == "dies"  # strong: silent contradiction
+
+
+def test_reconcile_survives_plus_needs_extraction_keeps_survives() -> None:
+    out = _reconcile(_v("survives", "gemma"),
+                     _v("needs_extraction", "mimo"))
+    assert out.verdict == "survives"
+
+
+def test_reconcile_both_needs_extraction() -> None:
+    out = _reconcile(_v("needs_extraction"), _v("needs_extraction", "mimo"))
+    assert out.verdict == "needs_extraction"
+
+
+def test_run_dual_judge_aggregates_disagreement_count() -> None:
+    """End-to-end: facts return mixed verdicts; report counts agreement
+    + disagreement separately."""
+    facts = [_fact("f/a", pmid="1", nv=1.0),
+             _fact("f/b", pmid="2", nv=2.0)]
+    # First fact: gemma=survives, mimo=dies -> disagreement
+    # Second fact: both say dies -> dies
+    judge_responses = iter([
+        _mock_judge_resp('{"verdict": "survives"}'),  # gemma fact a
+        _mock_judge_resp('{"verdict": "dies"}'),       # gemma fact b
+    ])
+    writer_responses = iter([
+        _mock_judge_resp('{"verdict": "dies"}'),       # mimo fact a
+        _mock_judge_resp('{"verdict": "dies"}'),       # mimo fact b
+    ])
+    with (
+        patch("agent.source_audit.fetch_pubmed_abstract", return_value="abs"),
+        patch("agent.source_audit.get_best_source", return_value=None),
+        patch("agent.source_audit.call_judge",
+              side_effect=lambda *_a, **_k: next(judge_responses)),
+        patch("agent.source_audit.call_writer_with_fallback",
+              side_effect=lambda *_a, **_k: next(writer_responses)),
+    ):
+        rpt = run_source_audit(
+            topic="t", snapshot_utc="ts", facts=facts,
+            settings=_settings(), client=httpx.Client(), judge="both",
+        )
+    assert rpt.facts_inspected == 2
+    assert rpt.disagreement == 1
+    assert rpt.dies == 1
+    # Per-fact: first verdict carries both judges' opinions
+    fact_a = next(v for v in rpt.verdicts if v.fact_id == "f/a")
+    assert fact_a.verdict == "disagreement"
+    assert fact_a.judge == "both"
+    assert {fact_a.secondary_verdict, fact_a.verdict} | {"dies"}
 
 
 def test_as_dict_round_trip() -> None:

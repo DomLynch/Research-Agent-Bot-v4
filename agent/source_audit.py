@@ -29,7 +29,8 @@ from agent.source_corpus import SourcePassage, get_best_source
 
 _EUTILS = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
 _VERDICTS = ("survives", "dies", "needs_extraction")
-_JUDGES = ("gemma", "mimo")  # locked stack; neither generated the inputs
+_JUDGES = ("gemma", "mimo", "both")  # 'both' runs dual-judge consensus
+_CONSENSUS_DISAGREE = "disagreement"  # survives-vs-dies -> human review
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,13 +44,20 @@ class FactVerdict:
     judge: str = "gemma"
     source_tier: str = "abstract"  # abstract | pmc_fulltext | researka_corpus
     anchor_hits: int = 0           # numeric-anchor matches in source
+    # Dual-judge fields (populated only when judge='both'):
+    secondary_verdict: str = ""    # other judge's verdict
+    secondary_judge: str = ""      # 'mimo' or 'gemma'
+    secondary_reason: str = ""
 
     def as_dict(self) -> dict[str, Any]:
         return {"fact_id": self.fact_id, "verdict": self.verdict,
                 "db_value": self.db_value, "pmid": self.pmid,
                 "judge": self.judge, "source_tier": self.source_tier,
                 "anchor_hits": self.anchor_hits,
-                "source_quote": self.source_quote, "reason": self.reason}
+                "source_quote": self.source_quote, "reason": self.reason,
+                "secondary_verdict": self.secondary_verdict,
+                "secondary_judge": self.secondary_judge,
+                "secondary_reason": self.secondary_reason}
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,12 +69,14 @@ class SourceAuditReport:
     dies: int
     needs_extraction: int
     verdicts: tuple[FactVerdict, ...]
+    disagreement: int = 0  # dual-judge survives-vs-dies splits
 
     def as_dict(self) -> dict[str, Any]:
         return {"topic": self.topic, "snapshot_utc": self.snapshot_utc,
                 "facts_inspected": self.facts_inspected,
                 "survives": self.survives, "dies": self.dies,
                 "needs_extraction": self.needs_extraction,
+                "disagreement": self.disagreement,
                 "verdicts": [v.as_dict() for v in self.verdicts]}
 
 
@@ -211,6 +221,38 @@ def verify_fact(
     )
 
 
+def _reconcile(primary: FactVerdict, secondary: FactVerdict) -> FactVerdict:
+    """Merge two judges' verdicts into one consensus FactVerdict.
+    Consensus rules (`p`, `s` = primary, secondary verdict):
+      same -> p (high confidence)
+      survives + needs_extraction -> survives (weak confirm)
+      dies + needs_extraction -> dies (strong — silent contradict)
+      survives + dies -> 'disagreement' (human review)
+      both needs_extraction -> needs_extraction
+    Carries the secondary verdict + judge + reason for full audit trail."""
+    p, s = primary.verdict, secondary.verdict
+    if p == s:
+        consensus = p
+    elif _CONSENSUS_DISAGREE in (p, s) or {p, s} == {"survives", "dies"}:
+        consensus = _CONSENSUS_DISAGREE
+    elif "dies" in (p, s):
+        consensus = "dies"
+    elif "survives" in (p, s):
+        consensus = "survives"
+    else:
+        consensus = "needs_extraction"
+    return FactVerdict(
+        fact_id=primary.fact_id, verdict=consensus,
+        db_value=primary.db_value, pmid=primary.pmid,
+        judge="both", source_tier=primary.source_tier,
+        anchor_hits=primary.anchor_hits,
+        source_quote=primary.source_quote, reason=primary.reason,
+        secondary_verdict=secondary.verdict,
+        secondary_judge=secondary.judge,
+        secondary_reason=secondary.reason,
+    )
+
+
 def run_source_audit(
     *, topic: str, snapshot_utc: str, facts: list[dict[str, Any]],
     settings: Settings, client: httpx.Client, ncbi_api_key: str = "",
@@ -238,15 +280,24 @@ def run_source_audit(
             f, abstract=abstract, client=client, settings=settings,
             ncbi_api_key=ncbi_api_key,
         ) if escalate else None)
-        verdicts.append(verify_fact(
-            f, abstract, settings=settings, judge=judge, passage=passage,
-        ))
-    counts = {v: 0 for v in _VERDICTS}
+        if judge == "both":
+            v_gemma = verify_fact(f, abstract, settings=settings,
+                                  judge="gemma", passage=passage)
+            v_mimo = verify_fact(f, abstract, settings=settings,
+                                 judge="mimo", passage=passage)
+            verdicts.append(_reconcile(v_gemma, v_mimo))
+        else:
+            verdicts.append(verify_fact(
+                f, abstract, settings=settings, judge=judge, passage=passage,
+            ))
+    counts: dict[str, int] = dict.fromkeys(_VERDICTS, 0)
+    counts[_CONSENSUS_DISAGREE] = 0
     for vd in verdicts:
         counts[vd.verdict] = counts.get(vd.verdict, 0) + 1
     return SourceAuditReport(
         topic=topic, snapshot_utc=snapshot_utc,
         facts_inspected=len(verdicts), survives=counts["survives"],
         dies=counts["dies"], needs_extraction=counts["needs_extraction"],
+        disagreement=counts[_CONSENSUS_DISAGREE],
         verdicts=tuple(verdicts),
     )

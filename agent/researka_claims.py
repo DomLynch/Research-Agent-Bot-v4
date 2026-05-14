@@ -48,12 +48,23 @@ def fetch_topic_claims(
     topic: str, *, client: httpx.Client, settings: Settings,
     sub_topic: str | None = None,
 ) -> list[dict[str, Any]]:
-    """Pull canonical facts for `topic`; return gap-analyser claim dicts."""
+    """Pull canonical facts for `topic`; return gap-analyser claim dicts.
+
+    `validated_only=true` is the Researka-DB synthesis-grade filter: it
+    drops every Tier 1 seed whose validator still starts with `bootstrap-`
+    (i.e. an LLM curator wrote the fact from memory, without anchoring to
+    source-paper text). The 2026-05-14 audit found a 43% error rate in
+    bootstrap seeds (Harrison sex-swap + Bitto-male 52% hallucination), so
+    this gate is mandatory for the writer pipeline. Source: Researka DB
+    Sprint 3 P0 — DECISIONS.md.
+    """
     base = settings.researka_database_url.rstrip("/")
     token = settings.researka_database_token.strip()
     if not base or not token or not topic.strip():
         return []
-    params = {"sub_topic": sub_topic} if sub_topic else {}
+    params: dict[str, Any] = {"validated_only": "true"}
+    if sub_topic:
+        params["sub_topic"] = sub_topic
     try:
         r = client.get(
             f"{base}/api/v1/topics/{topic}/facts",

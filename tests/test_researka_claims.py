@@ -122,6 +122,9 @@ def test_fetch_aggregates_live_shape() -> None:
     def handler(req: httpx.Request) -> httpx.Response:
         assert req.url.path == "/api/v1/topics/rapamycin/facts"
         assert req.headers.get("x-researka-token") == "tok"
+        # 2026-05-14 audit gate: writer pipeline must request only
+        # source-verified facts (drops 43%-error-rate bootstrap seeds).
+        assert req.url.params.get("validated_only") == "true"
         return httpx.Response(200, json=payload)
     s = type("S", (), {"researka_database_url": "https://x",
                        "researka_database_token": "tok"})()
