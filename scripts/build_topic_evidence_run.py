@@ -30,6 +30,7 @@ import httpx
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from agent.frontier_review import FrontierReview, run_frontier_review
 from agent.researka_claims import _aggregate
 from agent.settings import load_settings
 
@@ -201,10 +202,74 @@ def _sha256(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def _fetch_papers(topic: str, limit: int = 25) -> list[dict[str, Any]]:
+    """Pull paper metadata for cross-context (citations, fwci, quality)."""
+    settings = load_settings()
+    base = settings.researka_database_url.rstrip("/")
+    token = settings.researka_database_token.strip()
+    if not base or not token:
+        return []
+    try:
+        with httpx.Client(timeout=15.0) as c:
+            r = c.post(f"{base}/api/v1/papers/topic",
+                       headers={"X-Researka-Token": token},
+                       json={"topic": topic, "limit": limit})
+            r.raise_for_status()
+            data = r.json()
+    except (httpx.HTTPError, ValueError):
+        return []
+    return [p for p in data if isinstance(p, dict)] if isinstance(data, list) else []
+
+
+def _render_frontier_md(review: FrontierReview, topic: str) -> str:
+    """Markdown view of the MiMo-driven research-strategist output."""
+    if review.model.startswith("error:"):
+        return (
+            f"# Frontier review — {topic}\n\n"
+            f"**Snapshot:** {review.snapshot_utc}\n\n"
+            f"_No frontier review available ({review.model})._\n"
+        )
+
+    def _bullets(items: tuple[str, ...]) -> str:
+        return "\n".join(f"- {x}" for x in items) if items else "_none_"
+
+    theses_md = "_none_"
+    if review.theses:
+        blocks = []
+        for i, t in enumerate(review.theses, start=1):
+            blocks.append(
+                f"### #{i} — opportunity {t.opportunity_score} · "
+                f"`{t.paper_type or 'unspecified'}`\n\n"
+                f"**Thesis:** {t.title}\n\n"
+                f"- novelty {t.novelty} / evidence_strength "
+                f"{t.evidence_strength} / reviewer_risk {t.reviewer_risk}\n"
+                f"- **Why publishable:** {t.rationale}\n"
+            )
+        theses_md = "\n---\n\n".join(blocks)
+
+    return (
+        f"# Frontier review — {topic}\n\n"
+        f"**Snapshot:** {review.snapshot_utc}\n"
+        f"**Strategist model:** {review.model}\n\n"
+        f"## The lens\n\n{review.lens or '_no lens produced_'}\n\n"
+        f"## Already known — do not publish\n\n"
+        f"{_bullets(review.known_to_ignore)}\n\n"
+        f"## Tensions / contradictions\n\n{_bullets(review.tensions)}\n\n"
+        f"## Evidence gaps\n\n{_bullets(review.gaps)}\n\n"
+        f"## Paper theses\n\n{theses_md}\n\n"
+        f"## Reviewer objections to anticipate\n\n"
+        f"{_bullets(review.reviewer_objections)}\n\n"
+        f"## Suggested next extractions\n\n"
+        f"{_bullets(review.next_extractions)}\n"
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--topic", required=True)
     parser.add_argument("--top", type=int, default=5)
+    parser.add_argument("--no-frontier", action="store_true",
+                        help="Skip the MiMo frontier-review LLM call")
     args = parser.parse_args()
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
     out_dir = _RUNS / f"{args.topic}-evidence-{ts}"
@@ -232,6 +297,40 @@ def main() -> int:
     md_text = _render_md(args.topic, ts, top, len(facts), tier)
     md_path.write_text(md_text, encoding="utf-8")
 
+    files_manifest = {
+        "top_md": {"name": md_path.name, "sha256": _sha256(md_text)},
+        "all_facts": {"name": raw_path.name, "sha256": _sha256(raw_text)},
+        "claims_index": {"name": claims_path.name, "sha256": _sha256(claims_text)},
+    }
+
+    review_model = "skipped"
+    if not args.no_frontier and facts:
+        papers = _fetch_papers(args.topic)
+        review = run_frontier_review(
+            topic=args.topic, snapshot_utc=ts, facts=facts,
+            papers=papers or None, settings=load_settings(),
+        )
+        review_model = review.model
+        fr_md_path = out_dir / "frontier_review.md"
+        fr_md_text = _render_frontier_md(review, args.topic)
+        fr_md_path.write_text(fr_md_text, encoding="utf-8")
+        fr_json_path = out_dir / "frontier_review.json"
+        fr_json_text = json.dumps(review.as_dict(), indent=2, ensure_ascii=False)
+        fr_json_path.write_text(fr_json_text, encoding="utf-8")
+        files_manifest["frontier_md"] = {
+            "name": fr_md_path.name, "sha256": _sha256(fr_md_text),
+        }
+        files_manifest["frontier_json"] = {
+            "name": fr_json_path.name, "sha256": _sha256(fr_json_text),
+        }
+        if papers:
+            papers_path = out_dir / "papers_metadata.json"
+            papers_text = json.dumps(papers, indent=2, ensure_ascii=False)
+            papers_path.write_text(papers_text, encoding="utf-8")
+            files_manifest["papers_metadata"] = {
+                "name": papers_path.name, "sha256": _sha256(papers_text),
+            }
+
     manifest = {
         "topic": args.topic, "snapshot_utc": ts, "top_n": args.top,
         "facts_inspected": len(facts), "aggregated_claims": len(aggregated),
@@ -240,19 +339,16 @@ def main() -> int:
                    if tier == "tier1_canonical"
                    else "researka_db POST /api/v1/tier2/facts/search "
                    "(Tier-2 fallback; topic filter on response)"),
-        "files": {
-            "top_md": {"name": md_path.name, "sha256": _sha256(md_text)},
-            "all_facts": {"name": raw_path.name, "sha256": _sha256(raw_text)},
-            "claims_index": {"name": claims_path.name, "sha256": _sha256(claims_text)},
-        },
+        "frontier_model": review_model,
         "ranking": "deterministic: validation*magnitude*precision*recency",
+        "files": files_manifest,
     }
     (out_dir / "MANIFEST.json").write_text(
         json.dumps(manifest, indent=2), encoding="utf-8",
     )
 
     print(f"[evidence-run] topic={args.topic} facts={len(facts)} "
-          f"top={len(top)} → {out_dir}")
+          f"top={len(top)} frontier={review_model} → {out_dir}")
     for i, (score, f) in enumerate(top, start=1):
         phrase = str(f.get("canonical_phrase") or "")[:80]
         print(f"  #{i}  score={score:3}  {phrase}")

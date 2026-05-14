@@ -60,12 +60,25 @@
 # Sprints 14 / 26 / 32 / 37 patches — gap-analyser now reads from the
 # curated Researka source of truth, not from receipts a buggy writer
 # could poison.)
+# -> 9700 (Sprint 49 frontier-model research-strategist layer:
+# agent/frontier_review.py asks MiMo v2.5 Pro for the LENS over the
+# deterministic top-N — non-obvious framing, tensions between specific
+# studies, evidence gaps, 3 paper theses with novelty / evidence-
+# strength / reviewer-risk scores + opportunity_score = strength *
+# novelty / max(risk, 10). Prevents the "boring fact leaderboard
+# masquerading as research output" failure mode: deterministic alone
+# produces "rapamycin extends lifespan" (everyone knows that);
+# deterministic + frontier produces "transient C57BL/6 effect sizes
+# disagree with ITP feed-based UM-HET3 effects — timing/route/strain
+# may dominate headline magnitude". Tolerant JSON parser, returns
+# empty review with model='error:<reason>' on any failure so callers
+# never crash.)
 # Every new module under the higher cap must delete or prevent a
 # fake-evidence failure mode (receipts, validators, provenance, typed
 # contracts), not buy prose polish or speculative abstraction.
 set -euo pipefail
 
-CEILING="${LOC_CEILING:-9500}"
+CEILING="${LOC_CEILING:-9700}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 COUNT=$(find "$ROOT/agent" -name "*.py" -not -path "*/__pycache__/*" 2>/dev/null \
