@@ -1,6 +1,6 @@
 # Top 5 interesting findings — resveratrol
 
-**Snapshot:** 2026-05-14T16-25-25Z
+**Snapshot:** 2026-05-14T16-35-27Z
 **Source:** Researka DB Tier-2 search (`POST /api/v1/tier2/facts/search`, filter topic=resveratrol) — LLM-extracted, no Tier-1 canonical facts loaded for this topic yet; findings may be off-target (e.g. chemistry papers using the molecule name) until canonical curation.
 **Facts inspected:** 47
 **Ranking:** validation * magnitude * precision * recency (deterministic, no LLM).

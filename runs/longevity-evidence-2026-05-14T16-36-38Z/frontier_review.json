@@ -1,0 +1,13 @@
+{
+  "topic": "longevity",
+  "snapshot_utc": "2026-05-14T16-36-38Z",
+  "model": "mimo-v2.5-pro",
+  "lens": "",
+  "known_to_ignore": [],
+  "tensions": [],
+  "gaps": [],
+  "theses": [],
+  "reviewer_objections": [],
+  "next_extractions": [],
+  "raw_response": "{\n  \"lens\": \"The deterministic layer exposes a paradox: while human longevity heritability is below 10% (Genetics 2018), conserved genetic pathways like insulin/IGF-1 (e.g., daf-2 in C. elegans, Molecular Systems Biology 2013) and Nrf2-signaling (PNAS 2015) show strong mechanistic effects across species, suggesting that longevity research is fragmented between population-level noise and reductionist precision. This framing highlights the need to reconcile model organism findings with human translational challenges, particularly via cross-species meta-analyses of specific pathways.\",\n  \"known_to_ignore\": [\"Activity reducing mortality risk in humans (Gerontology and Geriatric Medicine 2018)\", \"Honey-fed wasps living twice as long as starved ones (Frontiers in Ecology and Evolution 2018)\", \"Calcium extending cut rose flower longevity (Israel journal of botany 2013)\"],\n  \"tensions\": [\"Heritability of human longevity below 10% (Genetics 2018) versus 41 FOXO3 SNPs associated with longevity (Aging Cell 2017)\", \"Nrf2-signaling positively correlated with maximum lifespan (PNAS 2015) but longevity negatively correlated with Keap1 and βTrCP regulators (PNAS 2015)\", \"FOXO3 genetic variability accounts for only 7.7% survival beyond age 89 (Genes 2019), yet daf-2 mutations double C. elegans lifespan (Molecular Systems Biology 2013)\"],\n  \"gaps\": [\"Dose-response relationships for fibrates or olive leaf extract (OLE) in mammalian models, as C. elegans data show 22.29% lifespan extension with OLE (Antioxidants 2021)\", \"Human GWAS on FOXO3 variant functional effects beyond SNP association, given the 41 SNPs identified (Aging Cell 2017)\", \"Ecological factors in wild populations, such as seasonal longevity variations in post-capture species (Frontiers in Ecology and Evolution 2016)\"],\n  \"theses\": [\n    {\n      \"title\": \"Cross-Species Meta-Analysis of Insulin/IGF-1 Pathway Interventions: Quantifying Effect Sizes from daf-2 Mutations to FOXO3 SNPs\",\n      \"paper_type\": \"meta-analysis-standard\",\n      \"novelty\": 80,\n      \"evidence_strength\": 75,\n      \"reviewer_risk\": 70,\n      \"rationale\": \"Consolidates evidence from C. elegans (2-fold lifespan increase, Molecular Systems Biology 2013) and human genetic studies (41 FOXO3 SNPs, Aging Cell 2017) to assess translational potential, addressing the heritability paradox (Genetics 2018).\"\n    },\n    {"
+}

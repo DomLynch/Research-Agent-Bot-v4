@@ -1,9 +1,9 @@
 {
-  "topic": "metformin",
-  "snapshot_utc": "2026-05-14T16-24-09Z",
+  "topic": "resveratrol",
+  "snapshot_utc": "2026-05-14T16-35-27Z",
   "top_n": 5,
-  "facts_inspected": 46,
-  "aggregated_claims": 45,
+  "facts_inspected": 47,
+  "aggregated_claims": 47,
   "data_tier": "tier2",
   "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
   "frontier_model": "mimo-v2.5-pro",
@@ -11,27 +11,27 @@
   "files": {
     "top_md": {
       "name": "top_5.md",
-      "sha256": "42785ac2197b91f282de93a78aa07ff5f4ebbbbcc733411b47984891ea78dd75"
+      "sha256": "ff11ad43a023644381ad165e791312cc9f0a3c816555c3a24f301c7dadd5aa9e"
     },
     "all_facts": {
       "name": "all_facts.json",
-      "sha256": "5f8fd60349d19b00ebdd73542a4fff73d60a4d7321f17f71dde10765bc36b066"
+      "sha256": "9dfb2850c13f8539b84cff8d1bef4e7885fd57a4336a11d09ff5abc26e57dc9e"
     },
     "claims_index": {
       "name": "claims_index.json",
-      "sha256": "c5e4764174b5059f1b09f35951ed3119676b98aaac414366f49a6555816b8313"
+      "sha256": "c094f927bff3cb79be413f81837757b5527123f968939ecd9d0a4b2e64caf090"
     },
     "frontier_md": {
       "name": "frontier_review.md",
-      "sha256": "a37c1fab512b66f33717c9ce6f4f1c932a820934defce2b4efa29ced435737e2"
+      "sha256": "13ef2ed7c41dddeffd34a2fb6190af902f9513364ee7e32cec6da9ff04fa9dbb"
     },
     "frontier_json": {
       "name": "frontier_review.json",
-      "sha256": "0de38adf7beb3f3d00494ac17c13adf75fcb3d854341144c95dcb1ae6c80d913"
+      "sha256": "d79066e2a2ac5a98bc1336d87f8995ae845509512bf5b9f9f8ec92178ceb8dad"
     },
     "papers_metadata": {
       "name": "papers_metadata.json",
-      "sha256": "38d1150ff4c6b19e26d05db91598d2b8e85d8ee5d1c3599b033ec06b1ab91a5f"
+      "sha256": "918042f2ce2e173ccab7bbd115b258344a7eda65f97a548842191ad4a615c11f"
     }
   }
 }

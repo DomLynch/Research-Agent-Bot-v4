@@ -1,6 +1,6 @@
 # Top 5 interesting findings — metformin
 
-**Snapshot:** 2026-05-14T16-24-09Z
+**Snapshot:** 2026-05-14T16-33-51Z
 **Source:** Researka DB Tier-2 search (`POST /api/v1/tier2/facts/search`, filter topic=metformin) — LLM-extracted, no Tier-1 canonical facts loaded for this topic yet; findings may be off-target (e.g. chemistry papers using the molecule name) until canonical curation.
 **Facts inspected:** 46
 **Ranking:** validation * magnitude * precision * recency (deterministic, no LLM).

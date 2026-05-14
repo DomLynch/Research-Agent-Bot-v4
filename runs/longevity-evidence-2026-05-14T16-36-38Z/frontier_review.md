@@ -1,6 +1,6 @@
-# Frontier review — metformin
+# Frontier review — longevity
 
-**Snapshot:** 2026-05-14T16-24-09Z
+**Snapshot:** 2026-05-14T16-36-38Z
 **Strategist model:** mimo-v2.5-pro
 
 ## The lens

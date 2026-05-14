@@ -161,16 +161,83 @@ def _str_list(v: Any) -> tuple[str, ...]:
     return tuple(str(x).strip() for x in v if str(x).strip())
 
 
+def _bracket_stack(text: str) -> tuple[list[str], bool]:
+    """Return (open-bracket stack, in_string_at_eof) for `text`."""
+    stack: list[str] = []
+    in_str, esc = False, False
+    for ch in text:
+        if esc:
+            esc = False
+            continue
+        if in_str:
+            if ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch in "{[":
+            stack.append(ch)
+        elif ch in "}]" and stack:
+            stack.pop()
+    return stack, in_str
+
+
+def _try_repair_json(text: str) -> str:
+    """Repair MiMo responses truncated mid-stream. Strategy: collect
+    cut points (after `]`/`}`, before `,`), try each from latest back,
+    close any open brackets, return the first valid candidate."""
+    try:
+        json.loads(text)
+        return text
+    except json.JSONDecodeError:
+        pass
+    cuts: list[int] = []
+    in_str, esc = False, False
+    for i, ch in enumerate(text):
+        if esc:
+            esc = False
+            continue
+        if in_str:
+            if ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch in "}]":
+            cuts.append(i + 1)
+        elif ch == ",":
+            cuts.append(i)
+    closers = {"{": "}", "[": "]"}
+    for cut in reversed(cuts):
+        prefix = text[:cut].rstrip().rstrip(",").rstrip()
+        stack, mid_str = _bracket_stack(prefix)
+        if mid_str:
+            continue
+        candidate = prefix + "".join(closers[s] for s in reversed(stack))
+        try:
+            json.loads(candidate)
+            return candidate
+        except json.JSONDecodeError:
+            continue
+    return text
+
+
 def _parse(raw: str) -> dict[str, Any]:
-    """Tolerant JSON parser — strips code fences, returns {} on failure."""
+    """Tolerant JSON parser — strips code fences, repairs MiMo
+    truncation, returns {} on irrecoverable failure."""
     text = raw.strip()
     if text.startswith("```"):
         text = text.split("```", 2)[1] if "```" in text[3:] else text
         if text.startswith("json"):
             text = text[4:]
         text = text.strip().rstrip("`").strip()
+    repaired = _try_repair_json(text)
     try:
-        loaded = json.loads(text)
+        loaded = json.loads(repaired)
         return loaded if isinstance(loaded, dict) else {}
     except json.JSONDecodeError:
         return {}
@@ -179,7 +246,7 @@ def _parse(raw: str) -> dict[str, Any]:
 def run_frontier_review(
     *, topic: str, snapshot_utc: str, facts: list[dict[str, Any]],
     papers: list[dict[str, Any]] | None, settings: Settings,
-    max_tokens: int = 3000,
+    max_tokens: int = 4000,
 ) -> FrontierReview:
     """Single MiMo call (Gemma fallback) -> structured review.
 

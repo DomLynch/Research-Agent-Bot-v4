@@ -1,0 +1,13 @@
+{
+  "topic": "fasting",
+  "snapshot_utc": "2026-05-14T16-38-44Z",
+  "model": "mimo-v2.5-pro",
+  "lens": "",
+  "known_to_ignore": [],
+  "tensions": [],
+  "gaps": [],
+  "theses": [],
+  "reviewer_objections": [],
+  "next_extractions": [],
+  "raw_response": "{\n  \"lens\": \"The divergent impact of fasting duration and obesity status on insulin sensitivity and glucagon dynamics—such as the 72-hour reduction in insulin sensitivity (American Journal of Physiology-Endocrinology and Metabolism, 2011) versus obesity-specific glucagon responses (Journal of Endocrinology, 2019)—suggests a critical window for therapeutic fasting that is underexploited in personalized metabolic therapy.\",\n  \"known_to_ignore\": [\"Fasting decreases fasting blood sugar during Ramadan (Journal of Clinical and Basic Research, 2017).\", \"Fasting leads to weight loss and reduced BMI (Institutional Repository of the University of Granada, 2014).\", \"Fasting improves lipid profiles such as triglycerides and HDL (African Journal of Biotechnology, 2010).\"],\n  \"tensions\": [\"Study in Journal of Clinical and Basic Research (2017) shows decreased FBS during Ramadan, while African Journal of Biotechnology (2010) reports higher serum glucose in patients during fasting—potentially due to diabetic subgroup differences or timing effects.\", \"A 72-hour fast in humans reduces insulin sensitivity (American Journal of Physiology-Endocrinology and Metabolism, 2011), but glucagon responses in mice diverge: decrease in obese mice between 8-24 hours vs. increase in lean mice after 24 hours (Journal of Endocrinology, 2019).\", \"IGF-I changes differ significantly between lean and obese subjects (American Journal of Physiology-Endocrinology and Metabolism, 2018), highlighting obesity-dependent metabolic adaptation.\"],\n  \"gaps\": [\"Lack of human studies on fasting durations between 24 and 72 hours in obese subgroups, beyond Ramadan protocols.\", \"Underexplored interaction between intermittent fasting and exercise in humans, with only mouse data available (Nutrients"
+}

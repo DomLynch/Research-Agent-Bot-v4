@@ -1,6 +1,6 @@
-# Frontier review — resveratrol
+# Frontier review — fasting
 
-**Snapshot:** 2026-05-14T16-25-25Z
+**Snapshot:** 2026-05-14T16-38-44Z
 **Strategist model:** mimo-v2.5-pro
 
 ## The lens

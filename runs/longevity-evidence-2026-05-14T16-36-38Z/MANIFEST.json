@@ -1,9 +1,9 @@
 {
-  "topic": "resveratrol",
-  "snapshot_utc": "2026-05-14T16-25-25Z",
+  "topic": "longevity",
+  "snapshot_utc": "2026-05-14T16-36-38Z",
   "top_n": 5,
-  "facts_inspected": 47,
-  "aggregated_claims": 47,
+  "facts_inspected": 36,
+  "aggregated_claims": 36,
   "data_tier": "tier2",
   "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
   "frontier_model": "mimo-v2.5-pro",
@@ -11,27 +11,27 @@
   "files": {
     "top_md": {
       "name": "top_5.md",
-      "sha256": "faeb405a7a23919ca77b832b356188224a060690a7fca674b7f393c01a3e74a9"
+      "sha256": "e0b178dbe33c4d2e8261136222e91d7e0104ed67ee18b643fc47c738fc46ef6e"
     },
     "all_facts": {
       "name": "all_facts.json",
-      "sha256": "9dfb2850c13f8539b84cff8d1bef4e7885fd57a4336a11d09ff5abc26e57dc9e"
+      "sha256": "1dc8f04bb82e541a4152c38cb217c8a4ec9e9c6c9bd11a34783966ab30ffdde3"
     },
     "claims_index": {
       "name": "claims_index.json",
-      "sha256": "0e678e76e9da8fa14332a63628a575a58083e542d38cbe34c6ac2bfb638b952a"
+      "sha256": "c5079adfb7356333f86846d03315dc1728fcc0b1210f7f11305f3de73ad26c0d"
     },
     "frontier_md": {
       "name": "frontier_review.md",
-      "sha256": "f3ab3c65cef5c3babc67ca3abe7f69f340deb32ecef294846bcc4e0a6202d1dc"
+      "sha256": "ca1967aaf88185497beedd5935670c6d53ba3326818293c9f41a2584a250722f"
     },
     "frontier_json": {
       "name": "frontier_review.json",
-      "sha256": "410af5a85b5851183693f9835e10e7e6f1944bda21ad4d8c0320ac402c421aa0"
+      "sha256": "690b735d29d94ece6d641194b513b3477d1c903c6120113dc9e6c2bdf01b2c90"
     },
     "papers_metadata": {
       "name": "papers_metadata.json",
-      "sha256": "918042f2ce2e173ccab7bbd115b258344a7eda65f97a548842191ad4a615c11f"
+      "sha256": "1a233fd68568ea826c41ece8c8cc70ba47859b616b5bbb8787e70710dfb2d01f"
     }
   }
 }

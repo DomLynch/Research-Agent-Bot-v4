@@ -10,6 +10,7 @@ Locks the lens-generation contract:
 """
 from __future__ import annotations
 
+import json
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -19,6 +20,7 @@ from agent.frontier_review import (
     _build_messages,
     _parse,
     _parse_thesis,
+    _try_repair_json,
     run_frontier_review,
 )
 
@@ -97,10 +99,47 @@ def test_parse_strips_markdown_fence() -> None:
     assert d == {"lens": "x"}
 
 
-def test_parse_returns_empty_on_bad_json() -> None:
+def test_parse_returns_empty_on_unrecoverable_json() -> None:
     assert _parse("not json at all") == {}
     assert _parse("") == {}
-    assert _parse('{"unclosed": "bad') == {}
+
+
+def test_repair_closes_truncated_object() -> None:
+    # MiMo cut off mid-array of strings inside an object value
+    truncated = '{"lens": "x", "tensions": ["a", "b", "c'
+    fixed = _try_repair_json(truncated)
+    assert json.loads(fixed) == {"lens": "x", "tensions": ["a", "b"]}
+
+
+def test_repair_closes_truncated_nested() -> None:
+    truncated = ('{"theses": [{"title": "T1", "novelty": 70}, '
+                 '{"title": "T2", "novelty": 80, "rationale": "trun')
+    fixed = _try_repair_json(truncated)
+    loaded = json.loads(fixed)
+    assert loaded["theses"][0]["title"] == "T1"
+    assert len(loaded["theses"]) >= 1
+
+
+def test_repair_handles_dangling_comma() -> None:
+    fixed = _try_repair_json('{"a": 1, "b": 2,')
+    assert json.loads(fixed) == {"a": 1, "b": 2}
+
+
+def test_repair_leaves_valid_unchanged() -> None:
+    valid = '{"a": 1, "b": [1, 2, 3]}'
+    assert _try_repair_json(valid) == valid
+
+
+def test_parse_recovers_truncated_response() -> None:
+    """Real-world: MiMo runs out of tokens mid-stream in a 4k cap."""
+    truncated = ('{"lens": "important framing here", '
+                 '"known_to_ignore": ["fact 1", "fact 2"], '
+                 '"tensions": ["t1", "t2"], "gaps": ["g1"], '
+                 '"theses": [{"title": "Paper A", "rationale": "incomplete')
+    d = _parse(truncated)
+    assert d.get("lens") == "important framing here"
+    assert d.get("known_to_ignore") == ["fact 1", "fact 2"]
+    assert d.get("tensions") == ["t1", "t2"]
 
 
 def test_parse_thesis_drops_titleless_entries() -> None:

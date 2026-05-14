@@ -108,27 +108,29 @@ def _normalize_tier2(item: dict[str, Any], topic: str) -> dict[str, Any]:
 
 def _fetch_facts(topic: str) -> list[dict[str, Any]]:
     """Try Tier-1 canonical first; fall back to Tier-2 search filtered
-    by topic so non-rapamycin topics still surface real DB evidence."""
+    by topic. Network/JSON errors return [] silently so a flaky DB
+    blip never crashes the whole run."""
     settings = load_settings()
     base = settings.researka_database_url.rstrip("/")
     token = settings.researka_database_token.strip()
     hdr = {"X-Researka-Token": token}
-    with httpx.Client(timeout=20.0) as c:
-        r = c.get(f"{base}/api/v1/topics/{topic}/facts", headers=hdr)
-        r.raise_for_status()
-        tier1 = r.json()
-        if isinstance(tier1, list) and tier1:
-            for f in tier1:
-                if isinstance(f, dict):
-                    f["_tier"] = "tier1_canonical"
-            return [f for f in tier1 if isinstance(f, dict)]
-        # Tier-2 fallback: semantic search filtered to the topic.
-        r2 = c.post(f"{base}/api/v1/tier2/facts/search", headers=hdr, json={
-            "query": topic, "top_k": 50,
-            "min_confidence": "medium", "numeric_only": True,
-        })
-        r2.raise_for_status()
-        items = r2.json() if isinstance(r2.json(), list) else []
+    try:
+        with httpx.Client(timeout=30.0) as c:
+            r = c.get(f"{base}/api/v1/topics/{topic}/facts", headers=hdr)
+            r.raise_for_status()
+            tier1 = r.json()
+            if isinstance(tier1, list) and tier1:
+                for f in tier1:
+                    if isinstance(f, dict):
+                        f["_tier"] = "tier1_canonical"
+                return [f for f in tier1 if isinstance(f, dict)]
+            r2 = c.post(f"{base}/api/v1/tier2/facts/search", headers=hdr,
+                        json={"query": topic, "top_k": 50,
+                              "min_confidence": "medium", "numeric_only": True})
+            r2.raise_for_status()
+            items = r2.json() if isinstance(r2.json(), list) else []
+    except (httpx.HTTPError, ValueError):
+        return []
     return [_normalize_tier2(it, topic) for it in items
             if isinstance(it, dict) and str(it.get("topic") or "") == topic]
 
@@ -236,7 +238,9 @@ def _render_frontier_md(review: FrontierReview, topic: str) -> str:
     theses_md = "_none_"
     if review.theses:
         blocks = []
-        for i, t in enumerate(review.theses, start=1):
+        sorted_theses = sorted(review.theses,
+                               key=lambda t: t.opportunity_score, reverse=True)
+        for i, t in enumerate(sorted_theses, start=1):
             blocks.append(
                 f"### #{i} — opportunity {t.opportunity_score} · "
                 f"`{t.paper_type or 'unspecified'}`\n\n"
