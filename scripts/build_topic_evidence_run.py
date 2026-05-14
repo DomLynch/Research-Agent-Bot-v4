@@ -73,16 +73,63 @@ def _interestingness(fact: dict[str, Any]) -> int:
     return min(100, score)
 
 
+def _normalize_tier2(item: dict[str, Any], topic: str) -> dict[str, Any]:
+    """Coerce a tier2/facts/search row into the Tier-1-shaped dict the
+    renderer / scorer expects. Keeps the same interestingness signals
+    (numeric_value, validation, recency) but flags `tier=tier2`."""
+    paper = item.get("paper") or {}
+    return {
+        "fact_id": item.get("id"), "topic": topic,
+        "sub_topic": item.get("claim_type") or "",
+        "source_paper": {
+            "pmid": paper.get("pmid"), "doi": paper.get("doi"),
+            "pmcid": paper.get("pmcid"), "title": paper.get("title"),
+            "journal": paper.get("journal_name"),
+            "year": paper.get("publication_year"),
+        },
+        "claim_type": item.get("claim_type"),
+        "numeric_value": item.get("numeric_value"),
+        "units": item.get("units"), "ci_lower": None, "ci_upper": None,
+        "population": "", "intervention": "", "comparator": "",
+        "canonical_phrase": item.get("canonical_phrase") or (
+            f"{item.get('claim_type','fact')}: "
+            f"{item.get('numeric_value','')}{item.get('units','')} "
+            f"({paper.get('title','')})".strip()
+        ),
+        "canonical_year": paper.get("publication_year"),
+        "validator": ("researka-tier2"
+                      if str(item.get("extraction_confidence") or "")
+                      in {"canonical", "high"} else ""),
+        "superseded_by": None,
+        "_tier": "tier2",
+    }
+
+
 def _fetch_facts(topic: str) -> list[dict[str, Any]]:
+    """Try Tier-1 canonical first; fall back to Tier-2 search filtered
+    by topic so non-rapamycin topics still surface real DB evidence."""
     settings = load_settings()
     base = settings.researka_database_url.rstrip("/")
     token = settings.researka_database_token.strip()
+    hdr = {"X-Researka-Token": token}
     with httpx.Client(timeout=20.0) as c:
-        r = c.get(f"{base}/api/v1/topics/{topic}/facts",
-                  headers={"X-Researka-Token": token})
+        r = c.get(f"{base}/api/v1/topics/{topic}/facts", headers=hdr)
         r.raise_for_status()
-        data = r.json()
-    return [f for f in data if isinstance(f, dict)] if isinstance(data, list) else []
+        tier1 = r.json()
+        if isinstance(tier1, list) and tier1:
+            for f in tier1:
+                if isinstance(f, dict):
+                    f["_tier"] = "tier1_canonical"
+            return [f for f in tier1 if isinstance(f, dict)]
+        # Tier-2 fallback: semantic search filtered to the topic.
+        r2 = c.post(f"{base}/api/v1/tier2/facts/search", headers=hdr, json={
+            "query": topic, "top_k": 50,
+            "min_confidence": "medium", "numeric_only": True,
+        })
+        r2.raise_for_status()
+        items = r2.json() if isinstance(r2.json(), list) else []
+    return [_normalize_tier2(it, topic) for it in items
+            if isinstance(it, dict) and str(it.get("topic") or "") == topic]
 
 
 def _fmt_value(fact: dict[str, Any]) -> str:
