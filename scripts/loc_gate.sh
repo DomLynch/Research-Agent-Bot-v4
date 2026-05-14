@@ -85,6 +85,18 @@
 # empirical calibration). Prevents the "silent lens loss when MiMo
 # truncates" failure mode the auditor caught on the noisy-topic
 # stress test.)
+# -> 10300 (Sprint 56 dual-judge consensus: agent/source_audit.py
+# adds judge='both' mode that runs Gemma AND MiMo on the same fact,
+# returns a consensus verdict with explicit agreement / disagreement
+# tag. Rules: both agree -> consensus = that verdict (high confidence);
+# one survives + one needs_extraction -> survives (weak); one dies +
+# one needs_extraction -> dies (strong); survives vs dies -> flagged
+# 'disagreement' for human review queue. Each FactVerdict now also
+# stores secondary_verdict / secondary_judge / secondary_reason so the
+# audit trail preserves BOTH judges' independent opinions even when
+# the consensus picks one. Prevents the 'single-judge-bias hides a
+# real DB error or false-flags a real fact' failure mode that the
+# Sprint 53 head-to-head proved was real on Bitto 2016 male 52%.)
 # -> 10200 (Sprint 55 subgroup matcher: agent/source_corpus.py adds
 # _tokenize + subgroup_score + rank_spans_by_subgroup, deterministic
 # token-recall scoring of how well each focused span's surrounding
@@ -127,7 +139,7 @@
 # contracts), not buy prose polish or speculative abstraction.
 set -euo pipefail
 
-CEILING="${LOC_CEILING:-10200}"
+CEILING="${LOC_CEILING:-10300}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 COUNT=$(find "$ROOT/agent" -name "*.py" -not -path "*/__pycache__/*" 2>/dev/null \
