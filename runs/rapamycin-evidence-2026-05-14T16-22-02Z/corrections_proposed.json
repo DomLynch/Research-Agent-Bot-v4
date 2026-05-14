@@ -1,0 +1,26 @@
+{
+  "topic": "rapamycin",
+  "snapshot_utc": "2026-05-14T16-22-02Z",
+  "proposals": [
+    {
+      "fact_id": "rapamycin/itp/harrison_2009/lifespan_female",
+      "current_value": "9.0%",
+      "proposed_value": "14%",
+      "current_population": "female heterogeneous-stock mice (UM-HET3); 4-site NIA Interventions Testing Program cohort",
+      "proposed_population": "n inhibitor of the mTOR pathway, extends median and maximal lifespan of both male and female mice when fed beginning at 600 days of age. Based on age at 90% mortality, rapamycin led to an increase of ",
+      "evidence_quote": "On the basis of age at 90% mortality, rapamycin led to an increase of 14% for females and 9% for males.",
+      "confidence": 0.758,
+      "rationale": "Source's strongest subgroup match has a different value than the DB; the proposed value is what the abstract supports."
+    },
+    {
+      "fact_id": "rapamycin/itp/harrison_2009/lifespan_male",
+      "current_value": "14.0%",
+      "proposed_value": "9%",
+      "current_population": "male heterogeneous-stock mice (UM-HET3); 4-site NIA Interventions Testing Program cohort",
+      "proposed_population": "TOR pathway, extends median and maximal lifespan of both male and female mice when fed beginning at 600 days of age. Based on age at 90% mortality, rapamycin led to an increase of 14% for females and ",
+      "evidence_quote": "On the basis of age at 90% mortality, rapamycin led to an increase of 14% for females and 9% for males.",
+      "confidence": 0.758,
+      "rationale": "Source's strongest subgroup match has a different value than the DB; the proposed value is what the abstract supports."
+    }
+  ]
+}

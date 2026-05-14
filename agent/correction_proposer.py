@@ -72,11 +72,16 @@ def propose_correction(
     intervention = str(fact.get("intervention") or "")
     tv = float(target_val)
 
-    def _rank(a: NumericAnchor) -> tuple[float, float]:
+    def _rank(a: NumericAnchor) -> tuple[float, float, float]:
         sg = subgroup_score(population, intervention, a.span)
+        # Penalize anchors equal to the DB value (proposing no change
+        # is a no-op). Among genuine alternatives, prefer the closer
+        # one — far-out values like '90%' from 'age at 90% mortality'
+        # lose to plausible effect-size alternatives.
+        is_same = 1.0 if abs(a.value - tv) < 1e-9 else 0.0
         dist = (min(1.0, abs(a.value - tv) / abs(tv))
                 if tv != 0 else 0.0)
-        return (sg, -dist)
+        return (sg, -is_same, -dist)
 
     best = max(anchors, key=_rank)
     sg = subgroup_score(population, intervention, best.span)

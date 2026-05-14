@@ -40,6 +40,14 @@
     "source_audit_json": {
       "name": "source_audit.json",
       "sha256": "396df0ef7e7aa129b221b5b6cf23cbe2e28e71f94eddc15ac7aaf15d42a47e36"
+    },
+    "corrections_json": {
+      "name": "corrections_proposed.json",
+      "sha256": "04c151ca36595a183626c7384c1458e294e762ceb188b67f40d011ae99403f86"
+    },
+    "corrections_md": {
+      "name": "corrections.md",
+      "sha256": "a203f26dc9ef0ec0d6c10e6b3e21a2a4da00627392097cc35a6fa14535e0c7d2"
     }
   },
   "source_audit_model": "gemma-judge"
