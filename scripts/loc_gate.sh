@@ -85,6 +85,17 @@
 # empirical calibration). Prevents the "silent lens loss when MiMo
 # truncates" failure mode the auditor caught on the noisy-topic
 # stress test.)
+# -> 10650 (Sprint 58 curator-quality feedback loop: agent/curator_
+# quality.py walks every runs/<topic>-evidence-<ts>/source_audit.json
+# in the repo, joins each verdict to its source-paper fact via
+# all_facts.json to recover the validator/curator_id, aggregates per-
+# curator stats: facts_audited, survives, dies, needs_extraction,
+# error_rate = dies / facts_audited. Emits runs/_curator_quality/
+# <utc>.{json,md} as a top-level dashboard. Closes the end-game loop:
+# Layer 7 produces machine-actionable corrections; Layer 8 quantifies
+# WHICH curators most need retraining or batch revalidation. Without
+# this, every audit run is a one-off; with it, error patterns
+# accumulate into a real quality signal over time.)
 # -> 10500 (Sprint 57 numeric-anchor parser + correction proposals:
 # agent/source_corpus.py adds NumericAnchor dataclass + extract_all_
 # anchors() that scans free text and emits structured (value, units,
@@ -153,7 +164,7 @@
 # contracts), not buy prose polish or speculative abstraction.
 set -euo pipefail
 
-CEILING="${LOC_CEILING:-10500}"
+CEILING="${LOC_CEILING:-10650}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 COUNT=$(find "$ROOT/agent" -name "*.py" -not -path "*/__pycache__/*" 2>/dev/null \
