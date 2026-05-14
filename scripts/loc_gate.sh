@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# LOC gate — fail if agent/ exceeds the 9,200 LOC ceiling.
+# LOC gate — fail if agent/ exceeds the 9,400 LOC ceiling.
 # Tests, docs, scripts, supplement plugins, and topic_pack TOML do not count.
 # Cap history: 3000 (initial) -> 5000 (Sprint-6 truth patch) -> 7500
 # (Sprint 11.1 manuscript completion: narrative writers + reference resolver
@@ -46,12 +46,17 @@
 # product reset — paper writer becomes one export module; the living
 # evidence map becomes the core product. Sprints 40-41 fold delta
 # detection + CLI within this cap.)
+# -> 9400 (Sprint 44 v4 gap-analyser: agent/gap_analyzer.py emits
+# typed PublishOpportunity payloads that gate when v3 should write a
+# paper. Prevents the "v3 writes a manuscript with no evidence-based
+# signal" failure mode by tying the trigger to receipt-derived
+# confidence + delta thresholds.)
 # Every new module under the higher cap must delete or prevent a
 # fake-evidence failure mode (receipts, validators, provenance, typed
 # contracts), not buy prose polish or speculative abstraction.
 set -euo pipefail
 
-CEILING="${LOC_CEILING:-9200}"
+CEILING="${LOC_CEILING:-9400}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 COUNT=$(find "$ROOT/agent" -name "*.py" -not -path "*/__pycache__/*" 2>/dev/null \
