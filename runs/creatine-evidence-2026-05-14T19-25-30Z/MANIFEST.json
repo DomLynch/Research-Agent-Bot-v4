@@ -1,0 +1,37 @@
+{
+  "topic": "creatine",
+  "snapshot_utc": "2026-05-14T19-25-30Z",
+  "top_n": 5,
+  "facts_inspected": 5,
+  "aggregated_claims": 5,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "ranking": "deterministic: validation*magnitude*precision*recency",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "90a731c1e2c530024befca6f6ec470ea6346757f24afb421daa0f8f89d317f94"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "3cb59b91ed8e7e29fac4f6b804b13d7d2cf3ac09be8a8d1f1a1bee5a0bfb905d"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "24bbb7ac51ab3ca33c44e084bab703f8e489933347892b3ad1c789cf566a0df1"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "cf19febf0201aba8d07ac5e62fd2d3968728ade82b8d8435378005c062febcfa"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "c121a217c2e18a51a0d1397b1c2d542c1db7334457781928d6f263447bd99e95"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "ad9877d46dc3ba19ab7a0e9c20c61b51bc948f3e3df5b79544dcdae47a8e501d"
+    }
+  }
+}

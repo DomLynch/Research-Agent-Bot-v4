@@ -1,0 +1,52 @@
+{
+  "topic": "creatine",
+  "snapshot_utc": "2026-05-14T19-25-30Z",
+  "claim_count": 5,
+  "claims": [
+    {
+      "claim_text": "Urinary creatine riboside was elevated 2.1-fold (P = 0.0001) in patients with ACC.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1078-0432.ccr-16-3156"
+      ]
+    },
+    {
+      "claim_text": "Higher levels of creatine, FA(18:2(OH)) and SM(d18:2/24:1) were associated with increased lacune count, higher white matter hyperintensity volume and impaired cognition.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/brain/awac041"
+      ]
+    },
+    {
+      "claim_text": "Changes of <5% in NAA, choline, creatine and <10% in mI and Glx detectable in a group of 20 subjects.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1002/nbm.3364"
+      ]
+    },
+    {
+      "claim_text": "Quantitative Western blots revealed a 4-fold increase in AMPK activation in skeletal muscle of d/d ob/ob mice",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1096/fj.12-225136"
+      ]
+    },
+    {
+      "claim_text": "niacin deficiency decreased intestinal Na+, K+-ATPase, alkaline phosphatase, γ-glutamyl transpeptidase and creatine kinase activities, and CCK and growth hormone contents (P < 0.05).",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/anu.12333"
+      ]
+    }
+  ]
+}

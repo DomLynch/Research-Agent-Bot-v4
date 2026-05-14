@@ -131,8 +131,23 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
             items = r2.json() if isinstance(r2.json(), list) else []
     except (httpx.HTTPError, ValueError):
         return []
-    return [_normalize_tier2(it, topic) for it in items
-            if isinstance(it, dict) and str(it.get("topic") or "") == topic]
+    # DB curators now bucket much of Tier-2 under topic='other'. Accept
+    # exact topic match OR content-match (topic word appears in the
+    # canonical_phrase / claim / paper title). Universal substring check.
+    tw = topic.replace("_", " ").lower()
+    out: list[dict[str, Any]] = []
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+        tag = str(it.get("topic") or "").lower()
+        haystack = " ".join([
+            str(it.get("canonical_phrase") or ""),
+            str(it.get("claim_type") or ""),
+            str((it.get("paper") or {}).get("title") or ""),
+        ]).lower()
+        if tag == topic.lower() or tw in haystack:
+            out.append(_normalize_tier2(it, topic))
+    return out
 
 
 def _fmt_value(fact: dict[str, Any]) -> str:
