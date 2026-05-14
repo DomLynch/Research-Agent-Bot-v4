@@ -20,7 +20,27 @@ _EUTILS = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
 _TAG = re.compile(r"<[^>]+>")
 _WS = re.compile(r"\s+")
 _TOKEN = re.compile(r"\w+")
+# Layer 3: free-text numeric extraction. Catches NUM[.NUM] followed by
+# an optional unit token (%, mg, ppm, mg/kg/day, n=NUM, days, years).
+_NUMBER = re.compile(
+    r"\b(\d+(?:\.\d+)?)\s*"
+    r"(%|ppm|mg/kg/day|mg/kg|mg|µg|μg|kg|days|day|years|year|months|month)?",
+    re.IGNORECASE,
+)
 TIERS = ("abstract", "pmc_fulltext", "researka_corpus")
+
+
+@dataclass(frozen=True, slots=True)
+class NumericAnchor:
+    """One (value, units, span) tuple extracted from free text."""
+    value: float
+    units: str
+    span: str   # ±window chars around the match
+    offset: int  # byte offset of the value in original text
+
+    def as_dict(self) -> dict[str, Any]:
+        return {"value": self.value, "units": self.units,
+                "span": self.span, "offset": self.offset}
 
 
 @dataclass(frozen=True, slots=True)
@@ -125,6 +145,46 @@ def extract_focused_spans(
         if len(out) >= max_spans:
             break
     return out
+
+
+def extract_all_anchors(
+    text: str, *, window: int = 200, max_anchors: int = 200,
+) -> list[NumericAnchor]:
+    """Scan text for every numeric token + unit. Universal — works
+    over any free text. Capped at max_anchors to bound cost on long
+    full-text papers."""
+    out: list[NumericAnchor] = []
+    for m in _NUMBER.finditer(text):
+        try:
+            val = float(m.group(1))
+        except (TypeError, ValueError):
+            continue
+        units = (m.group(2) or "").strip()
+        lo, hi = max(0, m.start() - window), min(len(text), m.end() + window)
+        out.append(NumericAnchor(value=val, units=units,
+                                 span=text[lo:hi], offset=m.start()))
+        if len(out) >= max_anchors:
+            break
+    return out
+
+
+def find_closest_anchor(
+    anchors: list[NumericAnchor], target: float, units: str = "",
+    tolerance: float = 0.05,
+) -> NumericAnchor | None:
+    """Closest-value anchor within `tolerance` (fractional) of target.
+    Prefers exact unit match; falls back to any unit when none match."""
+    if target == 0 or not anchors:
+        return None
+    units_lc = units.lower().strip()
+    within: list[NumericAnchor] = [
+        a for a in anchors
+        if abs(a.value - target) / abs(target) <= tolerance
+    ]
+    if not within:
+        return None
+    same_unit = [a for a in within if a.units.lower() == units_lc]
+    return same_unit[0] if same_unit else within[0]
 
 
 def _tokenize(s: str) -> frozenset[str]:
