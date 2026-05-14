@@ -1,0 +1,221 @@
+[
+  {
+    "fact_id": "rapamycin/transient/bitto_2016/lifespan_extension",
+    "topic": "rapamycin",
+    "sub_topic": "lifespan",
+    "source_paper": {
+      "pmid": "27549339",
+      "doi": "10.7554/eLife.16351",
+      "pmcid": "PMC4996648",
+      "title": "Transient rapamycin treatment can increase lifespan and healthspan in middle-aged mice",
+      "journal": "eLife",
+      "year": 2016
+    },
+    "claim_type": "effect_size",
+    "numeric_value": 60.0,
+    "units": "%",
+    "ci_lower": null,
+    "ci_upper": null,
+    "population": "middle-aged C57BL/6 mice (20 months at start)",
+    "intervention": "transient rapamycin (8 mg/kg/day i.p.) for 3 months",
+    "comparator": "vehicle control",
+    "timepoint": "remaining lifespan post-treatment",
+    "canonical_phrase": "3 months of rapamycin extended remaining lifespan by ~60% in middle-aged mice",
+    "canonical_year": 2016,
+    "last_validated": "2026-05-09",
+    "validator": "bootstrap-claude-opus-4-7-2026-05-09",
+    "notes": "Demonstrated short-course rapamycin gives durable lifespan benefit. Often cited for the 'transient treatment hypothesis'. BOOTSTRAP SEED — re-validate effect size and methodology before cert-blocking; some sources report this as ~50-60% remaining-lifespan extension.",
+    "superseded_by": null,
+    "aliases": [
+      "rapamycin/bitto_2016/transient_60pct"
+    ]
+  },
+  {
+    "fact_id": "rapamycin/transient/bitto_2016/lifespan_male",
+    "topic": "rapamycin",
+    "sub_topic": "lifespan",
+    "source_paper": {
+      "pmid": "27549339",
+      "doi": "10.7554/eLife.16351",
+      "pmcid": "PMC4996648",
+      "title": "Transient rapamycin treatment can increase lifespan and healthspan in middle-aged mice",
+      "journal": "eLife",
+      "year": 2016
+    },
+    "claim_type": "effect_size",
+    "numeric_value": 52.0,
+    "units": "%",
+    "ci_lower": null,
+    "ci_upper": null,
+    "population": "male middle-aged C57BL/6 mice (20 months at start)",
+    "intervention": "transient rapamycin (8 mg/kg/day i.p.) for 3 months",
+    "comparator": "vehicle control",
+    "timepoint": "median lifespan",
+    "canonical_phrase": "3 months of rapamycin extended median lifespan by 52% in male middle-aged mice",
+    "canonical_year": 2016,
+    "last_validated": "2026-05-11",
+    "validator": "bootstrap-codex-gpt-5-2026-05-11",
+    "notes": "Append-only companion to the existing Bitto 2016 transient rapamycin fact; source abstract reports 60% female and 52% male median lifespan extension. Re-validate before cert-blocking.",
+    "superseded_by": null,
+    "aliases": [
+      "rapamycin/bitto_2016/transient_male_52pct"
+    ]
+  },
+  {
+    "fact_id": "rapamycin/itp/harrison_2009/lifespan_female",
+    "topic": "rapamycin",
+    "sub_topic": "lifespan",
+    "source_paper": {
+      "pmid": "19587680",
+      "doi": "10.1038/nature08221",
+      "pmcid": "PMC2786175",
+      "title": "Rapamycin fed late in life extends lifespan in genetically heterogeneous mice",
+      "journal": "Nature",
+      "year": 2009
+    },
+    "claim_type": "effect_size",
+    "numeric_value": 9.0,
+    "units": "%",
+    "ci_lower": null,
+    "ci_upper": null,
+    "population": "female heterogeneous-stock mice (UM-HET3); 4-site NIA Interventions Testing Program cohort",
+    "intervention": "encapsulated rapamycin in feed (~14 ppm); started at 600 days of age",
+    "comparator": "control feed",
+    "timepoint": "median lifespan",
+    "canonical_phrase": "rapamycin extended median lifespan by 9% in females",
+    "canonical_year": 2009,
+    "last_validated": "2026-05-09",
+    "validator": "bootstrap-claude-opus-4-7-2026-05-09",
+    "notes": "Original ITP cohort, female cohort. Companion to harrison_2009/lifespan_male. BOOTSTRAP SEED — re-validate before cert-blocking.",
+    "superseded_by": null,
+    "aliases": [
+      "rapamycin/lifespan/harrison_2009/female"
+    ]
+  },
+  {
+    "fact_id": "rapamycin/itp/harrison_2009/lifespan_male",
+    "topic": "rapamycin",
+    "sub_topic": "lifespan",
+    "source_paper": {
+      "pmid": "19587680",
+      "doi": "10.1038/nature08221",
+      "pmcid": "PMC2786175",
+      "title": "Rapamycin fed late in life extends lifespan in genetically heterogeneous mice",
+      "journal": "Nature",
+      "year": 2009
+    },
+    "claim_type": "effect_size",
+    "numeric_value": 14.0,
+    "units": "%",
+    "ci_lower": null,
+    "ci_upper": null,
+    "population": "male heterogeneous-stock mice (UM-HET3); 4-site NIA Interventions Testing Program cohort",
+    "intervention": "encapsulated rapamycin in feed (~14 ppm); started at 600 days of age",
+    "comparator": "control feed",
+    "timepoint": "median lifespan",
+    "canonical_phrase": "rapamycin extended median lifespan by 14% in males",
+    "canonical_year": 2009,
+    "last_validated": "2026-05-09",
+    "validator": "bootstrap-claude-opus-4-7-2026-05-09",
+    "notes": "Original ITP cohort. Replicated by Miller 2014 (dose-response) and Strong 2020 (encapsulated formulation). Female effect ~9% (separate fact). BOOTSTRAP SEED — re-validate before cert-blocking.",
+    "superseded_by": null,
+    "aliases": [
+      "rapamycin/lifespan/harrison_2009/male",
+      "harrison_2009_male_14pct"
+    ]
+  },
+  {
+    "fact_id": "rapamycin/immune/mannick_2014/influenza_vaccine_response",
+    "topic": "rapamycin",
+    "sub_topic": "immune",
+    "source_paper": {
+      "pmid": "25540326",
+      "doi": "10.1126/scitranslmed.3009892",
+      "pmcid": null,
+      "title": "mTOR inhibition improves immune function in the elderly",
+      "journal": "Science Translational Medicine",
+      "year": 2014
+    },
+    "claim_type": "effect_size",
+    "numeric_value": 20.0,
+    "units": "%",
+    "ci_lower": null,
+    "ci_upper": null,
+    "population": "elderly humans (≥65 years), n=218",
+    "intervention": "RAD001 (everolimus) 0.5 mg daily, 5 mg weekly, or 20 mg weekly for 6 weeks before vaccination",
+    "comparator": "placebo",
+    "timepoint": "4 weeks post-influenza-vaccination antibody titer",
+    "canonical_phrase": "RAD001 improved influenza vaccine response by ~20% in the elderly",
+    "canonical_year": 2014,
+    "last_validated": "2026-05-09",
+    "validator": "bootstrap-claude-opus-4-7-2026-05-09",
+    "notes": "First human RCT of mTOR inhibition for immunosenescence. Best-responder dose was 0.5 mg daily / 5 mg weekly. BOOTSTRAP SEED — exact effect size varies by strain and dose arm; re-validate against per-arm reporting before cert-blocking.",
+    "superseded_by": null,
+    "aliases": [
+      "everolimus/mannick_2014/vaccine_20pct"
+    ]
+  },
+  {
+    "fact_id": "rapamycin/itp/miller_2014/dose_response_high_male",
+    "topic": "rapamycin",
+    "sub_topic": "lifespan",
+    "source_paper": {
+      "pmid": "24472261",
+      "doi": "10.1111/acel.12194",
+      "pmcid": "PMC4032600",
+      "title": "Rapamycin-mediated lifespan increase in mice is dose and sex dependent and metabolically distinct from dietary restriction",
+      "journal": "Aging Cell",
+      "year": 2014
+    },
+    "claim_type": "effect_size",
+    "numeric_value": 23.0,
+    "units": "%",
+    "ci_lower": null,
+    "ci_upper": null,
+    "population": "male heterogeneous-stock mice (UM-HET3); ITP",
+    "intervention": "encapsulated rapamycin in feed at 42 ppm (3x standard ITP dose)",
+    "comparator": "control feed",
+    "timepoint": "median lifespan",
+    "canonical_phrase": "rapamycin at 42 ppm extended male median lifespan by 23%",
+    "canonical_year": 2014,
+    "last_validated": "2026-05-09",
+    "validator": "bootstrap-claude-opus-4-7-2026-05-09",
+    "notes": "Dose-response replication of Harrison 2009 across 4.7 / 14 / 42 ppm. Demonstrated continued benefit at higher dose. BOOTSTRAP SEED — re-validate before cert-blocking.",
+    "superseded_by": null,
+    "aliases": [
+      "rapamycin/dose_response/miller_2014/high_male"
+    ]
+  },
+  {
+    "fact_id": "rapamycin/itp/miller_2014/dose_response_high_female",
+    "topic": "rapamycin",
+    "sub_topic": "lifespan",
+    "source_paper": {
+      "pmid": "24472261",
+      "doi": "10.1111/acel.12194",
+      "pmcid": "PMC4032600",
+      "title": "Rapamycin-mediated lifespan increase in mice is dose and sex dependent and metabolically distinct from dietary restriction",
+      "journal": "Aging Cell",
+      "year": 2014
+    },
+    "claim_type": "effect_size",
+    "numeric_value": 26.0,
+    "units": "%",
+    "ci_lower": null,
+    "ci_upper": null,
+    "population": "female heterogeneous-stock mice (UM-HET3); ITP",
+    "intervention": "encapsulated rapamycin in feed at 42 ppm (3x standard ITP dose)",
+    "comparator": "control feed",
+    "timepoint": "median lifespan",
+    "canonical_phrase": "rapamycin at 42 ppm extended female median lifespan by 26%",
+    "canonical_year": 2014,
+    "last_validated": "2026-05-11",
+    "validator": "bootstrap-claude-opus-4-7-2026-05-11",
+    "notes": "Append-only companion to miller_2014_dose_response (male 23%). Source paper reported both sexes at the 42 ppm dose; only the male canonical was seeded originally. Closes the 26% canonical gap caught by MiMo audit. Re-validate before cert-blocking.",
+    "superseded_by": null,
+    "aliases": [
+      "rapamycin/dose_response/miller_2014/high_female",
+      "miller_2014_female_26pct"
+    ]
+  }
+]
