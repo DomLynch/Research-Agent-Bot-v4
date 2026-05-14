@@ -1,20 +1,10 @@
-"""Sprint 54 — multi-source full-text cascade + focused-span retrieval.
+"""Sprint 54 — abstract -> PMC -> Researka cascade + focused spans.
 
-When PubMed abstract alone can't verify a DB fact (numeric value lives
-in body text / figures / tables, not the summary), this module
-escalates to richer sources and returns a focused passage centered on
-the target value:
-
-    abstract  ->  PMC OA full-text (eutils efetch db=pmc)
-              ->  Researka corpus search (vector retrieval, tertiary)
-
-Focused-span retrieval: regex-anchor every occurrence of the target
-numeric value in the retrieved text, return ±window chars around each
-match. The LLM judge then sees the candidate passages (~600 chars
-each) instead of a 150KB full paper.
-
-Universal: no domain literals. PMC is generic-biomedical; corpus
-search is general-purpose.
+When PubMed abstract can't verify a fact (numeric value lives in body
+text / figures / tables), escalates to PMC OA full-text then Researka
+corpus search. Returns ±window-char passages around each numeric
+anchor so the LLM judge sees candidate spans, not the full paper.
+Universal: no domain literals.
 """
 from __future__ import annotations
 
@@ -40,27 +30,21 @@ class SourcePassage:
     anchor_hits: int    # how many numeric-anchor matches were found
 
 
-def _strip_xml(xml: str) -> str:
-    """Naive XML -> plain text. Drops tags, collapses whitespace."""
-    return _WS.sub(" ", _TAG.sub(" ", xml)).strip()
-
-
 def fetch_pmc_fulltext(
     pmcid: str, *, client: httpx.Client, ncbi_api_key: str = "",
 ) -> str:
-    """eutils efetch db=pmc -> plain-text body. '' on any failure."""
+    """eutils efetch db=pmc, XML stripped to plain text. '' on failure."""
     pid = pmcid.strip().lstrip("PMC")
     if not pid:
         return ""
-    params: dict[str, str] = {
-        "db": "pmc", "id": pid, "rettype": "full", "retmode": "xml",
-    }
+    params: dict[str, str] = {"db": "pmc", "id": pid,
+                              "rettype": "full", "retmode": "xml"}
     if ncbi_api_key.strip():
         params["api_key"] = ncbi_api_key.strip()
     try:
         r = client.get(_EUTILS, params=params, timeout=30.0)
         r.raise_for_status()
-        return _strip_xml(r.text)
+        return _WS.sub(" ", _TAG.sub(" ", r.text)).strip()
     except (httpx.HTTPError, ValueError):
         return ""
 
@@ -98,24 +82,20 @@ def fetch_researka_corpus(
 
 
 def _value_patterns(target: float, units: str) -> list[str]:
-    """Universal numeric-anchor regex set. Matches the value as-is,
-    its integer form, ~-prefixed, and 'about' variants."""
+    """Anchor regex set: value as-is + int form, with unit variants."""
     units_s = units.strip()
-    raw = f"{target:g}"
-    intval = f"{int(target)}" if target == int(target) else raw
-    base = [raw, intval]
-    unit_alt = re.escape(units_s) if units_s else r""
-    patterns: list[str] = []
-    for v in set(base):
+    forms = {f"{target:g}",
+             f"{int(target)}" if target == int(target) else f"{target:g}"}
+    pats: list[str] = []
+    for v in forms:
         ve = re.escape(v)
         if units_s == "%":
-            patterns += [rf"\b{ve}\s*%", rf"~\s*{ve}\s*%",
-                         rf"about\s+{ve}\s*%"]
-        elif unit_alt:
-            patterns += [rf"\b{ve}\s*{unit_alt}", rf"\b{ve}\b"]
+            pats += [rf"\b{ve}\s*%", rf"~\s*{ve}\s*%", rf"about\s+{ve}\s*%"]
+        elif units_s:
+            pats += [rf"\b{ve}\s*{re.escape(units_s)}", rf"\b{ve}\b"]
         else:
-            patterns.append(rf"\b{ve}\b")
-    return patterns
+            pats.append(rf"\b{ve}\b")
+    return pats
 
 
 def extract_focused_spans(
@@ -149,10 +129,8 @@ def get_best_source(
     fact: dict[str, Any], *, abstract: str, client: httpx.Client,
     settings: Settings, ncbi_api_key: str = "",
 ) -> SourcePassage:
-    """Cascade: try abstract; if no numeric anchor, escalate to PMC
-    OA; if still none, try Researka corpus. Returns the tier with the
-    most numeric-anchor matches (PMC almost always wins for sex-
-    stratified body-text claims)."""
+    """Cascade abstract -> PMC OA -> Researka corpus; return the first
+    tier with numeric-anchor matches, else abstract as fallback."""
     paper = fact.get("source_paper") or {}
     nv = fact.get("numeric_value")
     units = str(fact.get("units") or "")
