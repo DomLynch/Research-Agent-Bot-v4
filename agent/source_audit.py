@@ -25,6 +25,7 @@ import httpx
 
 from agent.llm_client import call_judge, call_writer_with_fallback
 from agent.settings import Settings
+from agent.source_corpus import SourcePassage, get_best_source
 
 _EUTILS = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
 _VERDICTS = ("survives", "dies", "needs_extraction")
@@ -39,12 +40,15 @@ class FactVerdict:
     source_quote: str
     reason: str
     pmid: str
-    judge: str = "gemma"  # which model produced this verdict
+    judge: str = "gemma"
+    source_tier: str = "abstract"  # abstract | pmc_fulltext | researka_corpus
+    anchor_hits: int = 0           # numeric-anchor matches in source
 
     def as_dict(self) -> dict[str, Any]:
         return {"fact_id": self.fact_id, "verdict": self.verdict,
                 "db_value": self.db_value, "pmid": self.pmid,
-                "judge": self.judge,
+                "judge": self.judge, "source_tier": self.source_tier,
+                "anchor_hits": self.anchor_hits,
                 "source_quote": self.source_quote, "reason": self.reason}
 
 
@@ -116,11 +120,14 @@ def _parse_verdict(raw: str) -> dict[str, Any]:
 
 def verify_fact(
     fact: dict[str, Any], abstract: str, *, settings: Settings,
-    judge: str = "gemma",
+    judge: str = "gemma", passage: SourcePassage | None = None,
 ) -> FactVerdict:
     """Single LLM call: does the abstract support the DB fact?
     judge='gemma' (default, fast) or 'mimo' (stronger nuance, Gemma
-    fallback on runaway). Neither generated the inputs."""
+    fallback on runaway). Neither generated the inputs.
+    `passage` (optional) carries source-cascade provenance so the
+    verdict knows whether it was checked against abstract vs PMC
+    full-text vs Researka corpus."""
     fact_id = str(fact.get("fact_id") or "")
     paper = fact.get("source_paper") or {}
     pmid = str(paper.get("pmid") or "")
@@ -129,11 +136,15 @@ def verify_fact(
     db_value = f"{nv}{units}" if nv is not None else "(no numeric)"
     if judge not in _JUDGES:
         judge = "gemma"
-    if not abstract:
+    tier = passage.tier if passage else "abstract"
+    hits = passage.anchor_hits if passage else 0
+    text_to_judge = passage.text if passage else abstract
+    if not text_to_judge:
         return FactVerdict(
             fact_id=fact_id, verdict="needs_extraction",
             db_value=db_value, pmid=pmid, source_quote="",
             reason="abstract_unavailable", judge=judge,
+            source_tier=tier, anchor_hits=hits,
         )
     configured = (settings.writer_configured if judge == "mimo"
                   else settings.judge_configured)
@@ -142,10 +153,16 @@ def verify_fact(
             fact_id=fact_id, verdict="needs_extraction",
             db_value=db_value, pmid=pmid, source_quote="",
             reason=f"{judge}_not_configured", judge=judge,
+            source_tier=tier, anchor_hits=hits,
         )
+    tier_label = {
+        "abstract": "PUBMED ABSTRACT",
+        "pmc_fulltext": "PMC FULL-TEXT (focused passages around target value)",
+        "researka_corpus": "RESEARKA CORPUS PASSAGES",
+    }.get(tier, "SOURCE TEXT")
     user = (
         f"FACT TO VERIFY:\n{_fact_summary(fact)}\n\n"
-        f"SOURCE PAPER ABSTRACT (first 5000 chars):\n{abstract[:5000]}\n\n"
+        f"{tier_label} (first 5000 chars):\n{text_to_judge[:5000]}\n\n"
         "Decide whether the abstract supports the fact AS STATED. Check "
         "BOTH the numeric value AND which subgroup it applies to "
         "(sex / strain / dose / metric type — e.g. median lifespan vs "
@@ -177,6 +194,7 @@ def verify_fact(
             fact_id=fact_id, verdict="needs_extraction",
             db_value=db_value, pmid=pmid, source_quote="",
             reason=f"{judge}_call_failed:{type(e).__name__}", judge=judge,
+            source_tier=tier, anchor_hits=hits,
         )
     parsed = _parse_verdict(resp.content)
     verdict = str(parsed.get("verdict") or "needs_extraction").lower()
@@ -186,18 +204,21 @@ def verify_fact(
         fact_id=fact_id, verdict=verdict, db_value=db_value, pmid=pmid,
         source_quote=str(parsed.get("source_quote") or "")[:400],
         reason=str(parsed.get("reason") or "")[:400], judge=judge,
+        source_tier=tier, anchor_hits=hits,
     )
 
 
 def run_source_audit(
     *, topic: str, snapshot_utc: str, facts: list[dict[str, Any]],
     settings: Settings, client: httpx.Client, ncbi_api_key: str = "",
-    judge: str = "gemma",
+    judge: str = "gemma", escalate: bool = True,
 ) -> SourceAuditReport:
-    """Audit each fact against its source-paper abstract. Caches the
-    abstract per-PMID (siblings share a paper, so one fetch per paper).
-    `judge` picks the comparator model: 'gemma' (default, fast) or
-    'mimo' (stronger nuance). Never raises."""
+    """Audit each fact against its source-paper abstract, escalating
+    to PMC full-text and Researka corpus when the abstract lacks a
+    numeric anchor for the target value. Caches abstracts per-PMID.
+    Never raises.
+
+    `escalate=False` keeps v1 behaviour (abstract only)."""
     cache: dict[str, str] = {}
     verdicts: list[FactVerdict] = []
     for f in facts:
@@ -209,8 +230,13 @@ def run_source_audit(
             cache[pmid] = fetch_pubmed_abstract(
                 pmid, client=client, ncbi_api_key=ncbi_api_key,
             )
+        abstract = cache.get(pmid, "")
+        passage = (get_best_source(
+            f, abstract=abstract, client=client, settings=settings,
+            ncbi_api_key=ncbi_api_key,
+        ) if escalate else None)
         verdicts.append(verify_fact(
-            f, cache.get(pmid, ""), settings=settings, judge=judge,
+            f, abstract, settings=settings, judge=judge, passage=passage,
         ))
     counts = {v: 0 for v in _VERDICTS}
     for vd in verdicts:

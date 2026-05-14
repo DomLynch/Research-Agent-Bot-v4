@@ -2,7 +2,7 @@
 
 **Snapshot:** 2026-05-14T16-22-02Z
 **Facts inspected:** 7
-**Survives:** 0   **Dies:** 3   **Needs extraction:** 4
+**Survives:** 1   **Dies:** 3   **Needs extraction:** 3
 
 Verdicts come from Gemma (judge model, temperature 0.0) comparing each fact's DB-stored value + subgroup attribution against the source paper's PubMed abstract. `dies` means the abstract contradicts the DB claim (wrong number, wrong subgroup, or wrong metric). `needs_extraction` means the abstract did not discuss the value directly.
 
@@ -13,8 +13,8 @@ Verdicts come from Gemma (judge model, temperature 0.0) comparing each fact's DB
 - **Verdict:** `needs_extraction`
 - **DB value:** 60.0%
 - **PMID:** 27549339
-- **Source quote:** 3 months of rapamycin treatment is sufficient to increase life expectancy by up to 60% and improve measures of healthspan in middle-aged mice
-- **Reason:** While the abstract mentions a 60% increase in life expectancy for middle-aged mice, it does not specify the strain (C57BL/6), the starting age (20 months), or the specific dose (8 mg/kg/day i.p.) mentioned in the claim.
+- **Source quote:** Here we show that 3 months of rapamycin treatment is sufficient to increase life expectancy by up to 60% and improve measures of healthspan in middle-aged mice.
+- **Reason:** While the abstract mentions a 60% increase in life expectancy for middle-aged mice, it does not specify the mouse strain (C57BL/6), the starting age (20 months), or the specific dose (8 mg/kg/day i.p.) mentioned in the claim.
 
 ---
 
@@ -24,7 +24,7 @@ Verdicts come from Gemma (judge model, temperature 0.0) comparing each fact's DB
 - **DB value:** 52.0%
 - **PMID:** 27549339
 - **Source quote:** increase life expectancy by up to 60%
-- **Reason:** The abstract states an increase of up to 60% in middle-aged mice, not specifically 52% in male C57BL/6 mice as claimed.
+- **Reason:** The abstract reports a different maximum value (up to 60%) and does not specify sex, strain, or exact percentage for male mice as stated in the claim.
 
 ---
 
@@ -34,7 +34,7 @@ Verdicts come from Gemma (judge model, temperature 0.0) comparing each fact's DB
 - **DB value:** 9.0%
 - **PMID:** 19587680
 - **Source quote:** On the basis of age at 90% mortality, rapamycin led to an increase of 14% for females and 9% for males.
-- **Reason:** The abstract reports a 14% increase for females based on age at 90% mortality, not a 9% increase in median lifespan as claimed, and attributes 9% to males, not females.
+- **Reason:** The abstract specifies a 14% increase for females based on age at 90% mortality, not a 9% increase in median lifespan.
 
 ---
 
@@ -44,17 +44,17 @@ Verdicts come from Gemma (judge model, temperature 0.0) comparing each fact's DB
 - **DB value:** 14.0%
 - **PMID:** 19587680
 - **Source quote:** On the basis of age at 90% mortality, rapamycin led to an increase of 14% for females and 9% for males.
-- **Reason:** The abstract attributes a 9% increase to males based on age at 90% mortality, not a 14% increase in median lifespan as claimed.
+- **Reason:** The abstract states a 9% increase for males, not 14%, and the 14% increase applies to females.
 
 ---
 
-## [?] rapamycin/immune/mannick_2014/influenza_vaccine_response
+## [OK] rapamycin/immune/mannick_2014/influenza_vaccine_response
 
-- **Verdict:** `needs_extraction`
+- **Verdict:** `survives`
 - **DB value:** 20.0%
 - **PMID:** 25540326
 - **Source quote:** RAD001 enhanced the response to the influenza vaccine by about 20% at doses that were relatively well tolerated.
-- **Reason:** While the abstract confirms the 20% improvement, it does not specify the population size (n=218) or the specific dosing regimens (0.5 mg daily, 5 mg weekly, 20 mg weekly), which requires extraction from the full text.
+- **Reason:** The abstract directly supports the ~20% improvement in influenza vaccine response in elderly volunteers, matching the claim's numeric value and population subgroup.
 
 ---
 
@@ -63,8 +63,8 @@ Verdicts come from Gemma (judge model, temperature 0.0) comparing each fact's DB
 - **Verdict:** `needs_extraction`
 - **DB value:** 23.0%
 - **PMID:** 24472261
-- **Source quote:** Dose optimization of infliximab in patients with rheumatoid arthritis.
-- **Reason:** The abstract discusses infliximab for rheumatoid arthritis and does not mention rapamycin, lifespan, or any related studies, so it cannot verify the fact.
+- **Source quote:** _none_
+- **Reason:** The provided abstract discusses dose optimization of infliximab for rheumatoid arthritis and does not mention rapamycin, lifespan extension, or any parameters from the claim.
 
 ---
 
@@ -73,6 +73,6 @@ Verdicts come from Gemma (judge model, temperature 0.0) comparing each fact's DB
 - **Verdict:** `needs_extraction`
 - **DB value:** 26.0%
 - **PMID:** 24472261
-- **Source quote:** Dose optimization of infliximab in patients with rheumatoid arthritis.
-- **Reason:** The abstract discusses infliximab for rheumatoid arthritis and does not mention rapamycin, lifespan, mice, or the specific value of 26% lifespan extension.
+- **Source quote:** _none_
+- **Reason:** The provided abstract is about infliximab dose optimization for rheumatoid arthritis and does not mention rapamycin, lifespan, or the specific value of 26% for female mice.
 

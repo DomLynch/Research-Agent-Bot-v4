@@ -85,6 +85,18 @@
 # empirical calibration). Prevents the "silent lens loss when MiMo
 # truncates" failure mode the auditor caught on the noisy-topic
 # stress test.)
+# -> 10150 (Sprint 54 source-cascade + focused-span retrieval:
+# agent/source_corpus.py adds the abstract -> PMC OA full-text ->
+# Researka corpus cascade plus regex numeric-anchor extraction with
+# ±300-char windows. agent/source_audit.py escalates to the richer
+# tier when the abstract lacks a numeric anchor for the target value,
+# carries source_tier + anchor_hits in every FactVerdict for audit
+# provenance. Prevents the 'needs_extraction conservative-bias hides
+# body-text-only DB curation errors from audit' failure mode that
+# capped Sprint 52 at 71% needs_extraction on the rapamycin run —
+# sex-stratified values like Bitto 52% / Mannick n=218 live in body
+# text + figures, not the abstract summary, and were silently
+# unverifiable until this escalation layer.)
 # -> 9950 (Sprint 52 source-fact audit layer: agent/source_audit.py
 # fetches each Tier-1 fact's source-paper abstract from PubMed eutils
 # and asks Gemma — locked judge model, temperature 0.0 — whether the
@@ -104,7 +116,7 @@
 # contracts), not buy prose polish or speculative abstraction.
 set -euo pipefail
 
-CEILING="${LOC_CEILING:-9950}"
+CEILING="${LOC_CEILING:-10150}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 COUNT=$(find "$ROOT/agent" -name "*.py" -not -path "*/__pycache__/*" 2>/dev/null \
