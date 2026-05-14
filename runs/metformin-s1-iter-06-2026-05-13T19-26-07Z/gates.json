@@ -1,0 +1,15 @@
+{
+  "summary": {
+    "total": 1,
+    "by_gate": {
+      "length": 1
+    }
+  },
+  "violations": [
+    {
+      "gate": "length",
+      "location": "ABSTRACT",
+      "message": "ABSTRACT is 314 words (cap 300)"
+    }
+  ]
+}

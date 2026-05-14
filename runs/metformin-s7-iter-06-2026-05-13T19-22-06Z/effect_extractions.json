@@ -1,0 +1,34 @@
+{
+  "_doc": "Sprint 8 effect-extraction receipts. Each strict A-core record gets one receipt. Pooling reads only receipts that pass validate_extraction(); the rest are documented extraction failures.",
+  "topic": "metformin",
+  "run_id": "metformin-s7-iter-06-2026-05-13T19-22-06Z",
+  "frozen_at_utc": "2026-05-13T19:26:07+00:00",
+  "k_records": 1,
+  "k_contract_passing": 0,
+  "receipts": [
+    {
+      "study_id": "s049",
+      "status": "no_numerics",
+      "metric": "median_survival",
+      "treated_value": null,
+      "control_value": null,
+      "treated_n": 10,
+      "control_n": 10,
+      "hazard_ratio": null,
+      "hazard_ratio_ci_low": null,
+      "hazard_ratio_ci_high": null,
+      "percent_change": null,
+      "moderators": {},
+      "evidence_quotes": [
+        "a higher dose of metformin (200 mg/kg) resulted in 100% lethality of I/R mice while the untreated I/R mice showed 100% survival (Fig. 1h).",
+        "we orally treated mice with lower dose 50 mM metformin for 7 days before renal I/R surgery, and surprisingly we found that metformin-aggravated I/R-induced AKI, inducing > 50% death within 24 h (Fig. 1i).",
+        "h Kaplan\u2013Meier survival curves of mice in the I/R and I/R+Met200 (200 mg/kg i.p.) groups (n = 10 mice per group).",
+        "i. Kaplan\u2013Meier survival curves of mice in the I/R and I/R+Met50 (50 mM o.a.) groups (n = 10 mice per group)."
+      ],
+      "failure_reason": "No numeric survival data (e.g., median survival time) is provided; survival outcomes are described qualitatively.",
+      "reviewer": "mimo:mimo-v2.5-pro",
+      "text_hash": "09c9e05fa319013ba67ea616c30c2654182945266d5eb0975adb9d855e697feb",
+      "timestamp_utc": "2026-05-13T19:26:07+00:00"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "clean": false,
+  "k_repair_needed": 3,
+  "entries": [
+    {
+      "sentinel_id": "10.1111/acel.12496",
+      "role": "primary",
+      "failure_mode": "no_parse",
+      "bibliography_entry": "Strong R, Miller RA, Antebi A, et al. Longer lifespan in male mice treated with a weakly estrogenic agonist, an antioxidant, an alpha-glucosidase inhibitor or a Nrf2-inducer. Aging Cell. 2016;15(5):872-884. doi:10.1111/acel.12496.",
+      "recommended_actions": [
+        "manual-pdf-override",
+        "europe-pmc-retry"
+      ]
+    },
+    {
+      "sentinel_id": "10.1111/acel.12880",
+      "role": "primary",
+      "failure_mode": "no_parse",
+      "bibliography_entry": "",
+      "recommended_actions": [
+        "manual-pdf-override",
+        "europe-pmc-retry"
+      ]
+    },
+    {
+      "sentinel_id": "10.1111/acel.70131",
+      "role": "prior_meta",
+      "failure_mode": "no_parse",
+      "bibliography_entry": "Ivimey-Cook ER, Tyshkovskiy A, et al. Rapamycin, not metformin, mirrors dietary restriction-driven lifespan extension in vertebrates: a meta-analysis. Aging Cell. 2025. doi:10.1111/acel.70131.",
+      "recommended_actions": [
+        "manual-pdf-override",
+        "europe-pmc-retry"
+      ]
+    }
+  ]
+}

@@ -160,6 +160,7 @@ def stitch(
 
     s1 = _latest_bundle(topic, "s1")
     s2 = _latest_bundle(topic, "s2")
+    s3 = _latest_bundle(topic, "s3")
     s6 = _latest_bundle(topic, "s6")
     s7 = _latest_bundle(topic, "s7")
 
@@ -332,6 +333,21 @@ def stitch(
     (target / "paper_type_decision.json").write_text(
         json.dumps(paper_type.as_dict(), indent=2), encoding="utf-8",
     )
+
+    # Sprint 38: move the stage bundles (s1/s2/s3/s6/s7) INTO the paper
+    # folder's `.stages/` subdir so `runs/` stops looking like a junk
+    # drawer (one paper = one folder, audit trail preserved inside).
+    # Skipped under --allow-pending so partial-staging workflows don't
+    # consume the bundles they may still want to re-use.
+    if not allow_pending:
+        import shutil as _sh
+        stages_subdir = target / ".stages"
+        stages_subdir.mkdir(exist_ok=True)
+        for _stage in (s1, s2, s3, s6, s7):
+            if _stage is not None and _stage.exists() and _stage.is_dir():
+                _dest = stages_subdir / _stage.name
+                if not _dest.exists():
+                    _sh.move(str(_stage), str(_dest))
 
     print(
         f"[stitch] wrote {target_path} "

@@ -1,0 +1,20 @@
+{
+  "topic": "metformin",
+  "iteration": 6,
+  "timestamp_utc": "2026-05-13T19-26-07Z",
+  "model": "mimo-v2.5-pro",
+  "prompt_tokens": 4218,
+  "completion_tokens": 2591,
+  "section_key": "methods",
+  "sections_requested": [
+    "METHODS"
+  ],
+  "sections_parsed": [
+    "METHODS"
+  ],
+  "parse_ok": true,
+  "gate_violations": 1,
+  "gates_by_type": {
+    "evidence_slot": 1
+  }
+}
