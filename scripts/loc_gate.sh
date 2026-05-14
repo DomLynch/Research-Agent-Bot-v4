@@ -85,12 +85,26 @@
 # empirical calibration). Prevents the "silent lens loss when MiMo
 # truncates" failure mode the auditor caught on the noisy-topic
 # stress test.)
+# -> 9950 (Sprint 52 source-fact audit layer: agent/source_audit.py
+# fetches each Tier-1 fact's source-paper abstract from PubMed eutils
+# and asks Gemma — locked judge model, temperature 0.0 — whether the
+# DB's stored numeric/directional claim is actually supported by the
+# abstract, checking BOTH value AND subgroup attribution (sex / strain
+# / dose / metric type). Returns survives | dies | needs_extraction
+# per fact. Pipeline now: frontier_review -> source_audit ->
+# survives | dies | needs_extraction. Prevents the 'DB curator error
+# propagates silently into published thesis' failure mode caught live
+# on Sprint 51 — Harrison 2009 facts stored 'male 14% / female 9%
+# median lifespan' when the abstract actually says '14% females / 9%
+# males' for 90th-percentile mortality, killing the rapamycin
+# sex*dose-reversal thesis on source audit. Per-PMID abstract cache,
+# tolerant of HTTP / JSON / LLM failures, never raises.)
 # Every new module under the higher cap must delete or prevent a
 # fake-evidence failure mode (receipts, validators, provenance, typed
 # contracts), not buy prose polish or speculative abstraction.
 set -euo pipefail
 
-CEILING="${LOC_CEILING:-9750}"
+CEILING="${LOC_CEILING:-9950}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 COUNT=$(find "$ROOT/agent" -name "*.py" -not -path "*/__pycache__/*" 2>/dev/null \

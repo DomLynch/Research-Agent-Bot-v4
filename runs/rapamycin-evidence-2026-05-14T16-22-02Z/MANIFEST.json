@@ -32,6 +32,15 @@
     "papers_metadata": {
       "name": "papers_metadata.json",
       "sha256": "9ee127220dbf17fa778c238fd0e0ae18bc5c3a3b11aea02416ddb3803bb937f5"
+    },
+    "source_audit_md": {
+      "name": "source_audit.md",
+      "sha256": "3e3b5347afa302386129bfb0033df044c1ec7efda80fe12b0521c27b7788f096"
+    },
+    "source_audit_json": {
+      "name": "source_audit.json",
+      "sha256": "54966cfa3161e6eb8bc9b783bde9b5d7d3136010b3f68ccd52f2f7ea0d6e5c1c"
     }
-  }
+  },
+  "source_audit_model": "gemma-judge"
 }
