@@ -85,6 +85,16 @@
 # empirical calibration). Prevents the "silent lens loss when MiMo
 # truncates" failure mode the auditor caught on the noisy-topic
 # stress test.)
+# -> 11250 (Sprint 62 synonym/class-name resolution:
+# agent/topic_synonyms.py loads class -> instance mappings from
+# topic_packs/topic_synonyms.toml (data, not code). expand_topic_
+# keywords("senolytic") returns ("senolytic", "dasatinib",
+# "quercetin", "fisetin", "ABT-263", ...). Wired into fact_lanes
+# so class-name queries match facts about specific instances.
+# Prevents the 'senolytic facts mention compound names not the
+# class word, so the gate rejects them all' failure mode caught on
+# the Sprint 60 senolytic demo. Universal — empty TOML = old single-
+# keyword behavior.)
 # -> 11150 (Sprint 61 Tier-2 PICO enrichment:
 # agent/pico_enrichment.py runs a batched MiMo extraction pass over
 # facts whose population or intervention field is empty, inferring
@@ -194,7 +204,7 @@
 # contracts), not buy prose polish or speculative abstraction.
 set -euo pipefail
 
-CEILING="${LOC_CEILING:-11150}"
+CEILING="${LOC_CEILING:-11250}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 COUNT=$(find "$ROOT/agent" -name "*.py" -not -path "*/__pycache__/*" 2>/dev/null \

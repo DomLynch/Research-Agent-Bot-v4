@@ -1,0 +1,55 @@
+# Sprint 62 — Class → instance synonym map for fact-lane resolution.
+#
+# When a topic is a CLASS (senolytic, mtor_inhibitor, sirtuin_activator),
+# Tier-2 facts often mention specific compound INSTANCES (dasatinib,
+# rapamycin, resveratrol) instead of the class word. The fact-lane
+# classifier (agent/fact_lanes.py) calls expand_topic_keywords(topic)
+# to get every accepted match string for a class query.
+#
+# Rules:
+#   - Keys are normalised topic identifiers (lowercase, underscored).
+#   - Each entry has an `instances` array of strings.
+#   - Empty TOML or missing key = single-keyword behavior (the topic
+#     word itself). Universal — no biomedical literal lives in code.
+#   - Synonym strings are checked as case-insensitive substrings against
+#     each fact's PICO fields + canonical_phrase + paper title.
+#
+# Add new classes by appending to this file. No code change required.
+# Keep instances tight — over-broad lists false-promote noise to A_core.
+
+[senolytic]
+instances = [
+    "dasatinib", "quercetin", "fisetin", "ABT-263", "ABT263",
+    "navitoclax", "venetoclax", "ABT-737", "ABT737",
+    "D + Q", "dasatinib + quercetin", "dasatinib and quercetin",
+    "senolytic agent", "senolytic compound", "senolytic therapy",
+    "senolytics", "SASP", "senescent cell clearance",
+]
+
+[mtor_inhibitor]
+instances = [
+    "rapamycin", "sirolimus", "everolimus", "RAD001",
+    "temsirolimus", "ridaforolimus", "mTOR inhibition",
+    "mTORC1 inhibition",
+]
+
+[sirtuin_activator]
+instances = [
+    "SRT1720", "SRT2104", "SRT3025", "resveratrol",
+    "pterostilbene", "NMN", "NR", "nicotinamide riboside",
+    "SIRT1 activator", "SIRT3 activator",
+]
+
+[caloric_restriction]
+instances = [
+    "caloric restriction", "calorie restriction", "CR",
+    "dietary restriction", "DR", "energy restriction",
+    "70% CR", "60% CR", "40% CR", "ad libitum",
+    "time-restricted feeding", "intermittent fasting",
+]
+
+[nad_booster]
+instances = [
+    "NMN", "NR", "nicotinamide riboside", "nicotinamide mononucleotide",
+    "NAD precursor", "NAD+ precursor", "niagen",
+]
