@@ -30,7 +30,13 @@ import httpx
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from agent.frontier_review import FrontierReview, run_frontier_review
+from agent.frontier_review import (
+    FrontierReview,
+    run_frontier_review,
+)
+from agent.frontier_review import (
+    _parse as _frontier_parse,
+)
 from agent.llm_client import call_writer_with_fallback
 from agent.researka_claims import _aggregate
 from agent.settings import load_settings
@@ -280,11 +286,10 @@ def _call_mimo_editorial(
         )
     except (RuntimeError, OSError, httpx.HTTPError):
         return {}
-    try:
-        loaded = json.loads(resp.content.strip().lstrip("`").rstrip("`"))
-    except json.JSONDecodeError:
-        return {}
-    if not isinstance(loaded, dict):
+    # Reuse the frontier-review tolerant JSON parser: strips ```json
+    # code fences and repairs truncated-mid-stream MiMo output.
+    loaded = _frontier_parse(resp.content)
+    if not loaded:
         return {}
     out: dict[int, dict[str, str]] = {}
     for k, v in loaded.items():
@@ -314,18 +319,32 @@ def _render_md(topic: str, ts: str, top: list[tuple[int, dict[str, Any]]],
                   "— LLM-extracted, no Tier-1 canonical facts loaded for "
                   "this topic yet; findings may be off-target (e.g. chemistry "
                   "papers using the molecule name) until canonical curation.")
+    # Lane mode: if top spans 2+ distinct sub_topics, render labeled lanes.
+    sub_topics = [str(f.get("sub_topic") or "").strip() or "—"
+                  for _s, f in top]
+    use_lanes = len({s for s in sub_topics if s != "—"}) >= 2
+    ranking_note = (
+        "**Ranking:** validation * magnitude * precision * recency "
+        "(deterministic, no LLM). Same-paper + same-sub_topic findings "
+        "are collapsed; extra biomarkers from the same trial appear "
+        "as supporting numerics under the headline.\n"
+    )
     lines = [
         f"# Top {len(top)} interesting findings — {topic}",
         "",
         f"**Snapshot:** {ts}",
         f"**Source:** {source}",
         f"**Facts inspected:** {total_facts}",
-        "**Ranking:** validation * magnitude * precision * recency "
-        "(deterministic, no LLM).",
-        "",
-        "---",
+        ranking_note,
     ]
-    for i, (score, f) in enumerate(top, start=1):
+    if use_lanes:
+        lines.append(
+            "**Sub-topic lanes detected:** facts grouped by `sub_topic` "
+            "below — read each lane independently.\n",
+        )
+    lines.append("---")
+
+    def _emit_card(rank: int, score: int, f: dict[str, Any]) -> list[str]:
         paper = f.get("source_paper") or {}
         doi = str(paper.get("doi") or "")
         title = str(paper.get("title") or "(no title)")
@@ -336,9 +355,15 @@ def _render_md(topic: str, ts: str, top: list[tuple[int, dict[str, Any]]],
         population = str(f.get("population") or "—")
         intervention = str(f.get("intervention") or "—")
         sub_topic = str(f.get("sub_topic") or "—")
-        lines += [
+        supp_raw = f.get("_supporting_facts")
+        supp = supp_raw if isinstance(supp_raw, list) else []
+        editorial = _editorial_block(
+            f, sub_topic, len(supp),
+            (mimo_editorial or {}).get(rank - 1),
+        )
+        block: list[str] = [
             "",
-            f"## #{i} — score {score} · {sub_topic}",
+            f"## #{rank} — score {score} · {sub_topic}",
             "",
             f"**Finding:** {f.get('canonical_phrase') or '(no canonical phrase)'}",
             "",
@@ -349,9 +374,34 @@ def _render_md(topic: str, ts: str, top: list[tuple[int, dict[str, Any]]],
             f"  · DOI: `{doi}`" if doi else "",
             f"- **Validator:** {validator}"
             + (" · **SUPERSEDED**" if superseded else ""),
-            "",
-            "---",
         ]
+        if supp:
+            block.append("- **Same-trial supporting numerics:** "
+                          + "; ".join(
+                              f"{s.get('value')}{s.get('units', '')} "
+                              f"({str(s.get('canonical_phrase') or '')[:60]})"
+                              for s in supp if isinstance(s, dict)))
+        block += ["", editorial, "", "---"]
+        return block
+
+    if use_lanes:
+        # Stable lane order = order of first appearance in `top`
+        seen_lanes: list[str] = []
+        for s in sub_topics:
+            if s not in seen_lanes:
+                seen_lanes.append(s)
+        rank = 0
+        for lane in seen_lanes:
+            lane_label = lane if lane != "—" else "(no sub_topic)"
+            lines.append(f"\n### Lane — `{lane_label}`\n")
+            for sc, f in top:
+                if (str(f.get("sub_topic") or "").strip() or "—") != lane:
+                    continue
+                rank += 1
+                lines += _emit_card(rank, sc, f)
+    else:
+        for i, (sc, f) in enumerate(top, start=1):
+            lines += _emit_card(i, sc, f)
     return "\n".join(line for line in lines if line is not None) + "\n"
 
 
@@ -429,6 +479,10 @@ def main() -> int:
     parser.add_argument("--top", type=int, default=5)
     parser.add_argument("--no-frontier", action="store_true",
                         help="Skip the MiMo frontier-review LLM call")
+    parser.add_argument("--with-editorial", action="store_true",
+                        help="Enrich top-5 editorial fields (why_it_matters / "
+                             "caution / next_question) via one MiMo call. "
+                             "Default is deterministic templates.")
     args = parser.parse_args()
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
     out_dir = _RUNS / f"{args.topic}-evidence-{ts}"
@@ -437,7 +491,10 @@ def main() -> int:
     facts = _fetch_facts(args.topic)
     scored = sorted(((_interestingness(f), f) for f in facts),
                     key=lambda p: p[0], reverse=True)
-    top = scored[: args.top]
+    # Collapse same-paper + same-sub_topic duplicates so a single trial
+    # can't monopolise the Top N (Sprint 60a).
+    deduped = _dedup_by_paper_subtopic(scored)
+    top = deduped[: args.top]
     aggregated = _aggregate(facts)
 
     raw_path = out_dir / "all_facts.json"
@@ -452,8 +509,11 @@ def main() -> int:
     claims_path.write_text(claims_text, encoding="utf-8")
 
     tier = str((facts[0].get("_tier") if facts else "") or "none")
+    mimo_editorial = (_call_mimo_editorial(args.topic, top)
+                      if args.with_editorial else {})
     md_path = out_dir / f"top_{args.top}.md"
-    md_text = _render_md(args.topic, ts, top, len(facts), tier)
+    md_text = _render_md(args.topic, ts, top, len(facts), tier,
+                         mimo_editorial=mimo_editorial)
     md_path.write_text(md_text, encoding="utf-8")
 
     files_manifest = {

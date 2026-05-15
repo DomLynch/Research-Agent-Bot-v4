@@ -1,0 +1,37 @@
+{
+  "topic": "berberine",
+  "snapshot_utc": "2026-05-15T08-51-53Z",
+  "top_n": 5,
+  "facts_inspected": 6,
+  "aggregated_claims": 6,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "ranking": "deterministic: validation*magnitude*precision*recency",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "fd18a0d126ef355e03a758c1af96b458dfc81d1df478da5bfe3cd3f921c7e4fc"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "ae2354b32b5ee5bb7cf6f32d7b60d82a9ddca150a847d5bdc9fdf7bbf310f4ff"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "893813663e246e9f0c57b9f5abd8521ddda2da718f130d58bd0a23d1d5572b1e"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "3d4768de33f9d0487ce24260a6caf813bbc9b1f4d248051b95825226dc39a6d8"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "ab873150432ab6e3b01fdb8ca808168c44e3d4d6c4db84a49cd4d579e48c1ff0"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "ada3d58f4c96f1c56571231f4975c67b18522b1db523ed56858e9b1f43f368eb"
+    }
+  }
+}
