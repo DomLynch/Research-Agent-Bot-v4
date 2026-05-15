@@ -1,0 +1,56 @@
+{
+  "topic": "exercise",
+  "snapshot_utc": "2026-05-15T16-20-58Z",
+  "top_n": 5,
+  "facts_inspected": 49,
+  "aggregated_claims": 48,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "pico_enrichment": {
+    "facts_inspected": 49,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "skipped_no_candidates"
+  },
+  "ranking": "deterministic: validation*magnitude*precision*recency",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "623eb36ffddf71084bc68c5d2752886309970af2216ad8e7bcba84f871a40a50"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "99b41c70513d48fc7fad5bfab54ad7adabc4dd32168dc9560e3e7a3cee9ac499"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "30bd8121cfbbd50affb89a1025a6094b143b49b1143aa69181b48905f18014fd"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "b0b73f43d1be1c6210d6f0a38acaf52124e1d3398313b5933f8ca1cad94cd600"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "db387da9d209197f3992c40c84836d23dd01234820816400f27f044813ff88bc"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "1fc1371c4e9bb24e9ab8da5ea7b97d7a771bdf821c97424d1cd3609da3e23382"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "f7b442b08b7751961f1f05a22ff5f55a5a76331b2add5397b9863ae51ed6d95b"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "e2d8ce110b88a01a9c2c0e2b474ffd686a2b66311e89689af441b05368bae7e1"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "81698658169e5370be6979d302526d2545cfcaf5ed64fa3575c26de102671807"
+    }
+  }
+}

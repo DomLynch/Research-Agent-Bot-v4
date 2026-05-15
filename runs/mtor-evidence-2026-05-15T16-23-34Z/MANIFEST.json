@@ -1,0 +1,56 @@
+{
+  "topic": "mtor",
+  "snapshot_utc": "2026-05-15T16-23-34Z",
+  "top_n": 5,
+  "facts_inspected": 46,
+  "aggregated_claims": 46,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "pico_enrichment": {
+    "facts_inspected": 46,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "mimo-v2.5-pro"
+  },
+  "ranking": "deterministic: validation*magnitude*precision*recency",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "fadab09a97d9d887d85cfc1abd3f45001bc9da06cbb70bcc6030ef75b1dcbc1a"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "5c08201225ab6ae6c5df5a5a7ffd9632203740a77c9e81222ed733332605cb3c"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "04182e0df0284641c93808bba80e8be0a5ba3e730f038db93f7f1c4a0547570d"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "acb99e23718a0c9cb73c889b351fd2a26b8e82f187d58f9efec5c2a06d60bfcd"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "2c6ccae37f8f29aebc7ae3c62a207e8cf2a3e0c84047182d2a80caf8ceba0397"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "52553eaef4d915af29f53c71839c23563c734536ab1c4d453fdac3ec4ac7a054"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "6cf1d24b2bfc2068d38826cee48a94a961be24846ef1b18e0ed45530fa99677a"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "0d462db9a6b871e5dd8fb324fc2c76f70da171e6051884cc23420825ca9f24f4"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "1309abca7f569f0e7f5304f9a1f96239bce144d182a0859cb3cce19829668254"
+    }
+  }
+}

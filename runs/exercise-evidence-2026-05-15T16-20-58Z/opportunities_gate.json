@@ -1,0 +1,85 @@
+{
+  "topic": "exercise",
+  "snapshot_utc": "2026-05-15T16-20-58Z",
+  "input_pack": {
+    "topic": "exercise",
+    "a_core_count": 12,
+    "b_context_count": 1,
+    "excluded_counts": {
+      "C_noise": 0,
+      "D_bad_extraction": 36
+    },
+    "has_minimum_a_core": true,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Exercise as a Precision Multi-Pathway Intervention in Cancer Survivorship: Integrating Inflammation, Metabolism, and Functional Outcomes",
+      "status": "rejected",
+      "blocking_flags": [
+        "cites_d_bad_extraction:9",
+        "a_core_density_too_low:2<3"
+      ],
+      "original_opportunity": 100,
+      "capped_opportunity": 40,
+      "cited_fact_ids": [
+        "62068",
+        "26392",
+        "26390",
+        "26391",
+        "1854",
+        "25059",
+        "28648",
+        "2933",
+        "34833",
+        "10678",
+        "34200"
+      ]
+    },
+    {
+      "thesis_idx": 1,
+      "title": "Temporal Optimization of Exercise-Induced Protein Synthesis: A Meta-Analytic Framework for Rehabilitation Timing",
+      "status": "rejected",
+      "blocking_flags": [
+        "cites_d_bad_extraction:7"
+      ],
+      "original_opportunity": 77,
+      "capped_opportunity": 40,
+      "cited_fact_ids": [
+        "62068",
+        "26392",
+        "26390",
+        "26391",
+        "12572",
+        "12573",
+        "28648",
+        "2933",
+        "34833",
+        "10678"
+      ]
+    },
+    {
+      "thesis_idx": 2,
+      "title": "Translational Insights from Murine Exercise Models: Bridging Tumor Suppression and Frailty Attenuation to Human Aging and Oncology",
+      "status": "rejected",
+      "blocking_flags": [
+        "cites_d_bad_extraction:8",
+        "a_core_density_too_low:1<3"
+      ],
+      "original_opportunity": 94,
+      "capped_opportunity": 40,
+      "cited_fact_ids": [
+        "62068",
+        "26392",
+        "26390",
+        "26391",
+        "28648",
+        "2933",
+        "34833",
+        "10678",
+        "7940"
+      ]
+    }
+  ]
+}

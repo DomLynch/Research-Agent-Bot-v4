@@ -1,0 +1,44 @@
+# Frontier review — autophagy
+
+**Snapshot:** 2026-05-15T16-26-24Z
+**Strategist model:** mimo-v2.5-pro
+
+## The lens
+
+The therapeutic manipulation of autophagy is undermined by tissue-specific paradoxes, where the same intervention yields opposing effects—such as 3-MA rescuing placentation in mice (Molecular Human Reproduction, 2019) while exacerbating cartilage degradation in rat models (PubMed, 2018)—indicating that autophagy's role is contingent on cellular stress type and microenvironment rather than being universally cytoprotective or cytotoxic.
+
+## Already known — do not publish
+
+- Hypoxia induces autophagy in bladder cancer cells, promoting gemcitabine resistance via HIF-1α activation (International Journal of Oncology, 2018)
+- Autophagy inhibitors like 3-methyladenine enhance chemotherapy cytotoxicity in bladder cancer under hypoxia (International Journal of Oncology, 2018)
+- Beclin 1 regulates intestinal tight junction barrier function independently of autophagy through occludin endocytosis (American Journal of Physiology-Cell Physiology, 2019)
+
+## Tensions / contradictions
+
+- In C57BL/6J mice with traumatic freeze injury, mitochondrial-specific autophagy proteins increase ~2-fold while overall autophagy flux decreases by 26% (American Journal of Physiology-Cell Physiology, 2019), suggesting a disconnect between autophagy induction and degradation efficiency.
+- Inhibition of autophagy using 3-MA recovers placentation impairment in mice and human explants (Molecular Human Reproduction, 2019), but perinatal loss of ULK1/2 impairs autophagy, causing age-related cardiomyopathy and reduced survival in mice (Autophagy, 2022), highlighting tissue-dependent consequences of autophagy modulation.
+- Autophagy induction via starvation or rapamycin prevents Tat-beclin 1-induced tight junction permeability increase in Caco-2 cells (American Journal of Physiology-Cell Physiology, 2019), yet beclin 1 peptide perfusion alone increases colonic permeability in mouse colon (same journal, 2019), indicating complex interplay between autophagy proteins and barrier function.
+
+## Evidence gaps
+
+- Dose-response relationships for autophagy inhibitors like 3-MA are poorly defined across tissue types, e.g., in placentation (Molecular Human Reproduction, 2019) versus cartilage injury models (PubMed, 2018).
+- Timing of autophagy modulation interventions relative to disease progression is underexplored, such as in traumatic muscle injury (American Journal of Physiology-Cell Physiology, 2019) or cancer treatment with gemcitabine (International Journal of Oncology, 2018).
+- Combination therapies involving autophagy modulators with targeted agents like 3-BrPA in autophagy-impaired tumors (Autophagy, 2017) lack investigation in intact tumors or other cancer types.
+
+## Paper theses
+
+### #1 — opportunity 100 · `scoping-review`
+
+**Thesis:** Tissue-Specific Paradoxes in Autophagy Modulation: A Scoping Review for Translational Therapeutic Strategies
+
+- novelty 80 / evidence_strength 65 / reviewer_risk 45
+- **Why publishable:** This review synthesizes conflicting preclinical evidence from models like mouse placenta and rat cartilage to advocate for context-specific autophagy targeting, addressing a critical gap in developing precision therapies for oncology and regenerative medicine.
+
+
+## Reviewer objections to anticipate
+
+_none_
+
+## Suggested next extractions
+
+_none_

@@ -85,6 +85,19 @@
 # empirical calibration). Prevents the "silent lens loss when MiMo
 # truncates" failure mode the auditor caught on the noisy-topic
 # stress test.)
+# -> 11500 (Sprint 64 alpha-signal mode for Researka:
+# agent/numeric_sanitizer.py adds a universal syntactic detector for
+# identifier-embed numerics (14,15-EET parsed as 1415; Ser555 parsed
+# as 555; UOK 257-1 parsed as 257). Filters them out of the scoring
+# pool so 'top finding' is never a parse artifact. Lead-card override
+# in the renderer guarantees #1 is a real effect. New
+# scripts/build_signal_post.py emits the auditor's Signal/Why-
+# surprising/Evidence/Confidence/Next-question format from existing
+# frontier_review.json + lane verdicts (zero new LLM calls — pure
+# formatting). New --mode flag in build_topic_evidence_run.py swaps
+# strict 'paper_mode' for surprise-weighted 'alpha_mode' (default).
+# Prevents the 'gate flattens insight' failure mode where evidence
+# auditing kills publishable novelty for Researka.)
 # -> 11400 (Sprint 63 autonomous topic-discovery loop:
 # agent/topic_discovery.py pulls paper metadata via POST
 # /api/v1/papers/topic for a seed-topic set, scores each topic's
