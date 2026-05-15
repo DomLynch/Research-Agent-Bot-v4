@@ -24,6 +24,7 @@ from agent.numeric_role_classifier import (
     classify_numeric_role,
     is_real_finding,
 )
+from agent.topic_synonyms import expand_topic_keywords
 
 LANES = ("A_core", "B_context", "C_noise", "D_bad_extraction")
 _NORM_PUNCT = re.compile(r"[\W_]+")
@@ -83,15 +84,21 @@ def classify_lane(fact: dict[str, Any], topic: str) -> LaneVerdict:
             reason=f"numeric_role={role}_not_effect_finding",
         )
 
-    tw = _norm(topic)
-    if tw not in _norm(_topic_haystack(fact)):
+    # Sprint 62: class queries (senolytic) match instance words
+    # (dasatinib, quercetin). expand_topic_keywords always includes
+    # the topic itself first, so behavior is unchanged for unregistered
+    # topics.
+    keywords = [_norm(kw) for kw in expand_topic_keywords(topic)]
+    haystack = _norm(_topic_haystack(fact))
+    if not any(kw in haystack for kw in keywords if kw):
         return LaneVerdict(
             fact_id=fact_id, lane="C_noise",
             numeric_role=role,
             reason="topic_word_absent_from_pico_fields",
         )
 
-    if tw in _norm(str(fact.get("intervention") or "")):
+    intervention_norm = _norm(str(fact.get("intervention") or ""))
+    if any(kw in intervention_norm for kw in keywords if kw):
         return LaneVerdict(
             fact_id=fact_id, lane="A_core",
             numeric_role=role,

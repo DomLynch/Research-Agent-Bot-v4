@@ -1,0 +1,44 @@
+{
+  "topic": "senolytic",
+  "snapshot_utc": "2026-05-15T15-02-51Z",
+  "top_n": 5,
+  "facts_inspected": 17,
+  "aggregated_claims": 17,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "skipped",
+  "pico_enrichment": {
+    "facts_inspected": 17,
+    "facts_changed": 2,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 2,
+    "model": "mimo-v2.5-pro"
+  },
+  "ranking": "deterministic: validation*magnitude*precision*recency",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "c14b60773473b72e647e2d76c32dd97335b3d3019950f1c6b02a4f13c4628499"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "2e4c31dfc15a82ee29b40882ba04f622298a5d6904541c4370ea826ce72d6f46"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "0b4a43c51fed424b935e561fdea40ecfd0fc96cda6b7fe7065876663f6e35c70"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "f37f0faae174f7dbe43ec1e785db58f934bcbe82470201d8877fbab998c190a0"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "4247b3b2134b7a77ecdfaf637f88a2412a0eb3cbd71e25b39cf1ec9400acd83d"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "477557525bbdaf3876ad1922d95f77495cac166818aa89afede994c56d2b3fbf"
+    }
+  }
+}
