@@ -38,6 +38,7 @@ from agent.frontier_review import (
     _parse as _frontier_parse,
 )
 from agent.llm_client import call_writer_with_fallback
+from agent.numeric_sanitizer import filter_artifacts
 from agent.pico_enrichment import enrich_facts_pico
 from agent.researka_claims import _aggregate
 from agent.settings import load_settings
@@ -488,6 +489,10 @@ def main() -> int:
                         help="Skip the MiMo PICO-enrichment pass over Tier-2 "
                              "facts with empty population / intervention. "
                              "Default is to enrich; flag for debugging.")
+    parser.add_argument("--mode", choices=("alpha", "paper"), default="alpha",
+                        help="alpha (default): surprise-weighted Researka "
+                             "signal posts, labels risk; paper: strict "
+                             "evidence-gated journal mode.")
     args = parser.parse_args()
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
     out_dir = _RUNS / f"{args.topic}-evidence-{ts}"
@@ -497,6 +502,10 @@ def main() -> int:
     pico_result = None
     if not args.no_pico_enrich and facts:
         facts, pico_result = enrich_facts_pico(facts, settings=load_settings())
+    # Sprint 64: drop identifier-embed numerics (14,15-EET, Ser555,
+    # ABT-263) before scoring so a parse artifact can never lead the
+    # Top 5. Universal — syntactic shape only, no domain literals.
+    facts, _artifact_facts = filter_artifacts(facts)
     scored = sorted(((_interestingness(f), f) for f in facts),
                     key=lambda p: p[0], reverse=True)
     # Collapse same-paper + same-sub_topic duplicates so a single trial
