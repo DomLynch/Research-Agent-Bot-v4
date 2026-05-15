@@ -1,0 +1,42 @@
+{
+  "cycle_ts": "2026-05-15T19-37-48Z",
+  "top_requested": 3,
+  "cooldown_hours": 4.0,
+  "ran": [
+    {
+      "topic": "longevity",
+      "velocity": 0.344,
+      "status": "ran",
+      "run_dir": "runs/longevity-evidence-2026-05-15T19-38-00Z",
+      "signal_label": "unknown",
+      "notes": ""
+    },
+    {
+      "topic": "telomere",
+      "velocity": 0.287,
+      "status": "ran",
+      "run_dir": "runs/telomere-evidence-2026-05-15T19-40-25Z",
+      "signal_label": "speculative_alpha",
+      "notes": ""
+    },
+    {
+      "topic": "sirtuin",
+      "velocity": 0.176,
+      "status": "ran",
+      "run_dir": "runs/sirtuin-evidence-2026-05-15T19-42-05Z",
+      "signal_label": "unknown",
+      "notes": ""
+    }
+  ],
+  "skipped_in_cooldown": [
+    "exercise",
+    "metformin",
+    "caloric_restriction",
+    "mtor",
+    "rapamycin",
+    "autophagy",
+    "NAD",
+    "fasting",
+    "senolytic"
+  ]
+}

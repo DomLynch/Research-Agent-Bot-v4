@@ -146,7 +146,7 @@ def _run_topic_pipeline(
             txt = ""
         for marker in (
             "evidence_backed_signal", "frontier_hypothesis",
-            "speculative_alpha", "discard",
+            "speculative_alpha", "evidence_binding_failed", "discard",
         ):
             if f"`{marker}`" in txt:
                 label = marker

@@ -84,6 +84,39 @@ def test_is_real_finding_only_for_effect_fold_correlation() -> None:
     assert not is_real_finding("unknown")
 
 
+def test_paired_comparison_vs_marker_is_effect_size() -> None:
+    """Sprint 67: '1.33 vs 2.50' (Apc(1638N/+) macroadenoma counts)
+    should classify as effect_size, not unknown. Universal stats
+    syntax."""
+    assert classify_numeric_role(
+        1.33, "",
+        "macroadenoma count was 1.33 vs 2.50 in CR males (P<0.01)",
+    ) == "effect_size"
+
+
+def test_paired_comparison_plus_minus_marker_is_effect_size() -> None:
+    """'1.71 ± 0.26 vs 2.35 ± 0.25' — mean±SD comparison."""
+    assert classify_numeric_role(
+        1.71, "",
+        "macroadenomas in CR males (1.71 ± 0.26) vs control (2.35 ± 0.25)",
+    ) == "effect_size"
+
+
+def test_versus_word_marker_is_effect_size() -> None:
+    assert classify_numeric_role(
+        12.3, "",
+        "primary outcome 12.3 versus 15.7 in treatment arm",
+    ) == "effect_size"
+
+
+def test_unitless_positive_without_comparison_stays_unknown() -> None:
+    """A bare unitless number with no stats marker stays unknown
+    (no false-positive promotion)."""
+    assert classify_numeric_role(
+        42, "", "the answer was 42",
+    ) == "unknown"
+
+
 def test_universal_non_biomedical_fixture() -> None:
     """Climate-policy fixture: 8% emissions reduction with no regimen
     markers should be classified as effect_size."""

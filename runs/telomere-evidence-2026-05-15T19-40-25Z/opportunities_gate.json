@@ -1,0 +1,84 @@
+{
+  "topic": "telomere",
+  "snapshot_utc": "2026-05-15T19-40-25Z",
+  "input_pack": {
+    "topic": "telomere",
+    "a_core_count": 1,
+    "b_context_count": 7,
+    "excluded_counts": {
+      "C_noise": 2,
+      "D_bad_extraction": 30
+    },
+    "has_minimum_a_core": false,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Retrospective vs. Prospective Telomere Length–Breast Cancer Associations Diverge Due to Reverse Causation: A Deconfounding Meta-Analysis Stratified by Blood-Draw-to-Diagnosis Interval",
+      "status": "rejected",
+      "blocking_flags": [
+        "cites_d_bad_extraction:3",
+        "a_core_density_too_low:1<3"
+      ],
+      "original_opportunity": 100,
+      "capped_opportunity": 40,
+      "cited_fact_ids": [
+        "6907",
+        "6908",
+        "11257",
+        "16413"
+      ]
+    },
+    {
+      "thesis_idx": 1,
+      "title": "The Folate-Telomere Length Paradox: Folate Deficiency Elongates Telomeres While Longer Telomeres Elevate Cancer Risk—Implications for Supplementation Trial Interpretation",
+      "status": "rejected",
+      "blocking_flags": [
+        "cites_d_bad_extraction:3",
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 67,
+      "capped_opportunity": 40,
+      "cited_fact_ids": [
+        "20102",
+        "11257",
+        "17626",
+        "15899"
+      ]
+    },
+    {
+      "thesis_idx": 2,
+      "title": "Telomere Length Heterogeneity (Proportion <2 kb) as a Distinct Biomarker from Mean Telomere Length: Cross-Disease Scoping Beyond COVID-19 Lymphopenia",
+      "status": "rejected",
+      "blocking_flags": [
+        "cites_d_bad_extraction:4",
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 41,
+      "capped_opportunity": 40,
+      "cited_fact_ids": [
+        "15164",
+        "15163",
+        "32198",
+        "7527"
+      ]
+    },
+    {
+      "thesis_idx": 3,
+      "title": "TERRA Transcript Levels as a Sarcopenia Biomarker Independent of Telomere Length: From Single Cohort to Cross-Disease Validation",
+      "status": "rejected",
+      "blocking_flags": [
+        "cites_d_bad_extraction:1",
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 30,
+      "capped_opportunity": 30,
+      "cited_fact_ids": [
+        "31271",
+        "16455",
+        "15164"
+      ]
+    }
+  ]
+}
