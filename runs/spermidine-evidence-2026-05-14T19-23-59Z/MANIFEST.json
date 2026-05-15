@@ -32,6 +32,18 @@
     "papers_metadata": {
       "name": "papers_metadata.json",
       "sha256": "41a8b34676de62bdf7d746bcfb70dde7e01e7b67ba11df8767100e93f8aaca8e"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "28649bb70e70bd0f53fda1ca95d804f6959aa5a9d94fcd4df3b3f43710c4ccda"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "4e71738588f384aaed0f1a5ddc4fab2f4a4f6c8f703e377e0e2b287cfbcdd34d"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "cb2a90548b5e001dc7e2ccbddce99c9637a6d6cbf5449eeb3e543e21626ab66a"
     }
   }
 }

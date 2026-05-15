@@ -1,0 +1,192 @@
+{
+  "topic": "spermidine",
+  "snapshot_utc": "2026-05-14T19-23-59Z",
+  "counts": {
+    "A_core": 0,
+    "B_context": 0,
+    "C_noise": 0,
+    "D_bad_extraction": 30
+  },
+  "verdicts": [
+    {
+      "fact_id": "10765",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "4840",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "31376",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "17652",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "10768",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "10767",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "10766",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "37997",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "31377",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "31380",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "19225",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "30307",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "66107",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "65726",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "65725",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "65724",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "16844",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "27625",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "13182",
+      "lane": "D_bad_extraction",
+      "numeric_role": "dose",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "65021",
+      "lane": "D_bad_extraction",
+      "numeric_role": "dose",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "15627",
+      "lane": "D_bad_extraction",
+      "numeric_role": "dose",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "4844",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "45240",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "31887",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "31888",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "31890",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "31889",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "28411",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "62264",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "62267",
+      "lane": "D_bad_extraction",
+      "numeric_role": "duration",
+      "reason": "missing_population_or_intervention"
+    }
+  ]
+}

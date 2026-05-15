@@ -1,0 +1,42 @@
+{
+  "topic": "creatine",
+  "snapshot_utc": "2026-05-14T19-25-30Z",
+  "counts": {
+    "A_core": 0,
+    "B_context": 0,
+    "C_noise": 0,
+    "D_bad_extraction": 5
+  },
+  "verdicts": [
+    {
+      "fact_id": "56298",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "41600",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "63650",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "32411",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "66040",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    }
+  ]
+}

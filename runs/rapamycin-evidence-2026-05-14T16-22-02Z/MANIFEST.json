@@ -48,6 +48,18 @@
     "corrections_md": {
       "name": "corrections.md",
       "sha256": "a203f26dc9ef0ec0d6c10e6b3e21a2a4da00627392097cc35a6fa14535e0c7d2"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "ecf4ce5907db36e3502346937879601a03c30632593ef6b06218b91725b9fa32"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "1f824a5d35f013aa56cbd7076fa62d0b29217e712851633dd4e227f630df3076"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "2e20bc3acf0d8376ac3191c7d1b5b5bb2e444506d0245ae0ee8bf76cf4c8ba87"
     }
   },
   "source_audit_model": "gemma-judge"

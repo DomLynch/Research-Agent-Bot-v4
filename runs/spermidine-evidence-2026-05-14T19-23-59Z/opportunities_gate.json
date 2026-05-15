@@ -1,0 +1,90 @@
+{
+  "topic": "spermidine",
+  "snapshot_utc": "2026-05-14T19-23-59Z",
+  "input_pack": {
+    "topic": "spermidine",
+    "a_core_count": 0,
+    "b_context_count": 0,
+    "excluded_counts": {
+      "C_noise": 0,
+      "D_bad_extraction": 30
+    },
+    "has_minimum_a_core": false,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Structural determinants of spermidine specificity: charge spacing and chain geometry as a framework for polyamine pharmacology",
+      "status": "rejected",
+      "blocking_flags": [
+        "cites_d_bad_extraction:11",
+        "missing_source_metadata:31380",
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 95,
+      "capped_opportunity": 40,
+      "cited_fact_ids": [
+        "10765",
+        "17652",
+        "37997",
+        "31380",
+        "65725",
+        "65724",
+        "16844",
+        "27625",
+        "31887",
+        "62264",
+        "62267"
+      ]
+    },
+    {
+      "thesis_idx": 1,
+      "title": "SAT1-mediated polyamine depletion as the hidden confounder in spermidine supplementation studies: a call for baseline metabolite measurement",
+      "status": "rejected",
+      "blocking_flags": [
+        "cites_d_bad_extraction:9",
+        "missing_source_metadata:31380",
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 49,
+      "capped_opportunity": 40,
+      "cited_fact_ids": [
+        "10765",
+        "17652",
+        "31380",
+        "65725",
+        "27625",
+        "4844",
+        "31887",
+        "62264",
+        "62267"
+      ]
+    },
+    {
+      "thesis_idx": 2,
+      "title": "Cross-kingdom autophagy convergence is assumed but unproven: spermidine in animal apoptosis rescue vs. plant abiotic stress",
+      "status": "rejected",
+      "blocking_flags": [
+        "cites_d_bad_extraction:11",
+        "missing_source_metadata:31380",
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 26,
+      "capped_opportunity": 26,
+      "cited_fact_ids": [
+        "10765",
+        "17652",
+        "37997",
+        "31380",
+        "30307",
+        "65726",
+        "65725",
+        "27625",
+        "31887",
+        "62264",
+        "62267"
+      ]
+    }
+  ]
+}
