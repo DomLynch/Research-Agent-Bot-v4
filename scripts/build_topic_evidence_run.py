@@ -576,6 +576,8 @@ def main() -> int:
                    else "researka_db POST /api/v1/tier2/facts/search "
                    "(Tier-2 fallback; topic filter on response)"),
         "frontier_model": review_model,
+        "mode": args.mode,
+        "numeric_artifacts_filtered": len(_artifact_facts),
         "pico_enrichment": (pico_result.as_dict() if pico_result
                             else {"model": "skipped_by_flag"}),
         "ranking": "deterministic: validation*magnitude*precision*recency",

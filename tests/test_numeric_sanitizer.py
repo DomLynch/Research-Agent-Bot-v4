@@ -72,9 +72,19 @@ def test_empty_phrase_not_artifact() -> None:
     assert is_numeric_artifact(60, "") is False
 
 
-def test_value_not_in_phrase_not_artifact() -> None:
-    """Value 99 doesn't appear in phrase -> nothing to flag."""
-    assert is_numeric_artifact(99, "completely unrelated text") is False
+def test_value_not_in_phrase_is_artifact() -> None:
+    """If the value doesn't appear in the canonical_phrase, it's
+    either a concat artifact (14,15 -> 1415) or an unauditable
+    extraction. Either way: do not surface in Top 5."""
+    assert is_numeric_artifact(99, "completely unrelated text") is True
+
+
+def test_value_1415_from_comma_concat_is_artifact() -> None:
+    """The auditor's exact case: '14,15-EET' phrase, value=1415
+    (extractor concatenated). value 1415 doesn't appear in phrase
+    -> artifact via the 'value-absent' rule."""
+    assert is_numeric_artifact(
+        1415, "14,15-EET inhibited CSC-induced autophagy") is True
 
 
 def test_none_value_not_artifact() -> None:

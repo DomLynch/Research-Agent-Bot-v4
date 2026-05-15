@@ -1,0 +1,42 @@
+{
+  "topic": "senolytic",
+  "snapshot_utc": "2026-05-15T11-13-01Z",
+  "input_pack": {
+    "topic": "senolytic",
+    "a_core_count": 4,
+    "b_context_count": 0,
+    "excluded_counts": {
+      "C_noise": 0,
+      "D_bad_extraction": 13
+    },
+    "has_minimum_a_core": true,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Senolytic-Induced miR-27a Downregulation as a Mechanistic Lever Against Radiation-Induced Bone Marrow Adipose Tissue Expansion",
+      "status": "rejected",
+      "blocking_flags": [
+        "cites_d_bad_extraction:1",
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 99,
+      "capped_opportunity": 40,
+      "cited_fact_ids": [
+        "22274"
+      ]
+    },
+    {
+      "thesis_idx": 1,
+      "title": "The Irisin-Senescence Crosstalk: Implications for Senolytic Adjuvant Therapies in Age-Related Bone Loss",
+      "status": "needs_source_audit",
+      "blocking_flags": [
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 92,
+      "capped_opportunity": 80,
+      "cited_fact_ids": []
+    }
+  ]
+}

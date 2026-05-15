@@ -1,0 +1,34 @@
+{
+  "topic": "autophagy",
+  "snapshot_utc": "2026-05-15T18-12-38Z",
+  "top_n": 5,
+  "facts_inspected": 20,
+  "aggregated_claims": 20,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "skipped",
+  "mode": "alpha",
+  "numeric_artifacts_filtered": 28,
+  "pico_enrichment": {
+    "facts_inspected": 48,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "mimo-v2.5-pro"
+  },
+  "ranking": "deterministic: validation*magnitude*precision*recency",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "2a68843054217d5f724d6f5b815e55ce35de1955d6e87993c649c722908cb198"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "6978bd6129d69b75df3abc5dd3c76b804abbb4151344638ef0742d87e78d3a69"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "f3b0a4ad642dbfdd1705bc1db69ae3b4457f5d9434f1f3464932490f120f5d1d"
+    }
+  }
+}

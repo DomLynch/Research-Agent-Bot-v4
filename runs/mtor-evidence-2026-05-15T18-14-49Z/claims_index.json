@@ -1,0 +1,295 @@
+{
+  "topic": "mtor",
+  "snapshot_utc": "2026-05-15T18-14-49Z",
+  "claim_count": 32,
+  "claims": [
+    {
+      "claim_text": "RAD001 improved influenza vaccine response by ~20% in the elderly",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1126/scitranslmed.3009892"
+      ]
+    },
+    {
+      "claim_text": "Hypomorphic mTOR mice also had a high mortality (40%) compared with wild-type (WT) (0%) littermates",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.4049/jimmunol.1201767"
+      ]
+    },
+    {
+      "claim_text": "Metformin decreased tumor burden by 72%, which correlated with decreased cellular proliferation and marked inhibition of mTOR in tumors.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-10-0055"
+      ]
+    },
+    {
+      "claim_text": "Torin2 inhibited mTORC1-dependent T389 phosphorylation on S6K with an EC50 of 250 pmol/L and 800-fold selectivity for mTOR versus PI3K.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/0008-5472.can-12-1702"
+      ]
+    },
+    {
+      "claim_text": "identifying 33 MTOR mutations that confer pathway hyperactivation",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/2159-8290.cd-13-0929"
+      ]
+    },
+    {
+      "claim_text": "Western blot analysis showed the visibly higher phosphorylation of mTOR (70.6%), 4E-BP1 (76.5%) and p70S6K (73.5%) in bone marrow cells from CML patients.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3892/or.2011.1502"
+      ]
+    },
+    {
+      "claim_text": "Higher reactivity to the mTOR complex 1 activation marker, phospho-ribosomal protein S6, was associated with a better lung function response to rapamycin",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/cjp2.162"
+      ]
+    },
+    {
+      "claim_text": "aging increased mTOR activation evidenced by elevated S6K phosphorylation, and this was reversed after rapamycin treatment in old mice (P < 0.05).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.12524"
+      ]
+    },
+    {
+      "claim_text": "Bladder cancer shows high levels of mTOR activity in approximately 70% of urothelial carcinomas",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/cancers14061555"
+      ]
+    },
+    {
+      "claim_text": "WYE-132, a highly potent, ATP-competitive, and specific mTOR kinase inhibitor (IC(50): 0.19 +/- 0.07 nmol/L; >5,000-fold selective versus PI3Ks).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1158/0008-5472.can-09-2340"
+      ]
+    },
+    {
+      "claim_text": "pharmacodynamic observations of mTOR pathway inhibition for at least 72 hours following dosing",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "duration",
+      "supporting_study_ids": [
+        "10.1158/1535-7163.mct-10-0792"
+      ]
+    },
+    {
+      "claim_text": "Primary human aortic endothelial cells (HAECs) were treated with low-dose (0.1 ng/ml) TNF-α",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1152/ajpheart.00411.2018"
+      ]
+    },
+    {
+      "claim_text": "The concentrations of serum interleukin (IL)-6 and tumour necrosis factor (TNF)-α were higher in the CAD group than in the non-CAD group.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1042/cs20140427"
+      ]
+    },
+    {
+      "claim_text": "The survival rate of the cells treated with RAD001 over 0.33 microM was significantly different compared with that of control (P<0.01).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3892/or_00000747"
+      ]
+    },
+    {
+      "claim_text": "The NPRL3 pedigree exhibited an epilepsy penetrance of 28% and heterogeneous clinical phenotypes",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/brain/awac044"
+      ]
+    },
+    {
+      "claim_text": "Treatment with 20 nmol/l or more rapamycin could increase apoptotic cells, decrease expression of bcl-2 and activate caspase-3.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3892/or.2011.1502"
+      ]
+    },
+    {
+      "claim_text": "Variant allele fractions ranged from 0.14 to 22.67% across all mutation-positive samples.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/brain/awab376"
+      ]
+    },
+    {
+      "claim_text": "Pathogenic variants were identified in 17 individuals, with an overall molecular solve rate of 29.31%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/brain/awab376"
+      ]
+    },
+    {
+      "claim_text": "Torin2 exhibited potent activity against DNA-PK (EC50, 118 nmol/L).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/0008-5472.can-12-1702"
+      ]
+    },
+    {
+      "claim_text": "Torin2 exhibited potent activity against ATR (EC50, 35 nmol/L).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/0008-5472.can-12-1702"
+      ]
+    },
+    {
+      "claim_text": "Torin2 exhibited potent activity against ATM (EC50, 28 nmol/L).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/0008-5472.can-12-1702"
+      ]
+    },
+    {
+      "claim_text": "PIK3CA mutation was detected more frequently among liver metastases than nonhepatic lesions (P < 0.01).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1078-0432.ccr-16-2656"
+      ]
+    },
+    {
+      "claim_text": "RPPA analysis of an independent cohort of 154 tumors confirmed the relationship between pathway activation and hepatic metastasis.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1078-0432.ccr-16-2656"
+      ]
+    },
+    {
+      "claim_text": "Activation of AKT (S473) was detected more frequently among liver metastases (P = 0.056).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1078-0432.ccr-16-2656"
+      ]
+    },
+    {
+      "claim_text": "Activation of p70S6K (T389) was detected more frequently among liver metastases (P = 0.053).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1078-0432.ccr-16-2656"
+      ]
+    },
+    {
+      "claim_text": "the 5-year survival rate for head and neck squamous cell carcinomas patients remains relatively unchanged at 50%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1158/0008-5472.can-10-3192"
+      ]
+    },
+    {
+      "claim_text": "improving long-term cures (0-30% improved to 78-100%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18632/oncotarget.8286"
+      ]
+    },
+    {
+      "claim_text": "decreasing proliferation (43%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18632/oncotarget.8286"
+      ]
+    },
+    {
+      "claim_text": "limiting lymph node metastasis (32%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18632/oncotarget.8286"
+      ]
+    },
+    {
+      "claim_text": "enhanced CRT-induced cytotoxicity (3.3 fold) in clonogenic assays",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18632/oncotarget.8286"
+      ]
+    },
+    {
+      "claim_text": "lung metastatic burden (30 fold)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18632/oncotarget.8286"
+      ]
+    },
+    {
+      "claim_text": "Dual activation of Src and the mTOR pathway occurs in nearly half of all breast cancers, suggesting potential cross-talk",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1158/0008-5472.can-13-3627"
+      ]
+    }
+  ]
+}

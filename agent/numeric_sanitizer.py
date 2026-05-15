@@ -65,13 +65,16 @@ def is_numeric_artifact(value: Any, phrase: str) -> bool:
     val_str = _format_value(value)
     if not val_str:
         return False
-    for match in re.finditer(re.escape(val_str), phrase):
+    matches = list(re.finditer(re.escape(val_str), phrase))
+    # Rule 0: value doesn't appear in phrase at all. Either a parse
+    # artifact (extractor concatenated 14+15 into 1415) or an
+    # unauditable extraction. Either way, do not surface in Top 5.
+    if not matches:
+        return True
+    for match in matches:
         word = _word_containing(phrase, match.start(), match.end())
-        # Skip when the match is a digit-fragment of a longer pure-digit
-        # number (e.g. value=55 matching inside "5500"); not an artifact,
-        # just a regex-substring quirk.
         if word.isdigit() and word != val_str:
-            continue
+            continue  # value is a fragment of a longer pure number
         if any(c.isalpha() for c in word):
             return True
         if _PURE_NUMERIC_RANGE.match(word):
