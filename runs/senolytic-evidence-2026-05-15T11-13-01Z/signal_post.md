@@ -14,7 +14,9 @@ Real tension: ABT-263 at 100 mg/kg reduces senescent cells by 90% in Apoe-/- mic
 
 ## Evidence
 
-- _No cited facts could be mapped to this thesis._
+- ABT-263 at 100 mg/kg reduces senescent cells by 90% in Apoe-/- mice but is associated with >50% mortality and increased endothelial-to-mesenchymal transition (EndoMT) by 60%, conflicting with its therapeutic goals.
+- D+Q upregulates p53 (P=0.041) and downregulates miR34a (P=0.016) in mice, while irisin levels in humans correlate positively with femoral BMD (R=0.619; p=.001), yet no studies link senolytic effects to irisin modulation.
+- Radiation-induced bone marrow adipose tissue (BMAT) expansion peaks at day 7 but senolytic intervention with D+Q at 42 days post-radiation only partially mitigates architecture loss, indicating a critical timing gap in intervention efficacy.
 
 ## Confidence — `frontier_hypothesis`
 
