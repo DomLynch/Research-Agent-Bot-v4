@@ -34,6 +34,34 @@ def test_amino_acid_position_ser555() -> None:
     assert is_numeric_artifact(555, phrase) is True
 
 
+def test_amino_acid_position_ser_paren_555() -> None:
+    """The Sprint 65 audit found Ser(555) parsed as 555. Walk-adjacent
+    detector must catch this — letter before paren before value."""
+    phrase = "Leucine alone stimulated S6K1 phosphorylation at Ser(555)"
+    assert is_numeric_artifact(555, phrase) is True
+
+
+def test_amino_acid_position_with_dash() -> None:
+    """Ser-555 (alternate notation) also flagged."""
+    phrase = "phosphorylation at Ser-555 was increased"
+    assert is_numeric_artifact(555, phrase) is True
+
+
+def test_p_value_in_parens_not_artifact() -> None:
+    """(P < 0.001) — value preceded by whitespace inside parens; the
+    P is separated by whitespace, so walk-back stops at the space
+    before seeing the letter. Not an identifier embed."""
+    phrase = "the difference was significant (P < 0.001) in the trial"
+    assert is_numeric_artifact(0.001, phrase) is False
+
+
+def test_value_in_parens_with_space_not_artifact() -> None:
+    """(60%) — paren is not a letter, whitespace before paren. Real
+    effect size in parens should pass."""
+    phrase = "lifespan extension (60%) was observed in middle-aged mice"
+    assert is_numeric_artifact(60, phrase) is False
+
+
 def test_chemical_abt_263() -> None:
     """'ABT-263 reduced SMC by 90%' — value 263 is the compound id."""
     phrase = "ABT-263 reduced SMC by 90% in advanced atherosclerosis"

@@ -26,9 +26,10 @@ from __future__ import annotations
 import re
 from typing import Any
 
-# Whitespace + sentence-punctuation token boundaries. Chars INSIDE
-# a token: alphanumerics, hyphens, commas, dots, slashes.
-_TOKEN_BREAK = frozenset(" \t\n\r;:!?()[]{}\"'")
+# Walk-stop chars: whitespace + sentence-end punctuation. Stops the
+# "look for adjacent letters" walk. Brackets/parens are NOT stops —
+# Ser(555) and Ser[555] are still identifier embeds.
+_WALK_STOP = frozenset(" \t\n\r;:!?\"'")
 # Pure-numeric range or comma-list (1-5, 14,15, 1-2-3)
 _PURE_NUMERIC_RANGE = re.compile(r"^\d+(?:[-,]\d+)+$")
 
@@ -42,42 +43,43 @@ def _format_value(v: Any) -> str | None:
     return None
 
 
-def _word_containing(phrase: str, start: int, end: int) -> str:
-    """Return the whitespace + sentence-punctuation-bounded word
-    surrounding the [start:end] slice."""
+def _walk(phrase: str, start: int, end: int) -> tuple[str, bool]:
+    """Walk outward from [start:end] until whitespace/sentence-stop.
+    Returns (token, has_adjacent_letter). One pass, both signals."""
+    has_letter = False
     s = start
-    while s > 0 and phrase[s - 1] not in _TOKEN_BREAK:
+    while s > 0 and phrase[s - 1] not in _WALK_STOP:
+        if phrase[s - 1].isalpha():
+            has_letter = True
         s -= 1
     e = end
-    while e < len(phrase) and phrase[e] not in _TOKEN_BREAK:
+    while e < len(phrase) and phrase[e] not in _WALK_STOP:
+        if phrase[e].isalpha():
+            has_letter = True
         e += 1
-    return phrase[s:e]
+    return phrase[s:e], has_letter
 
 
 def is_numeric_artifact(value: Any, phrase: str) -> bool:
     """True when the value is likely an identifier embed, not an effect.
-    Universal: shape-based, no domain literals. Two rules:
-      1. Word containing the value has any letter (Ser555, ABT-263)
-      2. Word is a pure-numeric range/list (257-1, 14,15, 1-5)
-    """
+    Three rules: (0) value absent from phrase (concat parse artifact),
+    (1) letter adjacent w/o whitespace (Ser(555), ABT-263, 14,15-EET),
+    (2) token is pure-numeric range/list (257-1, 1-5)."""
     if not phrase:
         return False
     val_str = _format_value(value)
     if not val_str:
         return False
     matches = list(re.finditer(re.escape(val_str), phrase))
-    # Rule 0: value doesn't appear in phrase at all. Either a parse
-    # artifact (extractor concatenated 14+15 into 1415) or an
-    # unauditable extraction. Either way, do not surface in Top 5.
     if not matches:
         return True
     for match in matches:
-        word = _word_containing(phrase, match.start(), match.end())
-        if word.isdigit() and word != val_str:
+        token, has_letter = _walk(phrase, match.start(), match.end())
+        if token.isdigit() and token != val_str:
             continue  # value is a fragment of a longer pure number
-        if any(c.isalpha() for c in word):
+        if has_letter:
             return True
-        if _PURE_NUMERIC_RANGE.match(word):
+        if _PURE_NUMERIC_RANGE.match(token.strip("()[]{}")):
             return True
     return False
 

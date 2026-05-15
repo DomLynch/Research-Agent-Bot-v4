@@ -41,6 +41,11 @@ _LABEL_MAP = {
     "rejected": "speculative_alpha",  # default for rejected
 }
 
+# Lanes that count as bound evidence. C_noise/D_bad are excluded —
+# Sprint 66 source-binding lock prevents publishing a signal post
+# whose only "evidence" is mis-bound or off-topic facts.
+_BINDABLE_LANES = frozenset({"A_core", "B_context"})
+
 
 def _sha256(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
