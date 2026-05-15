@@ -1,6 +1,6 @@
 {
   "topic": "senolytic",
-  "snapshot_utc": "2026-05-15T05-57-10Z",
+  "snapshot_utc": "2026-05-15T11-13-01Z",
   "top_n": 5,
   "facts_inspected": 17,
   "aggregated_claims": 17,
@@ -11,7 +11,7 @@
   "files": {
     "top_md": {
       "name": "top_5.md",
-      "sha256": "1964cda268a4ecfe9721d570a92203dd2f6d0a9e25236965370e70c57b950fe7"
+      "sha256": "24268a9b2e19440c02f42da5a2ed750b4fec0c2c28122b15607e51260414a00d"
     },
     "all_facts": {
       "name": "all_facts.json",
@@ -19,31 +19,19 @@
     },
     "claims_index": {
       "name": "claims_index.json",
-      "sha256": "66a65b656f02e0c695def7755cfb975b71c999e9c56671ccbe2d2bde855312b8"
+      "sha256": "fc7851111e2176bdb1f5f88733a78bac9dbc6e5fdd4864c35501b359692bca33"
     },
     "frontier_md": {
       "name": "frontier_review.md",
-      "sha256": "02e1f4d6b080868df939546595e5ffdce1c677705e176c00500d048bef36f294"
+      "sha256": "6e461ac00f414208075c72dc1f8deb7f09989f8d2e8bd2813d9663de0b1e626c"
     },
     "frontier_json": {
       "name": "frontier_review.json",
-      "sha256": "7384d9bb7087d3335673db5339fb2fa3d8ef6a5b21b3395fc90de0631a2ea80c"
+      "sha256": "5671b963d7467b134c2fe15131dbe20cd8afe3b85cd4a97b399ed49d9872fbef"
     },
     "papers_metadata": {
       "name": "papers_metadata.json",
       "sha256": "c53d1fdc078209d6d1435fc8c9187e324bd6d1c8edc16c843e9a56a8abb4c6b6"
-    },
-    "fact_lanes": {
-      "name": "fact_lanes.json",
-      "sha256": "7eef6272201f12d317e3c0ce870cd3c5e1ce89d144c91c7fa80e73601bb4da40"
-    },
-    "opportunities_gate": {
-      "name": "opportunities_gate.json",
-      "sha256": "8c0e6cf5abbdc636c092d64e68b178c4dbd66e10739c56a9414828035e1c8938"
-    },
-    "paper_opportunities_md": {
-      "name": "paper_opportunities.md",
-      "sha256": "06b43996969e366e9cdc201b38297185732c7bcc7b8f46e116239b4990503d38"
     }
   }
 }
