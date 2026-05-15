@@ -1,0 +1,55 @@
+{
+  "topic": "exercise",
+  "snapshot_utc": "2026-05-15T18-51-41Z",
+  "input_pack": {
+    "topic": "exercise",
+    "a_core_count": 11,
+    "b_context_count": 1,
+    "excluded_counts": {
+      "C_noise": 0,
+      "D_bad_extraction": 31
+    },
+    "has_minimum_a_core": true,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Autophagy as a mediator of exercise-induced anti-tumor effects: a scoping review of ULK1/LC3B pathways in murine models versus human biomarkers",
+      "status": "rejected",
+      "blocking_flags": [
+        "cites_d_bad_extraction:6",
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 72,
+      "capped_opportunity": 40,
+      "cited_fact_ids": [
+        "26390",
+        "26391",
+        "15479",
+        "15478",
+        "34833",
+        "10678"
+      ]
+    },
+    {
+      "thesis_idx": 1,
+      "title": "Comparative efficacy of exercise alone versus exercise-metformin combinations on sTNFαR2 and IL-6 in cancer survivors: a pilot meta-analysis of controlled trials",
+      "status": "rejected",
+      "blocking_flags": [
+        "cites_d_bad_extraction:6",
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 60,
+      "capped_opportunity": 40,
+      "cited_fact_ids": [
+        "26392",
+        "26390",
+        "26391",
+        "28648",
+        "34833",
+        "10678"
+      ]
+    }
+  ]
+}

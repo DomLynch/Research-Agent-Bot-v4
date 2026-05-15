@@ -1,0 +1,53 @@
+{
+  "topic": "caloric_restriction",
+  "snapshot_utc": "2026-05-15T18-54-38Z",
+  "model": "mimo-v2.5-pro",
+  "lens": "The sex-specific and population-dependent paradoxes in caloric restriction's effects—such as opposing inflammatory responses in athletes versus obese women, and sex-dimorphic cancer outcomes in mice—reveal that CR is not a universal intervention but a context-dependent modulator, necessitating precision-based approaches over generalized recommendations.",
+  "known_to_ignore": [
+    "Caloric restriction decreases body weight (fact 18)",
+    "Caloric restriction can improve insulin sensitivity in mice (fact 6)"
+  ],
+  "tensions": [
+    "In Apc(1638N/+) mice, visceral fat removal attenuated macroadenomas in females but not males, while caloric restriction attenuated macroadenomas in males but not females (facts 1 and 7).",
+    "Short-term caloric restriction increased TNF-α and IL-6 in male judo athletes (fact 5), but decreased IL-6 and hs-CRP in overweight/obese postmenopausal women (facts 2 and 14).",
+    "Caloric restriction improved survival and reduced macroadenomas in mice (facts 8 and 23) but elevated bone marrow adiposity and impaired bone health (facts 9 and 12)."
+  ],
+  "gaps": [
+    "Lack of human data on caloric restriction's effects on gut microbiota, as current evidence is from rat studies (facts 4 and 16).",
+    "Limited exploration of caloric restriction durations and percentages beyond 40-70% in diverse human populations, such as age groups or ethnicities.",
+    "Understudied mechanisms behind sex-specific responses to caloric restriction, particularly in cancer prevention contexts.",
+    "No direct comparisons between caloric restriction and other interventions (e.g., exercise) for inflammation and bone outcomes in the same cohorts."
+  ],
+  "theses": [
+    {
+      "title": "Sexual Dimorphism in Caloric Restriction Efficacy for Intestinal Neoplasia Prevention: Evidence from Apc(1638N/+) Mouse Models",
+      "paper_type": "evidence-gap",
+      "novelty": 85,
+      "evidence_strength": 70,
+      "reviewer_risk": 60,
+      "opportunity_score": 99,
+      "rationale": "The conflicting effects of caloric restriction and visceral fat removal in male and female Apc(1638N/+) mice (facts 1 and 7) highlight a critical, underexplored variable—sex—in CR-based cancer prevention, offering a publishable angle to guide sex-specific therapeutic strategies."
+    },
+    {
+      "title": "Heterogeneous Inflammatory Responses to Short-Term Caloric Restriction: A Scoping Review of Divergent Outcomes in Athletes vs. Obese Populations",
+      "paper_type": "scoping-review",
+      "novelty": 80,
+      "evidence_strength": 50,
+      "reviewer_risk": 70,
+      "opportunity_score": 57,
+      "rationale": "Contrasting findings of increased TNF-α and IL-6 in judo athletes (fact 5) versus decreased hs-CRP and IL-6 in postmenopausal women (facts 2 and 14) suggest baseline health modulates CR's immunomodulatory effects, warranting a focused review to identify contextual factors and research gaps."
+    }
+  ],
+  "reviewer_objections": [
+    "The Apc(1638N/+) mouse model is specific to intestinal neoplasia and may not generalize to human cancers or other CR outcomes.",
+    "Human studies on inflammatory markers (facts 2, 5, 14) have small sample sizes (e.g., 11 judo athletes), limiting statistical power and external validity.",
+    "Lack of mechanistic data linking sex differences or inflammatory responses to molecular pathways, reducing translational potential.",
+    "Confounding variables, such as diet composition in animal studies or physical activity in human athletes, are not adequately controlled across studies."
+  ],
+  "next_extractions": [
+    "Human longitudinal studies on caloric restriction with sex as a primary variable, including biomarkers for cancer and inflammation.",
+    "Systematic extraction of caloric restriction studies in diverse populations (e.g., different ages, ethnicities) focusing on gut microbiota and immune markers.",
+    "Data on caloric restriction interventions combined with other lifestyle factors (e.g., exercise) to assess synergistic or antagonistic effects on bone and metabolic health."
+  ],
+  "raw_response": "{\n  \"lens\": \"The sex-specific and population-dependent paradoxes in caloric restriction's effects—such as opposing inflammatory responses in athletes versus obese women, and sex-dimorphic cancer outcomes in mice—reveal that CR is not a universal intervention but a context-dependent modulator, necessitating precision-based approaches over generalized recommendations.\",\n  \"known_to_ignore\": [\"Caloric restriction decreases body weight (fact 18)\", \"Caloric restriction can improve insulin sensitivity in mice (fact 6)\"],\n  \"tensions\": [\n    \"In Apc(1638N/+) mice, visceral fat removal attenuated macroadenomas in females but not males, while caloric restriction attenuated macroadenomas in males but not females (facts 1 and 7).\",\n    \"Short-term caloric restriction increased TNF-α and IL-6 in male judo athletes (fact 5), but decreased IL-6 and hs-CRP in overweight/obese postmenopausal women (facts 2 and 14).\",\n    \"Caloric restriction improved survival and reduced macroadenomas in mice (facts 8 and 23) but elevated bone marrow adiposity and impaired bone health (facts 9 and 12).\"\n  ],\n  \"gaps\": [\n    \"Lack of human data on caloric restriction's effects on gut microbiota, as current evidence is from rat studies (facts 4 and 16).\",\n    \"Limited exploration of caloric restriction durations and percentages beyond 40-70% in diverse human populations, such as age groups or ethnicities.\",\n    \"Understudied mechanisms behind sex-specific responses to caloric restriction, particularly in cancer prevention contexts.\",\n    \"No direct comparisons between caloric restriction and other interventions (e.g., exercise) for inflammation and bone outcomes in the same cohorts.\"\n  ],\n  \"theses\": [\n    {\n      \"title\": \"Sexual Dimorphism in Caloric Restriction Efficacy for Intestinal Neoplasia Prevention: Evidence from Apc(1638N/+) Mouse Models\",\n      \"paper_type\": \"evidence-gap\",\n      \"novelty\": 85,\n      \"evidence_strength\": 70,\n      \"reviewer_risk\": 60,\n      \"rationale\": \"The conflicting effects of caloric restriction and visceral fat removal in male and female Apc(1638N/+) mice (facts 1 and 7) highlight a critical, underexplored variable—sex—in CR-based cancer prevention, offering a publishable angle to guide sex-specific therapeutic strategies.\"\n    },\n    {\n      \"title\": \"Heterogeneous Inflammatory Responses to Short-Term Caloric Restriction: A Scoping Review of Divergent Outcomes in Athletes vs. Obese Populations\",\n      \"paper_type\": \"scoping-review\",\n      \"novelty\": 80,\n      \"evidence_strength\": 50,\n      \"reviewer_risk\": 70,\n      \"rationale\": \"Contrasting findings of increased TNF-α and IL-6 in judo athletes (fact 5) versus decreased hs-CRP and IL-6 in postmenopausal women (facts 2 and 14) suggest baseline health modulates CR's immunomodulatory effects, warranting a focused review to identify contextual factors and research gaps.\"\n    }\n  ],\n  \"reviewer_objections\": [\n    \"The Apc(1638N/+) mouse model is specific to intestinal neoplasia and may not generalize to human cancers or other CR outcomes.\",\n    \"Human studies on inflammatory markers (facts 2, 5, 14) have small sample sizes (e.g., 11 judo athletes), limiting statistical power and external validity.\",\n    \"Lack of mechanistic data linking sex differences or inflammatory responses to molecular pathways, reducing translational potential.\",\n    \"Confounding variables, such as diet composition in animal studies or physical activity in human athletes, are not adequately controlled across studies.\"\n  ],\n  \"next_extractions\": [\n    \"Human longitudinal studies on caloric restriction with sex as a primary variable, including biomarkers for cancer and inflammation.\",\n    \"Systematic extraction of caloric restriction studies in diverse populations (e.g., different ages, ethnicities) focusing on gut microbiota and immune markers.\",\n    \"Data on caloric restriction interventions combined with other lifestyle factors (e.g., exercise) to assess synergistic or antagonistic effects on bone and metabolic health.\"\n  ]\n}"
+}
