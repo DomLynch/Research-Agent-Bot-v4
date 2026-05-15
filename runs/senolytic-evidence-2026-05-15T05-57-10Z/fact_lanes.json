@@ -1,0 +1,114 @@
+{
+  "topic": "senolytic",
+  "snapshot_utc": "2026-05-15T05-57-10Z",
+  "counts": {
+    "A_core": 0,
+    "B_context": 0,
+    "C_noise": 4,
+    "D_bad_extraction": 13
+  },
+  "verdicts": [
+    {
+      "fact_id": "2675",
+      "lane": "D_bad_extraction",
+      "numeric_role": "duration",
+      "reason": "numeric_role=duration_not_effect_finding"
+    },
+    {
+      "fact_id": "7312",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "numeric_role=p_value_not_effect_finding"
+    },
+    {
+      "fact_id": "7313",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "numeric_role=p_value_not_effect_finding"
+    },
+    {
+      "fact_id": "7314",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "7315",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "12623",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "12621",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "12622",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "12624",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "7378",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "7374",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "7375",
+      "lane": "D_bad_extraction",
+      "numeric_role": "sample_size",
+      "reason": "numeric_role=sample_size_not_effect_finding"
+    },
+    {
+      "fact_id": "7377",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "22275",
+      "lane": "D_bad_extraction",
+      "numeric_role": "duration",
+      "reason": "numeric_role=duration_not_effect_finding"
+    },
+    {
+      "fact_id": "22273",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "22274",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "2832",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    }
+  ]
+}

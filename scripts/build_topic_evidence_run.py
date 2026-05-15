@@ -91,7 +91,10 @@ def _normalize_tier2(item: dict[str, Any], topic: str) -> dict[str, Any]:
         "claim_type": item.get("claim_type"),
         "numeric_value": item.get("numeric_value"),
         "units": item.get("units"), "ci_lower": None, "ci_upper": None,
-        "population": "", "intervention": "", "comparator": "",
+        # DB upgrade (2026-05-15) ships PICO on Tier-2; preserve if present.
+        "population": str(item.get("population") or ""),
+        "intervention": str(item.get("intervention") or ""),
+        "comparator": str(item.get("comparator") or ""),
         "canonical_phrase": item.get("canonical_phrase") or (
             f"{item.get('claim_type','fact')}: "
             f"{item.get('numeric_value','')}{item.get('units','')} "
@@ -131,14 +134,19 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
             items = r2.json() if isinstance(r2.json(), list) else []
     except (httpx.HTTPError, ValueError):
         return []
-    # DB curators now bucket much of Tier-2 under topic='other'. Accept
+    # DB curators bucket much of Tier-2 under topic='other'. Accept
     # exact topic match OR content-match (topic word appears in the
-    # canonical_phrase / claim / paper title). Universal substring check.
+    # canonical_phrase / claim / paper title). Universal substring
+    # check.  Fallback: when class-name queries (e.g. "senolytic")
+    # return semantic results that don't literally contain the word,
+    # trust the semantic search — it already did the relevance work.
     tw = topic.replace("_", " ").lower()
-    out: list[dict[str, Any]] = []
+    matched: list[dict[str, Any]] = []
+    all_items: list[dict[str, Any]] = []
     for it in items:
         if not isinstance(it, dict):
             continue
+        all_items.append(it)
         tag = str(it.get("topic") or "").lower()
         haystack = " ".join([
             str(it.get("canonical_phrase") or ""),
@@ -146,8 +154,9 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
             str((it.get("paper") or {}).get("title") or ""),
         ]).lower()
         if tag == topic.lower() or tw in haystack:
-            out.append(_normalize_tier2(it, topic))
-    return out
+            matched.append(it)
+    chosen = matched if matched else all_items
+    return [_normalize_tier2(it, topic) for it in chosen]
 
 
 def _fmt_value(fact: dict[str, Any]) -> str:
