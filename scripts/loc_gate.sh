@@ -85,6 +85,15 @@
 # empirical calibration). Prevents the "silent lens loss when MiMo
 # truncates" failure mode the auditor caught on the noisy-topic
 # stress test.)
+# -> 11400 (Sprint 63 autonomous topic-discovery loop:
+# agent/topic_discovery.py pulls paper metadata via POST
+# /api/v1/papers/topic for a seed-topic set, scores each topic's
+# velocity from fwci + cited_by_count + recency + quality_score,
+# emits a ranked candidate queue. Closes the gap-analyser's curator
+# role: v4 stops needing hand-picked topics. Universal — seed list
+# comes from topic_packs/discovery_seeds.toml (data, not code).
+# Prevents the 'human bottleneck on topic selection' failure mode
+# that was limiting v4's throughput across Sprints 47-62.)
 # -> 11250 (Sprint 62 synonym/class-name resolution:
 # agent/topic_synonyms.py loads class -> instance mappings from
 # topic_packs/topic_synonyms.toml (data, not code). expand_topic_
@@ -204,7 +213,7 @@
 # contracts), not buy prose polish or speculative abstraction.
 set -euo pipefail
 
-CEILING="${LOC_CEILING:-11250}"
+CEILING="${LOC_CEILING:-11400}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 COUNT=$(find "$ROOT/agent" -name "*.py" -not -path "*/__pycache__/*" 2>/dev/null \

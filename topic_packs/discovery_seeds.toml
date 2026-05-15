@@ -1,0 +1,37 @@
+# Sprint 63 — Seed-topic list for the autonomous discovery loop.
+#
+# agent/topic_discovery.py probes the DB's POST /api/v1/papers/topic
+# endpoint for each seed below, scores each by paper-level velocity
+# (fwci * log(cited_by_count) * recency * quality_score), aggregates,
+# and ranks. The top candidates become the v4 curator queue.
+#
+# Rules:
+#   - Operator extends by editing this TOML — no code change.
+#   - Each seed is a topic identifier matching the DB schema.
+#   - Universal: seed list is biomedical-leaning here because the DB
+#     is biomedical; swap to climate / energy / policy terms for those
+#     domains without touching code.
+
+[seeds]
+topics = [
+    "rapamycin",
+    "metformin",
+    "spermidine",
+    "creatine",
+    "caloric_restriction",
+    "fasting",
+    "exercise",
+    "resveratrol",
+    "longevity",
+    "NAD",
+    "NMN",
+    "senolytic",
+    "sirtuin",
+    "autophagy",
+    "mtor",
+    "telomere",
+    "berberine",
+    "fisetin",
+    "quercetin",
+    "dasatinib",
+]
