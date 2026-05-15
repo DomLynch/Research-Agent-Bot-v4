@@ -45,10 +45,19 @@ class ThesisAudit:
 def _cited_fact_ids(
     thesis: dict[str, Any], facts: list[dict[str, Any]],
 ) -> tuple[str, ...]:
-    """Heuristic citation extraction: a fact is cited if its
-    canonical_phrase prefix (first 40 chars) OR its formatted
-    numeric value (value+units) appears in the thesis title or
-    rationale."""
+    """Sprint 67: prefer MiMo's explicit cited_fact_ids when present
+    in the thesis. Fall back to the substring heuristic only when
+    MiMo did not provide an explicit list (older runs / weak models)."""
+    explicit = thesis.get("cited_fact_ids")
+    if isinstance(explicit, list) and explicit:
+        valid_ids = {str(f.get("fact_id") or "")
+                     for f in facts if isinstance(f, dict)}
+        out = tuple(str(fid) for fid in explicit
+                    if isinstance(fid, (str, int))
+                    and str(fid) in valid_ids)
+        if out:
+            return out
+        # explicit list given but none match facts -> fall through to heuristic
     text = (str(thesis.get("title") or "")
             + " " + str(thesis.get("rationale") or "")).lower()
     cited: list[str] = []
@@ -57,8 +66,6 @@ def _cited_fact_ids(
             continue
         nv = f.get("numeric_value")
         units = str(f.get("units") or "")
-        # Match both joined ("66weeks") and spaced ("66 weeks") forms,
-        # plus bare value ("66") — covers all rendering conventions.
         nv_variants: list[str] = []
         if isinstance(nv, (int, float)):
             nv_variants = [f"{nv:g}{units}".lower(),

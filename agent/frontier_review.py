@@ -27,6 +27,7 @@ class PaperThesis:
     evidence_strength: int
     reviewer_risk: int
     rationale: str
+    cited_fact_ids: tuple[str, ...] = ()  # Sprint 67: explicit fact-id binding
 
     @property
     def opportunity_score(self) -> int:
@@ -39,7 +40,8 @@ class PaperThesis:
                 "evidence_strength": self.evidence_strength,
                 "reviewer_risk": self.reviewer_risk,
                 "opportunity_score": self.opportunity_score,
-                "rationale": self.rationale}
+                "rationale": self.rationale,
+                "cited_fact_ids": list(self.cited_fact_ids)}
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,7 +78,9 @@ _SCHEMA = """{
     "title": "one-line publishable angle",
     "paper_type": "corpus-snapshot|evidence-gap|scoping-review|pilot-meta-analysis|meta-analysis-standard|meta-analysis-full",
     "novelty": 0-100, "evidence_strength": 0-100, "reviewer_risk": 0-100,
-    "rationale": "1-2 sentences why this is publishable"
+    "rationale": "1-2 sentences why this is publishable",
+    "cited_fact_ids": ["EXACT fact_id strings from the FACTS block",
+                       "...at minimum 2-3 IDs that directly support this thesis"]
   }],
   "reviewer_objections": ["concrete attack a peer reviewer would make", ...],
   "next_extractions": ["specific subtopic/population/dose to harvest next", ...]
@@ -85,13 +89,14 @@ _SCHEMA = """{
 
 def _format_fact_line(i: int, f: dict[str, Any]) -> str:
     p = f.get("source_paper") or {}
-    return (f"[{i+1}] {f.get('canonical_phrase', '')!r} "
+    # Sprint 67: include fact_id so MiMo can return exact citations
+    # (cited_fact_ids array per thesis) instead of paraphrased prose.
+    return (f"[{i+1}] fact_id={f.get('fact_id', '')!r} "
+            f"{f.get('canonical_phrase', '')!r} "
             f"value={f.get('numeric_value')}{f.get('units', '') or ''} "
             f"pop={(f.get('population') or '?')!r} "
             f"intervention={(f.get('intervention') or '?')!r} "
-            f"year={p.get('year', '?')} journal={p.get('journal', '?')!r} "
-            f"validator={f.get('validator') or 'none'} "
-            f"superseded={'yes' if f.get('superseded_by') else 'no'}")
+            f"year={p.get('year', '?')} journal={p.get('journal', '?')!r}")
 
 
 def _build_messages(
@@ -139,12 +144,17 @@ def _parse_thesis(d: dict[str, Any]) -> PaperThesis | None:
     title = str(d.get("title", "")).strip()
     if not title:
         return None
+    cited_raw = d.get("cited_fact_ids", [])
+    cited = tuple(str(fid).strip() for fid in cited_raw
+                  if isinstance(cited_raw, list)
+                  and isinstance(fid, (str, int)) and str(fid).strip())
     return PaperThesis(
         title=title, paper_type=str(d.get("paper_type", "")).strip(),
         novelty=_clamp_int(d.get("novelty")),
         evidence_strength=_clamp_int(d.get("evidence_strength")),
         reviewer_risk=_clamp_int(d.get("reviewer_risk")),
         rationale=str(d.get("rationale", "")).strip(),
+        cited_fact_ids=cited,
     )
 
 
