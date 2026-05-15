@@ -40,6 +40,13 @@ _REGIMEN_MARKERS = frozenset([
 _SAMPLE_SIZE_MARKERS = ("n=", "n =", "participants", "subjects",
                          "patients", "volunteers")
 
+# Paired-comparison markers (Sprint 67) — universal stats syntax
+# indicating a measured effect-style comparison ('1.33 vs 2.50' or
+# '1.71 ± 0.26 vs 2.35 ± 0.25'). When a unitless positive number
+# appears alongside these markers, treat it as effect_size — not
+# unknown. Fixes the auditor's Apc(1638N/+) binding case.
+_PAIRED_COMP_MARKERS = (" vs ", " vs. ", " versus ", "±", " ± ")
+
 # Roles that actually constitute a research finding
 _REAL_FINDING_ROLES = frozenset(["effect_size", "fold_change", "correlation"])
 
@@ -72,6 +79,12 @@ def classify_numeric_role(
     if (value is not None and value == int(value)
             and any(m in ctx for m in _SAMPLE_SIZE_MARKERS)):
         return "sample_size"
+    # Paired-comparison fallback (Sprint 67): a unitless positive
+    # number appearing alongside 'vs' / 'versus' / '±' is an effect-
+    # style comparison (e.g. macroadenoma count 1.33 vs 2.50).
+    if (value is not None and value > 0 and u == ""
+            and any(m in ctx for m in _PAIRED_COMP_MARKERS)):
+        return "effect_size"
     return "unknown"
 
 

@@ -85,6 +85,16 @@
 # empirical calibration). Prevents the "silent lens loss when MiMo
 # truncates" failure mode the auditor caught on the noisy-topic
 # stress test.)
+# -> 11600 (Sprint 67 fact-ID binding closure:
+# numeric_role_classifier recognises 'X vs Y' and 'X ± Y' as
+# effect-style paired comparisons (real-world stats syntax, not
+# biomedical), so Apc(1638N/+) 1.33 vs 2.50 macroadenoma counts
+# count as effect_size and survive the A_core/B_context lane gate.
+# frontier_review prompt now includes fact_id per row and requires
+# MiMo to return cited_fact_ids per thesis; frontier_audit uses
+# those explicit IDs in preference to the substring heuristic.
+# Closes the loop the auditor named: 'frontier model finds the
+# right pattern but does not attach the right fact IDs'.)
 # -> 11500 (Sprint 64 alpha-signal mode for Researka:
 # agent/numeric_sanitizer.py adds a universal syntactic detector for
 # identifier-embed numerics (14,15-EET parsed as 1415; Ser555 parsed
@@ -226,7 +236,7 @@
 # contracts), not buy prose polish or speculative abstraction.
 set -euo pipefail
 
-CEILING="${LOC_CEILING:-11500}"
+CEILING="${LOC_CEILING:-11600}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 COUNT=$(find "$ROOT/agent" -name "*.py" -not -path "*/__pycache__/*" 2>/dev/null \
