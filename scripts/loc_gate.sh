@@ -85,6 +85,16 @@
 # empirical calibration). Prevents the "silent lens loss when MiMo
 # truncates" failure mode the auditor caught on the noisy-topic
 # stress test.)
+# -> 11150 (Sprint 61 Tier-2 PICO enrichment:
+# agent/pico_enrichment.py runs a batched MiMo extraction pass over
+# facts whose population or intervention field is empty, inferring
+# the missing slot from the canonical_phrase + paper title only (no
+# hallucination — empty stays empty if MiMo cannot ground the value
+# in source text). Pushes facts from D_bad_extraction to A_core /
+# B_context downstream. Prevents the 'every non-rapamycin topic
+# produces zero paper opportunities' failure mode caught on the
+# Sprint 60 NAD / berberine / spermidine demos. Tolerant of MiMo
+# JSON errors; original facts preserved when enrichment fails.)
 # -> 11000 (Sprint 59 Evidence Opportunities Gate: four new modules
 # transform the frontier pipeline from 'creative theses generator' to
 # 'creative + audited theses generator'.
