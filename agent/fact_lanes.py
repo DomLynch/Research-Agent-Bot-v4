@@ -16,6 +16,7 @@ Lanes:
 """
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -25,6 +26,14 @@ from agent.numeric_role_classifier import (
 )
 
 LANES = ("A_core", "B_context", "C_noise", "D_bad_extraction")
+_NORM_PUNCT = re.compile(r"[\W_]+")
+
+
+def _norm(s: str) -> str:
+    """Universal text normalisation: collapse underscores + punctuation
+    to single spaces, lowercase. Makes 'carbon_tax' match 'carbon tax'
+    in both directions."""
+    return _NORM_PUNCT.sub(" ", s.lower()).strip()
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,15 +83,15 @@ def classify_lane(fact: dict[str, Any], topic: str) -> LaneVerdict:
             reason=f"numeric_role={role}_not_effect_finding",
         )
 
-    tw = topic.replace("_", " ").lower()
-    if tw not in _topic_haystack(fact):
+    tw = _norm(topic)
+    if tw not in _norm(_topic_haystack(fact)):
         return LaneVerdict(
             fact_id=fact_id, lane="C_noise",
             numeric_role=role,
             reason="topic_word_absent_from_pico_fields",
         )
 
-    if tw in str(fact.get("intervention") or "").lower():
+    if tw in _norm(str(fact.get("intervention") or "")):
         return LaneVerdict(
             fact_id=fact_id, lane="A_core",
             numeric_role=role,

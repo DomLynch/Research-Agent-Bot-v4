@@ -57,10 +57,15 @@ def _cited_fact_ids(
             continue
         nv = f.get("numeric_value")
         units = str(f.get("units") or "")
-        nv_str = (f"{nv:g}{units}" if isinstance(nv, (int, float))
-                  else "").lower()
+        # Match both joined ("66weeks") and spaced ("66 weeks") forms,
+        # plus bare value ("66") — covers all rendering conventions.
+        nv_variants: list[str] = []
+        if isinstance(nv, (int, float)):
+            nv_variants = [f"{nv:g}{units}".lower(),
+                           f"{nv:g} {units}".lower(),
+                           f"{nv:g}".lower()] if units else [f"{nv:g}".lower()]
         phrase_lead = str(f.get("canonical_phrase") or "")[:40].lower()
-        if (nv_str and nv_str in text) or \
+        if (any(v and v in text for v in nv_variants)) or \
            (phrase_lead and phrase_lead in text):
             cited.append(str(f.get("fact_id") or ""))
     return tuple(cited)
