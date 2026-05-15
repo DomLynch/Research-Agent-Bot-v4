@@ -31,6 +31,7 @@ import httpx
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.frontier_review import FrontierReview, run_frontier_review
+from agent.llm_client import call_writer_with_fallback
 from agent.researka_claims import _aggregate
 from agent.settings import load_settings
 
@@ -171,8 +172,138 @@ def _fmt_value(fact: dict[str, Any]) -> str:
     return f"{nv}{units}"
 
 
+def _dedup_by_paper_subtopic(
+    scored: list[tuple[int, dict[str, Any]]],
+) -> list[tuple[int, dict[str, Any]]]:
+    """Collapse same-paper same-subtopic facts into one top-card.
+
+    A single trial that reports FBS + 2HPP + fructosamine should not
+    monopolise the Top 5. After scoring, group by (doi, sub_topic):
+    keep the highest-scoring fact as headline; attach the rest as
+    `_supporting_facts` (list of dicts with `value` + `units` +
+    `canonical_phrase`). Order of headlines preserves the input
+    ranking. Universal — keys come from fact structure, not domain.
+    """
+    seen: dict[tuple[str, str], int] = {}
+    out: list[tuple[int, dict[str, Any]]] = []
+    for score, f in scored:
+        paper = f.get("source_paper") or {}
+        doi = str(paper.get("doi") or "").lower().strip()
+        sub = str(f.get("sub_topic") or "").lower().strip()
+        # Fallback key when doi missing: paper title (still groups same-paper)
+        key_a = doi or str(paper.get("title") or "").lower().strip()[:80]
+        key = (key_a, sub)
+        if not key_a:  # cannot bucket — treat as unique
+            out.append((score, f))
+            continue
+        if key not in seen:
+            seen[key] = len(out)
+            f_copy = dict(f)
+            f_copy["_supporting_facts"] = []
+            out.append((score, f_copy))
+        else:
+            head_idx = seen[key]
+            _, head = out[head_idx]
+            supp = head.setdefault("_supporting_facts", [])
+            if isinstance(supp, list):
+                supp.append({
+                    "value": f.get("numeric_value"),
+                    "units": str(f.get("units") or ""),
+                    "canonical_phrase": str(f.get("canonical_phrase") or ""),
+                })
+    return out
+
+
+def _editorial_block(
+    fact: dict[str, Any], sub_topic: str, supp_count: int,
+    mimo_enrichment: dict[str, str] | None = None,
+) -> str:
+    """Deterministic 3-line editorial. MiMo enrichment (when provided)
+    swaps in richer per-fact context for any of: why_it_matters,
+    caution, next_question. Universal — sub_topic + structural counts
+    only."""
+    enrich = mimo_enrichment or {}
+    why = enrich.get("why_it_matters") or (
+        f"Direct evidence in the `{sub_topic}` sub-topic; "
+        f"informs whether the finding generalises beyond a single study."
+    )
+    caution = enrich.get("caution") or (
+        f"Single trial / single subgroup (k={1 + supp_count} biomarker"
+        f"{'s' if supp_count else ''} from one paper); replication "
+        "across independent cohorts required."
+    )
+    nxt = enrich.get("next_question") or (
+        "What sub-populations, doses, or timepoints remain "
+        "underexplored for this finding?"
+    )
+    return (
+        f"- **Why it matters:** {why}\n"
+        f"- **Caution:** {caution}\n"
+        f"- **Next question:** {nxt}"
+    )
+
+
+def _call_mimo_editorial(
+    topic: str, top: list[tuple[int, dict[str, Any]]],
+) -> dict[int, dict[str, str]]:
+    """Opt-in MiMo enrichment of editorial fields. One batched call
+    returns {fact_idx: {why_it_matters, caution, next_question}}.
+    Returns {} on any error so the deterministic block stands in.
+    Universal — prompt asks only for context interpretation, no
+    domain-specific reasoning is hardcoded."""
+    settings = load_settings()
+    if not settings.writer_configured or not top:
+        return {}
+    fact_block = "\n".join(
+        f"[{i}] {str(f.get('canonical_phrase') or '')[:200]} "
+        f"(sub_topic={f.get('sub_topic')}, "
+        f"population={str(f.get('population') or '')[:80]})"
+        for i, (_score, f) in enumerate(top)
+    )
+    msgs = [
+        {"role": "system",
+         "content": "You produce editorial context for research "
+                    "findings. Reply with JSON only."},
+        {"role": "user", "content":
+            f"TOPIC: {topic}\nFINDINGS:\n{fact_block}\n\n"
+            "For each finding, write three short sentences:\n"
+            "  why_it_matters: 1 sentence on real-world significance\n"
+            "  caution: 1 sentence on study-design limits (k=1, model, dose)\n"
+            "  next_question: 1 sentence on the next unanswered question\n"
+            "Be specific. Avoid generic prose. Respond as JSON: "
+            '{"0": {"why_it_matters":..., "caution":..., "next_question":...}, '
+            '"1": {...}, ...}'},
+    ]
+    try:
+        resp = call_writer_with_fallback(
+            settings, msgs, temperature=0.2, max_tokens=2000,
+        )
+    except (RuntimeError, OSError, httpx.HTTPError):
+        return {}
+    try:
+        loaded = json.loads(resp.content.strip().lstrip("`").rstrip("`"))
+    except json.JSONDecodeError:
+        return {}
+    if not isinstance(loaded, dict):
+        return {}
+    out: dict[int, dict[str, str]] = {}
+    for k, v in loaded.items():
+        try:
+            idx = int(k)
+        except (TypeError, ValueError):
+            continue
+        if isinstance(v, dict):
+            out[idx] = {
+                "why_it_matters": str(v.get("why_it_matters") or "")[:400],
+                "caution": str(v.get("caution") or "")[:400],
+                "next_question": str(v.get("next_question") or "")[:400],
+            }
+    return out
+
+
 def _render_md(topic: str, ts: str, top: list[tuple[int, dict[str, Any]]],
-               total_facts: int, tier: str) -> str:
+               total_facts: int, tier: str,
+               mimo_editorial: dict[int, dict[str, str]] | None = None) -> str:
     if tier == "tier1_canonical":
         source = (f"Researka DB Tier-1 canonical "
                   f"(`GET /api/v1/topics/{topic}/facts`) — "
