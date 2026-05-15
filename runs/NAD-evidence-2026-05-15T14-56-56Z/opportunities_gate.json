@@ -1,0 +1,16 @@
+{
+  "topic": "NAD",
+  "snapshot_utc": "2026-05-15T14-56-56Z",
+  "input_pack": {
+    "topic": "NAD",
+    "a_core_count": 3,
+    "b_context_count": 1,
+    "excluded_counts": {
+      "C_noise": 2,
+      "D_bad_extraction": 37
+    },
+    "has_minimum_a_core": true,
+    "a_core_min": 3
+  },
+  "audits": []
+}

@@ -38,6 +38,7 @@ from agent.frontier_review import (
     _parse as _frontier_parse,
 )
 from agent.llm_client import call_writer_with_fallback
+from agent.pico_enrichment import enrich_facts_pico
 from agent.researka_claims import _aggregate
 from agent.settings import load_settings
 
@@ -483,12 +484,19 @@ def main() -> int:
                         help="Enrich top-5 editorial fields (why_it_matters / "
                              "caution / next_question) via one MiMo call. "
                              "Default is deterministic templates.")
+    parser.add_argument("--no-pico-enrich", action="store_true",
+                        help="Skip the MiMo PICO-enrichment pass over Tier-2 "
+                             "facts with empty population / intervention. "
+                             "Default is to enrich; flag for debugging.")
     args = parser.parse_args()
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
     out_dir = _RUNS / f"{args.topic}-evidence-{ts}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     facts = _fetch_facts(args.topic)
+    pico_result = None
+    if not args.no_pico_enrich and facts:
+        facts, pico_result = enrich_facts_pico(facts, settings=load_settings())
     scored = sorted(((_interestingness(f), f) for f in facts),
                     key=lambda p: p[0], reverse=True)
     # Collapse same-paper + same-sub_topic duplicates so a single trial
@@ -559,6 +567,8 @@ def main() -> int:
                    else "researka_db POST /api/v1/tier2/facts/search "
                    "(Tier-2 fallback; topic filter on response)"),
         "frontier_model": review_model,
+        "pico_enrichment": (pico_result.as_dict() if pico_result
+                            else {"model": "skipped_by_flag"}),
         "ranking": "deterministic: validation*magnitude*precision*recency",
         "files": files_manifest,
     }
