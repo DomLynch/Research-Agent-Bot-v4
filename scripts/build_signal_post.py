@@ -127,15 +127,29 @@ def _render_signal_post(
     known = review.get("known_to_ignore") or []
     next_extracts = review.get("next_extractions") or []
     tensions = review.get("tensions") or []
+    theses_list = review.get("theses") or []
+    has_thesis = (isinstance(theses_list, list) and theses_list
+                  and isinstance(theses_list[0], dict)
+                  and str(theses_list[0].get("title") or "").strip())
+    # No-signal case: MiMo refused to opine (no theses) — emit an
+    # honest 'no signal' marker rather than publishing the disclaimer.
+    if not lead_audit and not has_thesis:
+        return (
+            f"# No signal — {topic}\n\n"
+            f"_Snapshot:_ `{snapshot}`\n\n"
+            f"**No publishable thesis.** MiMo declined to elevate a "
+            f"finding from this evidence pool — typically because facts "
+            f"are too noisy, too narrow, or off-target for the topic.\n\n"
+            f"## MiMo's note\n\n{lens or '_no lens produced_'}\n\n"
+            f"See `frontier_review.md` for the raw lens + tensions, "
+            f"and `top_5.md` for the deterministic top-5.\n"
+        )
     if lead_audit:
         headline = str(lead_audit.get("title") or "")
+    elif has_thesis:
+        headline = str(theses_list[0].get("title") or "")
     else:
-        # Fall back to first thesis from the review
-        theses = review.get("theses") or []
-        headline = (str(theses[0].get("title") or "") if isinstance(theses, list)
-                    and theses and isinstance(theses[0], dict) else "")
-    if not headline:
-        headline = lens or f"Open research question — {topic}"
+        headline = f"Open research question — {topic}"
     surprise = (
         lens if lens else
         "No frontier lens produced — see top_5.md for raw findings."

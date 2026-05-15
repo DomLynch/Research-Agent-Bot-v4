@@ -1,0 +1,107 @@
+# Top 5 interesting findings — sirtuin_activator
+
+**Snapshot:** 2026-05-15T18-43-49Z
+**Source:** Researka DB Tier-2 search (`POST /api/v1/tier2/facts/search`, filter topic=sirtuin_activator) — LLM-extracted, no Tier-1 canonical facts loaded for this topic yet; findings may be off-target (e.g. chemistry papers using the molecule name) until canonical curation.
+**Facts inspected:** 44
+**Ranking:** validation * magnitude * precision * recency (deterministic, no LLM). Same-paper + same-sub_topic findings are collapsed; extra biomarkers from the same trial appear as supporting numerics under the headline.
+
+**Sub-topic lanes detected:** facts grouped by `sub_topic` below — read each lane independently.
+
+---
+
+### Lane — `effect_size`
+
+
+## #1 — score 80 · effect_size
+
+**Finding:** 2KT-Tp COF electrodes exhibited high capacitance of 256 F g−1 at a discharge rate of 0.2 A g−1
+
+- **Value:** 256.0F g−1
+- **Population:** 2KT-Tp COF electrode
+- **Intervention:** 2KT-Tp COF with orthoquinone redox-active sites
+- **Source:** *Skeleton Engineering of Isostructural 2D Covalent Organic Frameworks: Orthoquinone Redox-Active Sites Enhanced Energy Storage* — CCS Chemistry (2020)
+  · DOI: `10.31635/ccschem.020.202000257`
+- **Validator:** researka-tier2
+- **Same-trial supporting numerics:** 583.0F g−1 (4KT-Tp COF electrodes exhibited high capacitance of 583 F g−)
+
+- **Why it matters:** High capacitance in COF electrodes could advance supercapacitor technology for faster-charging, longer-lasting energy storage in devices.
+- **Caution:** The study likely used idealized lab conditions, not addressing scalability or performance in real-world energy systems.
+- **Next question:** How does this electrode maintain capacitance over thousands of charge-discharge cycles in practical applications?
+
+---
+
+## #2 — score 68 · effect_size
+
+**Finding:** A significant increase in β-gal liver activity was observed in BDR vs controls after overnight staining at pH 5.8 (24.09±6.88% vs 0.12±0.08; p<0.01).
+
+- **Value:** 24.09%
+- **Population:** control and BDR rats
+- **Intervention:** bile duct resection (BDR)
+- **Source:** *An Optimized Protocol for Histochemical Detection of Senescence-associated Beta-galactosidase Activity in Cryopreserved Liver Tissue* — Journal of Histochemistry & Cytochemistry (2020)
+  · DOI: `10.1369/0022155420913534`
+- **Validator:** researka-tier2
+- **Same-trial supporting numerics:** 6.98% (A significant increase in β-gal liver activity was observed )
+
+- **Why it matters:** Nearly half of German men meeting aerobic activity guidelines may reduce healthcare burdens by lowering risks of chronic diseases.
+- **Caution:** Self-reported activity data could overestimate actual exercise levels due to recall or social desirability bias.
+- **Next question:** Does this activity level correlate with specific health metrics like reduced cardiovascular events in this demographic?
+
+---
+
+### Lane — `rate`
+
+
+## #3 — score 71 · rate
+
+**Finding:** 48.0% of men conduct at least 2.5 hours of aerobic physical activity per week
+
+- **Value:** 48.0%
+- **Population:** adult men in Germany
+- **Intervention:** meeting WHO aerobic activity recommendation of at least 2.5 hours per week
+- **Source:** *Health-enhancing physical activity during leisure time among adults in Germany* — PubMed (2017)
+  · DOI: `10.17886/rki-gbe-2017-040`
+- **Validator:** researka-tier2
+- **Same-trial supporting numerics:** 42.6% (42.6% of women conduct at least 2.5 hours of aerobic physica); 27.6% (27.6% of women conduct muscle-strengthening activity at leas)
+
+- **Why it matters:** Common initial EEG patterns in temporal lobe epilepsy can enable quicker diagnosis and personalized treatment plans for patients.
+- **Caution:** The small sample size of 47 patients limits the generalizability to broader epilepsy populations with varying severities.
+- **Next question:** How do these EEG patterns evolve over time and predict seizure recurrence or medication resistance?
+
+---
+
+## #4 — score 70 · rate
+
+**Finding:** 35 patients (74.4%) showed flattening, low-voltage fast activity or fast activity as the initial EEG pattern.
+
+- **Value:** 74.4%
+- **Population:** 47 patients with temporal lobe epilepsy
+- **Intervention:** —
+- **Source:** *Ictal EEG modifications in temporal lobe epilepsy* — Epileptic Disorders (2013)
+  · DOI: `10.1684/epd.2013.0615`
+- **Validator:** researka-tier2
+
+- **Why it matters:** Age-related declines in enzyme activity in SCI patients highlight the need for age-specific rehabilitation to manage secondary complications.
+- **Caution:** The study focused only on men with motor complete SCI, excluding women and those with incomplete injuries, which may skew findings.
+- **Next question:** Can interventions like exercise or pharmacotherapy reverse or slow the decrease in CS and CIII activity in older SCI individuals?
+
+---
+
+### Lane — `subgroup`
+
+
+## #5 — score 68 · subgroup
+
+**Finding:** individuals with SCI over age 40 had decreased CS and CIII activity (P = 0.009; P = 0.004)
+
+- **Value:** 40.0
+- **Population:** 22 men with motor complete SCI
+- **Intervention:** —
+- **Source:** *Mitochondrial mass and activity as a function of body composition in individuals with spinal cord injury* — Physiological Reports (2017)
+  · DOI: `10.14814/phy2.13080`
+- **Validator:** researka-tier2
+
+- **Why it matters:** Elevated β-gal activity in BDR rats may serve as a biomarker for liver aging or stress, aiding research on liver diseases and senescence.
+- **Caution:** Results from rat models do not directly apply to human liver biology due to species-specific differences in metabolism.
+- **Next question:** What underlying cellular pathways cause the increased β-gal activity, and does it lead to functional liver impairment in BDR rats?
+
+---
