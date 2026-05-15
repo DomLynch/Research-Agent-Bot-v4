@@ -1,0 +1,32 @@
+{
+  "topic": "mtor",
+  "snapshot_utc": "2026-05-15T19-03-44Z",
+  "input_pack": {
+    "topic": "mtor",
+    "a_core_count": 1,
+    "b_context_count": 1,
+    "excluded_counts": {
+      "C_noise": 7,
+      "D_bad_extraction": 21
+    },
+    "has_minimum_a_core": false,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Contextual mTOR Modulation: Age and Tissue-Specific Therapeutic Windows for Immune and Cancer Applications",
+      "status": "rejected",
+      "blocking_flags": [
+        "cites_d_bad_extraction:1",
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 86,
+      "capped_opportunity": 40,
+      "cited_fact_ids": [
+        "rapamycin/immune/mannick_2014/influenza_vaccine_response",
+        "64214"
+      ]
+    }
+  ]
+}

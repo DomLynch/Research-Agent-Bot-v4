@@ -1,0 +1,45 @@
+{
+  "topic": "NAD",
+  "snapshot_utc": "2026-05-15T19-09-34Z",
+  "input_pack": {
+    "topic": "NAD",
+    "a_core_count": 3,
+    "b_context_count": 1,
+    "excluded_counts": {
+      "C_noise": 2,
+      "D_bad_extraction": 22
+    },
+    "has_minimum_a_core": true,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Sexual Dimorphism in NAD+ Metabolism: Implications for Personalized Supplementation in Metabolic Diseases",
+      "status": "rejected",
+      "blocking_flags": [
+        "cites_d_bad_extraction:1",
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 100,
+      "capped_opportunity": 40,
+      "cited_fact_ids": [
+        "10678"
+      ]
+    },
+    {
+      "thesis_idx": 1,
+      "title": "NAD+ Precursor Efficacy in Metabolic Syndrome: A Meta-Analysis of Context-Dependent Responses",
+      "status": "rejected",
+      "blocking_flags": [
+        "cites_d_bad_extraction:1",
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 50,
+      "capped_opportunity": 40,
+      "cited_fact_ids": [
+        "10678"
+      ]
+    }
+  ]
+}

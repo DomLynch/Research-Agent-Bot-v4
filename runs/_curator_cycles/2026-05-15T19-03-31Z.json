@@ -1,0 +1,37 @@
+{
+  "cycle_ts": "2026-05-15T19-03-31Z",
+  "top_requested": 3,
+  "cooldown_hours": 24.0,
+  "ran": [
+    {
+      "topic": "mtor",
+      "velocity": 1.015,
+      "status": "ran",
+      "run_dir": "runs/mtor-evidence-2026-05-15T19-03-44Z",
+      "signal_label": "speculative_alpha",
+      "notes": ""
+    },
+    {
+      "topic": "rapamycin",
+      "velocity": 0.915,
+      "status": "ran",
+      "run_dir": "runs/rapamycin-evidence-2026-05-15T19-07-34Z",
+      "signal_label": "frontier_hypothesis",
+      "notes": ""
+    },
+    {
+      "topic": "NAD",
+      "velocity": 0.5,
+      "status": "ran",
+      "run_dir": "runs/NAD-evidence-2026-05-15T19-09-34Z",
+      "signal_label": "speculative_alpha",
+      "notes": ""
+    }
+  ],
+  "skipped_in_cooldown": [
+    "exercise",
+    "metformin",
+    "caloric_restriction",
+    "autophagy"
+  ]
+}

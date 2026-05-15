@@ -1,0 +1,53 @@
+{
+  "topic": "rapamycin",
+  "snapshot_utc": "2026-05-15T19-07-34Z",
+  "model": "mimo-v2.5-pro",
+  "lens": "The divergent efficacy of rapamycin across genetic backgrounds—60% lifespan extension with transient high-dose (8 mg/kg/day i.p.) in C57BL/6 mice versus 14-26% effects with chronic lower doses in UM-HET3 mice—suggests that regimen optimization, not just mTOR inhibition, is a critical yet underexplored lever for anti-aging translation, potentially mediated by strain-specific metabolic or immune adaptations.",
+  "known_to_ignore": [
+    "Rapamycin is an mTOR inhibitor that extends lifespan in mice",
+    "Rapamycin improves immune responses in the elderly",
+    "mTOR pathway modulation is a conserved aging mechanism"
+  ],
+  "tensions": [
+    "Fact 1 (C57BL/6, 8 mg/kg/day i.p. for 3 months, 60% lifespan extension) vs. Fact 3 (UM-HET3, 14 ppm in feed chronic, 14% mortality reduction): conflicting outcomes due to strain, route, and dosing regimen",
+    "Facts 5 and 6 (UM-HET3, 42 ppm, sex-specific 23% male vs. 26% female lifespan extension) indicate sex-dependent efficacy, but Fact 3 (UM-HET3, 14 ppm) shows female-focused effects without male data at lower doses",
+    "Fact 4 (RAD001/everolimus in humans, 20% vaccine response improvement) uses a derivative, not rapamycin, raising translational validity for lifespan effects"
+  ],
+  "gaps": [
+    "No direct comparative studies of transient vs. chronic rapamycin dosing in the same mouse strain (e.g., C57BL/6 or UM-HET3)",
+    "Lack of dose-response data in UM-HET3 mice between 14 ppm and 42 ppm to identify optimal anti-aging thresholds",
+    "Human trials focusing solely on immune function (RAD001) without lifespan endpoints or sex-stratified analyses for rapamycin itself",
+    "Underexploration of rapamycin's effects in aged or disease-prone subpopulations beyond standard mouse models"
+  ],
+  "theses": [
+    {
+      "title": "Regimen Optimization for Rapamycin in Anti-Aging: A Meta-Analysis of Transient vs. Chronic Dosing Efficacy Across Murine Strains",
+      "paper_type": "meta-analysis-standard",
+      "novelty": 85,
+      "evidence_strength": 75,
+      "reviewer_risk": 65,
+      "opportunity_score": 98,
+      "rationale": "Synthesizes conflicting data from eLife (2016) and Nature (2009) to quantify dose and duration effects, addressing a key translational gap in moving from mouse to human applications."
+    },
+    {
+      "title": "Sex-Specific Responses to Rapamycin in Preclinical Aging Models: Implications for Human Trial Design",
+      "paper_type": "scoping-review",
+      "novelty": 70,
+      "evidence_strength": 60,
+      "reviewer_risk": 50,
+      "opportunity_score": 84,
+      "rationale": "Integrates sex-stratified findings from Aging Cell (2014) and Nature (2009) to highlight disparities that could inform personalized anti-aging regimens, a publishable angle given the lack of human data."
+    }
+  ],
+  "reviewer_objections": [
+    "Heterogeneity in mouse strains (C57BL/6 vs. UM-HET3) and dosing routes (i.p. vs. feed) confounds direct comparisons, limiting meta-analytic reliability.",
+    "Human evidence relies on RAD001 (everolimus), not rapamycin, and measures only immune function, not lifespan, undermining translational claims.",
+    "The superseded fact (2) indicates methodological disputes, raising concerns about data quality in the evidence pool."
+  ],
+  "next_extractions": [
+    "Rapamycin doses in the 1-10 mg/kg/day range across different mouse strains (e.g., BALB/c, transgenic models) for lifespan studies",
+    "Human clinical trials with rapamycin focusing on aging biomarkers, frailty, or mortality endpoints, especially those with sex-specific analyses",
+    "Data on side effects and safety profiles of transient rapamycin interventions in mice and humans, including immunosuppression risks"
+  ],
+  "raw_response": "{\n  \"lens\": \"The divergent efficacy of rapamycin across genetic backgrounds—60% lifespan extension with transient high-dose (8 mg/kg/day i.p.) in C57BL/6 mice versus 14-26% effects with chronic lower doses in UM-HET3 mice—suggests that regimen optimization, not just mTOR inhibition, is a critical yet underexplored lever for anti-aging translation, potentially mediated by strain-specific metabolic or immune adaptations.\",\n  \"known_to_ignore\": [\n    \"Rapamycin is an mTOR inhibitor that extends lifespan in mice\",\n    \"Rapamycin improves immune responses in the elderly\",\n    \"mTOR pathway modulation is a conserved aging mechanism\"\n  ],\n  \"tensions\": [\n    \"Fact 1 (C57BL/6, 8 mg/kg/day i.p. for 3 months, 60% lifespan extension) vs. Fact 3 (UM-HET3, 14 ppm in feed chronic, 14% mortality reduction): conflicting outcomes due to strain, route, and dosing regimen\",\n    \"Facts 5 and 6 (UM-HET3, 42 ppm, sex-specific 23% male vs. 26% female lifespan extension) indicate sex-dependent efficacy, but Fact 3 (UM-HET3, 14 ppm) shows female-focused effects without male data at lower doses\",\n    \"Fact 4 (RAD001/everolimus in humans, 20% vaccine response improvement) uses a derivative, not rapamycin, raising translational validity for lifespan effects\"\n  ],\n  \"gaps\": [\n    \"No direct comparative studies of transient vs. chronic rapamycin dosing in the same mouse strain (e.g., C57BL/6 or UM-HET3)\",\n    \"Lack of dose-response data in UM-HET3 mice between 14 ppm and 42 ppm to identify optimal anti-aging thresholds\",\n    \"Human trials focusing solely on immune function (RAD001) without lifespan endpoints or sex-stratified analyses for rapamycin itself\",\n    \"Underexploration of rapamycin's effects in aged or disease-prone subpopulations beyond standard mouse models\"\n  ],\n  \"theses\": [\n    {\n      \"title\": \"Regimen Optimization for Rapamycin in Anti-Aging: A Meta-Analysis of Transient vs. Chronic Dosing Efficacy Across Murine Strains\",\n      \"paper_type\": \"meta-analysis-standard\",\n      \"novelty\": 85,\n      \"evidence_strength\": 75,\n      \"reviewer_risk\": 65,\n      \"rationale\": \"Synthesizes conflicting data from eLife (2016) and Nature (2009) to quantify dose and duration effects, addressing a key translational gap in moving from mouse to human applications.\"\n    },\n    {\n      \"title\": \"Sex-Specific Responses to Rapamycin in Preclinical Aging Models: Implications for Human Trial Design\",\n      \"paper_type\": \"scoping-review\",\n      \"novelty\": 70,\n      \"evidence_strength\": 60,\n      \"reviewer_risk\": 50,\n      \"rationale\": \"Integrates sex-stratified findings from Aging Cell (2014) and Nature (2009) to highlight disparities that could inform personalized anti-aging regimens, a publishable angle given the lack of human data.\"\n    }\n  ],\n  \"reviewer_objections\": [\n    \"Heterogeneity in mouse strains (C57BL/6 vs. UM-HET3) and dosing routes (i.p. vs. feed) confounds direct comparisons, limiting meta-analytic reliability.\",\n    \"Human evidence relies on RAD001 (everolimus), not rapamycin, and measures only immune function, not lifespan, undermining translational claims.\",\n    \"The superseded fact (2) indicates methodological disputes, raising concerns about data quality in the evidence pool.\"\n  ],\n  \"next_extractions\": [\n    \"Rapamycin doses in the 1-10 mg/kg/day range across different mouse strains (e.g., BALB/c, transgenic models) for lifespan studies\",\n    \"Human clinical trials with rapamycin focusing on aging biomarkers, frailty, or mortality endpoints, especially those with sex-specific analyses\",\n    \"Data on side effects and safety profiles of transient rapamycin interventions in mice and humans, including immunosuppression risks\"\n  ]\n}"
+}

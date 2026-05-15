@@ -1,0 +1,62 @@
+{
+  "topic": "rapamycin",
+  "snapshot_utc": "2026-05-15T19-07-34Z",
+  "top_n": 5,
+  "facts_inspected": 6,
+  "aggregated_claims": 6,
+  "data_tier": "tier1_canonical",
+  "source": "researka_db GET /api/v1/topics/{topic}/facts",
+  "frontier_model": "mimo-v2.5-pro",
+  "mode": "alpha",
+  "numeric_artifacts_filtered": 1,
+  "pico_enrichment": {
+    "facts_inspected": 7,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "skipped_no_candidates"
+  },
+  "ranking": "deterministic: validation*magnitude*precision*recency",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "6e6488070eb05300446f4677ac066ba14cb9c28163cdb65a7e0b2564debaa7af"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "35d086b2e4f80de8e747973f1a63357bd14b7d7ae909a6082fb796880f7f5070"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "88b53a521a1101500165ee4ff598226747d64f000797ef6665f5956c26a66ebc"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "78e9d4eb92e60f92eba8d13bc7310eab6aa6460d013b27b9ee45a515e3aef1d8"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "7b1d196efa3ad7c0d55c3786c5784118b4b4007a49479b1e3089df47e2cbd4c7"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "9ee127220dbf17fa778c238fd0e0ae18bc5c3a3b11aea02416ddb3803bb937f5"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "ffe1ac737971229dc3b26ae9bdeb46c130c843920976dc21cc6d8dde5825b107"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "76da5ffb122290c43b9097834adcdadc6beb007bca6dc91ee472abcee629351a"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "7aa7ab629f5bb517e65bb7447611921329b2e9b5b4905839a11297cd3caa5d12"
+    },
+    "signal_post_md": {
+      "name": "signal_post.md",
+      "sha256": "107acc0648c6649d0a2aa9f4f72bd716b8bd345453ab1a70ee4a053389a834e7"
+    }
+  }
+}
