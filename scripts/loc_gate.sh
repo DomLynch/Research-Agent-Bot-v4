@@ -85,6 +85,26 @@
 # empirical calibration). Prevents the "silent lens loss when MiMo
 # truncates" failure mode the auditor caught on the noisy-topic
 # stress test.)
+# -> 11000 (Sprint 59 Evidence Opportunities Gate: four new modules
+# transform the frontier pipeline from 'creative theses generator' to
+# 'creative + audited theses generator'.
+#   numeric_role_classifier: tags numeric_value as effect_size /
+#     fold_change / correlation / dose / duration / regimen / etc.
+#     Universal — unit + verb context, no biomedical literals.
+#   fact_lanes: classifies each fact into A_core / B_context /
+#     C_noise / D_bad_extraction using PICO completeness + topic-word
+#     co-occurrence + numeric role. Stops 'inguinal fat increased at
+#     66 weeks' from ever ranking as a top finding.
+#   frontier_input_pack: filters to A_core + B_context before MiMo
+#     sees the facts; carries has_minimum_a_core flag (>=3 default).
+#   frontier_audit: per-thesis gate. 5 hard checks: D_bad_extraction
+#     citation, metric-family mix, missing source metadata, A_core
+#     density, opportunity cap. Returns survives | needs_source_audit
+#     | rejected with explicit blocking_flags.
+# Prevents the 'frontier model hallucinates a plausible thesis on
+# noisy/wrong facts' failure mode that surfaced on the spermidine
+# source-metadata oddity, caloric-restriction 66-weeks rank, and the
+# creatine low-A-core paper-opp false-positive.)
 # -> 10650 (Sprint 58 curator-quality feedback loop: agent/curator_
 # quality.py walks every runs/<topic>-evidence-<ts>/source_audit.json
 # in the repo, joins each verdict to its source-paper fact via
