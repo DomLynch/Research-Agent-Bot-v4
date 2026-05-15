@@ -51,15 +51,57 @@ def _sha256(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def _alpha_label_for(audit: dict[str, Any]) -> str:
-    """Map gate verdict + flags into a Researka alpha label."""
+def _alpha_label_for(
+    audit: dict[str, Any],
+    bound_a_or_b_count: int = -1,
+) -> str:
+    """Map gate verdict + flags + binding state into a Researka alpha
+    label. When bound_a_or_b_count is provided AND zero, override the
+    label to 'evidence_binding_failed' — Sprint 66 source-binding
+    lock: thesis idea may be sharp but its cited facts are missing
+    or D_bad, so the post is not publishable as written."""
     status = str(audit.get("status") or "")
     flags = audit.get("blocking_flags") or []
+    base = _LABEL_MAP.get(status, "frontier_hypothesis")
     if status == "rejected":
-        if any("metric_family_mix" in f for f in flags):
-            return "discard"
-        return "speculative_alpha"
-    return _LABEL_MAP.get(status, "frontier_hypothesis")
+        base = ("discard" if any("metric_family_mix" in f for f in flags)
+                else "speculative_alpha")
+    # Source-binding lock: override when we have explicit binding info
+    if bound_a_or_b_count == 0 and base != "discard":
+        return "evidence_binding_failed"
+    return base
+
+
+def _bound_fact_count(
+    cited_ids: list[str], facts_by_id: dict[str, dict[str, Any]],
+    lane_verdicts: dict[str, str],
+) -> int:
+    """How many cited facts land in A_core or B_context?"""
+    n = 0
+    for fid in cited_ids:
+        if fid not in facts_by_id:
+            continue
+        if lane_verdicts.get(fid) in _BINDABLE_LANES:
+            n += 1
+    return n
+
+
+def _read_lane_verdicts(run_dir: Path) -> dict[str, str]:
+    """fact_id -> lane mapping from Sprint 59 fact_lanes.json."""
+    p = run_dir / "fact_lanes.json"
+    if not p.exists():
+        return {}
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    out: dict[str, str] = {}
+    for v in data.get("verdicts", []) or []:
+        if isinstance(v, dict):
+            out[str(v.get("fact_id") or "")] = str(v.get("lane") or "")
+    return out
 
 
 def _confidence_human(label: str) -> str:
@@ -74,6 +116,12 @@ def _confidence_human(label: str) -> str:
         "speculative_alpha":
             "**Speculative alpha.** Counter-narrative signal worth "
             "noting; underlying evidence is thin or single-study.",
+        "evidence_binding_failed":
+            "**Evidence binding failed.** The thesis idea may be "
+            "sharp, but its cited facts either could not be located "
+            "or were classified as D_bad_extraction by the lane "
+            "gate. **Do not publish as-is.** Treat as an alpha "
+            "candidate; needs manual source binding.",
         "discard":
             "**Discard — metric mix.** Citations span incompatible "
             "metric families (effect_size + fold_change). Do not "
@@ -126,8 +174,11 @@ def _render_signal_post(
     topic: str, snapshot: str, review: dict[str, Any],
     lead_audit: dict[str, Any] | None,
     facts_by_id: dict[str, dict[str, Any]],
+    *,
+    bound_count: int = -1,
 ) -> str:
-    label = _alpha_label_for(lead_audit) if lead_audit else "frontier_hypothesis"
+    label = (_alpha_label_for(lead_audit, bound_count) if lead_audit
+             else "frontier_hypothesis")
     lens = str(review.get("lens") or "").strip()
     known = review.get("known_to_ignore") or []
     next_extracts = review.get("next_extractions") or []
@@ -165,16 +216,24 @@ def _render_signal_post(
     if isinstance(tensions, list) and tensions:
         surprise += ("\n\nReal tension: "
                      + str(tensions[0])[:300])
-    evidence_lines: list[str] = []
-    if lead_audit:
-        evidence_lines = _evidence_lines(lead_audit, facts_by_id)
-    if (not evidence_lines or evidence_lines[0].startswith("- _No cited")):
-        # Fall back to the frontier tensions list — already contains
-        # concrete numeric claims and is what the strategist cited.
-        if isinstance(tensions, list) and tensions:
-            evidence_lines = [f"- {str(t)[:400]}" for t in tensions[:3]]
-        else:
-            evidence_lines = ["- _See frontier_review.md for evidence._"]
+    # Sprint 66 source-binding lock: if the thesis's cited fact_ids
+    # cannot be bound to A_core or B_context lane facts, do NOT fall
+    # back to MiMo's `tensions` array (which is unbound prose and
+    # mis-attributes evidence to the thesis headline). Instead, emit
+    # an explicit 'evidence_binding_failed' notice.
+    evidence_lines = (_evidence_lines(lead_audit, facts_by_id)
+                      if lead_audit else [])
+    bind_failed = (label == "evidence_binding_failed"
+                   or not evidence_lines
+                   or evidence_lines[0].startswith("- _No cited"))
+    if bind_failed:
+        evidence_lines = [
+            "- **Evidence binding failed.** The thesis cites no facts "
+            "that survived the A_core/B_context lane gate. Raw tensions "
+            "are in `frontier_review.md`; do not copy them here as "
+            "evidence — they are unbound prose, not facts attached to "
+            "this headline.",
+        ]
     next_q = (str(next_extracts[0]) if isinstance(next_extracts, list)
               and next_extracts else
               "What replicates this signal in independent cohorts?")
@@ -230,7 +289,12 @@ def main() -> int:
     lead = _pick_lead_thesis(audits)
     topic = str(review.get("topic") or run_dir.name.split("-evidence-")[0])
     snapshot = str(review.get("snapshot_utc") or run_dir.name)
-    text = _render_signal_post(topic, snapshot, review, lead, facts_by_id)
+    lane_verdicts = _read_lane_verdicts(run_dir)
+    bound_count = (_bound_fact_count(
+        list(lead.get("cited_fact_ids") or []), facts_by_id, lane_verdicts,
+    ) if lead else 0)
+    text = _render_signal_post(topic, snapshot, review, lead, facts_by_id,
+                                bound_count=bound_count)
     out_path = run_dir / "signal_post.md"
     out_path.write_text(text, encoding="utf-8")
     # Update MANIFEST if present

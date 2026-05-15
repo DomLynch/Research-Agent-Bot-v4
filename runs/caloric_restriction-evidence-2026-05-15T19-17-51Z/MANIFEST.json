@@ -1,0 +1,62 @@
+{
+  "topic": "caloric_restriction",
+  "snapshot_utc": "2026-05-15T19-17-51Z",
+  "top_n": 5,
+  "facts_inspected": 29,
+  "aggregated_claims": 29,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "mode": "alpha",
+  "numeric_artifacts_filtered": 5,
+  "pico_enrichment": {
+    "facts_inspected": 34,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "skipped_no_candidates"
+  },
+  "ranking": "deterministic: validation*magnitude*precision*recency",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "e973e341a6a7a943a1a6cf3369807f9cbc532929d46ffed2765140c2e36781f0"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "f92973bfc23507ad2751d1c5789ec5f8686ce4be060142c6b914cd90c5748a7d"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "d082ef07b65573220730501eaf39447502f8675107b98354df9a071d3574718e"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "48550f8ce475afe6336f898e9bcc927cf0b6d6aff02aa587790bc6b64a4a4cf8"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "c60dbf4e1dea53a70be75645eaeafd0dc5c47b8f59f732179df07736b4eb349f"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "b8b908ac5e91db46d20e918808574e1e4ec16cfda528fe75e3257ad454ba6dc6"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "10273886f0aac9f4aa4ecab996b083680d19e0a8f94b2c8644a1193d8d25419d"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "a66cb24748c4e908005624787f5627dc6f8cc60d72d60f841fd351a4d0289ca2"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "c99975c3461376422bfd898a7a745433d594faf0fc25569f7366ed0ae5ab973a"
+    },
+    "signal_post_md": {
+      "name": "signal_post.md",
+      "sha256": "50c0591ab6d49be4688cc053b0a3bf2b1457fa37c553c1c10ce805e186241039"
+    }
+  }
+}
