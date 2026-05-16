@@ -242,3 +242,44 @@ def test_biomedical_specific_markers_no_longer_in_set() -> None:
     assert classify_numeric_role(
         70.0, "%", "ad libitum feeding at 70% calories",
     ) != "regimen"
+
+
+def test_loaded_role_markers_have_no_biomedical_literals() -> None:
+    """Sprint 72 — structural lock on the universal-no-hardcoding
+    contract. The role-marker vocabulary lives in
+    topic_packs/role_markers.toml; this test asserts that no
+    domain/clinical/animal-husbandry literal is in the loaded data.
+    If a biomedical leak ever lands in the TOML, this test fails
+    immediately. The auditor's strictest reading of 'no
+    hardcoding' is now enforceable by CI."""
+    from agent.numeric_role_classifier import _load_role_markers
+    markers = _load_role_markers()
+    blocklist = frozenset({
+        # Clinical-trial vocabulary
+        "patients", "volunteers", "patient", "clinic", "clinical",
+        # Animal-husbandry / Latin
+        "feeding", "feed", "ad lib", "ad libitum", "mice", "rats",
+        # Drug/molecule literals
+        "rapamycin", "metformin", "resveratrol", "sirt", "mtor",
+        # Disease literals
+        "cancer", "tumor", "alzheimer", "diabetes",
+    })
+    all_markers = markers["regimen"] | markers["sample_size"]
+    leaks = {m for m in all_markers if m.lower() in blocklist}
+    assert not leaks, (
+        f"biomedical literals leaked into topic_packs/role_markers.toml: "
+        f"{sorted(leaks)}. The universal-no-hardcoding contract requires "
+        f"only language-level English research vocabulary.")
+
+
+def test_role_markers_are_loaded_from_data_file() -> None:
+    """Sprint 72 — the classifier should not embed marker lists in
+    code. Loading from the TOML data file must yield non-empty
+    universal vocabulary for both regimen and sample_size."""
+    from agent.numeric_role_classifier import _load_role_markers
+    markers = _load_role_markers()
+    assert markers["regimen"], "regimen markers missing from TOML"
+    assert markers["sample_size"], "sample_size markers missing from TOML"
+    # Spot-check a known universal entry survives the round-trip.
+    assert "restriction" in markers["regimen"]
+    assert "n=" in markers["sample_size"]

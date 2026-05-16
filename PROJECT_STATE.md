@@ -91,7 +91,27 @@ editorial Sprint 60, **A_core/B_context-only top_N ranking Sprint 71**)
 strict binding lock). One-command autonomous curator cycle via
 `scripts/run_curator_cycle.py` (Sprint 65).
 
-**Sprint 71 closes the MiMo hook review issues from 2026-05-16:**
+**Sprint 72 (in flight, this commit pending) — closes the
+2026-05-16 auditor's strictest reading of universal-no-hardcoding:**
+- Marker vocabulary moved out of code into data:
+  `topic_packs/role_markers.toml` is now the single source of truth
+  for the regimen / sample-size word lists. `agent/numeric_role_
+  classifier.py` reads via `_load_role_markers()` (lru-cached;
+  degrades to empty sets on missing/malformed file). The classifier
+  is now pure logic; vocabulary is data.
+- Structural contract lock — `tests/test_numeric_role_classifier.py
+  ::test_loaded_role_markers_have_no_biomedical_literals` walks the
+  loaded TOML and asserts no clinical / animal-husbandry / drug /
+  disease literal leaked in. Any future regression is a CI failure.
+- 3 missing universal fixtures the auditor flagged are now
+  explicitly in `tests/test_numeric_sanitizer.py`: Sweden carbon
+  tax for 30 years (climate duration), 15% YoY revenue (business
+  growth), 5.25% Fed Funds rate (finance policy rate). Plus a
+  Q3-2024 quarter-year identifier fixture documenting that
+  `Q3 2024` -> 2024 is correctly flagged as an identifier-embed
+  by the same Sprint 69 rule that catches `MCF 7`.
+
+**Sprint 71 closed the MiMo hook review issues from 2026-05-16:**
 - `scripts/build_topic_evidence_run.py` now ranks `top_N.md` cards only
   from facts whose current lane verdict is `A_core` or `B_context`.
   `D_bad_extraction` and `C_noise` facts remain in receipts for audit,
