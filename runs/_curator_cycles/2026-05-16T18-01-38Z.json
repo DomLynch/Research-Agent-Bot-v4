@@ -44,5 +44,6 @@
       "notes": ""
     }
   ],
-  "skipped_in_cooldown": []
+  "skipped_in_cooldown": [],
+  "cross_topic_memo": "runs/_curator_cycles/2026-05-16T18-01-38Z_cross_topic_alpha_memo.md"
 }

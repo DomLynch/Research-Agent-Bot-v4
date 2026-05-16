@@ -316,12 +316,33 @@ def main() -> int:
         "ran": [r.as_dict() for r in results],
         "skipped_in_cooldown": skipped,
     }
-    (_CYCLES_DIR / f"{cycle_ts}.json").write_text(
+    json_path = _CYCLES_DIR / f"{cycle_ts}.json"
+    md_path = _CYCLES_DIR / f"{cycle_ts}.md"
+    json_path.write_text(
         json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
-    (_CYCLES_DIR / f"{cycle_ts}.md").write_text(
-        _summarize_md(cycle_ts, results, skipped,
-                      args.cooldown_hours, args.top),
-        encoding="utf-8")
+    md_text = _summarize_md(cycle_ts, results, skipped,
+                            args.cooldown_hours, args.top)
+    cross_ok, cross_last = _run_step(
+        [py, "scripts/run_cross_topic_synthesis.py",
+         "--cycle-json", str(json_path)],
+        "cross_topic",
+    )
+    if cross_ok:
+        memo_name = f"{cycle_ts}_cross_topic_alpha_memo.md"
+        payload["cross_topic_memo"] = f"runs/_curator_cycles/{memo_name}"
+        json_path.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        md_text += f"\n## Cross-topic lead\n\n`runs/_curator_cycles/{memo_name}`\n"
+    else:
+        payload["cross_topic_memo_error"] = cross_last[:240]
+        json_path.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        md_text += f"\n## Cross-topic lead\n\n_failed: {cross_last[:240]}_\n"
+    md_path.write_text(md_text, encoding="utf-8")
     print(f"[cycle] summary -> runs/_curator_cycles/{cycle_ts}.json")
     return 0
 

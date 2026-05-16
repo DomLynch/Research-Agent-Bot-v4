@@ -82,6 +82,24 @@ scoring, thresholds, and digest schema stay put.
 12. ✅ Tests (unit + golden) + supplement plugins + cutover validation
 
 ## Current Sprint
+**Sprint 85 shipped** — cross-topic alpha synthesis:
+- `agent/cross_topic_synthesizer.py` reads per-topic `alpha_memo.md`
+  files and applies a structural density gate before any lead memo can
+  publish: at least 3 topics must share one alpha cue, each supporting
+  topic must have bound receipts, and at most one support topic may be
+  speculative.
+- `scripts/run_cross_topic_synthesis.py` writes a cycle-level
+  `*_cross_topic_alpha_memo.md`; it uses MiMo when configured and
+  falls back to deterministic sections if the model is unavailable.
+  The model can sharpen prose but cannot bypass the density gate.
+- `scripts/run_curator_cycle.py` now runs the cross-topic synthesis
+  step after the normal per-topic pipeline and records the memo path in
+  the cycle JSON/Markdown summary.
+- Fresh live proof from the retained Sprint 84 cycle:
+  `runs/_curator_cycles/2026-05-16T18-01-38Z_cross_topic_alpha_memo.md`
+  passed the gate on the shared `functional_endpoint` cue across
+  metformin, exercise, and mTOR.
+
 **Sprint 84 shipped** — alpha memo product layer:
 - `agent/signal_memo_writer.py` renders `alpha_memo.md` from existing
   run receipts: `signal_post.md`, `frontier_review.json`,

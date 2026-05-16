@@ -8,7 +8,7 @@ Supplement = audit. Compiler = truth. LLM = prose. Contract = enforcement.
 **No LLM owns truth. No literal owns topic. No gate owns more than its rule.
 No section owns evidence outside its packet.**
 
-## Current State — 2026-05-16 (Sprint 84 alpha memos)
+## Current State — 2026-05-16 (Sprint 85 cross-topic alpha synthesis)
 - LOC ceiling: **14,000 in `agent/`** (hard gate, `scripts/loc_gate.sh`).
   See the cap-doctrine header in `loc_gate.sh` for the full bump
   history. Every module under the higher cap must delete or prevent a
