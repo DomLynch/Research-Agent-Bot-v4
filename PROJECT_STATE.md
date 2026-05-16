@@ -82,7 +82,7 @@ scoring, thresholds, and digest schema stay put.
 12. ✅ Tests (unit + golden) + supplement plugins + cutover validation
 
 ## Current Sprint
-**Sprint 69 in flight** (head ≈ `2b5616a`, this commit pending) —
+**Sprint 70 in flight** (head ≈ `efbb7d1`, this commit pending) —
 alpha-mode Researka pipeline working end-to-end: discovery (Sprint 63)
 → build_topic_evidence_run (with PICO enrichment Sprint 61, numeric
 sanitizer Sprint 64 + 69, dedup + lanes + editorial Sprint 60, fact-id
