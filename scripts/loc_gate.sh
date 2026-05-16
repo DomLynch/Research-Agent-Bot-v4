@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# LOC gate — fail if agent/ exceeds the 11,700 LOC ceiling.
+# LOC gate — fail if agent/ exceeds the 14,000 LOC ceiling.
 # Tests, docs, scripts, supplement plugins, and topic_pack TOML do not count.
 # Cap history: 3000 (initial) -> 5000 (Sprint-6 truth patch) -> 7500
 # (Sprint 11.1 manuscript completion: narrative writers + reference resolver
@@ -85,6 +85,16 @@
 # empirical calibration). Prevents the "silent lens loss when MiMo
 # truncates" failure mode the auditor caught on the noisy-topic
 # stress test.)
+# -> 14000 (Sprint 74 operator-approved headroom bump for the
+# universal-no-hardcoding sweep across agent/include_contract.py
+# (lane title-term lists -> data file), agent/risk_of_bias.py
+# (SYRCLE / Cochrane-RoB-2 / ROBINS-I framework defs -> data file),
+# and the residual biomedical surfaces named in the Sprint 73
+# honest inventory. The bump is conservative — most refactors will
+# net negative LOC as code-level constants move out, but typed-
+# dataclass + loader plumbing can be additive in intermediate
+# states. New code under the higher cap must still satisfy the
+# fake-evidence-failure-mode rule.)
 # -> 11700 (Sprint 70 cross-topic paper-anchorage dampening:
 # agent/topic_discovery.py builds a global paper-anchorage map
 # (doi/title -> set of topics where it sits in top-K driver papers)
@@ -258,7 +268,7 @@
 # contracts), not buy prose polish or speculative abstraction.
 set -euo pipefail
 
-CEILING="${LOC_CEILING:-11700}"
+CEILING="${LOC_CEILING:-14000}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 COUNT=$(find "$ROOT/agent" -name "*.py" -not -path "*/__pycache__/*" 2>/dev/null \
