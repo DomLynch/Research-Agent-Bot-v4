@@ -18,3 +18,48 @@ markers = [
   "subgroup",
   "stratified",
 ]
+
+[boosts.translation_context]
+weight = 12
+markers = [
+  "human",
+  "humans",
+  "older adults",
+  "elderly",
+  "middle-aged",
+  "clinical trial",
+  "cohort",
+]
+
+[boosts.functional_endpoint]
+weight = 30
+markers = [
+  "lifespan",
+  "healthspan",
+  "mortality",
+  "survival",
+  "frailty",
+  "immune function",
+  "vaccine response",
+]
+
+[boosts.timing_or_reversal]
+weight = 8
+markers = [
+  "late-life",
+  "transient",
+  "reversed",
+  "restored",
+  "rescue",
+  "after treatment",
+]
+
+[boosts.low_signal_context]
+weight = -12
+markers = [
+  "in vitro",
+  "cell line",
+  "assay",
+  "western blot",
+  "phosphorylation",
+]

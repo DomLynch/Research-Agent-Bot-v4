@@ -173,6 +173,25 @@ def _run_topic_pipeline(
     )
 
 
+def _top_card_summary(run_dir: str) -> tuple[str, str]:
+    if not run_dir:
+        return "", ""
+    top_path = _ROOT / run_dir / "top_5.md"
+    try:
+        lines = top_path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return "", ""
+    finding = cues = ""
+    for line in lines:
+        if not finding and line.startswith("**Finding:**"):
+            finding = line.removeprefix("**Finding:**").strip()
+        elif not cues and line.startswith("- **Alpha cues:**"):
+            cues = line.removeprefix("- **Alpha cues:**").strip()
+        if finding and cues:
+            break
+    return finding, cues
+
+
 def _summarize_md(
     cycle_ts: str, results: list[TopicResult], skipped: list[str],
     cooldown_hours: float, top_requested: int,
@@ -194,6 +213,24 @@ def _summarize_md(
             f"| {i} | `{r.topic}` | {r.velocity:.2f} | {r.status} | "
             f"`{r.signal_label}` | `{r.run_dir or '—'}` |"
         )
+    top_cards = [
+        (r.topic, r.signal_label, *_top_card_summary(r.run_dir), r.run_dir)
+        for r in results if r.run_dir
+    ]
+    top_cards = [row for row in top_cards if row[2]]
+    if top_cards:
+        lines += [
+            "",
+            "## Top surfaced cards",
+            "",
+            "| Topic | Signal | #1 finding | Alpha cues | Run dir |",
+            "|---|---|---|---|---|",
+        ]
+        for topic, label, finding, cues, run_dir in top_cards:
+            lines.append(
+                f"| `{topic}` | `{label}` | {finding[:180]} | "
+                f"{cues or 'baseline'} | `{run_dir}` |"
+            )
     if skipped:
         lines += [
             "",

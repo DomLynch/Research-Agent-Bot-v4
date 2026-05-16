@@ -15,6 +15,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from agent.fact_lanes import LaneVerdict
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 from build_topic_evidence_run import (
@@ -55,6 +57,19 @@ def test_rankable_facts_for_top_keeps_only_a_core_and_b_context() -> None:
     ]
     out = _rankable_facts_for_top(facts, "topicA")
     assert [f["fact_id"] for f in out] == ["a", "b"]
+
+
+def test_rankable_facts_for_top_drops_context_poor_numeric_fragments() -> None:
+    facts = [
+        _fact("a", phrase="1.215 (1.149-1.286) (P < .001) in analysis"),
+        _fact("b", phrase="intervention reduced functional decline by 40%"),
+    ]
+    lanes = [
+        LaneVerdict("a", "A_core", "effect_size", "ok"),
+        LaneVerdict("b", "A_core", "effect_size", "ok"),
+    ]
+    out = _rankable_facts_for_top(facts, "topic", lanes)
+    assert [f["fact_id"] for f in out] == ["b"]
 
 
 # ============= Sprint 60a: dedup =============
@@ -221,6 +236,18 @@ def test_editorial_partial_mimo_keeps_templates_for_missing_fields() -> None:
     )
     assert "MiMo overrides why." in out
     assert "Single trial" in out  # caution template still in place
+
+
+def test_rendered_card_shows_alpha_cues() -> None:
+    md = _render_md(
+        "topic", "ts",
+        [(90, _fact(
+            "f/1",
+            phrase="Late-life treatment improved survival in older adults.",
+        ))],
+        1, "tier2_search",
+    )
+    assert "- **Alpha cues:** translation_context, functional_endpoint" in md
 
 
 def test_lane_render_keeps_editorial_bound_to_original_fact() -> None:

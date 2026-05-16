@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from agent.alpha_selector import alpha_score
+from agent.alpha_selector import alpha_cues, alpha_score
 from agent.fact_facets import (
     classify_fact_facet,
     load_facet_markers,
@@ -88,6 +88,34 @@ def test_alpha_score_boosts_contrast_and_subgroup_markers() -> None:
     generic = alpha_score(base, _fact("generic", "The biomarker changed by 52%."))
     assert boosted > generic
     assert boosted == 85
+
+
+def test_alpha_cues_surface_translation_endpoint_and_penalty() -> None:
+    fact = _fact(
+        "late-life",
+        "Late-life treatment improved survival in older adults, but not all strata.",
+    )
+    cues = alpha_cues(fact)
+    assert "contrast" in cues
+    assert "translation_context" in cues
+    assert "functional_endpoint" in cues
+    assert alpha_score(50, fact) == 100
+
+    low_signal = _fact(
+        "assay",
+        "A cell line assay showed altered phosphorylation.",
+    )
+    assert "low_signal_context" in alpha_cues(low_signal)
+    assert alpha_score(5, low_signal) == 0
+
+
+def test_alpha_score_penalizes_context_poor_numeric_fragments() -> None:
+    fragment = _fact(
+        "fragment",
+        "1.215 (1.149-1.286) (P < .001) in multivariate Cox regression",
+    )
+    assert "context_fragment" in alpha_cues(fragment)
+    assert alpha_score(80, fragment) == 35
 
 
 def test_fact_facets_code_has_no_domain_vocabulary() -> None:

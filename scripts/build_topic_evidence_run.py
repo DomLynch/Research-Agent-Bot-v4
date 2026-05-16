@@ -14,7 +14,7 @@ parallel to the existing `runs/<topic>-paper-<ts>/` convention:
 No LLM calls. Pure data → ranked view from canonical Researka curation.
 
 Usage:
-    python scripts/build_topic_evidence_run.py --topic rapamycin --top 5
+    python scripts/build_topic_evidence_run.py --topic <topic> --top 5
 """
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ import httpx
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from agent.alpha_selector import alpha_score
+from agent.alpha_selector import alpha_cues, alpha_score
 from agent.fact_facets import (
     facet_counts,
     select_coherent_theme,
@@ -74,7 +74,7 @@ def _interestingness(fact: dict[str, Any]) -> int:
     nv = _safe_float(fact.get("numeric_value"))
     if nv is not None:
         score += 10
-        mag = min(20, int(abs(nv) / 3))  # 60% lifespan ext -> +20, 9% -> +3
+        mag = min(20, int(abs(nv) / 3))  # 60% -> +20, 9% -> +3
         score += mag
     if fact.get("ci_lower") is not None and fact.get("ci_upper") is not None:
         score += 15
@@ -193,6 +193,7 @@ def _rankable_facts_for_top(
     return [
         f for f in facts
         if lane_by_id.get(str(f.get("fact_id") or "")) in _TOP_BINDABLE_LANES
+        and "context_fragment" not in alpha_cues(f)
     ]
 
 
@@ -414,6 +415,7 @@ def _render_md(topic: str, ts: str, top: list[tuple[int, dict[str, Any]]],
             f"- **Value:** {_fmt_value(f)}",
             f"- **Population:** {population}",
             f"- **Intervention:** {intervention}",
+            f"- **Alpha cues:** {', '.join(alpha_cues(f)) or 'baseline'}",
             f"- **Source:** *{title}* — {journal} ({year})",
             f"  · DOI: `{doi}`" if doi else "",
             f"- **Validator:** {validator}"

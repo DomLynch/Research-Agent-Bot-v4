@@ -82,6 +82,27 @@ scoring, thresholds, and digest schema stay put.
 12. ✅ Tests (unit + golden) + supplement plugins + cutover validation
 
 ## Current Sprint
+**Sprint 83 shipped** — longevity alpha Top 5 scoring pass:
+- `agent/alpha_selector.py` now exposes deterministic `alpha_cues()`
+  and clamps positive/negative weighted cues to 0..100. Code remains
+  universal; cue vocabulary and weights live in
+  `topic_packs/alpha_selection.toml`.
+- `topic_packs/alpha_selection.toml` adds data-level cues for
+  translational context, functional endpoints, timing/reversal, and
+  low-signal assay context. Functional endpoints now outrank generic
+  magnitude when the evidence is A/B-bound.
+- `scripts/build_topic_evidence_run.py` renders `Alpha cues` per card
+  and excludes context-poor numeric fragments from operator-facing
+  Top cards after the A/B lane filter.
+- Fresh curator cycle retained at `runs/_curator_cycles/2026-05-16T18-01-38Z.*`.
+  Ran metformin, mTOR, rapamycin, autophagy, exercise. `runs/latest`
+  points to the newest fresh run:
+  `exercise-evidence-2026-05-16T18-12-38Z`.
+- Concrete output improvements: exercise mortality moved to #1;
+  metformin cancer mortality moved to #1; mTOR mortality moved to #1;
+  rapamycin lifespan cards all show endpoint / subgroup / timing cues;
+  autophagy numeric-only Cox fragment was removed from Top cards.
+
 **Sprint 82 shipped** — mTOR-specific render-regression lock:
 - Added `test_mtor_mortality_survival_editorial_swap_regression` in
   `tests/test_top5_rendering.py`. It uses the historical mTOR

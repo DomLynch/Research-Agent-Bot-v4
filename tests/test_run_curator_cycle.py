@@ -20,6 +20,7 @@ from run_curator_cycle import (
     _read_discovery_top,
     _recent_signal_topics,
     _summarize_md,
+    _top_card_summary,
 )
 
 
@@ -138,6 +139,27 @@ def test_summarize_md_renders_table() -> None:
     assert "rapamycin" in md and "metformin" in md
     assert "frontier_hypothesis" in md
     assert "Skipped" in md and "exercise" in md
+
+
+def test_top_card_summary_reads_first_finding_and_alpha_cues(tmp_path: Path) -> None:
+    run_dir = tmp_path / "runs" / "topic-evidence-ts"
+    run_dir.mkdir(parents=True)
+    (run_dir / "top_5.md").write_text(
+        "# Top 1\n\n"
+        "## #1 — score 90\n\n"
+        "**Finding:** mortality was lower by 11%.\n"
+        "- **Alpha cues:** functional_endpoint\n",
+        encoding="utf-8",
+    )
+    import run_curator_cycle
+    old_root = run_curator_cycle._ROOT
+    try:
+        run_curator_cycle._ROOT = tmp_path
+        finding, cues = _top_card_summary("runs/topic-evidence-ts")
+    finally:
+        run_curator_cycle._ROOT = old_root
+    assert finding == "mortality was lower by 11%."
+    assert cues == "functional_endpoint"
 
 
 def test_topic_result_round_trips() -> None:

@@ -31,6 +31,18 @@ def _text(fact: dict[str, Any]) -> str:
     return " ".join(str(p or "") for p in parts).lower()
 
 
+def _context_poor_numeric_phrase(fact: dict[str, Any]) -> bool:
+    phrase = str(fact.get("canonical_phrase") or "").strip()
+    if not phrase:
+        return True
+    starts_numeric = bool(phrase[:1].isdigit() or phrase[:1] in ".-")
+    words = [
+        token for token in phrase.replace("-", " ").split()
+        if any(ch.isalpha() for ch in token)
+    ]
+    return starts_numeric and len(words) < 8
+
+
 @lru_cache(maxsize=1)
 def load_alpha_boosts() -> dict[str, tuple[int, tuple[str, ...]]]:
     try:
@@ -58,10 +70,23 @@ def load_alpha_boosts() -> dict[str, tuple[int, tuple[str, ...]]]:
     return out
 
 
-def alpha_score(base_score: int, fact: dict[str, Any]) -> int:
+def alpha_cues(fact: dict[str, Any]) -> tuple[str, ...]:
     haystack = _text(fact)
+    cues = [
+        name for name, (_weight, markers) in load_alpha_boosts().items()
+        if any(marker in haystack for marker in markers)
+    ]
+    if _context_poor_numeric_phrase(fact):
+        cues.append("context_fragment")
+    return tuple(cues)
+
+
+def alpha_score(base_score: int, fact: dict[str, Any]) -> int:
     boost = 0
-    for weight, markers in load_alpha_boosts().values():
-        if any(marker in haystack for marker in markers):
+    cues = set(alpha_cues(fact))
+    for name, (weight, _markers) in load_alpha_boosts().items():
+        if name in cues:
             boost += weight
-    return min(100, base_score + boost)
+    if "context_fragment" in cues:
+        boost -= 45
+    return max(0, min(100, base_score + boost))

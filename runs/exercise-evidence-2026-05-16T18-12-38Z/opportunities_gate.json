@@ -1,0 +1,71 @@
+{
+  "topic": "exercise",
+  "snapshot_utc": "2026-05-16T18-12-38Z",
+  "input_pack": {
+    "topic": "exercise",
+    "a_core_count": 15,
+    "b_context_count": 1,
+    "excluded_counts": {
+      "C_noise": 0,
+      "D_bad_extraction": 21
+    },
+    "has_minimum_a_core": true,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Pathway-specific anti-inflammatory gating: metformin unlocks TNF-axis suppression in exercise-responsive cancer survivors that exercise alone cannot achieve",
+      "status": "survives",
+      "blocking_flags": [],
+      "original_opportunity": 100,
+      "capped_opportunity": 100,
+      "cited_fact_ids": [
+        "22116",
+        "22117",
+        "22118",
+        "22119"
+      ]
+    },
+    {
+      "thesis_idx": 1,
+      "title": "Obesity-induced anabolic resistance to exercise: cross-species evidence synthesis and implications for dose escalation in obese humans",
+      "status": "survives",
+      "blocking_flags": [],
+      "original_opportunity": 61,
+      "capped_opportunity": 61,
+      "cited_fact_ids": [
+        "12572",
+        "12573",
+        "19252"
+      ]
+    },
+    {
+      "thesis_idx": 2,
+      "title": "Concurrent PEDF and VEGF suppression by lifestyle intervention: toward a net-angiocrine-remodeling hypothesis for exercise-mediated tumor control",
+      "status": "survives",
+      "blocking_flags": [],
+      "original_opportunity": 73,
+      "capped_opportunity": 73,
+      "cited_fact_ids": [
+        "29370",
+        "29371",
+        "29372",
+        "41245"
+      ]
+    },
+    {
+      "thesis_idx": 3,
+      "title": "NO-donor pharmacological priming of exercise-induced hypertrophy in sarcopenia: from aged mouse muscle to translational trial design",
+      "status": "survives",
+      "blocking_flags": [],
+      "original_opportunity": 41,
+      "capped_opportunity": 41,
+      "cited_fact_ids": [
+        "34200",
+        "12572",
+        "12573"
+      ]
+    }
+  ]
+}

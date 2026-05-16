@@ -1,0 +1,370 @@
+{
+  "snapshot_utc": "2026-05-16T18-01-51Z",
+  "year": 2026,
+  "seed_count": 20,
+  "candidate_count": 20,
+  "top": [
+    {
+      "topic": "metformin",
+      "paper_count": 25,
+      "top_paper_doi": "10.1161/cir.0000000000000677",
+      "top_paper_title": "2019 ACC/AHA Guideline on the Primary Prevention of Cardiovascular Disease: Executive Summary: A Report of the American College of Cardiology/American Heart Association Task Force on Clinical Practice",
+      "velocity_score": 1.383,
+      "mean_fwci": 23.437,
+      "mean_cited_by": 391.1
+    },
+    {
+      "topic": "mtor",
+      "paper_count": 25,
+      "top_paper_doi": "10.1126/science.1190287",
+      "top_paper_title": "mTOR-Dependent Synapse Formation Underlies the Rapid Antidepressant Effects of NMDA Antagonists",
+      "velocity_score": 1.002,
+      "mean_fwci": 27.925,
+      "mean_cited_by": 634.7
+    },
+    {
+      "topic": "rapamycin",
+      "paper_count": 25,
+      "top_paper_doi": "10.1126/science.1190287",
+      "top_paper_title": "mTOR-Dependent Synapse Formation Underlies the Rapid Antidepressant Effects of NMDA Antagonists",
+      "velocity_score": 0.897,
+      "mean_fwci": 24.656,
+      "mean_cited_by": 524.9
+    },
+    {
+      "topic": "autophagy",
+      "paper_count": 25,
+      "top_paper_doi": "10.1172/jci73939",
+      "top_paper_title": "mTOR: a pharmacologic target for autophagy regulation",
+      "velocity_score": 0.627,
+      "mean_fwci": 29.812,
+      "mean_cited_by": 544.3
+    },
+    {
+      "topic": "exercise",
+      "paper_count": 25,
+      "top_paper_doi": "10.1089/rej.2012.1397",
+      "top_paper_title": "Effects of Different Exercise Interventions on Risk of Falls, Gait Ability, and Balance in Physically Frail Older Adults: A Systematic Review",
+      "velocity_score": 0.417,
+      "mean_fwci": 10.815,
+      "mean_cited_by": 149.2
+    },
+    {
+      "topic": "fasting",
+      "paper_count": 25,
+      "top_paper_doi": "10.1161/circulationaha.109.192703",
+      "top_paper_title": "Defining and Setting National Goals for Cardiovascular Health Promotion and Disease Reduction",
+      "velocity_score": 0.416,
+      "mean_fwci": 11.303,
+      "mean_cited_by": 336.8
+    },
+    {
+      "topic": "NAD",
+      "paper_count": 25,
+      "top_paper_doi": "10.1126/science.aaf2693",
+      "top_paper_title": "NAD <sup>+</sup> repletion improves mitochondrial and stem cell function and enhances life span in mice",
+      "velocity_score": 0.369,
+      "mean_fwci": 10.729,
+      "mean_cited_by": 257.6
+    },
+    {
+      "topic": "longevity",
+      "paper_count": 25,
+      "top_paper_doi": "10.1073/pnas.1511085112",
+      "top_paper_title": "Social relationships and physiological determinants of longevity across the human life span",
+      "velocity_score": 0.332,
+      "mean_fwci": 8.815,
+      "mean_cited_by": 115.2
+    },
+    {
+      "topic": "senolytic",
+      "paper_count": 25,
+      "top_paper_doi": "10.1126/science.aaf6659",
+      "top_paper_title": "Senescent intimal foam cells are deleterious at all stages of atherosclerosis",
+      "velocity_score": 0.291,
+      "mean_fwci": 8.135,
+      "mean_cited_by": 112.1
+    },
+    {
+      "topic": "telomere",
+      "paper_count": 25,
+      "top_paper_doi": "10.1126/science.1261121",
+      "top_paper_title": "Hidden costs of infection: Chronic malaria accelerates telomere degradation and senescence in wild birds",
+      "velocity_score": 0.287,
+      "mean_fwci": 12.907,
+      "mean_cited_by": 211.2
+    },
+    {
+      "topic": "spermidine",
+      "paper_count": 25,
+      "top_paper_doi": "10.1039/d2ra03281c",
+      "top_paper_title": "Design and synthesis of hybrid compounds as novel drugs and medicines",
+      "velocity_score": 0.138,
+      "mean_fwci": 7.31,
+      "mean_cited_by": 90.2
+    },
+    {
+      "topic": "quercetin",
+      "paper_count": 25,
+      "top_paper_doi": "10.1111/cbdd.13604",
+      "top_paper_title": "Characteristics of flavonoids as potent MERS‐CoV 3C‐like protease inhibitors",
+      "velocity_score": 0.138,
+      "mean_fwci": 6.179,
+      "mean_cited_by": 96.3
+    },
+    {
+      "topic": "sirtuin",
+      "paper_count": 25,
+      "top_paper_doi": "10.1080/15548627.2023.2254191",
+      "top_paper_title": "Dysfunction of autophagy in high-fat diet-induced non-alcoholic fatty liver disease",
+      "velocity_score": 0.106,
+      "mean_fwci": 4.816,
+      "mean_cited_by": 63.2
+    },
+    {
+      "topic": "creatine",
+      "paper_count": 25,
+      "top_paper_doi": "10.1002/14651858.cd004289.pub5",
+      "top_paper_title": "HMG CoA reductase inhibitors (statins) for dialysis patients",
+      "velocity_score": 0.103,
+      "mean_fwci": 5.97,
+      "mean_cited_by": 74.7
+    },
+    {
+      "topic": "dasatinib",
+      "paper_count": 22,
+      "top_paper_doi": "10.1016/j.biopha.2024.116474",
+      "top_paper_title": "Senolytic drugs dasatinib and quercetin combined with Carboplatin or Olaparib reduced the peritoneal and adipose tissue metastasis of ovarian cancer",
+      "velocity_score": 0.088,
+      "mean_fwci": 5.593,
+      "mean_cited_by": 98.7
+    },
+    {
+      "topic": "berberine",
+      "paper_count": 23,
+      "top_paper_doi": "10.1080/15384101.2022.2100682",
+      "top_paper_title": "Protective effect of berberine against LPS-induced injury in the intestine: a review",
+      "velocity_score": 0.086,
+      "mean_fwci": 5.498,
+      "mean_cited_by": 58.1
+    },
+    {
+      "topic": "NMN",
+      "paper_count": 15,
+      "top_paper_doi": "10.3390/nu15020445",
+      "top_paper_title": "Potential Synergistic Supplementation of NAD+ Promoting Compounds as a Strategy for Increasing Healthspan",
+      "velocity_score": 0.084,
+      "mean_fwci": 4.075,
+      "mean_cited_by": 47.9
+    },
+    {
+      "topic": "resveratrol",
+      "paper_count": 25,
+      "top_paper_doi": "10.1158/0008-5472.can-09-3537",
+      "top_paper_title": "Resveratrol Promotes Autophagic Cell Death in Chronic Myelogenous Leukemia Cells via JNK-Mediated p62/SQSTM1 Expression and AMPK Activation",
+      "velocity_score": 0.082,
+      "mean_fwci": 4.056,
+      "mean_cited_by": 63.8
+    },
+    {
+      "topic": "caloric_restriction",
+      "paper_count": 25,
+      "top_paper_doi": "10.1172/jci73938",
+      "top_paper_title": "Development of autophagy inducers in clinical medicine",
+      "velocity_score": 0.069,
+      "mean_fwci": 1.763,
+      "mean_cited_by": 22.5
+    },
+    {
+      "topic": "fisetin",
+      "paper_count": 4,
+      "top_paper_doi": "10.1002/jbmr.3978",
+      "top_paper_title": "Targeted Reduction of Senescent Cell Burden Alleviates Focal Radiotherapy-Related Bone Loss",
+      "velocity_score": 0.027,
+      "mean_fwci": 4.37,
+      "mean_cited_by": 55.0
+    }
+  ],
+  "all": [
+    {
+      "topic": "metformin",
+      "paper_count": 25,
+      "top_paper_doi": "10.1161/cir.0000000000000677",
+      "top_paper_title": "2019 ACC/AHA Guideline on the Primary Prevention of Cardiovascular Disease: Executive Summary: A Report of the American College of Cardiology/American Heart Association Task Force on Clinical Practice",
+      "velocity_score": 1.383,
+      "mean_fwci": 23.437,
+      "mean_cited_by": 391.1
+    },
+    {
+      "topic": "mtor",
+      "paper_count": 25,
+      "top_paper_doi": "10.1126/science.1190287",
+      "top_paper_title": "mTOR-Dependent Synapse Formation Underlies the Rapid Antidepressant Effects of NMDA Antagonists",
+      "velocity_score": 1.002,
+      "mean_fwci": 27.925,
+      "mean_cited_by": 634.7
+    },
+    {
+      "topic": "rapamycin",
+      "paper_count": 25,
+      "top_paper_doi": "10.1126/science.1190287",
+      "top_paper_title": "mTOR-Dependent Synapse Formation Underlies the Rapid Antidepressant Effects of NMDA Antagonists",
+      "velocity_score": 0.897,
+      "mean_fwci": 24.656,
+      "mean_cited_by": 524.9
+    },
+    {
+      "topic": "autophagy",
+      "paper_count": 25,
+      "top_paper_doi": "10.1172/jci73939",
+      "top_paper_title": "mTOR: a pharmacologic target for autophagy regulation",
+      "velocity_score": 0.627,
+      "mean_fwci": 29.812,
+      "mean_cited_by": 544.3
+    },
+    {
+      "topic": "exercise",
+      "paper_count": 25,
+      "top_paper_doi": "10.1089/rej.2012.1397",
+      "top_paper_title": "Effects of Different Exercise Interventions on Risk of Falls, Gait Ability, and Balance in Physically Frail Older Adults: A Systematic Review",
+      "velocity_score": 0.417,
+      "mean_fwci": 10.815,
+      "mean_cited_by": 149.2
+    },
+    {
+      "topic": "fasting",
+      "paper_count": 25,
+      "top_paper_doi": "10.1161/circulationaha.109.192703",
+      "top_paper_title": "Defining and Setting National Goals for Cardiovascular Health Promotion and Disease Reduction",
+      "velocity_score": 0.416,
+      "mean_fwci": 11.303,
+      "mean_cited_by": 336.8
+    },
+    {
+      "topic": "NAD",
+      "paper_count": 25,
+      "top_paper_doi": "10.1126/science.aaf2693",
+      "top_paper_title": "NAD <sup>+</sup> repletion improves mitochondrial and stem cell function and enhances life span in mice",
+      "velocity_score": 0.369,
+      "mean_fwci": 10.729,
+      "mean_cited_by": 257.6
+    },
+    {
+      "topic": "longevity",
+      "paper_count": 25,
+      "top_paper_doi": "10.1073/pnas.1511085112",
+      "top_paper_title": "Social relationships and physiological determinants of longevity across the human life span",
+      "velocity_score": 0.332,
+      "mean_fwci": 8.815,
+      "mean_cited_by": 115.2
+    },
+    {
+      "topic": "senolytic",
+      "paper_count": 25,
+      "top_paper_doi": "10.1126/science.aaf6659",
+      "top_paper_title": "Senescent intimal foam cells are deleterious at all stages of atherosclerosis",
+      "velocity_score": 0.291,
+      "mean_fwci": 8.135,
+      "mean_cited_by": 112.1
+    },
+    {
+      "topic": "telomere",
+      "paper_count": 25,
+      "top_paper_doi": "10.1126/science.1261121",
+      "top_paper_title": "Hidden costs of infection: Chronic malaria accelerates telomere degradation and senescence in wild birds",
+      "velocity_score": 0.287,
+      "mean_fwci": 12.907,
+      "mean_cited_by": 211.2
+    },
+    {
+      "topic": "spermidine",
+      "paper_count": 25,
+      "top_paper_doi": "10.1039/d2ra03281c",
+      "top_paper_title": "Design and synthesis of hybrid compounds as novel drugs and medicines",
+      "velocity_score": 0.138,
+      "mean_fwci": 7.31,
+      "mean_cited_by": 90.2
+    },
+    {
+      "topic": "quercetin",
+      "paper_count": 25,
+      "top_paper_doi": "10.1111/cbdd.13604",
+      "top_paper_title": "Characteristics of flavonoids as potent MERS‐CoV 3C‐like protease inhibitors",
+      "velocity_score": 0.138,
+      "mean_fwci": 6.179,
+      "mean_cited_by": 96.3
+    },
+    {
+      "topic": "sirtuin",
+      "paper_count": 25,
+      "top_paper_doi": "10.1080/15548627.2023.2254191",
+      "top_paper_title": "Dysfunction of autophagy in high-fat diet-induced non-alcoholic fatty liver disease",
+      "velocity_score": 0.106,
+      "mean_fwci": 4.816,
+      "mean_cited_by": 63.2
+    },
+    {
+      "topic": "creatine",
+      "paper_count": 25,
+      "top_paper_doi": "10.1002/14651858.cd004289.pub5",
+      "top_paper_title": "HMG CoA reductase inhibitors (statins) for dialysis patients",
+      "velocity_score": 0.103,
+      "mean_fwci": 5.97,
+      "mean_cited_by": 74.7
+    },
+    {
+      "topic": "dasatinib",
+      "paper_count": 22,
+      "top_paper_doi": "10.1016/j.biopha.2024.116474",
+      "top_paper_title": "Senolytic drugs dasatinib and quercetin combined with Carboplatin or Olaparib reduced the peritoneal and adipose tissue metastasis of ovarian cancer",
+      "velocity_score": 0.088,
+      "mean_fwci": 5.593,
+      "mean_cited_by": 98.7
+    },
+    {
+      "topic": "berberine",
+      "paper_count": 23,
+      "top_paper_doi": "10.1080/15384101.2022.2100682",
+      "top_paper_title": "Protective effect of berberine against LPS-induced injury in the intestine: a review",
+      "velocity_score": 0.086,
+      "mean_fwci": 5.498,
+      "mean_cited_by": 58.1
+    },
+    {
+      "topic": "NMN",
+      "paper_count": 15,
+      "top_paper_doi": "10.3390/nu15020445",
+      "top_paper_title": "Potential Synergistic Supplementation of NAD+ Promoting Compounds as a Strategy for Increasing Healthspan",
+      "velocity_score": 0.084,
+      "mean_fwci": 4.075,
+      "mean_cited_by": 47.9
+    },
+    {
+      "topic": "resveratrol",
+      "paper_count": 25,
+      "top_paper_doi": "10.1158/0008-5472.can-09-3537",
+      "top_paper_title": "Resveratrol Promotes Autophagic Cell Death in Chronic Myelogenous Leukemia Cells via JNK-Mediated p62/SQSTM1 Expression and AMPK Activation",
+      "velocity_score": 0.082,
+      "mean_fwci": 4.056,
+      "mean_cited_by": 63.8
+    },
+    {
+      "topic": "caloric_restriction",
+      "paper_count": 25,
+      "top_paper_doi": "10.1172/jci73938",
+      "top_paper_title": "Development of autophagy inducers in clinical medicine",
+      "velocity_score": 0.069,
+      "mean_fwci": 1.763,
+      "mean_cited_by": 22.5
+    },
+    {
+      "topic": "fisetin",
+      "paper_count": 4,
+      "top_paper_doi": "10.1002/jbmr.3978",
+      "top_paper_title": "Targeted Reduction of Senescent Cell Burden Alleviates Focal Radiotherapy-Related Bone Loss",
+      "velocity_score": 0.027,
+      "mean_fwci": 4.37,
+      "mean_cited_by": 55.0
+    }
+  ]
+}

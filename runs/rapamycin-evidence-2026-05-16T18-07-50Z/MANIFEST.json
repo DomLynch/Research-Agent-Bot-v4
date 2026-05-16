@@ -1,0 +1,67 @@
+{
+  "topic": "rapamycin",
+  "snapshot_utc": "2026-05-16T18-07-50Z",
+  "top_n": 5,
+  "facts_inspected": 6,
+  "aggregated_claims": 6,
+  "data_tier": "tier1_canonical",
+  "source": "researka_db GET /api/v1/topics/{topic}/facts",
+  "frontier_model": "mimo-v2.5-pro",
+  "mode": "alpha",
+  "selected_theme": "intervention_signal",
+  "facet_counts": {
+    "regimen_or_dose": 2,
+    "clinical_outcome": 1
+  },
+  "numeric_artifacts_filtered": 1,
+  "pico_enrichment": {
+    "facts_inspected": 7,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "skipped_no_candidates"
+  },
+  "ranking": "alpha: deterministic validation*magnitude*precision*recency + data-driven contrast/subgroup boosts + theme coherence",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "3e872a65e7ca69a83343d0dbc0a646d836281f5cca5b14faa7339074e5569b6c"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "35d086b2e4f80de8e747973f1a63357bd14b7d7ae909a6082fb796880f7f5070"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "a177ad0db1785327eee4149538def94029648cbd553fd196acf680f0ba5a71c4"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "89ac1df1007d47eec119a69f0fdfbddd0e87ee77b544eee9cde56b956962d2e5"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "011f93c4b480b92c419adf2ec0b9b298e54dcb79ba4d6725c3909b9dbe5f91da"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "050a38d2089f4e25478ca741987871f3478b857281fd997ba45a17145fc67f87"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "8e2a8acf3f2a741d6888ba2b0ee40992789093d759b0e723662af56470bdadfc"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "d4c51486b6b3b96acb8f78712bf8dc580c735306f9807c78eb65a6dfdee12ac5"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "81e6825c9ea3ca3353a9a077a1d9275697260d59af39d4170689d734598de8eb"
+    },
+    "signal_post_md": {
+      "name": "signal_post.md",
+      "sha256": "8959341c9dca183f7db7ae98c5fc2d92ab85c314bec3fa4cbd8960ff774f2142"
+    }
+  }
+}

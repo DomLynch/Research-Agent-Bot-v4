@@ -1,0 +1,45 @@
+{
+  "topic": "mtor",
+  "snapshot_utc": "2026-05-16T18-03-26Z",
+  "model": "mimo-v2.5-pro",
+  "lens": "The juxtaposition of mTOR deficiency-induced immunological mortality and metformin-mediated mTOR inhibition in tumor suppression reveals a therapeutic paradox where pathway modulation's efficacy is contingent on host resilience and disease context, challenging one-size-fits-all approaches.",
+  "known_to_ignore": [
+    "mTOR regulates cell growth and metabolism",
+    "mTOR inhibitors are used in cancer therapy"
+  ],
+  "tensions": [
+    "Hypomorphic mTOR mice exhibit 40% mortality (fact 15567) highlighting immune fragility, while metformin's mTOR inhibition reduces tumor burden by 72% (fact 2848) in carcinogen-exposed mice, indicating a trade-off between survival and oncogenic control."
+  ],
+  "gaps": [
+    "No comparative studies on mTOR modulation doses in immunocompromised versus tumor-bearing models",
+    "Lack of data on metformin's effects in mTOR-deficient genetic backgrounds",
+    "Underexploration of temporal dynamics of mTOR inhibition across different disease stages"
+  ],
+  "theses": [
+    {
+      "title": "Context-Dependent mTOR Modulation: Balancing Immune Resilience and Tumor Suppression in Murine Preclinical Models",
+      "paper_type": "evidence-gap",
+      "novelty": 85,
+      "evidence_strength": 30,
+      "reviewer_risk": 70,
+      "opportunity_score": 36,
+      "rationale": "This thesis frames the paradoxical roles of mTOR using specific mouse model data to argue for tailored therapeutic strategies, filling a gap in translating preclinical findings to clinical contexts.",
+      "cited_fact_ids": [
+        "15567",
+        "2848"
+      ]
+    }
+  ],
+  "reviewer_objections": [
+    "Limited evidence base with only two distinct mouse studies may not generalize to human biology.",
+    "Differences in interventions (genetic deficiency vs. pharmacological inhibition) complicate direct comparisons.",
+    "Lack of mechanistic details on how mTOR modulation interfaces with immune and tumor pathways simultaneously."
+  ],
+  "next_extractions": [
+    "RAD001's impact on influenza vaccine response in elderly cohorts (from alpha hint)",
+    "Torin2 selectivity for mTOR versus PI3K in specific cancer cell lines (from alpha hint)",
+    "Prevalence and effects of MTOR mutations in bladder cancer subtypes (from alpha hint)",
+    "Dose-response of rapamycin in aging models with mTOR activation (from alpha hint)"
+  ],
+  "raw_response": "{\n  \"lens\": \"The juxtaposition of mTOR deficiency-induced immunological mortality and metformin-mediated mTOR inhibition in tumor suppression reveals a therapeutic paradox where pathway modulation's efficacy is contingent on host resilience and disease context, challenging one-size-fits-all approaches.\",\n  \"known_to_ignore\": [\"mTOR regulates cell growth and metabolism\", \"mTOR inhibitors are used in cancer therapy\"],\n  \"tensions\": [\"Hypomorphic mTOR mice exhibit 40% mortality (fact 15567) highlighting immune fragility, while metformin's mTOR inhibition reduces tumor burden by 72% (fact 2848) in carcinogen-exposed mice, indicating a trade-off between survival and oncogenic control.\"],\n  \"gaps\": [\"No comparative studies on mTOR modulation doses in immunocompromised versus tumor-bearing models\", \"Lack of data on metformin's effects in mTOR-deficient genetic backgrounds\", \"Underexploration of temporal dynamics of mTOR inhibition across different disease stages\"],\n  \"theses\": [{\n    \"title\": \"Context-Dependent mTOR Modulation: Balancing Immune Resilience and Tumor Suppression in Murine Preclinical Models\",\n    \"paper_type\": \"evidence-gap\",\n    \"novelty\": 85,\n    \"evidence_strength\": 30,\n    \"reviewer_risk\": 70,\n    \"rationale\": \"This thesis frames the paradoxical roles of mTOR using specific mouse model data to argue for tailored therapeutic strategies, filling a gap in translating preclinical findings to clinical contexts.\",\n    \"cited_fact_ids\": [\"15567\", \"2848\"]\n  }],\n  \"reviewer_objections\": [\"Limited evidence base with only two distinct mouse studies may not generalize to human biology.\", \"Differences in interventions (genetic deficiency vs. pharmacological inhibition) complicate direct comparisons.\", \"Lack of mechanistic details on how mTOR modulation interfaces with immune and tumor pathways simultaneously.\"],\n  \"next_extractions\": [\"RAD001's impact on influenza vaccine response in elderly cohorts (from alpha hint)\", \"Torin2 selectivity for mTOR versus PI3K in specific cancer cell lines (from alpha hint)\", \"Prevalence and effects of MTOR mutations in bladder cancer subtypes (from alpha hint)\", \"Dose-response of rapamycin in aging models with mTOR activation (from alpha hint)\"]\n}"
+}
