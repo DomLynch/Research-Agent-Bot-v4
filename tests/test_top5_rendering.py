@@ -249,6 +249,47 @@ def test_lane_render_keeps_editorial_bound_to_original_fact() -> None:
     assert "why gamma" not in beta
 
 
+def test_mtor_mortality_survival_editorial_swap_regression() -> None:
+    """Sprint 82: mTOR regression fixture for the historical bug where
+    hypomorphic-mortality and HNSCC-survival editorials crossed after
+    lane grouping reordered cards."""
+    top = [
+        (80, _fact(
+            "mtor/metformin", sub_topic="mtor_inhibition",
+            phrase="Metformin decreased tumor burden by 72% via mTOR.",
+        )),
+        (75, _fact(
+            "mtor/phosphorylation", sub_topic="phosphorylation",
+            phrase="CML samples showed altered mTOR phosphorylation.",
+        )),
+        (70, _fact(
+            "mtor/mortality", sub_topic="mtor_inhibition",
+            phrase="Hypomorphic mTOR mice had high mortality of 40%.",
+        )),
+        (65, _fact(
+            "mtor/hnscc", sub_topic="survival_context",
+            phrase="HNSCC five-year survival remained near 50%.",
+        )),
+    ]
+    md = _render_md(
+        "mtor", "ts", top, 4, "tier2_search",
+        mimo_editorial={
+            0: {"why_it_matters": "metformin-specific editorial"},
+            1: {"why_it_matters": "phosphorylation-specific editorial"},
+            2: {"why_it_matters": "mortality-specific editorial"},
+            3: {"why_it_matters": "survival-specific editorial"},
+        },
+    )
+    mortality = md.split("**Finding:** Hypomorphic mTOR mice", 1)[1].split(
+        "---", 1)[0]
+    survival = md.split("**Finding:** HNSCC five-year survival", 1)[1].split(
+        "---", 1)[0]
+    assert "mortality-specific editorial" in mortality
+    assert "survival-specific editorial" in survival
+    assert "survival-specific editorial" not in mortality
+    assert "mortality-specific editorial" not in survival
+
+
 # ============= Universal non-biomedical fixture =============
 
 def test_universal_non_biomedical_carbon_tax_dedup() -> None:

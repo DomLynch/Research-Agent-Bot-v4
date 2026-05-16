@@ -82,6 +82,17 @@ scoring, thresholds, and digest schema stay put.
 12. ✅ Tests (unit + golden) + supplement plugins + cutover validation
 
 ## Current Sprint
+**Sprint 82 shipped** — mTOR-specific render-regression lock:
+- Added `test_mtor_mortality_survival_editorial_swap_regression` in
+  `tests/test_top5_rendering.py`. It uses the historical mTOR
+  mortality / HNSCC survival card pair and asserts the MiMo
+  "Why it matters" text remains bound to the correct fact after lane
+  grouping reorders cards.
+- This is a test-only lock for the concrete auditor complaint; no
+  production code or topic-specific runtime rule was added.
+- Full local quality gate rerun after the test: `pytest -q`, ruff,
+  mypy, LOC, and run-folder integrity.
+
 **Sprint 81 shipped** — retained live proof artifacts for the Sprint 80
 frontier-citation and Sprint 79 render-order fixes:
 - Fresh telomere artifact retained at
