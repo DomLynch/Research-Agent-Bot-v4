@@ -85,6 +85,19 @@
 # empirical calibration). Prevents the "silent lens loss when MiMo
 # truncates" failure mode the auditor caught on the noisy-topic
 # stress test.)
+# -> 11700 (Sprint 69 sanitizer space-separated identifier + bare
+# time-suffix rules: agent/numeric_sanitizer.py extends
+# is_numeric_artifact with rule 3 (capitalized 1-4 letter prefix +
+# space/hyphen + value → cell-line / compound code; Cal 27, HCT 116)
+# and rule 4 (value + space + time unit → bare duration; 72 h,
+# 24 hours, 30 min). Rule 3 is guarded by _UNIT_FOLLOWS so a value
+# followed by %, µM, mg, fold etc. is recognised as a real
+# measurement even when a capitalized prefix sits before it (IC50
+# SIRT2 0.25 µM stays a finding). Closes the auditor's exact
+# sirtuin top_5 leaks: 'whey for 72 h' was rendered as
+# numeric_value=72.0 effect_size; 'Cal 27 cell proliferation' as
+# numeric_value=27.0. Universal — same patterns demote 'Day 7'
+# timepoints in any domain.)
 # -> 11600 (Sprint 67 fact-ID binding closure:
 # numeric_role_classifier recognises 'X vs Y' and 'X ± Y' as
 # effect-style paired comparisons (real-world stats syntax, not
@@ -236,7 +249,7 @@
 # contracts), not buy prose polish or speculative abstraction.
 set -euo pipefail
 
-CEILING="${LOC_CEILING:-11600}"
+CEILING="${LOC_CEILING:-11700}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 COUNT=$(find "$ROOT/agent" -name "*.py" -not -path "*/__pycache__/*" 2>/dev/null \

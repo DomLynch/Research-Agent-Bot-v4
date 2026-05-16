@@ -82,29 +82,44 @@ scoring, thresholds, and digest schema stay put.
 12. ✅ Tests (unit + golden) + supplement plugins + cutover validation
 
 ## Current Sprint
-**Sprint 68 in flight** (head ≈ `a15099c`, this commit pending) —
+**Sprint 69 in flight** (head ≈ `2b5616a`, this commit pending) —
 alpha-mode Researka pipeline working end-to-end: discovery (Sprint 63)
 → build_topic_evidence_run (with PICO enrichment Sprint 61, numeric
-sanitizer Sprint 64, dedup + lanes + editorial Sprint 60, fact-id
+sanitizer Sprint 64 + 69, dedup + lanes + editorial Sprint 60, fact-id
 binding Sprint 67) → opportunities gate (Sprint 59) → signal post
 (Sprint 64 + 66 + 68 strict binding lock). One-command autonomous
 curator cycle via `scripts/run_curator_cycle.py` (Sprint 65).
-Sprints 45-67 each shipped + 4-way deployed (macbook + GitHub branch
+Sprints 45-68 each shipped + 4-way deployed (macbook + GitHub branch
 + GitHub main + VPS) — see `git log` for Sprint commits.
 
-**Sprint 68 (in flight) closes the auditor's remaining gaps:**
-- Signal post strict mode: only renders A_core/B_context cited facts;
-  D_bad/C_noise excluded so we never publish unbound evidence.
-- Numeric classifier learns universal epi units (OR / HR / RR / AOR
-  / AHR / IRR / ROR / SMR / IPR) → effect_size, not unknown.
-- Position-aware p-prefix detector: 'p =' / 'p<' counts ONLY when
-  IMMEDIATELY adjacent to the value, not anywhere in the phrase.
-- Cycle runner propagates downstream gate/signal failure into
-  TopicResult.status so cron sees `partial_failure` not silent `ran`.
+**Sprint 68 (shipped) closed earlier auditor gaps:** strict signal-
+post binding (A_core/B_context only); universal epi ratio units
+(OR/HR/RR/AOR/AHR/IRR/ROR/SMR/IPR → effect_size); position-aware
+p-prefix detector; cycle runner failure propagation.
+
+**Sprint 69 (in flight) closes the sirtuin top_5 artifact leaks
+the auditor caught in the 2026-05-15 review:**
+- `agent/numeric_sanitizer.py` rule 3: capitalized 1-4 letter
+  prefix + space/hyphen + integer value → cell-line / compound code
+  (Cal 27, HCT 116, T47 D). Walk-stop in the original rule 1 misses
+  these because the space breaks the token. Guarded by `_UNIT_FOLLOWS`
+  so a value followed by %, µM, mg, fold, °C etc. is still recognised
+  as a real measurement even when a capitalized prefix sits before
+  it (IC50 SIRT2 0.25 µM stays a finding).
+- `agent/numeric_sanitizer.py` rule 4: value + space + time unit
+  → bare duration (72 h, 24 hours, 30 min, 8 days). Catches the
+  duration-treated-as-effect case the extractor leaves with units
+  field empty.
+- Auditor verification: sirtuin top_5 leak gone — `whey for 72 h`
+  (fid 17510) and `Cal 27 cell proliferation` (fid 15814) both
+  filtered; IC50 0.25/0.78 µM measurements preserved.
 
 Standing by for: Researka write-surface spec (publish path #1 on the
-operator queue) and Tier-1 canonical curation for non-rapamycin
-topics (DB-side, not v4).
+operator queue), cross-topic paper dedup in discovery (Sprint 70
+candidate — the prior-auditor Priority 5 ACC/AHA anchoring problem
+remains deferred), Tier-1 canonical curation for non-rapamycin
+topics (DB-side, not v4), sirtuin-relevance semantic check for
+APO10LA-style off-target findings (Sprint 70+ candidate).
 
 ## Definition of Done (Current Gate)
 - [x] Fresh `runs/latest` contains `paper.md`, `supplement.md`, and the
