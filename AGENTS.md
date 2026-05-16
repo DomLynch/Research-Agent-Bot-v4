@@ -8,15 +8,16 @@ Supplement = audit. Compiler = truth. LLM = prose. Contract = enforcement.
 **No LLM owns truth. No literal owns topic. No gate owns more than its rule.
 No section owns evidence outside its packet.**
 
-## Current State — 2026-05-16 (Sprint 75 active; Sprints 70–74 shipped)
+## Current State — 2026-05-16 (Sprint 76 shipped; Sprint 77 next)
 - LOC ceiling: **14,000 in `agent/`** (hard gate, `scripts/loc_gate.sh`).
   See the cap-doctrine header in `loc_gate.sh` for the full bump
   history. Every module under the higher cap must delete or prevent a
   fake-evidence failure mode (typed contract, validator, receipt,
   provenance) — not buy prose polish or speculative abstraction.
-- Universal-no-hardcoding: no biomedical literals in `agent/`; topic
-  packs supply domain vocabulary, anchors, sentinels, eligibility terms,
-  metric families, ethics + conflicts back-matter prose.
+- Universal-no-hardcoding: topic packs own domain vocabulary, anchors,
+  sentinels, eligibility terms, metric families, ethics + conflicts
+  back-matter prose. Known legacy biomedical-bearing `agent/` surfaces
+  remain inventoried in `PROJECT_STATE.md`; do not add new ones.
 - Build mode: sequential sprints, verify before advancing.
 - Curator-layer role (Sprint 39+): on top of the paper pipeline, v4
   also reads per-paper receipts, computes per-topic 0..100 confidence

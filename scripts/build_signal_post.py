@@ -357,10 +357,16 @@ def _render_signal_post(
     evidence_lines = (_evidence_lines(lead_audit, facts_by_id,
                                        lane_verdicts=lane_verdicts)
                       if lead_audit else [])
-    bind_failed = (label == "evidence_binding_failed"
-                   or not evidence_lines
+    bind_failed = (not evidence_lines
                    or evidence_lines[0].startswith("- _No cited"))
-    if bind_failed:
+    if label == "curation_needed" and bind_failed:
+        evidence_lines = [
+            "- **Curation needed.** The thesis has no currently bound "
+            "A_core/B_context evidence bullets. Use `curation_brief.md` "
+            "and the adjacent prompts below to verify or harvest the "
+            "missing facts before publishing.",
+        ]
+    elif label == "evidence_binding_failed" or bind_failed:
         evidence_lines = [
             "- **Evidence binding failed.** The thesis cites no facts "
             "that survived the A_core/B_context lane gate. Raw tensions "
@@ -436,17 +442,20 @@ def main() -> int:
     out_path = run_dir / "signal_post.md"
     out_path.write_text(text, encoding="utf-8")
     label = (_alpha_label_for(lead, bound_count, has_hints)
-             if lead else "frontier_hypothesis")
+             if lead else ("no_signal" if text.startswith("# No signal")
+                           else "frontier_hypothesis"))
     # Sprint 75 — when the post lands in `curation_needed`, emit a
     # small actionable brief listing the missing facts. This turns
     # the noisy-alpha case into a bounded human/DB curation task
     # rather than an opaque rejection.
+    brief_text = ""
     if label == "curation_needed" and lead:
         brief = _curation_brief(
             topic, snapshot, lead, facts_by_id, lane_verdicts,
             next_extracts if isinstance(next_extracts, list) else [],
         )
         (run_dir / "curation_brief.md").write_text(brief, encoding="utf-8")
+        brief_text = brief
     # Update MANIFEST if present
     manifest_path = run_dir / "MANIFEST.json"
     if manifest_path.exists():
@@ -458,6 +467,11 @@ def main() -> int:
                     files["signal_post_md"] = {
                         "name": out_path.name, "sha256": _sha256(text),
                     }
+                    if brief_text:
+                        files["curation_brief_md"] = {
+                            "name": "curation_brief.md",
+                            "sha256": _sha256(brief_text),
+                        }
                 manifest_path.write_text(
                     json.dumps(m, indent=2), encoding="utf-8")
         except (OSError, json.JSONDecodeError):

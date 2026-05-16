@@ -82,7 +82,7 @@ scoring, thresholds, and digest schema stay put.
 12. ✅ Tests (unit + golden) + supplement plugins + cutover validation
 
 ## Current Sprint
-**Sprint 75 active** — alpha-mode Researka evidence pipeline is
+**Sprint 76 shipped (head `ab50be8`)** — alpha-mode Researka evidence pipeline is
 lane-gated at the top-card surface: discovery (Sprint 63 + Sprint 70
 anchorage dampening) → build_topic_evidence_run (PICO enrichment
 Sprint 61, numeric sanitizer Sprint 64 + 69, same-paper dedup +
@@ -91,7 +91,18 @@ editorial Sprint 60, **A_core/B_context-only top_N ranking Sprint 71**)
 strict binding lock). One-command autonomous curator cycle via
 `scripts/run_curator_cycle.py` (Sprint 65).
 
-**Sprint 75 (in flight, this commit pending) — closes the
+**Sprint 76 (shipped, head `ab50be8`) — adjacent-signal surfacing
+without evidence leakage:**
+- `scripts/build_signal_post.py` now renders an "Adjacent signals to
+  consider" section from top-magnitude C/D-lane facts. These are
+  explicitly labeled research prompts, **not cited evidence**.
+- Live 3-topic trace on Sprint 76: telomere and autophagy promoted to
+  `evidence_backed_signal`; sirtuin honestly rendered `# No signal`
+  with adjacent prompts instead of fake evidence.
+- `tests/test_signal_post_adjacent.py` locks the ordering, lane
+  exclusion, and non-evidence wording.
+
+**Sprint 75 (shipped, head `63acaef`) — closes the
 2026-05-16 auditor's "yield gap" critique. The system is safe
 (refuses bad evidence) but was suppressing real product because
 MiMo (frontier reviewer) was seeing ALL facts — including D_bad —
@@ -126,11 +137,11 @@ correctly killed:**
   appear under `ALPHA HINTS (INSPIRATION ONLY, MAY NOT BE CITED)`;
   system prompt contains `cited_fact_ids must reference only ids
   from EVIDENCE`.
-- Bonus housekeeping: 48 untracked macOS Finder duplicates
+- Bonus housekeeping: 48 untracked macOS Finder code/config duplicates
   (`* 2.py`, `* 2.toml`) deleted. Test count dropped from 1341 to
   932 because pytest was silently collecting + passing the dupes
-  against the OLD function signatures. All 932 canonical tests
-  pass cleanly.
+  against the OLD function signatures. Current canonical gate:
+  945 passed, 1 xfailed.
 
 **Sprint 73 (shipped, head `bc08c83`) — closed the
 2026-05-16 auditor's locality bug + over-claim correction:**

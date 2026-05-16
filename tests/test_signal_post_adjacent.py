@@ -14,6 +14,7 @@ discarded entirely. The fix surfaces top-N by magnitude as
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 from typing import Any
@@ -23,6 +24,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 from build_signal_post import (
     _BINDABLE_LANES,
     _adjacent_signals_block,
+    _render_signal_post,
+)
+from build_signal_post import (
+    main as signal_post_main,
 )
 
 
@@ -98,3 +103,69 @@ def test_adjacent_block_universal_non_biomedical() -> None:
 def test_bindable_lanes_constant_is_correct() -> None:
     """Sanity check — Adjacent block contract depends on this set."""
     assert frozenset({"A_core", "B_context"}) == _BINDABLE_LANES
+
+
+def test_curation_needed_evidence_text_matches_label() -> None:
+    """A curation-needed post must not render the old evidence-binding
+    failure wording under Evidence. The label and evidence copy should
+    point to the constructive curation path."""
+    audit = {
+        "title": "Unbound thesis",
+        "status": "rejected",
+        "blocking_flags": [],
+        "cited_fact_ids": ["f1"],
+    }
+    facts_by_id = {"f1": _fact("f1", 50.0, "unbound candidate")}
+    text = _render_signal_post(
+        "topic",
+        "ts",
+        {"lens": "lens", "next_extractions": ["harvest f1"]},
+        audit,
+        facts_by_id,
+        bound_count=0,
+        lane_verdicts={"f1": "D_bad_extraction"},
+    )
+    assert "## Confidence — `curation_needed`" in text
+    assert "- **Curation needed.**" in text
+    assert "- **Evidence binding failed.**" not in text
+
+
+def test_main_writes_curation_brief_and_manifest(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    run = tmp_path / "topic-evidence-ts"
+    run.mkdir()
+    (run / "frontier_review.json").write_text(json.dumps({
+        "topic": "topic",
+        "snapshot_utc": "ts",
+        "lens": "lens",
+        "next_extractions": ["harvest f1"],
+        "theses": [{"title": "T"}],
+    }), encoding="utf-8")
+    (run / "all_facts.json").write_text(json.dumps([
+        _fact("f1", 50.0, "needs curation"),
+    ]), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": "f1", "lane": "D_bad_extraction"}],
+    }), encoding="utf-8")
+    (run / "opportunities_gate.json").write_text(json.dumps({
+        "audits": [{
+            "title": "T",
+            "status": "rejected",
+            "blocking_flags": [],
+            "cited_fact_ids": ["f1"],
+        }],
+    }), encoding="utf-8")
+    (run / "MANIFEST.json").write_text(json.dumps({"files": {}}),
+                                       encoding="utf-8")
+
+    monkeypatch.setattr(sys, "argv", ["build_signal_post.py", "--run", str(run)])
+    assert signal_post_main() == 0
+
+    assert "curation_needed" in (run / "signal_post.md").read_text()
+    brief = (run / "curation_brief.md").read_text()
+    assert "fact_id=f1" in brief
+    assert "harvest f1" in brief
+    manifest = json.loads((run / "MANIFEST.json").read_text())
+    assert "signal_post_md" in manifest["files"]
+    assert "curation_brief_md" in manifest["files"]
