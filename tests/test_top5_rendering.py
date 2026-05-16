@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 from build_topic_evidence_run import (
     _dedup_by_paper_subtopic,
     _editorial_block,
+    _rankable_facts_for_top,
     _render_md,
 )
 
@@ -37,6 +38,23 @@ def _fact(fid: str, *, doi: str = "10.1/a", sub_topic: str = "glycemic",
         "population": population, "intervention": intervention,
         "numeric_value": numeric_value, "units": units,
     }
+
+
+def test_rankable_facts_for_top_keeps_only_a_core_and_b_context() -> None:
+    """Sprint 71: top_N cards must not surface D_bad or C_noise facts."""
+    facts = [
+        _fact("a", phrase="topicA intervention reduced X by 50%",
+              intervention="topicA intervention"),
+        _fact("b", phrase="topicA biomarker changed by 40%",
+              intervention="adjacent treatment", numeric_value=40.0),
+        _fact("d", phrase="topicA changed at p < 0.001",
+              intervention="topicA intervention", numeric_value=0.001,
+              units=""),
+        _fact("c", phrase="unrelated intervention reduced X by 60%",
+              intervention="unrelated intervention", numeric_value=60.0),
+    ]
+    out = _rankable_facts_for_top(facts, "topicA")
+    assert [f["fact_id"] for f in out] == ["a", "b"]
 
 
 # ============= Sprint 60a: dedup =============

@@ -2,7 +2,8 @@
 
 Probes the DB for each seed topic in topic_packs/discovery_seeds.toml,
 scores by paper-level velocity (fwci * log(1+cited) * recency *
-quality_score), and emits a ranked candidate queue:
+quality_score) with Sprint 70 cross-topic anchor dampening, and emits
+a ranked candidate queue:
 
   runs/_topics_discovery/<utc>.json   -- raw scores
   runs/_topics_discovery/<utc>.md     -- human-readable queue
@@ -39,7 +40,7 @@ def _render_md(stamps: dict[str, str],
         f"**Year reference:** {stamps['year']}",
         "**Score formula:** mean(top-5 paper-velocity) where "
         "paper-velocity = fwci * log(1+cited_by_count) * recency_weight "
-        "* quality_score/100",
+        "* quality_score/100, dampened when one paper anchors M >= 3 topics",
         "",
         "| Rank | Topic | Velocity | Papers | mean fwci | mean cited |"
         " Top paper |",

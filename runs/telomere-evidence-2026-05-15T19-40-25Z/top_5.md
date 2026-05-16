@@ -7,59 +7,7 @@
 
 ---
 
-## #1 — score 68 · effect_size
-
-**Finding:** Telomerase activity was 54 per cent higher in stressed rats than in controls, and associated with stress-related physiological and behavioural outcomes.
-
-- **Value:** 54.0%
-- **Population:** male rats
-- **Intervention:** chronic stress
-- **Source:** *Chronic stress elevates telomerase activity in rats* — Biology Letters (2012)
-  · DOI: `10.1098/rsbl.2012.0747`
-- **Validator:** researka-tier2
-
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
-
----
-
-## #2 — score 61 · effect_size
-
-**Finding:** TERRA expression was lower in sarcopenic participants compared to that in non-sarcopenic controls (5.18 ± 2.98 vs. 2.51 ± 1.89; p < 0.001).
-
-- **Value:** 5.18
-- **Population:** Older adults (≥65 years old), sarcopenic and non-sarcopenic
-- **Intervention:** none
-- **Source:** *Expression of Telomeric Repeat–Containing RNA Decreases in Sarcopenia and Increases after Exercise and Nutrition Intervention* — Nutrients (2020)
-  · DOI: `10.3390/nu12123766`
-- **Validator:** researka-tier2
-
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
-
----
-
-## #3 — score 60 · effect_size
-
-**Finding:** In COVID-19 patients, lymphocyte count was inversely correlated with the proportion of telomeres shorter than 2 kb (p = .005).
-
-- **Value:** 2.0
-- **Population:** older adults hospitalized with COVID-19
-- **Intervention:** telomere length (proportion of telomeres <2 kb)
-- **Source:** *The Nexus Between Telomere Length and Lymphocyte Count in Seniors Hospitalized With COVID-19* — The Journals of Gerontology Series A (2021)
-  · DOI: `10.1093/gerona/glab026`
-- **Validator:** researka-tier2
-- **Same-trial supporting numerics:** 0.9110^9/L (Lymphocyte count was 0.91 ± 0.42 in COVID-19 patients and 1.)
-
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
-
----
-
-## #4 — score 58 · effect_size
+## #1 — score 58 · effect_size
 
 **Finding:** telomere length (TL) in FA-deficient (30 nmol/L) cultures was 26% longer than that of 3,000 nmol/L FA cultures
 
@@ -76,7 +24,7 @@
 
 ---
 
-## #5 — score 57 · effect_size
+## #2 — score 57 · effect_size
 
 **Finding:** endurance athletes have significantly longer (7.1%, 208-416 nt) leukocyte telomeres
 
@@ -85,6 +33,57 @@
 - **Intervention:** endurance athlete status
 - **Source:** *Increased expression of telomere-regulating genes in endurance athletes with long leukocyte telomeres* — Journal of Applied Physiology (2015)
   · DOI: `10.1152/japplphysiol.00587.2015`
+- **Validator:** researka-tier2
+
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
+---
+
+## #3 — score 57 · effect_size
+
+**Finding:** identify one candidate meiotic driver in a centromere-linked region that shows an ∼8% increase in transmission frequency, corresponding to a ∼54:46 segregation ratio.
+
+- **Value:** 8.0%
+- **Population:** Drosophila with varying telomere lengths
+- **Intervention:** candidate meiotic driver in centromere-linked region
+- **Source:** *A Pooled Sequencing Approach Identifies a Candidate Meiotic Driver in <i>Drosophila</i>* — Genetics (2017)
+  · DOI: `10.1534/genetics.116.197335`
+- **Validator:** researka-tier2
+
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
+---
+
+## #4 — score 57 · effect_size
+
+**Finding:** Nestlings in enlarged broods achieved lower mass and lost 21% more telomere repeats relative to nestlings in reduced broods.
+
+- **Value:** 21.0%
+- **Population:** jackdaw nestlings in manipulated broods
+- **Intervention:** enlarged brood size
+- **Source:** *Nestling telomere shortening, but not telomere length, reflects developmental stress and predicts survival in wild birds* — Proceedings of the Royal Society B Biological Sciences (2014)
+  · DOI: `10.1098/rspb.2013.3287`
+- **Validator:** researka-tier2
+
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
+---
+
+## #5 — score 56 · effect_size
+
+**Finding:** SHS was almost four times likely to be in the first quartile (odds ratio [OR] = 3.81; 95% confidence interval [CI] 2.21-6.56)
+
+- **Value:** 3.81OR
+- **Population:** Adults with suboptimal health status and ideal health controls in China
+- **Intervention:** Suboptimal health status
+- **Source:** *Telomere Length and Accelerated Biological Aging in the China Suboptimal Health Cohort: A Case–Control Study* — OMICS A Journal of Integrative Biology (2017)
+  · DOI: `10.1089/omi.2017.0050`
 - **Validator:** researka-tier2
 
 - **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.

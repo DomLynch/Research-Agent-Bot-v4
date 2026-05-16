@@ -9,6 +9,7 @@ operator queue that drives subsequent build_topic_evidence_run runs.
 Velocity formula (universal, no domain literals):
     paper_score = fwci * log(1 + cited_by_count) * recency_weight
                   * (quality_score / 100)
+    if a paper anchors M >= 3 topics' top-K, contribution /= sqrt(M)
     topic_score = mean(top-K paper_score for that topic)
 
 recency_weight = max(0.2, 1 - (current_year - publication_year) / 10)

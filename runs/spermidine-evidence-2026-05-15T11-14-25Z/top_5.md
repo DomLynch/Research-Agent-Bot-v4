@@ -1,4 +1,4 @@
-# Top 5 interesting findings — spermidine
+# Top 2 interesting findings — spermidine
 
 **Snapshot:** 2026-05-15T11-14-25Z
 **Source:** Researka DB Tier-2 search (`POST /api/v1/tier2/facts/search`, filter topic=spermidine) — LLM-extracted, no Tier-1 canonical facts loaded for this topic yet; findings may be off-target (e.g. chemistry papers using the molecule name) until canonical curation.
@@ -9,47 +9,10 @@
 
 ---
 
-### Lane — `threshold`
-
-
-## #1 — score 80 · threshold
-
-**Finding:** high levels of total polyamines over 90 mg/kg were determined in mushrooms, green peppers, peas, citrus fruit, broad beans and tempeh with spermidine being predominant
-
-- **Value:** 90.0mg/kg
-- **Population:** plant-origin foods (mushrooms, green peppers, peas, citrus fruit, broad beans, tempeh)
-- **Intervention:** —
-- **Source:** *Occurrence of Polyamines in Foods and the Influence of Cooking Processes* — Foods (2021)
-  · DOI: `10.3390/foods10081752`
-- **Validator:** researka-tier2
-
-- **Why it matters:** Direct evidence in the `threshold` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
-
----
-
 ### Lane — `effect_size`
 
 
-## #2 — score 80 · effect_size
-
-**Finding:** the dry weight (DW) and fresh weight (FW) were reduced by 68.9% and 82%, respectively, compared with those of the normal-temperature controls.
-
-- **Value:** 68.9%
-- **Population:** lettuce seedlings under high-temperature stress
-- **Intervention:** high-temperature stress
-- **Source:** *Effects of exogenous spermidine on antioxidants and glyoxalase system of lettuce seedlings under high temperature* — Plant Signaling & Behavior (2020)
-  · DOI: `10.1080/15592324.2020.1824697`
-- **Validator:** researka-tier2
-
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
-
----
-
-## #3 — score 70 · effect_size
+## #1 — score 70 · effect_size
 
 **Finding:** Pretreatment with Spd dramatically improved grain yield per plant of KDML105 from 17.7 to 28.7 g (62% increase)
 
@@ -67,39 +30,23 @@
 
 ---
 
-## #4 — score 63 · effect_size
+### Lane — `rate`
 
-**Finding:** Δλ = 24 nm for spermidine
 
-- **Value:** 24.0nm
-- **Population:** volatile biogenic amines from spoiled food
-- **Intervention:** HGN-embedded paper sensor
-- **Source:** *Food Quality Monitor: Paper-Based Plasmonic Sensors Prepared Through Reversal Nanoimprinting for Rapid Detection of Biogenic Amine Odorants* — ACS Applied Materials & Interfaces (2017)
-  · DOI: `10.1021/acsami.7b00115`
+## #2 — score 60 · rate
+
+**Finding:** sym-homospermidine, which at 1mM gave rates 17% of the rate with spermidine
+
+- **Value:** 17.0%
+- **Population:** rat prostatic spermine synthase
+- **Intervention:** sym-homospermidine
+- **Source:** *[UE2014] - Loi de Titius - Bode* — The Biochemical journal (2015)
+  · DOI: `10.1042/bj1970315`
 - **Validator:** researka-tier2
+- **Same-trial supporting numerics:** 4.0% (N-(3-aminopropyl)-cadaverine, which at 1mM gave rates 4% of ); 2.0% (1,8-diamino-octane, which at 1mM gave rates 2% of the rate w)
 
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
-
----
-
-### Lane — `regimen`
-
-
-## #5 — score 75 · regimen
-
-**Finding:** plants were treated with 200 mM GB or 0.1 mM Spd for 3 weeks by weekly foliar application before the exposure to drought stress.
-
-- **Value:** 200.0OR
-- **Population:** creeping bentgrass
-- **Intervention:** 200 mM GB or 0.1 mM Spd
-- **Source:** *Differential Effects of Glycine Betaine and Spermidine on Osmotic Adjustment and Antioxidant Defense Contributing to Improved Drought Tolerance in Creeping Bentgrass* — Journal of the American Society for Horticultural Science (2017)
-  · DOI: `10.21273/jashs03962-16`
-- **Validator:** researka-tier2
-
-- **Why it matters:** Direct evidence in the `regimen` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Why it matters:** Direct evidence in the `rate` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=3 biomarkers from one paper); replication across independent cohorts required.
 - **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---

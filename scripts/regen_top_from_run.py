@@ -14,6 +14,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -24,8 +25,13 @@ from agent.numeric_sanitizer import filter_artifacts
 from scripts.build_topic_evidence_run import (
     _dedup_by_paper_subtopic,
     _interestingness,
+    _rankable_facts_for_top,
     _render_md,
 )
+
+
+def _sha256(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def main() -> int:
@@ -46,7 +52,8 @@ def main() -> int:
     ts = run.name.split("-evidence-", 1)[1] if "-evidence-" in run.name else ""
 
     facts, _drop = filter_artifacts(facts)
-    scored = sorted(((_interestingness(f), f) for f in facts),
+    rankable_facts = _rankable_facts_for_top(facts, topic)
+    scored = sorted(((_interestingness(f), f) for f in rankable_facts),
                     key=lambda pair: pair[0], reverse=True)
     deduped = _dedup_by_paper_subtopic(scored)
     top = deduped[: args.top]
@@ -55,6 +62,23 @@ def main() -> int:
 
     out_path = run / f"top_{args.top}.md"
     out_path.write_text(md, encoding="utf-8")
+    manifest_path = run / "MANIFEST.json"
+    if manifest_path.exists():
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            manifest = {}
+        if isinstance(manifest, dict):
+            files = manifest.setdefault("files", {})
+            if isinstance(files, dict):
+                files["top_md"] = {
+                    "name": out_path.name,
+                    "sha256": _sha256(md),
+                }
+                manifest_path.write_text(
+                    json.dumps(manifest, indent=2),
+                    encoding="utf-8",
+                )
     print(f"regenerated {out_path} ({len(top)} cards, "
           f"{len(_drop)} artifacts filtered)")
     return 0

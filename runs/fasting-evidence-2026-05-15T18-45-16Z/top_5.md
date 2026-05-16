@@ -39,10 +39,9 @@
 - **Source:** *Growth hormone signaling and action in obese versus lean human subjects* — American Journal of Physiology-Endocrinology and Metabolism (2018)
   · DOI: `10.1152/ajpendo.00431.2018`
 - **Validator:** researka-tier2
-- **Same-trial supporting numerics:** 27.0µg/l (ΔIGF-I: lean, -66 ± 10 vs. obese, 27 ± 16 µg/l; P < 0.01)
 
 - **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
 - **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
@@ -65,27 +64,10 @@
 
 ---
 
-## #4 — score 70 · effect_size
-
-**Finding:** A 72-hour fast in mice reduced circulating IGF-I by 70% and increased the level of the IGF-I inhibitor IGFBP-1 by 11-fold
-
-- **Value:** 70.0%
-- **Population:** mice
-- **Intervention:** 72-hour fast
-- **Source:** *Reduced Levels of IGF-I Mediate Differential Protection of Normal and Cancer Cells in Response to Fasting and Improve Chemotherapeutic Index* — Cancer Research (2010)
-  · DOI: `10.1158/0008-5472.can-09-3228`
-- **Validator:** researka-tier2
-
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
-
----
-
 ### Lane — `rate`
 
 
-## #5 — score 70 · rate
+## #4 — score 70 · rate
 
 **Finding:** Most patients in the fasting group (13, 92.9%) stated they would feel sad if they were not fasting.
 
@@ -97,6 +79,26 @@
 - **Validator:** researka-tier2
 
 - **Why it matters:** Direct evidence in the `rate` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
+---
+
+### Lane — `adverse`
+
+
+## #5 — score 67 · adverse
+
+**Finding:** The proportion of patients who experienced hypoglycemia during Ramadan was higher in Group A than Group B (36% vs 11%, P<0.001)
+
+- **Value:** 36.0%
+- **Population:** high-risk diabetes patients who fasted against medical advice during Ramadan
+- **Intervention:** fasting against medical advice (Group A)
+- **Source:** *“Ramadan challenges: Fasting against medical advice* — SHILAP Revista de lepidopterología (2017)
+  · DOI: `10.22038/jfh.2018.27312.1100`
+- **Validator:** researka-tier2
+
+- **Why it matters:** Direct evidence in the `adverse` sub-topic; informs whether the finding generalises beyond a single study.
 - **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
 - **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 

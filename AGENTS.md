@@ -8,7 +8,7 @@ Supplement = audit. Compiler = truth. LLM = prose. Contract = enforcement.
 **No LLM owns truth. No literal owns topic. No gate owns more than its rule.
 No section owns evidence outside its packet.**
 
-## Current State — 2026-05-16 (Sprint 70 in flight; Sprint 69 shipped)
+## Current State — 2026-05-16 (Sprint 71 active; Sprint 70 shipped)
 - LOC ceiling: **11,700 in `agent/`** (hard gate, `scripts/loc_gate.sh`).
   See the cap-doctrine header in `loc_gate.sh` for the full bump
   history. Every module under the higher cap must delete or prevent a
@@ -24,7 +24,9 @@ No section owns evidence outside its packet.**
 - Quality gates: `pytest -q`, `ruff check agent tests scripts`,
   `mypy agent`, and `scripts/loc_gate.sh` must all pass before commit.
   For paper runs, `tests/test_run_folder_integrity.py` must pass
-  against `runs/latest`.
+  against `runs/latest`; for evidence runs,
+  `tests/test_run_folder_top_n_integrity.py` must pass against all
+  canonical regen-able `top_N.md` artifacts.
 
 ## Hard Rule
 ```text

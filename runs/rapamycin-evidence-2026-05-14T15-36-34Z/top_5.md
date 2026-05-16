@@ -1,16 +1,11 @@
-# Top 4 interesting findings — rapamycin
+# Top 3 interesting findings — rapamycin
 
 **Snapshot:** 2026-05-14T15-36-34Z
 **Source:** Researka DB Tier-2 search (`POST /api/v1/tier2/facts/search`, filter topic=rapamycin) — LLM-extracted, no Tier-1 canonical facts loaded for this topic yet; findings may be off-target (e.g. chemistry papers using the molecule name) until canonical curation.
 **Facts inspected:** 7
 **Ranking:** validation * magnitude * precision * recency (deterministic, no LLM). Same-paper + same-sub_topic findings are collapsed; extra biomarkers from the same trial appear as supporting numerics under the headline.
 
-**Sub-topic lanes detected:** facts grouped by `sub_topic` below — read each lane independently.
-
 ---
-
-### Lane — `lifespan`
-
 
 ## #1 — score 76 · lifespan
 
@@ -62,26 +57,6 @@
 
 - **Why it matters:** Direct evidence in the `lifespan` sub-topic; informs whether the finding generalises beyond a single study.
 - **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
-
----
-
-### Lane — `immune`
-
-
-## #4 — score 57 · immune
-
-**Finding:** RAD001 improved influenza vaccine response by ~20% in the elderly
-
-- **Value:** 20.0%
-- **Population:** elderly humans (≥65 years), n=218
-- **Intervention:** RAD001 (everolimus) 0.5 mg daily, 5 mg weekly, or 20 mg weekly for 6 weeks before vaccination
-- **Source:** *mTOR inhibition improves immune function in the elderly* — Science Translational Medicine (2014)
-  · DOI: `10.1126/scitranslmed.3009892`
-- **Validator:** bootstrap-claude-opus-4-7-2026-05-09
-
-- **Why it matters:** Direct evidence in the `immune` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
 - **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---

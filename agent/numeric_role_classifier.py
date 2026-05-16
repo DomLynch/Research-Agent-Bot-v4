@@ -32,15 +32,24 @@ _CONC_UNITS = frozenset([
     "mol/l", "mmol/l", "μmol/l", "nmol/l",
 ])
 
-# Regimen markers — sentence describes a treatment protocol, not an outcome
+# Regimen markers (Sprint 71 — universal). Phrase describes a
+# treatment / intervention protocol, not an outcome. All entries are
+# universal-English research vocabulary used across biomedical,
+# climate-policy, economics, training, and engineering domains
+# (e.g. "carbon restriction", "budget protocol", "training regimen",
+# "test conditions"). Sprint 71 dropped animal-feeding Latin
+# ("feeding", "feed", "ad lib", "ad libitum") — those were
+# biomedical/agricultural-specific lazy markers.
 _REGIMEN_MARKERS = frozenset([
-    "restriction", "restricted", "feeding", "feed", "diet",
-    "conditions", "regimen", "of ad lib", "of ad libitum", "protocol",
+    "restriction", "restricted", "diet",
+    "conditions", "regimen", "protocol",
 ])
 
-# Sample-size markers — verbose forms of n=
-_SAMPLE_SIZE_MARKERS = ("n=", "n =", "participants", "subjects",
-                         "patients", "volunteers")
+# Sample-size markers (Sprint 71 — universal). "n=" is universal
+# stats notation; "participants"/"subjects" are universal across
+# psychology, economics, surveys, biomedical. Sprint 71 dropped
+# clinical-specific "patients" and "volunteers".
+_SAMPLE_SIZE_MARKERS = ("n=", "n =", "participants", "subjects")
 
 # Paired-comparison markers (Sprint 67) — universal stats syntax
 # indicating a measured effect-style comparison ('1.33 vs 2.50' or

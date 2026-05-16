@@ -82,45 +82,47 @@ scoring, thresholds, and digest schema stay put.
 12. ✅ Tests (unit + golden) + supplement plugins + cutover validation
 
 ## Current Sprint
-**Sprint 70 in flight** (head ≈ `efbb7d1`, this commit pending) —
-alpha-mode Researka pipeline working end-to-end: discovery (Sprint 63)
-→ build_topic_evidence_run (with PICO enrichment Sprint 61, numeric
-sanitizer Sprint 64 + 69, dedup + lanes + editorial Sprint 60, fact-id
-binding Sprint 67) → opportunities gate (Sprint 59) → signal post
-(Sprint 64 + 66 + 68 strict binding lock). One-command autonomous
-curator cycle via `scripts/run_curator_cycle.py` (Sprint 65).
-Sprints 45-68 each shipped + 4-way deployed (macbook + GitHub branch
-+ GitHub main + VPS) — see `git log` for Sprint commits.
+**Sprint 71 active** — alpha-mode Researka evidence pipeline is
+lane-gated at the top-card surface: discovery (Sprint 63 + Sprint 70
+anchorage dampening) → build_topic_evidence_run (PICO enrichment
+Sprint 61, numeric sanitizer Sprint 64 + 69, same-paper dedup +
+editorial Sprint 60, **A_core/B_context-only top_N ranking Sprint 71**)
+→ opportunities gate (Sprint 59) → signal post (Sprint 64 + 66 + 68
+strict binding lock). One-command autonomous curator cycle via
+`scripts/run_curator_cycle.py` (Sprint 65).
 
-**Sprint 68 (shipped) closed earlier auditor gaps:** strict signal-
+**Sprint 71 closes the MiMo hook review issues from 2026-05-16:**
+- `scripts/build_topic_evidence_run.py` now ranks `top_N.md` cards only
+  from facts whose current lane verdict is `A_core` or `B_context`.
+  `D_bad_extraction` and `C_noise` facts remain in receipts for audit,
+  but cannot appear as operator-facing top findings.
+- `scripts/regen_top_from_run.py` uses the same lane-aware path and
+  updates `MANIFEST.json` `top_md.sha256` after overwriting `top_N.md`.
+- `tests/test_run_folder_top_n_integrity.py` now has two checks:
+  sanitizer-artifact rejection and lane-bindability rejection. This
+  catches p-values, regimens, doses, durations, and off-topic C-lane
+  facts that are syntactically valid numbers but not top findings.
+- All 40 canonical regen-able evidence runs were regenerated. Some
+  historical runs now honestly render fewer than five cards when the
+  pool has fewer than five A/B facts.
+- The discovery queue was regenerated at
+  `runs/_topics_discovery/2026-05-16T10-22-24Z.json`.
+- `PROJECT_STATE.md`, `AGENTS.md`, and `scripts/loc_gate.sh` now agree
+  on the 11,700 LOC ceiling and current Sprint 71 state.
+
+**Sprint 70 (shipped) added cross-topic paper anchorage dampening:**
+when the same paper (by DOI / title key) sits in M ≥ 3 topics' top-K
+driver papers, its velocity contribution is scaled by `1/sqrt(M)`.
+This reduces broad-review/guideline dominance but does not fully
+suppress it; the refreshed queue still shows the 2019 ACC/AHA guideline
+as a leading paper for several topics. Stronger anchor suppression
+remains an open discovery-quality item.
+
+**Sprint 68/69 (shipped) closed earlier auditor gaps:** strict signal-
 post binding (A_core/B_context only); universal epi ratio units
 (OR/HR/RR/AOR/AHR/IRR/ROR/SMR/IPR → effect_size); position-aware
-p-prefix detector; cycle runner failure propagation.
-
-**Sprint 70 (in flight, this commit pending) closes the auditor's
-remaining 2026-05-16 review gaps:**
-- `agent/topic_discovery.py` — cross-topic paper anchorage dampening.
-  When the same paper (by DOI / title key) sits in M ≥ 3 topics'
-  top-K driver papers, its contribution to each topic's velocity is
-  scaled by `1/sqrt(M)`. Closes the auditor case where a single
-  2019 ACC/AHA cardiovascular guideline was the #1 driver of
-  exercise, metformin, and caloric_restriction velocity rankings.
-  Universal — structural over-citation signal, no domain literals.
-- `scripts/regen_top_from_run.py` — offline regen tool that takes a
-  run dir and re-renders `top_N.md` from existing `all_facts.json`
-  using the current sanitizer/scoring/dedup pipeline. Used to land
-  Sprint 69 fixes across all 40 historical runs without re-fetching
-  from the DB.
-- `tests/test_run_folder_top_n_integrity.py` — forward-looking gate
-  that walks every `runs/*-evidence-*/top_*.md` with a matching
-  `all_facts.json` and fails if any (Finding, Value) pair would be
-  filtered by the current sanitizer. Forces operators to regen
-  on-disk artifacts after sanitizer changes; closes the "code
-  filters but artifact still shows the bad fact" loop.
-- All 40 evidence runs regenerated; integrity gate passes
-  end-to-end.
-- Doc/state sync: PROJECT_STATE / AGENTS / loc_gate.sh comment text
-  now reflect Sprint 70 head + 11,700 ceiling.
+p-prefix detector; cycle runner failure propagation; and the sirtuin
+`72 h` / `Cal 27` sanitizer leaks.
 
 **Sprint 69 (shipped, head `efbb7d1`) closed the sirtuin top_5
 artifact leaks the auditor caught in the 2026-05-15 review:**
@@ -140,11 +142,9 @@ artifact leaks the auditor caught in the 2026-05-15 review:**
   filtered; IC50 0.25/0.78 µM measurements preserved.
 
 Standing by for: Researka write-surface spec (publish path #1 on the
-operator queue), cross-topic paper dedup in discovery (Sprint 70
-candidate — the prior-auditor Priority 5 ACC/AHA anchoring problem
-remains deferred), Tier-1 canonical curation for non-rapamycin
-topics (DB-side, not v4), sirtuin-relevance semantic check for
-APO10LA-style off-target findings (Sprint 70+ candidate).
+operator queue), stronger discovery anchor suppression, Tier-1
+canonical curation for non-rapamycin topics (DB-side, not v4), and
+sirtuin-relevance semantic checks for APO10LA-style off-target findings.
 
 ## Definition of Done (Current Gate)
 - [x] Fresh `runs/latest` contains `paper.md`, `supplement.md`, and the
@@ -152,8 +152,10 @@ APO10LA-style off-target findings (Sprint 70+ candidate).
 - [x] `pytest tests/test_run_folder_integrity.py` passes.
 - [x] `pytest -q`, `ruff check agent tests`, and `mypy agent` pass.
 - [x] No rendered manuscript/supplement prose claims absent run-folder files.
-- [ ] AGENTS.md, PROJECT_STATE.md, and HANDOVER.md match the current runner and
+- [x] AGENTS.md and PROJECT_STATE.md match the current runner and
       artifact shape.
+- [ ] HANDOVER.md is still a legacy paper-pipeline external-review
+      packet and needs refresh before reuse.
 - [ ] Researka DB Sprint 2 endpoint live → swap gap-analyser data source
 - [ ] Digest renderer (markdown view of `_digest_<ts>.json`) for
       operator curation review
@@ -170,11 +172,9 @@ APO10LA-style off-target findings (Sprint 70+ candidate).
 - Publication-opportunity trigger: confidence ≥ 70 AND k_pool ≥ 2
 - Strong-mover trigger: |delta_points| ≥ 10 between snapshots
 - Top-N cap: 5 opportunities per digest
-- LOC ceiling: **9,400 hard gate in `agent/`** (cap history 3,000 →
-  5,000 → 7,500 → 7,600 → 7,700 → 7,800 → 7,900 → 8,000 → 8,200 →
-  8,400 → 8,500 → 8,700 → 8,900 → 9,000 → 9,200 → 9,400 — every bump
-  documented in `scripts/loc_gate.sh`). New modules under the higher
-  cap must delete or prevent a fake-evidence failure mode (contracts,
+- LOC ceiling: **11,700 hard gate in `agent/`**. Full cap history is
+  documented in `scripts/loc_gate.sh`. New modules under the higher cap
+  must delete or prevent a fake-evidence failure mode (contracts,
   validators, receipts, provenance, typed contracts) — not buy prose
   polish or speculation.
 

@@ -1,4 +1,4 @@
-# Top 5 interesting findings — autophagy
+# Top 4 interesting findings — autophagy
 
 **Snapshot:** 2026-05-15T18-19-38Z
 **Source:** Researka DB Tier-2 search (`POST /api/v1/tier2/facts/search`, filter topic=autophagy) — LLM-extracted, no Tier-1 canonical facts loaded for this topic yet; findings may be off-target (e.g. chemistry papers using the molecule name) until canonical curation.
@@ -12,20 +12,19 @@
 ### Lane — `effect_size`
 
 
-## #1 — score 64 · effect_size
+## #1 — score 63 · effect_size
 
-**Finding:** Ulk1 knockouts had contractile weakness compared with littermate controls (-27%, P < 0.02).
+**Finding:** autophagy flux was significantly less in injured versus uninjured muscles (-26%, P < 0.02).
 
-- **Value:** -27.0%
-- **Population:** Ulk1 knockout mice and littermate controls
-- **Intervention:** Ulk1 deficiency
+- **Value:** -26.0%
+- **Population:** mice
+- **Intervention:** traumatic freeze injury
 - **Source:** *Mitochondrial-specific autophagy linked to mitochondrial dysfunction following traumatic freeze injury in mice* — American Journal of Physiology-Cell Physiology (2019)
   · DOI: `10.1152/ajpcell.00123.2019`
 - **Validator:** researka-tier2
-- **Same-trial supporting numerics:** -26.0% (autophagy flux was significantly less in injured versus unin)
 
 - **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
 - **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
@@ -48,58 +47,42 @@
 
 ---
 
-## #3 — score 55 · effect_size
-
-**Finding:** These findings show that beclin 1 plays a constitutive, autophagy-independent role in the regulation of intestinal TJ barrier function via endocytosis of occludin.
-
-- **Value:** 1.0
-- **Population:** intestinal epithelial cells and mouse colon
-- **Intervention:** beclin 1
-- **Source:** *Intestinal epithelial tight junction barrier regulation by autophagy-related protein ATG6/beclin 1* — American Journal of Physiology-Cell Physiology (2019)
-  · DOI: `10.1152/ajpcell.00246.2018`
-- **Validator:** researka-tier2
-- **Same-trial supporting numerics:** 1.0 (Perfusion of mouse colon with beclin 1 peptide caused an inc); 1.0 (beclin 1 siRNA transfection enhanced Caco-2 TJ barrier funct); 1.0 (Activation of beclin 1 increased occludin endocytosis and re)
-
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=4 biomarkers from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
-
----
-
-### Lane — `threshold`
+### Lane — `mechanism`
 
 
-## #4 — score 56 · threshold
+## #3 — score 50 · mechanism
 
-**Finding:** TXA1 induced autophagy of melanoma cells at the GI50 concentration (3.6 μM)
+**Finding:** Inhibition of autophagy by silencing of the key autophagy gene, beclin 1 or 3-MA, further increased the cytotoxicity of this combinatorial treatment, suggesting that autophagy plays a cytoprotective role
 
-- **Value:** 3.6μM
-- **Population:** A375-C5 melanoma cells
-- **Intervention:** TXA1
-- **Source:** *Modulation of Autophagy by a Thioxanthone Decreases the Viability of Melanoma Cells* — Molecules (2016)
-  · DOI: `10.3390/molecules21101343`
+- **Value:** 1.0OR
+- **Population:** glioma cells
+- **Intervention:** MK-2206 + gefitinib with autophagy inhibition (beclin 1 silencing or 3-MA)
+- **Source:** *MK-2206, a Novel Allosteric Inhibitor of Akt, Synergizes with Gefitinib against Malignant Glioma via Modulating Both Autophagy and Apoptosis* — Molecular Cancer Therapeutics (2011)
+  · DOI: `10.1158/1535-7163.mct-11-0606`
 - **Validator:** researka-tier2
 
-- **Why it matters:** Direct evidence in the `threshold` sub-topic; informs whether the finding generalises beyond a single study.
+- **Why it matters:** Direct evidence in the `mechanism` sub-topic; informs whether the finding generalises beyond a single study.
 - **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
 - **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
-## #5 — score 56 · threshold
+### Lane — `rate`
 
-**Finding:** APP-CTF (apparent EC(50) of ∼20 μM)
 
-- **Value:** 20.0μM
-- **Population:** cell lines and primary neuronal cultures
-- **Intervention:** SMER28
-- **Source:** *A small‐molecule enhancer of autophagy decreases levels of Aβ and APP‐CTF <b> <i>via</i> Atg5‐dependent autophagy pathway </b>* — The FASEB Journal (2011)
-  · DOI: `10.1096/fj.10-175158`
-- **Validator:** researka-tier2
-- **Same-trial supporting numerics:** 10.0μM (Aβ peptide (apparent EC(50) of ∼10 μM))
+## #4 — score 40 · rate
 
-- **Why it matters:** Direct evidence in the `threshold` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
+**Finding:** a population (∼30%) of intracellular Mtb is tagged with ubiquitin and targeted to selective autophagy
+
+- **Value:** 30.0%
+- **Population:** intracellular Mtb in macrophages
+- **Intervention:** ESX-1 secretion system perturbation
+- **Source:** *Galectin-8 Senses Phagosomal Damage and Recruits Selective Autophagy Adapter TAX1BP1 To Control <i>Mycobacterium tuberculosis</i> Infection in Macrophages* — mBio (2021)
+  · DOI: `10.1128/mbio.01871-20`
+- **Validator:** —
+
+- **Why it matters:** Direct evidence in the `rate` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
 - **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---

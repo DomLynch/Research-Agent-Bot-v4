@@ -14,18 +14,19 @@ the operator regenerates the artifact via
 
 Universal — operates on syntactic shape only, no domain literals.
 """
-from __future__ import annotations
-
+import json
 import re
 from pathlib import Path
 
 import pytest
 
+from agent.fact_lanes import classify_lane
 from agent.numeric_sanitizer import is_numeric_artifact
 
 _RUNS = Path(__file__).resolve().parent.parent / "runs"
 _FINDING_RE = re.compile(r"^\*\*Finding:\*\*\s+(.+?)\s*$", re.MULTILINE)
 _VALUE_RE = re.compile(r"^-\s*\*\*Value:\*\*\s*([-\d.]+)", re.MULTILINE)
+_BINDABLE_LANES = frozenset({"A_core", "B_context"})
 
 
 def _top_n_files() -> list[Path]:
@@ -70,6 +71,25 @@ def _pairs_in_card_order(text: str) -> list[tuple[float, str]]:
     return out
 
 
+def _facts_for(path: Path) -> list[dict[str, object]]:
+    data = json.loads((path.parent / "all_facts.json").read_text(encoding="utf-8"))
+    return [f for f in data if isinstance(f, dict)] if isinstance(data, list) else []
+
+
+def _matching_fact(
+    facts: list[dict[str, object]], value: float, finding: str,
+) -> dict[str, object] | None:
+    for fact in facts:
+        if str(fact.get("canonical_phrase") or "").strip() != finding:
+            continue
+        raw = fact.get("numeric_value")
+        if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+            continue
+        if float(raw) == value:
+            return fact
+    return None
+
+
 @pytest.mark.parametrize("path", _top_n_files(),
                          ids=lambda p: f"{p.parent.name}/{p.name}")
 def test_top_n_md_no_sanitizer_artifacts(path: Path) -> None:
@@ -88,4 +108,35 @@ def test_top_n_md_no_sanitizer_artifacts(path: Path) -> None:
         f"Regenerate via `scripts/regen_top_from_run.py "
         f"{path.parent}`. Leaks:\n  - "
         + "\n  - ".join(leaks)
+    )
+
+
+@pytest.mark.parametrize("path", _top_n_files(),
+                         ids=lambda p: f"{p.parent.name}/{p.name}")
+def test_top_n_md_cards_are_lane_bindable(path: Path) -> None:
+    """Rendered top_N cards must be facts the lane gate would allow.
+
+    This catches the class missed by the sanitizer-only test: p-values,
+    regimen/dose/duration facts, and off-topic C_noise facts that are
+    syntactically valid numerics but should not be top findings.
+    """
+    topic = path.parent.name.split("-evidence-", 1)[0]
+    facts = _facts_for(path)
+    text = path.read_text(encoding="utf-8")
+    leaks: list[str] = []
+    for value, finding in _pairs_in_card_order(text):
+        fact = _matching_fact(facts, value, finding)
+        if fact is None:
+            continue
+        verdict = classify_lane(fact, topic)
+        if verdict.lane not in _BINDABLE_LANES:
+            leaks.append(
+                f"fact_id={fact.get('fact_id')} lane={verdict.lane} "
+                f"role={verdict.numeric_role}: {finding[:90]!r}",
+            )
+    assert not leaks, (
+        f"{path.relative_to(_RUNS.parent)} contains top-card fact(s) "
+        f"that current fact_lanes would reject. Regenerate via "
+        f"`scripts/regen_top_from_run.py {path.parent}` after fixing "
+        f"top_N ranking. Leaks:\n  - " + "\n  - ".join(leaks)
     )

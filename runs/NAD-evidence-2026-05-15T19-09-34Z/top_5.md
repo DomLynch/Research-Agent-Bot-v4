@@ -1,4 +1,4 @@
-# Top 5 interesting findings — NAD
+# Top 4 interesting findings — NAD
 
 **Snapshot:** 2026-05-15T19-09-34Z
 **Source:** Researka DB Tier-2 search (`POST /api/v1/tier2/facts/search`, filter topic=NAD) — LLM-extracted, no Tier-1 canonical facts loaded for this topic yet; findings may be off-target (e.g. chemistry papers using the molecule name) until canonical curation.
@@ -12,42 +12,7 @@
 ### Lane — `effect_size`
 
 
-## #1 — score 80 · effect_size
-
-**Finding:** ArLD liver tissue showed markedly depressed concentrations of NAD+ (432 μM vs. 616 μM in normal liver)
-
-- **Value:** 432.0μM
-- **Population:** Patients with alcohol-related liver disease (ArLD) and normal liver
-- **Intervention:** ArLD
-- **Source:** *Nicotinamide Adenine Dinucleotide Metabolome Is Functionally Depressed in Patients Undergoing Liver Transplantation for Alcohol‐Related Liver Disease* — Hepatology Communications (2020)
-  · DOI: `10.1002/hep4.1530`
-- **Validator:** researka-tier2
-- **Same-trial supporting numerics:** 462.0μM (a significant difference for individual components of the me); 0.31 (NAD+ concentration was ... positively correlated with myelop); -0.127 (NAD+ concentration was inversely related to serum bilirubin ); 0.018 (There was a significant overall difference in the NAD+ metab)
-
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=5 biomarkers from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
-
----
-
-## #2 — score 75 · effect_size
-
-**Finding:** measured the concentration distribution of breath EtOH without alcohol consumption using the improved sniff-cam and obtained a value of 116.2 ± 35.7 ppb
-
-- **Value:** 116.2ppb
-- **Population:** human subjects
-- **Intervention:** ultrasensitive sniff-cam
-- **Source:** *Ultrasensitive Sniff-Cam for Biofluorometric-Imaging of Breath Ethanol Caused by Metabolism of Intestinal Flora* — Analytical Chemistry (2019)
-  · DOI: `10.1021/acs.analchem.8b05840`
-- **Validator:** researka-tier2
-
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
-
----
-
-## #3 — score 70 · effect_size
+## #1 — score 70 · effect_size
 
 **Finding:** 2,3-butanediol (maximal yield, 67%)
 
@@ -65,38 +30,55 @@
 
 ---
 
-### Lane — `regimen`
+## #2 — score 65 · effect_size
 
+**Finding:** NAD(P)(H) pools in M. maripaludis measured to be <15% of that of Escherichia coli
 
-## #4 — score 80 · regimen
-
-**Finding:** Mice received NMN in drinking water (400 mg/kg).
-
-- **Value:** 400.0mg/kg
-- **Population:** female C57BL/6J mice with diet-induced obesity
-- **Intervention:** NMN in drinking water
-- **Source:** *Exercise-induced benefits on glucose handling in a model of diet-induced obesity are reduced by concurrent nicotinamide mononucleotide* — American Journal of Physiology-Endocrinology and Metabolism (2021)
-  · DOI: `10.1152/ajpendo.00446.2020`
+- **Value:** 15.0%
+- **Population:** Methanococcus maripaludis
+- **Intervention:** none
+- **Source:** *Engineering nonphotosynthetic carbon fixation for production of bioplastics by methanogenic archaea* — Proceedings of the National Academy of Sciences (2022)
+  · DOI: `10.1073/pnas.2118638119`
 - **Validator:** researka-tier2
 
-- **Why it matters:** Direct evidence in the `regimen` sub-topic; informs whether the finding generalises beyond a single study.
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
 - **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
 - **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
-## #5 — score 75 · regimen
+## #3 — score 60 · effect_size
 
-**Finding:** A single dose (62.5 mg/kg) of NMN, administered to male mice
+**Finding:** women had higher plasma NAD+/NADH ratios than men (median 1.33 vs. 1.09, P<0.001)
 
-- **Value:** 62.5mg/kg
-- **Population:** male mice
-- **Intervention:** nicotinamide mononucleotide (NMN)
-- **Source:** *Nicotinamide mononucleotide alters mitochondrial dynamics by SIRT3‐dependent mechanism in male mice* — Journal of Neuroscience Research (2019)
-  · DOI: `10.1002/jnr.24397`
+- **Value:** 1.33
+- **Population:** 205 probands without severe diseases (91 men, 114 women), 18-83 years old
+- **Intervention:** N/A
+- **Source:** *Sex-related differences in human plasma NAD+/NADH levels depend on age* — Bioscience Reports (2021)
+  · DOI: `10.1042/bsr20200340`
 - **Validator:** researka-tier2
 
-- **Why it matters:** Direct evidence in the `regimen` sub-topic; informs whether the finding generalises beyond a single study.
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
+---
+
+### Lane — `rate`
+
+
+## #4 — score 56 · rate
+
+**Finding:** RNAIII, a central quorum-sensing regulator of this bacterium's physiology, was found to be 5' NAD capped in a range from 10 to 35%
+
+- **Value:** 5.0%
+- **Population:** Staphylococcus aureus isolates
+- **Intervention:** 5' NAD capping of RNAIII
+- **Source:** *The 5′ NAD Cap of RNAIII Modulates Toxin Production in Staphylococcus aureus Isolates* — Journal of Bacteriology (2019)
+  · DOI: `10.1128/jb.00591-19`
+- **Validator:** researka-tier2
+
+- **Why it matters:** Direct evidence in the `rate` sub-topic; informs whether the finding generalises beyond a single study.
 - **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
 - **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 

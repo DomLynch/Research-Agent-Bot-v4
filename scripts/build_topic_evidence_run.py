@@ -30,6 +30,7 @@ import httpx
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from agent.fact_lanes import LaneVerdict, classify_lanes
 from agent.frontier_review import (
     FrontierReview,
     run_frontier_review,
@@ -44,6 +45,7 @@ from agent.researka_claims import _aggregate
 from agent.settings import load_settings
 
 _RUNS = Path(__file__).resolve().parent.parent / "runs"
+_TOP_BINDABLE_LANES = frozenset({"A_core", "B_context"})
 
 
 def _safe_float(v: Any) -> float | None:
@@ -166,6 +168,27 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
             matched.append(it)
     chosen = matched if matched else all_items
     return [_normalize_tier2(it, topic) for it in chosen]
+
+
+def _rankable_facts_for_top(
+    facts: list[dict[str, Any]],
+    topic: str,
+    lane_verdicts: list[LaneVerdict] | None = None,
+) -> list[dict[str, Any]]:
+    """Facts allowed to appear as top_N cards.
+
+    Top cards are operator-facing "interesting findings", so they must
+    not include lane-rejected facts. Signal posts already fail closed via
+    fact_lanes; this applies the same A_core/B_context discipline to the
+    deterministic top_N renderer.
+    """
+    verdicts = lane_verdicts if lane_verdicts is not None else classify_lanes(
+        facts, topic)
+    lane_by_id = {v.fact_id: v.lane for v in verdicts}
+    return [
+        f for f in facts
+        if lane_by_id.get(str(f.get("fact_id") or "")) in _TOP_BINDABLE_LANES
+    ]
 
 
 def _fmt_value(fact: dict[str, Any]) -> str:
@@ -506,7 +529,8 @@ def main() -> int:
     # ABT-263) before scoring so a parse artifact can never lead the
     # Top 5. Universal — syntactic shape only, no domain literals.
     facts, _artifact_facts = filter_artifacts(facts)
-    scored = sorted(((_interestingness(f), f) for f in facts),
+    rankable_facts = _rankable_facts_for_top(facts, args.topic)
+    scored = sorted(((_interestingness(f), f) for f in rankable_facts),
                     key=lambda p: p[0], reverse=True)
     # Collapse same-paper + same-sub_topic duplicates so a single trial
     # can't monopolise the Top N (Sprint 60a).
