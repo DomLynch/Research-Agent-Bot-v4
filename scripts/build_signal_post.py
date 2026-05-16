@@ -313,8 +313,12 @@ def _render_signal_post(
     has_thesis = (isinstance(theses_list, list) and theses_list
                   and isinstance(theses_list[0], dict)
                   and str(theses_list[0].get("title") or "").strip())
+    adjacent = _adjacent_signals_block(
+        facts_by_id, lane_verdicts or {})
     # No-signal case: MiMo refused to opine (no theses) — emit an
     # honest 'no signal' marker rather than publishing the disclaimer.
+    # Sprint 76: still surface adjacent C/D facts as research prompts
+    # so operators get triagable alpha rather than just a dead end.
     if not lead_audit and not has_thesis:
         return (
             f"# No signal — {topic}\n\n"
@@ -323,8 +327,9 @@ def _render_signal_post(
             f"finding from this evidence pool — typically because facts "
             f"are too noisy, too narrow, or off-target for the topic.\n\n"
             f"## MiMo's note\n\n{lens or '_no lens produced_'}\n\n"
-            f"See `frontier_review.md` for the raw lens + tensions, "
-            f"and `top_5.md` for the deterministic top-5.\n"
+            + (adjacent + "\n" if adjacent else "")
+            + "See `frontier_review.md` for the raw lens + tensions, "
+            "and `top_5.md` for the deterministic top-5.\n"
         )
     if lead_audit:
         headline = str(lead_audit.get("title") or "")
@@ -376,7 +381,8 @@ def _render_signal_post(
         + "\n".join(evidence_lines) + "\n\n"
         f"## Confidence — `{label}`\n\n"
         f"{_confidence_human(label)}\n\n"
-        f"## Next question\n\n"
+        + (adjacent + "\n" if adjacent else "")
+        + f"## Next question\n\n"
         f"{next_q}\n"
     )
 
