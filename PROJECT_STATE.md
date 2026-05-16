@@ -82,6 +82,27 @@ scoring, thresholds, and digest schema stay put.
 12. ✅ Tests (unit + golden) + supplement plugins + cutover validation
 
 ## Current Sprint
+**Sprint 80 shipped** — frontier citation-recovery + proof hygiene:
+- Fixed a real telomere regression where MiMo's JSON truncated inside
+  thesis `rationale` before `cited_fact_ids`; the tolerant parser kept
+  the thesis but left citations empty, so the binding gate correctly
+  downgraded it. `agent/frontier_review.py` now recovers structural
+  `fact <id>` references from thesis prose, and for single-thesis
+  truncated reviews from the top-level lens/tensions/gaps, filtered
+  strictly to A/B EVIDENCE facts.
+- Added a universal non-biomedical regression test:
+  `test_truncated_single_thesis_recovers_evidence_fact_refs` uses
+  carbon-tax fact IDs and proves ALPHA HINT ids are not promoted to
+  citations.
+- Replayed the captured bad telomere raw response: recovered non-empty
+  citations. Fresh telomere run at `2026-05-16T16-30-34Z` returned
+  `evidence_backed_signal` with lead citations `6907, 6908, 11257`.
+- Fresh mTOR run at `2026-05-16T16-30-34Z` verified the editorial
+  card text is bound to each card's own fact; the ad hoc verification
+  folders were removed afterward to keep `runs/` clean.
+- Tightened `agent/fact_facets.py` fallback selection to avoid the
+  mypy `max(..., key=...)` type edge and empty-priority runtime edge.
+
 **Sprint 79 shipped** — coherent alpha Top 5 curation layer:
 - Fixed render-time editorial leakage when lane grouping reorders cards;
   each card now resolves MiMo editorial text by original fact index, not

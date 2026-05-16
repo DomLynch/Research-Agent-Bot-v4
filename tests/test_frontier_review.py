@@ -200,6 +200,40 @@ def test_build_messages_evidence_vs_hints_boundary() -> None:
     assert "cited_fact_ids must reference only ids from EVIDENCE" in sys
 
 
+def test_truncated_single_thesis_recovers_evidence_fact_refs() -> None:
+    """If MiMo truncates before cited_fact_ids but named fact ids in
+    lens/tensions, recover only citable EVIDENCE ids."""
+    mock_resp = MagicMock()
+    mock_resp.content = json.dumps({
+        "lens": "A useful contrast appears in fact ct/swe/1 versus fact ct/swe/2.",
+        "tensions": [
+            "The same tension mentions fact hint/9, but it is not citable.",
+        ],
+        "theses": [{
+            "title": "A structural contrast worth testing",
+            "paper_type": "scoping-review",
+            "novelty": 80,
+            "evidence_strength": 70,
+            "reviewer_risk": 30,
+            "rationale": "truncated before explicit citations",
+        }],
+    })
+    mock_resp.model = "mimo-v2.5-pro"
+    evidence = [
+        {"fact_id": "ct/swe/1", "canonical_phrase": "policy cut emissions 8%"},
+        {"fact_id": "ct/swe/2", "canonical_phrase": "industry cut emissions 12%"},
+    ]
+    hints = [{"fact_id": "hint/9", "canonical_phrase": "uncurated hint"}]
+    with patch("agent.frontier_review.call_writer_with_fallback",
+               return_value=mock_resp):
+        r = run_frontier_review(
+            topic="carbon_tax", snapshot_utc="ts",
+            evidence_facts=evidence, alpha_hints=hints, papers=None,
+            settings=_settings(),
+        )
+    assert r.theses[0].cited_fact_ids == ("ct/swe/1", "ct/swe/2")
+
+
 def test_universal_non_biomedical_fixture() -> None:
     msgs = _build_messages(
         "carbon_tax",

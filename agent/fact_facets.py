@@ -25,9 +25,9 @@ def _text(fact: dict[str, Any]) -> str:
 
 def _fallback_facet(config: tuple[dict[str, tuple[str, ...]], dict[str, int]]) -> str:
     markers_by_facet, priority_by_facet = config
-    if not markers_by_facet:
+    if not markers_by_facet or not priority_by_facet:
         return "unclassified"
-    return max(priority_by_facet, key=lambda facet: priority_by_facet[facet])
+    return max(priority_by_facet.items(), key=lambda item: item[1])[0]
 
 
 @lru_cache(maxsize=1)

@@ -10,6 +10,7 @@ returns an empty review on any failure so callers never crash.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -197,6 +198,68 @@ def _str_list(v: Any) -> tuple[str, ...]:
     return tuple(str(x).strip() for x in v if str(x).strip())
 
 
+def _all_strings(value: Any) -> list[str]:
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, list):
+        out: list[str] = []
+        for item in value:
+            out.extend(_all_strings(item))
+        return out
+    if isinstance(value, dict):
+        out = []
+        for item in value.values():
+            out.extend(_all_strings(item))
+        return out
+    return []
+
+
+def _fact_id_refs(text: str, facts: list[dict[str, Any]]) -> tuple[str, ...]:
+    """Recover structural `fact <id>` references from model prose.
+
+    Used only as a fallback when MiMo's JSON is truncated before
+    `cited_fact_ids`. References are filtered to the citable EVIDENCE
+    block, so ALPHA HINT ids cannot become citations.
+    """
+    cited: list[str] = []
+    for fact in facts:
+        fid = str(fact.get("fact_id") or "").strip()
+        if not fid:
+            continue
+        pattern = (
+            r"(?i)\b(?:fact(?:_id)?|fid)\s*[:=#-]?\s*[`'\"]?"
+            + re.escape(fid)
+            + r"(?![\w/-]|\.\d)"
+        )
+        if re.search(pattern, text):
+            cited.append(fid)
+    return tuple(dict.fromkeys(cited))
+
+
+def _with_recovered_citations(
+    thesis: PaperThesis, item: dict[str, Any], data: dict[str, Any],
+    evidence_facts: list[dict[str, Any]], thesis_count: int,
+) -> PaperThesis:
+    if thesis.cited_fact_ids:
+        return thesis
+    local_text = " ".join(_all_strings(item))
+    refs = _fact_id_refs(local_text, evidence_facts)
+    if not refs and thesis_count == 1:
+        review_parts: list[str] = []
+        for key in ("lens", "tensions", "gaps"):
+            review_parts.extend(_all_strings(data.get(key)))
+        review_text = " ".join(review_parts)
+        refs = _fact_id_refs(review_text, evidence_facts)
+    if not refs:
+        return thesis
+    return PaperThesis(
+        title=thesis.title, paper_type=thesis.paper_type,
+        novelty=thesis.novelty, evidence_strength=thesis.evidence_strength,
+        reviewer_risk=thesis.reviewer_risk, rationale=thesis.rationale,
+        cited_fact_ids=refs,
+    )
+
+
 def _bracket_stack(text: str) -> tuple[list[str], bool]:
     """Return (open-bracket stack, in_string_at_eof) for `text`."""
     stack: list[str] = []
@@ -317,7 +380,9 @@ def run_frontier_review(
             if isinstance(item, dict):
                 t = _parse_thesis(item)
                 if t is not None:
-                    theses.append(t)
+                    theses.append(_with_recovered_citations(
+                        t, item, data, evidence_facts, len(theses_raw),
+                    ))
     return FrontierReview(
         topic=topic, snapshot_utc=snapshot_utc, model=resp.model,
         lens=str(data.get("lens", "")).strip(),
