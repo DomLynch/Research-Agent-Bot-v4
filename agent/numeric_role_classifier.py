@@ -107,9 +107,23 @@ def classify_numeric_role(
     if u in _RATIO_UNITS:
         return "effect_size"
     if u == "%":
+        # Sprint 73 — regimen markers must sit IMMEDIATELY around the
+        # value, not anywhere in the phrase. Window: 15 chars before
+        # the value start, 25 chars after its end. Tuned so that
+        # genuine modifiers ('40% caloric restriction', 'conditions
+        # (70%)') still fire, but distant subjects ('Mediterranean
+        # diet reduced LDL by 30%', 'training regimen improved
+        # VO2max by 12%') no longer false-positive. Auditor's
+        # locality fix.
         markers = _load_role_markers()["regimen"]
-        return "regimen" if any(m in ctx for m in markers) \
-            else "effect_size"
+        if value is not None and markers:
+            val_str = (f"{int(value)}" if value == int(value)
+                       else f"{value:g}")
+            for m in re.finditer(re.escape(val_str), ctx):
+                window = ctx[max(0, m.start() - 15):m.end() + 25]
+                if any(marker in window for marker in markers):
+                    return "regimen"
+        return "effect_size"
     if value is not None and "fold" in ctx and u in ("", "x"):
         return "fold_change"
     if value is not None and -1.0 <= value <= 1.0 and u == "":

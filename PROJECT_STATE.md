@@ -82,7 +82,7 @@ scoring, thresholds, and digest schema stay put.
 12. ✅ Tests (unit + golden) + supplement plugins + cutover validation
 
 ## Current Sprint
-**Sprint 71 active** — alpha-mode Researka evidence pipeline is
+**Sprint 73 active** — alpha-mode Researka evidence pipeline is
 lane-gated at the top-card surface: discovery (Sprint 63 + Sprint 70
 anchorage dampening) → build_topic_evidence_run (PICO enrichment
 Sprint 61, numeric sanitizer Sprint 64 + 69, same-paper dedup +
@@ -91,8 +91,45 @@ editorial Sprint 60, **A_core/B_context-only top_N ranking Sprint 71**)
 strict binding lock). One-command autonomous curator cycle via
 `scripts/run_curator_cycle.py` (Sprint 65).
 
-**Sprint 72 (in flight, this commit pending) — closes the
-2026-05-16 auditor's strictest reading of universal-no-hardcoding:**
+**Sprint 73 (in flight, this commit pending) — closes the
+2026-05-16 auditor's locality bug + over-claim correction:**
+- `agent/numeric_role_classifier.py` — regimen-marker check is now
+  LOCALITY-AWARE. Markers must sit within a window of [-15, +25]
+  chars around the value, not anywhere in the phrase. Closes the
+  auditor's three failing cases verbatim:
+  `Mediterranean diet reduced LDL by 30%` → `effect_size`,
+  `policy protocol cut emissions by 8%` → `effect_size`,
+  `training regimen improved VO2max by 12%` → `effect_size`.
+  All six positive regimen cases (carbon restriction, austerity
+  protocol, load conditions, VO2max regimen, caloric restriction,
+  CR conditions) still return `regimen`.
+- 4 new negative tests in `tests/test_numeric_role_classifier.py`
+  lock the locality contract.
+- Honest correction: the previous Sprint 72 summary claimed "zero
+  biomedical literals in `agent/`" — that was an overclaim. The
+  marker vocabulary in `topic_packs/role_markers.toml` is now
+  universal-only, but `agent/` still contains domain-leaning
+  surfaces outside the role classifier:
+  * `agent/risk_of_bias.py` — `SYRCLE` / `Cochrane-RoB-2` /
+    `ROBINS-I` framework definitions (these are named tools for
+    biomedical research; turning them into a data file is a
+    separate sprint).
+  * `agent/include_contract.py` — disease-term lists
+    (`cancer / tumor / diabet / alzheimer / parkinson`) used to
+    gate include eligibility for current rapamycin-era data.
+  * `agent/source_audit.py`, `agent/effect_extraction.py`,
+    `agent/eligibility_merge.py`, `agent/back_matter.py`,
+    `agent/methods_honesty.py`, `agent/topic_synonyms.py`,
+    `agent/evidence_index.py` — biomedical examples in
+    docstrings / prompts (`mice`, `rapamycin/sirolimus`,
+    `lifespan`, `mortality`).
+  These are scheduled for moving to topic-pack data files in
+  Sprint 74+. The Sprint 72 universal-no-hardcoding sweep was
+  scoped to the role classifier only.
+
+**Sprint 72 (shipped, head `665a5de`) — closes the auditor's
+strictest reading of universal-no-hardcoding for the role
+classifier:**
 - Marker vocabulary moved out of code into data:
   `topic_packs/role_markers.toml` is now the single source of truth
   for the regimen / sample-size word lists. `agent/numeric_role_

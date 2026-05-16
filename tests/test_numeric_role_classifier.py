@@ -283,3 +283,44 @@ def test_role_markers_are_loaded_from_data_file() -> None:
     # Spot-check a known universal entry survives the round-trip.
     assert "restriction" in markers["regimen"]
     assert "n=" in markers["sample_size"]
+
+
+# ============= Sprint 73 — regimen locality fix =============
+
+def test_pct_with_diet_subject_far_from_value_is_effect_size() -> None:
+    """Sprint 73 / auditor: 'Mediterranean diet reduced LDL by 30%'
+    — 'diet' is the subject of a result clause, not adjacent to the
+    value. The 30% IS the outcome, not the dose. The locality fix
+    requires the regimen marker to sit within a tight window around
+    the value, not just anywhere in the phrase."""
+    assert classify_numeric_role(
+        30.0, "%", "Mediterranean diet reduced LDL by 30%",
+    ) == "effect_size"
+
+
+def test_pct_with_protocol_subject_far_from_value_is_effect_size() -> None:
+    """'policy protocol cut emissions by 8%' — 'protocol' is the
+    subject of the clause, far from the value. The 8% is the
+    outcome. Universal across climate / policy domains."""
+    assert classify_numeric_role(
+        8.0, "%", "policy protocol cut emissions by 8%",
+    ) == "effect_size"
+
+
+def test_pct_with_regimen_subject_far_from_value_is_effect_size() -> None:
+    """'training regimen improved VO2max by 12%' — 'regimen' is
+    the subject, the 12% is the outcome magnitude. Universal
+    across sports / training domains."""
+    assert classify_numeric_role(
+        12.0, "%", "training regimen improved VO2max by 12%",
+    ) == "effect_size"
+
+
+def test_pct_with_conditions_far_from_value_is_effect_size() -> None:
+    """'lab conditions did not change but the response rose 20%'
+    — 'conditions' present but far before the value with an
+    intervening result verb."""
+    assert classify_numeric_role(
+        20.0, "%",
+        "lab conditions did not change but the response rose 20%",
+    ) == "effect_size"
