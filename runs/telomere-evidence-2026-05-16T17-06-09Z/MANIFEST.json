@@ -1,9 +1,9 @@
 {
   "topic": "telomere",
-  "snapshot_utc": "2026-05-16T16-11-07Z",
+  "snapshot_utc": "2026-05-16T17-06-09Z",
   "top_n": 5,
-  "facts_inspected": 35,
-  "aggregated_claims": 35,
+  "facts_inspected": 36,
+  "aggregated_claims": 36,
   "data_tier": "tier2",
   "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
   "frontier_model": "mimo-v2.5-pro",
@@ -14,7 +14,7 @@
     "model_context": 4,
     "molecular_mechanism": 1
   },
-  "numeric_artifacts_filtered": 15,
+  "numeric_artifacts_filtered": 14,
   "pico_enrichment": {
     "facts_inspected": 50,
     "facts_changed": 0,
@@ -26,43 +26,43 @@
   "files": {
     "top_md": {
       "name": "top_5.md",
-      "sha256": "87dca493e15f2ada5173dce2c263490a774f39725c4d3faafc838e346ebb3f74"
+      "sha256": "7e03b625f95f8f42ce72feb826fc3d3b992ca6a27391c0ef8a875c7bc893a157"
     },
     "all_facts": {
       "name": "all_facts.json",
-      "sha256": "872566e5da9b2dcc5e217df2b41b10177bbe159af1563afc3db629258471ac41"
+      "sha256": "ae487161b4e5ce0e7e9d86b10c50dc4ae24d89feac467ff0d539e53e05cc567a"
     },
     "claims_index": {
       "name": "claims_index.json",
-      "sha256": "b2e1adf301d2f602f054ae807b6e31a26ec195596d34afdfac557e5b46ce52ba"
+      "sha256": "efa78d445bfd1e00932d412e27f6b0ff7ab02c5367b965a06e496ce3243e9688"
     },
     "frontier_md": {
       "name": "frontier_review.md",
-      "sha256": "8978d09fd7f6805ed02253fad958b5aea3a8799ca3e31ab94294541e28786a78"
+      "sha256": "426b44f3a0acd8fedb9befbef0157602315934b2dc480134dc5d72c1b27bafe5"
     },
     "frontier_json": {
       "name": "frontier_review.json",
-      "sha256": "811243847f94399dafbe2e0ee4f7d849b323d39c3561f777977edc4b02dc2c5d"
+      "sha256": "e83bfc0bab66e7ef537c717f4706bb6a3982772013cf8d5470f0c7df41b7e34e"
     },
     "papers_metadata": {
       "name": "papers_metadata.json",
-      "sha256": "1831f8b6c2a2a790858644c09ad48aacf7dbea4540722c47bfe93163455494db"
+      "sha256": "586a0a03b42d2645398ce90ac887bcb0445ee16c7305af9e38604ab08d028ddf"
     },
     "fact_lanes": {
       "name": "fact_lanes.json",
-      "sha256": "8d02ee800c82cb1908090a4565397d60c519798d42462c8425b2cc13998fdb3a"
+      "sha256": "288f483bb39864b8b59cf9f02896f8e868d80158ad4ccf79ac9005738ba3657c"
     },
     "opportunities_gate": {
       "name": "opportunities_gate.json",
-      "sha256": "13f30cf407a5cf1c6d906427ac3a41276f22e55055e91dcffdf716409f4975d1"
+      "sha256": "ac9380da4425f37a9f76e18ba5d2aba426b627fc8e6db5dcc01e23cb24b430b8"
     },
     "paper_opportunities_md": {
       "name": "paper_opportunities.md",
-      "sha256": "857fa3de00107b686121c70bff8a58280894b42c548dd89d9a59a0e3ae12a046"
+      "sha256": "99c7f561bcca80780c09c08364a332632ddf23a6f49a8ddb0fbc36f79d7f8f9c"
     },
     "signal_post_md": {
       "name": "signal_post.md",
-      "sha256": "40dc37289ed5a7619f137ca48849d714cae9b267dfb3662bc5c1004ecd4046f6"
+      "sha256": "05f270a0a0f8a31b7ec4f7284b87fa8f764b8c90a02a0cafe00cd6cdf35c8e6e"
     }
   }
 }

@@ -1,7 +1,7 @@
 {
   "topic": "telomere",
-  "snapshot_utc": "2026-05-16T16-11-07Z",
-  "claim_count": 35,
+  "snapshot_utc": "2026-05-16T17-06-09Z",
+  "claim_count": 36,
   "claims": [
     {
       "claim_text": "In COVID-19 patients, lymphocyte count was inversely correlated with the proportion of telomeres shorter than 2 kb (p = .005).",
@@ -40,21 +40,21 @@
       ]
     },
     {
-      "claim_text": "telomere length (TL) in FA-deficient (30 nmol/L) cultures was 26% longer than that of 3,000 nmol/L FA cultures",
-      "confidence_0_100": 70,
-      "publication_opportunity": false,
-      "paper_type": "effect_size",
-      "supporting_study_ids": [
-        "10.1158/1940-6207.capr-13-0264"
-      ]
-    },
-    {
       "claim_text": "Longitudinal changes in psychologic distress were significantly associated with increased telomere length in CD14(+) population (r = -0.46, P = 0.043)",
       "confidence_0_100": 70,
       "publication_opportunity": false,
       "paper_type": "effect_size",
       "supporting_study_ids": [
         "10.1158/1940-6207.capr-12-0008"
+      ]
+    },
+    {
+      "claim_text": "telomere length (TL) in FA-deficient (30 nmol/L) cultures was 26% longer than that of 3,000 nmol/L FA cultures",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-13-0264"
       ]
     },
     {
@@ -103,6 +103,15 @@
       ]
     },
     {
+      "claim_text": "p = 2.98 × 10^-9 for highest vs. lowest quintile; p = 1.82 × 10^-10 as a continuous variable",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/ijc.31928"
+      ]
+    },
+    {
       "claim_text": "Longer TL was associated with increased breast cancer risk [odds ratio (OR) 1.87, 95% confidence interval (CI) 1.38, 2.55]",
       "confidence_0_100": 70,
       "publication_opportunity": false,
@@ -121,15 +130,6 @@
       ]
     },
     {
-      "claim_text": "p = 2.98 × 10^-9 for highest vs. lowest quintile; p = 1.82 × 10^-10 as a continuous variable",
-      "confidence_0_100": 70,
-      "publication_opportunity": false,
-      "paper_type": "effect_size",
-      "supporting_study_ids": [
-        "10.1002/ijc.31928"
-      ]
-    },
-    {
       "claim_text": "those in the lowest quartile (shortest) had an almost twofold increased risk of incident diabetes (hazard ratio [HR] 1.83 [95% CI 1.26-2.66])",
       "confidence_0_100": 70,
       "publication_opportunity": false,
@@ -139,12 +139,12 @@
       ]
     },
     {
-      "claim_text": "identify one candidate meiotic driver in a centromere-linked region that shows an ∼8% increase in transmission frequency, corresponding to a ∼54:46 segregation ratio.",
+      "claim_text": "higher Healthy Eating Index 2010 scores (β = 0.065, 95% CI: 0.018, 0.112; P-trend = 0.007) were each associated with longer telomere length in women",
       "confidence_0_100": 70,
       "publication_opportunity": false,
       "paper_type": "effect_size",
       "supporting_study_ids": [
-        "10.1534/genetics.116.197335"
+        "10.1093/aje/kwy124"
       ]
     },
     {
@@ -157,12 +157,12 @@
       ]
     },
     {
-      "claim_text": "higher Healthy Eating Index 2010 scores (β = 0.065, 95% CI: 0.018, 0.112; P-trend = 0.007) were each associated with longer telomere length in women",
+      "claim_text": "identify one candidate meiotic driver in a centromere-linked region that shows an ∼8% increase in transmission frequency, corresponding to a ∼54:46 segregation ratio.",
       "confidence_0_100": 70,
       "publication_opportunity": false,
       "paper_type": "effect_size",
       "supporting_study_ids": [
-        "10.1093/aje/kwy124"
+        "10.1534/genetics.116.197335"
       ]
     },
     {
@@ -211,6 +211,24 @@
       ]
     },
     {
+      "claim_text": "TL was significantly reduced at the final point compared with baseline (0.86 ± 0.4 vs. 1.11 ± 0.34, P = 0.0006).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/mutage/gev038"
+      ]
+    },
+    {
+      "claim_text": "Comparison between the two groups (endurance athletes vs. sedentary controls) revealed a significant difference in TL (1.28 ± 0.4 vs. 1.02 ± 0.3, P = 0.005).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/mutage/gev038"
+      ]
+    },
+    {
       "claim_text": "Telomerase activity was 54 per cent higher in stressed rats than in controls, and associated with stress-related physiological and behavioural outcomes.",
       "confidence_0_100": 70,
       "publication_opportunity": false,
@@ -218,6 +236,13 @@
       "supporting_study_ids": [
         "10.1098/rsbl.2012.0747"
       ]
+    },
+    {
+      "claim_text": "No significant difference in mean age-adjusted LTL in late life (p = 0.845) was observed when comparing former male elite athletes and their age-matched controls.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
     },
     {
       "claim_text": "rTL values were 0.928 and 1.126 relative units (p = 0.001)",
@@ -236,13 +261,6 @@
       "supporting_study_ids": [
         "10.1158/1078-0432.ccr-16-1147"
       ]
-    },
-    {
-      "claim_text": "No significant difference in mean age-adjusted LTL in late life (p = 0.845) was observed when comparing former male elite athletes and their age-matched controls.",
-      "confidence_0_100": 70,
-      "publication_opportunity": false,
-      "paper_type": "effect_size",
-      "supporting_study_ids": []
     },
     {
       "claim_text": "SHS was almost four times likely to be in the first quartile (odds ratio [OR] = 3.81; 95% confidence interval [CI] 2.21-6.56)",
@@ -287,15 +305,6 @@
       "paper_type": "effect_size",
       "supporting_study_ids": [
         "10.1002/gcc.22669"
-      ]
-    },
-    {
-      "claim_text": "longer telomeres predict higher cancer risk across 22 species",
-      "confidence_0_100": 70,
-      "publication_opportunity": false,
-      "paper_type": "effect_size",
-      "supporting_study_ids": [
-        "10.1111/mec.15870"
       ]
     },
     {

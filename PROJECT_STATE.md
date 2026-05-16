@@ -82,6 +82,25 @@ scoring, thresholds, and digest schema stay put.
 12. ✅ Tests (unit + golden) + supplement plugins + cutover validation
 
 ## Current Sprint
+**Sprint 81 shipped** — retained live proof artifacts for the Sprint 80
+frontier-citation and Sprint 79 render-order fixes:
+- Fresh telomere artifact retained at
+  `runs/telomere-evidence-2026-05-16T17-06-09Z/`. Gate output:
+  A=6, B=8, C=5, D=17; lead thesis `survives`; `signal_post.md`
+  confidence is `evidence_backed_signal`; cited fact IDs are
+  `6907, 6908, 11257, 3475`.
+- Fresh mTOR artifact retained at
+  `runs/mtor-evidence-2026-05-16T17-08-58Z/`. The current strict
+  A/B + coherent-theme filter emits two cards, not the historical
+  four-card noisy surface. Both retained cards' MiMo "Why it matters"
+  blocks describe their own findings, closing the previous render-order
+  swap without preserving stale bad artifacts.
+- Removed stale telomere artifact
+  `runs/telomere-evidence-2026-05-16T16-11-07Z/`, which still showed
+  `evidence_binding_failed` and contradicted Sprint 80.
+- `runs/latest` now points to the newest retained evidence run:
+  `mtor-evidence-2026-05-16T17-08-58Z`.
+
 **Sprint 80 shipped** — frontier citation-recovery + proof hygiene:
 - Fixed a real telomere regression where MiMo's JSON truncated inside
   thesis `rationale` before `cited_fact_ids`; the tolerant parser kept
