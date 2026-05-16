@@ -33,6 +33,38 @@ _WALK_STOP = frozenset(" \t\n\r;:!?\"'")
 # Pure-numeric range or comma-list (1-5, 14,15, 1-2-3)
 _PURE_NUMERIC_RANGE = re.compile(r"^\d+(?:[-,]\d+)+$")
 
+# Sprint 69 — extended walk-stop rules for space-separated patterns
+# the rule-1 walk misses.
+#
+# Rule 3: capitalized 1-4 letter prefix immediately before the value
+# with ONE space or hyphen between. Catches cell-line / compound
+# codes that rule 1 misses because the space breaks the token
+# (Cal 27, HCT 116, T47 D). Lowercased English words ("over", "by",
+# "in") do not match because the leading char must be uppercase.
+_ID_PREFIX_SPACE = re.compile(r"[A-Z][A-Za-z0-9]{0,3}[-\s]$")
+# Rule 4: bare time-unit suffix when value is immediately followed
+# by a time token (72 h, 24 hours, 30 min, 8 days). Catches the
+# duration-treated-as-effect case when the extractor leaves the
+# units field empty. Universal — any domain.
+_TIME_SUFFIX = re.compile(
+    r"^\s+(?:s|sec|secs|seconds?|min|mins|minutes?|h|hr|hrs|hours?|"
+    r"d|days?|wk|wks|weeks?|mo|months?|y|yr|yrs|years?)\b",
+    re.IGNORECASE,
+)
+# Rule-3 guard: when a measurement unit immediately follows the
+# value, the value is a real effect — do NOT flag as identifier.
+# Catches "SIRT2 0.25 µM" (IC50) where the gene name precedes the
+# concentration but the concentration is the actual finding.
+# Universal: %, masses, concentrations, fold-changes, temperature.
+_UNIT_FOLLOWS = re.compile(
+    r"^\s*(?:%|°[CF]|degrees?\b|"
+    r"[mµμnkp]?[gmlL]\b|"
+    r"[mµμnp][MmLl]\b|"
+    r"fold\b|x\b|times?\b|"
+    r"iu\b|U\b)",
+    re.IGNORECASE,
+)
+
 
 def _format_value(v: Any) -> str | None:
     """Render value as it would appear in a phrase."""
@@ -80,6 +112,17 @@ def is_numeric_artifact(value: Any, phrase: str) -> bool:
         if has_letter:
             return True
         if _PURE_NUMERIC_RANGE.match(token.strip("()[]{}")):
+            return True
+        # Sprint 69 — space-separated identifier / inline time suffix
+        before = phrase[max(0, match.start() - 5):match.start()]
+        after = phrase[match.end():match.end() + 12]
+        if _TIME_SUFFIX.match(after):
+            return True
+        # Identifier prefix only when no unit follows the value; a
+        # trailing unit (µM, %, mg, fold) means the value is a real
+        # measurement even if a capitalized prefix sits before it.
+        if (_ID_PREFIX_SPACE.search(before)
+                and not _UNIT_FOLLOWS.match(after)):
             return True
     return False
 

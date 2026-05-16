@@ -177,3 +177,99 @@ def test_universal_policy_identifier_article_5() -> None:
 def test_universal_real_climate_effect_not_artifact() -> None:
     phrase = "Sweden's carbon tax cut emissions by 8% over 1991-2020"
     assert is_numeric_artifact(8, phrase) is False
+
+
+# ============= Sprint 69 — auditor cases (Cal 27 / 72 h) =============
+
+def test_cell_line_with_space_cal_27_is_artifact() -> None:
+    """Sprint 69 / auditor: 'Cal 27' is a cell-line designator parsed
+    as numeric_value=27 in the sirtuin betaine item. Walk-stop in
+    rule 1 misses it because the letters and digits are space-
+    separated. Sprint 69 catches the one-space identifier pattern."""
+    phrase = ("betaines showed the highest effect in reducing Cal 27 "
+              "cell proliferation up to 72 h (p < 0.01)")
+    assert is_numeric_artifact(27, phrase) is True
+
+
+def test_cell_line_with_space_hct_116_is_artifact() -> None:
+    """HCT 116 — 3-letter prefix + space + 3-digit code."""
+    phrase = "HCT 116 cells showed reduced proliferation after treatment"
+    assert is_numeric_artifact(116, phrase) is True
+
+
+def test_inline_time_suffix_72h_is_artifact() -> None:
+    """Sprint 69 / auditor: 'treatment with whey for 72 h' in the
+    sirtuin SIRT3 item was parsed as numeric_value=72.0 with empty
+    units field, so the lane classifier saw 'unknown' instead of
+    'duration'. The sanitizer must also catch this so top_5.md
+    doesn't surface a duration as an effect."""
+    phrase = ("treatment with whey for 72 h inhibited cell proliferation "
+              "(p < 0.001)")
+    assert is_numeric_artifact(72, phrase) is True
+
+
+def test_inline_time_suffix_24_hours_is_artifact() -> None:
+    """Full-word time unit: '24 hours of fasting'."""
+    phrase = "24 hours of fasting reduced glucose by 15%"
+    assert is_numeric_artifact(24, phrase) is True
+
+
+def test_inline_time_suffix_30_min_is_artifact() -> None:
+    """Min suffix: '30 min of exercise'."""
+    phrase = "subjects performed 30 min of moderate-intensity exercise"
+    assert is_numeric_artifact(30, phrase) is True
+
+
+def test_real_effect_with_year_following_not_artifact() -> None:
+    """'8% over 1991-2020' — the 8 is followed by '%' (no time
+    suffix). Sprint 69 must not regress the climate-policy effect
+    test."""
+    phrase = "Sweden's carbon tax cut emissions by 8% over 1991-2020"
+    assert is_numeric_artifact(8, phrase) is False
+
+
+def test_dose_with_unit_not_flagged_as_time_suffix() -> None:
+    """'8 mg/kg/day i.p.' — value 8 followed by 'mg' (not a time
+    unit). Must not trigger the time-suffix rule."""
+    phrase = "rapamycin was administered at 8 mg/kg/day i.p. for 3 weeks"
+    assert is_numeric_artifact(8, phrase) is False
+
+
+def test_ic50_concentration_after_gene_name_not_artifact() -> None:
+    """Sprint 69 regression: 'IC50 SIRT2 0.25 µM' — the value 0.25
+    is a real concentration effect (compound's IC50). The 'IRT2 '
+    prefix is part of a gene name, not a cell-line designator, and
+    µM follows the value. Identifier rule must not false-positive
+    when a measurement unit follows."""
+    phrase = ("compound 55 (IC50 SIRT2 0.25 µM and <25% inhibition "
+              "at 50 µM against SIRT1 and SIRT3)")
+    assert is_numeric_artifact(0.25, phrase) is False
+
+
+def test_real_percent_after_capitalized_word_not_artifact() -> None:
+    """'The 60% reduction was observed' — value 60 follows 'The '
+    (uppercase prefix) but '%' immediately follows the value, so
+    it's a real effect, not an identifier embed."""
+    phrase = "The 60% reduction was observed in treated cohorts"
+    assert is_numeric_artifact(60, phrase) is False
+
+
+def test_real_dose_after_capitalized_word_not_artifact() -> None:
+    """'Mice 8 mg/kg/day' — 'Mice ' prefix could falsely look like
+    an identifier; the 'mg' unit follows so the value is a dose."""
+    phrase = "Mice 8 mg/kg/day intraperitoneally for 3 weeks"
+    assert is_numeric_artifact(8, phrase) is False
+
+
+def test_lowercase_word_before_value_not_identifier() -> None:
+    """'over 1991-2020' — 'over' is lowercase English, not a
+    capitalized identifier code. Sprint 69 capitalized-prefix rule
+    must not regress this. (1991 already flagged by rule 2 as part
+    of '1991-2020' pure-numeric range, but the prefix check itself
+    should be inert here.)"""
+    # Year-range fixtures are caught by rule 2; testing the prefix
+    # rule in isolation: a lowercase prefix must not match.
+    phrase = "between 2020 results emerged"
+    # value 2020 isolated, preceded by 'en ' (lowercase) — not an
+    # identifier. Year recognition stays as-is.
+    assert is_numeric_artifact(2020, phrase) is False
