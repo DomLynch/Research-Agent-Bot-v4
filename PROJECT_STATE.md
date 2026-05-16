@@ -246,7 +246,10 @@ sirtuin-relevance semantic checks for APO10LA-style off-target findings.
 - Publication-opportunity trigger: confidence ≥ 70 AND k_pool ≥ 2
 - Strong-mover trigger: |delta_points| ≥ 10 between snapshots
 - Top-N cap: 5 opportunities per digest
-- LOC ceiling: **11,700 hard gate in `agent/`**. Full cap history is
+- LOC ceiling: **14,000 hard gate in `agent/`** (Sprint 74 operator-
+  approved bump from 11,700 to give headroom for the universal-no-
+  hardcoding refactors of `include_contract.py` and `risk_of_bias.py`).
+  Full cap history is
   documented in `scripts/loc_gate.sh`. New modules under the higher cap
   must delete or prevent a fake-evidence failure mode (contracts,
   validators, receipts, provenance, typed contracts) — not buy prose
