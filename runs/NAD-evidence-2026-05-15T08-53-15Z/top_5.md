@@ -2,7 +2,7 @@
 
 **Snapshot:** 2026-05-15T08-53-15Z
 **Source:** Researka DB Tier-2 search (`POST /api/v1/tier2/facts/search`, filter topic=NAD) — LLM-extracted, no Tier-1 canonical facts loaded for this topic yet; findings may be off-target (e.g. chemistry papers using the molecule name) until canonical curation.
-**Facts inspected:** 43
+**Facts inspected:** 24
 **Ranking:** validation * magnitude * precision * recency (deterministic, no LLM). Same-paper + same-sub_topic findings are collapsed; extra biomarkers from the same trial appear as supporting numerics under the headline.
 
 **Sub-topic lanes detected:** facts grouped by `sub_topic` below — read each lane independently.
@@ -47,10 +47,28 @@
 
 ---
 
+## #3 — score 70 · effect_size
+
+**Finding:** 2,3-butanediol (maximal yield, 67%)
+
+- **Value:** 67.0%
+- **Population:** Lactococcus lactis engineered strains
+- **Intervention:** Engineering of NAD+ cofactor recycling and overexpression of 2,3-butanediol biosynthesis pathways
+- **Source:** *High Yields of 2,3-Butanediol and Mannitol in Lactococcus lactis through Engineering of NAD <sup>+</sup> Cofactor Recycling* — Applied and Environmental Microbiology (2011)
+  · DOI: `10.1128/aem.05544-11`
+- **Validator:** researka-tier2
+- **Same-trial supporting numerics:** 42.0% (mannitol (maximal yield, 42%))
+
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
+---
+
 ### Lane — `regimen`
 
 
-## #3 — score 80 · regimen
+## #4 — score 80 · regimen
 
 **Finding:** Mice received NMN in drinking water (400 mg/kg).
 
@@ -67,7 +85,7 @@
 
 ---
 
-## #4 — score 75 · regimen
+## #5 — score 75 · regimen
 
 **Finding:** A single dose (62.5 mg/kg) of NMN, administered to male mice
 
@@ -79,26 +97,6 @@
 - **Validator:** researka-tier2
 
 - **Why it matters:** Direct evidence in the `regimen` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
-
----
-
-### Lane — `rate`
-
-
-## #5 — score 75 · rate
-
-**Finding:** The 5,5'-substituted bipyridine Cp*Rh<sup>III</sup> complex, which had the lowest reduction potential, most effectively regenerated NADH with a turnover frequency of 1100 h<sup>-1</sup>.
-
-- **Value:** 1100.0h⁻1
-- **Population:** 5,5'-substituted bipyridine Cp*Rh complex
-- **Intervention:** 5,5'-substituted bipyridine Cp*Rh complex for NADH regeneration
-- **Source:** *Correlation between the Structure and Catalytic Activity of [Cp*Rh(Substituted Bipyridine)] Complexes for NADH Regeneration* — Inorganic Chemistry (2017)
-  · DOI: `10.1021/acs.inorgchem.6b02474`
-- **Validator:** researka-tier2
-
-- **Why it matters:** Direct evidence in the `rate` sub-topic; informs whether the finding generalises beyond a single study.
 - **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
 - **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 

@@ -2,7 +2,7 @@
 
 **Snapshot:** 2026-05-15T16-26-24Z
 **Source:** Researka DB Tier-2 search (`POST /api/v1/tier2/facts/search`, filter topic=autophagy) — LLM-extracted, no Tier-1 canonical facts loaded for this topic yet; findings may be off-target (e.g. chemistry papers using the molecule name) until canonical curation.
-**Facts inspected:** 48
+**Facts inspected:** 14
 **Ranking:** validation * magnitude * precision * recency (deterministic, no LLM). Same-paper + same-sub_topic findings are collapsed; extra biomarkers from the same trial appear as supporting numerics under the headline.
 
 **Sub-topic lanes detected:** facts grouped by `sub_topic` below — read each lane independently.
@@ -12,25 +12,7 @@
 ### Lane — `effect_size`
 
 
-## #1 — score 75 · effect_size
-
-**Finding:** 14,15-EET inhibited CSC-induced autophagy in Beas-2B cells.
-
-- **Value:** 1415.0
-- **Population:** Beas-2B cells
-- **Intervention:** 14,15-EET
-- **Source:** *14,15-Epoxyeicosatrienoic acid suppresses cigarette smoke condensate-induced inflammation in lung epithelial cells by inhibiting autophagy* — American Journal of Physiology-Lung Cellular and Molecular Physiology (2016)
-  · DOI: `10.1152/ajplung.00161.2016`
-- **Validator:** researka-tier2
-- **Same-trial supporting numerics:** 1415.0 (14,15-EET treatment resulted in a significant reduction in I)
-
-- **Why it matters:** 14,15-EET could be developed as a therapeutic agent to protect lung cells from autophagy-induced damage caused by cigarette smoke.
-- **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
-
----
-
-## #2 — score 64 · effect_size
+## #1 — score 64 · effect_size
 
 **Finding:** Ulk1 knockouts had contractile weakness compared with littermate controls (-27%, P < 0.02).
 
@@ -40,15 +22,15 @@
 - **Source:** *Mitochondrial-specific autophagy linked to mitochondrial dysfunction following traumatic freeze injury in mice* — American Journal of Physiology-Cell Physiology (2019)
   · DOI: `10.1152/ajpcell.00123.2019`
 - **Validator:** researka-tier2
-- **Same-trial supporting numerics:** -26.0% (autophagy flux was significantly less in injured versus unin); 2.0fold (there is a significant increase in several mitochondrial-spe)
+- **Same-trial supporting numerics:** -26.0% (autophagy flux was significantly less in injured versus unin)
 
 - **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=3 biomarkers from one paper); replication across independent cohorts required.
+- **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
 - **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
-## #3 — score 60 · effect_size
+## #2 — score 60 · effect_size
 
 **Finding:** 1.215 (1.149-1.286) (P < .001) in multivariate Cox regression analysis
 
@@ -66,39 +48,58 @@
 
 ---
 
-## #4 — score 60 · effect_size
+## #3 — score 55 · effect_size
 
-**Finding:** perinatal loss of both ULK1 and ULK2 in cU1/2-DKO mice impaired autophagy causing age-related cardiomyopathy and reduced survival.
+**Finding:** These findings show that beclin 1 plays a constitutive, autophagy-independent role in the regulation of intestinal TJ barrier function via endocytosis of occludin.
 
-- **Value:** 2.0
-- **Population:** cU1/2-DKO mice with perinatal loss of both ULK1 and ULK2
-- **Intervention:** loss of ULK1 and ULK2 perinatally
-- **Source:** *Perinatal versus adult loss of ULK1 and ULK2 distinctly influences cardiac autophagy and function* — Autophagy (2022)
-  · DOI: `10.1080/15548627.2021.2022289`
+- **Value:** 1.0
+- **Population:** intestinal epithelial cells and mouse colon
+- **Intervention:** beclin 1
+- **Source:** *Intestinal epithelial tight junction barrier regulation by autophagy-related protein ATG6/beclin 1* — American Journal of Physiology-Cell Physiology (2019)
+  · DOI: `10.1152/ajpcell.00246.2018`
 - **Validator:** researka-tier2
+- **Same-trial supporting numerics:** 1.0 (Perfusion of mouse colon with beclin 1 peptide caused an inc); 1.0 (beclin 1 siRNA transfection enhanced Caco-2 TJ barrier funct); 1.0 (Activation of beclin 1 increased occludin endocytosis and re)
 
 - **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=4 biomarkers from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
+---
+
+### Lane — `threshold`
+
+
+## #4 — score 56 · threshold
+
+**Finding:** TXA1 induced autophagy of melanoma cells at the GI50 concentration (3.6 μM)
+
+- **Value:** 3.6μM
+- **Population:** A375-C5 melanoma cells
+- **Intervention:** TXA1
+- **Source:** *Modulation of Autophagy by a Thioxanthone Decreases the Viability of Melanoma Cells* — Molecules (2016)
+  · DOI: `10.3390/molecules21101343`
+- **Validator:** researka-tier2
+
+- **Why it matters:** Direct evidence in the `threshold` sub-topic; informs whether the finding generalises beyond a single study.
 - **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
 - **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
-### Lane — `duration`
+## #5 — score 56 · threshold
 
+**Finding:** APP-CTF (apparent EC(50) of ∼20 μM)
 
-## #5 — score 66 · duration
-
-**Finding:** At 48 hours following the combinatorial treatment, the level of LC3-II began to decrease but Bim was significantly elevated, suggesting a switch from autophagy to apoptosis
-
-- **Value:** 48.0hours
-- **Population:** glioma cells
-- **Intervention:** MK-2206 + gefitinib
-- **Source:** *MK-2206, a Novel Allosteric Inhibitor of Akt, Synergizes with Gefitinib against Malignant Glioma via Modulating Both Autophagy and Apoptosis* — Molecular Cancer Therapeutics (2011)
-  · DOI: `10.1158/1535-7163.mct-11-0606`
+- **Value:** 20.0μM
+- **Population:** cell lines and primary neuronal cultures
+- **Intervention:** SMER28
+- **Source:** *A small‐molecule enhancer of autophagy decreases levels of Aβ and APP‐CTF <b> <i>via</i> Atg5‐dependent autophagy pathway </b>* — The FASEB Journal (2011)
+  · DOI: `10.1096/fj.10-175158`
 - **Validator:** researka-tier2
+- **Same-trial supporting numerics:** 10.0μM (Aβ peptide (apparent EC(50) of ∼10 μM))
 
-- **Why it matters:** Direct evidence in the `duration` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Why it matters:** Direct evidence in the `threshold` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
 - **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---

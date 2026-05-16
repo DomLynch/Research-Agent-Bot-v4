@@ -2,10 +2,15 @@
 
 **Snapshot:** 2026-05-14T19-23-59Z
 **Source:** Researka DB Tier-2 search (`POST /api/v1/tier2/facts/search`, filter topic=spermidine) — LLM-extracted, no Tier-1 canonical facts loaded for this topic yet; findings may be off-target (e.g. chemistry papers using the molecule name) until canonical curation.
-**Facts inspected:** 30
-**Ranking:** validation * magnitude * precision * recency (deterministic, no LLM).
+**Facts inspected:** 20
+**Ranking:** validation * magnitude * precision * recency (deterministic, no LLM). Same-paper + same-sub_topic findings are collapsed; extra biomarkers from the same trial appear as supporting numerics under the headline.
+
+**Sub-topic lanes detected:** facts grouped by `sub_topic` below — read each lane independently.
 
 ---
+
+### Lane — `threshold`
+
 
 ## #1 — score 80 · threshold
 
@@ -18,7 +23,14 @@
   · DOI: `10.3390/foods10081752`
 - **Validator:** researka-tier2
 
+- **Why it matters:** Direct evidence in the `threshold` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
 ---
+
+### Lane — `effect_size`
+
 
 ## #2 — score 80 · effect_size
 
@@ -31,9 +43,51 @@
   · DOI: `10.1080/15592324.2020.1824697`
 - **Validator:** researka-tier2
 
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
 ---
 
-## #3 — score 75 · regimen
+## #3 — score 70 · effect_size
+
+**Finding:** Pretreatment with Spd dramatically improved grain yield per plant of KDML105 from 17.7 to 28.7 g (62% increase)
+
+- **Value:** 62.0%
+- **Population:** —
+- **Intervention:** —
+- **Source:** *Effects of exogenous spermidine (Spd) on yield, yield-related parameters and mineral composition of rice ('Oryza sativa' L. ssp. 'indica') grains under salt stress* — Australian Journal of Crop Science (2013)
+
+- **Validator:** researka-tier2
+- **Same-trial supporting numerics:** 16.0% (Pretreatment with Spd improved grain yield per plant of Pokk)
+
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
+---
+
+## #4 — score 63 · effect_size
+
+**Finding:** Δλ = 24 nm for spermidine
+
+- **Value:** 24.0nm
+- **Population:** —
+- **Intervention:** —
+- **Source:** *Food Quality Monitor: Paper-Based Plasmonic Sensors Prepared Through Reversal Nanoimprinting for Rapid Detection of Biogenic Amine Odorants* — ACS Applied Materials & Interfaces (2017)
+  · DOI: `10.1021/acsami.7b00115`
+- **Validator:** researka-tier2
+
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
+---
+
+### Lane — `regimen`
+
+
+## #5 — score 75 · regimen
 
 **Finding:** plants were treated with 200 mM GB or 0.1 mM Spd for 3 weeks by weekly foliar application before the exposure to drought stress.
 
@@ -44,30 +98,8 @@
   · DOI: `10.21273/jashs03962-16`
 - **Validator:** researka-tier2
 
----
-
-## #4 — score 70 · effect_size
-
-**Finding:** Pretreatment with Spd dramatically improved grain yield per plant of KDML105 from 17.7 to 28.7 g (62% increase)
-
-- **Value:** 62.0%
-- **Population:** —
-- **Intervention:** —
-- **Source:** *Effects of exogenous spermidine (Spd) on yield, yield-related parameters and mineral composition of rice ('Oryza sativa' L. ssp. 'indica') grains under salt stress* — Australian Journal of Crop Science (2013)
-
-- **Validator:** researka-tier2
-
----
-
-## #5 — score 70 · effect_size
-
-**Finding:** Loss of polysomes with increased 80S monosomes in polyamine-depleted cells suggests a role in translation initiation.
-
-- **Value:** 80.0
-- **Population:** —
-- **Intervention:** —
-- **Source:** *Depletion of cellular polyamines, spermidine and spermine, causes a total arrest in translation and growth in mammalian cells* — Proceedings of the National Academy of Sciences (2013)
-  · DOI: `10.1073/pnas.1219002110`
-- **Validator:** researka-tier2
+- **Why it matters:** Direct evidence in the `regimen` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---

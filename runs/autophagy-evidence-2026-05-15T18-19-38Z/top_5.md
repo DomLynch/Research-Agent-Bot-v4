@@ -2,37 +2,17 @@
 
 **Snapshot:** 2026-05-15T18-19-38Z
 **Source:** Researka DB Tier-2 search (`POST /api/v1/tier2/facts/search`, filter topic=autophagy) — LLM-extracted, no Tier-1 canonical facts loaded for this topic yet; findings may be off-target (e.g. chemistry papers using the molecule name) until canonical curation.
-**Facts inspected:** 16
+**Facts inspected:** 14
 **Ranking:** validation * magnitude * precision * recency (deterministic, no LLM). Same-paper + same-sub_topic findings are collapsed; extra biomarkers from the same trial appear as supporting numerics under the headline.
 
 **Sub-topic lanes detected:** facts grouped by `sub_topic` below — read each lane independently.
 
 ---
 
-### Lane — `duration`
-
-
-## #1 — score 66 · duration
-
-**Finding:** At 48 hours following the combinatorial treatment, the level of LC3-II began to decrease but Bim was significantly elevated, suggesting a switch from autophagy to apoptosis
-
-- **Value:** 48.0hours
-- **Population:** glioma cells
-- **Intervention:** MK-2206 + gefitinib
-- **Source:** *MK-2206, a Novel Allosteric Inhibitor of Akt, Synergizes with Gefitinib against Malignant Glioma via Modulating Both Autophagy and Apoptosis* — Molecular Cancer Therapeutics (2011)
-  · DOI: `10.1158/1535-7163.mct-11-0606`
-- **Validator:** researka-tier2
-
-- **Why it matters:** Direct evidence in the `duration` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
-
----
-
 ### Lane — `effect_size`
 
 
-## #2 — score 64 · effect_size
+## #1 — score 64 · effect_size
 
 **Finding:** Ulk1 knockouts had contractile weakness compared with littermate controls (-27%, P < 0.02).
 
@@ -50,7 +30,7 @@
 
 ---
 
-## #3 — score 60 · effect_size
+## #2 — score 60 · effect_size
 
 **Finding:** 1.215 (1.149-1.286) (P < .001) in multivariate Cox regression analysis
 
@@ -64,6 +44,24 @@
 
 - **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
 - **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
+---
+
+## #3 — score 55 · effect_size
+
+**Finding:** These findings show that beclin 1 plays a constitutive, autophagy-independent role in the regulation of intestinal TJ barrier function via endocytosis of occludin.
+
+- **Value:** 1.0
+- **Population:** intestinal epithelial cells and mouse colon
+- **Intervention:** beclin 1
+- **Source:** *Intestinal epithelial tight junction barrier regulation by autophagy-related protein ATG6/beclin 1* — American Journal of Physiology-Cell Physiology (2019)
+  · DOI: `10.1152/ajpcell.00246.2018`
+- **Validator:** researka-tier2
+- **Same-trial supporting numerics:** 1.0 (Perfusion of mouse colon with beclin 1 peptide caused an inc); 1.0 (beclin 1 siRNA transfection enhanced Caco-2 TJ barrier funct); 1.0 (Activation of beclin 1 increased occludin endocytosis and re)
+
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=4 biomarkers from one paper); replication across independent cohorts required.
 - **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---

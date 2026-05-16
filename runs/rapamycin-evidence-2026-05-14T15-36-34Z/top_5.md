@@ -1,11 +1,16 @@
-# Top 5 interesting findings — rapamycin
+# Top 4 interesting findings — rapamycin
 
 **Snapshot:** 2026-05-14T15-36-34Z
-**Source:** Researka DB · `GET /api/v1/topics/rapamycin/facts`
+**Source:** Researka DB Tier-2 search (`POST /api/v1/tier2/facts/search`, filter topic=rapamycin) — LLM-extracted, no Tier-1 canonical facts loaded for this topic yet; findings may be off-target (e.g. chemistry papers using the molecule name) until canonical curation.
 **Facts inspected:** 7
-**Ranking:** validation * magnitude * precision * recency (deterministic, no LLM).
+**Ranking:** validation * magnitude * precision * recency (deterministic, no LLM). Same-paper + same-sub_topic findings are collapsed; extra biomarkers from the same trial appear as supporting numerics under the headline.
+
+**Sub-topic lanes detected:** facts grouped by `sub_topic` below — read each lane independently.
 
 ---
+
+### Lane — `lifespan`
+
 
 ## #1 — score 76 · lifespan
 
@@ -17,23 +22,15 @@
 - **Source:** *Transient rapamycin treatment can increase lifespan and healthspan in middle-aged mice* — eLife (2016)
   · DOI: `10.7554/eLife.16351`
 - **Validator:** bootstrap-claude-opus-4-7-2026-05-09
+- **Same-trial supporting numerics:** 52.0% (3 months of rapamycin extended median lifespan by 52% in mal)
+
+- **Why it matters:** Direct evidence in the `lifespan` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
-## #2 — score 73 · lifespan
-
-**Finding:** 3 months of rapamycin extended median lifespan by 52% in male middle-aged mice
-
-- **Value:** 52.0%
-- **Population:** male middle-aged C57BL/6 mice (20 months at start)
-- **Intervention:** transient rapamycin (8 mg/kg/day i.p.) for 3 months
-- **Source:** *Transient rapamycin treatment can increase lifespan and healthspan in middle-aged mice* — eLife (2016)
-  · DOI: `10.7554/eLife.16351`
-- **Validator:** bootstrap-codex-gpt-5-2026-05-11
-
----
-
-## #3 — score 60 · lifespan
+## #2 — score 60 · lifespan
 
 **Finding:** rapamycin at 42 ppm extended female median lifespan by 26%
 
@@ -43,23 +40,36 @@
 - **Source:** *Rapamycin-mediated lifespan increase in mice is dose and sex dependent and metabolically distinct from dietary restriction* — Aging Cell (2014)
   · DOI: `10.1111/acel.12194`
 - **Validator:** bootstrap-claude-opus-4-7-2026-05-11
+- **Same-trial supporting numerics:** 23.0% (rapamycin at 42 ppm extended male median lifespan by 23%)
+
+- **Why it matters:** Direct evidence in the `lifespan` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
-## #4 — score 58 · lifespan
+## #3 — score 56 · lifespan
 
-**Finding:** rapamycin at 42 ppm extended male median lifespan by 23%
+**Finding:** rapamycin extended median lifespan by 14% in males
 
-- **Value:** 23.0%
-- **Population:** male heterogeneous-stock mice (UM-HET3); ITP
-- **Intervention:** encapsulated rapamycin in feed at 42 ppm (3x standard ITP dose)
-- **Source:** *Rapamycin-mediated lifespan increase in mice is dose and sex dependent and metabolically distinct from dietary restriction* — Aging Cell (2014)
-  · DOI: `10.1111/acel.12194`
+- **Value:** 14.0%
+- **Population:** male heterogeneous-stock mice (UM-HET3); 4-site NIA Interventions Testing Program cohort
+- **Intervention:** encapsulated rapamycin in feed (~14 ppm); started at 600 days of age
+- **Source:** *Rapamycin fed late in life extends lifespan in genetically heterogeneous mice* — Nature (2009)
+  · DOI: `10.1038/nature08221`
 - **Validator:** bootstrap-claude-opus-4-7-2026-05-09
+- **Same-trial supporting numerics:** 9.0% (rapamycin extended median lifespan by 9% in females)
+
+- **Why it matters:** Direct evidence in the `lifespan` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
-## #5 — score 57 · immune
+### Lane — `immune`
+
+
+## #4 — score 57 · immune
 
 **Finding:** RAD001 improved influenza vaccine response by ~20% in the elderly
 
@@ -69,5 +79,9 @@
 - **Source:** *mTOR inhibition improves immune function in the elderly* — Science Translational Medicine (2014)
   · DOI: `10.1126/scitranslmed.3009892`
 - **Validator:** bootstrap-claude-opus-4-7-2026-05-09
+
+- **Why it matters:** Direct evidence in the `immune` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---

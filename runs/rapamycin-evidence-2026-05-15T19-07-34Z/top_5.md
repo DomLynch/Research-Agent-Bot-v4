@@ -24,9 +24,9 @@
 - **Validator:** source-cross-check-claude-2026-05-14
 - **Same-trial supporting numerics:** 52.0% (3 months of rapamycin extended median lifespan by 52% in mal)
 
-- **Why it matters:** Short-term rapamycin treatment in middle-aged mice boosts lifespan by ~60%, suggesting a potential anti-aging intervention for humans starting in midlife.
-- **Caution:** The study is limited to a single mouse strain (C57BL/6) at a specific starting age, and the high lifespan extension may not translate to humans or other models.
-- **Next question:** Does this lifespan extension in mice include improved healthspan or reduced incidence of age-related diseases?
+- **Why it matters:** Direct evidence in the `lifespan` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
@@ -42,9 +42,9 @@
 - **Validator:** source-cross-check-claude-2026-05-14
 - **Same-trial supporting numerics:** 23.0% (rapamycin at 42 ppm extended male median lifespan by 23%)
 
-- **Why it matters:** Rapamycin extends median lifespan by 26% in genetically diverse female mice, indicating broader potential for lifespan enhancement in heterogeneous populations.
-- **Caution:** The effect is observed only in female mice at 42 ppm in the ITP, and sex-specific responses or dose variations could limit human applicability.
-- **Next question:** Are similar lifespan benefits achievable in male mice or at lower doses, and what mechanisms underlie the sex-specific effects?
+- **Why it matters:** Direct evidence in the `lifespan` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
@@ -59,8 +59,8 @@
   · DOI: `10.1038/nature08221`
 - **Validator:** source-cross-check-user-2026-05-14
 
-- **Why it matters:** RAD001 improves influenza vaccine response by ~20% in the elderly, offering a strategy to enhance immune function in aging populations prone to infections.
-- **Caution:** The study has a small sample size (n=218) and focuses on elderly humans, requiring larger, diverse trials to confirm efficacy and safety.
+- **Why it matters:** Direct evidence in the `lifespan` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
 - **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---

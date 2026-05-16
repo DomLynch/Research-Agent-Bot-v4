@@ -2,7 +2,7 @@
 
 **Snapshot:** 2026-05-15T11-13-01Z
 **Source:** Researka DB Tier-2 search (`POST /api/v1/tier2/facts/search`, filter topic=senolytic) — LLM-extracted, no Tier-1 canonical facts loaded for this topic yet; findings may be off-target (e.g. chemistry papers using the molecule name) until canonical curation.
-**Facts inspected:** 17
+**Facts inspected:** 13
 **Ranking:** validation * magnitude * precision * recency (deterministic, no LLM). Same-paper + same-sub_topic findings are collapsed; extra biomarkers from the same trial appear as supporting numerics under the headline.
 
 **Sub-topic lanes detected:** facts grouped by `sub_topic` below — read each lane independently.
@@ -24,48 +24,13 @@
 - **Validator:** researka-tier2
 - **Same-trial supporting numerics:** 60.0% (reduced α-SMA+ fibrous cap thickness by 60%); 60.0% (increased EC contributions to lesions via EC-to-mesenchymal )
 
-- **Why it matters:** The 90% reduction in senescent cells in atherosclerotic mice suggests senolytics could halt plaque progression in human cardiovascular disease.
-- **Caution:** The Apoe-/- mouse model on a western diet may not mimic human atherosclerosis complexity, and the senolytic dose used is unspecified.
-- **Next question:** Does this senolytic treatment reduce atherosclerotic plaque burden or inflammation in these mice over longer periods?
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=3 biomarkers from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
-## #2 — score 74 · effect_size
-
-**Finding:** Accumulation of senescent cells and SASP markers were correlated with a significant reduction in bone architecture at 42 days post-FRT.
-
-- **Value:** 42.0days
-- **Population:** C57BL/6 male mice with focal radiotherapy
-- **Intervention:** focal radiotherapy
-- **Source:** *Targeted Reduction of Senescent Cell Burden Alleviates Focal Radiotherapy-Related Bone Loss* — Journal of Bone and Mineral Research (2020)
-  · DOI: `10.1002/jbmr.3978`
-- **Validator:** researka-tier2
-
-- **Why it matters:** A mortality rate over 50% in treated mice signals severe safety risks for senolytic use in advanced atherosclerosis, warranting caution in human trials.
-- **Caution:** The adverse effect is observed in the same mouse model, with potential confounding factors like dose or treatment duration not detailed.
-- **Next question:** What specific toxicities or off-target effects caused the mortality, and can dosing adjustments mitigate them?
-
----
-
-## #3 — score 74 · effect_size
-
-**Finding:** miR-27a was elevated in radiated and aged bones, and downregulated by D + Q at 42 days post-radiation.
-
-- **Value:** 42.0days
-- **Population:** radiated and aged mice
-- **Intervention:** D + Q
-- **Source:** *Bone Marrow Adiposity in Models of Radiation- and Aging-Related Bone Loss Is Dependent on Cellular Senescence* — Journal of Bone and Mineral Research (2020)
-  · DOI: `10.1002/jbmr.4537`
-- **Validator:** researka-tier2
-- **Same-trial supporting numerics:** 6.0 (BMAT-related genes were the most upregulated gene subset in )
-
-- **Why it matters:** Linking senescent cells and SASP to bone loss post-radiotherapy implies that senolytics could protect bone integrity in cancer patients undergoing treatment.
-- **Caution:** The study used only male C57BL/6 mice with focal radiotherapy, which may not translate to female mice or other radiation modalities.
-- **Next question:** Can senolytic therapy administered post-radiotherapy reverse or prevent the observed bone architecture deterioration?
-
----
-
-## #4 — score 63 · effect_size
+## #2 — score 63 · effect_size
 
 **Finding:** we found lower irisin levels (p = .0011) in patients with osteopenia/osteoporosis compared to healthy controls
 
@@ -77,16 +42,34 @@
 - **Validator:** researka-tier2
 - **Same-trial supporting numerics:** -0.515R (irisin serum levels negatively correlated with age (R = -0.5); 0.619R (irisin serum levels positively correlated with femoral BMD (); 0.765R (FNDC5 positive fibers positively correlate with BMD of total)
 
-- **Why it matters:** Senolytics downregulating miR-27a in radiated bones reveals a potential mechanism for combating radiation-induced bone aging, relevant to osteoporosis prevention.
-- **Caution:** Findings are from radiated and aged mice, so the effect may not apply to non-radiated bone aging or different senolytic regimens.
-- **Next question:** Does miR-27a downregulation by senolytics correlate with functional improvements in bone strength or density in these mice?
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=4 biomarkers from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
+---
+
+## #3 — score 60 · effect_size
+
+**Finding:** D+Q treatment increased p53 gene expression (P = 0.041)
+
+- **Value:** 0.041
+- **Population:** mice, young and old females
+- **Intervention:** dasatinib plus quercetin (D+Q)
+- **Source:** *Dasatinib plus quercetin prevents uterine age-related dysfunction and fibrosis in mice* — Aging (2020)
+  · DOI: `10.18632/aging.102772`
+- **Validator:** researka-tier2
+- **Same-trial supporting numerics:** 0.016 (D+Q treatment decreased miR34a (P = 0.016)); 0.005 (Aging promoted downregulation of the Pi3k/Akt1/mTor signalin); 0.029 (reduction in expression of miR34c (P = 0.029), miR126a (P = )
+
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=4 biomarkers from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
 ### Lane — `adverse`
 
 
-## #5 — score 76 · adverse
+## #4 — score 76 · adverse
 
 **Finding:** was associated with a > 50% mortality rate
 
@@ -97,8 +80,28 @@
   · DOI: `10.1172/jci.insight.173863`
 - **Validator:** researka-tier2
 
-- **Why it matters:** Lower irisin levels in osteoporosis patients identify it as a potential biomarker for bone disease, guiding diagnostic or therapeutic strategies in humans.
-- **Caution:** This is a cross-sectional observational study, so causation between irisin levels and osteoporosis cannot be inferred.
-- **Next question:** Can interventions like senolytics or exercise elevate irisin levels, and does this lead to improved bone mineral density?
+- **Why it matters:** Direct evidence in the `adverse` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
+---
+
+### Lane — `duration`
+
+
+## #5 — score 62 · duration
+
+**Finding:** BMAT was significantly elevated in radiated bones at day 7.
+
+- **Value:** 7.0
+- **Population:** radiated mice
+- **Intervention:** radiation
+- **Source:** *Bone Marrow Adiposity in Models of Radiation- and Aging-Related Bone Loss Is Dependent on Cellular Senescence* — Journal of Bone and Mineral Research (2020)
+  · DOI: `10.1002/jbmr.4537`
+- **Validator:** researka-tier2
+
+- **Why it matters:** Direct evidence in the `duration` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---

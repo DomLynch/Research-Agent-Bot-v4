@@ -2,7 +2,7 @@
 
 **Snapshot:** 2026-05-15T19-19-20Z
 **Source:** Researka DB Tier-2 search (`POST /api/v1/tier2/facts/search`, filter topic=exercise) — LLM-extracted, no Tier-1 canonical facts loaded for this topic yet; findings may be off-target (e.g. chemistry papers using the molecule name) until canonical curation.
-**Facts inspected:** 40
+**Facts inspected:** 37
 **Ranking:** validation * magnitude * precision * recency (deterministic, no LLM). Same-paper + same-sub_topic findings are collapsed; extra biomarkers from the same trial appear as supporting numerics under the headline.
 
 ---
@@ -18,9 +18,9 @@
   · DOI: `10.1158/1940-6207.capr-20-0181`
 - **Validator:** researka-tier2
 
-- **Why it matters:** Diet and exercise combined significantly reduce dietary inflammation in postmenopausal women, which could lower risks of chronic diseases like cardiovascular conditions.
-- **Caution:** This is based on a single randomized trial, so findings may not generalize to other populations or long-term outcomes.
-- **Next question:** Do these inflammation reductions translate to fewer cardiovascular events or improved metabolic health over time?
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
@@ -35,9 +35,9 @@
   · DOI: `10.1158/0008-5472.can-16-3125`
 - **Validator:** researka-tier2
 
-- **Why it matters:** Exercise access in mice reduces MDA-MB-231 tumor growth by 66%, suggesting physical activity could be an adjunct therapy in cancer treatment.
-- **Caution:** This is an animal model using xenografts, and human exercise responses or tumor microenvironments may differ significantly.
-- **Next question:** What exercise intensity and duration are required to achieve similar tumor inhibition in human cancer patients?
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
@@ -53,8 +53,8 @@
 - **Validator:** researka-tier2
 - **Same-trial supporting numerics:** 2.97mL/kg/min (VO2peak was greater in the intervention group (MD 2.97 mL/kg)
 
-- **Why it matters:** A 57-meter improvement in 6-minute walk distance post-lung cancer surgery enhances functional capacity and quality of life during recovery.
-- **Caution:** The study may have limited sample size and short-term follow-up, and the intervention specifics (e.g., exercise type) are not detailed.
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
 - **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---

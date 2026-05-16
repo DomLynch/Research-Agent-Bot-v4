@@ -2,7 +2,7 @@
 
 **Snapshot:** 2026-05-15T18-45-16Z
 **Source:** Researka DB Tier-2 search (`POST /api/v1/tier2/facts/search`, filter topic=fasting) — LLM-extracted, no Tier-1 canonical facts loaded for this topic yet; findings may be off-target (e.g. chemistry papers using the molecule name) until canonical curation.
-**Facts inspected:** 38
+**Facts inspected:** 34
 **Ranking:** validation * magnitude * precision * recency (deterministic, no LLM). Same-paper + same-sub_topic findings are collapsed; extra biomarkers from the same trial appear as supporting numerics under the headline.
 
 **Sub-topic lanes detected:** facts grouped by `sub_topic` below — read each lane independently.
@@ -23,9 +23,9 @@
   · DOI: `10.1073/pnas.1909921117`
 - **Validator:** researka-tier2
 
-- **Why it matters:** The drastic reduction in glycoNOE signal after fasting in mice suggests significant metabolic changes that could inform human fasting studies for metabolic diseases.
-- **Caution:** With only five mice and a 24-hour fast, these results are preliminary and may not translate directly to humans due to model limitations.
-- **Next question:** Does this molecular change correlate with improvements in glucose homeostasis or other metabolic parameters in vivo?
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
@@ -41,9 +41,9 @@
 - **Validator:** researka-tier2
 - **Same-trial supporting numerics:** 27.0µg/l (ΔIGF-I: lean, -66 ± 10 vs. obese, 27 ± 16 µg/l; P < 0.01)
 
-- **Why it matters:** The lack of significant difference in growth hormone response to fasting between lean and obese men indicates similar hormonal adaptations, relevant for weight management strategies.
-- **Caution:** The high variability and non-significant P-value, despite large effect sizes, suggest potential issues with sample size or measurement precision in this population.
-- **Next question:** Are there subgroup differences or longer-term effects of fasting on growth hormone that this study missed?
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
@@ -59,9 +59,9 @@
 - **Validator:** researka-tier2
 - **Same-trial supporting numerics:** 27.6 (Patients in the fasting group had significantly higher preal); 4.6 (Patients in the fasting group had significantly higher album)
 
-- **Why it matters:** Fasting significantly improved global health status in cancer patients with fecal stomas, highlighting potential quality-of-life benefits during treatment.
-- **Caution:** Findings are limited to a specific cancer population with stomas, and generalizability to other cancer patients or healthy individuals is uncertain.
-- **Next question:** Does enhanced health status from fasting lead to better treatment adherence or survival outcomes in these patients?
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=3 biomarkers from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
@@ -76,7 +76,7 @@
   · DOI: `10.1158/0008-5472.can-09-3228`
 - **Validator:** researka-tier2
 
-- **Why it matters:** The 70% reduction in IGF-I and 11-fold increase in IGFBP-1 during a 72-hour fast in mice point to potent anti-aging and anti-cancer mechanisms.
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
 - **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
 - **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 

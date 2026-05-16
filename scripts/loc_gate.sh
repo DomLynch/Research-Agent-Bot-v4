@@ -85,6 +85,15 @@
 # empirical calibration). Prevents the "silent lens loss when MiMo
 # truncates" failure mode the auditor caught on the noisy-topic
 # stress test.)
+# -> 11700 (Sprint 70 cross-topic paper-anchorage dampening:
+# agent/topic_discovery.py builds a global paper-anchorage map
+# (doi/title -> set of topics where it sits in top-K driver papers)
+# and dampens any paper anchoring M >= 3 topics by 1/sqrt(M).
+# Closes the auditor case where a single 2019 ACC/AHA guideline
+# anchored exercise, metformin, and caloric_restriction velocity
+# rankings simultaneously. Same cap envelope as Sprint 69 — the
+# dampening replaces an unguarded scoring path; no fake-evidence
+# ceiling pressure added.)
 # -> 11700 (Sprint 69 sanitizer space-separated identifier + bare
 # time-suffix rules: agent/numeric_sanitizer.py extends
 # is_numeric_artifact with rule 3 (capitalized 1-4 letter prefix +

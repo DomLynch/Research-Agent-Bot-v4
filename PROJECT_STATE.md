@@ -97,6 +97,31 @@ post binding (A_core/B_context only); universal epi ratio units
 (OR/HR/RR/AOR/AHR/IRR/ROR/SMR/IPR → effect_size); position-aware
 p-prefix detector; cycle runner failure propagation.
 
+**Sprint 70 (in flight, this commit pending) closes the auditor's
+remaining 2026-05-16 review gaps:**
+- `agent/topic_discovery.py` — cross-topic paper anchorage dampening.
+  When the same paper (by DOI / title key) sits in M ≥ 3 topics'
+  top-K driver papers, its contribution to each topic's velocity is
+  scaled by `1/sqrt(M)`. Closes the auditor case where a single
+  2019 ACC/AHA cardiovascular guideline was the #1 driver of
+  exercise, metformin, and caloric_restriction velocity rankings.
+  Universal — structural over-citation signal, no domain literals.
+- `scripts/regen_top_from_run.py` — offline regen tool that takes a
+  run dir and re-renders `top_N.md` from existing `all_facts.json`
+  using the current sanitizer/scoring/dedup pipeline. Used to land
+  Sprint 69 fixes across all 40 historical runs without re-fetching
+  from the DB.
+- `tests/test_run_folder_top_n_integrity.py` — forward-looking gate
+  that walks every `runs/*-evidence-*/top_*.md` with a matching
+  `all_facts.json` and fails if any (Finding, Value) pair would be
+  filtered by the current sanitizer. Forces operators to regen
+  on-disk artifacts after sanitizer changes; closes the "code
+  filters but artifact still shows the bad fact" loop.
+- All 40 evidence runs regenerated; integrity gate passes
+  end-to-end.
+- Doc/state sync: PROJECT_STATE / AGENTS / loc_gate.sh comment text
+  now reflect Sprint 70 head + 11,700 ceiling.
+
 **Sprint 69 (shipped, head `efbb7d1`) closed the sirtuin top_5
 artifact leaks the auditor caught in the 2026-05-15 review:**
 - `agent/numeric_sanitizer.py` rule 3: capitalized 1-4 letter

@@ -2,7 +2,7 @@
 
 **Snapshot:** 2026-05-15T11-11-13Z
 **Source:** Researka DB Tier-2 search (`POST /api/v1/tier2/facts/search`, filter topic=NAD) — LLM-extracted, no Tier-1 canonical facts loaded for this topic yet; findings may be off-target (e.g. chemistry papers using the molecule name) until canonical curation.
-**Facts inspected:** 43
+**Facts inspected:** 24
 **Ranking:** validation * magnitude * precision * recency (deterministic, no LLM). Same-paper + same-sub_topic findings are collapsed; extra biomarkers from the same trial appear as supporting numerics under the headline.
 
 **Sub-topic lanes detected:** facts grouped by `sub_topic` below — read each lane independently.
@@ -24,9 +24,9 @@
 - **Validator:** researka-tier2
 - **Same-trial supporting numerics:** 462.0μM (a significant difference for individual components of the me); 0.31 (NAD+ concentration was ... positively correlated with myelop); -0.127 (NAD+ concentration was inversely related to serum bilirubin ); 0.018 (There was a significant overall difference in the NAD+ metab)
 
-- **Why it matters:** The depressed NAD+ concentration in ArLD liver tissue identifies a critical metabolic deficit that could be targeted to develop treatments for alcohol-related liver disease.
-- **Caution:** This is an observational study in human patients, so it cannot establish causality, and liver NAD+ levels may vary due to individual factors like disease stage.
-- **Next question:** Does supplementation with NAD+ precursors such as NMN or NR effectively restore NAD+ levels and improve liver function in ArLD patients?
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=5 biomarkers from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
@@ -41,16 +41,34 @@
   · DOI: `10.1021/acs.analchem.8b05840`
 - **Validator:** researka-tier2
 
-- **Why it matters:** Administering NMN via drinking water in obese mice provides a non-invasive method to boost NAD+ metabolism, potentially aiding in managing diet-induced obesity.
-- **Caution:** The high dose of 400 mg/kg may not translate directly to humans due to differences in metabolism and body size between species.
-- **Next question:** What are the long-term safety and efficacy effects of chronic NMN supplementation on metabolic health in obesity models?
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
+---
+
+## #3 — score 70 · effect_size
+
+**Finding:** 2,3-butanediol (maximal yield, 67%)
+
+- **Value:** 67.0%
+- **Population:** Lactococcus lactis engineered strains
+- **Intervention:** Engineering of NAD+ cofactor recycling and overexpression of 2,3-butanediol biosynthesis pathways
+- **Source:** *High Yields of 2,3-Butanediol and Mannitol in Lactococcus lactis through Engineering of NAD <sup>+</sup> Cofactor Recycling* — Applied and Environmental Microbiology (2011)
+  · DOI: `10.1128/aem.05544-11`
+- **Validator:** researka-tier2
+- **Same-trial supporting numerics:** 42.0% (mannitol (maximal yield, 42%))
+
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
 ### Lane — `regimen`
 
 
-## #3 — score 80 · regimen
+## #4 — score 80 · regimen
 
 **Finding:** Mice received NMN in drinking water (400 mg/kg).
 
@@ -61,13 +79,13 @@
   · DOI: `10.1152/ajpendo.00446.2020`
 - **Validator:** researka-tier2
 
-- **Why it matters:** Measuring baseline breath ethanol in sober humans reveals endogenous ethanol production, which could serve as a biomarker for metabolic disorders linked to NAD+ metabolism.
-- **Caution:** The study lacks details on participant demographics and sample size, limiting the generalizability of the measured concentration to broader populations.
-- **Next question:** How do factors like diet, gut microbiome composition, or NAD+ status influence endogenous breath ethanol levels in humans?
+- **Why it matters:** Direct evidence in the `regimen` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
-## #4 — score 75 · regimen
+## #5 — score 75 · regimen
 
 **Finding:** A single dose (62.5 mg/kg) of NMN, administered to male mice
 
@@ -79,26 +97,6 @@
 - **Validator:** researka-tier2
 
 - **Why it matters:** Direct evidence in the `regimen` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
-
----
-
-### Lane — `rate`
-
-
-## #5 — score 75 · rate
-
-**Finding:** The 5,5'-substituted bipyridine Cp*Rh<sup>III</sup> complex, which had the lowest reduction potential, most effectively regenerated NADH with a turnover frequency of 1100 h<sup>-1</sup>.
-
-- **Value:** 1100.0h⁻1
-- **Population:** 5,5'-substituted bipyridine Cp*Rh complex
-- **Intervention:** 5,5'-substituted bipyridine Cp*Rh complex for NADH regeneration
-- **Source:** *Correlation between the Structure and Catalytic Activity of [Cp*Rh(Substituted Bipyridine)] Complexes for NADH Regeneration* — Inorganic Chemistry (2017)
-  · DOI: `10.1021/acs.inorgchem.6b02474`
-- **Validator:** researka-tier2
-
-- **Why it matters:** Direct evidence in the `rate` sub-topic; informs whether the finding generalises beyond a single study.
 - **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
 - **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 

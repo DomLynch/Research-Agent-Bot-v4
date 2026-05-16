@@ -2,8 +2,8 @@
 
 **Snapshot:** 2026-05-14T16-47-57Z
 **Source:** Researka DB Tier-2 search (`POST /api/v1/tier2/facts/search`, filter topic=resveratrol) — LLM-extracted, no Tier-1 canonical facts loaded for this topic yet; findings may be off-target (e.g. chemistry papers using the molecule name) until canonical curation.
-**Facts inspected:** 47
-**Ranking:** validation * magnitude * precision * recency (deterministic, no LLM).
+**Facts inspected:** 35
+**Ranking:** validation * magnitude * precision * recency (deterministic, no LLM). Same-paper + same-sub_topic findings are collapsed; extra biomarkers from the same trial appear as supporting numerics under the headline.
 
 ---
 
@@ -18,6 +18,10 @@
   · DOI: `10.1038/s41598-021-96069-1`
 - **Validator:** researka-tier2
 
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
 ---
 
 ## #2 — score 80 · effect_size
@@ -30,6 +34,10 @@
 - **Source:** *Bitter Sensing <i>TAS2R50</i> Mediates the <i>trans</i>-Resveratrol-Induced Anti-inflammatory Effect on Interleukin 6 Release in HGF-1 Cells in Culture* — Journal of Agricultural and Food Chemistry (2021)
   · DOI: `10.1021/acs.jafc.0c07058`
 - **Validator:** researka-tier2
+
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
@@ -44,6 +52,10 @@
   · DOI: `10.18632/oncotarget.12414`
 - **Validator:** researka-tier2
 
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
 ---
 
 ## #4 — score 75 · effect_size
@@ -57,6 +69,10 @@
   · DOI: `10.1177/0885328217713357`
 - **Validator:** researka-tier2
 
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
 ---
 
 ## #5 — score 71 · effect_size
@@ -69,5 +85,9 @@
 - **Source:** *Resveratrol Improves Boar Sperm Quality via 5<mml:math xmlns:mml="http://www.w3.org/1998/Math/MathML" id="M1"><mml:msup><mml:mrow/><mml:mrow><mml:mo>′</mml:mo></mml:mrow></mml:msup></mml:math>AMP-Activated Protein Kinase Activation during Cryopreservation* — Oxidative Medicine and Cellular Longevity (2019)
   · DOI: `10.1155/2019/5921503`
 - **Validator:** researka-tier2
+
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---

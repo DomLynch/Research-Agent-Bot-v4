@@ -1,8 +1,8 @@
-# Top 3 interesting findings — berberine
+# Top 2 interesting findings — berberine
 
 **Snapshot:** 2026-05-15T08-51-53Z
 **Source:** Researka DB Tier-2 search (`POST /api/v1/tier2/facts/search`, filter topic=berberine) — LLM-extracted, no Tier-1 canonical facts loaded for this topic yet; findings may be off-target (e.g. chemistry papers using the molecule name) until canonical curation.
-**Facts inspected:** 6
+**Facts inspected:** 3
 **Ranking:** validation * magnitude * precision * recency (deterministic, no LLM). Same-paper + same-sub_topic findings are collapsed; extra biomarkers from the same trial appear as supporting numerics under the headline.
 
 **Sub-topic lanes detected:** facts grouped by `sub_topic` below — read each lane independently.
@@ -30,28 +30,10 @@
 
 ---
 
-## #2 — score 75 · effect_size
-
-**Finding:** There was also a significant decrease from 425.7 ± 139.7 micromoles per liter to 344.9± 126.1 micromoles per liter in fructoseamine
-
-- **Value:** 80.8micromoles per liter
-- **Population:** patients with type 2 diabetes
-- **Intervention:** Berberine capsules 500 mg twice daily
-- **Source:** *The Effects of Active Ingredients of Barberry Root (Berberine) on Glycemic Control and Insulin Resistance in Type 2 Diabetic Patients* — Jundishapur Journal of Natural Pharmaceutical Products (2018)
-  · DOI: `10.5812/jjnpp.64180`
-- **Validator:** researka-tier2
-- **Same-trial supporting numerics:** 43.6mg/dl (There was a significant decrease from 266.1 ± 93.7 mg dl to ); 24.3mg/dl (average blood sugar (FBS) in the Berberine group decreased f)
-
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=3 biomarkers from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
-
----
-
 ### Lane — `subgroup`
 
 
-## #3 — score 53 · subgroup
+## #2 — score 53 · subgroup
 
 **Finding:** low dose berberine (10 mg/kg per day) showed higher left ventricular ejection fraction and fractional shortening than high-dose berberine (50 mg/kg per day)
 

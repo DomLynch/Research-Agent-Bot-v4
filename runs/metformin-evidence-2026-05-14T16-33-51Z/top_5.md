@@ -2,8 +2,8 @@
 
 **Snapshot:** 2026-05-14T16-33-51Z
 **Source:** Researka DB Tier-2 search (`POST /api/v1/tier2/facts/search`, filter topic=metformin) — LLM-extracted, no Tier-1 canonical facts loaded for this topic yet; findings may be off-target (e.g. chemistry papers using the molecule name) until canonical curation.
-**Facts inspected:** 46
-**Ranking:** validation * magnitude * precision * recency (deterministic, no LLM).
+**Facts inspected:** 28
+**Ranking:** validation * magnitude * precision * recency (deterministic, no LLM). Same-paper + same-sub_topic findings are collapsed; extra biomarkers from the same trial appear as supporting numerics under the headline.
 
 ---
 
@@ -18,6 +18,10 @@
   · DOI: `10.1080/15226514.2022.2064815`
 - **Validator:** researka-tier2
 
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
 ---
 
 ## #2 — score 75 · effect_size
@@ -30,6 +34,10 @@
 - **Source:** *Metformin Scavenges Methylglyoxal To Form a Novel Imidazolinone Metabolite in Humans* — Chemical Research in Toxicology (2016)
   · DOI: `10.1021/acs.chemrestox.5b00497`
 - **Validator:** researka-tier2
+
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
@@ -44,6 +52,10 @@
   · DOI: `10.3390/toxics6030055`
 - **Validator:** researka-tier2
 
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
 ---
 
 ## #4 — score 75 · effect_size
@@ -57,6 +69,10 @@
   · DOI: `10.2337/db14-1683`
 - **Validator:** researka-tier2
 
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
 ---
 
 ## #5 — score 71 · effect_size
@@ -69,5 +85,9 @@
 - **Source:** *Metformin Inhibits Cellular Proliferation and Bioenergetics in Colorectal Cancer Patient–Derived Xenografts* — Molecular Cancer Therapeutics (2017)
   · DOI: `10.1158/1535-7163.mct-16-0793`
 - **Validator:** researka-tier2
+
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---

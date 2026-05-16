@@ -2,7 +2,7 @@
 
 **Snapshot:** 2026-05-15T19-42-05Z
 **Source:** Researka DB Tier-2 search (`POST /api/v1/tier2/facts/search`, filter topic=sirtuin) — LLM-extracted, no Tier-1 canonical facts loaded for this topic yet; findings may be off-target (e.g. chemistry papers using the molecule name) until canonical curation.
-**Facts inspected:** 25
+**Facts inspected:** 21
 **Ranking:** validation * magnitude * precision * recency (deterministic, no LLM). Same-paper + same-sub_topic findings are collapsed; extra biomarkers from the same trial appear as supporting numerics under the headline.
 
 ---
@@ -19,31 +19,13 @@
 - **Validator:** researka-tier2
 - **Same-trial supporting numerics:** 0.25µM (compound 55 (IC50 SIRT2 0.25 µM and <25% inhibition at 50 µM); 0.78µM (compound 56 (IC50 SIRT2 0.78 µM and <25% inhibition at 50 µM)
 
-- **Why it matters:** Selective SIRT2 inhibitors could lead to targeted cancer therapies with reduced off-target effects for lymphoma and epithelial cancers.
-- **Caution:** These results are based solely on in vitro cell line studies (k=1), lacking validation in in vivo models or human tissues.
-- **Next question:** Do these inhibitors retain their potency and selectivity in animal models, such as xenograft mice, before advancing to clinical trials?
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=3 biomarkers from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
-## #2 — score 80 · effect_size
-
-**Finding:** treatment with whey for 72 h inhibited cell proliferation (p < 0.001)
-
-- **Value:** 72.0
-- **Population:** human colon cancer cells HT-29, HCT 116, LoVo, SW480
-- **Intervention:** whey from Mediterranean water buffalo milk
-- **Source:** *SIRT3 and Metabolic Reprogramming Mediate the Antiproliferative Effects of Whey in Human Colon Cancer Cells* — Cancers (2021)
-  · DOI: `10.3390/cancers13205196`
-- **Validator:** researka-tier2
-- **Same-trial supporting numerics:** 0.01 (Transient SIRT3 gene silencing blocked the effects of whey o)
-
-- **Why it matters:** Whey may serve as a dietary intervention to slow colon cancer progression, accessible for prevention strategies.
-- **Caution:** The study uses only in vitro colon cancer cell lines, and the applied dose may not mirror human dietary intake or bioavailability.
-- **Next question:** What specific whey components or mechanisms, potentially involving sirtuin modulation, drive the observed anti-proliferative effects?
-
----
-
-## #3 — score 70 · effect_size
+## #2 — score 70 · effect_size
 
 **Finding:** reduced hepatic tumorigenesis (65% reduction in volume)
 
@@ -55,31 +37,13 @@
 - **Validator:** researka-tier2
 - **Same-trial supporting numerics:** 85.0% (reduced lung tumor incidence (85% reduction)); 50.0% (APO10LA supplementation (10 mg/kg diet) for 24 weeks signifi)
 
-- **Why it matters:** A 65% reduction in liver tumor volume in mice indicates potential for new treatments targeting hepatocellular carcinoma.
-- **Caution:** Mouse models like C57Bl/6J may not fully replicate human liver cancer biology, limiting translational certainty.
-- **Next question:** How does this intervention interact with sirtuin pathways to reduce hepatic tumorigenesis, and is it effective in human-derived models?
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=3 biomarkers from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
-## #4 — score 69 · effect_size
-
-**Finding:** betaines showed the highest effect in reducing Cal 27 cell proliferation up to 72 h (p < 0.01).
-
-- **Value:** 27.0
-- **Population:** head and neck squamous cell carcinoma Cal 27 cell line
-- **Intervention:** betaines
-- **Source:** *Synergistic Effect of Dietary Betaines on SIRT1-Mediated Apoptosis in Human Oral Squamous Cell Carcinoma Cal 27* — Cancers (2020)
-  · DOI: `10.3390/cancers12092468`
-- **Validator:** researka-tier2
-- **Same-trial supporting numerics:** 0.001 (This effect was enhanced when betaines were administered in ); 0.05 (SIRT1 gene silencing by small interfering RNA decreased the )
-
-- **Why it matters:** Betaines could be developed as novel therapeutics for head and neck squamous cell carcinoma, a challenging cancer type.
-- **Caution:** The effect is observed only in the Cal 27 cell line (k=1), with unknown efficacy in diverse cancer models or in vivo settings.
-- **Next question:** What is the mechanism by which betaines affect sirtuin activity or other pathways, and what are their optimal dosing and safety profiles?
-
----
-
-## #5 — score 66 · effect_size
+## #3 — score 66 · effect_size
 
 **Finding:** knockdown of SIRT1 resulted in 50% fewer animals developing tumors
 
@@ -90,8 +54,43 @@
   · DOI: `10.1158/1535-7163.mct-12-0700`
 - **Validator:** researka-tier2
 
-- **Why it matters:** SIRT1 knockdown reducing tumor incidence by 50% highlights SIRT1 as a critical target for cancer prevention.
-- **Caution:** Orthotopic xenograft models involve human cancer cells in mice, which may not account for immune interactions or long-term side effects.
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
+---
+
+## #4 — score 64 · effect_size
+
+**Finding:** deacetylase sirtuin (SIRT)-1 (-29%) in desynchronized young rats.
+
+- **Value:** -29.0%
+- **Population:** desynchronized young grass rats
+- **Intervention:** circadian desynchronization
+- **Source:** *Circadian desynchronization triggers premature cellular aging in a diurnal rodent* — The FASEB Journal (2015)
+  · DOI: `10.1096/fj.14-266817`
+- **Validator:** researka-tier2
+
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
+---
+
+## #5 — score 60 · effect_size
+
+**Finding:** PA negatively modulated SIRT3 expression (p < 0.001).
+
+- **Value:** 0.001
+- **Population:** human endothelial cells (TeloHAEC)
+- **Intervention:** palmitic acid (PA) treatment at 0.5 mM for 48 h
+- **Source:** *SIRT3 Modulates Endothelial Mitochondrial Redox State during Insulin Resistance* — Antioxidants (2022)
+  · DOI: `10.3390/antiox11081611`
+- **Validator:** researka-tier2
+- **Same-trial supporting numerics:** 0.01 (SIRT3 restoration suppressed pyroptosis (p < 0.01).); 0.01 (SIRT3 restoration suppressed PA-induced autophagy (p < 0.01)); 0.001 (PA imbalanced the oxidative status (p < 0.001).)
+
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=4 biomarkers from one paper); replication across independent cohorts required.
 - **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---

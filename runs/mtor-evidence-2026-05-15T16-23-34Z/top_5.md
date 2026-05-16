@@ -2,7 +2,7 @@
 
 **Snapshot:** 2026-05-15T16-23-34Z
 **Source:** Researka DB Tier-2 search (`POST /api/v1/tier2/facts/search`, filter topic=mtor) — LLM-extracted, no Tier-1 canonical facts loaded for this topic yet; findings may be off-target (e.g. chemistry papers using the molecule name) until canonical curation.
-**Facts inspected:** 46
+**Facts inspected:** 28
 **Ranking:** validation * magnitude * precision * recency (deterministic, no LLM). Same-paper + same-sub_topic findings are collapsed; extra biomarkers from the same trial appear as supporting numerics under the headline.
 
 **Sub-topic lanes detected:** facts grouped by `sub_topic` below — read each lane independently.
@@ -23,9 +23,9 @@
   · DOI: `10.3390/cancers14061555`
 - **Validator:** researka-tier2
 
-- **Why it matters:** High mTOR activity in most urothelial carcinomas highlights its potential as a therapeutic target for bladder cancer.
-- **Caution:** This rate-based observation may not account for tumor heterogeneity or establish causality without intervention studies.
-- **Next question:** Does pharmacological inhibition of mTOR in these tumors lead to improved patient survival?
+- **Why it matters:** Direct evidence in the `rate` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
@@ -33,40 +33,6 @@
 
 
 ## #2 — score 75 · effect_size
-
-**Finding:** the mTOR pathway plays an important role in the growth of these Flcn-deficient allograft and human UOK 257-1 xenograft tumors
-
-- **Value:** 257.0
-- **Population:** Flcn-deficient allograft and human UOK 257-1 xenograft tumors
-- **Intervention:** mTOR pathway
-- **Source:** *Flcn-deficient renal cells are tumorigenic and sensitive to mTOR suppression* — Oncotarget (2015)
-  · DOI: `10.18632/oncotarget.5018`
-- **Validator:** researka-tier2
-
-- **Why it matters:** mTOR's role in Flcn-deficient tumor growth underscores its importance in related renal cancer models.
-- **Caution:** Allograft and xenograft models may not fully replicate human tumor microenvironments or immune responses.
-- **Next question:** How do FLCN mutations modulate mTOR signaling in human renal cell carcinoma patients?
-
----
-
-## #3 — score 75 · effect_size
-
-**Finding:** noncancer cells showed up to 100-fold less sensitivity to ICSN3250
-
-- **Value:** 100.0fold
-- **Population:** cancer and noncancer cells
-- **Intervention:** ICSN3250
-- **Source:** *mTOR Inhibition via Displacement of Phosphatidic Acid Induces Enhanced Cytotoxicity Specifically in Cancer Cells* — Cancer Research (2018)
-  · DOI: `10.1158/0008-5472.can-18-0232`
-- **Validator:** researka-tier2
-
-- **Why it matters:** The 100-fold lower sensitivity of noncancer cells to ICSN3250 suggests a favorable therapeutic window for selective cancer treatment.
-- **Caution:** In vitro effect sizes may not translate to in vivo settings due to pharmacokinetic and dose variability.
-- **Next question:** Can ICSN3250 maintain its selectivity and efficacy in clinical trials with diverse cancer types?
-
----
-
-## #4 — score 75 · effect_size
 
 **Finding:** RPPA analysis of an independent cohort of 154 tumors confirmed the relationship between pathway activation and hepatic metastasis.
 
@@ -78,13 +44,13 @@
 - **Validator:** researka-tier2
 - **Same-trial supporting numerics:** 0.01 (PIK3CA mutation was detected more frequently among liver met); 0.056 (Activation of AKT (S473) was detected more frequently among ); 0.053 (Activation of p70S6K (T389) was detected more frequently amo)
 
-- **Why it matters:** Linking mTOR pathway activation to hepatic metastasis in breast cancer helps identify high-risk patients for early intervention.
-- **Caution:** The cohort of 154 tumors may not encompass all breast cancer molecular subtypes or ethnic variations.
-- **Next question:** Does targeting mTOR with inhibitors reduce hepatic metastasis incidence in breast cancer patients?
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=4 biomarkers from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
 
-## #5 — score 75 · effect_size
+## #3 — score 75 · effect_size
 
 **Finding:** improving long-term cures (0-30% improved to 78-100%)
 
@@ -96,8 +62,43 @@
 - **Validator:** researka-tier2
 - **Same-trial supporting numerics:** 43.0% (decreasing proliferation (43%)); 32.0% (limiting lymph node metastasis (32%)); 30.0fold (lung metastatic burden (30 fold)); 3.3fold (enhanced CRT-induced cytotoxicity (3.3 fold) in clonogenic a)
 
-- **Why it matters:** Improving cure rates from 0-30% to 78-100% in a murine model indicates potential for curative therapies in recurrent HPV+ HNSCC.
-- **Caution:** Murine models often fail to predict human clinical outcomes due to biological differences and tumor evolution.
-- **Next question:** What molecular mechanisms drive the enhanced cure rates, and how can they be sustained in human trials?
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=5 biomarkers from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
+---
+
+## #4 — score 70 · effect_size
+
+**Finding:** Metformin decreased tumor burden by 72%, which correlated with decreased cellular proliferation and marked inhibition of mTOR in tumors.
+
+- **Value:** 72.0%
+- **Population:** A/J mice treated with tobacco carcinogen NNK
+- **Intervention:** intraperitoneal metformin
+- **Source:** *Metformin Prevents Tobacco Carcinogen–Induced Lung Tumorigenesis* — Cancer Prevention Research (2010)
+  · DOI: `10.1158/1940-6207.capr-10-0055`
+- **Validator:** researka-tier2
+
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+
+---
+
+## #5 — score 70 · effect_size
+
+**Finding:** Torin2 inhibited mTORC1-dependent T389 phosphorylation on S6K with an EC50 of 250 pmol/L and 800-fold selectivity for mTOR versus PI3K.
+
+- **Value:** 250.0pmol/L
+- **Population:** cancer cells
+- **Intervention:** Torin2
+- **Source:** *Characterization of Torin2, an ATP-Competitive Inhibitor of mTOR, ATM, and ATR* — Cancer Research (2013)
+  · DOI: `10.1158/0008-5472.can-12-1702`
+- **Validator:** researka-tier2
+- **Same-trial supporting numerics:** 118.0nmol/L (Torin2 exhibited potent activity against DNA-PK (EC50, 118 n); 35.0nmol/L (Torin2 exhibited potent activity against ATR (EC50, 35 nmol/); 28.0nmol/L (Torin2 exhibited potent activity against ATM (EC50, 28 nmol/)
+
+- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
+- **Caution:** Single trial / single subgroup (k=4 biomarkers from one paper); replication across independent cohorts required.
+- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
 
 ---
