@@ -8,19 +8,23 @@ Supplement = audit. Compiler = truth. LLM = prose. Contract = enforcement.
 **No LLM owns truth. No literal owns topic. No gate owns more than its rule.
 No section owns evidence outside its packet.**
 
-## Current State — 2026-05-12 (Sprint 12.8)
-- LOC ceiling: **7,500 in `agent/`** (hard gate, `scripts/loc_gate.sh`).
-  History: 3,000 (initial) → 5,000 (Sprint 6 truth patch) → 7,500
-  (Sprint 11.1 manuscript completion). Every module under the higher cap
-  must delete or prevent a fake-evidence failure mode (typed contract,
-  validator, receipt, provenance) — not buy prose polish or speculative
-  abstraction.
+## Current State — 2026-05-16 (Sprint 70 in flight; Sprint 69 shipped)
+- LOC ceiling: **11,700 in `agent/`** (hard gate, `scripts/loc_gate.sh`).
+  See the cap-doctrine header in `loc_gate.sh` for the full bump
+  history. Every module under the higher cap must delete or prevent a
+  fake-evidence failure mode (typed contract, validator, receipt,
+  provenance) — not buy prose polish or speculative abstraction.
 - Universal-no-hardcoding: no biomedical literals in `agent/`; topic
   packs supply domain vocabulary, anchors, sentinels, eligibility terms,
   metric families, ethics + conflicts back-matter prose.
 - Build mode: sequential sprints, verify before advancing.
-- Current quality gate: `tests/test_run_folder_integrity.py` must pass
-  against `runs/latest` before any manuscript is described as AAA-clean.
+- Curator-layer role (Sprint 39+): on top of the paper pipeline, v4
+  also reads per-paper receipts, computes per-topic 0..100 confidence
+  snapshots, and emits a prioritized publish-opportunity digest.
+- Quality gates: `pytest -q`, `ruff check agent tests scripts`,
+  `mypy agent`, and `scripts/loc_gate.sh` must all pass before commit.
+  For paper runs, `tests/test_run_folder_integrity.py` must pass
+  against `runs/latest`.
 
 ## Hard Rule
 ```text

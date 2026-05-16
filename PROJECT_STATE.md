@@ -97,8 +97,8 @@ post binding (A_core/B_context only); universal epi ratio units
 (OR/HR/RR/AOR/AHR/IRR/ROR/SMR/IPR → effect_size); position-aware
 p-prefix detector; cycle runner failure propagation.
 
-**Sprint 69 (in flight) closes the sirtuin top_5 artifact leaks
-the auditor caught in the 2026-05-15 review:**
+**Sprint 69 (shipped, head `efbb7d1`) closed the sirtuin top_5
+artifact leaks the auditor caught in the 2026-05-15 review:**
 - `agent/numeric_sanitizer.py` rule 3: capitalized 1-4 letter
   prefix + space/hyphen + integer value → cell-line / compound code
   (Cal 27, HCT 116, T47 D). Walk-stop in the original rule 1 misses

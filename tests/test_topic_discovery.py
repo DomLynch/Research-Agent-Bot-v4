@@ -20,6 +20,7 @@ import httpx
 
 from agent.topic_discovery import (
     TopicCandidate,
+    _anchorage_counts,
     _paper_score,
     _score_topic,
     discover_topics,
@@ -189,4 +190,81 @@ def test_universal_non_biomedical_seed_list() -> None:
             settings=_settings(), client=c,
         )
     assert len(out) == 2
+
+
+# ============= Sprint 70 — cross-topic anchorage dampening =============
+
+def test_anchorage_counts_per_paper_topic_membership() -> None:
+    """Sprint 70: same DOI in 3 topics' top-K → count == 3.
+    Universal across-topic structural signal."""
+    shared = _paper(doi="10.1/shared", fwci=5.0, cited_by_count=500)
+    unique = _paper(doi="10.1/unique_a", fwci=1.0, cited_by_count=10)
+    counts = _anchorage_counts({
+        "topic_a": [shared, unique],
+        "topic_b": [shared],
+        "topic_c": [shared],
+    }, current_year=2024)
+    assert counts.get("10.1/shared") == 3
+    assert counts.get("10.1/unique_a") == 1
+
+
+def test_score_topic_dampens_cross_topic_anchor() -> None:
+    """Sprint 70 / auditor: an ACC/AHA-style paper that anchors three
+    topics has its contribution dampened by 1/sqrt(3). Same paper in
+    isolation (single-topic) keeps full score. Universal."""
+    paper = _paper(doi="10.1/acc-aha", fwci=10.0, cited_by_count=1000)
+    solo = _score_topic(
+        "topic_x", [paper], 2024, anchorage={"10.1/acc-aha": 1},
+    )
+    crowded = _score_topic(
+        "topic_x", [paper], 2024, anchorage={"10.1/acc-aha": 3},
+    )
+    assert crowded.velocity_score < solo.velocity_score
+    expected = solo.velocity_score / math.sqrt(3)
+    assert abs(crowded.velocity_score - expected) < 1e-6
+
+
+def test_score_topic_no_dampening_for_solo_anchor() -> None:
+    """M < 3 → no dampening. Single-topic specificity preserved."""
+    paper = _paper(doi="10.1/specific", fwci=5.0, cited_by_count=200)
+    no_anchor = _score_topic("t", [paper], 2024, anchorage=None)
+    m1 = _score_topic("t", [paper], 2024, anchorage={"10.1/specific": 1})
+    m2 = _score_topic("t", [paper], 2024, anchorage={"10.1/specific": 2})
+    assert abs(no_anchor.velocity_score - m1.velocity_score) < 1e-6
+    assert abs(no_anchor.velocity_score - m2.velocity_score) < 1e-6
+
+
+def test_discover_topics_dampens_acc_aha_style_anchor() -> None:
+    """Sprint 70 / auditor case: a single broad guideline appears as
+    the top driver of three unrelated topics. After dampening, those
+    topics' velocity scores drop; a topic with a unique strong paper
+    overtakes them."""
+    # Cross-domain anchor: same DOI returned for 3 topics.
+    # Raw score ≈ 20 * ln(2001) * 0.7 ≈ 106.4; dampened by 1/sqrt(3)
+    # ≈ 61.4.
+    shared = _paper(doi="10.1/guideline",
+                    title="Broad guideline anchoring 3 topics",
+                    fwci=20.0, cited_by_count=2000)
+    # Topic-specific paper for one topic only — strong enough to
+    # overtake the dampened guideline. Raw ≈ 15 * ln(1001) * 0.7
+    # ≈ 72.5 > 61.4.
+    unique = _paper(doi="10.1/topic_d_only",
+                    title="Topic-specific finding",
+                    fwci=15.0, cited_by_count=1000)
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        body = req.read().decode("utf-8") if req.content else "{}"
+        if "topic_d" in body:
+            return httpx.Response(200, json=[unique])
+        return httpx.Response(200, json=[shared])
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        out = discover_topics(
+            seeds=("topic_a", "topic_b", "topic_c", "topic_d"),
+            settings=_settings(), client=c, current_year=2024,
+        )
+    # Without dampening, the 3 shared-anchor topics would rank top.
+    # With dampening, topic_d's unique paper rises.
+    ranked_topics = [c.topic for c in out]
+    assert ranked_topics.index("topic_d") < ranked_topics.index("topic_a")
     assert all(o.velocity_score > 0 for o in out)

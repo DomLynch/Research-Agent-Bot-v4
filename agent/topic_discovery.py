@@ -87,19 +87,69 @@ def _paper_score(paper: dict[str, Any], current_year: int) -> float:
     return fwci * math.log1p(cited) * recency * (quality / 100.0)
 
 
+def _paper_key(paper: dict[str, Any]) -> str:
+    """Stable cross-topic dedup key: DOI when present, else title."""
+    doi = str(paper.get("doi") or "").strip().lower()
+    if doi:
+        return doi
+    return str(paper.get("title") or "").strip().lower()[:200]
+
+
+def _anchorage_counts(
+    papers_by_topic: dict[str, list[dict[str, Any]]],
+    current_year: int, *, top_k: int = 5,
+) -> dict[str, int]:
+    """Sprint 70 — count how many topics include each paper in their
+    top-K driver papers. Used to dampen cross-domain anchors: when one
+    broad review/guideline (e.g. 2019 ACC/AHA cardiovascular paper)
+    sits in the top-K of multiple unrelated topics, its contribution
+    to each topic's velocity is downweighted by 1/sqrt(M) where M is
+    the number of topics it anchors. Universal — structural signal
+    only, no domain literals."""
+    counts: dict[str, int] = {}
+    for papers in papers_by_topic.values():
+        if not papers:
+            continue
+        scored = sorted(
+            ((_paper_score(p, current_year), p) for p in papers),
+            key=lambda pair: pair[0], reverse=True,
+        )
+        for _, p in scored[:top_k]:
+            k = _paper_key(p)
+            if k:
+                counts[k] = counts.get(k, 0) + 1
+    return counts
+
+
 def _score_topic(
     topic: str, papers: list[dict[str, Any]], current_year: int,
     *, top_k: int = 5,
+    anchorage: dict[str, int] | None = None,
 ) -> TopicCandidate:
-    """Aggregate per-paper scores; pick the strongest paper as anchor."""
+    """Aggregate per-paper scores; pick the strongest paper as anchor.
+
+    When `anchorage` is supplied, dampen each paper's contribution by
+    1/sqrt(M) when it anchors M ≥ 3 other topics' top-K. Keeps
+    single-topic specificity intact (M < 3 = no dampening) while
+    penalising cross-domain reviews / guidelines.
+    """
     if not papers:
         return TopicCandidate(
             topic=topic, paper_count=0, top_paper_doi="",
             top_paper_title="", velocity_score=0.0,
             mean_fwci=0.0, mean_cited_by=0.0,
         )
+
+    def _adjusted(p: dict[str, Any]) -> float:
+        s = _paper_score(p, current_year)
+        if anchorage:
+            m = anchorage.get(_paper_key(p), 1)
+            if m >= 3:
+                s = s / math.sqrt(m)
+        return s
+
     scored = sorted(
-        ((_paper_score(p, current_year), p) for p in papers),
+        ((_adjusted(p), p) for p in papers),
         key=lambda pair: pair[0], reverse=True,
     )
     top = scored[:top_k]
@@ -155,10 +205,15 @@ def discover_topics(
     own_client = client is None
     c = client or httpx.Client()
     try:
-        candidates: list[TopicCandidate] = []
+        papers_by_topic: dict[str, list[dict[str, Any]]] = {}
         for topic in topics:
-            papers = _fetch_topic_papers(topic, client=c, settings=settings)
-            candidates.append(_score_topic(topic, papers, year_now))
+            papers_by_topic[topic] = _fetch_topic_papers(
+                topic, client=c, settings=settings)
+        anchorage = _anchorage_counts(papers_by_topic, year_now)
+        candidates: list[TopicCandidate] = [
+            _score_topic(topic, papers, year_now, anchorage=anchorage)
+            for topic, papers in papers_by_topic.items()
+        ]
     finally:
         if own_client:
             c.close()
