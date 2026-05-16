@@ -12,6 +12,8 @@ effect-size finding (e.g. '66 weeks' or '70% CR conditions').
 """
 from __future__ import annotations
 
+import re
+
 # Time units → duration (covers both treatment-length and timepoint)
 _TIME_UNITS = frozenset([
     "day", "days", "hour", "hours", "min", "minute", "minutes",
@@ -58,7 +60,7 @@ _RATIO_UNITS = frozenset([
 # P-value prefix markers (Sprint 68) — when ANY of these appear
 # immediately before the value in the phrase, override paired-
 # comparison and call it p_value regardless of magnitude. Auditor:
-# 'p = 2.98 × 10^-9 for highest vs lowest quintile' was promoted to
+# 'p = 2.98e-9 for highest vs lowest quintile' was promoted to
 # effect_size because 'vs' fired before p-prefix was checked.
 _PVALUE_PREFIX_MARKERS = ("p=", "p =", "p<", "p <", "p<=", "p <=")
 
@@ -96,11 +98,19 @@ def classify_numeric_role(
     if (value is not None and value == int(value)
             and any(m in ctx for m in _SAMPLE_SIZE_MARKERS)):
         return "sample_size"
-    # P-value prefix check (Sprint 68): if 'p=' / 'p<' appears in the
-    # phrase context, it's a p-value regardless of magnitude — overrides
-    # the paired-comparison fallback below.
-    if any(m in ctx for m in _PVALUE_PREFIX_MARKERS):
-        return "p_value"
+    # P-value prefix check (Sprint 68): a p-prefix counts ONLY when
+    # IMMEDIATELY adjacent to the value being classified (within 5
+    # chars before the match), not anywhere in the phrase. Prevents
+    # the Apc(1638N/+) effect-size case 'macroadenoma count was 1.33
+    # vs 2.50 (P<0.01)' from being mis-classified as p_value because
+    # the P< marker applies to a different stat in the same phrase.
+    if value is not None:
+        val_str = (f"{int(value)}" if value == int(value)
+                   else f"{value:g}")
+        for m in re.finditer(re.escape(val_str), ctx):
+            before = ctx[max(0, m.start() - 5):m.start()]
+            if any(p in before for p in _PVALUE_PREFIX_MARKERS):
+                return "p_value"
     # Paired-comparison fallback (Sprint 67): a unitless positive
     # number appearing alongside 'vs' / 'versus' / '±' is an effect-
     # style comparison (e.g. macroadenoma count 1.33 vs 2.50).

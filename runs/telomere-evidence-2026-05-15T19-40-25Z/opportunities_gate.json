@@ -3,13 +3,13 @@
   "snapshot_utc": "2026-05-15T19-40-25Z",
   "input_pack": {
     "topic": "telomere",
-    "a_core_count": 1,
-    "b_context_count": 7,
+    "a_core_count": 6,
+    "b_context_count": 8,
     "excluded_counts": {
-      "C_noise": 2,
-      "D_bad_extraction": 30
+      "C_noise": 7,
+      "D_bad_extraction": 19
     },
-    "has_minimum_a_core": false,
+    "has_minimum_a_core": true,
     "a_core_min": 3
   },
   "audits": [
@@ -18,8 +18,7 @@
       "title": "Retrospective vs. Prospective Telomere Length–Breast Cancer Associations Diverge Due to Reverse Causation: A Deconfounding Meta-Analysis Stratified by Blood-Draw-to-Diagnosis Interval",
       "status": "rejected",
       "blocking_flags": [
-        "cites_d_bad_extraction:3",
-        "a_core_density_too_low:1<3"
+        "cites_d_bad_extraction:1"
       ],
       "original_opportunity": 100,
       "capped_opportunity": 40,
@@ -35,8 +34,8 @@
       "title": "The Folate-Telomere Length Paradox: Folate Deficiency Elongates Telomeres While Longer Telomeres Elevate Cancer Risk—Implications for Supplementation Trial Interpretation",
       "status": "rejected",
       "blocking_flags": [
-        "cites_d_bad_extraction:3",
-        "a_core_density_too_low:0<3"
+        "cites_d_bad_extraction:2",
+        "a_core_density_too_low:1<3"
       ],
       "original_opportunity": 67,
       "capped_opportunity": 40,
@@ -52,8 +51,8 @@
       "title": "Telomere Length Heterogeneity (Proportion <2 kb) as a Distinct Biomarker from Mean Telomere Length: Cross-Disease Scoping Beyond COVID-19 Lymphopenia",
       "status": "rejected",
       "blocking_flags": [
-        "cites_d_bad_extraction:4",
-        "a_core_density_too_low:0<3"
+        "cites_d_bad_extraction:3",
+        "a_core_density_too_low:1<3"
       ],
       "original_opportunity": 41,
       "capped_opportunity": 40,

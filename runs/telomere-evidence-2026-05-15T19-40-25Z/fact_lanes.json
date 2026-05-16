@@ -2,10 +2,10 @@
   "topic": "telomere",
   "snapshot_utc": "2026-05-15T19-40-25Z",
   "counts": {
-    "A_core": 1,
-    "B_context": 7,
-    "C_noise": 2,
-    "D_bad_extraction": 30
+    "A_core": 6,
+    "B_context": 8,
+    "C_noise": 7,
+    "D_bad_extraction": 19
   },
   "verdicts": [
     {
@@ -23,7 +23,7 @@
     {
       "fact_id": "17626",
       "lane": "D_bad_extraction",
-      "numeric_role": "unknown",
+      "numeric_role": "effect_size",
       "reason": "missing_population_or_intervention"
     },
     {
@@ -34,9 +34,9 @@
     },
     {
       "fact_id": "13454",
-      "lane": "D_bad_extraction",
-      "numeric_role": "unknown",
-      "reason": "numeric_role=unknown_not_effect_finding"
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
     },
     {
       "fact_id": "21712",
@@ -58,15 +58,15 @@
     },
     {
       "fact_id": "46707",
-      "lane": "D_bad_extraction",
-      "numeric_role": "unknown",
-      "reason": "numeric_role=unknown_not_effect_finding"
+      "lane": "A_core",
+      "numeric_role": "effect_size",
+      "reason": "topic_in_intervention_pico_complete"
     },
     {
       "fact_id": "6907",
-      "lane": "D_bad_extraction",
-      "numeric_role": "unknown",
-      "reason": "numeric_role=unknown_not_effect_finding"
+      "lane": "A_core",
+      "numeric_role": "effect_size",
+      "reason": "topic_in_intervention_pico_complete"
     },
     {
       "fact_id": "15163",
@@ -76,21 +76,21 @@
     },
     {
       "fact_id": "6908",
-      "lane": "D_bad_extraction",
-      "numeric_role": "unknown",
-      "reason": "numeric_role=unknown_not_effect_finding"
-    },
-    {
-      "fact_id": "16413",
       "lane": "A_core",
       "numeric_role": "effect_size",
       "reason": "topic_in_intervention_pico_complete"
     },
     {
-      "fact_id": "11257",
+      "fact_id": "16413",
       "lane": "D_bad_extraction",
-      "numeric_role": "unknown",
-      "reason": "numeric_role=unknown_not_effect_finding"
+      "numeric_role": "p_value",
+      "reason": "numeric_role=p_value_not_effect_finding"
+    },
+    {
+      "fact_id": "11257",
+      "lane": "A_core",
+      "numeric_role": "effect_size",
+      "reason": "topic_in_intervention_pico_complete"
     },
     {
       "fact_id": "46474",
@@ -106,9 +106,9 @@
     },
     {
       "fact_id": "7527",
-      "lane": "D_bad_extraction",
-      "numeric_role": "unknown",
-      "reason": "numeric_role=unknown_not_effect_finding"
+      "lane": "A_core",
+      "numeric_role": "effect_size",
+      "reason": "topic_in_intervention_pico_complete"
     },
     {
       "fact_id": "15899",
@@ -137,8 +137,8 @@
     {
       "fact_id": "5634",
       "lane": "D_bad_extraction",
-      "numeric_role": "unknown",
-      "reason": "numeric_role=unknown_not_effect_finding"
+      "numeric_role": "p_value",
+      "reason": "numeric_role=p_value_not_effect_finding"
     },
     {
       "fact_id": "61182",
@@ -154,27 +154,27 @@
     },
     {
       "fact_id": "32807",
-      "lane": "D_bad_extraction",
-      "numeric_role": "unknown",
-      "reason": "numeric_role=unknown_not_effect_finding"
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
     },
     {
       "fact_id": "32806",
-      "lane": "D_bad_extraction",
-      "numeric_role": "unknown",
-      "reason": "numeric_role=unknown_not_effect_finding"
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
     },
     {
       "fact_id": "32805",
-      "lane": "D_bad_extraction",
-      "numeric_role": "unknown",
-      "reason": "numeric_role=unknown_not_effect_finding"
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
     },
     {
       "fact_id": "3475",
-      "lane": "D_bad_extraction",
-      "numeric_role": "unknown",
-      "reason": "numeric_role=unknown_not_effect_finding"
+      "lane": "A_core",
+      "numeric_role": "effect_size",
+      "reason": "topic_in_intervention_pico_complete"
     },
     {
       "fact_id": "35086",
@@ -202,15 +202,15 @@
     },
     {
       "fact_id": "4495",
-      "lane": "D_bad_extraction",
-      "numeric_role": "unknown",
-      "reason": "numeric_role=unknown_not_effect_finding"
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
     },
     {
       "fact_id": "16451",
-      "lane": "D_bad_extraction",
-      "numeric_role": "unknown",
-      "reason": "numeric_role=unknown_not_effect_finding"
+      "lane": "B_context",
+      "numeric_role": "effect_size",
+      "reason": "topic_in_phrase_but_not_intervention"
     },
     {
       "fact_id": "4351",

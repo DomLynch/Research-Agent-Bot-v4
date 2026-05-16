@@ -84,6 +84,50 @@ def test_is_real_finding_only_for_effect_fold_correlation() -> None:
     assert not is_real_finding("unknown")
 
 
+def test_ratio_unit_or_classifies_as_effect_size() -> None:
+    """Sprint 68: OR (odds ratio) is universal epi statistics —
+    effect_size, not unknown. Auditor's telomere case."""
+    assert classify_numeric_role(
+        15.5, "OR",
+        "age-adjusted OR=15.5 [95% CI 11.6-20.8] for breast cancer",
+    ) == "effect_size"
+
+
+def test_ratio_unit_hr_classifies_as_effect_size() -> None:
+    """HR (hazard ratio) — same family as OR."""
+    assert classify_numeric_role(
+        0.90, "HR",
+        "metformin HR 0.90 for colorectal cancer in cohort",
+    ) == "effect_size"
+
+
+def test_ratio_unit_rr_classifies_as_effect_size() -> None:
+    """RR (relative risk) — same family."""
+    assert classify_numeric_role(2.66, "RR",
+                                  "longer TL RR=2.66 melanoma") == "effect_size"
+
+
+def test_pvalue_prefix_position_aware_apc_case() -> None:
+    """Sprint 68: 'macroadenoma count was 1.33 vs 2.50 (P<0.01)' —
+    the value 1.33 is the effect, P<0.01 is a separate stat further
+    along. Position-aware p-prefix detector should NOT classify 1.33
+    as p_value; the paired-comparison fallback below catches the vs."""
+    assert classify_numeric_role(
+        1.33, "",
+        "macroadenoma count was 1.33 vs 2.50 in CR males (P<0.01)",
+    ) == "effect_size"
+
+
+def test_pvalue_prefix_immediately_before_value_classifies_pvalue() -> None:
+    """The 'p = 2.98 e-9' case: 2.98 immediately follows 'p = ' —
+    must classify as p_value, not effect_size, even though phrase
+    also contains 'vs'."""
+    assert classify_numeric_role(
+        2.98, "",
+        "p = 2.98 e-9 for highest vs lowest quintile",
+    ) == "p_value"
+
+
 def test_paired_comparison_vs_marker_is_effect_size() -> None:
     """Sprint 67: '1.33 vs 2.50' (Apc(1638N/+) macroadenoma counts)
     should classify as effect_size, not unknown. Universal stats

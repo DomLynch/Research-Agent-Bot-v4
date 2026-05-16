@@ -17,7 +17,6 @@ Real tension: Breast cancer: retrospective SEARCH study shows OR 15.5 for shorte
 - age-adjusted odds ratios for shortest (Q4) versus longest (Q1) quartile of mean telomere length was 15.5 [95% CI, 11.6-20.8; p-het = 5.7 x 10(-75)] for breast cancer **[15.5OR]** (Cancer Research 2010)
 - comparable odds ratios (Q4 versus Q1) were 1.58 (95% CI, 0.75-3.31; p-het = 0.23) for breast cancer **[1.58OR]** (Cancer Research 2010)
 - Longer TL was associated with increased breast cancer risk [odds ratio (OR) 1.87, 95% confidence interval (CI) 1.38, 2.55] **[1.87OR]** (Genes Chromosomes and Cancer 2013)
-- p = 2.98 × 10^-9 for highest vs. lowest quintile; p = 1.82 × 10^-10 as a continuous variable **[2.98]** (International Journal of Cancer 2018)
 
 ## Confidence — `speculative_alpha`
 

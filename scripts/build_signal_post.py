@@ -156,9 +156,9 @@ def _evidence_lines(
     cited = audit.get("cited_fact_ids") or []
     out: list[str] = []
     for fid in cited:
-        if lane_verdicts is not None:
-            if lane_verdicts.get(str(fid)) not in _BINDABLE_LANES:
-                continue  # D_bad / C_noise / unknown: skip
+        if (lane_verdicts is not None
+                and lane_verdicts.get(str(fid)) not in _BINDABLE_LANES):
+            continue  # D_bad / C_noise / unknown: skip
         f = facts_by_id.get(str(fid))
         if not f:
             continue

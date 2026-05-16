@@ -82,11 +82,29 @@ scoring, thresholds, and digest schema stay put.
 12. ✅ Tests (unit + golden) + supplement plugins + cutover validation
 
 ## Current Sprint
-**Sprint 44 landed** (commit `fc01fdf`) — `agent/gap_analyzer.py` emits
-typed `PublishOpportunity` payloads gated on `publication_opportunity`
-flags + `|delta_points| ≥ 10` strong-mover triggers, capped at top-5
-per digest, priority-sorted, malformed-JSON tolerant. Standing by for
-Researka DB Sprint 2 (`/api/v1/topics/{topic}/claims`).
+**Sprint 68 in flight** (head ≈ `a15099c`, this commit pending) —
+alpha-mode Researka pipeline working end-to-end: discovery (Sprint 63)
+→ build_topic_evidence_run (with PICO enrichment Sprint 61, numeric
+sanitizer Sprint 64, dedup + lanes + editorial Sprint 60, fact-id
+binding Sprint 67) → opportunities gate (Sprint 59) → signal post
+(Sprint 64 + 66 + 68 strict binding lock). One-command autonomous
+curator cycle via `scripts/run_curator_cycle.py` (Sprint 65).
+Sprints 45-67 each shipped + 4-way deployed (macbook + GitHub branch
++ GitHub main + VPS) — see `git log` for Sprint commits.
+
+**Sprint 68 (in flight) closes the auditor's remaining gaps:**
+- Signal post strict mode: only renders A_core/B_context cited facts;
+  D_bad/C_noise excluded so we never publish unbound evidence.
+- Numeric classifier learns universal epi units (OR / HR / RR / AOR
+  / AHR / IRR / ROR / SMR / IPR) → effect_size, not unknown.
+- Position-aware p-prefix detector: 'p =' / 'p<' counts ONLY when
+  IMMEDIATELY adjacent to the value, not anywhere in the phrase.
+- Cycle runner propagates downstream gate/signal failure into
+  TopicResult.status so cron sees `partial_failure` not silent `ran`.
+
+Standing by for: Researka write-surface spec (publish path #1 on the
+operator queue) and Tier-1 canonical curation for non-rapamycin
+topics (DB-side, not v4).
 
 ## Definition of Done (Current Gate)
 - [x] Fresh `runs/latest` contains `paper.md`, `supplement.md`, and the

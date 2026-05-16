@@ -44,19 +44,19 @@
     },
     "fact_lanes": {
       "name": "fact_lanes.json",
-      "sha256": "80dfe8ca7b81a064cba6e6406777a1557f6a97ee71df4ea2f247426e513b9b48"
+      "sha256": "039bfc2b7d395ae0edef478168aab96bb6fa32781b055ff7ca080ac347a402c4"
     },
     "opportunities_gate": {
       "name": "opportunities_gate.json",
-      "sha256": "45323b1f530742e10c0b54f3a895c80472ca4ec1cba214747601a0476c632759"
+      "sha256": "031bb6ba1d5323f651c3da223d72f960e408fd11caa7d455fcf6135cfd3c3719"
     },
     "paper_opportunities_md": {
       "name": "paper_opportunities.md",
-      "sha256": "a8d28d071511be7af2338e19c0e30957a444317fbf48c7021929300bffbde8e6"
+      "sha256": "95c07ecd0efa13ab83a373ba06c7529c543d076d93fd63e9233a86e086397629"
     },
     "signal_post_md": {
       "name": "signal_post.md",
-      "sha256": "6baa4386f6a5b3697e21288756e4a473969b6effaaa74de19eed174d839087ff"
+      "sha256": "ca63f7704dd5df5fe66dd06bcaa90d0fb524e27c4c91020e69d3299be6a07a20"
     }
   }
 }
