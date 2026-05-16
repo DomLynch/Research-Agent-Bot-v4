@@ -163,9 +163,11 @@ def test_main_writes_curation_brief_and_manifest(
     assert signal_post_main() == 0
 
     assert "curation_needed" in (run / "signal_post.md").read_text()
+    assert "Alpha memo" in (run / "alpha_memo.md").read_text()
     brief = (run / "curation_brief.md").read_text()
     assert "fact_id=f1" in brief
     assert "harvest f1" in brief
     manifest = json.loads((run / "MANIFEST.json").read_text())
     assert "signal_post_md" in manifest["files"]
+    assert "alpha_memo_md" in manifest["files"]
     assert "curation_brief_md" in manifest["files"]

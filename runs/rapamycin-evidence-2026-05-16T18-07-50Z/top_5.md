@@ -22,9 +22,9 @@
 - **Validator:** source-cross-check-claude-2026-05-14
 - **Same-trial supporting numerics:** 52.0% (3 months of rapamycin extended median lifespan by 52% in mal)
 
-- **Why it matters:** Direct evidence in the `lifespan` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+- **Why it matters:** This is worth checking because it reaches a hard outcome rather than stopping at a proxy.
+- **Caution:** Do not overread this as settled: k=2 from this paper; confirm extraction, comparator, and repeatability before treating it as a broad claim.
+- **Next question:** What independent receipt would confirm this signal and what specific result would falsify it?
 
 ---
 
@@ -40,9 +40,9 @@
   · DOI: `10.1038/nature08221`
 - **Validator:** source-cross-check-user-2026-05-14
 
-- **Why it matters:** Direct evidence in the `lifespan` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+- **Why it matters:** This is worth checking because it reaches a hard outcome rather than stopping at a proxy.
+- **Caution:** Do not overread this as settled: k=1 from this paper; confirm extraction, comparator, and repeatability before treating it as a broad claim.
+- **Next question:** What independent receipt would confirm this signal and what specific result would falsify it?
 
 ---
 
@@ -59,8 +59,8 @@
 - **Validator:** source-cross-check-claude-2026-05-14
 - **Same-trial supporting numerics:** 23.0% (rapamycin at 42 ppm extended male median lifespan by 23%)
 
-- **Why it matters:** Direct evidence in the `lifespan` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+- **Why it matters:** This is worth checking because it reaches a hard outcome rather than stopping at a proxy.
+- **Caution:** Do not overread this as settled: k=2 from this paper; confirm extraction, comparator, and repeatability before treating it as a broad claim.
+- **Next question:** What independent receipt would confirm this signal and what specific result would falsify it?
 
 ---

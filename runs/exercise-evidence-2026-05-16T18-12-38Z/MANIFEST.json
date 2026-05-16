@@ -27,7 +27,7 @@
   "files": {
     "top_md": {
       "name": "top_5.md",
-      "sha256": "48641ac77f32919ca4e07914ca219cd9f58a6f4d5433c196189a4aac7bad849c"
+      "sha256": "f0e08959e465f656631a1eec50f5d145cc900d178c1f9ac1ef38cc08ad06e22f"
     },
     "all_facts": {
       "name": "all_facts.json",
@@ -64,6 +64,10 @@
     "signal_post_md": {
       "name": "signal_post.md",
       "sha256": "02ec3cd2e94a6c7632b16a8be6d18d861a3799e33e976cd197707fc36405cd02"
+    },
+    "alpha_memo_md": {
+      "name": "alpha_memo.md",
+      "sha256": "0670b6ceafa4b09ed280d733a580538de85bc8d4bfc38d8afa62b67c9c0e2c38"
     }
   }
 }

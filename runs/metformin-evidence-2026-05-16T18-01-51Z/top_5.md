@@ -22,9 +22,9 @@
 - **Validator:** researka-tier2
 - **Same-trial supporting numerics:** 0.69RR (Overall cancer incidence was reduced by 31% [summary relativ)
 
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+- **Why it matters:** This is worth checking because it reaches a hard outcome rather than stopping at a proxy.
+- **Caution:** Do not overread this as settled: k=2 from this paper; confirm extraction, comparator, and repeatability before treating it as a broad claim.
+- **Next question:** What independent receipt would confirm this signal and what specific result would falsify it?
 
 ---
 
@@ -41,9 +41,9 @@
 - **Validator:** researka-tier2
 - **Same-trial supporting numerics:** -13.9% (metformin alone did not change hs-CRP (-13.9%; 95% CI, -40.0); -13.1% (exercise and metformin reduced sTNFαR2 (-13.1%; 95% CI, -22.)
 
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=3 biomarkers from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+- **Why it matters:** This is worth checking because it ties exercise and metformin in patients with breast and colorectal cancer who completed standard therapy, low baseline physical activity, without type 2 diabetes to a source-backed effect.
+- **Caution:** Do not overread this as settled: k=3 from this paper; confirm extraction, comparator, and repeatability before treating it as a broad claim.
+- **Next question:** What independent receipt would confirm this signal and what specific result would falsify it?
 
 ---
 
@@ -59,9 +59,9 @@
   · DOI: `10.1158/1535-7163.mct-16-0793`
 - **Validator:** researka-tier2
 
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+- **Why it matters:** This is worth checking because it ties metformin (150 mg/kg) in colorectal cancer patient-derived xenografts (PDX) to a source-backed effect.
+- **Caution:** Do not overread this as settled: k=1 from this paper; confirm extraction, comparator, and repeatability before treating it as a broad claim.
+- **Next question:** What independent receipt would confirm this signal and what specific result would falsify it?
 
 ---
 
@@ -77,9 +77,9 @@
   · DOI: `10.1158/1940-6207.capr-10-0055`
 - **Validator:** researka-tier2
 
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+- **Why it matters:** This is worth checking because it ties intraperitoneal metformin in A/J mice treated with tobacco carcinogen NNK to a source-backed effect.
+- **Caution:** Do not overread this as settled: k=1 from this paper; confirm extraction, comparator, and repeatability before treating it as a broad claim.
+- **Next question:** What independent receipt would confirm this signal and what specific result would falsify it?
 
 ---
 
@@ -95,8 +95,8 @@
   · DOI: `10.1158/0008-5472.can-09-2782`
 - **Validator:** researka-tier2
 
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+- **Why it matters:** This is worth checking because it ties combination of metformin and 2-deoxyglucose in LNCaP prostate cancer cells to a source-backed effect.
+- **Caution:** Do not overread this as settled: k=1 from this paper; confirm extraction, comparator, and repeatability before treating it as a broad claim.
+- **Next question:** What independent receipt would confirm this signal and what specific result would falsify it?
 
 ---

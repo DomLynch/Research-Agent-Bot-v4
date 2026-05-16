@@ -34,6 +34,8 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from agent.signal_memo_writer import write_signal_memo  # isort: skip
+
 
 _LABEL_MAP = {
     "survives": "evidence_backed_signal",
@@ -456,6 +458,7 @@ def main() -> int:
         )
         (run_dir / "curation_brief.md").write_text(brief, encoding="utf-8")
         brief_text = brief
+    memo_path, memo_text = write_signal_memo(run_dir, signal_text=text)
     # Update MANIFEST if present
     manifest_path = run_dir / "MANIFEST.json"
     if manifest_path.exists():
@@ -466,6 +469,9 @@ def main() -> int:
                 if isinstance(files, dict):
                     files["signal_post_md"] = {
                         "name": out_path.name, "sha256": _sha256(text),
+                    }
+                    files["alpha_memo_md"] = {
+                        "name": memo_path.name, "sha256": _sha256(memo_text),
                     }
                     if brief_text:
                         files["curation_brief_md"] = {

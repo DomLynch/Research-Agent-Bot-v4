@@ -260,18 +260,32 @@ def _editorial_block(
     caution, next_question. Universal — sub_topic + structural counts
     only."""
     enrich = mimo_enrichment or {}
+    cues = set(alpha_cues(fact))
+    population = str(fact.get("population") or "").strip()
+    intervention = str(fact.get("intervention") or "").strip()
+    context = (
+        f"{intervention} in {population}"
+        if intervention and intervention != "—" and population and population != "—"
+        else f"a measured `{sub_topic}` signal"
+    )
     why = enrich.get("why_it_matters") or (
-        f"Direct evidence in the `{sub_topic}` sub-topic; "
-        f"informs whether the finding generalises beyond a single study."
+        "This is worth checking because "
+        + (
+            "it reaches a hard outcome rather than stopping at a proxy."
+            if "functional_endpoint" in cues else
+            "it cuts against a simple one-direction story."
+            if "contrast" in cues else
+            f"it ties {context} to a source-backed effect."
+        )
     )
     caution = enrich.get("caution") or (
-        f"Single trial / single subgroup (k={1 + supp_count} biomarker"
-        f"{'s' if supp_count else ''} from one paper); replication "
-        "across independent cohorts required."
+        f"Do not overread this as settled: k={1 + supp_count} from this "
+        "paper; confirm extraction, comparator, and repeatability before "
+        "treating it as a broad claim."
     )
     nxt = enrich.get("next_question") or (
-        "What sub-populations, doses, or timepoints remain "
-        "underexplored for this finding?"
+        "What independent receipt would confirm this signal and what "
+        "specific result would falsify it?"
     )
     return (
         f"- **Why it matters:** {why}\n"

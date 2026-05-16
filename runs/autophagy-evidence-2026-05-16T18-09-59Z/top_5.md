@@ -26,9 +26,9 @@
   · DOI: `10.1152/ajpcell.00123.2019`
 - **Validator:** researka-tier2
 
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+- **Why it matters:** This is worth checking because it ties traumatic freeze injury in mice to a source-backed effect.
+- **Caution:** Do not overread this as settled: k=1 from this paper; confirm extraction, comparator, and repeatability before treating it as a broad claim.
+- **Next question:** What independent receipt would confirm this signal and what specific result would falsify it?
 
 ---
 
@@ -47,9 +47,9 @@
   · DOI: `10.1158/1535-7163.mct-11-0606`
 - **Validator:** researka-tier2
 
-- **Why it matters:** Direct evidence in the `mechanism` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+- **Why it matters:** This is worth checking because it ties MK-2206 + gefitinib with autophagy inhibition (beclin 1 silencing or 3-MA) in glioma cells to a source-backed effect.
+- **Caution:** Do not overread this as settled: k=1 from this paper; confirm extraction, comparator, and repeatability before treating it as a broad claim.
+- **Next question:** What independent receipt would confirm this signal and what specific result would falsify it?
 
 ---
 
@@ -68,8 +68,8 @@
   · DOI: `10.1128/mbio.01871-20`
 - **Validator:** —
 
-- **Why it matters:** Direct evidence in the `rate` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+- **Why it matters:** This is worth checking because it ties ESX-1 secretion system perturbation in intracellular Mtb in macrophages to a source-backed effect.
+- **Caution:** Do not overread this as settled: k=1 from this paper; confirm extraction, comparator, and repeatability before treating it as a broad claim.
+- **Next question:** What independent receipt would confirm this signal and what specific result would falsify it?
 
 ---

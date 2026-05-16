@@ -235,7 +235,14 @@ def test_editorial_partial_mimo_keeps_templates_for_missing_fields() -> None:
         mimo_enrichment={"why_it_matters": "MiMo overrides why."},
     )
     assert "MiMo overrides why." in out
-    assert "Single trial" in out  # caution template still in place
+    assert "Do not overread" in out  # caution template still in place
+
+
+def test_editorial_fallback_kills_robotic_database_boilerplate() -> None:
+    out = _editorial_block(_fact("f/1"), "effect_size", 0)
+    assert "Direct evidence in the" not in out
+    assert "generalises beyond a single study" not in out
+    assert "source-backed effect" in out
 
 
 def test_rendered_card_shows_alpha_cues() -> None:

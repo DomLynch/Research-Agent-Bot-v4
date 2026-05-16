@@ -21,9 +21,9 @@
   · DOI: `10.1161/hypertensionaha.114.03510`
 - **Validator:** researka-tier2
 
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+- **Why it matters:** This is worth checking because it reaches a hard outcome rather than stopping at a proxy.
+- **Caution:** Do not overread this as settled: k=1 from this paper; confirm extraction, comparator, and repeatability before treating it as a broad claim.
+- **Next question:** What independent receipt would confirm this signal and what specific result would falsify it?
 
 ---
 
@@ -40,9 +40,9 @@
 - **Validator:** researka-tier2
 - **Same-trial supporting numerics:** 42.0% (Mixed-muscle protein fractional synthetic rate increased by )
 
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=2 biomarkers from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+- **Why it matters:** This is worth checking because it ties BFR exercise (control) in sixteen healthy young men (CON group) to a source-backed effect.
+- **Caution:** Do not overread this as settled: k=2 from this paper; confirm extraction, comparator, and repeatability before treating it as a broad claim.
+- **Next question:** What independent receipt would confirm this signal and what specific result would falsify it?
 
 ---
 
@@ -58,9 +58,9 @@
   · DOI: `10.1158/1940-6207.capr-20-0181`
 - **Validator:** researka-tier2
 
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+- **Why it matters:** This is worth checking because it ties caloric-restriction diet in overweight/obese, healthy, postmenopausal women to a source-backed effect.
+- **Caution:** Do not overread this as settled: k=1 from this paper; confirm extraction, comparator, and repeatability before treating it as a broad claim.
+- **Next question:** What independent receipt would confirm this signal and what specific result would falsify it?
 
 ---
 
@@ -76,9 +76,9 @@
   · DOI: `10.1158/0008-5472.can-16-3125`
 - **Validator:** researka-tier2
 
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+- **Why it matters:** This is worth checking because it ties voluntary running wheel exercise in tumor-bearing mice (MDA-MB-231 xenograft) to a source-backed effect.
+- **Caution:** Do not overread this as settled: k=1 from this paper; confirm extraction, comparator, and repeatability before treating it as a broad claim.
+- **Next question:** What independent receipt would confirm this signal and what specific result would falsify it?
 
 ---
 
@@ -94,8 +94,8 @@
   · DOI: `10.1152/japplphysiol.01110.2016`
 - **Validator:** researka-tier2
 
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+- **Why it matters:** This is worth checking because it ties fatiguing plantar flexion exercise (from 0.5 to 7 kg for up to 14 min) in patients with peripheral artery disease and age-matched healthy controls to a source-backed effect.
+- **Caution:** Do not overread this as settled: k=1 from this paper; confirm extraction, comparator, and repeatability before treating it as a broad claim.
+- **Next question:** What independent receipt would confirm this signal and what specific result would falsify it?
 
 ---

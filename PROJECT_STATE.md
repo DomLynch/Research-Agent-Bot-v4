@@ -82,6 +82,25 @@ scoring, thresholds, and digest schema stay put.
 12. ✅ Tests (unit + golden) + supplement plugins + cutover validation
 
 ## Current Sprint
+**Sprint 84 shipped** — alpha memo product layer:
+- `agent/signal_memo_writer.py` renders `alpha_memo.md` from existing
+  run receipts: `signal_post.md`, `frontier_review.json`,
+  `opportunities_gate.json`, `fact_lanes.json`, `top_5.md`, and
+  `all_facts.json`. No new LLM call; code uses structure only.
+- `scripts/build_signal_post.py` now writes `alpha_memo.md` and records
+  it in `MANIFEST.json`, so every curator cycle has a publishable
+  memo surface in addition to raw Top cards and the signal post.
+- `topic_packs/publication.toml` owns author / ORCID / venue / license
+  / version / canonical-url defaults for the memo provenance block.
+  This keeps publication metadata in data, not runtime code.
+- `scripts/build_topic_evidence_run.py` replaced the robotic
+  deterministic Top-card fallback (`Direct evidence ... generalises`)
+  with cue-aware universal wording around why it matters, caution, and
+  falsifying next receipt.
+- Current Sprint 83 run folders were refreshed in place. Each retained
+  `2026-05-16T18-*` evidence run now has `alpha_memo.md`, manifest
+  hash coverage, and no old Top-card boilerplate.
+
 **Sprint 83 shipped** — longevity alpha Top 5 scoring pass:
 - `agent/alpha_selector.py` now exposes deterministic `alpha_cues()`
   and clamps positive/negative weighted cues to 0..100. Code remains

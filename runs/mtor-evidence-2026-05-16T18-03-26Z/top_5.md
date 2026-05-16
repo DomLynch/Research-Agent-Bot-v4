@@ -21,9 +21,9 @@
   · DOI: `10.4049/jimmunol.1201767`
 - **Validator:** researka-tier2
 
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+- **Why it matters:** This is worth checking because it reaches a hard outcome rather than stopping at a proxy.
+- **Caution:** Do not overread this as settled: k=1 from this paper; confirm extraction, comparator, and repeatability before treating it as a broad claim.
+- **Next question:** What independent receipt would confirm this signal and what specific result would falsify it?
 
 ---
 
@@ -39,8 +39,8 @@
   · DOI: `10.1158/1940-6207.capr-10-0055`
 - **Validator:** researka-tier2
 
-- **Why it matters:** Direct evidence in the `effect_size` sub-topic; informs whether the finding generalises beyond a single study.
-- **Caution:** Single trial / single subgroup (k=1 biomarker from one paper); replication across independent cohorts required.
-- **Next question:** What sub-populations, doses, or timepoints remain underexplored for this finding?
+- **Why it matters:** This is worth checking because it ties intraperitoneal metformin in A/J mice treated with tobacco carcinogen NNK to a source-backed effect.
+- **Caution:** Do not overread this as settled: k=1 from this paper; confirm extraction, comparator, and repeatability before treating it as a broad claim.
+- **Next question:** What independent receipt would confirm this signal and what specific result would falsify it?
 
 ---
