@@ -133,10 +133,20 @@ def _run_topic_pipeline(
         return TopicResult(topic=topic, velocity=velocity, status="failed",
                             run_dir="", signal_label="",
                             notes="no run_dir produced by build step")
-    _run_step([py, "scripts/run_opportunities_gate.py",
-               "--run", str(run_dir)], "gate")
-    _run_step([py, "scripts/build_signal_post.py",
-               "--run", str(run_dir)], "signal")
+    # Sprint 68: capture downstream return codes so cron can see
+    # partial failures (gate or signal step failed) instead of
+    # silently reporting status='ran'.
+    gate_ok, gate_last = _run_step(
+        [py, "scripts/run_opportunities_gate.py", "--run", str(run_dir)],
+        "gate")
+    signal_ok, signal_last = _run_step(
+        [py, "scripts/build_signal_post.py", "--run", str(run_dir)],
+        "signal")
+    downstream_notes: list[str] = []
+    if not gate_ok:
+        downstream_notes.append(f"gate_step_failed: {gate_last[:120]}")
+    if not signal_ok:
+        downstream_notes.append(f"signal_step_failed: {signal_last[:120]}")
     label = ""
     sig_path = run_dir / "signal_post.md"
     if sig_path.exists():
@@ -153,10 +163,12 @@ def _run_topic_pipeline(
                 break
         if not label and "# No signal" in txt:
             label = "no_signal"
+    status = "partial_failure" if downstream_notes else "ran"
     return TopicResult(
-        topic=topic, velocity=velocity, status="ran",
+        topic=topic, velocity=velocity, status=status,
         run_dir=str(run_dir.relative_to(_ROOT)),
-        signal_label=label or "unknown", notes="",
+        signal_label=label or "unknown",
+        notes="; ".join(downstream_notes),
     )
 
 

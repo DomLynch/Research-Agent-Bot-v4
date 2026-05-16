@@ -47,6 +47,21 @@ _SAMPLE_SIZE_MARKERS = ("n=", "n =", "participants", "subjects",
 # unknown. Fixes the auditor's Apc(1638N/+) binding case.
 _PAIRED_COMP_MARKERS = (" vs ", " vs. ", " versus ", "±", " ± ")
 
+# Ratio units (Sprint 68) — universal epi statistics. OR, HR, RR,
+# AOR, AHR, IRR, ROR, SMR, IPR. When `units` field is one of these,
+# the value is an effect-size ratio. Auditor: OR=15.5 retrospective
+# vs OR=1.58 prospective was being demoted to 'unknown'.
+_RATIO_UNITS = frozenset([
+    "or", "hr", "rr", "aor", "ahr", "irr", "ror", "smr", "ipr",
+])
+
+# P-value prefix markers (Sprint 68) — when ANY of these appear
+# immediately before the value in the phrase, override paired-
+# comparison and call it p_value regardless of magnitude. Auditor:
+# 'p = 2.98 × 10^-9 for highest vs lowest quintile' was promoted to
+# effect_size because 'vs' fired before p-prefix was checked.
+_PVALUE_PREFIX_MARKERS = ("p=", "p =", "p<", "p <", "p<=", "p <=")
+
 # Roles that actually constitute a research finding
 _REAL_FINDING_ROLES = frozenset(["effect_size", "fold_change", "correlation"])
 
@@ -64,6 +79,8 @@ def classify_numeric_role(
         return "dose"
     if u in _CONC_UNITS:
         return "concentration"
+    if u in _RATIO_UNITS:
+        return "effect_size"
     if u == "%":
         return "regimen" if any(m in ctx for m in _REGIMEN_MARKERS) \
             else "effect_size"
@@ -79,6 +96,11 @@ def classify_numeric_role(
     if (value is not None and value == int(value)
             and any(m in ctx for m in _SAMPLE_SIZE_MARKERS)):
         return "sample_size"
+    # P-value prefix check (Sprint 68): if 'p=' / 'p<' appears in the
+    # phrase context, it's a p-value regardless of magnitude — overrides
+    # the paired-comparison fallback below.
+    if any(m in ctx for m in _PVALUE_PREFIX_MARKERS):
+        return "p_value"
     # Paired-comparison fallback (Sprint 67): a unitless positive
     # number appearing alongside 'vs' / 'versus' / '±' is an effect-
     # style comparison (e.g. macroadenoma count 1.33 vs 2.50).

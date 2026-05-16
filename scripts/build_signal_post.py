@@ -146,12 +146,19 @@ def _pick_lead_thesis(
 
 def _evidence_lines(
     audit: dict[str, Any], facts_by_id: dict[str, dict[str, Any]],
+    lane_verdicts: dict[str, str] | None = None,
     max_lines: int = 4,
 ) -> list[str]:
-    """Build evidence bullets from the cited facts of this thesis."""
+    """Build evidence bullets from the cited facts of this thesis.
+    Sprint 68: strict — when lane_verdicts provided, ONLY emit facts
+    classified as A_core or B_context. D_bad/C_noise facts are
+    excluded so we never publish unbound-but-cited evidence."""
     cited = audit.get("cited_fact_ids") or []
     out: list[str] = []
-    for fid in cited[:max_lines]:
+    for fid in cited:
+        if lane_verdicts is not None:
+            if lane_verdicts.get(str(fid)) not in _BINDABLE_LANES:
+                continue  # D_bad / C_noise / unknown: skip
         f = facts_by_id.get(str(fid))
         if not f:
             continue
@@ -167,6 +174,8 @@ def _evidence_lines(
                        if journal or year else "")
         out.append(f"- {phrase}" + (f" **[{val}]**" if val else "")
                    + attribution)
+        if len(out) >= max_lines:
+            break
     return out or ["- _No cited facts could be mapped to this thesis._"]
 
 
@@ -176,6 +185,7 @@ def _render_signal_post(
     facts_by_id: dict[str, dict[str, Any]],
     *,
     bound_count: int = -1,
+    lane_verdicts: dict[str, str] | None = None,
 ) -> str:
     label = (_alpha_label_for(lead_audit, bound_count) if lead_audit
              else "frontier_hypothesis")
@@ -221,7 +231,10 @@ def _render_signal_post(
     # back to MiMo's `tensions` array (which is unbound prose and
     # mis-attributes evidence to the thesis headline). Instead, emit
     # an explicit 'evidence_binding_failed' notice.
-    evidence_lines = (_evidence_lines(lead_audit, facts_by_id)
+    # Sprint 68 strict: pass lane_verdicts so _evidence_lines filters
+    # cited facts to A_core/B_context only (no D_bad evidence bullets).
+    evidence_lines = (_evidence_lines(lead_audit, facts_by_id,
+                                       lane_verdicts=lane_verdicts)
                       if lead_audit else [])
     bind_failed = (label == "evidence_binding_failed"
                    or not evidence_lines
@@ -294,7 +307,8 @@ def main() -> int:
         list(lead.get("cited_fact_ids") or []), facts_by_id, lane_verdicts,
     ) if lead else 0)
     text = _render_signal_post(topic, snapshot, review, lead, facts_by_id,
-                                bound_count=bound_count)
+                                bound_count=bound_count,
+                                lane_verdicts=lane_verdicts)
     out_path = run_dir / "signal_post.md"
     out_path.write_text(text, encoding="utf-8")
     # Update MANIFEST if present
