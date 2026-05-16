@@ -566,8 +566,25 @@ def main() -> int:
     review_model = "skipped"
     if not args.no_frontier and facts:
         papers = _fetch_papers(args.topic)
+        # Sprint 75 — split facts by lane before handing to the
+        # frontier reviewer. EVIDENCE (A_core/B_context) is citable;
+        # ALPHA HINTS (C_noise/D_bad_extraction) are inspiration only.
+        # Stops MiMo from picking provocative D_bad facts and forming
+        # theses the binding gate must reject downstream.
+        _bindable = {"A_core", "B_context"}
+        lane_by_id: dict[str, str] = {
+            v.fact_id: v.lane for v in classify_lanes(facts, args.topic)
+        }
+        evidence_facts, alpha_hints = [], []
+        for f in facts:
+            lane = lane_by_id.get(str(f.get("fact_id") or ""))
+            if lane in _bindable:
+                evidence_facts.append(f)
+            elif lane is not None:
+                alpha_hints.append(f)
         review = run_frontier_review(
-            topic=args.topic, snapshot_utc=ts, facts=facts,
+            topic=args.topic, snapshot_utc=ts,
+            evidence_facts=evidence_facts, alpha_hints=alpha_hints,
             papers=papers or None, settings=load_settings(),
         )
         review_model = review.model

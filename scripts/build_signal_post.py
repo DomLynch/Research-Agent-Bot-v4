@@ -54,12 +54,15 @@ def _sha256(text: str) -> str:
 def _alpha_label_for(
     audit: dict[str, Any],
     bound_a_or_b_count: int = -1,
+    has_curation_hints: bool = False,
 ) -> str:
     """Map gate verdict + flags + binding state into a Researka alpha
     label. When bound_a_or_b_count is provided AND zero, override the
-    label to 'evidence_binding_failed' — Sprint 66 source-binding
-    lock: thesis idea may be sharp but its cited facts are missing
-    or D_bad, so the post is not publishable as written."""
+    label to surface the binding gap. Sprint 75: when MiMo provided
+    actionable `next_extractions`, prefer the constructive
+    `curation_needed` label (= 'thesis has merit, curate these N
+    missing facts to unlock publish'); otherwise fall back to the
+    legacy `evidence_binding_failed` notice."""
     status = str(audit.get("status") or "")
     flags = audit.get("blocking_flags") or []
     base = _LABEL_MAP.get(status, "frontier_hypothesis")
@@ -68,7 +71,8 @@ def _alpha_label_for(
                 else "speculative_alpha")
     # Source-binding lock: override when we have explicit binding info
     if bound_a_or_b_count == 0 and base != "discard":
-        return "evidence_binding_failed"
+        return "curation_needed" if has_curation_hints else \
+            "evidence_binding_failed"
     return base
 
 
@@ -116,6 +120,13 @@ def _confidence_human(label: str) -> str:
         "speculative_alpha":
             "**Speculative alpha.** Counter-narrative signal worth "
             "noting; underlying evidence is thin or single-study.",
+        "curation_needed":
+            "**Curation needed.** The thesis idea is sharp but its "
+            "cited facts did not bind to the A_core/B_context lane. "
+            "MiMo emitted actionable `next_extractions`; see "
+            "`curation_brief.md` for the small set of facts to verify "
+            "or harvest before this thesis can publish as evidence-"
+            "backed.",
         "evidence_binding_failed":
             "**Evidence binding failed.** The thesis idea may be "
             "sharp, but its cited facts either could not be located "

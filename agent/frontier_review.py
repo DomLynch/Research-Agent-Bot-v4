@@ -100,10 +100,31 @@ def _format_fact_line(i: int, f: dict[str, Any]) -> str:
 
 
 def _build_messages(
-    topic: str, facts: list[dict[str, Any]],
+    topic: str, evidence_facts: list[dict[str, Any]],
+    alpha_hints: list[dict[str, Any]],
     papers: list[dict[str, Any]] | None,
 ) -> list[dict[str, str]]:
-    facts_block = "\n".join(_format_fact_line(i, f) for i, f in enumerate(facts[:25]))
+    # Sprint 75 — evidence vs hints boundary. Theses may cite ONLY
+    # ids that appear in EVIDENCE FACTS (A_core / B_context lane).
+    # ALPHA HINTS (C_noise / D_bad_extraction) are inspiration only;
+    # MiMo may use them to populate next_extractions but never
+    # cited_fact_ids. This keeps the creative layer working inside
+    # the binding boundary instead of producing rejected theses.
+    evidence_block = "\n".join(
+        _format_fact_line(i, f) for i, f in enumerate(evidence_facts[:25]))
+    hints_block = ""
+    if alpha_hints:
+        # Hints get NO fact-id tag — only the canonical phrase + paper
+        # — so the model cannot accidentally cite them as evidence.
+        hint_lines = [
+            f"- {str(f.get('canonical_phrase') or '')[:200]} "
+            f"(paper={(f.get('source_paper') or {}).get('doi') or '?'})"
+            for f in alpha_hints[:25]
+        ]
+        hints_block = (
+            "\n\nALPHA HINTS (untagged — INSPIRATION ONLY, MAY NOT "
+            "BE CITED):\n" + "\n".join(hint_lines)
+        )
     papers_block = ""
     if papers:
         lines = []
@@ -128,12 +149,17 @@ def _build_messages(
         "3. If the evidence pool is too noisy or too narrow for a "
         "publishable thesis, say so — return empty theses and explain "
         "in the lens why.\n"
-        "4. Respond as VALID JSON only. No prose before or after."
+        "4. **cited_fact_ids must reference only ids from EVIDENCE "
+        "FACTS.** ALPHA HINTS are inspiration for `next_extractions` "
+        "only — never cite them. A thesis whose citations are all "
+        "hints will be rejected at the binding gate.\n"
+        "5. Respond as VALID JSON only. No prose before or after."
     )
     user_msg = (
         f"TOPIC: {topic}\n"
-        f"FACTS ({len(facts)} total, top 25 by deterministic score):\n"
-        f"{facts_block}{papers_block}\n\n"
+        f"EVIDENCE FACTS ({len(evidence_facts)} A/B-bound, top 25; "
+        f"these are the ONLY ids you may cite):\n"
+        f"{evidence_block}{hints_block}{papers_block}\n\n"
         f"Required JSON schema:\n{_SCHEMA}"
     )
     return [{"role": "system", "content": sys_msg},
@@ -254,21 +280,29 @@ def _parse(raw: str) -> dict[str, Any]:
 
 
 def run_frontier_review(
-    *, topic: str, snapshot_utc: str, facts: list[dict[str, Any]],
+    *, topic: str, snapshot_utc: str,
+    evidence_facts: list[dict[str, Any]],
+    alpha_hints: list[dict[str, Any]] | None = None,
     papers: list[dict[str, Any]] | None, settings: Settings,
     max_tokens: int = 4000,
 ) -> FrontierReview:
     """Single MiMo call (Gemma fallback) -> structured review.
 
+    Sprint 75: evidence/hints boundary. `evidence_facts` are
+    A_core/B_context lane facts MiMo may cite. `alpha_hints` are
+    C_noise/D_bad facts surfaced for inspiration only — they may
+    inform `next_extractions` but never `cited_fact_ids`.
+
     Never raises. On config / HTTP / JSON failure returns an empty
     FrontierReview with model='error:<reason>' so the caller can write
     the artifact and audit it.
     """
-    if not facts:
+    hints = list(alpha_hints or [])
+    if not evidence_facts and not hints:
         return _empty(topic, snapshot_utc, "no_facts")
     if not settings.writer_configured:
         return _empty(topic, snapshot_utc, "writer_not_configured")
-    messages = _build_messages(topic, facts, papers)
+    messages = _build_messages(topic, evidence_facts, hints, papers)
     try:
         resp = call_writer_with_fallback(
             settings, messages, temperature=0.4, max_tokens=max_tokens,
