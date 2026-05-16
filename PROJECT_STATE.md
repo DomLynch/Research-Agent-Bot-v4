@@ -109,6 +109,23 @@ strict binding lock). One-command autonomous curator cycle via
   `runs/_topics_discovery/2026-05-16T10-22-24Z.json`.
 - `PROJECT_STATE.md`, `AGENTS.md`, and `scripts/loc_gate.sh` now agree
   on the 11,700 LOC ceiling and current Sprint 71 state.
+- `agent/numeric_role_classifier.py` universal-marker sweep — dropped
+  biomedical/clinical-specific markers that leaked into the role
+  classifier during Sprint 64:
+  * `_REGIMEN_MARKERS`: removed `"feeding"`, `"feed"`, `"of ad lib"`,
+    `"of ad libitum"` (animal-husbandry Latin). Kept universal
+    `"restriction"`, `"restricted"`, `"diet"`, `"conditions"`,
+    `"regimen"`, `"protocol"`.
+  * `_SAMPLE_SIZE_MARKERS`: removed `"patients"`, `"volunteers"`
+    (clinical-trial vocabulary). Kept universal `"n="`, `"n ="`,
+    `"participants"`, `"subjects"`.
+  * 7 new tests in `tests/test_numeric_role_classifier.py` cover
+    carbon-restriction (climate), budget-protocol (public finance),
+    engineering-load (engineering), training-regimen (sports),
+    survey-respondents (social science), economics-subjects, plus a
+    negative test that locks the dropped markers as no-ops. Closes
+    the universal-no-hardcoding contract that the 2026-05-16 audit
+    flagged.
 
 **Sprint 70 (shipped) added cross-topic paper anchorage dampening:**
 when the same paper (by DOI / title key) sits in M ≥ 3 topics' top-K

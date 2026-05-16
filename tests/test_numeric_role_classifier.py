@@ -174,3 +174,71 @@ def test_minute_units_classify_as_duration() -> None:
     assert classify_numeric_role(
         30.0, "min", "treatment for 30 min",
     ) == "duration"
+
+
+# ============= Sprint 71 — universal regimen / sample-size =============
+
+def test_universal_carbon_restriction_is_regimen() -> None:
+    """Climate-policy regimen: '40% carbon restriction' uses the
+    universal 'restriction' marker — not biomedical."""
+    assert classify_numeric_role(
+        40.0, "%", "Sectoral 40% carbon restriction was imposed",
+    ) == "regimen"
+
+
+def test_universal_budget_protocol_is_regimen() -> None:
+    """Public-finance regimen: 'budget protocol' fires the universal
+    'protocol' marker."""
+    assert classify_numeric_role(
+        25.0, "%", "the 25% austerity protocol applied to ministries",
+    ) == "regimen"
+
+
+def test_universal_engineering_load_conditions_is_regimen() -> None:
+    """Engineering regimen: '70% load conditions' — 'conditions' is
+    universal across stress-test, climate, training domains."""
+    assert classify_numeric_role(
+        70.0, "%", "beam tested under 70% load conditions",
+    ) == "regimen"
+
+
+def test_universal_training_regimen_marker() -> None:
+    """Sports / training: '60% VO2max regimen' — 'regimen' is
+    universal."""
+    assert classify_numeric_role(
+        60.0, "%", "athletes followed a 60% VO2max regimen",
+    ) == "regimen"
+
+
+def test_universal_survey_sample_size_via_n_marker() -> None:
+    """Social-science / survey: 'respondents (n=2400) reported' —
+    'n=' is universal, even though 'respondents' isn't in the marker
+    set. The structural 'n=' notation is sufficient."""
+    assert classify_numeric_role(
+        2400.0, "",
+        "respondents (n=2400) reported a 12% drop in confidence",
+    ) == "sample_size"
+
+
+def test_universal_economics_subjects_sample_size() -> None:
+    """Behavioural economics: 'subjects (n=500)' uses two universal
+    markers."""
+    assert classify_numeric_role(
+        500.0, "", "subjects in the field experiment (n=500)",
+    ) == "sample_size"
+
+
+def test_biomedical_specific_markers_no_longer_in_set() -> None:
+    """Sprint 71: 'patients' / 'volunteers' / 'feeding' / 'ad lib'
+    were dropped from the marker sets. A phrase with ONLY those
+    words (no n=, no participants, no restriction) must NOT
+    classify as sample_size or regimen — the role classifier is now
+    silo-agnostic. Universal-no-hardcoding contract enforced."""
+    # 'patients' alone no longer triggers sample_size.
+    assert classify_numeric_role(
+        300.0, "", "treated patients showed improvement",
+    ) != "sample_size"
+    # 'feeding' alone no longer triggers regimen.
+    assert classify_numeric_role(
+        70.0, "%", "ad libitum feeding at 70% calories",
+    ) != "regimen"
