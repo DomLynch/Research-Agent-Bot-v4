@@ -1,0 +1,61 @@
+{
+  "topic": "rapamycin",
+  "snapshot_utc": "2026-05-16T16-09-36Z",
+  "claim_count": 6,
+  "claims": [
+    {
+      "claim_text": "3 months of rapamycin extended remaining lifespan by ~60% in middle-aged mice",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.7554/eLife.16351"
+      ]
+    },
+    {
+      "claim_text": "rapamycin reduced 90th-percentile mortality by 14% in females (Harrison 2009 NIA-ITP, 14 ppm)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/nature08221"
+      ]
+    },
+    {
+      "claim_text": "RAD001 improved influenza vaccine response by ~20% in the elderly",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1126/scitranslmed.3009892"
+      ]
+    },
+    {
+      "claim_text": "rapamycin at 42 ppm extended male median lifespan by 23%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.12194"
+      ]
+    },
+    {
+      "claim_text": "rapamycin at 42 ppm extended female median lifespan by 26%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.12194"
+      ]
+    },
+    {
+      "claim_text": "3 months of rapamycin extended median lifespan by 52% in male middle-aged mice",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.7554/eLife.16351"
+      ]
+    }
+  ]
+}

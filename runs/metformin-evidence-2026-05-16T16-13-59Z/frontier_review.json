@@ -1,0 +1,39 @@
+{
+  "topic": "metformin",
+  "snapshot_utc": "2026-05-16T16-13-59Z",
+  "model": "mimo-v2.5-pro",
+  "lens": "Framing metformin's anti-cancer potential through the paradox of robust preclinical efficacy at high doses versus inconsistent clinical epidemiology, highlighting dose-response relationships, combination strategies, and patient metabolic phenotypes as critical translational determinants.",
+  "known_to_ignore": [
+    "Metformin reduces overall cancer incidence and mortality in diabetic patients (facts 1110, 1111)",
+    "Metformin is an established glucose-lowering agent with weight loss effects (facts 63845, 17869)",
+    "Metformin activates mTOR inhibition in preclinical models (fact 2848)"
+  ],
+  "tensions": [
+    "Preclinical inhibition of colorectal cancer PDX tumors at 150 mg/kg metformin (fact 35442) versus no epidemiological association in a large diabetic cohort (fact 11416)",
+    "Metformin monotherapy alone shows no significant effect on inflammatory markers in cancer survivors (fact 22120) versus significant reduction when combined with exercise (facts 22118, 22119)"
+  ],
+  "gaps": [
+    "Efficacy of metformin in non-diabetic cancer patients at human-relevant doses, as most evidence derives from diabetic populations",
+    "Synergistic effects of metformin with boswellic acid nanoparticles (fact 32860) in human colorectal or pancreatic cancer trials",
+    "Role of mTOR inhibition (fact 2848) as a predictive biomarker for metformin response in human tumors"
+  ],
+  "theses": [
+    {
+      "title": "Translational Discrepancy in Metformin's Anti-Colorectal Cancer Efficacy: Dose, Model, and Population Factors",
+      "paper_type": "evidence-gap",
+      "novelty": 80,
+      "evidence_strength": 60,
+      "reviewer_risk": 50,
+      "opportunity_score": 96,
+      "rationale": "This thesis is publishable because it synthesizes conflicting preclinical and epidemiological evidence to identify specific factors (e.g., dose escalation, non-diabetic cohorts) that may explain metformin's inconsistent anti-cancer effects, guiding future trial design.",
+      "cited_fact_ids": [
+        "35442",
+        "11416",
+        "2848"
+      ]
+    }
+  ],
+  "reviewer_objections": [],
+  "next_extractions": [],
+  "raw_response": "{\n  \"lens\": \"Framing metformin's anti-cancer potential through the paradox of robust preclinical efficacy at high doses versus inconsistent clinical epidemiology, highlighting dose-response relationships, combination strategies, and patient metabolic phenotypes as critical translational determinants.\",\n  \"known_to_ignore\": [\n    \"Metformin reduces overall cancer incidence and mortality in diabetic patients (facts 1110, 1111)\",\n    \"Metformin is an established glucose-lowering agent with weight loss effects (facts 63845, 17869)\",\n    \"Metformin activates mTOR inhibition in preclinical models (fact 2848)\"\n  ],\n  \"tensions\": [\n    \"Preclinical inhibition of colorectal cancer PDX tumors at 150 mg/kg metformin (fact 35442) versus no epidemiological association in a large diabetic cohort (fact 11416)\",\n    \"Metformin monotherapy alone shows no significant effect on inflammatory markers in cancer survivors (fact 22120) versus significant reduction when combined with exercise (facts 22118, 22119)\"\n  ],\n  \"gaps\": [\n    \"Efficacy of metformin in non-diabetic cancer patients at human-relevant doses, as most evidence derives from diabetic populations\",\n    \"Synergistic effects of metformin with boswellic acid nanoparticles (fact 32860) in human colorectal or pancreatic cancer trials\",\n    \"Role of mTOR inhibition (fact 2848) as a predictive biomarker for metformin response in human tumors\"\n  ],\n  \"theses\": [\n    {\n      \"title\": \"Translational Discrepancy in Metformin's Anti-Colorectal Cancer Efficacy: Dose, Model, and Population Factors\",\n      \"paper_type\": \"evidence-gap\",\n      \"novelty\": 80,\n      \"evidence_strength\": 60,\n      \"reviewer_risk\": 50,\n      \"rationale\": \"This thesis is publishable because it synthesizes conflicting preclinical and epidemiological evidence to identify specific factors (e.g., dose escalation, non-diabetic cohorts) that may explain metformin's inconsistent anti-cancer effects, guiding future trial design.\",\n      \"cited_fact_ids\": [\"35442\", \"11416\", \"2848\"]\n    }\n  ],\n  \"reviewer_objections\": [\n    \"Epidemiological null findings in colorectal"
+}

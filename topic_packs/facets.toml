@@ -1,0 +1,120 @@
+[facets]
+environmental_remediation = [
+  "adsorption",
+  "activated carbon",
+  "aqueous",
+  "wastewater",
+  "water treatment",
+  "removal",
+  "remediation",
+  "pollutant",
+  "pharmaceutical pollution",
+]
+
+preclinical_cancer = [
+  "tumor",
+  "tumour",
+  "cancer cell",
+  "cell line",
+  "xenograft",
+  "pdx",
+  "macroadenoma",
+  "adenoma",
+  "carcinogen",
+  "metastasis",
+]
+
+molecular_mechanism = [
+  "phosphorylation",
+  "pathway",
+  "signaling",
+  "expression",
+  "protein",
+  "kinase",
+  "mutation",
+  "receptor",
+  "transcription",
+  "inhibition of",
+  "activation of",
+]
+
+clinical_outcome = [
+  "patients",
+  "cohort",
+  "randomized",
+  "trial",
+  "mortality",
+  "survival",
+  "risk",
+  "hospital",
+  "diagnosis",
+  "incidence",
+]
+
+biomarker = [
+  "biomarker",
+  "crp",
+  "il-",
+  "tnf",
+  "glucose",
+  "insulin",
+  "hba1c",
+  "cholesterol",
+  "leptin",
+  "igf",
+  "neutrophil",
+]
+
+assay_or_detection = [
+  "assay",
+  "detect",
+  "detection",
+  "western blot",
+  "ec50",
+  "ic50",
+  "selectivity",
+  "sensitivity",
+  "specificity",
+]
+
+regimen_or_dose = [
+  "mg/kg",
+  "mg/ml",
+  "dose",
+  "dosing",
+  "treated with",
+  "administered",
+  "restricted",
+  "restriction",
+  "regimen",
+]
+
+model_context = [
+  "mice",
+  "mouse",
+  "rat",
+  "rats",
+  "model",
+  "wild-type",
+  "knockout",
+  "knock-in",
+  "hypomorphic",
+  "in vitro",
+  "in vivo",
+]
+
+[themes]
+intervention_signal = [
+  "clinical_outcome",
+  "preclinical_cancer",
+  "molecular_mechanism",
+  "biomarker",
+  "regimen_or_dose",
+  "model_context",
+]
+environmental_signal = [
+  "environmental_remediation",
+]
+technical_signal = [
+  "assay_or_detection",
+]

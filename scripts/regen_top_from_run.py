@@ -19,15 +19,19 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from agent.numeric_sanitizer import filter_artifacts
-from scripts.build_topic_evidence_run import (
+from build_topic_evidence_run import (
     _dedup_by_paper_subtopic,
     _interestingness,
     _rankable_facts_for_top,
     _render_md,
 )
+
+from agent.alpha_selector import alpha_score
+from agent.fact_facets import facet_counts, select_coherent_theme
+from agent.numeric_sanitizer import filter_artifacts
 
 
 def _sha256(text: str) -> str:
@@ -53,12 +57,16 @@ def main() -> int:
 
     facts, _drop = filter_artifacts(facts)
     rankable_facts = _rankable_facts_for_top(facts, topic)
-    scored = sorted(((_interestingness(f), f) for f in rankable_facts),
+    scored = sorted(((alpha_score(_interestingness(f), f), f) for f in rankable_facts),
                     key=lambda pair: pair[0], reverse=True)
     deduped = _dedup_by_paper_subtopic(scored)
-    top = deduped[: args.top]
+    selected_theme, top = select_coherent_theme(deduped, args.top)
+    all_facet_counts = facet_counts([f for _score, f in deduped])
     tier = str((facts[0].get("_tier") if facts else "") or "none")
-    md = _render_md(topic, ts, top, len(facts), tier, mimo_editorial=None)
+    md = _render_md(
+        topic, ts, top, len(facts), tier, mimo_editorial=None,
+        selected_theme=selected_theme, all_facet_counts=all_facet_counts,
+    )
 
     out_path = run / f"top_{args.top}.md"
     out_path.write_text(md, encoding="utf-8")
@@ -75,10 +83,12 @@ def main() -> int:
                     "name": out_path.name,
                     "sha256": _sha256(md),
                 }
-                manifest_path.write_text(
-                    json.dumps(manifest, indent=2),
-                    encoding="utf-8",
-                )
+            manifest["selected_theme"] = selected_theme
+            manifest["facet_counts"] = all_facet_counts
+            manifest_path.write_text(
+                json.dumps(manifest, indent=2),
+                encoding="utf-8",
+            )
     print(f"regenerated {out_path} ({len(top)} cards, "
           f"{len(_drop)} artifacts filtered)")
     return 0

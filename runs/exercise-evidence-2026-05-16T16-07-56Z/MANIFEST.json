@@ -1,0 +1,73 @@
+{
+  "topic": "exercise",
+  "snapshot_utc": "2026-05-16T16-07-56Z",
+  "top_n": 5,
+  "facts_inspected": 37,
+  "aggregated_claims": 36,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "mode": "alpha",
+  "selected_theme": "intervention_signal",
+  "facet_counts": {
+    "clinical_outcome": 6,
+    "preclinical_cancer": 1,
+    "molecular_mechanism": 1,
+    "model_context": 2
+  },
+  "numeric_artifacts_filtered": 12,
+  "pico_enrichment": {
+    "facts_inspected": 49,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "skipped_no_candidates"
+  },
+  "ranking": "alpha: deterministic validation*magnitude*precision*recency + data-driven contrast/subgroup boosts + theme coherence",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "337be64b4850d5cb64a03163811a5ecd30a6722143607917e07363659236a7e4"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "b58e5115487b6710202011c1ae79c1bfd534c2323a40ba6341dec235047cd46e"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "0b2a40b33c61c51f208c63622593450e994f6a8b57a929664ba438bdb6975ec3"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "9af82261cc13e0c80b1dd082e9555abf8bb11b25a944d8d90b98e19129b10d4f"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "5c764427930ef7e2d3aa43cdacc54ac8b1beae99b7f8da5848129cf57541f499"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "e1ff450555c36a7104fb088992812c2fb723a3646e6506a21db36f64bcf26f87"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "afb3fb85b8d0e23ddd4055e9f5956dd05df00caf4b795c8e1d016d23a0ffa12b"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "0599de5101476a9e2a8a3f02c853a89f9ab91e1251e28a8045c1e49c059bc806"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "c1db6331fc6e80a046e5b27050e01f8f21e83349c0417da327549114ddb29cc5"
+    },
+    "signal_post_md": {
+      "name": "signal_post.md",
+      "sha256": "d80c28577016b5637a25fba02bdc33b16ad22de274e46eb793a5bb4360400e22"
+    },
+    "curation_brief_md": {
+      "name": "curation_brief.md",
+      "sha256": "f871e0a713eae31e9b7ab3eeedce4daa87a30a5879421f56b337d84d48f3d9d6"
+    }
+  }
+}

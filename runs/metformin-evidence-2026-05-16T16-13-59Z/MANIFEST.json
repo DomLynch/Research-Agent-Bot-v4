@@ -1,0 +1,69 @@
+{
+  "topic": "metformin",
+  "snapshot_utc": "2026-05-16T16-13-59Z",
+  "top_n": 5,
+  "facts_inspected": 32,
+  "aggregated_claims": 31,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "mode": "alpha",
+  "selected_theme": "intervention_signal",
+  "facet_counts": {
+    "environmental_remediation": 1,
+    "clinical_outcome": 6,
+    "preclinical_cancer": 4,
+    "model_context": 1
+  },
+  "numeric_artifacts_filtered": 18,
+  "pico_enrichment": {
+    "facts_inspected": 50,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "mimo-v2.5-pro"
+  },
+  "ranking": "alpha: deterministic validation*magnitude*precision*recency + data-driven contrast/subgroup boosts + theme coherence",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "b00a6d4e786511887271877014944ca90872c1aca9e12bd57dd9cfa9260c3d4e"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "851e68534dd58c4a357274abdd52609830751e0af9eee61d3dd17b3511352275"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "ba6695b417d604285b7cb0eeb46a9821f4b13983e0dff8a7e8874535e7553873"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "85cbec9c570f2bb1a8cd191e1d3c55bdcc8049ba81272907ea4449156c700fd3"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "d98d5dbcca9697cb0c51ead7212f622daaf3de6acf40b059c458b2ccfd7d5aa6"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "ca20f4671629f71af92682884dfb6c89eac5d3ad9596901ef0d0a4602fb52d69"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "6202fdf2c97612c1230e9f08131f79b255cbead8e094374fbed5433202f0230e"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "e08b227a5fb5dc6623aa087c61757a556de145ca63a942331c0e0a933dd492b1"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "604a45447d706fd4afa11a3c2716c95c521bee29d8db5ef97b4a4e7b2e6870ff"
+    },
+    "signal_post_md": {
+      "name": "signal_post.md",
+      "sha256": "d92348449bb8d718323463b4ccac887cbdd788916a8f19b60215f1e837225ffd"
+    }
+  }
+}

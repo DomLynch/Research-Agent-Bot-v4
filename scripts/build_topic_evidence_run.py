@@ -30,6 +30,11 @@ import httpx
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from agent.alpha_selector import alpha_score
+from agent.fact_facets import (
+    facet_counts,
+    select_coherent_theme,
+)
 from agent.fact_lanes import LaneVerdict, classify_lanes
 from agent.frontier_review import (
     FrontierReview,
@@ -333,7 +338,9 @@ def _call_mimo_editorial(
 
 def _render_md(topic: str, ts: str, top: list[tuple[int, dict[str, Any]]],
                total_facts: int, tier: str,
-               mimo_editorial: dict[int, dict[str, str]] | None = None) -> str:
+               mimo_editorial: dict[int, dict[str, str]] | None = None,
+               selected_theme: str | None = None,
+               all_facet_counts: dict[str, int] | None = None) -> str:
     if tier == "tier1_canonical":
         source = (f"Researka DB Tier-1 canonical "
                   f"(`GET /api/v1/topics/{topic}/facts`) — "
@@ -350,9 +357,10 @@ def _render_md(topic: str, ts: str, top: list[tuple[int, dict[str, Any]]],
     use_lanes = len({s for s in sub_topics if s != "—"}) >= 2
     ranking_note = (
         "**Ranking:** validation * magnitude * precision * recency "
-        "(deterministic, no LLM). Same-paper + same-sub_topic findings "
-        "are collapsed; extra biomarkers from the same trial appear "
-        "as supporting numerics under the headline.\n"
+        "(deterministic, no LLM), then one coherent broad theme is selected "
+        "by aggregate score. Same-paper + same-sub_topic findings are "
+        "collapsed; extra biomarkers from the same trial appear as "
+        "supporting numerics under the headline.\n"
     )
     lines = [
         f"# Top {len(top)} interesting findings — {topic}",
@@ -362,6 +370,15 @@ def _render_md(topic: str, ts: str, top: list[tuple[int, dict[str, Any]]],
         f"**Facts inspected:** {total_facts}",
         ranking_note,
     ]
+    if selected_theme:
+        counts = all_facet_counts or {}
+        counts_txt = ", ".join(
+            f"{k}={v}" for k, v in sorted(counts.items())
+        ) or "unavailable"
+        lines.append(
+            f"**Selected theme:** `{selected_theme}` "
+            f"(facet counts: {counts_txt})\n",
+        )
     if use_lanes:
         lines.append(
             "**Sub-topic lanes detected:** facts grouped by `sub_topic` "
@@ -369,7 +386,9 @@ def _render_md(topic: str, ts: str, top: list[tuple[int, dict[str, Any]]],
         )
     lines.append("---")
 
-    def _emit_card(rank: int, score: int, f: dict[str, Any]) -> list[str]:
+    def _emit_card(
+        rank: int, score: int, f: dict[str, Any], editorial_idx: int,
+    ) -> list[str]:
         paper = f.get("source_paper") or {}
         doi = str(paper.get("doi") or "")
         title = str(paper.get("title") or "(no title)")
@@ -384,7 +403,7 @@ def _render_md(topic: str, ts: str, top: list[tuple[int, dict[str, Any]]],
         supp = supp_raw if isinstance(supp_raw, list) else []
         editorial = _editorial_block(
             f, sub_topic, len(supp),
-            (mimo_editorial or {}).get(rank - 1),
+            (mimo_editorial or {}).get(editorial_idx),
         )
         block: list[str] = [
             "",
@@ -419,14 +438,14 @@ def _render_md(topic: str, ts: str, top: list[tuple[int, dict[str, Any]]],
         for lane in seen_lanes:
             lane_label = lane if lane != "—" else "(no sub_topic)"
             lines.append(f"\n### Lane — `{lane_label}`\n")
-            for sc, f in top:
+            for original_idx, (sc, f) in enumerate(top):
                 if (str(f.get("sub_topic") or "").strip() or "—") != lane:
                     continue
                 rank += 1
-                lines += _emit_card(rank, sc, f)
+                lines += _emit_card(rank, sc, f, original_idx)
     else:
         for i, (sc, f) in enumerate(top, start=1):
-            lines += _emit_card(i, sc, f)
+            lines += _emit_card(i, sc, f, i - 1)
     return "\n".join(line for line in lines if line is not None) + "\n"
 
 
@@ -530,12 +549,13 @@ def main() -> int:
     # Top 5. Universal — syntactic shape only, no domain literals.
     facts, _artifact_facts = filter_artifacts(facts)
     rankable_facts = _rankable_facts_for_top(facts, args.topic)
-    scored = sorted(((_interestingness(f), f) for f in rankable_facts),
+    scored = sorted(((alpha_score(_interestingness(f), f), f) for f in rankable_facts),
                     key=lambda p: p[0], reverse=True)
     # Collapse same-paper + same-sub_topic duplicates so a single trial
     # can't monopolise the Top N (Sprint 60a).
     deduped = _dedup_by_paper_subtopic(scored)
-    top = deduped[: args.top]
+    selected_theme, top = select_coherent_theme(deduped, args.top)
+    all_facet_counts = facet_counts([f for _score, f in deduped])
     aggregated = _aggregate(facts)
 
     raw_path = out_dir / "all_facts.json"
@@ -554,7 +574,9 @@ def main() -> int:
                       if args.with_editorial else {})
     md_path = out_dir / f"top_{args.top}.md"
     md_text = _render_md(args.topic, ts, top, len(facts), tier,
-                         mimo_editorial=mimo_editorial)
+                         mimo_editorial=mimo_editorial,
+                         selected_theme=selected_theme,
+                         all_facet_counts=all_facet_counts)
     md_path.write_text(md_text, encoding="utf-8")
 
     files_manifest = {
@@ -618,10 +640,13 @@ def main() -> int:
                    "(Tier-2 fallback; topic filter on response)"),
         "frontier_model": review_model,
         "mode": args.mode,
+        "selected_theme": selected_theme,
+        "facet_counts": all_facet_counts,
         "numeric_artifacts_filtered": len(_artifact_facts),
         "pico_enrichment": (pico_result.as_dict() if pico_result
                             else {"model": "skipped_by_flag"}),
-        "ranking": "deterministic: validation*magnitude*precision*recency",
+        "ranking": ("alpha: deterministic validation*magnitude*precision*recency "
+                    "+ data-driven contrast/subgroup boosts + theme coherence"),
         "files": files_manifest,
     }
     (out_dir / "MANIFEST.json").write_text(

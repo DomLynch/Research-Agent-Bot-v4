@@ -1,0 +1,53 @@
+{
+  "topic": "exercise",
+  "snapshot_utc": "2026-05-16T16-07-56Z",
+  "input_pack": {
+    "topic": "exercise",
+    "a_core_count": 15,
+    "b_context_count": 1,
+    "excluded_counts": {
+      "C_noise": 0,
+      "D_bad_extraction": 21
+    },
+    "has_minimum_a_core": true,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Obesity as a Gatekeeper of Exercise-Induced Anabolic Signaling in Cancer Cachexia Prevention",
+      "status": "rejected",
+      "blocking_flags": [
+        "cites_d_bad_extraction:5",
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 66,
+      "capped_opportunity": 40,
+      "cited_fact_ids": [
+        "26391",
+        "26390",
+        "26392",
+        "15479",
+        "34833"
+      ]
+    },
+    {
+      "thesis_idx": 1,
+      "title": "Synergistic Targeting of Inflammatory-Angiogenic Crosstalk by Exercise and Metformin in Cancer Survivorship",
+      "status": "rejected",
+      "blocking_flags": [
+        "cites_d_bad_extraction:5",
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 83,
+      "capped_opportunity": 40,
+      "cited_fact_ids": [
+        "26391",
+        "26390",
+        "26392",
+        "25059",
+        "34833"
+      ]
+    }
+  ]
+}

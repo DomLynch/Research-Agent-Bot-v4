@@ -82,6 +82,20 @@ scoring, thresholds, and digest schema stay put.
 12. ✅ Tests (unit + golden) + supplement plugins + cutover validation
 
 ## Current Sprint
+**Sprint 79 shipped** — coherent alpha Top 5 curation layer:
+- Fixed render-time editorial leakage when lane grouping reorders cards;
+  each card now resolves MiMo editorial text by original fact index, not
+  rendered rank.
+- Added data-driven broad-theme grouping:
+  `agent/fact_facets.py` loads facet markers and theme groups from
+  `topic_packs/facets.toml`; code contains no domain vocabulary.
+- Added data-driven alpha boosts:
+  `agent/alpha_selector.py` loads contrast/subgroup markers from
+  `topic_packs/alpha_selection.toml`.
+- Regenerated via the normal curator cycle at 2026-05-16T16:02:45Z.
+  Current kept runs: autophagy, exercise, rapamycin, telomere,
+  metformin. `runs/latest` points to the newest metformin run.
+
 **Sprint 78 shipped** — fresh curator top-5 artifact refresh and run-folder cleanup:
 - Re-ran `scripts/run_curator_cycle.py --top 5 --cooldown-hours 0` on
   `main` at 2026-05-16T15:10:57Z.

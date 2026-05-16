@@ -1,0 +1,320 @@
+{
+  "topic": "telomere",
+  "snapshot_utc": "2026-05-16T16-11-07Z",
+  "claim_count": 35,
+  "claims": [
+    {
+      "claim_text": "In COVID-19 patients, lymphocyte count was inversely correlated with the proportion of telomeres shorter than 2 kb (p = .005).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/gerona/glab026"
+      ]
+    },
+    {
+      "claim_text": "endurance athletes have significantly longer (7.1%, 208-416 nt) leukocyte telomeres",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1152/japplphysiol.00587.2015"
+      ]
+    },
+    {
+      "claim_text": "association between increased telomere length and melanoma risk with odds ratio of 2.66 (95% confidence interval: 2.07-3.25).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/gcc.22669"
+      ]
+    },
+    {
+      "claim_text": "The variant allele of rs398652 was associated with a significantly reduced risk of bladder cancer (odds ratio = 0.81; 95% confidence interval, 0.67-0.97; P = 0.025)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-11-0063"
+      ]
+    },
+    {
+      "claim_text": "telomere length (TL) in FA-deficient (30 nmol/L) cultures was 26% longer than that of 3,000 nmol/L FA cultures",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-13-0264"
+      ]
+    },
+    {
+      "claim_text": "Longitudinal changes in psychologic distress were significantly associated with increased telomere length in CD14(+) population (r = -0.46, P = 0.043)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-12-0008"
+      ]
+    },
+    {
+      "claim_text": "DNA strand breaks, essentially absent in wild-type cells, increased with each successive terc-/- generation and correlated strongly with telomere length (R² = 0.9631)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1152/ajplung.90411.2008"
+      ]
+    },
+    {
+      "claim_text": "those in the first quartile had an OR of 0.43 (95% CI: 0.28-0.68; P(trend), 0.0003)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/0008-5472.can-11-1988"
+      ]
+    },
+    {
+      "claim_text": "age-adjusted odds ratios for shortest (Q4) versus longest (Q1) quartile of mean telomere length was 15.5 [95% CI, 11.6-20.8; p-het = 5.7 x 10(-75)] for breast cancer",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/0008-5472.can-09-4595"
+      ]
+    },
+    {
+      "claim_text": "Lymphocyte count was 0.91 ± 0.42 in COVID-19 patients and 1.50 ± 0.50 in non-COVID-19 patients (p < .001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/gerona/glab026"
+      ]
+    },
+    {
+      "claim_text": "comparable odds ratios (Q4 versus Q1) were 1.58 (95% CI, 0.75-3.31; p-het = 0.23) for breast cancer",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/0008-5472.can-09-4595"
+      ]
+    },
+    {
+      "claim_text": "Longer TL was associated with increased breast cancer risk [odds ratio (OR) 1.87, 95% confidence interval (CI) 1.38, 2.55]",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/gcc.22056"
+      ]
+    },
+    {
+      "claim_text": "Every working year as a welder was associated with 0.0066 units shorter telomeres (95% confidence interval -0.013 to -0.00053, P = 0.033).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/em.21958"
+      ]
+    },
+    {
+      "claim_text": "p = 2.98 × 10^-9 for highest vs. lowest quintile; p = 1.82 × 10^-10 as a continuous variable",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/ijc.31928"
+      ]
+    },
+    {
+      "claim_text": "those in the lowest quartile (shortest) had an almost twofold increased risk of incident diabetes (hazard ratio [HR] 1.83 [95% CI 1.26-2.66])",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2337/db13-0744"
+      ]
+    },
+    {
+      "claim_text": "identify one candidate meiotic driver in a centromere-linked region that shows an ∼8% increase in transmission frequency, corresponding to a ∼54:46 segregation ratio.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1534/genetics.116.197335"
+      ]
+    },
+    {
+      "claim_text": "Patients who evolved to MDS and AML showed marked progressive telomere attrition before the emergence of -7.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1182/blood-2014-10-607572"
+      ]
+    },
+    {
+      "claim_text": "higher Healthy Eating Index 2010 scores (β = 0.065, 95% CI: 0.018, 0.112; P-trend = 0.007) were each associated with longer telomere length in women",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/aje/kwy124"
+      ]
+    },
+    {
+      "claim_text": "TERRA expression was lower in sarcopenic participants compared to that in non-sarcopenic controls (5.18 ± 2.98 vs. 2.51 ± 1.89; p < 0.001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu12123766"
+      ]
+    },
+    {
+      "claim_text": "paternal age at birth is associated with longer TL in offspring (n = 2,023, P = 1.84 × 10(-6))",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1073/pnas.1202092109"
+      ]
+    },
+    {
+      "claim_text": "IQ1 mostly stains the nucleus, induces cell cycle arrest in G0/G1 phase, triggers apoptotic response in cancer cells, and activates caspases 3/7.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1021/acs.bioconjchem.7b00781"
+      ]
+    },
+    {
+      "claim_text": "Adult telomere length was positively correlated with their telomere length as nestling (r = 0.83).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1098/rspb.2013.3287"
+      ]
+    },
+    {
+      "claim_text": "In the comparison of the longest versus shortest third of TL, we observed a marginally positive association between longer TL and higher risk of total cancers [OR = 1.086; 95% CI, 0.952-1.238].",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1055-9965.epi-16-0968"
+      ]
+    },
+    {
+      "claim_text": "Telomerase activity was 54 per cent higher in stressed rats than in controls, and associated with stress-related physiological and behavioural outcomes.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1098/rsbl.2012.0747"
+      ]
+    },
+    {
+      "claim_text": "rTL values were 0.928 and 1.126 relative units (p = 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1177/0748233715601758"
+      ]
+    },
+    {
+      "claim_text": "patients with ALT-positive primary PanNETs had a shorter recurrence-free survival [HR = 3.38; 95% CI, 1.83-6.27; P < 0.001]",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1078-0432.ccr-16-1147"
+      ]
+    },
+    {
+      "claim_text": "No significant difference in mean age-adjusted LTL in late life (p = 0.845) was observed when comparing former male elite athletes and their age-matched controls.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "SHS was almost four times likely to be in the first quartile (odds ratio [OR] = 3.81; 95% confidence interval [CI] 2.21-6.56)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1089/omi.2017.0050"
+      ]
+    },
+    {
+      "claim_text": "Nestlings in enlarged broods achieved lower mass and lost 21% more telomere repeats relative to nestlings in reduced broods.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1098/rspb.2013.3287"
+      ]
+    },
+    {
+      "claim_text": "telomere length was a significant mediator of the relationship between rs398652 and bladder cancer (P = 0.013), explaining 14% of the effect",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-11-0063"
+      ]
+    },
+    {
+      "claim_text": "Age-dependent telomere attrition was faster in melanoma cases than controls (P = .01).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/gcc.22669"
+      ]
+    },
+    {
+      "claim_text": "shorter telomeres (P = 1 × 10^{-5}) in primary tumors from unrelated melanoma patients with (121) than without (170) somatic TERT promoter mutations",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/gcc.22669"
+      ]
+    },
+    {
+      "claim_text": "longer telomeres predict higher cancer risk across 22 species",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/mec.15870"
+      ]
+    },
+    {
+      "claim_text": "The exposure of Immortalized human foreskin fibroblast, primary human foreskin fibroblast and human hepatocellular carcinoma cells to 25 mM ethanol for one week moderately shortened telomeres in all cells.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/cells7100169"
+      ]
+    },
+    {
+      "claim_text": "Classic twin studies have shown that genetic components may contribute up to 80% of the heritability of telomere length",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-11-0063"
+      ]
+    }
+  ]
+}

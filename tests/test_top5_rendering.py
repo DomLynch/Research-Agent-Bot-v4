@@ -223,6 +223,32 @@ def test_editorial_partial_mimo_keeps_templates_for_missing_fields() -> None:
     assert "Single trial" in out  # caution template still in place
 
 
+def test_lane_render_keeps_editorial_bound_to_original_fact() -> None:
+    """Lane grouping reorders cards; MiMo editorial must still follow
+    the original fact index, not the rendered rank."""
+    top = [
+        (80, _fact("f/1", sub_topic="effect", phrase="alpha finding")),
+        (75, _fact("f/2", sub_topic="rate", doi="10.1/b",
+                   phrase="beta finding")),
+        (70, _fact("f/3", sub_topic="effect", doi="10.1/c",
+                   phrase="gamma finding")),
+    ]
+    md = _render_md(
+        "t", "ts", top, 3, "tier2_search",
+        mimo_editorial={
+            0: {"why_it_matters": "why alpha"},
+            1: {"why_it_matters": "why beta"},
+            2: {"why_it_matters": "why gamma"},
+        },
+    )
+    gamma = md.split("**Finding:** gamma finding", 1)[1].split("---", 1)[0]
+    beta = md.split("**Finding:** beta finding", 1)[1].split("---", 1)[0]
+    assert "why gamma" in gamma
+    assert "why beta" in beta
+    assert "why beta" not in gamma
+    assert "why gamma" not in beta
+
+
 # ============= Universal non-biomedical fixture =============
 
 def test_universal_non_biomedical_carbon_tax_dedup() -> None:

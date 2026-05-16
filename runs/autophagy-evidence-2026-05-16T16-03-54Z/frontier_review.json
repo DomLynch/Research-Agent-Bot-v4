@@ -1,0 +1,51 @@
+{
+  "topic": "autophagy",
+  "snapshot_utc": "2026-05-16T16-03-54Z",
+  "model": "mimo-v2.5-pro",
+  "lens": "The juxtaposition of autophagy-related lncRNAs as poor prognostic indicators in lung adenocarcinoma with autophagy's cytoprotective role in glioma therapy resistance reveals a context-dependent paradox where autophagy machinery is co-opted for divergent cellular outcomes, suggesting that therapeutic strategies must be tailored to specific disease mechanisms and genetic backgrounds.",
+  "known_to_ignore": [
+    "Autophagy is a conserved cellular degradation process",
+    "LncRNAs are regulators of gene expression in cancer",
+    "Inhibition of autophagy can sensitize cells to anticancer agents"
+  ],
+  "tensions": [
+    "Between the cytoprotective role of autophagy in glioma cells (fact 8399) and the association of autophagy-related lncRNAs with worse survival in lung adenocarcinoma (facts 7110, 7112), implying that autophagy's impact on prognosis is not uniformly protective but may depend on lncRNA-mediated regulation.",
+    "Between reduced autophagy flux in injured mouse muscles (fact 28274) and targeted selective autophagy of Mtb in macrophages (fact 5229), highlighting tissue-specific and pathogen-specific autophagy responses that may have conflicting implications for host defense versus repair."
+  ],
+  "gaps": [
+    "The mechanism by which autophagy-related lncRNAs influence survival in lung adenocarcinoma, such as through modulation of autophagy flux or cross-talk with oncogenic pathways.",
+    "The interplay between autophagy and immune response in bacterial infection versus tissue injury models, particularly how selective autophagy targeting differs from bulk flux changes."
+  ],
+  "theses": [
+    {
+      "title": "Context-Dependent Autophagy: lncRNA-Driven Prognosis in Lung Cancer Versus Cytoprotection in Glioma Therapy",
+      "paper_type": "evidence-gap",
+      "novelty": 85,
+      "evidence_strength": 75,
+      "reviewer_risk": 60,
+      "opportunity_score": 100,
+      "rationale": "This thesis synthesizes survival data from autophagy-related lncRNA models in lung adenocarcinoma with functional autophagy inhibition studies in glioma to uncover disease-specific autophagy roles, addressing a critical gap in personalized oncology where autophagy targeting may require genetic stratification.",
+      "cited_fact_ids": [
+        "7110",
+        "7112",
+        "8399"
+      ]
+    },
+    {
+      "title": "Autophagy in Host Defense and Tissue Repair: Contrasting Selective Targeting of Mtb with Flux Reduction in Muscle Injury",
+      "paper_type": "scoping-review",
+      "novelty": 70,
+      "evidence_strength": 60,
+      "reviewer_risk": 45,
+      "opportunity_score": 93,
+      "rationale": "By comparing the selective autophagy tagging of intracellular Mtb with reduced autophagy flux in traumatic muscle injury, this thesis explores conserved and divergent autophagy pathways that could inform therapeutic approaches for infectious diseases and degenerative conditions.",
+      "cited_fact_ids": [
+        "28274",
+        "5229"
+      ]
+    }
+  ],
+  "reviewer_objections": [],
+  "next_extractions": [],
+  "raw_response": "{\n  \"lens\": \"The juxtaposition of autophagy-related lncRNAs as poor prognostic indicators in lung adenocarcinoma with autophagy's cytoprotective role in glioma therapy resistance reveals a context-dependent paradox where autophagy machinery is co-opted for divergent cellular outcomes, suggesting that therapeutic strategies must be tailored to specific disease mechanisms and genetic backgrounds.\",\n  \"known_to_ignore\": [\"Autophagy is a conserved cellular degradation process\", \"LncRNAs are regulators of gene expression in cancer\", \"Inhibition of autophagy can sensitize cells to anticancer agents\"],\n  \"tensions\": [\"Between the cytoprotective role of autophagy in glioma cells (fact 8399) and the association of autophagy-related lncRNAs with worse survival in lung adenocarcinoma (facts 7110, 7112), implying that autophagy's impact on prognosis is not uniformly protective but may depend on lncRNA-mediated regulation.\", \"Between reduced autophagy flux in injured mouse muscles (fact 28274) and targeted selective autophagy of Mtb in macrophages (fact 5229), highlighting tissue-specific and pathogen-specific autophagy responses that may have conflicting implications for host defense versus repair.\"],\n  \"gaps\": [\"The mechanism by which autophagy-related lncRNAs influence survival in lung adenocarcinoma, such as through modulation of autophagy flux or cross-talk with oncogenic pathways.\", \"The interplay between autophagy and immune response in bacterial infection versus tissue injury models, particularly how selective autophagy targeting differs from bulk flux changes.\"],\n  \"theses\": [\n    {\n      \"title\": \"Context-Dependent Autophagy: lncRNA-Driven Prognosis in Lung Cancer Versus Cytoprotection in Glioma Therapy\",\n      \"paper_type\": \"evidence-gap\",\n      \"novelty\": 85,\n      \"evidence_strength\": 75,\n      \"reviewer_risk\": 60,\n      \"rationale\": \"This thesis synthesizes survival data from autophagy-related lncRNA models in lung adenocarcinoma with functional autophagy inhibition studies in glioma to uncover disease-specific autophagy roles, addressing a critical gap in personalized oncology where autophagy targeting may require genetic stratification.\",\n      \"cited_fact_ids\": [\"7110\", \"7112\", \"8399\"]\n    },\n    {\n      \"title\": \"Autophagy in Host Defense and Tissue Repair: Contrasting Selective Targeting of Mtb with Flux Reduction in Muscle Injury\",\n      \"paper_type\": \"scoping-review\",\n      \"novelty\": 70,\n      \"evidence_strength\": 60,\n      \"reviewer_risk\": 45,\n      \"rationale\": \"By comparing the selective autophagy tagging of intracellular Mtb with reduced autophagy flux in traumatic muscle injury, this thesis explores conserved and divergent autophagy pathways that could inform therapeutic approaches for infectious diseases and degenerative conditions.\",\n      \"cited_fact_ids\": [\"28274\", \"5229\"]\n    }\n  ],\n  \"reviewer_objections\": [\"For the first thesis, the autophagy-related lncRNA"
+}

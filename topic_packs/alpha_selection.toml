@@ -1,0 +1,20 @@
+[boosts.contrast]
+weight = 25
+markers = [
+  "but not",
+  "however",
+  "whereas",
+  "opposite",
+  "paradox",
+  "divergent",
+]
+
+[boosts.subgroup]
+weight = 10
+markers = [
+  "male",
+  "female",
+  "sex",
+  "subgroup",
+  "stratified",
+]
