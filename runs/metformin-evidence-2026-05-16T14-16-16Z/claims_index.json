@@ -1,0 +1,284 @@
+{
+  "topic": "metformin",
+  "snapshot_utc": "2026-05-16T14-16-16Z",
+  "claim_count": 31,
+  "claims": [
+    {
+      "claim_text": "Metformin decreased tumor burden by 72%, which correlated with decreased cellular proliferation and marked inhibition of mTOR in tumors.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-10-0055"
+      ]
+    },
+    {
+      "claim_text": "placebo gained more lean body mass (p = .003) and thigh muscle mass (p < .001) than metformin",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13039"
+      ]
+    },
+    {
+      "claim_text": "oral administration of metformin (100 and 250 mg/kg body weight) significantly inhibited the growth of tumors.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18632/oncotarget.2606"
+      ]
+    },
+    {
+      "claim_text": "5 mM metformin improved cell viability, mitochondrial integrity, and respiratory chain activity under HG and/or H/R (P < 0.05).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1155/2016/2961954"
+      ]
+    },
+    {
+      "claim_text": "No association was observed between ever use of metformin and colorectal cancer risk (HR, 0.90; 95% CI, 0.76-1.07)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1055-9965.epi-17-0424"
+      ]
+    },
+    {
+      "claim_text": "Six-month treatment with metformin and isotretinoin significantly reduced the GAGS from 31.9 to 24.6 and from 34.1 to 13.3, respectively",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.22034/ijd.2019.98371"
+      ]
+    },
+    {
+      "claim_text": "Ever use of metformin was not associated with PC risk in analyses restricted to DM2 participants (adjusted OR: 1.01, 95% CI: 0.61-1.68).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/ijc.29120"
+      ]
+    },
+    {
+      "claim_text": "Metformin (150 mg/kg) as a single agent inhibits the growth of both PDX tumors by at least 50% (P < 0.05) when administered orally for 24 days.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1535-7163.mct-16-0793"
+      ]
+    },
+    {
+      "claim_text": "Mean HbA1c levels were reduced by 4.8 mmol/mol in all patients with an MPR ≥0.8.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1071/hc20043"
+      ]
+    },
+    {
+      "claim_text": "Metformin (25 mg/kg) protected against ischemic necrosis in the epiphysis of the rat femoral head by maintaining osteoblast/osteocyte function and vascular density but inhibiting osteoclast activity",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18632/aging.102796"
+      ]
+    },
+    {
+      "claim_text": "metformin treatment caused a significant body weight reduction in adult non-diabetic patients treated with atypical antipsychotics (4.8%, 95% CI 1.6 to 8.0)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1177/0269881109353461"
+      ]
+    },
+    {
+      "claim_text": "median Hscore change was 0.034 (P = 0.77)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-18-0262"
+      ]
+    },
+    {
+      "claim_text": "Urine from >90 MF-treated T2DM patients was analyzed, with increased levels of MF directly correlating with elevations in IMZ.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1021/acs.chemrestox.5b00497"
+      ]
+    },
+    {
+      "claim_text": "inhibition of cell proliferation with an effect of 80% for the combination with 0.3 mg/mL and 0.4 mg/mL and a constant concentration of metformin",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1166/jbn.2015.1877"
+      ]
+    },
+    {
+      "claim_text": "leading to 96% inhibition of cell viability in LNCaP prostate cancer cells",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/0008-5472.can-09-2782"
+      ]
+    },
+    {
+      "claim_text": "exercise and metformin reduced sTNFαR2 and IL6 (-38.7%; 95% CI, -52.3, -18.9)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-20-0188"
+      ]
+    },
+    {
+      "claim_text": "exercise and metformin reduced sTNFαR2 (-13.1%; 95% CI, -22.9, -1.0)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-20-0188"
+      ]
+    },
+    {
+      "claim_text": "metformin alone did not change hs-CRP (-13.9%; 95% CI, -40.0, 23.4), sTNFαR2, or IL6",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-20-0188"
+      ]
+    },
+    {
+      "claim_text": "A 31% reduction in overall summary relative risk (0.69; 95% confidence interval, 0.61-0.79) was found in subjects taking metformin compared with other antidiabetic drugs.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-10-0157"
+      ]
+    },
+    {
+      "claim_text": "the NOAEL dose of metformin (200 mg/kg/day) showed a limited efficiency in the metabolic disruption caused by chronic Cd exposure.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/toxics6030055"
+      ]
+    },
+    {
+      "claim_text": "Significant differences (P < 0.05) were observed in the average blood glucose level from 2 to 24 hours after metformin therapy with or without WSF.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.5402/2011/260537"
+      ]
+    },
+    {
+      "claim_text": "the treated group (n = 9) gaining a distance of 32.9 ± 32.7 m, while the placebo group (n = 14) gained 3.7 ± 32.4 m (P < 0.05)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/brain/awy231"
+      ]
+    },
+    {
+      "claim_text": "The 50% effective concentration (EC50) for extracellular HBsAg and intracellular HBsAg in HBV-producing HepG2.2.15 cells was 2.85 mm and 2.75 mm, respectively",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/jvh.12187"
+      ]
+    },
+    {
+      "claim_text": "The ratio of 1:2 caused the most significant (p<0.05) reduction in blood sugar (-66.07%) compared to distilled water (-7.2%).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Urine volume decreased to 5.4 L/24 h (P <0.001) on metformin",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2215/cjn.11260821"
+      ]
+    },
+    {
+      "claim_text": "DM dams treated with 200 mg/kg metformin in drinking water ameliorated fasting hyperglycemia, glucose intolerance, and insulin resistance with consequent reduction of cellular stress, apoptosis, and NTDs in their embryos",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2337/db14-1683"
+      ]
+    },
+    {
+      "claim_text": "CC-rs622342 (β = 1.36; P < .001) in the SLC22A1 gene with an increase in HbA1c levels during the follow-up period.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jcph.1425"
+      ]
+    },
+    {
+      "claim_text": "Overall cancer incidence was reduced by 31% [summary relative risk (SRR), 0.69; 95% confidence interval (CI), 0.52-0.90]",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-13-0424"
+      ]
+    },
+    {
+      "claim_text": "Cancer mortality was reduced by 34% (SRR, 0.66; 95% CI, 0.54-0.81; I(2) = 21%).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-13-0424"
+      ]
+    },
+    {
+      "claim_text": "The highest percentage of MET removal using OPAC was 97.23%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1080/15226514.2022.2064815"
+      ]
+    },
+    {
+      "claim_text": "intratumoral metformin concentration negatively associated with tumor volume (P = 0.03), and each 10 pmol increase in intratumoral metformin predicted >0.11 cm3 reduction in tumor volume.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-16-0211-t"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "topic": "exercise",
+  "snapshot_utc": "2026-05-16T14-05-51Z",
+  "input_pack": {
+    "topic": "exercise",
+    "a_core_count": 15,
+    "b_context_count": 2,
+    "excluded_counts": {
+      "C_noise": 0,
+      "D_bad_extraction": 21
+    },
+    "has_minimum_a_core": true,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Diet and exercise synergy in suppressing angiogenic factors for breast cancer chemoprevention in obese postmenopausal women",
+      "status": "survives",
+      "blocking_flags": [],
+      "original_opportunity": 100,
+      "capped_opportunity": 100,
+      "cited_fact_ids": [
+        "29370",
+        "29371",
+        "29372",
+        "30392"
+      ]
+    },
+    {
+      "thesis_idx": 1,
+      "title": "Obesity-mediated blunting of muscle anabolic response to exercise: Comparative insights from lean models and leucine supplementation",
+      "status": "survives",
+      "blocking_flags": [],
+      "original_opportunity": 81,
+      "capped_opportunity": 81,
+      "cited_fact_ids": [
+        "12572",
+        "12573",
+        "19252",
+        "32724"
+      ]
+    }
+  ]
+}

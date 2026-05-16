@@ -1,0 +1,28 @@
+{
+  "topic": "metformin",
+  "snapshot_utc": "2026-05-16T14-16-16Z",
+  "input_pack": {
+    "topic": "metformin",
+    "a_core_count": 14,
+    "b_context_count": 1,
+    "excluded_counts": {
+      "C_noise": 0,
+      "D_bad_extraction": 17
+    },
+    "has_minimum_a_core": true,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Exercise-metformin synergy in attenuating cancer-related inflammation: a call for targeted adjuvant trials",
+      "status": "needs_source_audit",
+      "blocking_flags": [
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 100,
+      "capped_opportunity": 80,
+      "cited_fact_ids": []
+    }
+  ]
+}

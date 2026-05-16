@@ -1,0 +1,32 @@
+{
+  "topic": "caloric_restriction",
+  "snapshot_utc": "2026-05-16T14-18-25Z",
+  "input_pack": {
+    "topic": "caloric_restriction",
+    "a_core_count": 5,
+    "b_context_count": 2,
+    "excluded_counts": {
+      "C_noise": 0,
+      "D_bad_extraction": 17
+    },
+    "has_minimum_a_core": true,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Sexual Dimorphism in Caloric Restriction Efficacy for Intestinal Adenoma Prevention: Mechanistic Insights from Apc-Mutant Mice",
+      "status": "needs_source_audit",
+      "blocking_flags": [
+        "a_core_density_too_low:2<3"
+      ],
+      "original_opportunity": 86,
+      "capped_opportunity": 80,
+      "cited_fact_ids": [
+        "31457",
+        "31458",
+        "3312"
+      ]
+    }
+  ]
+}

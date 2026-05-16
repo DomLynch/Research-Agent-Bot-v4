@@ -1,0 +1,62 @@
+{
+  "topic": "mtor",
+  "snapshot_utc": "2026-05-16T14-09-28Z",
+  "top_n": 5,
+  "facts_inspected": 28,
+  "aggregated_claims": 28,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "mode": "alpha",
+  "numeric_artifacts_filtered": 18,
+  "pico_enrichment": {
+    "facts_inspected": 46,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "mimo-runaway-fallback:google/gemma-4-31b-it"
+  },
+  "ranking": "deterministic: validation*magnitude*precision*recency",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "ce0cd16c7ff8b11890f17a943feeb70d32fb3a6c3391799923d7db7ffc4a3967"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "5f60e48c0614acf8f701937c1ddb01687abef4d8ebbfa71e6aa55d91afa4cb21"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "2f3e71e8d927c2f9f1cc4243353ec6a060cd564e3e11f95f73971b9c6ea348d5"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "c5dc4bcd69dd504bcfdbcd567c72a0b4c43bc58f2a6cc289098c18e2f1e9e890"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "a38c9a39d8112e41c296f572319f9b82bb6b652ae2a2355a98ba7f717209f660"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "70d4fa3bf2ac5ac7dc25c7ebcfdddfcb1982a623bf48c9e167b5271590fedbbd"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "9be53a0c70f7010c87b12dae69119637f5059c29587b3ee9f450cf03eb243352"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "441c648ad732a27fdc157b071e0b8ffacd35146cdb6f54c6924a40273d34de5f"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "aac23fee6396f65395450ad543f31b94c9a7f7e58658f282314aac25e37c906c"
+    },
+    "signal_post_md": {
+      "name": "signal_post.md",
+      "sha256": "d39a4de90ea06a8ffcf098f400914973dba6ebf306541653cb94da8920c9870b"
+    }
+  }
+}

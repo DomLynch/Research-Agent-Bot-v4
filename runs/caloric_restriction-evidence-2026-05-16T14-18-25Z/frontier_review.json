@@ -1,0 +1,45 @@
+{
+  "topic": "caloric_restriction",
+  "snapshot_utc": "2026-05-16T14-18-25Z",
+  "model": "mimo-v2.5-pro",
+  "lens": "The evidence uncovers a sexual dimorphism paradox: caloric restriction selectively inhibits intestinal adenomas in male but not female Apc-mutant mice, while simultaneously triggering uniform metabolic and proteomic shifts in both sexes, challenging the assumption of gender-agnostic dietary benefits.",
+  "known_to_ignore": [
+    "Caloric restriction universally reduces body weight and improves metabolic health markers",
+    "CR is a well-established intervention for extending lifespan in model organisms"
+  ],
+  "tensions": [
+    "Fact 31457 shows visceral fat removal attenuates macroadenomas in female Apc(1638N/+) mice, but caloric restriction does not, while fact 31458 demonstrates the opposite sex-specific pattern for CR's efficacy",
+    "Fact 3314 indicates CR dramatically elevates bone marrow adiposity in male C57Bl/6J mice, conflicting with its potential bone-protective effects suggested by lowered leptin and IGF-1 in fact 3312"
+  ],
+  "gaps": [
+    "Interaction effects between caloric restriction and visceral fat removal in both sexes simultaneously",
+    "Long-term skeletal health outcomes of CR in female mouse models",
+    "Role of sex hormones in mediating CR's divergent anti-tumor effects"
+  ],
+  "theses": [
+    {
+      "title": "Sexual Dimorphism in Caloric Restriction Efficacy for Intestinal Adenoma Prevention: Mechanistic Insights from Apc-Mutant Mice",
+      "paper_type": "scoping-review",
+      "novelty": 80,
+      "evidence_strength": 65,
+      "reviewer_risk": 60,
+      "opportunity_score": 86,
+      "rationale": "This review would consolidate the striking sex-specific responses to CR in cancer models, arguing for mechanistic studies on hormonal or adipose-tissue pathways to inform gender-tailored cancer prevention strategies.",
+      "cited_fact_ids": [
+        "31457",
+        "31458",
+        "3312"
+      ]
+    }
+  ],
+  "reviewer_objections": [
+    "The evidence for sex-specific cancer effects relies on a single 2013 study using Apc(1638N/+) mice, which may not generalize to other cancer models or human populations",
+    "Cited facts cover disparate outcomes (cancer, bone metabolism, proteomics) with different mouse strains and interventions, complicating coherent synthesis"
+  ],
+  "next_extractions": [
+    "Investigate the impact of sex hormone modulation on CR's effects in Apc-mutant models",
+    "Study longitudinal bone health parameters under CR in female mice",
+    "Explore CR interactions with exercise in sex-specific cancer prevention"
+  ],
+  "raw_response": "{\n  \"lens\": \"The evidence uncovers a sexual dimorphism paradox: caloric restriction selectively inhibits intestinal adenomas in male but not female Apc-mutant mice, while simultaneously triggering uniform metabolic and proteomic shifts in both sexes, challenging the assumption of gender-agnostic dietary benefits.\",\n  \"known_to_ignore\": [\"Caloric restriction universally reduces body weight and improves metabolic health markers\", \"CR is a well-established intervention for extending lifespan in model organisms\"],\n  \"tensions\": [\"Fact 31457 shows visceral fat removal attenuates macroadenomas in female Apc(1638N/+) mice, but caloric restriction does not, while fact 31458 demonstrates the opposite sex-specific pattern for CR's efficacy\", \"Fact 3314 indicates CR dramatically elevates bone marrow adiposity in male C57Bl/6J mice, conflicting with its potential bone-protective effects suggested by lowered leptin and IGF-1 in fact 3312\"],\n  \"gaps\": [\"Interaction effects between caloric restriction and visceral fat removal in both sexes simultaneously\", \"Long-term skeletal health outcomes of CR in female mouse models\", \"Role of sex hormones in mediating CR's divergent anti-tumor effects\"],\n  \"theses\": [{\n    \"title\": \"Sexual Dimorphism in Caloric Restriction Efficacy for Intestinal Adenoma Prevention: Mechanistic Insights from Apc-Mutant Mice\",\n    \"paper_type\": \"scoping-review\",\n    \"novelty\": 80,\n    \"evidence_strength\": 65,\n    \"reviewer_risk\": 60,\n    \"rationale\": \"This review would consolidate the striking sex-specific responses to CR in cancer models, arguing for mechanistic studies on hormonal or adipose-tissue pathways to inform gender-tailored cancer prevention strategies.\",\n    \"cited_fact_ids\": [\"31457\", \"31458\", \"3312\"]\n  }],\n  \"reviewer_objections\": [\"The evidence for sex-specific cancer effects relies on a single 2013 study using Apc(1638N/+) mice, which may not generalize to other cancer models or human populations\", \"Cited facts cover disparate outcomes (cancer, bone metabolism, proteomics) with different mouse strains and interventions, complicating coherent synthesis\"],\n  \"next_extractions\": [\"Investigate the impact of sex hormone modulation on CR's effects in Apc-mutant models\", \"Study longitudinal bone health parameters under CR in female mice\", \"Explore CR interactions with exercise in sex-specific cancer prevention\"]\n}"
+}

@@ -1,0 +1,31 @@
+{
+  "topic": "mtor",
+  "snapshot_utc": "2026-05-16T14-09-28Z",
+  "input_pack": {
+    "topic": "mtor",
+    "a_core_count": 1,
+    "b_context_count": 1,
+    "excluded_counts": {
+      "C_noise": 7,
+      "D_bad_extraction": 19
+    },
+    "has_minimum_a_core": false,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "mTOR Modulation at the Immune-Oncology Interface: An Evidence Gap Analysis of Preclinical Paradoxes",
+      "status": "needs_source_audit",
+      "blocking_flags": [
+        "a_core_density_too_low:1<3"
+      ],
+      "original_opportunity": 28,
+      "capped_opportunity": 28,
+      "cited_fact_ids": [
+        "15567",
+        "2848"
+      ]
+    }
+  ]
+}

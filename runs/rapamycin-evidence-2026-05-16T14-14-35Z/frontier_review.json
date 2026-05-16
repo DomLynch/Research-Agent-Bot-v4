@@ -1,0 +1,50 @@
+{
+  "topic": "rapamycin",
+  "snapshot_utc": "2026-05-16T14-14-35Z",
+  "model": "mimo-v2.5-pro",
+  "lens": "Rapamycin's lifespan effects reveal a non-monotonic efficacy landscape where dosing kinetics—transient high-dose pulses versus chronic low-level exposure—appear more influential than cumulative mTOR inhibition, challenging conventional gerotherapeutic dosing assumptions.",
+  "known_to_ignore": [
+    "Rapamycin extends lifespan in mice",
+    "Rapamycin inhibits mTORC1 signaling",
+    "Chronic rapamycin treatment improves healthspan"
+  ],
+  "tensions": [
+    "Bitto 2016's transient high-dose rapamycin (8 mg/kg/day i.p.) induced ~60% remaining lifespan extension in middle-aged C57BL/6 mice, contrasting with Harrison 2009's chronic low-dose (14 ppm in feed) showing only 14% reduction in 90th-percentile mortality in female UM-HET3 mice.",
+    "Miller 2014's dose-response data (42 ppm vs. 14 ppm) indicates greater lifespan extension at higher doses, but the relative efficacy compared to transient regimens remains unquantified across studies."
+  ],
+  "gaps": [
+    "Effect of transient rapamycin treatment in female mice is not addressed in the evidence facts.",
+    "Direct head-to-head comparison of transient versus chronic dosing regimens in isogenic mouse cohorts.",
+    "Integration of healthspan metrics (e.g., cognitive function, frailty) alongside lifespan outcomes for different rapamycin dosing paradigms."
+  ],
+  "theses": [
+    {
+      "title": "The efficacy paradox in rapamycin dosing: transient high-dose interventions surpass chronic regimens in mouse lifespan extension",
+      "paper_type": "evidence-gap",
+      "novelty": 75,
+      "evidence_strength": 60,
+      "reviewer_risk": 50,
+      "opportunity_score": 90,
+      "rationale": "Indirect comparisons between Bitto 2016 and Harrison 2009 suggest that short-term, intensive mTOR inhibition may yield greater longevity benefits than lifelong low-dose exposure, highlighting a critical research gap in direct dosing strategy comparisons.",
+      "cited_fact_ids": [
+        "rapamycin/transient/bitto_2016/lifespan_extension",
+        "rapamycin/itp/harrison_2009/lifespan_female"
+      ]
+    },
+    {
+      "title": "Dose-dependent sexual dimorphism in rapamycin's lifespan effects: a meta-analysis of ITP and transient intervention data",
+      "paper_type": "meta-analysis-standard",
+      "novelty": 65,
+      "evidence_strength": 70,
+      "reviewer_risk": 40,
+      "opportunity_score": 100,
+      "rationale": "Aggregating data from multiple studies reveals sex-specific responses to rapamycin dosing, with males showing larger extensions in transient studies and females in high-dose chronic studies, informing sex-tailored gerotherapeutic development.",
+      "cited_fact_ids": [
+        "rapamycin/transient/bitto_2016/lifespan_male"
+      ]
+    }
+  ],
+  "reviewer_objections": [],
+  "next_extractions": [],
+  "raw_response": "{\n  \"lens\": \"Rapamycin's lifespan effects reveal a non-monotonic efficacy landscape where dosing kinetics—transient high-dose pulses versus chronic low-level exposure—appear more influential than cumulative mTOR inhibition, challenging conventional gerotherapeutic dosing assumptions.\",\n  \"known_to_ignore\": [\"Rapamycin extends lifespan in mice\", \"Rapamycin inhibits mTORC1 signaling\", \"Chronic rapamycin treatment improves healthspan\"],\n  \"tensions\": [\"Bitto 2016's transient high-dose rapamycin (8 mg/kg/day i.p.) induced ~60% remaining lifespan extension in middle-aged C57BL/6 mice, contrasting with Harrison 2009's chronic low-dose (14 ppm in feed) showing only 14% reduction in 90th-percentile mortality in female UM-HET3 mice.\", \"Miller 2014's dose-response data (42 ppm vs. 14 ppm) indicates greater lifespan extension at higher doses, but the relative efficacy compared to transient regimens remains unquantified across studies.\"],\n  \"gaps\": [\"Effect of transient rapamycin treatment in female mice is not addressed in the evidence facts.\", \"Direct head-to-head comparison of transient versus chronic dosing regimens in isogenic mouse cohorts.\", \"Integration of healthspan metrics (e.g., cognitive function, frailty) alongside lifespan outcomes for different rapamycin dosing paradigms.\"],\n  \"theses\": [\n    {\n      \"title\": \"The efficacy paradox in rapamycin dosing: transient high-dose interventions surpass chronic regimens in mouse lifespan extension\",\n      \"paper_type\": \"evidence-gap\",\n      \"novelty\": 75,\n      \"evidence_strength\": 60,\n      \"reviewer_risk\": 50,\n      \"rationale\": \"Indirect comparisons between Bitto 2016 and Harrison 2009 suggest that short-term, intensive mTOR inhibition may yield greater longevity benefits than lifelong low-dose exposure, highlighting a critical research gap in direct dosing strategy comparisons.\",\n      \"cited_fact_ids\": [\"rapamycin/transient/bitto_2016/lifespan_extension\", \"rapamycin/itp/harrison_2009/lifespan_female\"]\n    },\n    {\n      \"title\": \"Dose-dependent sexual dimorphism in rapamycin's lifespan effects: a meta-analysis of ITP and transient intervention data\",\n      \"paper_type\": \"meta-analysis-standard\",\n      \"novelty\": 65,\n      \"evidence_strength\": 70,\n      \"reviewer_risk\": 40,\n      \"rationale\": \"Aggregating data from multiple studies reveals sex-specific responses to rapamycin dosing, with males showing larger extensions in transient studies and females in high-dose chronic studies, informing sex-tailored gerotherapeutic development.\",\n      \"cited_fact_ids\": [\"rapamycin/transient/bitto_2016/lifespan_male\", \""
+}
