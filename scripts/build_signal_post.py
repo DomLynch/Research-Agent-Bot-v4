@@ -90,6 +90,55 @@ def _bound_fact_count(
     return n
 
 
+def _adjacent_signals_block(
+    facts_by_id: dict[str, dict[str, Any]],
+    lane_verdicts: dict[str, str],
+    *, top_n: int = 3,
+) -> str:
+    """Sprint 76 — render an 'Adjacent signals' section pulled from
+    C_noise / D_bad_extraction facts ordered by absolute numeric
+    magnitude. These are NEVER cited as evidence; they surface as
+    research prompts so the operator can triage nearby alpha for
+    follow-up extraction without the signal post pretending they are
+    bound. Universal — structural lane + magnitude ordering only."""
+    candidates = [
+        facts_by_id[fid]
+        for fid, lane in lane_verdicts.items()
+        if lane not in _BINDABLE_LANES and fid in facts_by_id
+    ]
+
+    def _mag(f: dict[str, Any]) -> float:
+        nv = f.get("numeric_value")
+        try:
+            return abs(float(nv)) if nv is not None else 0.0
+        except (TypeError, ValueError):
+            return 0.0
+
+    candidates.sort(key=_mag, reverse=True)
+    top = candidates[:top_n]
+    if not top:
+        return ""
+    lines = [
+        "## Adjacent signals to consider",
+        "",
+        "_These facts did NOT bind to the A_core/B_context lane this "
+        "run — they are research prompts, NOT cited evidence. Triage "
+        "and re-extract carefully before treating any of these as "
+        "alpha:_",
+        "",
+    ]
+    for f in top:
+        phrase = str(f.get("canonical_phrase") or "")[:200]
+        doi = (f.get("source_paper") or {}).get("doi") or "?"
+        fid = str(f.get("fact_id") or "?")
+        lane = lane_verdicts.get(fid, "?")
+        lines.append(f"- {phrase}")
+        lines.append(
+            f"  - source: `{doi}` (fact_id=`{fid}`, lane=`{lane}`)"
+        )
+    return "\n".join(lines) + "\n"
+
+
 def _curation_brief(
     topic: str, snapshot: str, audit: dict[str, Any],
     facts_by_id: dict[str, dict[str, Any]],
