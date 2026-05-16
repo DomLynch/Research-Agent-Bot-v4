@@ -42,7 +42,7 @@ def _settings(writer_configured: bool = True) -> Any:
 
 
 def test_no_facts_returns_empty_review() -> None:
-    r = run_frontier_review(topic="t", snapshot_utc="ts", facts=[],
+    r = run_frontier_review(topic="t", snapshot_utc="ts", evidence_facts=[],
                             papers=None, settings=_settings())
     assert r.model == "error:no_facts"
     assert r.lens == "" and r.theses == ()
@@ -50,7 +50,7 @@ def test_no_facts_returns_empty_review() -> None:
 
 def test_writer_not_configured_returns_empty_review() -> None:
     r = run_frontier_review(topic="t", snapshot_utc="ts",
-                            facts=[_fact("x")], papers=None,
+                            evidence_facts=[_fact("x")], papers=None,
                             settings=_settings(writer_configured=False))
     assert r.model == "error:writer_not_configured"
 
@@ -59,7 +59,7 @@ def test_llm_runtime_error_returns_empty_review() -> None:
     with patch("agent.frontier_review.call_writer_with_fallback") as mock:
         mock.side_effect = RuntimeError("MiMo runaway: max attempts")
         r = run_frontier_review(topic="t", snapshot_utc="ts",
-                                facts=[_fact("x")], papers=None,
+                                evidence_facts=[_fact("x")], papers=None,
                                 settings=_settings())
     assert r.model.startswith("error:llm_call_failed:RuntimeError")
 
@@ -152,9 +152,11 @@ def test_parse_thesis_drops_titleless_entries() -> None:
 
 
 def test_build_messages_includes_topic_and_facts() -> None:
-    msgs = _build_messages("rapamycin",
-                           [_fact("rapamycin extends lifespan", 2016, 60.0)],
-                           None)
+    msgs = _build_messages(
+        "rapamycin",
+        [_fact("rapamycin extends lifespan", 2016, 60.0)],
+        [], None,
+    )
     assert len(msgs) == 2
     assert msgs[0]["role"] == "system"
     assert "research strategist" in msgs[0]["content"].lower()
@@ -167,11 +169,35 @@ def test_build_messages_includes_paper_metadata_when_provided() -> None:
     papers = [{"journal_name": "eLife", "publication_year": 2016,
                "cited_by_count": 500, "fwci": 4.2, "quality_score": 88,
                "doi": "10.1"}]
-    msgs = _build_messages("rapamycin", [_fact("x")], papers)
+    msgs = _build_messages("rapamycin", [_fact("x")], [], papers)
     user = msgs[1]["content"]
     assert "PAPER METADATA" in user
     assert "eLife" in user
     assert "cited=500" in user
+
+
+def test_build_messages_evidence_vs_hints_boundary() -> None:
+    """Sprint 75 — EVIDENCE FACTS get fact_id tags (citable); ALPHA
+    HINTS get no fact_id (inspiration only). Prompt must instruct the
+    model not to cite hints."""
+    msgs = _build_messages(
+        "carbon_tax",
+        [{"fact_id": "ev_1", "canonical_phrase": "tax cut emissions 8%",
+          "numeric_value": 8, "units": "%",
+          "source_paper": {"year": 2020}}],
+        [{"fact_id": "hint_1",
+          "canonical_phrase": "noise-prone hint phrase",
+          "source_paper": {"doi": "10.x/hint"}}],
+        None,
+    )
+    user = msgs[1]["content"]
+    sys = msgs[0]["content"]
+    assert "EVIDENCE FACTS" in user
+    assert "ALPHA HINTS" in user
+    assert "ev_1" in user
+    assert "hint_1" not in user
+    assert "INSPIRATION ONLY" in user
+    assert "cited_fact_ids must reference only ids from EVIDENCE" in sys
 
 
 def test_universal_non_biomedical_fixture() -> None:
@@ -184,7 +210,7 @@ def test_universal_non_biomedical_fixture() -> None:
             "population": "Sweden 1991-2020", "intervention": "CO2 tax",
             "validator": "ipcc-wg3", "superseded_by": None,
         }],
-        None,
+        [], None,
     )
     assert "carbon_tax" in msgs[1]["content"]
     assert "Sweden" in msgs[1]["content"]
@@ -205,7 +231,7 @@ def test_full_flow_with_mocked_llm() -> None:
     with patch("agent.frontier_review.call_writer_with_fallback",
                return_value=mock_resp):
         r = run_frontier_review(topic="t", snapshot_utc="ts",
-                                facts=[_fact("x")], papers=None,
+                                evidence_facts=[_fact("x")], papers=None,
                                 settings=_settings())
     assert isinstance(r, FrontierReview)
     assert r.model == "mimo-v2.5-pro"

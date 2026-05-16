@@ -82,7 +82,7 @@ scoring, thresholds, and digest schema stay put.
 12. ✅ Tests (unit + golden) + supplement plugins + cutover validation
 
 ## Current Sprint
-**Sprint 73 active** — alpha-mode Researka evidence pipeline is
+**Sprint 75 active** — alpha-mode Researka evidence pipeline is
 lane-gated at the top-card surface: discovery (Sprint 63 + Sprint 70
 anchorage dampening) → build_topic_evidence_run (PICO enrichment
 Sprint 61, numeric sanitizer Sprint 64 + 69, same-paper dedup +
@@ -91,7 +91,48 @@ editorial Sprint 60, **A_core/B_context-only top_N ranking Sprint 71**)
 strict binding lock). One-command autonomous curator cycle via
 `scripts/run_curator_cycle.py` (Sprint 65).
 
-**Sprint 73 (in flight, this commit pending) — closes the
+**Sprint 75 (in flight, this commit pending) — closes the
+2026-05-16 auditor's "yield gap" critique. The system is safe
+(refuses bad evidence) but was suppressing real product because
+MiMo (frontier reviewer) was seeing ALL facts — including D_bad —
+and forming theses around them, which the binding gate then
+correctly killed:**
+- `agent/frontier_review.py` — `run_frontier_review` now takes
+  `(evidence_facts, alpha_hints)` separately. EVIDENCE FACTS (A_core
+  / B_context lane) get fact-id tags and are the ONLY ids MiMo may
+  cite. ALPHA HINTS (C_noise / D_bad_extraction) are rendered as
+  untagged phrases under an "INSPIRATION ONLY, MAY NOT BE CITED"
+  block and feed `next_extractions` only. The system prompt's hard-
+  rule #4 spells this out.
+- `scripts/build_topic_evidence_run.py` — caller splits facts via
+  `classify_lanes(facts, topic)` before invoking the frontier
+  reviewer.
+- `scripts/build_signal_post.py` — new alpha label
+  `curation_needed` fires when bound_count == 0 AND MiMo emitted
+  actionable `next_extractions`. Constructive replacement for the
+  pessimistic `evidence_binding_failed` label. New
+  `_curation_brief()` writes `curation_brief.md` listing the
+  unbound cited fact-ids + MiMo's targeted extractions — turns
+  noisy alpha into a bounded curation task.
+- `scripts/build_signal_post.py` logger fix — `[signal-post]`
+  print now uses the actually-rendered label (with binding +
+  hints override applied), not the pre-binding base. Was an
+  audit-trust hazard: log said `frontier_hypothesis` while
+  signal_post.md said `evidence_binding_failed`.
+- `scripts/run_curator_cycle.py` — `curation_needed` added to the
+  marker scan list so cycle summary surfaces it correctly.
+- 1 new test `test_build_messages_evidence_vs_hints_boundary` locks
+  the dual-block boundary: hint phrases do NOT carry fact-ids and
+  appear under `ALPHA HINTS (INSPIRATION ONLY, MAY NOT BE CITED)`;
+  system prompt contains `cited_fact_ids must reference only ids
+  from EVIDENCE`.
+- Bonus housekeeping: 48 untracked macOS Finder duplicates
+  (`* 2.py`, `* 2.toml`) deleted. Test count dropped from 1341 to
+  932 because pytest was silently collecting + passing the dupes
+  against the OLD function signatures. All 932 canonical tests
+  pass cleanly.
+
+**Sprint 73 (shipped, head `bc08c83`) — closed the
 2026-05-16 auditor's locality bug + over-claim correction:**
 - `agent/numeric_role_classifier.py` — regimen-marker check is now
   LOCALITY-AWARE. Markers must sit within a window of [-15, +25]
