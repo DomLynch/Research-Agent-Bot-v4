@@ -90,6 +90,61 @@ def _bound_fact_count(
     return n
 
 
+def _curation_brief(
+    topic: str, snapshot: str, audit: dict[str, Any],
+    facts_by_id: dict[str, dict[str, Any]],
+    lane_verdicts: dict[str, str],
+    next_extractions: list[Any],
+) -> str:
+    """Sprint 75 — render an actionable curation brief.
+
+    Lists the cited fact-ids that fell OUTSIDE the A_core/B_context
+    lane (i.e. the binding gaps) plus MiMo's `next_extractions`.
+    Operator / DB-curator works through this list to unblock the
+    thesis. Universal — no domain literals."""
+    title = str(audit.get("title") or "").strip()
+    cited = [str(x) for x in (audit.get("cited_fact_ids") or [])]
+    unbound: list[tuple[str, str, str]] = []
+    for fid in cited:
+        lane = lane_verdicts.get(fid, "missing")
+        if lane in _BINDABLE_LANES:
+            continue
+        f = facts_by_id.get(fid) or {}
+        phrase = str(f.get("canonical_phrase") or "")[:160]
+        unbound.append((fid, lane, phrase))
+    lines = [
+        f"# Curation brief — {topic}", "",
+        f"_Snapshot:_ `{snapshot}`", "",
+        "## Thesis awaiting evidence binding",
+        "",
+        f"> {title}", "",
+        "## Unbound cited facts (curate or verify these to unlock "
+        "the thesis)", "",
+    ]
+    if unbound:
+        for fid, lane, phrase in unbound:
+            lines.append(
+                f"- `fact_id={fid}` (current lane: `{lane}`) — "
+                f"{phrase!r}"
+            )
+    else:
+        lines.append("- _(no cited fact-ids — see next_extractions)_")
+    if next_extractions:
+        lines += [
+            "", "## MiMo's targeted extractions to harvest", "",
+        ]
+        for item in next_extractions[:5]:
+            lines.append(f"- {str(item)[:240]}")
+    lines += [
+        "",
+        "_When these facts are curated into the Researka DB at "
+        "`A_core` or `B_context` lane, rerun "
+        "`scripts/build_topic_evidence_run.py` and the thesis will "
+        "re-evaluate against the binding gate._", "",
+    ]
+    return "\n".join(lines)
+
+
 def _read_lane_verdicts(run_dir: Path) -> dict[str, str]:
     """fact_id -> lane mapping from Sprint 59 fact_lanes.json."""
     p = run_dir / "fact_lanes.json"
@@ -198,11 +253,12 @@ def _render_signal_post(
     bound_count: int = -1,
     lane_verdicts: dict[str, str] | None = None,
 ) -> str:
-    label = (_alpha_label_for(lead_audit, bound_count) if lead_audit
-             else "frontier_hypothesis")
+    next_extracts = review.get("next_extractions") or []
+    has_hints = bool(isinstance(next_extracts, list) and next_extracts)
+    label = (_alpha_label_for(lead_audit, bound_count, has_hints)
+             if lead_audit else "frontier_hypothesis")
     lens = str(review.get("lens") or "").strip()
     known = review.get("known_to_ignore") or []
-    next_extracts = review.get("next_extractions") or []
     tensions = review.get("tensions") or []
     theses_list = review.get("theses") or []
     has_thesis = (isinstance(theses_list, list) and theses_list
@@ -317,11 +373,25 @@ def main() -> int:
     bound_count = (_bound_fact_count(
         list(lead.get("cited_fact_ids") or []), facts_by_id, lane_verdicts,
     ) if lead else 0)
+    next_extracts = review.get("next_extractions") or []
+    has_hints = bool(isinstance(next_extracts, list) and next_extracts)
     text = _render_signal_post(topic, snapshot, review, lead, facts_by_id,
                                 bound_count=bound_count,
                                 lane_verdicts=lane_verdicts)
     out_path = run_dir / "signal_post.md"
     out_path.write_text(text, encoding="utf-8")
+    label = (_alpha_label_for(lead, bound_count, has_hints)
+             if lead else "frontier_hypothesis")
+    # Sprint 75 — when the post lands in `curation_needed`, emit a
+    # small actionable brief listing the missing facts. This turns
+    # the noisy-alpha case into a bounded human/DB curation task
+    # rather than an opaque rejection.
+    if label == "curation_needed" and lead:
+        brief = _curation_brief(
+            topic, snapshot, lead, facts_by_id, lane_verdicts,
+            next_extracts if isinstance(next_extracts, list) else [],
+        )
+        (run_dir / "curation_brief.md").write_text(brief, encoding="utf-8")
     # Update MANIFEST if present
     manifest_path = run_dir / "MANIFEST.json"
     if manifest_path.exists():
@@ -337,8 +407,11 @@ def main() -> int:
                     json.dumps(m, indent=2), encoding="utf-8")
         except (OSError, json.JSONDecodeError):
             pass
-    label_used = (_alpha_label_for(lead) if lead else "frontier_hypothesis")
-    print(f"[signal-post] {run_dir.name}: label={label_used} -> {out_path}")
+    # Sprint 75 — log the ACTUAL rendered label (with bound_count +
+    # has_hints overrides applied), not the pre-binding base label.
+    # Was an audit-trust hazard: log said `frontier_hypothesis` while
+    # signal_post.md said `evidence_binding_failed`.
+    print(f"[signal-post] {run_dir.name}: label={label} -> {out_path}")
     return 0
 
 
