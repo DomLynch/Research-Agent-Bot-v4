@@ -1,0 +1,62 @@
+{
+  "topic": "metformin",
+  "snapshot_utc": "2026-05-16T15-19-54Z",
+  "top_n": 5,
+  "facts_inspected": 32,
+  "aggregated_claims": 31,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "mode": "alpha",
+  "numeric_artifacts_filtered": 18,
+  "pico_enrichment": {
+    "facts_inspected": 50,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "mimo-v2.5-pro"
+  },
+  "ranking": "deterministic: validation*magnitude*precision*recency",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "a83170112e55bc24f855a62fb2165eb6dca8555b37250a21e2f4255aad1ea0de"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "252bc7faf434f4928b662d4c612538138160f344e201a645a87bfbd5f0fea0c9"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "c227518f3a09a7cd404d8161f90968c931a06fe035f45811d3d26e8c030b4060"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "e12b698975d8ef2d52d634d441d3809b9f84d4fa5426f4917ac2f510949237cc"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "a8b78190f953d9f75b361edbdd5b9644f88e0a9a9a7cedb7df67b317cd9e7be0"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "af9c89690ff3f65df46e9fc078440528f76c9f61ed53208ece4898f331885fc8"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "9f838cd541e7af21da26ef5dd3c8467e1775e2ad5ef8c567836604f1224cbf8d"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "5182084dbcade92f7450164545a29cb120c1ee4784496c97594b53999c4e502f"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "c1ac6361690b5cec9eda05f94825cfded563937ffc01ec47b5e058a16879ac27"
+    },
+    "signal_post_md": {
+      "name": "signal_post.md",
+      "sha256": "efec5fca0dc35d451928faf4cdd6c5c3213a8923b785a47ed6fe8232fe8ec53b"
+    }
+  }
+}

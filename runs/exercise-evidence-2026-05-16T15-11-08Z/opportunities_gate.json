@@ -1,0 +1,47 @@
+{
+  "topic": "exercise",
+  "snapshot_utc": "2026-05-16T15-11-08Z",
+  "input_pack": {
+    "topic": "exercise",
+    "a_core_count": 15,
+    "b_context_count": 2,
+    "excluded_counts": {
+      "C_noise": 0,
+      "D_bad_extraction": 21
+    },
+    "has_minimum_a_core": true,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Synergistic Effects of Exercise and Pharmacological Agents on Inflammatory and Angiogenic Biomarkers in Cancer Survivorship",
+      "status": "survives",
+      "blocking_flags": [],
+      "original_opportunity": 100,
+      "capped_opportunity": 100,
+      "cited_fact_ids": [
+        "22116",
+        "22117",
+        "22118",
+        "22119",
+        "29370",
+        "29371",
+        "29372"
+      ]
+    },
+    {
+      "thesis_idx": 1,
+      "title": "Metabolic Impairment of Exercise-Induced Protein Synthesis in Obesity: Translational Insights from Comparative Animal and Human Data",
+      "status": "survives",
+      "blocking_flags": [],
+      "original_opportunity": 39,
+      "capped_opportunity": 39,
+      "cited_fact_ids": [
+        "19252",
+        "12572",
+        "12573"
+      ]
+    }
+  ]
+}

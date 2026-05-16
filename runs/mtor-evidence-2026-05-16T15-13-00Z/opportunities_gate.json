@@ -1,0 +1,47 @@
+{
+  "topic": "mtor",
+  "snapshot_utc": "2026-05-16T15-13-00Z",
+  "input_pack": {
+    "topic": "mtor",
+    "a_core_count": 2,
+    "b_context_count": 2,
+    "excluded_counts": {
+      "C_noise": 7,
+      "D_bad_extraction": 17
+    },
+    "has_minimum_a_core": false,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Translational Discrepancy in mTOR Inhibition: From Preclinical Tumor Burden Reduction to Clinical Survival Stagnation in Head and Neck Cancer",
+      "status": "needs_source_audit",
+      "blocking_flags": [
+        "a_core_density_too_low:2<3"
+      ],
+      "original_opportunity": 48,
+      "capped_opportunity": 48,
+      "cited_fact_ids": [
+        "2848",
+        "11840",
+        "15567"
+      ]
+    },
+    {
+      "thesis_idx": 1,
+      "title": "Context-Dependent mTOR Pathway Hyperphosphorylation: Implications for Therapeutic Targeting in Hematological vs. Solid Tumors",
+      "status": "needs_source_audit",
+      "blocking_flags": [
+        "a_core_density_too_low:1<3"
+      ],
+      "original_opportunity": 54,
+      "capped_opportunity": 54,
+      "cited_fact_ids": [
+        "64215",
+        "11840",
+        "2848"
+      ]
+    }
+  ]
+}

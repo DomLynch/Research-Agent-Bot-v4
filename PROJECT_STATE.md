@@ -82,6 +82,19 @@ scoring, thresholds, and digest schema stay put.
 12. ✅ Tests (unit + golden) + supplement plugins + cutover validation
 
 ## Current Sprint
+**Sprint 78 shipped** — fresh curator top-5 artifact refresh and run-folder cleanup:
+- Re-ran `scripts/run_curator_cycle.py --top 5 --cooldown-hours 0` on
+  `main` at 2026-05-16T15:10:57Z.
+- Current kept evidence runs are exercise, mtor, rapamycin, metformin,
+  and caloric_restriction from 2026-05-16T15:11–15:22Z.
+- `runs/latest` points to
+  `runs/caloric_restriction-evidence-2026-05-16T15-22-02Z`.
+- `runs/_curator_cycles` and `runs/_topics_discovery` retain only the
+  matching current cycle/discovery summaries.
+
+**Sprint 77 shipped (head `03ea912`)** — closed signal-post truth gaps
+around adjacent-signal rendering and label consistency.
+
 **Sprint 76 shipped (head `ab50be8`)** — alpha-mode Researka evidence pipeline is
 lane-gated at the top-card surface: discovery (Sprint 63 + Sprint 70
 anchorage dampening) → build_topic_evidence_run (PICO enrichment

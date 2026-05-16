@@ -1,0 +1,48 @@
+{
+  "cycle_ts": "2026-05-16T15-10-57Z",
+  "top_requested": 5,
+  "cooldown_hours": 0.0,
+  "ran": [
+    {
+      "topic": "exercise",
+      "velocity": 1.067,
+      "status": "ran",
+      "run_dir": "runs/exercise-evidence-2026-05-16T15-11-08Z",
+      "signal_label": "evidence_backed_signal",
+      "notes": ""
+    },
+    {
+      "topic": "mtor",
+      "velocity": 1.002,
+      "status": "ran",
+      "run_dir": "runs/mtor-evidence-2026-05-16T15-13-00Z",
+      "signal_label": "frontier_hypothesis",
+      "notes": ""
+    },
+    {
+      "topic": "rapamycin",
+      "velocity": 0.897,
+      "status": "ran",
+      "run_dir": "runs/rapamycin-evidence-2026-05-16T15-18-29Z",
+      "signal_label": "evidence_backed_signal",
+      "notes": ""
+    },
+    {
+      "topic": "metformin",
+      "velocity": 0.877,
+      "status": "ran",
+      "run_dir": "runs/metformin-evidence-2026-05-16T15-19-54Z",
+      "signal_label": "evidence_backed_signal",
+      "notes": ""
+    },
+    {
+      "topic": "caloric_restriction",
+      "velocity": 0.793,
+      "status": "ran",
+      "run_dir": "runs/caloric_restriction-evidence-2026-05-16T15-22-02Z",
+      "signal_label": "frontier_hypothesis",
+      "notes": ""
+    }
+  ],
+  "skipped_in_cooldown": []
+}

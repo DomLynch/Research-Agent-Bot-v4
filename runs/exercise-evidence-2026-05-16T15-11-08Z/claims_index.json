@@ -1,0 +1,340 @@
+{
+  "topic": "exercise",
+  "snapshot_utc": "2026-05-16T15-11-08Z",
+  "claim_count": 37,
+  "claims": [
+    {
+      "claim_text": "Exercise attenuated the development of frailty in both sexes (female = 0.32 ± 0.04 vs 0.21 ± 0.01; p = .005)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/gerona/glab297"
+      ]
+    },
+    {
+      "claim_text": "Exercise attenuated the development of frailty in both sexes (male = 0.30 ± 0.02 vs 0.22 ± 0.02; p = .042)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/gerona/glab297"
+      ]
+    },
+    {
+      "claim_text": "6MWD was greater in the intervention group (MD 57 m, 95% CI 34 to 80).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/14651858.cd009955.pub3"
+      ]
+    },
+    {
+      "claim_text": "The exercise group showed significant increases in their scores on the SPPB Total (p = .002)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1177/00315125221087026"
+      ]
+    },
+    {
+      "claim_text": "statistically significant post-exercise group differences in GDS (p ≤ .001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1177/00315125221087026"
+      ]
+    },
+    {
+      "claim_text": "statistically significant post-exercise group differences in MFES (p ≤ .001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1177/00315125221087026"
+      ]
+    },
+    {
+      "claim_text": "hs-CRP decreased by geometric mean 0.87 mg/L (0.51-1.23, P < 0.0001) in the diet + exercise groups",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/0008-5472.can-11-3092"
+      ]
+    },
+    {
+      "claim_text": "Mixed-muscle protein fractional synthetic rate increased by 42% at 3 h postexercise and 69% at 24 h postexercise in CON.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1152/ajpendo.00600.2013"
+      ]
+    },
+    {
+      "claim_text": "major osteoporotic fractures IR (0.69, 95% CI 0.52-0.92)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jbmr.4683"
+      ]
+    },
+    {
+      "claim_text": "The primary analysis in n = 23 interventions from 22 published studies revealed a significant positive effect of exercise on total hippocampal volume.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/hipo.23292"
+      ]
+    },
+    {
+      "claim_text": "NO contribution to cutaneous blood flow in response to heating at 42°C was 20.4% CVCmax (95% CI = 4.4, 36.4) greater following exercise training compared with conventional care",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1152/ajpendo.00055.2013"
+      ]
+    },
+    {
+      "claim_text": "CKD with low-bicarb had exaggerated MAP response vs. normal-bicarb (+5.9 vs. +2.6 mmHg/30 s, P=0.01).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1152/ajpregu.00076.2019"
+      ]
+    },
+    {
+      "claim_text": "tumor-bearing mice with access to running wheels showed reduced growth of MDA-MB-231 (-66%, P < 0.01) tumors",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/0008-5472.can-16-3125"
+      ]
+    },
+    {
+      "claim_text": "We found that exercise significantly reduced fasting insulin levels [WMD, -3.46 μU/mL; 95% confidence interval (CI), -5.97 to -0.95; P = 0.007].",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1055-9965.epi-16-0602"
+      ]
+    },
+    {
+      "claim_text": "IGF-I/IGFBP-3 ratio increased significantly in the diet + exercise group (+5.4%, P < 0.01) compared with control.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1055-9965.epi-13-0337"
+      ]
+    },
+    {
+      "claim_text": "exercise and metformin reduced sTNFαR2 and IL6 (-38.7%; 95% CI, -52.3, -18.9)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-20-0188"
+      ]
+    },
+    {
+      "claim_text": "exercise and metformin reduced sTNFαR2 (-13.1%; 95% CI, -22.9, -1.0)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-20-0188"
+      ]
+    },
+    {
+      "claim_text": "Compared with control, exercise alone reduced hs-CRP [-30.2%; 95% CI, -50.3, -1.0]",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-20-0188"
+      ]
+    },
+    {
+      "claim_text": "exercise alone reduced hs-CRP and IL6 (-30.9%; 95% CI, -47.3, -9.5)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-20-0188"
+      ]
+    },
+    {
+      "claim_text": "Mortality risk was 11% lower (hazard ratio, 0.89; 95% confidence interval, 0.86-0.93; P<0.001) for every 1-MET increase in exercise capacity.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/hypertensionaha.114.03510"
+      ]
+    },
+    {
+      "claim_text": "Between-group comparisons showed that the experimental group had a greater increase in occlusal force and masseter muscle thickness (P < .05 for both)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/joor.13036"
+      ]
+    },
+    {
+      "claim_text": "Exercise capacity was lower in CF (P < 0.014) only when VO2 peak was normalized for FFM (43.5 ± 7.7 vs. 50.6 ± 7.4 ml/kg-FFM/min)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/ppul.23189"
+      ]
+    },
+    {
+      "claim_text": "Participants randomized to the diet + exercise arms had statistically significantly greater reductions in PAI-1 at 12 months compared with controls (-19.3% vs. +3.48%, respectively, P < 0.0001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/0008-5472.can-16-0399"
+      ]
+    },
+    {
+      "claim_text": "Participants randomized to the diet and diet + exercise arms had statistically significantly greater reductions in VEGF (-9.98%, P < 0.0001) compared with controls.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/0008-5472.can-16-0399"
+      ]
+    },
+    {
+      "claim_text": "Participants randomized to the diet and diet + exercise arms had statistically significantly greater reductions in PEDF (-9.90%, P < 0.0001) compared with controls.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/0008-5472.can-16-0399"
+      ]
+    },
+    {
+      "claim_text": "patients with PAD had a greater increase in HR (14 ± 2 vs. 6 ± 2 beats/min, P = 0.033)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1152/japplphysiol.01110.2016"
+      ]
+    },
+    {
+      "claim_text": "patients with PAD had a greater reduction in SmO2 (-54 ± 10 vs. -12 ± 4%, P = 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1152/japplphysiol.01110.2016"
+      ]
+    },
+    {
+      "claim_text": "patients with PAD had a greater increase in mean arterial BP (18 ± 2 vs. 10 ± 2 mmHg, P = 0.029)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1152/japplphysiol.01110.2016"
+      ]
+    },
+    {
+      "claim_text": "OP minus CP; -10 ± 2 older vs. 1 ± 3 young mmHg, P < 0.05",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1152/ajpregu.00462.2010"
+      ]
+    },
+    {
+      "claim_text": "protein synthetic response to exercise was blunted in obese rats: mixed -7%, myofibrillar +6%, cytosolic +7% vs. lean +34%, +40%, +17%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1096/fj.12-224006"
+      ]
+    },
+    {
+      "claim_text": "exercise capacity increased significantly (+1 metabolic equivalent (MET) in exercise ECG stress test)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/ijerph16214085"
+      ]
+    },
+    {
+      "claim_text": "BMD decreased less in resistance (-0.006 g/cm²) and combination (-0.012 g/cm²) vs aerobic (-0.027 g/cm²) (p=0.001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jbmr.3905"
+      ]
+    },
+    {
+      "claim_text": "Leucine alone stimulated ribosomal protein s6 kinase 1 (S6K1) phosphorylation ∼280% more than placebo and EAA-Leu after exercise.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1096/fj.15-273474"
+      ]
+    },
+    {
+      "claim_text": "Participants randomized to diet and diet+exercise arms had greater reductions in E-DII (-104.4% and -84.4%), versus controls (-34.8%, both P < 0.001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-20-0181"
+      ]
+    },
+    {
+      "claim_text": "VO2peak was greater in the intervention group (MD 2.97 mL/kg/min, 95% CI 1.93 to 4.02).",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/14651858.cd009955.pub3"
+      ]
+    },
+    {
+      "claim_text": "Four (MMSE, DSB, VSB, and VFT) out of nine variables were significantly improved after Tai Chi exercise with the effect sizes ranged from 0.20 to 0.46 (small to medium).",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.jshs.2013.09.001"
+      ]
+    },
+    {
+      "claim_text": "NO-donor treatment with isosorbide dinitrate for 6 wk, in combination with voluntary exercise for 3 wk, increased muscle mass by 25%",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1152/ajpcell.00305.2011"
+      ]
+    }
+  ]
+}
