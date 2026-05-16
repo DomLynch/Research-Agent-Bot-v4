@@ -1,0 +1,41 @@
+# Sprint 72 — Numeric-role classification markers (universal).
+#
+# agent/numeric_role_classifier.py reads this file (cached) to decide
+# whether a phrase's surrounding context contains:
+#   - regimen / protocol descriptors  -> the value is a treatment
+#     dose / composition / setting, not an outcome
+#   - sample-size descriptors          -> an integer value is the
+#     count of subjects, not an effect
+#
+# All entries are universal-English research/scientific writing
+# vocabulary. They fire identically across biomedical, climate-
+# policy, finance, training, engineering, and social-science
+# domains (e.g. "carbon restriction", "budget protocol", "training
+# regimen", "test conditions", "survey participants").
+#
+# Universal-no-hardcoding contract:
+#   * NO domain-specific literals. A term that only applies to one
+#     industry (e.g. "feeding"/"patients") MUST NOT be added here.
+#     Such domain words belong either in a structural-pattern rule
+#     in the classifier or in a separate domain-overlay pack
+#     (future sprint surface).
+#   * The contract is locked by
+#     tests/test_numeric_role_classifier.py::
+#     test_loaded_role_markers_have_no_biomedical_literals — that
+#     test fails if any biomedical/clinical literal leaks back in.
+
+regimen = [
+    "restriction",
+    "restricted",
+    "diet",
+    "conditions",
+    "regimen",
+    "protocol",
+]
+
+sample_size = [
+    "n=",
+    "n =",
+    "participants",
+    "subjects",
+]

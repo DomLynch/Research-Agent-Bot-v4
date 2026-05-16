@@ -13,6 +13,9 @@ effect-size finding (e.g. '66 weeks' or '70% CR conditions').
 from __future__ import annotations
 
 import re
+import tomllib
+from functools import lru_cache
+from pathlib import Path
 
 # Time units → duration (covers both treatment-length and timepoint)
 _TIME_UNITS = frozenset([
@@ -32,24 +35,35 @@ _CONC_UNITS = frozenset([
     "mol/l", "mmol/l", "μmol/l", "nmol/l",
 ])
 
-# Regimen markers (Sprint 71 — universal). Phrase describes a
-# treatment / intervention protocol, not an outcome. All entries are
-# universal-English research vocabulary used across biomedical,
-# climate-policy, economics, training, and engineering domains
-# (e.g. "carbon restriction", "budget protocol", "training regimen",
-# "test conditions"). Sprint 71 dropped animal-feeding Latin
-# ("feeding", "feed", "ad lib", "ad libitum") — those were
-# biomedical/agricultural-specific lazy markers.
-_REGIMEN_MARKERS = frozenset([
-    "restriction", "restricted", "diet",
-    "conditions", "regimen", "protocol",
-])
+# Sprint 72 — marker vocabulary lives in topic_packs/role_markers.toml.
+# Code is now pure logic; the universal-English research vocabulary
+# is data. The auditor's strictest reading of "no hardcoding" treats
+# any in-code word list as domain-leaning; moving them out closes
+# that contract. See _load_role_markers() below.
+_ROLE_MARKERS_TOML = (Path(__file__).resolve().parent.parent
+                      / "topic_packs" / "role_markers.toml")
 
-# Sample-size markers (Sprint 71 — universal). "n=" is universal
-# stats notation; "participants"/"subjects" are universal across
-# psychology, economics, surveys, biomedical. Sprint 71 dropped
-# clinical-specific "patients" and "volunteers".
-_SAMPLE_SIZE_MARKERS = ("n=", "n =", "participants", "subjects")
+
+@lru_cache(maxsize=1)
+def _load_role_markers() -> dict[str, frozenset[str]]:
+    """Load universal numeric-role markers from data. Cached per-
+    process. Degrades to empty sets on missing/malformed file
+    (classifier still works; just won't promote regimen / sample
+    size cases). No domain literals in code — see role_markers.toml
+    header for the contract."""
+    try:
+        data = tomllib.loads(
+            _ROLE_MARKERS_TOML.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        data = {}
+    if not isinstance(data, dict):
+        return {"regimen": frozenset(), "sample_size": frozenset()}
+    return {
+        "regimen": frozenset(
+            str(m).lower() for m in (data.get("regimen") or [])),
+        "sample_size": frozenset(
+            str(m).lower() for m in (data.get("sample_size") or [])),
+    }
 
 # Paired-comparison markers (Sprint 67) — universal stats syntax
 # indicating a measured effect-style comparison ('1.33 vs 2.50' or
@@ -93,7 +107,8 @@ def classify_numeric_role(
     if u in _RATIO_UNITS:
         return "effect_size"
     if u == "%":
-        return "regimen" if any(m in ctx for m in _REGIMEN_MARKERS) \
+        markers = _load_role_markers()["regimen"]
+        return "regimen" if any(m in ctx for m in markers) \
             else "effect_size"
     if value is not None and "fold" in ctx and u in ("", "x"):
         return "fold_change"
@@ -105,7 +120,8 @@ def classify_numeric_role(
         ):
             return "p_value"
     if (value is not None and value == int(value)
-            and any(m in ctx for m in _SAMPLE_SIZE_MARKERS)):
+            and any(m in ctx
+                    for m in _load_role_markers()["sample_size"])):
         return "sample_size"
     # P-value prefix check (Sprint 68): a p-prefix counts ONLY when
     # IMMEDIATELY adjacent to the value being classified (within 5

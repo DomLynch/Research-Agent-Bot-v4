@@ -179,6 +179,46 @@ def test_universal_real_climate_effect_not_artifact() -> None:
     assert is_numeric_artifact(8, phrase) is False
 
 
+# ============= Sprint 72 — cross-industry universal fixtures =============
+
+def test_universal_climate_carbon_tax_30_years_is_duration() -> None:
+    """Climate-policy duration: Sweden levied a carbon tax for 30
+    years. Value 30 is followed by `years` (bare time suffix), so
+    sanitizer rule 4 flags it. Universal time-suffix rule fires
+    identically in any domain."""
+    phrase = "Sweden levied a carbon tax for 30 years over 1991-2020"
+    assert is_numeric_artifact(30, phrase) is True
+
+
+def test_universal_business_15_pct_yoy_revenue_not_artifact() -> None:
+    """Business / finance: '15% YoY revenue' is a real growth
+    metric. Value 15 followed by `%`, so `_UNIT_FOLLOWS` matches
+    and the identifier-prefix rule does NOT fire even though `Q3 `
+    or `Q4 ` may sit in the surrounding sentence."""
+    phrase = "Q3 2024 revenue grew 15% YoY against a soft comparator"
+    assert is_numeric_artifact(15, phrase) is False
+
+
+def test_universal_finance_fed_rate_525_not_artifact() -> None:
+    """Finance: 5.25% Fed Funds rate is a real policy rate.
+    Non-integer + unit-follows → never flagged. Decimal handling
+    preserves the rate."""
+    phrase = "Federal Reserve set the target rate at 5.25% in March"
+    assert is_numeric_artifact(5.25, phrase) is False
+
+
+def test_universal_quarter_year_identifier_is_artifact() -> None:
+    """Business: `Q3 2024` matches the identifier-prefix pattern
+    (uppercase + digit + separator + integer), structurally
+    identical to `MCF 7` cell-line. Sprint 69 rule 3 correctly
+    flags the `2024` as part of a quarter-year code rather than a
+    standalone year. Universal — the rule fires the same way on
+    any short alphanumeric prefix followed by a code-style
+    integer."""
+    phrase = "Q3 2024 revenue grew 15% YoY against a soft comparator"
+    assert is_numeric_artifact(2024, phrase) is True
+
+
 # ============= Sprint 69 — auditor cases (Cal 27 / 72 h) =============
 
 def test_cell_line_with_space_cal_27_is_artifact() -> None:
