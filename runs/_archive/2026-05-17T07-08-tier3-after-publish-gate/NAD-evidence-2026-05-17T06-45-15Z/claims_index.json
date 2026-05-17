@@ -1,0 +1,133 @@
+{
+  "topic": "NAD",
+  "snapshot_utc": "2026-05-17T06-45-15Z",
+  "claim_count": 14,
+  "claims": [
+    {
+      "claim_text": "women had higher plasma NAD+/NADH ratios than men (median 1.33 vs. 1.09, P<0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1042/bsr20200340"
+      ]
+    },
+    {
+      "claim_text": "ArLD liver tissue showed markedly depressed concentrations of NAD+ (432 μM vs. 616 μM in normal liver)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/hep4.1530"
+      ]
+    },
+    {
+      "claim_text": "exhibiting the average voltage of 2.3 V",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/anie.201906844"
+      ]
+    },
+    {
+      "claim_text": "measured the concentration distribution of breath EtOH without alcohol consumption using the improved sniff-cam and obtained a value of 116.2 ± 35.7 ppb",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1021/acs.analchem.8b05840"
+      ]
+    },
+    {
+      "claim_text": "NAD+ concentration was ... positively correlated with myeloperoxidase activity (r² = 0.31; P = 0.003).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/hep4.1530"
+      ]
+    },
+    {
+      "claim_text": "NAD+ concentration was inversely related to serum bilirubin concentration (r² = -0.127; P = 0.04)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/hep4.1530"
+      ]
+    },
+    {
+      "claim_text": "a significant difference for individual components of the metabolome was observed for the concentration of NAD+ (mean, 462 μM vs. 322 μM; P < 0.01 in nonsevere vs. severe alcoholic steatohepatitis, respectively).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/hep4.1530"
+      ]
+    },
+    {
+      "claim_text": "There was a significant overall difference in the NAD+ metabolome between ArLD samples with and without steatohepatitis (two-way ANOVA, P = 0.018).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/hep4.1530"
+      ]
+    },
+    {
+      "claim_text": "Protein levels of nicotinamide phosphoribosyltransferase (NAMPT) decreased by 14% with NR.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1113/jp278752"
+      ]
+    },
+    {
+      "claim_text": "total plasma NAD concentration was determined with median 1.34 µM (0.44-2.88 µM) without difference between men and women",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1042/bsr20200340"
+      ]
+    },
+    {
+      "claim_text": "RNAIII, a central quorum-sensing regulator of this bacterium's physiology, was found to be 5' NAD capped in a range from 10 to 35%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1128/jb.00591-19"
+      ]
+    },
+    {
+      "claim_text": "A single dose (62.5 mg/kg) of NMN, administered to male mice",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1002/jnr.24397"
+      ]
+    },
+    {
+      "claim_text": "NAD incorporation efficiency into RNAIII was found to depend in vivo on the -1 position of the P3 promoter",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1128/jb.00591-19"
+      ]
+    },
+    {
+      "claim_text": "NQO1-overexpressing cancer cells, which is noted in a majority (∼85%) of PDA cases",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/cddis.2014.564"
+      ]
+    }
+  ]
+}

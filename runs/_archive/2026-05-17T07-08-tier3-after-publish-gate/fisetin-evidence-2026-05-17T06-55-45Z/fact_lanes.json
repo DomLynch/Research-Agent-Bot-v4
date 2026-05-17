@@ -1,0 +1,90 @@
+{
+  "topic": "fisetin",
+  "snapshot_utc": "2026-05-17T06-55-45Z",
+  "counts": {
+    "A_core": 1,
+    "B_context": 1,
+    "C_noise": 0,
+    "D_bad_extraction": 11
+  },
+  "verdicts": [
+    {
+      "fact_id": "69676",
+      "lane": "A_core",
+      "numeric_role": "effect_size",
+      "reason": "topic_in_intervention_pico_complete"
+    },
+    {
+      "fact_id": "69698",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "numeric_role=p_value_not_effect_finding"
+    },
+    {
+      "fact_id": "69791",
+      "lane": "D_bad_extraction",
+      "numeric_role": "dose",
+      "reason": "numeric_role=dose_not_effect_finding"
+    },
+    {
+      "fact_id": "69737",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "69783",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "numeric_role=concentration_not_effect_finding"
+    },
+    {
+      "fact_id": "69648",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "numeric_role=concentration_not_effect_finding"
+    },
+    {
+      "fact_id": "69646",
+      "lane": "B_context",
+      "numeric_role": "effect_size",
+      "reason": "topic_in_phrase_but_not_intervention"
+    },
+    {
+      "fact_id": "69744",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "numeric_role=concentration_not_effect_finding"
+    },
+    {
+      "fact_id": "69677",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "numeric_role=concentration_not_effect_finding"
+    },
+    {
+      "fact_id": "69678",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "numeric_role=concentration_not_effect_finding"
+    },
+    {
+      "fact_id": "69715",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "numeric_role=concentration_not_effect_finding"
+    },
+    {
+      "fact_id": "69835",
+      "lane": "D_bad_extraction",
+      "numeric_role": "dose",
+      "reason": "numeric_role=dose_not_effect_finding"
+    },
+    {
+      "fact_id": "69733",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "numeric_role=concentration_not_effect_finding"
+    }
+  ]
+}

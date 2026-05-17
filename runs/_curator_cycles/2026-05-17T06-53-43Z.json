@@ -1,0 +1,73 @@
+{
+  "cycle_ts": "2026-05-17T06-53-43Z",
+  "top_requested": 6,
+  "cooldown_hours": 24.0,
+  "ran": [
+    {
+      "topic": "creatine",
+      "velocity": 0.229,
+      "status": "ran",
+      "run_dir": "runs/creatine-evidence-2026-05-17T06-54-30Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "fisetin",
+      "velocity": 0.223,
+      "status": "ran",
+      "run_dir": "runs/fisetin-evidence-2026-05-17T06-55-45Z",
+      "signal_label": "frontier_hypothesis",
+      "notes": ""
+    },
+    {
+      "topic": "berberine",
+      "velocity": 0.174,
+      "status": "ran",
+      "run_dir": "runs/berberine-evidence-2026-05-17T06-57-02Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "NMN",
+      "velocity": 0.174,
+      "status": "ran",
+      "run_dir": "runs/NMN-evidence-2026-05-17T06-58-14Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "resveratrol",
+      "velocity": 0.171,
+      "status": "ran",
+      "run_dir": "runs/resveratrol-evidence-2026-05-17T06-59-01Z",
+      "signal_label": "frontier_hypothesis",
+      "notes": ""
+    },
+    {
+      "topic": "spermidine",
+      "velocity": 0.117,
+      "status": "ran",
+      "run_dir": "runs/spermidine-evidence-2026-05-17T07-01-13Z",
+      "signal_label": "frontier_hypothesis",
+      "notes": ""
+    }
+  ],
+  "skipped_in_cooldown": [
+    "metformin",
+    "autophagy",
+    "caloric_restriction",
+    "exercise",
+    "mtor",
+    "rapamycin",
+    "longevity",
+    "fasting",
+    "senolytic",
+    "telomere",
+    "NAD",
+    "sirtuin",
+    "quercetin",
+    "dasatinib"
+  ],
+  "cross_topic_memo": "runs/_curator_cycles/2026-05-17T06-53-43Z_cross_topic_alpha_memo.md",
+  "publish_queue": "runs/_publish_queue.json"
+}

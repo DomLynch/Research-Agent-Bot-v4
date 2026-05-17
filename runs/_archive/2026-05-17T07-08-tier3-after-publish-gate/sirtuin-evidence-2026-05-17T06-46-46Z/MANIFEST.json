@@ -1,0 +1,72 @@
+{
+  "topic": "sirtuin",
+  "snapshot_utc": "2026-05-17T06-46-46Z",
+  "top_n": 5,
+  "facts_inspected": 8,
+  "aggregated_claims": 8,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "mode": "alpha",
+  "selected_theme": null,
+  "facet_counts": {},
+  "numeric_artifacts_filtered": 5,
+  "pico_enrichment": {
+    "facts_inspected": 13,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "mimo-v2.5-pro"
+  },
+  "ranking": "alpha: deterministic validation*magnitude*precision*recency + data-driven contrast/subgroup boosts + theme coherence",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "74ad7b2b242d0d021e73c76b1b1e5990f174f309eb3cf0e72e84eee2ae2ec4a9"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "5b20d5b133c4c0268b34cbfa00a5e9f1a01b4f585bb296bc49649433b1a7cdf4"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "c10956f4dcbae6573246206c2ed7c534f7c342cb61030416fbb5596bde380f03"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "968c0400a241d28baba76d64634a680c7da9d8903292fe66690ded1a51937e85"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "e737353472c4dd97148689cf20b052f71472d4876673cbca2c98e99598579467"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "534a47e4779af13da569b5716a8bf6592b499057464742704afedb135f539d62"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "9c09fe012eae3f80651350e9c4460fc7e441ca439d23daf2b9878c5fd746bfbf"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "1fe9398d1847ecda4d55e5052863c828d53534d79b4019ba6f786406b97163ac"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "6f75133c7cd20b7bf397ad1e84b3063abd3510bb439eec73189741b8488fd9c0"
+    },
+    "signal_post_md": {
+      "name": "signal_post.md",
+      "sha256": "94788dfaa8a413fa0e1f2899eedf5a397e2e7e053e7fc1575b968d48a2c1fd6d"
+    },
+    "alpha_memo_md": {
+      "name": "alpha_memo.md",
+      "sha256": "0652e80ef680d1eafae762f771c0bc9d5deac63c68459034da3b9150e6c74399"
+    },
+    "publish_verdict_json": {
+      "name": "publish_verdict.json",
+      "sha256": "a06130a5f08acbcd879de5f64361aaf623c77b00aee8814a49c30a20ec147d1b"
+    }
+  }
+}

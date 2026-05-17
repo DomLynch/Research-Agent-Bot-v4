@@ -1,0 +1,79 @@
+{
+  "topic": "sirtuin",
+  "snapshot_utc": "2026-05-17T06-46-46Z",
+  "claim_count": 8,
+  "claims": [
+    {
+      "claim_text": "PA negatively modulated SIRT3 expression (p < 0.001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/antiox11081611"
+      ]
+    },
+    {
+      "claim_text": "SIRT3 restoration suppressed pyroptosis (p < 0.01).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/antiox11081611"
+      ]
+    },
+    {
+      "claim_text": "SIRT3 restoration suppressed PA-induced autophagy (p < 0.01).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/antiox11081611"
+      ]
+    },
+    {
+      "claim_text": "PA imbalanced the oxidative status (p < 0.001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/antiox11081611"
+      ]
+    },
+    {
+      "claim_text": "5-methylmellein inhibited SirA activity with IC50 of 120 μM.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.2323/jgam.2018.01.001"
+      ]
+    },
+    {
+      "claim_text": "mellein inhibited SirA activity with IC50 of 160 μM.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.2323/jgam.2018.01.001"
+      ]
+    },
+    {
+      "claim_text": "There is an association between the SIRT2-C/T genotype (rs10410544) (50.92%) and AD susceptibility in the APOEε4-negative population",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/ijms20051249"
+      ]
+    },
+    {
+      "claim_text": "The 5 most frequent bigenic genotypes in AD are 33CT (27.81%), 33CC (21.36%), 34CT (15.29%), 34CC (9.76%) and 33TT (7.18%)",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/ijms20051249"
+      ]
+    }
+  ]
+}

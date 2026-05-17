@@ -1,0 +1,24 @@
+{
+  "topic": "creatine",
+  "snapshot_utc": "2026-05-17T06-54-30Z",
+  "counts": {
+    "A_core": 0,
+    "B_context": 1,
+    "C_noise": 0,
+    "D_bad_extraction": 1
+  },
+  "verdicts": [
+    {
+      "fact_id": "63650",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "numeric_role=p_value_not_effect_finding"
+    },
+    {
+      "fact_id": "32411",
+      "lane": "B_context",
+      "numeric_role": "effect_size",
+      "reason": "topic_in_phrase_but_not_intervention"
+    }
+  ]
+}

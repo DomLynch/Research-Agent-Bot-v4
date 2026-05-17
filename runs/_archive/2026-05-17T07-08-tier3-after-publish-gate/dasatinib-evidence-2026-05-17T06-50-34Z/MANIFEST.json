@@ -1,21 +1,20 @@
 {
-  "topic": "longevity",
-  "snapshot_utc": "2026-05-17T05-46-45Z",
+  "topic": "dasatinib",
+  "snapshot_utc": "2026-05-17T06-50-34Z",
   "top_n": 5,
-  "facts_inspected": 31,
-  "aggregated_claims": 29,
+  "facts_inspected": 5,
+  "aggregated_claims": 5,
   "data_tier": "tier2",
   "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
   "frontier_model": "mimo-v2.5-pro",
   "mode": "alpha",
   "selected_theme": "intervention_signal",
   "facet_counts": {
-    "clinical_outcome": 1,
-    "model_context": 1
+    "preclinical_cancer": 1
   },
-  "numeric_artifacts_filtered": 17,
+  "numeric_artifacts_filtered": 1,
   "pico_enrichment": {
-    "facts_inspected": 48,
+    "facts_inspected": 6,
     "facts_changed": 0,
     "facts_population_filled": 0,
     "facts_intervention_filled": 0,
@@ -25,47 +24,51 @@
   "files": {
     "top_md": {
       "name": "top_5.md",
-      "sha256": "eeaca9cfc97697fd83970305899ce439c1e80f3c93be16b747540ab1579a404a"
+      "sha256": "297fe8b8ab08b1ed81477ff8e5d64c20863732646f45330cd1a9d07e1b864c0d"
     },
     "all_facts": {
       "name": "all_facts.json",
-      "sha256": "0e9c54f2095b158007d2b9c3e5bc39b2821d7960d3091239270ec8b54e586bbe"
+      "sha256": "50a4163756fbff3f2b93efa35516b5281b13fab86d09b7f28726f7e9ef1f315c"
     },
     "claims_index": {
       "name": "claims_index.json",
-      "sha256": "1f07c364b265b86bc401d9ba7a2f0d3f306e8cca0d076e647105c81b9f48f733"
+      "sha256": "07075c99b69b80ce65b514a4c4bfac223b9700bfccd361d8e24b0f4e1fbd4f72"
     },
     "frontier_md": {
       "name": "frontier_review.md",
-      "sha256": "0687aadb3bb24eec46acac90385dd23ee4b5f75f0e1c59f8a51cfcdd16e82bd1"
+      "sha256": "235d051e748a0e5df5be6382bfccd1d2017a94d4ce43760fa87325ba03653662"
     },
     "frontier_json": {
       "name": "frontier_review.json",
-      "sha256": "5cf6d9ba6b698572172cca475dce1f9cc01085c34349d15acf6fe66e5b5f8d04"
+      "sha256": "71c36ffededf3fd7e84ee17b9295c9ca0900aaf1be62bfc52e8a7bcde3b714f8"
     },
     "papers_metadata": {
       "name": "papers_metadata.json",
-      "sha256": "f7f4b4d86206d4e67892c9b6ba67c62ab0a86a32e42f9e4d130b4b8cd99cb932"
+      "sha256": "8b95db625e266f96804c65d7310d9d53b5c709f5d773e5913ef6a7ef8ff34ed0"
     },
     "fact_lanes": {
       "name": "fact_lanes.json",
-      "sha256": "dcc603272e1cf5e6176dca11f9f9978f5c742de2e09add3f28b9ee293f30b8a5"
+      "sha256": "229668c4f361c253f0e753da52d483d51c74254961bf8e1a49cff170c2bb5999"
     },
     "opportunities_gate": {
       "name": "opportunities_gate.json",
-      "sha256": "ffe81b71450a01cab0053abcbf386b43ff495ae49744c7c2af997f8042624cd3"
+      "sha256": "51297105a6a2c20164736c99c6cca5d0802eb6089d8613b0c36fe444365f95be"
     },
     "paper_opportunities_md": {
       "name": "paper_opportunities.md",
-      "sha256": "dae4c2d14e64de51485006d733dd1391be03dc780a0143bd4978bf63f2cd8376"
+      "sha256": "8df6efcf826b880b24cab2c2b85805c7e60e996a08b8f7fe8b0ba2732faf6859"
     },
     "signal_post_md": {
       "name": "signal_post.md",
-      "sha256": "18ab3003987624582b623b13429cfaee4f02f9af881853798742e4522e67b8cc"
+      "sha256": "8ccdccc30b18af3e46cfd22f474216ca2a3dfec283e2a7de87d8485ff7aef044"
     },
     "alpha_memo_md": {
       "name": "alpha_memo.md",
-      "sha256": "1b1e9471b27fcaf98e66998ceb919d80b69ef56ccdafbff7ad7bd3ee169c1adb"
+      "sha256": "cb8a1e0cfcae4d080c1d5bb65496457c293cd05e4b9f613e18915fd3957fae88"
+    },
+    "publish_verdict_json": {
+      "name": "publish_verdict.json",
+      "sha256": "d0b771e9d56c6a30062fa831ac4a680a60d6db719fab76c417abf143e201a7ed"
     }
   }
 }

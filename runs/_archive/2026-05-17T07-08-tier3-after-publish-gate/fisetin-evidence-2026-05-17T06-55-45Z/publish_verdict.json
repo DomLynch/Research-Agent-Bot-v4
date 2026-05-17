@@ -1,0 +1,36 @@
+{
+  "run_dir": "runs/_archive/2026-05-17T07-08-tier3-after-publish-gate/fisetin-evidence-2026-05-17T06-55-45Z",
+  "topic": "fisetin",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "Scoping Review of Fisetin's Context-Dependent Bioactivity: Bridging Anti-Oncogenic and Antimicrobial Evidence Gaps",
+  "confidence_label": "frontier_hypothesis",
+  "alpha_score": 0,
+  "axes": {
+    "bound_receipts": 2,
+    "a_core_receipts": 1,
+    "source_concentrated": true,
+    "counter_consensus_tension": true,
+    "cross_domain_forced": true,
+    "feed_scope_mismatch": false,
+    "source_papers": [
+      {
+        "doi": "10.1093/carcin/bgv045",
+        "title": "Fisetin, a dietary flavonoid, induces apoptosis of cancer cells by inhibiting HSF1 activity through blocking its binding to the hsp70 promoter.",
+        "journal": "Carcinogenesis",
+        "year": 2015
+      },
+      {
+        "doi": "10.3390/molecules20046128",
+        "title": "Bactericidal effect of extracts and metabolites of Robinia pseudoacacia L. on Streptococcus mutans and Porphyromonas gingivalis causing dental plaque and periodontal inflammatory diseases.",
+        "journal": "Molecules (Basel, Switzerland)",
+        "year": 2015
+      }
+    ]
+  },
+  "blockers": [
+    "cross_domain_forced",
+    "low_alpha_score"
+  ]
+}

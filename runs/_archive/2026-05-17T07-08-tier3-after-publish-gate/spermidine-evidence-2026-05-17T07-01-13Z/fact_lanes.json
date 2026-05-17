@@ -1,0 +1,120 @@
+{
+  "topic": "spermidine",
+  "snapshot_utc": "2026-05-17T07-01-13Z",
+  "counts": {
+    "A_core": 3,
+    "B_context": 2,
+    "C_noise": 2,
+    "D_bad_extraction": 11
+  },
+  "verdicts": [
+    {
+      "fact_id": "10765",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "numeric_role=p_value_not_effect_finding"
+    },
+    {
+      "fact_id": "31376",
+      "lane": "A_core",
+      "numeric_role": "effect_size",
+      "reason": "topic_in_intervention_pico_complete"
+    },
+    {
+      "fact_id": "10766",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "numeric_role=p_value_not_effect_finding"
+    },
+    {
+      "fact_id": "10767",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "numeric_role=p_value_not_effect_finding"
+    },
+    {
+      "fact_id": "31377",
+      "lane": "A_core",
+      "numeric_role": "effect_size",
+      "reason": "topic_in_intervention_pico_complete"
+    },
+    {
+      "fact_id": "30307",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "numeric_role=concentration_not_effect_finding"
+    },
+    {
+      "fact_id": "66107",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "65726",
+      "lane": "B_context",
+      "numeric_role": "effect_size",
+      "reason": "topic_in_phrase_but_not_intervention"
+    },
+    {
+      "fact_id": "65724",
+      "lane": "A_core",
+      "numeric_role": "effect_size",
+      "reason": "topic_in_intervention_pico_complete"
+    },
+    {
+      "fact_id": "65725",
+      "lane": "B_context",
+      "numeric_role": "effect_size",
+      "reason": "topic_in_phrase_but_not_intervention"
+    },
+    {
+      "fact_id": "16844",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "numeric_role=concentration_not_effect_finding"
+    },
+    {
+      "fact_id": "13182",
+      "lane": "D_bad_extraction",
+      "numeric_role": "dose",
+      "reason": "numeric_role=dose_not_effect_finding"
+    },
+    {
+      "fact_id": "65021",
+      "lane": "D_bad_extraction",
+      "numeric_role": "dose",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "15627",
+      "lane": "D_bad_extraction",
+      "numeric_role": "dose",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "45240",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "31887",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "28411",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "62264",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    }
+  ]
+}

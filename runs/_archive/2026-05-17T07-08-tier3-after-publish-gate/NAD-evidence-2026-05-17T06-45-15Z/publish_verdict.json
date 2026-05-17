@@ -1,0 +1,36 @@
+{
+  "run_dir": "runs/_archive/2026-05-17T07-08-tier3-after-publish-gate/NAD-evidence-2026-05-17T06-45-15Z",
+  "topic": "NAD",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "Sexual Dimorphism in NAD Redox State as a Predictor of Host Susceptibility to NAD-Capped Bacterial Pathogens",
+  "confidence_label": "frontier_hypothesis",
+  "alpha_score": 0,
+  "axes": {
+    "bound_receipts": 2,
+    "a_core_receipts": 1,
+    "source_concentrated": true,
+    "counter_consensus_tension": true,
+    "cross_domain_forced": true,
+    "feed_scope_mismatch": false,
+    "source_papers": [
+      {
+        "doi": "10.1042/bsr20200340",
+        "title": "Sex-related differences in human plasma NAD+/NADH levels depend on age",
+        "journal": "Bioscience Reports",
+        "year": 2021
+      },
+      {
+        "doi": "10.1128/jb.00591-19",
+        "title": "The 5\u2032 NAD Cap of RNAIII Modulates Toxin Production in Staphylococcus aureus Isolates",
+        "journal": "Journal of Bacteriology",
+        "year": 2019
+      }
+    ]
+  },
+  "blockers": [
+    "cross_domain_forced",
+    "low_alpha_score"
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "topic": "sirtuin",
+  "snapshot_utc": "2026-05-17T06-46-46Z",
+  "counts": {
+    "A_core": 0,
+    "B_context": 0,
+    "C_noise": 2,
+    "D_bad_extraction": 6
+  },
+  "verdicts": [
+    {
+      "fact_id": "19514",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "numeric_role=p_value_not_effect_finding"
+    },
+    {
+      "fact_id": "19517",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "numeric_role=p_value_not_effect_finding"
+    },
+    {
+      "fact_id": "19516",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "numeric_role=p_value_not_effect_finding"
+    },
+    {
+      "fact_id": "19515",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "numeric_role=p_value_not_effect_finding"
+    },
+    {
+      "fact_id": "63098",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "numeric_role=concentration_not_effect_finding"
+    },
+    {
+      "fact_id": "6510",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "63099",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "numeric_role=concentration_not_effect_finding"
+    },
+    {
+      "fact_id": "6512",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    }
+  ]
+}

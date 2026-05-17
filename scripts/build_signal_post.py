@@ -34,6 +34,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from agent.publish_tier import write_publish_verdict  # isort: skip
 from agent.signal_memo_writer import write_signal_memo  # isort: skip
 
 
@@ -459,6 +460,8 @@ def main() -> int:
         (run_dir / "curation_brief.md").write_text(brief, encoding="utf-8")
         brief_text = brief
     memo_path, memo_text = write_signal_memo(run_dir, signal_text=text)
+    verdict_path, verdict = write_publish_verdict(run_dir)
+    verdict_text = verdict_path.read_text(encoding="utf-8")
     # Update MANIFEST if present
     manifest_path = run_dir / "MANIFEST.json"
     if manifest_path.exists():
@@ -473,6 +476,10 @@ def main() -> int:
                     files["alpha_memo_md"] = {
                         "name": memo_path.name, "sha256": _sha256(memo_text),
                     }
+                    files["publish_verdict_json"] = {
+                        "name": verdict_path.name,
+                        "sha256": _sha256(verdict_text),
+                    }
                     if brief_text:
                         files["curation_brief_md"] = {
                             "name": "curation_brief.md",
@@ -486,7 +493,10 @@ def main() -> int:
     # has_hints overrides applied), not the pre-binding base label.
     # Was an audit-trust hazard: log said `frontier_hypothesis` while
     # signal_post.md said `evidence_binding_failed`.
-    print(f"[signal-post] {run_dir.name}: label={label} -> {out_path}")
+    print(
+        f"[signal-post] {run_dir.name}: label={label} "
+        f"publish={verdict['publish_tier']} -> {out_path}"
+    )
     return 0
 
 

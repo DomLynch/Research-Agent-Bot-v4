@@ -1,0 +1,23 @@
+{
+  "run_dir": "runs/_archive/2026-05-17T07-08-tier3-after-publish-gate/fasting-evidence-2026-05-17T05-49-34Z",
+  "topic": "fasting",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "The Compliance Paradox in Fasting: When Patient Autonomy Overrides Medical Safety in Diabetes Management",
+  "confidence_label": "curation_needed",
+  "alpha_score": 60,
+  "axes": {
+    "bound_receipts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": true,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "blockers": [
+    "blocked_label:curation_needed",
+    "no_bound_receipts"
+  ]
+}

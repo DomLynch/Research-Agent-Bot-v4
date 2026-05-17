@@ -1,0 +1,34 @@
+{
+  "topic": "NMN",
+  "snapshot_utc": "2026-05-17T06-58-14Z",
+  "claim_count": 3,
+  "claims": [
+    {
+      "claim_text": "Mice received NMN in drinking water (400 mg/kg).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1152/ajpendo.00446.2020"
+      ]
+    },
+    {
+      "claim_text": "A single dose (62.5 mg/kg) of NMN, administered to male mice",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1002/jnr.24397"
+      ]
+    },
+    {
+      "claim_text": "Expression levels of PARP-1, NF-κB p65, FOXO1 and BCL2-like protein 4 were significantly increased at 96 h",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3892/etm.2017.5098"
+      ]
+    }
+  ]
+}

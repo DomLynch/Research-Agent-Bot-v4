@@ -1,0 +1,74 @@
+"""Build the ReseaRka alpha publish queue from run folders."""
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from agent.publish_tier import write_publish_verdict
+
+_ROOT = Path(__file__).resolve().parent.parent
+_RUNS = _ROOT / "runs"
+
+
+def _alpha_runs(include_archive: bool) -> list[Path]:
+    patterns = ["*-evidence-*/alpha_memo.md"]
+    if include_archive:
+        patterns.append("_archive/*/*-evidence-*/alpha_memo.md")
+    seen: set[Path] = set()
+    out: list[Path] = []
+    for pattern in patterns:
+        for path in sorted(_RUNS.glob(pattern)):
+            run = path.parent
+            if run not in seen:
+                seen.add(run)
+                out.append(run)
+    return out
+
+
+def build_queue(include_archive: bool = True) -> dict[str, list[dict[str, Any]]]:
+    rows = []
+    for run in _alpha_runs(include_archive):
+        _, verdict = write_publish_verdict(run)
+        rows.append(verdict)
+    rank = {"TIER_1": 0, "TIER_2": 1, "TIER_3": 2}
+    rows.sort(key=lambda r: (
+        rank.get(str(r.get("publish_tier")), 9),
+        -int(r.get("alpha_score") or 0),
+        str(r.get("topic") or ""),
+    ))
+    return {
+        "ready_to_publish": [
+            r for r in rows if r.get("decision") == "ready_to_publish"
+        ],
+        "needs_operator_review": [
+            r for r in rows if r.get("decision") == "needs_operator_review"
+        ],
+        "curation_needed": [
+            r for r in rows if r.get("decision") == "curation_needed"
+        ],
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--current-only", action="store_true")
+    parser.add_argument("--output", type=Path, default=_RUNS / "_publish_queue.json")
+    args = parser.parse_args()
+    queue = build_queue(include_archive=not args.current_only)
+    args.output.write_text(json.dumps(queue, indent=2), encoding="utf-8")
+    print(
+        "[publish-queue] "
+        f"ready={len(queue['ready_to_publish'])} "
+        f"review={len(queue['needs_operator_review'])} "
+        f"curation={len(queue['curation_needed'])} -> {args.output}"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

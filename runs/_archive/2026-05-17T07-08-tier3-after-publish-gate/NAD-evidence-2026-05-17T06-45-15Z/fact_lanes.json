@@ -1,0 +1,96 @@
+{
+  "topic": "NAD",
+  "snapshot_utc": "2026-05-17T06-45-15Z",
+  "counts": {
+    "A_core": 1,
+    "B_context": 1,
+    "C_noise": 2,
+    "D_bad_extraction": 10
+  },
+  "verdicts": [
+    {
+      "fact_id": "25459",
+      "lane": "B_context",
+      "numeric_role": "effect_size",
+      "reason": "topic_in_phrase_but_not_intervention"
+    },
+    {
+      "fact_id": "24802",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "numeric_role=concentration_not_effect_finding"
+    },
+    {
+      "fact_id": "35328",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "63690",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "24806",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "numeric_role=p_value_not_effect_finding"
+    },
+    {
+      "fact_id": "24805",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "17508",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "24803",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "numeric_role=concentration_not_effect_finding"
+    },
+    {
+      "fact_id": "24804",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "numeric_role=p_value_not_effect_finding"
+    },
+    {
+      "fact_id": "7651",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "3092",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "25461",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "numeric_role=concentration_not_effect_finding"
+    },
+    {
+      "fact_id": "17507",
+      "lane": "A_core",
+      "numeric_role": "effect_size",
+      "reason": "topic_in_intervention_pico_complete"
+    },
+    {
+      "fact_id": "7801",
+      "lane": "D_bad_extraction",
+      "numeric_role": "dose",
+      "reason": "numeric_role=dose_not_effect_finding"
+    }
+  ]
+}

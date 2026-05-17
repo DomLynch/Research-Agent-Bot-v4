@@ -70,6 +70,10 @@
     "curation_brief_md": {
       "name": "curation_brief.md",
       "sha256": "b8ca2ad25ebe03ceb0f595787e47a5492cf7445626dc962225c49653b0e4efd9"
+    },
+    "publish_verdict_json": {
+      "name": "publish_verdict.json",
+      "sha256": "7f6aea4ae1eb7ed351a118e362381a9f2308d9256fc9a0646b840c9f3e0f3181"
     }
   }
 }

@@ -1,0 +1,47 @@
+{
+  "run_dir": "runs/_archive/2026-05-17T05-58-archive-before-top3/metformin-evidence-2026-05-16T18-01-51Z",
+  "topic": "metformin",
+  "decision": "needs_operator_review",
+  "publish_tier": "TIER_2",
+  "maturity_level": "L4",
+  "headline": "Context-Dependent Efficacy of Metformin in Cancer Prevention: A Scoping Review Dissecting Preclinical-Clinical Discrepancies",
+  "confidence_label": "evidence_backed_signal",
+  "alpha_score": 100,
+  "axes": {
+    "bound_receipts": 4,
+    "a_core_receipts": 4,
+    "source_concentrated": false,
+    "counter_consensus_tension": true,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": [
+      {
+        "doi": "10.1158/1940-6207.capr-10-0055",
+        "title": "Metformin Prevents Tobacco Carcinogen\u2013Induced Lung Tumorigenesis",
+        "journal": "Cancer Prevention Research",
+        "year": 2010
+      },
+      {
+        "doi": "10.1158/1055-9965.epi-17-0424",
+        "title": "A Cohort Study of Metformin and Colorectal Cancer Risk among Patients with Diabetes Mellitus",
+        "journal": "Cancer Epidemiology Biomarkers & Prevention",
+        "year": 2018
+      },
+      {
+        "doi": "10.1002/ijc.29120",
+        "title": "Metformin use among type 2 diabetics and risk of pancreatic cancer in a clinic\u2010based case\u2013control study",
+        "journal": "International Journal of Cancer",
+        "year": 2014
+      },
+      {
+        "doi": "10.1158/1535-7163.mct-16-0793",
+        "title": "Metformin Inhibits Cellular Proliferation and Bioenergetics in Colorectal Cancer Patient\u2013Derived Xenografts",
+        "journal": "Molecular Cancer Therapeutics",
+        "year": 2017
+      }
+    ]
+  },
+  "blockers": [
+    "source_dispersion"
+  ]
+}

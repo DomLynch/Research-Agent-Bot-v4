@@ -1,0 +1,515 @@
+{
+  "ready_to_publish": [
+    {
+      "run_dir": "runs/_archive/2026-05-17T05-58-archive-before-top3/exercise-evidence-2026-05-16T18-12-38Z",
+      "topic": "exercise",
+      "decision": "ready_to_publish",
+      "publish_tier": "TIER_1",
+      "maturity_level": "L5",
+      "headline": "Pathway-specific anti-inflammatory gating: metformin unlocks TNF-axis suppression in exercise-responsive cancer survivors that exercise alone cannot achieve",
+      "confidence_label": "evidence_backed_signal",
+      "alpha_score": 100,
+      "axes": {
+        "bound_receipts": 4,
+        "a_core_receipts": 4,
+        "source_concentrated": true,
+        "counter_consensus_tension": true,
+        "cross_domain_forced": false,
+        "feed_scope_mismatch": false,
+        "source_papers": [
+          {
+            "doi": "10.1158/1940-6207.capr-20-0188",
+            "title": "Effect of Exercise or Metformin on Biomarkers of Inflammation in Breast and Colorectal Cancer: A Randomized Trial",
+            "journal": "Cancer Prevention Research",
+            "year": 2020
+          }
+        ]
+      },
+      "blockers": []
+    },
+    {
+      "run_dir": "runs/senolytic-evidence-2026-05-17T05-54-05Z",
+      "topic": "senolytic",
+      "decision": "ready_to_publish",
+      "publish_tier": "TIER_1",
+      "maturity_level": "L5",
+      "headline": "Senolytic-induced EndoMT as a maladaptive response in atherosclerotic plaque regression: implications for therapeutic window optimization",
+      "confidence_label": "evidence_backed_signal",
+      "alpha_score": 83,
+      "axes": {
+        "bound_receipts": 3,
+        "a_core_receipts": 3,
+        "source_concentrated": true,
+        "counter_consensus_tension": true,
+        "cross_domain_forced": false,
+        "feed_scope_mismatch": false,
+        "source_papers": [
+          {
+            "doi": "10.1172/jci.insight.173863",
+            "title": "Treatment of advanced atherosclerotic mice with ABT-263 reduced indices of plaque stability and increased mortality",
+            "journal": "JCI Insight",
+            "year": 2024
+          }
+        ]
+      },
+      "blockers": []
+    }
+  ],
+  "needs_operator_review": [
+    {
+      "run_dir": "runs/_archive/2026-05-17T05-58-archive-before-top3/metformin-evidence-2026-05-16T18-01-51Z",
+      "topic": "metformin",
+      "decision": "needs_operator_review",
+      "publish_tier": "TIER_2",
+      "maturity_level": "L4",
+      "headline": "Context-Dependent Efficacy of Metformin in Cancer Prevention: A Scoping Review Dissecting Preclinical-Clinical Discrepancies",
+      "confidence_label": "evidence_backed_signal",
+      "alpha_score": 100,
+      "axes": {
+        "bound_receipts": 4,
+        "a_core_receipts": 4,
+        "source_concentrated": false,
+        "counter_consensus_tension": true,
+        "cross_domain_forced": false,
+        "feed_scope_mismatch": false,
+        "source_papers": [
+          {
+            "doi": "10.1158/1940-6207.capr-10-0055",
+            "title": "Metformin Prevents Tobacco Carcinogen\u2013Induced Lung Tumorigenesis",
+            "journal": "Cancer Prevention Research",
+            "year": 2010
+          },
+          {
+            "doi": "10.1158/1055-9965.epi-17-0424",
+            "title": "A Cohort Study of Metformin and Colorectal Cancer Risk among Patients with Diabetes Mellitus",
+            "journal": "Cancer Epidemiology Biomarkers & Prevention",
+            "year": 2018
+          },
+          {
+            "doi": "10.1002/ijc.29120",
+            "title": "Metformin use among type 2 diabetics and risk of pancreatic cancer in a clinic\u2010based case\u2013control study",
+            "journal": "International Journal of Cancer",
+            "year": 2014
+          },
+          {
+            "doi": "10.1158/1535-7163.mct-16-0793",
+            "title": "Metformin Inhibits Cellular Proliferation and Bioenergetics in Colorectal Cancer Patient\u2013Derived Xenografts",
+            "journal": "Molecular Cancer Therapeutics",
+            "year": 2017
+          }
+        ]
+      },
+      "blockers": [
+        "source_dispersion"
+      ]
+    },
+    {
+      "run_dir": "runs/resveratrol-evidence-2026-05-17T06-59-01Z",
+      "topic": "resveratrol",
+      "decision": "needs_operator_review",
+      "publish_tier": "TIER_2",
+      "maturity_level": "L4",
+      "headline": "Resveratrol at 75 mg twice daily as a targeted intervention for bone resorption in postmenopausal women: evidence from T-score and collagen telopeptide data",
+      "confidence_label": "frontier_hypothesis",
+      "alpha_score": 80,
+      "axes": {
+        "bound_receipts": 2,
+        "a_core_receipts": 2,
+        "source_concentrated": true,
+        "counter_consensus_tension": true,
+        "cross_domain_forced": false,
+        "feed_scope_mismatch": false,
+        "source_papers": [
+          {
+            "doi": "10.1002/jbmr.4115",
+            "title": "Regular Supplementation With Resveratrol Improves Bone Mineral Density in Postmenopausal Women: A Randomized, Placebo-Controlled Trial",
+            "journal": "Journal of Bone and Mineral Research",
+            "year": 2020
+          }
+        ]
+      },
+      "blockers": []
+    },
+    {
+      "run_dir": "runs/_archive/2026-05-17T05-58-archive-before-top3/mtor-evidence-2026-05-16T18-03-26Z",
+      "topic": "mtor",
+      "decision": "needs_operator_review",
+      "publish_tier": "TIER_2",
+      "maturity_level": "L4",
+      "headline": "Context-Dependent mTOR Modulation: Balancing Immune Resilience and Tumor Suppression in Murine Preclinical Models",
+      "confidence_label": "frontier_hypothesis",
+      "alpha_score": 36,
+      "axes": {
+        "bound_receipts": 2,
+        "a_core_receipts": 1,
+        "source_concentrated": true,
+        "counter_consensus_tension": true,
+        "cross_domain_forced": true,
+        "feed_scope_mismatch": false,
+        "source_papers": [
+          {
+            "doi": "10.4049/jimmunol.1201767",
+            "title": "B Cell\u2013Specific Deficiencies in mTOR Limit Humoral Immune Responses",
+            "journal": "The Journal of Immunology",
+            "year": 2013
+          },
+          {
+            "doi": "10.1158/1940-6207.capr-10-0055",
+            "title": "Metformin Prevents Tobacco Carcinogen\u2013Induced Lung Tumorigenesis",
+            "journal": "Cancer Prevention Research",
+            "year": 2010
+          }
+        ]
+      },
+      "blockers": [
+        "cross_domain_forced"
+      ]
+    }
+  ],
+  "curation_needed": [
+    {
+      "run_dir": "runs/_archive/2026-05-17T07-08-tier3-after-publish-gate/longevity-evidence-2026-05-17T05-46-45Z",
+      "topic": "longevity",
+      "decision": "curation_needed",
+      "publish_tier": "TIER_3",
+      "maturity_level": "L2",
+      "headline": "Threshold Paradigm in Longevity: Bridging Human Genetic Enrichment and Seed Moisture Breakpoints",
+      "confidence_label": "frontier_hypothesis",
+      "alpha_score": 80,
+      "axes": {
+        "bound_receipts": 3,
+        "a_core_receipts": 1,
+        "source_concentrated": true,
+        "counter_consensus_tension": true,
+        "cross_domain_forced": true,
+        "feed_scope_mismatch": true,
+        "source_papers": [
+          {
+            "doi": "10.4049/jimmunol.1001629",
+            "title": "Hallmark Features of Immunosenescence Are Absent in Familial Longevity",
+            "journal": "The Journal of Immunology",
+            "year": 2010
+          },
+          {
+            "doi": "10.1017/s0960258518000211",
+            "title": "Improvement in rice seed storage longevity from high-temperature drying is a consistent positive function of harvest moisture content above a critical value",
+            "journal": "Seed Science Research",
+            "year": 2018
+          }
+        ]
+      },
+      "blockers": [
+        "cross_domain_forced",
+        "feed_scope_mismatch"
+      ]
+    },
+    {
+      "run_dir": "runs/_archive/2026-05-17T07-08-tier3-after-publish-gate/spermidine-evidence-2026-05-17T07-01-13Z",
+      "topic": "spermidine",
+      "decision": "curation_needed",
+      "publish_tier": "TIER_3",
+      "maturity_level": "L2",
+      "headline": "Genetic Determinants of Spermidine-Mediated Yield Enhancement in Indica Rice: Implications for Targeted Polyamine Biofortification",
+      "confidence_label": "frontier_hypothesis",
+      "alpha_score": 71,
+      "axes": {
+        "bound_receipts": 2,
+        "a_core_receipts": 2,
+        "source_concentrated": true,
+        "counter_consensus_tension": true,
+        "cross_domain_forced": false,
+        "feed_scope_mismatch": true,
+        "source_papers": [
+          {
+            "doi": "",
+            "title": "Effects of exogenous spermidine (Spd) on yield, yield-related parameters and mineral composition of rice ('Oryza sativa' L. ssp. 'indica') grains under salt stress",
+            "journal": "Australian Journal of Crop Science",
+            "year": 2013
+          }
+        ]
+      },
+      "blockers": [
+        "feed_scope_mismatch"
+      ]
+    },
+    {
+      "run_dir": "runs/_archive/2026-05-17T07-08-tier3-after-publish-gate/fasting-evidence-2026-05-17T05-49-34Z",
+      "topic": "fasting",
+      "decision": "curation_needed",
+      "publish_tier": "TIER_3",
+      "maturity_level": "L2",
+      "headline": "The Compliance Paradox in Fasting: When Patient Autonomy Overrides Medical Safety in Diabetes Management",
+      "confidence_label": "curation_needed",
+      "alpha_score": 60,
+      "axes": {
+        "bound_receipts": 0,
+        "a_core_receipts": 0,
+        "source_concentrated": false,
+        "counter_consensus_tension": true,
+        "cross_domain_forced": false,
+        "feed_scope_mismatch": false,
+        "source_papers": []
+      },
+      "blockers": [
+        "blocked_label:curation_needed",
+        "no_bound_receipts"
+      ]
+    },
+    {
+      "run_dir": "runs/_archive/2026-05-17T05-58-archive-before-top3/autophagy-evidence-2026-05-16T18-09-59Z",
+      "topic": "autophagy",
+      "decision": "curation_needed",
+      "publish_tier": "TIER_3",
+      "maturity_level": "L2",
+      "headline": "Context-Dependent Therapeutic Implications of Autophagy Modulation: A Comparative Scoping Review Across Cancer and Injury Models",
+      "confidence_label": "evidence_binding_failed",
+      "alpha_score": 45,
+      "axes": {
+        "bound_receipts": 0,
+        "a_core_receipts": 0,
+        "source_concentrated": false,
+        "counter_consensus_tension": true,
+        "cross_domain_forced": false,
+        "feed_scope_mismatch": false,
+        "source_papers": []
+      },
+      "blockers": [
+        "blocked_label:evidence_binding_failed",
+        "no_bound_receipts"
+      ]
+    },
+    {
+      "run_dir": "runs/_archive/2026-05-17T07-08-tier3-after-publish-gate/NAD-evidence-2026-05-17T06-45-15Z",
+      "topic": "NAD",
+      "decision": "curation_needed",
+      "publish_tier": "TIER_3",
+      "maturity_level": "L2",
+      "headline": "Sexual Dimorphism in NAD Redox State as a Predictor of Host Susceptibility to NAD-Capped Bacterial Pathogens",
+      "confidence_label": "frontier_hypothesis",
+      "alpha_score": 0,
+      "axes": {
+        "bound_receipts": 2,
+        "a_core_receipts": 1,
+        "source_concentrated": true,
+        "counter_consensus_tension": true,
+        "cross_domain_forced": true,
+        "feed_scope_mismatch": false,
+        "source_papers": [
+          {
+            "doi": "10.1042/bsr20200340",
+            "title": "Sex-related differences in human plasma NAD+/NADH levels depend on age",
+            "journal": "Bioscience Reports",
+            "year": 2021
+          },
+          {
+            "doi": "10.1128/jb.00591-19",
+            "title": "The 5\u2032 NAD Cap of RNAIII Modulates Toxin Production in Staphylococcus aureus Isolates",
+            "journal": "Journal of Bacteriology",
+            "year": 2019
+          }
+        ]
+      },
+      "blockers": [
+        "cross_domain_forced",
+        "low_alpha_score"
+      ]
+    },
+    {
+      "run_dir": "runs/_archive/2026-05-17T07-08-tier3-after-publish-gate/NMN-evidence-2026-05-17T06-58-14Z",
+      "topic": "NMN",
+      "decision": "curation_needed",
+      "publish_tier": "TIER_3",
+      "maturity_level": "L2",
+      "headline": "No signal \u2014 NMN",
+      "confidence_label": "no_signal",
+      "alpha_score": 0,
+      "axes": {
+        "bound_receipts": 0,
+        "a_core_receipts": 0,
+        "source_concentrated": false,
+        "counter_consensus_tension": false,
+        "cross_domain_forced": false,
+        "feed_scope_mismatch": false,
+        "source_papers": []
+      },
+      "blockers": [
+        "blocked_label:no_signal",
+        "no_bound_receipts"
+      ]
+    },
+    {
+      "run_dir": "runs/_archive/2026-05-17T07-08-tier3-after-publish-gate/berberine-evidence-2026-05-17T06-57-02Z",
+      "topic": "berberine",
+      "decision": "curation_needed",
+      "publish_tier": "TIER_3",
+      "maturity_level": "L2",
+      "headline": "No signal \u2014 berberine",
+      "confidence_label": "no_signal",
+      "alpha_score": 0,
+      "axes": {
+        "bound_receipts": 0,
+        "a_core_receipts": 0,
+        "source_concentrated": false,
+        "counter_consensus_tension": false,
+        "cross_domain_forced": false,
+        "feed_scope_mismatch": false,
+        "source_papers": []
+      },
+      "blockers": [
+        "blocked_label:no_signal",
+        "no_bound_receipts"
+      ]
+    },
+    {
+      "run_dir": "runs/_archive/2026-05-17T07-08-tier3-after-publish-gate/creatine-evidence-2026-05-17T06-54-30Z",
+      "topic": "creatine",
+      "decision": "curation_needed",
+      "publish_tier": "TIER_3",
+      "maturity_level": "L2",
+      "headline": "No signal \u2014 creatine",
+      "confidence_label": "no_signal",
+      "alpha_score": 0,
+      "axes": {
+        "bound_receipts": 0,
+        "a_core_receipts": 0,
+        "source_concentrated": false,
+        "counter_consensus_tension": false,
+        "cross_domain_forced": false,
+        "feed_scope_mismatch": false,
+        "source_papers": []
+      },
+      "blockers": [
+        "blocked_label:no_signal",
+        "no_bound_receipts"
+      ]
+    },
+    {
+      "run_dir": "runs/_archive/2026-05-17T07-08-tier3-after-publish-gate/dasatinib-evidence-2026-05-17T06-50-34Z",
+      "topic": "dasatinib",
+      "decision": "curation_needed",
+      "publish_tier": "TIER_3",
+      "maturity_level": "L2",
+      "headline": "No signal \u2014 dasatinib",
+      "confidence_label": "no_signal",
+      "alpha_score": 0,
+      "axes": {
+        "bound_receipts": 0,
+        "a_core_receipts": 0,
+        "source_concentrated": false,
+        "counter_consensus_tension": false,
+        "cross_domain_forced": false,
+        "feed_scope_mismatch": false,
+        "source_papers": []
+      },
+      "blockers": [
+        "blocked_label:no_signal",
+        "no_bound_receipts"
+      ]
+    },
+    {
+      "run_dir": "runs/_archive/2026-05-17T07-08-tier3-after-publish-gate/fisetin-evidence-2026-05-17T06-55-45Z",
+      "topic": "fisetin",
+      "decision": "curation_needed",
+      "publish_tier": "TIER_3",
+      "maturity_level": "L2",
+      "headline": "Scoping Review of Fisetin's Context-Dependent Bioactivity: Bridging Anti-Oncogenic and Antimicrobial Evidence Gaps",
+      "confidence_label": "frontier_hypothesis",
+      "alpha_score": 0,
+      "axes": {
+        "bound_receipts": 2,
+        "a_core_receipts": 1,
+        "source_concentrated": true,
+        "counter_consensus_tension": true,
+        "cross_domain_forced": true,
+        "feed_scope_mismatch": false,
+        "source_papers": [
+          {
+            "doi": "10.1093/carcin/bgv045",
+            "title": "Fisetin, a dietary flavonoid, induces apoptosis of cancer cells by inhibiting HSF1 activity through blocking its binding to the hsp70 promoter.",
+            "journal": "Carcinogenesis",
+            "year": 2015
+          },
+          {
+            "doi": "10.3390/molecules20046128",
+            "title": "Bactericidal effect of extracts and metabolites of Robinia pseudoacacia L. on Streptococcus mutans and Porphyromonas gingivalis causing dental plaque and periodontal inflammatory diseases.",
+            "journal": "Molecules (Basel, Switzerland)",
+            "year": 2015
+          }
+        ]
+      },
+      "blockers": [
+        "cross_domain_forced",
+        "low_alpha_score"
+      ]
+    },
+    {
+      "run_dir": "runs/_archive/2026-05-17T07-08-tier3-after-publish-gate/quercetin-evidence-2026-05-17T06-48-11Z",
+      "topic": "quercetin",
+      "decision": "curation_needed",
+      "publish_tier": "TIER_3",
+      "maturity_level": "L2",
+      "headline": "No signal \u2014 quercetin",
+      "confidence_label": "no_signal",
+      "alpha_score": 0,
+      "axes": {
+        "bound_receipts": 0,
+        "a_core_receipts": 0,
+        "source_concentrated": false,
+        "counter_consensus_tension": false,
+        "cross_domain_forced": false,
+        "feed_scope_mismatch": false,
+        "source_papers": []
+      },
+      "blockers": [
+        "blocked_label:no_signal",
+        "no_bound_receipts"
+      ]
+    },
+    {
+      "run_dir": "runs/_archive/2026-05-17T05-58-archive-before-top3/rapamycin-evidence-2026-05-16T18-07-50Z",
+      "topic": "rapamycin",
+      "decision": "curation_needed",
+      "publish_tier": "TIER_3",
+      "maturity_level": "L2",
+      "headline": "No signal \u2014 rapamycin",
+      "confidence_label": "no_signal",
+      "alpha_score": 0,
+      "axes": {
+        "bound_receipts": 0,
+        "a_core_receipts": 0,
+        "source_concentrated": false,
+        "counter_consensus_tension": false,
+        "cross_domain_forced": false,
+        "feed_scope_mismatch": false,
+        "source_papers": []
+      },
+      "blockers": [
+        "blocked_label:no_signal",
+        "no_bound_receipts"
+      ]
+    },
+    {
+      "run_dir": "runs/_archive/2026-05-17T07-08-tier3-after-publish-gate/sirtuin-evidence-2026-05-17T06-46-46Z",
+      "topic": "sirtuin",
+      "decision": "curation_needed",
+      "publish_tier": "TIER_3",
+      "maturity_level": "L2",
+      "headline": "No signal \u2014 sirtuin",
+      "confidence_label": "no_signal",
+      "alpha_score": 0,
+      "axes": {
+        "bound_receipts": 0,
+        "a_core_receipts": 0,
+        "source_concentrated": false,
+        "counter_consensus_tension": false,
+        "cross_domain_forced": false,
+        "feed_scope_mismatch": false,
+        "source_papers": []
+      },
+      "blockers": [
+        "blocked_label:no_signal",
+        "no_bound_receipts"
+      ]
+    }
+  ]
+}

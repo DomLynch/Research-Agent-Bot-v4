@@ -1,0 +1,42 @@
+{
+  "topic": "dasatinib",
+  "snapshot_utc": "2026-05-17T06-50-34Z",
+  "counts": {
+    "A_core": 1,
+    "B_context": 0,
+    "C_noise": 0,
+    "D_bad_extraction": 4
+  },
+  "verdicts": [
+    {
+      "fact_id": "7312",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "numeric_role=p_value_not_effect_finding"
+    },
+    {
+      "fact_id": "33103",
+      "lane": "A_core",
+      "numeric_role": "effect_size",
+      "reason": "topic_in_intervention_pico_complete"
+    },
+    {
+      "fact_id": "7313",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "numeric_role=p_value_not_effect_finding"
+    },
+    {
+      "fact_id": "7314",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "7315",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "missing_population_or_intervention"
+    }
+  ]
+}

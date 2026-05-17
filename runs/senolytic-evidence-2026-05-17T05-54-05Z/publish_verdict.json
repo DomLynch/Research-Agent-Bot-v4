@@ -1,0 +1,27 @@
+{
+  "run_dir": "runs/senolytic-evidence-2026-05-17T05-54-05Z",
+  "topic": "senolytic",
+  "decision": "ready_to_publish",
+  "publish_tier": "TIER_1",
+  "maturity_level": "L5",
+  "headline": "Senolytic-induced EndoMT as a maladaptive response in atherosclerotic plaque regression: implications for therapeutic window optimization",
+  "confidence_label": "evidence_backed_signal",
+  "alpha_score": 83,
+  "axes": {
+    "bound_receipts": 3,
+    "a_core_receipts": 3,
+    "source_concentrated": true,
+    "counter_consensus_tension": true,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": [
+      {
+        "doi": "10.1172/jci.insight.173863",
+        "title": "Treatment of advanced atherosclerotic mice with ABT-263 reduced indices of plaque stability and increased mortality",
+        "journal": "JCI Insight",
+        "year": 2024
+      }
+    ]
+  },
+  "blockers": []
+}

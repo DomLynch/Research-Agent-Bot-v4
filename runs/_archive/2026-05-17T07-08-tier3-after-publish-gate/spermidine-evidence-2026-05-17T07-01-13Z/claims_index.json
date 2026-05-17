@@ -1,0 +1,161 @@
+{
+  "topic": "spermidine",
+  "snapshot_utc": "2026-05-17T07-01-13Z",
+  "claim_count": 18,
+  "claims": [
+    {
+      "claim_text": "the addition of spermine (1 mmol/L) or spermidine (0.5 mmol/L) in extender improved boar sperm motility, the integrity of plasma membrane and acrosome (P < 0.05)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/jas/skac069"
+      ]
+    },
+    {
+      "claim_text": "Pretreatment with Spd dramatically improved grain yield per plant of KDML105 from 17.7 to 28.7 g (62% increase)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Addition of spermine or spermidine (0.5 mmol/L) improved sperm motility, membrane integrity, and reduced ROS after 7 d at 17 °C (P < 0.05)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/jas/skac069"
+      ]
+    },
+    {
+      "claim_text": "Accumulation of spermine or spermidine was inhibited by OCT inhibitors (P < 0.05) but not OCTN inhibitors (P > 0.05)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/jas/skac069"
+      ]
+    },
+    {
+      "claim_text": "Pretreatment with Spd improved grain yield per plant of Pokkali from 31.0 to 36.2 g (16% increase)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Concentrations of spermidine treatments 0.1 and 2 μM were used.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "N-(3-aminopropyl)-cadaverine, which at 1mM gave rates 4% of the rate with spermidine",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1042/bj1970315"
+      ]
+    },
+    {
+      "claim_text": "sym-homospermidine, which at 1mM gave rates 17% of the rate with spermidine",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1042/bj1970315"
+      ]
+    },
+    {
+      "claim_text": "1,8-diamino-octane, which at 1mM gave rates 2% of the rate with spermidine",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1042/bj1970315"
+      ]
+    },
+    {
+      "claim_text": "Seed priming was performed with 5 mM spermidine (SPD)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.3390/plants10020403"
+      ]
+    },
+    {
+      "claim_text": "Maize cultivar Xingken-6 (XK-6) was used and treated with Spd (1.5 mg L−1) and BRs (1.0 mmol L−1) under 14-days waterlogging treatments at three-leaf (V3) and fifth-leaf (V5) stages.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1016/j.sajb.2021.08.012"
+      ]
+    },
+    {
+      "claim_text": "spermidine was only detected in 32.5 % of the samples analyzed with the overall mean of 1.37 mg/kg.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "high levels of total polyamines over 90 mg/kg were determined in mushrooms, green peppers, peas, citrus fruit, broad beans and tempeh with spermidine being predominant",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3390/foods10081752"
+      ]
+    },
+    {
+      "claim_text": "the dry weight (DW) and fresh weight (FW) were reduced by 68.9% and 82%, respectively, compared with those of the normal-temperature controls.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1080/15592324.2020.1824697"
+      ]
+    },
+    {
+      "claim_text": "3- to 5-log fold reduction of C. albicans colonies recovered from tongue tissues",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1128/aac.01851-13"
+      ]
+    },
+    {
+      "claim_text": "plants were treated with 200 mM GB or 0.1 mM Spd for 3 weeks by weekly foliar application before the exposure to drought stress.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.21273/jashs03962-16"
+      ]
+    },
+    {
+      "claim_text": "Exogenous SPD sprayed on leaves at a concentration of 1 mM alleviated salinity-mediated growth reduction.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.21273/jashs.135.1.18"
+      ]
+    },
+    {
+      "claim_text": "a decline in the growth rate occurred at salinity levels higher than 70 mM",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.5897/ijppb.9000044"
+      ]
+    }
+  ]
+}

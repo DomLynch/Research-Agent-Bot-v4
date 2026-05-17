@@ -1,0 +1,29 @@
+{
+  "run_dir": "runs/_archive/2026-05-17T07-08-tier3-after-publish-gate/spermidine-evidence-2026-05-17T07-01-13Z",
+  "topic": "spermidine",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "Genetic Determinants of Spermidine-Mediated Yield Enhancement in Indica Rice: Implications for Targeted Polyamine Biofortification",
+  "confidence_label": "frontier_hypothesis",
+  "alpha_score": 71,
+  "axes": {
+    "bound_receipts": 2,
+    "a_core_receipts": 2,
+    "source_concentrated": true,
+    "counter_consensus_tension": true,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": true,
+    "source_papers": [
+      {
+        "doi": "",
+        "title": "Effects of exogenous spermidine (Spd) on yield, yield-related parameters and mineral composition of rice ('Oryza sativa' L. ssp. 'indica') grains under salt stress",
+        "journal": "Australian Journal of Crop Science",
+        "year": 2013
+      }
+    ]
+  },
+  "blockers": [
+    "feed_scope_mismatch"
+  ]
+}

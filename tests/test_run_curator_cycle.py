@@ -57,13 +57,17 @@ def test_recent_signal_topics_empty_runs_dir() -> None:
     ) == set()
 
 
-def test_recent_signal_topics_no_signal_post_yet(tmp_path: Path) -> None:
-    """Run folder exists but no signal_post.md -> topic isn't in cooldown."""
-    (tmp_path / "rapamycin-evidence-ts1").mkdir()
+def test_recent_signal_topics_partial_run_without_signal_post(tmp_path: Path) -> None:
+    """Partial run folder exists but no signal_post.md -> still cooldown."""
+    now = dt.datetime(2026, 5, 15, tzinfo=dt.UTC)
+    run = tmp_path / "rapamycin-evidence-ts1"
+    run.mkdir()
+    import os
+    epoch = now.timestamp()
+    os.utime(run, (epoch, epoch))
     recent = _recent_signal_topics(
-        tmp_path, cooldown_hours=24.0,
-        now=dt.datetime(2026, 5, 15, tzinfo=dt.UTC))
-    assert recent == set()
+        tmp_path, cooldown_hours=24.0, now=now)
+    assert recent == {"rapamycin"}
 
 
 def test_recent_signal_topics_ignores_non_evidence_dirs(tmp_path: Path) -> None:

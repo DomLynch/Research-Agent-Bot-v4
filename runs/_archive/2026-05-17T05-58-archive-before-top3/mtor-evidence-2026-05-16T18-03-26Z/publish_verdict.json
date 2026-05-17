@@ -1,0 +1,35 @@
+{
+  "run_dir": "runs/_archive/2026-05-17T05-58-archive-before-top3/mtor-evidence-2026-05-16T18-03-26Z",
+  "topic": "mtor",
+  "decision": "needs_operator_review",
+  "publish_tier": "TIER_2",
+  "maturity_level": "L4",
+  "headline": "Context-Dependent mTOR Modulation: Balancing Immune Resilience and Tumor Suppression in Murine Preclinical Models",
+  "confidence_label": "frontier_hypothesis",
+  "alpha_score": 36,
+  "axes": {
+    "bound_receipts": 2,
+    "a_core_receipts": 1,
+    "source_concentrated": true,
+    "counter_consensus_tension": true,
+    "cross_domain_forced": true,
+    "feed_scope_mismatch": false,
+    "source_papers": [
+      {
+        "doi": "10.4049/jimmunol.1201767",
+        "title": "B Cell\u2013Specific Deficiencies in mTOR Limit Humoral Immune Responses",
+        "journal": "The Journal of Immunology",
+        "year": 2013
+      },
+      {
+        "doi": "10.1158/1940-6207.capr-10-0055",
+        "title": "Metformin Prevents Tobacco Carcinogen\u2013Induced Lung Tumorigenesis",
+        "journal": "Cancer Prevention Research",
+        "year": 2010
+      }
+    ]
+  },
+  "blockers": [
+    "cross_domain_forced"
+  ]
+}

@@ -82,6 +82,25 @@ scoring, thresholds, and digest schema stay put.
 12. ✅ Tests (unit + golden) + supplement plugins + cutover validation
 
 ## Current Sprint
+**Sprint 87 shipped** — alpha memo publish-tier gate:
+- `agent/publish_tier.py` classifies every `alpha_memo.md` into
+  `TIER_1` / `TIER_2` / `TIER_3` using only structural signals:
+  bound A/B receipts, source concentration, counter-consensus tension,
+  alpha score, feed-scope data markers, and cross-domain-forced
+  detection from source-paper title/journal token overlap. No topic
+  names or runtime domain-specific routing logic.
+- `scripts/build_publish_queue.py` writes `runs/_publish_queue.json`
+  across current and archived alpha memos. Operator workflow becomes:
+  publish `ready_to_publish`, review `needs_operator_review`, and send
+  `curation_needed` back to DB/fact curation.
+- `scripts/build_signal_post.py` now emits `publish_verdict.json`
+  beside each alpha memo and records it in `MANIFEST.json`.
+- Current queue correctly routes known live cases:
+  `senolytic` + archived `exercise` -> `TIER_1/L5`;
+  `metformin`, `resveratrol`, `mTOR` -> `TIER_2/L4`;
+  `fasting`, `autophagy`, `rapamycin`, `longevity`, `spermidine`,
+  and no-signal runs -> `TIER_3`.
+
 **Sprint 85 shipped** — cross-topic alpha synthesis:
 - `agent/cross_topic_synthesizer.py` reads per-topic `alpha_memo.md`
   files and applies a structural density gate before any lead memo can

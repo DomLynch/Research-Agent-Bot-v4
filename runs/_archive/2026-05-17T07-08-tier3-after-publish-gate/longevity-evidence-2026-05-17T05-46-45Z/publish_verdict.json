@@ -1,0 +1,36 @@
+{
+  "run_dir": "runs/_archive/2026-05-17T07-08-tier3-after-publish-gate/longevity-evidence-2026-05-17T05-46-45Z",
+  "topic": "longevity",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "Threshold Paradigm in Longevity: Bridging Human Genetic Enrichment and Seed Moisture Breakpoints",
+  "confidence_label": "frontier_hypothesis",
+  "alpha_score": 80,
+  "axes": {
+    "bound_receipts": 3,
+    "a_core_receipts": 1,
+    "source_concentrated": true,
+    "counter_consensus_tension": true,
+    "cross_domain_forced": true,
+    "feed_scope_mismatch": true,
+    "source_papers": [
+      {
+        "doi": "10.4049/jimmunol.1001629",
+        "title": "Hallmark Features of Immunosenescence Are Absent in Familial Longevity",
+        "journal": "The Journal of Immunology",
+        "year": 2010
+      },
+      {
+        "doi": "10.1017/s0960258518000211",
+        "title": "Improvement in rice seed storage longevity from high-temperature drying is a consistent positive function of harvest moisture content above a critical value",
+        "journal": "Seed Science Research",
+        "year": 2018
+      }
+    ]
+  },
+  "blockers": [
+    "cross_domain_forced",
+    "feed_scope_mismatch"
+  ]
+}

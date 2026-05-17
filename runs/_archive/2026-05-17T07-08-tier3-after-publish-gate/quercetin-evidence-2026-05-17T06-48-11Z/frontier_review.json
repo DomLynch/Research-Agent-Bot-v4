@@ -1,0 +1,20 @@
+{
+  "topic": "quercetin",
+  "snapshot_utc": "2026-05-17T06-48-11Z",
+  "model": "mimo-v2.5-pro",
+  "lens": "Quercetin's molecular pleiotropy fragments into isolated evidence pools: computational antiviral target coverage versus in vivo metabolic disruption, with no integrated mechanistic model bridging these domains. The combinatorial synergy with vitamin D or estradiol emerges as a high-coverage but untested pharmacological hypothesis, overshadowed by dose-dependent contradictions in metabolic models.",
+  "known_to_ignore": [
+    "Quercetin modulates SARS-CoV-2-related gene expression in human cells",
+    "Quercetin downregulates autophagy markers like mTOR in high-fat diet animal models",
+    "Quercetin exhibits anti-inflammatory and antioxidant properties as a flavonoid"
+  ],
+  "tensions": [
+    "Between in silico predictions of broad antiviral target coverage (facts 1,4,5) and the absence of functional viral inhibition data in human systems",
+    "Discrepancy in quercetin's dose-response: high-dose metabolic benefits (≥500 mg/day from alpha hints) versus potential cytotoxicity at micromolar concentrations in other contexts"
+  ],
+  "gaps": [],
+  "theses": [],
+  "reviewer_objections": [],
+  "next_extractions": [],
+  "raw_response": "{\n  \"lens\": \"Quercetin's molecular pleiotropy fragments into isolated evidence pools: computational antiviral target coverage versus in vivo metabolic disruption, with no integrated mechanistic model bridging these domains. The combinatorial synergy with vitamin D or estradiol emerges as a high-coverage but untested pharmacological hypothesis, overshadowed by dose-dependent contradictions in metabolic models.\",\n  \"known_to_ignore\": [\"Quercetin modulates SARS-CoV-2-related gene expression in human cells\", \"Quercetin downregulates autophagy markers like mTOR in high-fat diet animal models\", \"Quercetin exhibits anti-inflammatory and antioxidant properties as a flavonoid\"],\n  \"tensions\": [\"Between in silico predictions of broad antiviral target coverage (facts 1,4,5) and the absence of functional viral inhibition data in human systems\", \"Discrepancy in quercetin's dose-response: high-dose metabolic benefits (≥500 mg/day from alpha hints) versus potential cytotoxicity at micromolar concentrations in other contexts\", \"Single-agent effects on specific genes (e.g., CD36"
+}

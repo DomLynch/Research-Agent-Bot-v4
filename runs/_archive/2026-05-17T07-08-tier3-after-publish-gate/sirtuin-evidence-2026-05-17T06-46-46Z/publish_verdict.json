@@ -1,0 +1,23 @@
+{
+  "run_dir": "runs/_archive/2026-05-17T07-08-tier3-after-publish-gate/sirtuin-evidence-2026-05-17T06-46-46Z",
+  "topic": "sirtuin",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 sirtuin",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "axes": {
+    "bound_receipts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

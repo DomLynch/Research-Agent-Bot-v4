@@ -1,0 +1,124 @@
+{
+  "topic": "fisetin",
+  "snapshot_utc": "2026-05-17T06-55-45Z",
+  "claim_count": 13,
+  "claims": [
+    {
+      "claim_text": "Intraperitoneal treatment of nude mice with fisetin at 30mg/kg resulted in a 35.7% (P < 0.001) inhibition of tumor growth.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/carcin/bgv045"
+      ]
+    },
+    {
+      "claim_text": "In the fisetin-treated group, the cataract stages were significantly lower than in the placebo group (p = 0.02).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s10792-014-0029-3"
+      ]
+    },
+    {
+      "claim_text": "Oral administration of fisetin (10 mg/kg) to diabetic rats for 30 days established significant decline in blood glucose and glycosylated hemoglobin and increase in plasma insulin.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.ejphar.2014.06.065"
+      ]
+    },
+    {
+      "claim_text": "10 and 20 mM NAC, non-toxic concentrations, can enhance fisetin (FIS)-mediated apoptosis in colon cancer cells COLO205.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/mc.22053"
+      ]
+    },
+    {
+      "claim_text": "fisetin showed high or moderate inhibitory activity on PKCζ with IC50 of 58 ± 9 μM",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s12272-014-0495-1"
+      ]
+    },
+    {
+      "claim_text": "fisetin showed dose-dependent cytotoxic activity against NCI-H460 cells, with 50% inhibition of cell viability occurring at a concentration of 75 μg/mL",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1007/s11626-014-9830-6"
+      ]
+    },
+    {
+      "claim_text": "fisetin and myricetin at 8 µg/mL inhibited the growth of S. mutans by 81% and 86%, respectively.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/molecules20046128"
+      ]
+    },
+    {
+      "claim_text": "Fisetin abolished heat shock-induced luciferase activity with an IC50 of 14 μM in HCT-116 cancer cells.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1093/carcin/bgv045"
+      ]
+    },
+    {
+      "claim_text": "The treatment of HCT-116 with fisetin inhibited proliferation with a GI50 of 23 μM.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1093/carcin/bgv045"
+      ]
+    },
+    {
+      "claim_text": "Fisetin at a dose of 15 mg/kg body weight was orally administered",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1007/s12017-012-8210-1"
+      ]
+    },
+    {
+      "claim_text": "fisetin, luteolin, morin, and quercetin exhibited the strongest effect and produced complete inhibition of OAT1-mediated PAH uptake at a concentration of 50 μM.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1124/dmd.114.059337"
+      ]
+    },
+    {
+      "claim_text": "Nontoxic fisetin at ≤10 μM inhibited the induction of RANK, tumor necrosis factor receptor associated factor 6 (TRAF6) and the activation of NF-κB",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1016/j.jnutbio.2013.11.003"
+      ]
+    },
+    {
+      "claim_text": "Narrow distribution fisetin-loaded MPEG-PCL NPs (approximately 100 nm)",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1166/jbn.2014.1746"
+      ]
+    }
+  ]
+}

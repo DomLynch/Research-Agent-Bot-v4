@@ -1,0 +1,23 @@
+{
+  "run_dir": "runs/_archive/2026-05-17T05-58-archive-before-top3/autophagy-evidence-2026-05-16T18-09-59Z",
+  "topic": "autophagy",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "Context-Dependent Therapeutic Implications of Autophagy Modulation: A Comparative Scoping Review Across Cancer and Injury Models",
+  "confidence_label": "evidence_binding_failed",
+  "alpha_score": 45,
+  "axes": {
+    "bound_receipts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": true,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "blockers": [
+    "blocked_label:evidence_binding_failed",
+    "no_bound_receipts"
+  ]
+}

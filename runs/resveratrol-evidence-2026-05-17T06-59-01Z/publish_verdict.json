@@ -1,0 +1,27 @@
+{
+  "run_dir": "runs/resveratrol-evidence-2026-05-17T06-59-01Z",
+  "topic": "resveratrol",
+  "decision": "needs_operator_review",
+  "publish_tier": "TIER_2",
+  "maturity_level": "L4",
+  "headline": "Resveratrol at 75 mg twice daily as a targeted intervention for bone resorption in postmenopausal women: evidence from T-score and collagen telopeptide data",
+  "confidence_label": "frontier_hypothesis",
+  "alpha_score": 80,
+  "axes": {
+    "bound_receipts": 2,
+    "a_core_receipts": 2,
+    "source_concentrated": true,
+    "counter_consensus_tension": true,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": [
+      {
+        "doi": "10.1002/jbmr.4115",
+        "title": "Regular Supplementation With Resveratrol Improves Bone Mineral Density in Postmenopausal Women: A Randomized, Placebo-Controlled Trial",
+        "journal": "Journal of Bone and Mineral Research",
+        "year": 2020
+      }
+    ]
+  },
+  "blockers": []
+}

@@ -1,0 +1,33 @@
+{
+  "topic": "spermidine",
+  "snapshot_utc": "2026-05-17T07-01-13Z",
+  "input_pack": {
+    "topic": "spermidine",
+    "a_core_count": 3,
+    "b_context_count": 2,
+    "excluded_counts": {
+      "C_noise": 2,
+      "D_bad_extraction": 11
+    },
+    "has_minimum_a_core": true,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Genetic Determinants of Spermidine-Mediated Yield Enhancement in Indica Rice: Implications for Targeted Polyamine Biofortification",
+      "status": "needs_source_audit",
+      "blocking_flags": [
+        "missing_source_metadata:31376",
+        "missing_source_metadata:31377",
+        "a_core_density_too_low:2<3"
+      ],
+      "original_opportunity": 71,
+      "capped_opportunity": 71,
+      "cited_fact_ids": [
+        "31376",
+        "31377"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "run_dir": "runs/_archive/2026-05-17T05-58-archive-before-top3/exercise-evidence-2026-05-16T18-12-38Z",
+  "topic": "exercise",
+  "decision": "ready_to_publish",
+  "publish_tier": "TIER_1",
+  "maturity_level": "L5",
+  "headline": "Pathway-specific anti-inflammatory gating: metformin unlocks TNF-axis suppression in exercise-responsive cancer survivors that exercise alone cannot achieve",
+  "confidence_label": "evidence_backed_signal",
+  "alpha_score": 100,
+  "axes": {
+    "bound_receipts": 4,
+    "a_core_receipts": 4,
+    "source_concentrated": true,
+    "counter_consensus_tension": true,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": [
+      {
+        "doi": "10.1158/1940-6207.capr-20-0188",
+        "title": "Effect of Exercise or Metformin on Biomarkers of Inflammation in Breast and Colorectal Cancer: A Randomized Trial",
+        "journal": "Cancer Prevention Research",
+        "year": 2020
+      }
+    ]
+  },
+  "blockers": []
+}

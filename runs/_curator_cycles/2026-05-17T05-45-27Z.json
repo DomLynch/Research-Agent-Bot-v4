@@ -45,5 +45,6 @@
       "signal_label": "evidence_backed_signal"
     }
   ],
-  "cross_topic_memo": "runs/_curator_cycles/2026-05-17T05-45-27Z_cross_topic_alpha_memo.md"
+  "cross_topic_memo": "runs/_curator_cycles/2026-05-17T05-45-27Z_cross_topic_alpha_memo.md",
+  "publish_queue": "runs/_publish_queue.json"
 }

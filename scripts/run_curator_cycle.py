@@ -55,8 +55,11 @@ class TopicResult:
 def _recent_signal_topics(
     runs_root: Path, cooldown_hours: float, now: dt.datetime,
 ) -> set[str]:
-    """Topics whose newest signal_post.md is within the cooldown
-    window — those should be skipped on this cycle."""
+    """Topics whose newest run marker is within the cooldown window.
+
+    Prefer signal_post.md when present; otherwise use the run folder
+    mtime so partial/zero-fact runs do not immediately repeat.
+    """
     if not runs_root.exists():
         return set()
     cutoff = now - dt.timedelta(hours=cooldown_hours)
@@ -68,11 +71,10 @@ def _recent_signal_topics(
     for run_dir in evidence_dirs:
         if not run_dir.is_dir() or "-evidence-" not in run_dir.name:
             continue
-        signal_path = run_dir / "signal_post.md"
-        if not signal_path.exists():
-            continue
-        mtime = dt.datetime.fromtimestamp(
-            signal_path.stat().st_mtime, tz=dt.UTC)
+        marker = run_dir / "signal_post.md"
+        if not marker.exists():
+            marker = run_dir
+        mtime = dt.datetime.fromtimestamp(marker.stat().st_mtime, tz=dt.UTC)
         if mtime >= cutoff:
             topic = run_dir.name.split("-evidence-")[0]
             recent.add(topic)
@@ -346,6 +348,24 @@ def main() -> int:
             encoding="utf-8",
         )
         md_text += f"\n## Cross-topic lead\n\n_failed: {cross_last[:240]}_\n"
+    queue_ok, queue_last = _run_step(
+        [py, "scripts/build_publish_queue.py"],
+        "publish_queue",
+    )
+    if queue_ok:
+        payload["publish_queue"] = "runs/_publish_queue.json"
+        json_path.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        md_text += "\n## Publish queue\n\n`runs/_publish_queue.json`\n"
+    else:
+        payload["publish_queue_error"] = queue_last[:240]
+        json_path.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        md_text += f"\n## Publish queue\n\n_failed: {queue_last[:240]}_\n"
     md_path.write_text(md_text, encoding="utf-8")
     print(f"[cycle] summary -> runs/_curator_cycles/{cycle_ts}.json")
     return 0

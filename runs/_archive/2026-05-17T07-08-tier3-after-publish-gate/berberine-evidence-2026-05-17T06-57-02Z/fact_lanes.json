@@ -1,0 +1,30 @@
+{
+  "topic": "berberine",
+  "snapshot_utc": "2026-05-17T06-57-02Z",
+  "counts": {
+    "A_core": 1,
+    "B_context": 0,
+    "C_noise": 1,
+    "D_bad_extraction": 1
+  },
+  "verdicts": [
+    {
+      "fact_id": "47581",
+      "lane": "A_core",
+      "numeric_role": "effect_size",
+      "reason": "topic_in_intervention_pico_complete"
+    },
+    {
+      "fact_id": "19009",
+      "lane": "D_bad_extraction",
+      "numeric_role": "dose",
+      "reason": "numeric_role=dose_not_effect_finding"
+    },
+    {
+      "fact_id": "47582",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    }
+  ]
+}
