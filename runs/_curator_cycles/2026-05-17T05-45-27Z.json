@@ -1,0 +1,49 @@
+{
+  "cycle_ts": "2026-05-17T05-45-27Z",
+  "top_requested": 3,
+  "cooldown_hours": 24.0,
+  "ran": [
+    {
+      "topic": "caloric_restriction",
+      "velocity": 1.362,
+      "status": "partial_failure",
+      "run_dir": "runs/caloric_restriction-evidence-2026-05-17T05-46-15Z",
+      "signal_label": "unknown",
+      "notes": "signal_step_failed: [signal-post] no frontier_review.json under /Users/domininclynch/Desktop/Business/Research agent bot v4/runs/caloric_res"
+    },
+    {
+      "topic": "longevity",
+      "velocity": 1.018,
+      "status": "ran",
+      "run_dir": "runs/longevity-evidence-2026-05-17T05-46-45Z",
+      "signal_label": "frontier_hypothesis",
+      "notes": ""
+    },
+    {
+      "topic": "fasting",
+      "velocity": 0.872,
+      "status": "ran",
+      "run_dir": "runs/fasting-evidence-2026-05-17T05-49-34Z",
+      "signal_label": "curation_needed",
+      "notes": ""
+    }
+  ],
+  "skipped_in_cooldown": [
+    "metformin",
+    "autophagy",
+    "exercise",
+    "mtor",
+    "rapamycin"
+  ],
+  "manual_replacement_runs": [
+    {
+      "replaces_topic": "caloric_restriction",
+      "reason": "caloric_restriction returned zero facts and produced no frontier_review.json",
+      "topic": "senolytic",
+      "status": "ran",
+      "run_dir": "runs/senolytic-evidence-2026-05-17T05-54-05Z",
+      "signal_label": "evidence_backed_signal"
+    }
+  ],
+  "cross_topic_memo": "runs/_curator_cycles/2026-05-17T05-45-27Z_cross_topic_alpha_memo.md"
+}

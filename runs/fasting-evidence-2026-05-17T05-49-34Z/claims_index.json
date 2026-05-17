@@ -1,0 +1,328 @@
+{
+  "topic": "fasting",
+  "snapshot_utc": "2026-05-17T05-49-34Z",
+  "claim_count": 37,
+  "claims": [
+    {
+      "claim_text": "Patients in the fasting group had significantly higher albumin levels (4.6 ± 0.2 versus 4.1 ± 0.4, P = 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Fasting in Ramadan significantly decreased FBS (P< 0.0001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18869/acadpub.jcbr.1.1.38"
+      ]
+    },
+    {
+      "claim_text": "the glucose levels were significantly (p < 0.05) higher in the serum subjects of patients during the fasting period when compared to the level before Ramadan.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.5897/ajb09.703"
+      ]
+    },
+    {
+      "claim_text": "lower perceived work performance was associated with higher distraction (β = -0.50, p < 0.01)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1177/1359105315573430"
+      ]
+    },
+    {
+      "claim_text": "low positive mood was associated with higher distraction (β = -0.38, p < 0.01)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1177/1359105315573430"
+      ]
+    },
+    {
+      "claim_text": "FITC-d increased significantly (p < 0.05) after fasting compared with control.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/jpn.12596"
+      ]
+    },
+    {
+      "claim_text": "L/M and L/R ratios for fasting and L/M ratio for DSS increased compared with control chickens (p < 0.05).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/jpn.12596"
+      ]
+    },
+    {
+      "claim_text": "BP mean values decreased from 126.2±18.6/81.4±11.0 to 119.7±15.9/77.6±9.8 mm Hg (mean change, -6.5/3.8 mm Hg).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.120.018649"
+      ]
+    },
+    {
+      "claim_text": "there was a correlation between physical activity with fasting blood sugar level of type 2 Diabetes Mellitus patient",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.20473/amnt.v1i2.6229"
+      ]
+    },
+    {
+      "claim_text": "Patients in the fasting group had significantly higher global health status scores (81.5 ± 16.7 versus 68.3 ± 20.1, P = 0.030)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Patients in the fasting group had significantly higher prealbumin levels (27.6 ± 7.4 versus 21.3 ± 8.5, P = 0.018)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "GLP-1 receptor KO mice had increased fasting glucose (9.1 ± 0.2, n = 44, vs. 7.7 ± 0.1 mmol/l, n = 41, P < 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1152/ajpregu.00288.2018"
+      ]
+    },
+    {
+      "claim_text": "GIP receptor KO mice had reduced fasting glucose (6.7 ± 0.1, n = 56, vs. 7.4 ± 0.1 mmol/l, n = 59, P = 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1152/ajpregu.00288.2018"
+      ]
+    },
+    {
+      "claim_text": "Fasting in Ramadan significantly decreased triglycerides (P< 0.01).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18869/acadpub.jcbr.1.1.38"
+      ]
+    },
+    {
+      "claim_text": "Fasting in Ramadan significantly decreased body mass index (P< 0.0001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18869/acadpub.jcbr.1.1.38"
+      ]
+    },
+    {
+      "claim_text": "Fasting in Ramadan significantly decreased insulin (P< 0.02).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18869/acadpub.jcbr.1.1.38"
+      ]
+    },
+    {
+      "claim_text": "Fasting in Ramadan significantly decreased HOMA index (P< 0.001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18869/acadpub.jcbr.1.1.38"
+      ]
+    },
+    {
+      "claim_text": "the significant decrease (P < 0.05) of insulin levels in patients during the fasting period.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.5897/ajb09.703"
+      ]
+    },
+    {
+      "claim_text": "HDL cholesterol recorded in the blood among patients rose significantly (p < 0.05) during the Ramadan than during the non-fasting period.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.5897/ajb09.703"
+      ]
+    },
+    {
+      "claim_text": "In contrast, a decrease in serum glucagon compared to baseline was observed in diet-induced obese mice between 8 and 24 h of fasting.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1530/joe-19-0201"
+      ]
+    },
+    {
+      "claim_text": "No associations were found with hunger (largest β = -0.11, p = 0.15)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1177/1359105315573430"
+      ]
+    },
+    {
+      "claim_text": "lower perceived work performance was associated with lower positive mood (β = 0.59, p = 0.01)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1177/1359105315573430"
+      ]
+    },
+    {
+      "claim_text": "the rates of glycosylated haemoglobin (HbA1c) decreased slightly (P < 0.05) during the last week of the month of Ramadan among the diabetic patients.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.5897/ajb09.703"
+      ]
+    },
+    {
+      "claim_text": "serum total cholesterol, triglyceride, LDL cholesterol and VLDL cholesterol levels decreased significantly (p < 0.05) during the third week of Ramadan than nonfasting day.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.5897/ajb09.703"
+      ]
+    },
+    {
+      "claim_text": "post-prandial glycemia increased by 5.95 ± 1.26 mM (n=6) in diabetic sand rats, as distinct from an increase of only 0.45 ± 0.56 mM in non-diabetic animals",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3892/ijmm_00000523"
+      ]
+    },
+    {
+      "claim_text": "The proportion of patients who experienced hypoglycemia during Ramadan was higher in Group A than Group B (36% vs 11%, P<0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.22038/jfh.2018.27312.1100"
+      ]
+    },
+    {
+      "claim_text": "Most patients in the fasting group (13, 92.9%) stated they would feel sad if they were not fasting.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Fasting and postprandial insulin decreased ≈ 20% in both exercise groups",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1152/japplphysiol.00680.2013"
+      ]
+    },
+    {
+      "claim_text": "decreased by 50% at 3 h",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1242/jeb.053298"
+      ]
+    },
+    {
+      "claim_text": "95% at 9 h following food withdrawal.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1242/jeb.053298"
+      ]
+    },
+    {
+      "claim_text": "Fasting lowered prealbumin levels (27.6 ± 7.4 versus 21.2 ± 4.4; P = 0.046)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "The average number of fasted days were smaller in Group A than Group B (26±3 SD versus 29±1 SD, P<0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "duration",
+      "supporting_study_ids": [
+        "10.22038/jfh.2018.27312.1100"
+      ]
+    },
+    {
+      "claim_text": "the proportion of patients who were able to fast the whole month were smaller in Group A than Group B (51% versus 87%, P<0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.22038/jfh.2018.27312.1100"
+      ]
+    },
+    {
+      "claim_text": "repeatedly endure exceptionally long fasting episodes throughout their development (1–3 mo).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "duration",
+      "supporting_study_ids": [
+        "10.1152/ajpregu.00370.2011"
+      ]
+    },
+    {
+      "claim_text": "as much as 58.0% of respondents had fasting blood sugar levels in the high category",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.20473/amnt.v1i2.6229"
+      ]
+    },
+    {
+      "claim_text": "we documented an increase of 6.3/2.2 mm Hg in a subgroup of 69 female subjects with BP <100/60 mm Hg.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1161/jaha.120.018649"
+      ]
+    },
+    {
+      "claim_text": "hyperinsulinemia was present in 60% (n=55) women",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": []
+    }
+  ]
+}

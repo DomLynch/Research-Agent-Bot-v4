@@ -1,0 +1,198 @@
+{
+  "topic": "longevity",
+  "snapshot_utc": "2026-05-17T05-46-45Z",
+  "counts": {
+    "A_core": 1,
+    "B_context": 2,
+    "C_noise": 10,
+    "D_bad_extraction": 18
+  },
+  "verdicts": [
+    {
+      "fact_id": "10028",
+      "lane": "A_core",
+      "numeric_role": "effect_size",
+      "reason": "topic_in_intervention_pico_complete"
+    },
+    {
+      "fact_id": "15979",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "numeric_role=p_value_not_effect_finding"
+    },
+    {
+      "fact_id": "16484",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "71084",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "10879",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "63559",
+      "lane": "D_bad_extraction",
+      "numeric_role": "duration",
+      "reason": "numeric_role=duration_not_effect_finding"
+    },
+    {
+      "fact_id": "64435",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "3431",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "21067",
+      "lane": "B_context",
+      "numeric_role": "effect_size",
+      "reason": "topic_in_phrase_but_not_intervention"
+    },
+    {
+      "fact_id": "21068",
+      "lane": "B_context",
+      "numeric_role": "effect_size",
+      "reason": "topic_in_phrase_but_not_intervention"
+    },
+    {
+      "fact_id": "3432",
+      "lane": "D_bad_extraction",
+      "numeric_role": "p_value",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "71085",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "15980",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "63561",
+      "lane": "D_bad_extraction",
+      "numeric_role": "duration",
+      "reason": "numeric_role=duration_not_effect_finding"
+    },
+    {
+      "fact_id": "11073",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "numeric_role=concentration_not_effect_finding"
+    },
+    {
+      "fact_id": "13228",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "11074",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "71086",
+      "lane": "D_bad_extraction",
+      "numeric_role": "duration",
+      "reason": "numeric_role=duration_not_effect_finding"
+    },
+    {
+      "fact_id": "13229",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "15514",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "14810",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "30615",
+      "lane": "D_bad_extraction",
+      "numeric_role": "duration",
+      "reason": "numeric_role=duration_not_effect_finding"
+    },
+    {
+      "fact_id": "63543",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "63544",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "63542",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "63541",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "21066",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "16798",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "16797",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "61449",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "66599",
+      "lane": "D_bad_extraction",
+      "numeric_role": "dose",
+      "reason": "numeric_role=dose_not_effect_finding"
+    }
+  ]
+}

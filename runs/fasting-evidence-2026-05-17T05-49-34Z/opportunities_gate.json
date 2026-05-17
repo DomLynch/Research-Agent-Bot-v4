@@ -1,0 +1,39 @@
+{
+  "topic": "fasting",
+  "snapshot_utc": "2026-05-17T05-49-34Z",
+  "input_pack": {
+    "topic": "fasting",
+    "a_core_count": 8,
+    "b_context_count": 1,
+    "excluded_counts": {
+      "C_noise": 2,
+      "D_bad_extraction": 26
+    },
+    "has_minimum_a_core": true,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "The Compliance Paradox in Fasting: When Patient Autonomy Overrides Medical Safety in Diabetes Management",
+      "status": "needs_source_audit",
+      "blocking_flags": [
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 99,
+      "capped_opportunity": 80,
+      "cited_fact_ids": []
+    },
+    {
+      "thesis_idx": 1,
+      "title": "Temporal Discrepancies in Fasting-Induced Biomarker Changes Among Cancer Patients: A Scoping Review",
+      "status": "needs_source_audit",
+      "blocking_flags": [
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 50,
+      "capped_opportunity": 50,
+      "cited_fact_ids": []
+    }
+  ]
+}

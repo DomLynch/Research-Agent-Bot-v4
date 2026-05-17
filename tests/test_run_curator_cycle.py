@@ -76,6 +76,18 @@ def test_recent_signal_topics_ignores_non_evidence_dirs(tmp_path: Path) -> None:
     assert recent == set()
 
 
+def test_recent_signal_topics_scans_archive(tmp_path: Path) -> None:
+    now = dt.datetime(2026, 5, 15, 18, 0, tzinfo=dt.UTC)
+    archive = tmp_path / "_archive" / "2026-05-15T18-00-00Z"
+    _make_run_with_signal(
+        archive, "carbon_tax", "ts1", now - dt.timedelta(hours=2),
+    )
+
+    recent = _recent_signal_topics(tmp_path, cooldown_hours=24.0, now=now)
+
+    assert recent == {"carbon_tax"}
+
+
 def test_read_discovery_top_returns_candidates(tmp_path: Path) -> None:
     p = tmp_path / "2026-05-15T18-00-00Z.json"
     payload: dict[str, Any] = {

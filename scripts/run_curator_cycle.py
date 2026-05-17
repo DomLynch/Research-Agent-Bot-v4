@@ -61,7 +61,11 @@ def _recent_signal_topics(
         return set()
     cutoff = now - dt.timedelta(hours=cooldown_hours)
     recent: set[str] = set()
-    for run_dir in runs_root.iterdir():
+    evidence_dirs = list(runs_root.iterdir())
+    archive_root = runs_root / "_archive"
+    if archive_root.exists():
+        evidence_dirs.extend(archive_root.glob("*/*-evidence-*"))
+    for run_dir in evidence_dirs:
         if not run_dir.is_dir() or "-evidence-" not in run_dir.name:
             continue
         signal_path = run_dir / "signal_post.md"

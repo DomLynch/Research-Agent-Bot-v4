@@ -32,7 +32,12 @@ def _run_dirs_from_cycle(path: Path) -> list[Path]:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return []
-    raw = data.get("ran") if isinstance(data, dict) else []
+    raw: list[object] = []
+    if isinstance(data, dict):
+        for key in ("ran", "manual_replacement_runs"):
+            rows = data.get(key)
+            if isinstance(rows, list):
+                raw.extend(rows)
     out: list[Path] = []
     for item in raw if isinstance(raw, list) else []:
         if not isinstance(item, dict):

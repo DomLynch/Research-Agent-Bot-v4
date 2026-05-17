@@ -1,0 +1,32 @@
+{
+  "topic": "longevity",
+  "snapshot_utc": "2026-05-17T05-46-45Z",
+  "input_pack": {
+    "topic": "longevity",
+    "a_core_count": 1,
+    "b_context_count": 2,
+    "excluded_counts": {
+      "C_noise": 10,
+      "D_bad_extraction": 18
+    },
+    "has_minimum_a_core": false,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Threshold Paradigm in Longevity: Bridging Human Genetic Enrichment and Seed Moisture Breakpoints",
+      "status": "needs_source_audit",
+      "blocking_flags": [
+        "a_core_density_too_low:1<3"
+      ],
+      "original_opportunity": 87,
+      "capped_opportunity": 80,
+      "cited_fact_ids": [
+        "10028",
+        "21067",
+        "21068"
+      ]
+    }
+  ]
+}
