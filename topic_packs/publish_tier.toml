@@ -1,0 +1,46 @@
+[publish_tier]
+# Universal English cue words for thesis tension. Domain vocabulary belongs in
+# topic packs or source data, not runtime code.
+tension_markers = [
+  "backfire",
+  "contradict",
+  "contrast",
+  "counter",
+  "discrepancy",
+  "paradox",
+  "tradeoff",
+  "tension",
+  "threshold",
+  "whereas",
+]
+
+generic_tokens = [
+  "analysis",
+  "association",
+  "based",
+  "clinical",
+  "cohort",
+  "context",
+  "effect",
+  "evidence",
+  "factor",
+  "finding",
+  "health",
+  "human",
+  "model",
+  "outcome",
+  "paper",
+  "research",
+  "risk",
+  "study",
+  "system",
+  "therapy",
+  "treatment",
+]
+
+[thresholds]
+ready_min_bound_receipts = 3
+ready_min_a_core_receipts = 2
+ready_min_alpha_score = 70
+source_concentration_share = 0.60
+domain_overlap_min = 0.06
