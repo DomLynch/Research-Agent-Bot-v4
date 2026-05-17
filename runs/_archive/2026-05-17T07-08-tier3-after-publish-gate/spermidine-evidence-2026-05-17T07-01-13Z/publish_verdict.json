@@ -7,8 +7,11 @@
   "headline": "Genetic Determinants of Spermidine-Mediated Yield Enhancement in Indica Rice: Implications for Targeted Polyamine Biofortification",
   "confidence_label": "frontier_hypothesis",
   "alpha_score": 71,
+  "surface_type": "split_or_reject_memo",
   "axes": {
     "bound_receipts": 2,
+    "available_bound_receipts": 5,
+    "available_source_contexts": 2,
     "a_core_receipts": 2,
     "source_concentrated": true,
     "counter_consensus_tension": true,
@@ -20,6 +23,150 @@
         "title": "Effects of exogenous spermidine (Spd) on yield, yield-related parameters and mineral composition of rice ('Oryza sativa' L. ssp. 'indica') grains under salt stress",
         "journal": "Australian Journal of Crop Science",
         "year": 2013
+      }
+    ]
+  },
+  "receipt_expansion": {
+    "needed": true,
+    "why": "lead_thesis_underuses_available_bound_receipts",
+    "cited_bound_fact_ids": [
+      "31376",
+      "31377"
+    ],
+    "available_bound_fact_ids": [
+      "31376",
+      "31377",
+      "65726",
+      "65724",
+      "65725"
+    ],
+    "candidate_receipts": [
+      {
+        "fact_id": "65724",
+        "lane": "A_core",
+        "phrase": "sym-homospermidine, which at 1mM gave rates 17% of the rate with spermidine",
+        "sub_topic": "rate",
+        "population": "rat prostatic spermine synthase",
+        "intervention": "sym-homospermidine",
+        "source_paper": {
+          "doi": "10.1042/bj1970315",
+          "title": "[UE2014] - Loi de Titius - Bode",
+          "journal": "The Biochemical journal",
+          "year": 2015
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "65725",
+        "lane": "B_context",
+        "phrase": "1,8-diamino-octane, which at 1mM gave rates 2% of the rate with spermidine",
+        "sub_topic": "rate",
+        "population": "rat prostatic spermine synthase",
+        "intervention": "1,8-diamino-octane",
+        "source_paper": {
+          "doi": "10.1042/bj1970315",
+          "title": "[UE2014] - Loi de Titius - Bode",
+          "journal": "The Biochemical journal",
+          "year": 2015
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "65726",
+        "lane": "B_context",
+        "phrase": "N-(3-aminopropyl)-cadaverine, which at 1mM gave rates 4% of the rate with spermidine",
+        "sub_topic": "rate",
+        "population": "rat prostatic spermine synthase",
+        "intervention": "N-(3-aminopropyl)-cadaverine",
+        "source_paper": {
+          "doi": "10.1042/bj1970315",
+          "title": "[UE2014] - Loi de Titius - Bode",
+          "journal": "The Biochemical journal",
+          "year": 2015
+        },
+        "same_source_as_lead": false
+      }
+    ]
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 0.611,
+    "source_count": 13,
+    "clusters": [
+      {
+        "label": "animal_oxidative_journal",
+        "member_fact_ids": [
+          "10765",
+          "10766",
+          "10767"
+        ],
+        "source_paper": {
+          "doi": "10.1093/jas/skac069",
+          "title": "Polyamines protect boar sperm from oxidative stress in vitro",
+          "journal": "Journal of Animal Science",
+          "year": 2022
+        },
+        "example_phrase": "the addition of spermine (1 mmol/L) or spermidine (0.5 mmol/L) in extender improved boar sperm motility, the integrity of plasma membrane and acrosome (P < 0.05)"
+      },
+      {
+        "label": "ue2014_journal_synthase",
+        "member_fact_ids": [
+          "65726",
+          "65724",
+          "65725"
+        ],
+        "source_paper": {
+          "doi": "10.1042/bj1970315",
+          "title": "[UE2014] - Loi de Titius - Bode",
+          "journal": "The Biochemical journal",
+          "year": 2015
+        },
+        "example_phrase": "N-(3-aminopropyl)-cadaverine, which at 1mM gave rates 4% of the rate with spermidine"
+      },
+      {
+        "label": "sativa_without_australian",
+        "member_fact_ids": [
+          "31376",
+          "31377"
+        ],
+        "source_paper": {
+          "doi": "",
+          "title": "Effects of exogenous spermidine (Spd) on yield, yield-related parameters and mineral composition of rice ('Oryza sativa' L. ssp. 'indica') grains under salt stress",
+          "journal": "Australian Journal of Crop Science",
+          "year": 2013
+        },
+        "example_phrase": "Pretreatment with Spd dramatically improved grain yield per plant of KDML105 from 17.7 to 28.7 g (62% increase)"
+      },
+      {
+        "label": "nacl_granatum_putrescine",
+        "member_fact_ids": [
+          "30307"
+        ],
+        "source_paper": {
+          "doi": "10.5897/ijppb.9000044",
+          "title": "The effects of spermidine and putrescine polyamines on growth of pomegranate ( Punica granatum L. cv 'Rabbab') in salinity circumstance",
+          "journal": "International Journal of Plant Physiology and Biochemistry",
+          "year": 2011
+        },
+        "example_phrase": "a decline in the growth rate occurred at salinity levels higher than 70 mM"
+      },
+      {
+        "label": "lime_australian_aurantifolia",
+        "member_fact_ids": [
+          "66107"
+        ],
+        "source_paper": {
+          "doi": "",
+          "title": "Response of Lime Seedlings (Citrus aurantifolia L.) to Exogenous Spermidine Treatments under Drought Stress",
+          "journal": "AUSTRALIAN JOURNAL OF BASIC AND APPLIED SCIENCES",
+          "year": 2010
+        },
+        "example_phrase": "Concentrations of spermidine treatments 0.1 and 2 \u03bcM were used."
       }
     ]
   },

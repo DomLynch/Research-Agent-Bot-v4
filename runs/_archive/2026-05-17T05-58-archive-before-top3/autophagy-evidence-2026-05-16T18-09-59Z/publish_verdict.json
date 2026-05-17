@@ -7,14 +7,190 @@
   "headline": "Context-Dependent Therapeutic Implications of Autophagy Modulation: A Comparative Scoping Review Across Cancer and Injury Models",
   "confidence_label": "evidence_binding_failed",
   "alpha_score": 45,
+  "surface_type": "subtopic_rerun_memo",
   "axes": {
     "bound_receipts": 0,
+    "available_bound_receipts": 5,
+    "available_source_contexts": 4,
     "a_core_receipts": 0,
     "source_concentrated": false,
     "counter_consensus_tension": true,
     "cross_domain_forced": false,
     "feed_scope_mismatch": false,
     "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": true,
+    "why": "lead_thesis_underuses_available_bound_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [
+      "7110",
+      "28274",
+      "7112",
+      "8399",
+      "5229"
+    ],
+    "candidate_receipts": [
+      {
+        "fact_id": "7110",
+        "lane": "A_core",
+        "phrase": "1.215 (1.149-1.286) (P < .001) in multivariate Cox regression analysis",
+        "sub_topic": "effect_size",
+        "population": "patients with lung adenocarcinoma",
+        "intervention": "autophagy-related lncRNA survival model",
+        "source_paper": {
+          "doi": "10.1111/jcmm.16582",
+          "title": "A novel autophagy\u2010related lncRNA survival model for lung adenocarcinoma",
+          "journal": "Journal of Cellular and Molecular Medicine",
+          "year": 2021
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "7112",
+        "lane": "A_core",
+        "phrase": "1.256 (1.196-1.320) (P < .001) in univariate Cox regression analysis",
+        "sub_topic": "effect_size",
+        "population": "patients with lung adenocarcinoma",
+        "intervention": "autophagy-related lncRNA survival model",
+        "source_paper": {
+          "doi": "10.1111/jcmm.16582",
+          "title": "A novel autophagy\u2010related lncRNA survival model for lung adenocarcinoma",
+          "journal": "Journal of Cellular and Molecular Medicine",
+          "year": 2021
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "8399",
+        "lane": "A_core",
+        "phrase": "Inhibition of autophagy by silencing of the key autophagy gene, beclin 1 or 3-MA, further increased the cytotoxicity of this combinatorial treatment, suggesting that autophagy plays a cytoprotective role",
+        "sub_topic": "mechanism",
+        "population": "glioma cells",
+        "intervention": "MK-2206 + gefitinib with autophagy inhibition (beclin 1 silencing or 3-MA)",
+        "source_paper": {
+          "doi": "10.1158/1535-7163.mct-11-0606",
+          "title": "MK-2206, a Novel Allosteric Inhibitor of Akt, Synergizes with Gefitinib against Malignant Glioma via Modulating Both Autophagy and Apoptosis",
+          "journal": "Molecular Cancer Therapeutics",
+          "year": 2011
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "28274",
+        "lane": "B_context",
+        "phrase": "autophagy flux was significantly less in injured versus uninjured muscles (-26%, P < 0.02).",
+        "sub_topic": "effect_size",
+        "population": "mice",
+        "intervention": "traumatic freeze injury",
+        "source_paper": {
+          "doi": "10.1152/ajpcell.00123.2019",
+          "title": "Mitochondrial-specific autophagy linked to mitochondrial dysfunction following traumatic freeze injury in mice",
+          "journal": "American Journal of Physiology-Cell Physiology",
+          "year": 2019
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "5229",
+        "lane": "B_context",
+        "phrase": "a population (\u223c30%) of intracellular Mtb is tagged with ubiquitin and targeted to selective autophagy",
+        "sub_topic": "rate",
+        "population": "intracellular Mtb in macrophages",
+        "intervention": "ESX-1 secretion system perturbation",
+        "source_paper": {
+          "doi": "10.1128/mbio.01871-20",
+          "title": "Galectin-8 Senses Phagosomal Damage and Recruits Selective Autophagy Adapter TAX1BP1 To Control <i>Mycobacterium tuberculosis</i> Infection in Macrophages",
+          "journal": "mBio",
+          "year": 2021
+        },
+        "same_source_as_lead": false
+      }
+    ]
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 0.625,
+    "source_count": 9,
+    "clusters": [
+      {
+        "label": "tight_journal_beclin",
+        "member_fact_ids": [
+          "12957",
+          "12960",
+          "12959",
+          "12961"
+        ],
+        "source_paper": {
+          "doi": "10.1152/ajpcell.00246.2018",
+          "title": "Intestinal epithelial tight junction barrier regulation by autophagy-related protein ATG6/beclin 1",
+          "journal": "American Journal of Physiology-Cell Physiology",
+          "year": 2019
+        },
+        "example_phrase": "These findings show that beclin 1 plays a constitutive, autophagy-independent role in the regulation of intestinal TJ barrier function via endocytosis of occludin."
+      },
+      {
+        "label": "outcomes_prognostic_aging",
+        "member_fact_ids": [
+          "6522",
+          "6523"
+        ],
+        "source_paper": {
+          "doi": "10.18632/aging.103718",
+          "title": "An autophagy-related long non-coding RNA prognostic signature accurately predicts survival outcomes in bladder urothelial carcinoma patients",
+          "journal": "Aging",
+          "year": 2020
+        },
+        "example_phrase": "The autophagy-related lncRNA signature was an independent prognostic predictor with an AUC value of 0.710."
+      },
+      {
+        "label": "lung_adenocarcinoma_cox",
+        "member_fact_ids": [
+          "7110",
+          "7112"
+        ],
+        "source_paper": {
+          "doi": "10.1111/jcmm.16582",
+          "title": "A novel autophagy\u2010related lncRNA survival model for lung adenocarcinoma",
+          "journal": "Journal of Cellular and Molecular Medicine",
+          "year": 2021
+        },
+        "example_phrase": "1.215 (1.149-1.286) (P < .001) in multivariate Cox regression analysis"
+      },
+      {
+        "label": "specific_linked_mitochondrial",
+        "member_fact_ids": [
+          "28274",
+          "28273"
+        ],
+        "source_paper": {
+          "doi": "10.1152/ajpcell.00123.2019",
+          "title": "Mitochondrial-specific autophagy linked to mitochondrial dysfunction following traumatic freeze injury in mice",
+          "journal": "American Journal of Physiology-Cell Physiology",
+          "year": 2019
+        },
+        "example_phrase": "autophagy flux was significantly less in injured versus uninjured muscles (-26%, P < 0.02)."
+      },
+      {
+        "label": "small_cultures_pathway",
+        "member_fact_ids": [
+          "9292",
+          "9293"
+        ],
+        "source_paper": {
+          "doi": "10.1096/fj.10-175158",
+          "title": "A small\u2010molecule enhancer of autophagy decreases levels of A\u03b2 and APP\u2010CTF <b> <i>via</i> Atg5\u2010dependent autophagy pathway </b>",
+          "journal": "The FASEB Journal",
+          "year": 2011
+        },
+        "example_phrase": "A\u03b2 peptide (apparent EC(50) of \u223c10 \u03bcM)"
+      }
+    ]
   },
   "blockers": [
     "blocked_label:evidence_binding_failed",

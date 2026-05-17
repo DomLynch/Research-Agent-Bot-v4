@@ -194,6 +194,92 @@ def _weakening_lines(review: dict[str, Any], label: str) -> list[str]:
     ]
 
 
+def _surface_line(verdict: dict[str, Any] | None) -> str:
+    if not verdict:
+        return "unclassified"
+    surface = str(verdict.get("surface_type") or "unclassified")
+    return surface.replace("_", " ")
+
+
+def _counter_lines(verdict: dict[str, Any] | None) -> list[str]:
+    if not verdict:
+        return ["- _Counter-evidence not classified yet._"]
+    counter = verdict.get("counter_evidence")
+    items = counter.get("items", []) if isinstance(counter, dict) else []
+    if not isinstance(items, list) or not items:
+        return [
+            "- _No A_core/B_context counter-evidence found in this run; "
+            "treat this as a single-direction signal until a broader receipt "
+            "expansion finds a real opposing fact._",
+        ]
+    out = []
+    for item in items[:3]:
+        if not isinstance(item, dict):
+            continue
+        raw_paper = item.get("source_paper")
+        paper = raw_paper if isinstance(raw_paper, dict) else {}
+        source = str(paper.get("title") or paper.get("doi") or "").strip()
+        phrase = str(item.get("phrase") or "").strip()
+        out.append(
+            f"- `fact_id={item.get('fact_id')}` (`{item.get('lane')}`) — "
+            f"{phrase[:240].rstrip()}"
+            + (f" Source: {source[:140].rstrip()}" if source else "")
+        )
+    return out or ["- _No A_core/B_context counter-evidence found in this run._"]
+
+
+def _receipt_expansion_lines(verdict: dict[str, Any] | None) -> list[str]:
+    if not verdict:
+        return []
+    expansion = verdict.get("receipt_expansion")
+    if not isinstance(expansion, dict) or not expansion.get("needed"):
+        return []
+    items = expansion.get("candidate_receipts", [])
+    if not isinstance(items, list) or not items:
+        return ["- More receipts are needed, but no unused A/B candidates were found in this run."]
+    lines = [
+        "- The lead thesis is thinner than the available corpus: it cites "
+        f"{len(expansion.get('cited_bound_fact_ids') or [])} bound receipt(s) "
+        f"while {len(expansion.get('available_bound_fact_ids') or [])} A/B "
+        "receipt(s) exist in this run.",
+    ]
+    for item in items[:5]:
+        if isinstance(item, dict):
+            phrase = str(item.get("phrase") or "").strip()
+            lines.append(
+                f"- Candidate `fact_id={item.get('fact_id')}` "
+                f"(`{item.get('lane')}`) — {phrase[:220].rstrip()}"
+            )
+    return lines
+
+
+def _subtopic_lines(verdict: dict[str, Any] | None) -> list[str]:
+    if not verdict:
+        return []
+    rec = verdict.get("subtopic_recommendations")
+    if not isinstance(rec, dict) or not rec.get("recommended"):
+        return []
+    clusters = rec.get("clusters", [])
+    lines = [
+        "- This topic looks broad/noisy enough that the next run should split it "
+        "before trying to force one public thesis.",
+    ]
+    if isinstance(clusters, list):
+        for cluster in clusters[:5]:
+            if not isinstance(cluster, dict):
+                continue
+            raw_paper = cluster.get("source_paper")
+            paper = raw_paper if isinstance(raw_paper, dict) else {}
+            label_text = str(
+                paper.get("title") or cluster.get("example_phrase") or ""
+            ).strip()
+            lines.append(
+                f"- `{cluster.get('label')}` — "
+                f"{label_text[:180].rstrip()}"
+            )
+    return lines
+
+
 def _provenance_block(
     run_dir: Path, topic: str, snapshot: str, headline: str, memo_body: str,
 ) -> list[str]:
@@ -231,7 +317,11 @@ def _provenance_block(
     ]
 
 
-def render_signal_memo(run_dir: Path, signal_text: str | None = None) -> str:
+def render_signal_memo(
+    run_dir: Path,
+    signal_text: str | None = None,
+    publish_verdict: dict[str, Any] | None = None,
+) -> str:
     signal_md = signal_text if signal_text is not None else _read(
         run_dir / "signal_post.md")
     review = _json(run_dir / "frontier_review.json", {})
@@ -253,6 +343,7 @@ def render_signal_memo(run_dir: Path, signal_text: str | None = None) -> str:
         f"**Headline:** {headline}",
         f"**Alpha score:** {_alpha_score(audit, label)}/100",
         f"**Confidence:** `{label}`",
+        f"**Memo surface:** `{_surface_line(publish_verdict)}`",
         f"**Snapshot:** `{snapshot}`",
         f"**Run:** `{run_dir.name}`",
         "",
@@ -279,6 +370,10 @@ def render_signal_memo(run_dir: Path, signal_text: str | None = None) -> str:
         "",
         *_weakening_lines(review if isinstance(review, dict) else {}, label),
         "",
+        "## Strongest counter-evidence",
+        "",
+        *_counter_lines(publish_verdict),
+        "",
         "## Next extraction",
         "",
     ]
@@ -290,13 +385,23 @@ def render_signal_memo(run_dir: Path, signal_text: str | None = None) -> str:
         lines.extend(["", "## Supporting Top cards", ""])
         lines.extend(f"- {finding} _(alpha cues: {cues})_"
                      for finding, cues in top_cards)
+    expansion_lines = _receipt_expansion_lines(publish_verdict)
+    if expansion_lines:
+        lines.extend(["", "## Receipt expansion candidates", "", *expansion_lines])
+    subtopic_lines = _subtopic_lines(publish_verdict)
+    if subtopic_lines:
+        lines.extend(["", "## Subtopic recommendations", "", *subtopic_lines])
     body = "\n".join(lines) + "\n"
     lines.extend(["", *_provenance_block(run_dir, topic, snapshot, headline, body)])
     return "\n".join(lines) + "\n"
 
 
-def write_signal_memo(run_dir: Path, signal_text: str | None = None) -> tuple[Path, str]:
-    text = render_signal_memo(run_dir, signal_text)
+def write_signal_memo(
+    run_dir: Path,
+    signal_text: str | None = None,
+    publish_verdict: dict[str, Any] | None = None,
+) -> tuple[Path, str]:
+    text = render_signal_memo(run_dir, signal_text, publish_verdict)
     out = run_dir / "alpha_memo.md"
     out.write_text(text, encoding="utf-8")
     return out, text

@@ -64,11 +64,11 @@
     },
     "alpha_memo_md": {
       "name": "alpha_memo.md",
-      "sha256": "e76862d4423f833a6b252aa1de16ae13de133bbbd42fe43e6d63f45b02c88bdc"
+      "sha256": "2ea625872dd4895c10662029febfc640a147d2c5f38a0da4cd474320b7714c63"
     },
     "publish_verdict_json": {
       "name": "publish_verdict.json",
-      "sha256": "c0208c84235b7e90efaa1e22980070525ecffbc1e85eb075f506217b70b1c275"
+      "sha256": "c4a95c4a3fb6a6fe81f8b2d554de24fbed5b0b5fac331a6e4b7bc94fbadb2a9f"
     }
   }
 }

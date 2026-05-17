@@ -67,7 +67,11 @@
     },
     "alpha_memo_md": {
       "name": "alpha_memo.md",
-      "sha256": "47226505c126767b133c1d60cde314bfb6e3e29e480720245e307f59da16ce3f"
+      "sha256": "276d13e289d4f91618a8de21ab37527fe42784d30330e900c7a9a51fce3bc686"
+    },
+    "publish_verdict_json": {
+      "name": "publish_verdict.json",
+      "sha256": "5b9fbb2e525d56726d0c5ac74b32d2dbdc581baa484acfa72e144a6f86212aab"
     }
   }
 }

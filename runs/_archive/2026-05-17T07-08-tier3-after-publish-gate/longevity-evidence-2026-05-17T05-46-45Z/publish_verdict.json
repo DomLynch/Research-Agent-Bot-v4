@@ -7,8 +7,11 @@
   "headline": "Threshold Paradigm in Longevity: Bridging Human Genetic Enrichment and Seed Moisture Breakpoints",
   "confidence_label": "frontier_hypothesis",
   "alpha_score": 80,
+  "surface_type": "split_or_reject_memo",
   "axes": {
     "bound_receipts": 3,
+    "available_bound_receipts": 3,
+    "available_source_contexts": 2,
     "a_core_receipts": 1,
     "source_concentrated": true,
     "counter_consensus_tension": true,
@@ -28,6 +31,32 @@
         "year": 2018
       }
     ]
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [
+      "10028",
+      "21067",
+      "21068"
+    ],
+    "available_bound_fact_ids": [
+      "10028",
+      "21067",
+      "21068"
+    ],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": false,
+    "reason": "not_broad_or_not_noisy_enough",
+    "d_bad_share": 0.581,
+    "source_count": 18,
+    "clusters": []
   },
   "blockers": [
     "cross_domain_forced",

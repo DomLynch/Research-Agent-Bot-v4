@@ -82,6 +82,25 @@ scoring, thresholds, and digest schema stay put.
 12. ✅ Tests (unit + golden) + supplement plugins + cutover validation
 
 ## Current Sprint
+**Sprint 88 shipped** — alpha memo surface router + receipt expansion:
+- `agent/publish_tier.py` now emits `surface_type`,
+  `receipt_expansion`, `counter_evidence`, and
+  `subtopic_recommendations` in every `publish_verdict.json`.
+  The gate distinguishes publishable alpha, context-dependence memos,
+  subtopic-rerun memos, curation briefs, and split/reject cases using
+  structural signals only. Feed-scope and cue vocabulary stay in
+  `topic_packs/publish_tier.toml`.
+- `agent/signal_memo_writer.py` renders the new verdict data into
+  `alpha_memo.md`: memo surface, strongest counter-evidence, receipt
+  expansion candidates, and subtopic recommendations.
+- `scripts/build_publish_queue.py` now keeps only the latest run per
+  topic when archives are included, preventing stale archived wins from
+  re-entering the current operator queue.
+- Resveratrol is now classified as a `context_dependence_memo`: the
+  lead thesis cites 2 bound receipts, while 7 A/B receipts exist in
+  the run. This preserves the strict gate while exposing the unused
+  corpus candidates instead of hiding them behind a misleading "2".
+
 **Sprint 87 shipped** — alpha memo publish-tier gate:
 - `agent/publish_tier.py` classifies every `alpha_memo.md` into
   `TIER_1` / `TIER_2` / `TIER_3` using only structural signals:

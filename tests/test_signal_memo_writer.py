@@ -110,3 +110,46 @@ def test_no_signal_memo_does_not_promote_mimo_note_heading(tmp_path: Path) -> No
 
     assert "**Headline:** No signal — topic" in memo
     assert "**Headline:** MiMo's note" not in memo
+
+
+def test_signal_memo_renders_publish_verdict_sections(tmp_path: Path) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "context_dependence_memo",
+        "counter_evidence": {
+            "status": "found",
+            "items": [{
+                "fact_id": "303",
+                "lane": "A_core",
+                "phrase": "Output did not improve in the comparison market.",
+                "source_paper": {"title": "Independent market comparison"},
+            }],
+        },
+        "receipt_expansion": {
+            "needed": True,
+            "cited_bound_fact_ids": ["101"],
+            "available_bound_fact_ids": ["101", "303"],
+            "candidate_receipts": [{
+                "fact_id": "303",
+                "lane": "A_core",
+                "phrase": "Output did not improve in the comparison market.",
+            }],
+        },
+        "subtopic_recommendations": {
+            "recommended": True,
+            "clusters": [{
+                "label": "market_comparison",
+                "source_paper": {"title": "Independent market comparison"},
+            }],
+        },
+    })
+
+    assert "**Memo surface:** `context dependence memo`" in memo
+    assert "## Strongest counter-evidence" in memo
+    assert "`fact_id=303` (`A_core`)" in memo
+    assert "## Receipt expansion candidates" in memo
+    assert "lead thesis is thinner than the available corpus" in memo
+    assert "## Subtopic recommendations" in memo
+    assert "`market_comparison`" in memo

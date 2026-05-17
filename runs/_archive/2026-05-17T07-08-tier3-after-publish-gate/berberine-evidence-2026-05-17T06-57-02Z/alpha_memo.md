@@ -3,6 +3,7 @@
 **Headline:** No signal — berberine
 **Alpha score:** 0/100
 **Confidence:** `no_signal`
+**Memo surface:** `curation brief`
 **Snapshot:** `2026-05-17T06-57-02Z`
 **Run:** `berberine-evidence-2026-05-17T06-57-02Z`
 
@@ -27,6 +28,10 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - The thesis relies on a single in vitro fact (fact_id=47581), lacking corroborating evidence from diverse models or doses, which undermines statistical robustness and translational relevance
 - Absence of cited in vivo or clinical data limits the scope to speculative extrapolations from cellular studies
 
+## Strongest counter-evidence
+
+- _No A_core/B_context counter-evidence found in this run; treat this as a single-direction signal until a broader receipt expansion finds a real opposing fact._
+
 ## Next extraction
 
 - Animal studies on berberine's cardiac effects, particularly dose comparisons (10 mg/kg vs. 50 mg/kg per day) on ejection fraction
@@ -36,6 +41,11 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 ## Supporting Top cards
 
 - the glucose consumption of HepG2 cells were promoted and reached 96.1% _(alpha cues: baseline)_
+
+## Receipt expansion candidates
+
+- The lead thesis is thinner than the available corpus: it cites 0 bound receipt(s) while 1 A/B receipt(s) exist in this run.
+- Candidate `fact_id=47581` (`A_core`) — the glucose consumption of HepG2 cells were promoted and reached 96.1%
 
 ## Provenance / priority
 
@@ -47,5 +57,5 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - **Canonical URL:** _not assigned_
 - **Suggested citation:** Dom Lynch. (2026). No signal — berberine. ReseaRka Evidence Index. Version 1.0.
 - **Run bundle SHA-256:** `a73fa447a545446941a1879ca4b9059116a323b404bb6ac711bc7616d348d713`
-- **Memo SHA-256:** `5ca80a55b69a4582b84b04e89f8ad9358ca00f167e9b24d81e0f7b06d3f21eb3`
+- **Memo SHA-256:** `62ff8b3b7df0d1390c64b7743ca5fb5b937de101dfa2813400b1fc9efaf8646a`
 - **Priority note:** This memo records the first published framing, source bundle, and evidence receipts for this run. Reuse should cite the canonical version.

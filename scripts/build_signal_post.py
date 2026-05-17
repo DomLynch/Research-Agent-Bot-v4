@@ -461,6 +461,10 @@ def main() -> int:
         brief_text = brief
     memo_path, memo_text = write_signal_memo(run_dir, signal_text=text)
     verdict_path, verdict = write_publish_verdict(run_dir)
+    memo_path, memo_text = write_signal_memo(
+        run_dir, signal_text=text, publish_verdict=verdict,
+    )
+    verdict_path, verdict = write_publish_verdict(run_dir)
     verdict_text = verdict_path.read_text(encoding="utf-8")
     # Update MANIFEST if present
     manifest_path = run_dir / "MANIFEST.json"

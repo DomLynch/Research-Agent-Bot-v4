@@ -3,6 +3,7 @@
 **Headline:** Resveratrol at 75 mg twice daily as a targeted intervention for bone resorption in postmenopausal women: evidence from T-score and collagen telopeptide data
 **Alpha score:** 80/100
 **Confidence:** `frontier_hypothesis`
+**Memo surface:** `context dependence memo`
 **Snapshot:** `2026-05-17T06-59-01Z`
 **Run:** `resveratrol-evidence-2026-05-17T06-59-01Z`
 
@@ -32,6 +33,10 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - For the bone health thesis, reviewers may challenge the evidence strength due to reliance on a single study with a specific dose (75 mg twice daily) and lack of comparative dose data
 - For the fetal thesis, objections could include the high resveratrol dose (0.37% in diet) in primates not translating to human equivalent doses, and the limited sample size typical of primate studies
 
+## Strongest counter-evidence
+
+- `fact_id=13393` (`A_core`) — Liver fat content decreased in placebo group (-0.7%) but not in resveratrol group (-0.03%), P=.018 for ITT population. Source: Effects of resveratrol supplementation on liver fat content in overweight and insulin‐resistant subjects: A randomized, double‐blind, placeb
+
 ## Next extraction
 
 - Studies on resveratrol's impact on blood pressure at doses ≥300 mg/day, as hinted by meta-analytic trends
@@ -46,6 +51,24 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - Significantly higher (90%) bioconversion of resveratrol was achieved with α-d-glucose as the sugar donor _(alpha cues: low_signal_context)_
 - Tumor incidence is reduced from 80% in mice treated with azoxymethane (AOM) + DSS to 20% in mice treated with AOM + DSS + resveratrol (300 ppm). _(alpha cues: baseline)_
 
+## Receipt expansion candidates
+
+- The lead thesis is thinner than the available corpus: it cites 2 bound receipt(s) while 7 A/B receipt(s) exist in this run.
+- Candidate `fact_id=13393` (`A_core`) — Liver fat content decreased in placebo group (-0.7%) but not in resveratrol group (-0.03%), P=.018 for ITT population.
+- Candidate `fact_id=5625` (`A_core`) — Tumor incidence is reduced from 80% in mice treated with azoxymethane (AOM) + DSS to 20% in mice treated with AOM + DSS + resveratrol (300 ppm).
+- Candidate `fact_id=9267` (`A_core`) — fetal pancreatic mass was enlarged by 42%,
+- Candidate `fact_id=9268` (`A_core`) — resveratrol resulted in 30% maternal weight loss
+- Candidate `fact_id=18722` (`B_context`) — Significantly higher (90%) bioconversion of resveratrol was achieved with α-d-glucose as the sugar donor
+
+## Subtopic recommendations
+
+- This topic looks broad/noisy enough that the next run should split it before trying to force one public thesis.
+- `smooth_liver_rat` — Resveratrol causes cell cycle arrest, decreased collagen synthesis, and apoptosis in rat intestinal smooth muscle cells
+- `loaded_wrapping_characterization` — Resveratrol-loaded glycyrrhizic acid-conjugated human serum albumin nanoparticles wrapping resveratrol nanoparticles: Preparation, characterization, and targeting effect on liver t
+- `curcumin_comparative_proteins` — Comparative Insilico Docking Analysis of Curcumin and Resveratrol on Breast Cancer Proteins and their Synergistic Effect on MCF-7 Cell Line
+- `reviews_science_review` — Effect of resveratrol on blood pressure: A systematic review and meta-analysis of randomized, controlled, clinical trials
+- `1998_activation_http` — Resveratrol Improves Boar Sperm Quality via 5<mml:math xmlns:mml="http://www.w3.org/1998/Math/MathML" id="M1"><mml:msup><mml:mrow/><mml:mrow><mml:mo>′</mml:mo></mml:mrow></mml:msup
+
 ## Provenance / priority
 
 - **Topic:** `resveratrol`
@@ -56,5 +79,5 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - **Canonical URL:** _not assigned_
 - **Suggested citation:** Dom Lynch. (2026). Resveratrol at 75 mg twice daily as a targeted intervention for bone resorption in postmenopausal women: evidence from T-score and collagen telopeptide data. ReseaRka Evidence Index. Version 1.0.
 - **Run bundle SHA-256:** `f0d283905e5e256c1679409c9e27c9d38ebfb7297f6ef193a2eda61336778eb7`
-- **Memo SHA-256:** `8299eb1228c9dbcc0f5e38fbf4ba8e2e60f1bd076ddad45fe6f22f653d08f1e8`
+- **Memo SHA-256:** `b23e4cd6e57ad873536db44a1c728c1bd4277cf6e1327b9c5422d72236c87248`
 - **Priority note:** This memo records the first published framing, source bundle, and evidence receipts for this run. Reuse should cite the canonical version.

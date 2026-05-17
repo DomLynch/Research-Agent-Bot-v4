@@ -63,6 +63,14 @@
     "signal_post_md": {
       "name": "signal_post.md",
       "sha256": "05f270a0a0f8a31b7ec4f7284b87fa8f764b8c90a02a0cafe00cd6cdf35c8e6e"
+    },
+    "alpha_memo_md": {
+      "name": "alpha_memo.md",
+      "sha256": "39c1a9311f3081c37eb0421813bea2a4311213eafc31e18985cb7ac6dccd425d"
+    },
+    "publish_verdict_json": {
+      "name": "publish_verdict.json",
+      "sha256": "9212ac8da3677d97e3eb6f32e2d8335ba18af7b006ef2850e8f54f0c0464e2cd"
     }
   }
 }

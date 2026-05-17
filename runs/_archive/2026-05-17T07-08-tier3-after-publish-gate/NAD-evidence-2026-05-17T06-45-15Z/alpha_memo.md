@@ -3,6 +3,7 @@
 **Headline:** Sexual Dimorphism in NAD Redox State as a Predictor of Host Susceptibility to NAD-Capped Bacterial Pathogens
 **Alpha score:** 0/100
 **Confidence:** `frontier_hypothesis`
+**Memo surface:** `split or reject memo`
 **Snapshot:** `2026-05-17T06-45-15Z`
 **Run:** `NAD-evidence-2026-05-17T06-45-15Z`
 
@@ -33,6 +34,10 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - The human study population excludes severe diseases, limiting generalizability to clinical infection contexts.
 - The bacterial study quantifies NAD capping extent but does not connect it to host factors, weakening the translational argument.
 
+## Strongest counter-evidence
+
+- _No A_core/B_context counter-evidence found in this run; treat this as a single-direction signal until a broader receipt expansion finds a real opposing fact._
+
 ## Next extraction
 
 - Extract data on NAD capping in other human pathogens (e.g., Streptococcus, E. coli) and its correlation with host sex hormones
@@ -44,6 +49,15 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - women had higher plasma NAD+/NADH ratios than men (median 1.33 vs. 1.09, P<0.001) _(alpha cues: subgroup, translation_context)_
 - RNAIII, a central quorum-sensing regulator of this bacterium's physiology, was found to be 5' NAD capped in a range from 10 to 35% _(alpha cues: baseline)_
 
+## Subtopic recommendations
+
+- This topic looks broad/noisy enough that the next run should split it before trying to force one public thesis.
+- `size_nicotinamide_disease` — Nicotinamide Adenine Dinucleotide Metabolome Is Functionally Depressed in Patients Undergoing Liver Transplantation for Alcohol‐Related Liver Disease
+- `depend_nadh_old` — Sex-related differences in human plasma NAD+/NADH levels depend on age
+- `production_isolates_cap` — The 5′ NAD Cap of RNAIII Modulates Toxin Production in Staphylococcus aureus Isolates
+- `size_nicotinamide_biological` — Biological Nicotinamide Cofactor as a Redox‐Active Motif for Reversible Electrochemical Energy Storage
+- `ethanol_size_analytical` — Ultrasensitive Sniff-Cam for Biofluorometric-Imaging of Breath Ethanol Caused by Metabolism of Intestinal Flora
+
 ## Provenance / priority
 
 - **Topic:** `NAD`
@@ -54,5 +68,5 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - **Canonical URL:** _not assigned_
 - **Suggested citation:** Dom Lynch. (2026). Sexual Dimorphism in NAD Redox State as a Predictor of Host Susceptibility to NAD-Capped Bacterial Pathogens. ReseaRka Evidence Index. Version 1.0.
 - **Run bundle SHA-256:** `6b931908bd0e8277969e945efbdab0c3d19739efc84990587a13bed1ebf4ca93`
-- **Memo SHA-256:** `249cd4331fe179ee2ada2ffb49ce7ab38373b3d55f780cb4edd2fa0abbcb0f87`
+- **Memo SHA-256:** `b93726633ee336a2059f5b8114be2bae94b3c5a6c3b48d675412de8b8a0fc23d`
 - **Priority note:** This memo records the first published framing, source bundle, and evidence receipts for this run. Reuse should cite the canonical version.

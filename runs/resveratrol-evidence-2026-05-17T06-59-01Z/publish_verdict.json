@@ -7,8 +7,11 @@
   "headline": "Resveratrol at 75 mg twice daily as a targeted intervention for bone resorption in postmenopausal women: evidence from T-score and collagen telopeptide data",
   "confidence_label": "frontier_hypothesis",
   "alpha_score": 80,
+  "surface_type": "context_dependence_memo",
   "axes": {
     "bound_receipts": 2,
+    "available_bound_receipts": 7,
+    "available_source_contexts": 5,
     "a_core_receipts": 2,
     "source_concentrated": true,
     "counter_consensus_tension": true,
@@ -20,6 +23,206 @@
         "title": "Regular Supplementation With Resveratrol Improves Bone Mineral Density in Postmenopausal Women: A Randomized, Placebo-Controlled Trial",
         "journal": "Journal of Bone and Mineral Research",
         "year": 2020
+      }
+    ]
+  },
+  "receipt_expansion": {
+    "needed": true,
+    "why": "lead_thesis_underuses_available_bound_receipts",
+    "cited_bound_fact_ids": [
+      "4434",
+      "4433"
+    ],
+    "available_bound_fact_ids": [
+      "18722",
+      "13393",
+      "9268",
+      "4434",
+      "4433",
+      "9267",
+      "5625"
+    ],
+    "candidate_receipts": [
+      {
+        "fact_id": "13393",
+        "lane": "A_core",
+        "phrase": "Liver fat content decreased in placebo group (-0.7%) but not in resveratrol group (-0.03%), P=.018 for ITT population.",
+        "sub_topic": "effect_size",
+        "population": "overweight and insulin-resistant subjects",
+        "intervention": "resveratrol supplementation",
+        "source_paper": {
+          "doi": "10.1111/dom.13268",
+          "title": "Effects of resveratrol supplementation on liver fat content in overweight and insulin\u2010resistant subjects: A randomized, double\u2010blind, placebo\u2010controlled clinical trial",
+          "journal": "Diabetes Obesity and Metabolism",
+          "year": 2018
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "5625",
+        "lane": "A_core",
+        "phrase": "Tumor incidence is reduced from 80% in mice treated with azoxymethane (AOM) + DSS to 20% in mice treated with AOM + DSS + resveratrol (300 ppm).",
+        "sub_topic": "rate",
+        "population": "AOM + DSS mouse model of colitis",
+        "intervention": "resveratrol (300 ppm)",
+        "source_paper": {
+          "doi": "10.1158/1940-6207.capr-09-0117",
+          "title": "Resveratrol Suppresses Colitis and Colon Cancer Associated with Colitis",
+          "journal": "Cancer Prevention Research",
+          "year": 2010
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "9267",
+        "lane": "A_core",
+        "phrase": "fetal pancreatic mass was enlarged by 42%,",
+        "sub_topic": "effect_size",
+        "population": "pregnant nonhuman primates",
+        "intervention": "resveratrol supplementation (WSD supplemented with 0.37% resveratrol)",
+        "source_paper": {
+          "doi": "10.1096/fj.13-245472",
+          "title": "Beneficial and cautionary outcomes of resveratrol supplementation in pregnant nonhuman primates",
+          "journal": "The FASEB Journal",
+          "year": 2014
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "9268",
+        "lane": "A_core",
+        "phrase": "resveratrol resulted in 30% maternal weight loss",
+        "sub_topic": "effect_size",
+        "population": "pregnant nonhuman primates",
+        "intervention": "resveratrol supplementation (WSD supplemented with 0.37% resveratrol)",
+        "source_paper": {
+          "doi": "10.1096/fj.13-245472",
+          "title": "Beneficial and cautionary outcomes of resveratrol supplementation in pregnant nonhuman primates",
+          "journal": "The FASEB Journal",
+          "year": 2014
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "18722",
+        "lane": "B_context",
+        "phrase": "Significantly higher (90%) bioconversion of resveratrol was achieved with \u03b1-d-glucose as the sugar donor",
+        "sub_topic": "effect_size",
+        "population": "in vitro enzymatic reaction",
+        "intervention": "\u03b1-d-glucose as sugar donor",
+        "source_paper": {
+          "doi": "10.1128/aem.02076-14",
+          "title": "Enzymatic Biosynthesis of Novel Resveratrol Glucoside and Glycoside Derivatives",
+          "journal": "Applied and Environmental Microbiology",
+          "year": 2014
+        },
+        "same_source_as_lead": false
+      }
+    ]
+  },
+  "counter_evidence": {
+    "status": "found",
+    "items": [
+      {
+        "fact_id": "13393",
+        "lane": "A_core",
+        "phrase": "Liver fat content decreased in placebo group (-0.7%) but not in resveratrol group (-0.03%), P=.018 for ITT population.",
+        "sub_topic": "effect_size",
+        "population": "overweight and insulin-resistant subjects",
+        "intervention": "resveratrol supplementation",
+        "source_paper": {
+          "doi": "10.1111/dom.13268",
+          "title": "Effects of resveratrol supplementation on liver fat content in overweight and insulin\u2010resistant subjects: A randomized, double\u2010blind, placebo\u2010controlled clinical trial",
+          "journal": "Diabetes Obesity and Metabolism",
+          "year": 2018
+        }
+      }
+    ]
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 0.816,
+    "source_count": 17,
+    "clusters": [
+      {
+        "label": "smooth_cell_muscle",
+        "member_fact_ids": [
+          "32359",
+          "32361",
+          "32363",
+          "32362",
+          "32360"
+        ],
+        "source_paper": {
+          "doi": "10.1152/ajpgi.00083.2011",
+          "title": "Resveratrol causes cell cycle arrest, decreased collagen synthesis, and apoptosis in rat intestinal smooth muscle cells",
+          "journal": "American Journal of Physiology-Gastrointestinal and Liver Physiology",
+          "year": 2011
+        },
+        "example_phrase": "Expression of collagen type I protein was decreased to 25% of control levels with 100 \u03bcM resveratrol (P < 0.05)"
+      },
+      {
+        "label": "glycyrrhizic_characterization_serum",
+        "member_fact_ids": [
+          "33995",
+          "33996",
+          "33998",
+          "33997"
+        ],
+        "source_paper": {
+          "doi": "10.1177/0885328217713357",
+          "title": "Resveratrol-loaded glycyrrhizic acid-conjugated human serum albumin nanoparticles wrapping resveratrol nanoparticles: Preparation, characterization, and targeting effect on liver tumors",
+          "journal": "Journal of Biomaterials Applications",
+          "year": 2017
+        },
+        "example_phrase": "The IC50 values of glycyrrhizic acid-conjugated human serum albumin nanoparticles wrapping resveratrol nanoparticles and resveratrol were 62.5 and 95.5 \u00b5g/ml, respectively."
+      },
+      {
+        "label": "cancer_curcumin_observed",
+        "member_fact_ids": [
+          "62134",
+          "62132",
+          "62133",
+          "62131"
+        ],
+        "source_paper": {
+          "doi": "10.5530/jyp.2017.9.94",
+          "title": "Comparative Insilico Docking Analysis of Curcumin and Resveratrol on Breast Cancer Proteins and their Synergistic Effect on MCF-7 Cell Line",
+          "journal": "Journal of Young Pharmacists",
+          "year": 2017
+        },
+        "example_phrase": "IC50 for the combined treatment with curcumin and resveratrol at the ratio of 1:1,1:3 and 3:1 were observed to be 28.06, 15.20 and 8.29 ug/ml"
+      },
+      {
+        "label": "systematic_critical_food",
+        "member_fact_ids": [
+          "2901",
+          "2902",
+          "2903"
+        ],
+        "source_paper": {
+          "doi": "10.1080/10408398.2017.1422480",
+          "title": "Effect of resveratrol on blood pressure: A systematic review and meta-analysis of randomized, controlled, clinical trials",
+          "journal": "Critical Reviews in Food Science and Nutrition",
+          "year": 2018
+        },
+        "example_phrase": "Administration of resveratrol did not significantly affect systolic BP [WMD: -2.5 95% CI:(-5.5, 0.6) mmHg; p=0.116]"
+      },
+      {
+        "label": "amp_www_control",
+        "member_fact_ids": [
+          "5439",
+          "5440",
+          "5442"
+        ],
+        "source_paper": {
+          "doi": "10.1155/2019/5921503",
+          "title": "Resveratrol Improves Boar Sperm Quality via 5<mml:math xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" id=\"M1\"><mml:msup><mml:mrow/><mml:mrow><mml:mo>\u2032</mml:mo></mml:mrow></mml:msup></mml:math>AMP-Activated Protein Kinase Activation during Cryopreservation",
+          "journal": "Oxidative Medicine and Cellular Longevity",
+          "year": 2019
+        },
+        "example_phrase": "50 \u03bcM resveratrol significantly improved post-thaw sperm quality parameters and AMPK phosphorylation."
       }
     ]
   },

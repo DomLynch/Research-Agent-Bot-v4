@@ -3,6 +3,7 @@
 **Headline:** No signal — dasatinib
 **Alpha score:** 0/100
 **Confidence:** `no_signal`
+**Memo surface:** `curation brief`
 **Snapshot:** `2026-05-17T06-50-34Z`
 **Run:** `dasatinib-evidence-2026-05-17T06-50-34Z`
 
@@ -27,6 +28,10 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - Only a single cell-line study is cited, insufficient for generalizability
 - No mechanistic or clinical evidence to support a translational narrative
 
+## Strongest counter-evidence
+
+- _No A_core/B_context counter-evidence found in this run; treat this as a single-direction signal until a broader receipt expansion finds a real opposing fact._
+
 ## Next extraction
 
 - Dasatinib sensitivity in specific DLBCL subtypes (e.g., MCD or EZB genetic subtypes)
@@ -36,6 +41,11 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 ## Supporting Top cards
 
 - Dasatinib, a multikinase inhibitor, was effective against 50% of DLBCL cell lines _(alpha cues: low_signal_context)_
+
+## Receipt expansion candidates
+
+- The lead thesis is thinner than the available corpus: it cites 0 bound receipt(s) while 1 A/B receipt(s) exist in this run.
+- Candidate `fact_id=33103` (`A_core`) — Dasatinib, a multikinase inhibitor, was effective against 50% of DLBCL cell lines
 
 ## Provenance / priority
 
@@ -47,5 +57,5 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - **Canonical URL:** _not assigned_
 - **Suggested citation:** Dom Lynch. (2026). No signal — dasatinib. ReseaRka Evidence Index. Version 1.0.
 - **Run bundle SHA-256:** `936b645e4ee030fed9180aa584753672ec4f182cc5056fc0b6285575775ed10f`
-- **Memo SHA-256:** `6e045a5a42a15b64ec54038cefb0028f71e29fefb83df9837ac2059bced8d7d9`
+- **Memo SHA-256:** `b590807cdf81a8f4bd7570bdea18c55bcd4bc75530127aed9fa11acc361c5e43`
 - **Priority note:** This memo records the first published framing, source bundle, and evidence receipts for this run. Reuse should cite the canonical version.

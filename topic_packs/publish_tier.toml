@@ -14,6 +14,17 @@ tension_markers = [
   "whereas",
 ]
 
+counter_markers = [
+  "did not",
+  "failed",
+  "lack",
+  "no ",
+  "not ",
+  "null",
+  "unchanged",
+  "without",
+]
+
 generic_tokens = [
   "analysis",
   "association",
@@ -38,6 +49,18 @@ generic_tokens = [
   "treatment",
 ]
 
+cluster_stopwords = [
+  "and",
+  "are",
+  "for",
+  "from",
+  "into",
+  "that",
+  "the",
+  "this",
+  "with",
+]
+
 [thresholds]
 ready_min_bound_receipts = 3
 ready_min_a_core_receipts = 2
@@ -45,6 +68,9 @@ ready_min_alpha_score = 70
 review_min_alpha_score = 30
 source_concentration_share = 0.60
 domain_overlap_min = 0.06
+context_min_available_sources = 3
+broad_d_bad_share = 0.60
+broad_min_sources = 3
 
 [feed_scope]
 # Product-scope markers for the current ReseaRka longevity feed. These are

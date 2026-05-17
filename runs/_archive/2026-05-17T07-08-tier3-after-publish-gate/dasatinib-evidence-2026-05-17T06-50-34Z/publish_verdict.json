@@ -7,14 +7,53 @@
   "headline": "No signal \u2014 dasatinib",
   "confidence_label": "no_signal",
   "alpha_score": 0,
+  "surface_type": "curation_brief",
   "axes": {
     "bound_receipts": 0,
+    "available_bound_receipts": 1,
+    "available_source_contexts": 1,
     "a_core_receipts": 0,
     "source_concentrated": false,
     "counter_consensus_tension": false,
     "cross_domain_forced": false,
     "feed_scope_mismatch": false,
     "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": true,
+    "why": "lead_thesis_underuses_available_bound_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [
+      "33103"
+    ],
+    "candidate_receipts": [
+      {
+        "fact_id": "33103",
+        "lane": "A_core",
+        "phrase": "Dasatinib, a multikinase inhibitor, was effective against 50% of DLBCL cell lines",
+        "sub_topic": "rate",
+        "population": "DLBCL cell lines",
+        "intervention": "dasatinib",
+        "source_paper": {
+          "doi": "10.1073/pnas.1905239116",
+          "title": "Repurposing dasatinib for diffuse large B cell lymphoma",
+          "journal": "Proceedings of the National Academy of Sciences",
+          "year": 2019
+        },
+        "same_source_as_lead": false
+      }
+    ]
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": false,
+    "reason": "not_broad_or_not_noisy_enough",
+    "d_bad_share": 0.8,
+    "source_count": 2,
+    "clusters": []
   },
   "blockers": [
     "blocked_label:no_signal",

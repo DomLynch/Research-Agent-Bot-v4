@@ -7,14 +7,117 @@
   "headline": "No signal \u2014 rapamycin",
   "confidence_label": "no_signal",
   "alpha_score": 0,
+  "surface_type": "curation_brief",
   "axes": {
     "bound_receipts": 0,
+    "available_bound_receipts": 5,
+    "available_source_contexts": 3,
     "a_core_receipts": 0,
     "source_concentrated": false,
     "counter_consensus_tension": false,
     "cross_domain_forced": false,
     "feed_scope_mismatch": false,
     "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": true,
+    "why": "lead_thesis_underuses_available_bound_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [
+      "rapamycin/transient/bitto_2016/lifespan_extension",
+      "rapamycin/transient/bitto_2016/lifespan_male",
+      "rapamycin/itp/harrison_2009/lifespan_female",
+      "rapamycin/itp/miller_2014/dose_response_high_male",
+      "rapamycin/itp/miller_2014/dose_response_high_female"
+    ],
+    "candidate_receipts": [
+      {
+        "fact_id": "rapamycin/itp/harrison_2009/lifespan_female",
+        "lane": "A_core",
+        "phrase": "rapamycin reduced 90th-percentile mortality by 14% in females (Harrison 2009 NIA-ITP, 14 ppm)",
+        "sub_topic": "lifespan",
+        "population": "female heterogeneous-stock mice (UM-HET3); 4-site NIA Interventions Testing Program cohort",
+        "intervention": "encapsulated rapamycin in feed (~14 ppm); started at 600 days of age",
+        "source_paper": {
+          "doi": "10.1038/nature08221",
+          "title": "Rapamycin fed late in life extends lifespan in genetically heterogeneous mice",
+          "journal": "Nature",
+          "year": 2009
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "rapamycin/itp/miller_2014/dose_response_high_female",
+        "lane": "A_core",
+        "phrase": "rapamycin at 42 ppm extended female median lifespan by 26%",
+        "sub_topic": "lifespan",
+        "population": "female heterogeneous-stock mice (UM-HET3); ITP",
+        "intervention": "encapsulated rapamycin in feed at 42 ppm (3x standard ITP dose)",
+        "source_paper": {
+          "doi": "10.1111/acel.12194",
+          "title": "Rapamycin-mediated lifespan increase in mice is dose and sex dependent and metabolically distinct from dietary restriction",
+          "journal": "Aging Cell",
+          "year": 2014
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "rapamycin/itp/miller_2014/dose_response_high_male",
+        "lane": "A_core",
+        "phrase": "rapamycin at 42 ppm extended male median lifespan by 23%",
+        "sub_topic": "lifespan",
+        "population": "male heterogeneous-stock mice (UM-HET3); ITP",
+        "intervention": "encapsulated rapamycin in feed at 42 ppm (3x standard ITP dose)",
+        "source_paper": {
+          "doi": "10.1111/acel.12194",
+          "title": "Rapamycin-mediated lifespan increase in mice is dose and sex dependent and metabolically distinct from dietary restriction",
+          "journal": "Aging Cell",
+          "year": 2014
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "rapamycin/transient/bitto_2016/lifespan_extension",
+        "lane": "A_core",
+        "phrase": "3 months of rapamycin extended remaining lifespan by ~60% in middle-aged mice",
+        "sub_topic": "lifespan",
+        "population": "middle-aged C57BL/6 mice (20 months at start)",
+        "intervention": "transient rapamycin (8 mg/kg/day i.p.) for 3 months",
+        "source_paper": {
+          "doi": "10.7554/eLife.16351",
+          "title": "Transient rapamycin treatment can increase lifespan and healthspan in middle-aged mice",
+          "journal": "eLife",
+          "year": 2016
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "rapamycin/transient/bitto_2016/lifespan_male",
+        "lane": "A_core",
+        "phrase": "3 months of rapamycin extended median lifespan by 52% in male middle-aged mice",
+        "sub_topic": "lifespan",
+        "population": "male middle-aged C57BL/6 mice (20 months at start)",
+        "intervention": "transient rapamycin (8 mg/kg/day i.p.) for 3 months",
+        "source_paper": {
+          "doi": "10.7554/eLife.16351",
+          "title": "Transient rapamycin treatment can increase lifespan and healthspan in middle-aged mice",
+          "journal": "eLife",
+          "year": 2016
+        },
+        "same_source_as_lead": false
+      }
+    ]
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": false,
+    "reason": "not_broad_or_not_noisy_enough",
+    "d_bad_share": 0.0,
+    "source_count": 4,
+    "clusters": []
   },
   "blockers": [
     "blocked_label:no_signal",

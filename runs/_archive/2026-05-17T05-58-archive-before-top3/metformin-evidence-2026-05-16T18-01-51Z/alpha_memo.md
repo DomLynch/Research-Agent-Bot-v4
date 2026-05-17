@@ -3,6 +3,7 @@
 **Headline:** Context-Dependent Efficacy of Metformin in Cancer Prevention: A Scoping Review Dissecting Preclinical-Clinical Discrepancies
 **Alpha score:** 100/100
 **Confidence:** `evidence_backed_signal`
+**Memo surface:** `frontier hypothesis memo`
 **Snapshot:** `2026-05-16T18-01-51Z`
 **Run:** `metformin-evidence-2026-05-16T18-01-51Z`
 
@@ -34,6 +35,10 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - Heterogeneity in study designs, populations, and endpoints across preclinical and clinical evidence may undermine causal inferences.
 - The scoping nature of the review may lack quantitative synthesis, limiting strength of conclusions for clinical translation.
 
+## Strongest counter-evidence
+
+- `fact_id=22120` (`A_core`) — metformin alone did not change hs-CRP (-13.9%; 95% CI, -40.0, 23.4), sTNFαR2, or IL6 Source: Effect of Exercise or Metformin on Biomarkers of Inflammation in Breast and Colorectal Cancer: A Randomized Trial
+
 ## Next extraction
 
 - Metformin's impact on lean body mass and muscle mass in non-cancer aging populations, as suggested by alpha hints.
@@ -57,5 +62,5 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - **Canonical URL:** _not assigned_
 - **Suggested citation:** Dom Lynch. (2026). Context-Dependent Efficacy of Metformin in Cancer Prevention: A Scoping Review Dissecting Preclinical-Clinical Discrepancies. ReseaRka Evidence Index. Version 1.0.
 - **Run bundle SHA-256:** `4102ab67b9f1f2dc30ad4926d7509fb0421e7ba9675748ea2a1545c2912a05dd`
-- **Memo SHA-256:** `8eb0e86c10ec765fb82aa59f410b1ceccc4b546b5fa7c5e370093234121c918a`
+- **Memo SHA-256:** `fcd471b21f0eb402bbba737cea3af2579cd722291a5772d6b65c2ee356290141`
 - **Priority note:** This memo records the first published framing, source bundle, and evidence receipts for this run. Reuse should cite the canonical version.

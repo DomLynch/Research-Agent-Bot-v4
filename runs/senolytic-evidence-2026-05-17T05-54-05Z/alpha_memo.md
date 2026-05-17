@@ -3,6 +3,7 @@
 **Headline:** Senolytic-induced EndoMT as a maladaptive response in atherosclerotic plaque regression: implications for therapeutic window optimization
 **Alpha score:** 83/100
 **Confidence:** `evidence_backed_signal`
+**Memo surface:** `publish alpha memo`
 **Snapshot:** `2026-05-17T05-54-05Z`
 **Run:** `senolytic-evidence-2026-05-17T05-54-05Z`
 
@@ -34,6 +35,10 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - The >50% mortality rate (fact_id=12622) could stem from off-target effects of ABT-263 rather than senolytic-specific mechanisms, weakening causal claims
 - Lack of cellular or molecular data on how ABT-263 directly induces EndoMT, leaving mechanistic gaps
 
+## Strongest counter-evidence
+
+- _No A_core/B_context counter-evidence found in this run; treat this as a single-direction signal until a broader receipt expansion finds a real opposing fact._
+
 ## Next extraction
 
 - Explore p53 and miR34a expression dynamics in ABT-263-treated endothelial cells to link senolytic action to EndoMT pathways
@@ -55,5 +60,5 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - **Canonical URL:** _not assigned_
 - **Suggested citation:** Dom Lynch. (2026). Senolytic-induced EndoMT as a maladaptive response in atherosclerotic plaque regression: implications for therapeutic window optimization. ReseaRka Evidence Index. Version 1.0.
 - **Run bundle SHA-256:** `4c5d69338a3b26f251f90acba701563f3899d85fa89a0f4daa2ebe50f0464f3a`
-- **Memo SHA-256:** `5ae4dc6424fd56d807f1f4d58849b4724d407148c57863b1a5220fe9cae6d4fa`
+- **Memo SHA-256:** `721dff61c1f087705b601386b579b0504d9ba6f41ba06dd6b356d65a8fa32360`
 - **Priority note:** This memo records the first published framing, source bundle, and evidence receipts for this run. Reuse should cite the canonical version.

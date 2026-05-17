@@ -3,6 +3,7 @@
 **Headline:** Genetic Determinants of Spermidine-Mediated Yield Enhancement in Indica Rice: Implications for Targeted Polyamine Biofortification
 **Alpha score:** 71/100
 **Confidence:** `frontier_hypothesis`
+**Memo surface:** `split or reject memo`
 **Snapshot:** `2026-05-17T07-01-13Z`
 **Run:** `spermidine-evidence-2026-05-17T07-01-13Z`
 
@@ -33,6 +34,10 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - Lack of mechanistic data linking yield differences to specific polyamine uptake, metabolism, or signaling pathways in plants
 - The enzymatic specificity data from rat prostate may not directly inform plant biology without cross-kingdom experimental validation
 
+## Strongest counter-evidence
+
+- _No A_core/B_context counter-evidence found in this run; treat this as a single-direction signal until a broader receipt expansion finds a real opposing fact._
+
 ## Next extraction
 
 - Test spermidine efficacy across a panel of rice cultivars with known genetic backgrounds, e.g., using doses from 0.1 to 5 mM as hinted in other studies
@@ -44,6 +49,22 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - Pretreatment with Spd dramatically improved grain yield per plant of KDML105 from 17.7 to 28.7 g (62% increase) _(alpha cues: baseline)_
 - sym-homospermidine, which at 1mM gave rates 17% of the rate with spermidine _(alpha cues: baseline)_
 
+## Receipt expansion candidates
+
+- The lead thesis is thinner than the available corpus: it cites 2 bound receipt(s) while 5 A/B receipt(s) exist in this run.
+- Candidate `fact_id=65724` (`A_core`) — sym-homospermidine, which at 1mM gave rates 17% of the rate with spermidine
+- Candidate `fact_id=65725` (`B_context`) — 1,8-diamino-octane, which at 1mM gave rates 2% of the rate with spermidine
+- Candidate `fact_id=65726` (`B_context`) — N-(3-aminopropyl)-cadaverine, which at 1mM gave rates 4% of the rate with spermidine
+
+## Subtopic recommendations
+
+- This topic looks broad/noisy enough that the next run should split it before trying to force one public thesis.
+- `size_animal_protect` — Polyamines protect boar sperm from oxidative stress in vitro
+- `rate_bode_prostatic` — [UE2014] - Loi de Titius - Bode
+- `yield_composition_indica` — Effects of exogenous spermidine (Spd) on yield, yield-related parameters and mineral composition of rice ('Oryza sativa' L. ssp. 'indica') grains under salt stress
+- `physiology_rate_occurred` — The effects of spermidine and putrescine polyamines on growth of pomegranate ( Punica granatum L. cv 'Rabbab') in salinity circumstance
+- `lime_under_applied` — Response of Lime Seedlings (Citrus aurantifolia L.) to Exogenous Spermidine Treatments under Drought Stress
+
 ## Provenance / priority
 
 - **Topic:** `spermidine`
@@ -54,5 +75,5 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - **Canonical URL:** _not assigned_
 - **Suggested citation:** Dom Lynch. (2026). Genetic Determinants of Spermidine-Mediated Yield Enhancement in Indica Rice: Implications for Targeted Polyamine Biofortification. ReseaRka Evidence Index. Version 1.0.
 - **Run bundle SHA-256:** `730ee860e561be34ba1d1118c0c984b9aa2974543083f79963a183d73ccf9708`
-- **Memo SHA-256:** `6aa05ca9c37a263366597d09e959745b35fd14bf98d6d8b20c88f0205063e45e`
+- **Memo SHA-256:** `17b7d75c2870311211a7fb84a196a94f89f9ce45954c3ac93ce95114fc9f4f94`
 - **Priority note:** This memo records the first published framing, source bundle, and evidence receipts for this run. Reuse should cite the canonical version.

@@ -30,9 +30,23 @@ def _alpha_runs(include_archive: bool) -> list[Path]:
     return out
 
 
+def _topic(run: Path) -> str:
+    return run.name.split("-evidence-", 1)[0]
+
+
+def _latest_per_topic(runs: list[Path]) -> list[Path]:
+    latest: dict[str, Path] = {}
+    for run in runs:
+        topic = _topic(run)
+        prev = latest.get(topic)
+        if prev is None or run.name > prev.name:
+            latest[topic] = run
+    return sorted(latest.values(), key=lambda p: p.name)
+
+
 def build_queue(include_archive: bool = True) -> dict[str, list[dict[str, Any]]]:
     rows = []
-    for run in _alpha_runs(include_archive):
+    for run in _latest_per_topic(_alpha_runs(include_archive)):
         _, verdict = write_publish_verdict(run)
         rows.append(verdict)
     rank = {"TIER_1": 0, "TIER_2": 1, "TIER_3": 2}

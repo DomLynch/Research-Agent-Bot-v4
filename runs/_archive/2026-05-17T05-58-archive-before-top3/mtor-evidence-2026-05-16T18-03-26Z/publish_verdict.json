@@ -7,8 +7,11 @@
   "headline": "Context-Dependent mTOR Modulation: Balancing Immune Resilience and Tumor Suppression in Murine Preclinical Models",
   "confidence_label": "frontier_hypothesis",
   "alpha_score": 36,
+  "surface_type": "split_or_reject_memo",
   "axes": {
     "bound_receipts": 2,
+    "available_bound_receipts": 2,
+    "available_source_contexts": 2,
     "a_core_receipts": 1,
     "source_concentrated": true,
     "counter_consensus_tension": true,
@@ -26,6 +29,108 @@
         "title": "Metformin Prevents Tobacco Carcinogen\u2013Induced Lung Tumorigenesis",
         "journal": "Cancer Prevention Research",
         "year": 2010
+      }
+    ]
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [
+      "15567",
+      "2848"
+    ],
+    "available_bound_fact_ids": [
+      "15567",
+      "2848"
+    ],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 0.679,
+    "source_count": 16,
+    "clusters": [
+      {
+        "label": "metastatic_oncotarget_adjuvant",
+        "member_fact_ids": [
+          "33521",
+          "33522",
+          "33520",
+          "33519",
+          "33518"
+        ],
+        "source_paper": {
+          "doi": "10.18632/oncotarget.8286",
+          "title": "mTOR inhibition as an adjuvant therapy in a metastatic model of HPV+ HNSCC",
+          "journal": "Oncotarget",
+          "year": 2016
+        },
+        "example_phrase": "enhanced CRT-induced cytotoxicity (3.3 fold) in clonogenic assays"
+      },
+      {
+        "label": "cancer_characterization_atm",
+        "member_fact_ids": [
+          "4624",
+          "4627",
+          "4625",
+          "4626"
+        ],
+        "source_paper": {
+          "doi": "10.1158/0008-5472.can-12-1702",
+          "title": "Characterization of Torin2, an ATP-Competitive Inhibitor of mTOR, ATM, and ATR",
+          "journal": "Cancer Research",
+          "year": 2013
+        },
+        "example_phrase": "Torin2 inhibited mTORC1-dependent T389 phosphorylation on S6K with an EC50 of 250 pmol/L and 800-fold selectivity for mTOR versus PI3K."
+      },
+      {
+        "label": "cancer_nonhepatic_pathway",
+        "member_fact_ids": [
+          "13585",
+          "13586",
+          "13583",
+          "13584"
+        ],
+        "source_paper": {
+          "doi": "10.1158/1078-0432.ccr-16-2656",
+          "title": "Enrichment of PI3K-AKT\u2013mTOR Pathway Activation in Hepatic Metastases from Breast Cancer",
+          "journal": "Clinical Cancer Research",
+          "year": 2017
+        },
+        "example_phrase": "Activation of AKT (S473) was detected more frequently among liver metastases (P = 0.056)."
+      },
+      {
+        "label": "chronic_reports_through",
+        "member_fact_ids": [
+          "64215",
+          "64214"
+        ],
+        "source_paper": {
+          "doi": "10.3892/or.2011.1502",
+          "title": "Rapamycin provides a therapeutic option through inhibition of mTOR signaling in chronic myelogenous leukemia",
+          "journal": "Oncology Reports",
+          "year": 2011
+        },
+        "example_phrase": "Western blot analysis showed the visibly higher phosphorylation of mTOR (70.6%), 4E-BP1 (76.5%) and p70S6K (73.5%) in bone marrow cells from CML patients."
+      },
+      {
+        "label": "brain_profiling_children",
+        "member_fact_ids": [
+          "11040",
+          "11039"
+        ],
+        "source_paper": {
+          "doi": "10.1093/brain/awab376",
+          "title": "Profiling PI3K-AKT-MTOR variants in focal brain malformations reveals new insights for diagnostic care",
+          "journal": "Brain",
+          "year": 2021
+        },
+        "example_phrase": "Variant allele fractions ranged from 0.14 to 22.67% across all mutation-positive samples."
       }
     ]
   },

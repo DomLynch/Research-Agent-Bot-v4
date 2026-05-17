@@ -3,6 +3,7 @@
 **Headline:** Threshold Paradigm in Longevity: Bridging Human Genetic Enrichment and Seed Moisture Breakpoints
 **Alpha score:** 80/100
 **Confidence:** `frontier_hypothesis`
+**Memo surface:** `split or reject memo`
 **Snapshot:** `2026-05-17T05-46-45Z`
 **Run:** `longevity-evidence-2026-05-17T05-46-45Z`
 
@@ -34,6 +35,10 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - The evidence pool is limited to two studies, making the proposed threshold paradigm speculative and lacking in robust statistical support.
 - The scoping review may conflate genetic and environmental factors without addressing confounding variables like population heterogeneity or seed accession variability.
 
+## Strongest counter-evidence
+
+- _No A_core/B_context counter-evidence found in this run; treat this as a single-direction signal until a broader receipt expansion finds a real opposing fact._
+
 ## Next extraction
 
 - FOXO3 SNPs and their association with longevity in diverse ethnic groups with dose-response curves
@@ -56,5 +61,5 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - **Canonical URL:** _not assigned_
 - **Suggested citation:** Dom Lynch. (2026). Threshold Paradigm in Longevity: Bridging Human Genetic Enrichment and Seed Moisture Breakpoints. ReseaRka Evidence Index. Version 1.0.
 - **Run bundle SHA-256:** `03cada82986e93b5be15bbdb241237758493003c5af3d90e7caf7d35752abc5e`
-- **Memo SHA-256:** `d64290223a821dab8318a65bb53da1b3c81bde68dab316f260c2c496211f7a08`
+- **Memo SHA-256:** `3069d6d6919d0b3f323f9c3647e055c25fcaa71b60ce3bf1861091ba0d22fa13`
 - **Priority note:** This memo records the first published framing, source bundle, and evidence receipts for this run. Reuse should cite the canonical version.

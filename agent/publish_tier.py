@@ -47,8 +47,14 @@ def _cfg() -> dict[str, Any]:
         "tension_markers": tuple(
             str(x).lower() for x in (publish or {}).get("tension_markers", [])
         ),
+        "counter_markers": tuple(
+            str(x).lower() for x in (publish or {}).get("counter_markers", [])
+        ),
         "generic_tokens": frozenset(
             str(x).lower() for x in (publish or {}).get("generic_tokens", [])
+        ),
+        "cluster_stopwords": frozenset(
+            str(x).lower() for x in (publish or {}).get("cluster_stopwords", [])
         ),
         "ready_min_bound_receipts": int(
             (thresholds or {}).get("ready_min_bound_receipts", 3)
@@ -68,6 +74,13 @@ def _cfg() -> dict[str, Any]:
         "domain_overlap_min": float(
             (thresholds or {}).get("domain_overlap_min", 0.06)
         ),
+        "context_min_available_sources": int(
+            (thresholds or {}).get("context_min_available_sources", 3)
+        ),
+        "broad_d_bad_share": float(
+            (thresholds or {}).get("broad_d_bad_share", 0.60)
+        ),
+        "broad_min_sources": int((thresholds or {}).get("broad_min_sources", 3)),
         "off_scope_markers": tuple(
             str(x).lower()
             for x in (data.get("feed_scope") or {}).get("off_scope_markers", [])
@@ -147,6 +160,164 @@ def _source_papers(
     return papers
 
 
+def _source_key(fact: dict[str, Any]) -> str:
+    paper = fact.get("source_paper") or {}
+    if not isinstance(paper, dict):
+        return ""
+    return str(paper.get("doi") or paper.get("pmid") or paper.get("title") or "")
+
+
+def _paper_summary(fact: dict[str, Any]) -> dict[str, Any]:
+    paper = fact.get("source_paper") or {}
+    return {
+        "doi": str(paper.get("doi") or ""),
+        "title": str(paper.get("title") or ""),
+        "journal": str(paper.get("journal") or ""),
+        "year": paper.get("year"),
+    } if isinstance(paper, dict) else {
+        "doi": "", "title": "", "journal": "", "year": None,
+    }
+
+
+def _fact_summary(
+    fid: str,
+    fact: dict[str, Any],
+    lane: str,
+) -> dict[str, Any]:
+    return {
+        "fact_id": fid,
+        "lane": lane,
+        "phrase": str(fact.get("canonical_phrase") or "")[:260],
+        "sub_topic": str(fact.get("sub_topic") or ""),
+        "population": str(fact.get("population") or "")[:160],
+        "intervention": str(fact.get("intervention") or "")[:160],
+        "source_paper": _paper_summary(fact),
+    }
+
+
+def _bound_ids_in_fact_order(
+    facts: dict[str, dict[str, Any]],
+    lanes: dict[str, str],
+) -> list[str]:
+    return [fid for fid in facts if lanes.get(fid) in _BINDABLE]
+
+
+def _counter_evidence(
+    cited_ids: list[str],
+    facts: dict[str, dict[str, Any]],
+    lanes: dict[str, str],
+    markers: tuple[str, ...],
+) -> list[dict[str, Any]]:
+    cited = set(cited_ids)
+    out: list[dict[str, Any]] = []
+    for fid in _bound_ids_in_fact_order(facts, lanes):
+        if fid in cited:
+            continue
+        fact = facts.get(fid) or {}
+        # Counter markers must live in the asserted finding itself. Comparator
+        # text often says "without X" for ordinary controls; treating that as
+        # opposition creates false counter-evidence.
+        haystack = str(fact.get("canonical_phrase") or "").lower()
+        if markers and not any(marker in haystack for marker in markers):
+            continue
+        out.append(_fact_summary(fid, fact, lanes.get(fid, "")))
+    out.sort(key=lambda item: (item["lane"] != "A_core", item["fact_id"]))
+    return out[:3]
+
+
+def _expansion_candidates(
+    cited_ids: list[str],
+    facts: dict[str, dict[str, Any]],
+    lanes: dict[str, str],
+    limit: int = 5,
+) -> list[dict[str, Any]]:
+    cited = set(cited_ids)
+    out: list[dict[str, Any]] = []
+    cited_sources = {
+        _source_key(facts[fid]) for fid in cited if fid in facts
+    }
+    for fid in _bound_ids_in_fact_order(facts, lanes):
+        if fid in cited:
+            continue
+        fact = facts.get(fid) or {}
+        item = _fact_summary(fid, fact, lanes.get(fid, ""))
+        item["same_source_as_lead"] = _source_key(fact) in cited_sources
+        out.append(item)
+    out.sort(key=lambda item: (
+        item["same_source_as_lead"],
+        item["lane"] != "A_core",
+        item["fact_id"],
+    ))
+    return out[:limit]
+
+
+def _cluster_label(
+    facts: list[dict[str, Any]],
+    topic: str,
+    generic: frozenset[str],
+    stopwords: frozenset[str],
+) -> str:
+    counts: Counter[str] = Counter()
+    for fact in facts:
+        paper = fact.get("source_paper") or {}
+        text = " ".join([
+            str(fact.get("sub_topic") or ""),
+            str(fact.get("population") or ""),
+            str(fact.get("intervention") or ""),
+            str(fact.get("comparator") or ""),
+            str(fact.get("canonical_phrase") or ""),
+            str(paper.get("title") or "") if isinstance(paper, dict) else "",
+            str(paper.get("journal") or "") if isinstance(paper, dict) else "",
+        ])
+        for token in _tokens(text, topic, generic | stopwords):
+            counts[token] += 1
+    return "_".join(token for token, _ in counts.most_common(3)) or "unlabeled"
+
+
+def _subtopic_recommendations(
+    facts: dict[str, dict[str, Any]],
+    lanes: dict[str, str],
+    topic: str,
+    generic: frozenset[str],
+    stopwords: frozenset[str],
+    *,
+    d_bad_share_min: float,
+    source_min: int,
+    enabled: bool,
+) -> dict[str, Any]:
+    total = max(1, len(lanes))
+    d_bad = sum(1 for lane in lanes.values() if lane == "D_bad_extraction")
+    by_source: dict[str, list[dict[str, Any]]] = {}
+    for fid, fact in facts.items():
+        key = _source_key(fact)
+        if key:
+            by_source.setdefault(key, []).append(fact | {"_fact_id": fid})
+    recommend = (
+        enabled and d_bad / total >= d_bad_share_min
+        and len(by_source) >= source_min
+    )
+    clusters: list[dict[str, Any]] = []
+    if recommend:
+        for items in sorted(by_source.values(), key=len, reverse=True)[:5]:
+            first = items[0]
+            clusters.append({
+                "label": _cluster_label(items, topic, generic, stopwords),
+                "member_fact_ids": [str(it.get("_fact_id") or "") for it in items[:8]],
+                "source_paper": _paper_summary(first),
+                "example_phrase": str(first.get("canonical_phrase") or "")[:220],
+            })
+    return {
+        "recommended": recommend,
+        "reason": (
+            "high_d_bad_share_plus_semantic_dispersion" if recommend
+            else "not_broad_or_not_noisy_enough"
+        ),
+        "d_bad_share": round(d_bad / total, 3),
+        "source_count": len(by_source),
+        "clusters": clusters,
+    }
+
+
 def _domain_forced(
     papers: list[dict[str, Any]],
     topic: str,
@@ -224,6 +395,10 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     bound_ids = [fid for fid in cited_ids if lanes.get(fid) in _BINDABLE]
     a_core = sum(1 for fid in bound_ids if lanes.get(fid) == "A_core")
     papers = _source_papers(bound_ids, facts)
+    all_bound_ids = _bound_ids_in_fact_order(facts, lanes)
+    available_source_count = len({
+        _source_key(facts[fid]) for fid in all_bound_ids if fid in facts
+    } - {""})
     source_concentrated = _source_concentrated(
         bound_ids, facts, float(cfg["source_concentration_share"]),
     )
@@ -232,6 +407,10 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     )
     tension = _has_tension(md, cfg["tension_markers"])
     off_scope = _off_scope(papers, cfg["off_scope_markers"])
+    counter_evidence = _counter_evidence(
+        bound_ids, facts, lanes, cfg["counter_markers"],
+    )
+    expansion_candidates = _expansion_candidates(bound_ids, facts, lanes)
     blockers: list[str] = []
     if label in _BLOCKED_LABELS:
         blockers.append(f"blocked_label:{label}")
@@ -265,6 +444,36 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     else:
         tier, level = "TIER_2", "L4"
         decision = "needs_operator_review"
+    expansion_needed = (
+        len(bound_ids) < int(cfg["ready_min_bound_receipts"])
+        and len(all_bound_ids) > len(bound_ids)
+    )
+    context_dependence = (
+        decision == "needs_operator_review"
+        and expansion_needed
+        and tension
+        and not forced
+        and not off_scope
+        and available_source_count >= int(cfg["context_min_available_sources"])
+    )
+    subtopics = _subtopic_recommendations(
+        facts, lanes, topic, cfg["generic_tokens"], cfg["cluster_stopwords"],
+        d_bad_share_min=float(cfg["broad_d_bad_share"]),
+        source_min=int(cfg["broad_min_sources"]),
+        enabled=decision != "ready_to_publish",
+    )
+    if decision == "ready_to_publish":
+        surface_type = "publish_alpha_memo"
+    elif context_dependence:
+        surface_type = "context_dependence_memo"
+    elif off_scope or forced:
+        surface_type = "split_or_reject_memo"
+    elif subtopics["recommended"]:
+        surface_type = "subtopic_rerun_memo"
+    elif decision == "curation_needed":
+        surface_type = "curation_brief"
+    else:
+        surface_type = "frontier_hypothesis_memo"
     try:
         run_ref = str(run_dir.resolve().relative_to(_ROOT))
     except ValueError:
@@ -278,8 +487,11 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         "headline": _field(md, "Headline"),
         "confidence_label": label,
         "alpha_score": alpha_score,
+        "surface_type": surface_type,
         "axes": {
             "bound_receipts": len(bound_ids),
+            "available_bound_receipts": len(all_bound_ids),
+            "available_source_contexts": available_source_count,
             "a_core_receipts": a_core,
             "source_concentrated": source_concentrated,
             "counter_consensus_tension": tension,
@@ -295,6 +507,21 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
                 for p in papers
             ],
         },
+        "receipt_expansion": {
+            "needed": expansion_needed,
+            "why": (
+                "lead_thesis_underuses_available_bound_receipts"
+                if expansion_needed else "lead_thesis_uses_available_receipts"
+            ),
+            "cited_bound_fact_ids": bound_ids,
+            "available_bound_fact_ids": all_bound_ids,
+            "candidate_receipts": expansion_candidates,
+        },
+        "counter_evidence": {
+            "status": "found" if counter_evidence else "none_found",
+            "items": counter_evidence,
+        },
+        "subtopic_recommendations": subtopics,
         "blockers": blockers,
     }
 

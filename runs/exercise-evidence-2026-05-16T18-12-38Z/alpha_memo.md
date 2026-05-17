@@ -3,6 +3,7 @@
 **Headline:** Pathway-specific anti-inflammatory gating: metformin unlocks TNF-axis suppression in exercise-responsive cancer survivors that exercise alone cannot achieve
 **Alpha score:** 100/100
 **Confidence:** `evidence_backed_signal`
+**Memo surface:** `publish alpha memo`
 **Snapshot:** `2026-05-16T18-12-38Z`
 **Run:** `exercise-evidence-2026-05-16T18-12-38Z`
 
@@ -35,6 +36,10 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - The metformin+exercise vs exercise-alone inflammatory comparison (facts 5-8) derives from a single trial in cancer survivors without type 2 diabetes; generalizability to diabetic cancer survivors or non-cancer populations is speculative.
 - Concurrent PEDF and VEGF suppression (facts 11-12) could reflect weight loss per se rather than exercise, since both study arms included caloric restriction (225 min/week activity + 10% weight-loss goal) — the independent exercise contribut
 
+## Strongest counter-evidence
+
+- _No A_core/B_context counter-evidence found in this run; treat this as a single-direction signal until a broader receipt expansion finds a real opposing fact._
+
 ## Next extraction
 
 - Protein fractional synthetic rate data stratified by BMI or body-fat percentage in human exercise trials
@@ -61,5 +66,5 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - **Canonical URL:** _not assigned_
 - **Suggested citation:** Dom Lynch. (2026). Pathway-specific anti-inflammatory gating: metformin unlocks TNF-axis suppression in exercise-responsive cancer survivors that exercise alone cannot achieve. ReseaRka Evidence Index. Version 1.0.
 - **Run bundle SHA-256:** `fe487b28cd8297287f8c8def5605a5aac25b0a1723c07436f22dfdaea7dc6374`
-- **Memo SHA-256:** `8cc2ffa8500420b8742fc1b153431f7c550f9bd83cdd65ae93c80d0609a8adc1`
+- **Memo SHA-256:** `537972c5276c0729e232c56b7f8574005596335f9b4f282796d22695fd812c8a`
 - **Priority note:** This memo records the first published framing, source bundle, and evidence receipts for this run. Reuse should cite the canonical version.

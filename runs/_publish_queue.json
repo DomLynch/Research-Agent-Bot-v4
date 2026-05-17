@@ -9,8 +9,11 @@
       "headline": "Pathway-specific anti-inflammatory gating: metformin unlocks TNF-axis suppression in exercise-responsive cancer survivors that exercise alone cannot achieve",
       "confidence_label": "evidence_backed_signal",
       "alpha_score": 100,
+      "surface_type": "publish_alpha_memo",
       "axes": {
         "bound_receipts": 4,
+        "available_bound_receipts": 16,
+        "available_source_contexts": 10,
         "a_core_receipts": 4,
         "source_concentrated": true,
         "counter_consensus_tension": true,
@@ -25,6 +28,122 @@
           }
         ]
       },
+      "receipt_expansion": {
+        "needed": false,
+        "why": "lead_thesis_uses_available_receipts",
+        "cited_bound_fact_ids": [
+          "22116",
+          "22117",
+          "22118",
+          "22119"
+        ],
+        "available_bound_fact_ids": [
+          "12572",
+          "12573",
+          "41245",
+          "12544",
+          "22119",
+          "22117",
+          "22118",
+          "22116",
+          "30392",
+          "15480",
+          "29372",
+          "29371",
+          "29370",
+          "19252",
+          "27808",
+          "34200"
+        ],
+        "candidate_receipts": [
+          {
+            "fact_id": "12544",
+            "lane": "A_core",
+            "phrase": "Mortality risk was 11% lower (hazard ratio, 0.89; 95% confidence interval, 0.86-0.93; P<0.001) for every 1-MET increase in exercise capacity.",
+            "sub_topic": "effect_size",
+            "population": "male veterans with hypertension aged \u226570 years",
+            "intervention": "exercise capacity (per 1-MET increase)",
+            "source_paper": {
+              "doi": "10.1161/hypertensionaha.114.03510",
+              "title": "Exercise Capacity and All-Cause Mortality in Male Veterans With Hypertension Aged \u226570 Years",
+              "journal": "Hypertension",
+              "year": 2014
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "12572",
+            "lane": "A_core",
+            "phrase": "Mixed-muscle protein fractional synthetic rate increased by 42% at 3 h postexercise and 69% at 24 h postexercise in CON.",
+            "sub_topic": "effect_size",
+            "population": "sixteen healthy young men (CON group)",
+            "intervention": "BFR exercise (control)",
+            "source_paper": {
+              "doi": "10.1152/ajpendo.00600.2013",
+              "title": "Activation of mTORC1 signaling and protein synthesis in human muscle following blood flow restriction exercise is inhibited by rapamycin",
+              "journal": "American Journal of Physiology-Endocrinology and Metabolism",
+              "year": 2014
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "12573",
+            "lane": "A_core",
+            "phrase": "Mixed-muscle protein fractional synthetic rate increased by 42% at 3 h postexercise and 69% at 24 h postexercise in CON.",
+            "sub_topic": "effect_size",
+            "population": "sixteen healthy young men (CON group)",
+            "intervention": "BFR exercise (control)",
+            "source_paper": {
+              "doi": "10.1152/ajpendo.00600.2013",
+              "title": "Activation of mTORC1 signaling and protein synthesis in human muscle following blood flow restriction exercise is inhibited by rapamycin",
+              "journal": "American Journal of Physiology-Endocrinology and Metabolism",
+              "year": 2014
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "15480",
+            "lane": "A_core",
+            "phrase": "patients with PAD had a greater reduction in SmO2 (-54 \u00b1 10 vs. -12 \u00b1 4%, P = 0.001)",
+            "sub_topic": "effect_size",
+            "population": "patients with peripheral artery disease and age-matched healthy controls",
+            "intervention": "fatiguing plantar flexion exercise (from 0.5 to 7 kg for up to 14 min)",
+            "source_paper": {
+              "doi": "10.1152/japplphysiol.01110.2016",
+              "title": "Blood pressure and calf muscle oxygen extraction during plantar flexion exercise in peripheral artery disease",
+              "journal": "Journal of Applied Physiology",
+              "year": 2017
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "19252",
+            "lane": "A_core",
+            "phrase": "protein synthetic response to exercise was blunted in obese rats: mixed -7%, myofibrillar +6%, cytosolic +7% vs. lean +34%, +40%, +17%.",
+            "sub_topic": "effect_size",
+            "population": "obese Zucker rats and lean littermates",
+            "intervention": "resistance exercise",
+            "source_paper": {
+              "doi": "10.1096/fj.12-224006",
+              "title": "Abnormal protein turnover and anabolic resistance to exercise in sarcopenic obesity",
+              "journal": "The FASEB Journal",
+              "year": 2013
+            },
+            "same_source_as_lead": false
+          }
+        ]
+      },
+      "counter_evidence": {
+        "status": "none_found",
+        "items": []
+      },
+      "subtopic_recommendations": {
+        "recommended": false,
+        "reason": "not_broad_or_not_noisy_enough",
+        "d_bad_share": 0.568,
+        "source_count": 25,
+        "clusters": []
+      },
       "blockers": []
     },
     {
@@ -36,8 +155,11 @@
       "headline": "Senolytic-induced EndoMT as a maladaptive response in atherosclerotic plaque regression: implications for therapeutic window optimization",
       "confidence_label": "evidence_backed_signal",
       "alpha_score": 83,
+      "surface_type": "publish_alpha_memo",
       "axes": {
         "bound_receipts": 3,
+        "available_bound_receipts": 4,
+        "available_source_contexts": 1,
         "a_core_receipts": 3,
         "source_concentrated": true,
         "counter_consensus_tension": true,
@@ -52,6 +174,49 @@
           }
         ]
       },
+      "receipt_expansion": {
+        "needed": false,
+        "why": "lead_thesis_uses_available_receipts",
+        "cited_bound_fact_ids": [
+          "12623",
+          "12624",
+          "12622"
+        ],
+        "available_bound_fact_ids": [
+          "12623",
+          "12621",
+          "12622",
+          "12624"
+        ],
+        "candidate_receipts": [
+          {
+            "fact_id": "12621",
+            "lane": "A_core",
+            "phrase": "reduced \u03b1-SMA+ fibrous cap thickness by 60%",
+            "sub_topic": "effect_size",
+            "population": "advanced atherosclerotic Apoe-/- mice fed western diet",
+            "intervention": "ABT-263 at 100 mg/kg or 50 mg/kg",
+            "source_paper": {
+              "doi": "10.1172/jci.insight.173863",
+              "title": "Treatment of advanced atherosclerotic mice with ABT-263 reduced indices of plaque stability and increased mortality",
+              "journal": "JCI Insight",
+              "year": 2024
+            },
+            "same_source_as_lead": true
+          }
+        ]
+      },
+      "counter_evidence": {
+        "status": "none_found",
+        "items": []
+      },
+      "subtopic_recommendations": {
+        "recommended": false,
+        "reason": "not_broad_or_not_noisy_enough",
+        "d_bad_share": 0.692,
+        "source_count": 4,
+        "clusters": []
+      },
       "blockers": []
     }
   ],
@@ -65,8 +230,11 @@
       "headline": "Context-Dependent Efficacy of Metformin in Cancer Prevention: A Scoping Review Dissecting Preclinical-Clinical Discrepancies",
       "confidence_label": "evidence_backed_signal",
       "alpha_score": 100,
+      "surface_type": "frontier_hypothesis_memo",
       "axes": {
         "bound_receipts": 4,
+        "available_bound_receipts": 15,
+        "available_source_contexts": 12,
         "a_core_receipts": 4,
         "source_concentrated": false,
         "counter_consensus_tension": true,
@@ -99,6 +267,294 @@
           }
         ]
       },
+      "receipt_expansion": {
+        "needed": false,
+        "why": "lead_thesis_uses_available_receipts",
+        "cited_bound_fact_ids": [
+          "2848",
+          "11416",
+          "54539",
+          "35442"
+        ],
+        "available_bound_fact_ids": [
+          "2848",
+          "11416",
+          "54539",
+          "35442",
+          "17869",
+          "32860",
+          "6505",
+          "22120",
+          "22119",
+          "22118",
+          "2474",
+          "63845",
+          "1111",
+          "1110",
+          "28964"
+        ],
+        "candidate_receipts": [
+          {
+            "fact_id": "1110",
+            "lane": "A_core",
+            "phrase": "Overall cancer incidence was reduced by 31% [summary relative risk (SRR), 0.69; 95% confidence interval (CI), 0.52-0.90]",
+            "sub_topic": "effect_size",
+            "population": "patients with diabetes",
+            "intervention": "metformin",
+            "source_paper": {
+              "doi": "10.1158/1940-6207.capr-13-0424",
+              "title": "Metformin and Cancer Risk and Mortality: A Systematic Review and Meta-analysis Taking into Account Biases and Confounders",
+              "journal": "Cancer Prevention Research",
+              "year": 2014
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "1111",
+            "lane": "A_core",
+            "phrase": "Cancer mortality was reduced by 34% (SRR, 0.66; 95% CI, 0.54-0.81; I(2) = 21%).",
+            "sub_topic": "effect_size",
+            "population": "patients with diabetes",
+            "intervention": "metformin",
+            "source_paper": {
+              "doi": "10.1158/1940-6207.capr-13-0424",
+              "title": "Metformin and Cancer Risk and Mortality: A Systematic Review and Meta-analysis Taking into Account Biases and Confounders",
+              "journal": "Cancer Prevention Research",
+              "year": 2014
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "17869",
+            "lane": "A_core",
+            "phrase": "metformin treatment caused a significant body weight reduction in adult non-diabetic patients treated with atypical antipsychotics (4.8%, 95% CI 1.6 to 8.0)",
+            "sub_topic": "effect_size",
+            "population": "adult non-diabetic patients treated with atypical antipsychotics",
+            "intervention": "metformin",
+            "source_paper": {
+              "doi": "10.1177/0269881109353461",
+              "title": "Metformin for weight reduction in non-diabetic patients on antipsychotic drugs: a systematic review and meta-analysis",
+              "journal": "Journal of Psychopharmacology",
+              "year": 2010
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "22118",
+            "lane": "A_core",
+            "phrase": "exercise and metformin reduced sTNF\u03b1R2 and IL6 (-38.7%; 95% CI, -52.3, -18.9)",
+            "sub_topic": "effect_size",
+            "population": "patients with breast and colorectal cancer who completed standard therapy, low baseline physical activity, without type 2 diabetes",
+            "intervention": "exercise and metformin",
+            "source_paper": {
+              "doi": "10.1158/1940-6207.capr-20-0188",
+              "title": "Effect of Exercise or Metformin on Biomarkers of Inflammation in Breast and Colorectal Cancer: A Randomized Trial",
+              "journal": "Cancer Prevention Research",
+              "year": 2020
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "22119",
+            "lane": "A_core",
+            "phrase": "exercise and metformin reduced sTNF\u03b1R2 (-13.1%; 95% CI, -22.9, -1.0)",
+            "sub_topic": "effect_size",
+            "population": "patients with breast and colorectal cancer who completed standard therapy, low baseline physical activity, without type 2 diabetes",
+            "intervention": "exercise and metformin",
+            "source_paper": {
+              "doi": "10.1158/1940-6207.capr-20-0188",
+              "title": "Effect of Exercise or Metformin on Biomarkers of Inflammation in Breast and Colorectal Cancer: A Randomized Trial",
+              "journal": "Cancer Prevention Research",
+              "year": 2020
+            },
+            "same_source_as_lead": false
+          }
+        ]
+      },
+      "counter_evidence": {
+        "status": "found",
+        "items": [
+          {
+            "fact_id": "22120",
+            "lane": "A_core",
+            "phrase": "metformin alone did not change hs-CRP (-13.9%; 95% CI, -40.0, 23.4), sTNF\u03b1R2, or IL6",
+            "sub_topic": "effect_size",
+            "population": "patients with breast and colorectal cancer who completed standard therapy, low baseline physical activity, without type 2 diabetes",
+            "intervention": "metformin alone",
+            "source_paper": {
+              "doi": "10.1158/1940-6207.capr-20-0188",
+              "title": "Effect of Exercise or Metformin on Biomarkers of Inflammation in Breast and Colorectal Cancer: A Randomized Trial",
+              "journal": "Cancer Prevention Research",
+              "year": 2020
+            }
+          }
+        ]
+      },
+      "subtopic_recommendations": {
+        "recommended": false,
+        "reason": "not_broad_or_not_noisy_enough",
+        "d_bad_share": 0.531,
+        "source_count": 28,
+        "clusters": []
+      },
+      "blockers": [
+        "source_dispersion"
+      ]
+    },
+    {
+      "run_dir": "runs/_archive/2026-05-17T05-58-archive-before-top3/telomere-evidence-2026-05-16T17-06-09Z",
+      "topic": "telomere",
+      "decision": "needs_operator_review",
+      "publish_tier": "TIER_2",
+      "maturity_level": "L4",
+      "headline": "Reconciling the Breast Cancer Telomere Paradox: A Scoping Review of Study Design, Ancestry, and Measurement Artifacts",
+      "confidence_label": "evidence_backed_signal",
+      "alpha_score": 100,
+      "surface_type": "frontier_hypothesis_memo",
+      "axes": {
+        "bound_receipts": 4,
+        "available_bound_receipts": 14,
+        "available_source_contexts": 12,
+        "a_core_receipts": 4,
+        "source_concentrated": false,
+        "counter_consensus_tension": true,
+        "cross_domain_forced": false,
+        "feed_scope_mismatch": false,
+        "source_papers": [
+          {
+            "doi": "10.1158/0008-5472.can-09-4595",
+            "title": "Telomere Length in Prospective and Retrospective Cancer Case-Control Studies",
+            "journal": "Cancer Research",
+            "year": 2010
+          },
+          {
+            "doi": "10.1002/gcc.22056",
+            "title": "Telomere length, telomere\u2010related genes, and breast cancer risk: The breast cancer health disparities study",
+            "journal": "Genes Chromosomes and Cancer",
+            "year": 2013
+          },
+          {
+            "doi": "10.1158/1055-9965.epi-16-0968",
+            "title": "The Association of Telomere Length in Peripheral Blood Cells with Cancer Risk: A Systematic Review and Meta-analysis of Prospective Studies",
+            "journal": "Cancer Epidemiology Biomarkers & Prevention",
+            "year": 2017
+          }
+        ]
+      },
+      "receipt_expansion": {
+        "needed": false,
+        "why": "lead_thesis_uses_available_receipts",
+        "cited_bound_fact_ids": [
+          "6907",
+          "6908",
+          "11257",
+          "3475"
+        ],
+        "available_bound_fact_ids": [
+          "16455",
+          "21712",
+          "20102",
+          "46707",
+          "6907",
+          "6908",
+          "11257",
+          "7527",
+          "8223",
+          "3475",
+          "16451",
+          "4351",
+          "13456",
+          "13457"
+        ],
+        "candidate_receipts": [
+          {
+            "fact_id": "46707",
+            "lane": "A_core",
+            "phrase": "those in the first quartile had an OR of 0.43 (95% CI: 0.28-0.68; P(trend), 0.0003)",
+            "sub_topic": "effect_size",
+            "population": "incident melanoma cases and age-matched controls from WHI-OS, HPFS, and NHS cohorts",
+            "intervention": "shorter telomere length in peripheral blood leukocytes (first quartile)",
+            "source_paper": {
+              "doi": "10.1158/0008-5472.can-11-1988",
+              "title": "Shorter Telomeres Associate with a Reduced Risk of Melanoma Development",
+              "journal": "Cancer Research",
+              "year": 2011
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "7527",
+            "lane": "A_core",
+            "phrase": "those in the lowest quartile (shortest) had an almost twofold increased risk of incident diabetes (hazard ratio [HR] 1.83 [95% CI 1.26-2.66])",
+            "sub_topic": "effect_size",
+            "population": "American Indians free of diabetes at baseline in the Strong Heart Family Study",
+            "intervention": "lowest quartile of leukocyte telomere length",
+            "source_paper": {
+              "doi": "10.2337/db13-0744",
+              "title": "Short Leukocyte Telomere Length Predicts Risk of Diabetes in American Indians: the Strong Heart Family Study",
+              "journal": "Diabetes",
+              "year": 2013
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "13456",
+            "lane": "B_context",
+            "phrase": "telomere length was a significant mediator of the relationship between rs398652 and bladder cancer (P = 0.013), explaining 14% of the effect",
+            "sub_topic": "effect_size",
+            "population": "bladder cancer case-control study",
+            "intervention": "rs398652 variant allele",
+            "source_paper": {
+              "doi": "10.1158/1940-6207.capr-11-0063",
+              "title": "A Genome-Wide Association Study Identifies a Locus on Chromosome 14q21 as a Predictor of Leukocyte Telomere Length and as a Marker of Susceptibility for Bladder Cancer",
+              "journal": "Cancer Prevention Research",
+              "year": 2011
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "13457",
+            "lane": "B_context",
+            "phrase": "Classic twin studies have shown that genetic components may contribute up to 80% of the heritability of telomere length",
+            "sub_topic": "effect_size",
+            "population": "general population (twin studies, cited)",
+            "intervention": "genetic components",
+            "source_paper": {
+              "doi": "10.1158/1940-6207.capr-11-0063",
+              "title": "A Genome-Wide Association Study Identifies a Locus on Chromosome 14q21 as a Predictor of Leukocyte Telomere Length and as a Marker of Susceptibility for Bladder Cancer",
+              "journal": "Cancer Prevention Research",
+              "year": 2011
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "16451",
+            "lane": "B_context",
+            "phrase": "SHS was almost four times likely to be in the first quartile (odds ratio [OR] = 3.81; 95% confidence interval [CI] 2.21-6.56)",
+            "sub_topic": "effect_size",
+            "population": "Adults with suboptimal health status and ideal health controls in China",
+            "intervention": "Suboptimal health status",
+            "source_paper": {
+              "doi": "10.1089/omi.2017.0050",
+              "title": "Telomere Length and Accelerated Biological Aging in the China Suboptimal Health Cohort: A Case\u2013Control Study",
+              "journal": "OMICS A Journal of Integrative Biology",
+              "year": 2017
+            },
+            "same_source_as_lead": false
+          }
+        ]
+      },
+      "counter_evidence": {
+        "status": "none_found",
+        "items": []
+      },
+      "subtopic_recommendations": {
+        "recommended": false,
+        "reason": "not_broad_or_not_noisy_enough",
+        "d_bad_share": 0.472,
+        "source_count": 28,
+        "clusters": []
+      },
       "blockers": [
         "source_dispersion"
       ]
@@ -112,8 +568,11 @@
       "headline": "Resveratrol at 75 mg twice daily as a targeted intervention for bone resorption in postmenopausal women: evidence from T-score and collagen telopeptide data",
       "confidence_label": "frontier_hypothesis",
       "alpha_score": 80,
+      "surface_type": "context_dependence_memo",
       "axes": {
         "bound_receipts": 2,
+        "available_bound_receipts": 7,
+        "available_source_contexts": 5,
         "a_core_receipts": 2,
         "source_concentrated": true,
         "counter_consensus_tension": true,
@@ -128,6 +587,206 @@
           }
         ]
       },
+      "receipt_expansion": {
+        "needed": true,
+        "why": "lead_thesis_underuses_available_bound_receipts",
+        "cited_bound_fact_ids": [
+          "4434",
+          "4433"
+        ],
+        "available_bound_fact_ids": [
+          "18722",
+          "13393",
+          "9268",
+          "4434",
+          "4433",
+          "9267",
+          "5625"
+        ],
+        "candidate_receipts": [
+          {
+            "fact_id": "13393",
+            "lane": "A_core",
+            "phrase": "Liver fat content decreased in placebo group (-0.7%) but not in resveratrol group (-0.03%), P=.018 for ITT population.",
+            "sub_topic": "effect_size",
+            "population": "overweight and insulin-resistant subjects",
+            "intervention": "resveratrol supplementation",
+            "source_paper": {
+              "doi": "10.1111/dom.13268",
+              "title": "Effects of resveratrol supplementation on liver fat content in overweight and insulin\u2010resistant subjects: A randomized, double\u2010blind, placebo\u2010controlled clinical trial",
+              "journal": "Diabetes Obesity and Metabolism",
+              "year": 2018
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "5625",
+            "lane": "A_core",
+            "phrase": "Tumor incidence is reduced from 80% in mice treated with azoxymethane (AOM) + DSS to 20% in mice treated with AOM + DSS + resveratrol (300 ppm).",
+            "sub_topic": "rate",
+            "population": "AOM + DSS mouse model of colitis",
+            "intervention": "resveratrol (300 ppm)",
+            "source_paper": {
+              "doi": "10.1158/1940-6207.capr-09-0117",
+              "title": "Resveratrol Suppresses Colitis and Colon Cancer Associated with Colitis",
+              "journal": "Cancer Prevention Research",
+              "year": 2010
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "9267",
+            "lane": "A_core",
+            "phrase": "fetal pancreatic mass was enlarged by 42%,",
+            "sub_topic": "effect_size",
+            "population": "pregnant nonhuman primates",
+            "intervention": "resveratrol supplementation (WSD supplemented with 0.37% resveratrol)",
+            "source_paper": {
+              "doi": "10.1096/fj.13-245472",
+              "title": "Beneficial and cautionary outcomes of resveratrol supplementation in pregnant nonhuman primates",
+              "journal": "The FASEB Journal",
+              "year": 2014
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "9268",
+            "lane": "A_core",
+            "phrase": "resveratrol resulted in 30% maternal weight loss",
+            "sub_topic": "effect_size",
+            "population": "pregnant nonhuman primates",
+            "intervention": "resveratrol supplementation (WSD supplemented with 0.37% resveratrol)",
+            "source_paper": {
+              "doi": "10.1096/fj.13-245472",
+              "title": "Beneficial and cautionary outcomes of resveratrol supplementation in pregnant nonhuman primates",
+              "journal": "The FASEB Journal",
+              "year": 2014
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "18722",
+            "lane": "B_context",
+            "phrase": "Significantly higher (90%) bioconversion of resveratrol was achieved with \u03b1-d-glucose as the sugar donor",
+            "sub_topic": "effect_size",
+            "population": "in vitro enzymatic reaction",
+            "intervention": "\u03b1-d-glucose as sugar donor",
+            "source_paper": {
+              "doi": "10.1128/aem.02076-14",
+              "title": "Enzymatic Biosynthesis of Novel Resveratrol Glucoside and Glycoside Derivatives",
+              "journal": "Applied and Environmental Microbiology",
+              "year": 2014
+            },
+            "same_source_as_lead": false
+          }
+        ]
+      },
+      "counter_evidence": {
+        "status": "found",
+        "items": [
+          {
+            "fact_id": "13393",
+            "lane": "A_core",
+            "phrase": "Liver fat content decreased in placebo group (-0.7%) but not in resveratrol group (-0.03%), P=.018 for ITT population.",
+            "sub_topic": "effect_size",
+            "population": "overweight and insulin-resistant subjects",
+            "intervention": "resveratrol supplementation",
+            "source_paper": {
+              "doi": "10.1111/dom.13268",
+              "title": "Effects of resveratrol supplementation on liver fat content in overweight and insulin\u2010resistant subjects: A randomized, double\u2010blind, placebo\u2010controlled clinical trial",
+              "journal": "Diabetes Obesity and Metabolism",
+              "year": 2018
+            }
+          }
+        ]
+      },
+      "subtopic_recommendations": {
+        "recommended": true,
+        "reason": "high_d_bad_share_plus_semantic_dispersion",
+        "d_bad_share": 0.816,
+        "source_count": 17,
+        "clusters": [
+          {
+            "label": "smooth_cell_muscle",
+            "member_fact_ids": [
+              "32359",
+              "32361",
+              "32363",
+              "32362",
+              "32360"
+            ],
+            "source_paper": {
+              "doi": "10.1152/ajpgi.00083.2011",
+              "title": "Resveratrol causes cell cycle arrest, decreased collagen synthesis, and apoptosis in rat intestinal smooth muscle cells",
+              "journal": "American Journal of Physiology-Gastrointestinal and Liver Physiology",
+              "year": 2011
+            },
+            "example_phrase": "Expression of collagen type I protein was decreased to 25% of control levels with 100 \u03bcM resveratrol (P < 0.05)"
+          },
+          {
+            "label": "glycyrrhizic_characterization_serum",
+            "member_fact_ids": [
+              "33995",
+              "33996",
+              "33998",
+              "33997"
+            ],
+            "source_paper": {
+              "doi": "10.1177/0885328217713357",
+              "title": "Resveratrol-loaded glycyrrhizic acid-conjugated human serum albumin nanoparticles wrapping resveratrol nanoparticles: Preparation, characterization, and targeting effect on liver tumors",
+              "journal": "Journal of Biomaterials Applications",
+              "year": 2017
+            },
+            "example_phrase": "The IC50 values of glycyrrhizic acid-conjugated human serum albumin nanoparticles wrapping resveratrol nanoparticles and resveratrol were 62.5 and 95.5 \u00b5g/ml, respectively."
+          },
+          {
+            "label": "cancer_curcumin_observed",
+            "member_fact_ids": [
+              "62134",
+              "62132",
+              "62133",
+              "62131"
+            ],
+            "source_paper": {
+              "doi": "10.5530/jyp.2017.9.94",
+              "title": "Comparative Insilico Docking Analysis of Curcumin and Resveratrol on Breast Cancer Proteins and their Synergistic Effect on MCF-7 Cell Line",
+              "journal": "Journal of Young Pharmacists",
+              "year": 2017
+            },
+            "example_phrase": "IC50 for the combined treatment with curcumin and resveratrol at the ratio of 1:1,1:3 and 3:1 were observed to be 28.06, 15.20 and 8.29 ug/ml"
+          },
+          {
+            "label": "systematic_critical_food",
+            "member_fact_ids": [
+              "2901",
+              "2902",
+              "2903"
+            ],
+            "source_paper": {
+              "doi": "10.1080/10408398.2017.1422480",
+              "title": "Effect of resveratrol on blood pressure: A systematic review and meta-analysis of randomized, controlled, clinical trials",
+              "journal": "Critical Reviews in Food Science and Nutrition",
+              "year": 2018
+            },
+            "example_phrase": "Administration of resveratrol did not significantly affect systolic BP [WMD: -2.5 95% CI:(-5.5, 0.6) mmHg; p=0.116]"
+          },
+          {
+            "label": "amp_www_control",
+            "member_fact_ids": [
+              "5439",
+              "5440",
+              "5442"
+            ],
+            "source_paper": {
+              "doi": "10.1155/2019/5921503",
+              "title": "Resveratrol Improves Boar Sperm Quality via 5<mml:math xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" id=\"M1\"><mml:msup><mml:mrow/><mml:mrow><mml:mo>\u2032</mml:mo></mml:mrow></mml:msup></mml:math>AMP-Activated Protein Kinase Activation during Cryopreservation",
+              "journal": "Oxidative Medicine and Cellular Longevity",
+              "year": 2019
+            },
+            "example_phrase": "50 \u03bcM resveratrol significantly improved post-thaw sperm quality parameters and AMPK phosphorylation."
+          }
+        ]
+      },
       "blockers": []
     },
     {
@@ -139,8 +798,11 @@
       "headline": "Context-Dependent mTOR Modulation: Balancing Immune Resilience and Tumor Suppression in Murine Preclinical Models",
       "confidence_label": "frontier_hypothesis",
       "alpha_score": 36,
+      "surface_type": "split_or_reject_memo",
       "axes": {
         "bound_receipts": 2,
+        "available_bound_receipts": 2,
+        "available_source_contexts": 2,
         "a_core_receipts": 1,
         "source_concentrated": true,
         "counter_consensus_tension": true,
@@ -161,6 +823,108 @@
           }
         ]
       },
+      "receipt_expansion": {
+        "needed": false,
+        "why": "lead_thesis_uses_available_receipts",
+        "cited_bound_fact_ids": [
+          "15567",
+          "2848"
+        ],
+        "available_bound_fact_ids": [
+          "15567",
+          "2848"
+        ],
+        "candidate_receipts": []
+      },
+      "counter_evidence": {
+        "status": "none_found",
+        "items": []
+      },
+      "subtopic_recommendations": {
+        "recommended": true,
+        "reason": "high_d_bad_share_plus_semantic_dispersion",
+        "d_bad_share": 0.679,
+        "source_count": 16,
+        "clusters": [
+          {
+            "label": "metastatic_oncotarget_adjuvant",
+            "member_fact_ids": [
+              "33521",
+              "33522",
+              "33520",
+              "33519",
+              "33518"
+            ],
+            "source_paper": {
+              "doi": "10.18632/oncotarget.8286",
+              "title": "mTOR inhibition as an adjuvant therapy in a metastatic model of HPV+ HNSCC",
+              "journal": "Oncotarget",
+              "year": 2016
+            },
+            "example_phrase": "enhanced CRT-induced cytotoxicity (3.3 fold) in clonogenic assays"
+          },
+          {
+            "label": "cancer_characterization_atm",
+            "member_fact_ids": [
+              "4624",
+              "4627",
+              "4625",
+              "4626"
+            ],
+            "source_paper": {
+              "doi": "10.1158/0008-5472.can-12-1702",
+              "title": "Characterization of Torin2, an ATP-Competitive Inhibitor of mTOR, ATM, and ATR",
+              "journal": "Cancer Research",
+              "year": 2013
+            },
+            "example_phrase": "Torin2 inhibited mTORC1-dependent T389 phosphorylation on S6K with an EC50 of 250 pmol/L and 800-fold selectivity for mTOR versus PI3K."
+          },
+          {
+            "label": "cancer_nonhepatic_pathway",
+            "member_fact_ids": [
+              "13585",
+              "13586",
+              "13583",
+              "13584"
+            ],
+            "source_paper": {
+              "doi": "10.1158/1078-0432.ccr-16-2656",
+              "title": "Enrichment of PI3K-AKT\u2013mTOR Pathway Activation in Hepatic Metastases from Breast Cancer",
+              "journal": "Clinical Cancer Research",
+              "year": 2017
+            },
+            "example_phrase": "Activation of AKT (S473) was detected more frequently among liver metastases (P = 0.056)."
+          },
+          {
+            "label": "chronic_reports_through",
+            "member_fact_ids": [
+              "64215",
+              "64214"
+            ],
+            "source_paper": {
+              "doi": "10.3892/or.2011.1502",
+              "title": "Rapamycin provides a therapeutic option through inhibition of mTOR signaling in chronic myelogenous leukemia",
+              "journal": "Oncology Reports",
+              "year": 2011
+            },
+            "example_phrase": "Western blot analysis showed the visibly higher phosphorylation of mTOR (70.6%), 4E-BP1 (76.5%) and p70S6K (73.5%) in bone marrow cells from CML patients."
+          },
+          {
+            "label": "brain_profiling_children",
+            "member_fact_ids": [
+              "11040",
+              "11039"
+            ],
+            "source_paper": {
+              "doi": "10.1093/brain/awab376",
+              "title": "Profiling PI3K-AKT-MTOR variants in focal brain malformations reveals new insights for diagnostic care",
+              "journal": "Brain",
+              "year": 2021
+            },
+            "example_phrase": "Variant allele fractions ranged from 0.14 to 22.67% across all mutation-positive samples."
+          }
+        ]
+      },
       "blockers": [
         "cross_domain_forced"
       ]
@@ -176,8 +940,11 @@
       "headline": "Threshold Paradigm in Longevity: Bridging Human Genetic Enrichment and Seed Moisture Breakpoints",
       "confidence_label": "frontier_hypothesis",
       "alpha_score": 80,
+      "surface_type": "split_or_reject_memo",
       "axes": {
         "bound_receipts": 3,
+        "available_bound_receipts": 3,
+        "available_source_contexts": 2,
         "a_core_receipts": 1,
         "source_concentrated": true,
         "counter_consensus_tension": true,
@@ -198,6 +965,32 @@
           }
         ]
       },
+      "receipt_expansion": {
+        "needed": false,
+        "why": "lead_thesis_uses_available_receipts",
+        "cited_bound_fact_ids": [
+          "10028",
+          "21067",
+          "21068"
+        ],
+        "available_bound_fact_ids": [
+          "10028",
+          "21067",
+          "21068"
+        ],
+        "candidate_receipts": []
+      },
+      "counter_evidence": {
+        "status": "none_found",
+        "items": []
+      },
+      "subtopic_recommendations": {
+        "recommended": false,
+        "reason": "not_broad_or_not_noisy_enough",
+        "d_bad_share": 0.581,
+        "source_count": 18,
+        "clusters": []
+      },
       "blockers": [
         "cross_domain_forced",
         "feed_scope_mismatch"
@@ -212,8 +1005,11 @@
       "headline": "Genetic Determinants of Spermidine-Mediated Yield Enhancement in Indica Rice: Implications for Targeted Polyamine Biofortification",
       "confidence_label": "frontier_hypothesis",
       "alpha_score": 71,
+      "surface_type": "split_or_reject_memo",
       "axes": {
         "bound_receipts": 2,
+        "available_bound_receipts": 5,
+        "available_source_contexts": 2,
         "a_core_receipts": 2,
         "source_concentrated": true,
         "counter_consensus_tension": true,
@@ -225,6 +1021,150 @@
             "title": "Effects of exogenous spermidine (Spd) on yield, yield-related parameters and mineral composition of rice ('Oryza sativa' L. ssp. 'indica') grains under salt stress",
             "journal": "Australian Journal of Crop Science",
             "year": 2013
+          }
+        ]
+      },
+      "receipt_expansion": {
+        "needed": true,
+        "why": "lead_thesis_underuses_available_bound_receipts",
+        "cited_bound_fact_ids": [
+          "31376",
+          "31377"
+        ],
+        "available_bound_fact_ids": [
+          "31376",
+          "31377",
+          "65726",
+          "65724",
+          "65725"
+        ],
+        "candidate_receipts": [
+          {
+            "fact_id": "65724",
+            "lane": "A_core",
+            "phrase": "sym-homospermidine, which at 1mM gave rates 17% of the rate with spermidine",
+            "sub_topic": "rate",
+            "population": "rat prostatic spermine synthase",
+            "intervention": "sym-homospermidine",
+            "source_paper": {
+              "doi": "10.1042/bj1970315",
+              "title": "[UE2014] - Loi de Titius - Bode",
+              "journal": "The Biochemical journal",
+              "year": 2015
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "65725",
+            "lane": "B_context",
+            "phrase": "1,8-diamino-octane, which at 1mM gave rates 2% of the rate with spermidine",
+            "sub_topic": "rate",
+            "population": "rat prostatic spermine synthase",
+            "intervention": "1,8-diamino-octane",
+            "source_paper": {
+              "doi": "10.1042/bj1970315",
+              "title": "[UE2014] - Loi de Titius - Bode",
+              "journal": "The Biochemical journal",
+              "year": 2015
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "65726",
+            "lane": "B_context",
+            "phrase": "N-(3-aminopropyl)-cadaverine, which at 1mM gave rates 4% of the rate with spermidine",
+            "sub_topic": "rate",
+            "population": "rat prostatic spermine synthase",
+            "intervention": "N-(3-aminopropyl)-cadaverine",
+            "source_paper": {
+              "doi": "10.1042/bj1970315",
+              "title": "[UE2014] - Loi de Titius - Bode",
+              "journal": "The Biochemical journal",
+              "year": 2015
+            },
+            "same_source_as_lead": false
+          }
+        ]
+      },
+      "counter_evidence": {
+        "status": "none_found",
+        "items": []
+      },
+      "subtopic_recommendations": {
+        "recommended": true,
+        "reason": "high_d_bad_share_plus_semantic_dispersion",
+        "d_bad_share": 0.611,
+        "source_count": 13,
+        "clusters": [
+          {
+            "label": "animal_oxidative_journal",
+            "member_fact_ids": [
+              "10765",
+              "10766",
+              "10767"
+            ],
+            "source_paper": {
+              "doi": "10.1093/jas/skac069",
+              "title": "Polyamines protect boar sperm from oxidative stress in vitro",
+              "journal": "Journal of Animal Science",
+              "year": 2022
+            },
+            "example_phrase": "the addition of spermine (1 mmol/L) or spermidine (0.5 mmol/L) in extender improved boar sperm motility, the integrity of plasma membrane and acrosome (P < 0.05)"
+          },
+          {
+            "label": "ue2014_journal_synthase",
+            "member_fact_ids": [
+              "65726",
+              "65724",
+              "65725"
+            ],
+            "source_paper": {
+              "doi": "10.1042/bj1970315",
+              "title": "[UE2014] - Loi de Titius - Bode",
+              "journal": "The Biochemical journal",
+              "year": 2015
+            },
+            "example_phrase": "N-(3-aminopropyl)-cadaverine, which at 1mM gave rates 4% of the rate with spermidine"
+          },
+          {
+            "label": "sativa_without_australian",
+            "member_fact_ids": [
+              "31376",
+              "31377"
+            ],
+            "source_paper": {
+              "doi": "",
+              "title": "Effects of exogenous spermidine (Spd) on yield, yield-related parameters and mineral composition of rice ('Oryza sativa' L. ssp. 'indica') grains under salt stress",
+              "journal": "Australian Journal of Crop Science",
+              "year": 2013
+            },
+            "example_phrase": "Pretreatment with Spd dramatically improved grain yield per plant of KDML105 from 17.7 to 28.7 g (62% increase)"
+          },
+          {
+            "label": "nacl_granatum_putrescine",
+            "member_fact_ids": [
+              "30307"
+            ],
+            "source_paper": {
+              "doi": "10.5897/ijppb.9000044",
+              "title": "The effects of spermidine and putrescine polyamines on growth of pomegranate ( Punica granatum L. cv 'Rabbab') in salinity circumstance",
+              "journal": "International Journal of Plant Physiology and Biochemistry",
+              "year": 2011
+            },
+            "example_phrase": "a decline in the growth rate occurred at salinity levels higher than 70 mM"
+          },
+          {
+            "label": "lime_australian_aurantifolia",
+            "member_fact_ids": [
+              "66107"
+            ],
+            "source_paper": {
+              "doi": "",
+              "title": "Response of Lime Seedlings (Citrus aurantifolia L.) to Exogenous Spermidine Treatments under Drought Stress",
+              "journal": "AUSTRALIAN JOURNAL OF BASIC AND APPLIED SCIENCES",
+              "year": 2010
+            },
+            "example_phrase": "Concentrations of spermidine treatments 0.1 and 2 \u03bcM were used."
           }
         ]
       },
@@ -241,14 +1181,219 @@
       "headline": "The Compliance Paradox in Fasting: When Patient Autonomy Overrides Medical Safety in Diabetes Management",
       "confidence_label": "curation_needed",
       "alpha_score": 60,
+      "surface_type": "subtopic_rerun_memo",
       "axes": {
         "bound_receipts": 0,
+        "available_bound_receipts": 9,
+        "available_source_contexts": 4,
         "a_core_receipts": 0,
         "source_concentrated": false,
         "counter_consensus_tension": true,
         "cross_domain_forced": false,
         "feed_scope_mismatch": false,
         "source_papers": []
+      },
+      "receipt_expansion": {
+        "needed": true,
+        "why": "lead_thesis_underuses_available_bound_receipts",
+        "cited_bound_fact_ids": [],
+        "available_bound_fact_ids": [
+          "64922",
+          "64924",
+          "64923",
+          "59468",
+          "64926",
+          "60067",
+          "64925",
+          "59469",
+          "23984"
+        ],
+        "candidate_receipts": [
+          {
+            "fact_id": "23984",
+            "lane": "A_core",
+            "phrase": "hyperinsulinemia was present in 60% (n=55) women",
+            "sub_topic": "rate",
+            "population": "premenopausal women diagnosed with PCOS",
+            "intervention": "fasting insulin",
+            "source_paper": {
+              "doi": "",
+              "title": "Homeostatic Model Assessment for Insulin Resistance (HOMA-IR): A Better Marker for Evaluating Insulin Resistance Than Fasting Insulin in Women with Polycystic Ovarian Syndrome.",
+              "journal": "PubMed",
+              "year": 2017
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "59468",
+            "lane": "A_core",
+            "phrase": "The proportion of patients who experienced hypoglycemia during Ramadan was higher in Group A than Group B (36% vs 11%, P<0.001)",
+            "sub_topic": "adverse",
+            "population": "high-risk diabetes patients who fasted against medical advice during Ramadan",
+            "intervention": "fasting against medical advice (Group A)",
+            "source_paper": {
+              "doi": "10.22038/jfh.2018.27312.1100",
+              "title": "\u201cRamadan challenges: Fasting against medical advice",
+              "journal": "SHILAP Revista de lepidopterolog\u00eda",
+              "year": 2017
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "59469",
+            "lane": "A_core",
+            "phrase": "the proportion of patients who were able to fast the whole month were smaller in Group A than Group B (51% versus 87%, P<0.001)",
+            "sub_topic": "rate",
+            "population": "high-risk diabetes patients who fasted against medical advice during Ramadan",
+            "intervention": "fasting against medical advice (Group A)",
+            "source_paper": {
+              "doi": "10.22038/jfh.2018.27312.1100",
+              "title": "\u201cRamadan challenges: Fasting against medical advice",
+              "journal": "SHILAP Revista de lepidopterolog\u00eda",
+              "year": 2017
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "64922",
+            "lane": "A_core",
+            "phrase": "Patients in the fasting group had significantly higher albumin levels (4.6 \u00b1 0.2 versus 4.1 \u00b1 0.4, P = 0.001)",
+            "sub_topic": "effect_size",
+            "population": "patients with a cancer-related fecal stoma",
+            "intervention": "fasting group",
+            "source_paper": {
+              "doi": "",
+              "title": "Ramadan fasting in patients with a stoma: a prospective study of quality of life and nutritional status.",
+              "journal": "PubMed",
+              "year": 2013
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "64923",
+            "lane": "A_core",
+            "phrase": "Patients in the fasting group had significantly higher prealbumin levels (27.6 \u00b1 7.4 versus 21.3 \u00b1 8.5, P = 0.018)",
+            "sub_topic": "effect_size",
+            "population": "patients with a cancer-related fecal stoma",
+            "intervention": "fasting group",
+            "source_paper": {
+              "doi": "",
+              "title": "Ramadan fasting in patients with a stoma: a prospective study of quality of life and nutritional status.",
+              "journal": "PubMed",
+              "year": 2013
+            },
+            "same_source_as_lead": false
+          }
+        ]
+      },
+      "counter_evidence": {
+        "status": "found",
+        "items": [
+          {
+            "fact_id": "64926",
+            "lane": "A_core",
+            "phrase": "Most patients in the fasting group (13, 92.9%) stated they would feel sad if they were not fasting.",
+            "sub_topic": "rate",
+            "population": "patients in the fasting group",
+            "intervention": "Ramadan fasting",
+            "source_paper": {
+              "doi": "",
+              "title": "Ramadan fasting in patients with a stoma: a prospective study of quality of life and nutritional status.",
+              "journal": "PubMed",
+              "year": 2013
+            }
+          }
+        ]
+      },
+      "subtopic_recommendations": {
+        "recommended": true,
+        "reason": "high_d_bad_share_plus_semantic_dispersion",
+        "d_bad_share": 0.703,
+        "source_count": 15,
+        "clusters": [
+          {
+            "label": "ramadan_nutritional_status",
+            "member_fact_ids": [
+              "64922",
+              "64924",
+              "64923",
+              "64926",
+              "64925"
+            ],
+            "source_paper": {
+              "doi": "",
+              "title": "Ramadan fasting in patients with a stoma: a prospective study of quality of life and nutritional status.",
+              "journal": "PubMed",
+              "year": 2013
+            },
+            "example_phrase": "Patients in the fasting group had significantly higher albumin levels (4.6 \u00b1 0.2 versus 4.1 \u00b1 0.4, P = 0.001)"
+          },
+          {
+            "label": "journal_ramadan_healthy",
+            "member_fact_ids": [
+              "61712",
+              "61714",
+              "61713",
+              "61715",
+              "61716"
+            ],
+            "source_paper": {
+              "doi": "10.18869/acadpub.jcbr.1.1.38",
+              "title": "Effect of Prolonged Intermittent Fasting in Ramadan on Biochemical and Inflammatory Parameters of Healthy Men",
+              "journal": "Journal of Clinical and Basic Research",
+              "year": 2017
+            },
+            "example_phrase": "Fasting in Ramadan significantly decreased FBS (P< 0.0001)."
+          },
+          {
+            "label": "proteinous_ramadan_women",
+            "member_fact_ids": [
+              "59524",
+              "59526",
+              "59527",
+              "59525",
+              "59528"
+            ],
+            "source_paper": {
+              "doi": "10.5897/ajb09.703",
+              "title": "Effect of Ramadan fasting on glucose, glycosylated haemoglobin, insulin, lipids and proteinous concentrations in women with non-insulin dependent diabetes mellitus",
+              "journal": "AFRICAN JOURNAL OF BIOTECHNOLOGY",
+              "year": 2010
+            },
+            "example_phrase": "the glucose levels were significantly (p < 0.05) higher in the serum subjects of patients during the fasting period when compared to the level before Ramadan."
+          },
+          {
+            "label": "mood_compared_associated",
+            "member_fact_ids": [
+              "68984",
+              "68983",
+              "68986",
+              "68985"
+            ],
+            "source_paper": {
+              "doi": "10.1177/1359105315573430",
+              "title": "Distraction, not hunger, is associated with lower mood and lower perceived work performance on fast compared to non-fast days during intermittent fasting.",
+              "journal": "Journal of health psychology",
+              "year": 2015
+            },
+            "example_phrase": "lower perceived work performance was associated with higher distraction (\u03b2 = -0.50, p < 0.01)"
+          },
+          {
+            "label": "advice_ramadan_low",
+            "member_fact_ids": [
+              "59468",
+              "59470",
+              "59469"
+            ],
+            "source_paper": {
+              "doi": "10.22038/jfh.2018.27312.1100",
+              "title": "\u201cRamadan challenges: Fasting against medical advice",
+              "journal": "SHILAP Revista de lepidopterolog\u00eda",
+              "year": 2017
+            },
+            "example_phrase": "The proportion of patients who experienced hypoglycemia during Ramadan was higher in Group A than Group B (36% vs 11%, P<0.001)"
+          }
+        ]
       },
       "blockers": [
         "blocked_label:curation_needed",
@@ -264,14 +1409,190 @@
       "headline": "Context-Dependent Therapeutic Implications of Autophagy Modulation: A Comparative Scoping Review Across Cancer and Injury Models",
       "confidence_label": "evidence_binding_failed",
       "alpha_score": 45,
+      "surface_type": "subtopic_rerun_memo",
       "axes": {
         "bound_receipts": 0,
+        "available_bound_receipts": 5,
+        "available_source_contexts": 4,
         "a_core_receipts": 0,
         "source_concentrated": false,
         "counter_consensus_tension": true,
         "cross_domain_forced": false,
         "feed_scope_mismatch": false,
         "source_papers": []
+      },
+      "receipt_expansion": {
+        "needed": true,
+        "why": "lead_thesis_underuses_available_bound_receipts",
+        "cited_bound_fact_ids": [],
+        "available_bound_fact_ids": [
+          "7110",
+          "28274",
+          "7112",
+          "8399",
+          "5229"
+        ],
+        "candidate_receipts": [
+          {
+            "fact_id": "7110",
+            "lane": "A_core",
+            "phrase": "1.215 (1.149-1.286) (P < .001) in multivariate Cox regression analysis",
+            "sub_topic": "effect_size",
+            "population": "patients with lung adenocarcinoma",
+            "intervention": "autophagy-related lncRNA survival model",
+            "source_paper": {
+              "doi": "10.1111/jcmm.16582",
+              "title": "A novel autophagy\u2010related lncRNA survival model for lung adenocarcinoma",
+              "journal": "Journal of Cellular and Molecular Medicine",
+              "year": 2021
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "7112",
+            "lane": "A_core",
+            "phrase": "1.256 (1.196-1.320) (P < .001) in univariate Cox regression analysis",
+            "sub_topic": "effect_size",
+            "population": "patients with lung adenocarcinoma",
+            "intervention": "autophagy-related lncRNA survival model",
+            "source_paper": {
+              "doi": "10.1111/jcmm.16582",
+              "title": "A novel autophagy\u2010related lncRNA survival model for lung adenocarcinoma",
+              "journal": "Journal of Cellular and Molecular Medicine",
+              "year": 2021
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "8399",
+            "lane": "A_core",
+            "phrase": "Inhibition of autophagy by silencing of the key autophagy gene, beclin 1 or 3-MA, further increased the cytotoxicity of this combinatorial treatment, suggesting that autophagy plays a cytoprotective role",
+            "sub_topic": "mechanism",
+            "population": "glioma cells",
+            "intervention": "MK-2206 + gefitinib with autophagy inhibition (beclin 1 silencing or 3-MA)",
+            "source_paper": {
+              "doi": "10.1158/1535-7163.mct-11-0606",
+              "title": "MK-2206, a Novel Allosteric Inhibitor of Akt, Synergizes with Gefitinib against Malignant Glioma via Modulating Both Autophagy and Apoptosis",
+              "journal": "Molecular Cancer Therapeutics",
+              "year": 2011
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "28274",
+            "lane": "B_context",
+            "phrase": "autophagy flux was significantly less in injured versus uninjured muscles (-26%, P < 0.02).",
+            "sub_topic": "effect_size",
+            "population": "mice",
+            "intervention": "traumatic freeze injury",
+            "source_paper": {
+              "doi": "10.1152/ajpcell.00123.2019",
+              "title": "Mitochondrial-specific autophagy linked to mitochondrial dysfunction following traumatic freeze injury in mice",
+              "journal": "American Journal of Physiology-Cell Physiology",
+              "year": 2019
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "5229",
+            "lane": "B_context",
+            "phrase": "a population (\u223c30%) of intracellular Mtb is tagged with ubiquitin and targeted to selective autophagy",
+            "sub_topic": "rate",
+            "population": "intracellular Mtb in macrophages",
+            "intervention": "ESX-1 secretion system perturbation",
+            "source_paper": {
+              "doi": "10.1128/mbio.01871-20",
+              "title": "Galectin-8 Senses Phagosomal Damage and Recruits Selective Autophagy Adapter TAX1BP1 To Control <i>Mycobacterium tuberculosis</i> Infection in Macrophages",
+              "journal": "mBio",
+              "year": 2021
+            },
+            "same_source_as_lead": false
+          }
+        ]
+      },
+      "counter_evidence": {
+        "status": "none_found",
+        "items": []
+      },
+      "subtopic_recommendations": {
+        "recommended": true,
+        "reason": "high_d_bad_share_plus_semantic_dispersion",
+        "d_bad_share": 0.625,
+        "source_count": 9,
+        "clusters": [
+          {
+            "label": "tight_journal_beclin",
+            "member_fact_ids": [
+              "12957",
+              "12960",
+              "12959",
+              "12961"
+            ],
+            "source_paper": {
+              "doi": "10.1152/ajpcell.00246.2018",
+              "title": "Intestinal epithelial tight junction barrier regulation by autophagy-related protein ATG6/beclin 1",
+              "journal": "American Journal of Physiology-Cell Physiology",
+              "year": 2019
+            },
+            "example_phrase": "These findings show that beclin 1 plays a constitutive, autophagy-independent role in the regulation of intestinal TJ barrier function via endocytosis of occludin."
+          },
+          {
+            "label": "outcomes_prognostic_aging",
+            "member_fact_ids": [
+              "6522",
+              "6523"
+            ],
+            "source_paper": {
+              "doi": "10.18632/aging.103718",
+              "title": "An autophagy-related long non-coding RNA prognostic signature accurately predicts survival outcomes in bladder urothelial carcinoma patients",
+              "journal": "Aging",
+              "year": 2020
+            },
+            "example_phrase": "The autophagy-related lncRNA signature was an independent prognostic predictor with an AUC value of 0.710."
+          },
+          {
+            "label": "lung_adenocarcinoma_cox",
+            "member_fact_ids": [
+              "7110",
+              "7112"
+            ],
+            "source_paper": {
+              "doi": "10.1111/jcmm.16582",
+              "title": "A novel autophagy\u2010related lncRNA survival model for lung adenocarcinoma",
+              "journal": "Journal of Cellular and Molecular Medicine",
+              "year": 2021
+            },
+            "example_phrase": "1.215 (1.149-1.286) (P < .001) in multivariate Cox regression analysis"
+          },
+          {
+            "label": "specific_linked_mitochondrial",
+            "member_fact_ids": [
+              "28274",
+              "28273"
+            ],
+            "source_paper": {
+              "doi": "10.1152/ajpcell.00123.2019",
+              "title": "Mitochondrial-specific autophagy linked to mitochondrial dysfunction following traumatic freeze injury in mice",
+              "journal": "American Journal of Physiology-Cell Physiology",
+              "year": 2019
+            },
+            "example_phrase": "autophagy flux was significantly less in injured versus uninjured muscles (-26%, P < 0.02)."
+          },
+          {
+            "label": "small_cultures_pathway",
+            "member_fact_ids": [
+              "9292",
+              "9293"
+            ],
+            "source_paper": {
+              "doi": "10.1096/fj.10-175158",
+              "title": "A small\u2010molecule enhancer of autophagy decreases levels of A\u03b2 and APP\u2010CTF <b> <i>via</i> Atg5\u2010dependent autophagy pathway </b>",
+              "journal": "The FASEB Journal",
+              "year": 2011
+            },
+            "example_phrase": "A\u03b2 peptide (apparent EC(50) of \u223c10 \u03bcM)"
+          }
+        ]
       },
       "blockers": [
         "blocked_label:evidence_binding_failed",
@@ -287,8 +1608,11 @@
       "headline": "Sexual Dimorphism in NAD Redox State as a Predictor of Host Susceptibility to NAD-Capped Bacterial Pathogens",
       "confidence_label": "frontier_hypothesis",
       "alpha_score": 0,
+      "surface_type": "split_or_reject_memo",
       "axes": {
         "bound_receipts": 2,
+        "available_bound_receipts": 2,
+        "available_source_contexts": 2,
         "a_core_receipts": 1,
         "source_concentrated": true,
         "counter_consensus_tension": true,
@@ -309,6 +1633,102 @@
           }
         ]
       },
+      "receipt_expansion": {
+        "needed": false,
+        "why": "lead_thesis_uses_available_receipts",
+        "cited_bound_fact_ids": [
+          "25459",
+          "17507"
+        ],
+        "available_bound_fact_ids": [
+          "25459",
+          "17507"
+        ],
+        "candidate_receipts": []
+      },
+      "counter_evidence": {
+        "status": "none_found",
+        "items": []
+      },
+      "subtopic_recommendations": {
+        "recommended": true,
+        "reason": "high_d_bad_share_plus_semantic_dispersion",
+        "d_bad_share": 0.714,
+        "source_count": 8,
+        "clusters": [
+          {
+            "label": "disease_hepatology_depressed",
+            "member_fact_ids": [
+              "24802",
+              "24806",
+              "24805",
+              "24803",
+              "24804"
+            ],
+            "source_paper": {
+              "doi": "10.1002/hep4.1530",
+              "title": "Nicotinamide Adenine Dinucleotide Metabolome Is Functionally Depressed in Patients Undergoing Liver Transplantation for Alcohol\u2010Related Liver Disease",
+              "journal": "Hepatology Communications",
+              "year": 2020
+            },
+            "example_phrase": "ArLD liver tissue showed markedly depressed concentrations of NAD+ (432 \u03bcM vs. 616 \u03bcM in normal liver)"
+          },
+          {
+            "label": "without_women_reports",
+            "member_fact_ids": [
+              "25459",
+              "25461"
+            ],
+            "source_paper": {
+              "doi": "10.1042/bsr20200340",
+              "title": "Sex-related differences in human plasma NAD+/NADH levels depend on age",
+              "journal": "Bioscience Reports",
+              "year": 2021
+            },
+            "example_phrase": "women had higher plasma NAD+/NADH ratios than men (median 1.33 vs. 1.09, P<0.001)"
+          },
+          {
+            "label": "found_toxin_was",
+            "member_fact_ids": [
+              "17508",
+              "17507"
+            ],
+            "source_paper": {
+              "doi": "10.1128/jb.00591-19",
+              "title": "The 5\u2032 NAD Cap of RNAIII Modulates Toxin Production in Staphylococcus aureus Isolates",
+              "journal": "Journal of Bacteriology",
+              "year": 2019
+            },
+            "example_phrase": "NAD incorporation efficiency into RNAIII was found to depend in vivo on the -1 position of the P3 promoter"
+          },
+          {
+            "label": "reversible_voltage_active",
+            "member_fact_ids": [
+              "35328"
+            ],
+            "source_paper": {
+              "doi": "10.1002/anie.201906844",
+              "title": "Biological Nicotinamide Cofactor as a Redox\u2010Active Motif for Reversible Electrochemical Energy Storage",
+              "journal": "Angewandte Chemie International Edition",
+              "year": 2019
+            },
+            "example_phrase": "exhibiting the average voltage of 2.3 V"
+          },
+          {
+            "label": "biofluorometric_without_etoh",
+            "member_fact_ids": [
+              "63690"
+            ],
+            "source_paper": {
+              "doi": "10.1021/acs.analchem.8b05840",
+              "title": "Ultrasensitive Sniff-Cam for Biofluorometric-Imaging of Breath Ethanol Caused by Metabolism of Intestinal Flora",
+              "journal": "Analytical Chemistry",
+              "year": 2019
+            },
+            "example_phrase": "measured the concentration distribution of breath EtOH without alcohol consumption using the improved sniff-cam and obtained a value of 116.2 \u00b1 35.7 ppb"
+          }
+        ]
+      },
       "blockers": [
         "cross_domain_forced",
         "low_alpha_score"
@@ -323,14 +1743,75 @@
       "headline": "No signal \u2014 NMN",
       "confidence_label": "no_signal",
       "alpha_score": 0,
+      "surface_type": "subtopic_rerun_memo",
       "axes": {
         "bound_receipts": 0,
+        "available_bound_receipts": 0,
+        "available_source_contexts": 0,
         "a_core_receipts": 0,
         "source_concentrated": false,
         "counter_consensus_tension": false,
         "cross_domain_forced": false,
         "feed_scope_mismatch": false,
         "source_papers": []
+      },
+      "receipt_expansion": {
+        "needed": false,
+        "why": "lead_thesis_uses_available_receipts",
+        "cited_bound_fact_ids": [],
+        "available_bound_fact_ids": [],
+        "candidate_receipts": []
+      },
+      "counter_evidence": {
+        "status": "none_found",
+        "items": []
+      },
+      "subtopic_recommendations": {
+        "recommended": true,
+        "reason": "high_d_bad_share_plus_semantic_dispersion",
+        "d_bad_share": 1.0,
+        "source_count": 3,
+        "clusters": [
+          {
+            "label": "female_400_received",
+            "member_fact_ids": [
+              "28457"
+            ],
+            "source_paper": {
+              "doi": "10.1152/ajpendo.00446.2020",
+              "title": "Exercise-induced benefits on glucose handling in a model of diet-induced obesity are reduced by concurrent nicotinamide mononucleotide",
+              "journal": "American Journal of Physiology-Endocrinology and Metabolism",
+              "year": 2021
+            },
+            "example_phrase": "Mice received NMN in drinking water (400 mg/kg)."
+          },
+          {
+            "label": "administered_sirt3_dose",
+            "member_fact_ids": [
+              "7801"
+            ],
+            "source_paper": {
+              "doi": "10.1002/jnr.24397",
+              "title": "Nicotinamide mononucleotide alters mitochondrial dynamics by SIRT3\u2010dependent mechanism in male mice",
+              "journal": "Journal of Neuroscience Research",
+              "year": 2019
+            },
+            "example_phrase": "A single dose (62.5 mg/kg) of NMN, administered to male mice"
+          },
+          {
+            "label": "nampt_associated_through",
+            "member_fact_ids": [
+              "28760"
+            ],
+            "source_paper": {
+              "doi": "10.3892/etm.2017.5098",
+              "title": "Endogenous Nampt upregulation is associated with diabetic nephropathy inflammatory\u2011fibrosis through the NF\u2011\u03baB p65 and Sirt1 pathway; NMN alleviates diabetic nephropathy inflammatory\u2011fibrosis by inhibiting endogenous Nampt",
+              "journal": "Experimental and Therapeutic Medicine",
+              "year": 2017
+            },
+            "example_phrase": "Expression levels of PARP-1, NF-\u03baB p65, FOXO1 and BCL2-like protein 4 were significantly increased at 96 h"
+          }
+        ]
       },
       "blockers": [
         "blocked_label:no_signal",
@@ -346,14 +1827,53 @@
       "headline": "No signal \u2014 berberine",
       "confidence_label": "no_signal",
       "alpha_score": 0,
+      "surface_type": "curation_brief",
       "axes": {
         "bound_receipts": 0,
+        "available_bound_receipts": 1,
+        "available_source_contexts": 1,
         "a_core_receipts": 0,
         "source_concentrated": false,
         "counter_consensus_tension": false,
         "cross_domain_forced": false,
         "feed_scope_mismatch": false,
         "source_papers": []
+      },
+      "receipt_expansion": {
+        "needed": true,
+        "why": "lead_thesis_underuses_available_bound_receipts",
+        "cited_bound_fact_ids": [],
+        "available_bound_fact_ids": [
+          "47581"
+        ],
+        "candidate_receipts": [
+          {
+            "fact_id": "47581",
+            "lane": "A_core",
+            "phrase": "the glucose consumption of HepG2 cells were promoted and reached 96.1%",
+            "sub_topic": "effect_size",
+            "population": "HepG2 cells",
+            "intervention": "berberine",
+            "source_paper": {
+              "doi": "10.1002/ddr.21302",
+              "title": "Antihyperglycemia and Antihyperlipidemia Effect of Protoberberine Alkaloids From Rhizoma Coptidis in HepG2 Cell and Diabetic KK\u2010Ay Mice",
+              "journal": "Drug Development Research",
+              "year": 2016
+            },
+            "same_source_as_lead": false
+          }
+        ]
+      },
+      "counter_evidence": {
+        "status": "none_found",
+        "items": []
+      },
+      "subtopic_recommendations": {
+        "recommended": false,
+        "reason": "not_broad_or_not_noisy_enough",
+        "d_bad_share": 0.333,
+        "source_count": 2,
+        "clusters": []
       },
       "blockers": [
         "blocked_label:no_signal",
@@ -369,14 +1889,53 @@
       "headline": "No signal \u2014 creatine",
       "confidence_label": "no_signal",
       "alpha_score": 0,
+      "surface_type": "curation_brief",
       "axes": {
         "bound_receipts": 0,
+        "available_bound_receipts": 1,
+        "available_source_contexts": 1,
         "a_core_receipts": 0,
         "source_concentrated": false,
         "counter_consensus_tension": false,
         "cross_domain_forced": false,
         "feed_scope_mismatch": false,
         "source_papers": []
+      },
+      "receipt_expansion": {
+        "needed": true,
+        "why": "lead_thesis_underuses_available_bound_receipts",
+        "cited_bound_fact_ids": [],
+        "available_bound_fact_ids": [
+          "32411"
+        ],
+        "candidate_receipts": [
+          {
+            "fact_id": "32411",
+            "lane": "B_context",
+            "phrase": "Changes of <5% in NAA, choline, creatine and <10% in mI and Glx detectable in a group of 20 subjects.",
+            "sub_topic": "threshold",
+            "population": "group of 20 subjects",
+            "intervention": "MRS measurements",
+            "source_paper": {
+              "doi": "10.1002/nbm.3364",
+              "title": "Single\u2010voxel <sup>1</sup>H spectroscopy in the human hippocampus at 3 T using the LASER sequence: characterization of neurochemical profile and reproducibility",
+              "journal": "NMR in Biomedicine",
+              "year": 2015
+            },
+            "same_source_as_lead": false
+          }
+        ]
+      },
+      "counter_evidence": {
+        "status": "none_found",
+        "items": []
+      },
+      "subtopic_recommendations": {
+        "recommended": false,
+        "reason": "not_broad_or_not_noisy_enough",
+        "d_bad_share": 0.5,
+        "source_count": 2,
+        "clusters": []
       },
       "blockers": [
         "blocked_label:no_signal",
@@ -392,14 +1951,53 @@
       "headline": "No signal \u2014 dasatinib",
       "confidence_label": "no_signal",
       "alpha_score": 0,
+      "surface_type": "curation_brief",
       "axes": {
         "bound_receipts": 0,
+        "available_bound_receipts": 1,
+        "available_source_contexts": 1,
         "a_core_receipts": 0,
         "source_concentrated": false,
         "counter_consensus_tension": false,
         "cross_domain_forced": false,
         "feed_scope_mismatch": false,
         "source_papers": []
+      },
+      "receipt_expansion": {
+        "needed": true,
+        "why": "lead_thesis_underuses_available_bound_receipts",
+        "cited_bound_fact_ids": [],
+        "available_bound_fact_ids": [
+          "33103"
+        ],
+        "candidate_receipts": [
+          {
+            "fact_id": "33103",
+            "lane": "A_core",
+            "phrase": "Dasatinib, a multikinase inhibitor, was effective against 50% of DLBCL cell lines",
+            "sub_topic": "rate",
+            "population": "DLBCL cell lines",
+            "intervention": "dasatinib",
+            "source_paper": {
+              "doi": "10.1073/pnas.1905239116",
+              "title": "Repurposing dasatinib for diffuse large B cell lymphoma",
+              "journal": "Proceedings of the National Academy of Sciences",
+              "year": 2019
+            },
+            "same_source_as_lead": false
+          }
+        ]
+      },
+      "counter_evidence": {
+        "status": "none_found",
+        "items": []
+      },
+      "subtopic_recommendations": {
+        "recommended": false,
+        "reason": "not_broad_or_not_noisy_enough",
+        "d_bad_share": 0.8,
+        "source_count": 2,
+        "clusters": []
       },
       "blockers": [
         "blocked_label:no_signal",
@@ -415,8 +2013,11 @@
       "headline": "Scoping Review of Fisetin's Context-Dependent Bioactivity: Bridging Anti-Oncogenic and Antimicrobial Evidence Gaps",
       "confidence_label": "frontier_hypothesis",
       "alpha_score": 0,
+      "surface_type": "split_or_reject_memo",
       "axes": {
         "bound_receipts": 2,
+        "available_bound_receipts": 2,
+        "available_source_contexts": 2,
         "a_core_receipts": 1,
         "source_concentrated": true,
         "counter_consensus_tension": true,
@@ -437,6 +2038,98 @@
           }
         ]
       },
+      "receipt_expansion": {
+        "needed": false,
+        "why": "lead_thesis_uses_available_receipts",
+        "cited_bound_fact_ids": [
+          "69676",
+          "69646"
+        ],
+        "available_bound_fact_ids": [
+          "69676",
+          "69646"
+        ],
+        "candidate_receipts": []
+      },
+      "counter_evidence": {
+        "status": "none_found",
+        "items": []
+      },
+      "subtopic_recommendations": {
+        "recommended": true,
+        "reason": "high_d_bad_share_plus_semantic_dispersion",
+        "d_bad_share": 0.846,
+        "source_count": 11,
+        "clusters": [
+          {
+            "label": "cancer_hsp70_induces",
+            "member_fact_ids": [
+              "69676",
+              "69677",
+              "69678"
+            ],
+            "source_paper": {
+              "doi": "10.1093/carcin/bgv045",
+              "title": "Fisetin, a dietary flavonoid, induces apoptosis of cancer cells by inhibiting HSF1 activity through blocking its binding to the hsp70 promoter.",
+              "journal": "Carcinogenesis",
+              "year": 2015
+            },
+            "example_phrase": "Intraperitoneal treatment of nude mice with fisetin at 30mg/kg resulted in a 35.7% (P < 0.001) inhibition of tumor growth."
+          },
+          {
+            "label": "placebo_lower_two",
+            "member_fact_ids": [
+              "69698"
+            ],
+            "source_paper": {
+              "doi": "10.1007/s10792-014-0029-3",
+              "title": "Effects of two antioxidants; \u03b1-lipoic acid and fisetin against diabetic cataract in mice.",
+              "journal": "International ophthalmology",
+              "year": 2015
+            },
+            "example_phrase": "In the fisetin-treated group, the cataract stages were significantly lower than in the placebo group (p = 0.02)."
+          },
+          {
+            "label": "through_european_glucose",
+            "member_fact_ids": [
+              "69791"
+            ],
+            "source_paper": {
+              "doi": "10.1016/j.ejphar.2014.06.065",
+              "title": "Fisetin improves glucose homeostasis through the inhibition of gluconeogenic enzymes in hepatic tissues of streptozotocin induced diabetic rats.",
+              "journal": "European journal of pharmacology",
+              "year": 2014
+            },
+            "example_phrase": "Oral administration of fisetin (10 mg/kg) to diabetic rats for 30 days established significant decline in blood glucose and glycosylated hemoglobin and increase in plasma insulin."
+          },
+          {
+            "label": "cancer_acetyl_mediated",
+            "member_fact_ids": [
+              "69737"
+            ],
+            "source_paper": {
+              "doi": "10.1002/mc.22053",
+              "title": "N-acetyl-L-cysteine enhances fisetin-induced cytotoxicity via induction of ROS-independent apoptosis in human colonic cancer cells.",
+              "journal": "Molecular carcinogenesis",
+              "year": 2014
+            },
+            "example_phrase": "10 and 20 mM NAC, non-toxic concentrations, can enhance fisetin (FIS)-mediated apoptosis in colon cancer cells COLO205."
+          },
+          {
+            "label": "enzyme_showed_complex",
+            "member_fact_ids": [
+              "69783"
+            ],
+            "source_paper": {
+              "doi": "10.1007/s12272-014-0495-1",
+              "title": "Structure-based lead discovery for protein kinase C zeta inhibitor design by exploiting kinase-inhibitor complex crystal structure data and potential therapeutics for preterm labour.",
+              "journal": "Archives of pharmacal research",
+              "year": 2014
+            },
+            "example_phrase": "fisetin showed high or moderate inhibitory activity on PKC\u03b6 with IC50 of 58 \u00b1 9 \u03bcM"
+          }
+        ]
+      },
       "blockers": [
         "cross_domain_forced",
         "low_alpha_score"
@@ -451,14 +2144,200 @@
       "headline": "No signal \u2014 quercetin",
       "confidence_label": "no_signal",
       "alpha_score": 0,
+      "surface_type": "subtopic_rerun_memo",
       "axes": {
         "bound_receipts": 0,
+        "available_bound_receipts": 7,
+        "available_source_contexts": 3,
         "a_core_receipts": 0,
         "source_concentrated": false,
         "counter_consensus_tension": false,
         "cross_domain_forced": false,
         "feed_scope_mismatch": false,
         "source_papers": []
+      },
+      "receipt_expansion": {
+        "needed": true,
+        "why": "lead_thesis_underuses_available_bound_receipts",
+        "cited_bound_fact_ids": [],
+        "available_bound_fact_ids": [
+          "76030",
+          "21487",
+          "21484",
+          "76032",
+          "76034",
+          "21485",
+          "12457"
+        ],
+        "candidate_receipts": [
+          {
+            "fact_id": "12457",
+            "lane": "A_core",
+            "phrase": "Quercetin + resveratrol at the ratio of 1:1 performed better than when used at ratios of either 3:1 or 1:3.",
+            "sub_topic": "subgroup",
+            "population": "etched dentin samples",
+            "intervention": "dentin pretreatment with quercetin and resveratrol mixture at ratio 1:1",
+            "source_paper": {
+              "doi": "10.1111/eos.12403",
+              "title": "Use of polyphenols as a strategy to prevent bond degradation in the dentin\u2013resin interface",
+              "journal": "European Journal Of Oral Sciences",
+              "year": 2018
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "21484",
+            "lane": "A_core",
+            "phrase": "Quercetin notably inhibited both mRNA and protein expression of CD36 (reduced by 53% and 71%, resp.)",
+            "sub_topic": "effect_size",
+            "population": "high-fat diet-induced animal model",
+            "intervention": "quercetin supplementation",
+            "source_paper": {
+              "doi": "10.1155/2015/607531",
+              "title": "Quercetin Alleviates High-Fat Diet-Induced Oxidized Low-Density Lipoprotein Accumulation in the Liver: Implication for Autophagy Regulation",
+              "journal": "BioMed Research International",
+              "year": 2015
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "21485",
+            "lane": "A_core",
+            "phrase": "and MSR1 (reduced by 25% and 45%, resp.)",
+            "sub_topic": "effect_size",
+            "population": "high-fat diet-induced animal model",
+            "intervention": "quercetin supplementation",
+            "source_paper": {
+              "doi": "10.1155/2015/607531",
+              "title": "Quercetin Alleviates High-Fat Diet-Induced Oxidized Low-Density Lipoprotein Accumulation in the Liver: Implication for Autophagy Regulation",
+              "journal": "BioMed Research International",
+              "year": 2015
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "21487",
+            "lane": "A_core",
+            "phrase": "p62 and mTOR was downregulated by 57% and 63% by quercetin treatment.",
+            "sub_topic": "effect_size",
+            "population": "high-fat diet-induced animal model",
+            "intervention": "quercetin supplementation",
+            "source_paper": {
+              "doi": "10.1155/2015/607531",
+              "title": "Quercetin Alleviates High-Fat Diet-Induced Oxidized Low-Density Lipoprotein Accumulation in the Liver: Implication for Autophagy Regulation",
+              "journal": "BioMed Research International",
+              "year": 2015
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "76030",
+            "lane": "A_core",
+            "phrase": "quercetin alters the expression of 98 of 332 (30%) of human genes encoding protein targets of SARS-CoV-2",
+            "sub_topic": "effect_size",
+            "population": "human genes encoding protein targets of SARS-CoV-2",
+            "intervention": "quercetin",
+            "source_paper": {
+              "doi": "10.3390/biomedicines8050129",
+              "title": "Tripartite Combination of Candidate Pandemic Mitigation Agents: Vitamin D, Quercetin, and Estradiol Manifest Properties of Medicinal Agents for Targeted Mitigation of the COVID-19 Pandemic Defined by Genomics-Guided Tracing of SARS-CoV-2 Targets in Human Cells",
+              "journal": "Biomedicines",
+              "year": 2020
+            },
+            "same_source_as_lead": false
+          }
+        ]
+      },
+      "counter_evidence": {
+        "status": "none_found",
+        "items": []
+      },
+      "subtopic_recommendations": {
+        "recommended": true,
+        "reason": "high_d_bad_share_plus_semantic_dispersion",
+        "d_bad_share": 0.69,
+        "source_count": 12,
+        "clusters": [
+          {
+            "label": "pandemic_cov_agents",
+            "member_fact_ids": [
+              "76030",
+              "76032",
+              "76034",
+              "76031",
+              "76033"
+            ],
+            "source_paper": {
+              "doi": "10.3390/biomedicines8050129",
+              "title": "Tripartite Combination of Candidate Pandemic Mitigation Agents: Vitamin D, Quercetin, and Estradiol Manifest Properties of Medicinal Agents for Targeted Mitigation of the COVID-19 Pandemic Defined by Genomics-Guided Tracing of SARS-CoV-2 Targets in Human Cells",
+              "journal": "Biomedicines",
+              "year": 2020
+            },
+            "example_phrase": "quercetin alters the expression of 98 of 332 (30%) of human genes encoding protein targets of SARS-CoV-2"
+          },
+          {
+            "label": "age_young_dysfunction",
+            "member_fact_ids": [
+              "7312",
+              "7313",
+              "7315",
+              "7314"
+            ],
+            "source_paper": {
+              "doi": "10.18632/aging.102772",
+              "title": "Dasatinib plus quercetin prevents uterine age-related dysfunction and fibrosis in mice",
+              "journal": "Aging",
+              "year": 2020
+            },
+            "example_phrase": "D+Q treatment increased p53 gene expression (P = 0.041)"
+          },
+          {
+            "label": "animal_low_biomed",
+            "member_fact_ids": [
+              "21487",
+              "21484",
+              "21486",
+              "21485"
+            ],
+            "source_paper": {
+              "doi": "10.1155/2015/607531",
+              "title": "Quercetin Alleviates High-Fat Diet-Induced Oxidized Low-Density Lipoprotein Accumulation in the Liver: Implication for Autophagy Regulation",
+              "journal": "BioMed Research International",
+              "year": 2015
+            },
+            "example_phrase": "p62 and mTOR was downregulated by 57% and 63% by quercetin treatment."
+          },
+          {
+            "label": "systematic_disorders_metabolic",
+            "member_fact_ids": [
+              "9677",
+              "9679",
+              "9676",
+              "9678"
+            ],
+            "source_paper": {
+              "doi": "10.1002/ptr.6334",
+              "title": "Effects of quercetin supplementation on glycemic control among patients with metabolic syndrome and related disorders: A systematic review and meta\u2010analysis of randomized controlled trials",
+              "journal": "Phytotherapy Research",
+              "year": 2019
+            },
+            "example_phrase": "quercetin supplementation significantly reduced FPG in studies that used quercetin in dosages of \u2265500 mg/day (WMD: -1.08; 95% CI [-2.08, -0.07])"
+          },
+          {
+            "label": "resveratrol_was_medica",
+            "member_fact_ids": [
+              "29213",
+              "29214",
+              "29215"
+            ],
+            "source_paper": {
+              "doi": "10.1055/a-1270-7606",
+              "title": "Enhanced Oral Bioavailability and Improved Biological Activities of a Quercetin/Resveratrol Combination Using a Liquid Self-Microemulsifying Drug Delivery System",
+              "journal": "Planta Medica",
+              "year": 2020
+            },
+            "example_phrase": "The percentage of release for quercetin in the self-microemulsifying formulation was 75.88 \u00b1 1.44% at 30 min."
+          }
+        ]
       },
       "blockers": [
         "blocked_label:no_signal",
@@ -474,14 +2353,117 @@
       "headline": "No signal \u2014 rapamycin",
       "confidence_label": "no_signal",
       "alpha_score": 0,
+      "surface_type": "curation_brief",
       "axes": {
         "bound_receipts": 0,
+        "available_bound_receipts": 5,
+        "available_source_contexts": 3,
         "a_core_receipts": 0,
         "source_concentrated": false,
         "counter_consensus_tension": false,
         "cross_domain_forced": false,
         "feed_scope_mismatch": false,
         "source_papers": []
+      },
+      "receipt_expansion": {
+        "needed": true,
+        "why": "lead_thesis_underuses_available_bound_receipts",
+        "cited_bound_fact_ids": [],
+        "available_bound_fact_ids": [
+          "rapamycin/transient/bitto_2016/lifespan_extension",
+          "rapamycin/transient/bitto_2016/lifespan_male",
+          "rapamycin/itp/harrison_2009/lifespan_female",
+          "rapamycin/itp/miller_2014/dose_response_high_male",
+          "rapamycin/itp/miller_2014/dose_response_high_female"
+        ],
+        "candidate_receipts": [
+          {
+            "fact_id": "rapamycin/itp/harrison_2009/lifespan_female",
+            "lane": "A_core",
+            "phrase": "rapamycin reduced 90th-percentile mortality by 14% in females (Harrison 2009 NIA-ITP, 14 ppm)",
+            "sub_topic": "lifespan",
+            "population": "female heterogeneous-stock mice (UM-HET3); 4-site NIA Interventions Testing Program cohort",
+            "intervention": "encapsulated rapamycin in feed (~14 ppm); started at 600 days of age",
+            "source_paper": {
+              "doi": "10.1038/nature08221",
+              "title": "Rapamycin fed late in life extends lifespan in genetically heterogeneous mice",
+              "journal": "Nature",
+              "year": 2009
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "rapamycin/itp/miller_2014/dose_response_high_female",
+            "lane": "A_core",
+            "phrase": "rapamycin at 42 ppm extended female median lifespan by 26%",
+            "sub_topic": "lifespan",
+            "population": "female heterogeneous-stock mice (UM-HET3); ITP",
+            "intervention": "encapsulated rapamycin in feed at 42 ppm (3x standard ITP dose)",
+            "source_paper": {
+              "doi": "10.1111/acel.12194",
+              "title": "Rapamycin-mediated lifespan increase in mice is dose and sex dependent and metabolically distinct from dietary restriction",
+              "journal": "Aging Cell",
+              "year": 2014
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "rapamycin/itp/miller_2014/dose_response_high_male",
+            "lane": "A_core",
+            "phrase": "rapamycin at 42 ppm extended male median lifespan by 23%",
+            "sub_topic": "lifespan",
+            "population": "male heterogeneous-stock mice (UM-HET3); ITP",
+            "intervention": "encapsulated rapamycin in feed at 42 ppm (3x standard ITP dose)",
+            "source_paper": {
+              "doi": "10.1111/acel.12194",
+              "title": "Rapamycin-mediated lifespan increase in mice is dose and sex dependent and metabolically distinct from dietary restriction",
+              "journal": "Aging Cell",
+              "year": 2014
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "rapamycin/transient/bitto_2016/lifespan_extension",
+            "lane": "A_core",
+            "phrase": "3 months of rapamycin extended remaining lifespan by ~60% in middle-aged mice",
+            "sub_topic": "lifespan",
+            "population": "middle-aged C57BL/6 mice (20 months at start)",
+            "intervention": "transient rapamycin (8 mg/kg/day i.p.) for 3 months",
+            "source_paper": {
+              "doi": "10.7554/eLife.16351",
+              "title": "Transient rapamycin treatment can increase lifespan and healthspan in middle-aged mice",
+              "journal": "eLife",
+              "year": 2016
+            },
+            "same_source_as_lead": false
+          },
+          {
+            "fact_id": "rapamycin/transient/bitto_2016/lifespan_male",
+            "lane": "A_core",
+            "phrase": "3 months of rapamycin extended median lifespan by 52% in male middle-aged mice",
+            "sub_topic": "lifespan",
+            "population": "male middle-aged C57BL/6 mice (20 months at start)",
+            "intervention": "transient rapamycin (8 mg/kg/day i.p.) for 3 months",
+            "source_paper": {
+              "doi": "10.7554/eLife.16351",
+              "title": "Transient rapamycin treatment can increase lifespan and healthspan in middle-aged mice",
+              "journal": "eLife",
+              "year": 2016
+            },
+            "same_source_as_lead": false
+          }
+        ]
+      },
+      "counter_evidence": {
+        "status": "none_found",
+        "items": []
+      },
+      "subtopic_recommendations": {
+        "recommended": false,
+        "reason": "not_broad_or_not_noisy_enough",
+        "d_bad_share": 0.0,
+        "source_count": 4,
+        "clusters": []
       },
       "blockers": [
         "blocked_label:no_signal",
@@ -497,14 +2479,80 @@
       "headline": "No signal \u2014 sirtuin",
       "confidence_label": "no_signal",
       "alpha_score": 0,
+      "surface_type": "subtopic_rerun_memo",
       "axes": {
         "bound_receipts": 0,
+        "available_bound_receipts": 0,
+        "available_source_contexts": 0,
         "a_core_receipts": 0,
         "source_concentrated": false,
         "counter_consensus_tension": false,
         "cross_domain_forced": false,
         "feed_scope_mismatch": false,
         "source_papers": []
+      },
+      "receipt_expansion": {
+        "needed": false,
+        "why": "lead_thesis_uses_available_receipts",
+        "cited_bound_fact_ids": [],
+        "available_bound_fact_ids": [],
+        "candidate_receipts": []
+      },
+      "counter_evidence": {
+        "status": "none_found",
+        "items": []
+      },
+      "subtopic_recommendations": {
+        "recommended": true,
+        "reason": "high_d_bad_share_plus_semantic_dispersion",
+        "d_bad_share": 0.75,
+        "source_count": 3,
+        "clusters": [
+          {
+            "label": "mitochondrial_telohaec_sirt3",
+            "member_fact_ids": [
+              "19514",
+              "19517",
+              "19516",
+              "19515"
+            ],
+            "source_paper": {
+              "doi": "10.3390/antiox11081611",
+              "title": "SIRT3 Modulates Endothelial Mitochondrial Redox State during Insulin Resistance",
+              "journal": "Antioxidants",
+              "year": 2022
+            },
+            "example_phrase": "PA negatively modulated SIRT3 expression (p < 0.001)."
+          },
+          {
+            "label": "methylmellein_inhibited_modulates",
+            "member_fact_ids": [
+              "63098",
+              "63099"
+            ],
+            "source_paper": {
+              "doi": "10.2323/jgam.2018.01.001",
+              "title": "5-Methylmellein is a novel inhibitor of fungal sirtuin and modulates fungal secondary metabolite production",
+              "journal": "The Journal of General and Applied Microbiology",
+              "year": 2018
+            },
+            "example_phrase": "5-methylmellein inhibited SirA activity with IC50 of 120 \u03bcM."
+          },
+          {
+            "label": "disease_sirtuins_sirt2",
+            "member_fact_ids": [
+              "6510",
+              "6512"
+            ],
+            "source_paper": {
+              "doi": "10.3390/ijms20051249",
+              "title": "Sirtuins in Alzheimer\u2019s Disease: SIRT2-Related GenoPhenotypes and Implications for PharmacoEpiGenetics",
+              "journal": "International Journal of Molecular Sciences",
+              "year": 2019
+            },
+            "example_phrase": "There is an association between the SIRT2-C/T genotype (rs10410544) (50.92%) and AD susceptibility in the APOE\u03b54-negative population"
+          }
+        ]
       },
       "blockers": [
         "blocked_label:no_signal",

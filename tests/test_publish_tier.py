@@ -29,6 +29,13 @@ def _run(
     run = root / "grid_storage-evidence-ts"
     run.mkdir()
     ids = [str(i + 1) for i in range(len(lanes))]
+    def _fit(values: tuple[str, ...]) -> tuple[str, ...]:
+        if len(values) >= len(ids):
+            return values[:len(ids)]
+        return values + (values[-1],) * (len(ids) - len(values))
+    dois = _fit(dois)
+    titles = _fit(titles)
+    journals = _fit(journals)
     run.joinpath("alpha_memo.md").write_text(
         "# Alpha memo - grid_storage\n\n"
         "**Headline:** Storage threshold paradox in reserve markets\n"
@@ -68,6 +75,34 @@ def _run(
         for fid, doi, title, journal in zip(ids, dois, titles, journals, strict=True)
     ]), encoding="utf-8")
     return run
+
+
+def _add_fact(
+    run: Path,
+    *,
+    fact_id: str,
+    lane: str,
+    doi: str,
+    title: str,
+    phrase: str,
+    journal: str = "Policy Review",
+    population: str = "operators",
+    intervention: str = "intervention",
+) -> None:
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    facts.append({
+        "fact_id": fact_id,
+        "canonical_phrase": phrase,
+        "population": population,
+        "intervention": intervention,
+        "source_paper": {
+            "doi": doi, "title": title, "journal": journal, "year": 2026,
+        },
+    })
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    lanes["verdicts"].append({"fact_id": fact_id, "lane": lane})
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
 
 
 def test_ready_to_publish_requires_bound_concentrated_tension(tmp_path: Path) -> None:
@@ -163,3 +198,82 @@ def test_write_publish_verdict_writes_file(tmp_path: Path) -> None:
 
     assert path == run / "publish_verdict.json"
     assert json.loads(path.read_text(encoding="utf-8")) == verdict
+
+
+def test_thin_memo_with_unused_bound_receipts_gets_context_surface(
+    tmp_path: Path,
+) -> None:
+    run = _run(
+        tmp_path,
+        label="frontier_hypothesis",
+        lanes=("A_core", "A_core"),
+        dois=("10.same/a", "10.same/a"),
+        titles=(
+            "Storage tariff improves reserve reliability",
+            "Storage tariff improves reserve reliability",
+        ),
+    )
+    for i in range(3, 6):
+        _add_fact(
+            run,
+            fact_id=str(i),
+            lane="A_core",
+            doi=f"10.extra/{i}",
+            title=f"Reserve market context {i} changes dispatch reliability",
+            phrase=f"Independent context {i} did not match the lead effect.",
+        )
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "needs_operator_review"
+    assert verdict["surface_type"] == "context_dependence_memo"
+    assert verdict["axes"]["bound_receipts"] == 2
+    assert verdict["axes"]["available_bound_receipts"] == 5
+    assert verdict["receipt_expansion"]["needed"] is True
+    assert len(verdict["receipt_expansion"]["candidate_receipts"]) == 3
+
+
+def test_counter_evidence_is_explicit_when_a_bound_opposing_fact_exists(
+    tmp_path: Path,
+) -> None:
+    run = _run(tmp_path, lanes=("A_core", "A_core"))
+    _add_fact(
+        run,
+        fact_id="3",
+        lane="A_core",
+        doi="10.counter/a",
+        title="Independent tariff audit finds no reserve improvement",
+        phrase="The intervention did not improve reserve reliability.",
+    )
+
+    verdict = publish_verdict(run)
+
+    assert verdict["counter_evidence"]["status"] == "found"
+    assert verdict["counter_evidence"]["items"][0]["fact_id"] == "3"
+
+
+def test_noisy_broad_topic_gets_subtopic_recommendations(tmp_path: Path) -> None:
+    run = _run(
+        tmp_path,
+        label="frontier_hypothesis",
+        lanes=("A_core", "A_core"),
+        dois=("10.same/a", "10.same/a"),
+    )
+    for i in range(3, 11):
+        _add_fact(
+            run,
+            fact_id=str(i),
+            lane="D_bad_extraction",
+            doi=f"10.noisy/{i}",
+            title=f"Different market domain {i} changes operator behavior",
+            phrase=f"Malformed or off-target numeric fragment {i}.",
+            population=f"context {i}",
+            intervention=f"policy variant {i}",
+        )
+
+    verdict = publish_verdict(run)
+
+    rec = verdict["subtopic_recommendations"]
+    assert rec["recommended"] is True
+    assert rec["reason"] == "high_d_bad_share_plus_semantic_dispersion"
+    assert rec["clusters"]

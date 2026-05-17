@@ -7,14 +7,53 @@
   "headline": "No signal \u2014 creatine",
   "confidence_label": "no_signal",
   "alpha_score": 0,
+  "surface_type": "curation_brief",
   "axes": {
     "bound_receipts": 0,
+    "available_bound_receipts": 1,
+    "available_source_contexts": 1,
     "a_core_receipts": 0,
     "source_concentrated": false,
     "counter_consensus_tension": false,
     "cross_domain_forced": false,
     "feed_scope_mismatch": false,
     "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": true,
+    "why": "lead_thesis_underuses_available_bound_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [
+      "32411"
+    ],
+    "candidate_receipts": [
+      {
+        "fact_id": "32411",
+        "lane": "B_context",
+        "phrase": "Changes of <5% in NAA, choline, creatine and <10% in mI and Glx detectable in a group of 20 subjects.",
+        "sub_topic": "threshold",
+        "population": "group of 20 subjects",
+        "intervention": "MRS measurements",
+        "source_paper": {
+          "doi": "10.1002/nbm.3364",
+          "title": "Single\u2010voxel <sup>1</sup>H spectroscopy in the human hippocampus at 3 T using the LASER sequence: characterization of neurochemical profile and reproducibility",
+          "journal": "NMR in Biomedicine",
+          "year": 2015
+        },
+        "same_source_as_lead": false
+      }
+    ]
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": false,
+    "reason": "not_broad_or_not_noisy_enough",
+    "d_bad_share": 0.5,
+    "source_count": 2,
+    "clusters": []
   },
   "blockers": [
     "blocked_label:no_signal",
