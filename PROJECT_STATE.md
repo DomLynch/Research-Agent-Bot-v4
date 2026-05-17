@@ -13,6 +13,13 @@ snapshots, watches them move over time, and emits a prioritized
 v4 emits opportunities; v3 (separate ~25k LOC writer) acts on user
 queries independently — v4 does not trigger v3.
 
+**Current curator goal:** for ReseaRka alpha memos, the bot must not
+stop at labeling a memo as thin, broad, or context-dependent. When a
+lead thesis underuses the available corpus, the universal path should
+automatically expand the cited receipt set from available A/B facts,
+emit split child-topic rerun plans from structural clusters, and only
+then decide publish / review / curation. No topic-specific patches.
+
 ## Success Condition (current — staged CLI pipeline)
 The pipeline is invoked stage-by-stage via individual scripts; a
 single-command runner shipped in Sprint 15 (`build_topic_paper.py`).
@@ -82,6 +89,17 @@ scoring, thresholds, and digest schema stay put.
 12. ✅ Tests (unit + golden) + supplement plugins + cutover validation
 
 ## Current Sprint
+**Sprint 89 TODO — automatic receipt expansion + split execution:**
+- Convert Sprint 88's diagnostic fields (`receipt_expansion` and
+  `subtopic_recommendations`) into action, not just labels.
+- For context-dependence memos, rebuild the memo around the full
+  available A/B receipt set when extra non-cited receipts exist.
+- For broad/noisy topics, emit concrete child-topic rerun specs from
+  structural clusters and make the curator cycle run those children
+  before final queue placement.
+- Keep the implementation universal: no `if topic == ...` routing;
+  data/cue vocabulary lives in topic packs or source receipts.
+
 **Sprint 88 shipped** — alpha memo surface router + receipt expansion:
 - `agent/publish_tier.py` now emits `surface_type`,
   `receipt_expansion`, `counter_evidence`, and
