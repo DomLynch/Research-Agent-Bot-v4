@@ -565,7 +565,7 @@
       "decision": "needs_operator_review",
       "publish_tier": "TIER_2",
       "maturity_level": "L4",
-      "headline": "Resveratrol at 75 mg twice daily as a targeted intervention for bone resorption in postmenopausal women: evidence from T-score and collagen telopeptide data",
+      "headline": "Resveratrol may be context-specific, not broadly generalizable",
       "confidence_label": "frontier_hypothesis",
       "alpha_score": 80,
       "surface_type": "context_dependence_memo",
@@ -707,7 +707,7 @@
         "source_count": 17,
         "clusters": [
           {
-            "label": "smooth_cell_muscle",
+            "label": "synthesis_cell_smooth",
             "member_fact_ids": [
               "32359",
               "32361",
@@ -724,7 +724,7 @@
             "example_phrase": "Expression of collagen type I protein was decreased to 25% of control levels with 100 \u03bcM resveratrol (P < 0.05)"
           },
           {
-            "label": "glycyrrhizic_characterization_serum",
+            "label": "conjugated_nanoparticles_wrapping",
             "member_fact_ids": [
               "33995",
               "33996",
@@ -740,7 +740,7 @@
             "example_phrase": "The IC50 values of glycyrrhizic acid-conjugated human serum albumin nanoparticles wrapping resveratrol nanoparticles and resveratrol were 62.5 and 95.5 \u00b5g/ml, respectively."
           },
           {
-            "label": "cancer_curcumin_observed",
+            "label": "synergistic_pharmacists_line",
             "member_fact_ids": [
               "62134",
               "62132",
@@ -756,7 +756,7 @@
             "example_phrase": "IC50 for the combined treatment with curcumin and resveratrol at the ratio of 1:1,1:3 and 3:1 were observed to be 28.06, 15.20 and 8.29 ug/ml"
           },
           {
-            "label": "systematic_critical_food",
+            "label": "systematic_food_patients",
             "member_fact_ids": [
               "2901",
               "2902",
@@ -771,7 +771,7 @@
             "example_phrase": "Administration of resveratrol did not significantly affect systolic BP [WMD: -2.5 95% CI:(-5.5, 0.6) mmHg; p=0.116]"
           },
           {
-            "label": "amp_www_control",
+            "label": "cryopreservation_www_math",
             "member_fact_ids": [
               "5439",
               "5440",
@@ -847,7 +847,7 @@
         "source_count": 16,
         "clusters": [
           {
-            "label": "metastatic_oncotarget_adjuvant",
+            "label": "oncotarget_metastatic_inhibition",
             "member_fact_ids": [
               "33521",
               "33522",
@@ -864,7 +864,7 @@
             "example_phrase": "enhanced CRT-induced cytotoxicity (3.3 fold) in clonogenic assays"
           },
           {
-            "label": "cancer_characterization_atm",
+            "label": "atm_competitive_cancer",
             "member_fact_ids": [
               "4624",
               "4627",
@@ -880,7 +880,7 @@
             "example_phrase": "Torin2 inhibited mTORC1-dependent T389 phosphorylation on S6K with an EC50 of 250 pmol/L and 800-fold selectivity for mTOR versus PI3K."
           },
           {
-            "label": "cancer_nonhepatic_pathway",
+            "label": "nonhepatic_cancer_akt",
             "member_fact_ids": [
               "13585",
               "13586",
@@ -896,7 +896,7 @@
             "example_phrase": "Activation of AKT (S473) was detected more frequently among liver metastases (P = 0.056)."
           },
           {
-            "label": "chronic_reports_through",
+            "label": "through_cells_myelogenous",
             "member_fact_ids": [
               "64215",
               "64214"
@@ -910,7 +910,7 @@
             "example_phrase": "Western blot analysis showed the visibly higher phosphorylation of mTOR (70.6%), 4E-BP1 (76.5%) and p70S6K (73.5%) in bone marrow cells from CML patients."
           },
           {
-            "label": "brain_profiling_children",
+            "label": "care_reveals_new",
             "member_fact_ids": [
               "11040",
               "11039"
@@ -1097,7 +1097,7 @@
         "source_count": 13,
         "clusters": [
           {
-            "label": "animal_oxidative_journal",
+            "label": "animal_vitro_journal",
             "member_fact_ids": [
               "10765",
               "10766",
@@ -1112,7 +1112,7 @@
             "example_phrase": "the addition of spermine (1 mmol/L) or spermidine (0.5 mmol/L) in extender improved boar sperm motility, the integrity of plasma membrane and acrosome (P < 0.05)"
           },
           {
-            "label": "ue2014_journal_synthase",
+            "label": "biochemical_rates_prostatic",
             "member_fact_ids": [
               "65726",
               "65724",
@@ -1127,7 +1127,7 @@
             "example_phrase": "N-(3-aminopropyl)-cadaverine, which at 1mM gave rates 4% of the rate with spermidine"
           },
           {
-            "label": "sativa_without_australian",
+            "label": "mineral_oryza_exogenous",
             "member_fact_ids": [
               "31376",
               "31377"
@@ -1141,7 +1141,7 @@
             "example_phrase": "Pretreatment with Spd dramatically improved grain yield per plant of KDML105 from 17.7 to 28.7 g (62% increase)"
           },
           {
-            "label": "nacl_granatum_putrescine",
+            "label": "occurred_120_rabbab",
             "member_fact_ids": [
               "30307"
             ],
@@ -1154,7 +1154,7 @@
             "example_phrase": "a decline in the growth rate occurred at salinity levels higher than 70 mM"
           },
           {
-            "label": "lime_australian_aurantifolia",
+            "label": "seedlings_concentrations_basic",
             "member_fact_ids": [
               "66107"
             ],
@@ -1312,7 +1312,7 @@
         "source_count": 15,
         "clusters": [
           {
-            "label": "ramadan_nutritional_status",
+            "label": "life_patients_quality",
             "member_fact_ids": [
               "64922",
               "64924",
@@ -1329,7 +1329,7 @@
             "example_phrase": "Patients in the fasting group had significantly higher albumin levels (4.6 \u00b1 0.2 versus 4.1 \u00b1 0.4, P = 0.001)"
           },
           {
-            "label": "journal_ramadan_healthy",
+            "label": "biochemical_basic_before",
             "member_fact_ids": [
               "61712",
               "61714",
@@ -1346,7 +1346,7 @@
             "example_phrase": "Fasting in Ramadan significantly decreased FBS (P< 0.0001)."
           },
           {
-            "label": "proteinous_ramadan_women",
+            "label": "concentrations_haemoglobin_biotechnology",
             "member_fact_ids": [
               "59524",
               "59526",
@@ -1363,7 +1363,7 @@
             "example_phrase": "the glucose levels were significantly (p < 0.05) higher in the serum subjects of patients during the fasting period when compared to the level before Ramadan."
           },
           {
-            "label": "mood_compared_associated",
+            "label": "not_perceived_hunger",
             "member_fact_ids": [
               "68984",
               "68983",
@@ -1379,7 +1379,7 @@
             "example_phrase": "lower perceived work performance was associated with higher distraction (\u03b2 = -0.50, p < 0.01)"
           },
           {
-            "label": "advice_ramadan_low",
+            "label": "against_high_patients",
             "member_fact_ids": [
               "59468",
               "59470",
@@ -1521,7 +1521,7 @@
         "source_count": 9,
         "clusters": [
           {
-            "label": "tight_journal_beclin",
+            "label": "beclin_barrier_tight",
             "member_fact_ids": [
               "12957",
               "12960",
@@ -1537,7 +1537,7 @@
             "example_phrase": "These findings show that beclin 1 plays a constitutive, autophagy-independent role in the regulation of intestinal TJ barrier function via endocytosis of occludin."
           },
           {
-            "label": "outcomes_prognostic_aging",
+            "label": "predicts_lncrna_carcinoma",
             "member_fact_ids": [
               "6522",
               "6523"
@@ -1551,7 +1551,7 @@
             "example_phrase": "The autophagy-related lncRNA signature was an independent prognostic predictor with an AUC value of 0.710."
           },
           {
-            "label": "lung_adenocarcinoma_cox",
+            "label": "lncrna_patients_medicine",
             "member_fact_ids": [
               "7110",
               "7112"
@@ -1565,7 +1565,7 @@
             "example_phrase": "1.215 (1.149-1.286) (P < .001) in multivariate Cox regression analysis"
           },
           {
-            "label": "specific_linked_mitochondrial",
+            "label": "mice_cell_freeze",
             "member_fact_ids": [
               "28274",
               "28273"
@@ -1579,7 +1579,7 @@
             "example_phrase": "autophagy flux was significantly less in injured versus uninjured muscles (-26%, P < 0.02)."
           },
           {
-            "label": "small_cultures_pathway",
+            "label": "cell_cultures_threshold",
             "member_fact_ids": [
               "9292",
               "9293"
@@ -1657,7 +1657,7 @@
         "source_count": 8,
         "clusters": [
           {
-            "label": "disease_hepatology_depressed",
+            "label": "patients_arld_depressed",
             "member_fact_ids": [
               "24802",
               "24806",
@@ -1674,7 +1674,7 @@
             "example_phrase": "ArLD liver tissue showed markedly depressed concentrations of NAD+ (432 \u03bcM vs. 616 \u03bcM in normal liver)"
           },
           {
-            "label": "without_women_reports",
+            "label": "diseases_nadh_plasma",
             "member_fact_ids": [
               "25459",
               "25461"
@@ -1688,7 +1688,7 @@
             "example_phrase": "women had higher plasma NAD+/NADH ratios than men (median 1.33 vs. 1.09, P<0.001)"
           },
           {
-            "label": "found_toxin_was",
+            "label": "toxin_aureus_found",
             "member_fact_ids": [
               "17508",
               "17507"
@@ -1702,7 +1702,7 @@
             "example_phrase": "NAD incorporation efficiency into RNAIII was found to depend in vivo on the -1 position of the P3 promoter"
           },
           {
-            "label": "reversible_voltage_active",
+            "label": "not_storage_electrode",
             "member_fact_ids": [
               "35328"
             ],
@@ -1715,7 +1715,7 @@
             "example_phrase": "exhibiting the average voltage of 2.3 V"
           },
           {
-            "label": "biofluorometric_without_etoh",
+            "label": "breath_biofluorometric_imaging",
             "member_fact_ids": [
               "63690"
             ],
@@ -1773,7 +1773,7 @@
         "source_count": 3,
         "clusters": [
           {
-            "label": "female_400_received",
+            "label": "female_regimen_mice",
             "member_fact_ids": [
               "28457"
             ],
@@ -1786,7 +1786,7 @@
             "example_phrase": "Mice received NMN in drinking water (400 mg/kg)."
           },
           {
-            "label": "administered_sirt3_dose",
+            "label": "male_nicotinamide_single",
             "member_fact_ids": [
               "7801"
             ],
@@ -1799,7 +1799,7 @@
             "example_phrase": "A single dose (62.5 mg/kg) of NMN, administered to male mice"
           },
           {
-            "label": "nampt_associated_through",
+            "label": "experimental_inhibiting_associated",
             "member_fact_ids": [
               "28760"
             ],
@@ -2062,7 +2062,7 @@
         "source_count": 11,
         "clusters": [
           {
-            "label": "cancer_hsp70_induces",
+            "label": "its_inhibiting_cancer",
             "member_fact_ids": [
               "69676",
               "69677",
@@ -2077,7 +2077,7 @@
             "example_phrase": "Intraperitoneal treatment of nude mice with fisetin at 30mg/kg resulted in a 35.7% (P < 0.001) inhibition of tumor growth."
           },
           {
-            "label": "placebo_lower_two",
+            "label": "against_mice_induced",
             "member_fact_ids": [
               "69698"
             ],
@@ -2090,7 +2090,7 @@
             "example_phrase": "In the fisetin-treated group, the cataract stages were significantly lower than in the placebo group (p = 0.02)."
           },
           {
-            "label": "through_european_glucose",
+            "label": "pharmacology_weight_induced",
             "member_fact_ids": [
               "69791"
             ],
@@ -2103,7 +2103,7 @@
             "example_phrase": "Oral administration of fisetin (10 mg/kg) to diabetic rats for 30 days established significant decline in blood glucose and glycosylated hemoglobin and increase in plasma insulin."
           },
           {
-            "label": "cancer_acetyl_mediated",
+            "label": "concentrations_enhance_colonic",
             "member_fact_ids": [
               "69737"
             ],
@@ -2116,7 +2116,7 @@
             "example_phrase": "10 and 20 mM NAC, non-toxic concentrations, can enhance fisetin (FIS)-mediated apoptosis in colon cancer cells COLO205."
           },
           {
-            "label": "enzyme_showed_complex",
+            "label": "exploiting_complex_high",
             "member_fact_ids": [
               "69783"
             ],
@@ -2258,7 +2258,7 @@
         "source_count": 12,
         "clusters": [
           {
-            "label": "pandemic_cov_agents",
+            "label": "tracing_manifest_defined",
             "member_fact_ids": [
               "76030",
               "76032",
@@ -2275,7 +2275,7 @@
             "example_phrase": "quercetin alters the expression of 98 of 332 (30%) of human genes encoding protein targets of SARS-CoV-2"
           },
           {
-            "label": "age_young_dysfunction",
+            "label": "mice_uterine_dysfunction",
             "member_fact_ids": [
               "7312",
               "7313",
@@ -2291,7 +2291,7 @@
             "example_phrase": "D+Q treatment increased p53 gene expression (P = 0.041)"
           },
           {
-            "label": "animal_low_biomed",
+            "label": "implication_high_animal",
             "member_fact_ids": [
               "21487",
               "21484",
@@ -2307,7 +2307,7 @@
             "example_phrase": "p62 and mTOR was downregulated by 57% and 63% by quercetin treatment."
           },
           {
-            "label": "systematic_disorders_metabolic",
+            "label": "systematic_patients_among",
             "member_fact_ids": [
               "9677",
               "9679",
@@ -2323,7 +2323,7 @@
             "example_phrase": "quercetin supplementation significantly reduced FPG in studies that used quercetin in dosages of \u2265500 mg/day (WMD: -1.08; 95% CI [-2.08, -0.07])"
           },
           {
-            "label": "resveratrol_was_medica",
+            "label": "self_drug_using",
             "member_fact_ids": [
               "29213",
               "29214",
@@ -2509,7 +2509,7 @@
         "source_count": 3,
         "clusters": [
           {
-            "label": "mitochondrial_telohaec_sirt3",
+            "label": "insulin_cells_modulates",
             "member_fact_ids": [
               "19514",
               "19517",
@@ -2525,7 +2525,7 @@
             "example_phrase": "PA negatively modulated SIRT3 expression (p < 0.001)."
           },
           {
-            "label": "methylmellein_inhibited_modulates",
+            "label": "applied_methylmellein_aspergillus",
             "member_fact_ids": [
               "63098",
               "63099"
@@ -2539,7 +2539,7 @@
             "example_phrase": "5-methylmellein inhibited SirA activity with IC50 of 120 \u03bcM."
           },
           {
-            "label": "disease_sirtuins_sirt2",
+            "label": "sirt2_patients_pharmacoepigenetics",
             "member_fact_ids": [
               "6510",
               "6512"

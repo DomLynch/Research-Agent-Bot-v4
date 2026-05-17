@@ -89,6 +89,16 @@ scoring, thresholds, and digest schema stay put.
 12. ✅ Tests (unit + golden) + supplement plugins + cutover validation
 
 ## Current Sprint
+**Sprint 89a shipped** — context-dependence memo public surface:
+- `agent/signal_memo_writer.py` now gives any
+  `context_dependence_memo` a publish-facing headline:
+  `<topic> may be context-specific, not broadly generalizable`.
+- The memo preserves the original narrow thesis as `Source thesis`
+  and rewrites the one-sentence thesis from the unused A/B receipt
+  contexts. This turns resveratrol from a bone-trial headline into a
+  Tier 2 frontier memo about tissue/population specificity without
+  changing the strict gate.
+
 **Sprint 89 TODO — automatic receipt expansion + split execution:**
 - Convert Sprint 88's diagnostic fields (`receipt_expansion` and
   `subtopic_recommendations`) into action, not just labels.

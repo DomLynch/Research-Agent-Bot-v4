@@ -138,7 +138,7 @@
     "source_count": 15,
     "clusters": [
       {
-        "label": "ramadan_nutritional_status",
+        "label": "life_patients_quality",
         "member_fact_ids": [
           "64922",
           "64924",
@@ -155,7 +155,7 @@
         "example_phrase": "Patients in the fasting group had significantly higher albumin levels (4.6 \u00b1 0.2 versus 4.1 \u00b1 0.4, P = 0.001)"
       },
       {
-        "label": "journal_ramadan_healthy",
+        "label": "biochemical_basic_before",
         "member_fact_ids": [
           "61712",
           "61714",
@@ -172,7 +172,7 @@
         "example_phrase": "Fasting in Ramadan significantly decreased FBS (P< 0.0001)."
       },
       {
-        "label": "proteinous_ramadan_women",
+        "label": "concentrations_haemoglobin_biotechnology",
         "member_fact_ids": [
           "59524",
           "59526",
@@ -189,7 +189,7 @@
         "example_phrase": "the glucose levels were significantly (p < 0.05) higher in the serum subjects of patients during the fasting period when compared to the level before Ramadan."
       },
       {
-        "label": "mood_compared_associated",
+        "label": "not_perceived_hunger",
         "member_fact_ids": [
           "68984",
           "68983",
@@ -205,7 +205,7 @@
         "example_phrase": "lower perceived work performance was associated with higher distraction (\u03b2 = -0.50, p < 0.01)"
       },
       {
-        "label": "advice_ramadan_low",
+        "label": "against_high_patients",
         "member_fact_ids": [
           "59468",
           "59470",

@@ -37,7 +37,7 @@
     "source_count": 3,
     "clusters": [
       {
-        "label": "female_400_received",
+        "label": "female_regimen_mice",
         "member_fact_ids": [
           "28457"
         ],
@@ -50,7 +50,7 @@
         "example_phrase": "Mice received NMN in drinking water (400 mg/kg)."
       },
       {
-        "label": "administered_sirt3_dose",
+        "label": "male_nicotinamide_single",
         "member_fact_ids": [
           "7801"
         ],
@@ -63,7 +63,7 @@
         "example_phrase": "A single dose (62.5 mg/kg) of NMN, administered to male mice"
       },
       {
-        "label": "nampt_associated_through",
+        "label": "experimental_inhibiting_associated",
         "member_fact_ids": [
           "28760"
         ],

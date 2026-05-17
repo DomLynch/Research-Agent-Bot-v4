@@ -1,15 +1,16 @@
 # Alpha memo — resveratrol
 
-**Headline:** Resveratrol at 75 mg twice daily as a targeted intervention for bone resorption in postmenopausal women: evidence from T-score and collagen telopeptide data
+**Headline:** Resveratrol may be context-specific, not broadly generalizable
 **Alpha score:** 80/100
 **Confidence:** `frontier_hypothesis`
 **Memo surface:** `context dependence memo`
 **Snapshot:** `2026-05-17T06-59-01Z`
 **Run:** `resveratrol-evidence-2026-05-17T06-59-01Z`
+**Source thesis:** Resveratrol at 75 mg twice daily as a targeted intervention for bone resorption in postmenopausal women: evidence from T-score and collagen telopeptide data
 
 ## One-sentence thesis
 
-Resveratrol at 75 mg twice daily as a targeted intervention for bone resorption in postmenopausal women: evidence from T-score and collagen telopeptide data
+The lead signal sits beside A/B receipts across overweight and insulin-resistant subjects, AOM + DSS mouse model of colitis, and pregnant nonhuman primates; publish it as a context-dependence signal rather than a broad claim.
 
 ## Why this is surprising
 
@@ -63,11 +64,11 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 ## Subtopic recommendations
 
 - This topic looks broad/noisy enough that the next run should split it before trying to force one public thesis.
-- `smooth_liver_rat` — Resveratrol causes cell cycle arrest, decreased collagen synthesis, and apoptosis in rat intestinal smooth muscle cells
-- `loaded_wrapping_characterization` — Resveratrol-loaded glycyrrhizic acid-conjugated human serum albumin nanoparticles wrapping resveratrol nanoparticles: Preparation, characterization, and targeting effect on liver t
-- `curcumin_comparative_proteins` — Comparative Insilico Docking Analysis of Curcumin and Resveratrol on Breast Cancer Proteins and their Synergistic Effect on MCF-7 Cell Line
-- `reviews_science_review` — Effect of resveratrol on blood pressure: A systematic review and meta-analysis of randomized, controlled, clinical trials
-- `1998_activation_http` — Resveratrol Improves Boar Sperm Quality via 5<mml:math xmlns:mml="http://www.w3.org/1998/Math/MathML" id="M1"><mml:msup><mml:mrow/><mml:mrow><mml:mo>′</mml:mo></mml:mrow></mml:msup
+- `cultured_smooth_muscle` — Resveratrol causes cell cycle arrest, decreased collagen synthesis, and apoptosis in rat intestinal smooth muscle cells
+- `albumin_nanoparticles_glycyrrhizic` — Resveratrol-loaded glycyrrhizic acid-conjugated human serum albumin nanoparticles wrapping resveratrol nanoparticles: Preparation, characterization, and targeting effect on liver t
+- `pharmacists_mcf_proteins` — Comparative Insilico Docking Analysis of Curcumin and Resveratrol on Breast Cancer Proteins and their Synergistic Effect on MCF-7 Cell Line
+- `trials_reviews_review` — Effect of resveratrol on blood pressure: A systematic review and meta-analysis of randomized, controlled, clinical trials
+- `cellular_oxidative_kinase` — Resveratrol Improves Boar Sperm Quality via 5<mml:math xmlns:mml="http://www.w3.org/1998/Math/MathML" id="M1"><mml:msup><mml:mrow/><mml:mrow><mml:mo>′</mml:mo></mml:mrow></mml:msup
 
 ## Provenance / priority
 
@@ -77,7 +78,7 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - **Version:** 1.0
 - **License:** CC BY-NC 4.0
 - **Canonical URL:** _not assigned_
-- **Suggested citation:** Dom Lynch. (2026). Resveratrol at 75 mg twice daily as a targeted intervention for bone resorption in postmenopausal women: evidence from T-score and collagen telopeptide data. ReseaRka Evidence Index. Version 1.0.
+- **Suggested citation:** Dom Lynch. (2026). Resveratrol may be context-specific, not broadly generalizable. ReseaRka Evidence Index. Version 1.0.
 - **Run bundle SHA-256:** `f0d283905e5e256c1679409c9e27c9d38ebfb7297f6ef193a2eda61336778eb7`
-- **Memo SHA-256:** `b23e4cd6e57ad873536db44a1c728c1bd4277cf6e1327b9c5422d72236c87248`
+- **Memo SHA-256:** `fd07d1bada3332de7f557ab4ddd0641960932018cd1c50f998a4615e8e14ec65`
 - **Priority note:** This memo records the first published framing, source bundle, and evidence receipts for this run. Reuse should cite the canonical version.

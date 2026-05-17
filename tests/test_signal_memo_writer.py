@@ -147,6 +147,9 @@ def test_signal_memo_renders_publish_verdict_sections(tmp_path: Path) -> None:
     })
 
     assert "**Memo surface:** `context dependence memo`" in memo
+    assert "**Headline:** Carbon tax may be context-specific, not broadly generalizable" in memo
+    assert "**Source thesis:** Carbon pricing may cut emissions" in memo
+    assert "comparison market" in memo
     assert "## Strongest counter-evidence" in memo
     assert "`fact_id=303` (`A_core`)" in memo
     assert "## Receipt expansion candidates" in memo

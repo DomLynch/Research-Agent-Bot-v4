@@ -56,7 +56,7 @@
     "source_count": 11,
     "clusters": [
       {
-        "label": "cancer_hsp70_induces",
+        "label": "its_inhibiting_cancer",
         "member_fact_ids": [
           "69676",
           "69677",
@@ -71,7 +71,7 @@
         "example_phrase": "Intraperitoneal treatment of nude mice with fisetin at 30mg/kg resulted in a 35.7% (P < 0.001) inhibition of tumor growth."
       },
       {
-        "label": "placebo_lower_two",
+        "label": "against_mice_induced",
         "member_fact_ids": [
           "69698"
         ],
@@ -84,7 +84,7 @@
         "example_phrase": "In the fisetin-treated group, the cataract stages were significantly lower than in the placebo group (p = 0.02)."
       },
       {
-        "label": "through_european_glucose",
+        "label": "pharmacology_weight_induced",
         "member_fact_ids": [
           "69791"
         ],
@@ -97,7 +97,7 @@
         "example_phrase": "Oral administration of fisetin (10 mg/kg) to diabetic rats for 30 days established significant decline in blood glucose and glycosylated hemoglobin and increase in plasma insulin."
       },
       {
-        "label": "cancer_acetyl_mediated",
+        "label": "concentrations_enhance_colonic",
         "member_fact_ids": [
           "69737"
         ],
@@ -110,7 +110,7 @@
         "example_phrase": "10 and 20 mM NAC, non-toxic concentrations, can enhance fisetin (FIS)-mediated apoptosis in colon cancer cells COLO205."
       },
       {
-        "label": "enzyme_showed_complex",
+        "label": "exploiting_complex_high",
         "member_fact_ids": [
           "69783"
         ],

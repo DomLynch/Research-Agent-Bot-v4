@@ -37,7 +37,7 @@
     "source_count": 3,
     "clusters": [
       {
-        "label": "mitochondrial_telohaec_sirt3",
+        "label": "insulin_cells_modulates",
         "member_fact_ids": [
           "19514",
           "19517",
@@ -53,7 +53,7 @@
         "example_phrase": "PA negatively modulated SIRT3 expression (p < 0.001)."
       },
       {
-        "label": "methylmellein_inhibited_modulates",
+        "label": "applied_methylmellein_aspergillus",
         "member_fact_ids": [
           "63098",
           "63099"
@@ -67,7 +67,7 @@
         "example_phrase": "5-methylmellein inhibited SirA activity with IC50 of 120 \u03bcM."
       },
       {
-        "label": "disease_sirtuins_sirt2",
+        "label": "sirt2_patients_pharmacoepigenetics",
         "member_fact_ids": [
           "6510",
           "6512"

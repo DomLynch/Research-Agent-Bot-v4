@@ -119,7 +119,7 @@
     "source_count": 9,
     "clusters": [
       {
-        "label": "tight_journal_beclin",
+        "label": "beclin_barrier_tight",
         "member_fact_ids": [
           "12957",
           "12960",
@@ -135,7 +135,7 @@
         "example_phrase": "These findings show that beclin 1 plays a constitutive, autophagy-independent role in the regulation of intestinal TJ barrier function via endocytosis of occludin."
       },
       {
-        "label": "outcomes_prognostic_aging",
+        "label": "predicts_lncrna_carcinoma",
         "member_fact_ids": [
           "6522",
           "6523"
@@ -149,7 +149,7 @@
         "example_phrase": "The autophagy-related lncRNA signature was an independent prognostic predictor with an AUC value of 0.710."
       },
       {
-        "label": "lung_adenocarcinoma_cox",
+        "label": "lncrna_patients_medicine",
         "member_fact_ids": [
           "7110",
           "7112"
@@ -163,7 +163,7 @@
         "example_phrase": "1.215 (1.149-1.286) (P < .001) in multivariate Cox regression analysis"
       },
       {
-        "label": "specific_linked_mitochondrial",
+        "label": "mice_cell_freeze",
         "member_fact_ids": [
           "28274",
           "28273"
@@ -177,7 +177,7 @@
         "example_phrase": "autophagy flux was significantly less in injured versus uninjured muscles (-26%, P < 0.02)."
       },
       {
-        "label": "small_cultures_pathway",
+        "label": "cell_cultures_threshold",
         "member_fact_ids": [
           "9292",
           "9293"

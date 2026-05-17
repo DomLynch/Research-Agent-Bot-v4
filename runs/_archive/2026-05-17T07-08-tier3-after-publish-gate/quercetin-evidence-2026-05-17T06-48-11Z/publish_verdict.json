@@ -121,7 +121,7 @@
     "source_count": 12,
     "clusters": [
       {
-        "label": "pandemic_cov_agents",
+        "label": "tracing_manifest_defined",
         "member_fact_ids": [
           "76030",
           "76032",
@@ -138,7 +138,7 @@
         "example_phrase": "quercetin alters the expression of 98 of 332 (30%) of human genes encoding protein targets of SARS-CoV-2"
       },
       {
-        "label": "age_young_dysfunction",
+        "label": "mice_uterine_dysfunction",
         "member_fact_ids": [
           "7312",
           "7313",
@@ -154,7 +154,7 @@
         "example_phrase": "D+Q treatment increased p53 gene expression (P = 0.041)"
       },
       {
-        "label": "animal_low_biomed",
+        "label": "implication_high_animal",
         "member_fact_ids": [
           "21487",
           "21484",
@@ -170,7 +170,7 @@
         "example_phrase": "p62 and mTOR was downregulated by 57% and 63% by quercetin treatment."
       },
       {
-        "label": "systematic_disorders_metabolic",
+        "label": "systematic_patients_among",
         "member_fact_ids": [
           "9677",
           "9679",
@@ -186,7 +186,7 @@
         "example_phrase": "quercetin supplementation significantly reduced FPG in studies that used quercetin in dosages of \u2265500 mg/day (WMD: -1.08; 95% CI [-2.08, -0.07])"
       },
       {
-        "label": "resveratrol_was_medica",
+        "label": "self_drug_using",
         "member_fact_ids": [
           "29213",
           "29214",

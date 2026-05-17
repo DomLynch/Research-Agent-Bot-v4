@@ -99,7 +99,7 @@
     "source_count": 13,
     "clusters": [
       {
-        "label": "animal_oxidative_journal",
+        "label": "animal_vitro_journal",
         "member_fact_ids": [
           "10765",
           "10766",
@@ -114,7 +114,7 @@
         "example_phrase": "the addition of spermine (1 mmol/L) or spermidine (0.5 mmol/L) in extender improved boar sperm motility, the integrity of plasma membrane and acrosome (P < 0.05)"
       },
       {
-        "label": "ue2014_journal_synthase",
+        "label": "biochemical_rates_prostatic",
         "member_fact_ids": [
           "65726",
           "65724",
@@ -129,7 +129,7 @@
         "example_phrase": "N-(3-aminopropyl)-cadaverine, which at 1mM gave rates 4% of the rate with spermidine"
       },
       {
-        "label": "sativa_without_australian",
+        "label": "mineral_oryza_exogenous",
         "member_fact_ids": [
           "31376",
           "31377"
@@ -143,7 +143,7 @@
         "example_phrase": "Pretreatment with Spd dramatically improved grain yield per plant of KDML105 from 17.7 to 28.7 g (62% increase)"
       },
       {
-        "label": "nacl_granatum_putrescine",
+        "label": "occurred_120_rabbab",
         "member_fact_ids": [
           "30307"
         ],
@@ -156,7 +156,7 @@
         "example_phrase": "a decline in the growth rate occurred at salinity levels higher than 70 mM"
       },
       {
-        "label": "lime_australian_aurantifolia",
+        "label": "seedlings_concentrations_basic",
         "member_fact_ids": [
           "66107"
         ],

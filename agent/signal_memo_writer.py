@@ -201,6 +201,48 @@ def _surface_line(verdict: dict[str, Any] | None) -> str:
     return surface.replace("_", " ")
 
 
+def _topic_title(topic: str) -> str:
+    label = " ".join(part for part in topic.replace("-", "_").split("_") if part)
+    return label[:1].upper() + label[1:]
+
+
+def _public_headline(topic: str, headline: str, verdict: dict[str, Any] | None) -> str:
+    if verdict and verdict.get("surface_type") == "context_dependence_memo":
+        return f"{_topic_title(topic)} may be context-specific, not broadly generalizable"
+    return headline
+
+
+def _context_subline(verdict: dict[str, Any] | None, fallback: str) -> str:
+    if not verdict or verdict.get("surface_type") != "context_dependence_memo":
+        return fallback
+    expansion = verdict.get("receipt_expansion")
+    candidates = expansion.get("candidate_receipts", []) if isinstance(expansion, dict) else []
+    contexts: list[str] = []
+    if isinstance(candidates, list):
+        for item in candidates:
+            if not isinstance(item, dict):
+                continue
+            context = str(item.get("population") or item.get("sub_topic") or "").strip()
+            if context and context not in contexts:
+                contexts.append(context)
+            if len(contexts) >= 3:
+                break
+    if contexts:
+        joined = (
+            contexts[0] if len(contexts) == 1 else
+            ", ".join(contexts[:-1]) + f", and {contexts[-1]}"
+        )
+        return (
+            "The lead signal sits beside A/B receipts across "
+            + joined
+            + "; publish it as a context-dependence signal rather than a broad claim."
+        )
+    return (
+        "The lead signal cites fewer receipts than the run contains, so publish it "
+        "as a context-dependence signal rather than a broad claim."
+    )
+
+
 def _counter_lines(verdict: dict[str, Any] | None) -> list[str]:
     if not verdict:
         return ["- _Counter-evidence not classified yet._"]
@@ -328,12 +370,16 @@ def render_signal_memo(
     top_md = _read(run_dir / "top_5.md")
     topic = str(review.get("topic") or run_dir.name.split("-evidence-")[0])
     snapshot = str(review.get("snapshot_utc") or run_dir.name)
-    headline = _headline(signal_md, topic)
+    raw_headline = _headline(signal_md, topic)
+    headline = _public_headline(topic, raw_headline, publish_verdict)
     label = _label(signal_md)
     audit = _lead_audit(run_dir)
     facts = _facts_by_id(run_dir)
     lanes = _lane_map(run_dir)
-    thesis = _first_sentence(str(audit.get("rationale") or ""), headline)
+    thesis = _context_subline(
+        publish_verdict,
+        _first_sentence(str(audit.get("rationale") or ""), headline),
+    )
     next_extractions = review.get("next_extractions") if isinstance(review, dict) else []
     top_cards = _top_cards(top_md)
 
@@ -346,6 +392,8 @@ def render_signal_memo(
         f"**Memo surface:** `{_surface_line(publish_verdict)}`",
         f"**Snapshot:** `{snapshot}`",
         f"**Run:** `{run_dir.name}`",
+        *([f"**Source thesis:** {raw_headline}"]
+          if raw_headline != headline else []),
         "",
         "## One-sentence thesis",
         "",
