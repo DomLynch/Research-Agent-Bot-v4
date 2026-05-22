@@ -22,14 +22,12 @@ from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
-from scripts.build_publish_queue import build_queue
-
 _ROOT = Path(__file__).resolve().parent.parent
+_SCRIPT_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(_ROOT))
+sys.path.insert(0, str(_SCRIPT_DIR))
+
 _RUNS = _ROOT / "runs"
-_DAILY = _RUNS / "_daily_ledger"
-_HOLDS = _RUNS / "_retracted_holds"
 
 Json = dict[str, Any]
 Fetcher = Callable[[str], Json]
@@ -46,6 +44,13 @@ def _json(path: Path, default: Any) -> Any:
 def _write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def _build_queue(include_archive: bool) -> Json:
+    from build_publish_queue import build_queue
+
+    data = build_queue(include_archive=include_archive)
+    return data if isinstance(data, dict) else {}
 
 
 def _norm(value: Any) -> str:
@@ -328,7 +333,7 @@ def run_cycle(
             ledger.update({"status": "candidate_refresh_failed"})
             _write_json(ledger_path, ledger)
             return ledger
-    queue = queue if queue is not None else build_queue(include_archive=include_archive)
+    queue = queue if queue is not None else _build_queue(include_archive)
     ledger["queue_counts"] = {
         key: len(queue.get(key) or [])
         for key in ("ready_to_publish", "needs_operator_review", "curation_needed")
@@ -347,7 +352,10 @@ def run_cycle(
     ledger["retraction_check"] = retraction
     if retraction.get("status") != "clean":
         ledger.update({"status": "held_retraction_check", "candidate": candidate.get("topic")})
-        _write_json(_HOLDS / f"{candidate.get('topic')}-{date}.json", ledger)
+        _write_json(
+            runs_root / "_retracted_holds" / f"{candidate.get('topic')}-{date}.json",
+            ledger,
+        )
         _write_json(ledger_path, ledger)
         return ledger
     ledger["candidate"] = {
