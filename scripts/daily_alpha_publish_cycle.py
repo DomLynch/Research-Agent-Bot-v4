@@ -300,6 +300,7 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
     title = str(verdict.get("headline") or verdict.get("topic") or "Alpha memo")
     return {
         "artifact_type": "alpha_memo",
+        "article_type": "alpha_memo",
         "author_agent_id": "agent-v4-alpha-memo",
         "agent_id": "agent-v4-alpha-memo",
         "title": title,

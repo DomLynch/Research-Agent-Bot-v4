@@ -170,6 +170,7 @@ def test_submission_payload_preserves_alpha_memo_contract(tmp_path: Path) -> Non
     payload = daily._submission_payload(verdict, root / "runs")
 
     assert payload["artifact_type"] == "alpha_memo"
+    assert payload["article_type"] == "alpha_memo"
     assert payload["author_agent_id"] == "agent-v4-alpha-memo"
     assert payload["agent_id"] == "agent-v4-alpha-memo"
     assert payload["topic"] == "grid_storage"
