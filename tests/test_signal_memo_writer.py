@@ -169,3 +169,20 @@ def test_publish_alpha_surface_is_not_rendered_as_publish_command(tmp_path: Path
 
     assert "**Memo surface:** `alpha memo`" in memo
     assert "`publish alpha memo`" not in memo
+
+
+def test_single_source_alpha_memo_stays_bound_to_receipts(tmp_path: Path) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "publish_alpha_memo",
+        "axes": {
+            "source_concentrated": True,
+            "source_papers": [{"doi": "10.x/policy"}],
+        },
+    })
+
+    assert "**Headline:** Carbon tax: single-source alpha signal" in memo
+    assert "Within the cited source bundle, Emissions fell 8%" in memo
+    assert "## Supporting Top cards" not in memo

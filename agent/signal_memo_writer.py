@@ -170,6 +170,21 @@ def _receipt_lines(
     return out or ["- _No A_core/B_context receipts bind to this memo._"]
 
 
+def _receipt_phrases(
+    audit: dict[str, Any],
+    facts: dict[str, dict[str, Any]],
+    lanes: dict[str, str],
+) -> list[str]:
+    out: list[str] = []
+    for fid in [str(x) for x in audit.get("cited_fact_ids", [])]:
+        if lanes.get(fid) not in _BINDABLE:
+            continue
+        phrase = str((facts.get(fid) or {}).get("canonical_phrase") or "").strip()
+        if phrase:
+            out.append(phrase)
+    return out
+
+
 def _alpha_score(audit: dict[str, Any], label: str) -> int:
     base = int(audit.get("capped_opportunity")
                or audit.get("opportunity_score") or 0)
@@ -208,6 +223,43 @@ def _surface_line(verdict: dict[str, Any] | None) -> str:
     if surface == "publish_alpha_memo":
         return "alpha memo"
     return surface.replace("_", " ")
+
+
+def _single_source_signal(verdict: dict[str, Any] | None) -> bool:
+    axes = verdict.get("axes") if isinstance(verdict, dict) else {}
+    papers = axes.get("source_papers", []) if isinstance(axes, dict) else []
+    return (
+        bool(axes.get("source_concentrated")) if isinstance(axes, dict) else False
+    ) and isinstance(papers, list) and len(papers) <= 1
+
+
+def _single_source_thesis(phrases: list[str], fallback: str) -> str:
+    if not phrases:
+        return fallback
+    joined = "; ".join(_clip(phrase, 150).rstrip(".") for phrase in phrases[:3])
+    return (
+        "Within the cited source bundle, "
+        + joined
+        + ". Treat the broader framing as a follow-up hypothesis, not a settled claim."
+    )
+
+
+def _single_source_why(phrases: list[str]) -> str:
+    if not phrases:
+        return (
+            "The memo is source-concentrated, so the public signal is the "
+            "bounded cited contrast, not a broad topic claim."
+        )
+    joined = "; ".join(_clip(phrase, 150).rstrip(".") for phrase in phrases[:3])
+    return "The surprise is the within-bundle contrast among cited receipts: " + joined + "."
+
+
+def _single_source_weakening() -> list[str]:
+    return [
+        "- An independent source fails to reproduce the same contrast.",
+        "- The cited source depends on a narrow protocol, subgroup, comparator, or measurement choice.",
+        "- Broader receipts show the same topic behaves differently outside the cited source bundle.",
+    ]
 
 
 def _topic_title(topic: str) -> str:
@@ -395,13 +447,27 @@ def render_signal_memo(
     audit = _lead_audit(run_dir)
     facts = _facts_by_id(run_dir)
     lanes = _lane_map(run_dir)
+    receipt_phrases = _receipt_phrases(audit, facts, lanes)
+    single_source = _single_source_signal(publish_verdict)
     thesis = _context_subline(
         publish_verdict,
         _first_sentence(str(audit.get("rationale") or ""), headline),
     )
+    if single_source:
+        headline = f"{_topic_title(topic)}: single-source alpha signal"
+        thesis = _single_source_thesis(receipt_phrases, thesis)
     next_extractions = review.get("next_extractions") if isinstance(review, dict) else []
-    top_cards = _top_cards(top_md)
-    weakening = _weakening_lines(review if isinstance(review, dict) else {}, label)
+    top_cards = [] if single_source else _top_cards(top_md)
+    weakening = (
+        _single_source_weakening()
+        if single_source
+        else _weakening_lines(review if isinstance(review, dict) else {}, label)
+    )
+    why_surprising = (
+        _single_source_why(receipt_phrases)
+        if single_source
+        else (_section(signal_md, "Why this is surprising") or "_No frontier lens produced._")
+    )
 
     lines = [
         f"# Alpha memo — {topic}",
@@ -421,7 +487,7 @@ def render_signal_memo(
         "",
         "## Why this is surprising",
         "",
-        _section(signal_md, "Why this is surprising") or "_No frontier lens produced._",
+        why_surprising,
         "",
         "## Evidence receipts",
         "",
