@@ -210,19 +210,34 @@ def _cited_dois(verdict: Json) -> list[str]:
     return out
 
 
-def _source_bundle(verdict: Json) -> list[Json]:
+def _source_bundle(verdict: Json, run_dir: Path) -> list[Json]:
     papers = ((verdict.get("axes") or {}).get("source_papers") or [])
+    papers = [*papers, *_json(run_dir / "papers_metadata.json", [])]
+    for fact in _json(run_dir / "all_facts.json", []):
+        if isinstance(fact, dict) and isinstance(fact.get("source_paper"), dict):
+            papers.append(fact["source_paper"])
     bundle: list[Json] = []
+    seen: set[str] = set()
     for paper in papers:
         if not isinstance(paper, dict):
             continue
-        title = str(paper.get("title") or paper.get("doi") or "Source paper").strip()
+        doi = _norm(paper.get("doi"))
+        title = str(paper.get("title") or doi or "Source paper").strip()
+        key = doi or _norm(title)
+        if not title or key in seen:
+            continue
+        seen.add(key)
         entry: Json = {"title": title, "evidence_type": "primary"}
         for key in ("doi", "url", "year"):
             if paper.get(key):
                 entry[key] = paper[key]
         bundle.append(entry)
-    return bundle
+    bundle.sort(key=lambda entry: (
+        int(entry.get("year") or 0) < 2020,
+        -int(entry.get("year") or 0),
+        _norm(entry.get("title")),
+    ))
+    return bundle[:12]
 
 
 def _memo_sections(title: str, memo: str, verdict: Json) -> Json:
@@ -341,7 +356,7 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         "abstract": title,
         "domain_slug": str(verdict.get("topic") or "alpha_memo"),
         "sections": _memo_sections(title, memo, verdict),
-        "source_bundle": _source_bundle(verdict),
+        "source_bundle": _source_bundle(verdict, run_dir),
         "markdown": memo,
         "novelty_score": verdict.get("alpha_score"),
         "confidence_score": verdict.get("maturity_level"),

@@ -166,6 +166,11 @@ def test_submission_payload_matches_researka_contract(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict()
     _memo(root, verdict)
+    run = root / verdict["run_dir"]
+    daily._write_json(run / "papers_metadata.json", [
+        {"title": f"Independent source {i}", "doi": f"10.1000/{i}", "year": 2024}
+        for i in range(12)
+    ])
 
     payload = daily._submission_payload(verdict, root / "runs")
 
@@ -174,10 +179,14 @@ def test_submission_payload_matches_researka_contract(tmp_path: Path) -> None:
     assert payload["abstract"] == payload["title"]
     assert "Research Question" in payload["sections"]
     assert payload["sections"]["Evidence Landscape"] == "# Alpha memo\n"
-    assert payload["source_bundle"] == [
-        {"title": "Reserve threshold paper", "evidence_type": "primary", "doi": "10.1000/a"},
-        {"title": "Reserve replication", "evidence_type": "primary", "doi": "10.1000/b"},
-    ]
+    assert len(payload["source_bundle"]) == 12
+    assert payload["source_bundle"][0] == {
+        "title": "Independent source 0",
+        "evidence_type": "primary",
+        "doi": "10.1000/0",
+        "year": 2024,
+    }
+    assert sum(1 for entry in payload["source_bundle"] if entry.get("year") == 2024) == 12
 
 
 def test_http_submitter_sends_runtime_api_key_header(monkeypatch: MonkeyPatch) -> None:
