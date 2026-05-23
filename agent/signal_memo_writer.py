@@ -107,6 +107,13 @@ def _first_sentence(text: str, fallback: str) -> str:
     return (m.group(1) if m else cleaned).strip()[:360]
 
 
+def _clip(text: Any, limit: int) -> str:
+    clean = " ".join(str(text or "").split())
+    if len(clean) <= limit:
+        return clean
+    return clean[:limit].rsplit(" ", 1)[0].rstrip(".,;:") + "..."
+
+
 def _lane_map(run_dir: Path) -> dict[str, str]:
     data = _json(run_dir / "fact_lanes.json", {})
     out: dict[str, str] = {}
@@ -180,7 +187,7 @@ def _alpha_score(audit: dict[str, Any], label: str) -> int:
 
 def _weakening_lines(review: dict[str, Any], label: str) -> list[str]:
     raw = review.get("reviewer_objections") if isinstance(review, dict) else []
-    lines = [f"- {str(x)[:240]}" for x in raw[:3]] if isinstance(raw, list) else []
+    lines = [f"- {_clip(x, 240)}" for x in raw[:3]] if isinstance(raw, list) else []
     if lines:
         return lines
     if label in {"evidence_binding_failed", "curation_needed", "no_signal"}:
@@ -198,6 +205,8 @@ def _surface_line(verdict: dict[str, Any] | None) -> str:
     if not verdict:
         return "unclassified"
     surface = str(verdict.get("surface_type") or "unclassified")
+    if surface == "publish_alpha_memo":
+        return "alpha memo"
     return surface.replace("_", " ")
 
 
@@ -322,6 +331,16 @@ def _subtopic_lines(verdict: dict[str, Any] | None) -> list[str]:
     return lines
 
 
+def _limitations_lines(weakening: list[str]) -> list[str]:
+    return [
+        "- This is an alpha memo, not a settled review, guideline, or broad "
+        "consensus claim.",
+        "- Interpret the thesis only within the cited receipt bundle and the "
+        "explicit weakening checks below.",
+        *weakening[:3],
+    ]
+
+
 def _provenance_block(
     run_dir: Path, topic: str, snapshot: str, headline: str, memo_body: str,
 ) -> list[str]:
@@ -382,12 +401,13 @@ def render_signal_memo(
     )
     next_extractions = review.get("next_extractions") if isinstance(review, dict) else []
     top_cards = _top_cards(top_md)
+    weakening = _weakening_lines(review if isinstance(review, dict) else {}, label)
 
     lines = [
         f"# Alpha memo — {topic}",
         "",
         f"**Headline:** {headline}",
-        f"**Alpha score:** {_alpha_score(audit, label)}/100",
+        f"**Alpha score:** {_alpha_score(audit, label)}/100 (internal triage score; not a certainty claim)",
         f"**Confidence:** `{label}`",
         f"**Memo surface:** `{_surface_line(publish_verdict)}`",
         f"**Snapshot:** `{snapshot}`",
@@ -414,9 +434,13 @@ def render_signal_memo(
         "contrast, receipt bundle, and next extraction that could confirm or "
         "kill the thesis.",
         "",
+        "## Limitations",
+        "",
+        *_limitations_lines(weakening),
+        "",
         "## What would weaken this",
         "",
-        *_weakening_lines(review if isinstance(review, dict) else {}, label),
+        *weakening,
         "",
         "## Strongest counter-evidence",
         "",

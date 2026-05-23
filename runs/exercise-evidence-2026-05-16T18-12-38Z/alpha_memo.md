@@ -1,9 +1,9 @@
 # Alpha memo — exercise
 
 **Headline:** Pathway-specific anti-inflammatory gating: metformin unlocks TNF-axis suppression in exercise-responsive cancer survivors that exercise alone cannot achieve
-**Alpha score:** 100/100
+**Alpha score:** 100/100 (internal triage score; not a certainty claim)
 **Confidence:** `evidence_backed_signal`
-**Memo surface:** `publish alpha memo`
+**Memo surface:** `alpha memo`
 **Snapshot:** `2026-05-16T18-12-38Z`
 **Run:** `exercise-evidence-2026-05-16T18-12-38Z`
 
@@ -30,11 +30,19 @@ Real tension: Exercise alone robustly reduces hs-CRP/IL6 (facts 6, 8: -30%) but 
 
 Treat this as a focused working signal, not a broad topic claim. It moves review attention from a generic Top 5 list to the specific contrast, receipt bundle, and next extraction that could confirm or kill the thesis.
 
+## Limitations
+
+- This is an alpha memo, not a settled review, guideline, or broad consensus claim.
+- Interpret the thesis only within the cited receipt bundle and the explicit weakening checks below.
+- Facts 1-2 and fact 14 compare protein synthesis across species (human vs Zucker rat) and exercise modalities (BFR vs resistance) — any cross-species synthesis argument lacks direct head-to-head evidence and risks ecological fallacy.
+- The metformin+exercise vs exercise-alone inflammatory comparison (facts 5-8) derives from a single trial in cancer survivors without type 2 diabetes; generalizability to diabetic cancer survivors or non-cancer populations is speculative.
+- Concurrent PEDF and VEGF suppression (facts 11-12) could reflect weight loss per se rather than exercise, since both study arms included caloric restriction (225 min/week activity + 10% weight-loss goal) — the independent exercise...
+
 ## What would weaken this
 
 - Facts 1-2 and fact 14 compare protein synthesis across species (human vs Zucker rat) and exercise modalities (BFR vs resistance) — any cross-species synthesis argument lacks direct head-to-head evidence and risks ecological fallacy.
 - The metformin+exercise vs exercise-alone inflammatory comparison (facts 5-8) derives from a single trial in cancer survivors without type 2 diabetes; generalizability to diabetic cancer survivors or non-cancer populations is speculative.
-- Concurrent PEDF and VEGF suppression (facts 11-12) could reflect weight loss per se rather than exercise, since both study arms included caloric restriction (225 min/week activity + 10% weight-loss goal) — the independent exercise contribut
+- Concurrent PEDF and VEGF suppression (facts 11-12) could reflect weight loss per se rather than exercise, since both study arms included caloric restriction (225 min/week activity + 10% weight-loss goal) — the independent exercise...
 
 ## Strongest counter-evidence
 
@@ -66,5 +74,5 @@ Treat this as a focused working signal, not a broad topic claim. It moves review
 - **Canonical URL:** _not assigned_
 - **Suggested citation:** Dom Lynch. (2026). Pathway-specific anti-inflammatory gating: metformin unlocks TNF-axis suppression in exercise-responsive cancer survivors that exercise alone cannot achieve. ReseaRka Evidence Index. Version 1.0.
 - **Run bundle SHA-256:** `fe487b28cd8297287f8c8def5605a5aac25b0a1723c07436f22dfdaea7dc6374`
-- **Memo SHA-256:** `537972c5276c0729e232c56b7f8574005596335f9b4f282796d22695fd812c8a`
+- **Memo SHA-256:** `a73ad007a9ae06c0cfad2138b160241b3ea52e627e82c8877847dd0e8bda3727`
 - **Priority note:** This memo records the first published framing, source bundle, and evidence receipts for this run. Reuse should cite the canonical version.
