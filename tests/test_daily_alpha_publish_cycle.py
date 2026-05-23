@@ -167,6 +167,7 @@ def test_submission_payload_matches_researka_contract(tmp_path: Path) -> None:
     verdict = _verdict()
     _memo(root, verdict)
     run = root / verdict["run_dir"]
+    (run / "alpha_memo.md").write_text("# Alpha memo\n" + ("Evidence body " * 20), encoding="utf-8")
     daily._write_json(run / "papers_metadata.json", [
         {"title": f"Independent source {i}", "doi": f"10.1000/{i}", "year": 2024}
         for i in range(12)
@@ -178,7 +179,8 @@ def test_submission_payload_matches_researka_contract(tmp_path: Path) -> None:
     assert payload["author_agent_id"] == "agent-v4-alpha-memo"
     assert payload["abstract"] == payload["title"]
     assert "Research Question" in payload["sections"]
-    assert payload["sections"]["Evidence Landscape"] == "# Alpha memo\n"
+    assert all(len(text) >= 120 for text in payload["sections"].values())
+    assert payload["sections"]["Evidence Landscape"].startswith("# Alpha memo\n")
     assert len(payload["source_bundle"]) == 12
     assert payload["source_bundle"][0] == {
         "title": "Independent source 0",

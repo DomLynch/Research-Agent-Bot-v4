@@ -256,8 +256,16 @@ def _memo_sections(title: str, memo: str, verdict: Json) -> Json:
         "Evidence Landscape": memo,
         "Key Findings": memo,
         "Limitations": "This submission is an alpha memo, not a settled review. Claims should remain bounded to the cited receipts and the publish verdict.",
-        "Gaps Identified": "See the memo's counter-evidence, receipt expansion, and next-extraction sections for unresolved checks.",
-        "Conclusion": thesis,
+        "Gaps Identified": (
+            "See the memo's counter-evidence, receipt expansion, and next-extraction "
+            "sections for unresolved checks. Researka should treat these gaps as the "
+            "next review targets before escalating the memo into a broader claim."
+        ),
+        "Conclusion": (
+            f"The working conclusion is: {thesis}. This should remain a bounded "
+            "alpha signal until Researka review confirms the source bundle, "
+            "counter-evidence, and next-extraction plan support public release."
+        ),
     }
 
 
