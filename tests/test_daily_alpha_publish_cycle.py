@@ -84,13 +84,13 @@ def test_dry_run_selects_best_candidate_and_writes_ledger(tmp_path: Path) -> Non
     assert written["queue_counts"]["ready_to_publish"] == 2
 
 
-def test_duplicate_fingerprint_skips_previous_publication(tmp_path: Path) -> None:
+def test_duplicate_fingerprint_skips_previous_submission(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     first = _verdict("first")
     second = _verdict("second") | {"receipt_expansion": {"cited_bound_fact_ids": ["9"]}}
     _memo(root, second)
     fp = daily.memo_fingerprint(first)
-    daily._write_json(root / "_daily_ledger" / "_published_fingerprints.json", [
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
         {"fingerprint": fp, "topic": "first"},
     ])
 
@@ -103,7 +103,7 @@ def test_duplicate_fingerprint_skips_previous_publication(tmp_path: Path) -> Non
 
     assert ledger["status"] == "dry_run_selected"
     assert ledger["candidate"]["topic"] == "second"
-    assert ledger["considered"][0]["status"] == "duplicate_fingerprint"
+    assert ledger["considered"][0]["status"] == "duplicate_submission_fingerprint"
 
 
 def test_missing_alpha_memo_is_not_publishable(tmp_path: Path) -> None:
@@ -162,33 +162,20 @@ def test_submit_token_accepts_research_alias(monkeypatch: MonkeyPatch) -> None:
     assert daily._submit_token() == ("alias-token", "RESEARCH_API_KEY_V4")
 
 
-def test_submission_payload_matches_researka_contract(tmp_path: Path) -> None:
+def test_submission_payload_preserves_alpha_memo_contract(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict()
     _memo(root, verdict)
-    run = root / verdict["run_dir"]
-    (run / "alpha_memo.md").write_text("# Alpha memo\n" + ("Evidence body " * 20), encoding="utf-8")
-    daily._write_json(run / "papers_metadata.json", [
-        {"title": f"Independent source {i}", "doi": f"10.1000/{i}", "year": 2024}
-        for i in range(12)
-    ])
 
     payload = daily._submission_payload(verdict, root / "runs")
 
     assert payload["artifact_type"] == "alpha_memo"
     assert payload["author_agent_id"] == "agent-v4-alpha-memo"
-    assert payload["abstract"] == payload["title"]
-    assert "Research Question" in payload["sections"]
-    assert all(len(text) >= 120 for text in payload["sections"].values())
-    assert payload["sections"]["Evidence Landscape"].startswith("# Alpha memo\n")
-    assert len(payload["source_bundle"]) == 12
-    assert payload["source_bundle"][0] == {
-        "title": "Independent source 0",
-        "evidence_type": "primary",
-        "doi": "10.1000/0",
-        "year": 2024,
-    }
-    assert sum(1 for entry in payload["source_bundle"] if entry.get("year") == 2024) == 12
+    assert payload["agent_id"] == "agent-v4-alpha-memo"
+    assert payload["topic"] == "grid_storage"
+    assert payload["markdown"] == "# Alpha memo\n"
+    assert "sections" not in payload
+    assert "source_bundle" not in payload
 
 
 def test_http_submitter_sends_runtime_api_key_header(monkeypatch: MonkeyPatch) -> None:
@@ -222,7 +209,7 @@ def test_http_submitter_sends_runtime_api_key_header(monkeypatch: MonkeyPatch) -
     assert seen["headers"]["X-api-key"] == "secret-token"
 
 
-def test_successful_submit_records_published_fingerprint(tmp_path: Path) -> None:
+def test_successful_submit_records_submission_not_publication(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict()
     _memo(root, verdict)
@@ -237,9 +224,11 @@ def test_successful_submit_records_published_fingerprint(tmp_path: Path) -> None
         submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
     )
 
-    assert ledger["status"] == "published"
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["submitted"] == 1
+    assert ledger["published"] == 0
     records = json.loads(
-        (root / "_daily_ledger" / "_published_fingerprints.json").read_text(
+        (root / "_daily_ledger" / "_submitted_fingerprints.json").read_text(
             encoding="utf-8",
         )
     )

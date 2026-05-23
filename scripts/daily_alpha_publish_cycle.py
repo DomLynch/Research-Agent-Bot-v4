@@ -150,7 +150,7 @@ def _has_memo(verdict: Json, root: Path) -> bool:
     return (run_dir / "alpha_memo.md").exists()
 
 
-def _published_fingerprints(path: Path) -> set[str]:
+def _seen_submission_fingerprints(path: Path) -> set[str]:
     data = _json(path, [])
     if isinstance(data, list):
         return {str(x.get("fingerprint")) for x in data if isinstance(x, dict)}
@@ -161,10 +161,10 @@ def select_candidate(
     queue: Json,
     *,
     runs_root: Path,
-    published_path: Path,
+    submitted_path: Path,
     allow_tier2: bool = False,
 ) -> tuple[Json | None, list[Json]]:
-    seen = _published_fingerprints(published_path)
+    seen = _seen_submission_fingerprints(submitted_path)
     considered: list[Json] = []
     candidates = sorted(
         _rows(queue, allow_tier2=allow_tier2),
@@ -178,7 +178,7 @@ def select_candidate(
         fp = memo_fingerprint(verdict)
         status = "eligible"
         if fp in seen:
-            status = "duplicate_fingerprint"
+            status = "duplicate_submission_fingerprint"
         elif not _has_memo(verdict, runs_root):
             status = "missing_alpha_memo"
         elif not _approved(verdict, runs_root):
@@ -208,65 +208,6 @@ def _cited_dois(verdict: Json) -> list[str]:
         if doi and doi not in out:
             out.append(doi)
     return out
-
-
-def _source_bundle(verdict: Json, run_dir: Path) -> list[Json]:
-    papers = ((verdict.get("axes") or {}).get("source_papers") or [])
-    papers = [*papers, *_json(run_dir / "papers_metadata.json", [])]
-    for fact in _json(run_dir / "all_facts.json", []):
-        if isinstance(fact, dict) and isinstance(fact.get("source_paper"), dict):
-            papers.append(fact["source_paper"])
-    bundle: list[Json] = []
-    seen: set[str] = set()
-    for paper in papers:
-        if not isinstance(paper, dict):
-            continue
-        doi = _norm(paper.get("doi"))
-        title = str(paper.get("title") or doi or "Source paper").strip()
-        key = doi or _norm(title)
-        if not title or key in seen:
-            continue
-        seen.add(key)
-        entry: Json = {"title": title, "evidence_type": "primary"}
-        for key in ("doi", "url", "year"):
-            if paper.get(key):
-                entry[key] = paper[key]
-        bundle.append(entry)
-    bundle.sort(key=lambda entry: (
-        int(entry.get("year") or 0) < 2020,
-        -int(entry.get("year") or 0),
-        _norm(entry.get("title")),
-    ))
-    return bundle[:12]
-
-
-def _memo_sections(title: str, memo: str, verdict: Json) -> Json:
-    topic = str(verdict.get("topic") or "alpha memo").replace("_", " ")
-    thesis = title.rstrip(".")
-    question = (
-        f"This alpha memo asks whether the retained evidence for {topic} supports "
-        f"the thesis: {thesis}. It treats the memo as a publishable evidence signal, "
-        "checks whether the supporting receipts are bound to the claim, separates "
-        "counter-evidence from promotional framing, and preserves the remaining "
-        "uncertainty so Researka can approve, reject, or request more curation."
-    )
-    return {
-        "Research Question": question,
-        "Search Summary": f"Research Agent Bot v4 selected this memo from run {verdict.get('run_dir') or 'unknown'} after publish-tier, deduplication, and retraction checks.",
-        "Evidence Landscape": memo,
-        "Key Findings": memo,
-        "Limitations": "This submission is an alpha memo, not a settled review. Claims should remain bounded to the cited receipts and the publish verdict.",
-        "Gaps Identified": (
-            "See the memo's counter-evidence, receipt expansion, and next-extraction "
-            "sections for unresolved checks. Researka should treat these gaps as the "
-            "next review targets before escalating the memo into a broader claim."
-        ),
-        "Conclusion": (
-            f"The working conclusion is: {thesis}. This should remain a bounded "
-            "alpha signal until Researka review confirms the source bundle, "
-            "counter-evidence, and next-extraction plan support public release."
-        ),
-    }
 
 
 def _crossref_fetch(doi: str) -> Json:
@@ -360,11 +301,9 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
     return {
         "artifact_type": "alpha_memo",
         "author_agent_id": "agent-v4-alpha-memo",
+        "agent_id": "agent-v4-alpha-memo",
         "title": title,
-        "abstract": title,
-        "domain_slug": str(verdict.get("topic") or "alpha_memo"),
-        "sections": _memo_sections(title, memo, verdict),
-        "source_bundle": _source_bundle(verdict, run_dir),
+        "topic": verdict.get("topic"),
         "markdown": memo,
         "novelty_score": verdict.get("alpha_score"),
         "confidence_score": verdict.get("maturity_level"),
@@ -441,7 +380,7 @@ def run_cycle(
     fetcher: Fetcher = _crossref_fetch,
 ) -> Json:
     ledger_path = runs_root / "_daily_ledger" / f"{date}.json"
-    published_path = runs_root / "_daily_ledger" / "_published_fingerprints.json"
+    submitted_path = runs_root / "_daily_ledger" / "_submitted_fingerprints.json"
     ledger: Json = {
         "date": date,
         "dry_run": not submit,
@@ -449,6 +388,8 @@ def run_cycle(
         "max_cost_usd": max_cost_usd,
         "published": 0,
         "published_topic": None,
+        "submitted": 0,
+        "submitted_topic": None,
         "status": "started",
     }
     if estimated_cost_usd > max_cost_usd:
@@ -471,7 +412,7 @@ def run_cycle(
         for key in ("ready_to_publish", "needs_operator_review", "curation_needed")
     }
     candidate, considered = select_candidate(
-        queue, runs_root=runs_root, published_path=published_path,
+        queue, runs_root=runs_root, submitted_path=submitted_path,
         allow_tier2=allow_tier2,
     )
     ledger["considered"] = considered
@@ -515,7 +456,7 @@ def run_cycle(
     result = submit_with_backoff(_submission_payload(candidate, runs_root), submitter)
     ledger["submission"] = result
     if result["status"] == "accepted":
-        records = _json(published_path, [])
+        records = _json(submitted_path, [])
         if not isinstance(records, list):
             records = []
         records.append({
@@ -524,8 +465,12 @@ def run_cycle(
             "run_dir": candidate.get("run_dir"),
             "fingerprint": candidate.get("memo_fingerprint"),
         })
-        _write_json(published_path, records)
-        ledger.update({"status": "published", "published": 1, "published_topic": candidate.get("topic")})
+        _write_json(submitted_path, records)
+        ledger.update({
+            "status": "submitted_to_researka",
+            "submitted": 1,
+            "submitted_topic": candidate.get("topic"),
+        })
     else:
         ledger.update({"status": result["status"], "published": 0})
     _write_json(ledger_path, ledger)
@@ -559,8 +504,9 @@ def main() -> int:
     )
     print(
         "[daily-alpha] "
-        f"status={ledger['status']} published={ledger['published']} "
-        f"topic={ledger.get('published_topic') or ledger.get('candidate', {}).get('topic') or '-'}"
+        f"status={ledger['status']} submitted={ledger.get('submitted', 0)} "
+        f"published={ledger['published']} "
+        f"topic={ledger.get('submitted_topic') or ledger.get('published_topic') or ledger.get('candidate', {}).get('topic') or '-'}"
     )
     return 2 if ledger["status"] == "candidate_refresh_failed" else 0
 
