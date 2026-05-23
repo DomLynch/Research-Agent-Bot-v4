@@ -210,6 +210,42 @@ def _cited_dois(verdict: Json) -> list[str]:
     return out
 
 
+def _source_bundle(verdict: Json) -> list[Json]:
+    papers = ((verdict.get("axes") or {}).get("source_papers") or [])
+    bundle: list[Json] = []
+    for paper in papers:
+        if not isinstance(paper, dict):
+            continue
+        title = str(paper.get("title") or paper.get("doi") or "Source paper").strip()
+        entry: Json = {"title": title, "evidence_type": "primary"}
+        for key in ("doi", "url", "year"):
+            if paper.get(key):
+                entry[key] = paper[key]
+        bundle.append(entry)
+    return bundle
+
+
+def _memo_sections(title: str, memo: str, verdict: Json) -> Json:
+    topic = str(verdict.get("topic") or "alpha memo").replace("_", " ")
+    thesis = title.rstrip(".")
+    question = (
+        f"This alpha memo asks whether the retained evidence for {topic} supports "
+        f"the thesis: {thesis}. It treats the memo as a publishable evidence signal, "
+        "checks whether the supporting receipts are bound to the claim, separates "
+        "counter-evidence from promotional framing, and preserves the remaining "
+        "uncertainty so Researka can approve, reject, or request more curation."
+    )
+    return {
+        "Research Question": question,
+        "Search Summary": f"Research Agent Bot v4 selected this memo from run {verdict.get('run_dir') or 'unknown'} after publish-tier, deduplication, and retraction checks.",
+        "Evidence Landscape": memo,
+        "Key Findings": memo,
+        "Limitations": "This submission is an alpha memo, not a settled review. Claims should remain bounded to the cited receipts and the publish verdict.",
+        "Gaps Identified": "See the memo's counter-evidence, receipt expansion, and next-extraction sections for unresolved checks.",
+        "Conclusion": thesis,
+    }
+
+
 def _crossref_fetch(doi: str) -> Json:
     url = "https://api.crossref.org/works/" + urllib.parse.quote(doi, safe="")
     req = urllib.request.Request(url, headers={"User-Agent": "researka-v4/1.0"})
@@ -297,11 +333,15 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
     memo = ""
     with suppress(OSError):
         memo = (run_dir / "alpha_memo.md").read_text(encoding="utf-8")
+    title = str(verdict.get("headline") or verdict.get("topic") or "Alpha memo")
     return {
         "artifact_type": "alpha_memo",
-        "agent_id": "agent-v4-alpha-memo",
-        "title": verdict.get("headline") or verdict.get("topic") or "Alpha memo",
-        "topic": verdict.get("topic"),
+        "author_agent_id": "agent-v4-alpha-memo",
+        "title": title,
+        "abstract": title,
+        "domain_slug": str(verdict.get("topic") or "alpha_memo"),
+        "sections": _memo_sections(title, memo, verdict),
+        "source_bundle": _source_bundle(verdict),
         "markdown": memo,
         "novelty_score": verdict.get("alpha_score"),
         "confidence_score": verdict.get("maturity_level"),
@@ -322,6 +362,7 @@ def _http_submitter(url: str, token: str) -> Submitter:
             method="POST",
             headers={
                 "Authorization": f"Bearer {token}",
+                "x-api-key": token,
                 "Content-Type": "application/json",
             },
         )
@@ -436,7 +477,7 @@ def run_cycle(
         _write_json(ledger_path, ledger)
         return ledger
     if submitter is None:
-        url = os.environ.get("RESEARKA_SUBMIT_URL", "https://researka.org/api/v1/submissions")
+        url = os.environ.get("RESEARKA_SUBMIT_URL", "https://api.researka.org/submissions")
         token, token_env = _submit_token()
         if not token:
             ledger.update({

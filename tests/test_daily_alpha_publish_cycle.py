@@ -6,8 +6,10 @@ rules.
 from __future__ import annotations
 
 import json
+import urllib.request
 from pathlib import Path
 from typing import Any
+from urllib.request import Request
 
 from pytest import MonkeyPatch
 
@@ -158,6 +160,55 @@ def test_submit_token_accepts_research_alias(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv("RESEARCH_API_KEY_V4", "alias-token")
 
     assert daily._submit_token() == ("alias-token", "RESEARCH_API_KEY_V4")
+
+
+def test_submission_payload_matches_researka_contract(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict()
+    _memo(root, verdict)
+
+    payload = daily._submission_payload(verdict, root / "runs")
+
+    assert payload["artifact_type"] == "alpha_memo"
+    assert payload["author_agent_id"] == "agent-v4-alpha-memo"
+    assert payload["abstract"] == payload["title"]
+    assert "Research Question" in payload["sections"]
+    assert payload["sections"]["Evidence Landscape"] == "# Alpha memo\n"
+    assert payload["source_bundle"] == [
+        {"title": "Reserve threshold paper", "evidence_type": "primary", "doi": "10.1000/a"},
+        {"title": "Reserve replication", "evidence_type": "primary", "doi": "10.1000/b"},
+    ]
+
+
+def test_http_submitter_sends_runtime_api_key_header(monkeypatch: MonkeyPatch) -> None:
+    seen: dict[str, Any] = {}
+
+    class Response:
+        status = 200
+
+        def __enter__(self) -> Response:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return b'{"accepted": true}'
+
+    def fake_urlopen(req: Request, timeout: int) -> Response:
+        seen["timeout"] = timeout
+        seen["headers"] = dict(req.header_items())
+        return Response()
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+    result = daily._http_submitter("https://api.example/submissions", "secret-token")(
+        {"title": "memo"},
+    )
+
+    assert result["ok"] is True
+    assert seen["headers"]["Authorization"] == "Bearer secret-token"
+    assert seen["headers"]["X-api-key"] == "secret-token"
 
 
 def test_successful_submit_records_published_fingerprint(tmp_path: Path) -> None:
