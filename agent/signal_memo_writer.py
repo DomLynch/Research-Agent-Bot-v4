@@ -244,14 +244,30 @@ def _single_source_thesis(phrases: list[str], fallback: str) -> str:
     )
 
 
-def _single_source_why(phrases: list[str]) -> str:
-    if not phrases:
-        return (
-            "The memo is source-concentrated, so the public signal is the "
-            "bounded cited contrast, not a broad topic claim."
-        )
-    joined = "; ".join(_clip(phrase, 150).rstrip(".") for phrase in phrases[:3])
-    return "The surprise is the within-bundle contrast among cited receipts: " + joined + "."
+def _single_source_why() -> str:
+    return (
+        "The signal is not a broad topic claim; it is a source-bounded "
+        "contrast that identifies a specific replication target. The value is "
+        "the falsifiable pattern inside one cited bundle, not a claim that the "
+        "pattern is already settled across the field."
+    )
+
+
+def _single_source_note(verdict: dict[str, Any] | None) -> str:
+    axes = verdict.get("axes") if isinstance(verdict, dict) else {}
+    papers = axes.get("source_papers", []) if isinstance(axes, dict) else []
+    paper = papers[0] if isinstance(papers, list) and papers and isinstance(papers[0], dict) else {}
+    title = str(paper.get("title") or "one cited source").strip()
+    journal = str(paper.get("journal") or "").strip()
+    year = str(paper.get("year") or "").strip()
+    doi = str(paper.get("doi") or "").strip()
+    bits = [title]
+    detail = ", ".join(x for x in (journal, year) if x)
+    if detail:
+        bits.append(f"({detail})")
+    if doi:
+        bits.append(f"DOI `{doi}`")
+    return "This memo is derived from one cited source: " + " ".join(bits) + "."
 
 
 def _single_source_weakening() -> list[str]:
@@ -464,7 +480,7 @@ def render_signal_memo(
         else _weakening_lines(review if isinstance(review, dict) else {}, label)
     )
     why_surprising = (
-        _single_source_why(receipt_phrases)
+        _single_source_why()
         if single_source
         else (_section(signal_md, "Why this is surprising") or "_No frontier lens produced._")
     )
@@ -480,6 +496,8 @@ def render_signal_memo(
         f"**Run:** `{run_dir.name}`",
         *([f"**Source thesis:** {raw_headline}"]
           if raw_headline != headline else []),
+        *([f"**Source scope:** {_single_source_note(publish_verdict)}"]
+          if single_source else []),
         "",
         "## One-sentence thesis",
         "",
@@ -495,10 +513,16 @@ def render_signal_memo(
         "",
         "## What this changes",
         "",
-        "Treat this as a focused working signal, not a broad topic claim. "
-        "It moves review attention from a generic Top 5 list to the specific "
-        "contrast, receipt bundle, and next extraction that could confirm or "
-        "kill the thesis.",
+        (
+            "Treat this as a narrow, single-source signal. It changes the next "
+            "curation step: test the same contrast in independent receipts "
+            "before making a broader topic claim."
+            if single_source else
+            "Treat this as a focused working signal, not a broad topic claim. "
+            "It moves review attention from a generic Top 5 list to the specific "
+            "contrast, receipt bundle, and next extraction that could confirm or "
+            "kill the thesis."
+        ),
         "",
         "## Limitations",
         "",
