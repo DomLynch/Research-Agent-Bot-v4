@@ -17,6 +17,10 @@ import scripts.daily_alpha_publish_cycle as daily
 
 
 def _verdict(topic: str = "grid_storage", *, score: int = 90) -> dict[str, Any]:
+    source_papers = [
+        {"doi": f"10.1000/{i}", "title": f"Reserve threshold paper {i}"}
+        for i in range(12)
+    ]
     return {
         "run_dir": f"runs/{topic}-evidence-ts",
         "topic": topic,
@@ -28,10 +32,8 @@ def _verdict(topic: str = "grid_storage", *, score: int = 90) -> dict[str, Any]:
         "alpha_score": score,
         "surface_type": "publish_alpha_memo",
         "axes": {
-            "source_papers": [
-                {"doi": "10.1000/a", "title": "Reserve threshold paper"},
-                {"doi": "10.1000/b", "title": "Reserve replication"},
-            ],
+            "available_source_contexts": 12,
+            "source_papers": source_papers,
         },
         "receipt_expansion": {
             "cited_bound_fact_ids": ["3", "1", "2"],
@@ -119,6 +121,34 @@ def test_missing_alpha_memo_is_not_publishable(tmp_path: Path) -> None:
 
     assert ledger["status"] == "no_publishable_candidate"
     assert ledger["considered"][0]["status"] == "missing_alpha_memo"
+
+
+def test_submit_mode_holds_thin_source_memos(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    thin = _verdict("thin") | {
+        "axes": {
+            "source_papers": [
+                {"doi": "10.1000/a", "title": "Thin source A"},
+                {"doi": "10.1000/b", "title": "Thin source B"},
+            ],
+        },
+    }
+    _memo(root, thin)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(thin),
+        submit=True,
+        retraction_mode="metadata",
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+    )
+
+    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["submitted"] == 0
+    assert ledger["considered"][0]["source_count"] == 2
+    assert ledger["considered"][0]["min_source_count"] == 12
+    assert ledger["considered"][0]["status"] == "source_floor_below_min"
 
 
 def test_retraction_check_blocks_submission_and_writes_hold(tmp_path: Path) -> None:

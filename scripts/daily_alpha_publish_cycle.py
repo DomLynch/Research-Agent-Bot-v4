@@ -157,12 +157,36 @@ def _seen_submission_fingerprints(path: Path) -> set[str]:
     return set()
 
 
+def _source_count(verdict: Json) -> int:
+    axes = verdict.get("axes") or {}
+    papers = axes.get("source_papers") or []
+    counts = [
+        axes.get("available_source_contexts"),
+        axes.get("source_count"),
+        axes.get("selected_count"),
+    ]
+    if isinstance(papers, list):
+        keys = {
+            _norm((p or {}).get("doi") or (p or {}).get("title"))
+            for p in papers if isinstance(p, dict)
+        }
+        counts.append(len([k for k in keys if k]))
+    out = 0
+    for count in counts:
+        if count is None:
+            continue
+        with suppress(TypeError, ValueError):
+            out = max(out, int(str(count)))
+    return out
+
+
 def select_candidate(
     queue: Json,
     *,
     runs_root: Path,
     submitted_path: Path,
     allow_tier2: bool = False,
+    min_source_count: int = 0,
 ) -> tuple[Json | None, list[Json]]:
     seen = _seen_submission_fingerprints(submitted_path)
     considered: list[Json] = []
@@ -183,6 +207,8 @@ def select_candidate(
             status = "missing_alpha_memo"
         elif not _approved(verdict, runs_root):
             status = "needs_operator_approval"
+        elif _source_count(verdict) < min_source_count:
+            status = "source_floor_below_min"
         row = {
             "topic": verdict.get("topic"),
             "decision": verdict.get("decision"),
@@ -190,6 +216,8 @@ def select_candidate(
             "alpha_score": verdict.get("alpha_score"),
             "run_dir": verdict.get("run_dir"),
             "fingerprint": fp,
+            "source_count": _source_count(verdict),
+            "min_source_count": min_source_count,
             "status": status,
         }
         considered.append(row)
@@ -377,6 +405,7 @@ def run_cycle(
     max_cost_usd: float = 5.0,
     submit: bool = False,
     retraction_mode: str = "metadata",
+    min_submit_sources: int = 12,
     submitter: Submitter | None = None,
     fetcher: Fetcher = _crossref_fetch,
 ) -> Json:
@@ -387,6 +416,7 @@ def run_cycle(
         "dry_run": not submit,
         "estimated_cost_usd": estimated_cost_usd,
         "max_cost_usd": max_cost_usd,
+        "min_submit_sources": min_submit_sources,
         "published": 0,
         "published_topic": None,
         "submitted": 0,
@@ -415,6 +445,7 @@ def run_cycle(
     candidate, considered = select_candidate(
         queue, runs_root=runs_root, submitted_path=submitted_path,
         allow_tier2=allow_tier2,
+        min_source_count=min_submit_sources if submit else 0,
     )
     ledger["considered"] = considered
     if candidate is None:
@@ -486,6 +517,7 @@ def main() -> int:
     parser.add_argument("--allow-tier2", action="store_true")
     parser.add_argument("--estimated-cost-usd", type=float, default=0.0)
     parser.add_argument("--max-cost-usd", type=float, default=5.0)
+    parser.add_argument("--min-submit-sources", type=int, default=12)
     parser.add_argument("--submit", action="store_true")
     parser.add_argument(
         "--retraction-check",
@@ -500,6 +532,7 @@ def main() -> int:
         allow_tier2=args.allow_tier2,
         estimated_cost_usd=args.estimated_cost_usd,
         max_cost_usd=args.max_cost_usd,
+        min_submit_sources=args.min_submit_sources,
         submit=args.submit,
         retraction_mode=args.retraction_check,
     )
