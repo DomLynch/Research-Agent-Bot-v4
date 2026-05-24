@@ -147,7 +147,7 @@ def test_submit_mode_holds_thin_source_memos(tmp_path: Path) -> None:
     assert ledger["status"] == "no_publishable_candidate"
     assert ledger["submitted"] == 0
     assert ledger["considered"][0]["source_count"] == 2
-    assert ledger["considered"][0]["min_source_count"] == 12
+    assert ledger["considered"][0]["min_source_count"] == 5
     assert ledger["considered"][0]["status"] == "source_floor_below_min"
 
 

@@ -34,6 +34,7 @@ _SUBMIT_TOKEN_ENVS = (
     "RESEARKA_AGENT_TOKEN_V4",
     "RESEARCH_API_KEY_V4",
 )
+_DEFAULT_MIN_SUBMIT_SOURCES = 5
 
 
 def _json(path: Path, default: Any) -> Any:
@@ -405,7 +406,7 @@ def run_cycle(
     max_cost_usd: float = 5.0,
     submit: bool = False,
     retraction_mode: str = "metadata",
-    min_submit_sources: int = 12,
+    min_submit_sources: int = _DEFAULT_MIN_SUBMIT_SOURCES,
     submitter: Submitter | None = None,
     fetcher: Fetcher = _crossref_fetch,
 ) -> Json:
@@ -517,7 +518,7 @@ def main() -> int:
     parser.add_argument("--allow-tier2", action="store_true")
     parser.add_argument("--estimated-cost-usd", type=float, default=0.0)
     parser.add_argument("--max-cost-usd", type=float, default=5.0)
-    parser.add_argument("--min-submit-sources", type=int, default=12)
+    parser.add_argument("--min-submit-sources", type=int, default=_DEFAULT_MIN_SUBMIT_SOURCES)
     parser.add_argument("--submit", action="store_true")
     parser.add_argument(
         "--retraction-check",
