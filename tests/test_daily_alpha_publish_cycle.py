@@ -294,6 +294,63 @@ def test_successful_submit_records_submission_not_publication(tmp_path: Path) ->
     assert records[0]["fingerprint"] == daily.memo_fingerprint(verdict)
 
 
+def test_sync_submission_decisions_records_async_rejection(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submitted_to_researka",
+        "submission": {
+            "attempts": [
+                {"response": {"submission": {"id": "sub_123"}}},
+            ],
+        },
+    })
+
+    summary = daily.sync_submission_decisions(
+        root,
+        fetcher=lambda submission_id: {
+            "status": "complete",
+            "decision": "reject",
+            "gate_failures": [
+                {"name": "minimum_citations", "reason": "source bundle too small"},
+            ],
+            "seen_id": submission_id,
+        },
+    )
+
+    patched = json.loads(
+        (root / "_daily_ledger" / "2026-05-21.json").read_text(encoding="utf-8")
+    )
+    assert summary["checked"] == 1
+    assert summary["updated"] == 1
+    assert patched["submission_id"] == "sub_123"
+    assert patched["final_verdict"] == "rejected"
+    assert patched["researka_decision"]["gate_failures"][0]["name"] == "minimum_citations"
+
+
+def test_run_cycle_syncs_prior_submission_decisions(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submitted_to_researka",
+        "submission": {"attempts": [{"response": {"submission": {"id": "sub_123"}}}]},
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(),
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+        },
+    )
+
+    patched = json.loads(
+        (root / "_daily_ledger" / "2026-05-21.json").read_text(encoding="utf-8")
+    )
+    assert ledger["decision_sync"]["updated"] == 1
+    assert patched["final_verdict"] == "accepted"
+
+
 def test_cost_cap_writes_no_publish_ledger(tmp_path: Path) -> None:
     root = tmp_path / "repo"
 

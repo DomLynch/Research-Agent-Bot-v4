@@ -27,6 +27,7 @@ _RUNS = _ROOT / "runs"
 
 Json = dict[str, Any]
 Fetcher = Callable[[str], Json]
+DecisionFetcher = Callable[[str], Json]
 Submitter = Callable[[Json], Json]
 _SUBMIT_TOKEN_ENVS = (
     "RESEARKA_API_KEY_V4",
@@ -242,6 +243,74 @@ def _crossref_fetch(doi: str) -> Json:
     return data if isinstance(data, dict) else {}
 
 
+def _decision_fetch(submission_id: str) -> Json:
+    base = os.environ.get("RESEARKA_DECISION_URL_BASE", "https://api.researka.org/submissions")
+    url = base.rstrip("/") + "/" + urllib.parse.quote(submission_id, safe="") + "/decision"
+    req = urllib.request.Request(url, headers={"User-Agent": "researka-v4/1.0"})
+    with urllib.request.urlopen(req, timeout=30) as response:
+        data = json.loads(response.read().decode("utf-8"))
+    return data if isinstance(data, dict) else {}
+
+
+def _submission_id(payload: Json) -> str:
+    direct = payload.get("submission_id")
+    if direct:
+        return str(direct)
+    submission = payload.get("submission")
+    if isinstance(submission, dict) and submission.get("id"):
+        return str(submission.get("id"))
+    for attempt in payload.get("attempts") or []:
+        if not isinstance(attempt, dict):
+            continue
+        response = attempt.get("response")
+        if isinstance(response, dict):
+            found = _submission_id(response)
+            if found:
+                return found
+    nested = payload.get("submission")
+    return str(nested.get("id") if isinstance(nested, dict) else "")
+
+
+def sync_submission_decisions(
+    runs_root: Path = _RUNS,
+    *,
+    fetcher: DecisionFetcher = _decision_fetch,
+) -> Json:
+    ledger_dir = runs_root / "_daily_ledger"
+    summary: Json = {"checked": 0, "updated": 0, "pending": 0, "errors": []}
+    for path in sorted(ledger_dir.glob("*.json")):
+        ledger = _json(path, {})
+        if not isinstance(ledger, dict) or ledger.get("status") != "submitted_to_researka":
+            continue
+        if ledger.get("final_verdict") in {"accepted", "rejected"}:
+            continue
+        submission_id = _submission_id(ledger.get("submission", {}))
+        if not submission_id:
+            continue
+        summary["checked"] += 1
+        try:
+            decision = fetcher(submission_id)
+        except Exception as exc:  # pragma: no cover - network defensive path
+            summary["errors"].append({
+                "ledger": path.name,
+                "submission_id": submission_id,
+                "error": type(exc).__name__,
+                "detail": str(exc)[:180],
+            })
+            continue
+        final = "pending"
+        if decision.get("status") == "complete":
+            final = "accepted" if decision.get("decision") == "accept" else "rejected"
+        summary["pending"] += int(final == "pending")
+        ledger["submission_id"] = submission_id
+        ledger["researka_decision"] = decision
+        ledger["final_verdict"] = final
+        if final != "pending":
+            summary["updated"] += 1
+        _write_json(path, ledger)
+    return summary
+
+
 def _has_retraction_marker(payload: Any) -> bool:
     if isinstance(payload, dict):
         for key, value in payload.items():
@@ -404,12 +473,15 @@ def run_cycle(
     min_submit_sources: int = _DEFAULT_MIN_SUBMIT_SOURCES,
     submitter: Submitter | None = None,
     fetcher: Fetcher = _crossref_fetch,
+    decision_fetcher: DecisionFetcher = _decision_fetch,
 ) -> Json:
     ledger_path = runs_root / "_daily_ledger" / f"{date}.json"
     submitted_path = runs_root / "_daily_ledger" / "_submitted_fingerprints.json"
+    decision_sync = sync_submission_decisions(runs_root, fetcher=decision_fetcher)
     ledger: Json = {
         "date": date,
         "dry_run": not submit,
+        "decision_sync": decision_sync,
         "estimated_cost_usd": estimated_cost_usd,
         "max_cost_usd": max_cost_usd,
         "min_submit_sources": min_submit_sources,
@@ -484,6 +556,7 @@ def run_cycle(
     result = submit_with_backoff(_submission_payload(candidate, runs_root), submitter)
     ledger["submission"] = result
     if result["status"] == "accepted":
+        submission_id = _submission_id(result)
         records = _json(submitted_path, [])
         if not isinstance(records, list):
             records = []
@@ -492,12 +565,15 @@ def run_cycle(
             "topic": candidate.get("topic"),
             "run_dir": candidate.get("run_dir"),
             "fingerprint": candidate.get("memo_fingerprint"),
+            "submission_id": submission_id,
         })
         _write_json(submitted_path, records)
         ledger.update({
+            "final_verdict": "pending",
             "status": "submitted_to_researka",
             "submitted": 1,
             "submitted_topic": candidate.get("topic"),
+            "submission_id": submission_id,
         })
     else:
         ledger.update({"status": result["status"], "published": 0})
