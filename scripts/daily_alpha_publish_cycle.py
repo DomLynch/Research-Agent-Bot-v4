@@ -161,24 +161,19 @@ def _seen_submission_fingerprints(path: Path) -> set[str]:
 def _source_count(verdict: Json) -> int:
     axes = verdict.get("axes") or {}
     papers = axes.get("source_papers") or []
-    counts = [
-        axes.get("available_source_contexts"),
-        axes.get("source_count"),
-        axes.get("selected_count"),
-    ]
     if isinstance(papers, list):
         keys = {
             _norm((p or {}).get("doi") or (p or {}).get("title"))
             for p in papers if isinstance(p, dict)
         }
-        counts.append(len([k for k in keys if k]))
-    out = 0
-    for count in counts:
+        if keys:
+            return len([k for k in keys if k])
+    for count in (axes.get("source_count"), axes.get("selected_count")):
         if count is None:
             continue
         with suppress(TypeError, ValueError):
-            out = max(out, int(str(count)))
-    return out
+            return int(str(count))
+    return 0
 
 
 def select_candidate(

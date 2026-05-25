@@ -151,6 +151,33 @@ def test_submit_mode_holds_thin_source_memos(tmp_path: Path) -> None:
     assert ledger["considered"][0]["status"] == "source_floor_below_min"
 
 
+def test_submit_floor_uses_cited_sources_not_available_contexts(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    thin = _verdict("thin") | {
+        "axes": {
+            "available_source_contexts": 9,
+            "source_papers": [
+                {"doi": "10.1000/only", "title": "Only cited source"},
+            ],
+        },
+    }
+    _memo(root, thin)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(thin),
+        submit=True,
+        retraction_mode="metadata",
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+    )
+
+    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["submitted"] == 0
+    assert ledger["considered"][0]["source_count"] == 1
+    assert ledger["considered"][0]["status"] == "source_floor_below_min"
+
+
 def test_retraction_check_blocks_submission_and_writes_hold(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict()
