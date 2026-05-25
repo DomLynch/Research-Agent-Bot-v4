@@ -55,6 +55,28 @@ def _memo(root: Path, verdict: dict[str, Any]) -> None:
     (run / "alpha_memo.md").write_text("# Alpha memo\n", encoding="utf-8")
 
 
+def _memo_with_source_receipts(root: Path, verdict: dict[str, Any], count: int) -> None:
+    run = root / str(verdict["run_dir"])
+    run.mkdir(parents=True)
+    ids = [str(i + 1) for i in range(count)]
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n## Evidence receipts\n\n"
+        + "\n".join(f"- `fact_id={fid}` (`A_core`) - receipt" for fid in ids)
+        + "\n",
+        encoding="utf-8",
+    )
+    run.joinpath("all_facts.json").write_text(json.dumps([
+        {
+            "fact_id": fid,
+            "source_paper": {
+                "doi": f"10.1000/memo-{fid}",
+                "title": f"Memo source {fid}",
+            },
+        }
+        for fid in ids
+    ]), encoding="utf-8")
+
+
 def test_memo_fingerprint_is_stable_across_headline_rewording() -> None:
     left = _verdict()
     right = _verdict() | {"headline": "Reworded public headline"}
@@ -180,6 +202,37 @@ def test_submit_floor_uses_cited_sources_not_available_contexts(tmp_path: Path) 
     assert ledger["considered"][0]["status"] == "source_floor_below_min"
 
 
+def test_submit_floor_counts_sources_used_by_alpha_memo(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    thin_metadata = _verdict("memo_sources") | {
+        "axes": {
+            "source_papers": [
+                {"doi": "10.1000/old", "title": "Old lead source"},
+            ],
+        },
+    }
+    _memo_with_source_receipts(root, thin_metadata, 5)
+    seen_payload: dict[str, Any] = {}
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        seen_payload.update(payload)
+        return {"ok": True, "status": 200, "response": {}}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(thin_metadata),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {"title": ["clean paper"]}},
+        submitter=submitter,
+    )
+
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["considered"][0]["source_count"] == 5
+    assert len(seen_payload["source_bundle"]) == 5
+
+
 def test_submit_floor_allows_structural_two_source_alpha_exception(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     narrow = _verdict("narrow") | {
@@ -269,7 +322,8 @@ def test_submission_payload_preserves_alpha_memo_contract(tmp_path: Path) -> Non
     assert payload["topic"] == "grid_storage"
     assert payload["markdown"] == "# Alpha memo\n"
     assert "sections" not in payload
-    assert "source_bundle" not in payload
+    assert "source_bundle" in payload
+    assert "source_papers" in payload["evidence_bundle"]
 
 
 def test_http_submitter_sends_runtime_api_key_header(monkeypatch: MonkeyPatch) -> None:

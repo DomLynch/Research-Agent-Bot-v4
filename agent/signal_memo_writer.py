@@ -59,6 +59,18 @@ def _publication_defaults() -> dict[str, str]:
     return defaults
 
 
+def _memo_min_source_papers() -> int:
+    try:
+        data = tomllib.loads(_PUB_PATH.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return 5
+    alpha = data.get("alpha_memo") if isinstance(data, dict) else {}
+    try:
+        return int((alpha or {}).get("min_source_papers", 5))
+    except (TypeError, ValueError):
+        return 5
+
+
 def _section(md: str, heading: str) -> str:
     m = re.search(
         rf"^## {re.escape(heading)}\n\n(.*?)(?=\n## |\Z)",
@@ -148,13 +160,66 @@ def _lead_audit(run_dir: Path) -> dict[str, Any]:
     )
 
 
+def _source_key(fact: dict[str, Any]) -> str:
+    paper = fact.get("source_paper") or {}
+    if not isinstance(paper, dict):
+        return ""
+    return str(paper.get("doi") or paper.get("pmid") or paper.get("title") or "").strip()
+
+
+def _expanded_receipt_ids(
+    audit: dict[str, Any],
+    facts: dict[str, dict[str, Any]],
+    lanes: dict[str, str],
+    *,
+    min_sources: int,
+) -> list[str]:
+    selected: list[str] = []
+    seen_ids: set[str] = set()
+    sources: set[str] = set()
+
+    def add(fid: str) -> None:
+        if fid in seen_ids or lanes.get(fid) not in _BINDABLE or fid not in facts:
+            return
+        selected.append(fid)
+        seen_ids.add(fid)
+        key = _source_key(facts[fid])
+        if key:
+            sources.add(key)
+
+    for fid in [str(x) for x in audit.get("cited_fact_ids", [])]:
+        add(fid)
+    for fid, fact in facts.items():
+        if len(sources) >= min_sources:
+            break
+        key = _source_key(fact)
+        if key and key not in sources:
+            add(fid)
+    for fid in facts:
+        if len(sources) >= min_sources:
+            break
+        add(fid)
+    return selected
+
+
+def _source_count_for_ids(ids: list[str], facts: dict[str, dict[str, Any]]) -> int:
+    return len({
+        _source_key(facts[fid])
+        for fid in ids if fid in facts and _source_key(facts[fid])
+    })
+
+
 def _receipt_lines(
     audit: dict[str, Any],
     facts: dict[str, dict[str, Any]],
     lanes: dict[str, str],
+    receipt_ids: list[str] | None = None,
 ) -> list[str]:
     out: list[str] = []
-    for fid in [str(x) for x in audit.get("cited_fact_ids", [])]:
+    ids = receipt_ids if receipt_ids is not None else [
+        str(x) for x in audit.get("cited_fact_ids", [])
+    ]
+    for fid in ids:
         if lanes.get(fid) not in _BINDABLE:
             continue
         fact = facts.get(fid) or {}
@@ -168,21 +233,6 @@ def _receipt_lines(
                 + (f" DOI `{doi}`" if doi else "")
             )
     return out or ["- _No A_core/B_context receipts bind to this memo._"]
-
-
-def _receipt_phrases(
-    audit: dict[str, Any],
-    facts: dict[str, dict[str, Any]],
-    lanes: dict[str, str],
-) -> list[str]:
-    out: list[str] = []
-    for fid in [str(x) for x in audit.get("cited_fact_ids", [])]:
-        if lanes.get(fid) not in _BINDABLE:
-            continue
-        phrase = str((facts.get(fid) or {}).get("canonical_phrase") or "").strip()
-        if phrase:
-            out.append(phrase)
-    return out
 
 
 def _alpha_score(audit: dict[str, Any], label: str) -> int:
@@ -223,59 +273,6 @@ def _surface_line(verdict: dict[str, Any] | None) -> str:
     if surface == "publish_alpha_memo":
         return "alpha memo"
     return surface.replace("_", " ")
-
-
-def _single_source_signal(verdict: dict[str, Any] | None) -> bool:
-    axes = verdict.get("axes") if isinstance(verdict, dict) else {}
-    papers = axes.get("source_papers", []) if isinstance(axes, dict) else []
-    return (
-        bool(axes.get("source_concentrated")) if isinstance(axes, dict) else False
-    ) and isinstance(papers, list) and len(papers) <= 1
-
-
-def _single_source_thesis(phrases: list[str], fallback: str) -> str:
-    if not phrases:
-        return fallback
-    joined = "; ".join(_clip(phrase, 150).rstrip(".") for phrase in phrases[:3])
-    return (
-        "Within the cited source bundle, "
-        + joined
-        + ". Treat the broader framing as a follow-up hypothesis, not a settled claim."
-    )
-
-
-def _single_source_why() -> str:
-    return (
-        "The signal is not a broad topic claim; it is a source-bounded "
-        "contrast that identifies a specific replication target. The value is "
-        "the falsifiable pattern inside one cited bundle, not a claim that the "
-        "pattern is already settled across the field."
-    )
-
-
-def _single_source_note(verdict: dict[str, Any] | None) -> str:
-    axes = verdict.get("axes") if isinstance(verdict, dict) else {}
-    papers = axes.get("source_papers", []) if isinstance(axes, dict) else []
-    paper = papers[0] if isinstance(papers, list) and papers and isinstance(papers[0], dict) else {}
-    title = str(paper.get("title") or "one cited source").strip()
-    journal = str(paper.get("journal") or "").strip()
-    year = str(paper.get("year") or "").strip()
-    doi = str(paper.get("doi") or "").strip()
-    bits = [title]
-    detail = ", ".join(x for x in (journal, year) if x)
-    if detail:
-        bits.append(f"({detail})")
-    if doi:
-        bits.append(f"DOI `{doi}`")
-    return "This memo is derived from one cited source: " + " ".join(bits) + "."
-
-
-def _single_source_weakening() -> list[str]:
-    return [
-        "- An independent source fails to reproduce the same contrast.",
-        "- The cited source depends on a narrow protocol, subgroup, comparator, or measurement choice.",
-        "- Broader receipts show the same topic behaves differently outside the cited source bundle.",
-    ]
 
 
 def _topic_title(topic: str) -> str:
@@ -463,27 +460,19 @@ def render_signal_memo(
     audit = _lead_audit(run_dir)
     facts = _facts_by_id(run_dir)
     lanes = _lane_map(run_dir)
-    receipt_phrases = _receipt_phrases(audit, facts, lanes)
-    single_source = _single_source_signal(publish_verdict)
+    min_sources = _memo_min_source_papers()
+    receipt_ids = _expanded_receipt_ids(
+        audit, facts, lanes, min_sources=min_sources,
+    )
+    source_count = _source_count_for_ids(receipt_ids, facts)
     thesis = _context_subline(
         publish_verdict,
         _first_sentence(str(audit.get("rationale") or ""), headline),
     )
-    if single_source:
-        headline = f"{_topic_title(topic)}: single-source alpha signal"
-        thesis = _single_source_thesis(receipt_phrases, thesis)
     next_extractions = review.get("next_extractions") if isinstance(review, dict) else []
-    top_cards = [] if single_source else _top_cards(top_md)
-    weakening = (
-        _single_source_weakening()
-        if single_source
-        else _weakening_lines(review if isinstance(review, dict) else {}, label)
-    )
-    why_surprising = (
-        _single_source_why()
-        if single_source
-        else (_section(signal_md, "Why this is surprising") or "_No frontier lens produced._")
-    )
+    top_cards = _top_cards(top_md)
+    weakening = _weakening_lines(review if isinstance(review, dict) else {}, label)
+    why_surprising = _section(signal_md, "Why this is surprising") or "_No frontier lens produced._"
 
     lines = [
         f"# Alpha memo — {topic}",
@@ -496,8 +485,7 @@ def render_signal_memo(
         f"**Run:** `{run_dir.name}`",
         *([f"**Source thesis:** {raw_headline}"]
           if raw_headline != headline else []),
-        *([f"**Source scope:** {_single_source_note(publish_verdict)}"]
-          if single_source else []),
+        f"**Source breadth:** `{source_count}/{min_sources}` unique cited source(s)",
         "",
         "## One-sentence thesis",
         "",
@@ -509,15 +497,11 @@ def render_signal_memo(
         "",
         "## Evidence receipts",
         "",
-        *_receipt_lines(audit, facts, lanes),
+        *_receipt_lines(audit, facts, lanes, receipt_ids),
         "",
         "## What this changes",
         "",
         (
-            "Treat this as a narrow, single-source signal. It changes the next "
-            "curation step: test the same contrast in independent receipts "
-            "before making a broader topic claim."
-            if single_source else
             "Treat this as a focused working signal, not a broad topic claim. "
             "It moves review attention from a generic Top 5 list to the specific "
             "contrast, receipt bundle, and next extraction that could confirm or "

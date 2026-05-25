@@ -11,6 +11,7 @@ import datetime as dt
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -160,7 +161,78 @@ def _seen_submission_fingerprints(path: Path) -> set[str]:
     return set()
 
 
-def _source_count(verdict: Json) -> int:
+def _source_count(verdict: Json, root: Path | None = None) -> int:
+    if root is not None:
+        papers = _memo_source_papers(verdict, root)
+        if papers:
+            return len(papers)
+    return _source_count_from_verdict(verdict)
+
+
+def _memo_receipt_ids(text: str) -> list[str]:
+    match = re.search(
+        r"^## Evidence receipts\n\n(.*?)(?=\n## |\Z)",
+        text,
+        flags=re.M | re.S,
+    )
+    section = match.group(1) if match else ""
+    seen: set[str] = set()
+    out: list[str] = []
+    for fid in re.findall(r"`fact_id=([^`\s]+)`", section):
+        if fid not in seen:
+            seen.add(fid)
+            out.append(fid)
+    return out
+
+
+def _source_key_from_fact(fact: Json) -> str:
+    paper = fact.get("source_paper") or {}
+    if not isinstance(paper, dict):
+        return ""
+    return _norm(paper.get("doi") or paper.get("pmid") or paper.get("title"))
+
+
+def _memo_source_papers(verdict: Json, root: Path) -> list[Json]:
+    run_dir = _run_path(root, verdict.get("run_dir"))
+    memo = _read_text(run_dir / "alpha_memo.md")
+    ids = _memo_receipt_ids(memo)
+    if not ids:
+        return []
+    facts = _json(run_dir / "all_facts.json", [])
+    if not isinstance(facts, list):
+        return []
+    by_id = {
+        str(f.get("fact_id") or ""): f
+        for f in facts if isinstance(f, dict)
+    }
+    seen: set[str] = set()
+    papers: list[Json] = []
+    for fid in ids:
+        fact = by_id.get(fid) or {}
+        key = _source_key_from_fact(fact)
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        paper = fact.get("source_paper") or {}
+        if isinstance(paper, dict):
+            papers.append({
+                "doi": str(paper.get("doi") or ""),
+                "title": str(paper.get("title") or ""),
+                "journal": str(paper.get("journal") or ""),
+                "year": paper.get("year"),
+                "is_retracted": bool(paper.get("is_retracted")),
+            })
+    return papers
+
+
+def _read_text(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+
+
+def _source_count_from_verdict(verdict: Json) -> int:
     axes_raw = verdict.get("axes")
     axes = axes_raw if isinstance(axes_raw, dict) else {}
     papers = axes.get("source_papers") or []
@@ -224,7 +296,7 @@ def select_candidate(
     )
     for verdict in candidates:
         fp = memo_fingerprint(verdict)
-        source_count = _source_count(verdict)
+        source_count = _source_count(verdict, runs_root)
         source_exception = _source_floor_exception(verdict, source_count, min_source_count)
         status = "eligible"
         if fp in seen:
@@ -253,8 +325,13 @@ def select_candidate(
     return None, considered
 
 
-def _cited_dois(verdict: Json) -> list[str]:
-    papers = ((verdict.get("axes") or {}).get("source_papers") or [])
+def _cited_dois(verdict: Json, runs_root: Path | None = None) -> list[str]:
+    memo_papers = (
+        _memo_source_papers(verdict, runs_root)
+        if runs_root is not None else
+        []
+    )
+    papers = memo_papers or ((verdict.get("axes") or {}).get("source_papers") or [])
     out: list[str] = []
     for paper in papers:
         if not isinstance(paper, dict):
@@ -369,12 +446,18 @@ def retraction_check(
     *,
     mode: str,
     fetcher: Fetcher = _crossref_fetch,
+    runs_root: Path | None = None,
 ) -> Json:
-    dois = _cited_dois(verdict)
+    dois = _cited_dois(verdict, runs_root)
     if mode == "skip":
         return {"status": "skipped", "checked_dois": dois, "retracted": []}
     if mode == "metadata":
-        papers = ((verdict.get("axes") or {}).get("source_papers") or [])
+        memo_papers = (
+            _memo_source_papers(verdict, runs_root)
+            if runs_root is not None else
+            []
+        )
+        papers = memo_papers or ((verdict.get("axes") or {}).get("source_papers") or [])
         hits = [
             p for p in papers
             if isinstance(p, dict) and bool(p.get("is_retracted"))
@@ -421,6 +504,7 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
     with suppress(OSError):
         memo = (run_dir / "alpha_memo.md").read_text(encoding="utf-8")
     title = str(verdict.get("headline") or verdict.get("topic") or "Alpha memo")
+    source_papers = _memo_source_papers(verdict, root)
     return {
         "artifact_type": "alpha_memo",
         "article_type": "alpha_memo",
@@ -429,11 +513,14 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         "title": title,
         "topic": verdict.get("topic"),
         "markdown": memo,
+        "citations": source_papers,
+        "source_bundle": source_papers,
         "novelty_score": verdict.get("alpha_score"),
         "confidence_score": verdict.get("maturity_level"),
         "evidence_bundle": {
             "publish_verdict": verdict,
             "run_dir": verdict.get("run_dir"),
+            "source_papers": source_papers,
         },
         "content_hash": "sha256:" + hashlib.sha256(memo.encode("utf-8")).hexdigest(),
     }
@@ -551,7 +638,9 @@ def run_cycle(
         _write_json(ledger_path, ledger)
         return ledger
     check_mode = "crossref" if submit and retraction_mode == "metadata" else retraction_mode
-    retraction = retraction_check(candidate, mode=check_mode, fetcher=fetcher)
+    retraction = retraction_check(
+        candidate, mode=check_mode, fetcher=fetcher, runs_root=runs_root,
+    )
     ledger["retraction_check"] = retraction
     if retraction.get("status") != "clean":
         ledger.update({"status": "held_retraction_check", "candidate": candidate.get("topic")})

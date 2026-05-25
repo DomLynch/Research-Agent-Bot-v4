@@ -171,9 +171,23 @@ def test_publish_alpha_surface_is_not_rendered_as_publish_command(tmp_path: Path
     assert "`publish alpha memo`" not in memo
 
 
-def test_single_source_alpha_memo_stays_bound_to_receipts(tmp_path: Path) -> None:
+def test_alpha_memo_expands_receipts_to_five_sources_when_available(
+    tmp_path: Path,
+) -> None:
     run = tmp_path / "carbon_tax-evidence-ts"
     _write_run(run)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    for i in range(3, 7):
+        fid = str(i * 101)
+        facts.append({
+            "fact_id": fid,
+            "canonical_phrase": f"Independent source {i} replicated the contrast.",
+            "source_paper": {"doi": f"10.x/policy-{i}"},
+        })
+        lanes["verdicts"].append({"fact_id": fid, "lane": "A_core"})
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
 
     memo = render_signal_memo(run, publish_verdict={
         "surface_type": "publish_alpha_memo",
@@ -183,6 +197,9 @@ def test_single_source_alpha_memo_stays_bound_to_receipts(tmp_path: Path) -> Non
         },
     })
 
-    assert "**Headline:** Carbon tax: single-source alpha signal" in memo
-    assert "Within the cited source bundle, Emissions fell 8%" in memo
-    assert "## Supporting Top cards" not in memo
+    assert "**Headline:** Carbon pricing may cut emissions" in memo
+    assert "**Source breadth:** `5/5` unique cited source(s)" in memo
+    assert "`fact_id=101` (`A_core`)" in memo
+    assert "`fact_id=202`" not in memo
+    assert "`fact_id=505` (`A_core`)" in memo
+    assert "## Supporting Top cards" in memo
