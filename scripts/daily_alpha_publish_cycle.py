@@ -251,29 +251,24 @@ def _source_count_from_verdict(verdict: Json) -> int:
     return 0
 
 
-def _int_value(value: Any) -> int:
-    with suppress(TypeError, ValueError):
-        return int(str(value))
-    return 0
-
-
-def _source_floor_exception(verdict: Json, source_count: int, min_source_count: int) -> bool:
-    """Allow narrow public alpha memos only when structural quality is already high."""
-    if source_count < 2 or source_count > 4 or source_count >= min_source_count:
-        return False
-    axes = verdict.get("axes") or {}
-    if verdict.get("decision") != "ready_to_publish" or verdict.get("publish_tier") != "TIER_1":
-        return False
-    if verdict.get("maturity_level") != "L5" and verdict.get("confidence_label") != "evidence_backed_signal":
-        return False
-    if verdict.get("blockers") or axes.get("cross_domain_forced") or axes.get("feed_scope_mismatch"):
-        return False
-    bound = max(
-        _int_value(axes.get("bound_receipts")),
-        _int_value(axes.get("a_core_receipts")),
-        _int_value(axes.get("available_bound_receipts")),
-    )
-    return bound >= 2
+def _corpus_source_count(verdict: Json, root: Path) -> int:
+    run_dir = _run_path(root, verdict.get("run_dir"))
+    facts = _json(run_dir / "all_facts.json", [])
+    lanes_raw = _json(run_dir / "fact_lanes.json", {})
+    if not isinstance(facts, list) or not isinstance(lanes_raw, dict):
+        return _source_count_from_verdict(verdict)
+    lanes = {
+        str(row.get("fact_id") or ""): str(row.get("lane") or "")
+        for row in lanes_raw.get("verdicts", [])
+        if isinstance(row, dict)
+    }
+    sources = {
+        _source_key_from_fact(fact)
+        for fact in facts
+        if isinstance(fact, dict)
+        and lanes.get(str(fact.get("fact_id") or "")) in {"A_core", "B_context"}
+    }
+    return len({s for s in sources if s})
 
 
 def select_candidate(
@@ -297,7 +292,7 @@ def select_candidate(
     for verdict in candidates:
         fp = memo_fingerprint(verdict)
         source_count = _source_count(verdict, runs_root)
-        source_exception = _source_floor_exception(verdict, source_count, min_source_count)
+        corpus_source_count = _corpus_source_count(verdict, runs_root)
         status = "eligible"
         if fp in seen:
             status = "duplicate_submission_fingerprint"
@@ -305,8 +300,12 @@ def select_candidate(
             status = "missing_alpha_memo"
         elif not _approved(verdict, runs_root):
             status = "needs_operator_approval"
-        elif source_count < min_source_count and not source_exception:
-            status = "source_floor_below_min"
+        elif source_count < min_source_count:
+            status = (
+                "corpus_source_floor_below_min"
+                if corpus_source_count < min_source_count else
+                "memo_source_floor_below_min"
+            )
         row = {
             "topic": verdict.get("topic"),
             "decision": verdict.get("decision"),
@@ -315,8 +314,8 @@ def select_candidate(
             "run_dir": verdict.get("run_dir"),
             "fingerprint": fp,
             "source_count": source_count,
+            "corpus_ab_paper_count": corpus_source_count,
             "min_source_count": min_source_count,
-            "source_floor_exception": source_exception,
             "status": status,
         }
         considered.append(row)

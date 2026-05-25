@@ -169,8 +169,9 @@ def test_submit_mode_holds_thin_source_memos(tmp_path: Path) -> None:
     assert ledger["status"] == "no_publishable_candidate"
     assert ledger["submitted"] == 0
     assert ledger["considered"][0]["source_count"] == 2
+    assert ledger["considered"][0]["corpus_ab_paper_count"] == 0
     assert ledger["considered"][0]["min_source_count"] == 5
-    assert ledger["considered"][0]["status"] == "source_floor_below_min"
+    assert ledger["considered"][0]["status"] == "corpus_source_floor_below_min"
 
 
 def test_submit_floor_uses_cited_sources_not_available_contexts(tmp_path: Path) -> None:
@@ -199,7 +200,7 @@ def test_submit_floor_uses_cited_sources_not_available_contexts(tmp_path: Path) 
     assert ledger["status"] == "no_publishable_candidate"
     assert ledger["submitted"] == 0
     assert ledger["considered"][0]["source_count"] == 1
-    assert ledger["considered"][0]["status"] == "source_floor_below_min"
+    assert ledger["considered"][0]["status"] == "corpus_source_floor_below_min"
 
 
 def test_submit_floor_counts_sources_used_by_alpha_memo(tmp_path: Path) -> None:
@@ -233,7 +234,7 @@ def test_submit_floor_counts_sources_used_by_alpha_memo(tmp_path: Path) -> None:
     assert len(seen_payload["source_bundle"]) == 5
 
 
-def test_submit_floor_allows_structural_two_source_alpha_exception(tmp_path: Path) -> None:
+def test_submit_floor_has_no_two_source_alpha_exception(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     narrow = _verdict("narrow") | {
         "axes": {
@@ -261,10 +262,47 @@ def test_submit_floor_allows_structural_two_source_alpha_exception(tmp_path: Pat
         },
     )
 
-    assert ledger["status"] == "submitted_to_researka"
-    assert ledger["submitted"] == 1
+    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["submitted"] == 0
     assert ledger["considered"][0]["source_count"] == 2
-    assert ledger["considered"][0]["source_floor_exception"] is True
+    assert ledger["considered"][0]["status"] == "corpus_source_floor_below_min"
+
+
+def test_ledger_distinguishes_memo_underuse_from_corpus_thinness(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("underused") | {
+        "axes": {
+            "source_papers": [{"doi": "10.1000/old", "title": "Old lead"}],
+        },
+    }
+    _memo_with_source_receipts(root, verdict, 1)
+    run = root / str(verdict["run_dir"])
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = {"verdicts": [{"fact_id": str(i + 1), "lane": "A_core"} for i in range(5)]}
+    for i in range(1, 5):
+        facts.append({
+            "fact_id": str(i + 1),
+            "source_paper": {
+                "doi": f"10.1000/unused-{i}",
+                "title": f"Unused source {i}",
+            },
+        })
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        submit=True,
+        retraction_mode="metadata",
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+    )
+
+    row = ledger["considered"][0]
+    assert row["source_count"] == 1
+    assert row["corpus_ab_paper_count"] == 5
+    assert row["status"] == "memo_source_floor_below_min"
 
 
 def test_retraction_check_blocks_submission_and_writes_hold(tmp_path: Path) -> None:
