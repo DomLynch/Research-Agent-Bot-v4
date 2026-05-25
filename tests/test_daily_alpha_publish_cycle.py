@@ -156,6 +156,8 @@ def test_submit_floor_uses_cited_sources_not_available_contexts(tmp_path: Path) 
     thin = _verdict("thin") | {
         "axes": {
             "available_source_contexts": 9,
+            "bound_receipts": 4,
+            "a_core_receipts": 4,
             "source_papers": [
                 {"doi": "10.1000/only", "title": "Only cited source"},
             ],
@@ -176,6 +178,40 @@ def test_submit_floor_uses_cited_sources_not_available_contexts(tmp_path: Path) 
     assert ledger["submitted"] == 0
     assert ledger["considered"][0]["source_count"] == 1
     assert ledger["considered"][0]["status"] == "source_floor_below_min"
+
+
+def test_submit_floor_allows_structural_two_source_alpha_exception(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    narrow = _verdict("narrow") | {
+        "axes": {
+            "bound_receipts": 2,
+            "a_core_receipts": 2,
+            "source_papers": [
+                {"doi": "10.1000/a", "title": "Narrow source A"},
+                {"doi": "10.1000/b", "title": "Narrow source B"},
+            ],
+        },
+    }
+    _memo(root, narrow)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(narrow),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": "sub-1"}},
+        },
+    )
+
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["submitted"] == 1
+    assert ledger["considered"][0]["source_count"] == 2
+    assert ledger["considered"][0]["source_floor_exception"] is True
 
 
 def test_retraction_check_blocks_submission_and_writes_hold(tmp_path: Path) -> None:

@@ -112,7 +112,8 @@ def _run_path(root: Path, run_ref: Any) -> Path:
 def memo_fingerprint(verdict: Json) -> str:
     """Deterministic duplicate key, stable across headline rewording."""
     receipts = verdict.get("receipt_expansion") or {}
-    axes = verdict.get("axes") or {}
+    axes_raw = verdict.get("axes")
+    axes = axes_raw if isinstance(axes_raw, dict) else {}
     cited = sorted(str(x) for x in receipts.get("cited_bound_fact_ids", []))[:3]
     papers = axes.get("source_papers", [])
     dois = sorted(
@@ -160,7 +161,8 @@ def _seen_submission_fingerprints(path: Path) -> set[str]:
 
 
 def _source_count(verdict: Json) -> int:
-    axes = verdict.get("axes") or {}
+    axes_raw = verdict.get("axes")
+    axes = axes_raw if isinstance(axes_raw, dict) else {}
     papers = axes.get("source_papers") or []
     if isinstance(papers, list):
         keys = {
@@ -175,6 +177,31 @@ def _source_count(verdict: Json) -> int:
         with suppress(TypeError, ValueError):
             return int(str(count))
     return 0
+
+
+def _int_value(value: Any) -> int:
+    with suppress(TypeError, ValueError):
+        return int(str(value))
+    return 0
+
+
+def _source_floor_exception(verdict: Json, source_count: int, min_source_count: int) -> bool:
+    """Allow narrow public alpha memos only when structural quality is already high."""
+    if source_count < 2 or source_count > 4 or source_count >= min_source_count:
+        return False
+    axes = verdict.get("axes") or {}
+    if verdict.get("decision") != "ready_to_publish" or verdict.get("publish_tier") != "TIER_1":
+        return False
+    if verdict.get("maturity_level") != "L5" and verdict.get("confidence_label") != "evidence_backed_signal":
+        return False
+    if verdict.get("blockers") or axes.get("cross_domain_forced") or axes.get("feed_scope_mismatch"):
+        return False
+    bound = max(
+        _int_value(axes.get("bound_receipts")),
+        _int_value(axes.get("a_core_receipts")),
+        _int_value(axes.get("available_bound_receipts")),
+    )
+    return bound >= 2
 
 
 def select_candidate(
@@ -197,6 +224,8 @@ def select_candidate(
     )
     for verdict in candidates:
         fp = memo_fingerprint(verdict)
+        source_count = _source_count(verdict)
+        source_exception = _source_floor_exception(verdict, source_count, min_source_count)
         status = "eligible"
         if fp in seen:
             status = "duplicate_submission_fingerprint"
@@ -204,7 +233,7 @@ def select_candidate(
             status = "missing_alpha_memo"
         elif not _approved(verdict, runs_root):
             status = "needs_operator_approval"
-        elif _source_count(verdict) < min_source_count:
+        elif source_count < min_source_count and not source_exception:
             status = "source_floor_below_min"
         row = {
             "topic": verdict.get("topic"),
@@ -213,8 +242,9 @@ def select_candidate(
             "alpha_score": verdict.get("alpha_score"),
             "run_dir": verdict.get("run_dir"),
             "fingerprint": fp,
-            "source_count": _source_count(verdict),
+            "source_count": source_count,
             "min_source_count": min_source_count,
+            "source_floor_exception": source_exception,
             "status": status,
         }
         considered.append(row)
