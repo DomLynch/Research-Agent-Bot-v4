@@ -217,6 +217,38 @@ def test_repairable_retry_refreshes_even_when_source_floor_passes(tmp_path: Path
     assert ledger["status"] == "submitted_to_researka"
 
 
+def test_repairable_prior_candidate_reenters_empty_queue(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("retry_queue")
+    _memo_with_source_receipts(root, verdict, 5)
+    run = root / str(verdict["run_dir"])
+    daily._write_json(run / "publish_verdict.json", verdict)
+    fp = daily.memo_fingerprint(verdict)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
+        {"fingerprint": fp, "topic": "retry_queue", "submission_id": "old-sub"},
+    ])
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submitted_to_researka",
+        "final_verdict": "revise",
+        "candidate": {"fingerprint": fp, "topic": "retry_queue", "run_dir": verdict["run_dir"]},
+        "researka_decision": {"status": "complete", "decision": "revise"},
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+    )
+
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["submitted_topic"] == "retry_queue"
+    assert ledger["considered"][0]["retry_after_rejection"] is True
+
+
 def test_nonrepairable_rejection_does_not_retry_duplicate(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("nonretryable")

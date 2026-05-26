@@ -155,6 +155,23 @@ def _rows(queue: Json, *, allow_tier2: bool) -> list[Json]:
     return [r for r in out if isinstance(r, dict)]
 
 
+def _with_repairable_candidates(queue: Json, runs_root: Path) -> Json:
+    repairable = _repairable_candidate_verdicts(runs_root)
+    if not repairable:
+        return queue
+    existing = {
+        memo_fingerprint(row)
+        for bucket in queue.values() if isinstance(bucket, list)
+        for row in bucket if isinstance(row, dict)
+    }
+    additions = [row for row in repairable if memo_fingerprint(row) not in existing]
+    if not additions:
+        return queue
+    merged = dict(queue)
+    merged["ready_to_publish"] = additions + list(queue.get("ready_to_publish") or [])
+    return merged
+
+
 def _approved(verdict: Json, root: Path) -> bool:
     if verdict.get("decision") == "ready_to_publish":
         return True
@@ -213,6 +230,31 @@ def _repairable_rejected_fingerprints(ledger_dir: Path) -> set[str]:
         if fp:
             retryable.add(fp)
     return retryable
+
+
+def _repairable_candidate_verdicts(runs_root: Path) -> list[Json]:
+    verdicts: list[Json] = []
+    seen: set[str] = set()
+    for path in sorted((runs_root / "_daily_ledger").glob("*.json"), reverse=True):
+        ledger = _json(path, {})
+        if (
+            not isinstance(ledger, dict)
+            or ledger.get("final_verdict") not in {"rejected", "revise"}
+        ):
+            continue
+        decision = ledger.get("researka_decision")
+        if not isinstance(decision, dict) or not _repairable_rejection(decision):
+            continue
+        run_dir = _run_path(runs_root, (ledger.get("candidate") or {}).get("run_dir"))
+        verdict = _json(run_dir / "publish_verdict.json", {})
+        if not isinstance(verdict, dict) or not verdict:
+            continue
+        fp = memo_fingerprint(verdict)
+        if fp in seen:
+            continue
+        seen.add(fp)
+        verdicts.append(verdict)
+    return verdicts
 
 
 def _repairable_rejection(decision: Json) -> bool:
@@ -773,6 +815,7 @@ def run_cycle(
             _write_json(ledger_path, ledger)
             return ledger
     queue = queue if queue is not None else _build_queue(runs_root, include_archive)
+    queue = _with_repairable_candidates(queue, runs_root)
     ledger["queue_counts"] = {
         key: len(queue.get(key) or [])
         for key in ("ready_to_publish", "needs_operator_review", "curation_needed")
