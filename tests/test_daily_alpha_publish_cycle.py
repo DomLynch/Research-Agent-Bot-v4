@@ -675,6 +675,31 @@ def test_sync_submission_decisions_records_async_rejection(tmp_path: Path) -> No
     assert patched["researka_decision"]["gate_failures"][0]["name"] == "minimum_citations"
 
 
+def test_sync_submission_decisions_uses_top_level_submission_id(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submitted_to_researka",
+        "submission_id": "sub_top",
+        "submission": {"attempts": [{"response": {}}]},
+    })
+
+    summary = daily.sync_submission_decisions(
+        root,
+        fetcher=lambda submission_id: {
+            "status": "complete",
+            "decision": "reject",
+            "seen_id": submission_id,
+        },
+    )
+
+    patched = json.loads(
+        (root / "_daily_ledger" / "2026-05-21.json").read_text(encoding="utf-8")
+    )
+    assert summary["checked"] == 1
+    assert patched["final_verdict"] == "rejected"
+    assert patched["researka_decision"]["seen_id"] == "sub_top"
+
+
 def test_run_cycle_syncs_prior_submission_decisions(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {

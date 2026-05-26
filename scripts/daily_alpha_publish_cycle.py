@@ -500,7 +500,9 @@ def sync_submission_decisions(
             continue
         if ledger.get("final_verdict") in {"accepted", "rejected"}:
             continue
-        submission_id = _submission_id(ledger.get("submission", {}))
+        submission_id = str(ledger.get("submission_id") or "") or _submission_id(
+            ledger.get("submission", {}),
+        )
         if not submission_id:
             continue
         summary["checked"] += 1
