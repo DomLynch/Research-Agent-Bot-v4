@@ -9,7 +9,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from agent.publish_tier import write_publish_verdict
+from agent.publish_tier import publish_verdict
 
 _ROOT = Path(__file__).resolve().parent.parent
 _RUNS = _ROOT / "runs"
@@ -44,11 +44,22 @@ def _latest_per_topic(runs: list[Path]) -> list[Path]:
     return sorted(latest.values(), key=lambda p: p.name)
 
 
+def _read_json(path: Path) -> dict[str, Any]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _verdict_for_run(run: Path) -> dict[str, Any]:
+    return _read_json(run / "publish_verdict.json") or publish_verdict(run)
+
+
 def build_queue(include_archive: bool = True) -> dict[str, list[dict[str, Any]]]:
     rows = []
     for run in _latest_per_topic(_alpha_runs(include_archive)):
-        _, verdict = write_publish_verdict(run)
-        rows.append(verdict)
+        rows.append(_verdict_for_run(run))
     rank = {"TIER_1": 0, "TIER_2": 1, "TIER_3": 2}
     rows.sort(key=lambda r: (
         rank.get(str(r.get("publish_tier")), 9),

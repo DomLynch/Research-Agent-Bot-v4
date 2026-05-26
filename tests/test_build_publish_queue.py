@@ -80,3 +80,30 @@ def test_build_queue_keeps_latest_run_per_topic(
 
     assert [r["topic"] for r in out["ready_to_publish"]] == ["tariff"]
     assert [r["topic"] for r in out["curation_needed"]] == ["grid_storage"]
+
+
+def test_build_queue_does_not_mutate_run_verdict_files(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    runs = tmp_path / "runs"
+    archive = runs / "_archive" / "old"
+    archived_run = _run(
+        archive,
+        "archived-evidence-2026-01-01T00-00-00Z",
+        label="evidence_backed_signal",
+        lanes=("A_core", "A_core", "A_core"),
+    )
+    current_run = _run(
+        runs,
+        "current-evidence-2026-02-01T00-00-00Z",
+        label="evidence_backed_signal",
+        lanes=("A_core", "A_core", "A_core"),
+    )
+    monkeypatch.setattr(queue, "_RUNS", runs)
+
+    out = queue.build_queue(include_archive=True)
+
+    assert [r["topic"] for r in out["ready_to_publish"]] == ["archived", "current"]
+    assert not archived_run.joinpath("publish_verdict.json").exists()
+    assert not current_run.joinpath("publish_verdict.json").exists()
