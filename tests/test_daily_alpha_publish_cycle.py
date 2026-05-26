@@ -305,6 +305,64 @@ def test_ledger_distinguishes_memo_underuse_from_corpus_thinness(tmp_path: Path)
     assert row["status"] == "memo_source_floor_below_min"
 
 
+def test_submit_refreshes_underexpanded_memo_once(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("underused") | {
+        "axes": {
+            "source_papers": [{"doi": "10.1000/old", "title": "Old lead"}],
+        },
+    }
+    _memo_with_source_receipts(root, verdict, 1)
+    run = root / str(verdict["run_dir"])
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    for i in range(1, 5):
+        facts.append({
+            "fact_id": str(i + 1),
+            "source_paper": {
+                "doi": f"10.1000/unused-{i}",
+                "title": f"Unused source {i}",
+            },
+        })
+    run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": str(i + 1), "lane": "A_core"} for i in range(5)],
+    }), encoding="utf-8")
+    seen_payload: dict[str, Any] = {}
+
+    def refresh(run_dir: Path, _verdict: dict[str, Any]) -> bool:
+        run_dir.joinpath("alpha_memo.md").write_text(
+            "# Alpha memo\n\n## Evidence receipts\n\n"
+            + "\n".join(
+                f"- `fact_id={i + 1}` (`A_core`) - receipt" for i in range(5)
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        return True
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        seen_payload.update(payload)
+        return {"ok": True, "status": 200, "response": {}}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+        memo_refresher=refresh,
+    )
+
+    row = ledger["considered"][0]
+    assert row["memo_refreshed"] is True
+    assert row["source_count"] == 5
+    assert row["status"] == "eligible"
+    assert ledger["status"] == "submitted_to_researka"
+    assert len(seen_payload["source_bundle"]) == 5
+
+
 def test_retraction_check_blocks_submission_and_writes_hold(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict()

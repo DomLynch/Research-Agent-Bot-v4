@@ -30,6 +30,7 @@ Json = dict[str, Any]
 Fetcher = Callable[[str], Json]
 DecisionFetcher = Callable[[str], Json]
 Submitter = Callable[[Json], Json]
+MemoRefresher = Callable[[Path, Json], bool]
 _SUBMIT_TOKEN_ENVS = (
     "RESEARKA_API_KEY_V4",
     "RESEARKA_API_TOKEN_V4",
@@ -152,6 +153,15 @@ def _approved(verdict: Json, root: Path) -> bool:
 def _has_memo(verdict: Json, root: Path) -> bool:
     run_dir = _run_path(root, verdict.get("run_dir"))
     return (run_dir / "alpha_memo.md").exists()
+
+
+def _refresh_alpha_memo(run_dir: Path, verdict: Json) -> bool:
+    if not (run_dir / "signal_post.md").exists():
+        return False
+    from agent.signal_memo_writer import write_signal_memo
+
+    write_signal_memo(run_dir, publish_verdict=verdict)
+    return True
 
 
 def _seen_submission_fingerprints(path: Path) -> set[str]:
@@ -278,6 +288,7 @@ def select_candidate(
     submitted_path: Path,
     allow_tier2: bool = False,
     min_source_count: int = 0,
+    memo_refresher: MemoRefresher | None = None,
 ) -> tuple[Json | None, list[Json]]:
     seen = _seen_submission_fingerprints(submitted_path)
     considered: list[Json] = []
@@ -294,6 +305,7 @@ def select_candidate(
         source_count = _source_count(verdict, runs_root)
         corpus_source_count = _corpus_source_count(verdict, runs_root)
         status = "eligible"
+        memo_refreshed = False
         if fp in seen:
             status = "duplicate_submission_fingerprint"
         elif not _has_memo(verdict, runs_root):
@@ -301,11 +313,18 @@ def select_candidate(
         elif not _approved(verdict, runs_root):
             status = "needs_operator_approval"
         elif source_count < min_source_count:
+            if corpus_source_count >= min_source_count and memo_refresher:
+                run_dir = _run_path(runs_root, verdict.get("run_dir"))
+                memo_refreshed = memo_refresher(run_dir, verdict)
+                if memo_refreshed:
+                    source_count = _source_count(verdict, runs_root)
             status = (
                 "corpus_source_floor_below_min"
                 if corpus_source_count < min_source_count else
                 "memo_source_floor_below_min"
             )
+            if source_count >= min_source_count:
+                status = "eligible"
         row = {
             "topic": verdict.get("topic"),
             "decision": verdict.get("decision"),
@@ -318,6 +337,8 @@ def select_candidate(
             "min_source_count": min_source_count,
             "status": status,
         }
+        if memo_refreshed:
+            row["memo_refreshed"] = True
         considered.append(row)
         if status == "eligible":
             return verdict | {"memo_fingerprint": fp}, considered
@@ -590,6 +611,7 @@ def run_cycle(
     submitter: Submitter | None = None,
     fetcher: Fetcher = _crossref_fetch,
     decision_fetcher: DecisionFetcher = _decision_fetch,
+    memo_refresher: MemoRefresher = _refresh_alpha_memo,
 ) -> Json:
     ledger_path = runs_root / "_daily_ledger" / f"{date}.json"
     submitted_path = runs_root / "_daily_ledger" / "_submitted_fingerprints.json"
@@ -630,6 +652,7 @@ def run_cycle(
         queue, runs_root=runs_root, submitted_path=submitted_path,
         allow_tier2=allow_tier2,
         min_source_count=min_submit_sources if submit else 0,
+        memo_refresher=memo_refresher if submit else None,
     )
     ledger["considered"] = considered
     if candidate is None:
