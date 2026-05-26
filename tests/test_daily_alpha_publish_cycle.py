@@ -130,6 +130,108 @@ def test_duplicate_fingerprint_skips_previous_submission(tmp_path: Path) -> None
     assert ledger["considered"][0]["status"] == "duplicate_submission_fingerprint"
 
 
+def test_repairable_rejected_submission_can_retry_once(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("retryable")
+    _memo(root, verdict)
+    fp = daily.memo_fingerprint(verdict)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
+        {"fingerprint": fp, "topic": "retryable", "submission_id": "old-sub"},
+    ])
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submitted_to_researka",
+        "final_verdict": "rejected",
+        "candidate": {"fingerprint": fp, "topic": "retryable"},
+        "researka_decision": {
+            "status": "complete",
+            "decision": "reject",
+            "failure_category": "source_bundle_schema",
+        },
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": "new-sub"}},
+        },
+    )
+
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["submitted"] == 1
+    assert ledger["considered"][0]["status"] == "eligible"
+    assert ledger["considered"][0]["retry_after_rejection"] is True
+
+
+def test_nonrepairable_rejection_does_not_retry_duplicate(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("nonretryable")
+    _memo(root, verdict)
+    fp = daily.memo_fingerprint(verdict)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
+        {"fingerprint": fp, "topic": "nonretryable", "submission_id": "old-sub"},
+    ])
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submitted_to_researka",
+        "final_verdict": "rejected",
+        "candidate": {"fingerprint": fp, "topic": "nonretryable"},
+        "researka_decision": {
+            "status": "complete",
+            "decision": "reject",
+            "failure_category": "quality_gate",
+        },
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        submit=True,
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+    )
+
+    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["considered"][0]["status"] == "duplicate_submission_fingerprint"
+
+
+def test_repairable_rejection_retry_is_capped(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("capped")
+    _memo(root, verdict)
+    fp = daily.memo_fingerprint(verdict)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
+        {"fingerprint": fp, "topic": "capped", "submission_id": "old-sub-1"},
+        {"fingerprint": fp, "topic": "capped", "submission_id": "old-sub-2"},
+    ])
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submitted_to_researka",
+        "final_verdict": "rejected",
+        "candidate": {"fingerprint": fp, "topic": "capped"},
+        "researka_decision": {
+            "status": "complete",
+            "decision": "reject",
+            "gate_failures": [{"name": "minimum_citations"}],
+        },
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        submit=True,
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+    )
+
+    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["considered"][0]["status"] == "duplicate_submission_fingerprint"
+
+
 def test_missing_alpha_memo_is_not_publishable(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     missing = _verdict("missing")

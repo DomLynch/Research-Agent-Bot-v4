@@ -38,6 +38,11 @@ _SUBMIT_TOKEN_ENVS = (
     "RESEARCH_API_KEY_V4",
 )
 _DEFAULT_MIN_SUBMIT_SOURCES = 5
+_REPAIRABLE_REJECTION_REASONS = {
+    "minimum_citations",
+    "recency_ratio",
+    "source_bundle_schema",
+}
 
 
 def _json(path: Path, default: Any) -> Any:
@@ -169,6 +174,48 @@ def _seen_submission_fingerprints(path: Path) -> set[str]:
     if isinstance(data, list):
         return {str(x.get("fingerprint")) for x in data if isinstance(x, dict)}
     return set()
+
+
+def _submission_attempt_counts(path: Path) -> dict[str, int]:
+    data = _json(path, [])
+    counts: dict[str, int] = {}
+    if not isinstance(data, list):
+        return counts
+    for row in data:
+        if not isinstance(row, dict):
+            continue
+        fp = str(row.get("fingerprint") or "")
+        if fp:
+            counts[fp] = counts.get(fp, 0) + 1
+    return counts
+
+
+def _repairable_rejected_fingerprints(ledger_dir: Path) -> set[str]:
+    retryable: set[str] = set()
+    for path in ledger_dir.glob("*.json"):
+        ledger = _json(path, {})
+        if not isinstance(ledger, dict) or ledger.get("final_verdict") != "rejected":
+            continue
+        decision = ledger.get("researka_decision")
+        if not isinstance(decision, dict) or not _repairable_rejection(decision):
+            continue
+        fp = str((ledger.get("candidate") or {}).get("fingerprint") or "")
+        if fp:
+            retryable.add(fp)
+    return retryable
+
+
+def _repairable_rejection(decision: Json) -> bool:
+    reasons = {
+        str(decision.get("failure_category") or ""),
+        *(str(x) for x in decision.get("failed_checks") or []),
+    }
+    for gate in decision.get("gate_failures") or []:
+        if isinstance(gate, dict):
+            reasons.add(str(gate.get("name") or ""))
+            reasons.add(str(gate.get("reason") or ""))
+    text = " ".join(reasons).lower()
+    return any(reason in text for reason in _REPAIRABLE_REJECTION_REASONS)
 
 
 def _source_count(verdict: Json, root: Path | None = None) -> int:
@@ -328,6 +375,8 @@ def select_candidate(
     memo_refresher: MemoRefresher | None = None,
 ) -> tuple[Json | None, list[Json]]:
     seen = _seen_submission_fingerprints(submitted_path)
+    attempts = _submission_attempt_counts(submitted_path)
+    retryable = _repairable_rejected_fingerprints(submitted_path.parent)
     considered: list[Json] = []
     candidates = sorted(
         _rows(queue, allow_tier2=allow_tier2),
@@ -343,7 +392,8 @@ def select_candidate(
         corpus_source_count = _corpus_source_count(verdict, runs_root)
         status = "eligible"
         memo_refreshed = False
-        if fp in seen:
+        retry_after_rejection = fp in retryable and attempts.get(fp, 0) < 2
+        if fp in seen and not retry_after_rejection:
             status = "duplicate_submission_fingerprint"
         elif not _has_memo(verdict, runs_root):
             status = "missing_alpha_memo"
@@ -376,6 +426,8 @@ def select_candidate(
         }
         if memo_refreshed:
             row["memo_refreshed"] = True
+        if retry_after_rejection:
+            row["retry_after_rejection"] = True
         considered.append(row)
         if status == "eligible":
             return verdict | {"memo_fingerprint": fp}, considered
