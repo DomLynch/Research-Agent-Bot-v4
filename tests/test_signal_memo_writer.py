@@ -204,7 +204,8 @@ def test_alpha_memo_expands_receipts_to_five_sources_when_available(
     assert "`fact_id=101` (`A_core`)" in memo
     assert "`fact_id=202`" not in memo
     assert "`fact_id=505` (`A_core`)" in memo
-    assert "## Supporting Top cards" in memo
+    assert "## Supporting Top cards" not in memo
+    assert "connects each context receipt to the lead claim" in memo
 
 
 def test_alpha_memo_turns_repeated_title_into_declarative_thesis(

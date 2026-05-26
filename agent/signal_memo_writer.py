@@ -261,10 +261,6 @@ def _score_band(score: int) -> str:
 
 
 def _weakening_lines(review: dict[str, Any], label: str) -> list[str]:
-    raw = review.get("reviewer_objections") if isinstance(review, dict) else []
-    lines = [f"- {_clip(x, 240)}" for x in raw[:3]] if isinstance(raw, list) else []
-    if lines:
-        return lines
     if label in {"evidence_binding_failed", "curation_needed", "no_signal"}:
         return [
             "- The thesis stays weak until the missing receipts bind to A_core/B_context facts.",
@@ -461,6 +457,18 @@ def _why_surprising(
     return fallback or "_No frontier lens produced._"
 
 
+def _next_extraction_lines(context_ids: list[str]) -> list[str]:
+    lines = [
+        "- Extract independent A_core/B_context receipts that test the lead contrast directly.",
+        "- Audit whether each direct receipt remains comparable on population, endpoint, comparator, and measurement method.",
+    ]
+    if context_ids:
+        lines.append(
+            "- Run a follow-up pass that either connects each context receipt to the lead claim or splits it into a separate memo.",
+        )
+    return lines
+
+
 def _provenance_block(
     run_dir: Path, topic: str, snapshot: str, headline: str, memo_body: str,
 ) -> list[str]:
@@ -506,7 +514,6 @@ def render_signal_memo(
     signal_md = signal_text if signal_text is not None else _read(
         run_dir / "signal_post.md")
     review = _json(run_dir / "frontier_review.json", {})
-    top_md = _read(run_dir / "top_5.md")
     topic = str(review.get("topic") or run_dir.name.split("-evidence-")[0])
     snapshot = str(review.get("snapshot_utc") or run_dir.name)
     raw_headline = _headline(signal_md, topic)
@@ -528,8 +535,6 @@ def render_signal_memo(
     context_ids = [fid for fid in receipt_ids if fid not in set(lead_ids)]
     source_count = _source_count_for_ids(receipt_ids, facts)
     thesis = _receipt_thesis(headline, audit, facts, receipt_ids, publish_verdict)
-    next_extractions = review.get("next_extractions") if isinstance(review, dict) else []
-    top_cards = _top_cards(top_md)
     weakening = _weakening_lines(review if isinstance(review, dict) else {}, label)
     why_surprising = _why_surprising(
         _section(signal_md, "Why this is surprising"),
@@ -594,14 +599,7 @@ def render_signal_memo(
         "## Next extraction",
         "",
     ])
-    if isinstance(next_extractions, list) and next_extractions:
-        lines.extend(f"- {str(x)[:240]}" for x in next_extractions[:5])
-    else:
-        lines.append("- Add independent A_core/B_context receipts that test the thesis directly.")
-    if top_cards:
-        lines.extend(["", "## Supporting Top cards", ""])
-        lines.extend(f"- {finding} _(alpha cues: {cues})_"
-                     for finding, cues in top_cards)
+    lines.extend(_next_extraction_lines(context_ids))
     expansion_lines = _receipt_expansion_lines(publish_verdict)
     if expansion_lines:
         lines.extend(["", "## Receipt expansion candidates", "", *expansion_lines])
