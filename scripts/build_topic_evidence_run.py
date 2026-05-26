@@ -51,6 +51,7 @@ from agent.settings import load_settings
 
 _RUNS = Path(__file__).resolve().parent.parent / "runs"
 _TOP_BINDABLE_LANES = frozenset({"A_core", "B_context"})
+_MIN_FACT_SOURCE_PAPERS = 5
 
 
 def _safe_float(v: Any) -> float | None:
@@ -125,44 +126,40 @@ def _normalize_tier2(item: dict[str, Any], topic: str) -> dict[str, Any]:
     }
 
 
-def _fetch_facts(topic: str) -> list[dict[str, Any]]:
-    """Try Tier-1 canonical first; fall back to Tier-2 search filtered
-    by topic. Network/JSON errors return [] silently so a flaky DB
-    blip never crashes the whole run."""
-    settings = load_settings()
-    base = settings.researka_database_url.rstrip("/")
-    token = settings.researka_database_token.strip()
-    hdr = {"X-Researka-Token": token}
-    try:
-        with httpx.Client(timeout=30.0) as c:
-            r = c.get(f"{base}/api/v1/topics/{topic}/facts", headers=hdr)
-            r.raise_for_status()
-            tier1 = r.json()
-            if isinstance(tier1, list) and tier1:
-                for f in tier1:
-                    if isinstance(f, dict):
-                        f["_tier"] = "tier1_canonical"
-                return [f for f in tier1 if isinstance(f, dict)]
-            r2 = c.post(f"{base}/api/v1/tier2/facts/search", headers=hdr,
-                        json={"query": topic, "top_k": 50,
-                              "min_confidence": "medium", "numeric_only": True})
-            r2.raise_for_status()
-            items = r2.json() if isinstance(r2.json(), list) else []
-    except (httpx.HTTPError, ValueError):
-        return []
-    # DB curators bucket much of Tier-2 under topic='other'. Accept
-    # exact topic match OR content-match (topic word appears in the
-    # canonical_phrase / claim / paper title). Universal substring
-    # check.  Fallback: when class-name queries (e.g. "senolytic")
-    # return semantic results that don't literally contain the word,
-    # trust the semantic search — it already did the relevance work.
+def _source_key(fact: dict[str, Any]) -> str:
+    paper = fact.get("source_paper") or fact.get("paper") or {}
+    return str(
+        paper.get("doi")
+        or paper.get("pmid")
+        or paper.get("pmcid")
+        or paper.get("title")
+        or fact.get("paper_id")
+        or "",
+    ).casefold().strip()
+
+
+def _source_count(facts: list[dict[str, Any]]) -> int:
+    return len({k for f in facts if (k := _source_key(f))})
+
+
+def _dedup_facts(facts: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    seen: set[str] = set()
+    out: list[dict[str, Any]] = []
+    for f in facts:
+        key = str(f.get("fact_id") or "").strip()
+        if not key:
+            key = f"{_source_key(f)}::{str(f.get('canonical_phrase') or '')[:160]}"
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(f)
+    return out
+
+
+def _select_tier2_items(items: list[dict[str, Any]], topic: str) -> list[dict[str, Any]]:
     tw = topic.replace("_", " ").lower()
     matched: list[dict[str, Any]] = []
-    all_items: list[dict[str, Any]] = []
     for it in items:
-        if not isinstance(it, dict):
-            continue
-        all_items.append(it)
         tag = str(it.get("topic") or "").lower()
         haystack = " ".join([
             str(it.get("canonical_phrase") or ""),
@@ -171,8 +168,89 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
         ]).lower()
         if tag == topic.lower() or tw in haystack:
             matched.append(it)
-    chosen = matched if matched else all_items
-    return [_normalize_tier2(it, topic) for it in chosen]
+    return matched if matched else items
+
+
+def _post_tier2_facts(
+    client: httpx.Client,
+    base: str,
+    hdr: dict[str, str],
+    topic: str,
+    *,
+    numeric_only: bool,
+    strict_audit_required: bool,
+) -> list[dict[str, Any]]:
+    body: dict[str, Any] = {
+        "query": topic,
+        "top_k": 50,
+        "min_confidence": "medium",
+        "numeric_only": numeric_only,
+    }
+    if strict_audit_required:
+        body["strict_audit_required"] = True
+    try:
+        r = client.post(
+            f"{base}/api/v1/tier2/facts/search", headers=hdr, json=body,
+        )
+        r.raise_for_status()
+        data = r.json()
+    except (httpx.HTTPError, ValueError):
+        return []
+    return [x for x in data if isinstance(x, dict)] if isinstance(data, list) else []
+
+
+def _fetch_facts(topic: str) -> list[dict[str, Any]]:
+    """Fetch strict facts first, then widen through the Researka data spine."""
+    settings = load_settings()
+    base = settings.researka_database_url.rstrip("/")
+    token = settings.researka_database_token.strip()
+    if not base or not token:
+        return []
+    hdr = {"X-Researka-Token": token}
+    facts: list[dict[str, Any]] = []
+    try:
+        with httpx.Client(timeout=30.0) as c:
+            strict = _post_tier2_facts(
+                c, base, hdr, topic, numeric_only=True,
+                strict_audit_required=True,
+            )
+            facts.extend(_normalize_tier2(it, topic) for it in strict)
+            try:
+                r = c.get(
+                    f"{base}/api/v1/topics/{topic}/facts",
+                    headers=hdr,
+                    params={"validated_only": "true"},
+                )
+                r.raise_for_status()
+                tier1 = r.json()
+                if isinstance(tier1, list) and tier1:
+                    for f in tier1:
+                        if isinstance(f, dict):
+                            f["_tier"] = "tier1_canonical"
+                            facts.append(f)
+            except (httpx.HTTPError, ValueError):
+                pass
+            if _source_count(facts) < _MIN_FACT_SOURCE_PAPERS:
+                items = _post_tier2_facts(
+                    c, base, hdr, topic, numeric_only=True,
+                    strict_audit_required=False,
+                )
+                facts.extend(
+                    _normalize_tier2(it, topic)
+                    for it in _select_tier2_items(items, topic)
+                )
+            if _source_count(facts) < _MIN_FACT_SOURCE_PAPERS:
+                items = _post_tier2_facts(
+                    c, base, hdr, topic, numeric_only=False,
+                    strict_audit_required=False,
+                )
+                facts.extend(
+                    _normalize_tier2(it, topic)
+                    for it in _select_tier2_items(items, topic)
+                )
+    except (httpx.HTTPError, ValueError):
+        return _dedup_facts(facts)
+    return _dedup_facts(facts)
 
 
 def _rankable_facts_for_top(
@@ -470,12 +548,13 @@ def _sha256(text: str) -> str:
 
 
 def _fetch_papers(topic: str, limit: int = 25) -> list[dict[str, Any]]:
-    """Pull paper metadata for cross-context (citations, fwci, quality)."""
+    """Pull elite topic papers plus broad search context."""
     settings = load_settings()
     base = settings.researka_database_url.rstrip("/")
     token = settings.researka_database_token.strip()
     if not base or not token:
         return []
+    papers: list[dict[str, Any]] = []
     try:
         with httpx.Client(timeout=15.0) as c:
             r = c.post(f"{base}/api/v1/papers/topic",
@@ -483,9 +562,38 @@ def _fetch_papers(topic: str, limit: int = 25) -> list[dict[str, Any]]:
                        json={"topic": topic, "limit": limit})
             r.raise_for_status()
             data = r.json()
+            if isinstance(data, list):
+                papers.extend(p for p in data if isinstance(p, dict))
+            r2 = c.post(
+                f"{base}/api/v1/search",
+                headers={"X-Researka-Token": token},
+                json={
+                    "query": topic,
+                    "established_k": max(1, limit // 3),
+                    "discovery_k": max(1, limit // 3),
+                    "semantic_k": max(1, limit // 3),
+                },
+            )
+            r2.raise_for_status()
+            data2 = r2.json()
     except (httpx.HTTPError, ValueError):
-        return []
-    return [p for p in data if isinstance(p, dict)] if isinstance(data, list) else []
+        return papers
+    if isinstance(data2, dict):
+        for lane in ("established", "discovery", "semantic"):
+            items = data2.get(lane) or []
+            if isinstance(items, list):
+                papers.extend(p for p in items if isinstance(p, dict))
+    deduped: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for p in papers:
+        key = str(
+            p.get("doi") or p.get("paper_id") or p.get("id") or p.get("title") or ""
+        ).casefold().strip()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        deduped.append(p)
+    return deduped
 
 
 def _render_frontier_md(review: FrontierReview, topic: str) -> str:
@@ -659,6 +767,15 @@ def main() -> int:
         "selected_theme": selected_theme,
         "facet_counts": all_facet_counts,
         "numeric_artifacts_filtered": len(_artifact_facts),
+        "fact_fetch_plan": [
+            "strict audited numeric facts via POST /api/v1/tier2/facts/search",
+            "validated topic facts via GET /api/v1/topics/{topic}/facts",
+            "normal numeric fact graph via POST /api/v1/tier2/facts/search",
+            "normal all-fact graph when source diversity is still thin",
+        ],
+        "paper_context_source": (
+            "POST /api/v1/papers/topic + POST /api/v1/search"
+        ),
         "pico_enrichment": (pico_result.as_dict() if pico_result
                             else {"model": "skipped_by_flag"}),
         "ranking": ("alpha: deterministic validation*magnitude*precision*recency "
