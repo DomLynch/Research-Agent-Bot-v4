@@ -317,6 +317,36 @@ def _context_subline(verdict: dict[str, Any] | None, fallback: str) -> str:
     )
 
 
+def _same_phrase(left: str, right: str) -> bool:
+    norm = r"[^a-z0-9]+"
+    return re.sub(norm, " ", left.lower()).strip() == re.sub(
+        norm, " ", right.lower(),
+    ).strip()
+
+
+def _fact_phrase(fact: dict[str, Any]) -> str:
+    return str(fact.get("canonical_phrase") or "").strip().rstrip(".")
+
+
+def _receipt_thesis(
+    headline: str,
+    audit: dict[str, Any],
+    facts: dict[str, dict[str, Any]],
+    receipt_ids: list[str],
+    verdict: dict[str, Any] | None,
+) -> str:
+    fallback = _first_sentence(str(audit.get("rationale") or ""), "")
+    if verdict and verdict.get("surface_type") == "context_dependence_memo":
+        return _context_subline(verdict, fallback or headline)
+    if fallback and not _same_phrase(fallback, headline):
+        return fallback
+    phrases = [_fact_phrase(facts.get(fid) or {}) for fid in receipt_ids[:2]]
+    joined = "; ".join(p for p in phrases if p)
+    if joined:
+        return f"The cited A/B receipts support a specific working claim: {joined}."
+    return f"The memo advances a bounded evidence signal under this headline: {headline}."
+
+
 def _counter_lines(verdict: dict[str, Any] | None) -> list[str]:
     if not verdict:
         return ["- _Counter-evidence not classified yet._"]
@@ -406,6 +436,19 @@ def _limitations_lines(weakening: list[str]) -> list[str]:
     ]
 
 
+def _why_surprising(
+    fallback: str,
+    context_ids: list[str],
+) -> str:
+    if context_ids:
+        return (
+            "The useful signal is narrower than the topic label: the lead receipts "
+            "support the core claim, while the added A/B context receipts define "
+            "where that claim may generalize, fail, or need a separate extraction."
+        )
+    return fallback or "_No frontier lens produced._"
+
+
 def _provenance_block(
     run_dir: Path, topic: str, snapshot: str, headline: str, memo_body: str,
 ) -> list[str]:
@@ -464,15 +507,22 @@ def render_signal_memo(
     receipt_ids = _expanded_receipt_ids(
         audit, facts, lanes, min_sources=min_sources,
     )
+    lead_ids = [
+        str(x) for x in audit.get("cited_fact_ids", [])
+        if lanes.get(str(x)) in _BINDABLE and str(x) in facts
+    ]
+    if not lead_ids:
+        lead_ids = receipt_ids[:1]
+    context_ids = [fid for fid in receipt_ids if fid not in set(lead_ids)]
     source_count = _source_count_for_ids(receipt_ids, facts)
-    thesis = _context_subline(
-        publish_verdict,
-        _first_sentence(str(audit.get("rationale") or ""), headline),
-    )
+    thesis = _receipt_thesis(headline, audit, facts, receipt_ids, publish_verdict)
     next_extractions = review.get("next_extractions") if isinstance(review, dict) else []
     top_cards = _top_cards(top_md)
     weakening = _weakening_lines(review if isinstance(review, dict) else {}, label)
-    why_surprising = _section(signal_md, "Why this is surprising") or "_No frontier lens produced._"
+    why_surprising = _why_surprising(
+        _section(signal_md, "Why this is surprising"),
+        context_ids,
+    )
 
     lines = [
         f"# Alpha memo — {topic}",
@@ -497,7 +547,16 @@ def render_signal_memo(
         "",
         "## Evidence receipts",
         "",
-        *_receipt_lines(audit, facts, lanes, receipt_ids),
+        *_receipt_lines(audit, facts, lanes, lead_ids),
+    ]
+    if context_ids:
+        lines.extend([
+            "",
+            "## Context receipts",
+            "",
+            *_receipt_lines(audit, facts, lanes, context_ids),
+        ])
+    lines.extend([
         "",
         "## What this changes",
         "",
@@ -522,7 +581,7 @@ def render_signal_memo(
         "",
         "## Next extraction",
         "",
-    ]
+    ])
     if isinstance(next_extractions, list) and next_extractions:
         lines.extend(f"- {str(x)[:240]}" for x in next_extractions[:5])
     else:

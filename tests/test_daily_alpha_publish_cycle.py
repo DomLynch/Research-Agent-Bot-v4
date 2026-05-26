@@ -215,6 +215,7 @@ def test_repairable_rejection_retry_is_capped(tmp_path: Path) -> None:
     daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
         {"fingerprint": fp, "topic": "capped", "submission_id": "old-sub-1"},
         {"fingerprint": fp, "topic": "capped", "submission_id": "old-sub-2"},
+        {"fingerprint": fp, "topic": "capped", "submission_id": "old-sub-3"},
     ])
     daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
         "status": "submitted_to_researka",
@@ -336,6 +337,50 @@ def test_submit_floor_counts_sources_used_by_alpha_memo(tmp_path: Path) -> None:
         retraction_mode="crossref",
         fetcher=lambda _doi: {"message": {"title": ["clean paper"]}},
         submitter=submitter,
+    )
+
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["considered"][0]["source_count"] == 5
+    assert len(seen_payload["source_bundle"]) == 5
+
+
+def test_submit_floor_counts_context_receipts_in_source_bundle(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("context_sources") | {
+        "axes": {"source_papers": [{"doi": "10.1000/old", "title": "Old source"}]},
+    }
+    _memo_with_source_receipts(root, verdict, 1)
+    run = root / str(verdict["run_dir"])
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n"
+        "## Evidence receipts\n\n"
+        "- `fact_id=1` (`A_core`) - direct\n\n"
+        "## Context receipts\n\n"
+        + "\n".join(f"- `fact_id={i}` (`A_core`) - context" for i in range(2, 6))
+        + "\n",
+        encoding="utf-8",
+    )
+    facts = json.loads(run.joinpath("all_facts.json").read_text(encoding="utf-8"))
+    for i in range(2, 6):
+        facts.append({
+            "fact_id": str(i),
+            "source_paper": {"doi": f"10.1000/context-{i}", "title": f"Context {i}"},
+        })
+    run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    seen_payload: dict[str, Any] = {}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda payload: seen_payload.update(payload) or {
+            "ok": True,
+            "status": 200,
+            "response": {},
+        },
     )
 
     assert ledger["status"] == "submitted_to_researka"
@@ -705,6 +750,47 @@ def test_sync_submission_decisions_uses_top_level_submission_id(tmp_path: Path) 
     assert summary["checked"] == 1
     assert patched["final_verdict"] == "rejected"
     assert patched["researka_decision"]["seen_id"] == "sub_top"
+
+
+def test_sync_submission_decisions_records_revise_as_retryable(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("revise")
+    _memo(root, verdict)
+    fp = daily.memo_fingerprint(verdict)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
+        {"fingerprint": fp, "topic": "revise", "submission_id": "old-sub"},
+    ])
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submitted_to_researka",
+        "submission_id": "old-sub",
+        "candidate": {"fingerprint": fp, "topic": "revise"},
+    })
+
+    summary = daily.sync_submission_decisions(
+        root,
+        fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "revise",
+            "required_revisions": ["make thesis declarative"],
+        },
+    )
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+    )
+
+    assert summary["updated"] == 1
+    patched = json.loads(
+        (root / "_daily_ledger" / "2026-05-21.json").read_text(encoding="utf-8")
+    )
+    assert patched["final_verdict"] == "revise"
+    assert ledger["considered"][0]["retry_after_rejection"] is True
+    assert ledger["status"] == "submitted_to_researka"
 
 
 def test_run_cycle_syncs_prior_submission_decisions(tmp_path: Path) -> None:

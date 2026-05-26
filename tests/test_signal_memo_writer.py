@@ -199,7 +199,24 @@ def test_alpha_memo_expands_receipts_to_five_sources_when_available(
 
     assert "**Headline:** Carbon pricing may cut emissions" in memo
     assert "**Source breadth:** `5/5` unique cited source(s)" in memo
+    assert "## Context receipts" in memo
     assert "`fact_id=101` (`A_core`)" in memo
     assert "`fact_id=202`" not in memo
     assert "`fact_id=505` (`A_core`)" in memo
     assert "## Supporting Top cards" in memo
+
+
+def test_alpha_memo_turns_repeated_title_into_declarative_thesis(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    gate = json.loads((run / "opportunities_gate.json").read_text(encoding="utf-8"))
+    gate["audits"][0]["rationale"] = "Carbon pricing may cut emissions without the expected output penalty"
+    (run / "opportunities_gate.json").write_text(json.dumps(gate), encoding="utf-8")
+
+    memo = render_signal_memo(run, publish_verdict={"surface_type": "publish_alpha_memo"})
+    thesis = memo.split("## One-sentence thesis\n\n", 1)[1].split("\n\n## ", 1)[0]
+
+    assert thesis != gate["audits"][0]["rationale"]
+    assert "The cited A/B receipts support a specific working claim" in thesis

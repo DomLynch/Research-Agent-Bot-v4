@@ -38,9 +38,11 @@ _SUBMIT_TOKEN_ENVS = (
     "RESEARCH_API_KEY_V4",
 )
 _DEFAULT_MIN_SUBMIT_SOURCES = 5
+_MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT = 3
 _REPAIRABLE_REJECTION_REASONS = {
     "minimum_citations",
     "recency_ratio",
+    "reviewer_revise",
     "source_bundle_schema",
 }
 
@@ -199,7 +201,10 @@ def _repairable_rejected_fingerprints(ledger_dir: Path) -> set[str]:
     retryable: set[str] = set()
     for path in ledger_dir.glob("*.json"):
         ledger = _json(path, {})
-        if not isinstance(ledger, dict) or ledger.get("final_verdict") != "rejected":
+        if (
+            not isinstance(ledger, dict)
+            or ledger.get("final_verdict") not in {"rejected", "revise"}
+        ):
             continue
         decision = ledger.get("researka_decision")
         if not isinstance(decision, dict) or not _repairable_rejection(decision):
@@ -211,6 +216,8 @@ def _repairable_rejected_fingerprints(ledger_dir: Path) -> set[str]:
 
 
 def _repairable_rejection(decision: Json) -> bool:
+    if decision.get("decision") == "revise":
+        return True
     reasons = {
         str(decision.get("failure_category") or ""),
         *(str(x) for x in decision.get("failed_checks") or []),
@@ -232,12 +239,12 @@ def _source_count(verdict: Json, root: Path | None = None) -> int:
 
 
 def _memo_receipt_ids(text: str) -> list[str]:
-    match = re.search(
-        r"^## Evidence receipts\n\n(.*?)(?=\n## |\Z)",
+    sections = re.findall(
+        r"^## (?:Evidence|Context) receipts\n\n(.*?)(?=\n## |\Z)",
         text,
         flags=re.M | re.S,
     )
-    section = match.group(1) if match else ""
+    section = "\n".join(sections)
     seen: set[str] = set()
     out: list[str] = []
     for fid in re.findall(r"`fact_id=([^`\s]+)`", section):
@@ -397,7 +404,10 @@ def select_candidate(
         corpus_source_count = _corpus_source_count(verdict, runs_root)
         status = "eligible"
         memo_refreshed = False
-        retry_after_rejection = fp in retryable and attempts.get(fp, 0) < 2
+        retry_after_rejection = (
+            fp in retryable
+            and attempts.get(fp, 0) < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
+        )
         if fp in seen and not retry_after_rejection:
             status = "duplicate_submission_fingerprint"
         elif not _has_memo(verdict, runs_root):
@@ -503,7 +513,7 @@ def sync_submission_decisions(
         ledger = _json(path, {})
         if not isinstance(ledger, dict) or ledger.get("status") != "submitted_to_researka":
             continue
-        if ledger.get("final_verdict") in {"accepted", "rejected"}:
+        if ledger.get("final_verdict") in {"accepted", "rejected", "revise"}:
             continue
         submission_id = str(ledger.get("submission_id") or "") or _submission_id(
             ledger.get("submission", {}),
@@ -523,7 +533,12 @@ def sync_submission_decisions(
             continue
         final = "pending"
         if decision.get("status") == "complete":
-            final = "accepted" if decision.get("decision") == "accept" else "rejected"
+            if decision.get("decision") == "accept":
+                final = "accepted"
+            elif decision.get("decision") == "revise":
+                final = "revise"
+            else:
+                final = "rejected"
         summary["pending"] += int(final == "pending")
         ledger["submission_id"] = submission_id
         ledger["researka_decision"] = decision
