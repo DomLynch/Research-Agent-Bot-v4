@@ -38,7 +38,7 @@ _SUBMIT_TOKEN_ENVS = (
     "RESEARCH_API_KEY_V4",
 )
 _DEFAULT_MIN_SUBMIT_SOURCES = 5
-_DEFAULT_REFRESH_TOP = 12
+_DEFAULT_REFRESH_TOP = 20
 _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT = 4
 _REPAIRABLE_REJECTION_REASONS = {
     "minimum_citations",
@@ -804,6 +804,7 @@ def run_cycle(
         "decision_sync": decision_sync,
         "estimated_cost_usd": estimated_cost_usd,
         "max_cost_usd": max_cost_usd,
+        "refresh_top": refresh_top,
         "min_submit_sources": min_submit_sources,
         "published": 0,
         "published_topic": None,

@@ -980,4 +980,5 @@ def test_refresh_candidates_scans_more_than_top_five(
     )
 
     assert ledger["refresh_candidates"]["ok"] is True
-    assert calls[0][-4:] == ["--top", "12", "--cooldown-hours", "24"]
+    assert ledger["refresh_top"] == 20
+    assert calls[0][-4:] == ["--top", "20", "--cooldown-hours", "24"]
