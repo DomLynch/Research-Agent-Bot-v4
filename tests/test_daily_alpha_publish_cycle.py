@@ -176,6 +176,47 @@ def test_repairable_rejected_submission_can_retry_once(tmp_path: Path) -> None:
     assert ledger["considered"][0]["retry_after_rejection"] is True
 
 
+def test_repairable_retry_refreshes_even_when_source_floor_passes(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("retry_refresh")
+    _memo_with_source_receipts(root, verdict, 5)
+    fp = daily.memo_fingerprint(verdict)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
+        {"fingerprint": fp, "topic": "retry_refresh", "submission_id": "old-sub"},
+    ])
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submitted_to_researka",
+        "final_verdict": "revise",
+        "candidate": {"fingerprint": fp, "topic": "retry_refresh"},
+        "researka_decision": {"status": "complete", "decision": "revise"},
+    })
+    refreshed = {"called": False}
+
+    def refresh(run_dir: Path, _verdict: dict[str, Any]) -> bool:
+        refreshed["called"] = True
+        text = run_dir.joinpath("alpha_memo.md").read_text(encoding="utf-8")
+        run_dir.joinpath("alpha_memo.md").write_text(
+            text + "\nRevision marker.\n",
+            encoding="utf-8",
+        )
+        return True
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+        memo_refresher=refresh,
+    )
+
+    assert refreshed["called"] is True
+    assert ledger["considered"][0]["memo_refreshed"] is True
+    assert ledger["status"] == "submitted_to_researka"
+
+
 def test_nonrepairable_rejection_does_not_retry_duplicate(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("nonretryable")

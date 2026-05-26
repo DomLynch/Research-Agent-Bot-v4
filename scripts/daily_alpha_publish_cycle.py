@@ -414,19 +414,26 @@ def select_candidate(
             status = "missing_alpha_memo"
         elif not _approved(verdict, runs_root):
             status = "needs_operator_approval"
-        elif source_count < min_source_count:
-            if corpus_source_count >= min_source_count and memo_refresher:
+        else:
+            if retry_after_rejection and memo_refresher:
                 run_dir = _run_path(runs_root, verdict.get("run_dir"))
                 memo_refreshed = memo_refresher(run_dir, verdict)
                 if memo_refreshed:
                     source_count = _source_count(verdict, runs_root)
-            status = (
-                "corpus_source_floor_below_min"
-                if corpus_source_count < min_source_count else
-                "memo_source_floor_below_min"
-            )
-            if source_count >= min_source_count:
-                status = "eligible"
+                    corpus_source_count = _corpus_source_count(verdict, runs_root)
+            if source_count < min_source_count:
+                if corpus_source_count >= min_source_count and memo_refresher:
+                    run_dir = _run_path(runs_root, verdict.get("run_dir"))
+                    memo_refreshed = memo_refresher(run_dir, verdict)
+                    if memo_refreshed:
+                        source_count = _source_count(verdict, runs_root)
+                status = (
+                    "corpus_source_floor_below_min"
+                    if corpus_source_count < min_source_count else
+                    "memo_source_floor_below_min"
+                )
+                if source_count >= min_source_count:
+                    status = "eligible"
         row = {
             "topic": verdict.get("topic"),
             "decision": verdict.get("decision"),
