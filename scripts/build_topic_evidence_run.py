@@ -23,6 +23,7 @@ import datetime as dt
 import hashlib
 import json
 import sys
+import tomllib
 from pathlib import Path
 from typing import Any
 
@@ -50,8 +51,8 @@ from agent.researka_claims import _aggregate
 from agent.settings import load_settings
 
 _RUNS = Path(__file__).resolve().parent.parent / "runs"
+_PUBLICATION_CFG = Path(__file__).resolve().parent.parent / "topic_packs" / "publication.toml"
 _TOP_BINDABLE_LANES = frozenset({"A_core", "B_context"})
-_MIN_FACT_SOURCE_PAPERS = 5
 
 
 def _safe_float(v: Any) -> float | None:
@@ -142,6 +143,18 @@ def _source_count(facts: list[dict[str, Any]]) -> int:
     return len({k for f in facts if (k := _source_key(f))})
 
 
+def _min_fact_source_papers() -> int:
+    try:
+        data = tomllib.loads(_PUBLICATION_CFG.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return 5
+    alpha = data.get("alpha_memo") if isinstance(data, dict) else {}
+    try:
+        return int((alpha or {}).get("min_source_papers", 5))
+    except (TypeError, ValueError):
+        return 5
+
+
 def _dedup_facts(facts: list[dict[str, Any]]) -> list[dict[str, Any]]:
     seen: set[str] = set()
     out: list[dict[str, Any]] = []
@@ -208,6 +221,7 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
         return []
     hdr = {"X-Researka-Token": token}
     facts: list[dict[str, Any]] = []
+    min_sources = _min_fact_source_papers()
     try:
         with httpx.Client(timeout=30.0) as c:
             strict = _post_tier2_facts(
@@ -230,7 +244,7 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
                             facts.append(f)
             except (httpx.HTTPError, ValueError):
                 pass
-            if _source_count(facts) < _MIN_FACT_SOURCE_PAPERS:
+            if _source_count(facts) < min_sources:
                 items = _post_tier2_facts(
                     c, base, hdr, topic, numeric_only=True,
                     strict_audit_required=False,
@@ -239,7 +253,7 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
                     _normalize_tier2(it, topic)
                     for it in _select_tier2_items(items, topic)
                 )
-            if _source_count(facts) < _MIN_FACT_SOURCE_PAPERS:
+            if _source_count(facts) < min_sources:
                 items = _post_tier2_facts(
                     c, base, hdr, topic, numeric_only=False,
                     strict_audit_required=False,
