@@ -39,6 +39,7 @@ _SUBMIT_TOKEN_ENVS = (
 )
 _DEFAULT_MIN_SUBMIT_SOURCES = 5
 _DEFAULT_REFRESH_TOP = 20
+_REFRESH_TIMEOUT_SECONDS = 5400
 _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT = 4
 _REPAIRABLE_REJECTION_REASONS = {
     "minimum_citations",
@@ -820,7 +821,7 @@ def run_cycle(
         ok, note = _run_step([
             sys.executable, "scripts/run_curator_cycle.py",
             "--top", str(refresh_top), "--cooldown-hours", "24",
-        ])
+        ], timeout=_REFRESH_TIMEOUT_SECONDS)
         ledger["refresh_candidates"] = {"ok": ok, "note": note}
         if not ok:
             ledger.update({"status": "candidate_refresh_failed"})

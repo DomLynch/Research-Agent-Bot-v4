@@ -964,10 +964,10 @@ def test_cost_cap_writes_no_publish_ledger(tmp_path: Path) -> None:
 def test_refresh_candidates_scans_more_than_top_five(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
-    calls: list[list[str]] = []
+    calls: list[tuple[list[str], int]] = []
 
     def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
-        calls.append(args)
+        calls.append((args, timeout))
         return True, "ok"
 
     monkeypatch.setattr(daily, "_run_step", fake_step)
@@ -981,4 +981,5 @@ def test_refresh_candidates_scans_more_than_top_five(
 
     assert ledger["refresh_candidates"]["ok"] is True
     assert ledger["refresh_top"] == 20
-    assert calls[0][-4:] == ["--top", "20", "--cooldown-hours", "24"]
+    assert calls[0][0][-4:] == ["--top", "20", "--cooldown-hours", "24"]
+    assert calls[0][1] == 5400
