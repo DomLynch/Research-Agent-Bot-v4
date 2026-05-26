@@ -57,6 +57,11 @@ def _write_json(path: Path, payload: Any) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 
 
+def _ledger_stamp(now: dt.datetime | None = None) -> str:
+    current = (now or dt.datetime.now(dt.UTC)).astimezone(dt.UTC)
+    return current.replace(microsecond=0).isoformat().replace("+00:00", "Z").replace(":", "-")
+
+
 def _submit_token() -> tuple[str, str]:
     for name in _SUBMIT_TOKEN_ENVS:
         token = os.environ.get(name, "").strip()
@@ -826,7 +831,7 @@ def run_cycle(
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--date", default=dt.datetime.now(dt.UTC).date().isoformat())
+    parser.add_argument("--date", default=_ledger_stamp())
     parser.add_argument("--include-archive", action="store_true")
     parser.add_argument("--refresh-candidates", action="store_true")
     parser.add_argument("--allow-tier2", action="store_true")

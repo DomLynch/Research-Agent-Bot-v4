@@ -5,6 +5,7 @@ rules.
 """
 from __future__ import annotations
 
+import datetime as dt
 import json
 import urllib.request
 from pathlib import Path
@@ -82,6 +83,12 @@ def test_memo_fingerprint_is_stable_across_headline_rewording() -> None:
     right = _verdict() | {"headline": "Reworded public headline"}
 
     assert daily.memo_fingerprint(left) == daily.memo_fingerprint(right)
+
+
+def test_ledger_stamp_includes_utc_time_for_twice_daily_runs() -> None:
+    stamp = daily._ledger_stamp(dt.datetime(2026, 5, 26, 17, 30, 1, tzinfo=dt.UTC))
+
+    assert stamp == "2026-05-26T17-30-01Z"
 
 
 def test_dry_run_selects_best_candidate_and_writes_ledger(tmp_path: Path) -> None:
