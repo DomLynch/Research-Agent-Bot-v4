@@ -38,6 +38,7 @@ _SUBMIT_TOKEN_ENVS = (
     "RESEARCH_API_KEY_V4",
 )
 _DEFAULT_MIN_SUBMIT_SOURCES = 5
+_DEFAULT_REFRESH_TOP = 12
 _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT = 4
 _REPAIRABLE_REJECTION_REASONS = {
     "minimum_citations",
@@ -446,29 +447,38 @@ def select_candidate(
         corpus_source_count = _corpus_source_count(verdict, runs_root)
         status = "eligible"
         memo_refreshed = False
+        has_memo = _has_memo(verdict, runs_root)
+        approved = _approved(verdict, runs_root) if has_memo else False
         retry_after_rejection = (
             fp in retryable
             and attempts.get(fp, 0) < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
         )
+        if (
+            has_memo
+            and approved
+            and source_count < min_source_count
+            and corpus_source_count >= min_source_count
+            and memo_refresher
+        ):
+            run_dir = _run_path(runs_root, verdict.get("run_dir"))
+            memo_refreshed = memo_refresher(run_dir, verdict)
+            if memo_refreshed:
+                source_count = _source_count(verdict, runs_root)
+                corpus_source_count = _corpus_source_count(verdict, runs_root)
         if fp in seen and not retry_after_rejection:
             status = "duplicate_submission_fingerprint"
-        elif not _has_memo(verdict, runs_root):
+        elif not has_memo:
             status = "missing_alpha_memo"
-        elif not _approved(verdict, runs_root):
+        elif not approved:
             status = "needs_operator_approval"
         else:
-            if retry_after_rejection and memo_refresher:
+            if retry_after_rejection and memo_refresher and not memo_refreshed:
                 run_dir = _run_path(runs_root, verdict.get("run_dir"))
                 memo_refreshed = memo_refresher(run_dir, verdict)
                 if memo_refreshed:
                     source_count = _source_count(verdict, runs_root)
                     corpus_source_count = _corpus_source_count(verdict, runs_root)
             if source_count < min_source_count:
-                if corpus_source_count >= min_source_count and memo_refresher:
-                    run_dir = _run_path(runs_root, verdict.get("run_dir"))
-                    memo_refreshed = memo_refresher(run_dir, verdict)
-                    if memo_refreshed:
-                        source_count = _source_count(verdict, runs_root)
                 status = (
                     "corpus_source_floor_below_min"
                     if corpus_source_count < min_source_count else
@@ -776,6 +786,7 @@ def run_cycle(
     allow_tier2: bool = False,
     estimated_cost_usd: float = 0.0,
     max_cost_usd: float = 5.0,
+    refresh_top: int = _DEFAULT_REFRESH_TOP,
     submit: bool = False,
     retraction_mode: str = "metadata",
     min_submit_sources: int = _DEFAULT_MIN_SUBMIT_SOURCES,
@@ -807,7 +818,7 @@ def run_cycle(
     if refresh_candidates:
         ok, note = _run_step([
             sys.executable, "scripts/run_curator_cycle.py",
-            "--top", "5", "--cooldown-hours", "24",
+            "--top", str(refresh_top), "--cooldown-hours", "24",
         ])
         ledger["refresh_candidates"] = {"ok": ok, "note": note}
         if not ok:
@@ -902,6 +913,7 @@ def main() -> int:
     parser.add_argument("--allow-tier2", action="store_true")
     parser.add_argument("--estimated-cost-usd", type=float, default=0.0)
     parser.add_argument("--max-cost-usd", type=float, default=5.0)
+    parser.add_argument("--refresh-top", type=int, default=_DEFAULT_REFRESH_TOP)
     parser.add_argument("--min-submit-sources", type=int, default=_DEFAULT_MIN_SUBMIT_SOURCES)
     parser.add_argument("--submit", action="store_true")
     parser.add_argument(
@@ -917,6 +929,7 @@ def main() -> int:
         allow_tier2=args.allow_tier2,
         estimated_cost_usd=args.estimated_cost_usd,
         max_cost_usd=args.max_cost_usd,
+        refresh_top=args.refresh_top,
         min_submit_sources=args.min_submit_sources,
         submit=args.submit,
         retraction_mode=args.retraction_check,

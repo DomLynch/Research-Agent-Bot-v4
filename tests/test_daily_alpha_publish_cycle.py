@@ -137,6 +137,61 @@ def test_duplicate_fingerprint_skips_previous_submission(tmp_path: Path) -> None
     assert ledger["considered"][0]["status"] == "duplicate_submission_fingerprint"
 
 
+def test_duplicate_underexpanded_memo_refreshes_before_reporting(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("already_seen") | {
+        "axes": {
+            "source_papers": [{"doi": "10.1000/old", "title": "Old lead"}],
+        },
+    }
+    _memo_with_source_receipts(root, verdict, 1)
+    run = root / str(verdict["run_dir"])
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    facts.extend({
+        "fact_id": str(i + 1),
+        "source_paper": {
+            "doi": f"10.1000/unused-{i}",
+            "title": f"Unused source {i}",
+        },
+    } for i in range(1, 5))
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": str(i + 1), "lane": "A_core"} for i in range(5)],
+    }), encoding="utf-8")
+    fp = daily.memo_fingerprint(verdict)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
+        {"fingerprint": fp, "topic": "already_seen"},
+    ])
+
+    def refresh(run_dir: Path, _verdict: dict[str, Any]) -> bool:
+        run_dir.joinpath("alpha_memo.md").write_text(
+            "# Alpha memo\n\n## Evidence receipts\n\n"
+            + "\n".join(
+                f"- `fact_id={i + 1}` (`A_core`) - receipt" for i in range(5)
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        return True
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        submit=True,
+        retraction_mode="metadata",
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+        memo_refresher=refresh,
+    )
+
+    row = ledger["considered"][0]
+    assert ledger["status"] == "no_publishable_candidate"
+    assert row["status"] == "duplicate_submission_fingerprint"
+    assert row["memo_refreshed"] is True
+    assert row["source_count"] == 5
+    assert row["corpus_ab_paper_count"] == 5
+
+
 def test_repairable_rejected_submission_can_retry_once(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("retryable")
@@ -904,3 +959,25 @@ def test_cost_cap_writes_no_publish_ledger(tmp_path: Path) -> None:
 
     assert ledger["status"] == "cost_cap_exceeded"
     assert (root / "_daily_ledger" / "2026-05-22.json").exists()
+
+
+def test_refresh_candidates_scans_more_than_top_five(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+
+    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        calls.append(args)
+        return True, "ok"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    ledger = daily.run_cycle(
+        runs_root=tmp_path,
+        date="2026-05-22",
+        refresh_candidates=True,
+        queue=_queue(),
+    )
+
+    assert ledger["refresh_candidates"]["ok"] is True
+    assert calls[0][-4:] == ["--top", "12", "--cooldown-hours", "24"]
