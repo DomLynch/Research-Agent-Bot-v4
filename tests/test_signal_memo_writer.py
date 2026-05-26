@@ -84,7 +84,7 @@ def test_signal_memo_has_required_alpha_sections_and_bound_receipts(
     assert "## Provenance / priority" in memo
     assert "`fact_id=101` (`A_core`)" in memo
     assert "fact_id=202" not in memo
-    assert "**Alpha score:** 98/100 (internal triage score; not a certainty claim)" in memo
+    assert "**Alpha triage:** `high` (internal ranking; not a certainty claim)" in memo
     assert "Suggested citation" in memo
     assert "Run bundle SHA-256" in memo
 
@@ -198,6 +198,7 @@ def test_alpha_memo_expands_receipts_to_five_sources_when_available(
     })
 
     assert "**Headline:** Carbon pricing may cut emissions" in memo
+    assert "does not conduct a new meta-analysis or systematic review" in memo
     assert "**Source breadth:** `5/5` unique cited source(s)" in memo
     assert "## Context receipts" in memo
     assert "`fact_id=101` (`A_core`)" in memo

@@ -257,6 +257,7 @@ def test_repairable_rejection_retry_is_capped(tmp_path: Path) -> None:
         {"fingerprint": fp, "topic": "capped", "submission_id": "old-sub-1"},
         {"fingerprint": fp, "topic": "capped", "submission_id": "old-sub-2"},
         {"fingerprint": fp, "topic": "capped", "submission_id": "old-sub-3"},
+        {"fingerprint": fp, "topic": "capped", "submission_id": "old-sub-4"},
     ])
     daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
         "status": "submitted_to_researka",

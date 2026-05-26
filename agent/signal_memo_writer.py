@@ -250,6 +250,16 @@ def _alpha_score(audit: dict[str, Any], label: str) -> int:
     return max(0, min(100, base + shift))
 
 
+def _score_band(score: int) -> str:
+    if score >= 80:
+        return "high"
+    if score >= 60:
+        return "medium"
+    if score > 0:
+        return "low"
+    return "none"
+
+
 def _weakening_lines(review: dict[str, Any], label: str) -> list[str]:
     raw = review.get("reviewer_objections") if isinstance(review, dict) else []
     lines = [f"- {_clip(x, 240)}" for x in raw[:3]] if isinstance(raw, list) else []
@@ -430,6 +440,8 @@ def _limitations_lines(weakening: list[str]) -> list[str]:
     return [
         "- This is an alpha memo, not a settled review, guideline, or broad "
         "consensus claim.",
+        "- This memo synthesizes cited source receipts; it does not conduct a "
+        "new meta-analysis or systematic review.",
         "- Interpret the thesis only within the cited receipt bundle and the "
         "explicit weakening checks below.",
         *weakening[:3],
@@ -528,7 +540,7 @@ def render_signal_memo(
         f"# Alpha memo — {topic}",
         "",
         f"**Headline:** {headline}",
-        f"**Alpha score:** {_alpha_score(audit, label)}/100 (internal triage score; not a certainty claim)",
+        f"**Alpha triage:** `{_score_band(_alpha_score(audit, label))}` (internal ranking; not a certainty claim)",
         f"**Confidence:** `{label}`",
         f"**Memo surface:** `{_surface_line(publish_verdict)}`",
         f"**Snapshot:** `{snapshot}`",
