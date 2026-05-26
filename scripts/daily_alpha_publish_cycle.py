@@ -229,10 +229,47 @@ def _memo_source_papers(verdict: Json, root: Path) -> list[Json]:
                 "doi": str(paper.get("doi") or ""),
                 "title": str(paper.get("title") or ""),
                 "journal": str(paper.get("journal") or ""),
+                "url": paper.get("url") or paper.get("source_url"),
                 "year": paper.get("year"),
                 "is_retracted": bool(paper.get("is_retracted")),
             })
     return papers
+
+
+def _memo_headline(memo: str) -> str:
+    match = re.search(r"^\*\*Headline:\*\*\s*(.+?)\s*$", memo, flags=re.M)
+    return match.group(1).strip() if match else ""
+
+
+def _year(value: Any) -> int | None:
+    try:
+        year = int(str(value))
+    except (TypeError, ValueError):
+        return None
+    return year if 1000 <= year <= 3000 else None
+
+
+def _evidence_type(paper: Json) -> str:
+    title = _norm(paper.get("title"))
+    if "review" in title or "meta-analysis" in title or "meta analysis" in title:
+        return "review"
+    return "primary"
+
+
+def _source_bundle(papers: list[Json]) -> list[Json]:
+    bundle: list[Json] = []
+    for paper in papers:
+        title = str(paper.get("title") or "").strip()
+        if not title:
+            continue
+        bundle.append({
+            "title": title,
+            "url": paper.get("url") or None,
+            "doi": str(paper.get("doi") or "").strip() or None,
+            "year": _year(paper.get("year")),
+            "evidence_type": _evidence_type(paper),
+        })
+    return bundle
 
 
 def _read_text(path: Path) -> str:
@@ -523,8 +560,15 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
     memo = ""
     with suppress(OSError):
         memo = (run_dir / "alpha_memo.md").read_text(encoding="utf-8")
-    title = str(verdict.get("headline") or verdict.get("topic") or "Alpha memo")
+    title = str(
+        _memo_headline(memo)
+        or verdict.get("headline")
+        or verdict.get("topic")
+        or "Alpha memo"
+    )
     source_papers = _memo_source_papers(verdict, root)
+    source_bundle = _source_bundle(source_papers)
+    receipt_count = len(_memo_receipt_ids(memo))
     return {
         "artifact_type": "alpha_memo",
         "article_type": "alpha_memo",
@@ -533,14 +577,18 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         "title": title,
         "topic": verdict.get("topic"),
         "markdown": memo,
-        "citations": source_papers,
-        "source_bundle": source_papers,
+        "citations": source_bundle,
+        "source_bundle": source_bundle,
         "novelty_score": verdict.get("alpha_score"),
         "confidence_score": verdict.get("maturity_level"),
         "evidence_bundle": {
             "publish_verdict": verdict,
             "run_dir": verdict.get("run_dir"),
             "source_papers": source_papers,
+            "bound_receipt_count": receipt_count,
+            "bound_source_count": len(source_bundle),
+            "source_bundle_count": len(source_bundle),
+            "context_sources_are_not_direct_support": False,
         },
         "content_hash": "sha256:" + hashlib.sha256(memo.encode("utf-8")).hexdigest(),
     }

@@ -422,6 +422,66 @@ def test_submission_payload_preserves_alpha_memo_contract(tmp_path: Path) -> Non
     assert "source_papers" in payload["evidence_bundle"]
 
 
+def test_submission_payload_uses_researka_source_bundle_schema(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict()
+    run = root / str(verdict["run_dir"])
+    run.mkdir(parents=True)
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n"
+        "**Headline:** Endpoint-specific storage reserve signal\n\n"
+        "## Evidence receipts\n\n"
+        "- `fact_id=1` (`A_core`) - receipt\n"
+        "- `fact_id=2` (`B_context`) - receipt\n",
+        encoding="utf-8",
+    )
+    run.joinpath("all_facts.json").write_text(json.dumps([
+        {
+            "fact_id": "1",
+            "source_paper": {
+                "doi": "10.1000/primary",
+                "title": "Primary field trial",
+                "url": "https://example.test/primary",
+                "year": "2025",
+                "journal": "Ignored by public source bundle",
+                "is_retracted": False,
+            },
+        },
+        {
+            "fact_id": "2",
+            "source_paper": {
+                "doi": "10.1000/review",
+                "title": "Systematic review of reserve markets",
+                "source_url": "https://example.test/review",
+                "year": 2024,
+            },
+        },
+    ]), encoding="utf-8")
+
+    payload = daily._submission_payload(verdict, root / "runs")
+
+    assert payload["title"] == "Endpoint-specific storage reserve signal"
+    assert payload["source_bundle"] == [
+        {
+            "title": "Primary field trial",
+            "url": "https://example.test/primary",
+            "doi": "10.1000/primary",
+            "year": 2025,
+            "evidence_type": "primary",
+        },
+        {
+            "title": "Systematic review of reserve markets",
+            "url": "https://example.test/review",
+            "doi": "10.1000/review",
+            "year": 2024,
+            "evidence_type": "review",
+        },
+    ]
+    assert payload["citations"] == payload["source_bundle"]
+    assert payload["evidence_bundle"]["bound_receipt_count"] == 2
+    assert payload["evidence_bundle"]["bound_source_count"] == 2
+
+
 def test_http_submitter_sends_runtime_api_key_header(monkeypatch: MonkeyPatch) -> None:
     seen: dict[str, Any] = {}
 
