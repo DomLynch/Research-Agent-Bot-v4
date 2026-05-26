@@ -292,6 +292,24 @@ def _public_headline(topic: str, headline: str, verdict: dict[str, Any] | None) 
     return headline
 
 
+def _bounded_headline(
+    topic: str,
+    headline: str,
+    verdict: dict[str, Any] | None,
+    *,
+    lead_source_count: int,
+    context_ids: list[str],
+) -> str:
+    if (
+        verdict
+        and verdict.get("surface_type") == "publish_alpha_memo"
+        and context_ids
+        and lead_source_count <= 1
+    ):
+        return f"{_topic_title(topic)}: single-source lead signal with broader context receipts"
+    return headline
+
+
 def _context_subline(verdict: dict[str, Any] | None, fallback: str) -> str:
     if not verdict or verdict.get("surface_type") != "context_dependence_memo":
         return fallback
@@ -339,6 +357,7 @@ def _receipt_thesis(
     audit: dict[str, Any],
     facts: dict[str, dict[str, Any]],
     receipt_ids: list[str],
+    context_ids: list[str],
     verdict: dict[str, Any] | None,
 ) -> str:
     fallback = _first_sentence(str(audit.get("rationale") or ""), "")
@@ -349,6 +368,12 @@ def _receipt_thesis(
     phrases = [_fact_phrase(facts.get(fid) or {}) for fid in receipt_ids[:2]]
     joined = "; ".join(p for p in phrases if p)
     if joined:
+        if context_ids:
+            return (
+                f"The direct receipts support a narrow working claim: {joined}. "
+                "The context receipts provide source breadth and boundary checks, "
+                "not independent confirmation of the lead claim."
+            )
         return f"The cited A/B receipts support a specific working claim: {joined}."
     return f"The memo advances a bounded evidence signal under this headline: {headline}."
 
@@ -432,16 +457,26 @@ def _subtopic_lines(verdict: dict[str, Any] | None) -> list[str]:
     return lines
 
 
-def _limitations_lines(weakening: list[str]) -> list[str]:
-    return [
+def _limitations_lines(
+    weakening: list[str],
+    *,
+    lead_source_count: int,
+    context_ids: list[str],
+) -> list[str]:
+    lines = [
         "- This is an alpha memo, not a settled review, guideline, or broad "
         "consensus claim.",
         "- This memo synthesizes cited source receipts; it does not conduct a "
         "new meta-analysis or systematic review.",
         "- Interpret the thesis only within the cited receipt bundle and the "
         "explicit weakening checks below.",
-        *weakening[:3],
     ]
+    if context_ids:
+        lines.append(
+            f"- The core claim rests on {lead_source_count} direct source paper(s); "
+            "context receipts broaden the source bundle but are not convergent proof.",
+        )
+    return [*lines, *weakening[:3]]
 
 
 def _why_surprising(
@@ -533,8 +568,18 @@ def render_signal_memo(
     if not lead_ids:
         lead_ids = receipt_ids[:1]
     context_ids = [fid for fid in receipt_ids if fid not in set(lead_ids)]
+    lead_source_count = _source_count_for_ids(lead_ids, facts)
+    headline = _bounded_headline(
+        topic,
+        headline,
+        publish_verdict,
+        lead_source_count=lead_source_count,
+        context_ids=context_ids,
+    )
     source_count = _source_count_for_ids(receipt_ids, facts)
-    thesis = _receipt_thesis(headline, audit, facts, receipt_ids, publish_verdict)
+    thesis = _receipt_thesis(
+        headline, audit, facts, receipt_ids, context_ids, publish_verdict,
+    )
     weakening = _weakening_lines(review if isinstance(review, dict) else {}, label)
     why_surprising = _why_surprising(
         _section(signal_md, "Why this is surprising"),
@@ -550,6 +595,7 @@ def render_signal_memo(
         f"**Memo surface:** `{_surface_line(publish_verdict)}`",
         f"**Snapshot:** `{snapshot}`",
         f"**Run:** `{run_dir.name}`",
+        f"**Direct source breadth:** `{lead_source_count}` direct cited source(s)",
         *([f"**Source thesis:** {raw_headline}"]
           if raw_headline != headline else []),
         f"**Source breadth:** `{source_count}/{min_sources}` unique cited source(s)",
@@ -586,7 +632,11 @@ def render_signal_memo(
         "",
         "## Limitations",
         "",
-        *_limitations_lines(weakening),
+        *_limitations_lines(
+            weakening,
+            lead_source_count=lead_source_count,
+            context_ids=context_ids,
+        ),
         "",
         "## What would weaken this",
         "",
