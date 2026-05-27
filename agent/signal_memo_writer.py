@@ -485,9 +485,10 @@ def _why_surprising(
 ) -> str:
     if context_ids:
         return (
-            "The useful signal is narrower than the topic label: the lead receipts "
-            "support the core claim, while the added A/B context receipts define "
-            "where that claim may generalize, fail, or need a separate extraction."
+            "Real tension: the useful signal is narrower than the topic label. "
+            "The lead receipts support the core claim, while the added A/B "
+            "context receipts define where that claim may generalize, fail, "
+            "or need a separate extraction."
         )
     return fallback or "_No frontier lens produced._"
 
