@@ -4,12 +4,13 @@ Locks the cascade contract:
   - regex anchors find target value in % / unit / plain form
   - ±window passages dedup overlapping matches
   - PMC fetch returns '' on HTTP/empty/missing PMCID
-  - corpus search returns '' on missing creds / non-list response
+  - corpus search returns '' on missing creds / empty canonical response
   - get_best_source picks the tier with anchor hits, abstract fallback
   - universal: non-biomedical fixture cascades identically
 """
 from __future__ import annotations
 
+import json
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -109,14 +110,24 @@ def test_corpus_returns_empty_without_creds() -> None:
 
 def test_corpus_concatenates_abstracts() -> None:
     def handler(req: httpx.Request) -> httpx.Response:
-        assert req.url.path == "/api/v1/corpus/search"
-        return httpx.Response(200, json=[
-            {"abstract": "first abstract text"},
-            {"abstract": "second abstract text"},
-        ])
+        assert req.url.path == "/api/v1/search"
+        body = json.loads(req.content)
+        assert body == {
+            "query": "rapa",
+            "established_k": 3,
+            "discovery_k": 3,
+            "semantic_k": 3,
+        }
+        return httpx.Response(200, json={
+            "established": [{"abstract": "first abstract text"}],
+            "discovery": [{"abstract": "second abstract text"}],
+            "semantic": [{"text": "third body text"}],
+        })
     with httpx.Client(transport=httpx.MockTransport(handler)) as c:
         out = fetch_researka_corpus("rapa", client=c, settings=_settings())
-    assert "first abstract" in out and "second abstract" in out
+    assert "first abstract" in out
+    assert "second abstract" in out
+    assert "third body" in out
 
 
 def test_get_best_source_returns_abstract_tier_when_anchored() -> None:

@@ -75,31 +75,44 @@ def fetch_researka_corpus(
     query: str, *, client: httpx.Client, settings: Settings,
     top_k: int = 3,
 ) -> str:
-    """Tertiary fallback: vector retrieval over the Researka corpus.
-    Concatenates abstracts of the top-k matches."""
+    """Tertiary fallback: canonical Researka Database search.
+    Concatenates abstracts/text from the established/discovery/semantic lanes."""
     base = settings.researka_database_url.rstrip("/")
     tok = settings.researka_database_token.strip()
     if not base or not tok or not query.strip():
         return ""
     try:
         r = client.post(
-            f"{base}/api/v1/corpus/search",
+            f"{base}/api/v1/search",
             headers={"X-Researka-Token": tok},
-            json={"query": query[:512], "top_k": top_k},
+            json={
+                "query": query[:512],
+                "established_k": top_k,
+                "discovery_k": top_k,
+                "semantic_k": top_k,
+            },
             timeout=20.0,
         )
         r.raise_for_status()
         data = r.json()
     except (httpx.HTTPError, ValueError):
         return ""
-    if not isinstance(data, list):
-        return ""
     chunks: list[str] = []
-    for item in data:
-        if isinstance(item, dict):
-            txt = str(item.get("abstract") or item.get("text") or "")
-            if txt:
-                chunks.append(txt)
+    items = (
+        data
+        if isinstance(data, list) else
+        [
+            item
+            for lane in ("established", "discovery", "semantic")
+            for item in (data.get(lane) or [])
+        ] if isinstance(data, dict) else []
+    )
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        txt = str(item.get("abstract") or item.get("text") or "")
+        if txt:
+            chunks.append(txt)
     return "\n\n".join(chunks)
 
 
