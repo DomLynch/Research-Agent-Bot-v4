@@ -192,6 +192,14 @@ def test_duplicate_underexpanded_memo_refreshes_before_reporting(tmp_path: Path)
     assert row["corpus_ab_paper_count"] == 5
 
 
+def test_default_memo_refresher_never_mutates_archive(tmp_path: Path) -> None:
+    run = tmp_path / "runs" / "_archive" / "cycle" / "topic-evidence-ts"
+    run.mkdir(parents=True)
+    run.joinpath("signal_post.md").write_text("# Signal\n", encoding="utf-8")
+
+    assert daily._refresh_alpha_memo(run, {}) is False
+
+
 def test_repairable_rejected_submission_can_retry_once(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("retryable")

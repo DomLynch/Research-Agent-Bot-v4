@@ -200,6 +200,8 @@ def _has_memo(verdict: Json, root: Path) -> bool:
 
 
 def _refresh_alpha_memo(run_dir: Path, verdict: Json) -> bool:
+    if "_archive" in run_dir.parts:
+        return False
     if not (run_dir / "signal_post.md").exists():
         return False
     from agent.signal_memo_writer import write_signal_memo

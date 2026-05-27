@@ -198,6 +198,32 @@ def _top_card_summary(run_dir: str) -> tuple[str, str]:
     return finding, cues
 
 
+def _plan_topics(
+    ranked: list[dict[str, Any]],
+    *,
+    recent: set[str],
+    excluded: set[str],
+    top: int,
+) -> tuple[list[dict[str, Any]], list[str], list[str]]:
+    plan: list[dict[str, Any]] = []
+    skipped: list[str] = []
+    skipped_excluded: list[str] = []
+    for c in ranked:
+        topic = str(c.get("topic") or "")
+        if not topic:
+            continue
+        if topic in excluded:
+            skipped_excluded.append(topic)
+            continue
+        if topic in recent:
+            skipped.append(topic)
+            continue
+        plan.append(c)
+        if len(plan) >= top:
+            break
+    return plan, skipped, skipped_excluded
+
+
 def _summarize_md(
     cycle_ts: str, results: list[TopicResult], skipped: list[str],
     cooldown_hours: float, top_requested: int,
@@ -279,25 +305,13 @@ def main() -> int:
     # Step 2: cooldown filter
     recent = _recent_signal_topics(_RUNS, args.cooldown_hours, cycle_start)
     excluded = {str(t).strip() for t in args.exclude_topic if str(t).strip()}
-    plan: list[dict[str, Any]] = []
-    skipped: list[str] = []
-    skipped_excluded: list[str] = []
-    for c in ranked:
-        topic = str(c.get("topic") or "")
-        if not topic:
-            continue
-        if topic in excluded:
-            skipped_excluded.append(topic)
-            continue
-        if topic in recent:
-            skipped.append(topic)
-            continue
-        plan.append(c)
-        if len(plan) >= args.top:
-            break
+    plan, skipped, skipped_excluded = _plan_topics(
+        ranked, recent=recent, excluded=excluded, top=args.top,
+    )
 
     print(f"[cycle] plan: {len(plan)} topics to run, {len(skipped)} skipped "
-          f"(cooldown {args.cooldown_hours}h)")
+          f"(cooldown {args.cooldown_hours}h), "
+          f"{len(skipped_excluded)} excluded")
     for c in plan:
         print(f"   - {c['topic']:25}  velocity={c.get('velocity_score',0):.2f}")
 

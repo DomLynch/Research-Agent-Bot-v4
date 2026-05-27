@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 from run_curator_cycle import (
     TopicResult,
+    _plan_topics,
     _read_discovery_top,
     _recent_signal_topics,
     _summarize_md,
@@ -137,6 +138,25 @@ def test_read_discovery_top_skips_topicless_entries(tmp_path: Path) -> None:
     }), encoding="utf-8")
     out = _read_discovery_top(tmp_path)
     assert len(out) == 1
+
+
+def test_plan_topics_honors_excluded_before_cooldown() -> None:
+    ranked = [
+        {"topic": "duplicate", "velocity_score": 9.0},
+        {"topic": "recent", "velocity_score": 8.0},
+        {"topic": "fresh", "velocity_score": 7.0},
+    ]
+
+    plan, skipped, skipped_excluded = _plan_topics(
+        ranked,
+        recent={"recent"},
+        excluded={"duplicate"},
+        top=1,
+    )
+
+    assert [row["topic"] for row in plan] == ["fresh"]
+    assert skipped == ["recent"]
+    assert skipped_excluded == ["duplicate"]
 
 
 def test_summarize_md_renders_table() -> None:
