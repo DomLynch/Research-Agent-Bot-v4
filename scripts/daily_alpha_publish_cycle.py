@@ -43,6 +43,15 @@ _DEFAULT_REFRESH_TOP = 20
 _DEFAULT_MAX_REFRESH_BATCHES = 2
 _REFRESH_TIMEOUT_SECONDS = 5400
 _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT = 4
+_EXHAUSTED_STATUSES = {
+    "duplicate_submission_fingerprint",
+    "missing_alpha_memo",
+    "needs_operator_approval",
+    "corpus_source_floor_below_min",
+    "memo_source_floor_below_min",
+    "cycle_failed_submission",
+    "held_retraction_check",
+}
 _REPAIRABLE_REJECTION_REASONS = {
     "minimum_citations",
     "recency_ratio",
@@ -432,11 +441,13 @@ def select_candidate(
     min_source_count: int = 0,
     memo_refresher: MemoRefresher | None = None,
     blocked_fingerprints: set[str] | None = None,
+    blocked_topics: set[str] | None = None,
 ) -> tuple[Json | None, list[Json]]:
     seen = _seen_submission_fingerprints(submitted_path)
     attempts = _submission_attempt_counts(submitted_path)
     retryable = _repairable_rejected_fingerprints(submitted_path.parent)
     blocked = blocked_fingerprints or set()
+    topic_blocked = blocked_topics or set()
     considered: list[Json] = []
     candidates = sorted(
         _rows(queue, allow_tier2=allow_tier2),
@@ -455,6 +466,7 @@ def select_candidate(
         has_memo = _has_memo(verdict, runs_root)
         approved = _approved(verdict, runs_root) if has_memo else False
         cycle_blocked = fp in blocked
+        exhausted_topic = str(verdict.get("topic") or "") in topic_blocked
         retry_after_rejection = (
             fp in retryable
             and attempts.get(fp, 0) < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
@@ -472,7 +484,9 @@ def select_candidate(
             if memo_refreshed:
                 source_count = _source_count(verdict, runs_root)
                 corpus_source_count = _corpus_source_count(verdict, runs_root)
-        if cycle_blocked:
+        if exhausted_topic:
+            status = "cycle_exhausted_topic"
+        elif cycle_blocked:
             status = "cycle_failed_submission"
         elif fp in seen and not retry_after_rejection:
             status = "duplicate_submission_fingerprint"
@@ -697,12 +711,18 @@ def _run_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
     return result.returncode == 0, (lines[-1] if lines else "")
 
 
-def _refresh_candidate_batch(refresh_top: int) -> Json:
-    ok, note = _run_step([
+def _refresh_candidate_batch(
+    refresh_top: int, excluded_topics: set[str] | None = None,
+) -> Json:
+    exclusions = sorted(t for t in (excluded_topics or set()) if t)
+    args = [
         sys.executable, "scripts/run_curator_cycle.py",
         "--top", str(refresh_top), "--cooldown-hours", "24",
-    ], timeout=_REFRESH_TIMEOUT_SECONDS)
-    return {"ok": ok, "note": note, "top": refresh_top}
+    ]
+    for topic in exclusions:
+        args.extend(["--exclude-topic", topic])
+    ok, note = _run_step(args, timeout=_REFRESH_TIMEOUT_SECONDS)
+    return {"ok": ok, "note": note, "top": refresh_top, "excluded_topics": exclusions}
 
 
 def _queue_counts(queue: Json) -> Json:
@@ -846,6 +866,7 @@ def run_cycle(
         _write_json(ledger_path, ledger)
         return ledger
     blocked_fingerprints: set[str] = set()
+    blocked_topics: set[str] = set()
     all_considered: list[Json] = []
     batch_limit = max(1, max_refresh_batches if refresh_candidates else 1)
     if submit and submitter is None:
@@ -863,7 +884,7 @@ def run_cycle(
         submitter = _http_submitter(url, token)
     for batch in range(1, batch_limit + 1):
         if refresh_candidates:
-            refresh = _refresh_candidate_batch(refresh_top)
+            refresh = _refresh_candidate_batch(refresh_top, blocked_topics)
             refresh["batch"] = batch
             ledger["refresh_batches"].append(refresh)
             ledger["refresh_candidates"] = refresh
@@ -881,10 +902,18 @@ def run_cycle(
             min_source_count=min_submit_sources if submit else 0,
             memo_refresher=memo_refresher if submit else None,
             blocked_fingerprints=blocked_fingerprints,
+            blocked_topics=blocked_topics,
         )
         for row in considered:
             if refresh_candidates:
                 row["batch"] = batch
+            if row.get("status") in _EXHAUSTED_STATUSES:
+                fingerprint = str(row.get("fingerprint") or "")
+                topic = str(row.get("topic") or "")
+                if fingerprint:
+                    blocked_fingerprints.add(fingerprint)
+                if topic:
+                    blocked_topics.add(topic)
         all_considered.extend(considered)
         ledger["considered"] = all_considered
         if candidate is None:

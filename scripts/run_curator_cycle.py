@@ -256,6 +256,8 @@ def main() -> int:
                              "(default 24)")
     parser.add_argument("--no-editorial", action="store_true",
                         help="Skip MiMo editorial polish on top-5 cards")
+    parser.add_argument("--exclude-topic", action="append", default=[],
+                        help="Skip a topic for this cycle; repeatable")
     parser.add_argument("--dry-run", action="store_true",
                         help="Print plan; do not invoke the pipeline")
     args = parser.parse_args()
@@ -276,11 +278,16 @@ def main() -> int:
 
     # Step 2: cooldown filter
     recent = _recent_signal_topics(_RUNS, args.cooldown_hours, cycle_start)
+    excluded = {str(t).strip() for t in args.exclude_topic if str(t).strip()}
     plan: list[dict[str, Any]] = []
     skipped: list[str] = []
+    skipped_excluded: list[str] = []
     for c in ranked:
         topic = str(c.get("topic") or "")
         if not topic:
+            continue
+        if topic in excluded:
+            skipped_excluded.append(topic)
             continue
         if topic in recent:
             skipped.append(topic)
@@ -321,6 +328,7 @@ def main() -> int:
         "cooldown_hours": args.cooldown_hours,
         "ran": [r.as_dict() for r in results],
         "skipped_in_cooldown": skipped,
+        "skipped_excluded": skipped_excluded,
     }
     json_path = _CYCLES_DIR / f"{cycle_ts}.json"
     md_path = _CYCLES_DIR / f"{cycle_ts}.md"

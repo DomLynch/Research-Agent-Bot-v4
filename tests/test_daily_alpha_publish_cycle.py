@@ -1059,3 +1059,48 @@ def test_sync_rejection_tries_next_refresh_batch(
     assert ledger["cycle_attempts"][0]["status"] == "rejected_needs_evidence"
     assert ledger["cycle_attempts"][1]["status"] == "submitted_to_researka"
     assert any(row["status"] == "cycle_failed_submission" for row in ledger["considered"])
+
+
+def test_duplicate_topic_is_excluded_from_next_refresh_batch(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    duplicate = _verdict("duplicate")
+    fresh = _verdict("fresh") | {
+        "receipt_expansion": {"cited_bound_fact_ids": ["9", "8", "7"]},
+    }
+    _memo_with_source_receipts(root, duplicate, 5)
+    _memo_with_source_receipts(root, fresh, 5)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
+        {"fingerprint": daily.memo_fingerprint(duplicate), "topic": "duplicate"},
+    ])
+    calls: list[list[str]] = []
+    queues = iter([_queue(duplicate), _queue(duplicate, fresh)])
+
+    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        calls.append(args)
+        return True, "ok"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        refresh_candidates=True,
+        max_refresh_batches=2,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+        queue_builder=lambda _root, _include_archive: next(queues),
+    )
+
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["submitted_topic"] == "fresh"
+    assert calls[0].count("--exclude-topic") == 0
+    assert calls[1][-2:] == ["--exclude-topic", "duplicate"]
+    assert [row["status"] for row in ledger["considered"]] == [
+        "duplicate_submission_fingerprint",
+        "cycle_exhausted_topic",
+        "eligible",
+    ]
