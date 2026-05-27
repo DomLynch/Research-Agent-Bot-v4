@@ -767,11 +767,27 @@ def _queue_counts(queue: Json) -> Json:
     }
 
 
+def _public_submission_markdown(memo: str) -> str:
+    lines = [
+        line for line in memo.splitlines()
+        if not line.startswith("**Alpha score:**")
+        and not line.startswith("**Alpha triage:**")
+    ]
+    text = "\n".join(lines).strip() + "\n"
+    return text.replace(
+        "## Context receipts\n\n",
+        "## Context receipts\n\n"
+        "_Boundary evidence only; these receipts broaden source context but do "
+        "not independently prove the lead claim._\n\n",
+    )
+
+
 def _submission_payload(verdict: Json, root: Path) -> Json:
     run_dir = _run_path(root, verdict.get("run_dir"))
     memo = ""
     with suppress(OSError):
         memo = (run_dir / "alpha_memo.md").read_text(encoding="utf-8")
+    public_memo = _public_submission_markdown(memo)
     title = str(
         _memo_headline(memo)
         or verdict.get("headline")
@@ -788,7 +804,7 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         "agent_id": "agent-v4-alpha-memo",
         "title": title,
         "topic": verdict.get("topic"),
-        "markdown": memo,
+        "markdown": public_memo,
         "citations": source_bundle,
         "source_bundle": source_bundle,
         "novelty_score": verdict.get("alpha_score"),
@@ -800,9 +816,9 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
             "bound_receipt_count": receipt_count,
             "bound_source_count": len(source_bundle),
             "source_bundle_count": len(source_bundle),
-            "context_sources_are_not_direct_support": False,
+            "context_sources_are_not_direct_support": "## Context receipts" in memo,
         },
-        "content_hash": "sha256:" + hashlib.sha256(memo.encode("utf-8")).hexdigest(),
+        "content_hash": "sha256:" + hashlib.sha256(public_memo.encode("utf-8")).hexdigest(),
     }
 
 

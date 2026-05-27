@@ -713,6 +713,30 @@ def test_submission_payload_preserves_alpha_memo_contract(tmp_path: Path) -> Non
     assert "source_papers" in payload["evidence_bundle"]
 
 
+def test_submission_payload_strips_internal_alpha_scores(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict()
+    run = root / str(verdict["run_dir"])
+    run.mkdir(parents=True)
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n"
+        "**Headline:** Bounded endpoint signal\n"
+        "**Alpha score:** 100/100\n"
+        "**Alpha triage:** `high` (internal ranking; not a certainty claim)\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## Context receipts\n\n"
+        "- boundary receipt\n",
+        encoding="utf-8",
+    )
+
+    payload = daily._submission_payload(verdict, root / "runs")
+
+    assert "**Alpha score:**" not in payload["markdown"]
+    assert "**Alpha triage:**" not in payload["markdown"]
+    assert "Boundary evidence only" in payload["markdown"]
+    assert payload["evidence_bundle"]["context_sources_are_not_direct_support"] is True
+
+
 def test_submission_payload_uses_researka_source_bundle_schema(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict()
