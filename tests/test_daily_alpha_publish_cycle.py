@@ -203,7 +203,7 @@ def test_default_memo_refresher_never_mutates_archive(tmp_path: Path) -> None:
 def test_repairable_rejected_submission_can_retry_once(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("retryable")
-    _memo(root, verdict)
+    _memo_with_source_receipts(root, verdict, 5)
     fp = daily.memo_fingerprint(verdict)
     daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
         {"fingerprint": fp, "topic": "retryable", "submission_id": "old-sub"},
@@ -481,7 +481,7 @@ def test_submit_floor_counts_sources_used_by_alpha_memo(tmp_path: Path) -> None:
     assert len(seen_payload["source_bundle"]) == 5
 
 
-def test_submit_floor_counts_context_receipts_in_source_bundle(tmp_path: Path) -> None:
+def test_submit_floor_blocks_context_only_source_padding(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("context_sources") | {
         "axes": {"source_papers": [{"doi": "10.1000/old", "title": "Old source"}]},
@@ -504,6 +504,48 @@ def test_submit_floor_counts_context_receipts_in_source_bundle(tmp_path: Path) -
             "source_paper": {"doi": f"10.1000/context-{i}", "title": f"Context {i}"},
         })
     run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+    )
+
+    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["considered"][0]["source_count"] == 5
+    assert ledger["considered"][0]["direct_source_count"] == 1
+    assert ledger["considered"][0]["min_direct_source_count"] == 2
+    assert ledger["considered"][0]["status"] == "direct_source_floor_below_min"
+
+
+def test_submit_floor_allows_broad_context_when_direct_sources_pass(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("direct_and_context") | {
+        "axes": {"source_papers": [{"doi": "10.1000/old", "title": "Old source"}]},
+    }
+    _memo_with_source_receipts(root, verdict, 1)
+    run = root / str(verdict["run_dir"])
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n"
+        "## Evidence receipts\n\n"
+        "- `fact_id=1` (`A_core`) - direct\n"
+        "- `fact_id=2` (`A_core`) - direct\n\n"
+        "## Context receipts\n\n"
+        + "\n".join(f"- `fact_id={i}` (`A_core`) - context" for i in range(3, 6))
+        + "\n",
+        encoding="utf-8",
+    )
+    facts = [
+        {
+            "fact_id": str(i),
+            "source_paper": {"doi": f"10.1000/source-{i}", "title": f"Source {i}"},
+        }
+        for i in range(1, 6)
+    ]
+    run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
     seen_payload: dict[str, Any] = {}
 
     ledger = daily.run_cycle(
@@ -522,7 +564,10 @@ def test_submit_floor_counts_context_receipts_in_source_bundle(tmp_path: Path) -
 
     assert ledger["status"] == "submitted_to_researka"
     assert ledger["considered"][0]["source_count"] == 5
+    assert ledger["considered"][0]["direct_source_count"] == 2
     assert len(seen_payload["source_bundle"]) == 5
+    assert seen_payload["evidence_bundle"]["direct_source_count"] == 2
+    assert seen_payload["evidence_bundle"]["context_source_count"] == 3
 
 
 def test_submit_floor_has_no_two_source_alpha_exception(tmp_path: Path) -> None:
@@ -657,7 +702,7 @@ def test_submit_refreshes_underexpanded_memo_once(tmp_path: Path) -> None:
 def test_retraction_check_blocks_submission_and_writes_hold(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict()
-    _memo(root, verdict)
+    _memo_with_source_receipts(root, verdict, 5)
 
     ledger = daily.run_cycle(
         runs_root=root,
@@ -834,7 +879,7 @@ def test_http_submitter_sends_runtime_api_key_header(monkeypatch: MonkeyPatch) -
 def test_successful_submit_records_submission_not_publication(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict()
-    _memo(root, verdict)
+    _memo_with_source_receipts(root, verdict, 5)
 
     ledger = daily.run_cycle(
         runs_root=root,
@@ -919,7 +964,7 @@ def test_sync_submission_decisions_uses_top_level_submission_id(tmp_path: Path) 
 def test_sync_submission_decisions_records_revise_as_retryable(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("revise")
-    _memo(root, verdict)
+    _memo_with_source_receipts(root, verdict, 5)
     fp = daily.memo_fingerprint(verdict)
     daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
         {"fingerprint": fp, "topic": "revise", "submission_id": "old-sub"},

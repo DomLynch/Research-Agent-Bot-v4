@@ -15,6 +15,7 @@ import re
 import subprocess
 import sys
 import time
+import tomllib
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -27,6 +28,7 @@ from agent.alpha_selector import accepted_shape_bonus
 
 _ROOT = Path(__file__).resolve().parent.parent
 _RUNS = _ROOT / "runs"
+_PUBLICATION_PATH = _ROOT / "topic_packs" / "publication.toml"
 
 Json = dict[str, Any]
 Fetcher = Callable[[str], Json]
@@ -40,7 +42,21 @@ _SUBMIT_TOKEN_ENVS = (
     "RESEARKA_AGENT_TOKEN_V4",
     "RESEARCH_API_KEY_V4",
 )
-_DEFAULT_MIN_SUBMIT_SOURCES = 5
+def _alpha_memo_int(name: str, default: int) -> int:
+    try:
+        data = tomllib.loads(_PUBLICATION_PATH.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return default
+    alpha = data.get("alpha_memo") if isinstance(data, dict) else {}
+    if not isinstance(alpha, dict):
+        return default
+    with suppress(TypeError, ValueError):
+        return max(0, int(str(alpha.get(name))))
+    return default
+
+
+_DEFAULT_MIN_SUBMIT_SOURCES = _alpha_memo_int("min_source_papers", 5)
+_DEFAULT_MIN_DIRECT_SUBMIT_SOURCES = _alpha_memo_int("min_direct_source_papers", 2)
 _DEFAULT_REFRESH_TOP = 20
 _DEFAULT_MAX_REFRESH_BATCHES = 2
 _REFRESH_TIMEOUT_SECONDS = 5400
@@ -51,6 +67,7 @@ _EXHAUSTED_STATUSES = {
     "needs_operator_approval",
     "corpus_source_floor_below_min",
     "memo_source_floor_below_min",
+    "direct_source_floor_below_min",
     "cycle_failed_submission",
     "held_retraction_check",
 }
@@ -324,9 +341,13 @@ def _source_count(verdict: Json, root: Path | None = None) -> int:
     return _source_count_from_verdict(verdict)
 
 
-def _memo_receipt_ids(text: str) -> list[str]:
+def _memo_receipt_ids(
+    text: str,
+    section_names: tuple[str, ...] = ("Evidence", "Context"),
+) -> list[str]:
+    names = "|".join(re.escape(name) for name in section_names)
     sections = re.findall(
-        r"^## (?:Evidence|Context) receipts\n\n(.*?)(?=\n## |\Z)",
+        rf"^## (?:{names}) receipts\n\n(.*?)(?=\n## |\Z)",
         text,
         flags=re.M | re.S,
     )
@@ -347,10 +368,14 @@ def _source_key_from_fact(fact: Json) -> str:
     return _norm(paper.get("doi") or paper.get("pmid") or paper.get("title"))
 
 
-def _memo_source_papers(verdict: Json, root: Path) -> list[Json]:
+def _memo_source_papers(
+    verdict: Json,
+    root: Path,
+    section_names: tuple[str, ...] = ("Evidence", "Context"),
+) -> list[Json]:
     run_dir = _run_path(root, verdict.get("run_dir"))
     memo = _read_text(run_dir / "alpha_memo.md")
-    ids = _memo_receipt_ids(memo)
+    ids = _memo_receipt_ids(memo, section_names)
     if not ids:
         return []
     facts = _json(run_dir / "all_facts.json", [])
@@ -379,6 +404,10 @@ def _memo_source_papers(verdict: Json, root: Path) -> list[Json]:
                 "is_retracted": bool(paper.get("is_retracted")),
             })
     return papers
+
+
+def _direct_source_count(verdict: Json, root: Path) -> int:
+    return len(_memo_source_papers(verdict, root, ("Evidence",)))
 
 
 def _memo_headline(memo: str) -> str:
@@ -470,6 +499,7 @@ def select_candidate(
     submitted_path: Path,
     allow_tier2: bool = False,
     min_source_count: int = 0,
+    min_direct_source_count: int = 0,
     memo_refresher: MemoRefresher | None = None,
     blocked_fingerprints: set[str] | None = None,
     blocked_topics: set[str] | None = None,
@@ -493,6 +523,7 @@ def select_candidate(
     for verdict in candidates:
         fp = memo_fingerprint(verdict)
         source_count = _source_count(verdict, runs_root)
+        direct_source_count = _direct_source_count(verdict, runs_root)
         corpus_source_count = _corpus_source_count(verdict, runs_root)
         shape_bonus = accepted_shape_bonus(verdict, shape_profiles)
         status = "eligible"
@@ -509,14 +540,21 @@ def select_candidate(
             not cycle_blocked
             and has_memo
             and approved
-            and source_count < min_source_count
-            and corpus_source_count >= min_source_count
+            and (
+                source_count < min_source_count
+                or direct_source_count < min_direct_source_count
+            )
+            and (
+                corpus_source_count >= min_source_count
+                or source_count >= min_source_count
+            )
             and memo_refresher
         ):
             run_dir = _run_path(runs_root, verdict.get("run_dir"))
             memo_refreshed = memo_refresher(run_dir, verdict)
             if memo_refreshed:
                 source_count = _source_count(verdict, runs_root)
+                direct_source_count = _direct_source_count(verdict, runs_root)
                 corpus_source_count = _corpus_source_count(verdict, runs_root)
         if exhausted_topic:
             status = "cycle_exhausted_topic"
@@ -534,6 +572,7 @@ def select_candidate(
                 memo_refreshed = memo_refresher(run_dir, verdict)
                 if memo_refreshed:
                     source_count = _source_count(verdict, runs_root)
+                    direct_source_count = _direct_source_count(verdict, runs_root)
                     corpus_source_count = _corpus_source_count(verdict, runs_root)
             if source_count < min_source_count:
                 status = (
@@ -543,6 +582,8 @@ def select_candidate(
                 )
                 if source_count >= min_source_count:
                     status = "eligible"
+            elif direct_source_count < min_direct_source_count:
+                status = "direct_source_floor_below_min"
         row = {
             "topic": verdict.get("topic"),
             "decision": verdict.get("decision"),
@@ -551,8 +592,10 @@ def select_candidate(
             "run_dir": verdict.get("run_dir"),
             "fingerprint": fp,
             "source_count": source_count,
+            "direct_source_count": direct_source_count,
             "corpus_ab_paper_count": corpus_source_count,
             "min_source_count": min_source_count,
+            "min_direct_source_count": min_direct_source_count,
             "accepted_shape_bonus": shape_bonus,
             "status": status,
         }
@@ -802,7 +845,9 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         or "Alpha memo"
     )
     source_papers = _memo_source_papers(verdict, root)
+    direct_source_papers = _memo_source_papers(verdict, root, ("Evidence",))
     source_bundle = _source_bundle(source_papers)
+    direct_source_count = len(direct_source_papers)
     receipt_count = len(_memo_receipt_ids(memo))
     return {
         "artifact_type": "alpha_memo",
@@ -820,9 +865,12 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
             "publish_verdict": verdict,
             "run_dir": verdict.get("run_dir"),
             "source_papers": source_papers,
+            "direct_source_papers": direct_source_papers,
             "bound_receipt_count": receipt_count,
             "bound_source_count": len(source_bundle),
             "source_bundle_count": len(source_bundle),
+            "direct_source_count": direct_source_count,
+            "context_source_count": max(0, len(source_bundle) - direct_source_count),
             "context_sources_are_not_direct_support": "## Context receipts" in memo,
         },
         "content_hash": "sha256:" + hashlib.sha256(public_memo.encode("utf-8")).hexdigest(),
@@ -893,6 +941,7 @@ def run_cycle(
     submit: bool = False,
     retraction_mode: str = "metadata",
     min_submit_sources: int = _DEFAULT_MIN_SUBMIT_SOURCES,
+    min_direct_submit_sources: int = _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES,
     submitter: Submitter | None = None,
     fetcher: Fetcher = _crossref_fetch,
     decision_fetcher: DecisionFetcher = _decision_fetch,
@@ -911,6 +960,7 @@ def run_cycle(
         "refresh_top": refresh_top,
         "max_refresh_batches": max_refresh_batches,
         "min_submit_sources": min_submit_sources,
+        "min_direct_submit_sources": min_direct_submit_sources,
         "refresh_batches": [],
         "cycle_attempts": [],
         "published": 0,
@@ -959,6 +1009,7 @@ def run_cycle(
             current_queue, runs_root=runs_root, submitted_path=submitted_path,
             allow_tier2=allow_tier2,
             min_source_count=min_submit_sources if submit else 0,
+            min_direct_source_count=min_direct_submit_sources if submit else 0,
             memo_refresher=memo_refresher if submit else None,
             blocked_fingerprints=blocked_fingerprints,
             blocked_topics=blocked_topics,
@@ -1089,6 +1140,7 @@ def main() -> int:
     parser.add_argument("--refresh-top", type=int, default=_DEFAULT_REFRESH_TOP)
     parser.add_argument("--max-refresh-batches", type=int, default=_DEFAULT_MAX_REFRESH_BATCHES)
     parser.add_argument("--min-submit-sources", type=int, default=_DEFAULT_MIN_SUBMIT_SOURCES)
+    parser.add_argument("--min-direct-submit-sources", type=int, default=_DEFAULT_MIN_DIRECT_SUBMIT_SOURCES)
     parser.add_argument("--submit", action="store_true")
     parser.add_argument(
         "--retraction-check",
@@ -1106,6 +1158,7 @@ def main() -> int:
         refresh_top=args.refresh_top,
         max_refresh_batches=args.max_refresh_batches,
         min_submit_sources=args.min_submit_sources,
+        min_direct_submit_sources=args.min_direct_submit_sources,
         submit=args.submit,
         retraction_mode=args.retraction_check,
     )
