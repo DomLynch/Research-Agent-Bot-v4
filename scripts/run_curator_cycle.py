@@ -106,6 +106,17 @@ def _newest_run_for_topic(topic: str) -> Path | None:
     return candidates[-1] if candidates else None
 
 
+def _is_publish_ready(run_dir: str) -> bool:
+    if not run_dir:
+        return False
+    try:
+        verdict = json.loads((_ROOT / run_dir / "publish_verdict.json").read_text(
+            encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    return str(verdict.get("decision") or "") == "ready_to_publish"
+
+
 def _run_step(args: list[str], step_name: str) -> tuple[bool, str]:
     """Run a subprocess; return (ok, last_line). Never raises."""
     try:
@@ -120,7 +131,7 @@ def _run_step(args: list[str], step_name: str) -> tuple[bool, str]:
 
 def _run_topic_pipeline(
     topic: str, velocity: float, *, with_editorial: bool, top_n: int,
-    py: str,
+    py: str, pico_enrich: bool = False,
 ) -> TopicResult:
     """Run build + gate + signal_post for one topic. Returns the
     aggregate result. Each step's failure is recorded; we continue
@@ -129,6 +140,8 @@ def _run_topic_pipeline(
                   "--topic", topic, "--top", str(top_n)]
     if with_editorial:
         build_args.append("--with-editorial")
+    if not pico_enrich:
+        build_args.append("--no-pico-enrich")
     ok, last = _run_step(build_args, "build")
     if not ok:
         return TopicResult(topic=topic, velocity=velocity, status="failed",
@@ -282,6 +295,10 @@ def main() -> int:
                              "(default 24)")
     parser.add_argument("--no-editorial", action="store_true",
                         help="Skip MiMo editorial polish on top-5 cards")
+    parser.add_argument("--with-pico-enrich", action="store_true",
+                        help="Run optional MiMo PICO enrichment in build step")
+    parser.add_argument("--stop-on-ready", action="store_true",
+                        help="Stop after the first ready_to_publish verdict")
     parser.add_argument("--exclude-topic", action="append", default=[],
                         help="Skip a topic for this cycle; repeatable")
     parser.add_argument("--dry-run", action="store_true",
@@ -321,6 +338,7 @@ def main() -> int:
 
     # Step 3: run pipeline per topic
     results: list[TopicResult] = []
+    stopped_on_ready = False
     for c in plan:
         topic = str(c["topic"])
         vel = float(c.get("velocity_score") or 0.0)
@@ -328,12 +346,16 @@ def main() -> int:
         t0 = time.time()
         res = _run_topic_pipeline(
             topic, vel, with_editorial=not args.no_editorial,
-            top_n=5, py=py,
+            top_n=5, py=py, pico_enrich=args.with_pico_enrich,
         )
         elapsed = time.time() - t0
         print(f"   -> {res.status} label={res.signal_label} "
               f"({elapsed:.1f}s)")
         results.append(res)
+        if args.stop_on_ready and _is_publish_ready(res.run_dir):
+            stopped_on_ready = True
+            print("[cycle] stop-on-ready: publishable candidate created")
+            break
 
     # Step 4: emit summary
     _CYCLES_DIR.mkdir(parents=True, exist_ok=True)
@@ -343,6 +365,7 @@ def main() -> int:
         "ran": [r.as_dict() for r in results],
         "skipped_in_cooldown": skipped,
         "skipped_excluded": skipped_excluded,
+        "stopped_on_ready": stopped_on_ready,
     }
     json_path = _CYCLES_DIR / f"{cycle_ts}.json"
     md_path = _CYCLES_DIR / f"{cycle_ts}.md"
@@ -350,7 +373,7 @@ def main() -> int:
         json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
     md_text = _summarize_md(cycle_ts, results, skipped,
                             args.cooldown_hours, args.top)
-    cross_ok, cross_last = _run_step(
+    cross_ok, cross_last = (False, "skipped_stop_on_ready") if stopped_on_ready else _run_step(
         [py, "scripts/run_cross_topic_synthesis.py",
          "--cycle-json", str(json_path)],
         "cross_topic",

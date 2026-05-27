@@ -206,6 +206,82 @@ def test_topic_result_round_trips() -> None:
     assert d["velocity"] == 1.0
 
 
+def test_topic_pipeline_skips_pico_by_default(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    run_dir = tmp_path / "runs" / "topic-evidence-ts"
+    run_dir.mkdir(parents=True)
+    calls: list[list[str]] = []
+
+    def fake_step(args: list[str], _step: str) -> tuple[bool, str]:
+        calls.append(args)
+        return True, "ok"
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", tmp_path / "runs")
+    monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
+
+    run_curator_cycle._run_topic_pipeline(
+        "topic", 1.0, with_editorial=True, top_n=5, py="python",
+    )
+
+    assert "--with-editorial" in calls[0]
+    assert "--no-pico-enrich" in calls[0]
+
+
+def test_stop_on_ready_halts_plan(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    runs = tmp_path / "runs"
+    cycles = runs / "_curator_cycles"
+    cycles.mkdir(parents=True)
+    seen: list[str] = []
+
+    def fake_pipeline(
+        topic: str, velocity: float, *, with_editorial: bool,
+        top_n: int, py: str, pico_enrich: bool = False,
+    ) -> TopicResult:
+        seen.append(topic)
+        run_dir = runs / f"{topic}-evidence-ts"
+        run_dir.mkdir()
+        (run_dir / "publish_verdict.json").write_text(
+            json.dumps({"decision": "ready_to_publish"}), encoding="utf-8",
+        )
+        return TopicResult(
+            topic=topic, velocity=velocity, status="ran",
+            run_dir=f"runs/{topic}-evidence-ts",
+            signal_label="evidence_backed_signal", notes="",
+        )
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
+    monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
+    monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
+    monkeypatch.setattr(
+        run_curator_cycle, "_read_discovery_top",
+        lambda _out: [
+            {"topic": "ready", "velocity_score": 2.0},
+            {"topic": "later", "velocity_score": 1.0},
+        ],
+    )
+    monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",
+                        lambda *_args, **_kwargs: set())
+    monkeypatch.setattr(run_curator_cycle, "_run_step",
+                        lambda *_args, **_kwargs: (True, "ok"))
+    monkeypatch.setattr(sys, "argv", [
+        "run_curator_cycle.py", "--top", "2", "--stop-on-ready",
+    ])
+
+    assert run_curator_cycle.main() == 0
+    assert seen == ["ready"]
+    payload = json.loads(next(cycles.glob("*.json")).read_text(encoding="utf-8"))
+    assert payload["stopped_on_ready"] is True
+
+
 def test_universal_non_biomedical_topic(tmp_path: Path) -> None:
     """Cooldown filter works on any topic identifier — no biomedical
     assumption."""
