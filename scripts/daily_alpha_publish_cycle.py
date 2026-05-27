@@ -58,7 +58,7 @@ def _alpha_memo_int(name: str, default: int) -> int:
 _DEFAULT_MIN_SUBMIT_SOURCES = _alpha_memo_int("min_source_papers", 5)
 _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES = _alpha_memo_int("min_direct_source_papers", 2)
 _DEFAULT_REFRESH_TOP = 20
-_DEFAULT_MAX_REFRESH_BATCHES = 2
+_DEFAULT_MAX_REFRESH_BATCHES = 5
 _REFRESH_TIMEOUT_SECONDS = 5400
 _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT = 4
 _EXHAUSTED_STATUSES = {
@@ -1143,6 +1143,9 @@ def run_cycle(
                 break
         ledger["cycle_attempts"].append(attempt)
         blocked_fingerprints.add(str(candidate.get("memo_fingerprint") or ""))
+        topic = str(candidate.get("topic") or "")
+        if topic:
+            blocked_topics.add(topic)
         if not refresh_candidates or batch == batch_limit:
             ledger.update({"status": result["status"], "published": 0})
             _write_json(ledger_path, ledger)

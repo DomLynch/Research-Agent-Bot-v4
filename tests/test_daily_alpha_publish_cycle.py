@@ -1247,6 +1247,57 @@ def test_duplicate_topic_is_excluded_from_next_refresh_batch(
     ]
 
 
+def test_submit_duplicates_rotate_topics_until_success(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    first = _verdict("first")
+    second = _verdict("second")
+    third = _verdict("third") | {
+        "receipt_expansion": {"cited_bound_fact_ids": ["9", "8", "7"]},
+    }
+    for verdict in (first, second, third):
+        _memo_with_source_receipts(root, verdict, 5)
+    queues = iter([
+        _queue(first),
+        _queue(first, second),
+        _queue(first, second, third),
+    ])
+    responses = iter([
+        {"ok": False, "status": 409, "response": "duplicate_submission"},
+        {"ok": False, "status": 409, "response": "duplicate_submission"},
+        {"ok": True, "status": 200, "response": {"submission": {"id": "sub-ok"}}},
+    ])
+    calls: list[list[str]] = []
+
+    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        calls.append(args)
+        return True, "ok"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        refresh_candidates=True,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: next(responses),
+        queue_builder=lambda _root, _include_archive: next(queues),
+    )
+
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["submitted_topic"] == "third"
+    assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == [
+        "rejected_duplicate",
+        "rejected_duplicate",
+        "submitted_to_researka",
+    ]
+    assert calls[1][-2:] == ["--exclude-topic", "first"]
+    assert calls[2][-4:] == ["--exclude-topic", "first", "--exclude-topic", "second"]
+
+
 def test_accepted_shape_bias_breaks_candidate_tie(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     matching = _verdict("matching", score=90) | {
