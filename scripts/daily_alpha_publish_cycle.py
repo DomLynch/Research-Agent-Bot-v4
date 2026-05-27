@@ -234,18 +234,26 @@ def _seen_submission_fingerprints(path: Path) -> set[str]:
     return set()
 
 
-def _submission_attempt_counts(path: Path) -> dict[str, int]:
+def _memo_sha256(verdict: Json, root: Path) -> str:
+    run_dir = _run_path(root, verdict.get("run_dir"))
+    memo = _read_text(run_dir / "alpha_memo.md")
+    return hashlib.sha256(memo.encode("utf-8")).hexdigest() if memo else ""
+
+
+def _fingerprint_attempt_count(path: Path, fingerprint: str, memo_sha256: str) -> int:
     data = _json(path, [])
-    counts: dict[str, int] = {}
     if not isinstance(data, list):
-        return counts
-    for row in data:
-        if not isinstance(row, dict):
-            continue
-        fp = str(row.get("fingerprint") or "")
-        if fp:
-            counts[fp] = counts.get(fp, 0) + 1
-    return counts
+        return 0
+    return sum(
+        1
+        for row in data
+        if isinstance(row, dict)
+        and row.get("fingerprint") == fingerprint
+        and (
+            not memo_sha256
+            or row.get("memo_sha256") == memo_sha256
+        )
+    )
 
 
 def _repairable_rejected_fingerprints(ledger_dir: Path) -> set[str]:
@@ -518,7 +526,6 @@ def select_candidate(
     accepted_shape_profiles: list[Json] | None = None,
 ) -> tuple[Json | None, list[Json]]:
     seen = _seen_submission_fingerprints(submitted_path)
-    attempts = _submission_attempt_counts(submitted_path)
     retryable = _repairable_rejected_fingerprints(submitted_path.parent)
     blocked = blocked_fingerprints or set()
     topic_blocked = blocked_topics or set()
@@ -541,12 +548,14 @@ def select_candidate(
         status = "eligible"
         memo_refreshed = False
         has_memo = _has_memo(verdict, runs_root)
+        memo_sha256 = _memo_sha256(verdict, runs_root) if has_memo else ""
         approved = _approved(verdict, runs_root) if has_memo else False
         cycle_blocked = fp in blocked
         exhausted_topic = str(verdict.get("topic") or "") in topic_blocked
+        attempt_count = _fingerprint_attempt_count(submitted_path, fp, memo_sha256)
         retry_after_rejection = (
             fp in retryable
-            and attempts.get(fp, 0) < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
+            and attempt_count < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
         )
         if (
             not cycle_blocked
@@ -568,6 +577,12 @@ def select_candidate(
                 source_count = _source_count(verdict, runs_root)
                 direct_source_count = _direct_source_count(verdict, runs_root)
                 corpus_source_count = _corpus_source_count(verdict, runs_root)
+                memo_sha256 = _memo_sha256(verdict, runs_root)
+                attempt_count = _fingerprint_attempt_count(submitted_path, fp, memo_sha256)
+                retry_after_rejection = (
+                    fp in retryable
+                    and attempt_count < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
+                )
         if exhausted_topic:
             status = "cycle_exhausted_topic"
         elif cycle_blocked:
@@ -586,6 +601,12 @@ def select_candidate(
                     source_count = _source_count(verdict, runs_root)
                     direct_source_count = _direct_source_count(verdict, runs_root)
                     corpus_source_count = _corpus_source_count(verdict, runs_root)
+                    memo_sha256 = _memo_sha256(verdict, runs_root)
+                    attempt_count = _fingerprint_attempt_count(submitted_path, fp, memo_sha256)
+                    retry_after_rejection = (
+                        fp in retryable
+                        and attempt_count < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
+                    )
             if source_count < min_source_count:
                 status = (
                     "corpus_source_floor_below_min"
@@ -615,6 +636,7 @@ def select_candidate(
             row["memo_refreshed"] = True
         if retry_after_rejection:
             row["retry_after_rejection"] = True
+            row["retry_attempt_count"] = attempt_count
         considered.append(row)
         if status == "eligible":
             return verdict | {"memo_fingerprint": fp}, considered
@@ -1098,6 +1120,7 @@ def run_cycle(
                 "topic": candidate.get("topic"),
                 "run_dir": candidate.get("run_dir"),
                 "fingerprint": candidate.get("memo_fingerprint"),
+                "memo_sha256": _memo_sha256(candidate, runs_root),
                 "submission_id": submission_id,
             })
             _write_json(submitted_path, records)

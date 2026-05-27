@@ -351,11 +351,12 @@ def test_repairable_rejection_retry_is_capped(tmp_path: Path) -> None:
     verdict = _verdict("capped")
     _memo(root, verdict)
     fp = daily.memo_fingerprint(verdict)
+    memo_sha = daily._memo_sha256(verdict, root)
     daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
-        {"fingerprint": fp, "topic": "capped", "submission_id": "old-sub-1"},
-        {"fingerprint": fp, "topic": "capped", "submission_id": "old-sub-2"},
-        {"fingerprint": fp, "topic": "capped", "submission_id": "old-sub-3"},
-        {"fingerprint": fp, "topic": "capped", "submission_id": "old-sub-4"},
+        {"fingerprint": fp, "topic": "capped", "submission_id": "old-sub-1", "memo_sha256": memo_sha},
+        {"fingerprint": fp, "topic": "capped", "submission_id": "old-sub-2", "memo_sha256": memo_sha},
+        {"fingerprint": fp, "topic": "capped", "submission_id": "old-sub-3", "memo_sha256": memo_sha},
+        {"fingerprint": fp, "topic": "capped", "submission_id": "old-sub-4", "memo_sha256": memo_sha},
     ])
     daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
         "status": "submitted_to_researka",
@@ -378,6 +379,56 @@ def test_repairable_rejection_retry_is_capped(tmp_path: Path) -> None:
 
     assert ledger["status"] == "no_publishable_candidate"
     assert ledger["considered"][0]["status"] == "duplicate_submission_fingerprint"
+
+
+def test_repairable_revision_retry_cap_uses_current_memo_hash(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("revised")
+    _memo_with_source_receipts(root, verdict, 5)
+    fp = daily.memo_fingerprint(verdict)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
+        {
+            "fingerprint": fp,
+            "topic": "revised",
+            "submission_id": f"old-sub-{i}",
+            "memo_sha256": "old-memo",
+        }
+        for i in range(4)
+    ])
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submitted_to_researka",
+        "final_verdict": "revise",
+        "candidate": {"fingerprint": fp, "topic": "revised"},
+        "researka_decision": {
+            "status": "complete",
+            "decision": "revise",
+            "resubmission": {"allowed": True},
+        },
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": "new-sub"}},
+        },
+    )
+
+    records = json.loads(
+        (root / "_daily_ledger" / "_submitted_fingerprints.json").read_text(
+            encoding="utf-8",
+        )
+    )
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["considered"][0]["retry_after_rejection"] is True
+    assert ledger["considered"][0]["retry_attempt_count"] == 0
+    assert records[-1]["memo_sha256"] == daily._memo_sha256(verdict, root)
 
 
 def test_missing_alpha_memo_is_not_publishable(tmp_path: Path) -> None:
