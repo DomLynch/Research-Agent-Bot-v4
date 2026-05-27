@@ -586,11 +586,13 @@ def render_signal_memo(
         context_ids,
     )
 
+    score = _alpha_score(audit, label)
     lines = [
         f"# Alpha memo — {topic}",
         "",
         f"**Headline:** {headline}",
-        f"**Alpha triage:** `{_score_band(_alpha_score(audit, label))}` (internal ranking; not a certainty claim)",
+        f"**Alpha score:** {score}/100",
+        f"**Alpha triage:** `{_score_band(score)}` (internal ranking; not a certainty claim)",
         f"**Confidence:** `{label}`",
         f"**Memo surface:** `{_surface_line(publish_verdict)}`",
         f"**Snapshot:** `{snapshot}`",

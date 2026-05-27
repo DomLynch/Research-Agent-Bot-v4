@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from agent.publish_tier import publish_verdict
 from agent.signal_memo_writer import render_signal_memo, write_signal_memo
 
 
@@ -84,6 +85,7 @@ def test_signal_memo_has_required_alpha_sections_and_bound_receipts(
     assert "## Provenance / priority" in memo
     assert "`fact_id=101` (`A_core`)" in memo
     assert "fact_id=202" not in memo
+    assert "**Alpha score:** 98/100" in memo
     assert "**Alpha triage:** `high` (internal ranking; not a certainty claim)" in memo
     assert "Suggested citation" in memo
     assert "Run bundle SHA-256" in memo
@@ -96,6 +98,7 @@ def test_write_signal_memo_writes_alpha_memo(tmp_path: Path) -> None:
 
     assert out == run / "alpha_memo.md"
     assert out.read_text(encoding="utf-8") == text
+    assert publish_verdict(run)["alpha_score"] == 98
 
 
 def test_no_signal_memo_does_not_promote_mimo_note_heading(tmp_path: Path) -> None:
