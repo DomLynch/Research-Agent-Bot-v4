@@ -373,10 +373,14 @@ def _receipt_thesis(
     verdict: dict[str, Any] | None,
 ) -> str:
     fallback = _first_sentence(str(audit.get("rationale") or ""), "")
+    stream_note = (
+        " The cited receipts are separate evidence streams; this memo maps a "
+        "testable contrast, not one integrated analysis."
+    )
     if verdict and verdict.get("surface_type") == "context_dependence_memo":
         return _context_subline(verdict, fallback or headline)
     if fallback and not _same_phrase(fallback, headline):
-        return fallback
+        return fallback + stream_note
     phrases = [_fact_phrase(facts.get(fid) or {}) for fid in receipt_ids[:2]]
     joined = "; ".join(p for p in phrases if p)
     if joined:
@@ -386,7 +390,7 @@ def _receipt_thesis(
                 "The context receipts provide source breadth and boundary checks, "
                 "not independent confirmation of the lead claim."
             )
-        return f"The cited A/B receipts support a specific working claim: {joined}."
+        return f"The cited A/B receipts support a specific working claim: {joined}.{stream_note}"
     return f"The memo advances a bounded evidence signal under this headline: {headline}."
 
 
@@ -645,8 +649,9 @@ def render_signal_memo(
         (
             "Treat this as a focused working signal, not a broad topic claim. "
             "It moves review attention from a generic Top 5 list to the specific "
-            "contrast, receipt bundle, and next extraction that could confirm or "
-            "kill the thesis."
+            "contrast, receipt bundle, and matched direct-receipt table by "
+            "population, model, endpoint, comparator, and effect direction that "
+            "could confirm or kill the thesis."
         ),
         "",
         "## Limitations",

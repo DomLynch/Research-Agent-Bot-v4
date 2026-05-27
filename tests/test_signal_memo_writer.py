@@ -202,6 +202,8 @@ def test_alpha_memo_expands_receipts_to_five_sources_when_available(
 
     assert "**Headline:** Carbon pricing may cut emissions" in memo
     assert "**Direct source breadth:** `5` direct cited source(s)" in memo
+    assert "separate evidence streams" in memo
+    assert "matched direct-receipt table" in memo
     assert "does not conduct a new meta-analysis or systematic review" in memo
     assert "Real tension:" not in memo
     assert "**Source breadth:** `5/5` unique cited source(s)" in memo
