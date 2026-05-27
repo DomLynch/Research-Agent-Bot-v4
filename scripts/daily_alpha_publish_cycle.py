@@ -774,6 +774,13 @@ def _public_submission_markdown(memo: str) -> str:
         and not line.startswith("**Alpha triage:**")
     ]
     text = "\n".join(lines).strip() + "\n"
+    note = (
+        "**Interpretation note:** This is a hypothesis-generating alpha memo, "
+        "not confirmatory evidence; subgroup or context-derived claims require "
+        "independent replication.\n"
+    )
+    if "## Why this is surprising" in text and note not in text:
+        text = text.replace("\n## Why this is surprising", f"\n\n{note}\n## Why this is surprising", 1)
     return text.replace(
         "## Context receipts\n\n",
         "## Context receipts\n\n"

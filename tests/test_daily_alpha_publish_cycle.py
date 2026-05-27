@@ -724,6 +724,8 @@ def test_submission_payload_strips_internal_alpha_scores(tmp_path: Path) -> None
         "**Alpha score:** 100/100\n"
         "**Alpha triage:** `high` (internal ranking; not a certainty claim)\n"
         "**Confidence:** `evidence_backed_signal`\n\n"
+        "## Why this is surprising\n\n"
+        "Narrow signal.\n\n"
         "## Context receipts\n\n"
         "- boundary receipt\n",
         encoding="utf-8",
@@ -733,6 +735,7 @@ def test_submission_payload_strips_internal_alpha_scores(tmp_path: Path) -> None
 
     assert "**Alpha score:**" not in payload["markdown"]
     assert "**Alpha triage:**" not in payload["markdown"]
+    assert "hypothesis-generating alpha memo, not confirmatory evidence" in payload["markdown"]
     assert "Boundary evidence only" in payload["markdown"]
     assert payload["evidence_bundle"]["context_sources_are_not_direct_support"] is True
 
