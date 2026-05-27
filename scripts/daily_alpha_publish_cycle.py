@@ -23,6 +23,8 @@ from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
+from agent.alpha_selector import accepted_shape_bonus
+
 _ROOT = Path(__file__).resolve().parent.parent
 _RUNS = _ROOT / "runs"
 
@@ -270,6 +272,33 @@ def _repairable_candidate_verdicts(runs_root: Path) -> list[Json]:
     return verdicts
 
 
+def _accepted_shape_profiles(runs_root: Path, *, limit: int = 25) -> list[Json]:
+    profiles: list[Json] = []
+    ledger_dir = runs_root / "_daily_ledger"
+    for path in sorted(ledger_dir.glob("*.json"), reverse=True):
+        ledger = _json(path, {})
+        if not isinstance(ledger, dict) or ledger.get("final_verdict") != "accepted":
+            continue
+        candidate = ledger.get("candidate")
+        if not isinstance(candidate, dict):
+            candidate = {}
+        fp = str(candidate.get("fingerprint") or "")
+        profile: Json = {}
+        run_dir = _run_path(runs_root, candidate.get("run_dir"))
+        verdict = _json(run_dir / "publish_verdict.json", {})
+        if isinstance(verdict, dict):
+            profile.update(verdict)
+        for row in ledger.get("considered") or []:
+            if isinstance(row, dict) and (not fp or row.get("fingerprint") == fp):
+                profile.update(row)
+                break
+        if profile:
+            profiles.append(profile)
+        if len(profiles) >= limit:
+            break
+    return profiles
+
+
 def _repairable_rejection(decision: Json) -> bool:
     if decision.get("decision") == "revise":
         return True
@@ -442,18 +471,20 @@ def select_candidate(
     memo_refresher: MemoRefresher | None = None,
     blocked_fingerprints: set[str] | None = None,
     blocked_topics: set[str] | None = None,
+    accepted_shape_profiles: list[Json] | None = None,
 ) -> tuple[Json | None, list[Json]]:
     seen = _seen_submission_fingerprints(submitted_path)
     attempts = _submission_attempt_counts(submitted_path)
     retryable = _repairable_rejected_fingerprints(submitted_path.parent)
     blocked = blocked_fingerprints or set()
     topic_blocked = blocked_topics or set()
+    shape_profiles = accepted_shape_profiles or []
     considered: list[Json] = []
     candidates = sorted(
         _rows(queue, allow_tier2=allow_tier2),
         key=lambda r: (
             0 if r.get("decision") == "ready_to_publish" else 1,
-            -int(r.get("alpha_score") or 0),
+            -(int(r.get("alpha_score") or 0) + accepted_shape_bonus(r, shape_profiles)),
             str(r.get("topic") or ""),
         ),
     )
@@ -461,6 +492,7 @@ def select_candidate(
         fp = memo_fingerprint(verdict)
         source_count = _source_count(verdict, runs_root)
         corpus_source_count = _corpus_source_count(verdict, runs_root)
+        shape_bonus = accepted_shape_bonus(verdict, shape_profiles)
         status = "eligible"
         memo_refreshed = False
         has_memo = _has_memo(verdict, runs_root)
@@ -519,6 +551,7 @@ def select_candidate(
             "source_count": source_count,
             "corpus_ab_paper_count": corpus_source_count,
             "min_source_count": min_source_count,
+            "accepted_shape_bonus": shape_bonus,
             "status": status,
         }
         if memo_refreshed:
@@ -867,6 +900,7 @@ def run_cycle(
         return ledger
     blocked_fingerprints: set[str] = set()
     blocked_topics: set[str] = set()
+    accepted_shape_profiles = _accepted_shape_profiles(runs_root)
     all_considered: list[Json] = []
     batch_limit = max(1, max_refresh_batches if refresh_candidates else 1)
     if submit and submitter is None:
@@ -903,6 +937,7 @@ def run_cycle(
             memo_refresher=memo_refresher if submit else None,
             blocked_fingerprints=blocked_fingerprints,
             blocked_topics=blocked_topics,
+            accepted_shape_profiles=accepted_shape_profiles,
         )
         for row in considered:
             if refresh_candidates:

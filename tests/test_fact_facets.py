@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from agent.alpha_selector import alpha_cues, alpha_score
+from agent.alpha_selector import accepted_shape_bonus, alpha_cues, alpha_score
 from agent.fact_facets import (
     classify_fact_facet,
     load_facet_markers,
@@ -116,6 +116,28 @@ def test_alpha_score_penalizes_context_poor_numeric_fragments() -> None:
     )
     assert "context_fragment" in alpha_cues(fragment)
     assert alpha_score(80, fragment) == 35
+
+
+def test_accepted_shape_bonus_rewards_prior_accepted_profile() -> None:
+    profile = {
+        "source_count": 5,
+        "alpha_score": 88,
+        "publish_tier": "TIER_1",
+        "surface_type": "publish_alpha_memo",
+    }
+    matching = {
+        "alpha_score": 90,
+        "publish_tier": "TIER_1",
+        "surface_type": "publish_alpha_memo",
+        "axes": {"source_papers": [{"doi": f"10.1/{i}"} for i in range(5)]},
+    }
+    loose = matching | {
+        "alpha_score": 50,
+        "axes": {"source_papers": [{"doi": f"10.2/{i}"} for i in range(12)]},
+    }
+
+    assert accepted_shape_bonus(matching, [profile]) > accepted_shape_bonus(loose, [profile])
+    assert accepted_shape_bonus(matching, []) == 0
 
 
 def test_fact_facets_code_has_no_domain_vocabulary() -> None:

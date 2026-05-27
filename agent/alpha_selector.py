@@ -90,3 +90,66 @@ def alpha_score(base_score: int, fact: dict[str, Any]) -> int:
     if "context_fragment" in cues:
         boost -= 45
     return max(0, min(100, base_score + boost))
+
+
+def _intish(value: Any) -> int:
+    try:
+        return int(str(value))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _shape_source_count(verdict: dict[str, Any]) -> int:
+    for key in ("source_count", "bound_source_count", "source_bundle_count"):
+        count = _intish(verdict.get(key))
+        if count:
+            return count
+    axes = verdict.get("axes")
+    if isinstance(axes, dict):
+        papers = axes.get("source_papers")
+        if isinstance(papers, list):
+            keys = {
+                str((p or {}).get("doi") or (p or {}).get("title") or "").lower()
+                for p in papers if isinstance(p, dict)
+            }
+            return len({k for k in keys if k})
+        for key in ("source_count", "selected_count"):
+            count = _intish(axes.get(key))
+            if count:
+                return count
+    return 0
+
+
+def accepted_shape_bonus(
+    verdict: dict[str, Any],
+    accepted_profiles: list[dict[str, Any]] | tuple[dict[str, Any], ...],
+) -> int:
+    """Small deterministic bias toward shapes Researka has accepted before."""
+    if not accepted_profiles:
+        return 0
+    candidate_sources = _shape_source_count(verdict)
+    candidate_alpha = _intish(verdict.get("alpha_score"))
+    best = 0
+    for profile in accepted_profiles:
+        score = 0
+        profile_sources = _shape_source_count(profile)
+        if candidate_sources and profile_sources:
+            delta = abs(candidate_sources - profile_sources)
+            if delta == 0:
+                score += 4
+            elif delta <= 2:
+                score += 2
+            elif candidate_sources >= profile_sources:
+                score += 1
+        profile_alpha = _intish(profile.get("alpha_score"))
+        if candidate_alpha and profile_alpha:
+            delta = abs(candidate_alpha - profile_alpha)
+            if delta <= 10:
+                score += 2
+            elif delta <= 20:
+                score += 1
+        for key in ("publish_tier", "maturity_level", "surface_type", "confidence_label"):
+            if verdict.get(key) and verdict.get(key) == profile.get(key):
+                score += 1
+        best = max(best, score)
+    return min(best, 10)

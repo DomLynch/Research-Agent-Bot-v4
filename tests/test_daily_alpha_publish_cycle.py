@@ -1104,3 +1104,44 @@ def test_duplicate_topic_is_excluded_from_next_refresh_batch(
         "cycle_exhausted_topic",
         "eligible",
     ]
+
+
+def test_accepted_shape_bias_breaks_candidate_tie(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    matching = _verdict("matching", score=90) | {
+        "axes": {"source_papers": [{"doi": f"10.1/{i}"} for i in range(5)]},
+    }
+    raw_higher = _verdict("raw_higher", score=93) | {
+        "axes": {"source_papers": [{"doi": f"10.2/{i}"} for i in range(12)]},
+        "receipt_expansion": {"cited_bound_fact_ids": ["9", "8", "7"]},
+    }
+    _memo_with_source_receipts(root, matching, 5)
+    _memo_with_source_receipts(root, raw_higher, 12)
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submitted_to_researka",
+        "final_verdict": "accepted",
+        "candidate": {
+            "fingerprint": "accepted-shape",
+            "run_dir": matching["run_dir"],
+        },
+        "considered": [
+            {
+                "fingerprint": "accepted-shape",
+                "source_count": 5,
+                "alpha_score": 88,
+                "publish_tier": "TIER_1",
+                "surface_type": "publish_alpha_memo",
+            },
+        ],
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(raw_higher, matching),
+        retraction_mode="metadata",
+    )
+
+    assert ledger["status"] == "dry_run_selected"
+    assert ledger["candidate"]["topic"] == "matching"
+    assert ledger["considered"][0]["accepted_shape_bonus"] > 0
