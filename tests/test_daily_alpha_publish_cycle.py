@@ -983,3 +983,79 @@ def test_refresh_candidates_scans_more_than_top_five(
     assert ledger["refresh_top"] == 20
     assert calls[0][0][-4:] == ["--top", "20", "--cooldown-hours", "24"]
     assert calls[0][1] == 5400
+
+
+def test_refresh_batches_continue_until_eligible_candidate(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    thin = _verdict("thin") | {
+        "axes": {"source_papers": [{"doi": "10.1000/thin", "title": "Thin source"}]},
+    }
+    good = _verdict("good")
+    _memo_with_source_receipts(root, thin, 1)
+    _memo_with_source_receipts(root, good, 5)
+    calls: list[list[str]] = []
+    queues = iter([_queue(thin), _queue(good)])
+
+    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        calls.append(args)
+        return True, "ok"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        refresh_candidates=True,
+        max_refresh_batches=2,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+        queue_builder=lambda _root, _include_archive: next(queues),
+    )
+
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["submitted_topic"] == "good"
+    assert len(calls) == 2
+    assert [row["batch"] for row in ledger["considered"]] == [1, 2]
+    assert ledger["considered"][0]["status"] == "corpus_source_floor_below_min"
+    assert ledger["considered"][1]["status"] == "eligible"
+
+
+def test_sync_rejection_tries_next_refresh_batch(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    rejected = _verdict("rejected")
+    accepted = _verdict("accepted", score=80) | {
+        "receipt_expansion": {"cited_bound_fact_ids": ["9", "8", "7"]},
+    }
+    _memo_with_source_receipts(root, rejected, 5)
+    _memo_with_source_receipts(root, accepted, 5)
+    queues = iter([_queue(rejected), _queue(rejected, accepted)])
+    responses = iter([
+        {"ok": False, "status": 422, "response": "needs evidence"},
+        {"ok": True, "status": 200, "response": {"submission": {"id": "sub-ok"}}},
+    ])
+
+    monkeypatch.setattr(daily, "_run_step", lambda _args, timeout=1800: (True, "ok"))
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        refresh_candidates=True,
+        max_refresh_batches=2,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: next(responses),
+        queue_builder=lambda _root, _include_archive: next(queues),
+    )
+
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["submitted_topic"] == "accepted"
+    assert ledger["cycle_attempts"][0]["status"] == "rejected_needs_evidence"
+    assert ledger["cycle_attempts"][1]["status"] == "submitted_to_researka"
+    assert any(row["status"] == "cycle_failed_submission" for row in ledger["considered"])

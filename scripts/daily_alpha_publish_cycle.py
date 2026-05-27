@@ -31,6 +31,7 @@ Fetcher = Callable[[str], Json]
 DecisionFetcher = Callable[[str], Json]
 Submitter = Callable[[Json], Json]
 MemoRefresher = Callable[[Path, Json], bool]
+QueueBuilder = Callable[[Path, bool], Json]
 _SUBMIT_TOKEN_ENVS = (
     "RESEARKA_API_KEY_V4",
     "RESEARKA_API_TOKEN_V4",
@@ -39,6 +40,7 @@ _SUBMIT_TOKEN_ENVS = (
 )
 _DEFAULT_MIN_SUBMIT_SOURCES = 5
 _DEFAULT_REFRESH_TOP = 20
+_DEFAULT_MAX_REFRESH_BATCHES = 2
 _REFRESH_TIMEOUT_SECONDS = 5400
 _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT = 4
 _REPAIRABLE_REJECTION_REASONS = {
@@ -429,10 +431,12 @@ def select_candidate(
     allow_tier2: bool = False,
     min_source_count: int = 0,
     memo_refresher: MemoRefresher | None = None,
+    blocked_fingerprints: set[str] | None = None,
 ) -> tuple[Json | None, list[Json]]:
     seen = _seen_submission_fingerprints(submitted_path)
     attempts = _submission_attempt_counts(submitted_path)
     retryable = _repairable_rejected_fingerprints(submitted_path.parent)
+    blocked = blocked_fingerprints or set()
     considered: list[Json] = []
     candidates = sorted(
         _rows(queue, allow_tier2=allow_tier2),
@@ -450,12 +454,14 @@ def select_candidate(
         memo_refreshed = False
         has_memo = _has_memo(verdict, runs_root)
         approved = _approved(verdict, runs_root) if has_memo else False
+        cycle_blocked = fp in blocked
         retry_after_rejection = (
             fp in retryable
             and attempts.get(fp, 0) < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
         )
         if (
-            has_memo
+            not cycle_blocked
+            and has_memo
             and approved
             and source_count < min_source_count
             and corpus_source_count >= min_source_count
@@ -466,7 +472,9 @@ def select_candidate(
             if memo_refreshed:
                 source_count = _source_count(verdict, runs_root)
                 corpus_source_count = _corpus_source_count(verdict, runs_root)
-        if fp in seen and not retry_after_rejection:
+        if cycle_blocked:
+            status = "cycle_failed_submission"
+        elif fp in seen and not retry_after_rejection:
             status = "duplicate_submission_fingerprint"
         elif not has_memo:
             status = "missing_alpha_memo"
@@ -689,6 +697,21 @@ def _run_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
     return result.returncode == 0, (lines[-1] if lines else "")
 
 
+def _refresh_candidate_batch(refresh_top: int) -> Json:
+    ok, note = _run_step([
+        sys.executable, "scripts/run_curator_cycle.py",
+        "--top", str(refresh_top), "--cooldown-hours", "24",
+    ], timeout=_REFRESH_TIMEOUT_SECONDS)
+    return {"ok": ok, "note": note, "top": refresh_top}
+
+
+def _queue_counts(queue: Json) -> Json:
+    return {
+        key: len(queue.get(key) or [])
+        for key in ("ready_to_publish", "needs_operator_review", "curation_needed")
+    }
+
+
 def _submission_payload(verdict: Json, root: Path) -> Json:
     run_dir = _run_path(root, verdict.get("run_dir"))
     memo = ""
@@ -788,6 +811,7 @@ def run_cycle(
     estimated_cost_usd: float = 0.0,
     max_cost_usd: float = 5.0,
     refresh_top: int = _DEFAULT_REFRESH_TOP,
+    max_refresh_batches: int = _DEFAULT_MAX_REFRESH_BATCHES,
     submit: bool = False,
     retraction_mode: str = "metadata",
     min_submit_sources: int = _DEFAULT_MIN_SUBMIT_SOURCES,
@@ -795,6 +819,7 @@ def run_cycle(
     fetcher: Fetcher = _crossref_fetch,
     decision_fetcher: DecisionFetcher = _decision_fetch,
     memo_refresher: MemoRefresher = _refresh_alpha_memo,
+    queue_builder: QueueBuilder = _build_queue,
 ) -> Json:
     ledger_path = runs_root / "_daily_ledger" / f"{date}.json"
     submitted_path = runs_root / "_daily_ledger" / "_submitted_fingerprints.json"
@@ -806,7 +831,10 @@ def run_cycle(
         "estimated_cost_usd": estimated_cost_usd,
         "max_cost_usd": max_cost_usd,
         "refresh_top": refresh_top,
+        "max_refresh_batches": max_refresh_batches,
         "min_submit_sources": min_submit_sources,
+        "refresh_batches": [],
+        "cycle_attempts": [],
         "published": 0,
         "published_topic": None,
         "submitted": 0,
@@ -817,56 +845,10 @@ def run_cycle(
         ledger.update({"status": "cost_cap_exceeded", "reason": "estimated_cost_above_cap"})
         _write_json(ledger_path, ledger)
         return ledger
-    if refresh_candidates:
-        ok, note = _run_step([
-            sys.executable, "scripts/run_curator_cycle.py",
-            "--top", str(refresh_top), "--cooldown-hours", "24",
-        ], timeout=_REFRESH_TIMEOUT_SECONDS)
-        ledger["refresh_candidates"] = {"ok": ok, "note": note}
-        if not ok:
-            ledger.update({"status": "candidate_refresh_failed"})
-            _write_json(ledger_path, ledger)
-            return ledger
-    queue = queue if queue is not None else _build_queue(runs_root, include_archive)
-    queue = _with_repairable_candidates(queue, runs_root)
-    ledger["queue_counts"] = {
-        key: len(queue.get(key) or [])
-        for key in ("ready_to_publish", "needs_operator_review", "curation_needed")
-    }
-    candidate, considered = select_candidate(
-        queue, runs_root=runs_root, submitted_path=submitted_path,
-        allow_tier2=allow_tier2,
-        min_source_count=min_submit_sources if submit else 0,
-        memo_refresher=memo_refresher if submit else None,
-    )
-    ledger["considered"] = considered
-    if candidate is None:
-        ledger.update({"status": "no_publishable_candidate", "reason": "no eligible non-duplicate memo"})
-        _write_json(ledger_path, ledger)
-        return ledger
-    check_mode = "crossref" if submit and retraction_mode == "metadata" else retraction_mode
-    retraction = retraction_check(
-        candidate, mode=check_mode, fetcher=fetcher, runs_root=runs_root,
-    )
-    ledger["retraction_check"] = retraction
-    if retraction.get("status") != "clean":
-        ledger.update({"status": "held_retraction_check", "candidate": candidate.get("topic")})
-        _write_json(
-            runs_root / "_retracted_holds" / f"{candidate.get('topic')}-{date}.json",
-            ledger,
-        )
-        _write_json(ledger_path, ledger)
-        return ledger
-    ledger["candidate"] = {
-        "topic": candidate.get("topic"),
-        "run_dir": candidate.get("run_dir"),
-        "fingerprint": candidate.get("memo_fingerprint"),
-    }
-    if not submit:
-        ledger.update({"status": "dry_run_selected"})
-        _write_json(ledger_path, ledger)
-        return ledger
-    if submitter is None:
+    blocked_fingerprints: set[str] = set()
+    all_considered: list[Json] = []
+    batch_limit = max(1, max_refresh_batches if refresh_candidates else 1)
+    if submit and submitter is None:
         url = os.environ.get("RESEARKA_SUBMIT_URL", "https://api.researka.org/submissions")
         token, token_env = _submit_token()
         if not token:
@@ -879,30 +861,130 @@ def run_cycle(
             return ledger
         ledger["submit_token_env"] = token_env
         submitter = _http_submitter(url, token)
-    result = submit_with_backoff(_submission_payload(candidate, runs_root), submitter)
-    ledger["submission"] = result
-    if result["status"] == "accepted":
-        submission_id = _submission_id(result)
-        records = _json(submitted_path, [])
-        if not isinstance(records, list):
-            records = []
-        records.append({
-            "date": date,
+    for batch in range(1, batch_limit + 1):
+        if refresh_candidates:
+            refresh = _refresh_candidate_batch(refresh_top)
+            refresh["batch"] = batch
+            ledger["refresh_batches"].append(refresh)
+            ledger["refresh_candidates"] = refresh
+            if not refresh["ok"]:
+                ledger["considered"] = all_considered
+                ledger.update({"status": "candidate_refresh_failed"})
+                _write_json(ledger_path, ledger)
+                return ledger
+        current_queue = queue if queue is not None else queue_builder(runs_root, include_archive)
+        current_queue = _with_repairable_candidates(current_queue, runs_root)
+        ledger["queue_counts"] = _queue_counts(current_queue)
+        candidate, considered = select_candidate(
+            current_queue, runs_root=runs_root, submitted_path=submitted_path,
+            allow_tier2=allow_tier2,
+            min_source_count=min_submit_sources if submit else 0,
+            memo_refresher=memo_refresher if submit else None,
+            blocked_fingerprints=blocked_fingerprints,
+        )
+        for row in considered:
+            if refresh_candidates:
+                row["batch"] = batch
+        all_considered.extend(considered)
+        ledger["considered"] = all_considered
+        if candidate is None:
+            continue
+        check_mode = "crossref" if submit and retraction_mode == "metadata" else retraction_mode
+        retraction = retraction_check(
+            candidate, mode=check_mode, fetcher=fetcher, runs_root=runs_root,
+        )
+        attempt = {
+            "batch": batch,
             "topic": candidate.get("topic"),
             "run_dir": candidate.get("run_dir"),
             "fingerprint": candidate.get("memo_fingerprint"),
-            "submission_id": submission_id,
-        })
-        _write_json(submitted_path, records)
+            "retraction_check": retraction,
+        }
+        ledger["retraction_check"] = retraction
+        ledger["candidate"] = {
+            "topic": candidate.get("topic"),
+            "run_dir": candidate.get("run_dir"),
+            "fingerprint": candidate.get("memo_fingerprint"),
+        }
+        if retraction.get("status") != "clean":
+            attempt["status"] = "held_retraction_check"
+            for row in reversed(all_considered):
+                if row.get("fingerprint") == candidate.get("memo_fingerprint"):
+                    row["pre_attempt_status"] = row.get("status")
+                    row["status"] = "held_retraction_check"
+                    break
+            ledger["cycle_attempts"].append(attempt)
+            blocked_fingerprints.add(str(candidate.get("memo_fingerprint") or ""))
+            _write_json(
+                runs_root / "_retracted_holds" / f"{candidate.get('topic')}-{date}.json",
+                ledger,
+            )
+            if not refresh_candidates or batch == batch_limit:
+                ledger.update({
+                    "status": "held_retraction_check",
+                    "candidate": candidate.get("topic"),
+                })
+                _write_json(ledger_path, ledger)
+                return ledger
+            continue
+        if not submit:
+            ledger["cycle_attempts"].append(attempt | {"status": "dry_run_selected"})
+            ledger.update({"status": "dry_run_selected"})
+            _write_json(ledger_path, ledger)
+            return ledger
+        assert submitter is not None
+        result = submit_with_backoff(_submission_payload(candidate, runs_root), submitter)
+        attempt["submission"] = result
+        ledger["submission"] = result
+        if result["status"] == "accepted":
+            submission_id = _submission_id(result)
+            records = _json(submitted_path, [])
+            if not isinstance(records, list):
+                records = []
+            records.append({
+                "date": date,
+                "topic": candidate.get("topic"),
+                "run_dir": candidate.get("run_dir"),
+                "fingerprint": candidate.get("memo_fingerprint"),
+                "submission_id": submission_id,
+            })
+            _write_json(submitted_path, records)
+            ledger["cycle_attempts"].append(attempt | {"status": "submitted_to_researka"})
+            ledger.update({
+                "final_verdict": "pending",
+                "status": "submitted_to_researka",
+                "submitted": 1,
+                "submitted_topic": candidate.get("topic"),
+                "submission_id": submission_id,
+            })
+            _write_json(ledger_path, ledger)
+            return ledger
+        attempt["status"] = result["status"]
+        for row in reversed(all_considered):
+            if row.get("fingerprint") == candidate.get("memo_fingerprint"):
+                row["pre_attempt_status"] = row.get("status")
+                row["status"] = "cycle_failed_submission"
+                row["submit_status"] = result["status"]
+                break
+        ledger["cycle_attempts"].append(attempt)
+        blocked_fingerprints.add(str(candidate.get("memo_fingerprint") or ""))
+        if not refresh_candidates or batch == batch_limit:
+            ledger.update({"status": result["status"], "published": 0})
+            _write_json(ledger_path, ledger)
+            return ledger
+    if ledger["cycle_attempts"]:
+        last_status = str(ledger["cycle_attempts"][-1].get("status") or "failed")
         ledger.update({
-            "final_verdict": "pending",
-            "status": "submitted_to_researka",
-            "submitted": 1,
-            "submitted_topic": candidate.get("topic"),
-            "submission_id": submission_id,
+            "status": "submit_retry_exhausted",
+            "reason": f"no candidate accepted after {batch_limit} batch(es)",
+            "last_attempt_status": last_status,
+            "published": 0,
         })
     else:
-        ledger.update({"status": result["status"], "published": 0})
+        ledger.update({
+            "status": "no_publishable_candidate",
+            "reason": "no eligible non-duplicate memo",
+        })
     _write_json(ledger_path, ledger)
     return ledger
 
@@ -916,6 +998,7 @@ def main() -> int:
     parser.add_argument("--estimated-cost-usd", type=float, default=0.0)
     parser.add_argument("--max-cost-usd", type=float, default=5.0)
     parser.add_argument("--refresh-top", type=int, default=_DEFAULT_REFRESH_TOP)
+    parser.add_argument("--max-refresh-batches", type=int, default=_DEFAULT_MAX_REFRESH_BATCHES)
     parser.add_argument("--min-submit-sources", type=int, default=_DEFAULT_MIN_SUBMIT_SOURCES)
     parser.add_argument("--submit", action="store_true")
     parser.add_argument(
@@ -932,6 +1015,7 @@ def main() -> int:
         estimated_cost_usd=args.estimated_cost_usd,
         max_cost_usd=args.max_cost_usd,
         refresh_top=args.refresh_top,
+        max_refresh_batches=args.max_refresh_batches,
         min_submit_sources=args.min_submit_sources,
         submit=args.submit,
         retraction_mode=args.retraction_check,
