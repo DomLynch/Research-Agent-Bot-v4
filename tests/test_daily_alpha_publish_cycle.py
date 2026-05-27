@@ -76,6 +76,9 @@ def _memo_with_source_receipts(root: Path, verdict: dict[str, Any], count: int) 
         }
         for fid in ids
     ]), encoding="utf-8")
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": fid, "lane": "A_core"} for fid in ids],
+    }), encoding="utf-8")
 
 
 def test_memo_fingerprint_is_stable_across_headline_rewording() -> None:
@@ -517,7 +520,7 @@ def test_submit_floor_blocks_context_only_source_padding(tmp_path: Path) -> None
     assert ledger["status"] == "no_publishable_candidate"
     assert ledger["considered"][0]["source_count"] == 5
     assert ledger["considered"][0]["direct_source_count"] == 1
-    assert ledger["considered"][0]["min_direct_source_count"] == 2
+    assert ledger["considered"][0]["min_direct_source_count"] == 5
     assert ledger["considered"][0]["status"] == "direct_source_floor_below_min"
 
 
@@ -531,10 +534,10 @@ def test_submit_floor_allows_broad_context_when_direct_sources_pass(tmp_path: Pa
     run.joinpath("alpha_memo.md").write_text(
         "# Alpha memo\n\n"
         "## Evidence receipts\n\n"
-        "- `fact_id=1` (`A_core`) - direct\n"
-        "- `fact_id=2` (`A_core`) - direct\n\n"
+        + "\n".join(f"- `fact_id={i}` (`A_core`) - direct" for i in range(1, 6))
+        + "\n\n"
         "## Context receipts\n\n"
-        + "\n".join(f"- `fact_id={i}` (`A_core`) - context" for i in range(3, 6))
+        + "\n".join(f"- `fact_id={i}` (`B_context`) - context" for i in range(6, 8))
         + "\n",
         encoding="utf-8",
     )
@@ -543,9 +546,16 @@ def test_submit_floor_allows_broad_context_when_direct_sources_pass(tmp_path: Pa
             "fact_id": str(i),
             "source_paper": {"doi": f"10.1000/source-{i}", "title": f"Source {i}"},
         }
-        for i in range(1, 6)
+        for i in range(1, 8)
     ]
     run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [
+            {"fact_id": str(i), "lane": "A_core"} for i in range(1, 6)
+        ] + [
+            {"fact_id": str(i), "lane": "B_context"} for i in range(6, 8)
+        ],
+    }), encoding="utf-8")
     seen_payload: dict[str, Any] = {}
 
     ledger = daily.run_cycle(
@@ -563,11 +573,11 @@ def test_submit_floor_allows_broad_context_when_direct_sources_pass(tmp_path: Pa
     )
 
     assert ledger["status"] == "submitted_to_researka"
-    assert ledger["considered"][0]["source_count"] == 5
-    assert ledger["considered"][0]["direct_source_count"] == 2
-    assert len(seen_payload["source_bundle"]) == 5
-    assert seen_payload["evidence_bundle"]["direct_source_count"] == 2
-    assert seen_payload["evidence_bundle"]["context_source_count"] == 3
+    assert ledger["considered"][0]["source_count"] == 7
+    assert ledger["considered"][0]["direct_source_count"] == 5
+    assert len(seen_payload["source_bundle"]) == 7
+    assert seen_payload["evidence_bundle"]["direct_source_count"] == 5
+    assert seen_payload["evidence_bundle"]["context_source_count"] == 2
 
 
 def test_submit_floor_has_no_two_source_alpha_exception(tmp_path: Path) -> None:

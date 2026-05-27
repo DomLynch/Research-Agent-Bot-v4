@@ -15,6 +15,7 @@ from typing import Any
 
 _ROOT = Path(__file__).resolve().parent.parent
 _PUB_PATH = _ROOT / "topic_packs" / "publication.toml"
+_DIRECT = frozenset({"A_core"})
 _BINDABLE = frozenset({"A_core", "B_context"})
 
 
@@ -59,16 +60,24 @@ def _publication_defaults() -> dict[str, str]:
     return defaults
 
 
-def _memo_min_source_papers() -> int:
+def _memo_alpha_int(name: str, default: int) -> int:
     try:
         data = tomllib.loads(_PUB_PATH.read_text(encoding="utf-8"))
     except (OSError, tomllib.TOMLDecodeError):
-        return 5
+        return default
     alpha = data.get("alpha_memo") if isinstance(data, dict) else {}
     try:
-        return int((alpha or {}).get("min_source_papers", 5))
+        return int((alpha or {}).get(name, default))
     except (TypeError, ValueError):
-        return 5
+        return default
+
+
+def _memo_min_source_papers() -> int:
+    return _memo_alpha_int("min_source_papers", 5)
+
+
+def _memo_min_direct_source_papers() -> int:
+    return _memo_alpha_int("min_direct_source_papers", 5)
 
 
 def _section(md: str, heading: str) -> str:
@@ -173,13 +182,14 @@ def _expanded_receipt_ids(
     lanes: dict[str, str],
     *,
     min_sources: int,
+    allowed_lanes: frozenset[str] = _BINDABLE,
 ) -> list[str]:
     selected: list[str] = []
     seen_ids: set[str] = set()
     sources: set[str] = set()
 
     def add(fid: str) -> None:
-        if fid in seen_ids or lanes.get(fid) not in _BINDABLE or fid not in facts:
+        if fid in seen_ids or lanes.get(fid) not in allowed_lanes or fid not in facts:
             return
         selected.append(fid)
         seen_ids.add(fid)
@@ -559,16 +569,20 @@ def render_signal_memo(
     facts = _facts_by_id(run_dir)
     lanes = _lane_map(run_dir)
     min_sources = _memo_min_source_papers()
-    receipt_ids = _expanded_receipt_ids(
+    min_direct_sources = _memo_min_direct_source_papers()
+    expanded_ids = _expanded_receipt_ids(
         audit, facts, lanes, min_sources=min_sources,
     )
-    lead_ids = [
-        str(x) for x in audit.get("cited_fact_ids", [])
-        if lanes.get(str(x)) in _BINDABLE and str(x) in facts
-    ]
+    lead_ids = _expanded_receipt_ids(
+        audit, facts, lanes,
+        min_sources=min_direct_sources,
+        allowed_lanes=_DIRECT,
+    )
     if not lead_ids:
-        lead_ids = receipt_ids[:1]
-    context_ids = [fid for fid in receipt_ids if fid not in set(lead_ids)]
+        lead_ids = expanded_ids[:1]
+    lead_set = set(lead_ids)
+    receipt_ids = lead_ids + [fid for fid in expanded_ids if fid not in lead_set]
+    context_ids = [fid for fid in receipt_ids if fid not in lead_set]
     lead_source_count = _source_count_for_ids(lead_ids, facts)
     headline = _bounded_headline(
         topic,

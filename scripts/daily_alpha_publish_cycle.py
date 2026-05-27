@@ -372,6 +372,7 @@ def _memo_source_papers(
     verdict: Json,
     root: Path,
     section_names: tuple[str, ...] = ("Evidence", "Context"),
+    lane_names: set[str] | None = None,
 ) -> list[Json]:
     run_dir = _run_path(root, verdict.get("run_dir"))
     memo = _read_text(run_dir / "alpha_memo.md")
@@ -385,9 +386,20 @@ def _memo_source_papers(
         str(f.get("fact_id") or ""): f
         for f in facts if isinstance(f, dict)
     }
+    lanes: dict[str, str] = {}
+    if lane_names is not None:
+        lanes_raw = _json(run_dir / "fact_lanes.json", {})
+        if isinstance(lanes_raw, dict):
+            lanes = {
+                str(row.get("fact_id") or ""): str(row.get("lane") or "")
+                for row in lanes_raw.get("verdicts", [])
+                if isinstance(row, dict)
+            }
     seen: set[str] = set()
     papers: list[Json] = []
     for fid in ids:
+        if lane_names is not None and lanes.get(fid) not in lane_names:
+            continue
         fact = by_id.get(fid) or {}
         key = _source_key_from_fact(fact)
         if not key or key in seen:
@@ -407,7 +419,7 @@ def _memo_source_papers(
 
 
 def _direct_source_count(verdict: Json, root: Path) -> int:
-    return len(_memo_source_papers(verdict, root, ("Evidence",)))
+    return len(_memo_source_papers(verdict, root, ("Evidence",), {"A_core"}))
 
 
 def _memo_headline(memo: str) -> str:
@@ -845,7 +857,7 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         or "Alpha memo"
     )
     source_papers = _memo_source_papers(verdict, root)
-    direct_source_papers = _memo_source_papers(verdict, root, ("Evidence",))
+    direct_source_papers = _memo_source_papers(verdict, root, ("Evidence",), {"A_core"})
     source_bundle = _source_bundle(source_papers)
     direct_source_count = len(direct_source_papers)
     receipt_count = len(_memo_receipt_ids(memo))
