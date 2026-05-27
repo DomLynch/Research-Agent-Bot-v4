@@ -36,6 +36,7 @@ DecisionFetcher = Callable[[str], Json]
 Submitter = Callable[[Json], Json]
 MemoRefresher = Callable[[Path, Json], bool]
 QueueBuilder = Callable[[Path, bool], Json]
+PageFetcher = Callable[[str], Json]
 _SUBMIT_TOKEN_ENVS = (
     "RESEARKA_API_KEY_V4",
     "RESEARKA_API_TOKEN_V4",
@@ -73,6 +74,7 @@ _EXHAUSTED_STATUSES = {
 }
 _REPAIRABLE_REJECTION_REASONS = {
     "minimum_citations",
+    "public_page_not_rendered",
     "recency_ratio",
     "reviewer_revise",
     "source_bundle_schema",
@@ -265,8 +267,7 @@ def _repairable_rejected_fingerprints(ledger_dir: Path) -> set[str]:
             or ledger.get("final_verdict") not in {"rejected", "revise"}
         ):
             continue
-        decision = ledger.get("researka_decision")
-        if not isinstance(decision, dict) or not _repairable_rejection(decision):
+        if not _repairable_ledger(ledger):
             continue
         fp = str((ledger.get("candidate") or {}).get("fingerprint") or "")
         if fp:
@@ -284,8 +285,7 @@ def _repairable_candidate_verdicts(runs_root: Path) -> list[Json]:
             or ledger.get("final_verdict") not in {"rejected", "revise"}
         ):
             continue
-        decision = ledger.get("researka_decision")
-        if not isinstance(decision, dict) or not _repairable_rejection(decision):
+        if not _repairable_ledger(ledger):
             continue
         run_dir = _run_path(runs_root, (ledger.get("candidate") or {}).get("run_dir"))
         verdict = _json(run_dir / "publish_verdict.json", {})
@@ -339,6 +339,17 @@ def _repairable_rejection(decision: Json) -> bool:
             reasons.add(str(gate.get("reason") or ""))
     text = " ".join(reasons).lower()
     return any(reason in text for reason in _REPAIRABLE_REJECTION_REASONS)
+
+
+def _repairable_ledger(ledger: Json) -> bool:
+    decision = ledger.get("researka_decision")
+    if isinstance(decision, dict) and _repairable_rejection(decision):
+        return True
+    page = ledger.get("public_page_check")
+    return (
+        isinstance(page, dict)
+        and str(page.get("status") or "") in {"missing_public_url", "not_rendered", "error"}
+    )
 
 
 def _source_count(verdict: Json, root: Path | None = None) -> int:
@@ -696,13 +707,137 @@ def _submission_id(payload: Json) -> str:
     return str(nested.get("id") if isinstance(nested, dict) else "")
 
 
+def _public_alpha_base() -> str:
+    return os.environ.get("RESEARKA_ALPHA_BASE_URL", "https://researka.org/alpha").rstrip("/")
+
+
+def _public_alpha_url(value: Any) -> str:
+    raw = str(value or "").strip()
+    if not raw:
+        return ""
+    if raw.startswith(("http://", "https://")):
+        return raw
+    return _public_alpha_base() + "/" + urllib.parse.quote(raw, safe="")
+
+
+def _public_alpha_urls(payload: Any) -> list[str]:
+    urls: list[str] = []
+
+    def add(value: Any) -> None:
+        url = _public_alpha_url(value)
+        if url and url not in urls:
+            urls.append(url)
+
+    def walk(value: Any) -> None:
+        if isinstance(value, dict):
+            for key, item in value.items():
+                key_l = str(key).lower()
+                if key_l in {
+                    "alpha_url",
+                    "canonical_url",
+                    "public_url",
+                    "publication_url",
+                    "url",
+                }:
+                    if "url" not in key_l or "/alpha/" in str(item):
+                        add(item)
+                elif "id" in key_l and any(
+                    token in key_l for token in ("alpha", "artifact", "public", "publication")
+                ):
+                    add(item)
+                walk(item)
+        elif isinstance(value, list):
+            for item in value:
+                walk(item)
+
+    walk(payload)
+    return urls
+
+
+def _fetch_public_page(url: str) -> Json:
+    req = urllib.request.Request(url, headers={"User-Agent": "researka-v4/1.0"})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as response:
+            body = response.read(4096).decode("utf-8", errors="replace")
+            return {"ok": True, "status": response.status, "body": body}
+    except urllib.error.HTTPError as exc:
+        return {"ok": False, "status": exc.code, "body": exc.read(512).decode("utf-8", errors="replace")}
+    except Exception as exc:  # pragma: no cover - network defensive path
+        return {"ok": False, "status": 0, "error": type(exc).__name__, "detail": str(exc)[:180]}
+
+
+def _page_rendered(result: Json) -> bool:
+    body = str(result.get("body") or "").lower()
+    title_404 = re.search(r"<title>[^<]*(404|not found)[^<]*</title>", body)
+    return bool(result.get("ok")) and int(result.get("status") or 0) == 200 and not title_404
+
+
+def _public_page_check(decision: Json, *, page_fetcher: PageFetcher) -> Json:
+    urls = _public_alpha_urls(decision)
+    if not urls:
+        return {"ok": False, "status": "missing_public_url", "urls": []}
+    checks: list[Json] = []
+    for url in urls:
+        result = page_fetcher(url)
+        check = {
+            "url": url,
+            "http_status": result.get("status"),
+            "ok": _page_rendered(result),
+        }
+        if result.get("error"):
+            check["error"] = result.get("error")
+        checks.append(check)
+        if check["ok"]:
+            return {"ok": True, "status": "rendered", "url": url, "checks": checks}
+    return {"ok": False, "status": "not_rendered", "urls": urls, "checks": checks}
+
+
+def _apply_submission_decision(
+    ledger: Json,
+    *,
+    submission_id: str,
+    decision: Json,
+    page_fetcher: PageFetcher,
+) -> str:
+    final = "pending"
+    if decision.get("status") == "complete":
+        if decision.get("decision") == "accept":
+            page = _public_page_check(decision, page_fetcher=page_fetcher)
+            ledger["public_page_check"] = page
+            if page.get("ok"):
+                final = "accepted"
+                ledger["status"] = "published"
+                ledger["published"] = 1
+                ledger["published_topic"] = (
+                    ledger.get("submitted_topic")
+                    or (ledger.get("candidate") or {}).get("topic")
+                )
+                ledger["public_url"] = page.get("url")
+            else:
+                final = "rejected"
+                ledger["status"] = "public_page_not_rendered"
+                ledger["published"] = 0
+                ledger["publish_failure_reason"] = "public_page_not_rendered"
+        elif decision.get("decision") == "revise":
+            final = "revise"
+            ledger["status"] = "reviewer_revise"
+        else:
+            final = "rejected"
+            ledger["status"] = "reviewer_rejected"
+    ledger["submission_id"] = submission_id
+    ledger["researka_decision"] = decision
+    ledger["final_verdict"] = final
+    return final
+
+
 def sync_submission_decisions(
     runs_root: Path = _RUNS,
     *,
     fetcher: DecisionFetcher = _decision_fetch,
+    page_fetcher: PageFetcher = _fetch_public_page,
 ) -> Json:
     ledger_dir = runs_root / "_daily_ledger"
-    summary: Json = {"checked": 0, "updated": 0, "pending": 0, "errors": []}
+    summary: Json = {"checked": 0, "updated": 0, "published": 0, "pending": 0, "errors": []}
     for path in sorted(ledger_dir.glob("*.json")):
         ledger = _json(path, {})
         if not isinstance(ledger, dict) or ledger.get("status") != "submitted_to_researka":
@@ -725,18 +860,14 @@ def sync_submission_decisions(
                 "detail": str(exc)[:180],
             })
             continue
-        final = "pending"
-        if decision.get("status") == "complete":
-            if decision.get("decision") == "accept":
-                final = "accepted"
-            elif decision.get("decision") == "revise":
-                final = "revise"
-            else:
-                final = "rejected"
+        final = _apply_submission_decision(
+            ledger,
+            submission_id=submission_id,
+            decision=decision,
+            page_fetcher=page_fetcher,
+        )
         summary["pending"] += int(final == "pending")
-        ledger["submission_id"] = submission_id
-        ledger["researka_decision"] = decision
-        ledger["final_verdict"] = final
+        summary["published"] += int(final == "accepted")
         if final != "pending":
             summary["updated"] += 1
         _write_json(path, ledger)
@@ -979,12 +1110,15 @@ def run_cycle(
     submitter: Submitter | None = None,
     fetcher: Fetcher = _crossref_fetch,
     decision_fetcher: DecisionFetcher = _decision_fetch,
+    page_fetcher: PageFetcher = _fetch_public_page,
     memo_refresher: MemoRefresher = _refresh_alpha_memo,
     queue_builder: QueueBuilder = _build_queue,
 ) -> Json:
     ledger_path = runs_root / "_daily_ledger" / f"{date}.json"
     submitted_path = runs_root / "_daily_ledger" / "_submitted_fingerprints.json"
-    decision_sync = sync_submission_decisions(runs_root, fetcher=decision_fetcher)
+    decision_sync = sync_submission_decisions(
+        runs_root, fetcher=decision_fetcher, page_fetcher=page_fetcher,
+    )
     ledger: Json = {
         "date": date,
         "dry_run": not submit,
@@ -1124,7 +1258,6 @@ def run_cycle(
                 "submission_id": submission_id,
             })
             _write_json(submitted_path, records)
-            ledger["cycle_attempts"].append(attempt | {"status": "submitted_to_researka"})
             ledger.update({
                 "final_verdict": "pending",
                 "status": "submitted_to_researka",
@@ -1132,6 +1265,50 @@ def run_cycle(
                 "submitted_topic": candidate.get("topic"),
                 "submission_id": submission_id,
             })
+            if submission_id:
+                try:
+                    decision = decision_fetcher(submission_id)
+                except Exception as exc:  # pragma: no cover - network defensive path
+                    ledger["decision_check_error"] = {
+                        "error": type(exc).__name__,
+                        "detail": str(exc)[:180],
+                    }
+                else:
+                    final = _apply_submission_decision(
+                        ledger,
+                        submission_id=submission_id,
+                        decision=decision,
+                        page_fetcher=page_fetcher,
+                    )
+                    if final == "accepted":
+                        attempt["public_page_check"] = ledger.get("public_page_check")
+                        ledger["cycle_attempts"].append(attempt | {"status": "published"})
+                        _write_json(ledger_path, ledger)
+                        return ledger
+                    if final in {"rejected", "revise"}:
+                        attempt["status"] = (
+                            str(ledger.get("publish_failure_reason") or "")
+                            or ("reviewer_revise" if final == "revise" else "reviewer_rejected")
+                        )
+                        attempt["researka_decision"] = decision
+                        attempt["public_page_check"] = ledger.get("public_page_check")
+                        for row in reversed(all_considered):
+                            if row.get("fingerprint") == candidate.get("memo_fingerprint"):
+                                row["pre_attempt_status"] = row.get("status")
+                                row["status"] = "cycle_failed_submission"
+                                row["submit_status"] = attempt["status"]
+                                break
+                        ledger["cycle_attempts"].append(attempt)
+                        blocked_fingerprints.add(str(candidate.get("memo_fingerprint") or ""))
+                        topic = str(candidate.get("topic") or "")
+                        if topic:
+                            blocked_topics.add(topic)
+                        if not refresh_candidates or batch == batch_limit:
+                            ledger.update({"status": attempt["status"], "published": 0})
+                            _write_json(ledger_path, ledger)
+                            return ledger
+                        continue
+            ledger["cycle_attempts"].append(attempt | {"status": "submitted_to_researka"})
             _write_json(ledger_path, ledger)
             return ledger
         attempt["status"] = result["status"]

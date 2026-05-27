@@ -1068,6 +1068,7 @@ def test_run_cycle_syncs_prior_submission_decisions(tmp_path: Path) -> None:
     daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
         "status": "submitted_to_researka",
         "submission": {"attempts": [{"response": {"submission": {"id": "sub_123"}}}]},
+        "submitted_topic": "grid_storage",
     })
 
     ledger = daily.run_cycle(
@@ -1077,6 +1078,12 @@ def test_run_cycle_syncs_prior_submission_decisions(tmp_path: Path) -> None:
         decision_fetcher=lambda _submission_id: {
             "status": "complete",
             "decision": "accept",
+            "public_url": "https://researka.org/alpha/pub_123",
+        },
+        page_fetcher=lambda _url: {
+            "ok": True,
+            "status": 200,
+            "body": "<html><title>Alpha memo</title></html>",
         },
     )
 
@@ -1084,7 +1091,46 @@ def test_run_cycle_syncs_prior_submission_decisions(tmp_path: Path) -> None:
         (root / "_daily_ledger" / "2026-05-21.json").read_text(encoding="utf-8")
     )
     assert ledger["decision_sync"]["updated"] == 1
+    assert ledger["decision_sync"]["published"] == 1
+    assert patched["status"] == "published"
     assert patched["final_verdict"] == "accepted"
+    assert patched["published"] == 1
+    assert patched["public_url"] == "https://researka.org/alpha/pub_123"
+
+
+def test_sync_submission_decisions_rejects_accept_without_rendered_page(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submitted_to_researka",
+        "submission_id": "sub_123",
+        "candidate": {"topic": "grid_storage"},
+    })
+
+    summary = daily.sync_submission_decisions(
+        root,
+        fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "public_url": "https://researka.org/alpha/pub_404",
+        },
+        page_fetcher=lambda _url: {
+            "ok": False,
+            "status": 404,
+            "body": "<html><title>404 Not Found</title></html>",
+        },
+    )
+
+    patched = json.loads(
+        (root / "_daily_ledger" / "2026-05-21.json").read_text(encoding="utf-8")
+    )
+    assert summary["checked"] == 1
+    assert summary["updated"] == 1
+    assert summary["published"] == 0
+    assert patched["final_verdict"] == "rejected"
+    assert patched["status"] == "public_page_not_rendered"
+    assert patched["published"] == 0
+    assert patched["publish_failure_reason"] == "public_page_not_rendered"
+    assert patched["public_page_check"]["status"] == "not_rendered"
 
 
 def test_cost_cap_writes_no_publish_ledger(tmp_path: Path) -> None:
@@ -1296,6 +1342,73 @@ def test_submit_duplicates_rotate_topics_until_success(
     ]
     assert calls[1][-2:] == ["--exclude-topic", "first"]
     assert calls[2][-4:] == ["--exclude-topic", "first", "--exclude-topic", "second"]
+
+
+def test_unrendered_accept_rotates_to_next_topic(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    first = _verdict("first")
+    second = _verdict("second") | {
+        "receipt_expansion": {"cited_bound_fact_ids": ["9", "8", "7"]},
+    }
+    for verdict in (first, second):
+        _memo_with_source_receipts(root, verdict, 5)
+    calls: list[list[str]] = []
+    submitted: list[str] = []
+
+    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        calls.append(args)
+        return True, "ok"
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submitted.append(str(payload["topic"]))
+        return {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": f"sub-{payload['topic']}"}},
+        }
+
+    def decision_fetcher(submission_id: str) -> dict[str, Any]:
+        public_id = "bad" if submission_id == "sub-first" else "good"
+        return {
+            "status": "complete",
+            "decision": "accept",
+            "public_url": f"https://researka.org/alpha/{public_id}",
+        }
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(first, second),
+        refresh_candidates=True,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+        decision_fetcher=decision_fetcher,
+        page_fetcher=lambda url: {
+            "ok": "good" in url,
+            "status": 200 if "good" in url else 404,
+            "body": "<html><title>Alpha memo</title></html>"
+            if "good" in url else
+            "<html><title>404 Not Found</title></html>",
+        },
+    )
+
+    assert submitted == ["first", "second"]
+    assert ledger["status"] == "published"
+    assert ledger["final_verdict"] == "accepted"
+    assert ledger["published"] == 1
+    assert ledger["published_topic"] == "second"
+    assert ledger["public_url"] == "https://researka.org/alpha/good"
+    assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == [
+        "public_page_not_rendered",
+        "published",
+    ]
+    assert calls[1][-2:] == ["--exclude-topic", "first"]
 
 
 def test_accepted_shape_bias_breaks_candidate_tie(tmp_path: Path) -> None:
