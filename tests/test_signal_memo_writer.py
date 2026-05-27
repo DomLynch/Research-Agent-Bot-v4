@@ -207,6 +207,8 @@ def test_alpha_memo_expands_receipts_to_five_sources_when_available(
     assert "**Source breadth:** `5/5` unique cited source(s)" in memo
     assert "## Context receipts" not in memo
     assert "`fact_id=101` (`A_core`)" in memo
+    assert "doi=10.x/policy" in memo
+    assert "doi=10.x/policy-5" in memo
     assert "`fact_id=202`" not in memo
     assert "`fact_id=505` (`A_core`)" in memo
     assert "## Supporting Top cards" not in memo

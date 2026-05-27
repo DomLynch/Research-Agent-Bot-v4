@@ -236,11 +236,13 @@ def _receipt_lines(
         phrase = str(fact.get("canonical_phrase") or "").strip()
         paper = fact.get("source_paper") or {}
         doi = str(paper.get("doi") or "").strip()
+        source = str(doi or paper.get("pmid") or paper.get("title") or "").strip()
         lane = lanes.get(fid, "?")
         if phrase:
             out.append(
                 f"- `fact_id={fid}` (`{lane}`) — {phrase[:240]}"
-                + (f" DOI `{doi}`" if doi else "")
+                + (f" doi={doi}" if doi else "")
+                + (f" source={source[:120]}" if source and not doi else "")
             )
     return out or ["- _No A_core/B_context receipts bind to this memo._"]
 
