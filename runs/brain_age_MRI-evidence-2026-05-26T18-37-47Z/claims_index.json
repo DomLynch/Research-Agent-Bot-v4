@@ -1,0 +1,187 @@
+{
+  "topic": "brain_age_MRI",
+  "snapshot_utc": "2026-05-26T18-37-47Z",
+  "claim_count": 20,
+  "claims": [
+    {
+      "claim_text": "The average annual age-adjusted incidence rate (AAAIR) of all malignant and non-malignant brain and other CNS tumors was 24.83 per 100,000 population",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/neuonc/noad149"
+      ]
+    },
+    {
+      "claim_text": "The average annual age-adjusted incidence rate (AAAIR) of all malignant and non-malignant brain and other CNS tumors was 24.25",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/neuonc/noab200"
+      ]
+    },
+    {
+      "claim_text": "The average annual age-adjusted incidence rate (AAAIR) of all malignant and non-malignant brain and other CNS tumors was 24.71 per 100,000 population.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/neuonc/noac202"
+      ]
+    },
+    {
+      "claim_text": "The average annual age-adjusted incidence rate (AAAIR) of all malignant and non-malignant brain and other CNS tumors was 23.79",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/neuonc/noaa200"
+      ]
+    },
+    {
+      "claim_text": "The average annual age-adjusted incidence rate of all malignant and non-malignant brain and other CNS tumors was 23.41",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/neuonc/noz150"
+      ]
+    },
+    {
+      "claim_text": "the average annual age-adjusted incidence rate (AAAIR) of all primary malignant and non-malignant brain and other CNS tumors was 25.34 per 100,000 population",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/neuonc/noae145"
+      ]
+    },
+    {
+      "claim_text": "In children and adolescents (age 0-19 years), the incidence rate of all primary brain and other CNS tumors was 6.06",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/neuonc/noz150"
+      ]
+    },
+    {
+      "claim_text": "for a non-malignant brain and other CNS tumors the five-year relative survival rate was 91.8%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/neuonc/noab200"
+      ]
+    },
+    {
+      "claim_text": "The five-year relative survival rate following diagnosis of a malignant brain and other CNS tumor was 35.6%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/neuonc/noab200"
+      ]
+    },
+    {
+      "claim_text": "The 5-year relative survival rate following diagnosis of a malignant brain and other CNS tumor was 23.5%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/neuonc/noaa200"
+      ]
+    },
+    {
+      "claim_text": "The most commonly occurring malignant brain and other CNS tumor was glioblastoma (14.5% of all tumors)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/neuonc/noaa200"
+      ]
+    },
+    {
+      "claim_text": "The five-year relative survival rate following diagnosis of a malignant brain and other CNS tumor was 35.8%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/neuonc/noz150"
+      ]
+    },
+    {
+      "claim_text": "The five-year relative survival rate following diagnosis of a malignant brain and other CNS tumor was 35.7%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/neuonc/noad149"
+      ]
+    },
+    {
+      "claim_text": "The five-year relative survival rate following diagnosis of a malignant brain or other CNS tumor was 35.7%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/neuonc/noae145"
+      ]
+    },
+    {
+      "claim_text": "average annual mortality rate of 4.41 per 100,000 population",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/neuonc/noac202"
+      ]
+    },
+    {
+      "claim_text": "The most commonly occurring malignant brain and other CNS histopathology was glioblastoma (14.2% of all tumors and 50.1% of all malignant tumors)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/neuonc/noac202"
+      ]
+    },
+    {
+      "claim_text": "79,718 deaths attributed to malignant brain and other CNS tumors between 2012 and 2016. This represents an average annual mortality rate of 4.42",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/neuonc/noz150"
+      ]
+    },
+    {
+      "claim_text": "non-Hispanic persons compared to Hispanic persons (25.24 versus 22.61 per 100,000)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1093/neuonc/noad149"
+      ]
+    },
+    {
+      "claim_text": "Gliomas accounted for 26.3% of all tumors.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/neuonc/noad149"
+      ]
+    },
+    {
+      "claim_text": "This overall rate was higher in females compared to males (27.85 versus 21.62 per 100,000)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1093/neuonc/noad149"
+      ]
+    }
+  ]
+}

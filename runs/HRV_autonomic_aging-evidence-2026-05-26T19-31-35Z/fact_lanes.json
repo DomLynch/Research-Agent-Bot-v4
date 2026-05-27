@@ -1,0 +1,54 @@
+{
+  "topic": "HRV_autonomic_aging",
+  "snapshot_utc": "2026-05-26T19-31-35Z",
+  "counts": {
+    "A_core": 0,
+    "B_context": 0,
+    "C_noise": 2,
+    "D_bad_extraction": 5
+  },
+  "verdicts": [
+    {
+      "fact_id": "150240",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "168807",
+      "lane": "D_bad_extraction",
+      "numeric_role": "correlation",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "144047",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "144048",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "144049",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "99007",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "74302",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    }
+  ]
+}

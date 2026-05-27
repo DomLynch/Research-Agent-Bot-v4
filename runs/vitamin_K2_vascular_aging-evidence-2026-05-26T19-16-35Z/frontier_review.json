@@ -1,0 +1,17 @@
+{
+  "topic": "vitamin_K2_vascular_aging",
+  "snapshot_utc": "2026-05-26T19-16-35Z",
+  "model": "mimo-v2.5-pro",
+  "lens": "The evidence pool is entirely devoid of facts on vitamin K2 and vascular aging, precluding any thesis formation and indicating a stark gap in current research that requires primary investigation.",
+  "known_to_ignore": [],
+  "tensions": [],
+  "gaps": [
+    "Direct evidence linking specific vitamin K2 forms (e.g., menaquinone-7) to vascular aging biomarkers like arterial stiffness or endothelial dysfunction is absent."
+  ],
+  "theses": [],
+  "reviewer_objections": [],
+  "next_extractions": [
+    "Extract RCTs on menaquinone-7 supplementation (doses 100-200 µg/day) measuring pulse wave velocity in adults over 60; cohort studies on dietary vitamin K2 intake and carotid intima-media thickness progression in elderly populations."
+  ],
+  "raw_response": "{\n  \"lens\": \"The evidence pool is entirely devoid of facts on vitamin K2 and vascular aging, precluding any thesis formation and indicating a stark gap in current research that requires primary investigation.\",\n  \"known_to_ignore\": [],\n  \"tensions\": [],\n  \"gaps\": [\"Direct evidence linking specific vitamin K2 forms (e.g., menaquinone-7) to vascular aging biomarkers like arterial stiffness or endothelial dysfunction is absent.\"],\n  \"theses\": [],\n  \"reviewer_objections\": [],\n  \"next_extractions\": [\"Extract RCTs on menaquinone-7 supplementation (doses 100-200 µg/day) measuring pulse wave velocity in adults over 60; cohort studies on dietary vitamin K2 intake and carotid intima-media thickness progression in elderly populations.\"]\n}"
+}

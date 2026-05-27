@@ -1,0 +1,16 @@
+{
+  "topic": "SASP_secretome",
+  "snapshot_utc": "2026-05-27T06-16-36Z",
+  "input_pack": {
+    "topic": "SASP_secretome",
+    "a_core_count": 0,
+    "b_context_count": 0,
+    "excluded_counts": {
+      "C_noise": 0,
+      "D_bad_extraction": 6
+    },
+    "has_minimum_a_core": false,
+    "a_core_min": 3
+  },
+  "audits": []
+}

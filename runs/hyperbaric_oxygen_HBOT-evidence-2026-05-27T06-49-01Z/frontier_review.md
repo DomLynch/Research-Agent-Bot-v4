@@ -1,0 +1,39 @@
+# Frontier review — hyperbaric_oxygen_HBOT
+
+**Snapshot:** 2026-05-27T06-49-01Z
+**Strategist model:** mimo-v2.5-pro
+
+## The lens
+
+The absence of structured evidence fact IDs renders the current pool insufficient for deriving a publishable thesis grounded in citable data. A meta-analytic angle would require extraction of specific outcome measures (e.g., odds ratios, risk ratios) from primary studies, which are hinted at but not yet fact-bound. To avoid unsubstantiated claims, the next step must focus on harvesting comparative efficacy and cost data from identified trials.
+
+## Already known — do not publish
+
+- HBOT's general association with improved healing in diabetic foot ulcers
+- High cost estimates of HBOT compared to standard care
+- Basic oxygen therapy access disparities in global health settings
+
+## Tensions / contradictions
+
+- Dichotomy between HBOT's efficacy in complete ulcer healing versus its non-significant effect on minor amputations, as suggested by overlapping confidence intervals in meta-analyses
+- Discrepancy in adverse event rates favoring standard treatment groups over HBOT in certain study populations
+
+## Evidence gaps
+
+- Dose-response dynamics for HBOT pressures (e.g., 2.0 vs. 2.4 ATA) and session frequencies in diabetic foot ulcer subgroups stratified by Wagner grade
+- Cost-effectiveness analyses incorporating regional healthcare system variations beyond the $10,000–$50,000 range
+
+## Paper theses
+
+_none_
+
+## Reviewer objections to anticipate
+
+- Lack of directly cited evidence facts undermines any thesis, making claims speculative and unsuitable for peer review
+- Alpha hints alone cannot substitute for primary data extraction, risking circular reasoning based on unverified meta-analytic summaries
+
+## Suggested next extractions
+
+- Extract detailed outcome data (e.g., OR, RR, I²) from the meta-analysis in 10.1038/s41598-021-81886-1 focusing on diabetic foot ulcer healing and amputation subtypes
+- Harvest cost and resource utilization metrics from 10.1093/jncimonographs/lgz010, stratifying by hospital setting and patient comorbidities
+- Isolate adverse event rates from comparative trials in 10.1038/s41598-021-81886-1 to quantify safety trade-offs

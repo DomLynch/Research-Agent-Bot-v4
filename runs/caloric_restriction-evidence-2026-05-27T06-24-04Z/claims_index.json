@@ -1,0 +1,160 @@
+{
+  "topic": "caloric_restriction",
+  "snapshot_utc": "2026-05-27T06-24-04Z",
+  "claim_count": 17,
+  "claims": [
+    {
+      "claim_text": "a 7-day water-only fast leads to an average weight loss of 5.7 kg (±0.8 kg) among 12 volunteers",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s42255-024-01008-9"
+      ]
+    },
+    {
+      "claim_text": "0.819 kg [0.364 to 1.273] of CR-induced LBM loss prevented",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu10040423"
+      ]
+    },
+    {
+      "claim_text": "RT reduced 93.5% of CR-induced LBM loss",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu10040423"
+      ]
+    },
+    {
+      "claim_text": "40% caloric restriction had the strongest lifespan extension effect.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41586-024-08026-3"
+      ]
+    },
+    {
+      "claim_text": "Studies with subtherapeutic dosing typically used more moderate caloric restrictions (reducing energy intake by 500-600 kcal/day) and the weighted mean remission rate was 6.9%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1177/1559827620930962"
+      ]
+    },
+    {
+      "claim_text": "30% CR was sufficient to extend the life span by 10%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1126/science.abk0297"
+      ]
+    },
+    {
+      "claim_text": "change in strength/LBM ratio tended to be different (p = 0.07) following CRRT (20.9 ± 23.1%) and CR (−7.5 ± 9.9%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu10040423"
+      ]
+    },
+    {
+      "claim_text": "30% CR in young male mice decreased fat mass and improved glucose tolerance and insulin sensitivity",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.7554/elife.88080"
+      ]
+    },
+    {
+      "claim_text": "25% caloric restriction (n = 145; 11.7% caloric restriction was achieved, on average) or to maintain current diet (n = 75) for 2 years",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1093/gerona/glx096"
+      ]
+    },
+    {
+      "claim_text": "11.7% caloric restriction was achieved, on average",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1093/gerona/glx096"
+      ]
+    },
+    {
+      "claim_text": "40% caloric restriction led to a loss of lean mass and changes in the immune repertoire that could confer susceptibility to infections.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.1038/s41586-024-08026-3"
+      ]
+    },
+    {
+      "claim_text": "n = 220 adults without obesity were randomized to 25% CR or ad libitum control diet for 2 yr",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1038/s43587-022-00357-y"
+      ]
+    },
+    {
+      "claim_text": "a daily fasting interval and circadian alignment of feeding acted together to extend life span by 35% in male C57BL/6J mice",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1126/science.abk0297"
+      ]
+    },
+    {
+      "claim_text": "Both RT+CR+AT and CR+AT produced significant improvements in Kansas City Cardiomyopathy Questionnaire score [17 (12, 22) versus 23 (17, 28); P =0.001 for both]",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/circheartfailure.122.010161"
+      ]
+    },
+    {
+      "claim_text": "RT+CR+AT produced significantly greater increases in leg muscle quality [0.07 (0.03, 0.11) versus 0.02 (–0.02, 0.06) Nm/cm 2 , P =0.04]",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/circheartfailure.122.010161"
+      ]
+    },
+    {
+      "claim_text": "RT+CR+AT produced significantly greater increases in leg muscle strength [4.9 (0.7, 9.0) versus –1.1 (–5.5, 3.2) Nm, P =0.05]",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/circheartfailure.122.010161"
+      ]
+    },
+    {
+      "claim_text": "when TRF is combined with caloric restriction, weight loss is >5% of the initial body weight",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu14224778"
+      ]
+    }
+  ]
+}

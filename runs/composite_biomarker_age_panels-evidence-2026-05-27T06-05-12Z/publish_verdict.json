@@ -1,0 +1,128 @@
+{
+  "run_dir": "runs/composite_biomarker_age_panels-evidence-2026-05-27T06-05-12Z",
+  "topic": "composite_biomarker_age_panels",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 composite_biomarker_age_panels",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 0,
+    "available_source_contexts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 0.789,
+    "source_count": 13,
+    "clusters": [
+      {
+        "label": "positivity_participants_disease",
+        "member_fact_ids": [
+          "173950",
+          "173949",
+          "173948",
+          "173952",
+          "173953",
+          "173951"
+        ],
+        "source_paper": {
+          "doi": "10.1093/braincomms/fcab008",
+          "title": "Detection of \u03b2-amyloid positivity in Alzheimer\u2019s Disease Neuroimaging Initiative participants with demographics, cognition, MRI and plasma biomarkers",
+          "journal": "Brain Communications",
+          "year": 2021
+        },
+        "example_phrase": "Clinical information enhanced the performance of plasma biomarkers by 0.21-0.25 units of area under curve for cognitively impaired."
+      },
+      {
+        "label": "novel_type_disease",
+        "member_fact_ids": [
+          "144554",
+          "144558",
+          "144555",
+          "144557",
+          "144556"
+        ],
+        "source_paper": {
+          "doi": "10.1093/brain/awac407",
+          "title": "Brain-derived tau: a novel blood-based biomarker for Alzheimer\u2019s disease-type neurodegeneration",
+          "journal": "Brain",
+          "year": 2022
+        },
+        "example_phrase": "plasma brain-derived tau accurately distinguished autopsy-confirmed Alzheimer\u2019s disease from other neurodegenerative diseases (area under the curve = 86.4%)"
+      },
+      {
+        "label": "cerebrospinal_broad_panel",
+        "member_fact_ids": [
+          "92528",
+          "92531",
+          "92533",
+          "92529",
+          "92532"
+        ],
+        "source_paper": {
+          "doi": "10.1093/brain/awae032",
+          "title": "Cerebrospinal fluid biomarker panel for synaptic dysfunction in a broad spectrum of neurodegenerative diseases",
+          "journal": "Brain",
+          "year": 2024
+        },
+        "example_phrase": "SNAP-25 was the strongest predictor of progression to AD dementia in non-demented individuals (hazard ratio = 2.11)."
+      },
+      {
+        "label": "neurofilament_disease_neurology",
+        "member_fact_ids": [
+          "75688",
+          "75689",
+          "75690",
+          "75691"
+        ],
+        "source_paper": {
+          "doi": "10.1001/jamaneurol.2016.6117",
+          "title": "Association of Plasma Neurofilament Light With Neurodegeneration in Patients With Alzheimer Disease",
+          "journal": "JAMA Neurology",
+          "year": 2017
+        },
+        "example_phrase": "Plasma NFL had high diagnostic accuracy for patients with AD with dementia vs controls (area under the receiver operating characteristic curve, 0.87)."
+      },
+      {
+        "label": "autopsy_acta_less",
+        "member_fact_ids": [
+          "143842",
+          "143843",
+          "143845"
+        ],
+        "source_paper": {
+          "doi": "10.1007/s00401-022-02408-5",
+          "title": "Plasma biomarkers for Alzheimer\u2019s Disease in relation to neuropathology and cognitive change",
+          "journal": "Acta Neuropathologica",
+          "year": 2022
+        },
+        "example_phrase": "P-tau181 (AUC = 0.856) showed strong sensitivity and specificity for AD neuropathological change (ADNC)."
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "topic": "mitochondrial_peptides",
+  "snapshot_utc": "2026-05-26T19-52-11Z",
+  "input_pack": {
+    "topic": "mitochondrial_peptides",
+    "a_core_count": 0,
+    "b_context_count": 0,
+    "excluded_counts": {
+      "C_noise": 2,
+      "D_bad_extraction": 3
+    },
+    "has_minimum_a_core": false,
+    "a_core_min": 3
+  },
+  "audits": []
+}

@@ -1,0 +1,133 @@
+{
+  "run_dir": "runs/telomere-evidence-2026-05-26T19-24-25Z",
+  "topic": "telomere",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "Sex-Dimorphic and Assay-Modulated Associations Between Telomere Length and Cancer Risk: A Meta-Regression Approach",
+  "confidence_label": "evidence_binding_failed",
+  "alpha_score": 0,
+  "surface_type": "curation_brief",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 12,
+    "available_source_contexts": 6,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": true,
+    "why": "lead_thesis_underuses_available_bound_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [
+      "109012",
+      "172807",
+      "172806",
+      "109013",
+      "145145",
+      "172432",
+      "3475",
+      "171628",
+      "3477",
+      "3479",
+      "3476",
+      "3478"
+    ],
+    "candidate_receipts": [
+      {
+        "fact_id": "109012",
+        "lane": "A_core",
+        "phrase": "Genetically determined longer telomere length was associated with lowered risk of coronary heart disease (CHD; OR = 0.95, 95% CI: 0.92-0.98)",
+        "sub_topic": "effect_size",
+        "population": "UK Biobank participants aged 60 and older",
+        "intervention": "genetically determined longer telomere length (per 250 base pairs increase)",
+        "source_paper": {
+          "doi": "10.1111/acel.13017",
+          "title": "Telomere length and aging\u2010related outcomes in humans: A Mendelian randomization study in 261,000 older participants",
+          "journal": "Aging Cell",
+          "year": 2019
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "109013",
+        "lane": "A_core",
+        "phrase": "but raised risk of cancer (OR = 1.11, 95% CI: 1.06-1.16)",
+        "sub_topic": "effect_size",
+        "population": "UK Biobank participants aged 60 and older",
+        "intervention": "genetically determined longer telomere length (per 250 base pairs increase)",
+        "source_paper": {
+          "doi": "10.1111/acel.13017",
+          "title": "Telomere length and aging\u2010related outcomes in humans: A Mendelian randomization study in 261,000 older participants",
+          "journal": "Aging Cell",
+          "year": 2019
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "145145",
+        "lane": "A_core",
+        "phrase": "one SD TL decrement-associated hazard ratio of 1.09 (95% CI: 1.06-1.13)",
+        "sub_topic": "effect_size",
+        "population": "121,749 individuals with 21,763 deaths from meta-analysis of 25 studies",
+        "intervention": "one standard deviation decrement in telomere length",
+        "source_paper": {
+          "doi": "10.1016/j.arr.2018.09.002",
+          "title": "Telomere Length and All-Cause Mortality: A Meta-analysis",
+          "journal": "Ageing Research Reviews",
+          "year": 2018
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "172432",
+        "lane": "A_core",
+        "phrase": "longer LTL was associated with higher brain volume (\u03b2 = 0.43, 95%CI: 0.36-0.50%, p = 0.008, N = 1102)",
+        "sub_topic": "effect_size",
+        "population": "non-demented individuals",
+        "intervention": "longer leukocyte telomere length (LTL)",
+        "source_paper": {
+          "doi": "10.1016/j.arr.2022.101679",
+          "title": "Telomere length and brain aging: A systematic review and meta-analysis",
+          "journal": "Ageing Research Reviews",
+          "year": 2022
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "172806",
+        "lane": "A_core",
+        "phrase": "Variant status was significantly associated with transplant-free survival (discovery: age-, sex-, and ancestry-adjusted hazard ratio, 3.73)",
+        "sub_topic": "effect_size",
+        "population": "Patients with chronic hypersensitivity pneumonitis (discovery cohort)",
+        "intervention": "Rare protein-altering variant in telomere-related genes",
+        "source_paper": {
+          "doi": "10.1164/rccm.201902-0360oc",
+          "title": "Rare Protein-Altering Telomere-related Gene Variants in Patients with Chronic Hypersensitivity Pneumonitis",
+          "journal": "American Journal of Respiratory and Critical Care Medicine",
+          "year": 2019
+        },
+        "same_source_as_lead": false
+      }
+    ]
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": false,
+    "reason": "not_broad_or_not_noisy_enough",
+    "d_bad_share": 0.579,
+    "source_count": 18,
+    "clusters": []
+  },
+  "blockers": [
+    "blocked_label:evidence_binding_failed",
+    "no_bound_receipts"
+  ]
+}

@@ -1,0 +1,205 @@
+{
+  "topic": "vascular_age",
+  "snapshot_utc": "2026-05-26T19-40-36Z",
+  "claim_count": 22,
+  "claims": [
+    {
+      "claim_text": "supernormal vascular aging had lower risk (hazard ratio, 0.59 [95% CI, 0.41-0.85])",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/hypertensionaha.120.14971"
+      ]
+    },
+    {
+      "claim_text": "early vascular aging had higher risk (hazard ratio, 2.70 [95% CI, 1.55-4.70])",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/hypertensionaha.120.14971"
+      ]
+    },
+    {
+      "claim_text": "Higher baseline systolic blood pressure was associated with greater positive change in common cIMT (0.007 mm [0.003, 0.011]; P<0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.014891"
+      ]
+    },
+    {
+      "claim_text": "Higher baseline systolic blood pressure was associated with greater positive change in pulse wave velocity carotid-femoral (0.066 m/sec [0.002, 0.130]; P=0.042)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.014891"
+      ]
+    },
+    {
+      "claim_text": "those with obesity had greater positive change in common cIMT (0.05 mm [0.03, 0.06]; P<0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.014891"
+      ]
+    },
+    {
+      "claim_text": "those with type 2 diabetes mellitus had greater positive change in common cIMT (0.05 mm [0.04, 0.07]; P<0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.014891"
+      ]
+    },
+    {
+      "claim_text": "those with type 2 diabetes mellitus had greater positive change in augmentation index (4.67% [2.20, 7.13]; P<0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.014891"
+      ]
+    },
+    {
+      "claim_text": "Higher baseline systolic blood pressure was associated with greater positive change in internal cIMT (0.008 mm [0.003, 0.013]; P=0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.014891"
+      ]
+    },
+    {
+      "claim_text": "those with obesity had greater positive change in pulse wave velocity carotid-femoral (0.38 m/sec [0.14, 0.61]; P=0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.014891"
+      ]
+    },
+    {
+      "claim_text": "those with type 2 diabetes mellitus had greater positive change in pulse wave velocity carotid-femoral (0.74 m/sec [0.46, 1.02]; P<0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.014891"
+      ]
+    },
+    {
+      "claim_text": "accounting for 31% of annual deaths globally.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/cells9010195"
+      ]
+    },
+    {
+      "claim_text": "1.7% are multi-organ agers",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1038/s41586-023-06802-1"
+      ]
+    },
+    {
+      "claim_text": "nearly 20% of the population show strongly accelerated age in one organ",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1038/s41586-023-06802-1"
+      ]
+    },
+    {
+      "claim_text": "Accelerated organ aging confers 20-50% higher mortality risk",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41586-023-06802-1"
+      ]
+    },
+    {
+      "claim_text": "individuals with accelerated heart aging have a 250% increased heart failure risk",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41586-023-06802-1"
+      ]
+    },
+    {
+      "claim_text": "25-30% of ischaemic stroke survivors develop immediate or delayed vascular cognitive impairment (VCI) or vascular dementia (VaD).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/j.bbadis.2016.01.015"
+      ]
+    },
+    {
+      "claim_text": "dual therapy Ang-2/VEGF-A inhibition with faricimab (6 mg) has a greater effect on reducing/resolving biomarkers of vascular instability than aflibercept (2 mg)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s00417-024-06695-4"
+      ]
+    },
+    {
+      "claim_text": "p53 (r = -0.49, P = 0.003), p21 (r = -0.38, P = 0.03), and p16 (r = -0.58, P = 0.002) were inversely associated with vascular endothelial function",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1152/ajpheart.00416.2017"
+      ]
+    },
+    {
+      "claim_text": "Retinal PDGFRβ loss significantly associated with increased retinal vascular Aβ 40 and Aβ 42 burden",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s00401-020-02134-w"
+      ]
+    },
+    {
+      "claim_text": "vascular dementia (weighted average 62%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1038/jcbfm.2011.200"
+      ]
+    },
+    {
+      "claim_text": "Sirolimus resulted in a clinical improvement in 85% of patients.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1172/jci.insight.173095"
+      ]
+    },
+    {
+      "claim_text": "Grade 3-4 adverse events were observed in 24 (18%) patients; all resolved after treatment interruption/arrest.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.1172/jci.insight.173095"
+      ]
+    }
+  ]
+}

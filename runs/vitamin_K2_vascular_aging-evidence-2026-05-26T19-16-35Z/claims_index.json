@@ -1,0 +1,304 @@
+{
+  "topic": "vitamin_K2_vascular_aging",
+  "snapshot_utc": "2026-05-26T19-16-35Z",
+  "claim_count": 33,
+  "claims": [
+    {
+      "claim_text": "We are very uncertain regarding the effect of vitamin D versus placebo or no intervention on all-cause mortality (risk ratio (RR) 0.86, 95% confidence interval (CI) 0.51 to 1.45; 27 trials; 1979 participants).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/14651858.cd011564.pub3"
+      ]
+    },
+    {
+      "claim_text": "serum vitamin D levels predicted COVID-19 mortality rates (16 studies) and linearly predicted COVID-19 illness severity (8 studies).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fpubh.2020.00513"
+      ]
+    },
+    {
+      "claim_text": "Vitamin D deficiency (serum 25-hydroxyvitamin D <50 nmol/L) accelerates bone turnover, bone loss, and osteoporotic fractures.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1210/er.2018-00126"
+      ]
+    },
+    {
+      "claim_text": "Rickets and osteomalacia can be prevented by daily supplements of 400 IU of vitamin D.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1210/er.2018-00126"
+      ]
+    },
+    {
+      "claim_text": "1000 IU daily should be recommended in patients at increased risk of vitamin D deficiency.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1007/s40520-022-02279-6"
+      ]
+    },
+    {
+      "claim_text": "The mean baseline 25(OH)D levels were 22.4 ± 8.0 ng/mL in DO-HEALTH and increased to 37.6 ng/mL in the vitamin D treatment groups",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1093/gerona/glad073"
+      ]
+    },
+    {
+      "claim_text": "The mean baseline 25(OH)D levels were 30.7 ± 10 ng/mL in VITAL and increased to 41.2 ng/mL in the vitamin D treatment groups",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1093/gerona/glad073"
+      ]
+    },
+    {
+      "claim_text": "Maintaining the population's vitamin D sufficiency (above 40 ng/mL) with vitamin D3 supplements and/or daily sun exposure reduces chronic diseases and sepsis.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3390/biomedicines11061542"
+      ]
+    },
+    {
+      "claim_text": "recommended doses for vitamin D supplementation vary between 200 and 2000 IU/day, to achieve a goal of circulating 25-hydroxyvitamin D of at least 50 nmol/L.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1007/s40520-022-02279-6"
+      ]
+    },
+    {
+      "claim_text": "negative correlation between vitamin D serum levels and C-reactive protein (p = 0.04)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu13030717"
+      ]
+    },
+    {
+      "claim_text": "Lower vitamin D in elderly COVID-19 patients who died vs survived (median 3.0 vs 8.4 ng/mL, p=0.046)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu13030717"
+      ]
+    },
+    {
+      "claim_text": "a statistically significant positive correlation was observed between vitamin D serum levels and PaO2/FiO2 (p = 0.02)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu13030717"
+      ]
+    },
+    {
+      "claim_text": "vitamin D was found significantly lower in COVID-19 patients with multiple lung consolidations (p = 0.0001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu13030717"
+      ]
+    },
+    {
+      "claim_text": "supplemental vitamin D did not improve bone density or structure (n = 771) or physical performance measures (n = 1 054)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/gerona/glad073"
+      ]
+    },
+    {
+      "claim_text": "Three hundred and ninety-six (28.8%) patients presented vitamin B12 > 1000 pg/mL",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/nu9010001"
+      ]
+    },
+    {
+      "claim_text": "elevated vitamin B12 was an independent predictor of LOS (p = 0.027)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu9010001"
+      ]
+    },
+    {
+      "claim_text": "The adjusted odds ratio of in-hospital mortality in patients with high vitamin B12 was 2.20 (95% CI, 1.56-3.08; p < 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu9010001"
+      ]
+    },
+    {
+      "claim_text": "high vitamin B12 concentrations (>1000 pg/mL) are associated with in-hospital mortality",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3390/nu9010001"
+      ]
+    },
+    {
+      "claim_text": "neutropenia (n = 24 [35%] vs n = 21 [31%], respectively)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.1001/jama.2019.2402"
+      ]
+    },
+    {
+      "claim_text": "at first restaging, 32.0 ng/mL vs 18.7 ng/mL (difference, 12.8 ng/mL [95% CI, 9.0 to 16.6], P < .001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1001/jama.2019.2402"
+      ]
+    },
+    {
+      "claim_text": "tumor ORR (58% vs 63%, respectively; difference, −5% [95% CI, −20% to 100%], P = .27)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1001/jama.2019.2402"
+      ]
+    },
+    {
+      "claim_text": "multivariable hazard ratio for PFS or death was 0.64 (1-sided 95% CI, 0 to 0.90; P = .02)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1001/jama.2019.2402"
+      ]
+    },
+    {
+      "claim_text": "Significantly lower vitamin D serum levels were found in COVID-19 patients than in CNT (median 7.9 vs 16.3 ng/mL, p = 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu13030717"
+      ]
+    },
+    {
+      "claim_text": "The fatality rate was high in vitamin D deficient (21% vs 3.1%).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1038/s41598-020-77093-z"
+      ]
+    },
+    {
+      "claim_text": "maintain levels above 30 ng/mL (75 nmol/L) in categories at risk",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3390/nu10050546"
+      ]
+    },
+    {
+      "claim_text": "20 ng/mL (50 nmol/L) can be considered appropriate in the general population",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3390/nu10050546"
+      ]
+    },
+    {
+      "claim_text": "In-hospital mortality with and without vitamin C supplementation was 24.1% vs. 33.9% (OR = 0.59; 95%CI: 0.37 to 0.95; p = 0.03)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu14194217"
+      ]
+    },
+    {
+      "claim_text": "Acute kidney injury with vitamin C vs without: 27.8% vs. 45.0% (OR = 0.56, p < 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.3390/nu14194217"
+      ]
+    },
+    {
+      "claim_text": "No differences in other adverse events with vitamin C (all p > 0.05)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.3390/nu14194217"
+      ]
+    },
+    {
+      "claim_text": "the 3 treatments combined showed a significant 39% decreased odds of becoming prefrail compared to the control",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/gerona/glad073"
+      ]
+    },
+    {
+      "claim_text": "levels above 50 ng/mL are necessary to mitigate conditions such as infections/sepsis, cancer, and reduce premature deaths.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3390/biomedicines11061542"
+      ]
+    },
+    {
+      "claim_text": "the mRNA of major vitamin D-25-hydroxylase (CYP2R1) is markedly (~40%) lower in livers of obese mice (fed a high-fat diet) compared with livers from normal mice",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jbmr.3884"
+      ]
+    },
+    {
+      "claim_text": "These risks can be reduced by 800 IU of vitamin D together with an appropriate calcium intake, given to institutionalized or vitamin D-deficient elderly subjects.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1210/er.2018-00126"
+      ]
+    }
+  ]
+}

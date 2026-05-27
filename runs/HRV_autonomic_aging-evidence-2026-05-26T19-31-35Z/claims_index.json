@@ -1,0 +1,70 @@
+{
+  "topic": "HRV_autonomic_aging",
+  "snapshot_utc": "2026-05-26T19-31-35Z",
+  "claim_count": 7,
+  "claims": [
+    {
+      "claim_text": "somatic expansion from 40 to 150 CAGs had no apparent cell-autonomous effect",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1016/j.cell.2024.11.038"
+      ]
+    },
+    {
+      "claim_text": "A significant, moderate effect was observed (r = 0.25), such that higher HRV was related to better cognitive and behavioral scores",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.arr.2021.101539"
+      ]
+    },
+    {
+      "claim_text": "CAN is increasingly recognised in people with prediabetes with a reported prevalence up to 11%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1007/s13300-019-00693-0"
+      ]
+    },
+    {
+      "claim_text": "CAN is increasingly recognised in people with the metabolic syndrome with a reported prevalence up to 24%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1007/s13300-019-00693-0"
+      ]
+    },
+    {
+      "claim_text": "An estimated global prevalence of the impaired glucose tolerance (IGT) form of pre-DM of 587 million people by 2045.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1007/s13300-019-00693-0"
+      ]
+    },
+    {
+      "claim_text": "The Random Trees model presented the best classification performance (overall accuracy: 95.6%) utilizing ECG fiducial variables.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/access.2021.3109806"
+      ]
+    },
+    {
+      "claim_text": "pooled relative risk (RR) of 3.16 (95%CI 2.42 to 4.13; p<0.0001) of future CVE in favour of CAN",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1136/bmjdrc-2021-002480"
+      ]
+    }
+  ]
+}

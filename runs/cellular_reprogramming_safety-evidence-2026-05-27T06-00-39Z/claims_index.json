@@ -1,0 +1,43 @@
+{
+  "topic": "cellular_reprogramming_safety",
+  "snapshot_utc": "2026-05-27T06-00-39Z",
+  "claim_count": 4,
+  "claims": [
+    {
+      "claim_text": "systemically delivered adeno-associated viruses, encoding an inducible OSK system, in 124-week-old male mice extend the median remaining lifespan by 109% over WT controls",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1089/cell.2023.0072"
+      ]
+    },
+    {
+      "claim_text": "RCC represents 85-95% of kidney cancers",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/ijms24098391"
+      ]
+    },
+    {
+      "claim_text": "It accounts for 3% of all cancer cases",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/ijms24098391"
+      ]
+    },
+    {
+      "claim_text": "Clear cell renal cell carcinoma (ccRCC), accounts for 75% of RCCs",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/ijms24098391"
+      ]
+    }
+  ]
+}

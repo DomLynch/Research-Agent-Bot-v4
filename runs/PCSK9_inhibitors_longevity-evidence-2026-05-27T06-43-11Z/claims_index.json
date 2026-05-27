@@ -1,0 +1,286 @@
+{
+  "topic": "PCSK9_inhibitors_longevity",
+  "snapshot_utc": "2026-05-27T06-43-11Z",
+  "claim_count": 31,
+  "claims": [
+    {
+      "claim_text": "PCSK9 inhibitors seem to be capable of reducing Lp(a) levels by 25-30%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/ijerph20186721"
+      ]
+    },
+    {
+      "claim_text": "reduced the primary outcome by 1.8% over 7 years (hazard ratio: 0.90; 95% CI: 0.84–0.96).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/cir.0000000000000626"
+      ]
+    },
+    {
+      "claim_text": "decreased the primary outcome by 1.5% over 2.2 years (hazard ratio: 0.80; 95% CI: 0.73–0.88).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/cir.0000000000000626"
+      ]
+    },
+    {
+      "claim_text": "reduced the primary outcome by 1.6% over 2.8 years (hazard ratio: 0.86; 95% CI: 0.79–0.93).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/cir.0000000000000626"
+      ]
+    },
+    {
+      "claim_text": "The threshold value has been set at 50 mg/dL, but the risk may increase already at levels above 30 mg/dL.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3390/ijerph20186721"
+      ]
+    },
+    {
+      "claim_text": "Mipomersen decreases Lp(a) levels by 25-40%, but its use is burdened with important side effects.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.3390/ijerph20186721"
+      ]
+    },
+    {
+      "claim_text": "Mipomersen decreases Lp(a) levels by 25-40%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/ijerph20186721"
+      ]
+    },
+    {
+      "claim_text": "the incidence of homozygous FH is 1: 100.000-160.000",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/medicina58111665"
+      ]
+    },
+    {
+      "claim_text": "The incidence of heterozygous FH is 1: 200-250",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/medicina58111665"
+      ]
+    },
+    {
+      "claim_text": "clinical practice goals are still not met in a substantial proportion of patients (even in 70%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1007/s40265-024-02105-5"
+      ]
+    },
+    {
+      "claim_text": "11% (3%-18%) for >75 years of age.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1161/jaha.122.026551"
+      ]
+    },
+    {
+      "claim_text": "51% (38%-63%) for multimorbidity.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1161/jaha.122.026551"
+      ]
+    },
+    {
+      "claim_text": "64% excluded patients with moderate to severe heart failure.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1161/jaha.122.026551"
+      ]
+    },
+    {
+      "claim_text": "76% those with moderate kidney failure.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1161/jaha.122.026551"
+      ]
+    },
+    {
+      "claim_text": "64% those with immunosuppressant conditions.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1161/jaha.122.026551"
+      ]
+    },
+    {
+      "claim_text": "The pooled prevalence for patients >70 years of age was 25% (95% CI, 0%-49%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1161/jaha.122.026551"
+      ]
+    },
+    {
+      "claim_text": "Over 90% of the SNVs in both these groups are located outside the coding regions of the genes.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1186/s12944-017-0488-4"
+      ]
+    },
+    {
+      "claim_text": "reduced risk of stroke with SGLT2 inhibitors compared to non-SGLT2 inhibitors (HR, 0.83; 95%CI, 0.77-0.91)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.phrs.2021.105836"
+      ]
+    },
+    {
+      "claim_text": "reduced risk of stroke with SGLT2 inhibitors compared to DPP-4 inhibitors (Hazard ratio HR, 0.89; 95%CI, 0.82-0.96)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.phrs.2021.105836"
+      ]
+    },
+    {
+      "claim_text": "odds ratio (OR) 1.30, 95% CI 1.22 to 1.38",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.1002/14651858.cd002309.pub6"
+      ]
+    },
+    {
+      "claim_text": "odds ratio (OR) 0.78, 95% CI 0.73 to 0.84",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/14651858.cd002309.pub6"
+      ]
+    },
+    {
+      "claim_text": "mean difference (MD) 49.33 mL, 95% confidence interval (CI) 44.17 to 54.49",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/14651858.cd002309.pub6"
+      ]
+    },
+    {
+      "claim_text": "mean difference (MD) -1.06 units, 95% CI -1.68 to -0.43",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/14651858.cd002309.pub6"
+      ]
+    },
+    {
+      "claim_text": "Their efficacy potential to lower HbA1c is in the range between 0.5 and 1.0%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fendo.2019.00389"
+      ]
+    },
+    {
+      "claim_text": "those with heart failure treated with SGLT2 inhibitors had a 20% relative risk reduction in cardiovascular deaths and heart failure hospitalizations (risk ratio, 0.78; P<0.001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.120.019463"
+      ]
+    },
+    {
+      "claim_text": "Patients on SGLT2 inhibitors had a reduction in body weight of -1.21 kg (P<0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.120.019463"
+      ]
+    },
+    {
+      "claim_text": "Of 91 patients treated with a PD-L1 inhibitor, 19 (21%) developed new onset thyroid dysfunction.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1089/thy.2019.0250"
+      ]
+    },
+    {
+      "claim_text": "Moderate quality evidence supported a lower risk of serious AF events with SGLT inhibitors (1.1% versus 1.5%; risk ratio 0.75 [95% CI, 0.66-0.86])",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.121.022222"
+      ]
+    },
+    {
+      "claim_text": "in patients with a history of AF, SGLT inhibitors resulted in a lower risk in the composite of heart failure hospitalization or cardiovascular death (hazard ratio, 0.70 [95% CI, 0.57-0.85])",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.121.022222"
+      ]
+    },
+    {
+      "claim_text": "pembrolizumab resulted in an overall response rate (ORR) of 34%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/j.ebiom.2015.01.011"
+      ]
+    },
+    {
+      "claim_text": "with a reduction in LDL cholesterol by approximately 15%.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/ph15070839"
+      ]
+    }
+  ]
+}

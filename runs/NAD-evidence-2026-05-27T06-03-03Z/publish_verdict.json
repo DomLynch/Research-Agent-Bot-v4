@@ -1,0 +1,122 @@
+{
+  "run_dir": "runs/NAD-evidence-2026-05-27T06-03-03Z",
+  "topic": "NAD",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "Glucose-Stimulated Mitochondrial Free NADH Depletion as a Regulatory Mechanism in Insulin Secretion: A Compartmentalized Redox Paradigm",
+  "confidence_label": "frontier_hypothesis",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 1,
+    "available_bound_receipts": 1,
+    "available_source_contexts": 1,
+    "a_core_receipts": 0,
+    "source_concentrated": true,
+    "counter_consensus_tension": true,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": [
+      {
+        "doi": "10.1089/ars.2019.7800",
+        "title": "Mitochondrial Superoxide Production Decreases on Glucose-Stimulated Insulin Secretion in Pancreatic \u03b2 Cells Due to Decreasing Mitochondrial Matrix NADH/NAD <sup>+</sup> Ratio",
+        "journal": "Antioxidants and Redox Signaling",
+        "year": 2020
+      }
+    ]
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [
+      "141820"
+    ],
+    "available_bound_fact_ids": [
+      "141820"
+    ],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 0.818,
+    "source_count": 9,
+    "clusters": [
+      {
+        "label": "daily_safety_blind",
+        "member_fact_ids": [
+          "148463",
+          "148469"
+        ],
+        "source_paper": {
+          "doi": "10.1007/s11357-022-00705-1",
+          "title": "The efficacy and safety of \u03b2-nicotinamide mononucleotide (NMN) supplementation in healthy middle-aged adults: a randomized, multicenter, double-blind, placebo-controlled, parallel-group, dose-dependent clinical trial",
+          "journal": "GeroScience",
+          "year": 2022
+        },
+        "example_phrase": "Blood NAD concentrations were statistically significantly increased among all NMN-treated groups at day 30 and day 60 (all p \u2264 0.001)."
+      },
+      {
+        "label": "size_decreases_matrix",
+        "member_fact_ids": [
+          "141820",
+          "141819"
+        ],
+        "source_paper": {
+          "doi": "10.1089/ars.2019.7800",
+          "title": "Mitochondrial Superoxide Production Decreases on Glucose-Stimulated Insulin Secretion in Pancreatic \u03b2 Cells Due to Decreasing Mitochondrial Matrix NADH/NAD <sup>+</sup> Ratio",
+          "journal": "Antioxidants and Redox Signaling",
+          "year": 2020
+        },
+        "example_phrase": "Novel double-channel fluorescence lifetime imaging, approximating free mitochondrial matrix NADHF, indicated its \u223c20% decrease"
+      },
+      {
+        "label": "subjects_size_activation",
+        "member_fact_ids": [
+          "162275"
+        ],
+        "source_paper": {
+          "doi": "10.1172/jci138538",
+          "title": "Boosting NAD level suppresses inflammatory activation of PBMCs in heart failure",
+          "journal": "Journal of Clinical Investigation",
+          "year": 2020
+        },
+        "example_phrase": "oral NR administration enhanced PBMC respiration and reduced proinflammatory cytokine gene expression in 4 subjects with HF."
+      },
+      {
+        "label": "associated_idh_size",
+        "member_fact_ids": [
+          "70158"
+        ],
+        "source_paper": {
+          "doi": "10.1007/s00401-010-0645-6",
+          "title": "The prognostic IDH1( R132 ) mutation is associated with reduced NADP+-dependent IDH activity in glioblastoma.",
+          "journal": "Acta neuropathologica",
+          "year": 2010
+        },
+        "example_phrase": "The occurrence of IDH1 (R132 ) mutation reduced this capacity by 38%."
+      },
+      {
+        "label": "subjects_received_efficiently",
+        "member_fact_ids": [
+          "166047"
+        ],
+        "source_paper": {
+          "doi": "10.3389/fnut.2022.868640",
+          "title": "Oral Administration of Nicotinamide Mononucleotide Is Safe and Efficiently Increases Blood Nicotinamide Adenine Dinucleotide Levels in Healthy Subjects",
+          "journal": "Frontiers in Nutrition",
+          "year": 2022
+        },
+        "example_phrase": "Healthy volunteers received 250 mg/day of NMN (n = 15) or placebo (n = 15) for 12 weeks."
+      }
+    ]
+  },
+  "blockers": [
+    "low_alpha_score"
+  ]
+}

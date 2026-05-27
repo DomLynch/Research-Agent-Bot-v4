@@ -1,0 +1,32 @@
+{
+  "topic": "sirtuin",
+  "snapshot_utc": "2026-05-27T05-38-15Z",
+  "model": "mimo-v2.5-pro",
+  "lens": "The evidence pool lacks A/B-bound facts, rendering it impossible to anchor a publishable thesis to verifiable citations. Without specific studies, strains, or doses from the fact block, any framing would be speculative and fail binding validation.",
+  "known_to_ignore": [
+    "Sirtuins are NAD+-dependent deacetylases involved in aging and metabolism.",
+    "SIRT1 activation is linked to caloric restriction benefits.",
+    "Resveratrol is a well-studied SIRT1 activator."
+  ],
+  "tensions": [
+    "SIRT1 is required for autophagy induction by resveratrol and nutrient deprivation but not by rapamycin or p53 inhibition, as per mechanistic studies in human cells and C. elegans.",
+    "SIRT6 reduction promotes tumor senescence in myCAFs, yet its therapeutic activation (e.g., MDL-800) shows promise in overcoming chemoresistance, indicating context-dependent roles."
+  ],
+  "gaps": [
+    "Limited investigation of SIRT6 activators like MDL-800 in combinatorial regimens with antibodies such as anti-TSPAN8 for cancer therapy.",
+    "Understudied mechanisms of trigonelline's lifespan-extending effects via sirtuin-dependent pathways, particularly in age-related muscle wasting.",
+    "Dose-response relationships for synthetic SIRT modulators (e.g., SRT1720, IC50 = 0.04-100 μM) across different disease models."
+  ],
+  "theses": [],
+  "reviewer_objections": [
+    "The thesis lacks empirical support from cited evidence facts, making claims unsubstantiated.",
+    "Without specific study references, the novelty cannot be assessed against existing literature."
+  ],
+  "next_extractions": [
+    "Extract studies on SRT1720 and SRT1460 as SIRT1 modulators with documented IC50 ranges from pharmacological reviews.",
+    "Harvest data on autophagy assays in C. elegans and human cells involving SIRT1 knockdown/knockout from papers like 10.1038/cddis.2009.8.",
+    "Investigate SIRT6 activators (e.g., MDL-800) in combination with anti-TSPAN8 antibodies from translational medicine studies.",
+    "Explore trigonelline's NAD+-dependent mechanisms requiring sirtuin activation from recent metabolism-focused research."
+  ],
+  "raw_response": "{\n  \"lens\": \"The evidence pool lacks A/B-bound facts, rendering it impossible to anchor a publishable thesis to verifiable citations. Without specific studies, strains, or doses from the fact block, any framing would be speculative and fail binding validation.\",\n  \"known_to_ignore\": [\"Sirtuins are NAD+-dependent deacetylases involved in aging and metabolism.\", \"SIRT1 activation is linked to caloric restriction benefits.\", \"Resveratrol is a well-studied SIRT1 activator.\"],\n  \"tensions\": [\"SIRT1 is required for autophagy induction by resveratrol and nutrient deprivation but not by rapamycin or p53 inhibition, as per mechanistic studies in human cells and C. elegans.\", \"SIRT6 reduction promotes tumor senescence in myCAFs, yet its therapeutic activation (e.g., MDL-800) shows promise in overcoming chemoresistance, indicating context-dependent roles.\"],\n  \"gaps\": [\"Limited investigation of SIRT6 activators like MDL-800 in combinatorial regimens with antibodies such as anti-TSPAN8 for cancer therapy.\", \"Understudied mechanisms of trigonelline's lifespan-extending effects via sirtuin-dependent pathways, particularly in age-related muscle wasting.\", \"Dose-response relationships for synthetic SIRT modulators (e.g., SRT1720, IC50 = 0.04-100 μM) across different disease models.\"],\n  \"theses\": [],\n  \"reviewer_objections\": [\"The thesis lacks empirical support from cited evidence facts, making claims unsubstantiated.\", \"Without specific study references, the novelty cannot be assessed against existing literature.\"],\n  \"next_extractions\": [\"Extract studies on SRT1720 and SRT1460 as SIRT1 modulators with documented IC50 ranges from pharmacological reviews.\", \"Harvest data on autophagy assays in C. elegans and human cells involving SIRT1 knockdown/knockout from papers like 10.1038/cddis.2009.8.\", \"Investigate SIRT6 activators (e.g., MDL-800) in combination with anti-TSPAN8 antibodies from translational medicine studies.\", \"Explore trigonelline's NAD+-dependent mechanisms requiring sirtuin activation from recent metabolism-focused research.\"]\n}"
+}

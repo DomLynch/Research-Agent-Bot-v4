@@ -1,0 +1,40 @@
+# Frontier review — vascular_age
+
+**Snapshot:** 2026-05-26T19-40-36Z
+**Strategist model:** mimo-v2.5-pro
+
+## The lens
+
+Without any curated evidence fact IDs, the evidence pool for vascular aging is effectively empty, preventing the derivation of specific, cited theses. This suggests a critical gap in data synthesis, where existing studies on vascular metrics and interventions remain fragmented and not yet actionable for publishable reviews or meta-analyses.
+
+## Already known — do not publish
+
+- Vascular aging is associated with increased cardiovascular morbidity and mortality
+- Systolic blood pressure is a key driver of arterial stiffness
+
+## Tensions / contradictions
+
+- Conflicting evidence on the differential impact of type 2 diabetes on augmentation index versus carotid-femoral pulse wave velocity
+- Potential trade-offs between supernormal vascular aging benefits and accelerated organ aging risks in multi-morbidity contexts
+
+## Evidence gaps
+
+- Lack of clinical trials targeting mTOR inhibition (e.g., sirolimus doses) for vascular aging reversal in humans
+- Insufficient data linking senescence biomarkers (p53, p21, p16) to vascular endothelial function in longitudinal studies
+- Underexplored population: stroke survivors with vascular cognitive impairment and accelerated vascular aging
+
+## Paper theses
+
+_none_
+
+## Reviewer objections to anticipate
+
+- The proposal lacks any cited evidence, making it impossible to assess validity or novelty
+- Without specific study references, the feasibility of a meta-analysis or systematic review is questionable
+- The gap in curated data indicates that the field may not have matured enough for high-impact synthesis
+
+## Suggested next extractions
+
+- Quantify hazard ratios for supernormal vs. early vascular aging from cohort studies like those in Hypertension (doi:10.1161/hypertensionaha.120.14971)
+- Extract dose-response data for sirolimus in vascular aging contexts from clinical trials (e.g., JCI Insight study)
+- Harvest multi-organ aging data from Nature studies (doi:10.1038/s41586-023-06802-1) to explore vascular-specific aging trajectories

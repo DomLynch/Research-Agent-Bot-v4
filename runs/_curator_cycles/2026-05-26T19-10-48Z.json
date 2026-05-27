@@ -1,0 +1,182 @@
+{
+  "cycle_ts": "2026-05-26T19-10-48Z",
+  "top_requested": 20,
+  "cooldown_hours": 24.0,
+  "ran": [
+    {
+      "topic": "carnosine_anti_glycation",
+      "velocity": 3.191,
+      "status": "ran",
+      "run_dir": "runs/carnosine_anti_glycation-evidence-2026-05-26T19-11-35Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "plant_based_diet_biological_age",
+      "velocity": 3.145,
+      "status": "ran",
+      "run_dir": "runs/plant_based_diet_biological_age-evidence-2026-05-26T19-14-20Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "vitamin_K2_vascular_aging",
+      "velocity": 3.033,
+      "status": "ran",
+      "run_dir": "runs/vitamin_K2_vascular_aging-evidence-2026-05-26T19-16-35Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "melatonin_aging",
+      "velocity": 2.959,
+      "status": "ran",
+      "run_dir": "runs/melatonin_aging-evidence-2026-05-26T19-18-12Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "digital_frailty_index",
+      "velocity": 2.943,
+      "status": "ran",
+      "run_dir": "runs/digital_frailty_index-evidence-2026-05-26T19-19-06Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "sleep_architecture_deep_sleep",
+      "velocity": 2.907,
+      "status": "ran",
+      "run_dir": "runs/sleep_architecture_deep_sleep-evidence-2026-05-26T19-22-33Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "telomere",
+      "velocity": 2.898,
+      "status": "ran",
+      "run_dir": "runs/telomere-evidence-2026-05-26T19-24-25Z",
+      "signal_label": "evidence_binding_failed",
+      "notes": ""
+    },
+    {
+      "topic": "stem_cell_exhaustion",
+      "velocity": 2.892,
+      "status": "ran",
+      "run_dir": "runs/stem_cell_exhaustion-evidence-2026-05-26T19-26-56Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "longevity",
+      "velocity": 2.883,
+      "status": "ran",
+      "run_dir": "runs/longevity-evidence-2026-05-26T19-28-36Z",
+      "signal_label": "frontier_hypothesis",
+      "notes": ""
+    },
+    {
+      "topic": "HRV_autonomic_aging",
+      "velocity": 2.87,
+      "status": "ran",
+      "run_dir": "runs/HRV_autonomic_aging-evidence-2026-05-26T19-31-35Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "ergothioneine",
+      "velocity": 2.81,
+      "status": "ran",
+      "run_dir": "runs/ergothioneine-evidence-2026-05-26T19-33-19Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "organ_specific_aging_clocks",
+      "velocity": 2.794,
+      "status": "ran",
+      "run_dir": "runs/organ_specific_aging_clocks-evidence-2026-05-26T19-34-21Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "vascular_age",
+      "velocity": 2.718,
+      "status": "ran",
+      "run_dir": "runs/vascular_age-evidence-2026-05-26T19-40-36Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "blue_zones_diet_lifestyle",
+      "velocity": 2.64,
+      "status": "ran",
+      "run_dir": "runs/blue_zones_diet_lifestyle-evidence-2026-05-26T19-42-32Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "retatrutide_triple_agonists",
+      "velocity": 2.568,
+      "status": "ran",
+      "run_dir": "runs/retatrutide_triple_agonists-evidence-2026-05-26T19-44-10Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "therapeutic_plasma_exchange",
+      "velocity": 2.537,
+      "status": "ran",
+      "run_dir": "runs/therapeutic_plasma_exchange-evidence-2026-05-26T19-50-19Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "mitochondrial_peptides",
+      "velocity": 2.413,
+      "status": "ran",
+      "run_dir": "runs/mitochondrial_peptides-evidence-2026-05-26T19-52-11Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "exercise",
+      "velocity": 2.37,
+      "status": "ran",
+      "run_dir": "runs/exercise-evidence-2026-05-26T19-53-42Z",
+      "signal_label": "evidence_backed_signal",
+      "notes": ""
+    },
+    {
+      "topic": "quercetin",
+      "velocity": 2.306,
+      "status": "ran",
+      "run_dir": "runs/quercetin-evidence-2026-05-26T19-55-42Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "vitamin_D_healthspan",
+      "velocity": 2.285,
+      "status": "ran",
+      "run_dir": "runs/vitamin_D_healthspan-evidence-2026-05-26T19-57-29Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    }
+  ],
+  "skipped_in_cooldown": [
+    "autophagy",
+    "brain_age_MRI",
+    "NAD_IV_therapy",
+    "sauna_heat_therapy",
+    "mtor",
+    "extracellular_matrix_stiffening",
+    "low_dose_lithium",
+    "low_dose_naltrexone_inflammation",
+    "mitochondrial_DNA_damage",
+    "sarcopenia_muscle_preservation",
+    "immune_age"
+  ],
+  "cross_topic_memo": "runs/_curator_cycles/2026-05-26T19-10-48Z_cross_topic_alpha_memo.md",
+  "publish_queue": "runs/_publish_queue.json"
+}

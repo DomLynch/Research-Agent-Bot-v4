@@ -1,0 +1,277 @@
+{
+  "topic": "GLP_1_longevity",
+  "snapshot_utc": "2026-05-27T06-15-17Z",
+  "claim_count": 30,
+  "claims": [
+    {
+      "claim_text": "GLP-1RA and SGLT-2i showed a greater decrease of PWV (13%) than insulin or GLP-1RA.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.015716"
+      ]
+    },
+    {
+      "claim_text": "The lifetime risk of developing pancreatitis in patients on GLP-1 RA was lower (0.3% vs. 0.4%, p < 0.001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.3390/jcm14030944"
+      ]
+    },
+    {
+      "claim_text": "GLP-1RAs significantly increased weight loss (SMD -2.2 kg; 95% CI -2.9, -1.5)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/diseases12010014"
+      ]
+    },
+    {
+      "claim_text": "GLP-1RAs significantly reduced mean blood glucose (SMD -1.1 mg/dL; 95% CI -1.8, -0.3)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/diseases12010014"
+      ]
+    },
+    {
+      "claim_text": "GLP-1RAs significantly reduced cardiothoracic ratio (SMD of -1.2%; 95% CI -2.0, -0.4)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/diseases12010014"
+      ]
+    },
+    {
+      "claim_text": "are associated with a significantly 14% lower risk of MACE in patients with T2DM and a history of CV disease",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1155/2022/6820377"
+      ]
+    },
+    {
+      "claim_text": "and with a nonsignificantly 6% lower risk in patients without history of CV disease",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1155/2022/6820377"
+      ]
+    },
+    {
+      "claim_text": "GLP-1RA+SGLT-2i provided a greater increase of global work index (17.4%) compared with insulin or SGLT-2i.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.015716"
+      ]
+    },
+    {
+      "claim_text": "GLP-1RA provided a greater increase of global work index (12.7%) compared with insulin or SGLT-2i.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.015716"
+      ]
+    },
+    {
+      "claim_text": "we report 8 major themes including effects of medications (30%); diabetes (21%); and Weight loss and obesity (19%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1038/s41598-023-48267-2"
+      ]
+    },
+    {
+      "claim_text": "at 1 year (0.1% vs. 0.2%, p = 0.02)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.3390/jcm14030944"
+      ]
+    },
+    {
+      "claim_text": "at 3 years (0.2% vs. 0.3%, p = 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.3390/jcm14030944"
+      ]
+    },
+    {
+      "claim_text": "at 5 years (0.3% vs. 0.4%, p < 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.3390/jcm14030944"
+      ]
+    },
+    {
+      "claim_text": "The risk of pancreatitis between the two groups was not statistically different between the two cohorts at 6 months at (0.1% vs. 0.1%, p = 0.04)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.3390/jcm14030944"
+      ]
+    },
+    {
+      "claim_text": "GLP-1RA versus unexposed: 1.38 [95% CI: 1.07,1.69], P < 0.0001",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1172/jci188314"
+      ]
+    },
+    {
+      "claim_text": "GLP-1RA versus DPP-4I: 0.65 [95% CI: 0.43,0.88], P < 0.0001",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1172/jci188314"
+      ]
+    },
+    {
+      "claim_text": "GLP-1RA versus unexposed: 0.51 [95% CI: 0.29,0.72], P < 0.0001",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1172/jci188314"
+      ]
+    },
+    {
+      "claim_text": "a more significant weight loss was seen in GLP-1 RA groups with an overall mean difference of -7.1 kg (95% CI -9.2 to -5.0)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/obr.13435"
+      ]
+    },
+    {
+      "claim_text": "The dual therapy showed the greatest effect on measured markers in patients with left ventricular ejection fraction <55% (P<0.05).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.015716"
+      ]
+    },
+    {
+      "claim_text": "SGLT-2i showed a greater decrease of PWV (10.1%) than insulin or GLP-1RA.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.015716"
+      ]
+    },
+    {
+      "claim_text": "risks of adverse events were similarly lower in both sexes for GLP-1RA (aHR-women: 0.81, 0.73-0.89; aHR-men: 0.80, 0.71-0.89).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.012940"
+      ]
+    },
+    {
+      "claim_text": "Compared with sulfonylureas, hazard ratios for cardiovascular events were lower with GLP-1RA (aHR-men: 0.82, 0.71-0.95).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.012940"
+      ]
+    },
+    {
+      "claim_text": "GLP-1 RAs may benefit patients with type 2 diabetes mellitus or obesity.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/medicina60030357"
+      ]
+    },
+    {
+      "claim_text": "depression (n = 204)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/brainsci13111503"
+      ]
+    },
+    {
+      "claim_text": "mental health issues in general (n = 165)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/brainsci13111503"
+      ]
+    },
+    {
+      "claim_text": "insomnia (n = 620 matches)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/brainsci13111503"
+      ]
+    },
+    {
+      "claim_text": "anxiety (n = 353)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/brainsci13111503"
+      ]
+    },
+    {
+      "claim_text": "high discontinuation rates of GLP-1RAs (20%-50%) within the first year",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1111/dom.16364"
+      ]
+    },
+    {
+      "claim_text": "aspiration rates of 4.8 cases per 10,000 in GLP-1 RA users compared to 4.6 cases per 10,000 in nonusers",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/jcm13216336"
+      ]
+    },
+    {
+      "claim_text": "GLP-1RAs were associated with a 3.8- and 35.7-time higher risk of nausea",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.3390/diseases12010014"
+      ]
+    }
+  ]
+}

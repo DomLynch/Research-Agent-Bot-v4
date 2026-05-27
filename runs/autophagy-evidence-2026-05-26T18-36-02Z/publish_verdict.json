@@ -1,0 +1,131 @@
+{
+  "run_dir": "runs/autophagy-evidence-2026-05-26T18-36-02Z",
+  "topic": "autophagy",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 autophagy",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 0,
+    "available_source_contexts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 1.0,
+    "source_count": 10,
+    "clusters": [
+      {
+        "label": "pancreatic_pre_crosstalk",
+        "member_fact_ids": [
+          "157970",
+          "157974",
+          "157972",
+          "157976",
+          "157971",
+          "157973",
+          "157975"
+        ],
+        "source_paper": {
+          "doi": "10.1016/j.phrs.2023.106822",
+          "title": "A bioinformatics analysis, pre-clinical and clinical conception of autophagy in pancreatic cancer: Complexity and simplicity in crosstalk",
+          "journal": "Pharmacological Research",
+          "year": 2023
+        },
+        "example_phrase": "The 5-year survival rate is less than 10%, even in developed countries such as the USA."
+      },
+      {
+        "label": "pathway_protects_dependent",
+        "member_fact_ids": [
+          "145790",
+          "145795",
+          "145793",
+          "145792",
+          "145794",
+          "145791"
+        ],
+        "source_paper": {
+          "doi": "10.1016/j.redox.2021.102227",
+          "title": "Induction of autophagy via the ROS-dependent AMPK-mTOR pathway protects copper-induced spermatogenesis disorder",
+          "journal": "Redox Biology",
+          "year": 2021
+        },
+        "example_phrase": "autophagy plays a positive role for attenuating CuSO4-induced testicular damage and spermatogenesis disorder."
+      },
+      {
+        "label": "exosome_rna_alcoholic",
+        "member_fact_ids": [
+          "80380",
+          "80383",
+          "80381",
+          "80382",
+          "80384"
+        ],
+        "source_paper": {
+          "doi": "10.1002/hep.30766",
+          "title": "Dysregulated Autophagy and Lysosome Function Are Linked to Exosome Production by Micro\u2010RNA 155 in Alcoholic Liver Disease",
+          "journal": "Hepatology",
+          "year": 2019
+        },
+        "example_phrase": "We identified miR-155 as a mediator of alcohol-related regulation of autophagy and exosome production in hepatocytes and macrophages."
+      },
+      {
+        "label": "pathway_macrophage_dependent",
+        "member_fact_ids": [
+          "148029",
+          "148031",
+          "148030",
+          "148035"
+        ],
+        "source_paper": {
+          "doi": "10.1038/s41419-020-03357-1",
+          "title": "Arsenic trioxide induces macrophage autophagy and atheroprotection by regulating ROS-dependent TFEB nuclear translocation and AKT/mTOR pathway",
+          "journal": "Cell Death and Disease",
+          "year": 2021
+        },
+        "example_phrase": "ATO promoted autophagy in the aorta of ApoE-/- mice and reduced atherosclerotic lesions in early AS"
+      },
+      {
+        "label": "activation_triggers_frontiers",
+        "member_fact_ids": [
+          "185483",
+          "185488",
+          "185484",
+          "185485"
+        ],
+        "source_paper": {
+          "doi": "10.3389/fimmu.2018.02096",
+          "title": "Activation of RIG-I-Mediated Antiviral Signaling Triggers Autophagy Through the MAVS-TRAF6-Beclin-1 Signaling Axis",
+          "journal": "Frontiers in Immunology",
+          "year": 2018
+        },
+        "example_phrase": "PolyI:C into the cytoplasm, or Sendai virus infection, significantly induced autophagy in normal cells but not in RIG-I-deficient cells."
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

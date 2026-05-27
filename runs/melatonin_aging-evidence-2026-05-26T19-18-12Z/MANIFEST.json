@@ -1,0 +1,79 @@
+{
+  "topic": "melatonin_aging",
+  "snapshot_utc": "2026-05-26T19-18-12Z",
+  "top_n": 5,
+  "facts_inspected": 8,
+  "aggregated_claims": 8,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "mode": "alpha",
+  "selected_theme": null,
+  "facet_counts": {},
+  "numeric_artifacts_filtered": 3,
+  "fact_fetch_plan": [
+    "strict audited numeric facts via POST /api/v1/tier2/facts/search",
+    "validated topic facts via GET /api/v1/topics/{topic}/facts",
+    "normal numeric fact graph via POST /api/v1/tier2/facts/search",
+    "normal all-fact graph when source diversity is still thin"
+  ],
+  "paper_context_source": "POST /api/v1/papers/topic + POST /api/v1/search",
+  "pico_enrichment": {
+    "facts_inspected": 11,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "skipped_no_candidates"
+  },
+  "ranking": "alpha: deterministic validation*magnitude*precision*recency + data-driven contrast/subgroup boosts + theme coherence",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "1d78c4f8e80037a6ac523045dc9113da1f62b2f5b1898a6c9dc11482f3bc799b"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "fabbc7ebecda9e27fa871ca55c9b65c78202e36598d869ba5da0aacceb9c7e24"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "d3ce705528f5c8ae4e3e5096bf85c341aa068f5f18b8a155476619ba00a1515c"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "3ea4a7836a72ff0144497e39493afb80f258c394fbcc56b5b76ea25d7ba45706"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "57389eec0bb5d3ebd12e187dad0ea01306c08139c3c4a8e45b34b80e028d9c1d"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "6ec3f63e4e2d4dfb8bc04182aa2d6090bb0ab4b4a418c0480502873d456f2fbe"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "f224393c8e81e379d5e35ad94ab4b2f69e340341e6fd107dee880139bdbc171d"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "b7de2b06827a1e898a395ed025ff68920e99c74d6ae0810fea1c95390d15fe77"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "d76525b6eb53fc43034a6dc18fd89a1596bf0a882ecef47bc4ef7fb422acd88a"
+    },
+    "signal_post_md": {
+      "name": "signal_post.md",
+      "sha256": "33c3853c85e6a0f4cab213fef1123c9f77135319a3eb7f2e27b67d9d9cc293a8"
+    },
+    "alpha_memo_md": {
+      "name": "alpha_memo.md",
+      "sha256": "27d741aeeec53500aeb20c4b462cf6dbfbc326134ae3908282587baa7f52af10"
+    },
+    "publish_verdict_json": {
+      "name": "publish_verdict.json",
+      "sha256": "d90a894a390786d2d2ce88138be92e13bc91f868df608f9d5cf64383f2b1cdd3"
+    }
+  }
+}

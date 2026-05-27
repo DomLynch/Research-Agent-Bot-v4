@@ -1,0 +1,106 @@
+{
+  "topic": "epigenetic_clocks",
+  "snapshot_utc": "2026-05-27T08-38-57Z",
+  "claim_count": 11,
+  "claims": [
+    {
+      "claim_text": "biobanks in China (n = 3,977) and Finland (n = 1,990), the proteomic age clock showed similar age prediction accuracy (Pearson r = 0.92 and r = 0.94, respectively)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-024-03164-7"
+      ]
+    },
+    {
+      "claim_text": "In a validation study involving biobanks in China (n = 3,977) and Finland (n = 1,990), the proteomic age clock showed similar age prediction accuracy (Pearson r = 0.92 and r = 0.94, respectively)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-024-03164-7"
+      ]
+    },
+    {
+      "claim_text": "proteomic aging was associated with the incidence of 18 major chronic diseases, as well as with multimorbidity and all-cause mortality risk",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-024-03164-7"
+      ]
+    },
+    {
+      "claim_text": "We identified 204 proteins that accurately predict chronological age (Pearson r = 0.94)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-024-03164-7"
+      ]
+    },
+    {
+      "claim_text": "strong correlations between the epigenetic clocks and individual's chronological age (r > 0.8, p < 0.0001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41467-022-29801-8"
+      ]
+    },
+    {
+      "claim_text": "longitudinal increases in gravidity were linked to accelerated epigenetic aging in two epigenetic clocks (n = 331).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1073/pnas.2317290121"
+      ]
+    },
+    {
+      "claim_text": "756 CpGs were identified as differentially methylated following COVID-19 diagnosis in blood at an FDR adjusted p-value < 0.05.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fgene.2022.819749"
+      ]
+    },
+    {
+      "claim_text": "PhenoAgeAA was associated with 4/9 outcomes (walking speed, frailty MOCA, MMSE) in minimally adjusted models.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/gerona/glaa286"
+      ]
+    },
+    {
+      "claim_text": "GrimAgeAA was associated with 8/9 outcomes (all except grip strength) in minimally adjusted models.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/gerona/glaa286"
+      ]
+    },
+    {
+      "claim_text": "Significant increases in epigenetic age acceleration were observed in first-generation epigenetic clocks and mitotic clocks at 3 and 6 months",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18632/aging.205581"
+      ]
+    },
+    {
+      "claim_text": "associations were more pronounced among non-Hispanic whites, individuals with a BMI of 25-30, and former smokers",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1038/s41514-025-00217-0"
+      ]
+    }
+  ]
+}

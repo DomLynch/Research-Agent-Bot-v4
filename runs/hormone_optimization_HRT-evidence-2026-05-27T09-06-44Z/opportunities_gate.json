@@ -1,0 +1,16 @@
+{
+  "topic": "hormone_optimization_HRT",
+  "snapshot_utc": "2026-05-27T09-06-44Z",
+  "input_pack": {
+    "topic": "hormone_optimization_HRT",
+    "a_core_count": 0,
+    "b_context_count": 0,
+    "excluded_counts": {
+      "C_noise": 12,
+      "D_bad_extraction": 26
+    },
+    "has_minimum_a_core": false,
+    "a_core_min": 3
+  },
+  "audits": []
+}

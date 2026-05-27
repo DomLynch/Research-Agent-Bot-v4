@@ -1,0 +1,79 @@
+{
+  "topic": "curcumin_inflammaging",
+  "snapshot_utc": "2026-05-27T09-27-16Z",
+  "top_n": 5,
+  "facts_inspected": 13,
+  "aggregated_claims": 13,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "mode": "alpha",
+  "selected_theme": null,
+  "facet_counts": {},
+  "numeric_artifacts_filtered": 5,
+  "fact_fetch_plan": [
+    "strict audited numeric facts via POST /api/v1/tier2/facts/search",
+    "validated topic facts via GET /api/v1/topics/{topic}/facts",
+    "normal numeric fact graph via POST /api/v1/tier2/facts/search",
+    "normal all-fact graph when source diversity is still thin"
+  ],
+  "paper_context_source": "POST /api/v1/papers/topic + POST /api/v1/search",
+  "pico_enrichment": {
+    "facts_inspected": 18,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "skipped_no_candidates"
+  },
+  "ranking": "alpha: deterministic validation*magnitude*precision*recency + data-driven contrast/subgroup boosts + theme coherence",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "bb6c7e23ad876325e14055e6f5ce12a0deb7df4d897cb995554619b49c88b032"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "622698e4e35b597012224f15dc3284e12189749ecf05b1391aa20065454dfcac"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "6b8bf83f14834fa697aba117708410377a802a29cb34cf671407a500408ab916"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "c49935882c63ca9ec2206232824e66188d0c5383b30991ccacc31b481a841698"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "8ed9df2b3393852e45132834f4e5548ae8181eba448322fc8a7db6023036e269"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "05db7112765d7639b4ee186c41e60b5886b621fc9b754c2ba4504e8d950df76f"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "70d470834075aef8e5edac8d26196051df3f27742083b990c6bc7b5a5470695b"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "18504e676fe96c8ff6764f16a607814e8bdfdb5c6d08a877af913695a16ad67e"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "fe5e51722d5a7c50c1fdfc0bee861a9a9502765782176ea1dd95f3fb71671359"
+    },
+    "signal_post_md": {
+      "name": "signal_post.md",
+      "sha256": "734782064897854025e216dbbd10f94ea4899f365de450bd2c150a11e74a8fa6"
+    },
+    "alpha_memo_md": {
+      "name": "alpha_memo.md",
+      "sha256": "2cd351abe2095f0cdc95bb2c462c94df16230093218e4dba8f5af0a6967c4493"
+    },
+    "publish_verdict_json": {
+      "name": "publish_verdict.json",
+      "sha256": "f9284a32b56a2f71d8589e940a0ea9258483065df5a0ce69e35605fe716c5b10"
+    }
+  }
+}

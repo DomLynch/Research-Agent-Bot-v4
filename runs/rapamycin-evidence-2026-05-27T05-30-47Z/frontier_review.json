@@ -1,0 +1,48 @@
+{
+  "topic": "rapamycin",
+  "snapshot_utc": "2026-05-27T05-30-47Z",
+  "model": "mimo-v2.5-pro",
+  "lens": "The sexually dimorphic and dose-dependent longevity effects of rapamycin in mice underscore a complex pharmacology where transient versus continuous mTOR inhibition interacts with genetic background and sex-specific aging pathways, challenging uniform anti-aging assumptions.",
+  "known_to_ignore": [
+    "Rapamycin extends lifespan in laboratory mice",
+    "mTOR inhibition is a key mechanism in aging and longevity",
+    "Rapamycin is a common geroprotector in preclinical studies"
+  ],
+  "tensions": [
+    "Bitto 2016's transient rapamycin in C57BL/6 mice (60% extension) contrasts with ITP's continuous feeding in UM-HET3 mice showing 14-26% extension, suggesting strain and regimen dependencies.",
+    "Within ITP studies, high-dose rapamycin (42 ppm) yields greater median lifespan extension in females (26%) than males (23%), indicating sex-specific dose-response relationships."
+  ],
+  "gaps": [
+    "Effects of rapamycin on lifespan in young or aged-out mice beyond middle age, or in non-murine models like primates.",
+    "Long-term healthspan outcomes such as cognitive function, muscle integrity, or metabolic health alongside lifespan metrics.",
+    "Mechanistic studies on the role of sex hormones or X-linked genes in rapamycin's longevity effects."
+  ],
+  "theses": [
+    {
+      "title": "Sex and Regimen Dependencies in Rapamycin's Longevity Effects: A Scoping Review of Preclinical Evidence",
+      "paper_type": "scoping-review",
+      "novelty": 75,
+      "evidence_strength": 60,
+      "reviewer_risk": 40,
+      "opportunity_score": 100,
+      "rationale": "This review synthesizes disparate murine studies to highlight critical variables—sex, dose, and treatment timing—that modulate rapamycin's efficacy, providing a framework for targeted gerotherapeutic strategies.",
+      "cited_fact_ids": [
+        "rapamycin/transient/bitto_2016/lifespan_extension",
+        "rapamycin/itp/harrison_2009/lifespan_female",
+        "rapamycin/itp/miller_2014/dose_response_high_male",
+        "rapamycin/itp/miller_2014/dose_response_high_female"
+      ]
+    }
+  ],
+  "reviewer_objections": [
+    "The evidence pool is limited to four mouse studies with heterogeneous designs (e.g., different strains, doses, endpoints), limiting direct comparison and robustness.",
+    "Human translational relevance is speculative, as no human lifespan data are cited, and rapamycin's side effects (e.g., immunosuppression) may offset benefits.",
+    "The focus on median lifespan extension may overlook heterogeneity in mortality risk, as seen in Harrison 2009's 90th-percentile analysis."
+  ],
+  "next_extractions": [
+    "Rapamycin effects on age-related diseases such as bladder cancer in models with TSC1 mutations, as hinted by alpha data.",
+    "Impact of rapamycin analogs like RAD001 on immune function and vaccine response in elderly human cohorts.",
+    "Dose-response studies with lower rapamycin doses (e.g., <14 ppm) in different mouse strains to define therapeutic windows."
+  ],
+  "raw_response": "{\n  \"lens\": \"The sexually dimorphic and dose-dependent longevity effects of rapamycin in mice underscore a complex pharmacology where transient versus continuous mTOR inhibition interacts with genetic background and sex-specific aging pathways, challenging uniform anti-aging assumptions.\",\n  \"known_to_ignore\": [\"Rapamycin extends lifespan in laboratory mice\", \"mTOR inhibition is a key mechanism in aging and longevity\", \"Rapamycin is a common geroprotector in preclinical studies\"],\n  \"tensions\": [\"Bitto 2016's transient rapamycin in C57BL/6 mice (60% extension) contrasts with ITP's continuous feeding in UM-HET3 mice showing 14-26% extension, suggesting strain and regimen dependencies.\", \"Within ITP studies, high-dose rapamycin (42 ppm) yields greater median lifespan extension in females (26%) than males (23%), indicating sex-specific dose-response relationships.\"],\n  \"gaps\": [\"Effects of rapamycin on lifespan in young or aged-out mice beyond middle age, or in non-murine models like primates.\", \"Long-term healthspan outcomes such as cognitive function, muscle integrity, or metabolic health alongside lifespan metrics.\", \"Mechanistic studies on the role of sex hormones or X-linked genes in rapamycin's longevity effects.\"],\n  \"theses\": [{\n    \"title\": \"Sex and Regimen Dependencies in Rapamycin's Longevity Effects: A Scoping Review of Preclinical Evidence\",\n    \"paper_type\": \"scoping-review\",\n    \"novelty\": 75,\n    \"evidence_strength\": 60,\n    \"reviewer_risk\": 40,\n    \"rationale\": \"This review synthesizes disparate murine studies to highlight critical variables—sex, dose, and treatment timing—that modulate rapamycin's efficacy, providing a framework for targeted gerotherapeutic strategies.\",\n    \"cited_fact_ids\": [\"rapamycin/transient/bitto_2016/lifespan_extension\", \"rapamycin/itp/harrison_2009/lifespan_female\", \"rapamycin/itp/miller_2014/dose_response_high_male\", \"rapamycin/itp/miller_2014/dose_response_high_female\"]\n  }],\n  \"reviewer_objections\": [\"The evidence pool is limited to four mouse studies with heterogeneous designs (e.g., different strains, doses, endpoints), limiting direct comparison and robustness.\", \"Human translational relevance is speculative, as no human lifespan data are cited, and rapamycin's side effects (e.g., immunosuppression) may offset benefits.\", \"The focus on median lifespan extension may overlook heterogeneity in mortality risk, as seen in Harrison 2009's 90th-percentile analysis.\"],\n  \"next_extractions\": [\"Rapamycin effects on age-related diseases such as bladder cancer in models with TSC1 mutations, as hinted by alpha data.\", \"Impact of rapamycin analogs like RAD001 on immune function and vaccine response in elderly human cohorts.\", \"Dose-response studies with lower rapamycin doses (e.g., <14 ppm) in different mouse strains to define therapeutic windows.\"]\n}"
+}

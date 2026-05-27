@@ -1,0 +1,16 @@
+{
+  "topic": "inflammaging",
+  "snapshot_utc": "2026-05-27T06-07-09Z",
+  "input_pack": {
+    "topic": "inflammaging",
+    "a_core_count": 0,
+    "b_context_count": 0,
+    "excluded_counts": {
+      "C_noise": 1,
+      "D_bad_extraction": 2
+    },
+    "has_minimum_a_core": false,
+    "a_core_min": 3
+  },
+  "audits": []
+}

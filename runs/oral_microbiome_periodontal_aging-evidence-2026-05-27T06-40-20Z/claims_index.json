@@ -1,0 +1,404 @@
+{
+  "topic": "oral_microbiome_periodontal_aging",
+  "snapshot_utc": "2026-05-27T06-40-20Z",
+  "claim_count": 45,
+  "claims": [
+    {
+      "claim_text": "4.5 ± 0.14 years for the oral microbiome",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1128/msystems.00630-19"
+      ]
+    },
+    {
+      "claim_text": "rapid and consistent alterations emerged as early as 24 to 72 h after oral-hygiene pause",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "duration",
+      "supporting_study_ids": [
+        "10.1128/mbio.03281-20"
+      ]
+    },
+    {
+      "claim_text": "the skin microbiome provides the best prediction of age (mean ± standard deviation, 3.8 ± 0.45 years)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1128/msystems.00630-19"
+      ]
+    },
+    {
+      "claim_text": "11.5 ± 0.12 years for the gut microbiome",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1128/msystems.00630-19"
+      ]
+    },
+    {
+      "claim_text": "Type 2 diabetic individuals with severe form of periodontal disease have 3.2 times greater mortality risk compared with individuals with no or mild periodontitis",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Periodontal disease is likely to cause 19% increase in the risk of cardiovascular disease",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Approximately 40% of community-dwelling older adults have oral frailty.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1111/ggi.14980"
+      ]
+    },
+    {
+      "claim_text": "demographic, lifestyle, and physiological factors collectively explained 12 to 20% of the variability in microbiome composition.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1128/mbio.00839-19"
+      ]
+    },
+    {
+      "claim_text": "this increase in relative risk reaches to 44% among individuals aged 65 years and over",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "oral diadochokinesis (5%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/s2666-7568(21)00143-4"
+      ]
+    },
+    {
+      "claim_text": "Factors of oral health status deterioration (52%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/s2666-7568(21)00143-4"
+      ]
+    },
+    {
+      "claim_text": "Reduced oral motor skills (27%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/s2666-7568(21)00143-4"
+      ]
+    },
+    {
+      "claim_text": "approximately 30% of dentate residents had moderate to severe periodontitis",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/ijerph16214132"
+      ]
+    },
+    {
+      "claim_text": "Patients with oral cancer and diabetes mellitus had a higher mortality than controls (HR = 2.09 [95%CI = 1.36-3.22], p = .001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/odi.13289"
+      ]
+    },
+    {
+      "claim_text": "lowest prevalence of periodontitis in Utah (62.3%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1111/prd.12145"
+      ]
+    },
+    {
+      "claim_text": "Cardiovascular Diseases (n = 335) were the most representative categories of systemic diseases associated with periodontitis.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1111/prd.12621"
+      ]
+    },
+    {
+      "claim_text": "29.6% of differentially expressed human pathways were predicted to be targeted by microbiome metabolism.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41396-020-0727-y"
+      ]
+    },
+    {
+      "claim_text": "The most co-cited journals were the Journal of Periodontology (n = 1412), the Journal of Clinical Periodontology (n = 1343), the Journal of Dental Research (n = 940), and Periodontology 2000 (n = 849).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1111/prd.12621"
+      ]
+    },
+    {
+      "claim_text": "46.73% of the literature on the topic was published in the last 5 years and the annual publication trend peaked in 2023.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1111/prd.12621"
+      ]
+    },
+    {
+      "claim_text": "Nutritional & Metabolic Diseases (n = 398), Cardiovascular Diseases (n = 335), Female Urogenital Diseases & Pregnancy Complications (n = 244), and Musculoskeletal Diseases (n = 182) were the most representative categories.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1111/prd.12621"
+      ]
+    },
+    {
+      "claim_text": "fuzzy computing (9%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/j.health.2024.100304"
+      ]
+    },
+    {
+      "claim_text": "data mining (10%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/j.health.2024.100304"
+      ]
+    },
+    {
+      "claim_text": "The larger part of the articles focused on deep learning (37%) methods",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/j.health.2024.100304"
+      ]
+    },
+    {
+      "claim_text": "genetic algorithms (12%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/j.health.2024.100304"
+      ]
+    },
+    {
+      "claim_text": "followed by machine learning (32%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/j.health.2024.100304"
+      ]
+    },
+    {
+      "claim_text": "the prevalence of oral diseases in the elderly aged 65 and above showed a significant increase",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s40520-025-03110-8"
+      ]
+    },
+    {
+      "claim_text": "69.9% of the proposed 'microbiome-metabolite-host' interaction links were validated in the independent multi-omic data.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41396-020-0727-y"
+      ]
+    },
+    {
+      "claim_text": "greater chance of oral cancer among patients with diabetes mellitus (OR = 1.41 [95% CI = 1.10-1.81], p = .007)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/odi.13289"
+      ]
+    },
+    {
+      "claim_text": "oral lichen planus among patients with diabetic (OR = 1.87 [95% CI = 1.37-2.57], p < .001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/odi.13289"
+      ]
+    },
+    {
+      "claim_text": "Pooled prevalence of oral cancer in patients with diabetic was 0.25% (95% CI = 0.15-0.39)-250 per 100,000 patients with diabetes mellitus",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1111/odi.13289"
+      ]
+    },
+    {
+      "claim_text": "OSCC is the most common cancer of the oral cavity and constitutes 95% of all cancers of this area.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.12659/pjr.900892"
+      ]
+    },
+    {
+      "claim_text": "Statistical significance was maintained when only studies comparing the same LAI and oral antipsychotic were included (OR = 0.79; 95%CI = 0.66-0.95; p = <0.01)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1038/s41380-024-02694-3"
+      ]
+    },
+    {
+      "claim_text": "Lower risk of all-cause mortality for patients receiving LAI antipsychotics vs receiving oral antipsychotics was found (OR = 0.79; 95%CI = 0.66-0.95).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41380-024-02694-3"
+      ]
+    },
+    {
+      "claim_text": "once-daily oral semaglutide 14 mg reduced HbA1c by 1.0-1.4% after 26 weeks",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fendo.2021.645617"
+      ]
+    },
+    {
+      "claim_text": "statistically significant decrease in neoplastic parameters with an overall effect size (ES) of 0.85 (95% CI: [0.74, 0.98])",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1186/s12903-024-04045-8"
+      ]
+    },
+    {
+      "claim_text": "The incremental cost of oral mucositis was approximately $5000-$30 000 among patients receiving radiation therapy.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/jncimonographs/lgz010"
+      ]
+    },
+    {
+      "claim_text": "OSCC accounts for approximately 90% of oral malignancies",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1038/s41368-023-00249-w"
+      ]
+    },
+    {
+      "claim_text": "A small percentage of oral cancer worldwide (approximately 2%) is caused by human papillomavirus infection, primarily HPV16.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1056/nejmsr2210097"
+      ]
+    },
+    {
+      "claim_text": "Influencing factor analysis showed R² = 0.712, F = 434.73, P < 0.05 for oral frailty factors.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1186/s12903-024-03946-y"
+      ]
+    },
+    {
+      "claim_text": "The core microbiome was defined with 246 shared species among groups, which occupied 80.7% of all the species detected",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3389/fcimb.2018.00442"
+      ]
+    },
+    {
+      "claim_text": "more than 90% of diabetic patients suffered from oral complications",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.2147/dmso.s318972"
+      ]
+    },
+    {
+      "claim_text": "Periodontal therapy has been shown to improve glycemic control in type 2 diabetic subjects",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "it can effectively recruit rBMSCs to the periodontal defect and significantly promote periodontal bone regeneration under type 2 DM.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.bioactmat.2022.08.029"
+      ]
+    },
+    {
+      "claim_text": "The clinical recognition and evaluation of oral mucosal lesions can detect up to 99% of oral cancers/premalignancies.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/ijerph17249160"
+      ]
+    },
+    {
+      "claim_text": "average BA values of ~1% were sufficient for two recent FDA approvals of semaglutide and octreotide oral formulations",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1016/j.addr.2021.113925"
+      ]
+    }
+  ]
+}

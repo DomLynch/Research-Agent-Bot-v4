@@ -1,0 +1,140 @@
+{
+  "run_dir": "runs/resveratrol-evidence-2026-05-27T06-18-43Z",
+  "topic": "resveratrol",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 resveratrol",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 1,
+    "available_source_contexts": 1,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": true,
+    "why": "lead_thesis_underuses_available_bound_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [
+      "167404"
+    ],
+    "candidate_receipts": [
+      {
+        "fact_id": "167404",
+        "lane": "A_core",
+        "phrase": "we observed a reduction of the viral titer by 80% with resveratrol",
+        "sub_topic": "effect_size",
+        "population": "HCoV-229E coronavirus in vitro",
+        "intervention": "resveratrol",
+        "source_paper": {
+          "doi": "10.3390/v13020354",
+          "title": "Resveratrol Inhibits HCoV-229E and SARS-CoV-2 Coronavirus Replication In Vitro",
+          "journal": "Viruses",
+          "year": 2021
+        },
+        "same_source_as_lead": false
+      }
+    ]
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 0.923,
+    "source_count": 19,
+    "clusters": [
+      {
+        "label": "sars_viruses_hcov",
+        "member_fact_ids": [
+          "167404",
+          "167405",
+          "167407",
+          "167406"
+        ],
+        "source_paper": {
+          "doi": "10.3390/v13020354",
+          "title": "Resveratrol Inhibits HCoV-229E and SARS-CoV-2 Coronavirus Replication In Vitro",
+          "journal": "Viruses",
+          "year": 2021
+        },
+        "example_phrase": "we observed a reduction of the viral titer by 80% with resveratrol"
+      },
+      {
+        "label": "rsv_mediated_pathway",
+        "member_fact_ids": [
+          "95777",
+          "95780",
+          "95778",
+          "95779"
+        ],
+        "source_paper": {
+          "doi": "10.1155/2019/7591840",
+          "title": "Resveratrol Attenuates Oxidative Stress-Induced Intestinal Barrier Injury through PI3K/Akt-Mediated Nrf2 Signaling Pathway",
+          "journal": "Oxidative Medicine and Cellular Longevity",
+          "year": 2019
+        },
+        "example_phrase": "RSV significantly increased cell viability; increased expression levels of tight junction proteins; improved activities of SOD-1, CAT, and GSH-Px; and decreased intracellular ROS levels and apoptosis induced by H2O2 (P <"
+      },
+      {
+        "label": "food_critical_science",
+        "member_fact_ids": [
+          "2901",
+          "2902",
+          "2903"
+        ],
+        "source_paper": {
+          "doi": "10.1080/10408398.2017.1422480",
+          "title": "Effect of resveratrol on blood pressure: A systematic review and meta-analysis of randomized, controlled, clinical trials",
+          "journal": "Critical Reviews in Food Science and Nutrition",
+          "year": 2018
+        },
+        "example_phrase": "Administration of resveratrol did not significantly affect systolic BP [WMD: -2.5 95% CI:(-5.5, 0.6) mmHg; p=0.116]"
+      },
+      {
+        "label": "polycystic_significantly_efficacy",
+        "member_fact_ids": [
+          "183960",
+          "183962",
+          "183961"
+        ],
+        "source_paper": {
+          "doi": "10.11604/pamj.2023.44.134.32404",
+          "title": "Efficacy of resveratrol in women with polycystic ovary syndrome: a systematic review and meta-analysis of randomized clinical trials",
+          "journal": "Pan African Medical Journal",
+          "year": 2023
+        },
+        "example_phrase": "Resveratrol significantly reduced testosterone (SMD = -0.40; 95% CI [-0.71, -0.10], P = 0.009)"
+      },
+      {
+        "label": "docking_chemical_descriptors",
+        "member_fact_ids": [
+          "83440",
+          "83441",
+          "83443"
+        ],
+        "source_paper": {
+          "doi": "10.1016/j.chphi.2023.100296",
+          "title": "RETRACTED: Structural analysis, reactivity descriptors (HOMO-LUMO, ELF, NBO), effect of polar (DMSO, EtOH, H2O) solvation, and libido-enhancing potential of resveratrol by molecular docking",
+          "journal": "Chemical Physics Impact",
+          "year": 2023
+        },
+        "example_phrase": "RES exhibiting a greater affinity for 1UDT at -8.1 kcal/mol compared to 1UDU"
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "topic": "hydrogen_water",
+  "snapshot_utc": "2026-05-27T05-56-23Z",
+  "top_n": 5,
+  "facts_inspected": 31,
+  "aggregated_claims": 30,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "mode": "alpha",
+  "selected_theme": null,
+  "facet_counts": {},
+  "numeric_artifacts_filtered": 13,
+  "fact_fetch_plan": [
+    "strict audited numeric facts via POST /api/v1/tier2/facts/search",
+    "validated topic facts via GET /api/v1/topics/{topic}/facts",
+    "normal numeric fact graph via POST /api/v1/tier2/facts/search",
+    "normal all-fact graph when source diversity is still thin"
+  ],
+  "paper_context_source": "POST /api/v1/papers/topic + POST /api/v1/search",
+  "pico_enrichment": {
+    "facts_inspected": 44,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "mimo-v2.5-pro"
+  },
+  "ranking": "alpha: deterministic validation*magnitude*precision*recency + data-driven contrast/subgroup boosts + theme coherence",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "3c992a9b92bdf78769d7b8060a1947971342f6d9630b2ffe60f6da69f427d723"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "81f7397465b6334fde749c15dd91a38c5649228c9ab66a6975f3d07a25e2da10"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "f7f9e18128fc0e7524450e4139c71e5ff92b1075eb2de6a45c0f1ad751bf9264"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "689a0134a731789ae0b3a87f620b454245c31a61d2562c6e4e0a047e06328478"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "8f729548a155076e4641465927d160c4159453bc5d402721c36f585a81b600ca"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "97b0e5a31c791b356122d03769d5239d043abba9792247ef132aa83a354e3010"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "8347ce90460422b9713db14f408550379851f6aca2df81e47da91ccb38b6e0dc"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "073f30fa3063b5839091eca95f524d3154a6fcda67e1680b05a057b996d7984b"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "4289c9c47b035da94a92dc809b5e78811d9e319976694ec5ff7a4f71b2c91751"
+    },
+    "signal_post_md": {
+      "name": "signal_post.md",
+      "sha256": "141b1b0315a7fc85b8b676e956f85fc8486bfdf7df1a89a1f65a51d8c4f1a3a6"
+    },
+    "alpha_memo_md": {
+      "name": "alpha_memo.md",
+      "sha256": "4c5c9eebbc86820b0b8c6fb631127e2dfbaf2f08049397d562c1f28cb5729de0"
+    },
+    "publish_verdict_json": {
+      "name": "publish_verdict.json",
+      "sha256": "6dc6ad775721839970e48ffa8e18e5e24ecf7d138ea7be7ec9d05d2b5226e3dc"
+    }
+  }
+}

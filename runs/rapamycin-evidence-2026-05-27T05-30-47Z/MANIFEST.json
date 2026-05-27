@@ -1,0 +1,82 @@
+{
+  "topic": "rapamycin",
+  "snapshot_utc": "2026-05-27T05-30-47Z",
+  "top_n": 5,
+  "facts_inspected": 6,
+  "aggregated_claims": 6,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "mode": "alpha",
+  "selected_theme": "intervention_signal",
+  "facet_counts": {
+    "regimen_or_dose": 2,
+    "clinical_outcome": 1
+  },
+  "numeric_artifacts_filtered": 1,
+  "fact_fetch_plan": [
+    "strict audited numeric facts via POST /api/v1/tier2/facts/search",
+    "validated topic facts via GET /api/v1/topics/{topic}/facts",
+    "normal numeric fact graph via POST /api/v1/tier2/facts/search",
+    "normal all-fact graph when source diversity is still thin"
+  ],
+  "paper_context_source": "POST /api/v1/papers/topic + POST /api/v1/search",
+  "pico_enrichment": {
+    "facts_inspected": 7,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "skipped_no_candidates"
+  },
+  "ranking": "alpha: deterministic validation*magnitude*precision*recency + data-driven contrast/subgroup boosts + theme coherence",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "7bbadf7578ec6889b02ce35641a1b4b0c51669d068abbf8ba80c4eb226325ea6"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "b3ca7250b6c5327e316ee2468c89dc4ef985adedbca1d86ddf6158e8315a7457"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "d9470e76ebb79f537906f9ef23dcf5e25797bd638b4b147fbd3b9c839226700b"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "074d63462d8e0d3935125f234229e576c4aa60a46820239adb7365ab4ba15b62"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "9d6b0e93a6883d00082ab31f07e286162ed05d73bf181fa66a4b3c50a79b4699"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "081ff4b9d176e7784c63153f798e1cb211ab2fa19a3801ac9900d967328e2c36"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "97f48ff77352a46c8f7c68b21278dc2a8a755750f197da393568da1efac2a456"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "c23597d09c27f74ee7de1710e953b3c0df7fbe0f0dd1dd1a88d7cfcd0de17961"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "28492685842396a2e31e9334f0adb8a4208d1c3b0535e77d26a9a1ecc8329605"
+    },
+    "signal_post_md": {
+      "name": "signal_post.md",
+      "sha256": "60f71b5575d201ae4242cc6000368d38e77847a775a8c686d98a3ab4ab379c83"
+    },
+    "alpha_memo_md": {
+      "name": "alpha_memo.md",
+      "sha256": "c0d29fac51b8d514fdd5969a3aa16903f7e62d1e7a038fa8c2f3768aac18492d"
+    },
+    "publish_verdict_json": {
+      "name": "publish_verdict.json",
+      "sha256": "e4707f3f0b834f0826a043b05db174b58afdfd24402445b9d87e39d0f13651f5"
+    }
+  }
+}

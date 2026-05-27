@@ -1,0 +1,106 @@
+{
+  "topic": "NAD",
+  "snapshot_utc": "2026-05-27T06-03-03Z",
+  "claim_count": 11,
+  "claims": [
+    {
+      "claim_text": "Blood NAD concentrations were statistically significantly increased among all NMN-treated groups at day 30 and day 60 (all p ≤ 0.001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s11357-022-00705-1"
+      ]
+    },
+    {
+      "claim_text": "oral NR administration enhanced PBMC respiration and reduced proinflammatory cytokine gene expression in 4 subjects with HF.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1172/jci138538"
+      ]
+    },
+    {
+      "claim_text": "Novel double-channel fluorescence lifetime imaging, approximating free mitochondrial matrix NADHF, indicated its ∼20% decrease",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1089/ars.2019.7800"
+      ]
+    },
+    {
+      "claim_text": "The occurrence of IDH1 (R132 ) mutation reduced this capacity by 38%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s00401-010-0645-6"
+      ]
+    },
+    {
+      "claim_text": "Healthy volunteers received 250 mg/day of NMN (n = 15) or placebo (n = 15) for 12 weeks.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.3389/fnut.2022.868640"
+      ]
+    },
+    {
+      "claim_text": "Clinical efficacy expressed by blood NAD concentration and physical performance reaches highest at a dose of 600 mg daily oral intake.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1007/s11357-022-00705-1"
+      ]
+    },
+    {
+      "claim_text": "Our results support extending the dose range of NR in phase II clinical trials to 3000 mg per day, with appropriate safety monitoring.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1038/s41467-023-43514-6"
+      ]
+    },
+    {
+      "claim_text": "Twenty body mass index (BMI)-discordant monozygotic twin pairs were supplemented with an escalating dose of NR (250 to 1000 mg/day) for 5 months.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1126/sciadv.add5163"
+      ]
+    },
+    {
+      "claim_text": "degrades about 90% of dietary tryptophan",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1177/1178646919852996"
+      ]
+    },
+    {
+      "claim_text": "Unexpectedly, INS-1E cells at transitions from 3 to 25 mM glucose decreased matrix superoxide release rates",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1089/ars.2019.7800"
+      ]
+    },
+    {
+      "claim_text": "Nearly 30% of blood glucose can flux through this pathway-a major path contributing to NADH/NAD+ redox imbalance.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3390/antiox11102003"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "topic": "aspirin_geroprotection",
+  "snapshot_utc": "2026-05-27T05-34-57Z",
+  "top_n": 5,
+  "facts_inspected": 11,
+  "aggregated_claims": 11,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "mode": "alpha",
+  "selected_theme": null,
+  "facet_counts": {},
+  "numeric_artifacts_filtered": 6,
+  "fact_fetch_plan": [
+    "strict audited numeric facts via POST /api/v1/tier2/facts/search",
+    "validated topic facts via GET /api/v1/topics/{topic}/facts",
+    "normal numeric fact graph via POST /api/v1/tier2/facts/search",
+    "normal all-fact graph when source diversity is still thin"
+  ],
+  "paper_context_source": "POST /api/v1/papers/topic + POST /api/v1/search",
+  "pico_enrichment": {
+    "facts_inspected": 17,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "skipped_no_candidates"
+  },
+  "ranking": "alpha: deterministic validation*magnitude*precision*recency + data-driven contrast/subgroup boosts + theme coherence",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "72003942297e8e45cbec1877c5129d14eba46f33c6d5dc8ca4d088c560d5ee6a"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "24493431da52ea48ab0e0ad070084af32badff7ae94a8f80fe04ffff86f3fa55"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "239216d66c59599b6fc047e496f00c2509e247d74cadcbc8dfe3bc9c478676d9"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "84832e4273d0cf3a8236600d8837c274c93140db5ba7aa6ac83eef239b9621ca"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "95c6e7e415dcf5dfcad8e4fe4e22c067b8393cd9aee8be860dd58b8f94300d50"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "554fce665404c1f7cdcfceb4d3ae6780cd5b355e76a4b64fe5a7fac578ac6c9e"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "656d4f5bb86e579a7174779940032a628af4f8efadb1bdd8a06d1b31b5bef010"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "51b5346d64b3f7dae6c2245adbb2658c898f3fee5d29d701fad4edde15107a4a"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "3f79af4e4c5b4cd5d0dfa6fad33fa6a3c408a80b3def1077e29fd99f76d3fe20"
+    },
+    "signal_post_md": {
+      "name": "signal_post.md",
+      "sha256": "ef01a8eb941e93116257327700247fdf82578403420afca658522ef3a875a63f"
+    },
+    "alpha_memo_md": {
+      "name": "alpha_memo.md",
+      "sha256": "54c1af1e0238c2055e5dcb50f5306fd6b3fd227c4d23db6bd470ed3d732c424e"
+    },
+    "publish_verdict_json": {
+      "name": "publish_verdict.json",
+      "sha256": "24462a3cab6b761bd3150de5288741e7bbb8844e820bb3d795a38426ca85e36f"
+    }
+  }
+}

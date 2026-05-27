@@ -1,0 +1,340 @@
+{
+  "topic": "grip_strength_longevity",
+  "snapshot_utc": "2026-05-27T06-28-11Z",
+  "claim_count": 37,
+  "claims": [
+    {
+      "claim_text": "Low handgrip strength was associated with worsening ADL (1.51 (1.34-1.70))",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jcsm.12502"
+      ]
+    },
+    {
+      "claim_text": "low muscle strength was found in 43.4% (95%CI: 35.0-51.9)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13425"
+      ]
+    },
+    {
+      "claim_text": "Prevalence was higher in dialysis (50.0%) compared to non-dialysis (19.6%; P<0.01) for low muscle strength",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13425"
+      ]
+    },
+    {
+      "claim_text": "centenarians belonged 2.5 times (odds ratio (OR) = 2.52, 95% confidence interval (CI) = 1.23-5.10) more often to the highest third of grip strength in midlife",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s11357-011-9256-y"
+      ]
+    },
+    {
+      "claim_text": "GrimAgeAA was associated with 8/9 outcomes (all except grip strength) in minimally adjusted models.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/gerona/glaa286"
+      ]
+    },
+    {
+      "claim_text": "low hand-grip strength had adverse effects on KOA (p-value 0.0001, odds ratio (OR) 1.4569, 95% confidence interval (CI) 1.2007– 1.7677)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2147/cia.s424633"
+      ]
+    },
+    {
+      "claim_text": "A significant and negative relationship was found between EAT-10 and SPPB and hand-grip strength in Model 2 (β = -0.07 ± 0.03, p < 0.0001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.clnu.2018.11.022"
+      ]
+    },
+    {
+      "claim_text": "men had 12.62 kg (11.34, 13.90) higher grip strength than women after adjustment for age and body size",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1371/journal.pone.0027899"
+      ]
+    },
+    {
+      "claim_text": "The RT group improved their functional fitness, grip strength, gait speed, and isometric muscle strength (p < 0.01, d > 0.99; large)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/ijerph18136762"
+      ]
+    },
+    {
+      "claim_text": "malnutrition by GLIM criteria calculating muscle mass with HGS (odds ratio 2.72, CI 1.37-5.40, p = 0.004)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu11092043"
+      ]
+    },
+    {
+      "claim_text": "Prevalence of confirmed sarcopenia was significantly lower using STS compared with grip strength (30CST, 4.6%; 5TSTS, 4.1% vs. grip strength, 7.1%; p < 0.05).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1186/s11556-020-00255-5"
+      ]
+    },
+    {
+      "claim_text": "every 5-kg decrease in grip strength was associated with worse survival (adjusted HR, 1.24; 95% CI, 1.07-1.43)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1182/blood.2019000758"
+      ]
+    },
+    {
+      "claim_text": "MNA-SF, SPPB and hand-grip strength were independently associated with higher risk of dysphagia (OR = 0.91, 95%CI = 0.83-0.99, p = 0.03",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.clnu.2018.11.022"
+      ]
+    },
+    {
+      "claim_text": "obesity appeared protective when probable sarcopenia was assessed by low hand grip strength alone [OR (CI) 0.64 (0.52, 0.79), p < 0.001]",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu15061505"
+      ]
+    },
+    {
+      "claim_text": "overweight appeared protective when probable sarcopenia was assessed by low hand grip strength alone [OR (CI) 0.72 (0.60, 0.88), p = 0.001]",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu15061505"
+      ]
+    },
+    {
+      "claim_text": "Direct segmentation of low-field-strength MRI yielded nonsignificant correlations with volumetric measurements from high field strength for most ROIs (P > .05).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1148/radiol.220522"
+      ]
+    },
+    {
+      "claim_text": "for the hippocampus [r = 0.85; P < .001], thalamus [r = 0.84; P = .001], and whole cerebrum [r = 0.92; P < .001].",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1148/radiol.220522"
+      ]
+    },
+    {
+      "claim_text": "a significant increase in global muscle strength was also observed among six RCTs (SMD: 0.69, 95% CI: 0.33-1.06, P = 0.0002)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13132"
+      ]
+    },
+    {
+      "claim_text": "leg press strength (SMD =0.24 [0.05–0.43]; p =0.01)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2147/oajsm.s123529"
+      ]
+    },
+    {
+      "claim_text": "chest press strength (standardized mean difference [SMD] =0.35 [0.16–0.53]; p =0.0002)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2147/oajsm.s123529"
+      ]
+    },
+    {
+      "claim_text": "These improvements were accompanied by significantly greater increases in FEA bone strength (p < 0.001 at all time points).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jbmr.4409"
+      ]
+    },
+    {
+      "claim_text": "sex ... moderating the treatment efficacy on handgrip strength (β = -1.72; 95% CrI: -2.68, -0.77",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.3390/nu16070941"
+      ]
+    },
+    {
+      "claim_text": "supplementation dose ... moderating the treatment efficacy on leg strength (β = 0.76; 95% CrI: 0.06, 1.47",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.3390/nu16070941"
+      ]
+    },
+    {
+      "claim_text": "whey supplement yielded the most effective treatments augmenting efficacy of RT on handgrip strength (SMD = 1.46, 95% CI: 0.92, 2.00",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu16070941"
+      ]
+    },
+    {
+      "claim_text": "small-to-moderately beneficial effects on 30-s chair stand when compared with strength training (1.1 repetitions; ± 0.5 repetitions)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s40520-019-01124-7"
+      ]
+    },
+    {
+      "claim_text": "Progressive resistance training was more effective than control for upper body strength (standardized mean difference 1.43, 95% confidence interval (0.73-2.13))",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1177/2047487317713329"
+      ]
+    },
+    {
+      "claim_text": "Combined training was more effective than aerobic training for upper body strength (0.51 (0.27-0.74))",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1177/2047487317713329"
+      ]
+    },
+    {
+      "claim_text": "Combined training was more effective than aerobic training for lower body strength (0.62 (0.32-0.92))",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1177/2047487317713329"
+      ]
+    },
+    {
+      "claim_text": "Progressive resistance training was more effective than control for lower body strength (standardized mean difference 0.57, 95% confidence interval (0.17-0.96))",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1177/2047487317713329"
+      ]
+    },
+    {
+      "claim_text": "the strength of the relationship was attenuated but still statistically significant in the multivariate model (β = -0.28 ± 0.07, p < 0.0001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.clnu.2018.11.022"
+      ]
+    },
+    {
+      "claim_text": "co-supplementation with vitamin D enhanced muscle strength (SMD =2.005; 95% CI: 0.975, 3.035; n = 11)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.advnut.2023.05.011"
+      ]
+    },
+    {
+      "claim_text": "obesity was associated with an increased likelihood of probable sarcopenia when defined by lower limb strength alone [OR (CI) 1.49 (1.21, 1.83), p < 0.001]",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu15061505"
+      ]
+    },
+    {
+      "claim_text": "the incorporation of bacteria in concrete leads to increment in strength properties, with strength enhancement of up to 42.8 %.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.jmrt.2024.01.261"
+      ]
+    },
+    {
+      "claim_text": "The meta-analysed effect on VO2peak was a moderately beneficial effect for the combined training compared to no-exercise controls (3.6 mL kg-1 min-1; ± 95% confidence limits 0.8 mL kg-1 min-1)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s40520-019-01124-7"
+      ]
+    },
+    {
+      "claim_text": "small-to-moderately beneficial effects on VO2peak when compared to endurance training (0.8 mL kg-1 min-1; ± 1.0 mL kg-1 min-1)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s40520-019-01124-7"
+      ]
+    },
+    {
+      "claim_text": "small-to-moderately beneficial effects on 30-s chair stand (2.8 repetitions; ± 1.7 repetitions) when compared to no-exercise controls",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s40520-019-01124-7"
+      ]
+    },
+    {
+      "claim_text": "Associations held among patients with good Eastern Cooperative Oncology Group performance status (0 or 1).",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1182/blood.2019000758"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "topic": "longevity",
+  "snapshot_utc": "2026-05-26T19-28-36Z",
+  "input_pack": {
+    "topic": "longevity",
+    "a_core_count": 0,
+    "b_context_count": 6,
+    "excluded_counts": {
+      "C_noise": 12,
+      "D_bad_extraction": 13
+    },
+    "has_minimum_a_core": false,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Multi-organ aging clocks as integrative longevity biomarkers: reconciling genetic heritability, proteomic trajectories, and novel loci",
+      "status": "needs_source_audit",
+      "blocking_flags": [
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 100,
+      "capped_opportunity": 80,
+      "cited_fact_ids": [
+        "161784",
+        "157873",
+        "145166"
+      ]
+    },
+    {
+      "thesis_idx": 1,
+      "title": "Ecological toxicology meets gerontology: insecticide-induced lifespan collapse in solitary bees as a model for human environmental aging thresholds",
+      "status": "needs_source_audit",
+      "blocking_flags": [
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 36,
+      "capped_opportunity": 36,
+      "cited_fact_ids": [
+        "163217",
+        "179394",
+        "179393"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,403 @@
+{
+  "topic": "CGM_glucose_variability",
+  "snapshot_utc": "2026-05-27T06-11-21Z",
+  "claim_count": 44,
+  "claims": [
+    {
+      "claim_text": "CGM significantly reduced the glycated hemoglobin level (WMD -0.31%; 95% CI -0.42 to -0.21; I2 = 0%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1089/dia.2023.0390"
+      ]
+    },
+    {
+      "claim_text": "median time <70 mg/dL decreased from 5.0% at baseline to 2.8% at 52 weeks",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1089/dia.2021.0503"
+      ]
+    },
+    {
+      "claim_text": "CGM significantly reduced the glucose level (WMD -11.16 mg/dL; 95% CI -19.94 to -2.39; I2 = 0%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1089/dia.2023.0390"
+      ]
+    },
+    {
+      "claim_text": "CGM reduced glucose time >180 mg/dL (WMD -7.75%; 95% CI -12.04 to -3.45; I2 = 0%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1089/dia.2023.0390"
+      ]
+    },
+    {
+      "claim_text": "CGM reduced time in hypoglycemia level 2 (WMD -0.28%; 95% CI -0.52 to -0.03; I2 = 91%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1089/dia.2023.0390"
+      ]
+    },
+    {
+      "claim_text": "CGM also increased time in range (WMD 8.63%; 95% CI 4.54-12.71; I2 = 0%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1089/dia.2023.0390"
+      ]
+    },
+    {
+      "claim_text": "from 26 to 52 weeks median time <70 mg/dL decreased from 3.9% to 1.9% (P < 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1089/dia.2021.0503"
+      ]
+    },
+    {
+      "claim_text": "had lower hemoglobin A1c (HbA1c) (mean 7.6% [59 mmol/mol] vs. 7.4% [57 mmol/mol]; P = 0.01)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1089/dia.2021.0503"
+      ]
+    },
+    {
+      "claim_text": "Participants spent more time in range 70-180 mg/dL (TIR) (mean 56% vs. 64%; P < 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1089/dia.2021.0503"
+      ]
+    },
+    {
+      "claim_text": "TIR increased from 56% to 60% (P = 0.006)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1089/dia.2021.0503"
+      ]
+    },
+    {
+      "claim_text": "HbA1c decreased from 7.5% (58 mmol/mol) to 7.3% (57 mmol/mol) (P = 0.025)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1089/dia.2021.0503"
+      ]
+    },
+    {
+      "claim_text": "a severe hypoglycemic event was reported for nine participants while using BGM during the RCT and for two participants during the extension phase with CGM (P = 0.02)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.1089/dia.2021.0503"
+      ]
+    },
+    {
+      "claim_text": "Adoption of a unified fingerstick capillary glucose (SMBG) target of between 4 and 10 mmol/L (70–180 mg/dl)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1111/pedi.13455"
+      ]
+    },
+    {
+      "claim_text": "emphasizing a tighter fasting target range of 4–8 mmol/L (70–144 mg/dl)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1111/pedi.13455"
+      ]
+    },
+    {
+      "claim_text": "blood glucose levels drop by 5%–8% hourly if whole blood is stored at room temperature.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.4103/ijem.ijem_225_20"
+      ]
+    },
+    {
+      "claim_text": "fasting plasma glucose level of <110 mg/dL (<6.1 mmol/L)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1111/j.2040-1124.2010.00074.x"
+      ]
+    },
+    {
+      "claim_text": "casual plasma glucose level of ≥200 mg/dL (≥11.1 mmol/L)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1111/j.2040-1124.2010.00074.x"
+      ]
+    },
+    {
+      "claim_text": "fasting plasma glucose level of ≥126 mg/dL (≥7.0 mmol/L)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1111/j.2040-1124.2010.00074.x"
+      ]
+    },
+    {
+      "claim_text": "2-h value of ≥200 mg/dL (≥11.1 mmol/L) in 75 g oral glucose tolerance test (OGTT)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1111/j.2040-1124.2010.00074.x"
+      ]
+    },
+    {
+      "claim_text": "GDM is defined, if fasting venous plasma glucose is ≥ 92 mg/dl or 1 h ≥ 180 mg/dl or 2 h ≥ 153 mg/dl after glucose loading (international consensus criteria).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1007/s00508-023-02181-9"
+      ]
+    },
+    {
+      "claim_text": "If blood glucose levels cannot be maintained in the therapeutic range (fasting < 95 mg/dl and 1 h after meals < 140 mg/dl).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1007/s00508-023-02181-9"
+      ]
+    },
+    {
+      "claim_text": "After delivery all women with GDM have to be reevaluated as to their glucose tolerance by a 75 g oGTT 4-12 weeks postpartum.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1007/s00508-023-02181-9"
+      ]
+    },
+    {
+      "claim_text": "fasting <95 mg/dl",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1007/s00508-018-1419-8"
+      ]
+    },
+    {
+      "claim_text": "fasting plasma glucose >126 mg/dl",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1007/s00508-018-1419-8"
+      ]
+    },
+    {
+      "claim_text": "a fasting glucose concentration ≥92 mg/dl.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1007/s00508-018-1419-8"
+      ]
+    },
+    {
+      "claim_text": "1 h postprandial <140 mg/dl",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1007/s00508-018-1419-8"
+      ]
+    },
+    {
+      "claim_text": "Sodium-glucose cotransporter type 2 in the renal proximal tubule reabsorbs approximately 90% of filtered glucose",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.2215/cjn.06080616"
+      ]
+    },
+    {
+      "claim_text": "elastic net Cox regression based with 586 unimputed variables achieved a C-index of 0.801 compared to 0.793 for a traditional Cox model",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1371/journal.pone.0202344"
+      ]
+    },
+    {
+      "claim_text": "pooled standardized difference in means = -0.148, 95% CI: -0.637 to 0.228, P = 0.355",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1097/md.0000000000002584"
+      ]
+    },
+    {
+      "claim_text": "Individuals with MCI exhibited greater within-day variability than CU on processing speed and visual short-term memory binding ( p < 0.001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fdgth.2021.758031"
+      ]
+    },
+    {
+      "claim_text": "A one SD increase in systolic BP variability was associated with increased odds of the presence or progression of white matter hyperintensities (odds ratio, 1.26 [95% CI, 1.06-1.50]).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/strokeaha.119.026739"
+      ]
+    },
+    {
+      "claim_text": "The association of systolic BP variability with the presence of lacunes (odds ratio, 0.93 [95% CI, 0.74-1.16]) were not statistically significant.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/strokeaha.119.026739"
+      ]
+    },
+    {
+      "claim_text": "fasting and postprandial blood glucose, HbA1c, GA, MBG, MAGE, AUC(pp) and HOMA-IR decreased significantly in both groups (P < 0.01).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/j.1440-1681.2010.05361.x"
+      ]
+    },
+    {
+      "claim_text": "longer-term studies, mean 24-h glucose was not significantly reduced compared to control (-0.9 mmol/L [-2.2, 0.3], p = 0.14)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fendo.2020.00495"
+      ]
+    },
+    {
+      "claim_text": "longer-term studies, mean 24-h glucose was reduced compared to pre-exercise values (-0.5 mmol/L, [-0.7 to -0.2] p < 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fendo.2020.00495"
+      ]
+    },
+    {
+      "claim_text": "exercise decreased the primary outcome of mean 24-h glucose concentrations in short-term studies (-0.5 mmol/L, [-0.7, -0.3]; p < 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fendo.2020.00495"
+      ]
+    },
+    {
+      "claim_text": "98.7% specificity for DM classification",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-022-05570-8"
+      ]
+    },
+    {
+      "claim_text": "94.8% sensitivity for DM classification",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-022-05570-8"
+      ]
+    },
+    {
+      "claim_text": "96.0% precision for DM classification",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-022-05570-8"
+      ]
+    },
+    {
+      "claim_text": "the model achieved the accuracy of 97.8% for DM classification",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-022-05570-8"
+      ]
+    },
+    {
+      "claim_text": "use of clinical variables combined with CT features (AUC = 0.778) was superior to use of clinical variables alone (AUC = 0.690)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1148/radiol.2016151455"
+      ]
+    },
+    {
+      "claim_text": "only 0.7% had evidence for more severe hypoglycemia, with documented laboratory glucose below 40 mg/dL [2.2 mmol/L], emergency room visit, or hospitalization for hypoglycemia.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1002/oby.21520"
+      ]
+    },
+    {
+      "claim_text": "CGM was used a median of >90% of the time at 52 weeks",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1089/dia.2021.0503"
+      ]
+    },
+    {
+      "claim_text": "the glucose-lowering effect of berberine was associated with baseline mean FPG and HbA1c in type 2 diabetes",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.3389/fphar.2022.1015045"
+      ]
+    }
+  ]
+}

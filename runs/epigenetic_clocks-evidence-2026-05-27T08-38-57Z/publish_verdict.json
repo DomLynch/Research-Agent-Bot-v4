@@ -1,0 +1,114 @@
+{
+  "run_dir": "runs/epigenetic_clocks-evidence-2026-05-27T08-38-57Z",
+  "topic": "epigenetic_clocks",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 epigenetic_clocks",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 0,
+    "available_source_contexts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 1.0,
+    "source_count": 7,
+    "clusters": [
+      {
+        "label": "nature_aging_clock",
+        "member_fact_ids": [
+          "143013",
+          "143012",
+          "143009",
+          "143010"
+        ],
+        "source_paper": {
+          "doi": "10.1038/s41591-024-03164-7",
+          "title": "Proteomic aging clock predicts mortality and risk of common age-related diseases in diverse populations",
+          "journal": "Nature Medicine",
+          "year": 2024
+        },
+        "example_phrase": "biobanks in China (n = 3,977) and Finland (n = 1,990), the proteomic age clock showed similar age prediction accuracy (Pearson r = 0.92 and r = 0.94, respectively)"
+      },
+      {
+        "label": "associated_grimage_phenotypes",
+        "member_fact_ids": [
+          "77007",
+          "77005"
+        ],
+        "source_paper": {
+          "doi": "10.1093/gerona/glaa286",
+          "title": "GrimAge Outperforms Other Epigenetic Clocks in the Prediction of Age-Related Clinical Phenotypes and All-Cause Mortality",
+          "journal": "The Journals of Gerontology Series A",
+          "year": 2020
+        },
+        "example_phrase": "PhenoAgeAA was associated with 4/9 outcomes (walking speed, frailty MOCA, MMSE) in minimally adjusted models."
+      },
+      {
+        "label": "significant_aging_baseline",
+        "member_fact_ids": [
+          "90736"
+        ],
+        "source_paper": {
+          "doi": "10.18632/aging.205581",
+          "title": "Exploring the effects of Dasatinib, Quercetin, and Fisetin on DNA methylation clocks: a longitudinal study on senolytic interventions",
+          "journal": "Aging",
+          "year": 2024
+        },
+        "example_phrase": "Significant increases in epigenetic age acceleration were observed in first-generation epigenetic clocks and mitotic clocks at 3 and 6 months"
+      },
+      {
+        "label": "strong_nature_aging",
+        "member_fact_ids": [
+          "157236"
+        ],
+        "source_paper": {
+          "doi": "10.1038/s41467-022-29801-8",
+          "title": "Accelerated biological aging in COVID-19 patients",
+          "journal": "Nature Communications",
+          "year": 2022
+        },
+        "example_phrase": "strong correlations between the epigenetic clocks and individual's chronological age (r > 0.8, p < 0.0001)."
+      },
+      {
+        "label": "same_aging_linked",
+        "member_fact_ids": [
+          "177034"
+        ],
+        "source_paper": {
+          "doi": "10.1073/pnas.2317290121",
+          "title": "Pregnancy is linked to faster epigenetic aging in young women",
+          "journal": "Proceedings of the National Academy of Sciences",
+          "year": 2024
+        },
+        "example_phrase": "longitudinal increases in gravidity were linked to accelerated epigenetic aging in two epigenetic clocks (n = 331)."
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

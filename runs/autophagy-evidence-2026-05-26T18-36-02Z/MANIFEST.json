@@ -1,0 +1,79 @@
+{
+  "topic": "autophagy",
+  "snapshot_utc": "2026-05-26T18-36-02Z",
+  "top_n": 5,
+  "facts_inspected": 38,
+  "aggregated_claims": 38,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "mode": "alpha",
+  "selected_theme": null,
+  "facet_counts": {},
+  "numeric_artifacts_filtered": 3,
+  "fact_fetch_plan": [
+    "strict audited numeric facts via POST /api/v1/tier2/facts/search",
+    "validated topic facts via GET /api/v1/topics/{topic}/facts",
+    "normal numeric fact graph via POST /api/v1/tier2/facts/search",
+    "normal all-fact graph when source diversity is still thin"
+  ],
+  "paper_context_source": "POST /api/v1/papers/topic + POST /api/v1/search",
+  "pico_enrichment": {
+    "facts_inspected": 41,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "mimo-v2.5-pro"
+  },
+  "ranking": "alpha: deterministic validation*magnitude*precision*recency + data-driven contrast/subgroup boosts + theme coherence",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "86c7704ba72ed05e8e882441647c7f4c49f8739432ec97849c238ce989471e2f"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "2c5e50fa2081468f4050bf0d920057a8504d6f232a0df0fb2cb04f2911d0521f"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "82142c10e70754a7ccdff95219003222e07020ef4bd09a15a84ae0a464f9b536"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "3d7b20fd3372da0f6f538e1e8ced2fdb88274b4c90785614ec895983ea86be88"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "71ac50210ce889f97a01dd28b063aaeb5f274cf95f87bc21cdb52cc5f9f26bae"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "5b195713ce7e8a2d3ea7199c7c7667054018fc7d0cc21c6168568b5a412f874b"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "e6237cf51dbada593c7170c82f5372eda6ff2abdce3bd489f51f1a03ca8bb105"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "c54ba243793d392a4e5a410e6c44abebb679b15a3e50a826980f1475a8a0029f"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "320ff3f0251981e26083cc1f0076ab691f6025e37af054784af62e4d83d91527"
+    },
+    "signal_post_md": {
+      "name": "signal_post.md",
+      "sha256": "9a8337d31dbf528e88d7fd87073d37195663dd3e28a7454b15a96454d49da552"
+    },
+    "alpha_memo_md": {
+      "name": "alpha_memo.md",
+      "sha256": "b130a085bc38ed6e55129b8dbe44b070d34d87fbe85609ac76e2f18d165d9efe"
+    },
+    "publish_verdict_json": {
+      "name": "publish_verdict.json",
+      "sha256": "f387946935603140e373545c7a8b4512b734adb2ec04fbd09d71e5408edba80d"
+    }
+  }
+}

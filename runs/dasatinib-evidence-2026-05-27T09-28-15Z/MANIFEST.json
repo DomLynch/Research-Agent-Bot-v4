@@ -1,0 +1,81 @@
+{
+  "topic": "dasatinib",
+  "snapshot_utc": "2026-05-27T09-28-15Z",
+  "top_n": 5,
+  "facts_inspected": 20,
+  "aggregated_claims": 20,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "mode": "alpha",
+  "selected_theme": "intervention_signal",
+  "facet_counts": {
+    "clinical_outcome": 2
+  },
+  "numeric_artifacts_filtered": 9,
+  "fact_fetch_plan": [
+    "strict audited numeric facts via POST /api/v1/tier2/facts/search",
+    "validated topic facts via GET /api/v1/topics/{topic}/facts",
+    "normal numeric fact graph via POST /api/v1/tier2/facts/search",
+    "normal all-fact graph when source diversity is still thin"
+  ],
+  "paper_context_source": "POST /api/v1/papers/topic + POST /api/v1/search",
+  "pico_enrichment": {
+    "facts_inspected": 29,
+    "facts_changed": 1,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 1,
+    "model": "mimo-v2.5-pro"
+  },
+  "ranking": "alpha: deterministic validation*magnitude*precision*recency + data-driven contrast/subgroup boosts + theme coherence",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "0cdf11c28ab4d58b0cf47530eb6ab4b096907f64e3f17d509bfc1d2e2965e77a"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "310146791ef55886906609a7b15e20518fa8f4e9549169d72d44874b92b1f1e4"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "4daf13b8a6ea59ebe9eff0808642bccf6d4dab7b419e9e991dde42fd6672d18e"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "fa83e3275832d34d5949a6cb53d8321aff796f40cd8d599f75646142bc097255"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "a7db2cfb40723199c0b57e2a0f9285909b10881907ba600404d1a5457f58e6af"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "afb33c1f39887199ffe9b444a1d16e13cc2542dbb74c392f5252cb116d6e8595"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "861cd00e0083f84e29770b3be04750894d0ae83bb435438800ba0b18989806d7"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "de55e08d87667c562b74dc75cf090d4589f0f3bb90b080b2df1819777d5d91ef"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "7ab3c25cd88d48375bd07261c0e5d04ac4581930b026d5bf9009a9b3198759f6"
+    },
+    "signal_post_md": {
+      "name": "signal_post.md",
+      "sha256": "2b42e463e260bc94c410755166a2b5e99aeae7a83624f628e98893650bfa441a"
+    },
+    "alpha_memo_md": {
+      "name": "alpha_memo.md",
+      "sha256": "afe6269607ccd8c2364fd281c398bb3c6d1d533ca61512ab869e51d4e2c4d2ff"
+    },
+    "publish_verdict_json": {
+      "name": "publish_verdict.json",
+      "sha256": "79b8817cf7036667d5d61c4b19ca205c987c9bfde2eb363f978f6df81eef1ba4"
+    }
+  }
+}

@@ -1,0 +1,99 @@
+{
+  "run_dir": "runs/ARBs_longevity-evidence-2026-05-27T06-31-41Z",
+  "topic": "ARBs_longevity",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 ARBs_longevity",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 0,
+    "available_source_contexts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 1.0,
+    "source_count": 4,
+    "clusters": [
+      {
+        "label": "lower_aceis_tract",
+        "member_fact_ids": [
+          "164016",
+          "164014"
+        ],
+        "source_paper": {
+          "doi": "10.1093/cvr/cvaa097",
+          "title": "Hypertension, the renin\u2013angiotensin system, and the risk of lower respiratory tract infections and lung injury: implications for COVID-19",
+          "journal": "Cardiovascular Research",
+          "year": 2020
+        },
+        "example_phrase": "ACEIs and ARBs may be associated with lower incidence and/or improved outcome in patients with lower respiratory tract infections."
+      },
+      {
+        "label": "superior_ace_death",
+        "member_fact_ids": [
+          "165350",
+          "165348"
+        ],
+        "source_paper": {
+          "doi": "10.1007/s40265-020-01290-3",
+          "title": "ACE Inhibitor Benefit to Kidney and Cardiovascular Outcomes for Patients with Non-Dialysis Chronic Kidney Disease Stages 3\u20135: A Network Meta-Analysis of Randomised Clinical Trials",
+          "journal": "Drugs",
+          "year": 2020
+        },
+        "example_phrase": "In patients with advanced diabetic kidney disease, ACEIs were superior to ARBs in lowering risk of all-cause death but not in kidney events and cardiovascular events."
+      },
+      {
+        "label": "management_alternative_ace",
+        "member_fact_ids": [
+          "160888"
+        ],
+        "source_paper": {
+          "doi": "10.1007/s40256-023-00605-5",
+          "title": "The Pivotal Role of Angiotensin-Converting Enzyme Inhibitors and Angiotensin II Receptor Blockers in Hypertension Management and Cardiovascular and Renal Protection: A Critical Appraisal and Comparison of International Guidelines",
+          "journal": "American Journal of Cardiovascular Drugs",
+          "year": 2023
+        },
+        "example_phrase": "ARBs considered as an alternative when ACEis are not tolerated"
+      },
+      {
+        "label": "nephrology_non_size",
+        "member_fact_ids": [
+          "145245"
+        ],
+        "source_paper": {
+          "doi": "10.1093/ndt/gfad112",
+          "title": "SGLT2i for evidence-based cardiorenal protection in diabetic and non-diabetic chronic kidney disease: a comprehensive review by EURECA-m and ERBP working groups of ERA",
+          "journal": "Nephrology Dialysis Transplantation",
+          "year": 2023
+        },
+        "example_phrase": "neither angiotensin-converting enzyme inhibitors (ACEIs) nor angiotensin receptor blockers (ARBs) reduced cardiovascular events and mortality in major trials in CKD."
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

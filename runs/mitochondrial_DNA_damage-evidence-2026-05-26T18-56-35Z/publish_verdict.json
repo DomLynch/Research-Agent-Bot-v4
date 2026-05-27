@@ -1,0 +1,121 @@
+{
+  "run_dir": "runs/mitochondrial_DNA_damage-evidence-2026-05-26T18-56-35Z",
+  "topic": "mitochondrial_DNA_damage",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 mitochondrial_DNA_damage",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 0,
+    "available_source_contexts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 0.95,
+    "source_count": 9,
+    "clusters": [
+      {
+        "label": "dermatology_ageing_age",
+        "member_fact_ids": [
+          "94452",
+          "94453",
+          "94454",
+          "94455",
+          "94456",
+          "94457"
+        ],
+        "source_paper": {
+          "doi": "10.1111/bjd.14906",
+          "title": "Oxidative stress and ageing",
+          "journal": "British Journal of Dermatology",
+          "year": 2016
+        },
+        "example_phrase": "Complex II activity significantly decreased with age in fibroblasts (P = 0\u00b7015), but not in keratinocytes."
+      },
+      {
+        "label": "participants_number_wgs",
+        "member_fact_ids": [
+          "172062",
+          "172064",
+          "172063"
+        ],
+        "source_paper": {
+          "doi": "10.1371/journal.pone.0228166",
+          "title": "Evaluation of mitochondrial DNA copy number estimation techniques",
+          "journal": "PLoS ONE",
+          "year": 2020
+        },
+        "example_phrase": "mtDNA-CN derived from WGS data is significantly more associated with known correlates compared to all other methods (p < 0.001)."
+      },
+      {
+        "label": "ochratoxin_occurrence_rate",
+        "member_fact_ids": [
+          "145052",
+          "145053",
+          "145054"
+        ],
+        "source_paper": {
+          "doi": "10.1016/j.heliyon.2024.e39313",
+          "title": "Ochratoxin A in food commodities: A review of occurrence, toxicity, and management strategies",
+          "journal": "Heliyon",
+          "year": 2024
+        },
+        "example_phrase": "91.5 % of ready-to-sell cocoa beans in Nigeria testing positive for OTA."
+      },
+      {
+        "label": "death_way_threshold",
+        "member_fact_ids": [
+          "96967",
+          "96968"
+        ],
+        "source_paper": {
+          "doi": "10.1080/15548627.2018.1515609",
+          "title": "Parallel damage in mitochondria and lysosomes is an efficient way to photoinduce cell death",
+          "journal": "Autophagy",
+          "year": 2018
+        },
+        "example_phrase": "at 10 nM, only DMMB could induce mitochondrial damage, triggering cell death"
+      },
+      {
+        "label": "variants_diseases_mtdna",
+        "member_fact_ids": [
+          "100219",
+          "100220"
+        ],
+        "source_paper": {
+          "doi": "10.3390/cells8060608",
+          "title": "Mitochondrial DNA Variants and Common Diseases: A Mathematical Model for the Diversity of Age-Related mtDNA Mutations",
+          "journal": "Cells",
+          "year": 2019
+        },
+        "example_phrase": "almost 90% of non-proliferating cells would be expected to have at least 100 mutations per cell by the age of 70"
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

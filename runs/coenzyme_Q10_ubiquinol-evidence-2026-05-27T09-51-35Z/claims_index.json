@@ -1,0 +1,34 @@
+{
+  "topic": "coenzyme_Q10_ubiquinol",
+  "snapshot_utc": "2026-05-27T09-51-35Z",
+  "claim_count": 3,
+  "claims": [
+    {
+      "claim_text": "the optimal treatment regimen of CoQ10 for improving pregnancy rate was 30 mg/d for 3 mo before the controlled ovarian stimulation cycle",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1016/j.advnut.2024.100273"
+      ]
+    },
+    {
+      "claim_text": "coenzyme Q10 (CoQ10) tended to be more effective than melatonin, myo-inositol, and vitamins",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1016/j.advnut.2024.100273"
+      ]
+    },
+    {
+      "claim_text": "included studies investigated oral or parenteral administration of nutrients including Coenzyme Q10, L-carnitine, zinc, methionine, NAD, and vitamins C, D and B.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.3390/nu15092154"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,114 @@
+{
+  "run_dir": "runs/extracellular_matrix_stiffening-evidence-2026-05-26T18-50-25Z",
+  "topic": "extracellular_matrix_stiffening",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 extracellular_matrix_stiffening",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 0,
+    "available_source_contexts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 0.889,
+    "source_count": 5,
+    "clusters": [
+      {
+        "label": "biobank_aging_mortality",
+        "member_fact_ids": [
+          "143009",
+          "143010",
+          "143013",
+          "143012"
+        ],
+        "source_paper": {
+          "doi": "10.1038/s41591-024-03164-7",
+          "title": "Proteomic aging clock predicts mortality and risk of common age-related diseases in diverse populations",
+          "journal": "Nature Medicine",
+          "year": 2024
+        },
+        "example_phrase": "proteomic aging was associated with the incidence of 18 major chronic diseases, as well as with multimorbidity and all-cause mortality risk"
+      },
+      {
+        "label": "superoxide_secretion_glucose",
+        "member_fact_ids": [
+          "141819",
+          "141820"
+        ],
+        "source_paper": {
+          "doi": "10.1089/ars.2019.7800",
+          "title": "Mitochondrial Superoxide Production Decreases on Glucose-Stimulated Insulin Secretion in Pancreatic \u03b2 Cells Due to Decreasing Mitochondrial Matrix NADH/NAD <sup>+</sup> Ratio",
+          "journal": "Antioxidants and Redox Signaling",
+          "year": 2020
+        },
+        "example_phrase": "Unexpectedly, INS-1E cells at transitions from 3 to 25 mM glucose decreased matrix superoxide release rates"
+      },
+      {
+        "label": "use_rat_experiment",
+        "member_fact_ids": [
+          "69810"
+        ],
+        "source_paper": {
+          "doi": "10.1021/ac401595a",
+          "title": "Hydroxyflavones as a new family of matrices for MALDI tissue imaging.",
+          "journal": "Analytical chemistry",
+          "year": 2013
+        },
+        "example_phrase": "The use of quercetin led to improved lipid imaging, with 212 lipids being successfully imaged from rat brain in a single experiment."
+      },
+      {
+        "label": "media_their_respondents",
+        "member_fact_ids": [
+          "81406"
+        ],
+        "source_paper": {
+          "doi": "10.1002/jev2.12061",
+          "title": "Foetal bovine serum influence on in vitro extracellular vesicle analyses",
+          "journal": "Journal of Extracellular Vesicles",
+          "year": 2021
+        },
+        "example_phrase": "83% of International Society for Extracellular Vesicles (ISEV) respondents utilize conditioned cell culture media as their starting material"
+      },
+      {
+        "label": "science_innovative_stiffeners",
+        "member_fact_ids": [
+          "75746"
+        ],
+        "source_paper": {
+          "doi": "10.38124//ijisrt/ijisrt24aug130",
+          "title": "Structural Improvement in Crane Boom Rest",
+          "journal": "International Journal of Innovative Science and Research Technology (IJISRT)",
+          "year": 2024
+        },
+        "example_phrase": "reduced deformation from 17.2 mm to 2.2 mm"
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

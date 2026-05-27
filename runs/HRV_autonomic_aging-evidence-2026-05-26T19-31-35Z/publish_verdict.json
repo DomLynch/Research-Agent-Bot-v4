@@ -1,0 +1,112 @@
+{
+  "run_dir": "runs/HRV_autonomic_aging-evidence-2026-05-26T19-31-35Z",
+  "topic": "HRV_autonomic_aging",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 HRV_autonomic_aging",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 0,
+    "available_source_contexts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 0.714,
+    "source_count": 5,
+    "clusters": [
+      {
+        "label": "metabolic_prediabetes_people",
+        "member_fact_ids": [
+          "144047",
+          "144048",
+          "144049"
+        ],
+        "source_paper": {
+          "doi": "10.1007/s13300-019-00693-0",
+          "title": "Cardiac Autonomic Neuropathy in Obesity, the Metabolic Syndrome and Prediabetes: A Narrative Review",
+          "journal": "Diabetes Therapy",
+          "year": 2019
+        },
+        "example_phrase": "CAN is increasingly recognised in people with prediabetes with a reported prevalence up to 11%."
+      },
+      {
+        "label": "drives_had_150",
+        "member_fact_ids": [
+          "150240"
+        ],
+        "source_paper": {
+          "doi": "10.1016/j.cell.2024.11.038",
+          "title": "Long somatic DNA-repeat expansion drives neurodegeneration in Huntington\u2019s disease",
+          "journal": "Cell",
+          "year": 2025
+        },
+        "example_phrase": "somatic expansion from 40 to 150 CAGs had no apparent cell-autonomous effect"
+      },
+      {
+        "label": "higher_moderate_rate",
+        "member_fact_ids": [
+          "168807"
+        ],
+        "source_paper": {
+          "doi": "10.1016/j.arr.2021.101539",
+          "title": "Heart rate variability in relation to cognition and behavior in neurodegenerative diseases: A systematic review and meta-analysis",
+          "journal": "Ageing Research Reviews",
+          "year": 2021
+        },
+        "example_phrase": "A significant, moderate effect was observed (r = 0.25), such that higher HRV was related to better cognitive and behavioral scores"
+      },
+      {
+        "label": "random_physical_classification",
+        "member_fact_ids": [
+          "99007"
+        ],
+        "source_paper": {
+          "doi": "10.1109/access.2021.3109806",
+          "title": "Big-ECG: Cardiographic Predictive Cyber-Physical System for Stroke Management",
+          "journal": "IEEE Access",
+          "year": 2021
+        },
+        "example_phrase": "The Random Trees model presented the best classification performance (overall accuracy: 95.6%) utilizing ECG fiducial variables."
+      },
+      {
+        "label": "mortality_cardiac_favour",
+        "member_fact_ids": [
+          "74302"
+        ],
+        "source_paper": {
+          "doi": "10.1136/bmjdrc-2021-002480",
+          "title": "Cardiac autonomic neuropathy and risk of cardiovascular disease and mortality in type 1 and type 2 diabetes: a meta-analysis",
+          "journal": "BMJ Open Diabetes Research & Care",
+          "year": 2021
+        },
+        "example_phrase": "pooled relative risk (RR) of 3.16 (95%CI 2.42 to 4.13; p<0.0001) of future CVE in favour of CAN"
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

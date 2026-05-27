@@ -1,0 +1,42 @@
+{
+  "topic": "proteostasis_chaperones",
+  "snapshot_utc": "2026-05-27T09-42-24Z",
+  "counts": {
+    "A_core": 0,
+    "B_context": 0,
+    "C_noise": 1,
+    "D_bad_extraction": 4
+  },
+  "verdicts": [
+    {
+      "fact_id": "167055",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "184108",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "144632",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "162955",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "159890",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    }
+  ]
+}

@@ -1,0 +1,331 @@
+{
+  "topic": "retatrutide_triple_agonists",
+  "snapshot_utc": "2026-05-26T19-44-10Z",
+  "claim_count": 36,
+  "claims": [
+    {
+      "claim_text": "Tirzepatide leads in up to 22.5% weight loss in phase 3 obesity trials.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41366-024-01473-y"
+      ]
+    },
+    {
+      "claim_text": "Semaglutide 2.4 mg once weekly results in 15-17% mean weight loss with evidence of cardioprotection.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41366-024-01473-y"
+      ]
+    },
+    {
+      "claim_text": "cause rapid and significant loss of lean mass (∼10% or ∼6 kg)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2337/dci23-0100"
+      ]
+    },
+    {
+      "claim_text": "induce ∼15-24% weight loss in adults with overweight and obesity",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2337/dci23-0100"
+      ]
+    },
+    {
+      "claim_text": "elicit large increases in lean mass (∼3 kg)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2337/dci23-0100"
+      ]
+    },
+    {
+      "claim_text": "elicit large increases in strength (∼25%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2337/dci23-0100"
+      ]
+    },
+    {
+      "claim_text": "Incretin-based therapies have been associated with a body weight reduction of ≥5% in at least half of patients in most randomized controlled trials and real-world studies",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1038/s44324-024-00030-5"
+      ]
+    },
+    {
+      "claim_text": "Obesity-related disability-adjusted life years are expected to increase by approximately 40% from 2020 to 2030",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1038/s44324-024-00030-5"
+      ]
+    },
+    {
+      "claim_text": "In the United States, triple negative breast cancer (TNBC) represents 15 to 20% of all BC.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/cancers14051253"
+      ]
+    },
+    {
+      "claim_text": "has a higher mortality rate of 40% in advanced stages within the first 5 years after diagnosis.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/cancers14051253"
+      ]
+    },
+    {
+      "claim_text": "Triple negative breast cancer (TNBC) accounts for 10-20% of all cases of breast carcinoma.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1007/s13346-018-0551-3"
+      ]
+    },
+    {
+      "claim_text": "Approximately, 20% of all breast cancers are characterized as triple negative (TNBC).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/j.clbc.2023.06.004"
+      ]
+    },
+    {
+      "claim_text": "Triple negative breast cancer is responsible for more than 15-20% of all breast cancers.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/cancers14102569"
+      ]
+    },
+    {
+      "claim_text": "the median overall survival was 20.2 (16.8-23.6) months after G47∆ initiation",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-022-01897-x"
+      ]
+    },
+    {
+      "claim_text": "The most common G47∆-related adverse event was fever (17 of 19)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.1038/s41591-022-01897-x"
+      ]
+    },
+    {
+      "claim_text": "median overall survival was 28.8 (20.1-37.5) months from the initial surgery",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-022-01897-x"
+      ]
+    },
+    {
+      "claim_text": "The primary endpoint of 1-yr survival rate after G47∆ initiation was 84.2% (95% confidence interval, 60.4-96.6; 16 of 19).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-022-01897-x"
+      ]
+    },
+    {
+      "claim_text": "TNBCs show 77% of the overall 4-year survival rate compared to other breast cancer subtypes (82.7 to 92.5%).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/cancers13153697"
+      ]
+    },
+    {
+      "claim_text": "Rates of pCR in these groups of patients can be in the 60 % range",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1186/s13058-016-0684-6"
+      ]
+    },
+    {
+      "claim_text": "The 10-month PFS and overall survival (OS) was 82% and 90% for cilta-cel versus 47% and 77% ide-cel",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/hem3.70070"
+      ]
+    },
+    {
+      "claim_text": "complete response at Day 30 of 48% versus 26% (p < 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/hem3.70070"
+      ]
+    },
+    {
+      "claim_text": "Nonrelapse mortality was 5% for cilta-cel versus 3% for ide-cel (p = 0.51)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1002/hem3.70070"
+      ]
+    },
+    {
+      "claim_text": "Cilta-cel showed significantly higher ORR (93% vs. 79%; p < 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/hem3.70070"
+      ]
+    },
+    {
+      "claim_text": "Incidence of CRS and ICANS appeared similar (81% and 19% for cilta-cel versus 85% and 19% for ide-cel)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.1002/hem3.70070"
+      ]
+    },
+    {
+      "claim_text": "10% and 7% in the cilta-cel group versus 4% and 2% in the ide-cel group showed severe CRS and ICANS grade 3-4",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.1002/hem3.70070"
+      ]
+    },
+    {
+      "claim_text": "TNBC AUC = 0.7674",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41698-023-00352-5"
+      ]
+    },
+    {
+      "claim_text": "The average list price of insulin has skyrocketed in recent years, nearly tripling between 2002 and 2013.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.2337/dci18-0019"
+      ]
+    },
+    {
+      "claim_text": "total direct medical costs spent in the US for cardiovascular diseases are projected to triple from 273 to 818 billion dollars",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/circulationaha.111.047431"
+      ]
+    },
+    {
+      "claim_text": "SHBG associated with elevated risk of triple negative cancer (OR = 1.19, 95% CI: 0.92-1.54).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/ijc.34026"
+      ]
+    },
+    {
+      "claim_text": "SHBG associated with reduced ER-positive but elevated ER-negative and triple negative breast cancer risk (Pheterogeneity = 0.01).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1002/ijc.34026"
+      ]
+    },
+    {
+      "claim_text": "Basal-like cancers (15% of all invasive breast cancers) predominate among \"triple negative\" cancers.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/jbi/wbaa110"
+      ]
+    },
+    {
+      "claim_text": "The AUC were 0.864, 0.811, and 0.837 for the triple-negative subtype, HER2 (+) subtype and HR (+) subtype predictions, respectively.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fonc.2021.623506"
+      ]
+    },
+    {
+      "claim_text": "maintenance with triple immunosuppression (1.43 [1.06-2.15])",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1111/ajt.16615"
+      ]
+    },
+    {
+      "claim_text": "Semaglutide and tirzepatide have also displayed a mean 60-69% 10-years relative risk reduction of T2D development",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s44324-024-00030-5"
+      ]
+    },
+    {
+      "claim_text": "reduced the risk of major cardiovascular events and heart failure-related events in individuals with obesity, as recently demonstrated for the first time in the SELECT trial with semaglutide 2.4 mg once-weekly",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s44324-024-00030-5"
+      ]
+    },
+    {
+      "claim_text": "Patients with low selenium status according to all three biomarkers had an overall survival probability of ∼50% after 8 years.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1016/j.redox.2021.102145"
+      ]
+    }
+  ]
+}

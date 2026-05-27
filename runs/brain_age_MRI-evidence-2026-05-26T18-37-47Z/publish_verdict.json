@@ -1,0 +1,123 @@
+{
+  "run_dir": "runs/brain_age_MRI-evidence-2026-05-26T18-37-47Z",
+  "topic": "brain_age_MRI",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 brain_age_MRI",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 0,
+    "available_source_contexts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 0.85,
+    "source_count": 6,
+    "clusters": [
+      {
+        "label": "report_cbtrus_neuro",
+        "member_fact_ids": [
+          "140134",
+          "140141",
+          "140138",
+          "140139",
+          "140137"
+        ],
+        "source_paper": {
+          "doi": "10.1093/neuonc/noad149",
+          "title": "CBTRUS Statistical Report: Primary Brain and Other Central Nervous System Tumors Diagnosed in the United States in 2016\u20142020",
+          "journal": "Neuro-Oncology",
+          "year": 2023
+        },
+        "example_phrase": "The average annual age-adjusted incidence rate (AAAIR) of all malignant and non-malignant brain and other CNS tumors was 24.83 per 100,000 population"
+      },
+      {
+        "label": "report_cbtrus_neuro",
+        "member_fact_ids": [
+          "74919",
+          "74923",
+          "74920",
+          "74921"
+        ],
+        "source_paper": {
+          "doi": "10.1093/neuonc/noz150",
+          "title": "CBTRUS Statistical Report: Primary Brain and Other Central Nervous System Tumors Diagnosed in the United States in 2012\u20132016",
+          "journal": "Neuro-Oncology",
+          "year": 2019
+        },
+        "example_phrase": "The average annual age-adjusted incidence rate of all malignant and non-malignant brain and other CNS tumors was 23.41"
+      },
+      {
+        "label": "report_cbtrus_2014",
+        "member_fact_ids": [
+          "74161",
+          "74165",
+          "74164"
+        ],
+        "source_paper": {
+          "doi": "10.1093/neuonc/noab200",
+          "title": "CBTRUS Statistical Report: Primary Brain and Other Central Nervous System Tumors Diagnosed in the United States in 2014\u20132018",
+          "journal": "Neuro-Oncology",
+          "year": 2021
+        },
+        "example_phrase": "The average annual age-adjusted incidence rate (AAAIR) of all malignant and non-malignant brain and other CNS tumors was 24.25"
+      },
+      {
+        "label": "report_cbtrus_neuro",
+        "member_fact_ids": [
+          "141362",
+          "141369",
+          "141367"
+        ],
+        "source_paper": {
+          "doi": "10.1093/neuonc/noac202",
+          "title": "CBTRUS Statistical Report: Primary Brain and Other Central Nervous System Tumors Diagnosed in the United States in 2015\u20132019",
+          "journal": "Neuro-Oncology",
+          "year": 2022
+        },
+        "example_phrase": "The average annual age-adjusted incidence rate (AAAIR) of all malignant and non-malignant brain and other CNS tumors was 24.71 per 100,000 population."
+      },
+      {
+        "label": "2017_report_cbtrus",
+        "member_fact_ids": [
+          "74766",
+          "74768",
+          "74770"
+        ],
+        "source_paper": {
+          "doi": "10.1093/neuonc/noaa200",
+          "title": "CBTRUS Statistical Report: Primary Brain and Other Central Nervous System Tumors Diagnosed in the United States in 2013\u20132017",
+          "journal": "Neuro-Oncology",
+          "year": 2020
+        },
+        "example_phrase": "The average annual age-adjusted incidence rate (AAAIR) of all malignant and non-malignant brain and other CNS tumors was 23.79"
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

@@ -1,0 +1,123 @@
+{
+  "run_dir": "runs/NMN-evidence-2026-05-27T09-55-07Z",
+  "topic": "NMN",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 NMN",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 0,
+    "available_source_contexts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 1.0,
+    "source_count": 7,
+    "clusters": [
+      {
+        "label": "mononucleotide_supplementation_controlled",
+        "member_fact_ids": [
+          "148463",
+          "148466",
+          "148465",
+          "148464",
+          "148467",
+          "148469",
+          "148468"
+        ],
+        "source_paper": {
+          "doi": "10.1007/s11357-022-00705-1",
+          "title": "The efficacy and safety of \u03b2-nicotinamide mononucleotide (NMN) supplementation in healthy middle-aged adults: a randomized, multicenter, double-blind, placebo-controlled, parallel-group, dose-dependent clinical trial",
+          "journal": "GeroScience",
+          "year": 2022
+        },
+        "example_phrase": "Blood NAD concentrations were statistically significantly increased among all NMN-treated groups at day 30 and day 60 (all p \u2264 0.001)."
+      },
+      {
+        "label": "mononucleotide_adenine_efficiently",
+        "member_fact_ids": [
+          "166047",
+          "166045",
+          "166049"
+        ],
+        "source_paper": {
+          "doi": "10.3389/fnut.2022.868640",
+          "title": "Oral Administration of Nicotinamide Mononucleotide Is Safe and Efficiently Increases Blood Nicotinamide Adenine Dinucleotide Levels in Healthy Subjects",
+          "journal": "Frontiers in Nutrition",
+          "year": 2022
+        },
+        "example_phrase": "Healthy volunteers received 250 mg/day of NMN (n = 15) or placebo (n = 15) for 12 weeks."
+      },
+      {
+        "label": "size_disease_syndrome",
+        "member_fact_ids": [
+          "141754",
+          "141757",
+          "141756"
+        ],
+        "source_paper": {
+          "doi": "10.1038/s41598-019-39419-4",
+          "title": "Targeting NAD+ Metabolism as Interventions for Mitochondrial Disease",
+          "journal": "Scientific Reports",
+          "year": 2019
+        },
+        "example_phrase": "Administration of NAD+ precursor, nicotinamide mononucleotide (NMN) extended lifespan of Ndufs4-KO mice and attenuated lactic acidosis."
+      },
+      {
+        "label": "mononucleotide_250_journal",
+        "member_fact_ids": [
+          "97343",
+          "97341",
+          "97345"
+        ],
+        "source_paper": {
+          "doi": "10.1507/endocrj.ej19-0313",
+          "title": "Effect of oral administration of nicotinamide mononucleotide on clinical parameters and nicotinamide metabolite levels in healthy Japanese men",
+          "journal": "Endocrine Journal",
+          "year": 2019
+        },
+        "example_phrase": "Plasma concentrations of N-methyl-2-pyridone-5-carboxamide and N-methyl-4-pyridone-5-carboxamide were significantly increased dose-dependently by NMN administration."
+      },
+      {
+        "label": "mononucleotide_size_disease",
+        "member_fact_ids": [
+          "141790",
+          "141791"
+        ],
+        "source_paper": {
+          "doi": "10.1038/s41419-022-04613-2",
+          "title": "PINK1-parkin-mediated neuronal mitophagy deficiency in prion disease",
+          "journal": "Cell Death and Disease",
+          "year": 2022
+        },
+        "example_phrase": "supplementation with two mitophagy-inducing agents, nicotinamide mononucleotide (NMN) and urolithin A (UA), significantly stimulated PINK1-parkin-mediated mitophagy."
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

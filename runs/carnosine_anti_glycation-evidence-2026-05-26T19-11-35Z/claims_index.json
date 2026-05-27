@@ -1,0 +1,259 @@
+{
+  "topic": "carnosine_anti_glycation",
+  "snapshot_utc": "2026-05-26T19-11-35Z",
+  "claim_count": 28,
+  "claims": [
+    {
+      "claim_text": "Consumption of 30 g dry beef can fully meet daily physiological needs of the healthy 70-kg adult human for taurine and carnosine",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1007/s00726-020-02823-6"
+      ]
+    },
+    {
+      "claim_text": "administered for 12 weeks at a dose of 1 g/day",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.3390/biomedicines9030253"
+      ]
+    },
+    {
+      "claim_text": "The second largest number of studies reported on anti-cluster of differentiation (anti-CD) agents (n = 13) (incidence of 33.9% by overall estimation and 35.6% by meta-analysis).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/jcm8020143"
+      ]
+    },
+    {
+      "claim_text": "Seven (2.74%) health workers had anti-Spike-RBD IgGs titer >0.8 U/mL on D1.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1002/ajh.26185"
+      ]
+    },
+    {
+      "claim_text": "One (0.89%) octogenarian was positive for anti-Spike-RBD IgGs on D1.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1002/ajh.26185"
+      ]
+    },
+    {
+      "claim_text": "The presence of human leukocyte antigen-DRB1*10:01 [55% (24/44)] was associated with higher serum anti-IgLON5 IgG titres",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1093/brain/awac090"
+      ]
+    },
+    {
+      "claim_text": "for combination of anti-estrogenic treatment with mammalian target of rapamycin (mTOR) inhibitors 14-31%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fonc.2019.00359"
+      ]
+    },
+    {
+      "claim_text": "median (1370 vs. 11 710, p < .001), and geometric mean titers (948 vs. 11 300, p < .001) of anti-SARS-CoV-2 RBD IgG titers were all highly significant",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/ajt.16607"
+      ]
+    },
+    {
+      "claim_text": "geometric mean titers (948 vs. 11 300, p < .001) of anti-SARS-CoV-2 RBD IgG titers",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/ajt.16607"
+      ]
+    },
+    {
+      "claim_text": "Anti-SARS-CoV-2 RBD-IgG antibodies were detected in 20 of the 34 SOT recipients (58.8%).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1111/ajt.16607"
+      ]
+    },
+    {
+      "claim_text": "in 7 patients, [68Ga]Ga-NOTA-anti-HER2 shows interlesional heterogeneity within the same patient",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.2967/jnumed.123.266254"
+      ]
+    },
+    {
+      "claim_text": "Neurofilament light chain and glial fibrillary acidic protein in serum were substantially increased (71.1 ± 103.9 pg/ml and 126.7 ± 73.3 pg/ml, respectively)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1093/brain/awac090"
+      ]
+    },
+    {
+      "claim_text": "First-line immunotherapy of relapse-like acute-to-subacute exacerbation episodes resulted in improvement in 41% (11/27) of patients",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/brain/awac090"
+      ]
+    },
+    {
+      "claim_text": "28% (15/53) reported subacute disease onset and 51% (27/53) relapse-like exacerbations during the disease course",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/brain/awac090"
+      ]
+    },
+    {
+      "claim_text": "75% (27/36) of these experienced no further disease progression (observation period of 20.2 ± 15.4 months)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/brain/awac090"
+      ]
+    },
+    {
+      "claim_text": "Inflammatory CSF changes were evident in 37% (19/51) and increased blood-CSF-barrier permeability in 46% (21/46)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/brain/awac090"
+      ]
+    },
+    {
+      "claim_text": "Recently completed phase 2 and 3 trials of 3rd generation anti-amyloid immunotherapies are supportive of their clinical efficacy in reducing brain Aβ burden and preventing cognitive decline.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s13311-023-01405-0"
+      ]
+    },
+    {
+      "claim_text": "Phosphonate modified MSNs significantly enhanced the anti-proliferative potential of RES with an IC50 of 7.15 μM as compared to 14.86 μM of free RES",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fbioe.2019.00225"
+      ]
+    },
+    {
+      "claim_text": "The absorbed dose to the kidneys was 1.54 ± 0.25 mGy/MBq.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2967/jnumed.120.255679"
+      ]
+    },
+    {
+      "claim_text": "and to bone marrow it was 0.03 ± 0.01 mGy/MBq.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2967/jnumed.120.255679"
+      ]
+    },
+    {
+      "claim_text": "cessation in CD patients in combo-therapy proportion of relapse is high, close to 40% and 50% over 1 year and 2 years respectively",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/apt.12838"
+      ]
+    },
+    {
+      "claim_text": "With a repeatability coefficient of 21.8%, this imaging technique was repeatable.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2967/jnumed.123.266254"
+      ]
+    },
+    {
+      "claim_text": "findings were replicated in the study population with T2D when comparing semaglutide with non-GLP-1RA anti-diabetes medications for incident CUD (HR: 0.40, 95% CI: 0.29-0.56)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41380-024-02498-5"
+      ]
+    },
+    {
+      "claim_text": "semaglutide compared with non-GLP-1RA anti-obesity medications was associated with lower risk for incident CUD (HR: 0.56, 95% CI: 0.42-0.75)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41380-024-02498-5"
+      ]
+    },
+    {
+      "claim_text": "symptomatic and serious ARIA (7/1321=0.53% in the high dose groups versus 0/1446 in the placebo groups; risk ratio=6.44; P=0.04)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/j.neurol.2022.06.012"
+      ]
+    },
+    {
+      "claim_text": "difference in cognitive decline measured with CDR-SB after 18 months between the high dose immunotherapy groups vs. placebo = -0.24 points; P=0.04",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.neurol.2022.06.012"
+      ]
+    },
+    {
+      "claim_text": "the prevalence of anti-IFN-I autoAbs in apparently healthy individuals increases with age, such that ∼4% of those over 70 years old are affected.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1002/eji.202250164"
+      ]
+    },
+    {
+      "claim_text": "Anti‐PD‐1 antibodies currently show promising results with response rates of up to 50% in both locally advanced and metastatic cSCC.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1111/jdv.16024"
+      ]
+    }
+  ]
+}

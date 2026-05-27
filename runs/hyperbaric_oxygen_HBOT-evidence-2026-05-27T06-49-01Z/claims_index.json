@@ -1,0 +1,178 @@
+{
+  "topic": "hyperbaric_oxygen_HBOT",
+  "snapshot_utc": "2026-05-27T06-49-01Z",
+  "claim_count": 19,
+  "claims": [
+    {
+      "claim_text": "HBOT was significantly effective in complete healing of diabetic foot ulcer (OR = 0.29; 95% CI 0.14-0.61; I2 = 62%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-021-81886-1"
+      ]
+    },
+    {
+      "claim_text": "HBOT effective in reduction of major amputation (RR = 0.60; 95% CI 0.39-0.92; I2 = 24%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-021-81886-1"
+      ]
+    },
+    {
+      "claim_text": "less adverse events were reported in standard treatment group (RR = 1.68; 95% CI 1.07-2.65; I2 = 0%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-021-81886-1"
+      ]
+    },
+    {
+      "claim_text": "it was not effective for minor amputations (RR = 0.82; 95% CI 0.34-1.97; I2 = 79%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-021-81886-1"
+      ]
+    },
+    {
+      "claim_text": "Hyperbaric oxygen therapy may add $10 000-$50 000 to the cost of therapy.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/jncimonographs/lgz010"
+      ]
+    },
+    {
+      "claim_text": "less than one in three (30%) people who need oxygen for acute medical or surgical conditions currently receives adequate oxygen therapy",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/s2214-109x(24)00496-0"
+      ]
+    },
+    {
+      "claim_text": "pulse oximeters and oxygen are currently available in 54% and 58% of general and 83% and 86% of tertiary hospitals",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/s2214-109x(24)00496-0"
+      ]
+    },
+    {
+      "claim_text": "over 5 billion people, 60% of the world's population, do not currently have access to safe, quality, and affordable medical oxygen services",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1016/s2214-109x(24)00496-0"
+      ]
+    },
+    {
+      "claim_text": "No difference in mortality was observed in patients treated with HFNO (relative risk (RR) 0.94, 95%CI 0.67–1.31) compared with conventional oxygen therapy.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/anae.15073"
+      ]
+    },
+    {
+      "claim_text": "The primary outcome of tracheal intubation rate was 38% in the HFNO group, 47% in the non-rebreather facemask group and 50% in the NIV group (p = 0.18).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1111/anae.15073"
+      ]
+    },
+    {
+      "claim_text": "the goal is to maintain systemic oxygen delivery at least 3 times oxygen consumption (the DO2:VO2 ratio is >3)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1097/mat.0000000000001510"
+      ]
+    },
+    {
+      "claim_text": "treatment failure RR, MH, random-effects 0.79, 95% CI 0.49 to 1.27",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/14651858.cd010172.pub3"
+      ]
+    },
+    {
+      "claim_text": "the use high oxygen concentrations (90% to 100%) has caused more oxidative stress and clinical complications that the use of lower oxygen concentrations (30-60%).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.1016/j.redox.2017.03.011"
+      ]
+    },
+    {
+      "claim_text": "the use of 100% oxygen given with positive pressure in the airways of the newborn infant during resuscitation causes more oxidative stress than using air, and increases mortality.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.1016/j.redox.2017.03.011"
+      ]
+    },
+    {
+      "claim_text": "under hyperglycemic conditions, about 10% of the respiratory oxygen consumed may be lost as free radicals.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3390/antiox11102003"
+      ]
+    },
+    {
+      "claim_text": "oxygenator failure the most prevalent (12.8%; CI 95% = 7.1-21.7)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1186/s13613-017-0275-4"
+      ]
+    },
+    {
+      "claim_text": "Venoarterial extracorporeal membrane oxygenation with concomitant Impella strategy was used in 27% of the patients.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1097/mat.0000000000001039"
+      ]
+    },
+    {
+      "claim_text": "over 700 coastal systems have reported low oxygen levels",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/j.oneear.2020.01.001"
+      ]
+    },
+    {
+      "claim_text": "Ru-Cu peroxide NDs (RCp NDs, x = 0.50) possess the highest oxygen vacancy (O_V) density",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1021/acsami.3c18888"
+      ]
+    }
+  ]
+}

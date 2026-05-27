@@ -1,0 +1,30 @@
+{
+  "topic": "NAD",
+  "snapshot_utc": "2026-05-27T06-03-03Z",
+  "input_pack": {
+    "topic": "NAD",
+    "a_core_count": 0,
+    "b_context_count": 1,
+    "excluded_counts": {
+      "C_noise": 1,
+      "D_bad_extraction": 9
+    },
+    "has_minimum_a_core": false,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Glucose-Stimulated Mitochondrial Free NADH Depletion as a Regulatory Mechanism in Insulin Secretion: A Compartmentalized Redox Paradigm",
+      "status": "needs_source_audit",
+      "blocking_flags": [
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 56,
+      "capped_opportunity": 56,
+      "cited_fact_ids": [
+        "141820"
+      ]
+    }
+  ]
+}

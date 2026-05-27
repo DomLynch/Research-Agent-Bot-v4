@@ -1,0 +1,178 @@
+{
+  "topic": "metabolomic_age_clocks",
+  "snapshot_utc": "2026-05-27T06-52-53Z",
+  "claim_count": 19,
+  "claims": [
+    {
+      "claim_text": "biobanks in China (n = 3,977) and Finland (n = 1,990), the proteomic age clock showed similar age prediction accuracy (Pearson r = 0.92 and r = 0.94, respectively)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-024-03164-7"
+      ]
+    },
+    {
+      "claim_text": "In a validation study involving biobanks in China (n = 3,977) and Finland (n = 1,990), the proteomic age clock showed similar age prediction accuracy (Pearson r = 0.92 and r = 0.94, respectively)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-024-03164-7"
+      ]
+    },
+    {
+      "claim_text": "proteomic aging was associated with the incidence of 18 major chronic diseases, as well as with multimorbidity and all-cause mortality risk",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-024-03164-7"
+      ]
+    },
+    {
+      "claim_text": "We identified 204 proteins that accurately predict chronological age (Pearson r = 0.94)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-024-03164-7"
+      ]
+    },
+    {
+      "claim_text": "Individuals with an older MileAge were frailer, had shorter telomeres, were more likely to suffer from chronic illness, rated their health worse, and had a higher all-cause mortality hazard (HR = 1.51; 95% CI, 1.43 to 1.59; P < 0.001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1126/sciadv.adp3743"
+      ]
+    },
+    {
+      "claim_text": "16 factors representing pulmonary function, body composition, socioeconomic status, dietary quality, smoking status, alcohol intake, and disease status showed quantitatively stronger associations.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1002/advs.202406670"
+      ]
+    },
+    {
+      "claim_text": "the average lifespan of Clock-/- mice is reduced by 15% compared with wild type mice",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18632/aging.100241"
+      ]
+    },
+    {
+      "claim_text": "maximum lifespan is reduced by more than 20%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18632/aging.100241"
+      ]
+    },
+    {
+      "claim_text": "an ultra-predictive aging clock comprised of 491 protein entries with Pearson correlation 0.98 in the learning set and 0.96 in the test set",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13256"
+      ]
+    },
+    {
+      "claim_text": "we found robust associations between SES measures in adulthood and the GrimAge and DunedinPoAm clocks (Bonferroni-corrected p-value < 0.01).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1080/15592294.2021.1939479"
+      ]
+    },
+    {
+      "claim_text": "Our clock model placed the SCs at a blood biological age to between 80.43 and 102.67 years.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1126/sciadv.abq7599"
+      ]
+    },
+    {
+      "claim_text": "These predictive models estimate mammalian tissue age with high accuracy (r > 0.96)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s43587-023-00462-6"
+      ]
+    },
+    {
+      "claim_text": "we then were able to blindly identify hypoxic animals correctly 84% of the time compared to nonhypoxic controls.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1371/journal.pone.0065035"
+      ]
+    },
+    {
+      "claim_text": "severe COVID-19 infection can slow the acceleration of the epigenetic clock 'GrimAge' (beta = -0.24, se = 0.07, P = 0.00122)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fmed.2022.989950"
+      ]
+    },
+    {
+      "claim_text": "longitudinal increases in gravidity were linked to accelerated epigenetic aging in two epigenetic clocks (n = 331).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1073/pnas.2317290121"
+      ]
+    },
+    {
+      "claim_text": "The untargeted metabolomics identified 164 and 158 differential metabolites in 0.03 and 0.3 mg/kg·bw·d exposure groups",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2023.107851"
+      ]
+    },
+    {
+      "claim_text": "strong correlations between the epigenetic clocks and individual's chronological age (r > 0.8, p < 0.0001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41467-022-29801-8"
+      ]
+    },
+    {
+      "claim_text": "Significant increases in epigenetic age acceleration were observed in first-generation epigenetic clocks and mitotic clocks at 3 and 6 months",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18632/aging.205581"
+      ]
+    },
+    {
+      "claim_text": "eTRF altered the diurnal patterns in cortisol and the expression of several circadian clock genes (p < 0.05)",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu11061234"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "topic": "hyperbaric_oxygen_HBOT",
+  "snapshot_utc": "2026-05-27T06-49-01Z",
+  "input_pack": {
+    "topic": "hyperbaric_oxygen_HBOT",
+    "a_core_count": 0,
+    "b_context_count": 0,
+    "excluded_counts": {
+      "C_noise": 14,
+      "D_bad_extraction": 5
+    },
+    "has_minimum_a_core": false,
+    "a_core_min": 3
+  },
+  "audits": []
+}

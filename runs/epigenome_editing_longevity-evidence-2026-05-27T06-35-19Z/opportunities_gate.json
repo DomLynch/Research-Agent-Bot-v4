@@ -1,0 +1,16 @@
+{
+  "topic": "epigenome_editing_longevity",
+  "snapshot_utc": "2026-05-27T06-35-19Z",
+  "input_pack": {
+    "topic": "epigenome_editing_longevity",
+    "a_core_count": 0,
+    "b_context_count": 0,
+    "excluded_counts": {
+      "C_noise": 7,
+      "D_bad_extraction": 5
+    },
+    "has_minimum_a_core": false,
+    "a_core_min": 3
+  },
+  "audits": []
+}

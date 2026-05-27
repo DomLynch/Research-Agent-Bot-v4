@@ -1,0 +1,349 @@
+{
+  "topic": "autophagy",
+  "snapshot_utc": "2026-05-26T18-36-02Z",
+  "claim_count": 38,
+  "claims": [
+    {
+      "claim_text": "The 5-year survival rate is less than 10%, even in developed countries such as the USA.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1016/j.phrs.2023.106822"
+      ]
+    },
+    {
+      "claim_text": "autophagy plays a positive role for attenuating CuSO4-induced testicular damage and spermatogenesis disorder.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.redox.2021.102227"
+      ]
+    },
+    {
+      "claim_text": "ATO promoted autophagy in the aorta of ApoE-/- mice and reduced atherosclerotic lesions in early AS",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41419-020-03357-1"
+      ]
+    },
+    {
+      "claim_text": "We identified miR-155 as a mediator of alcohol-related regulation of autophagy and exosome production in hepatocytes and macrophages.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/hep.30766"
+      ]
+    },
+    {
+      "claim_text": "HIF-1α-induced expression of m6A reader YTHDF1 drives hypoxia-induced autophagy and malignancy of hepatocellular carcinoma by promoting ATG2A and ATG14 translation",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41392-020-00453-8"
+      ]
+    },
+    {
+      "claim_text": "PolyI:C into the cytoplasm, or Sendai virus infection, significantly induced autophagy in normal cells but not in RIG-I-deficient cells.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fimmu.2018.02096"
+      ]
+    },
+    {
+      "claim_text": "Berberine represses human gastric cancer cell growth in vitro and in vivo by inducing cytostatic autophagy via inhibition of MAPK/mTOR/p70S6K and Akt signaling pathways",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.biopha.2020.110245"
+      ]
+    },
+    {
+      "claim_text": "inhibition of autophagy could suppress CuSO4-induced ferroptosis in in vivo and vitro.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.redox.2021.102227"
+      ]
+    },
+    {
+      "claim_text": "Inhibition of autophagy could decrease cell viability, and enhance the ROS accumulation and apoptosis in the GC-1 cells.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.redox.2021.102227"
+      ]
+    },
+    {
+      "claim_text": "oxidative stress inhibitor (NAC) attenuated CuSO4-induced autophagy in vivo and vitro, reversing the activation for AMPK-mTOR pathway.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.redox.2021.102227"
+      ]
+    },
+    {
+      "claim_text": "co-treatment with the apoptosis inhibitor (Z-VAD-FMK) could decrease the spermatogenesis disorder but not influence autophagy.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.redox.2021.102227"
+      ]
+    },
+    {
+      "claim_text": "CuSO4 could induce autophagy via AMPK-mTOR pathway that downregulated p-mTOR/mTOR and subsequently upregulated p-AMPKα/AMPKα as well as p-ULK1/ULK1.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.redox.2021.102227"
+      ]
+    },
+    {
+      "claim_text": "ATO triggered the nuclear translocation of TFEB, which in turn promoted autophagy and autophagosome-lysosome fusion",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41419-020-03357-1"
+      ]
+    },
+    {
+      "claim_text": "ATO-induced activation of autophagy was an earlier event than ATO-induced inhibition of the expression of apoptosis markers",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41419-020-03357-1"
+      ]
+    },
+    {
+      "claim_text": "PI3K inhibitor (LY294002) and mTOR inhibitor (rapamycin) cooperated with ATO to induce autophagy",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41419-020-03357-1"
+      ]
+    },
+    {
+      "claim_text": "Autophagy-activated Schwann cells promote PNI through enhanced migration and axon guidance toward PanCa cells and increased chemoattraction",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1186/s13046-021-02198-w"
+      ]
+    },
+    {
+      "claim_text": "alcohol disrupted autophagy function at the lysosomal level through decreased LAMP1 and LAMP2 in livers with ALD.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/hep.30766"
+      ]
+    },
+    {
+      "claim_text": "We found impaired autophagy both in ALD and alcoholic hepatitis (AH) mouse models and human livers with ALD as indicated by increased hepatic p62 and LC3-II levels.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/hep.30766"
+      ]
+    },
+    {
+      "claim_text": "Alcohol reduced autophagy flux in vivo in chloroquine-treated mice as well as in vitro in hepatocytes and macrophages treated with bafilomycin A.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/hep.30766"
+      ]
+    },
+    {
+      "claim_text": "miR-155-deficient mice were protected from alcohol-induced disruption of autophagy and showed attenuated exosome production.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/hep.30766"
+      ]
+    },
+    {
+      "claim_text": "Ablation of Atg7 from kidney proximal tubules led to autophagy deficiency and worse renal hypertrophy, tubular damage, inflammation, fibrosis, and albuminuria in diabetic mice",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1172/jci135536"
+      ]
+    },
+    {
+      "claim_text": "blockade of p53 attenuated miR-214 induction in DKD, leading to higher levels of ULK1 and autophagy, accompanied by an amelioration of DKD",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1172/jci135536"
+      ]
+    },
+    {
+      "claim_text": "renal biopsies from patients with diabetes showed induction of p53 and miR-214, associated with downregulation of ULK1 and autophagy",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1172/jci135536"
+      ]
+    },
+    {
+      "claim_text": "Ablation of miR-214 from kidney proximal tubules prevented a decrease in ULK1 expression and autophagy impairment in diabetic kidneys, resulting in less renal hypertrophy and albuminuria",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1172/jci135536"
+      ]
+    },
+    {
+      "claim_text": "YTHDF1 deficiency inhibited HCC autophagy, growth, and metastasis.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41392-020-00453-8"
+      ]
+    },
+    {
+      "claim_text": "YTHDF1 contributed to the translation of autophagy-related genes ATG2A and ATG14 by binding to m6A-modified ATG2A and ATG14 mRNA.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41392-020-00453-8"
+      ]
+    },
+    {
+      "claim_text": "PolyI:C transfection or Sendai virus infection induced autophagy in the cells lacking type-I interferon signaling.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fimmu.2018.02096"
+      ]
+    },
+    {
+      "claim_text": "RIG-I-mediated autophagy diminished by the deficiency of mitochondrial antiviral signaling protein (MAVS) or TRAF6.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fimmu.2018.02096"
+      ]
+    },
+    {
+      "claim_text": "In xenografts, the berberine induced autophagy leads to suppression of tumor proliferation with no side-effect.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.biopha.2020.110245"
+      ]
+    },
+    {
+      "claim_text": "Berberine triggered cell autophagy, demonstrated by monodansylcadaverine staining, GFP-LC3, LC3-II, Beclin-1, p-ULK1 promotion, and p62 degradation.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.biopha.2020.110245"
+      ]
+    },
+    {
+      "claim_text": "Autophagy can degrade MHC-I to mediate immune evasion and also regulates polarization of macrophages in the tumor microenvironment.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.phrs.2023.106822"
+      ]
+    },
+    {
+      "claim_text": "Protective autophagy stimulates drug resistance and gemcitabine resistance in PC cells, and its inhibition can enhance radiosensitivity.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.phrs.2023.106822"
+      ]
+    },
+    {
+      "claim_text": "Starvation and hypoxia can stimulate glycolysis, and glycolysis induction can be mediated by autophagy in enhancing tumorigenesis in PC.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.phrs.2023.106822"
+      ]
+    },
+    {
+      "claim_text": "Supportive autophagy in PC escalates the growth rate of PC cells and its suppression can mediate cell death.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.phrs.2023.106822"
+      ]
+    },
+    {
+      "claim_text": "Autophagy determines the metastasis of PC cells, and it can control the EMT in affecting migration.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.phrs.2023.106822"
+      ]
+    },
+    {
+      "claim_text": "The induction of autophagy by the RIG-I pathway might also contribute to preventing an excessive interferon response as a negative-feedback mechanism.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fimmu.2018.02096"
+      ]
+    },
+    {
+      "claim_text": "Exposing fibroblasts to ROS scavengers decreased ROS production during SS, inhibited autophagy, and significantly reduced the expression of senescence and myofibroblast differentiation markers.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1080/15548627.2020.1713640"
+      ]
+    },
+    {
+      "claim_text": "Modulation of autophagy activity is provided by silibinin, ursolic acid, chrysin and huaier in the treatment of PC.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1016/j.phrs.2023.106822"
+      ]
+    }
+  ]
+}

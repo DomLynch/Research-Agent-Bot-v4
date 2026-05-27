@@ -1,0 +1,367 @@
+{
+  "topic": "organ_specific_aging_clocks",
+  "snapshot_utc": "2026-05-26T19-34-21Z",
+  "claim_count": 40,
+  "claims": [
+    {
+      "claim_text": "32.8% of which occurred in 4 Ohio Valley states.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1001/jama.2019.16932"
+      ]
+    },
+    {
+      "claim_text": "The largest relative increases in midlife mortality rates occurred in New England (New Hampshire, 23.3%; Maine, 20.7%; Vermont, 19.9%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1001/jama.2019.16932"
+      ]
+    },
+    {
+      "claim_text": "Accrual of aged organs progressively increased mortality risk (2-4 aged organs, HR = 2.3; 5-7 aged organs, HR = 4.5; 8+ aged organs, HR = 8.3)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-025-03798-1"
+      ]
+    },
+    {
+      "claim_text": "Accelerated organ aging confers 20-50% higher mortality risk",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41586-023-06802-1"
+      ]
+    },
+    {
+      "claim_text": "1.7% are multi-organ agers",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1038/s41586-023-06802-1"
+      ]
+    },
+    {
+      "claim_text": "nearly 20% of the population show strongly accelerated age in one organ",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1038/s41586-023-06802-1"
+      ]
+    },
+    {
+      "claim_text": "5-7 aged organs, HR = 4.5",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-025-03798-1"
+      ]
+    },
+    {
+      "claim_text": "multiple organ metastasis had a higher mortality rate (67.4%) compared to single organ metastasis (51.2%, p < 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/cancers13071625"
+      ]
+    },
+    {
+      "claim_text": "a youthful brain (HR = 0.26) provided protection that was similar to carrying two copies of APOE2",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-025-03798-1"
+      ]
+    },
+    {
+      "claim_text": "youthful brain, HR = 0.60 for mortality risk",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-025-03798-1"
+      ]
+    },
+    {
+      "claim_text": "youthful brains and immune systems were uniquely associated with longevity (youthful both, HR = 0.44)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-025-03798-1"
+      ]
+    },
+    {
+      "claim_text": "youthful immune system, HR = 0.58",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-025-03798-1"
+      ]
+    },
+    {
+      "claim_text": "having an especially aged brain posed a risk of Alzheimer's disease (hazard ratio (HR) = 3.1)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-025-03798-1"
+      ]
+    },
+    {
+      "claim_text": "multiple organ involvement (HR = 5.08, 95% CI = 1.21-21.30, p = 0.013)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/cancers13071625"
+      ]
+    },
+    {
+      "claim_text": "The mean absorbed organ doses were 0.72 ± 0.21 Gy/GBq for the kidneys",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2967/jnumed.116.178483"
+      ]
+    },
+    {
+      "claim_text": "Absorbed organ doses were relatively constant among the 4 different cycles.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2967/jnumed.116.178483"
+      ]
+    },
+    {
+      "claim_text": "with a mortality of 40% (2/5) for both types of inoculated piglets during a 28-day observation period postinoculation.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1128/jvi.02045-18"
+      ]
+    },
+    {
+      "claim_text": "cause-specific out-of-hospital mortality related to neoplasms (76.7%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1371/journal.pone.0248995"
+      ]
+    },
+    {
+      "claim_text": "Between mid-2015 and Jan 30, 2016, 4783 suspected cases of microcephaly were reported.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/s0140-6736(16)00273-7"
+      ]
+    },
+    {
+      "claim_text": "brain abnormalities were detected by imaging in 387 babies",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/s0140-6736(16)00273-7"
+      ]
+    },
+    {
+      "claim_text": "Zika virus was detected in 17 babies, including in two fetal losses.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/s0140-6736(16)00273-7"
+      ]
+    },
+    {
+      "claim_text": "Before 2015, the annual numbers of reported cases of microcephaly in Brazil were consistently below 200.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1016/s0140-6736(16)00273-7"
+      ]
+    },
+    {
+      "claim_text": "individuals with accelerated heart aging have a 250% increased heart failure risk",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41586-023-06802-1"
+      ]
+    },
+    {
+      "claim_text": "at least 30 mL/kg of IV crystalloid fluid should be given within the first 3 hr of resuscitation",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1097/ccm.0000000000005337"
+      ]
+    },
+    {
+      "claim_text": "we recommend an initial target mean arterial pressure (MAP) of 65 mm Hg over higher MAP targets",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1097/ccm.0000000000005337"
+      ]
+    },
+    {
+      "claim_text": "licensed doses are 0.2 mg/kg per every other week and 1.0 mg/kg per every other week",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.2215/cjn.09480819"
+      ]
+    },
+    {
+      "claim_text": "only 25 of 105 patients survived until the age of 50",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.2215/cjn.09480819"
+      ]
+    },
+    {
+      "claim_text": "peaking in 2012 with 13 publications",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3835/plantgenome2013.03.0001in"
+      ]
+    },
+    {
+      "claim_text": "onset of first symptoms in females is generally 5–10 years later than in males.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "duration",
+      "supporting_study_ids": [
+        "10.1681/asn.2018030329"
+      ]
+    },
+    {
+      "claim_text": "More than 900 GLA mutations have been identified",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1681/asn.2018030329"
+      ]
+    },
+    {
+      "claim_text": "GLA deficiency of <5% of wild-type activity in leukocytes",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1681/asn.2018030329"
+      ]
+    },
+    {
+      "claim_text": "male gender (HR = 1.90, 95% CI = 1.40-2.57, p = 0.009)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/cancers13071625"
+      ]
+    },
+    {
+      "claim_text": "higher tumor grade (HR = 4.76, 95% CI = 3.93-5.76, p < 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/cancers13071625"
+      ]
+    },
+    {
+      "claim_text": "brain metastasis (HR = 4.21, 95% CI = 2.20-8.07, p = 0.010)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/cancers13071625"
+      ]
+    },
+    {
+      "claim_text": "a cumulative activity of 40 GBq of 177Lu-PSMA I&T appears to be safe and justifiable.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.2967/jnumed.116.178483"
+      ]
+    },
+    {
+      "claim_text": "SUVs from pretherapeutic PET moderately correlated with absorbed dose (r = 0.44, P < 0.001 for SUVmax)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2967/jnumed.116.178483"
+      ]
+    },
+    {
+      "claim_text": "for DDKs from donors after both cardiac death (22% vs. 31%) and brain death (20% vs. 23%)",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1016/j.ekir.2023.02.1081"
+      ]
+    },
+    {
+      "claim_text": "DDK discard has increased across all adult donor age groups (18–60 years: 16% vs. 21%; ≥60 years: 54% vs. 60%)",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1016/j.ekir.2023.02.1081"
+      ]
+    },
+    {
+      "claim_text": "among DDKs with medium (18% vs. 22%) and high kidney donor profile index (64% vs. 68%)",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1016/j.ekir.2023.02.1081"
+      ]
+    },
+    {
+      "claim_text": "would result in 967 and 805 fewer transplants occurring in 2019 and 2020, respectively",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.ekir.2023.02.1081"
+      ]
+    }
+  ]
+}

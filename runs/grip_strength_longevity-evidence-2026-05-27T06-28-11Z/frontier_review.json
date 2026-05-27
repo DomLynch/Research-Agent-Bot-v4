@@ -1,0 +1,29 @@
+{
+  "topic": "grip_strength_longevity",
+  "snapshot_utc": "2026-05-27T06-28-11Z",
+  "model": "mimo-v2.5-pro",
+  "lens": "The evidence pool contains no A/B-bound facts, precluding the formulation of specific, citable theses for a publishable paper. The ALPHA HINTS suggest directions such as investigating the paradox of obesity in sarcopenia assessment or sex-specific treatment effects, but these require primary data extraction to become evidence-based.",
+  "known_to_ignore": [
+    "Grip strength is inversely associated with mortality risk",
+    "Low handgrip strength is a biomarker for frailty and poor health outcomes"
+  ],
+  "tensions": [
+    "Obesity shows protective associations for probable sarcopenia when using grip strength alone (hint), but may conflict with other sarcopenia measures like muscle mass",
+    "Sex differences modulate handgrip strength response to interventions (hint), yet evidence on longevity impacts is sparse"
+  ],
+  "gaps": [
+    "Dose-response relationships between grip strength improvements and longevity markers in randomized trials, particularly with whey supplementation",
+    "Longitudinal studies on grip strength and functional decline (e.g., ADL, dysphagia) in underrepresented groups like dialysis patients"
+  ],
+  "theses": [],
+  "reviewer_objections": [
+    "Lack of direct, citable evidence from controlled studies limits meta-analytic potential",
+    "Heterogeneity in grip strength protocols (e.g., measurement devices, cut-offs) across observational studies introduces bias"
+  ],
+  "next_extractions": [
+    "Dialysis populations and prevalence of low muscle strength with grip strength cutoffs",
+    "Resistance training trials measuring handgrip strength changes and associated functional outcomes like SPPB",
+    "Data on sex-stratified effects of supplementation doses on handgrip strength in older adults"
+  ],
+  "raw_response": "{\n  \"lens\": \"The evidence pool contains no A/B-bound facts, precluding the formulation of specific, citable theses for a publishable paper. The ALPHA HINTS suggest directions such as investigating the paradox of obesity in sarcopenia assessment or sex-specific treatment effects, but these require primary data extraction to become evidence-based.\",\n  \"known_to_ignore\": [\"Grip strength is inversely associated with mortality risk\", \"Low handgrip strength is a biomarker for frailty and poor health outcomes\"],\n  \"tensions\": [\"Obesity shows protective associations for probable sarcopenia when using grip strength alone (hint), but may conflict with other sarcopenia measures like muscle mass\", \"Sex differences modulate handgrip strength response to interventions (hint), yet evidence on longevity impacts is sparse\"],\n  \"gaps\": [\"Dose-response relationships between grip strength improvements and longevity markers in randomized trials, particularly with whey supplementation\", \"Longitudinal studies on grip strength and functional decline (e.g., ADL, dysphagia) in underrepresented groups like dialysis patients\"],\n  \"theses\": [],\n  \"reviewer_objections\": [\"Lack of direct, citable evidence from controlled studies limits meta-analytic potential\", \"Heterogeneity in grip strength protocols (e.g., measurement devices, cut-offs) across observational studies introduces bias\"],\n  \"next_extractions\": [\"Dialysis populations and prevalence of low muscle strength with grip strength cutoffs\", \"Resistance training trials measuring handgrip strength changes and associated functional outcomes like SPPB\", \"Data on sex-stratified effects of supplementation doses on handgrip strength in older adults\"]\n}"
+}

@@ -1,0 +1,70 @@
+{
+  "topic": "therapeutic_plasma_exchange",
+  "snapshot_utc": "2026-05-26T19-50-19Z",
+  "claim_count": 7,
+  "claims": [
+    {
+      "claim_text": "Plasma %p-tau217 was clinically equivalent to FDA-approved CSF tests in classifying Aβ PET status, with AUC between 0.95 and 0.97.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-024-02869-z"
+      ]
+    },
+    {
+      "claim_text": "Plasma %p-tau217 was generally superior to CSF tests in classification of tau-PET with AUCs of 0.95-0.98.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-024-02869-z"
+      ]
+    },
+    {
+      "claim_text": "plasma %p-tau217 had an accuracy, a positive predictive value and a negative predictive value of 89-90% for Aβ PET",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1038/s41591-024-02869-z"
+      ]
+    },
+    {
+      "claim_text": "accuracy, a positive predictive value and a negative predictive value of 87-88% for tau PET status",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1038/s41591-024-02869-z"
+      ]
+    },
+    {
+      "claim_text": "a 33.3% reduction in the median number of therapeutic plasma exchange days (5.0 vs 7.5 days) vs placebo.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1182/bloodadvances.2020001834"
+      ]
+    },
+    {
+      "claim_text": "further improving to 95% using a two-cutoffs approach.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1038/s41591-024-02869-z"
+      ]
+    },
+    {
+      "claim_text": "Patients who fail medical therapy should be treated with therapeutic plasma exchange or thyroidectomy.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1177/0885066613498053"
+      ]
+    }
+  ]
+}

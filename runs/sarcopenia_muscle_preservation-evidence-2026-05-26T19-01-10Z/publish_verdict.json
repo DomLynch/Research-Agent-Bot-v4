@@ -1,0 +1,127 @@
+{
+  "run_dir": "runs/sarcopenia_muscle_preservation-evidence-2026-05-26T19-01-10Z",
+  "topic": "sarcopenia_muscle_preservation",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 sarcopenia_muscle_preservation",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 0,
+    "available_source_contexts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 0.644,
+    "source_count": 18,
+    "clusters": [
+      {
+        "label": "kidney_systematic_meta",
+        "member_fact_ids": [
+          "136705",
+          "136702",
+          "136700",
+          "136698",
+          "136699",
+          "136701",
+          "136703",
+          "136704"
+        ],
+        "source_paper": {
+          "doi": "10.1002/jcsm.13425",
+          "title": "Prevalence of sarcopenia in patients with chronic kidney disease: a global systematic review and meta\u2010analysis",
+          "journal": "Journal of Cachexia Sarcopenia and Muscle",
+          "year": 2024
+        },
+        "example_phrase": "Prevalence was higher in dialysis (50.0%) compared to non-dialysis (19.6%; P<0.01) for low muscle strength"
+      },
+      {
+        "label": "dilution_humans_measurement",
+        "member_fact_ids": [
+          "81582",
+          "81580",
+          "81579",
+          "81583"
+        ],
+        "source_paper": {
+          "doi": "10.1002/jcsm.13083",
+          "title": "D<sub>3</sub>\u2010creatine dilution for skeletal muscle mass measurement: historical development and current status",
+          "journal": "Journal of Cachexia Sarcopenia and Muscle",
+          "year": 2022
+        },
+        "example_phrase": "Not all tracer is distributed in skeletal muscle with non-muscle creatine sources ranging from 2% to 10%"
+      },
+      {
+        "label": "systematic_meta_diagnosis",
+        "member_fact_ids": [
+          "144531",
+          "144526",
+          "144525",
+          "144527"
+        ],
+        "source_paper": {
+          "doi": "10.1002/jcsm.12890",
+          "title": "Diagnosis, prevalence, and mortality of sarcopenia in dialysis patients: a systematic review and meta\u2010analysis",
+          "journal": "Journal of Cachexia Sarcopenia and Muscle",
+          "year": 2022
+        },
+        "example_phrase": "sarcopenia prevalence could not be affected by average age [regression coefficient 0.004 (95% CI: -0.005 to 0.012), P = 0.406]"
+      },
+      {
+        "label": "prevalence_metabolism_consequences",
+        "member_fact_ids": [
+          "137326",
+          "137325",
+          "137324"
+        ],
+        "source_paper": {
+          "doi": "10.1016/j.metabol.2023.155533",
+          "title": "Epidemiology of sarcopenia: Prevalence, risk factors, and consequences",
+          "journal": "Metabolism",
+          "year": 2023
+        },
+        "example_phrase": "The prevalence of sarcopenia ranged from 18 % in diabetic patients to 66 % in patients with unresectable esophageal cancer."
+      },
+      {
+        "label": "impact_systematic_meta",
+        "member_fact_ids": [
+          "81541",
+          "81544",
+          "81543"
+        ],
+        "source_paper": {
+          "doi": "10.1002/jcsm.12600",
+          "title": "Diagnosis, prevalence, and clinical impact of sarcopenia in COPD: a systematic review and meta\u2010analysis",
+          "journal": "Journal of Cachexia Sarcopenia and Muscle",
+          "year": 2020
+        },
+        "example_phrase": "Overall sarcopenia prevalence was 34% (95%CI 20.6-47.3) using muscle mass criteria alone."
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

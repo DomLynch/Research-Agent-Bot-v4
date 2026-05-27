@@ -1,0 +1,106 @@
+{
+  "topic": "aspirin_geroprotection",
+  "snapshot_utc": "2026-05-27T05-34-57Z",
+  "claim_count": 11,
+  "claims": [
+    {
+      "claim_text": "Daily aspirin 81 mg or 1000 mg, or placebo, added to the first 60 days of anti-tuberculosis drugs and dexamethasone.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.7554/elife.33478"
+      ]
+    },
+    {
+      "claim_text": "Subgroup analysis in microbiologically confirmed TBM showed potential reduction in new infarcts and deaths by day 60 (p=0.06).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.7554/elife.33478"
+      ]
+    },
+    {
+      "claim_text": "aspirin reduced the occurrence of any adenoma by 17%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-11-0391"
+      ]
+    },
+    {
+      "claim_text": "daily aspirin treatment for about five years was associated with a 34% reduction in 20-year CRC mortality",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-11-0391"
+      ]
+    },
+    {
+      "claim_text": "aspirin reduced the occurrence of advanced adenomas by 28%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-11-0391"
+      ]
+    },
+    {
+      "claim_text": "there was a 50% or more reduction in the risk of CRC commencing five years after randomization",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1940-6207.capr-11-0391"
+      ]
+    },
+    {
+      "claim_text": "Major and clinically relevant nonmajor bleeding: hazard ratio 0.68 (95% CI 0.22-2.16) for apixaban vs aspirin.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.1056/evidoa2300235"
+      ]
+    },
+    {
+      "claim_text": "Serious adverse event rates: 43.9 per 100 person-years apixaban vs 45.7 aspirin.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.1056/evidoa2300235"
+      ]
+    },
+    {
+      "claim_text": "New ischemic lesions: 13.6% apixaban vs 16.0% aspirin, adjusted odds ratio 0.79 (95% CI 0.42-1.48, P=0.57).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1056/evidoa2300235"
+      ]
+    },
+    {
+      "claim_text": "patients that were taking aspirin had a 21% reduction in prostate cancer risk",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/cancers12102984"
+      ]
+    },
+    {
+      "claim_text": "long-term users of daily low dose aspirin had a 29% prostate cancer risk reduction as compared to the controls",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/cancers12102984"
+      ]
+    }
+  ]
+}

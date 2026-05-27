@@ -1,0 +1,88 @@
+{
+  "topic": "extracellular_matrix_stiffening",
+  "snapshot_utc": "2026-05-26T18-50-25Z",
+  "claim_count": 9,
+  "claims": [
+    {
+      "claim_text": "proteomic aging was associated with the incidence of 18 major chronic diseases, as well as with multimorbidity and all-cause mortality risk",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-024-03164-7"
+      ]
+    },
+    {
+      "claim_text": "We identified 204 proteins that accurately predict chronological age (Pearson r = 0.94)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-024-03164-7"
+      ]
+    },
+    {
+      "claim_text": "biobanks in China (n = 3,977) and Finland (n = 1,990), the proteomic age clock showed similar age prediction accuracy (Pearson r = 0.92 and r = 0.94, respectively)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-024-03164-7"
+      ]
+    },
+    {
+      "claim_text": "In a validation study involving biobanks in China (n = 3,977) and Finland (n = 1,990), the proteomic age clock showed similar age prediction accuracy (Pearson r = 0.92 and r = 0.94, respectively)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-024-03164-7"
+      ]
+    },
+    {
+      "claim_text": "Unexpectedly, INS-1E cells at transitions from 3 to 25 mM glucose decreased matrix superoxide release rates",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1089/ars.2019.7800"
+      ]
+    },
+    {
+      "claim_text": "Novel double-channel fluorescence lifetime imaging, approximating free mitochondrial matrix NADHF, indicated its ∼20% decrease",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1089/ars.2019.7800"
+      ]
+    },
+    {
+      "claim_text": "The use of quercetin led to improved lipid imaging, with 212 lipids being successfully imaged from rat brain in a single experiment.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1021/ac401595a"
+      ]
+    },
+    {
+      "claim_text": "83% of International Society for Extracellular Vesicles (ISEV) respondents utilize conditioned cell culture media as their starting material",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1002/jev2.12061"
+      ]
+    },
+    {
+      "claim_text": "reduced deformation from 17.2 mm to 2.2 mm",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.38124//ijisrt/ijisrt24aug130"
+      ]
+    }
+  ]
+}

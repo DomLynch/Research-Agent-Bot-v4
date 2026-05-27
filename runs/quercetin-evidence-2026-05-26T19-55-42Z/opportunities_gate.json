@@ -1,0 +1,16 @@
+{
+  "topic": "quercetin",
+  "snapshot_utc": "2026-05-26T19-55-42Z",
+  "input_pack": {
+    "topic": "quercetin",
+    "a_core_count": 8,
+    "b_context_count": 0,
+    "excluded_counts": {
+      "C_noise": 7,
+      "D_bad_extraction": 21
+    },
+    "has_minimum_a_core": true,
+    "a_core_min": 3
+  },
+  "audits": []
+}

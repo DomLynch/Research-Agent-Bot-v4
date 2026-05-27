@@ -1,0 +1,349 @@
+{
+  "topic": "composite_biomarker_age_panels",
+  "snapshot_utc": "2026-05-27T06-05-12Z",
+  "claim_count": 38,
+  "claims": [
+    {
+      "claim_text": "the early, focal amyloid β PET composite showed a 120% increase in the accumulation rate of amyloid β compared to the global composite",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/braincomms/fcaa007"
+      ]
+    },
+    {
+      "claim_text": "resulting in a 60% increase in the power to detect a treatment effect in a primary prevention trial design",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/braincomms/fcaa007"
+      ]
+    },
+    {
+      "claim_text": "19-protein CSF biomarker panel classifies MCI due to AD with areas under the curve of 0.984",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.xinn.2023.100544"
+      ]
+    },
+    {
+      "claim_text": "8-protein serum biomarker panel classifies MCI due to AD with areas under the curve of 0.881",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.xinn.2023.100544"
+      ]
+    },
+    {
+      "claim_text": "These proteins form a biomarker panel that, along with age, could significantly discriminate between individuals with high and low amyloid pathology with an area under the curve of 0.74.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3233/jad-190434"
+      ]
+    },
+    {
+      "claim_text": "CA-125 with CA 19-9, EGFR, G-CSF, Eotaxin, IL-2R, cVCAM, MIF improved sensitivity to 98.2% in early stage ovarian cancer detection.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.heliyon.2019.e02826"
+      ]
+    },
+    {
+      "claim_text": "P-tau181 (AUC = 0.856) showed strong sensitivity and specificity for AD neuropathological change (ADNC).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s00401-022-02408-5"
+      ]
+    },
+    {
+      "claim_text": "plasma brain-derived tau accurately distinguished autopsy-confirmed Alzheimer’s disease from other neurodegenerative diseases (area under the curve = 86.4%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/brain/awac407"
+      ]
+    },
+    {
+      "claim_text": "Plasma NFL had high diagnostic accuracy for patients with AD with dementia vs controls (area under the receiver operating characteristic curve, 0.87).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1001/jamaneurol.2016.6117"
+      ]
+    },
+    {
+      "claim_text": "Plasma NFL was increased in patients with AD dementia (mean, 51.0 ng/L) compared with controls (mean, 34.7 ng/L) (P < .001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1001/jamaneurol.2016.6117"
+      ]
+    },
+    {
+      "claim_text": "high plasma phosphorylated-tau217 predicted increased tau-PET signals, brain atrophy and worse cognition (P < 0.004)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/brain/awab163"
+      ]
+    },
+    {
+      "claim_text": "SNAP-25 was the strongest predictor of progression to AD dementia in non-demented individuals (hazard ratio = 2.11).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/brain/awae032"
+      ]
+    },
+    {
+      "claim_text": "AUC = 0.85 for AD classifiers",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1371/journal.pone.0244180"
+      ]
+    },
+    {
+      "claim_text": "CA-125 with CA 19-9, EGFR, G-CSF, Eotaxin, IL-2R, cVCAM, MIF improved specificity to 98.7% in early stage ovarian cancer detection.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.heliyon.2019.e02826"
+      ]
+    },
+    {
+      "claim_text": "Clinical information enhanced the performance of plasma biomarkers by 0.21-0.25 units of area under curve for cognitively impaired.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/braincomms/fcab008"
+      ]
+    },
+    {
+      "claim_text": "Clinical information enhanced the performance of plasma biomarkers by 0.06-0.14 units of area under curve for cognitively unimpaired.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/braincomms/fcab008"
+      ]
+    },
+    {
+      "claim_text": "when combined with clinical information, plasma phosphorylated-tau at threonine-181 and neurofilament light biomarkers, and an MRI-score could effectively identify β-amyloid+ cognitively unimpaired and impaired (area under curve, 0.80-0.90).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/braincomms/fcab008"
+      ]
+    },
+    {
+      "claim_text": "further enhancement with an MRI-score yielded an additional improvement of 0.05-0.09 AUC units for cognitively impaired.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/braincomms/fcab008"
+      ]
+    },
+    {
+      "claim_text": "Plasma phosphorylated-tau at threonine-181 detected β-amyloid-positivity only in the cognitively impaired with a moderate area under curve of 0.67",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/braincomms/fcab008"
+      ]
+    },
+    {
+      "claim_text": "further enhancement of these models with an MRI-score of β-amyloid-positivity yielded an additional improvement of 0.04-0.11 units of area under curve for cognitively unimpaired",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/braincomms/fcab008"
+      ]
+    },
+    {
+      "claim_text": "P-tau231 (AUC = 0.773) showed sensitivity and specificity for AD neuropathological change (ADNC).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s00401-022-02408-5"
+      ]
+    },
+    {
+      "claim_text": "Plasma Aβ42/40 was decreased in relation to amyloid and AD pathology, with modest diagnostic accuracy (AUC = 0.601).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s00401-022-02408-5"
+      ]
+    },
+    {
+      "claim_text": "Pasteurellaceae, which was increased in DM and decreased in DR compared with HC, generated a high AUC (0.74) as an individual predictive biomarker",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fcimb.2021.646348"
+      ]
+    },
+    {
+      "claim_text": "14 family biomarkers were associated with fasting blood glucose levels or diabetes, with most of them being negatively correlated",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fcimb.2021.646348"
+      ]
+    },
+    {
+      "claim_text": "a biomarker set of 25 bacterial families, which could distinguish patients in the DR group from those in the DM and HC groups",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fcimb.2021.646348"
+      ]
+    },
+    {
+      "claim_text": "serum brain-derived tau differentiated Alzheimer’s disease from a range of other neurodegenerative disorders, including frontotemporal lobar degeneration and atypical parkinsonian disorders (area under the curve up to 99.6%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/brain/awac407"
+      ]
+    },
+    {
+      "claim_text": "serum and CSF brain-derived tau were significantly correlated (rho = 0.85, P < 0.0001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/brain/awac407"
+      ]
+    },
+    {
+      "claim_text": "Plasma brain-derived tau (rho = 0.52-0.67, P = 0.003), but not neurofilament light (rho = -0.14-0.17, P = 0.501), was associated with global and regional amyloid plaque and neurofibrillary tangle counts.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/brain/awac407"
+      ]
+    },
+    {
+      "claim_text": "serum and CSF total-tau were not (rho = 0.23, P = 0.3364)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/brain/awac407"
+      ]
+    },
+    {
+      "claim_text": "Plasma NFL correlated with CSF NFL (Spearman ρ = 0.59, P < .001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1001/jamaneurol.2016.6117"
+      ]
+    },
+    {
+      "claim_text": "Plasma NFL was increased in patients with MCI (mean, 42.8 ng/L) compared with controls (mean, 34.7 ng/L) (P < .001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1001/jamaneurol.2016.6117"
+      ]
+    },
+    {
+      "claim_text": "people with diffuse malignant Parkinson's disease had the lowest level of cerebrospinal fluid amyloid-β (329.0 ± 96.7 pg/ml, P = 0.006).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/brain/awx118"
+      ]
+    },
+    {
+      "claim_text": "amyloid-β/total-tau ratio (8.2 ± 3.0, P = 0.032).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/brain/awx118"
+      ]
+    },
+    {
+      "claim_text": "SNAP-25 and 14-3-3 zeta/delta also had the strongest associations with tau-PET, amyloid-β-PET and cortical thickness [β(SE) = -0.056(0.0006) to 0.058(0.005), P < 0.0001].",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/brain/awae032"
+      ]
+    },
+    {
+      "claim_text": "NPTX2 showed the strongest associations with subsequent cognitive decline [and mPACC: β(SE) = 0.095(0.024), P ≤ 0.001].",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/brain/awae032"
+      ]
+    },
+    {
+      "claim_text": "SNAP-25, 14-3-3 zeta/delta, β-synuclein, and neurogranin exhibited the highest discriminatory accuracy (areas under the curve = 0.81-0.93).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/brain/awae032"
+      ]
+    },
+    {
+      "claim_text": "NPTX2 showed the strongest associations with subsequent cognitive decline [longitudinal Mini-Mental State Examination: β(SE) = 0.57(0.1), P ≤ 0.0001].",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/brain/awae032"
+      ]
+    },
+    {
+      "claim_text": "AUC = 0.6 for MCI classifiers",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1371/journal.pone.0244180"
+      ]
+    }
+  ]
+}

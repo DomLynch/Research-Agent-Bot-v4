@@ -1,0 +1,202 @@
+{
+  "cycle_ts": "2026-05-27T05-30-00Z",
+  "top_requested": 20,
+  "cooldown_hours": 24.0,
+  "ran": [
+    {
+      "topic": "rapamycin",
+      "velocity": 2.262,
+      "status": "ran",
+      "run_dir": "runs/rapamycin-evidence-2026-05-27T05-30-47Z",
+      "signal_label": "evidence_backed_signal",
+      "notes": ""
+    },
+    {
+      "topic": "metformin",
+      "velocity": 2.125,
+      "status": "ran",
+      "run_dir": "runs/metformin-evidence-2026-05-27T05-32-33Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "aspirin_geroprotection",
+      "velocity": 1.955,
+      "status": "ran",
+      "run_dir": "runs/aspirin_geroprotection-evidence-2026-05-27T05-34-57Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "allostatic_load",
+      "velocity": 1.916,
+      "status": "ran",
+      "run_dir": "runs/allostatic_load-evidence-2026-05-27T05-36-12Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "sirtuin",
+      "velocity": 1.902,
+      "status": "ran",
+      "run_dir": "runs/sirtuin-evidence-2026-05-27T05-38-15Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "plasma_proteomic_age_clocks",
+      "velocity": 1.887,
+      "status": "ran",
+      "run_dir": "runs/plasma_proteomic_age_clocks-evidence-2026-05-27T05-39-41Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "senolytic",
+      "velocity": 1.824,
+      "status": "ran",
+      "run_dir": "runs/senolytic-evidence-2026-05-27T05-41-34Z",
+      "signal_label": "evidence_backed_signal",
+      "notes": ""
+    },
+    {
+      "topic": "bempedoic_acid_longevity",
+      "velocity": 1.809,
+      "status": "ran",
+      "run_dir": "runs/bempedoic_acid_longevity-evidence-2026-05-27T05-43-34Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "young_plasma_parabiosis",
+      "velocity": 1.778,
+      "status": "ran",
+      "run_dir": "runs/young_plasma_parabiosis-evidence-2026-05-27T05-45-45Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "immunosenescence",
+      "velocity": 1.727,
+      "status": "ran",
+      "run_dir": "runs/immunosenescence-evidence-2026-05-27T05-47-44Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "exosomes_extracellular_vesicles",
+      "velocity": 1.725,
+      "status": "ran",
+      "run_dir": "runs/exosomes_extracellular_vesicles-evidence-2026-05-27T05-49-27Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "fasting",
+      "velocity": 1.723,
+      "status": "ran",
+      "run_dir": "runs/fasting-evidence-2026-05-27T05-51-53Z",
+      "signal_label": "frontier_hypothesis",
+      "notes": ""
+    },
+    {
+      "topic": "EGCG_green_tea_longevity",
+      "velocity": 1.65,
+      "status": "ran",
+      "run_dir": "runs/EGCG_green_tea_longevity-evidence-2026-05-27T05-55-01Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "hydrogen_water",
+      "velocity": 1.632,
+      "status": "ran",
+      "run_dir": "runs/hydrogen_water-evidence-2026-05-27T05-56-23Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "microbiome_longevity",
+      "velocity": 1.628,
+      "status": "ran",
+      "run_dir": "runs/microbiome_longevity-evidence-2026-05-27T05-58-24Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "cellular_reprogramming_safety",
+      "velocity": 1.596,
+      "status": "ran",
+      "run_dir": "runs/cellular_reprogramming_safety-evidence-2026-05-27T06-00-39Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "NAD",
+      "velocity": 1.595,
+      "status": "ran",
+      "run_dir": "runs/NAD-evidence-2026-05-27T06-03-03Z",
+      "signal_label": "frontier_hypothesis",
+      "notes": ""
+    },
+    {
+      "topic": "composite_biomarker_age_panels",
+      "velocity": 1.579,
+      "status": "ran",
+      "run_dir": "runs/composite_biomarker_age_panels-evidence-2026-05-27T06-05-12Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "inflammaging",
+      "velocity": 1.54,
+      "status": "ran",
+      "run_dir": "runs/inflammaging-evidence-2026-05-27T06-07-09Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    },
+    {
+      "topic": "glycomic_age_clocks",
+      "velocity": 1.538,
+      "status": "ran",
+      "run_dir": "runs/glycomic_age_clocks-evidence-2026-05-27T06-08-42Z",
+      "signal_label": "no_signal",
+      "notes": ""
+    }
+  ],
+  "skipped_in_cooldown": [
+    "autophagy",
+    "brain_age_MRI",
+    "NAD_IV_therapy",
+    "sauna_heat_therapy",
+    "mtor",
+    "extracellular_matrix_stiffening",
+    "low_dose_lithium",
+    "low_dose_naltrexone_inflammation",
+    "mitochondrial_DNA_damage",
+    "sarcopenia_muscle_preservation",
+    "immune_age",
+    "carnosine_anti_glycation",
+    "plant_based_diet_biological_age",
+    "vitamin_K2_vascular_aging",
+    "melatonin_aging",
+    "digital_frailty_index",
+    "sleep_architecture_deep_sleep",
+    "telomere",
+    "stem_cell_exhaustion",
+    "longevity",
+    "HRV_autonomic_aging",
+    "ergothioneine",
+    "organ_specific_aging_clocks",
+    "vascular_age",
+    "blue_zones_diet_lifestyle",
+    "retatrutide_triple_agonists",
+    "therapeutic_plasma_exchange",
+    "mitochondrial_peptides",
+    "exercise",
+    "quercetin",
+    "vitamin_D_healthspan"
+  ],
+  "cross_topic_memo": "runs/_curator_cycles/2026-05-27T05-30-00Z_cross_topic_alpha_memo.md",
+  "publish_queue": "runs/_publish_queue.json"
+}

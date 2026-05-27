@@ -1,0 +1,178 @@
+{
+  "topic": "mtor",
+  "snapshot_utc": "2026-05-26T18-45-19Z",
+  "claim_count": 19,
+  "claims": [
+    {
+      "claim_text": "Targeted sequencing revealed TSC1 mutations in about 8% of 109 additional bladder cancers examined.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1126/science.1226344"
+      ]
+    },
+    {
+      "claim_text": "RAD001 improved influenza vaccine response by ~20% in the elderly",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1126/scitranslmed.3009892"
+      ]
+    },
+    {
+      "claim_text": "for combination of anti-estrogenic treatment with mammalian target of rapamycin (mTOR) inhibitors 14-31%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fonc.2019.00359"
+      ]
+    },
+    {
+      "claim_text": "only protein in excess of ~25 g per meal induces mTOR activation and functional effects",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1038/s42255-024-00984-2"
+      ]
+    },
+    {
+      "claim_text": "WYE-132, a highly potent, ATP-competitive, and specific mTOR kinase inhibitor (IC(50): 0.19 +/- 0.07 nmol/L; >5,000-fold selective versus PI3Ks).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1158/0008-5472.can-09-2340"
+      ]
+    },
+    {
+      "claim_text": "activating mutations of MTOR (2/5)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1097/pas.0000000000001170"
+      ]
+    },
+    {
+      "claim_text": "cathepsin-K was positive in 5 cases",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1097/pas.0000000000001170"
+      ]
+    },
+    {
+      "claim_text": "somatic inactivating mutations of TSC2 (3/5 tumors tested)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1097/pas.0000000000001170"
+      ]
+    },
+    {
+      "claim_text": "Shorter time to progression on EGFR TKI was associated with amplification of ERBB2 (HR = 2.4, P = 0.015)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1078-0432.ccr-17-2961"
+      ]
+    },
+    {
+      "claim_text": "Shorter time to progression on EGFR TKI was associated with amplification of MET (HR = 3.7, P = 0.019)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1078-0432.ccr-17-2961"
+      ]
+    },
+    {
+      "claim_text": "In the 136 posttreatment samples, we identified known mechanisms of acquired resistance: EGFR T790M (51%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1158/1078-0432.ccr-17-2961"
+      ]
+    },
+    {
+      "claim_text": "Shorter time to progression on EGFR TKI was associated with mutation in TP53 (HR = 1.7, P = 0.006)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1078-0432.ccr-17-2961"
+      ]
+    },
+    {
+      "claim_text": "ingestion of protein in excess of ~22% of dietary energy requirements drives atherosclerosis in male mice",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1038/s42255-024-00984-2"
+      ]
+    },
+    {
+      "claim_text": "significantly delayed tumor growth in 4 PDXs",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.molonc.2014.06.004"
+      ]
+    },
+    {
+      "claim_text": "EMPA could ameliorate SNT-induced cardiotoxicity, both in terms of SBP and LVEF (76.18 ± 5.16% vs. 50.24 ± 3.06%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fphar.2021.664181"
+      ]
+    },
+    {
+      "claim_text": "EMPA could ameliorate SNT-induced cardiotoxicity, both in terms of SBP (117.51 ± 5.28 mmHg vs. 134.30 ± 6.455 mmHg)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fphar.2021.664181"
+      ]
+    },
+    {
+      "claim_text": "Supplementation of the flies' diets with 5 μM AKG extended their lifespan",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18632/aging.102045"
+      ]
+    },
+    {
+      "claim_text": "~68% of non-small cell lung cancers (NSCLCs)",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1126/scitranslmed.aaw1565"
+      ]
+    },
+    {
+      "claim_text": "p53 tumor suppressor gene is frequently altered in various cancers, in ~36% of hepatocellular carcinomas",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1126/scitranslmed.aaw1565"
+      ]
+    }
+  ]
+}

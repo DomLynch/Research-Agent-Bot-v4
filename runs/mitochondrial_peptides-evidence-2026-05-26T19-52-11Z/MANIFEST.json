@@ -1,0 +1,79 @@
+{
+  "topic": "mitochondrial_peptides",
+  "snapshot_utc": "2026-05-26T19-52-11Z",
+  "top_n": 5,
+  "facts_inspected": 5,
+  "aggregated_claims": 5,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "mode": "alpha",
+  "selected_theme": null,
+  "facet_counts": {},
+  "numeric_artifacts_filtered": 4,
+  "fact_fetch_plan": [
+    "strict audited numeric facts via POST /api/v1/tier2/facts/search",
+    "validated topic facts via GET /api/v1/topics/{topic}/facts",
+    "normal numeric fact graph via POST /api/v1/tier2/facts/search",
+    "normal all-fact graph when source diversity is still thin"
+  ],
+  "paper_context_source": "POST /api/v1/papers/topic + POST /api/v1/search",
+  "pico_enrichment": {
+    "facts_inspected": 9,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "mimo-v2.5-pro"
+  },
+  "ranking": "alpha: deterministic validation*magnitude*precision*recency + data-driven contrast/subgroup boosts + theme coherence",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "fa26dbc0841510c0ef18b9da5836c10e29ca640c6f17d338c7aff8d8033ca67b"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "28816f0a29be14eefde89f110513e822a08d054d61bdb5afe489ee5d96cce2f1"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "e35ca46ef85761e62ad79aa35c6dafc7166155c0c5ce7bccdfc02740350f0e14"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "6d1dc96a8a458cd4c21ec4e32f1bcc59e767f2d69a80a65a926c21a2205acd7f"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "451c0e44485ec02831e345e64977bca36433ff97d8a845d949b7b0d531d13bea"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "fa9a20bf3aefa26633dd23b043eae1396db73a44dccb697f4c2272a2128f156d"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "62d8a6ad2065e91573338aa494b9972643645419ebc2692f01855a86f34a0b22"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "54d6a04f51d4a9d13ad1c9be484270171b6edc8b63c9079baa2d348719751098"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "7e496f30f645ca68fa899ce1c350adab949248249c98e5dd0ebaf109d276d03d"
+    },
+    "signal_post_md": {
+      "name": "signal_post.md",
+      "sha256": "2a0e52052fe31cc60bcf17756b1aada59d94e70e2c12eb1718c83f9a78efb946"
+    },
+    "alpha_memo_md": {
+      "name": "alpha_memo.md",
+      "sha256": "a3ecfee5625f9b4931d114bba1ac31194083b0053fbbc0e821c1b39a0bbfe145"
+    },
+    "publish_verdict_json": {
+      "name": "publish_verdict.json",
+      "sha256": "c9d38ca34c1d9d5bc0451133a8130479179067ac92b162356c13c86fd7ebce70"
+    }
+  }
+}

@@ -1,0 +1,331 @@
+{
+  "topic": "quercetin",
+  "snapshot_utc": "2026-05-26T19-55-42Z",
+  "claim_count": 36,
+  "claims": [
+    {
+      "claim_text": "it significantly dampened the postprandial hyperglycemia by 64.0% in maltose loaded diabetic rats",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.4236/jdm.2012.21013"
+      ]
+    },
+    {
+      "claim_text": "body weight, insulin, and fasting blood sugar levels were significantly restored (p < 0.05)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/metabo13010130"
+      ]
+    },
+    {
+      "claim_text": "Only quercetin and fisetin inhibited DENV-2 and DENV-3 infection in the absence or presence of enhancing antibody (>90%, p<0.001);",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2147/idr.s210890"
+      ]
+    },
+    {
+      "claim_text": "oral supplementation significantly reduced blood glucose levels (p < 0.001), improved lipid profile (p < 0.001), and enhanced total antioxidant status (p < 0.01)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/ph17060757"
+      ]
+    },
+    {
+      "claim_text": "D&Q treatment improved fasting blood glucose (p = 0.001) and glucose tolerance (p = 0.007) in old mice that was concomitant with lower hepatic gluconeogenesis",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13767"
+      ]
+    },
+    {
+      "claim_text": "Quercetin in 600 mg/kg dose produces significantly more reduction in postprandial hyperglycemia compared to acarbose",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.4236/jdm.2012.21013"
+      ]
+    },
+    {
+      "claim_text": "quercetin alters the expression of 98 of 332 (30%) of human genes encoding protein targets of SARS-CoV-2",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/biomedicines8050129"
+      ]
+    },
+    {
+      "claim_text": "and 30.3% after 300 mg/kg dose in normal rats, compared to control",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.4236/jdm.2012.21013"
+      ]
+    },
+    {
+      "claim_text": "it significantly dampened the postprandial hyperglycemia by 32.0% in maltose loaded diabetic rats",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.4236/jdm.2012.21013"
+      ]
+    },
+    {
+      "claim_text": "functions of 25 of 27 (93%) of SARS-CoV-2 proteins in human cells may be altered",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/biomedicines8050129"
+      ]
+    },
+    {
+      "claim_text": "quercetin inhibited α-amylase activity (in vitro) up to 20.30 ± 0.49%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/ph17060757"
+      ]
+    },
+    {
+      "claim_text": "both compounds significantly inhibited the proliferation of Huh-7 and HepG2 (p < 0.0001) with no effect on Vero cell line",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/ph17060757"
+      ]
+    },
+    {
+      "claim_text": "The use of quercetin led to improved lipid imaging, with 212 lipids being successfully imaged from rat brain in a single experiment.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1021/ac401595a"
+      ]
+    },
+    {
+      "claim_text": "Quercetin demonstrated prospective binding affinity for COVID-19 PLpro over 50 ns MD simulations, with binding energy value of -40.9 kcal/mol.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1080/07391102.2020.1784291"
+      ]
+    },
+    {
+      "claim_text": "D&Q improved insulin-stimulated suppression of plasma NEFAs (p = 0.01)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13767"
+      ]
+    },
+    {
+      "claim_text": "D&Q reduced fed and fasted plasma triglycerides (both p ≤ 0.04)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13767"
+      ]
+    },
+    {
+      "claim_text": "D&Q improved systemic lipid tolerance (p = 0.006)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13767"
+      ]
+    },
+    {
+      "claim_text": "D&Q have senolytic effects, reducing age-related increase in senescence-associated β-galactosidase, expression of p16 and p21 gene and P16 protein in perigonadal white adipose tissue (all p ≤ 0.04)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13767"
+      ]
+    },
+    {
+      "claim_text": "This treatment also suppressed age-related increase in the expression of a subset of pro-inflammatory SASP genes, crown-like structures, abundance of T cells and macrophages in pgWAT (all p ≤ 0.04)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13767"
+      ]
+    },
+    {
+      "claim_text": "diabetic rats were orally treated with C. reticulata fruit peel hydroethanolic extract, hesperidin, and quercetin at a dose of 100 mg/kg b.w./day for four weeks",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1155/2020/1730492"
+      ]
+    },
+    {
+      "claim_text": "Dasatinib (5 mg/kg) and quercetin (50 mg/kg) were administered to diabetic db/db mice by gavage for 20 weeks.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.3892/ijmm.2024.5350"
+      ]
+    },
+    {
+      "claim_text": "acarbose produced 54% decrease in normal rats loaded with maltose",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.4236/jdm.2012.21013"
+      ]
+    },
+    {
+      "claim_text": "acarbose produced 51% decrease in maltose loaded diabetic rats",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.4236/jdm.2012.21013"
+      ]
+    },
+    {
+      "claim_text": "inflammatory markers (TNF-α, IL-6, and IL-1β) were significantly increased (52.64 ± 2, 95.64 ± 3, 23.3 ± 1.2 pg/mL)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/metabo13010130"
+      ]
+    },
+    {
+      "claim_text": "antioxidant enzymes levels (SOD, GST, CAT, and GSH) were significantly decreased (40.3 ± 3 U/mg, 81.9 ± 10 mU/mg, 14.2 ± 2 U/mg, 19.9 ± 2 μmol/g)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/metabo13010130"
+      ]
+    },
+    {
+      "claim_text": "diabetes control rats showed significantly decreased body weights (198 ± 10 vs. 214 ± 13 g)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/metabo13010130"
+      ]
+    },
+    {
+      "claim_text": "insulin levels (0.28 ± 0.04 vs. 1.15 ± 0.05 ng/mL) in comparison to normal control",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/metabo13010130"
+      ]
+    },
+    {
+      "claim_text": "triglyceride (TG) levels (122.9 ± 8.7 vs. 230.7 ± 7.2 mg/dL) (p < 0.05)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/metabo13010130"
+      ]
+    },
+    {
+      "claim_text": "fasting blood glucose (99 ± 5 vs. 230 ± 7 mg/dL) (p < 0.05)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/metabo13010130"
+      ]
+    },
+    {
+      "claim_text": "Estradiol affects the expression of the majority of human genes (203 of 332; 61%) encoding SARS-CoV-2 targets",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/biomedicines8050129"
+      ]
+    },
+    {
+      "claim_text": "Vitamin D alters expression of 84 of 332 (25%) of human genes encoding protein targets of SARS-CoV-2",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/biomedicines8050129"
+      ]
+    },
+    {
+      "claim_text": "kaempferol inhibited α-amylase activity (in vitro) up to 37.43 ± 0.42%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/ph17060757"
+      ]
+    },
+    {
+      "claim_text": "Significant increases in epigenetic age acceleration were observed in first-generation epigenetic clocks and mitotic clocks at 3 and 6 months",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18632/aging.205581"
+      ]
+    },
+    {
+      "claim_text": "Oral administration of QE (100 mg/kg) or acarbose (40 mg/kg) to STZ-treated rats significantly decreased incremental plasma glucose levels",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.4162/nrp.2011.5.2.107"
+      ]
+    },
+    {
+      "claim_text": "QE (0.08% of diet) or acarbose (0.03% of diet) offered to db/db mice significantly reduced both plasma glucose and blood glycated hemoglobin compared to controls",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.4162/nrp.2011.5.2.107"
+      ]
+    },
+    {
+      "claim_text": "A hypothetical tripartite combination consisting of quercetin/vitamin D/estradiol may affect expression of 244 of 332 (73%) human genes encoding SARS-CoV-2 targets",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/biomedicines8050129"
+      ]
+    }
+  ]
+}

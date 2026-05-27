@@ -1,0 +1,122 @@
+{
+  "run_dir": "runs/bempedoic_acid_longevity-evidence-2026-05-27T05-43-34Z",
+  "topic": "bempedoic_acid_longevity",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 bempedoic_acid_longevity",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 0,
+    "available_source_contexts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 0.676,
+    "source_count": 20,
+    "clusters": [
+      {
+        "label": "effects_strength_performance",
+        "member_fact_ids": [
+          "94952",
+          "94951",
+          "94950",
+          "94953"
+        ],
+        "source_paper": {
+          "doi": "10.3390/nu12123739",
+          "title": "Effects of Omega-3 Fatty Acids on Muscle Mass, Muscle Strength and Muscle Performance among the Elderly: A Meta-Analysis",
+          "journal": "Nutrients",
+          "year": 2020
+        },
+        "example_phrase": "omega-3 fatty acid supplements at more than 2 g/day may contribute to muscle mass gain (0.67 kg; 95% CI: 0.16, 1.18)"
+      },
+      {
+        "label": "strains_bioengineering_seleno",
+        "member_fact_ids": [
+          "175270",
+          "175272",
+          "175276",
+          "175271"
+        ],
+        "source_paper": {
+          "doi": "10.3389/fbioe.2020.00506",
+          "title": "Biotransformation of Selenium by Lactic Acid Bacteria: Formation of Seleno-Nanoparticles and Seleno-Amino Acids",
+          "journal": "Frontiers in Bioengineering and Biotechnology",
+          "year": 2020
+        },
+        "example_phrase": "Lb. brevis CRL 2051 (0.873 ppm), Lb. plantarum CRL 2030 (0.867 ppm), and F. tropaeoli CRL 2034 (0.625 ppm) were the strains that showed the highest concentrations."
+      },
+      {
+        "label": "systematic_cancer_folic",
+        "member_fact_ids": [
+          "148701",
+          "148699",
+          "148700"
+        ],
+        "source_paper": {
+          "doi": "10.1136/bmjopen-2011-000653",
+          "title": "Cancer risk with folic acid supplements: a systematic review and meta-analysis",
+          "journal": "BMJ Open",
+          "year": 2012
+        },
+        "example_phrase": "RR of cancer mortality in folic acid supplemented groups was 1.09 (95% CI 0.90 to 1.30) compared to controls."
+      },
+      {
+        "label": "cardiac_sequential_undergoing",
+        "member_fact_ids": [
+          "165870",
+          "165873",
+          "165869"
+        ],
+        "source_paper": {
+          "doi": "10.1111/anae.16058",
+          "title": "Prophylactic intravenous tranexamic acid and thromboembolism in non\u2010cardiac surgery: a systematic review, meta\u2010analysis and trial sequential analysis",
+          "journal": "Anaesthesia",
+          "year": 2023
+        },
+        "example_phrase": "Intravenous tranexamic acid was associated with a reduced blood transfusion rate compared with control (9.9% vs. 19.4%, risk ratio 0.46, 95%CI 0.41-0.51, p < 0.0001)"
+      },
+      {
+        "label": "progression_metabolism_profile",
+        "member_fact_ids": [
+          "178098",
+          "178097",
+          "178096"
+        ],
+        "source_paper": {
+          "doi": "10.1038/s41598-024-72909-8",
+          "title": "Altered gut microbial profile accompanied by abnormal short chain fatty acid metabolism exacerbates nonalcoholic fatty liver disease progression",
+          "journal": "Scientific Reports",
+          "year": 2024
+        },
+        "example_phrase": "acetic acid distinguished moderate-NAFLD and severe-NAFLD from non-NAFLD with AUC value of 0.84 and 0.70."
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

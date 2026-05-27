@@ -1,0 +1,367 @@
+{
+  "topic": "cold_exposure_brown_fat",
+  "snapshot_utc": "2026-05-27T09-53-01Z",
+  "claim_count": 40,
+  "claims": [
+    {
+      "claim_text": "Associations remained below the current WHO guideline exposure level of 10 µg/m3 for PM2.5.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2020.105974"
+      ]
+    },
+    {
+      "claim_text": "The combined Risk Ratio (RR) for PM2.5 and natural-cause mortality was 1.08 (95%CI 1.06, 1.09) per 10 µg/m3.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2020.105974"
+      ]
+    },
+    {
+      "claim_text": "the exposome explained an additional 17 percentage points of mortality variation, whereas polygenic risk scores explained less than 2 percentage points",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-024-03483-9"
+      ]
+    },
+    {
+      "claim_text": "the exposome explained a greater proportion of variation (5.5-49.4%) compared with polygenic risk for incidence of diseases of the lung, heart and liver",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-024-03483-9"
+      ]
+    },
+    {
+      "claim_text": "In total, 11.98% (95% eCI, 10.46-13.08%) of mortality was attributable to heat and cold",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2020.105994"
+      ]
+    },
+    {
+      "claim_text": "8.48% (95% eCI, 7.31-9.49%) attributable to cold",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2020.105994"
+      ]
+    },
+    {
+      "claim_text": "27.97% (95% eCI, 18.42-33.35%) for hypertensive heart disease",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2020.105994"
+      ]
+    },
+    {
+      "claim_text": "12.41% (95% eCI, 8.81-15.07%) for stroke",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2020.105994"
+      ]
+    },
+    {
+      "claim_text": "28.46% (95% eCI: 4.93-33.57%) for Alzheimer's and dementia",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2020.105994"
+      ]
+    },
+    {
+      "claim_text": "25.18% (95% eCI, 18.42-29.63%) for chronic obstructive pulmonary disease",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2020.105994"
+      ]
+    },
+    {
+      "claim_text": "16.38% (95% eCI, 7.27-22.31%) for myocardial infarction (MI)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2020.105994"
+      ]
+    },
+    {
+      "claim_text": "Serologically, cases are divided into warm type (65%), cold type (29% cold haemagglutinin disease [CHAD], 1% paroxysmal cold haemoglobinuria) or mixed AIHA (5%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1111/bjh.14478"
+      ]
+    },
+    {
+      "claim_text": "Cold-induced acrocyanosis (dusky blue appearance of toes, fingers, nose tip or ears) or Raynaud phenomenon occur in 40‒90% of patients",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1111/bjh.14478"
+      ]
+    },
+    {
+      "claim_text": "Isocaloric diets containing 16%-23% fat and 57%-65% carbohydrate lower liver fat compared to diets with 43%-55% fat and 27%-38% carbohydrate.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.3390/nu7115454"
+      ]
+    },
+    {
+      "claim_text": "high fat diet driven age-related changes culminated with alterations in 155 proteins involving primarily the urea cycle.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1074/mcp.m116.065524"
+      ]
+    },
+    {
+      "claim_text": "Age-related changes on low fat diet significantly altered only 18 proteins representing mainly urea cycle.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1074/mcp.m116.065524"
+      ]
+    },
+    {
+      "claim_text": "Long-term high fat diet significantly altered 55 proteins associated with immune response and rennin angiotensin system.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1074/mcp.m116.065524"
+      ]
+    },
+    {
+      "claim_text": "3.49% (95% eCI, 2.87-4.00%) attributable to heat",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2020.105994"
+      ]
+    },
+    {
+      "claim_text": "43 proteins representing lipid metabolism and red-ox pathways were significantly altered (FDR < 10%).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1074/mcp.m116.065524"
+      ]
+    },
+    {
+      "claim_text": "equivalent to 266 cold-related deaths avoided (~15% of total cold-related mortality over ~11 weeks)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2021.106530"
+      ]
+    },
+    {
+      "claim_text": "Long-term annual average exposure to O3 was significantly associated with deaths caused by cardiovascular disease (per 10 ppb; hazard ratio [HR], 1.03)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1164/rccm.201806-1161oc"
+      ]
+    },
+    {
+      "claim_text": "Significantly elevated respiratory disease mortality risk associated with long-term O3 exposure was found among those living in locations with high temperature (Pinteraction < 0.05)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1164/rccm.201806-1161oc"
+      ]
+    },
+    {
+      "claim_text": "When using whole blood cadmium as a biomarker, the association with overall CVD risk was linear, yielding a risk ratio (RR) of 2.58 (95 % confidence interval-CI 1.78-3.74) at 1 μg/L.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envpol.2024.123462"
+      ]
+    },
+    {
+      "claim_text": "When using urinary cadmium as a biomarker, the association was linear until 0.5 μg/g creatinine (RR = 2.79, 95 % CI 1.26-6.16), after which risk plateaued.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envpol.2024.123462"
+      ]
+    },
+    {
+      "claim_text": "1.019 (95% CI: 1.004-1.035) for cardiovascular mortality",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.xinn.2022.100246"
+      ]
+    },
+    {
+      "claim_text": "1.074 (95% CI: 1.054-1.093) for congestive heart failure mortality",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.xinn.2022.100246"
+      ]
+    },
+    {
+      "claim_text": "pooled relative risk 1.014 (95% CI: 1.009-1.019) for all-cause mortality",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.xinn.2022.100246"
+      ]
+    },
+    {
+      "claim_text": "1.025 (95% CI: 1.010-1.040) for respiratory mortality",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.xinn.2022.100246"
+      ]
+    },
+    {
+      "claim_text": "1.056 (95% CI: 1.029-1.084) for COPD mortality",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.xinn.2022.100246"
+      ]
+    },
+    {
+      "claim_text": "The sex-averaged excess relative risk per Gy was 0.42 [95% CI: 0.32, 0.53] for all solid cancer at age 70 years after exposure at age 30 based on a linear model.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1667/rr2629.1"
+      ]
+    },
+    {
+      "claim_text": "Reductions in tongue fat were strongly correlated with reductions in AHI (Pearson's rho = 0.62, P < 0.0001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1164/rccm.201903-0692oc"
+      ]
+    },
+    {
+      "claim_text": "risk estimates of lung cancer prevalence in association with benzene exposure were 1.20 (n = 14; 95% CI 1.05-1.37)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/ijerph21020205"
+      ]
+    },
+    {
+      "claim_text": "risk estimates of lung cancer mortality in association with benzene exposure were 1.15 (n = 13; 95% CI 1.02-1.30)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/ijerph21020205"
+      ]
+    },
+    {
+      "claim_text": "significant association of PM2.5 with Alzheimer's disease (n = 12, ROS = 0.32, three stars)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s43587-025-00844-y"
+      ]
+    },
+    {
+      "claim_text": "minimum 14% increased risk averaged across PM2.5 levels between 4.5 and 26.9 µg m⁻³ relative to a reference of 2.0 µg m⁻³",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s43587-025-00844-y"
+      ]
+    },
+    {
+      "claim_text": "randomized controlled trials that lowered intake of dietary saturated fat and replaced it with polyunsaturated vegetable oil reduced CVD by ≈30%",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/cir.0000000000000510"
+      ]
+    },
+    {
+      "claim_text": "the serum concentration of 25OHD is substantially lower (~−20%) in serum of obese mice (fed a high-fat diet) compared with normal-weight mice",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jbmr.3884"
+      ]
+    },
+    {
+      "claim_text": "the mRNA of major vitamin D-25-hydroxylase (CYP2R1) is markedly (~40%) lower in livers of obese mice (fed a high-fat diet) compared with livers from normal mice",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jbmr.3884"
+      ]
+    },
+    {
+      "claim_text": "finding lower protein expression (~50% decrease) of CYP2R1",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jbmr.3884"
+      ]
+    },
+    {
+      "claim_text": "Phthalate exposure is associated with cardiometabolic mortality in humans, with societal costs ∼ $39 billion/year or more.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2023.107769"
+      ]
+    }
+  ]
+}

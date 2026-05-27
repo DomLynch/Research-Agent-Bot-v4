@@ -1,0 +1,61 @@
+{
+  "topic": "GDF11",
+  "snapshot_utc": "2026-05-27T10-01-18Z",
+  "claim_count": 6,
+  "claims": [
+    {
+      "claim_text": "an ultra-predictive aging clock comprised of 491 protein entries with Pearson correlation 0.98 in the learning set and 0.96 in the test set",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13256"
+      ]
+    },
+    {
+      "claim_text": "at least 64 of these 529 proteins are capable of regulating life span in an animal model",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1111/acel.13256"
+      ]
+    },
+    {
+      "claim_text": "reversed functional impairments and restored genomic integrity in aged muscle stem cells",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1126/science.1251152"
+      ]
+    },
+    {
+      "claim_text": "improved muscle structural and functional features",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1126/science.1251152"
+      ]
+    },
+    {
+      "claim_text": "increased strength and endurance exercise capacity",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1126/science.1251152"
+      ]
+    },
+    {
+      "claim_text": "GDF11 levels, which normally decline with age",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1126/science.1251152"
+      ]
+    }
+  ]
+}

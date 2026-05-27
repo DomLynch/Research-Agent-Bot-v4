@@ -1,0 +1,16 @@
+{
+  "topic": "young_plasma_parabiosis",
+  "snapshot_utc": "2026-05-27T05-45-45Z",
+  "input_pack": {
+    "topic": "young_plasma_parabiosis",
+    "a_core_count": 0,
+    "b_context_count": 0,
+    "excluded_counts": {
+      "C_noise": 5,
+      "D_bad_extraction": 40
+    },
+    "has_minimum_a_core": false,
+    "a_core_min": 3
+  },
+  "audits": []
+}

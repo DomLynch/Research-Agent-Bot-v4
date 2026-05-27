@@ -1,0 +1,41 @@
+# Frontier review — plant_based_diet_biological_age
+
+**Snapshot:** 2026-05-26T19-14-20Z
+**Strategist model:** mimo-v2.5-pro
+
+## The lens
+
+The current evidence conflates disease endpoints with direct biological age metrics, lacking studies that correlate plant-based diet indices with epigenetic clocks or telomere attrition. This gap prevents a mechanistic thesis, as existing data is derived from cohort studies focused on mortality and morbidity rather than aging biomarkers.
+
+## Already known — do not publish
+
+- Adherence to overall plant-based diet index is associated with a 31-32% lower risk of cardiovascular disease mortality in highest versus lowest quintiles
+- Healthful plant-based diets decrease CVD incidence with pooled HR of 0.87, while unhealthful versions increase cardiovascular mortality risk
+- Plant-based diets reduce risk of coronary heart disease events by an estimated 40%
+
+## Tensions / contradictions
+
+- Healthful plant-based diet indices show protective effects on CVD mortality (pooled HR: 0.92), but unhealthful indices increase risk (pooled HR: 1.05), creating a dichotomy in dietary quality definitions
+- The protective effect of overweight on cognitive impairment is more pronounced with higher plant-based diet index adherence, suggesting complex interactions between body composition and diet
+- Shifting the healthy aging threshold to 75 years amplifies the association for Alternative Healthy Eating Index (OR: 2.24), indicating age-dependent effects that are not uniformly captured
+
+## Evidence gaps
+
+- Dose-response relationships for specific plant-based food groups (e.g., legumes, whole grains) on biological age markers like DNA methylation
+- Effects in subgroups defined by age thresholds (e.g., 75+ years) and sex, as data in the Nature Medicine 2025 study included 66% women but did not stratify aging biomarkers
+- Integration of plant-based low-protein diets (e.g., PLADO at 0.6-0.8 g/kg/day) with aging outcomes, which remains unexplored in relation to biological age
+
+## Paper theses
+
+_none_
+
+## Reviewer objections to anticipate
+
+- The absence of direct biological age measurements (e.g., epigenetic clocks) makes any thesis speculative and correlational, risking rejection for overinterpreting disease proxies as aging outcomes
+- Heterogeneous definitions of 'plant-based diet' across studies (e.g., overall vs. healthful indices) limit comparability and confound findings on biological age effects
+
+## Suggested next extractions
+
+- Studies linking plant-based diet adherence to telomere length or Horvath epigenetic clock acceleration in prospective cohorts
+- Subgroup analyses focusing on older adults (75+ years) with validated aging biomarkers and detailed dietary recalls to assess dose-response
+- Investigations into the role of specific nutrients (e.g., fiber, phytochemicals) from plant sources in modulating inflammatory markers like IL-6 or CRP in aging contexts

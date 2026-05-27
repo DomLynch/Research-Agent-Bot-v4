@@ -1,0 +1,39 @@
+{
+  "topic": "telomere",
+  "snapshot_utc": "2026-05-26T19-24-25Z",
+  "input_pack": {
+    "topic": "telomere",
+    "a_core_count": 11,
+    "b_context_count": 1,
+    "excluded_counts": {
+      "C_noise": 4,
+      "D_bad_extraction": 22
+    },
+    "has_minimum_a_core": true,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Sex-Dimorphic and Assay-Modulated Associations Between Telomere Length and Cancer Risk: A Meta-Regression Approach",
+      "status": "needs_source_audit",
+      "blocking_flags": [
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 100,
+      "capped_opportunity": 80,
+      "cited_fact_ids": []
+    },
+    {
+      "thesis_idx": 1,
+      "title": "Telomere-Related Genetic Variants as Prognostic Markers and Therapeutic Targets in Chronic Hypersensitivity Pneumonitis",
+      "status": "needs_source_audit",
+      "blocking_flags": [
+        "a_core_density_too_low:0<3"
+      ],
+      "original_opportunity": 100,
+      "capped_opportunity": 80,
+      "cited_fact_ids": []
+    }
+  ]
+}

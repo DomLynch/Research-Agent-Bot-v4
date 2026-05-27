@@ -1,0 +1,322 @@
+{
+  "topic": "bempedoic_acid_longevity",
+  "snapshot_utc": "2026-05-27T05-43-34Z",
+  "claim_count": 35,
+  "claims": [
+    {
+      "claim_text": "RR of cancer mortality in folic acid supplemented groups was 1.09 (95% CI 0.90 to 1.30) compared to controls.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1136/bmjopen-2011-000653"
+      ]
+    },
+    {
+      "claim_text": "RR of developing cancer in patients randomised to folic acid supplements was 1.07 (95% CI 1.00 to 1.14) compared to controls.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1136/bmjopen-2011-000653"
+      ]
+    },
+    {
+      "claim_text": "RR of prostate cancer in men receiving folic acid was 1.24 (95% CI 1.03 to 1.49) compared to controls.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1136/bmjopen-2011-000653"
+      ]
+    },
+    {
+      "claim_text": "received either 3.7 g/day of flaxseed oil containing 2.2 g of alpha-linolenic acid, or an isocaloric placebo for 12 weeks.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.3390/nu15061499"
+      ]
+    },
+    {
+      "claim_text": "When exercise and amino acid-based nutrition were combined, only 2 of the 10 study arms provided sufficient evidence of age-related muscle anabolic resistance.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1152/ajpendo.00213.2016"
+      ]
+    },
+    {
+      "claim_text": "in response to amino acid-based nutrition alone, 8 of the 21 study arms provided sufficient evidence of age-related muscle anabolic resistance.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1152/ajpendo.00213.2016"
+      ]
+    },
+    {
+      "claim_text": "increasing intake of arachidonic acid (up to 1500 mg/day) has no adverse effect on platelet aggregation, blood clotting, immune function, and markers of inflammation.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3390/nu13072421"
+      ]
+    },
+    {
+      "claim_text": "omega-3 fatty acid supplements at more than 2 g/day may contribute to muscle mass gain (0.67 kg; 95% CI: 0.16, 1.18)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu12123739"
+      ]
+    },
+    {
+      "claim_text": "high serum uric acid levels (>6 mg/dL or 60 mg/L) in hypertension-associated morbidities",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3390/ijms21114066"
+      ]
+    },
+    {
+      "claim_text": "Verbal fluency scores improved significantly more with flaxseed oil (0.30 ± 0.53) vs placebo (0.03 ± 0.49, p < 0.05).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu15061499"
+      ]
+    },
+    {
+      "claim_text": "ferulic acid (at an optimum dose of 75 µM)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.3389/fphar.2019.00027"
+      ]
+    },
+    {
+      "claim_text": "Treatment with ferulic acid (50 mg kg−1 body wt., orally for eight weeks)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.3389/fphar.2019.00027"
+      ]
+    },
+    {
+      "claim_text": "Intravenous tranexamic acid was associated with a reduced blood transfusion rate compared with control (9.9% vs. 19.4%, risk ratio 0.46, 95%CI 0.41-0.51, p < 0.0001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/anae.16058"
+      ]
+    },
+    {
+      "claim_text": "The primary outcome occurred in 4.5% of patients receiving intravenous tranexamic acid compared with 4.9% of patients in the control group",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/anae.16058"
+      ]
+    },
+    {
+      "claim_text": "iPSCs-CMs (98% purity)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3390/cells8091095"
+      ]
+    },
+    {
+      "claim_text": "about 60 countries are implementing mandatory folic acid fortification of staple foods",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1007/s00381-023-05910-7"
+      ]
+    },
+    {
+      "claim_text": "1% increase in serum perfluorohexanoic acid was significantly associated with 0.030% (95% CI: 0.010%, 0.051%) increment in HbA1c levels.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2019.105295"
+      ]
+    },
+    {
+      "claim_text": "1% increase in serum perfluorohexane sulfonic acid was significantly associated with 0.007% (95% CI: 0.003%, 0.011%) increment in HbA1c levels.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2019.105295"
+      ]
+    },
+    {
+      "claim_text": "acetic acid distinguished moderate-NAFLD and severe-NAFLD from non-NAFLD with AUC value of 0.84 and 0.70.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1038/s41598-024-72909-8"
+      ]
+    },
+    {
+      "claim_text": "butyric acid distinguished mild-NAFLD from non-NAFLD with AUC value of 0.83.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1038/s41598-024-72909-8"
+      ]
+    },
+    {
+      "claim_text": "and a higher reducing power (IC50= 0.082 mg/mL), with IC50 having a significantly lower value than IC50 for ascorbic acid.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1155/2019/3692605"
+      ]
+    },
+    {
+      "claim_text": "There were minor benefits for timed up and go performance (-0.30 s; 95% CI: -0.43, -0.17)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu12123739"
+      ]
+    },
+    {
+      "claim_text": "There were minor benefits for muscle mass gain (0.33 kg; 95% CI: 0.05, 0.62)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu12123739"
+      ]
+    },
+    {
+      "claim_text": "improve walking speed, especially for those receiving more than 6 months of intervention (1.78 m/sec; 95% CI: 1.38, 2.17)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu12123739"
+      ]
+    },
+    {
+      "claim_text": "The areas under the receiver operating characteristic curve (0.941) and the calibration curve were significantly similar.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1097/cad.0000000000001189"
+      ]
+    },
+    {
+      "claim_text": "no difference between groups for composite cardiovascular thromboembolic events (risk ratio 1.02, 95%CI 0.94-1.11, p = 0.65)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/anae.16058"
+      ]
+    },
+    {
+      "claim_text": "chlorogenic acid and piceatannol exhibited the highest inhibitory activities (IC50 = 10.6 and 12.1 µM, respectively)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1055/s-0042-118711"
+      ]
+    },
+    {
+      "claim_text": "with a 5% rate of sudden death in childhood",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/jcm10214855"
+      ]
+    },
+    {
+      "claim_text": "Lb. brevis CRL 2051 (0.873 ppm), Lb. plantarum CRL 2030 (0.867 ppm), and F. tropaeoli CRL 2034 (0.625 ppm) were the strains that showed the highest concentrations.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fbioe.2020.00506"
+      ]
+    },
+    {
+      "claim_text": "These bacteria accumulated intracellularly between 1.2 and 2.5 ppm of the added Se",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fbioe.2020.00506"
+      ]
+    },
+    {
+      "claim_text": "The ninety-six assayed strains could grow in the presence of 5 ppm sodium selenite.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3389/fbioe.2020.00506"
+      ]
+    },
+    {
+      "claim_text": "eight strains could remove more than 80% of the added Se from the culture medium.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3389/fbioe.2020.00506"
+      ]
+    },
+    {
+      "claim_text": "we detected pathogen nucleic acid in cerebrospinal fluid (CSF) from 22 subjects, 3 of whom had no clinical diagnosis by routine workup.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1128/mbio.01143-21"
+      ]
+    },
+    {
+      "claim_text": "43.6% reported a positive cognitive outcome after the consumption of n-3 FA compared to the placebo.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/j.arr.2022.101835"
+      ]
+    },
+    {
+      "claim_text": "Bempedoic acid has the potential to contribute to the reduction of CVD risk not only as monotherapy, but even further as part of a lipid-lowering combination therapy with ezetimibe, reducing LDL-C cholesterol up to 40%.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.pcad.2023.03.001"
+      ]
+    }
+  ]
+}
