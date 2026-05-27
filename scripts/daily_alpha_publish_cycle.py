@@ -56,9 +56,23 @@ def _alpha_memo_int(name: str, default: int) -> int:
     return default
 
 
+def _alpha_memo_float(name: str, default: float) -> float:
+    try:
+        data = tomllib.loads(_PUBLICATION_PATH.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return default
+    alpha = data.get("alpha_memo") if isinstance(data, dict) else {}
+    if not isinstance(alpha, dict):
+        return default
+    with suppress(TypeError, ValueError):
+        return max(0.0, float(str(alpha.get(name))))
+    return default
+
+
 _DEFAULT_MIN_SUBMIT_SOURCES = _alpha_memo_int("min_source_papers", 5)
 _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES = _alpha_memo_int("min_direct_source_papers", 2)
 _DEFAULT_REFRESH_TOP = 20
+_DEFAULT_REFRESH_COOLDOWN_HOURS = _alpha_memo_float("refresh_cooldown_hours", 2.0)
 _DEFAULT_MAX_REFRESH_BATCHES = 5
 _REFRESH_TIMEOUT_SECONDS = 5400
 _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT = 4
@@ -234,6 +248,47 @@ def _seen_submission_fingerprints(path: Path) -> set[str]:
     if isinstance(data, list):
         return {str(x.get("fingerprint")) for x in data if isinstance(x, dict)}
     return set()
+
+
+def _same_memo_seen(path: Path, fingerprint: str, memo_sha256: str) -> bool:
+    data = _json(path, [])
+    if not isinstance(data, list):
+        return False
+    for row in data:
+        if not isinstance(row, dict) or row.get("fingerprint") != fingerprint:
+            continue
+        if memo_sha256:
+            if row.get("memo_sha256") == memo_sha256:
+                return True
+        else:
+            return True
+    return False
+
+
+def _record_submission_attempt(
+    path: Path,
+    *,
+    date: str,
+    candidate: Json,
+    runs_root: Path,
+    submission_id: str = "",
+    submit_status: str = "",
+) -> None:
+    records = _json(path, [])
+    if not isinstance(records, list):
+        records = []
+    record = {
+        "date": date,
+        "topic": candidate.get("topic"),
+        "run_dir": candidate.get("run_dir"),
+        "fingerprint": candidate.get("memo_fingerprint"),
+        "memo_sha256": _memo_sha256(candidate, runs_root),
+        "submission_id": submission_id,
+    }
+    if submit_status:
+        record["submit_status"] = submit_status
+    records.append(record)
+    _write_json(path, records)
 
 
 def _memo_sha256(verdict: Json, root: Path) -> str:
@@ -618,7 +673,9 @@ def select_candidate(
                         fp in retryable
                         and attempt_count < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
                     )
-            if source_count < min_source_count:
+            if fp in seen and _same_memo_seen(submitted_path, fp, memo_sha256):
+                status = "duplicate_submission_fingerprint"
+            elif source_count < min_source_count:
                 status = (
                     "corpus_source_floor_below_min"
                     if corpus_source_count < min_source_count else
@@ -695,6 +752,12 @@ def _submission_id(payload: Json) -> str:
     submission = payload.get("submission")
     if isinstance(submission, dict) and submission.get("id"):
         return str(submission.get("id"))
+    for key in ("detail", "data"):
+        nested = payload.get(key)
+        if isinstance(nested, dict):
+            found = _submission_id(nested)
+            if found:
+                return found
     for attempt in payload.get("attempts") or []:
         if not isinstance(attempt, dict):
             continue
@@ -703,6 +766,11 @@ def _submission_id(payload: Json) -> str:
             found = _submission_id(response)
             if found:
                 return found
+        elif isinstance(response, str):
+            with suppress(json.JSONDecodeError):
+                found = _submission_id(json.loads(response))
+                if found:
+                    return found
     nested = payload.get("submission")
     return str(nested.get("id") if isinstance(nested, dict) else "")
 
@@ -955,17 +1023,25 @@ def _run_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
 
 
 def _refresh_candidate_batch(
-    refresh_top: int, excluded_topics: set[str] | None = None,
+    refresh_top: int,
+    excluded_topics: set[str] | None = None,
+    cooldown_hours: float = _DEFAULT_REFRESH_COOLDOWN_HOURS,
 ) -> Json:
     exclusions = sorted(t for t in (excluded_topics or set()) if t)
     args = [
         sys.executable, "scripts/run_curator_cycle.py",
-        "--top", str(refresh_top), "--cooldown-hours", "24",
+        "--top", str(refresh_top), "--cooldown-hours", f"{cooldown_hours:g}",
     ]
     for topic in exclusions:
         args.extend(["--exclude-topic", topic])
     ok, note = _run_step(args, timeout=_REFRESH_TIMEOUT_SECONDS)
-    return {"ok": ok, "note": note, "top": refresh_top, "excluded_topics": exclusions}
+    return {
+        "ok": ok,
+        "note": note,
+        "top": refresh_top,
+        "cooldown_hours": cooldown_hours,
+        "excluded_topics": exclusions,
+    }
 
 
 def _queue_counts(queue: Json) -> Json:
@@ -1102,6 +1178,7 @@ def run_cycle(
     estimated_cost_usd: float = 0.0,
     max_cost_usd: float = 5.0,
     refresh_top: int = _DEFAULT_REFRESH_TOP,
+    refresh_cooldown_hours: float = _DEFAULT_REFRESH_COOLDOWN_HOURS,
     max_refresh_batches: int = _DEFAULT_MAX_REFRESH_BATCHES,
     submit: bool = False,
     retraction_mode: str = "metadata",
@@ -1126,6 +1203,7 @@ def run_cycle(
         "estimated_cost_usd": estimated_cost_usd,
         "max_cost_usd": max_cost_usd,
         "refresh_top": refresh_top,
+        "refresh_cooldown_hours": refresh_cooldown_hours,
         "max_refresh_batches": max_refresh_batches,
         "min_submit_sources": min_submit_sources,
         "min_direct_submit_sources": min_direct_submit_sources,
@@ -1161,7 +1239,12 @@ def run_cycle(
         submitter = _http_submitter(url, token)
     for batch in range(1, batch_limit + 1):
         if refresh_candidates:
-            refresh = _refresh_candidate_batch(refresh_top, blocked_topics)
+            cooldown = 0.0 if blocked_topics else refresh_cooldown_hours
+            refresh = _refresh_candidate_batch(
+                refresh_top, blocked_topics, cooldown,
+            )
+            if cooldown != refresh_cooldown_hours:
+                refresh["cooldown_reason"] = "retry_after_blocked_topic"
             refresh["batch"] = batch
             ledger["refresh_batches"].append(refresh)
             ledger["refresh_candidates"] = refresh
@@ -1246,18 +1329,13 @@ def run_cycle(
         ledger["submission"] = result
         if result["status"] == "accepted":
             submission_id = _submission_id(result)
-            records = _json(submitted_path, [])
-            if not isinstance(records, list):
-                records = []
-            records.append({
-                "date": date,
-                "topic": candidate.get("topic"),
-                "run_dir": candidate.get("run_dir"),
-                "fingerprint": candidate.get("memo_fingerprint"),
-                "memo_sha256": _memo_sha256(candidate, runs_root),
-                "submission_id": submission_id,
-            })
-            _write_json(submitted_path, records)
+            _record_submission_attempt(
+                submitted_path,
+                date=date,
+                candidate=candidate,
+                runs_root=runs_root,
+                submission_id=submission_id,
+            )
             ledger.update({
                 "final_verdict": "pending",
                 "status": "submitted_to_researka",
@@ -1311,6 +1389,15 @@ def run_cycle(
             ledger["cycle_attempts"].append(attempt | {"status": "submitted_to_researka"})
             _write_json(ledger_path, ledger)
             return ledger
+        if result["status"] == "rejected_duplicate":
+            _record_submission_attempt(
+                submitted_path,
+                date=date,
+                candidate=candidate,
+                runs_root=runs_root,
+                submission_id=_submission_id(result),
+                submit_status="rejected_duplicate",
+            )
         attempt["status"] = result["status"]
         for row in reversed(all_considered):
             if row.get("fingerprint") == candidate.get("memo_fingerprint"):
@@ -1353,6 +1440,7 @@ def main() -> int:
     parser.add_argument("--estimated-cost-usd", type=float, default=0.0)
     parser.add_argument("--max-cost-usd", type=float, default=5.0)
     parser.add_argument("--refresh-top", type=int, default=_DEFAULT_REFRESH_TOP)
+    parser.add_argument("--refresh-cooldown-hours", type=float, default=_DEFAULT_REFRESH_COOLDOWN_HOURS)
     parser.add_argument("--max-refresh-batches", type=int, default=_DEFAULT_MAX_REFRESH_BATCHES)
     parser.add_argument("--min-submit-sources", type=int, default=_DEFAULT_MIN_SUBMIT_SOURCES)
     parser.add_argument("--min-direct-submit-sources", type=int, default=_DEFAULT_MIN_DIRECT_SUBMIT_SOURCES)
@@ -1371,6 +1459,7 @@ def main() -> int:
         estimated_cost_usd=args.estimated_cost_usd,
         max_cost_usd=args.max_cost_usd,
         refresh_top=args.refresh_top,
+        refresh_cooldown_hours=args.refresh_cooldown_hours,
         max_refresh_batches=args.max_refresh_batches,
         min_submit_sources=args.min_submit_sources,
         min_direct_submit_sources=args.min_direct_submit_sources,

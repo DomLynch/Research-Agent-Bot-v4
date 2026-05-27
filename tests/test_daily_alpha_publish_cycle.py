@@ -283,6 +283,43 @@ def test_repairable_retry_refreshes_even_when_source_floor_passes(tmp_path: Path
     assert ledger["status"] == "submitted_to_researka"
 
 
+def test_repairable_retry_does_not_resubmit_unchanged_memo(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("unchanged_retry")
+    _memo_with_source_receipts(root, verdict, 5)
+    fp = daily.memo_fingerprint(verdict)
+    memo_sha = daily._memo_sha256(verdict, root)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
+        {
+            "fingerprint": fp,
+            "topic": "unchanged_retry",
+            "submission_id": "old-sub",
+            "memo_sha256": memo_sha,
+        },
+    ])
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submitted_to_researka",
+        "final_verdict": "revise",
+        "candidate": {"fingerprint": fp, "topic": "unchanged_retry"},
+        "researka_decision": {"status": "complete", "decision": "revise"},
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+        memo_refresher=lambda _run, _verdict: True,
+    )
+
+    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["considered"][0]["memo_refreshed"] is True
+    assert ledger["considered"][0]["status"] == "duplicate_submission_fingerprint"
+
+
 def test_repairable_prior_candidate_reenters_empty_queue(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("retry_queue")
@@ -1168,8 +1205,30 @@ def test_refresh_candidates_scans_more_than_top_five(
 
     assert ledger["refresh_candidates"]["ok"] is True
     assert ledger["refresh_top"] == 20
-    assert calls[0][0][-4:] == ["--top", "20", "--cooldown-hours", "24"]
+    assert calls[0][0][-4:] == ["--top", "20", "--cooldown-hours", "2"]
     assert calls[0][1] == 5400
+
+
+def test_refresh_cooldown_is_cycle_configurable(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+
+    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        calls.append(args)
+        return True, "ok"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    daily.run_cycle(
+        runs_root=tmp_path,
+        date="2026-05-22",
+        refresh_candidates=True,
+        refresh_cooldown_hours=0.5,
+        queue=_queue(),
+    )
+
+    assert calls[0][-4:] == ["--top", "20", "--cooldown-hours", "0.5"]
 
 
 def test_refresh_batches_continue_until_eligible_candidate(
@@ -1310,8 +1369,16 @@ def test_submit_duplicates_rotate_topics_until_success(
         _queue(first, second, third),
     ])
     responses = iter([
-        {"ok": False, "status": 409, "response": "duplicate_submission"},
-        {"ok": False, "status": 409, "response": "duplicate_submission"},
+        {
+            "ok": False,
+            "status": 409,
+            "response": '{"detail":{"error":"duplicate_submission","submission_id":"dup-1"}}',
+        },
+        {
+            "ok": False,
+            "status": 409,
+            "response": '{"detail":{"error":"duplicate_submission","submission_id":"dup-2"}}',
+        },
         {"ok": True, "status": 200, "response": {"submission": {"id": "sub-ok"}}},
     ])
     calls: list[list[str]] = []
@@ -1340,7 +1407,19 @@ def test_submit_duplicates_rotate_topics_until_success(
         "rejected_duplicate",
         "submitted_to_researka",
     ]
+    records = json.loads(
+        (root / "_daily_ledger" / "_submitted_fingerprints.json").read_text(
+            encoding="utf-8",
+        )
+    )
+    assert [row.get("submit_status") for row in records[:2]] == [
+        "rejected_duplicate",
+        "rejected_duplicate",
+    ]
+    assert [row.get("submission_id") for row in records[:2]] == ["dup-1", "dup-2"]
+    assert calls[1][calls[1].index("--cooldown-hours") + 1] == "0"
     assert calls[1][-2:] == ["--exclude-topic", "first"]
+    assert calls[2][calls[2].index("--cooldown-hours") + 1] == "0"
     assert calls[2][-4:] == ["--exclude-topic", "first", "--exclude-topic", "second"]
 
 

@@ -9,3 +9,4 @@ canonical_url_base = ""
 [alpha_memo]
 min_source_papers = 5
 min_direct_source_papers = 5
+refresh_cooldown_hours = 2
