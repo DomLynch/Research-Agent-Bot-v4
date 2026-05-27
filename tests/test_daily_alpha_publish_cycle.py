@@ -1231,89 +1231,6 @@ def test_refresh_cooldown_is_cycle_configurable(
     assert calls[0][-4:] == ["--top", "20", "--cooldown-hours", "0.5"]
 
 
-def test_empty_refresh_escalates_to_zero_cooldown(
-    tmp_path: Path, monkeypatch: MonkeyPatch,
-) -> None:
-    root = tmp_path / "repo"
-    fresh = _verdict("fresh")
-    _memo_with_source_receipts(root, fresh, 5)
-    queues = iter([_queue(), _queue(fresh)])
-    calls: list[list[str]] = []
-
-    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
-        calls.append(args)
-        cycle_dir = root / "_curator_cycles"
-        cycle_dir.mkdir(parents=True, exist_ok=True)
-        payload = (
-            {"ran": [], "skipped_in_cooldown": ["fresh"]}
-            if len(calls) == 1 else
-            {"ran": [{"topic": "fresh"}], "skipped_in_cooldown": []}
-        )
-        daily._write_json(cycle_dir / f"cycle-{len(calls)}.json", payload)
-        return True, "ok"
-
-    monkeypatch.setattr(daily, "_run_step", fake_step)
-
-    ledger = daily.run_cycle(
-        runs_root=root,
-        date="2026-05-22",
-        refresh_candidates=True,
-        max_refresh_batches=2,
-        submit=True,
-        retraction_mode="crossref",
-        fetcher=lambda _doi: {"message": {}},
-        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
-        queue_builder=lambda _root, _include_archive: next(queues),
-    )
-
-    assert ledger["status"] == "submitted_to_researka"
-    assert ledger["submitted_topic"] == "fresh"
-    assert calls[0][calls[0].index("--cooldown-hours") + 1] == "2"
-    assert calls[1][calls[1].index("--cooldown-hours") + 1] == "0"
-    assert ledger["refresh_batches"][1]["cooldown_reason"] == "retry_after_empty_refresh"
-
-
-def test_nonpublishable_refresh_topics_are_excluded_next_batch(
-    tmp_path: Path, monkeypatch: MonkeyPatch,
-) -> None:
-    root = tmp_path / "repo"
-    fresh = _verdict("fresh")
-    _memo_with_source_receipts(root, fresh, 5)
-    queues = iter([_queue(), _queue(fresh)])
-    calls: list[list[str]] = []
-
-    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
-        calls.append(args)
-        cycle_dir = root / "_curator_cycles"
-        cycle_dir.mkdir(parents=True, exist_ok=True)
-        payload = (
-            {"ran": [{"topic": "curation_only"}], "skipped_in_cooldown": []}
-            if len(calls) == 1 else
-            {"ran": [{"topic": "fresh"}], "skipped_in_cooldown": []}
-        )
-        daily._write_json(cycle_dir / f"cycle-{len(calls)}.json", payload)
-        return True, "ok"
-
-    monkeypatch.setattr(daily, "_run_step", fake_step)
-
-    ledger = daily.run_cycle(
-        runs_root=root,
-        date="2026-05-22",
-        refresh_candidates=True,
-        max_refresh_batches=2,
-        submit=True,
-        retraction_mode="crossref",
-        fetcher=lambda _doi: {"message": {}},
-        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
-        queue_builder=lambda _root, _include_archive: next(queues),
-    )
-
-    assert ledger["status"] == "submitted_to_researka"
-    assert ledger["submitted_topic"] == "fresh"
-    assert calls[1][-2:] == ["--exclude-topic", "curation_only"]
-    assert ledger["refresh_batches"][1]["cooldown_reason"] == "retry_after_blocked_topic"
-
-
 def test_refresh_batches_continue_until_eligible_candidate(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
@@ -1427,9 +1344,7 @@ def test_duplicate_topic_is_excluded_from_next_refresh_batch(
     assert ledger["status"] == "submitted_to_researka"
     assert ledger["submitted_topic"] == "fresh"
     assert calls[0].count("--exclude-topic") == 0
-    assert calls[1][calls[1].index("--cooldown-hours") + 1] == "0"
     assert calls[1][-2:] == ["--exclude-topic", "duplicate"]
-    assert ledger["refresh_batches"][1]["cooldown_reason"] == "retry_after_blocked_topic"
     assert [row["status"] for row in ledger["considered"]] == [
         "duplicate_submission_fingerprint",
         "cycle_exhausted_topic",

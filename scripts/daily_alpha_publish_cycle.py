@@ -1022,31 +1022,10 @@ def _run_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
     return result.returncode == 0, (lines[-1] if lines else "")
 
 
-def _latest_cycle_topics(runs_root: Path) -> Json:
-    cycles = sorted((runs_root / "_curator_cycles").glob("*.json"))
-    if not cycles:
-        return {}
-    payload = _json(cycles[-1], {})
-    if not isinstance(payload, dict):
-        return {}
-    ran = [
-        str(row.get("topic") or "")
-        for row in payload.get("ran") or []
-        if isinstance(row, dict) and row.get("topic")
-    ]
-    skipped = [str(t) for t in payload.get("skipped_in_cooldown") or [] if str(t)]
-    return {
-        "cycle": cycles[-1].name,
-        "ran_topics": ran,
-        "skipped_in_cooldown": skipped,
-    }
-
-
 def _refresh_candidate_batch(
     refresh_top: int,
     excluded_topics: set[str] | None = None,
     cooldown_hours: float = _DEFAULT_REFRESH_COOLDOWN_HOURS,
-    runs_root: Path = _RUNS,
 ) -> Json:
     exclusions = sorted(t for t in (excluded_topics or set()) if t)
     args = [
@@ -1062,7 +1041,7 @@ def _refresh_candidate_batch(
         "top": refresh_top,
         "cooldown_hours": cooldown_hours,
         "excluded_topics": exclusions,
-    } | _latest_cycle_topics(runs_root)
+    }
 
 
 def _queue_counts(queue: Json) -> Json:
@@ -1242,7 +1221,6 @@ def run_cycle(
         return ledger
     blocked_fingerprints: set[str] = set()
     blocked_topics: set[str] = set()
-    force_refresh = False
     accepted_shape_profiles = _accepted_shape_profiles(runs_root)
     all_considered: list[Json] = []
     batch_limit = max(1, max_refresh_batches if refresh_candidates else 1)
@@ -1260,18 +1238,13 @@ def run_cycle(
         ledger["submit_token_env"] = token_env
         submitter = _http_submitter(url, token)
     for batch in range(1, batch_limit + 1):
-        refresh: Json = {}
         if refresh_candidates:
-            cooldown = 0.0 if blocked_topics or force_refresh else refresh_cooldown_hours
+            cooldown = 0.0 if blocked_topics else refresh_cooldown_hours
             refresh = _refresh_candidate_batch(
-                refresh_top, blocked_topics, cooldown, runs_root,
+                refresh_top, blocked_topics, cooldown,
             )
             if cooldown != refresh_cooldown_hours:
-                refresh["cooldown_reason"] = (
-                    "retry_after_blocked_topic"
-                    if blocked_topics else "retry_after_empty_refresh"
-                )
-            force_refresh = False
+                refresh["cooldown_reason"] = "retry_after_blocked_topic"
             refresh["batch"] = batch
             ledger["refresh_batches"].append(refresh)
             ledger["refresh_candidates"] = refresh
@@ -1306,11 +1279,6 @@ def run_cycle(
         all_considered.extend(considered)
         ledger["considered"] = all_considered
         if candidate is None:
-            ran_topics = [str(t) for t in refresh.get("ran_topics") or [] if str(t)]
-            if ran_topics:
-                blocked_topics.update(ran_topics)
-            elif refresh_candidates and refresh.get("skipped_in_cooldown"):
-                force_refresh = True
             continue
         check_mode = "crossref" if submit and retraction_mode == "metadata" else retraction_mode
         retraction = retraction_check(
