@@ -253,13 +253,16 @@ def _refresh_alpha_memo(run_dir: Path, verdict: Json) -> bool:
 
 def _revision_notes(decision: Json) -> str:
     parts: list[str] = []
-    for key in ("review_summary",):
+    for key in ("failure_category", "review_summary"):
         if decision.get(key):
             parts.append(str(decision[key]))
     for key in ("required_revisions", "major_issues", "minor_issues"):
         values = decision.get(key)
         if isinstance(values, list):
             parts.extend(str(v) for v in values if v)
+    for gate in decision.get("gate_failures") or []:
+        if isinstance(gate, dict):
+            parts.extend(str(gate.get(k) or "") for k in ("name", "reason"))
     return " ".join(parts)
 
 
@@ -285,6 +288,19 @@ def _insert_scope_clarification(text: str) -> str:
     if marker in text:
         return text.replace(marker, f"\n\n{note}{marker}", 1)
     return text.rstrip() + "\n\n" + note
+
+
+def _soften_overclaim_language(text: str) -> str:
+    replacements = (
+        (r"\bnovel\s+(approach|framework|finding|method|insight|signal|claim)\b", r"bounded \1"),
+        (r"\bunprecedented\s+", "unusual "),
+        (r"\bgroundbreaking\s+", "notable "),
+        (r"\bfirst\s+to\s+(show|demonstrate|report)\b", "reports"),
+    )
+    out = text
+    for pattern, repl in replacements:
+        out = re.sub(pattern, repl, out, flags=re.I)
+    return out
 
 
 def _apply_reviewer_revision_notes(run_dir: Path, decision: Json) -> bool:
@@ -313,6 +329,18 @@ def _apply_reviewer_revision_notes(run_dir: Path, decision: Json) -> bool:
             for term in ("single primary", "contextual support", "context receipts")
         ):
             revised = _insert_scope_clarification(revised)
+        if any(
+            term in notes_norm
+            for term in (
+                "unsupported_novelty",
+                "novel",
+                "overclaim",
+                "unprecedented",
+                "groundbreaking",
+                "first to",
+            )
+        ):
+            revised = _soften_overclaim_language(revised)
         if revised != original:
             path.write_text(revised, encoding="utf-8")
             return True
