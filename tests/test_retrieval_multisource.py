@@ -91,7 +91,7 @@ async def test_openalex_inverts_abstract_index_and_extracts_pmid() -> None:
         "doi": "https://doi.org/10.1038/nature08221",
         "ids": {"pmid": "https://pubmed.ncbi.nlm.nih.gov/19587680"},
         "publication_year": 2009,
-        "host_venue": {"display_name": "Nature"},
+        "primary_location": {"source": {"display_name": "Nature"}},
         "abstract_inverted_index": {"Rapamycin": [0], "extends": [1], "lifespan": [2]},
     }]}
     async with httpx.AsyncClient(transport=_mock(
@@ -101,6 +101,7 @@ async def test_openalex_inverts_abstract_index_and_extracts_pmid() -> None:
     assert hits[0].pmid == "19587680"
     assert hits[0].doi == "10.1038/nature08221"
     assert hits[0].abstract == "Rapamycin extends lifespan"
+    assert hits[0].venue == "Nature"
 
 
 @pytest.mark.asyncio
