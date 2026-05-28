@@ -1268,11 +1268,53 @@ def _queue_counts(queue: Json) -> Json:
     }
 
 
+def _drop_markdown_section(memo: str, heading: str) -> str:
+    out: list[str] = []
+    dropping = False
+    for line in memo.splitlines():
+        if line.strip() == heading:
+            dropping = True
+            continue
+        if dropping and line.startswith("## "):
+            dropping = False
+        if not dropping:
+            out.append(line)
+    return "\n".join(out)
+
+
+def _plain_section(memo: str, heading: str) -> str:
+    match = re.search(rf"^## {re.escape(heading)}\n+(.*?)(?=^## |\Z)", memo, re.M | re.S)
+    if not match:
+        return ""
+    text = re.sub(r"`([^`]+)`", r"\1", match.group(1))
+    text = re.sub(r"\*\*([^*]+)\*\*", r"\1", text)
+    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
+    lines = [
+        re.sub(r"^[-*]\s+", "", line.strip())
+        for line in text.splitlines()
+        if line.strip() and not line.lstrip().startswith("|")
+    ]
+    return " ".join(" ".join(lines).split())
+
+
 def _public_submission_markdown(memo: str) -> str:
+    memo = _drop_markdown_section(memo, "## Provenance / priority")
+    internal_prefixes = (
+        "# Alpha memo",
+        "**Headline:**",
+        "**Alpha score:**",
+        "**Alpha triage:**",
+        "**Confidence:**",
+        "**Memo surface:**",
+        "**Snapshot:**",
+        "**Run:**",
+        "**Direct source breadth:**",
+        "**Source thesis:**",
+        "**Source breadth:**",
+    )
     lines = [
         line for line in memo.splitlines()
-        if not line.startswith("**Alpha score:**")
-        and not line.startswith("**Alpha triage:**")
+        if not line.startswith(internal_prefixes)
     ]
     text = "\n".join(lines).strip() + "\n"
     note = (
@@ -1302,6 +1344,11 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         or verdict.get("topic")
         or "Alpha memo"
     )
+    abstract = (
+        _plain_section(memo, "One-sentence thesis")
+        or _plain_section(memo, "Why this is surprising")
+        or title
+    )
     source_papers = _memo_source_papers(verdict, root)
     direct_source_papers = _memo_source_papers(verdict, root, ("Evidence",), {"A_core"})
     source_bundle = _source_bundle(source_papers)
@@ -1313,6 +1360,8 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         "author_agent_id": "agent-v4-alpha-memo",
         "agent_id": "agent-v4-alpha-memo",
         "title": title,
+        "abstract": abstract[:1200],
+        "summary": abstract[:1200],
         "topic": verdict.get("topic"),
         "markdown": public_memo,
         "citations": source_bundle,

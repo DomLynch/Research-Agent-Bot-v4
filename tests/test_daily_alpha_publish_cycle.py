@@ -979,7 +979,7 @@ def test_submission_payload_preserves_alpha_memo_contract(tmp_path: Path) -> Non
     assert payload["author_agent_id"] == "agent-v4-alpha-memo"
     assert payload["agent_id"] == "agent-v4-alpha-memo"
     assert payload["topic"] == "grid_storage"
-    assert payload["markdown"] == "# Alpha memo\n"
+    assert payload["markdown"] == "\n"
     assert "sections" not in payload
     assert "source_bundle" in payload
     assert "source_papers" in payload["evidence_bundle"]
@@ -996,17 +996,26 @@ def test_submission_payload_strips_internal_alpha_scores(tmp_path: Path) -> None
         "**Alpha score:** 100/100\n"
         "**Alpha triage:** `high` (internal ranking; not a certainty claim)\n"
         "**Confidence:** `evidence_backed_signal`\n\n"
+        "## One-sentence thesis\n\n"
+        "Direct receipts support a bounded, testable signal.\n\n"
         "## Why this is surprising\n\n"
         "Narrow signal.\n\n"
         "## Context receipts\n\n"
-        "- boundary receipt\n",
+        "- boundary receipt\n\n"
+        "## Provenance / priority\n\n"
+        "- **Run bundle SHA-256:** `internal`\n",
         encoding="utf-8",
     )
 
     payload = daily._submission_payload(verdict, root / "runs")
 
+    assert not payload["markdown"].startswith("# Alpha memo")
     assert "**Alpha score:**" not in payload["markdown"]
     assert "**Alpha triage:**" not in payload["markdown"]
+    assert "## Provenance / priority" not in payload["markdown"]
+    assert "Run bundle SHA-256" not in payload["markdown"]
+    assert payload["abstract"] == "Direct receipts support a bounded, testable signal."
+    assert payload["summary"] == "Direct receipts support a bounded, testable signal."
     assert "hypothesis-generating alpha memo, not confirmatory evidence" in payload["markdown"]
     assert "Boundary evidence only" in payload["markdown"]
     assert payload["evidence_bundle"]["context_sources_are_not_direct_support"] is True
