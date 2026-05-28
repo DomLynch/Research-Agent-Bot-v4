@@ -337,3 +337,18 @@ def test_discover_topics_counts_slug_prefix_fact_sources() -> None:
         )
 
     assert out[0].fact_source_count == 5
+
+
+def test_fact_source_count_respects_probe_budget(monkeypatch: Any) -> None:
+    from agent import topic_discovery
+
+    def handler(_req: httpx.Request) -> httpx.Response:
+        raise AssertionError("fact probe should not call DB after budget expires")
+
+    monkeypatch.setattr(topic_discovery, "_FACT_PROBE_BUDGET_SECONDS", 0.0)
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        out = topic_discovery._fetch_topic_fact_source_count(
+            "omega_3_longevity", client=c, settings=_settings(),
+        )
+
+    assert out == 0

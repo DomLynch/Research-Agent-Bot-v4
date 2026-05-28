@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import datetime as dt
 import math
+import time
 import tomllib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -36,6 +37,8 @@ from agent.topic_synonyms import expand_topic_queries
 _SEEDS_TOML = (Path(__file__).resolve().parent.parent
                / "topic_packs" / "discovery_seeds.toml")
 _FACT_PROBE_TOPICS = 40
+_FACT_PROBE_TIMEOUT_SECONDS = 5.0
+_FACT_PROBE_BUDGET_SECONDS = 12.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,13 +147,16 @@ def _fetch_topic_fact_source_count(
     if not base or not tok:
         return 0
     source_keys: set[str] = set()
-    for query in expand_topic_queries(topic, max_queries=16):
+    deadline = time.monotonic() + _FACT_PROBE_BUDGET_SECONDS
+    for query in expand_topic_queries(topic, max_queries=8):
+        if time.monotonic() >= deadline:
+            break
         try:
             r = client.post(
                 f"{base}/api/v1/tier2/facts/search",
                 headers={"X-Researka-Token": tok},
                 json={"query": query, "top_k": limit, "numeric_only": True},
-                timeout=20.0,
+                timeout=_FACT_PROBE_TIMEOUT_SECONDS,
             )
             r.raise_for_status()
             data = r.json()
