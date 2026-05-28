@@ -24,6 +24,7 @@ import hashlib
 import json
 import re
 import sys
+import time
 import tomllib
 from pathlib import Path
 from typing import Any
@@ -55,6 +56,8 @@ from agent.topic_synonyms import expand_topic_queries
 _RUNS = Path(__file__).resolve().parent.parent / "runs"
 _PUBLICATION_CFG = Path(__file__).resolve().parent.parent / "topic_packs" / "publication.toml"
 _TOP_BINDABLE_LANES = frozenset({"A_core", "B_context"})
+_FACT_FETCH_TIMEOUT_SECONDS = 8.0
+_FACT_FETCH_BUDGET_SECONDS = 45.0
 
 
 def _safe_float(v: Any) -> float | None:
@@ -238,9 +241,12 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
     facts: list[dict[str, Any]] = []
     min_sources = _min_fact_source_papers()
     queries = expand_topic_queries(topic, max_queries=16)
+    deadline = time.monotonic() + _FACT_FETCH_BUDGET_SECONDS
     try:
-        with httpx.Client(timeout=30.0) as c:
+        with httpx.Client(timeout=_FACT_FETCH_TIMEOUT_SECONDS) as c:
             for query in queries:
+                if time.monotonic() >= deadline:
+                    break
                 strict = _post_tier2_facts(
                     c, base, hdr, query, numeric_only=True,
                     strict_audit_required=True,
@@ -248,23 +254,26 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
                 facts.extend(_normalize_tier2(it, topic) for it in strict)
                 if _a_core_source_count(facts, topic) >= min_sources:
                     break
-            try:
-                r = c.get(
-                    f"{base}/api/v1/topics/{topic}/facts",
-                    headers=hdr,
-                    params={"validated_only": "true"},
-                )
-                r.raise_for_status()
-                tier1 = r.json()
-                if isinstance(tier1, list) and tier1:
-                    for f in tier1:
-                        if isinstance(f, dict):
-                            f["_tier"] = "tier1_canonical"
-                            facts.append(f)
-            except (httpx.HTTPError, ValueError):
-                pass
+            if time.monotonic() < deadline:
+                try:
+                    r = c.get(
+                        f"{base}/api/v1/topics/{topic}/facts",
+                        headers=hdr,
+                        params={"validated_only": "true"},
+                    )
+                    r.raise_for_status()
+                    tier1 = r.json()
+                    if isinstance(tier1, list) and tier1:
+                        for f in tier1:
+                            if isinstance(f, dict):
+                                f["_tier"] = "tier1_canonical"
+                                facts.append(f)
+                except (httpx.HTTPError, ValueError):
+                    pass
             if _a_core_source_count(facts, topic) < min_sources:
                 for query in queries:
+                    if time.monotonic() >= deadline:
+                        break
                     items = _post_tier2_facts(
                         c, base, hdr, query, numeric_only=True,
                         strict_audit_required=False,
@@ -277,6 +286,8 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
                         break
             if _a_core_source_count(facts, topic) < min_sources:
                 for query in queries:
+                    if time.monotonic() >= deadline:
+                        break
                     items = _post_tier2_facts(
                         c, base, hdr, query, numeric_only=False,
                         strict_audit_required=False,

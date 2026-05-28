@@ -142,6 +142,16 @@ def test_fetch_facts_falls_back_when_strict_endpoint_rejects_flag(
     assert [f["fact_id"] for f in facts] == ["normal"]
 
 
+def test_fetch_facts_respects_total_budget(monkeypatch: Any) -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        raise AssertionError("fact fetch should not call DB after budget expires")
+
+    _mock_client(monkeypatch, handler)
+    monkeypatch.setattr(evidence_run, "_FACT_FETCH_BUDGET_SECONDS", 0.0)
+
+    assert evidence_run._fetch_facts("topicA") == []
+
+
 def test_select_tier2_items_filters_with_expanded_topic_queries() -> None:
     items = [
         {
