@@ -76,6 +76,8 @@ _DEFAULT_REFRESH_COOLDOWN_HOURS = _alpha_memo_float("refresh_cooldown_hours", 2.
 _DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS = _alpha_memo_int(
     "published_topic_cooldown_days", 30,
 )
+_DEFAULT_DECISION_POLL_ATTEMPTS = _alpha_memo_int("decision_poll_attempts", 30)
+_DEFAULT_DECISION_POLL_SECONDS = _alpha_memo_float("decision_poll_seconds", 10.0)
 _DEFAULT_MAX_REFRESH_BATCHES = 5
 _REFRESH_TIMEOUT_SECONDS = 5400
 _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT = 4
@@ -1025,6 +1027,44 @@ def _apply_submission_decision(
     return final
 
 
+def _poll_submission_decision(
+    ledger: Json,
+    *,
+    submission_id: str,
+    fetcher: DecisionFetcher,
+    page_fetcher: PageFetcher,
+    attempts: int,
+    sleep_seconds: float,
+    sleep: Callable[[float], None] = time.sleep,
+) -> str:
+    final = "pending"
+    if attempts <= 0:
+        ledger["decision_poll"] = {"attempts": 0, "final_verdict": final}
+        return final
+    for idx in range(attempts):
+        if idx and sleep_seconds > 0:
+            sleep(sleep_seconds)
+        try:
+            decision = fetcher(submission_id)
+        except Exception as exc:  # pragma: no cover - network defensive path
+            ledger["decision_check_error"] = {
+                "error": type(exc).__name__,
+                "detail": str(exc)[:180],
+                "attempt": idx + 1,
+            }
+            return final
+        final = _apply_submission_decision(
+            ledger,
+            submission_id=submission_id,
+            decision=decision,
+            page_fetcher=page_fetcher,
+        )
+        ledger["decision_poll"] = {"attempts": idx + 1, "final_verdict": final}
+        if final != "pending":
+            return final
+    return final
+
+
 def sync_submission_decisions(
     runs_root: Path = _RUNS,
     *,
@@ -1334,12 +1374,15 @@ def run_cycle(
     retraction_mode: str = "metadata",
     min_submit_sources: int = _DEFAULT_MIN_SUBMIT_SOURCES,
     min_direct_submit_sources: int = _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES,
+    decision_poll_attempts: int = _DEFAULT_DECISION_POLL_ATTEMPTS,
+    decision_poll_seconds: float = _DEFAULT_DECISION_POLL_SECONDS,
     submitter: Submitter | None = None,
     fetcher: Fetcher = _crossref_fetch,
     decision_fetcher: DecisionFetcher = _decision_fetch,
     page_fetcher: PageFetcher = _fetch_public_page,
     memo_refresher: MemoRefresher = _refresh_alpha_memo,
     queue_builder: QueueBuilder = _build_queue,
+    sleep: Callable[[float], None] = time.sleep,
 ) -> Json:
     ledger_path = runs_root / "_daily_ledger" / f"{date}.json"
     submitted_path = runs_root / "_daily_ledger" / "_submitted_fingerprints.json"
@@ -1358,6 +1401,8 @@ def run_cycle(
         "published_topic_cooldown_days": published_topic_cooldown_days,
         "min_submit_sources": min_submit_sources,
         "min_direct_submit_sources": min_direct_submit_sources,
+        "decision_poll_attempts": decision_poll_attempts,
+        "decision_poll_seconds": decision_poll_seconds,
         "refresh_batches": [],
         "cycle_attempts": [],
         "published": 0,
@@ -1379,6 +1424,7 @@ def run_cycle(
     accepted_shape_profiles = _accepted_shape_profiles(runs_root)
     all_considered: list[Json] = []
     batch_limit = max(1, max_refresh_batches if refresh_candidates else 1)
+    default_submitter = submitter is None
     if submit and submitter is None:
         url = os.environ.get("RESEARKA_SUBMIT_URL", "https://api.researka.org/submissions")
         token, token_env = _submit_token()
@@ -1509,20 +1555,19 @@ def run_cycle(
                 "submission_id": submission_id,
             })
             if submission_id:
-                try:
-                    decision = decision_fetcher(submission_id)
-                except Exception as exc:  # pragma: no cover - network defensive path
-                    ledger["decision_check_error"] = {
-                        "error": type(exc).__name__,
-                        "detail": str(exc)[:180],
-                    }
-                else:
-                    final = _apply_submission_decision(
-                        ledger,
-                        submission_id=submission_id,
-                        decision=decision,
-                        page_fetcher=page_fetcher,
-                    )
+                final = _poll_submission_decision(
+                    ledger,
+                    submission_id=submission_id,
+                    fetcher=decision_fetcher,
+                    page_fetcher=page_fetcher,
+                    attempts=decision_poll_attempts
+                    if default_submitter or decision_fetcher is not _decision_fetch
+                    else 0,
+                    sleep_seconds=decision_poll_seconds,
+                    sleep=sleep,
+                )
+                decision = ledger.get("researka_decision", {})
+                if isinstance(decision, dict):
                     if final == "accepted":
                         attempt["public_page_check"] = ledger.get("public_page_check")
                         ledger["cycle_attempts"].append(attempt | {"status": "published"})
@@ -1614,6 +1659,8 @@ def main() -> int:
     )
     parser.add_argument("--min-submit-sources", type=int, default=_DEFAULT_MIN_SUBMIT_SOURCES)
     parser.add_argument("--min-direct-submit-sources", type=int, default=_DEFAULT_MIN_DIRECT_SUBMIT_SOURCES)
+    parser.add_argument("--decision-poll-attempts", type=int, default=_DEFAULT_DECISION_POLL_ATTEMPTS)
+    parser.add_argument("--decision-poll-seconds", type=float, default=_DEFAULT_DECISION_POLL_SECONDS)
     parser.add_argument("--submit", action="store_true")
     parser.add_argument(
         "--retraction-check",
@@ -1634,6 +1681,8 @@ def main() -> int:
         published_topic_cooldown_days=args.published_topic_cooldown_days,
         min_submit_sources=args.min_submit_sources,
         min_direct_submit_sources=args.min_direct_submit_sources,
+        decision_poll_attempts=args.decision_poll_attempts,
+        decision_poll_seconds=args.decision_poll_seconds,
         submit=args.submit,
         retraction_mode=args.retraction_check,
     )

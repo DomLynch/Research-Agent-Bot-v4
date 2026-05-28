@@ -1234,6 +1234,54 @@ def test_run_cycle_syncs_prior_submission_decisions(tmp_path: Path) -> None:
     assert patched["public_url"] == "https://researka.org/alpha/pub_123"
 
 
+def test_run_cycle_polls_pending_submission_until_publication_renders(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict()
+    _memo_with_source_receipts(root, verdict, 5)
+    decisions: list[dict[str, object]] = [
+        {"status": "pending", "decision": None},
+        {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/pub_after_poll"},
+        },
+    ]
+    seen: list[str] = []
+
+    def decision_fetcher(submission_id: str) -> dict[str, object]:
+        seen.append(submission_id)
+        return decisions[min(len(seen) - 1, len(decisions) - 1)]
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": "sub_poll"}},
+        },
+        decision_fetcher=decision_fetcher,
+        page_fetcher=lambda _url: {
+            "ok": True,
+            "status": 200,
+            "body": "<html><title>Alpha memo</title></html>",
+        },
+        decision_poll_attempts=2,
+        decision_poll_seconds=0,
+    )
+
+    assert seen == ["sub_poll", "sub_poll"]
+    assert ledger["status"] == "published"
+    assert ledger["published"] == 1
+    assert ledger["final_verdict"] == "accepted"
+    assert ledger["decision_poll"] == {"attempts": 2, "final_verdict": "accepted"}
+    assert ledger["public_url"] == "https://researka.org/alpha/pub_after_poll"
+
+
 def test_sync_submission_decisions_rejects_accept_without_rendered_page(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
