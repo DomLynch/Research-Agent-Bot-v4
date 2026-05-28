@@ -11,6 +11,7 @@ Locks the velocity-scoring + ranking contract:
 """
 from __future__ import annotations
 
+import json
 import math
 from pathlib import Path
 from typing import Any
@@ -352,3 +353,20 @@ def test_fact_source_count_respects_probe_budget(monkeypatch: Any) -> None:
         )
 
     assert out == 0
+
+
+def test_fact_source_probe_uses_submit_sized_top_k() -> None:
+    from agent import topic_discovery
+
+    bodies: list[dict[str, Any]] = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        bodies.append(json.loads(req.content))
+        return httpx.Response(200, json=[])
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        topic_discovery._fetch_topic_fact_source_count(
+            "omega_3_longevity", client=c, settings=_settings(),
+        )
+
+    assert bodies[0]["top_k"] == 50

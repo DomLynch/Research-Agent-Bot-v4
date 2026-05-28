@@ -194,12 +194,26 @@ def _select_tier2_items(items: list[dict[str, Any]], topic: str) -> list[dict[st
         haystack = " ".join([
             str(it.get("canonical_phrase") or ""),
             str(it.get("claim_type") or ""),
+            str(it.get("population") or ""),
+            str(it.get("intervention") or ""),
+            str(it.get("comparator") or ""),
             str((it.get("paper") or {}).get("title") or ""),
         ]).lower()
         haystack = re.sub(r"[\W_]+", " ", haystack).strip()
         if tag in queries or any(q and q in haystack for q in queries):
             matched.append(it)
     return matched
+
+
+def _topic_fact_keys(topic: str, *, max_keys: int = 4) -> tuple[str, ...]:
+    seen: dict[str, None] = {}
+    for query in expand_topic_queries(topic, max_queries=max_keys * 3):
+        key = re.sub(r"[\W]+", "_", query).strip("_")
+        if key:
+            seen.setdefault(key, None)
+        if len(seen) >= max_keys:
+            break
+    return tuple(seen)
 
 
 def _post_tier2_facts(
@@ -254,10 +268,13 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
                 facts.extend(_normalize_tier2(it, topic) for it in strict)
                 if _a_core_source_count(facts, topic) >= min_sources:
                     break
-            if time.monotonic() < deadline:
+            for topic_key in _topic_fact_keys(topic):
+                if (time.monotonic() >= deadline
+                        or _a_core_source_count(facts, topic) >= min_sources):
+                    break
                 try:
                     r = c.get(
-                        f"{base}/api/v1/topics/{topic}/facts",
+                        f"{base}/api/v1/topics/{topic_key}/facts",
                         headers=hdr,
                         params={"validated_only": "true"},
                     )
@@ -269,7 +286,7 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
                                 f["_tier"] = "tier1_canonical"
                                 facts.append(f)
                 except (httpx.HTTPError, ValueError):
-                    pass
+                    continue
             if _a_core_source_count(facts, topic) < min_sources:
                 for query in queries:
                     if time.monotonic() >= deadline:
@@ -627,34 +644,41 @@ def _fetch_papers(topic: str, limit: int = 25) -> list[dict[str, Any]]:
     if not base or not token:
         return []
     papers: list[dict[str, Any]] = []
+    hdr = {"X-Researka-Token": token}
+    deadline = time.monotonic() + 30.0
     try:
         with httpx.Client(timeout=15.0) as c:
-            r = c.post(f"{base}/api/v1/papers/topic",
-                       headers={"X-Researka-Token": token},
-                       json={"topic": topic, "limit": limit})
-            r.raise_for_status()
-            data = r.json()
-            if isinstance(data, list):
-                papers.extend(p for p in data if isinstance(p, dict))
-            r2 = c.post(
-                f"{base}/api/v1/search",
-                headers={"X-Researka-Token": token},
-                json={
-                    "query": topic,
-                    "established_k": max(1, limit // 3),
-                    "discovery_k": max(1, limit // 3),
-                    "semantic_k": max(1, limit // 3),
-                },
-            )
-            r2.raise_for_status()
-            data2 = r2.json()
+            for topic_key in _topic_fact_keys(topic):
+                if time.monotonic() >= deadline:
+                    break
+                r = c.post(f"{base}/api/v1/papers/topic", headers=hdr,
+                           json={"topic": topic_key, "limit": limit})
+                r.raise_for_status()
+                data = r.json()
+                if isinstance(data, list):
+                    papers.extend(p for p in data if isinstance(p, dict))
+            for query in expand_topic_queries(topic, max_queries=4):
+                if time.monotonic() >= deadline:
+                    break
+                r2 = c.post(
+                    f"{base}/api/v1/search",
+                    headers=hdr,
+                    json={
+                        "query": query,
+                        "established_k": max(1, limit // 3),
+                        "discovery_k": max(1, limit // 3),
+                        "semantic_k": max(1, limit // 3),
+                    },
+                )
+                r2.raise_for_status()
+                data2 = r2.json()
+                if isinstance(data2, dict):
+                    for lane in ("established", "discovery", "semantic"):
+                        items = data2.get(lane) or []
+                        if isinstance(items, list):
+                            papers.extend(p for p in items if isinstance(p, dict))
     except (httpx.HTTPError, ValueError):
         return papers
-    if isinstance(data2, dict):
-        for lane in ("established", "discovery", "semantic"):
-            items = data2.get(lane) or []
-            if isinstance(items, list):
-                papers.extend(p for p in items if isinstance(p, dict))
     deduped: list[dict[str, Any]] = []
     seen: set[str] = set()
     for p in papers:

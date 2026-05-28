@@ -48,6 +48,18 @@ def _fact(fid: str, doi: str, *, bindable: bool = True) -> dict[str, Any]:
     return out
 
 
+def _tier1_fact(fid: str, doi: str) -> dict[str, Any]:
+    return {
+        "fact_id": fid,
+        "source_paper": {"doi": doi, "title": f"Paper {fid}"},
+        "numeric_value": 10,
+        "units": "%",
+        "canonical_phrase": f"MK-7 signal {fid}",
+        "population": "adults",
+        "intervention": "MK-7",
+    }
+
+
 def _mock_client(monkeypatch: Any, handler: Any) -> None:
     real_client = httpx.Client
 
@@ -201,18 +213,59 @@ def test_select_tier2_items_filters_with_expanded_topic_queries() -> None:
     assert selected == [items[1]]
 
 
+def test_select_tier2_items_keeps_synonym_match_in_pico_fields() -> None:
+    items = [{
+        "canonical_phrase": "Arterial stiffness changed by 12%",
+        "intervention": "MK-7",
+        "population": "older adults",
+        "paper": {"title": "Cardiovascular trial"},
+    }]
+
+    selected = evidence_run._select_tier2_items(
+        items, "vitamin_K2_vascular_aging",
+    )
+
+    assert selected == items
+
+
+def test_fetch_facts_queries_tier1_synonym_topic_keys(monkeypatch: Any) -> None:
+    post_bodies: list[dict[str, Any]] = []
+    get_paths: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET":
+            get_paths.append(request.url.path)
+            if request.url.path == "/api/v1/topics/vitamin_k2/facts":
+                return httpx.Response(
+                    200,
+                    json=[_tier1_fact(f"t1-{i}", f"10.1/tier1-{i}") for i in range(5)],
+                )
+            return httpx.Response(200, json=[])
+        body = json.loads(request.content)
+        post_bodies.append(body)
+        return httpx.Response(200, json=[])
+
+    _mock_client(monkeypatch, handler)
+
+    facts = evidence_run._fetch_facts("vitamin_K2_vascular_aging")
+
+    assert "/api/v1/topics/vitamin_k2/facts" in get_paths
+    assert all(body.get("strict_audit_required") for body in post_bodies)
+    assert evidence_run._a_core_source_count(
+        facts, "vitamin_K2_vascular_aging",
+    ) == 5
+
+
 def test_fetch_papers_merges_elite_topic_and_broad_search(
     monkeypatch: Any,
 ) -> None:
-    paths: list[str] = []
+    calls: list[tuple[str, dict[str, Any]]] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
-        paths.append(request.url.path)
+        body = json.loads(request.content)
+        calls.append((request.url.path, body))
         if request.url.path == "/api/v1/papers/topic":
-            return httpx.Response(200, json=[{
-                "doi": "10.1/a",
-                "title": "Elite paper",
-            }])
+            return httpx.Response(200, json=[{"doi": "10.1/a", "title": "Elite paper"}])
         return httpx.Response(200, json={
             "established": [{"doi": "10.1/a", "title": "Duplicate"}],
             "discovery": [{"doi": "10.1/b", "title": "Broad paper"}],
@@ -223,5 +276,34 @@ def test_fetch_papers_merges_elite_topic_and_broad_search(
 
     papers = evidence_run._fetch_papers("topicA")
 
-    assert paths == ["/api/v1/papers/topic", "/api/v1/search"]
+    assert calls == [
+        ("/api/v1/papers/topic", {"topic": "topicA", "limit": 25}),
+        ("/api/v1/search", {
+            "query": "topicA",
+            "established_k": 8,
+            "discovery_k": 8,
+            "semantic_k": 8,
+        }),
+    ]
     assert [p["doi"] for p in papers] == ["10.1/a", "10.1/b"]
+
+
+def test_fetch_papers_uses_expanded_topic_queries(monkeypatch: Any) -> None:
+    calls: list[tuple[str, dict[str, Any]]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        calls.append((request.url.path, body))
+        if request.url.path == "/api/v1/papers/topic":
+            return httpx.Response(200, json=[])
+        return httpx.Response(200, json={})
+
+    _mock_client(monkeypatch, handler)
+
+    assert evidence_run._fetch_papers("vitamin_K2_vascular_aging") == []
+
+    assert ("/api/v1/papers/topic", {"topic": "vitamin_k2", "limit": 25}) in calls
+    assert any(
+        path == "/api/v1/search" and body.get("query") == "vitamin k2"
+        for path, body in calls
+    )

@@ -1246,7 +1246,7 @@ def _refresh_candidate_batch(
     exclusions = sorted(t for t in (excluded_topics or set()) if t)
     args = [
         sys.executable, "scripts/run_curator_cycle.py",
-        "--stop-on-ready", "--top", str(refresh_top),
+        "--stop-on-ready", "--with-pico-enrich", "--top", str(refresh_top),
         "--cooldown-hours", f"{cooldown_hours:g}",
     ]
     for topic in exclusions:

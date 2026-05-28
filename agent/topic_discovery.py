@@ -36,9 +36,9 @@ from agent.topic_synonyms import expand_topic_queries
 
 _SEEDS_TOML = (Path(__file__).resolve().parent.parent
                / "topic_packs" / "discovery_seeds.toml")
-_FACT_PROBE_TOPICS = 40
-_FACT_PROBE_TIMEOUT_SECONDS = 5.0
-_FACT_PROBE_BUDGET_SECONDS = 12.0
+_FACT_PROBE_TOPICS = 100
+_FACT_PROBE_TIMEOUT_SECONDS = 8.0
+_FACT_PROBE_BUDGET_SECONDS = 24.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -139,7 +139,7 @@ def _fact_for_lane(item: dict[str, Any], topic: str) -> dict[str, Any]:
 
 def _fetch_topic_fact_source_count(
     topic: str, *, client: httpx.Client, settings: Settings,
-    limit: int = 20,
+    limit: int = 50,
 ) -> int:
     """Count unique direct bindable fact-backed sources for ranking."""
     base = settings.researka_database_url.rstrip("/")
@@ -184,7 +184,7 @@ def _fetch_fact_source_counts(
 ) -> dict[str, int]:
     if not topics:
         return {}
-    workers = min(8, len(topics))
+    workers = min(2, len(topics))
     out: dict[str, int] = {}
     with ThreadPoolExecutor(max_workers=workers) as pool:
         futures = {
