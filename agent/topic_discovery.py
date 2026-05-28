@@ -135,7 +135,7 @@ def _fact_for_lane(item: dict[str, Any], topic: str) -> dict[str, Any]:
 
 def _fetch_topic_fact_source_count(
     topic: str, *, client: httpx.Client, settings: Settings,
-    limit: int = 50,
+    limit: int = 20,
 ) -> int:
     """Count unique direct bindable fact-backed sources for ranking."""
     base = settings.researka_database_url.rstrip("/")
