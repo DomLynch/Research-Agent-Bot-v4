@@ -29,6 +29,7 @@ from typing import Any
 
 import httpx
 
+from agent.fact_lanes import classify_lanes
 from agent.settings import Settings
 
 _SEEDS_TOML = (Path(__file__).resolve().parent.parent
@@ -101,7 +102,7 @@ def _paper_key(paper: dict[str, Any]) -> str:
 
 
 def _fact_source_key(item: dict[str, Any]) -> str:
-    paper_raw = item.get("paper")
+    paper_raw = item.get("paper") or item.get("source_paper")
     paper = paper_raw if isinstance(paper_raw, dict) else {}
     return str(
         paper.get("doi")
@@ -112,11 +113,31 @@ def _fact_source_key(item: dict[str, Any]) -> str:
     ).strip().lower()[:200]
 
 
+def _fact_for_lane(item: dict[str, Any], topic: str) -> dict[str, Any]:
+    paper_raw = item.get("paper")
+    paper = paper_raw if isinstance(paper_raw, dict) else {}
+    return {
+        "fact_id": item.get("id") or item.get("fact_id"),
+        "topic": topic,
+        "sub_topic": item.get("claim_type") or item.get("sub_topic") or "",
+        "source_paper": {
+            "doi": paper.get("doi"), "pmid": paper.get("pmid"),
+            "title": paper.get("title"),
+        },
+        "numeric_value": item.get("numeric_value"),
+        "units": item.get("units"),
+        "population": item.get("population") or "",
+        "intervention": item.get("intervention") or "",
+        "comparator": item.get("comparator") or "",
+        "canonical_phrase": item.get("canonical_phrase") or "",
+    }
+
+
 def _fetch_topic_fact_source_count(
     topic: str, *, client: httpx.Client, settings: Settings,
-    limit: int = 20,
+    limit: int = 50,
 ) -> int:
-    """Count unique fact-backed sources for publishability-aware ranking."""
+    """Count unique direct bindable fact-backed sources for ranking."""
     base = settings.researka_database_url.rstrip("/")
     tok = settings.researka_database_token.strip()
     if not base or not tok:
@@ -134,9 +155,15 @@ def _fetch_topic_fact_source_count(
         return 0
     if not isinstance(data, list):
         return 0
+    facts = [_fact_for_lane(row, topic) for row in data if isinstance(row, dict)]
+    lanes = {
+        verdict.fact_id: verdict.lane
+        for verdict in classify_lanes(facts, topic)
+    }
     return len({
-        key for row in data if isinstance(row, dict)
-        for key in (_fact_source_key(row),) if key
+        key for fact in facts
+        if lanes.get(str(fact.get("fact_id") or "")) == "A_core"
+        for key in (_fact_source_key(fact),) if key
     })
 
 

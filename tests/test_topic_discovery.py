@@ -276,16 +276,24 @@ def test_discover_topics_prefers_fact_source_breadth() -> None:
     fast_thin = [_paper(doi="10.1/fast", fwci=20.0, cited_by_count=2000)]
     slower_rich = [_paper(doi="10.1/rich", fwci=2.0, cited_by_count=100)]
 
-    def facts(n: int) -> list[dict[str, Any]]:
+    def facts(n: int, topic: str) -> list[dict[str, Any]]:
         return [
-            {"id": f"f{i}", "paper_id": f"10.2/{i}", "paper": {"doi": f"10.2/{i}"}}
+            {
+                "id": f"f{i}", "paper_id": f"10.2/{i}",
+                "paper": {"doi": f"10.2/{i}"},
+                "numeric_value": 10, "units": "%",
+                "population": "adults",
+                "intervention": topic.replace("_", " "),
+                "canonical_phrase": f"{topic.replace('_', ' ')} reduced risk by 10%",
+            }
             for i in range(n)
         ]
 
     def handler(req: httpx.Request) -> httpx.Response:
         body = req.read().decode("utf-8") if req.content else "{}"
         if req.url.path.endswith("/tier2/facts/search"):
-            return httpx.Response(200, json=facts(5 if "rich" in body else 1))
+            topic = "rich_topic" if "rich" in body else "fast_topic"
+            return httpx.Response(200, json=facts(5 if "rich" in body else 1, topic))
         if "rich" in body:
             return httpx.Response(200, json=slower_rich)
         return httpx.Response(200, json=fast_thin)

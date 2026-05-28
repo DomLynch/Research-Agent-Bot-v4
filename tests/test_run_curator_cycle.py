@@ -321,12 +321,14 @@ def test_stop_on_ready_ignores_under_source_candidate(
     cycles = runs / "_curator_cycles"
     cycles.mkdir(parents=True)
     seen: list[str] = []
+    top_values: list[int] = []
 
     def fake_pipeline(
         topic: str, velocity: float, *, with_editorial: bool,
         top_n: int, py: str, pico_enrich: bool = False,
     ) -> TopicResult:
         seen.append(topic)
+        top_values.append(top_n)
         run_dir = runs / f"{topic}-evidence-ts"
         _write_ready_alpha_run(run_dir, source_count=4 if topic == "thin" else 5)
         return TopicResult(
@@ -356,6 +358,7 @@ def test_stop_on_ready_ignores_under_source_candidate(
 
     assert run_curator_cycle.main() == 0
     assert seen == ["thin", "ready"]
+    assert top_values == [10, 10]
     payload = json.loads(next(cycles.glob("*.json")).read_text(encoding="utf-8"))
     assert payload["stopped_on_ready"] is True
 

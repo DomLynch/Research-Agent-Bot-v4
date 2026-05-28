@@ -42,6 +42,7 @@ from daily_alpha_publish_cycle import (
 _ROOT = Path(__file__).resolve().parent.parent
 _RUNS = _ROOT / "runs"
 _CYCLES_DIR = _RUNS / "_curator_cycles"
+_DEFAULT_PIPELINE_TOP_N = max(5, _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES * 2)
 
 
 @dataclass(frozen=True, slots=True)
@@ -358,7 +359,8 @@ def main() -> int:
         t0 = time.time()
         res = _run_topic_pipeline(
             topic, vel, with_editorial=not args.no_editorial,
-            top_n=5, py=py, pico_enrich=args.with_pico_enrich,
+            top_n=_DEFAULT_PIPELINE_TOP_N, py=py,
+            pico_enrich=args.with_pico_enrich,
         )
         elapsed = time.time() - t0
         print(f"   -> {res.status} label={res.signal_label} "
