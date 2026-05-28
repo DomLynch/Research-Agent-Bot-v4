@@ -35,7 +35,7 @@ class OpenAlexSource:
             "search": clean_text(query, limit=1024),
             "per_page": str(min(retmax, 200)),
             "select": (
-                "id,title,doi,ids,publication_year,host_venue,"
+                "id,title,doi,ids,publication_year,primary_location,"
                 "abstract_inverted_index"
             ),
         }
@@ -65,8 +65,11 @@ def _parse_item(item: Any) -> PaperHit | None:
     doi = normalize_doi(item.get("doi"))
     ids = item.get("ids") or {}
     pmid = clean_text(ids.get("pmid"), limit=64).rsplit("/", 1)[-1] or None
+    primary = item.get("primary_location") or {}
+    source = primary.get("source") or {}
+    legacy = item.get("host_venue") or {}
     venue = clean_text(
-        (item.get("host_venue") or {}).get("display_name"), limit=200,
+        source.get("display_name") or legacy.get("display_name"), limit=200,
     ) or None
     year = int_or_none(item.get("publication_year"))
     url = clean_text(item.get("id"), limit=500)
