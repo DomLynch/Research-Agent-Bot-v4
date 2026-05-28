@@ -24,6 +24,7 @@ from build_topic_evidence_run import (
     _editorial_block,
     _rankable_facts_for_top,
     _render_md,
+    _source_diverse_top,
 )
 
 
@@ -142,6 +143,26 @@ def test_missing_doi_and_title_treated_as_unique() -> None:
               "numeric_value": 2.0, "units": ""}),
     ])
     assert len(out) == 2
+
+
+def test_source_diverse_top_meets_direct_source_floor() -> None:
+    scored = [
+        (100, _fact("a", doi="10.1/a")),
+        (95, _fact("dup", doi="10.1/a")),
+        (90, _fact("ctx", doi="10.1/context")),
+        (80, _fact("b", doi="10.1/b")),
+        (70, _fact("c", doi="10.1/c")),
+        (60, _fact("d", doi="10.1/d")),
+        (50, _fact("e", doi="10.1/e")),
+    ]
+    lane_by_id = {fid: "A_core" for fid in ("a", "dup", "b", "c", "d", "e")}
+    lane_by_id["ctx"] = "B_context"
+
+    out = _source_diverse_top(
+        scored, top_n=10, min_sources=5, lane_by_id=lane_by_id,
+    )
+
+    assert [fact["fact_id"] for _score, fact in out] == ["a", "b", "c", "d", "e"]
 
 
 def test_dedup_preserves_score_order() -> None:

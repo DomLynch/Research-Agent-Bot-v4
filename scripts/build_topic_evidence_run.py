@@ -343,6 +343,28 @@ def _dedup_by_paper_subtopic(
     return out
 
 
+def _source_diverse_top(
+    scored: list[tuple[int, dict[str, Any]]],
+    top_n: int,
+    *,
+    min_sources: int,
+    lane_by_id: dict[str, str],
+) -> list[tuple[int, dict[str, Any]]]:
+    selected: list[tuple[int, dict[str, Any]]] = []
+    seen_sources: set[str] = set()
+    for score, fact in scored:
+        if lane_by_id.get(str(fact.get("fact_id") or "")) != "A_core":
+            continue
+        source = _source_key(fact)
+        if not source or source in seen_sources:
+            continue
+        selected.append((score, fact))
+        seen_sources.add(source)
+        if len(selected) >= top_n:
+            break
+    return selected if len(seen_sources) >= min_sources else []
+
+
 def _editorial_block(
     fact: dict[str, Any], sub_topic: str, supp_count: int,
     mimo_enrichment: dict[str, str] | None = None,
@@ -686,13 +708,22 @@ def main() -> int:
     # ABT-263) before scoring so a parse artifact can never lead the
     # Top 5. Universal — syntactic shape only, no domain literals.
     facts, _artifact_facts = filter_artifacts(facts)
-    rankable_facts = _rankable_facts_for_top(facts, args.topic)
+    lane_verdicts = classify_lanes(facts, args.topic)
+    lane_by_id = {v.fact_id: v.lane for v in lane_verdicts}
+    rankable_facts = _rankable_facts_for_top(facts, args.topic, lane_verdicts)
     scored = sorted(((alpha_score(_interestingness(f), f), f) for f in rankable_facts),
                     key=lambda p: p[0], reverse=True)
     # Collapse same-paper + same-sub_topic duplicates so a single trial
     # can't monopolise the Top N (Sprint 60a).
     deduped = _dedup_by_paper_subtopic(scored)
     selected_theme, top = select_coherent_theme(deduped, args.top)
+    min_sources = _min_fact_source_papers()
+    if _source_count([fact for _score, fact in top]) < min_sources:
+        source_diverse = _source_diverse_top(
+            deduped, args.top, min_sources=min_sources, lane_by_id=lane_by_id,
+        )
+        if source_diverse:
+            selected_theme, top = None, source_diverse
     all_facet_counts = facet_counts([f for _score, f in deduped])
     aggregated = _aggregate(facts)
 
@@ -732,9 +763,6 @@ def main() -> int:
         # Stops MiMo from picking provocative D_bad facts and forming
         # theses the binding gate must reject downstream.
         _bindable = {"A_core", "B_context"}
-        lane_by_id: dict[str, str] = {
-            v.fact_id: v.lane for v in classify_lanes(facts, args.topic)
-        }
         evidence_facts, alpha_hints = [], []
         for f in facts:
             lane = lane_by_id.get(str(f.get("fact_id") or ""))
