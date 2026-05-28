@@ -244,7 +244,7 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
     deadline = time.monotonic() + _FACT_FETCH_BUDGET_SECONDS
     try:
         with httpx.Client(timeout=_FACT_FETCH_TIMEOUT_SECONDS) as c:
-            for query in queries:
+            for query in queries[:2]:
                 if time.monotonic() >= deadline:
                     break
                 strict = _post_tier2_facts(

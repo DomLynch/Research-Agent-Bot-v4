@@ -124,6 +124,36 @@ def test_fetch_facts_widens_when_strict_sources_are_not_direct_bindable(
     assert evidence_run._a_core_source_count(facts, "topicA") == 5
 
 
+def test_fetch_facts_caps_strict_synonym_probes_before_normal(
+    monkeypatch: Any,
+) -> None:
+    bodies: list[dict[str, Any]] = []
+
+    monkeypatch.setattr(
+        evidence_run, "expand_topic_queries",
+        lambda _topic, max_queries=16: ("topicA", "q1", "q2", "q3", "q4"),
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET":
+            return httpx.Response(200, json=[])
+        body = json.loads(request.content)
+        bodies.append(body)
+        if body.get("strict_audit_required"):
+            return httpx.Response(200, json=[])
+        return httpx.Response(
+            200,
+            json=[_fact(f"normal-{i}", f"10.1/normal-{i}") for i in range(5)],
+        )
+
+    _mock_client(monkeypatch, handler)
+
+    facts = evidence_run._fetch_facts("topicA")
+
+    assert [b.get("strict_audit_required") for b in bodies[:3]] == [True, True, None]
+    assert evidence_run._a_core_source_count(facts, "topicA") == 5
+
+
 def test_fetch_facts_falls_back_when_strict_endpoint_rejects_flag(
     monkeypatch: Any,
 ) -> None:
