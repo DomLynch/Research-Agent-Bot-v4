@@ -143,6 +143,15 @@ def _source_count(facts: list[dict[str, Any]]) -> int:
     return len({k for f in facts if (k := _source_key(f))})
 
 
+def _a_core_source_count(facts: list[dict[str, Any]], topic: str) -> int:
+    lane_by_id = {v.fact_id: v.lane for v in classify_lanes(facts, topic)}
+    return len({
+        key for fact in facts
+        if lane_by_id.get(str(fact.get("fact_id") or "")) == "A_core"
+        for key in (_source_key(fact),) if key
+    })
+
+
 def _min_fact_source_papers() -> int:
     try:
         data = tomllib.loads(_PUBLICATION_CFG.read_text(encoding="utf-8"))
@@ -244,7 +253,7 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
                             facts.append(f)
             except (httpx.HTTPError, ValueError):
                 pass
-            if _source_count(facts) < min_sources:
+            if _a_core_source_count(facts, topic) < min_sources:
                 items = _post_tier2_facts(
                     c, base, hdr, topic, numeric_only=True,
                     strict_audit_required=False,
@@ -253,7 +262,7 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
                     _normalize_tier2(it, topic)
                     for it in _select_tier2_items(items, topic)
                 )
-            if _source_count(facts) < min_sources:
+            if _a_core_source_count(facts, topic) < min_sources:
                 items = _post_tier2_facts(
                     c, base, hdr, topic, numeric_only=False,
                     strict_audit_required=False,

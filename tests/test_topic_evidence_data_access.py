@@ -27,8 +27,8 @@ def _settings() -> Any:
     )
 
 
-def _fact(fid: str, doi: str) -> dict[str, Any]:
-    return {
+def _fact(fid: str, doi: str, *, bindable: bool = True) -> dict[str, Any]:
+    out = {
         "id": fid,
         "paper": {
             "doi": doi,
@@ -42,6 +42,10 @@ def _fact(fid: str, doi: str) -> dict[str, Any]:
         "extraction_confidence": "high",
         "canonical_phrase": f"topicA signal {fid}",
     }
+    if bindable:
+        out["population"] = "adults"
+        out["intervention"] = "topicA"
+    return out
 
 
 def _mock_client(monkeypatch: Any, handler: Any) -> None:
@@ -87,6 +91,37 @@ def test_fetch_facts_strict_first_then_normal_until_source_floor(
     assert bodies[1]["numeric_only"] is True
     assert len(bodies) == 2
     assert evidence_run._source_count(facts) == 6
+    assert evidence_run._a_core_source_count(facts, "topicA") == 6
+
+
+def test_fetch_facts_widens_when_strict_sources_are_not_direct_bindable(
+    monkeypatch: Any,
+) -> None:
+    bodies: list[dict[str, Any]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET":
+            return httpx.Response(200, json=[])
+        body = json.loads(request.content)
+        bodies.append(body)
+        if body.get("strict_audit_required"):
+            return httpx.Response(
+                200,
+                json=[_fact(f"strict-{i}", f"10.1/strict-{i}", bindable=False)
+                      for i in range(5)],
+            )
+        return httpx.Response(
+            200,
+            json=[_fact(f"normal-{i}", f"10.1/normal-{i}") for i in range(5)],
+        )
+
+    _mock_client(monkeypatch, handler)
+
+    facts = evidence_run._fetch_facts("topicA")
+
+    assert [body["numeric_only"] for body in bodies] == [True, True]
+    assert evidence_run._source_count(facts) == 10
+    assert evidence_run._a_core_source_count(facts, "topicA") == 5
 
 
 def test_fetch_facts_falls_back_when_strict_endpoint_rejects_flag(
