@@ -73,6 +73,9 @@ _DEFAULT_MIN_SUBMIT_SOURCES = _alpha_memo_int("min_source_papers", 5)
 _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES = _alpha_memo_int("min_direct_source_papers", 2)
 _DEFAULT_REFRESH_TOP = 20
 _DEFAULT_REFRESH_COOLDOWN_HOURS = _alpha_memo_float("refresh_cooldown_hours", 2.0)
+_DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS = _alpha_memo_int(
+    "published_topic_cooldown_days", 30,
+)
 _DEFAULT_MAX_REFRESH_BATCHES = 5
 _REFRESH_TIMEOUT_SECONDS = 5400
 _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT = 4
@@ -237,10 +240,81 @@ def _refresh_alpha_memo(run_dir: Path, verdict: Json) -> bool:
         return False
     if not (run_dir / "signal_post.md").exists():
         return False
+    decision = verdict.get("_repair_decision")
+    if isinstance(decision, dict) and _apply_reviewer_revision_notes(run_dir, decision):
+        return True
     from agent.signal_memo_writer import write_signal_memo
 
     write_signal_memo(run_dir, publish_verdict=verdict)
     return True
+
+
+def _revision_notes(decision: Json) -> str:
+    parts: list[str] = []
+    for key in ("review_summary",):
+        if decision.get(key):
+            parts.append(str(decision[key]))
+    for key in ("required_revisions", "major_issues", "minor_issues"):
+        values = decision.get(key)
+        if isinstance(values, list):
+            parts.extend(str(v) for v in values if v)
+    return " ".join(parts)
+
+
+def _clean_title_claim(line: str) -> str:
+    return re.sub(
+        r":\s*(?:a\s+)?(?:systematic review|meta-analysis|meta analysis)"
+        r"(?:\s+and\s+(?:meta-analysis|meta analysis))?(?:\s+of\s+[^.\n]+)?",
+        "",
+        line,
+        flags=re.I,
+    )
+
+
+def _insert_scope_clarification(text: str) -> str:
+    note = (
+        "**Scope clarification:** The lead claim should be read as a narrow "
+        "direct-source signal. Other cited sources provide context and boundary "
+        "checks, not independent confirmation of the lead claim.\n"
+    )
+    if note in text:
+        return text
+    marker = "\n## Why this is surprising"
+    if marker in text:
+        return text.replace(marker, f"\n\n{note}{marker}", 1)
+    return text.rstrip() + "\n\n" + note
+
+
+def _apply_reviewer_revision_notes(run_dir: Path, decision: Json) -> bool:
+    if decision.get("decision") != "revise":
+        return False
+    notes = _revision_notes(decision)
+    if not notes:
+        return False
+    path = run_dir / "alpha_memo.md"
+    with suppress(OSError):
+        original = path.read_text(encoding="utf-8")
+        revised = original
+        notes_norm = _norm(notes)
+        if "title" in notes_norm and any(
+            term in notes_norm
+            for term in ("systematic review", "meta-analysis", "meta analysis")
+        ):
+            lines = []
+            for line in revised.splitlines():
+                if line.startswith("**Headline:**") or line.startswith("- **Suggested citation:**"):
+                    line = _clean_title_claim(line)
+                lines.append(line)
+            revised = "\n".join(lines) + ("\n" if original.endswith("\n") else "")
+        if any(
+            term in notes_norm
+            for term in ("single primary", "contextual support", "context receipts")
+        ):
+            revised = _insert_scope_clarification(revised)
+        if revised != original:
+            path.write_text(revised, encoding="utf-8")
+            return True
+    return False
 
 
 def _seen_submission_fingerprints(path: Path) -> set[str]:
@@ -330,6 +404,23 @@ def _repairable_rejected_fingerprints(ledger_dir: Path) -> set[str]:
     return retryable
 
 
+def _repairable_decisions_by_fingerprint(ledger_dir: Path) -> dict[str, Json]:
+    retryable: dict[str, Json] = {}
+    for path in sorted(ledger_dir.glob("*.json"), reverse=True):
+        ledger = _json(path, {})
+        if (
+            not isinstance(ledger, dict)
+            or ledger.get("final_verdict") not in {"rejected", "revise"}
+            or not _repairable_ledger(ledger)
+        ):
+            continue
+        fp = str((ledger.get("candidate") or {}).get("fingerprint") or "")
+        decision = ledger.get("researka_decision")
+        if fp and isinstance(decision, dict) and fp not in retryable:
+            retryable[fp] = decision
+    return retryable
+
+
 def _repairable_candidate_verdicts(runs_root: Path) -> list[Json]:
     verdicts: list[Json] = []
     seen: set[str] = set()
@@ -379,6 +470,30 @@ def _accepted_shape_profiles(runs_root: Path, *, limit: int = 25) -> list[Json]:
         if len(profiles) >= limit:
             break
     return profiles
+
+
+def _recently_published_topics(ledger_dir: Path, *, days: int) -> set[str]:
+    cutoff = time.time() - (max(0, days) * 86400)
+    topics: set[str] = set()
+    for path in ledger_dir.glob("*.json"):
+        if path.name.startswith("_"):
+            continue
+        with suppress(OSError):
+            if path.stat().st_mtime < cutoff:
+                continue
+        ledger = _json(path, {})
+        if not isinstance(ledger, dict):
+            continue
+        if ledger.get("final_verdict") != "accepted" and ledger.get("published") != 1:
+            continue
+        topic = (
+            ledger.get("published_topic")
+            or ledger.get("submitted_topic")
+            or (ledger.get("candidate") or {}).get("topic")
+        )
+        if topic:
+            topics.add(str(topic))
+    return topics
 
 
 def _repairable_rejection(decision: Json) -> bool:
@@ -593,6 +708,7 @@ def select_candidate(
 ) -> tuple[Json | None, list[Json]]:
     seen = _seen_submission_fingerprints(submitted_path)
     retryable = _repairable_rejected_fingerprints(submitted_path.parent)
+    retry_decisions = _repairable_decisions_by_fingerprint(submitted_path.parent)
     blocked = blocked_fingerprints or set()
     topic_blocked = blocked_topics or set()
     shape_profiles = accepted_shape_profiles or []
@@ -638,7 +754,8 @@ def select_candidate(
             and memo_refresher
         ):
             run_dir = _run_path(runs_root, verdict.get("run_dir"))
-            memo_refreshed = memo_refresher(run_dir, verdict)
+            refresh_verdict = verdict | {"_repair_decision": retry_decisions.get(fp)}
+            memo_refreshed = memo_refresher(run_dir, refresh_verdict)
             if memo_refreshed:
                 source_count = _source_count(verdict, runs_root)
                 direct_source_count = _direct_source_count(verdict, runs_root)
@@ -662,7 +779,8 @@ def select_candidate(
         else:
             if retry_after_rejection and memo_refresher and not memo_refreshed:
                 run_dir = _run_path(runs_root, verdict.get("run_dir"))
-                memo_refreshed = memo_refresher(run_dir, verdict)
+                refresh_verdict = verdict | {"_repair_decision": retry_decisions.get(fp)}
+                memo_refreshed = memo_refresher(run_dir, refresh_verdict)
                 if memo_refreshed:
                     source_count = _source_count(verdict, runs_root)
                     direct_source_count = _direct_source_count(verdict, runs_root)
@@ -1211,6 +1329,7 @@ def run_cycle(
     refresh_top: int = _DEFAULT_REFRESH_TOP,
     refresh_cooldown_hours: float = _DEFAULT_REFRESH_COOLDOWN_HOURS,
     max_refresh_batches: int = _DEFAULT_MAX_REFRESH_BATCHES,
+    published_topic_cooldown_days: int = _DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS,
     submit: bool = False,
     retraction_mode: str = "metadata",
     min_submit_sources: int = _DEFAULT_MIN_SUBMIT_SOURCES,
@@ -1236,6 +1355,7 @@ def run_cycle(
         "refresh_top": refresh_top,
         "refresh_cooldown_hours": refresh_cooldown_hours,
         "max_refresh_batches": max_refresh_batches,
+        "published_topic_cooldown_days": published_topic_cooldown_days,
         "min_submit_sources": min_submit_sources,
         "min_direct_submit_sources": min_direct_submit_sources,
         "refresh_batches": [],
@@ -1251,7 +1371,10 @@ def run_cycle(
         _write_json(ledger_path, ledger)
         return ledger
     blocked_fingerprints: set[str] = set()
-    blocked_topics: set[str] = set()
+    blocked_topics = _recently_published_topics(
+        submitted_path.parent, days=published_topic_cooldown_days,
+    )
+    ledger["recently_published_topics_blocked"] = sorted(blocked_topics)
     force_refresh = False
     accepted_shape_profiles = _accepted_shape_profiles(runs_root)
     all_considered: list[Json] = []
@@ -1484,6 +1607,11 @@ def main() -> int:
     parser.add_argument("--refresh-top", type=int, default=_DEFAULT_REFRESH_TOP)
     parser.add_argument("--refresh-cooldown-hours", type=float, default=_DEFAULT_REFRESH_COOLDOWN_HOURS)
     parser.add_argument("--max-refresh-batches", type=int, default=_DEFAULT_MAX_REFRESH_BATCHES)
+    parser.add_argument(
+        "--published-topic-cooldown-days",
+        type=int,
+        default=_DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS,
+    )
     parser.add_argument("--min-submit-sources", type=int, default=_DEFAULT_MIN_SUBMIT_SOURCES)
     parser.add_argument("--min-direct-submit-sources", type=int, default=_DEFAULT_MIN_DIRECT_SUBMIT_SOURCES)
     parser.add_argument("--submit", action="store_true")
@@ -1503,6 +1631,7 @@ def main() -> int:
         refresh_top=args.refresh_top,
         refresh_cooldown_hours=args.refresh_cooldown_hours,
         max_refresh_batches=args.max_refresh_batches,
+        published_topic_cooldown_days=args.published_topic_cooldown_days,
         min_submit_sources=args.min_submit_sources,
         min_direct_submit_sources=args.min_direct_submit_sources,
         submit=args.submit,

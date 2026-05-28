@@ -203,6 +203,44 @@ def test_default_memo_refresher_never_mutates_archive(tmp_path: Path) -> None:
     assert daily._refresh_alpha_memo(run, {}) is False
 
 
+def test_revision_refresher_edits_existing_memo_without_scratch_rewrite(tmp_path: Path) -> None:
+    run = tmp_path / "runs" / "metformin-evidence-ts"
+    run.mkdir(parents=True)
+    run.joinpath("signal_post.md").write_text("# Signal\n", encoding="utf-8")
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo — metformin\n\n"
+        "**Headline:** Stage-Specific Efficacy: A Systematic Review of Survival Outcomes\n\n"
+        "## One-sentence thesis\n\n"
+        "The direct receipt reports one disease-specific signal.\n\n"
+        "## Why this is surprising\n\n"
+        "The context differs.\n\n"
+        "## Evidence receipts\n\n"
+        "- `fact_id=1` (`A_core`) - receipt\n\n"
+        "- **Suggested citation:** Dom Lynch. (2026). Stage-Specific Efficacy: "
+        "A Systematic Review of Survival Outcomes. ReseaRka Evidence Index.\n",
+        encoding="utf-8",
+    )
+
+    changed = daily._refresh_alpha_memo(run, {
+        "_repair_decision": {
+            "decision": "revise",
+            "required_revisions": [
+                "Revise the title to remove 'systematic review'.",
+                "Clarify that findings derive from a single primary study with contextual support.",
+            ],
+        },
+    })
+
+    memo = run.joinpath("alpha_memo.md").read_text(encoding="utf-8")
+    assert changed is True
+    assert "**Headline:** Stage-Specific Efficacy" in memo
+    assert "**Headline:** Stage-Specific Efficacy:" not in memo
+    assert "Systematic Review" not in memo
+    assert "Scope clarification" in memo
+    assert "## Evidence receipts" in memo
+    assert "`fact_id=1`" in memo
+
+
 def test_repairable_rejected_submission_can_retry_once(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("retryable")
@@ -254,12 +292,19 @@ def test_repairable_retry_refreshes_even_when_source_floor_passes(tmp_path: Path
         "status": "submitted_to_researka",
         "final_verdict": "revise",
         "candidate": {"fingerprint": fp, "topic": "retry_refresh"},
-        "researka_decision": {"status": "complete", "decision": "revise"},
+        "researka_decision": {
+            "status": "complete",
+            "decision": "revise",
+            "required_revisions": ["make thesis declarative"],
+        },
     })
     refreshed = {"called": False}
 
     def refresh(run_dir: Path, _verdict: dict[str, Any]) -> bool:
         refreshed["called"] = True
+        assert _verdict["_repair_decision"]["required_revisions"] == [
+            "make thesis declarative",
+        ]
         text = run_dir.joinpath("alpha_memo.md").read_text(encoding="utf-8")
         run_dir.joinpath("alpha_memo.md").write_text(
             text + "\nRevision marker.\n",
@@ -281,6 +326,39 @@ def test_repairable_retry_refreshes_even_when_source_floor_passes(tmp_path: Path
     assert refreshed["called"] is True
     assert ledger["considered"][0]["memo_refreshed"] is True
     assert ledger["status"] == "submitted_to_researka"
+
+
+def test_recently_published_topic_is_skipped_for_fresh_topic(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    published = _verdict("published", score=100)
+    fresh = _verdict("fresh", score=90)
+    _memo_with_source_receipts(root, published, 5)
+    _memo_with_source_receipts(root, fresh, 5)
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "published",
+        "final_verdict": "accepted",
+        "published": 1,
+        "published_topic": "published",
+        "candidate": {
+            "topic": "published",
+            "fingerprint": daily.memo_fingerprint(published),
+        },
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(published, fresh),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+    )
+
+    assert ledger["submitted_topic"] == "fresh"
+    assert ledger["recently_published_topics_blocked"] == ["published"]
+    assert ledger["considered"][0]["topic"] == "published"
+    assert ledger["considered"][0]["status"] == "cycle_exhausted_topic"
 
 
 def test_repairable_retry_does_not_resubmit_unchanged_memo(tmp_path: Path) -> None:
