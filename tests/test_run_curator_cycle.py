@@ -294,6 +294,32 @@ def test_topic_pipeline_skips_pico_by_default(
     assert "--no-pico-enrich" in calls[0]
 
 
+def test_discovery_failure_aborts_before_stale_plan(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    calls: list[tuple[str, int]] = []
+
+    def fake_step(
+        _args: list[str], step_name: str, *, timeout: int = 600,
+    ) -> tuple[bool, str]:
+        calls.append((step_name, timeout))
+        return False, "discovery: TimeoutExpired"
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", tmp_path / "runs")
+    monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
+    monkeypatch.setattr(
+        run_curator_cycle, "_run_topic_pipeline",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError),
+    )
+    monkeypatch.setattr(sys, "argv", ["run_curator_cycle.py", "--top", "2"])
+
+    assert run_curator_cycle.main() == 1
+    assert calls == [("discovery", 1800)]
+
+
 def test_stop_on_ready_halts_plan(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

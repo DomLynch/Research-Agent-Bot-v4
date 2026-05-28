@@ -43,6 +43,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 _RUNS = _ROOT / "runs"
 _CYCLES_DIR = _RUNS / "_curator_cycles"
 _DEFAULT_PIPELINE_TOP_N = max(5, _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES * 2)
+_DISCOVERY_TIMEOUT_SECONDS = 1800
 
 
 @dataclass(frozen=True, slots=True)
@@ -130,11 +131,13 @@ def _is_publish_ready(run_dir: str) -> bool:
     )
 
 
-def _run_step(args: list[str], step_name: str) -> tuple[bool, str]:
+def _run_step(
+    args: list[str], step_name: str, *, timeout: int = 600,
+) -> tuple[bool, str]:
     """Run a subprocess; return (ok, last_line). Never raises."""
     try:
         r = subprocess.run(args, capture_output=True, text=True,
-                           timeout=600, check=False)
+                           timeout=timeout, check=False)
     except (subprocess.SubprocessError, OSError) as e:
         return False, f"{step_name}: {type(e).__name__}: {e}"
     out = (r.stdout or "").strip().splitlines()
@@ -335,8 +338,14 @@ def main() -> int:
     # Step 1: refresh discovery
     print("[cycle] step 1: topic discovery")
     if not args.dry_run:
-        _run_step([py, "scripts/run_topic_discovery.py", "--top", "20"],
-                  "discovery")
+        ok, last = _run_step(
+            [py, "scripts/run_topic_discovery.py", "--top", "20"],
+            "discovery",
+            timeout=_DISCOVERY_TIMEOUT_SECONDS,
+        )
+        if not ok:
+            print(f"[cycle] discovery failed: {last}", file=sys.stderr)
+            return 1
     ranked = _read_discovery_top(_RUNS / "_topics_discovery")
     if not ranked:
         print("[cycle] no discovery candidates; aborting.", file=sys.stderr)
