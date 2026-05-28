@@ -124,7 +124,7 @@ def _is_publish_ready(run_dir: str) -> bool:
         return False
     if str(verdict.get("decision") or "") != "ready_to_publish":
         return False
-    return (
+    return bool(
         _source_count(verdict, _RUNS) >= _DEFAULT_MIN_SUBMIT_SOURCES
         and _direct_source_count(verdict, _RUNS) >= _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES
     )
@@ -233,6 +233,7 @@ def _plan_topics(
     min_fact_sources: int = 0,
 ) -> tuple[list[dict[str, Any]], list[str], list[str]]:
     plan: list[dict[str, Any]] = []
+    underfloor: list[dict[str, Any]] = []
     skipped: list[str] = []
     skipped_excluded: list[str] = []
     for c in ranked:
@@ -246,10 +247,16 @@ def _plan_topics(
             skipped.append(topic)
             continue
         if min_fact_sources and int(c.get("fact_source_count") or 0) < min_fact_sources:
+            underfloor.append(c)
             continue
         plan.append(c)
         if len(plan) >= top:
             break
+    if not plan:
+        for c in underfloor:
+            if len(plan) >= top:
+                break
+            plan.append(c)
     return plan, skipped, skipped_excluded
 
 

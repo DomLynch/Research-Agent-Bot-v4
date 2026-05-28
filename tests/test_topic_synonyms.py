@@ -16,6 +16,7 @@ from pathlib import Path
 from agent.topic_synonyms import (
     _norm,
     expand_topic_keywords,
+    expand_topic_queries,
     load_synonyms,
     text_matches_topic,
 )
@@ -54,6 +55,11 @@ def test_topic_first_then_instances_preserves_order() -> None:
     out = expand_topic_keywords("mtor_inhibitor")
     assert out[0] == "mtor_inhibitor"
     assert "rapamycin" in out
+
+
+def test_expand_topic_queries_adds_normalized_prefixes() -> None:
+    out = expand_topic_queries("omega_3_longevity")
+    assert out[:3] == ("omega_3_longevity", "omega 3 longevity", "omega 3")
 
 
 def test_text_matches_topic_finds_instance() -> None:

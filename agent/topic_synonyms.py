@@ -64,6 +64,31 @@ def expand_topic_keywords(topic: str) -> tuple[str, ...]:
     return tuple(seen)
 
 
+def expand_topic_queries(topic: str, *, max_queries: int = 4) -> tuple[str, ...]:
+    """Search queries for slug-style topics.
+
+    Keeps the exact topic first, then adds normalized phrase forms and
+    short prefixes so `omega_3_longevity` can still reach facts indexed
+    under `omega 3`. Registry instances participate through
+    expand_topic_keywords().
+    """
+    seen: dict[str, None] = {}
+    for kw in expand_topic_keywords(topic):
+        normed = _norm(kw)
+        raw = kw.strip()
+        if raw:
+            seen.setdefault(raw, None)
+        if normed and normed != raw.casefold():
+            seen.setdefault(normed, None)
+        parts = normed.split()
+        while len(parts) > 2:
+            parts = parts[:-1]
+            seen.setdefault(" ".join(parts), None)
+        if len(seen) >= max_queries:
+            break
+    return tuple(seen)[:max_queries]
+
+
 def text_matches_topic(text: str, topic: str) -> bool:
     """Case-insensitive substring check across topic + all instances.
     Underscore-aware on the topic word (carbon_tax -> carbon tax)."""

@@ -307,3 +307,33 @@ def test_discover_topics_prefers_fact_source_breadth() -> None:
     assert out[0].topic == "rich_topic"
     assert out[0].fact_source_count == 5
     assert out[1].fact_source_count == 1
+
+
+def test_discover_topics_counts_slug_prefix_fact_sources() -> None:
+    papers = [_paper(doi="10.1/omega", fwci=2.0, cited_by_count=100)]
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        body = req.read().decode("utf-8") if req.content else "{}"
+        if req.url.path.endswith("/tier2/facts/search"):
+            if "omega 3" not in body or "longevity" in body:
+                return httpx.Response(200, json=[])
+            return httpx.Response(200, json=[
+                {
+                    "id": f"f{i}", "paper_id": f"10.2/{i}",
+                    "paper": {"doi": f"10.2/{i}"},
+                    "numeric_value": 10, "units": "%",
+                    "population": "adults",
+                    "intervention": "omega 3",
+                    "canonical_phrase": "omega 3 changed risk by 10%",
+                }
+                for i in range(5)
+            ])
+        return httpx.Response(200, json=papers)
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        out = discover_topics(
+            seeds=("omega_3_longevity",),
+            settings=_settings(), client=c, current_year=2024,
+        )
+
+    assert out[0].fact_source_count == 5

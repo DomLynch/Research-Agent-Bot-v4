@@ -24,7 +24,7 @@ from agent.numeric_role_classifier import (
     classify_numeric_role,
     is_real_finding,
 )
-from agent.topic_synonyms import expand_topic_keywords
+from agent.topic_synonyms import expand_topic_queries
 
 LANES = ("A_core", "B_context", "C_noise", "D_bad_extraction")
 _NORM_PUNCT = re.compile(r"[\W_]+")
@@ -88,7 +88,7 @@ def classify_lane(fact: dict[str, Any], topic: str) -> LaneVerdict:
     # (dasatinib, quercetin). expand_topic_keywords always includes
     # the topic itself first, so behavior is unchanged for unregistered
     # topics.
-    keywords = [_norm(kw) for kw in expand_topic_keywords(topic)]
+    keywords = [_norm(kw) for kw in expand_topic_queries(topic, max_queries=64)]
     haystack = _norm(_topic_haystack(fact))
     if not any(kw in haystack for kw in keywords if kw):
         return LaneVerdict(

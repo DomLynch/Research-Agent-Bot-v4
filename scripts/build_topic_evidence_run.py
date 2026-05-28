@@ -49,6 +49,7 @@ from agent.numeric_sanitizer import filter_artifacts
 from agent.pico_enrichment import enrich_facts_pico
 from agent.researka_claims import _aggregate
 from agent.settings import load_settings
+from agent.topic_synonyms import expand_topic_queries
 
 _RUNS = Path(__file__).resolve().parent.parent / "runs"
 _PUBLICATION_CFG = Path(__file__).resolve().parent.parent / "topic_packs" / "publication.toml"
@@ -231,13 +232,17 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
     hdr = {"X-Researka-Token": token}
     facts: list[dict[str, Any]] = []
     min_sources = _min_fact_source_papers()
+    queries = expand_topic_queries(topic)
     try:
         with httpx.Client(timeout=30.0) as c:
-            strict = _post_tier2_facts(
-                c, base, hdr, topic, numeric_only=True,
-                strict_audit_required=True,
-            )
-            facts.extend(_normalize_tier2(it, topic) for it in strict)
+            for query in queries:
+                strict = _post_tier2_facts(
+                    c, base, hdr, query, numeric_only=True,
+                    strict_audit_required=True,
+                )
+                facts.extend(_normalize_tier2(it, topic) for it in strict)
+                if _a_core_source_count(facts, topic) >= min_sources:
+                    break
             try:
                 r = c.get(
                     f"{base}/api/v1/topics/{topic}/facts",
@@ -254,23 +259,29 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
             except (httpx.HTTPError, ValueError):
                 pass
             if _a_core_source_count(facts, topic) < min_sources:
-                items = _post_tier2_facts(
-                    c, base, hdr, topic, numeric_only=True,
-                    strict_audit_required=False,
-                )
-                facts.extend(
-                    _normalize_tier2(it, topic)
-                    for it in _select_tier2_items(items, topic)
-                )
+                for query in queries:
+                    items = _post_tier2_facts(
+                        c, base, hdr, query, numeric_only=True,
+                        strict_audit_required=False,
+                    )
+                    facts.extend(
+                        _normalize_tier2(it, topic)
+                        for it in _select_tier2_items(items, topic)
+                    )
+                    if _a_core_source_count(facts, topic) >= min_sources:
+                        break
             if _a_core_source_count(facts, topic) < min_sources:
-                items = _post_tier2_facts(
-                    c, base, hdr, topic, numeric_only=False,
-                    strict_audit_required=False,
-                )
-                facts.extend(
-                    _normalize_tier2(it, topic)
-                    for it in _select_tier2_items(items, topic)
-                )
+                for query in queries:
+                    items = _post_tier2_facts(
+                        c, base, hdr, query, numeric_only=False,
+                        strict_audit_required=False,
+                    )
+                    facts.extend(
+                        _normalize_tier2(it, topic)
+                        for it in _select_tier2_items(items, topic)
+                    )
+                    if _a_core_source_count(facts, topic) >= min_sources:
+                        break
     except (httpx.HTTPError, ValueError):
         return _dedup_facts(facts)
     return _dedup_facts(facts)

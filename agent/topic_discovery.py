@@ -31,6 +31,7 @@ import httpx
 
 from agent.fact_lanes import classify_lanes
 from agent.settings import Settings
+from agent.topic_synonyms import expand_topic_queries
 
 _SEEDS_TOML = (Path(__file__).resolve().parent.parent
                / "topic_packs" / "discovery_seeds.toml")
@@ -142,29 +143,34 @@ def _fetch_topic_fact_source_count(
     tok = settings.researka_database_token.strip()
     if not base or not tok:
         return 0
-    try:
-        r = client.post(
-            f"{base}/api/v1/tier2/facts/search",
-            headers={"X-Researka-Token": tok},
-            json={"query": topic, "top_k": limit, "numeric_only": True},
-            timeout=20.0,
+    source_keys: set[str] = set()
+    for query in expand_topic_queries(topic):
+        try:
+            r = client.post(
+                f"{base}/api/v1/tier2/facts/search",
+                headers={"X-Researka-Token": tok},
+                json={"query": query, "top_k": limit, "numeric_only": True},
+                timeout=20.0,
+            )
+            r.raise_for_status()
+            data = r.json()
+        except (httpx.HTTPError, ValueError):
+            continue
+        if not isinstance(data, list):
+            continue
+        facts = [_fact_for_lane(row, topic) for row in data if isinstance(row, dict)]
+        lanes = {
+            verdict.fact_id: verdict.lane
+            for verdict in classify_lanes(facts, topic)
+        }
+        source_keys.update(
+            key for fact in facts
+            if lanes.get(str(fact.get("fact_id") or "")) == "A_core"
+            for key in (_fact_source_key(fact),) if key
         )
-        r.raise_for_status()
-        data = r.json()
-    except (httpx.HTTPError, ValueError):
-        return 0
-    if not isinstance(data, list):
-        return 0
-    facts = [_fact_for_lane(row, topic) for row in data if isinstance(row, dict)]
-    lanes = {
-        verdict.fact_id: verdict.lane
-        for verdict in classify_lanes(facts, topic)
-    }
-    return len({
-        key for fact in facts
-        if lanes.get(str(fact.get("fact_id") or "")) == "A_core"
-        for key in (_fact_source_key(fact),) if key
-    })
+        if len(source_keys) >= 5:
+            break
+    return len(source_keys)
 
 
 def _fetch_fact_source_counts(

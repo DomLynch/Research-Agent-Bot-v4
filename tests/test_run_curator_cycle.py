@@ -207,6 +207,21 @@ def test_plan_topics_skips_below_direct_source_floor() -> None:
     assert skipped_excluded == []
 
 
+def test_plan_topics_falls_back_to_underfloor_when_ready_pool_empty() -> None:
+    ranked = [
+        {"topic": "blocked", "velocity_score": 9.0, "fact_source_count": 5},
+        {"topic": "thin", "velocity_score": 8.0, "fact_source_count": 2},
+    ]
+
+    plan, skipped, skipped_excluded = _plan_topics(
+        ranked, recent=set(), excluded={"blocked"}, top=1, min_fact_sources=5,
+    )
+
+    assert [row["topic"] for row in plan] == ["thin"]
+    assert skipped == []
+    assert skipped_excluded == ["blocked"]
+
+
 def test_summarize_md_renders_table() -> None:
     results = [
         TopicResult(topic="rapamycin", velocity=0.91, status="ran",
