@@ -192,6 +192,21 @@ def test_plan_topics_honors_excluded_before_cooldown() -> None:
     assert skipped_excluded == ["duplicate"]
 
 
+def test_plan_topics_skips_below_direct_source_floor() -> None:
+    ranked = [
+        {"topic": "thin", "velocity_score": 9.0, "fact_source_count": 4},
+        {"topic": "ready", "velocity_score": 8.0, "fact_source_count": 5},
+    ]
+
+    plan, skipped, skipped_excluded = _plan_topics(
+        ranked, recent=set(), excluded=set(), top=2, min_fact_sources=5,
+    )
+
+    assert [row["topic"] for row in plan] == ["ready"]
+    assert skipped == []
+    assert skipped_excluded == []
+
+
 def test_summarize_md_renders_table() -> None:
     results = [
         TopicResult(topic="rapamycin", velocity=0.91, status="ran",
@@ -294,8 +309,8 @@ def test_stop_on_ready_halts_plan(
     monkeypatch.setattr(
         run_curator_cycle, "_read_discovery_top",
         lambda _out: [
-            {"topic": "ready", "velocity_score": 2.0},
-            {"topic": "later", "velocity_score": 1.0},
+            {"topic": "ready", "velocity_score": 2.0, "fact_source_count": 5},
+            {"topic": "later", "velocity_score": 1.0, "fact_source_count": 5},
         ],
     )
     monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",
@@ -344,8 +359,8 @@ def test_stop_on_ready_ignores_under_source_candidate(
     monkeypatch.setattr(
         run_curator_cycle, "_read_discovery_top",
         lambda _out: [
-            {"topic": "thin", "velocity_score": 2.0},
-            {"topic": "ready", "velocity_score": 1.0},
+            {"topic": "thin", "velocity_score": 2.0, "fact_source_count": 5},
+            {"topic": "ready", "velocity_score": 1.0, "fact_source_count": 5},
         ],
     )
     monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",

@@ -230,6 +230,7 @@ def _plan_topics(
     recent: set[str],
     excluded: set[str],
     top: int,
+    min_fact_sources: int = 0,
 ) -> tuple[list[dict[str, Any]], list[str], list[str]]:
     plan: list[dict[str, Any]] = []
     skipped: list[str] = []
@@ -243,6 +244,8 @@ def _plan_topics(
             continue
         if topic in recent:
             skipped.append(topic)
+            continue
+        if min_fact_sources and int(c.get("fact_source_count") or 0) < min_fact_sources:
             continue
         plan.append(c)
         if len(plan) >= top:
@@ -337,6 +340,9 @@ def main() -> int:
     excluded = {str(t).strip() for t in args.exclude_topic if str(t).strip()}
     plan, skipped, skipped_excluded = _plan_topics(
         ranked, recent=recent, excluded=excluded, top=args.top,
+        min_fact_sources=(
+            _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES if args.stop_on_ready else 0
+        ),
     )
 
     print(f"[cycle] plan: {len(plan)} topics to run, {len(skipped)} skipped "
