@@ -241,6 +241,27 @@ def test_revision_refresher_edits_existing_memo_without_scratch_rewrite(tmp_path
     assert "`fact_id=1`" in memo
 
 
+def test_repairable_reject_refresher_can_patch_existing_memo(tmp_path: Path) -> None:
+    run = tmp_path / "runs" / "topic-evidence-ts"
+    run.mkdir(parents=True)
+    run.joinpath("signal_post.md").write_text("# Signal\n", encoding="utf-8")
+    run.joinpath("alpha_memo.md").write_text(
+        "**Headline:** Claim: A Meta-analysis of Effects\n\n"
+        "## Why this is surprising\n\nBody.\n",
+        encoding="utf-8",
+    )
+
+    changed = daily._refresh_alpha_memo(run, {
+        "_repair_decision": {
+            "decision": "reject",
+            "review_summary": "Title should not claim meta-analysis.",
+        },
+    })
+
+    assert changed is True
+    assert "Meta-analysis" not in run.joinpath("alpha_memo.md").read_text(encoding="utf-8")
+
+
 def test_repairable_rejected_submission_can_retry_once(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("retryable")

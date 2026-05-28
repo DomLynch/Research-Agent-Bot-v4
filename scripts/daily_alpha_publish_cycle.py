@@ -286,7 +286,7 @@ def _insert_scope_clarification(text: str) -> str:
 
 
 def _apply_reviewer_revision_notes(run_dir: Path, decision: Json) -> bool:
-    if decision.get("decision") != "revise":
+    if decision.get("decision") not in {"reject", "revise"}:
         return False
     notes = _revision_notes(decision)
     if not notes:
