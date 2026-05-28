@@ -21,6 +21,7 @@ from __future__ import annotations
 import datetime as dt
 import math
 import tomllib
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -137,6 +138,28 @@ def _fetch_topic_fact_source_count(
         key for row in data if isinstance(row, dict)
         for key in (_fact_source_key(row),) if key
     })
+
+
+def _fetch_fact_source_counts(
+    topics: list[str], *, client: httpx.Client, settings: Settings,
+) -> dict[str, int]:
+    if not topics:
+        return {}
+    workers = min(8, len(topics))
+    out: dict[str, int] = {}
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = {
+            pool.submit(
+                _fetch_topic_fact_source_count,
+                topic,
+                client=client,
+                settings=settings,
+            ): topic
+            for topic in topics
+        }
+        for fut in as_completed(futures):
+            out[futures[fut]] = fut.result()
+    return out
 
 
 def _anchorage_counts(
@@ -264,12 +287,11 @@ def discover_topics(
             key=lambda c: c.velocity_score,
             reverse=True,
         )
-        fact_sources_by_topic = {
-            cand.topic: _fetch_topic_fact_source_count(
-                cand.topic, client=c, settings=settings,
-            )
-            for cand in velocity_ranked[:_FACT_PROBE_TOPICS]
-        }
+        fact_sources_by_topic = _fetch_fact_source_counts(
+            [cand.topic for cand in velocity_ranked[:_FACT_PROBE_TOPICS]],
+            client=c,
+            settings=settings,
+        )
         candidates = [
             _score_topic(
                 topic, papers, year_now, anchorage=anchorage,
