@@ -796,6 +796,11 @@ def _public_alpha_urls(payload: Any) -> list[str]:
         if url and url not in urls:
             urls.append(url)
 
+    if isinstance(payload, dict):
+        publication = payload.get("publication")
+        if isinstance(publication, dict):
+            add(publication.get("url"))
+
     def walk(value: Any) -> None:
         if isinstance(value, dict):
             for key, item in value.items():
@@ -810,7 +815,7 @@ def _public_alpha_urls(payload: Any) -> list[str]:
                     if "url" not in key_l or "/alpha/" in str(item):
                         add(item)
                 elif "id" in key_l and any(
-                    token in key_l for token in ("alpha", "artifact", "public", "publication")
+                    token in key_l for token in ("alpha", "public", "publication")
                 ):
                     add(item)
                 walk(item)
@@ -836,8 +841,12 @@ def _fetch_public_page(url: str) -> Json:
 
 def _page_rendered(result: Json) -> bool:
     body = str(result.get("body") or "").lower()
-    title_404 = re.search(r"<title>[^<]*(404|not found)[^<]*</title>", body)
-    return bool(result.get("ok")) and int(result.get("status") or 0) == 200 and not title_404
+    missing_title = re.search(r"<title\b[^>]*>[^<]*(404|not found)[^<]*</title>", body)
+    return (
+        bool(result.get("ok"))
+        and int(result.get("status") or 0) == 200
+        and not missing_title
+    )
 
 
 def _public_page_check(decision: Json, *, page_fetcher: PageFetcher) -> Json:

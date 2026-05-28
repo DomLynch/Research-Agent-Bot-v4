@@ -1170,6 +1170,30 @@ def test_sync_submission_decisions_rejects_accept_without_rendered_page(tmp_path
     assert patched["public_page_check"]["status"] == "not_rendered"
 
 
+def test_public_alpha_urls_prefers_publication_url_over_artifact_ids() -> None:
+    decision = {
+        "dw_artifact_id": "claim_16e9ea4c16c74570",
+        "publication": {
+            "url": "https://researka.org/alpha/002f5fe8-38f1-4b5a-b1a1-3cdff72ddedd",
+            "dw_artifact_id": "claim_b884f46fe51b4b25",
+        },
+    }
+
+    urls = daily._public_alpha_urls(decision)
+
+    assert urls[0] == "https://researka.org/alpha/002f5fe8-38f1-4b5a-b1a1-3cdff72ddedd"
+    assert "https://researka.org/alpha/claim_16e9ea4c16c74570" not in urls
+    assert "https://researka.org/alpha/claim_b884f46fe51b4b25" not in urls
+
+
+def test_page_rendered_rejects_not_found_title_with_attrs() -> None:
+    assert daily._page_rendered({
+        "ok": True,
+        "status": 200,
+        "body": '<title data-next-head="">Alpha Memo Not Found</title>',
+    }) is False
+
+
 def test_cost_cap_writes_no_publish_ledger(tmp_path: Path) -> None:
     root = tmp_path / "repo"
 
