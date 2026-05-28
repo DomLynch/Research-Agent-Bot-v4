@@ -32,6 +32,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from daily_alpha_publish_cycle import (
+    _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES,
+    _DEFAULT_MIN_SUBMIT_SOURCES,
+    _direct_source_count,
+    _source_count,
+)
+
 _ROOT = Path(__file__).resolve().parent.parent
 _RUNS = _ROOT / "runs"
 _CYCLES_DIR = _RUNS / "_curator_cycles"
@@ -114,7 +121,12 @@ def _is_publish_ready(run_dir: str) -> bool:
             encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return False
-    return str(verdict.get("decision") or "") == "ready_to_publish"
+    if str(verdict.get("decision") or "") != "ready_to_publish":
+        return False
+    return (
+        _source_count(verdict, _RUNS) >= _DEFAULT_MIN_SUBMIT_SOURCES
+        and _direct_source_count(verdict, _RUNS) >= _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES
+    )
 
 
 def _run_step(args: list[str], step_name: str) -> tuple[bool, str]:

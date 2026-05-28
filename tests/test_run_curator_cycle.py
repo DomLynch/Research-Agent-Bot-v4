@@ -39,6 +39,39 @@ def _make_run_with_signal(
     return run_dir
 
 
+def _write_ready_alpha_run(run_dir: Path, *, source_count: int) -> None:
+    run_dir.mkdir(parents=True, exist_ok=True)
+    facts = [
+        {
+            "fact_id": str(i),
+            "source_paper": {
+                "doi": f"10.1000/{run_dir.name}-{i}",
+                "title": f"Source {i}",
+            },
+        }
+        for i in range(source_count)
+    ]
+    run_dir.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n## Evidence receipts\n\n"
+        + "\n".join(f"- `fact_id={i}` (`A_core`) - receipt" for i in range(source_count))
+        + "\n",
+        encoding="utf-8",
+    )
+    run_dir.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    run_dir.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [
+            {"fact_id": str(i), "lane": "A_core"} for i in range(source_count)
+        ],
+    }), encoding="utf-8")
+    run_dir.joinpath("publish_verdict.json").write_text(
+        json.dumps({
+            "decision": "ready_to_publish",
+            "run_dir": f"runs/{run_dir.name}",
+        }),
+        encoding="utf-8",
+    )
+
+
 def test_recent_signal_topics_picks_up_recent(tmp_path: Path) -> None:
     now = dt.datetime(2026, 5, 15, 18, 0, tzinfo=dt.UTC)
     # 1h ago — within 24h cooldown
@@ -247,10 +280,7 @@ def test_stop_on_ready_halts_plan(
     ) -> TopicResult:
         seen.append(topic)
         run_dir = runs / f"{topic}-evidence-ts"
-        run_dir.mkdir()
-        (run_dir / "publish_verdict.json").write_text(
-            json.dumps({"decision": "ready_to_publish"}), encoding="utf-8",
-        )
+        _write_ready_alpha_run(run_dir, source_count=5)
         return TopicResult(
             topic=topic, velocity=velocity, status="ran",
             run_dir=f"runs/{topic}-evidence-ts",
@@ -278,6 +308,54 @@ def test_stop_on_ready_halts_plan(
 
     assert run_curator_cycle.main() == 0
     assert seen == ["ready"]
+    payload = json.loads(next(cycles.glob("*.json")).read_text(encoding="utf-8"))
+    assert payload["stopped_on_ready"] is True
+
+
+def test_stop_on_ready_ignores_under_source_candidate(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    runs = tmp_path / "runs"
+    cycles = runs / "_curator_cycles"
+    cycles.mkdir(parents=True)
+    seen: list[str] = []
+
+    def fake_pipeline(
+        topic: str, velocity: float, *, with_editorial: bool,
+        top_n: int, py: str, pico_enrich: bool = False,
+    ) -> TopicResult:
+        seen.append(topic)
+        run_dir = runs / f"{topic}-evidence-ts"
+        _write_ready_alpha_run(run_dir, source_count=4 if topic == "thin" else 5)
+        return TopicResult(
+            topic=topic, velocity=velocity, status="ran",
+            run_dir=f"runs/{topic}-evidence-ts",
+            signal_label="evidence_backed_signal", notes="",
+        )
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
+    monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
+    monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
+    monkeypatch.setattr(
+        run_curator_cycle, "_read_discovery_top",
+        lambda _out: [
+            {"topic": "thin", "velocity_score": 2.0},
+            {"topic": "ready", "velocity_score": 1.0},
+        ],
+    )
+    monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",
+                        lambda *_args, **_kwargs: set())
+    monkeypatch.setattr(run_curator_cycle, "_run_step",
+                        lambda *_args, **_kwargs: (True, "ok"))
+    monkeypatch.setattr(sys, "argv", [
+        "run_curator_cycle.py", "--top", "2", "--stop-on-ready",
+    ])
+
+    assert run_curator_cycle.main() == 0
+    assert seen == ["thin", "ready"]
     payload = json.loads(next(cycles.glob("*.json")).read_text(encoding="utf-8"))
     assert payload["stopped_on_ready"] is True
 
