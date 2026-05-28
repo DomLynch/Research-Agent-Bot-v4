@@ -171,3 +171,51 @@ def test_main_writes_curation_brief_and_manifest(
     assert "signal_post_md" in manifest["files"]
     assert "alpha_memo_md" in manifest["files"]
     assert "curation_brief_md" in manifest["files"]
+
+
+def test_main_repairs_source_dispersion_before_verdict(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    run = tmp_path / "grid_storage-evidence-ts"
+    run.mkdir()
+    (run / "frontier_review.json").write_text(json.dumps({
+        "topic": "grid_storage",
+        "snapshot_utc": "ts",
+        "lens": "Real contrast: reliability rises while costs fall.",
+        "theses": [{"title": "Storage threshold contrast in reserve markets"}],
+    }), encoding="utf-8")
+    facts = [
+        _fact("f1", 50.0, "storage threshold improved reliability", "10.same/a"),
+        _fact("f2", 40.0, "storage threshold reduced outages", "10.same/a"),
+        _fact("f3", 30.0, "storage threshold lowered costs", "10.same/a"),
+        _fact("f4", 20.0, "storage reserve changed prices", "10.other/b"),
+        _fact("f5", 10.0, "storage reserve shifted dispatch", "10.other/c"),
+        _fact("f6", 5.0, "storage reserve changed risk", "10.other/d"),
+    ]
+    for f in facts:
+        f["source_paper"]["title"] = "Grid storage reserve threshold reliability"
+        f["source_paper"]["journal"] = "Grid Review"
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": f"f{i}", "lane": "A_core"} for i in range(1, 7)],
+    }), encoding="utf-8")
+    (run / "opportunities_gate.json").write_text(json.dumps({
+        "audits": [{
+            "title": "Storage threshold contrast in reserve markets",
+            "status": "survives",
+            "capped_opportunity": 90,
+            "blocking_flags": [],
+            "cited_fact_ids": ["f1", "f4", "f5", "f6"],
+        }],
+    }), encoding="utf-8")
+
+    monkeypatch.setattr(sys, "argv", ["build_signal_post.py", "--run", str(run)])
+    assert signal_post_main() == 0
+
+    gate = json.loads((run / "opportunities_gate.json").read_text())
+    audit = gate["audits"][0]
+    assert audit["cited_fact_ids"] == ["f1", "f2", "f3"]
+    assert audit["self_repair"]["reason"] == "source_dispersion"
+    verdict = json.loads((run / "publish_verdict.json").read_text())
+    assert verdict["decision"] == "ready_to_publish"
+    assert "source_dispersion" not in verdict["blockers"]
