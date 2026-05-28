@@ -32,12 +32,14 @@ from agent.settings import Settings
 
 _SEEDS_TOML = (Path(__file__).resolve().parent.parent
                / "topic_packs" / "discovery_seeds.toml")
+_FACT_PROBE_TOPICS = 40
 
 
 @dataclass(frozen=True, slots=True)
 class TopicCandidate:
     topic: str
     paper_count: int
+    fact_source_count: int
     top_paper_doi: str
     top_paper_title: str
     velocity_score: float
@@ -46,6 +48,7 @@ class TopicCandidate:
 
     def as_dict(self) -> dict[str, Any]:
         return {"topic": self.topic, "paper_count": self.paper_count,
+                "fact_source_count": self.fact_source_count,
                 "top_paper_doi": self.top_paper_doi,
                 "top_paper_title": self.top_paper_title,
                 "velocity_score": round(self.velocity_score, 3),
@@ -96,6 +99,46 @@ def _paper_key(paper: dict[str, Any]) -> str:
     return str(paper.get("title") or "").strip().lower()[:200]
 
 
+def _fact_source_key(item: dict[str, Any]) -> str:
+    paper_raw = item.get("paper")
+    paper = paper_raw if isinstance(paper_raw, dict) else {}
+    return str(
+        paper.get("doi")
+        or item.get("paper_id")
+        or paper.get("pmid")
+        or paper.get("title")
+        or "",
+    ).strip().lower()[:200]
+
+
+def _fetch_topic_fact_source_count(
+    topic: str, *, client: httpx.Client, settings: Settings,
+    limit: int = 20,
+) -> int:
+    """Count unique fact-backed sources for publishability-aware ranking."""
+    base = settings.researka_database_url.rstrip("/")
+    tok = settings.researka_database_token.strip()
+    if not base or not tok:
+        return 0
+    try:
+        r = client.post(
+            f"{base}/api/v1/tier2/facts/search",
+            headers={"X-Researka-Token": tok},
+            json={"query": topic, "top_k": limit, "numeric_only": True},
+            timeout=20.0,
+        )
+        r.raise_for_status()
+        data = r.json()
+    except (httpx.HTTPError, ValueError):
+        return 0
+    if not isinstance(data, list):
+        return 0
+    return len({
+        key for row in data if isinstance(row, dict)
+        for key in (_fact_source_key(row),) if key
+    })
+
+
 def _anchorage_counts(
     papers_by_topic: dict[str, list[dict[str, Any]]],
     current_year: int, *, top_k: int = 5,
@@ -125,6 +168,7 @@ def _anchorage_counts(
 def _score_topic(
     topic: str, papers: list[dict[str, Any]], current_year: int,
     *, top_k: int = 5,
+    fact_source_count: int = 0,
     anchorage: dict[str, int] | None = None,
 ) -> TopicCandidate:
     """Aggregate per-paper scores; pick the strongest paper as anchor.
@@ -136,7 +180,8 @@ def _score_topic(
     """
     if not papers:
         return TopicCandidate(
-            topic=topic, paper_count=0, top_paper_doi="",
+            topic=topic, paper_count=0, fact_source_count=fact_source_count,
+            top_paper_doi="",
             top_paper_title="", velocity_score=0.0,
             mean_fwci=0.0, mean_cited_by=0.0,
         )
@@ -159,7 +204,7 @@ def _score_topic(
     fwci_vals = [float(p.get("fwci") or 0.0) for p in papers]
     cited_vals = [float(p.get("cited_by_count") or 0.0) for p in papers]
     return TopicCandidate(
-        topic=topic, paper_count=len(papers),
+        topic=topic, paper_count=len(papers), fact_source_count=fact_source_count,
         top_paper_doi=str(top_paper.get("doi") or ""),
         top_paper_title=str(top_paper.get("title") or "")[:200],
         velocity_score=velocity,
@@ -211,12 +256,32 @@ def discover_topics(
             papers_by_topic[topic] = _fetch_topic_papers(
                 topic, client=c, settings=settings)
         anchorage = _anchorage_counts(papers_by_topic, year_now)
-        candidates: list[TopicCandidate] = [
-            _score_topic(topic, papers, year_now, anchorage=anchorage)
+        velocity_ranked = sorted(
+            [
+                _score_topic(topic, papers, year_now, anchorage=anchorage)
+                for topic, papers in papers_by_topic.items()
+            ],
+            key=lambda c: c.velocity_score,
+            reverse=True,
+        )
+        fact_sources_by_topic = {
+            cand.topic: _fetch_topic_fact_source_count(
+                cand.topic, client=c, settings=settings,
+            )
+            for cand in velocity_ranked[:_FACT_PROBE_TOPICS]
+        }
+        candidates = [
+            _score_topic(
+                topic, papers, year_now, anchorage=anchorage,
+                fact_source_count=fact_sources_by_topic.get(topic, 0),
+            )
             for topic, papers in papers_by_topic.items()
         ]
     finally:
         if own_client:
             c.close()
-    candidates.sort(key=lambda c: c.velocity_score, reverse=True)
+    candidates.sort(
+        key=lambda c: (c.fact_source_count >= 5, c.fact_source_count, c.velocity_score),
+        reverse=True,
+    )
     return tuple(candidates)

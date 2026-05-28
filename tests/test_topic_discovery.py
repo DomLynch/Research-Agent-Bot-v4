@@ -167,12 +167,13 @@ def test_load_seed_topics_real_seeds_loaded() -> None:
 
 def test_candidate_as_dict_round_trip() -> None:
     c = TopicCandidate(
-        topic="rapamycin", paper_count=10, top_paper_doi="10.1/x",
-        top_paper_title="Paper", velocity_score=12.345,
+        topic="rapamycin", paper_count=10, fact_source_count=6,
+        top_paper_doi="10.1/x", top_paper_title="Paper", velocity_score=12.345,
         mean_fwci=2.5, mean_cited_by=120.7,
     )
     d = c.as_dict()
     assert d["topic"] == "rapamycin"
+    assert d["fact_source_count"] == 6
     assert d["velocity_score"] == 12.345
     assert d["mean_cited_by"] == 120.7
 
@@ -268,3 +269,33 @@ def test_discover_topics_dampens_acc_aha_style_anchor() -> None:
     ranked_topics = [c.topic for c in out]
     assert ranked_topics.index("topic_d") < ranked_topics.index("topic_a")
     assert all(o.velocity_score > 0 for o in out)
+
+
+def test_discover_topics_prefers_fact_source_breadth() -> None:
+    """Paper velocity alone should not outrank a submit-floor-sized fact shelf."""
+    fast_thin = [_paper(doi="10.1/fast", fwci=20.0, cited_by_count=2000)]
+    slower_rich = [_paper(doi="10.1/rich", fwci=2.0, cited_by_count=100)]
+
+    def facts(n: int) -> list[dict[str, Any]]:
+        return [
+            {"id": f"f{i}", "paper_id": f"10.2/{i}", "paper": {"doi": f"10.2/{i}"}}
+            for i in range(n)
+        ]
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        body = req.read().decode("utf-8") if req.content else "{}"
+        if req.url.path.endswith("/tier2/facts/search"):
+            return httpx.Response(200, json=facts(5 if "rich" in body else 1))
+        if "rich" in body:
+            return httpx.Response(200, json=slower_rich)
+        return httpx.Response(200, json=fast_thin)
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        out = discover_topics(
+            seeds=("fast_topic", "rich_topic"),
+            settings=_settings(), client=c, current_year=2024,
+        )
+
+    assert out[0].topic == "rich_topic"
+    assert out[0].fact_source_count == 5
+    assert out[1].fact_source_count == 1

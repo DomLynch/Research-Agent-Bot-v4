@@ -42,14 +42,14 @@ def _render_md(stamps: dict[str, str],
         "paper-velocity = fwci * log(1+cited_by_count) * recency_weight "
         "* quality_score/100, dampened when one paper anchors M >= 3 topics",
         "",
-        "| Rank | Topic | Velocity | Papers | mean fwci | mean cited |"
+        "| Rank | Topic | Velocity | Papers | Fact sources | mean fwci | mean cited |"
         " Top paper |",
-        "|---:|---|---:|---:|---:|---:|---|",
+        "|---:|---|---:|---:|---:|---:|---:|---|",
     ]
     for i, c in enumerate(candidates, start=1):
         lines.append(
             f"| {i} | `{c.topic}` | **{c.velocity_score:.2f}** | "
-            f"{c.paper_count} | {c.mean_fwci:.2f} | "
+            f"{c.paper_count} | {c.fact_source_count} | {c.mean_fwci:.2f} | "
             f"{c.mean_cited_by:.0f} | "
             f"_{c.top_paper_title[:70]}_ |"
         )
@@ -93,7 +93,8 @@ def main() -> int:
           f"-> runs/_topics_discovery/{ts}.json")
     for i, c in enumerate(top, start=1):
         print(f"  #{i}  velocity={c.velocity_score:6.2f}  "
-              f"{c.topic:25}  papers={c.paper_count:3}")
+              f"{c.topic:25}  papers={c.paper_count:3} "
+              f"fact_sources={c.fact_source_count:2}")
     return 0
 
 
