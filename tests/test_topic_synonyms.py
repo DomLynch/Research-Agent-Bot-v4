@@ -62,6 +62,12 @@ def test_expand_topic_queries_adds_normalized_prefixes() -> None:
     assert out[:3] == ("omega_3_longevity", "omega 3 longevity", "omega 3")
 
 
+def test_expand_topic_queries_can_reach_registered_instances() -> None:
+    out = expand_topic_queries("carnosine_anti_glycation", max_queries=16)
+
+    assert "carnosine" in out
+
+
 def test_text_matches_topic_finds_instance() -> None:
     """senolytic query should match a fact about dasatinib."""
     text = "dasatinib + quercetin reduced senescent cell burden by 70%"

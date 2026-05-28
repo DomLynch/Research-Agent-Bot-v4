@@ -142,6 +142,25 @@ def test_fetch_facts_falls_back_when_strict_endpoint_rejects_flag(
     assert [f["fact_id"] for f in facts] == ["normal"]
 
 
+def test_select_tier2_items_filters_with_expanded_topic_queries() -> None:
+    items = [
+        {
+            "canonical_phrase": "vitamin D changed mortality by 8%",
+            "paper": {"title": "Vitamin D trial"},
+        },
+        {
+            "canonical_phrase": "MK-7 reduced vascular calcification by 12%",
+            "paper": {"title": "Menaquinone and vascular calcification"},
+        },
+    ]
+
+    selected = evidence_run._select_tier2_items(
+        items, "vitamin_K2_vascular_aging",
+    )
+
+    assert selected == [items[1]]
+
+
 def test_fetch_papers_merges_elite_topic_and_broad_search(
     monkeypatch: Any,
 ) -> None:

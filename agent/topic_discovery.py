@@ -144,7 +144,7 @@ def _fetch_topic_fact_source_count(
     if not base or not tok:
         return 0
     source_keys: set[str] = set()
-    for query in expand_topic_queries(topic):
+    for query in expand_topic_queries(topic, max_queries=16):
         try:
             r = client.post(
                 f"{base}/api/v1/tier2/facts/search",

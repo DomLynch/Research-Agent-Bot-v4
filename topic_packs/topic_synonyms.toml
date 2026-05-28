@@ -53,3 +53,21 @@ instances = [
     "NMN", "NR", "nicotinamide riboside", "nicotinamide mononucleotide",
     "NAD precursor", "NAD+ precursor", "niagen",
 ]
+
+[vitamin_k2_vascular_aging]
+instances = [
+    "vitamin K2", "menaquinone", "menaquinone-7", "MK-7",
+    "phylloquinone", "vascular calcification",
+]
+
+[carnosine_anti_glycation]
+instances = [
+    "carnosine", "L-carnosine", "beta-alanyl-L-histidine",
+    "anti-glycation", "advanced glycation end products", "AGEs",
+]
+
+[brain_age_mri]
+instances = [
+    "brain age", "brainAGE", "brain age gap", "predicted brain age",
+    "magnetic resonance imaging", "MRI",
+]

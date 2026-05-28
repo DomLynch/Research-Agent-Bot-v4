@@ -22,6 +22,7 @@ import argparse
 import datetime as dt
 import hashlib
 import json
+import re
 import sys
 import tomllib
 from pathlib import Path
@@ -180,18 +181,22 @@ def _dedup_facts(facts: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def _select_tier2_items(items: list[dict[str, Any]], topic: str) -> list[dict[str, Any]]:
-    tw = topic.replace("_", " ").lower()
+    queries = {
+        re.sub(r"[\W_]+", " ", q.lower()).strip()
+        for q in expand_topic_queries(topic, max_queries=64)
+    }
     matched: list[dict[str, Any]] = []
     for it in items:
-        tag = str(it.get("topic") or "").lower()
+        tag = str(it.get("topic") or "").lower().replace("_", " ")
         haystack = " ".join([
             str(it.get("canonical_phrase") or ""),
             str(it.get("claim_type") or ""),
             str((it.get("paper") or {}).get("title") or ""),
         ]).lower()
-        if tag == topic.lower() or tw in haystack:
+        haystack = re.sub(r"[\W_]+", " ", haystack).strip()
+        if tag in queries or any(q and q in haystack for q in queries):
             matched.append(it)
-    return matched if matched else items
+    return matched
 
 
 def _post_tier2_facts(
@@ -232,7 +237,7 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
     hdr = {"X-Researka-Token": token}
     facts: list[dict[str, Any]] = []
     min_sources = _min_fact_source_papers()
-    queries = expand_topic_queries(topic)
+    queries = expand_topic_queries(topic, max_queries=16)
     try:
         with httpx.Client(timeout=30.0) as c:
             for query in queries:
