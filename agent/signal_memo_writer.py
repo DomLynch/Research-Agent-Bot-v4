@@ -18,11 +18,10 @@ _PUB_PATH = _ROOT / "topic_packs" / "publication.toml"
 _DIRECT = frozenset({"A_core"})
 _BINDABLE = frozenset({"A_core", "B_context"})
 
-# Receipt-coherence: a padded receipt must share the lead claim's specific
-# wording (not merely the topic) so the bundle stays about ONE claim
-# (Researka rejects "disparate facts that do not cohere").
-_CLAIM_FIELDS = ("canonical_phrase", "population", "intervention",
-                 "sub_topic", "comparator")
+# Receipt-coherence: a padded receipt must share the lead claim's OUTCOME
+# wording (finding sentence only — the PICO intervention is the shared topic
+# modality) so the bundle stays about ONE claim, not "disparate facts".
+_CLAIM_FIELDS = ("canonical_phrase",)
 _CLAIM_MIN_OVERLAP = 1
 _WORD = re.compile(r"[a-z][a-z0-9]*")  # alpha-led: pure numbers aren't claim signal
 # Universal filler (not domain literals) dropped from the coherence signal.
@@ -203,7 +202,7 @@ def _claim_token_set(*values: Any) -> set[str]:
 def _claim_signal(
     seed_ids: list[str], facts: dict[str, dict[str, Any]], topic: str,
 ) -> set[str]:
-    """Claim-specific tokens from the lead (cited) facts' PICO+phrase, minus the
+    """Outcome tokens from the lead (cited) facts' finding sentence, minus the
     topic word and generic filler (what a padded receipt must share to cohere)."""
     sig: set[str] = set()
     for fid in seed_ids:
