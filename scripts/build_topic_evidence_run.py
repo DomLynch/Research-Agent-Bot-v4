@@ -56,8 +56,18 @@ from agent.topic_synonyms import expand_topic_queries
 _RUNS = Path(__file__).resolve().parent.parent / "runs"
 _PUBLICATION_CFG = Path(__file__).resolve().parent.parent / "topic_packs" / "publication.toml"
 _TOP_BINDABLE_LANES = frozenset({"A_core", "B_context"})
-_FACT_FETCH_TIMEOUT_SECONDS = 8.0
-_FACT_FETCH_BUDGET_SECONDS = 45.0
+_FACT_FETCH_TIMEOUT_SECONDS = 15.0  # endpoint can run slow; catch slow-success
+_FACT_FETCH_BUDGET_SECONDS = 60.0
+_FETCH_TOP_K = 500  # Researka per-query cap (raised to 500, confirmed live)
+# Universal scientific slice terms (NOT domain literals): outcome, dose, safety,
+# subgroup, and study-design. Combined with the topic they each pull a DIFFERENT
+# fact slice, instead of near-duplicate topic-name queries returning the same
+# ~50 facts. Dedup + rank happens after the merge.
+_OUTCOME_TERMS = (
+    "mortality", "survival", "lifespan", "healthspan", "risk", "incidence",
+    "effect", "reduction", "dose", "adverse", "sex", "age", "subgroup",
+    "randomized", "meta analysis", "cohort",
+)
 
 
 def _safe_float(v: Any) -> float | None:
@@ -227,7 +237,7 @@ def _post_tier2_facts(
 ) -> list[dict[str, Any]]:
     body: dict[str, Any] = {
         "query": topic,
-        "top_k": 50,
+        "top_k": _FETCH_TOP_K,
         "min_confidence": "medium",
         "numeric_only": numeric_only,
     }
@@ -244,6 +254,19 @@ def _post_tier2_facts(
     return [x for x in data if isinstance(x, dict)] if isinstance(data, list) else []
 
 
+def _diverse_queries(topic: str) -> list[str]:
+    """Topic-name variants PLUS topic x universal outcome terms, so each query
+    pulls a *different* fact slice (heart-attack, mortality, ...) instead of
+    near-duplicate name queries that return the same facts. Universal — the
+    outcome terms are generic endpoints, never topic/domain literals."""
+    base = list(expand_topic_queries(topic, max_queries=16))
+    stem = base[-1] if base else topic.replace("_", " ").strip()
+    seen: dict[str, None] = dict.fromkeys(base)
+    for term in _OUTCOME_TERMS:
+        seen.setdefault(f"{stem} {term}", None)
+    return list(seen)
+
+
 def _fetch_facts(topic: str) -> list[dict[str, Any]]:
     """Fetch strict facts first, then widen through the Researka data spine."""
     settings = load_settings()
@@ -254,7 +277,11 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
     hdr = {"X-Researka-Token": token}
     facts: list[dict[str, Any]] = []
     min_sources = _min_fact_source_papers()
-    queries = expand_topic_queries(topic, max_queries=16)
+    # Gather well beyond the floor so the diverse outcome queries actually run
+    # and the coherence filter can assemble a SAME-outcome bundle. The floor is
+    # per-outcome; stopping at the first scattered 5 was the omega_3 reject.
+    gather_target = min_sources * 4
+    queries = _diverse_queries(topic)
     deadline = time.monotonic() + _FACT_FETCH_BUDGET_SECONDS
     try:
         with httpx.Client(timeout=_FACT_FETCH_TIMEOUT_SECONDS) as c:
@@ -266,11 +293,11 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
                     strict_audit_required=True,
                 )
                 facts.extend(_normalize_tier2(it, topic) for it in strict)
-                if _a_core_source_count(facts, topic) >= min_sources:
+                if _a_core_source_count(facts, topic) >= gather_target:
                     break
             for topic_key in _topic_fact_keys(topic):
                 if (time.monotonic() >= deadline
-                        or _a_core_source_count(facts, topic) >= min_sources):
+                        or _a_core_source_count(facts, topic) >= gather_target):
                     break
                 try:
                     r = c.get(
@@ -287,7 +314,7 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
                                 facts.append(f)
                 except (httpx.HTTPError, ValueError):
                     continue
-            if _a_core_source_count(facts, topic) < min_sources:
+            if _a_core_source_count(facts, topic) < gather_target:
                 for query in queries:
                     if time.monotonic() >= deadline:
                         break
@@ -299,9 +326,9 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
                         _normalize_tier2(it, topic)
                         for it in _select_tier2_items(items, topic)
                     )
-                    if _a_core_source_count(facts, topic) >= min_sources:
+                    if _a_core_source_count(facts, topic) >= gather_target:
                         break
-            if _a_core_source_count(facts, topic) < min_sources:
+            if _a_core_source_count(facts, topic) < gather_target:
                 for query in queries:
                     if time.monotonic() >= deadline:
                         break
@@ -313,7 +340,7 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
                         _normalize_tier2(it, topic)
                         for it in _select_tier2_items(items, topic)
                     )
-                    if _a_core_source_count(facts, topic) >= min_sources:
+                    if _a_core_source_count(facts, topic) >= gather_target:
                         break
     except (httpx.HTTPError, ValueError):
         return _dedup_facts(facts)
