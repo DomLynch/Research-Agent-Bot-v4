@@ -40,11 +40,13 @@ def test_unregistered_topic_returns_just_topic() -> None:
 
 
 def test_registered_class_expands_to_instances() -> None:
-    """senolytic should expand to a list of compound names + class words."""
+    """senolytic should expand to tight senolytic-context instances."""
     out = expand_topic_keywords("senolytic")
     assert out[0] == "senolytic"  # topic always first
-    assert "dasatinib" in out
-    assert "quercetin" in out
+    assert "dasatinib" not in out
+    assert "quercetin" not in out
+    assert "venetoclax" not in out
+    assert "dasatinib + quercetin" in out
     assert "ABT-263" in out
     # No duplicates
     assert len(out) == len(set(out))
@@ -72,9 +74,18 @@ def test_expand_topic_queries_can_reach_registered_instances() -> None:
 
 
 def test_text_matches_topic_finds_instance() -> None:
-    """senolytic query should match a fact about dasatinib."""
+    """senolytic query should match a fact about D+Q senescent-cell clearance."""
     text = "dasatinib + quercetin reduced senescent cell burden by 70%"
     assert text_matches_topic(text, "senolytic")
+
+
+def test_senolytic_does_not_match_standalone_oncology_drug_use() -> None:
+    assert not text_matches_topic(
+        "venetoclax produced objective responses in AML patients", "senolytic",
+    )
+    assert not text_matches_topic(
+        "dasatinib improved survival in Philadelphia-positive ALL", "senolytic",
+    )
 
 
 def test_text_matches_topic_finds_class_word_directly() -> None:

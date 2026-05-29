@@ -19,8 +19,7 @@
 
 [senolytic]
 instances = [
-    "dasatinib", "quercetin", "fisetin", "ABT-263", "ABT263",
-    "navitoclax", "venetoclax", "ABT-737", "ABT737",
+    "fisetin", "ABT-263", "ABT263", "navitoclax", "ABT-737", "ABT737",
     "D + Q", "dasatinib + quercetin", "dasatinib and quercetin",
     "senolytic agent", "senolytic compound", "senolytic therapy",
     "senolytics", "SASP", "senescent cell clearance",

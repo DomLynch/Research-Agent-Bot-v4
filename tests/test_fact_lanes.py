@@ -98,6 +98,28 @@ def test_topic_absent_is_c_noise() -> None:
     assert v.lane == "C_noise"
 
 
+def test_senolytic_ignores_standalone_oncology_instance_use() -> None:
+    """Class synonyms must not treat any standalone oncology use of an instance
+    drug as senolytic evidence."""
+    v = classify_lane(_fact(
+        canonical_phrase="Objective response was observed in 21% of patients",
+        population="relapsed refractory AML patients",
+        intervention="venetoclax with low-intensity chemotherapy",
+    ), topic="senolytic")
+
+    assert v.lane == "C_noise"
+
+
+def test_senolytic_context_phrase_still_binds() -> None:
+    v = classify_lane(_fact(
+        canonical_phrase="dasatinib + quercetin reduced senescent cell burden by 70%",
+        population="aged mice",
+        intervention="dasatinib + quercetin senolytic therapy",
+    ), topic="senolytic")
+
+    assert v.lane == "A_core"
+
+
 def test_topic_in_phrase_only_is_b_context() -> None:
     """Topic appears in canonical_phrase but not intervention -> B_context."""
     v = classify_lane(_fact(
