@@ -71,7 +71,7 @@ def _alpha_memo_float(name: str, default: float) -> float:
 
 _DEFAULT_MIN_SUBMIT_SOURCES = _alpha_memo_int("min_source_papers", 5)
 _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES = _alpha_memo_int("min_direct_source_papers", 2)
-_DEFAULT_REFRESH_TOP = 20
+_DEFAULT_REFRESH_TOP = _alpha_memo_int("refresh_top", 1)
 _DEFAULT_REFRESH_COOLDOWN_HOURS = _alpha_memo_float("refresh_cooldown_hours", 2.0)
 _DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS = _alpha_memo_int(
     "published_topic_cooldown_days", 30,
@@ -92,11 +92,16 @@ _EXHAUSTED_STATUSES = {
     "held_retraction_check",
 }
 _REPAIRABLE_REJECTION_REASONS = {
+    "cited doi",
     "minimum_citations",
+    "not verifiably grounded",
     "public_page_not_rendered",
     "recency_ratio",
+    "required revision",
     "reviewer_revise",
+    "scope reset",
     "source_bundle_schema",
+    "title/abstract",
 }
 
 
@@ -253,10 +258,13 @@ def _refresh_alpha_memo(run_dir: Path, verdict: Json) -> bool:
 
 def _revision_notes(decision: Json) -> str:
     parts: list[str] = []
-    for key in ("failure_category", "review_summary"):
-        if decision.get(key):
-            parts.append(str(decision[key]))
-    for key in ("required_revisions", "major_issues", "minor_issues"):
+    for key in ("failure_category", "review_summary", "notes"):
+        values = decision.get(key)
+        if isinstance(values, list):
+            parts.extend(str(v) for v in values if v)
+        elif values:
+            parts.append(str(values))
+    for key in ("required_revisions", "major_issues", "minor_issues", "failed_checks"):
         values = decision.get(key)
         if isinstance(values, list):
             parts.extend(str(v) for v in values if v)
@@ -326,7 +334,17 @@ def _apply_reviewer_revision_notes(run_dir: Path, decision: Json) -> bool:
             revised = "\n".join(lines) + ("\n" if original.endswith("\n") else "")
         if any(
             term in notes_norm
-            for term in ("single primary", "contextual support", "context receipts")
+            for term in (
+                "cited doi",
+                "context receipts",
+                "contextual support",
+                "not verifiably grounded",
+                "provided source bundle",
+                "scope reset",
+                "single primary",
+                "source bundle",
+                "title/abstract",
+            )
         ):
             revised = _insert_scope_clarification(revised)
         if any(
@@ -538,6 +556,7 @@ def _repairable_rejection(decision: Json) -> bool:
             reasons.add(str(gate.get("name") or ""))
             reasons.add(str(gate.get("reason") or ""))
     text = " ".join(reasons).lower()
+    text = f"{text} {_revision_notes(decision).lower()}"
     return any(reason in text for reason in _REPAIRABLE_REJECTION_REASONS)
 
 
@@ -1246,7 +1265,7 @@ def _refresh_candidate_batch(
     exclusions = sorted(t for t in (excluded_topics or set()) if t)
     args = [
         sys.executable, "scripts/run_curator_cycle.py",
-        "--stop-on-ready", "--with-pico-enrich", "--top", str(refresh_top),
+        "--stop-on-ready", "--top", str(refresh_top),
         "--cooldown-hours", f"{cooldown_hours:g}",
     ]
     for topic in exclusions:

@@ -292,6 +292,36 @@ def test_repairable_reject_refresher_softens_gate_reported_novelty(tmp_path: Pat
     assert "`fact_id=1`" in memo
 
 
+def test_repairable_reject_refresher_handles_scope_reset_notes(tmp_path: Path) -> None:
+    run = tmp_path / "runs" / "glp-evidence-ts"
+    run.mkdir(parents=True)
+    run.joinpath("signal_post.md").write_text("# Signal\n", encoding="utf-8")
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n"
+        "**Headline:** Weight regain and lean mass dynamics\n\n"
+        "## Why this is surprising\n\n"
+        "The evidence is narrower.\n",
+        encoding="utf-8",
+    )
+
+    changed = daily._refresh_alpha_memo(run, {
+        "_repair_decision": {
+            "status": "complete",
+            "decision": "reject",
+            "required_revisions": [
+                "A complete scope reset is required. The memo must reconcile its "
+                "title/abstract topic with the evidence actually presented.",
+                "Supporting claims must be directly and verifiably grounded in "
+                "the provided source bundle and cited DOIs.",
+            ],
+        },
+    })
+
+    memo = run.joinpath("alpha_memo.md").read_text(encoding="utf-8")
+    assert changed is True
+    assert "Scope clarification" in memo
+
+
 def test_repairable_rejected_submission_can_retry_once(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("retryable")
@@ -328,6 +358,46 @@ def test_repairable_rejected_submission_can_retry_once(tmp_path: Path) -> None:
     assert ledger["status"] == "submitted_to_researka"
     assert ledger["submitted"] == 1
     assert ledger["considered"][0]["status"] == "eligible"
+    assert ledger["considered"][0]["retry_after_rejection"] is True
+
+
+def test_reject_with_required_revisions_can_retry(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("scope_retry")
+    _memo_with_source_receipts(root, verdict, 5)
+    fp = daily.memo_fingerprint(verdict)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
+        {"fingerprint": fp, "topic": "scope_retry", "submission_id": "old-sub"},
+    ])
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submitted_to_researka",
+        "final_verdict": "rejected",
+        "candidate": {"fingerprint": fp, "topic": "scope_retry"},
+        "researka_decision": {
+            "status": "complete",
+            "decision": "reject",
+            "required_revisions": [
+                "A complete scope reset is required.",
+                "Claims must be verifiably grounded in cited DOIs.",
+            ],
+        },
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": "new-sub"}},
+        },
+    )
+
+    assert ledger["status"] == "submitted_to_researka"
     assert ledger["considered"][0]["retry_after_rejection"] is True
 
 
@@ -1428,7 +1498,7 @@ def test_cost_cap_writes_no_publish_ledger(tmp_path: Path) -> None:
     assert (root / "_daily_ledger" / "2026-05-22.json").exists()
 
 
-def test_refresh_candidates_scans_more_than_top_five(
+def test_refresh_candidates_builds_one_topic_per_submit_batch(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     calls: list[tuple[list[str], int]] = []
@@ -1447,10 +1517,10 @@ def test_refresh_candidates_scans_more_than_top_five(
     )
 
     assert ledger["refresh_candidates"]["ok"] is True
-    assert ledger["refresh_top"] == 20
+    assert ledger["refresh_top"] == 1
     assert "--stop-on-ready" in calls[0][0]
-    assert "--with-pico-enrich" in calls[0][0]
-    assert calls[0][0][-4:] == ["--top", "20", "--cooldown-hours", "2"]
+    assert "--with-pico-enrich" not in calls[0][0]
+    assert calls[0][0][-4:] == ["--top", "1", "--cooldown-hours", "2"]
     assert calls[0][1] == 5400
 
 
@@ -1473,7 +1543,7 @@ def test_refresh_cooldown_is_cycle_configurable(
         queue=_queue(),
     )
 
-    assert calls[0][-4:] == ["--top", "20", "--cooldown-hours", "0.5"]
+    assert calls[0][-4:] == ["--top", "1", "--cooldown-hours", "0.5"]
 
 
 def test_empty_refresh_escalates_to_zero_cooldown(
