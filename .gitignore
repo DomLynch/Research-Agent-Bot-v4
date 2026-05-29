@@ -19,6 +19,8 @@ htmlcov/
 # it would create constant dirt and 3-way merge conflicts.
 runs/_topic_supply_cache.json
 runs/_topic_supply_cache.json.tmp
+# Transient diagnostic run logs (the .json artifact beside them IS tracked).
+runs/_diagnostics/*.log
 
 # macOS Finder dedup-on-copy artifacts ("foo 2.json", "main_draft 2.md", etc.).
 # Never canonical; have polluted run-dir bundles before.
