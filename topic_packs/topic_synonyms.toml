@@ -71,3 +71,10 @@ instances = [
     "brain age", "brainAGE", "brain age gap", "predicted brain age",
     "magnetic resonance imaging", "MRI",
 ]
+
+[omega_3_longevity]
+instances = [
+    "omega-3", "omega 3", "omega-3 fatty acids", "n-3 PUFA", "n-3 fatty acids",
+    "fish oil", "EPA", "DHA", "eicosapentaenoic acid", "docosahexaenoic acid",
+    "marine omega-3",
+]
