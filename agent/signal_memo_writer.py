@@ -24,14 +24,14 @@ _BINDABLE = frozenset({"A_core", "B_context"})
 _CLAIM_FIELDS = ("canonical_phrase", "population", "intervention",
                  "sub_topic", "comparator")
 _CLAIM_MIN_OVERLAP = 1
-_WORD = re.compile(r"[a-z0-9]+")
+_WORD = re.compile(r"[a-z][a-z0-9]*")  # alpha-led: pure numbers aren't claim signal
 # Universal filler (not domain literals) dropped from the coherence signal.
 _GENERIC_TOKENS = frozenset({
-    "the", "of", "to", "in", "and", "or", "for", "with", "from", "by", "on", "at",
-    "an", "as", "is", "are", "was", "were", "be", "not", "than", "that", "this",
-    "study", "trial", "group", "groups", "patients", "subjects", "adults", "risk",
-    "participants", "effect", "effects", "increased", "decreased", "reduced",
-    "change", "results", "significant", "versus", "compared", "control", "treated",
+    "the", "of", "to", "in", "and", "or", "for", "with", "from", "by", "on", "at", "an",
+    "as", "is", "are", "was", "were", "be", "not", "than", "that", "this", "study", "trial",
+    "group", "groups", "patients", "subjects", "adults", "participants", "risk", "effect",
+    "effects", "increased", "decreased", "reduced", "change", "results", "significant",
+    "versus", "compared", "control", "treated", "ci", "rr", "hr", "nnt", "rct", "rcts",
 })
 
 
