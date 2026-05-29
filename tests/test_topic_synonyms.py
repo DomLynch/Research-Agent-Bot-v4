@@ -58,8 +58,11 @@ def test_topic_first_then_instances_preserves_order() -> None:
 
 
 def test_expand_topic_queries_adds_normalized_prefixes() -> None:
-    out = expand_topic_queries("omega_3_longevity")
-    assert out[:3] == ("omega_3_longevity", "omega 3 longevity", "omega 3")
+    # Unregistered slug: prefix-trimming applies to the topic itself.
+    out = expand_topic_queries("renewable_energy_subsidy")
+    assert out[:3] == (
+        "renewable_energy_subsidy", "renewable energy subsidy", "renewable energy",
+    )
 
 
 def test_expand_topic_queries_can_reach_registered_instances() -> None:
@@ -107,6 +110,15 @@ def test_short_synonym_matches_on_word_boundary_only() -> None:
     from agent.topic_synonyms import phrase_in_text
     assert not phrase_in_text("epa", "heparin reduced clotting")
     assert phrase_in_text("epa", "epa lowered triglycerides")
+
+
+def test_multiword_synonym_not_trimmed_to_generic_fragment() -> None:
+    """Instances must NOT prefix-trim to generic fragments: 'low level laser
+    therapy' must match its real phrase but not unrelated 'low-level ...' text."""
+    t = "photobiomodulation_red_light"
+    assert "low level" not in expand_topic_queries(t, max_queries=64)
+    assert text_matches_topic("low-level laser therapy improved symptoms", t)
+    assert not text_matches_topic("low-level weight loss intervention", t)
 
 
 def test_load_synonyms_missing_file_returns_empty() -> None:

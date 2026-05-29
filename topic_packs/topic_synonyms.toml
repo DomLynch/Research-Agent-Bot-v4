@@ -124,9 +124,10 @@ instances = [
 ]
 
 [photobiomodulation_red_light]
-# No "low-level laser therapy": expand_topic_queries trims it to the generic
-# fragment "low level", which substring-matched "low-level weight loss".
+# "low-level laser therapy" is safe now: instances are no longer prefix-trimmed
+# (so no generic "low level" fragment) and matching is word-boundary.
 instances = [
     "photobiomodulation", "red light therapy", "near-infrared light",
     "near infrared light", "PBM", "LLLT",
+    "low-level laser therapy", "low level light therapy",
 ]

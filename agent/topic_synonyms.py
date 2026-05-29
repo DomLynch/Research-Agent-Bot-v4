@@ -66,25 +66,24 @@ def expand_topic_keywords(topic: str) -> tuple[str, ...]:
 
 
 def expand_topic_queries(topic: str, *, max_queries: int = 4) -> tuple[str, ...]:
-    """Search queries for slug-style topics.
-
-    Keeps the exact topic first, then adds normalized phrase forms and
-    short prefixes so `omega_3_longevity` can still reach facts indexed
-    under `omega 3`. Registry instances participate through
-    expand_topic_keywords().
+    """Exact topic + normalized forms + registry instances. Prefix-trimming
+    (so `omega_3_longevity` reaches `omega 3`) applies ONLY to the topic slug,
+    never to instances: trimming `low level laser therapy` to the generic
+    fragment `low level` false-matched unrelated `low-level ...` text.
     """
     seen: dict[str, None] = {}
-    for kw in expand_topic_keywords(topic):
+    for idx, kw in enumerate(expand_topic_keywords(topic)):
         normed = _norm(kw)
         raw = kw.strip()
         if raw:
             seen.setdefault(raw, None)
         if normed and normed != raw.casefold():
             seen.setdefault(normed, None)
-        parts = normed.split()
-        while len(parts) > 2:
-            parts = parts[:-1]
-            seen.setdefault(" ".join(parts), None)
+        if idx == 0:  # trim ONLY the topic slug into short prefixes
+            parts = normed.split()
+            while len(parts) > 2:
+                parts = parts[:-1]
+                seen.setdefault(" ".join(parts), None)
         if len(seen) >= max_queries:
             break
     return tuple(seen)[:max_queries]
