@@ -617,7 +617,9 @@ def test_repairable_rejection_retry_is_capped(tmp_path: Path) -> None:
     assert ledger["considered"][0]["status"] == "duplicate_submission_fingerprint"
 
 
-def test_repairable_revision_retry_cap_uses_current_memo_hash(tmp_path: Path) -> None:
+def test_repairable_revision_allows_third_repair_retry_across_fingerprint(
+    tmp_path: Path,
+) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("revised")
     _memo_with_source_receipts(root, verdict, 5)
@@ -629,7 +631,7 @@ def test_repairable_revision_retry_cap_uses_current_memo_hash(tmp_path: Path) ->
             "submission_id": f"old-sub-{i}",
             "memo_sha256": "old-memo",
         }
-        for i in range(4)
+        for i in range(3)
     ])
     daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
         "status": "submitted_to_researka",
@@ -663,7 +665,7 @@ def test_repairable_revision_retry_cap_uses_current_memo_hash(tmp_path: Path) ->
     )
     assert ledger["status"] == "submitted_to_researka"
     assert ledger["considered"][0]["retry_after_rejection"] is True
-    assert ledger["considered"][0]["retry_attempt_count"] == 0
+    assert ledger["considered"][0]["retry_attempt_count"] == 3
     assert records[-1]["memo_sha256"] == daily._memo_sha256(verdict, root)
 
 

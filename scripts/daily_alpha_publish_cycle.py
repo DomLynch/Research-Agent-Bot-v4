@@ -80,6 +80,8 @@ _DEFAULT_DECISION_POLL_ATTEMPTS = _alpha_memo_int("decision_poll_attempts", 30)
 _DEFAULT_DECISION_POLL_SECONDS = _alpha_memo_float("decision_poll_seconds", 10.0)
 _DEFAULT_MAX_REFRESH_BATCHES = 5
 _REFRESH_TIMEOUT_SECONDS = 5400
+# User-facing "3x" repair limit: one initial submit plus three repaired
+# resubmits for the same evidence fingerprint.
 _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT = 4
 _EXHAUSTED_STATUSES = {
     "duplicate_submission_fingerprint",
@@ -419,7 +421,7 @@ def _memo_sha256(verdict: Json, root: Path) -> str:
     return hashlib.sha256(memo.encode("utf-8")).hexdigest() if memo else ""
 
 
-def _fingerprint_attempt_count(path: Path, fingerprint: str, memo_sha256: str) -> int:
+def _fingerprint_attempt_count(path: Path, fingerprint: str) -> int:
     data = _json(path, [])
     if not isinstance(data, list):
         return 0
@@ -428,10 +430,6 @@ def _fingerprint_attempt_count(path: Path, fingerprint: str, memo_sha256: str) -
         for row in data
         if isinstance(row, dict)
         and row.get("fingerprint") == fingerprint
-        and (
-            not memo_sha256
-            or row.get("memo_sha256") == memo_sha256
-        )
     )
 
 
@@ -783,7 +781,7 @@ def select_candidate(
         approved = _approved(verdict, runs_root) if has_memo else False
         cycle_blocked = fp in blocked
         exhausted_topic = str(verdict.get("topic") or "") in topic_blocked
-        attempt_count = _fingerprint_attempt_count(submitted_path, fp, memo_sha256)
+        attempt_count = _fingerprint_attempt_count(submitted_path, fp)
         retry_after_rejection = (
             fp in retryable
             and attempt_count < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
@@ -810,7 +808,7 @@ def select_candidate(
                 direct_source_count = _direct_source_count(verdict, runs_root)
                 corpus_source_count = _corpus_source_count(verdict, runs_root)
                 memo_sha256 = _memo_sha256(verdict, runs_root)
-                attempt_count = _fingerprint_attempt_count(submitted_path, fp, memo_sha256)
+                attempt_count = _fingerprint_attempt_count(submitted_path, fp)
                 retry_after_rejection = (
                     fp in retryable
                     and attempt_count < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
@@ -835,7 +833,7 @@ def select_candidate(
                     direct_source_count = _direct_source_count(verdict, runs_root)
                     corpus_source_count = _corpus_source_count(verdict, runs_root)
                     memo_sha256 = _memo_sha256(verdict, runs_root)
-                    attempt_count = _fingerprint_attempt_count(submitted_path, fp, memo_sha256)
+                    attempt_count = _fingerprint_attempt_count(submitted_path, fp)
                     retry_after_rejection = (
                         fp in retryable
                         and attempt_count < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
