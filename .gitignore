@@ -14,6 +14,11 @@ htmlcov/
 
 # Keep runs/ tracked — they are the section deliverables.
 # If runs/ grows large later, switch to selective tracking.
+# ...except the per-topic supply cache: runtime state, not a deliverable.
+# It is rewritten every discovery cycle (incl. on the VPS cron), so tracking
+# it would create constant dirt and 3-way merge conflicts.
+runs/_topic_supply_cache.json
+runs/_topic_supply_cache.json.tmp
 
 # macOS Finder dedup-on-copy artifacts ("foo 2.json", "main_draft 2.md", etc.).
 # Never canonical; have polluted run-dir bundles before.

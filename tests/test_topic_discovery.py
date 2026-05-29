@@ -352,7 +352,10 @@ def test_fact_source_count_respects_probe_budget(monkeypatch: Any) -> None:
             "omega_3_longevity", client=c, settings=_settings(),
         )
 
-    assert out == 0
+    # Budget expired before any probe ran, so the DB was never asked: the
+    # count is *inconclusive*, not a genuine 0. The sentinel lets the caller
+    # fall back to a cached count instead of mis-ranking the topic at 0.
+    assert out == topic_discovery._PROBE_INCONCLUSIVE
 
 
 def test_fact_source_probe_uses_submit_sized_top_k() -> None:
@@ -370,3 +373,65 @@ def test_fact_source_probe_uses_submit_sized_top_k() -> None:
         )
 
     assert bodies[0]["top_k"] == 50
+
+
+def test_supply_cache_hit_skips_reprobe(monkeypatch: Any, tmp_path: Path) -> None:
+    """A fresh cached count is reused without re-probing the DB — the load
+    reduction that also shrinks the window for transient false-zeros."""
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    calls = {"n": 0}
+
+    def probe(*_a: Any, **_k: Any) -> int:
+        calls["n"] += 1
+        return 9
+
+    monkeypatch.setattr(td, "_fetch_topic_fact_source_count", probe)
+    first = td._fetch_fact_source_counts(
+        ["rapamycin"], client=MagicMock(), settings=_settings())
+    second = td._fetch_fact_source_counts(
+        ["rapamycin"], client=MagicMock(), settings=_settings())
+
+    assert first == second == {"rapamycin": 9}
+    assert calls["n"] == 1  # second call served from fresh cache
+
+
+def test_supply_cache_failure_keeps_prior_count(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    """A transient probe failure (-1) must NOT overwrite a known-good cached
+    count — the exact false-zero that mis-ranked rich topics down to 0."""
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_TTL_SECONDS", 0.0)  # force re-probe
+    counts = iter([16, td._PROBE_INCONCLUSIVE])
+    monkeypatch.setattr(
+        td, "_fetch_topic_fact_source_count", lambda *_a, **_k: next(counts))
+
+    first = td._fetch_fact_source_counts(
+        ["rapamycin"], client=MagicMock(), settings=_settings())
+    second = td._fetch_fact_source_counts(
+        ["rapamycin"], client=MagicMock(), settings=_settings())
+
+    assert first == {"rapamycin": 16}
+    assert second == {"rapamycin": 16}  # cached count survives the failure
+
+
+def test_supply_cache_failure_without_prior_is_zero(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    """First-ever probe fails (-1) with no cached history → 0, so a dead DB
+    cannot fabricate a phantom count."""
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    monkeypatch.setattr(
+        td, "_fetch_topic_fact_source_count",
+        lambda *_a, **_k: td._PROBE_INCONCLUSIVE)
+
+    out = td._fetch_fact_source_counts(
+        ["rapamycin"], client=MagicMock(), settings=_settings())
+
+    assert out == {"rapamycin": 0}

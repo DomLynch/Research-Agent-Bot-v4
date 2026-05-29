@@ -19,6 +19,7 @@ Tolerant: HTTP / JSON errors return empty list. Never raises.
 from __future__ import annotations
 
 import datetime as dt
+import json
 import math
 import time
 import tomllib
@@ -36,6 +37,17 @@ from agent.topic_synonyms import expand_topic_queries
 
 _SEEDS_TOML = (Path(__file__).resolve().parent.parent
                / "topic_packs" / "discovery_seeds.toml")
+# Per-topic A_core source-count cache. The probe is concurrent and
+# network-bound; a timed-out query is indistinguishable from genuine
+# scarcity (both yield 0), so under load a rich topic randomly drops
+# to 0 and gets mis-ranked as worthless. The cache persists the last
+# SUCCESSFUL count per topic so a transient failure never overwrites a
+# known-good value, and only stale/missing topics are re-probed (which
+# also slashes per-cycle DB load). Universal — no domain literals.
+_SUPPLY_CACHE_PATH = (Path(__file__).resolve().parent.parent
+                      / "runs" / "_topic_supply_cache.json")
+_SUPPLY_CACHE_TTL_SECONDS = 86_400.0  # re-probe a topic at most once/day
+_PROBE_INCONCLUSIVE = -1  # all queries failed (timeout/error), not a real 0
 _FACT_PROBE_TOPICS = 100
 _FACT_PROBE_TIMEOUT_SECONDS = 8.0
 _FACT_PROBE_BUDGET_SECONDS = 24.0
@@ -147,6 +159,7 @@ def _fetch_topic_fact_source_count(
     if not base or not tok:
         return 0
     source_keys: set[str] = set()
+    any_success = False
     deadline = time.monotonic() + _FACT_PROBE_BUDGET_SECONDS
     for query in expand_topic_queries(topic, max_queries=8):
         if time.monotonic() >= deadline:
@@ -169,6 +182,7 @@ def _fetch_topic_fact_source_count(
             verdict.fact_id: verdict.lane
             for verdict in classify_lanes(facts, topic)
         }
+        any_success = True
         source_keys.update(
             key for fact in facts
             if lanes.get(str(fact.get("fact_id") or "")) == "A_core"
@@ -176,7 +190,30 @@ def _fetch_topic_fact_source_count(
         )
         if len(source_keys) >= 5:
             break
+    # Distinguish "genuinely 0 A_core" (queries ran, found none) from
+    # "probe failed" (every query timed out/errored). The latter must
+    # NOT masquerade as a real 0 — that is what mis-ranked rich topics.
+    if not any_success:
+        return _PROBE_INCONCLUSIVE
     return len(source_keys)
+
+
+def _load_supply_cache() -> dict[str, dict[str, Any]]:
+    try:
+        data = json.loads(_SUPPLY_CACHE_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _save_supply_cache(cache: dict[str, dict[str, Any]]) -> None:
+    try:
+        _SUPPLY_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        tmp = _SUPPLY_CACHE_PATH.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(cache, indent=2), encoding="utf-8")
+        tmp.replace(_SUPPLY_CACHE_PATH)  # atomic
+    except OSError:
+        pass
 
 
 def _fetch_fact_source_counts(
@@ -184,16 +221,29 @@ def _fetch_fact_source_counts(
 ) -> dict[str, int]:
     if not topics:
         return {}
-    # Concurrency for the per-topic A_core source probe. Restored to 8
-    # (the value used for weeks before commit 4c24a51 dropped it to 2,
-    # which — combined with that commit's 40->100 topic and 12->24s
-    # budget increases — caused a ~20x discovery-latency regression and
-    # 2.5h cycles that missed the 2h publish cadence). Bumping workers
-    # is coverage-neutral: it parallelises the same probes rather than
-    # cutting the per-topic budget. 100 topics / 8 workers * 24s budget
-    # ~= 5 min/probe vs ~20 min at 2 workers.
-    workers = min(8, len(topics))
+    # Read cached counts first; only re-probe stale/missing topics. This
+    # both slashes per-cycle DB load and means a transient probe failure
+    # cannot overwrite a known-good count (see _SUPPLY_CACHE_PATH note).
+    cache = _load_supply_cache()
+    now = time.time()
     out: dict[str, int] = {}
+    to_probe: list[str] = []
+    for topic in topics:
+        entry = cache.get(topic)
+        if (isinstance(entry, dict)
+                and now - float(entry.get("ts", 0.0)) < _SUPPLY_CACHE_TTL_SECONDS):
+            out[topic] = int(entry.get("count", 0))
+        else:
+            to_probe.append(topic)
+    if not to_probe:
+        return out
+    # Concurrency for the per-topic A_core source probe. 8 workers (the
+    # value used for weeks before commit 4c24a51 dropped it to 2, causing
+    # a ~20x discovery-latency regression). With the cache above, only
+    # stale/missing topics reach here, so concurrent DB pressure — and
+    # thus the transient-timeout false-zeros it caused — is far lower.
+    workers = min(8, len(to_probe))
+    probed: dict[str, int] = {}
     with ThreadPoolExecutor(max_workers=workers) as pool:
         futures = {
             pool.submit(
@@ -202,10 +252,22 @@ def _fetch_fact_source_counts(
                 client=client,
                 settings=settings,
             ): topic
-            for topic in topics
+            for topic in to_probe
         }
         for fut in as_completed(futures):
-            out[futures[fut]] = fut.result()
+            probed[futures[fut]] = fut.result()
+    # Successful probe (>=0): refresh cache + use it. Inconclusive (-1):
+    # keep the last cached count if any, else fall back to 0; never cache
+    # a failure as a real count.
+    for topic, count in probed.items():
+        if count >= 0:
+            cache[topic] = {"count": count, "ts": now}
+            out[topic] = count
+        else:
+            prior = cache.get(topic)
+            out[topic] = (int(prior.get("count", 0))
+                          if isinstance(prior, dict) else 0)
+    _save_supply_cache(cache)
     return out
 
 
