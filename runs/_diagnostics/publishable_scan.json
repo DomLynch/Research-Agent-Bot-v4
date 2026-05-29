@@ -1,0 +1,68 @@
+{
+  "generated_utc": "2026-05-29T17:17:56.187892+00:00",
+  "floor": 5,
+  "publishable": 3,
+  "total": 10,
+  "rows": [
+    {
+      "topic": "omega_3_longevity",
+      "papers": 25,
+      "a_core_papers": 12,
+      "coherent_sources": 6
+    },
+    {
+      "topic": "glp_1_longevity",
+      "papers": 96,
+      "a_core_papers": 64,
+      "coherent_sources": 54
+    },
+    {
+      "topic": "sglt2_inhibitors",
+      "papers": 43,
+      "a_core_papers": 29,
+      "coherent_sources": 29
+    },
+    {
+      "topic": "urolithin_a",
+      "papers": 15,
+      "a_core_papers": 3,
+      "coherent_sources": 1
+    },
+    {
+      "topic": "alpha_ketoglutarate_akg",
+      "papers": 11,
+      "a_core_papers": 1,
+      "coherent_sources": 1
+    },
+    {
+      "topic": "glynac",
+      "papers": 0,
+      "a_core_papers": 0,
+      "coherent_sources": 0
+    },
+    {
+      "topic": "klotho",
+      "papers": 8,
+      "a_core_papers": 2,
+      "coherent_sources": 1
+    },
+    {
+      "topic": "hyperbaric_oxygen_hbot",
+      "papers": 2,
+      "a_core_papers": 1,
+      "coherent_sources": 1
+    },
+    {
+      "topic": "therapeutic_plasma_exchange",
+      "papers": 14,
+      "a_core_papers": 6,
+      "coherent_sources": 3
+    },
+    {
+      "topic": "photobiomodulation_red_light",
+      "papers": 2,
+      "a_core_papers": 1,
+      "coherent_sources": 1
+    }
+  ]
+}
