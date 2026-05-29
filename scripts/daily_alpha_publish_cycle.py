@@ -1515,6 +1515,7 @@ def run_cycle(
             return ledger
         ledger["submit_token_env"] = token_env
         submitter = _http_submitter(url, token)
+    prev_queue_sig: frozenset[str] = frozenset()
     for batch in range(1, batch_limit + 1):
         refresh: Json = {}
         if refresh_candidates:
@@ -1538,6 +1539,16 @@ def run_cycle(
                 return ledger
         current_queue = queue if queue is not None else queue_builder(runs_root, include_archive)
         current_queue = _with_repairable_candidates(current_queue, runs_root)
+        # Fingerprint the queue so we can detect a refresh batch that changed
+        # nothing. memo_fingerprint shifts when a candidate's cited receipts
+        # change, so a genuine build/refresh moves the signature.
+        queue_sig = frozenset(
+            memo_fingerprint(r)
+            for bucket in current_queue.values() if isinstance(bucket, list)
+            for r in bucket if isinstance(r, dict)
+        )
+        queue_unchanged = queue_sig == prev_queue_sig
+        prev_queue_sig = queue_sig
         ledger["queue_counts"] = _queue_counts(current_queue)
         candidate, considered = select_candidate(
             current_queue, runs_root=runs_root, submitted_path=submitted_path,
@@ -1567,6 +1578,15 @@ def run_cycle(
                 blocked_topics.update(ran_topics)
             elif refresh_candidates and refresh.get("skipped_in_cooldown"):
                 force_refresh = True
+            elif refresh_candidates and queue_unchanged:
+                # This refresh batch produced an identical candidate queue and
+                # no publishable candidate, so further batches would just
+                # re-run discovery to the same below-floor result. Stop instead
+                # of burning a full discovery cycle per remaining batch.
+                ledger["refresh_early_exit"] = {
+                    "batch": batch, "reason": "queue_unchanged_no_candidate",
+                }
+                break
             continue
         check_mode = "crossref" if submit and retraction_mode == "metadata" else retraction_mode
         retraction = retraction_check(
