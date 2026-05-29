@@ -99,6 +99,16 @@ def test_text_matches_empty_inputs() -> None:
     assert not text_matches_topic("dasatinib", "")
 
 
+def test_short_synonym_matches_on_word_boundary_only() -> None:
+    """`EPA` must NOT match inside `heparin`, but must match the real token."""
+    assert not text_matches_topic("heparin reduced clotting risk", "omega_3_longevity")
+    assert text_matches_topic("EPA reduced triglycerides", "omega_3_longevity")
+    # also exercised through the fact-lane classifier's shared matcher
+    from agent.topic_synonyms import phrase_in_text
+    assert not phrase_in_text("epa", "heparin reduced clotting")
+    assert phrase_in_text("epa", "epa lowered triglycerides")
+
+
 def test_load_synonyms_missing_file_returns_empty() -> None:
     """Pointing at a nonexistent path returns {} (graceful)."""
     load_synonyms.cache_clear()

@@ -52,7 +52,7 @@ from agent.numeric_sanitizer import filter_artifacts
 from agent.pico_enrichment import enrich_facts_pico
 from agent.researka_claims import _aggregate
 from agent.settings import load_settings
-from agent.topic_synonyms import expand_topic_queries
+from agent.topic_synonyms import expand_topic_queries, phrase_in_text
 
 _RUNS = Path(__file__).resolve().parent.parent / "runs"
 _PUBLICATION_CFG = Path(__file__).resolve().parent.parent / "topic_packs" / "publication.toml"
@@ -212,7 +212,7 @@ def _select_tier2_items(items: list[dict[str, Any]], topic: str) -> list[dict[st
             str((it.get("paper") or {}).get("title") or ""),
         ]).lower()
         haystack = re.sub(r"[\W_]+", " ", haystack).strip()
-        if tag in queries or any(q and q in haystack for q in queries):
+        if tag in queries or any(phrase_in_text(q, haystack) for q in queries):
             matched.append(it)
     return matched
 

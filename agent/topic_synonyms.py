@@ -1,12 +1,8 @@
-"""Sprint 62 — Class -> instance synonym resolver.
+"""Class -> instance synonym resolver (data: topic_packs/topic_synonyms.toml).
 
-Class queries (senolytic, mtor_inhibitor) match facts about specific
-compound instances (dasatinib, rapamycin). Data lives in
-topic_packs/topic_synonyms.toml — operator extends without code change.
-
-Universal: TOML is data. Empty / missing key falls back to single-
-keyword behavior (the topic word itself), preserving the pre-Sprint-62
-contract for any topic not registered.
+Class queries (senolytic) match instance facts (dasatinib). Matching is
+word-boundary, so a short synonym (EPA) never matches inside a word
+(heparin). Missing key -> topic-word-only behaviour. Universal: TOML is data.
 """
 from __future__ import annotations
 
@@ -23,6 +19,11 @@ _NORM = re.compile(r"[\W_]+")
 def _norm(s: str) -> str:
     """Lowercase + collapse non-word chars to single space."""
     return _NORM.sub(" ", s.lower()).strip()
+
+
+def phrase_in_text(needle: str, haystack: str) -> bool:
+    """Word-boundary match (normalised inputs): `epa` must not hit `heparin`."""
+    return bool(needle) and re.search(rf"\b{re.escape(needle)}\b", haystack) is not None
 
 
 @lru_cache(maxsize=1)
@@ -95,5 +96,5 @@ def text_matches_topic(text: str, topic: str) -> bool:
     if not text or not topic.strip():
         return False
     haystack = _norm(text)
-    return any(_norm(kw) in haystack
+    return any(phrase_in_text(_norm(kw), haystack)
                for kw in expand_topic_keywords(topic))

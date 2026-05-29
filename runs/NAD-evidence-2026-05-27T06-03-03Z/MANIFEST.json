@@ -10,7 +10,7 @@
   "mode": "alpha",
   "selected_theme": "intervention_signal",
   "facet_counts": {
-    "biomarker": 1
+    "clinical_outcome": 2
   },
   "numeric_artifacts_filtered": 7,
   "fact_fetch_plan": [
@@ -31,7 +31,7 @@
   "files": {
     "top_md": {
       "name": "top_5.md",
-      "sha256": "8033072d0903f9e0b0d8fe7d6fa3edacfc79df94a3e252c6fcff3390f6c86244"
+      "sha256": "7b2a6f7f8720cd0379f5bcb4c7f090f073213871cd8ee353494115ea5805d78f"
     },
     "all_facts": {
       "name": "all_facts.json",
