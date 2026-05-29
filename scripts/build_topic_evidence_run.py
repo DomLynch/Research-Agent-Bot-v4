@@ -26,6 +26,7 @@ import re
 import sys
 import time
 import tomllib
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -56,8 +57,9 @@ from agent.topic_synonyms import expand_topic_queries
 _RUNS = Path(__file__).resolve().parent.parent / "runs"
 _PUBLICATION_CFG = Path(__file__).resolve().parent.parent / "topic_packs" / "publication.toml"
 _TOP_BINDABLE_LANES = frozenset({"A_core", "B_context"})
-_FACT_FETCH_TIMEOUT_SECONDS = 15.0  # endpoint can run slow; catch slow-success
-_FACT_FETCH_BUDGET_SECONDS = 60.0
+_FACT_FETCH_TIMEOUT_SECONDS = 25.0  # per-query; search runs 15-22s under load
+_FACT_FETCH_BUDGET_SECONDS = 90.0  # overall wall-cap across concurrent queries
+_FETCH_WORKERS = 6  # concurrent queries: serial cascade exhausted the budget
 _FETCH_TOP_K = 500  # Researka per-query cap (raised to 500, confirmed live)
 # Universal scientific slice terms (NOT domain literals): outcome, dose, safety,
 # subgroup, and study-design. Combined with the topic they each pull a DIFFERENT
@@ -267,83 +269,62 @@ def _diverse_queries(topic: str) -> list[str]:
     return list(seen)
 
 
+def _fetch_one(
+    job: tuple[str, str], base: str, hdr: dict[str, str], topic: str,
+) -> list[dict[str, Any]]:
+    """One fetch unit (own client = thread-safe). Tolerant: any error -> []."""
+    kind, value = job
+    try:
+        with httpx.Client(timeout=_FACT_FETCH_TIMEOUT_SECONDS) as c:
+            if kind == "tier1":
+                r = c.get(
+                    f"{base}/api/v1/topics/{value}/facts",
+                    headers=hdr, params={"validated_only": "true"},
+                )
+                r.raise_for_status()
+                data = r.json()
+                out: list[dict[str, Any]] = []
+                for f in data if isinstance(data, list) else []:
+                    if isinstance(f, dict):
+                        f["_tier"] = "tier1_canonical"
+                        out.append(f)
+                return out
+            items = _post_tier2_facts(
+                c, base, hdr, value, numeric_only=True,
+                strict_audit_required=(kind == "strict"),
+            )
+            rows = items if kind == "strict" else _select_tier2_items(items, topic)
+            return [_normalize_tier2(it, topic) for it in rows]
+    except (httpx.HTTPError, ValueError):
+        return []
+
+
 def _fetch_facts(topic: str) -> list[dict[str, Any]]:
-    """Fetch strict facts first, then widen through the Researka data spine."""
+    """Pull facts across diverse slices CONCURRENTLY, then dedup. The Researka
+    search runs 15-25s/query (strict-audited can 504), so a serial cascade
+    exhausted the budget on the first slow query before the diverse outcome
+    slices ran. Parallel fetch lets a slow/504 query fail without blocking the
+    rest, so a broad SAME-claim bundle can actually be assembled."""
     settings = load_settings()
     base = settings.researka_database_url.rstrip("/")
     token = settings.researka_database_token.strip()
-    if not base or not token:
+    if not base or not token or _FACT_FETCH_BUDGET_SECONDS <= 0:
         return []
     hdr = {"X-Researka-Token": token}
-    facts: list[dict[str, Any]] = []
-    min_sources = _min_fact_source_papers()
-    # Gather well beyond the floor so the diverse outcome queries actually run
-    # and the coherence filter can assemble a SAME-outcome bundle. The floor is
-    # per-outcome; stopping at the first scattered 5 was the omega_3 reject.
-    gather_target = min_sources * 4
     queries = _diverse_queries(topic)
-    deadline = time.monotonic() + _FACT_FETCH_BUDGET_SECONDS
-    try:
-        with httpx.Client(timeout=_FACT_FETCH_TIMEOUT_SECONDS) as c:
-            for query in queries[:2]:
-                if time.monotonic() >= deadline:
-                    break
-                strict = _post_tier2_facts(
-                    c, base, hdr, query, numeric_only=True,
-                    strict_audit_required=True,
-                )
-                facts.extend(_normalize_tier2(it, topic) for it in strict)
-                if _a_core_source_count(facts, topic) >= gather_target:
-                    break
-            for topic_key in _topic_fact_keys(topic):
-                if (time.monotonic() >= deadline
-                        or _a_core_source_count(facts, topic) >= gather_target):
-                    break
-                try:
-                    r = c.get(
-                        f"{base}/api/v1/topics/{topic_key}/facts",
-                        headers=hdr,
-                        params={"validated_only": "true"},
-                    )
-                    r.raise_for_status()
-                    tier1 = r.json()
-                    if isinstance(tier1, list) and tier1:
-                        for f in tier1:
-                            if isinstance(f, dict):
-                                f["_tier"] = "tier1_canonical"
-                                facts.append(f)
-                except (httpx.HTTPError, ValueError):
-                    continue
-            if _a_core_source_count(facts, topic) < gather_target:
-                for query in queries:
-                    if time.monotonic() >= deadline:
-                        break
-                    items = _post_tier2_facts(
-                        c, base, hdr, query, numeric_only=True,
-                        strict_audit_required=False,
-                    )
-                    facts.extend(
-                        _normalize_tier2(it, topic)
-                        for it in _select_tier2_items(items, topic)
-                    )
-                    if _a_core_source_count(facts, topic) >= gather_target:
-                        break
-            if _a_core_source_count(facts, topic) < gather_target:
-                for query in queries:
-                    if time.monotonic() >= deadline:
-                        break
-                    items = _post_tier2_facts(
-                        c, base, hdr, query, numeric_only=False,
-                        strict_audit_required=False,
-                    )
-                    facts.extend(
-                        _normalize_tier2(it, topic)
-                        for it in _select_tier2_items(items, topic)
-                    )
-                    if _a_core_source_count(facts, topic) >= gather_target:
-                        break
-    except (httpx.HTTPError, ValueError):
-        return _dedup_facts(facts)
+    jobs: list[tuple[str, str]] = (
+        [("tier1", k) for k in _topic_fact_keys(topic)]
+        + [("strict", q) for q in queries[:2]]
+        + [("normal", q) for q in queries]
+    )
+    facts: list[dict[str, Any]] = []
+    with ThreadPoolExecutor(max_workers=_FETCH_WORKERS) as pool:
+        futures = [pool.submit(_fetch_one, job, base, hdr, topic) for job in jobs]
+        try:
+            for fut in as_completed(futures, timeout=_FACT_FETCH_BUDGET_SECONDS):
+                facts.extend(fut.result())
+        except TimeoutError:
+            pass  # keep whatever finished within the overall budget
     return _dedup_facts(facts)
 
 
