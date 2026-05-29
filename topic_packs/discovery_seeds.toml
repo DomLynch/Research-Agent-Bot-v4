@@ -13,6 +13,7 @@
 #     domains without touching code.
 
 [seeds]
+derived_topic_limit = 250
 topics = [
     "rapamycin",
     "metformin",

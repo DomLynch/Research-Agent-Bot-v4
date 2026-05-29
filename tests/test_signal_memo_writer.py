@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 
 from agent.publish_tier import publish_verdict
-from agent.signal_memo_writer import render_signal_memo, write_signal_memo
+from agent.signal_memo_writer import _memo_alpha_int, render_signal_memo, write_signal_memo
 
 
 def _write_run(run: Path) -> None:
@@ -279,3 +279,86 @@ def test_alpha_memo_turns_repeated_title_into_declarative_thesis(
 
     assert thesis != gate["audits"][0]["rationale"]
     assert "The cited A/B receipts support a specific working claim" in thesis
+
+
+def test_alpha_memo_selects_boundary_angle_over_generic_surprise(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    facts.append({
+        "fact_id": "303",
+        "canonical_phrase": "Emissions fell in cities but output losses persisted elsewhere.",
+        "source_paper": {"doi": "10.x/boundary"},
+    })
+    lanes["verdicts"].append({"fact_id": "303", "lane": "B_context"})
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+
+    memo = render_signal_memo(run, publish_verdict={"surface_type": "publish_alpha_memo"})
+
+    assert "**Selected angle:** `boundary_condition`" in memo
+    assert "**Headline:** Carbon tax may hinge on a boundary condition" in memo
+    assert "where the evidence stops generalizing" in memo
+    assert "output losses persisted elsewhere" in memo
+
+
+def test_alpha_memo_abandons_weak_angles_below_config_floor(tmp_path: Path) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+
+    memo = render_signal_memo(run, publish_verdict={"surface_type": "publish_alpha_memo"})
+
+    assert _memo_alpha_int("min_angle_score", 0) == 45
+    assert "**Selected angle:** `source`" in memo
+    assert "**Headline:** Carbon pricing may cut emissions" in memo
+    assert "has a live counter-signal" not in memo
+    assert "may hinge on a boundary condition" not in memo
+
+
+def test_alpha_memo_selects_counter_signal_angle_when_counter_receipt_exists(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "publish_alpha_memo",
+        "counter_evidence": {"items": [{
+            "fact_id": "404",
+            "lane": "A_core",
+            "phrase": "Output fell after the intervention in a matched market.",
+        }]},
+    })
+
+    assert "**Selected angle:** `counter_signal`" in memo
+    assert "**Headline:** Carbon tax has a live counter-signal" in memo
+    assert "The strongest opposing receipt says" in memo
+    assert "matched market" in memo
+
+
+def test_alpha_angle_selection_uses_live_publication_config(tmp_path: Path) -> None:
+    run = tmp_path / "grid_storage_tariff-evidence-ts"
+    _write_run(run)
+    review = json.loads((run / "frontier_review.json").read_text(encoding="utf-8"))
+    review["topic"] = "grid_storage_tariff"
+    (run / "frontier_review.json").write_text(json.dumps(review), encoding="utf-8")
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    facts[0]["canonical_phrase"] = "Grid storage tariffs improved adoption in cities."
+    facts.append({
+        "fact_id": "303",
+        "canonical_phrase": "Grid storage tariffs improved adoption but raised peak prices elsewhere.",
+        "source_paper": {"doi": "10.x/grid"},
+    })
+    lanes["verdicts"].append({"fact_id": "303", "lane": "B_context"})
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+
+    memo = render_signal_memo(run, publish_verdict={"surface_type": "publish_alpha_memo"})
+
+    assert _memo_alpha_int("angle_candidates", 0) == 5
+    assert "**Selected angle:** `boundary_condition`" in memo
+    assert "**Headline:** Grid storage tariff may hinge on a boundary condition" in memo

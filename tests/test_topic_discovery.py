@@ -24,7 +24,9 @@ from agent.topic_discovery import (
     _anchorage_counts,
     _paper_score,
     _score_topic,
+    _title_topic_slugs,
     discover_topics,
+    load_derived_topic_limit,
     load_seed_topics,
 )
 
@@ -164,6 +166,20 @@ def test_load_seed_topics_real_seeds_loaded() -> None:
     seeds = load_seed_topics()
     assert len(seeds) >= 5
     assert all(isinstance(s, str) and s.strip() for s in seeds)
+
+
+def test_load_derived_topic_limit_from_real_config() -> None:
+    assert load_derived_topic_limit() >= 100
+
+
+def test_title_topic_slugs_derive_candidates_from_paper_titles() -> None:
+    out = _title_topic_slugs({
+        "seed": [_paper(title="Carbon pricing and grid storage improve adoption")],
+    }, current_year=2024, limit=8)
+
+    assert "carbon_pricing" in out
+    assert "grid_storage" in out
+    assert all("study" not in slug for slug in out)
 
 
 def test_candidate_as_dict_round_trip() -> None:
@@ -308,6 +324,37 @@ def test_discover_topics_prefers_fact_source_breadth() -> None:
     assert out[0].topic == "rich_topic"
     assert out[0].fact_source_count == 5
     assert out[1].fact_source_count == 1
+
+
+def test_discover_topics_can_rank_derived_title_candidates() -> None:
+    seed_papers = [_paper(
+        doi="10.1/seed",
+        title="Carbon pricing and grid storage improve adoption",
+        fwci=2.0,
+    )]
+    derived_papers = [_paper(
+        doi="10.1/derived",
+        title="Grid storage tariffs improve adoption",
+        fwci=12.0,
+    )]
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        body = req.read().decode("utf-8") if req.content else "{}"
+        if req.url.path.endswith("/tier2/facts/search"):
+            return httpx.Response(200, json=[])
+        if "grid_storage" in body:
+            return httpx.Response(200, json=derived_papers)
+        return httpx.Response(200, json=seed_papers)
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        out = discover_topics(
+            seeds=("seed_topic",), settings=_settings(), client=c,
+            current_year=2024, derived_topic_limit=8,
+        )
+
+    topics = [c.topic for c in out]
+    assert "grid_storage" in topics
+    assert topics.index("grid_storage") < topics.index("seed_topic")
 
 
 def test_discover_topics_counts_slug_prefix_fact_sources() -> None:

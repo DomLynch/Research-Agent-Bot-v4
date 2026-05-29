@@ -27,6 +27,7 @@ from agent.settings import load_settings
 from agent.topic_discovery import (
     TopicCandidate,
     discover_topics,
+    load_derived_topic_limit,
     load_seed_topics,
 )
 
@@ -69,7 +70,8 @@ def main() -> int:
     settings = load_settings()
     with httpx.Client() as client:
         ranked = discover_topics(seeds=seeds, settings=settings,
-                                 client=client)
+                                 client=client,
+                                 derived_topic_limit=load_derived_topic_limit())
     top = ranked[: args.top]
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
     year = dt.datetime.now(dt.UTC).year

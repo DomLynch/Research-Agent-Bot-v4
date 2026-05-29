@@ -21,6 +21,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import math
+import re
 import time
 import tomllib
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -59,6 +60,14 @@ _FACT_PROBE_BUDGET_SECONDS = 24.0
 # and stopped the supply cache from ever warming. 4 keeps probes succeeding so
 # the cache fills and steady-state load collapses to near zero.
 _FACT_PROBE_WORKERS = 4
+_TITLE_WORD = re.compile(r"[a-z][a-z0-9]+")
+_DERIVED_TOPIC_LIMIT = 250
+_TITLE_STOPWORDS = frozenset({
+    "and", "the", "for", "with", "from", "into", "using", "among", "after",
+    "before", "during", "study", "trial", "review", "analysis", "effect",
+    "effects", "association", "associated", "based", "between", "patients",
+    "adults", "human", "mouse", "mice", "model", "models", "new", "novel",
+})
 
 
 @dataclass(frozen=True, slots=True)
@@ -99,6 +108,20 @@ def load_seed_topics(path: Path | None = None) -> tuple[str, ...]:
     if not isinstance(topics, list):
         return ()
     return tuple(str(t).strip() for t in topics if str(t).strip())
+
+
+def load_derived_topic_limit(path: Path | None = None) -> int:
+    target = path or _SEEDS_TOML
+    try:
+        data = tomllib.loads(target.read_text(encoding="utf-8"))
+        seeds = data.get("seeds", {}) if isinstance(data, dict) else {}
+        raw = (
+            seeds.get("derived_topic_limit", _DERIVED_TOPIC_LIMIT)
+            if isinstance(seeds, dict) else _DERIVED_TOPIC_LIMIT
+        )
+        return max(0, int(raw))
+    except (OSError, tomllib.TOMLDecodeError, TypeError, ValueError):
+        return _DERIVED_TOPIC_LIMIT
 
 
 def _paper_score(paper: dict[str, Any], current_year: int) -> float:
@@ -278,6 +301,26 @@ def _fetch_fact_source_counts(
     return out
 
 
+def _title_topic_slugs(
+    papers_by_topic: dict[str, list[dict[str, Any]]], current_year: int, *,
+    limit: int,
+) -> tuple[str, ...]:
+    scores: dict[str, float] = {}
+    for papers in papers_by_topic.values():
+        ranked = sorted(papers, key=lambda p: _paper_score(p, current_year), reverse=True)
+        for paper in ranked[:5]:
+            paper_score = _paper_score(paper, current_year)
+            words = [
+                w for w in _TITLE_WORD.findall(str(paper.get("title") or "").lower())
+                if len(w) > 2 and w not in _TITLE_STOPWORDS
+            ][:12]
+            for width in (2, 3, 4):
+                for i in range(0, max(0, len(words) - width + 1)):
+                    slug = "_".join(words[i:i + width])
+                    scores[slug] = scores.get(slug, 0.0) + paper_score / width
+    return tuple(k for k, _ in sorted(scores.items(), key=lambda item: item[1], reverse=True)[:limit])
+
+
 def _anchorage_counts(
     papers_by_topic: dict[str, list[dict[str, Any]]],
     current_year: int, *, top_k: int = 5,
@@ -380,6 +423,7 @@ def discover_topics(
     seeds: tuple[str, ...] | None = None, *,
     settings: Settings, client: httpx.Client | None = None,
     current_year: int | None = None,
+    derived_topic_limit: int = 0,
 ) -> tuple[TopicCandidate, ...]:
     """Score every seed topic; return ranked tuple (highest velocity first).
     Never raises — degrades silently on HTTP/JSON errors per topic."""
@@ -394,6 +438,14 @@ def discover_topics(
         for topic in topics:
             papers_by_topic[topic] = _fetch_topic_papers(
                 topic, client=c, settings=settings)
+        known = set(papers_by_topic)
+        if derived_topic_limit:
+            for topic in _title_topic_slugs(papers_by_topic, year_now,
+                                           limit=derived_topic_limit):
+                if topic not in known:
+                    papers_by_topic[topic] = _fetch_topic_papers(
+                        topic, client=c, settings=settings)
+                    known.add(topic)
         anchorage = _anchorage_counts(papers_by_topic, year_now)
         velocity_ranked = sorted(
             [

@@ -9,7 +9,7 @@ Supplement = audit. Compiler = truth. LLM = prose. Contract = enforcement.
 No section owns evidence outside its packet.**
 
 ## Current State — 2026-05-17 (Sprint 89 context-memo publish surface)
-- LOC ceiling: **14,000 in `agent/`** (hard gate, `scripts/loc_gate.sh`).
+- LOC ceiling: **19,000 in `agent/`** (hard gate, `scripts/loc_gate.sh`).
   See the cap-doctrine header in `loc_gate.sh` for the full bump
   history. Every module under the higher cap must delete or prevent a
   fake-evidence failure mode (typed contract, validator, receipt,

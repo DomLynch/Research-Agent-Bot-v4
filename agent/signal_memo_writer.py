@@ -1,9 +1,3 @@
-"""Render operator-facing alpha memos from existing evidence-run receipts.
-
-No new model call. The memo is a product layer over `signal_post.md`,
-`frontier_review.json`, `opportunities_gate.json`, `fact_lanes.json`,
-`top_5.md`, and `all_facts.json`.
-"""
 from __future__ import annotations
 
 import hashlib
@@ -18,13 +12,9 @@ _PUB_PATH = _ROOT / "topic_packs" / "publication.toml"
 _DIRECT = frozenset({"A_core"})
 _BINDABLE = frozenset({"A_core", "B_context"})
 
-# Receipt-coherence: a padded receipt must share the lead claim's OUTCOME
-# wording (finding sentence only — the PICO intervention is the shared topic
-# modality) so the bundle stays about ONE claim, not "disparate facts".
 _CLAIM_FIELDS = ("canonical_phrase",)
 _CLAIM_MIN_OVERLAP = 1
 _WORD = re.compile(r"[a-z][a-z0-9]*")  # alpha-led: pure numbers aren't claim signal
-# Universal filler (not domain literals) dropped from the coherence signal.
 _GENERIC_TOKENS = frozenset({
     "the", "of", "to", "in", "and", "or", "for", "with", "from", "by", "on", "at", "an",
     "as", "is", "are", "was", "were", "be", "not", "than", "that", "this", "study", "trial",
@@ -32,8 +22,6 @@ _GENERIC_TOKENS = frozenset({
     "effects", "increased", "decreased", "reduced", "change", "results", "significant",
     "versus", "compared", "control", "treated", "ci", "rr", "hr", "nnt", "rct", "rcts",
 })
-
-
 def _read(path: Path) -> str:
     try:
         return path.read_text(encoding="utf-8")
@@ -46,8 +34,6 @@ def _json(path: Path, default: Any) -> Any:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return default
-
-
 def _sha256(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
@@ -87,14 +73,6 @@ def _memo_alpha_int(name: str, default: int) -> int:
         return default
 
 
-def _memo_min_source_papers() -> int:
-    return _memo_alpha_int("min_source_papers", 5)
-
-
-def _memo_min_direct_source_papers() -> int:
-    return _memo_alpha_int("min_direct_source_papers", 5)
-
-
 def _section(md: str, heading: str) -> str:
     m = re.search(
         rf"^## {re.escape(heading)}\n\n(.*?)(?=\n## |\Z)",
@@ -118,21 +96,6 @@ def _label(signal_md: str) -> str:
     if m:
         return m.group(1)
     return "no_signal" if signal_md.startswith("# No signal") else "unknown"
-
-
-def _top_cards(top_md: str, limit: int = 5) -> list[tuple[str, str]]:
-    cards: list[tuple[str, str]] = []
-    for block in re.split(r"\n## #\d+ ", top_md)[1:]:
-        finding = re.search(r"\*\*Finding:\*\* (.+)", block)
-        cues = re.search(r"- \*\*Alpha cues:\*\* (.+)", block)
-        if finding:
-            cards.append((
-                finding.group(1).strip()[:220],
-                (cues.group(1).strip() if cues else "baseline"),
-            ))
-        if len(cards) >= limit:
-            break
-    return cards
 
 
 def _first_sentence(text: str, fallback: str) -> str:
@@ -186,24 +149,16 @@ def _lead_audit(run_dir: Path) -> dict[str, Any]:
 
 def _source_key(fact: dict[str, Any]) -> str:
     paper = fact.get("source_paper") or {}
-    if not isinstance(paper, dict):
-        return ""
-    return str(paper.get("doi") or paper.get("pmid") or paper.get("title") or "").strip()
+    return str(paper.get("doi") or paper.get("pmid") or paper.get("title") or "").strip() if isinstance(paper, dict) else ""
 
 
 def _claim_token_set(*values: Any) -> set[str]:
-    """Word tokens (len>=2) — mirrors source_corpus._tokenize, no heavy import."""
-    out: set[str] = set()
-    for value in values:
-        out.update(t for t in _WORD.findall(str(value or "").lower()) if len(t) >= 2)
-    return out
+    return {t for value in values for t in _WORD.findall(str(value or "").lower()) if len(t) >= 2}
 
 
 def _claim_signal(
     seed_ids: list[str], facts: dict[str, dict[str, Any]], topic: str,
 ) -> set[str]:
-    """Outcome tokens from the lead (cited) facts' finding sentence, minus the
-    topic word and generic filler (what a padded receipt must share to cohere)."""
     sig: set[str] = set()
     for fid in seed_ids:
         fact = facts.get(fid) or {}
@@ -212,7 +167,6 @@ def _claim_signal(
 
 
 def _fact_coheres(fact: dict[str, Any], claim: set[str], topic: str) -> bool:
-    """Coheres iff it shares >= _CLAIM_MIN_OVERLAP claim tokens (else allow)."""
     if not claim:
         return True
     cand = _claim_token_set(*(fact.get(k) for k in _CLAIM_FIELDS))
@@ -243,11 +197,8 @@ def _expanded_receipt_ids(
         if key:
             sources.add(key)
 
-    # Seed with the cited lead facts (these DEFINE the claim, always kept).
     for fid in [str(x) for x in audit.get("cited_fact_ids", [])]:
         add(fid)
-    # Pad toward min_sources, but only with receipts that cohere with the claim
-    # so we never fill the floor with on-topic-but-off-claim facts.
     for fid, fact in facts.items():
         if len(sources) >= min_sources:
             break
@@ -357,24 +308,6 @@ def _public_headline(topic: str, headline: str, verdict: dict[str, Any] | None) 
     return headline
 
 
-def _bounded_headline(
-    topic: str,
-    headline: str,
-    verdict: dict[str, Any] | None,
-    *,
-    lead_source_count: int,
-    context_ids: list[str],
-) -> str:
-    if (
-        verdict
-        and verdict.get("surface_type") == "publish_alpha_memo"
-        and context_ids
-        and lead_source_count <= 1
-    ):
-        return f"{_topic_title(topic)}: single-source lead signal with broader context receipts"
-    return headline
-
-
 def _context_subline(verdict: dict[str, Any] | None, fallback: str) -> str:
     if not verdict or verdict.get("surface_type") != "context_dependence_memo":
         return fallback
@@ -415,6 +348,53 @@ def _same_phrase(left: str, right: str) -> bool:
 
 def _fact_phrase(fact: dict[str, Any]) -> str:
     return str(fact.get("canonical_phrase") or "").strip().rstrip(".")
+
+
+def _select_angle(
+    topic: str,
+    headline: str,
+    thesis: str,
+    why: str,
+    facts: dict[str, dict[str, Any]],
+    lead_ids: list[str],
+    context_ids: list[str],
+    verdict: dict[str, Any] | None,
+    source_count: int,
+) -> dict[str, str]:
+    lead = _clip(_fact_phrase(facts.get(lead_ids[0]) or {}), 220) if lead_ids else ""
+    context = _clip(_fact_phrase(facts.get(context_ids[0]) or {}), 220) if context_ids else ""
+    raw = verdict.get("counter_evidence") if verdict else None
+    raw_items = raw.get("items", []) if isinstance(raw, dict) else []
+    counter = next((
+        _clip(item.get("phrase"), 220) for item in raw_items
+        if isinstance(item, dict)
+    ), "") if isinstance(raw_items, list) else ""
+    base = {"kind": "source", "headline": headline, "thesis": thesis, "why": why}
+    candidates: list[tuple[int, dict[str, str]]] = [(source_count * 8, base)]
+    if lead and context:
+        candidates.append((source_count * 8 + 40, {
+            "kind": "boundary_condition",
+            "headline": f"{_topic_title(topic)} may hinge on a boundary condition",
+            "thesis": f"{lead}. Boundary receipts add a second constraint: {context}.",
+            "why": (
+                "The interesting signal is where the evidence stops generalizing: "
+                "the memo is not a broad topic summary, but a testable boundary condition."
+            ),
+        }))
+    if lead and counter:
+        candidates.append((source_count * 8 + 44, {
+            "kind": "counter_signal",
+            "headline": f"{_topic_title(topic)} has a live counter-signal",
+            "thesis": f"{lead}. The strongest opposing receipt says: {counter}.",
+            "why": (
+                "The value is the collision between receipts, not the isolated positive "
+                "finding; this is the branch worth testing next."
+            ),
+        }))
+    limit = max(1, min(5, _memo_alpha_int("angle_candidates", 5)))
+    floor = max(0, min(100, _memo_alpha_int("min_angle_score", 45)))
+    score, winner = max(candidates[:limit], key=lambda item: item[0])
+    return winner if score >= floor else base
 
 
 def _receipt_thesis(
@@ -627,8 +607,8 @@ def render_signal_memo(
     audit = _lead_audit(run_dir)
     facts = _facts_by_id(run_dir)
     lanes = _lane_map(run_dir)
-    min_sources = _memo_min_source_papers()
-    min_direct_sources = _memo_min_direct_source_papers()
+    min_sources = _memo_alpha_int("min_source_papers", 5)
+    min_direct_sources = _memo_alpha_int("min_direct_source_papers", 5)
     claim = _claim_signal(
         [str(x) for x in audit.get("cited_fact_ids", [])], facts, topic,
     )
@@ -647,13 +627,6 @@ def render_signal_memo(
     receipt_ids = lead_ids + [fid for fid in expanded_ids if fid not in lead_set]
     context_ids = [fid for fid in receipt_ids if fid not in lead_set]
     lead_source_count = _source_count_for_ids(lead_ids, facts)
-    headline = _bounded_headline(
-        topic,
-        headline,
-        publish_verdict,
-        lead_source_count=lead_source_count,
-        context_ids=context_ids,
-    )
     source_count = _source_count_for_ids(receipt_ids, facts)
     thesis = _receipt_thesis(
         headline, audit, facts, receipt_ids, context_ids, publish_verdict,
@@ -663,6 +636,14 @@ def render_signal_memo(
         _section(signal_md, "Why this is surprising"),
         context_ids,
     )
+    angle = _select_angle(
+        topic, headline, thesis, why_surprising, facts, lead_ids,
+        context_ids, publish_verdict, source_count,
+    )
+    if publish_verdict and publish_verdict.get("surface_type") == "publish_alpha_memo":
+        headline = angle["headline"]
+    thesis = angle["thesis"]
+    why_surprising = angle["why"]
 
     score = _alpha_score(audit, label)
     lines = [
@@ -673,6 +654,7 @@ def render_signal_memo(
         f"**Alpha triage:** `{_score_band(score)}` (internal ranking; not a certainty claim)",
         f"**Confidence:** `{label}`",
         f"**Memo surface:** `{_surface_line(publish_verdict)}`",
+        f"**Selected angle:** `{angle['kind']}`",
         f"**Snapshot:** `{snapshot}`",
         f"**Run:** `{run_dir.name}`",
         f"**Direct source breadth:** `{lead_source_count}` direct cited source(s)",
