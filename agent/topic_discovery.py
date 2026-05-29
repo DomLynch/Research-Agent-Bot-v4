@@ -184,7 +184,15 @@ def _fetch_fact_source_counts(
 ) -> dict[str, int]:
     if not topics:
         return {}
-    workers = min(2, len(topics))
+    # Concurrency for the per-topic A_core source probe. Restored to 8
+    # (the value used for weeks before commit 4c24a51 dropped it to 2,
+    # which — combined with that commit's 40->100 topic and 12->24s
+    # budget increases — caused a ~20x discovery-latency regression and
+    # 2.5h cycles that missed the 2h publish cadence). Bumping workers
+    # is coverage-neutral: it parallelises the same probes rather than
+    # cutting the per-topic budget. 100 topics / 8 workers * 24s budget
+    # ~= 5 min/probe vs ~20 min at 2 workers.
+    workers = min(8, len(topics))
     out: dict[str, int] = {}
     with ThreadPoolExecutor(max_workers=workers) as pool:
         futures = {
