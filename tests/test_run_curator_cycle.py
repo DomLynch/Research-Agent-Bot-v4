@@ -180,7 +180,7 @@ def test_plan_topics_honors_excluded_before_cooldown() -> None:
         {"topic": "fresh", "velocity_score": 7.0},
     ]
 
-    plan, skipped, skipped_excluded = _plan_topics(
+    plan, skipped, skipped_excluded, below_floor = _plan_topics(
         ranked,
         recent={"recent"},
         excluded={"duplicate"},
@@ -190,6 +190,7 @@ def test_plan_topics_honors_excluded_before_cooldown() -> None:
     assert [row["topic"] for row in plan] == ["fresh"]
     assert skipped == ["recent"]
     assert skipped_excluded == ["duplicate"]
+    assert below_floor == []
 
 
 def test_plan_topics_skips_below_direct_source_floor() -> None:
@@ -198,13 +199,14 @@ def test_plan_topics_skips_below_direct_source_floor() -> None:
         {"topic": "ready", "velocity_score": 8.0, "fact_source_count": 5},
     ]
 
-    plan, skipped, skipped_excluded = _plan_topics(
+    plan, skipped, skipped_excluded, below_floor = _plan_topics(
         ranked, recent=set(), excluded=set(), top=2, min_fact_sources=5,
     )
 
     assert [row["topic"] for row in plan] == ["ready"]
     assert skipped == []
     assert skipped_excluded == []
+    assert below_floor == []
 
 
 def test_plan_topics_falls_back_to_underfloor_when_ready_pool_empty() -> None:
@@ -213,13 +215,50 @@ def test_plan_topics_falls_back_to_underfloor_when_ready_pool_empty() -> None:
         {"topic": "thin", "velocity_score": 8.0, "fact_source_count": 2},
     ]
 
-    plan, skipped, skipped_excluded = _plan_topics(
+    plan, skipped, skipped_excluded, below_floor = _plan_topics(
         ranked, recent=set(), excluded={"blocked"}, top=1, min_fact_sources=5,
     )
 
     assert [row["topic"] for row in plan] == ["thin"]
     assert skipped == []
     assert skipped_excluded == ["blocked"]
+    assert below_floor == []
+
+
+def test_plan_topics_never_builds_zero_source_candidate() -> None:
+    """A fact_source_count=0 topic is dropped below the hard floor and is NOT
+    built — not even as the last-resort fallback when nothing else qualifies.
+    This is the cheap filter that stops the cycle building dead candidates."""
+    ranked = [
+        {"topic": "dead", "velocity_score": 9.0, "fact_source_count": 0},
+        {"topic": "thin", "velocity_score": 8.0, "fact_source_count": 2},
+    ]
+
+    plan, _skipped, _excluded, below_floor = _plan_topics(
+        ranked, recent=set(), excluded=set(), top=5,
+        min_fact_sources=5, hard_floor=3,
+    )
+
+    assert plan == []  # both below hard floor -> nothing built, no fallback
+    assert set(below_floor) == {"dead", "thin"}
+
+
+def test_plan_topics_builds_candidate_meeting_preferred_floor() -> None:
+    """A topic at/above the preferred floor still builds; a 3-4 source topic is
+    rescued only via fallback; sub-floor (<3) is never built."""
+    ranked = [
+        {"topic": "ready", "velocity_score": 7.0, "fact_source_count": 5},
+        {"topic": "mid", "velocity_score": 9.0, "fact_source_count": 3},
+        {"topic": "dead", "velocity_score": 8.0, "fact_source_count": 1},
+    ]
+
+    plan, _skipped, _excluded, below_floor = _plan_topics(
+        ranked, recent=set(), excluded=set(), top=5,
+        min_fact_sources=5, hard_floor=3,
+    )
+
+    assert [row["topic"] for row in plan] == ["ready"]  # only >=5 planned
+    assert below_floor == ["dead"]  # <3 dropped; 'mid' (3) kept in reserve
 
 
 def test_summarize_md_renders_table() -> None:

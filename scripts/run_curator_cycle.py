@@ -44,6 +44,13 @@ _RUNS = _ROOT / "runs"
 _CYCLES_DIR = _RUNS / "_curator_cycles"
 _DEFAULT_PIPELINE_TOP_N = max(5, _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES * 2)
 _DISCOVERY_TIMEOUT_SECONDS = 1800
+# Cheap pre-build gate: a topic whose discovery probe finds fewer bindable
+# sources than this can never clear the publish source floor, so a full
+# evidence build is wasted. Derived from the floor (margin for probe
+# under-counting), not a domain literal. Sub-floor topics are never built —
+# not even as a last-resort fallback — which stops the cycle burning ~an hour
+# on dozens of zero/low-source dead candidates.
+_PREBUILD_MIN_SOURCE_FLOOR = max(1, _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES - 2)
 
 
 @dataclass(frozen=True, slots=True)
@@ -234,11 +241,13 @@ def _plan_topics(
     excluded: set[str],
     top: int,
     min_fact_sources: int = 0,
-) -> tuple[list[dict[str, Any]], list[str], list[str]]:
+    hard_floor: int = 0,
+) -> tuple[list[dict[str, Any]], list[str], list[str], list[str]]:
     plan: list[dict[str, Any]] = []
     underfloor: list[dict[str, Any]] = []
     skipped: list[str] = []
     skipped_excluded: list[str] = []
+    below_floor: list[str] = []
     for c in ranked:
         topic = str(c.get("topic") or "")
         if not topic:
@@ -249,18 +258,26 @@ def _plan_topics(
         if topic in recent:
             skipped.append(topic)
             continue
-        if min_fact_sources and int(c.get("fact_source_count") or 0) < min_fact_sources:
+        count = int(c.get("fact_source_count") or 0)
+        # Hard floor first: a sub-floor topic is dropped outright and is never
+        # eligible for the last-resort fallback below — building it cannot pass.
+        if hard_floor and count < hard_floor:
+            below_floor.append(topic)
+            continue
+        if min_fact_sources and count < min_fact_sources:
             underfloor.append(c)
             continue
         plan.append(c)
         if len(plan) >= top:
             break
+    # Rescue only candidates that cleared the hard floor (underfloor already
+    # excludes sub-floor topics), so a zero/low-source topic is never built.
     if not plan:
         for c in underfloor:
             if len(plan) >= top:
                 break
             plan.append(c)
-    return plan, skipped, skipped_excluded
+    return plan, skipped, skipped_excluded, below_floor
 
 
 def _summarize_md(
@@ -354,16 +371,18 @@ def main() -> int:
     # Step 2: cooldown filter
     recent = _recent_signal_topics(_RUNS, args.cooldown_hours, cycle_start)
     excluded = {str(t).strip() for t in args.exclude_topic if str(t).strip()}
-    plan, skipped, skipped_excluded = _plan_topics(
+    plan, skipped, skipped_excluded, below_floor = _plan_topics(
         ranked, recent=recent, excluded=excluded, top=args.top,
         min_fact_sources=(
             _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES if args.stop_on_ready else 0
         ),
+        hard_floor=_PREBUILD_MIN_SOURCE_FLOOR,
     )
 
     print(f"[cycle] plan: {len(plan)} topics to run, {len(skipped)} skipped "
           f"(cooldown {args.cooldown_hours}h), "
-          f"{len(skipped_excluded)} excluded")
+          f"{len(skipped_excluded)} excluded, "
+          f"{len(below_floor)} below source floor (not built)")
     for c in plan:
         print(f"   - {c['topic']:25}  velocity={c.get('velocity_score',0):.2f}")
 
@@ -401,6 +420,7 @@ def main() -> int:
         "ran": [r.as_dict() for r in results],
         "skipped_in_cooldown": skipped,
         "skipped_excluded": skipped_excluded,
+        "skipped_below_source_floor": below_floor,
         "stopped_on_ready": stopped_on_ready,
     }
     json_path = _CYCLES_DIR / f"{cycle_ts}.json"
