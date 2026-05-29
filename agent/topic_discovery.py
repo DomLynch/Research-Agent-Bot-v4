@@ -51,6 +51,14 @@ _PROBE_INCONCLUSIVE = -1  # all queries failed (timeout/error), not a real 0
 _FACT_PROBE_TOPICS = 100
 _FACT_PROBE_TIMEOUT_SECONDS = 8.0
 _FACT_PROBE_BUDGET_SECONDS = 24.0
+# Concurrent probe workers, capped to what the shared Researka DB sustains.
+# Measured capacity: at <=4 concurrent the facts endpoint answers in <8s (the
+# per-query timeout) and every probe succeeds; at 6-8 concurrent its latency
+# climbs to 12s+ so queries exceed the timeout, return -1, and under sustained
+# load it 504s — which starved discovery (all topics looked like 0 sources)
+# and stopped the supply cache from ever warming. 4 keeps probes succeeding so
+# the cache fills and steady-state load collapses to near zero.
+_FACT_PROBE_WORKERS = 4
 
 
 @dataclass(frozen=True, slots=True)
@@ -237,12 +245,11 @@ def _fetch_fact_source_counts(
             to_probe.append(topic)
     if not to_probe:
         return out
-    # Concurrency for the per-topic A_core source probe. 8 workers (the
-    # value used for weeks before commit 4c24a51 dropped it to 2, causing
-    # a ~20x discovery-latency regression). With the cache above, only
-    # stale/missing topics reach here, so concurrent DB pressure — and
-    # thus the transient-timeout false-zeros it caused — is far lower.
-    workers = min(8, len(to_probe))
+    # Concurrency for the per-topic A_core source probe, capped to the
+    # DB-sustainable level (see _FACT_PROBE_WORKERS). With the cache above
+    # only stale/missing topics reach here, so steady-state pressure is low;
+    # the cap protects the cold first-fill from overloading the endpoint.
+    workers = min(_FACT_PROBE_WORKERS, len(to_probe))
     probed: dict[str, int] = {}
     with ThreadPoolExecutor(max_workers=workers) as pool:
         futures = {
