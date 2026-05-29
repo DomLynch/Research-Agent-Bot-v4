@@ -124,7 +124,9 @@ instances = [
 ]
 
 [photobiomodulation_red_light]
+# No "low-level laser therapy": expand_topic_queries trims it to the generic
+# fragment "low level", which substring-matched "low-level weight loss".
 instances = [
     "photobiomodulation", "red light therapy", "near-infrared light",
-    "low-level laser therapy", "low level light therapy", "PBM",
+    "near infrared light", "PBM", "LLLT",
 ]
