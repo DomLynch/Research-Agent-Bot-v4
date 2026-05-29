@@ -78,3 +78,53 @@ instances = [
     "fish oil", "EPA", "DHA", "eicosapentaenoic acid", "docosahexaenoic acid",
     "marine omega-3",
 ]
+
+# Synonym-heavy compound/intervention topics: the literature names the agent,
+# not the topic slug. Tight instance lists only (precise drugs/synonyms) to
+# avoid false-promoting noise. Proven lever (omega-3: coherent 3 -> 10).
+[glp_1_longevity]
+instances = [
+    "GLP-1", "glucagon-like peptide-1", "GLP-1 receptor agonist",
+    "semaglutide", "liraglutide", "tirzepatide", "dulaglutide", "exenatide",
+]
+
+[sglt2_inhibitors]
+instances = [
+    "SGLT2 inhibitor", "SGLT-2 inhibitor", "gliflozin", "empagliflozin",
+    "dapagliflozin", "canagliflozin", "ertugliflozin",
+]
+
+[urolithin_a]
+instances = ["urolithin A", "urolithin-A", "Mitopure"]
+
+[alpha_ketoglutarate_akg]
+instances = [
+    "alpha-ketoglutarate", "α-ketoglutarate", "AKG", "2-oxoglutarate",
+    "calcium alpha-ketoglutarate", "Ca-AKG",
+]
+
+[glynac]
+instances = [
+    "GlyNAC", "glycine and N-acetylcysteine", "glycine + NAC",
+    "glycine and NAC",
+]
+
+[klotho]
+instances = ["klotho", "alpha-klotho", "α-klotho", "s-klotho", "soluble klotho"]
+
+[hyperbaric_oxygen_hbot]
+instances = [
+    "hyperbaric oxygen", "HBOT", "hyperbaric oxygen therapy",
+    "hyperbaric oxygenation",
+]
+
+[therapeutic_plasma_exchange]
+instances = [
+    "therapeutic plasma exchange", "plasma exchange", "plasmapheresis", "TPE",
+]
+
+[photobiomodulation_red_light]
+instances = [
+    "photobiomodulation", "red light therapy", "near-infrared light",
+    "low-level laser therapy", "low level light therapy", "PBM",
+]
