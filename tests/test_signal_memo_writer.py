@@ -185,7 +185,10 @@ def test_alpha_memo_expands_receipts_to_five_sources_when_available(
         fid = str(i * 101)
         facts.append({
             "fact_id": fid,
-            "canonical_phrase": f"Independent source {i} replicated the contrast.",
+            "canonical_phrase": (
+                f"Emissions fell after the carbon pricing intervention "
+                f"in jurisdiction {i}."
+            ),
             "source_paper": {"doi": f"10.x/policy-{i}"},
         })
         lanes["verdicts"].append({"fact_id": fid, "lane": "A_core"})
@@ -214,6 +217,52 @@ def test_alpha_memo_expands_receipts_to_five_sources_when_available(
     assert "`fact_id=202`" not in memo
     assert "`fact_id=505` (`A_core`)" in memo
     assert "## Supporting Top cards" not in memo
+
+
+def test_alpha_memo_does_not_pad_with_off_claim_receipts(tmp_path: Path) -> None:
+    """Off-claim A_core facts (valid lane + unique source, but unrelated to the
+    lead claim) must NOT pad the bundle to the source floor. Researka rejects
+    'disparate facts that do not cohere'; breadth must stay below 5 so the
+    existing source-floor gate blocks/rotates instead of submitting junk."""
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    for i in (3, 4):  # coherent carbon-pricing receipts, unique sources
+        facts.append({
+            "fact_id": str(i * 101),
+            "canonical_phrase": (
+                f"Emissions fell after the carbon pricing intervention "
+                f"in region {i}."
+            ),
+            "source_paper": {"doi": f"10.x/policy-{i}"},
+        })
+        lanes["verdicts"].append({"fact_id": str(i * 101), "lane": "A_core"})
+    # Off-claim A_core facts: valid lane + unique source, unrelated content.
+    facts.append({
+        "fact_id": "7001",
+        "canonical_phrase": "Vitamin D supplementation improved cognition in elders.",
+        "source_paper": {"doi": "10.x/brain"},
+    })
+    facts.append({
+        "fact_id": "7002",
+        "canonical_phrase": "Resistance training raised muscle mass over twelve weeks.",
+        "source_paper": {"doi": "10.x/muscle"},
+    })
+    lanes["verdicts"].append({"fact_id": "7001", "lane": "A_core"})
+    lanes["verdicts"].append({"fact_id": "7002", "lane": "A_core"})
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+
+    memo = render_signal_memo(run)
+
+    assert "10.x/brain" not in memo
+    assert "10.x/muscle" not in memo
+    assert "fact_id=7001" not in memo
+    assert "fact_id=7002" not in memo
+    # only the 3 coherent sources count -> below the 5 floor, so the gate blocks
+    assert "**Source breadth:** `5/5` unique cited source(s)" not in memo
+    assert "`fact_id=303` (`A_core`)" in memo
 
 
 def test_alpha_memo_turns_repeated_title_into_declarative_thesis(

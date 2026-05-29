@@ -18,6 +18,22 @@ _PUB_PATH = _ROOT / "topic_packs" / "publication.toml"
 _DIRECT = frozenset({"A_core"})
 _BINDABLE = frozenset({"A_core", "B_context"})
 
+# Receipt-coherence: a padded receipt must share the lead claim's specific
+# wording (not merely the topic) so the bundle stays about ONE claim
+# (Researka rejects "disparate facts that do not cohere").
+_CLAIM_FIELDS = ("canonical_phrase", "population", "intervention",
+                 "sub_topic", "comparator")
+_CLAIM_MIN_OVERLAP = 1
+_WORD = re.compile(r"[a-z0-9]+")
+# Universal filler (not domain literals) dropped from the coherence signal.
+_GENERIC_TOKENS = frozenset({
+    "the", "of", "to", "in", "and", "or", "for", "with", "from", "by", "on", "at",
+    "an", "as", "is", "are", "was", "were", "be", "not", "than", "that", "this",
+    "study", "trial", "group", "groups", "patients", "subjects", "adults", "risk",
+    "participants", "effect", "effects", "increased", "decreased", "reduced",
+    "change", "results", "significant", "versus", "compared", "control", "treated",
+})
+
 
 def _read(path: Path) -> str:
     try:
@@ -176,6 +192,35 @@ def _source_key(fact: dict[str, Any]) -> str:
     return str(paper.get("doi") or paper.get("pmid") or paper.get("title") or "").strip()
 
 
+def _claim_token_set(*values: Any) -> set[str]:
+    """Word tokens (len>=2) — mirrors source_corpus._tokenize, no heavy import."""
+    out: set[str] = set()
+    for value in values:
+        out.update(t for t in _WORD.findall(str(value or "").lower()) if len(t) >= 2)
+    return out
+
+
+def _claim_signal(
+    seed_ids: list[str], facts: dict[str, dict[str, Any]], topic: str,
+) -> set[str]:
+    """Claim-specific tokens from the lead (cited) facts' PICO+phrase, minus the
+    topic word and generic filler (what a padded receipt must share to cohere)."""
+    sig: set[str] = set()
+    for fid in seed_ids:
+        fact = facts.get(fid) or {}
+        sig |= _claim_token_set(*(fact.get(k) for k in _CLAIM_FIELDS))
+    return sig - _claim_token_set(topic) - _GENERIC_TOKENS
+
+
+def _fact_coheres(fact: dict[str, Any], claim: set[str], topic: str) -> bool:
+    """Coheres iff it shares >= _CLAIM_MIN_OVERLAP claim tokens (else allow)."""
+    if not claim:
+        return True
+    cand = _claim_token_set(*(fact.get(k) for k in _CLAIM_FIELDS))
+    cand -= _claim_token_set(topic) | _GENERIC_TOKENS
+    return len(cand & claim) >= _CLAIM_MIN_OVERLAP
+
+
 def _expanded_receipt_ids(
     audit: dict[str, Any],
     facts: dict[str, dict[str, Any]],
@@ -183,6 +228,8 @@ def _expanded_receipt_ids(
     *,
     min_sources: int,
     allowed_lanes: frozenset[str] = _BINDABLE,
+    claim: set[str] | None = None,
+    topic: str = "",
 ) -> list[str]:
     selected: list[str] = []
     seen_ids: set[str] = set()
@@ -197,17 +244,24 @@ def _expanded_receipt_ids(
         if key:
             sources.add(key)
 
+    # Seed with the cited lead facts (these DEFINE the claim, always kept).
     for fid in [str(x) for x in audit.get("cited_fact_ids", [])]:
         add(fid)
+    # Pad toward min_sources, but only with receipts that cohere with the claim
+    # so we never fill the floor with on-topic-but-off-claim facts.
     for fid, fact in facts.items():
         if len(sources) >= min_sources:
             break
+        if claim is not None and not _fact_coheres(fact, claim, topic):
+            continue
         key = _source_key(fact)
         if key and key not in sources:
             add(fid)
     for fid in facts:
         if len(sources) >= min_sources:
             break
+        if claim is not None and not _fact_coheres(facts[fid], claim, topic):
+            continue
         add(fid)
     return selected
 
@@ -576,13 +630,17 @@ def render_signal_memo(
     lanes = _lane_map(run_dir)
     min_sources = _memo_min_source_papers()
     min_direct_sources = _memo_min_direct_source_papers()
+    claim = _claim_signal(
+        [str(x) for x in audit.get("cited_fact_ids", [])], facts, topic,
+    )
     expanded_ids = _expanded_receipt_ids(
-        audit, facts, lanes, min_sources=min_sources,
+        audit, facts, lanes, min_sources=min_sources, claim=claim, topic=topic,
     )
     lead_ids = _expanded_receipt_ids(
         audit, facts, lanes,
         min_sources=min_direct_sources,
         allowed_lanes=_DIRECT,
+        claim=claim, topic=topic,
     )
     if not lead_ids:
         lead_ids = expanded_ids[:1]
