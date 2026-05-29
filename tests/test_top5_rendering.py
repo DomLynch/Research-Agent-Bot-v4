@@ -57,7 +57,10 @@ def test_rankable_facts_for_top_keeps_only_a_core_and_b_context() -> None:
               intervention="unrelated intervention", numeric_value=60.0),
     ]
     out = _rankable_facts_for_top(facts, "topicA")
-    assert [f["fact_id"] for f in out] == ["a", "b"]
+    # 'd' (topicA in intervention, only a p-value — no effect magnitude) now
+    # binds as B_context (usable context, just not the A_core lead) instead of
+    # being discarded as D_bad. 'c' stays C_noise (topicA absent everywhere).
+    assert [f["fact_id"] for f in out] == ["a", "b", "d"]
 
 
 def test_rankable_facts_for_top_drops_context_poor_numeric_fragments() -> None:

@@ -55,10 +55,13 @@ def test_clean_thesis_survives_uncapped() -> None:
 
 
 def test_d_bad_citation_rejects_thesis() -> None:
-    """Thesis cites '66 weeks' fact (D_bad_extraction) -> rejected, cap 40."""
+    """Thesis cites an incomplete-PICO fact (D_bad_extraction) -> rejected, cap 40.
+    (A methodological number like '66 weeks' is no longer D_bad — it binds as
+    B_context — so the genuine D_bad case is missing population/intervention.)"""
     facts = [
         _fact("f/dur",
               canonical_phrase="rapamycin CR at 66 weeks of treatment",
+              intervention="",  # missing intervention -> D_bad_extraction
               numeric_value=66.0, units="weeks"),
         _fact("f/ok"),
     ]

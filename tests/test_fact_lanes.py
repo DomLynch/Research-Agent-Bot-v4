@@ -47,26 +47,46 @@ def test_missing_population_is_d_bad_extraction() -> None:
     assert v.lane == "D_bad_extraction"
 
 
-def test_duration_numeric_is_d_bad_extraction() -> None:
-    """The '66 weeks' failure mode the auditor flagged on caloric_restriction."""
+def test_duration_numeric_is_b_context_not_a_core() -> None:
+    """The '66 weeks' timepoint must not rank as an effect size (so not the
+    A_core lead), but the finding ('fat significantly increased by CR') is a
+    real qualitative result with clean PICO + topic match — bind as context,
+    don't discard it."""
     v = classify_lane(_fact(
         canonical_phrase="inguinal fat was significantly increased by CR at 66 weeks",
         intervention="caloric restriction",
         numeric_value=66.0, units="weeks",
     ), topic="caloric_restriction")
-    assert v.lane == "D_bad_extraction"
+    assert v.lane == "B_context"
     assert v.numeric_role == "duration"
+    assert v.reason == "topic_matched_no_clean_numeric_effect"
 
 
-def test_regimen_numeric_is_d_bad_extraction() -> None:
-    """'70% CR conditions' should not rank as an effect size."""
+def test_regimen_numeric_is_b_context_not_a_core() -> None:
+    """'70% CR conditions' is a regimen descriptor, not an effect size: not the
+    A_core lead, but still PICO-complete + topic-matched context."""
     v = classify_lane(_fact(
         canonical_phrase="CR conditions (70%)",
         intervention="caloric restriction",
         numeric_value=70.0, units="%",
     ), topic="caloric_restriction")
-    assert v.lane == "D_bad_extraction"
+    assert v.lane == "B_context"
     assert v.numeric_role == "regimen"
+
+
+def test_numeric_less_finding_is_b_context_not_d_bad() -> None:
+    """The dominant real-world case: a qualitative finding with complete PICO
+    and topic-in-intervention but NO numeric value. Must bind as B_context
+    (not discarded as D_bad just for lacking a number), while staying out of
+    the A_core lead (which still requires a real numeric effect)."""
+    v = classify_lane(_fact(
+        canonical_phrase="ATO promoted autophagy and reduced atherosclerotic lesions",
+        population="ApoE-/- mice",
+        intervention="autophagy induction via ATO",
+        numeric_value=None, units=None,
+    ), topic="autophagy")
+    assert v.lane == "B_context"
+    assert v.reason == "topic_matched_no_clean_numeric_effect"
 
 
 def test_topic_absent_is_c_noise() -> None:

@@ -7,12 +7,13 @@ the topic. Universal: rules use fact structural fields + topic-word
 co-occurrence + numeric role; no biomedical domain literals.
 
 Lanes:
-  A_core           — topic in intervention + clean PICO + real effect
-  B_context        — topic in phrase but not intervention; still useful
-                     as mechanism / translational support
+  A_core           — topic in intervention + clean PICO + real numeric effect
+  B_context        — topic matched + clean PICO, but either topic only in the
+                     phrase OR no clean numeric effect (qualitative finding /
+                     methodological number); usable as mechanism / context
+                     support, never the lead
   C_noise          — topic word absent from every structural field
-  D_bad_extraction — missing population/intervention OR numeric is not
-                     an effect (regimen, timepoint, dose, p-value, etc.)
+  D_bad_extraction — missing population/intervention (incomplete PICO)
 """
 from __future__ import annotations
 
@@ -77,12 +78,6 @@ def classify_lane(fact: dict[str, Any], topic: str) -> LaneVerdict:
             fact_id=fact_id, lane="D_bad_extraction",
             numeric_role=role, reason="missing_population_or_intervention",
         )
-    if not is_real_finding(role):
-        return LaneVerdict(
-            fact_id=fact_id, lane="D_bad_extraction",
-            numeric_role=role,
-            reason=f"numeric_role={role}_not_effect_finding",
-        )
 
     # Sprint 62: class queries (senolytic) match instance words
     # (dasatinib, quercetin). expand_topic_keywords always includes
@@ -97,8 +92,14 @@ def classify_lane(fact: dict[str, Any], topic: str) -> LaneVerdict:
             reason="topic_word_absent_from_pico_fields",
         )
 
+    # A_core is the quantitative LEAD: topic in intervention + clean PICO +
+    # a real numeric effect. Anything else that is PICO-complete and topic-
+    # matched binds as B_context (mechanism / qualitative / context support),
+    # rather than being discarded — a numeric_role that is not an effect
+    # (or absent) only blocks the lead, it does not make the fact unusable.
+    real = is_real_finding(role)
     intervention_norm = _norm(str(fact.get("intervention") or ""))
-    if any(kw in intervention_norm for kw in keywords if kw):
+    if real and any(kw in intervention_norm for kw in keywords if kw):
         return LaneVerdict(
             fact_id=fact_id, lane="A_core",
             numeric_role=role,
@@ -107,7 +108,8 @@ def classify_lane(fact: dict[str, Any], topic: str) -> LaneVerdict:
     return LaneVerdict(
         fact_id=fact_id, lane="B_context",
         numeric_role=role,
-        reason="topic_in_phrase_but_not_intervention",
+        reason=("topic_in_phrase_but_not_intervention" if real
+                else "topic_matched_no_clean_numeric_effect"),
     )
 
 
