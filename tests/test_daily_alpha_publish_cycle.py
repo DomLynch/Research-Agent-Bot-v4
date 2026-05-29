@@ -1890,6 +1890,78 @@ def test_unrendered_accept_rotates_to_next_topic(
     assert calls[1][-2:] == ["--exclude-topic", "first"]
 
 
+def test_repairable_reject_retries_same_topic_before_refreshing(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("repair_first")
+    _memo_with_source_receipts(root, verdict, 5)
+    calls: list[list[str]] = []
+    submitted: list[str] = []
+    decisions: list[dict[str, Any]] = [
+        {
+            "status": "complete",
+            "decision": "reject",
+            "required_revisions": ["A complete scope reset is required."],
+        },
+        {
+            "status": "complete",
+            "decision": "accept",
+            "public_url": "https://researka.org/alpha/good",
+        },
+    ]
+
+    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        calls.append(args)
+        return True, "ok"
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submitted.append(str(payload["topic"]))
+        return {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": f"sub-{len(submitted)}"}},
+        }
+
+    def refresh(run_dir: Path, _verdict: dict[str, Any]) -> bool:
+        text = run_dir.joinpath("alpha_memo.md").read_text(encoding="utf-8")
+        run_dir.joinpath("alpha_memo.md").write_text(
+            text + "\nScope repair.\n", encoding="utf-8",
+        )
+        return True
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        refresh_candidates=True,
+        max_refresh_batches=2,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+        decision_fetcher=lambda _submission_id: decisions.pop(0),
+        page_fetcher=lambda _url: {
+            "ok": True,
+            "status": 200,
+            "body": "<html><title>Alpha memo</title></html>",
+        },
+        memo_refresher=refresh,
+        sleep=lambda _seconds: None,
+    )
+
+    assert submitted == ["repair_first", "repair_first"]
+    assert len(calls) == 1
+    assert ledger["status"] == "published"
+    assert ledger["refresh_batches"][1]["note"] == "skipped_after_repairable_submission"
+    assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == [
+        "reviewer_rejected",
+        "published",
+    ]
+
+
 def test_accepted_shape_bias_breaks_candidate_tie(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     matching = _verdict("matching", score=90) | {

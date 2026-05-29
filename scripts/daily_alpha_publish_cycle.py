@@ -1535,9 +1535,22 @@ def run_cycle(
         ledger["submit_token_env"] = token_env
         submitter = _http_submitter(url, token)
     prev_queue_sig: frozenset[str] = frozenset()
+    skip_next_refresh = False
     for batch in range(1, batch_limit + 1):
         refresh: Json = {}
-        if refresh_candidates:
+        if refresh_candidates and skip_next_refresh:
+            refresh = {
+                "ok": True,
+                "note": "skipped_after_repairable_submission",
+                "top": refresh_top,
+                "cooldown_hours": refresh_cooldown_hours,
+                "excluded_topics": sorted(blocked_topics),
+            }
+            skip_next_refresh = False
+            refresh["batch"] = batch
+            ledger["refresh_batches"].append(refresh)
+            ledger["refresh_candidates"] = refresh
+        elif refresh_candidates:
             cooldown = 0.0 if blocked_topics or force_refresh else refresh_cooldown_hours
             refresh = _refresh_candidate_batch(
                 refresh_top, blocked_topics, cooldown, runs_root,
@@ -1703,6 +1716,19 @@ def run_cycle(
                                 row["submit_status"] = attempt["status"]
                                 break
                         ledger["cycle_attempts"].append(attempt)
+                        if (
+                            _repairable_rejection(decision)
+                            and refresh_candidates
+                            and batch < batch_limit
+                        ):
+                            skip_next_refresh = True
+                            ledger["repair_retry_scheduled"] = {
+                                "batch": batch + 1,
+                                "topic": candidate.get("topic"),
+                                "reason": attempt["status"],
+                            }
+                            _write_json(ledger_path, ledger)
+                            continue
                         blocked_fingerprints.add(str(candidate.get("memo_fingerprint") or ""))
                         topic = str(candidate.get("topic") or "")
                         if topic:
