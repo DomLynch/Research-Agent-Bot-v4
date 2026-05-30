@@ -362,3 +362,39 @@ def test_alpha_angle_selection_uses_live_publication_config(tmp_path: Path) -> N
     assert _memo_alpha_int("angle_candidates", 0) == 5
     assert "**Selected angle:** `boundary_condition`" in memo
     assert "**Headline:** Grid storage tariff may hinge on a boundary condition" in memo
+
+
+def test_recent_angle_history_flips_selection() -> None:
+    """C2 novelty archive: the same evidence bundle picks the sharp boundary
+    angle fresh, but once that angle dominates recent siblings the repeat
+    penalty rejects it and a different angle is selected."""
+    from agent.signal_memo_writer import _select_angle
+
+    facts = {
+        "a": {"canonical_phrase": "Primary outcome improved by 30%"},
+        "b": {"canonical_phrase": "Effect differs in older adults"},
+    }
+    kw = dict(
+        topic="t", headline="H", thesis="T", why="W", facts=facts,
+        lead_ids=["a"], context_ids=["b"], verdict=None, source_count=5,
+    )
+    fresh = _select_angle(**kw)  # type: ignore[arg-type]
+    repeated = _select_angle(**kw, recent_kinds={"boundary_condition": 3})  # type: ignore[arg-type]
+    assert fresh["kind"] == "boundary_condition"
+    assert repeated["kind"] != "boundary_condition"
+
+
+def test_recent_angle_kinds_reads_sibling_memos(tmp_path: Path) -> None:
+    """_recent_angle_kinds parses selected-angle lines from sibling alpha memos."""
+    from agent.signal_memo_writer import _recent_angle_kinds
+
+    root = tmp_path / "runs"
+    for name, kind in (("t1-evidence-a", "source"), ("t2-evidence-b", "boundary_condition")):
+        d = root / name
+        d.mkdir(parents=True)
+        (d / "alpha_memo.md").write_text(
+            f"# Alpha memo\n\n**Selected angle:** `{kind}`\n", encoding="utf-8")
+    target = root / "t3-evidence-c"
+    target.mkdir()
+    counts = _recent_angle_kinds(target)
+    assert counts == {"source": 1, "boundary_condition": 1}

@@ -87,6 +87,7 @@ _EXHAUSTED_STATUSES = {
     "duplicate_submission_fingerprint",
     "missing_alpha_memo",
     "needs_operator_approval",
+    "memo_missing_falsifier",
     "corpus_source_floor_below_min",
     "memo_source_floor_below_min",
     "direct_source_floor_below_min",
@@ -256,6 +257,14 @@ def _approved(verdict: Json, root: Path) -> bool:
 def _has_memo(verdict: Json, root: Path) -> bool:
     run_dir = _run_path(root, verdict.get("run_dir"))
     return (run_dir / "alpha_memo.md").exists()
+
+
+def _has_falsifier(verdict: Json, root: Path) -> bool:
+    """Submit gate: a memo must state what would disprove it before it ships."""
+    from agent.signal_memo_writer import falsifier_present
+
+    run_dir = _run_path(root, verdict.get("run_dir"))
+    return falsifier_present(_read_text(run_dir / "alpha_memo.md"))
 
 
 def _refresh_alpha_memo(run_dir: Path, verdict: Json) -> bool:
@@ -840,6 +849,8 @@ def select_candidate(
             status = "missing_alpha_memo"
         elif not approved:
             status = "needs_operator_approval"
+        elif not _has_falsifier(verdict, runs_root):
+            status = "memo_missing_falsifier"
         else:
             if retry_after_rejection and memo_refresher and not memo_refreshed:
                 run_dir = _run_path(runs_root, verdict.get("run_dir"))

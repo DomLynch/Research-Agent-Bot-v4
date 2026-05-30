@@ -2048,3 +2048,49 @@ def test_accepted_shape_bias_breaks_candidate_tie(tmp_path: Path) -> None:
     assert ledger["status"] == "dry_run_selected"
     assert ledger["candidate"]["topic"] == "matching"
     assert ledger["considered"][0]["accepted_shape_bonus"] > 0
+
+
+def test_memo_without_falsifier_is_blocked(tmp_path: Path) -> None:
+    """C4 submit gate: an approved memo that omits 'What would weaken this' is
+    held as memo_missing_falsifier and never submitted."""
+    root = tmp_path / "repo"
+    verdict = _verdict("no_falsifier")
+    _queue_file(root, verdict)
+    queue = daily._build_queue(root / "runs", include_archive=False)
+    run_dir = root / "runs" / "no_falsifier-evidence-ts"
+    run_dir.mkdir(parents=True)
+    (run_dir / "signal_post.md").write_text("# Signal\n", encoding="utf-8")
+    (run_dir / "alpha_memo.md").write_text(
+        "# Alpha memo\n\n**Headline:** A bounded signal\n\n"
+        "## Evidence receipts\n\n- `fact_id=1` (`A_core`) - receipt\n",
+        encoding="utf-8",
+    )
+    cand, considered = daily.select_candidate(
+        queue, runs_root=root / "runs", submitted_path=root / "submitted.json",
+        min_source_count=5, min_direct_source_count=2,
+    )
+    assert cand is None
+    assert considered[0]["status"] == "memo_missing_falsifier"
+
+
+def test_memo_with_falsifier_passes_the_gate(tmp_path: Path) -> None:
+    """A memo carrying a concrete 'What would weaken this' bullet clears the
+    falsifier gate (it then proceeds to the normal source-floor checks)."""
+    root = tmp_path / "repo"
+    verdict = _verdict("has_falsifier")
+    _queue_file(root, verdict)
+    queue = daily._build_queue(root / "runs", include_archive=False)
+    run_dir = root / "runs" / "has_falsifier-evidence-ts"
+    run_dir.mkdir(parents=True)
+    (run_dir / "signal_post.md").write_text("# Signal\n", encoding="utf-8")
+    (run_dir / "alpha_memo.md").write_text(
+        "# Alpha memo\n\n**Headline:** A bounded signal\n\n"
+        "## What would weaken this\n\n"
+        "- Independent receipts fail to reproduce the claimed contrast.\n",
+        encoding="utf-8",
+    )
+    _cand, considered = daily.select_candidate(
+        queue, runs_root=root / "runs", submitted_path=root / "submitted.json",
+        min_source_count=5, min_direct_source_count=2,
+    )
+    assert considered[0]["status"] != "memo_missing_falsifier"

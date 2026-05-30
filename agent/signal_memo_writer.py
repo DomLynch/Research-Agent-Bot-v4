@@ -682,6 +682,11 @@ def render_signal_memo(
     lead_set = set(lead_ids)
     receipt_ids = lead_ids + [fid for fid in expanded_ids if fid not in lead_set]
     context_ids = [fid for fid in receipt_ids if fid not in lead_set]
+    with suppress(OSError):  # sidecar: claim -> receipts -> support, for audit
+        (run_dir / "claim_receipt_matrix.json").write_text(
+            json.dumps(build_claim_receipt_matrix(claim, lead_ids, receipt_ids, facts),
+                       indent=2, sort_keys=True),
+            encoding="utf-8")
     lead_source_count = _source_count_for_ids(lead_ids, facts)
     source_count = _source_count_for_ids(receipt_ids, facts)
     thesis = _receipt_thesis(

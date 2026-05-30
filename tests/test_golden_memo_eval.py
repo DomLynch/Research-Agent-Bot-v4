@@ -10,11 +10,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from agent.signal_memo_writer import (
-    build_claim_receipt_matrix,
-    falsifier_present,
-    render_signal_memo,
-)
+from agent.signal_memo_writer import falsifier_present, render_signal_memo
 
 _GOLDEN = Path(__file__).parent / "golden_memo_eval.jsonl"
 _VERDICT = {"surface_type": "publish_alpha_memo"}
@@ -71,13 +67,13 @@ def test_grounded_memo_passes_quality_bar(tmp_path: Path) -> None:
     assert dims["falsifier"] is True           # states what would disprove it
     assert int(dims["receipts"]) >= 1          # evidence is bound
     assert int(dims["source_breadth"]) >= 1    # has cited source breadth
-    # claim -> receipt -> support matrix (C3): pure, auditable.
-    facts = {"101": {"fact_id": "101",
-                     "canonical_phrase": "Emissions fell 8% after the carbon pricing intervention.",
-                     "source_paper": {"doi": "10.x/policy"}}}
-    matrix = build_claim_receipt_matrix({"emissions", "fell"}, ["101"], ["101"], facts)
+    # C3: render emits the claim->receipt->support matrix as a run artifact.
+    matrix_path = run / "claim_receipt_matrix.json"
+    assert matrix_path.exists()
+    matrix = json.loads(matrix_path.read_text(encoding="utf-8"))
     assert matrix["support_level"] in {"weak", "moderate", "strong"}
-    assert matrix["direct_sources"] == 1
+    assert matrix["direct_sources"] >= 1
+    assert "101" in matrix["coherent_receipt_ids"]
 
 
 def test_eval_catches_unsupported_memo(tmp_path: Path) -> None:
