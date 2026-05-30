@@ -54,7 +54,7 @@ def _dimensions(memo: str) -> dict[str, Any]:
     }
 
 
-def _golden_rows() -> dict[str, dict[str, object]]:
+def _golden_rows() -> dict[str, dict[str, Any]]:
     rows = [json.loads(ln) for ln in _GOLDEN.read_text(encoding="utf-8").splitlines() if ln.strip()]
     return {str(r["id"]): r for r in rows}
 
