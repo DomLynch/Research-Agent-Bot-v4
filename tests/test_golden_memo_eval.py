@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
+from typing import Any
 
 from agent.signal_memo_writer import (
     build_claim_receipt_matrix,
@@ -42,7 +43,7 @@ def _make_run(run: Path) -> None:
          "source_paper": {"doi": "10.x/policy"}}]), encoding="utf-8")
 
 
-def _dimensions(memo: str) -> dict[str, object]:
+def _dimensions(memo: str) -> dict[str, Any]:
     angle = re.search(r"\*\*Selected angle:\*\*\s*`([a-z_]+)`", memo)
     breadth = re.search(r"\*\*Source breadth:\*\*\s*`(\d+)/", memo)
     return {
