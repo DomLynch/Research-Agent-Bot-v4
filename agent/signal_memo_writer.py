@@ -350,6 +350,54 @@ def _fact_phrase(fact: dict[str, Any]) -> str:
     return str(fact.get("canonical_phrase") or "").strip().rstrip(".")
 
 
+def _recent_angle_kinds(run_dir: Path, *, limit: int = 8) -> dict[str, int]:
+    """Novelty archive: count angle kinds used by recent sibling memos so a
+    repeated angle flavor is penalized in _select_angle and runs stay varied."""
+    counts: dict[str, int] = {}
+    try:
+        sibs = sorted(
+            (p for p in run_dir.parent.glob("*/alpha_memo.md") if p.parent != run_dir),
+            key=lambda p: p.stat().st_mtime, reverse=True,
+        )
+    except OSError:
+        return counts
+    for path in sibs[:limit]:
+        m = re.search(r"\*\*Selected angle:\*\*\s*`([a-z_]+)`", _read(path))
+        if m:
+            counts[m.group(1)] = counts.get(m.group(1), 0) + 1
+    return counts
+
+
+def build_claim_receipt_matrix(
+    claim: set[str], lead_ids: list[str],
+    receipt_ids: list[str], facts: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    """Claim -> receipts -> support level, as an auditable structure. Surfaces
+    what the coherence filter + direct-source floor already enforce at submit
+    time: direct>=5 strong, >=2 moderate, else weak (pure; no side effects)."""
+    direct = _source_count_for_ids(lead_ids, facts)
+    return {
+        "claim_tokens": sorted(claim),
+        "lead_fact_ids": lead_ids,
+        "coherent_receipt_ids": [
+            fid for fid in receipt_ids if _fact_coheres(facts.get(fid, {}), claim, "")
+        ],
+        "direct_sources": direct,
+        "total_sources": _source_count_for_ids(receipt_ids, facts),
+        "support_level": "strong" if direct >= 5 else "moderate" if direct >= 2 else "weak",
+    }
+
+
+def falsifier_present(memo_text: str) -> bool:
+    """A memo must say what would disprove it: True iff 'What would weaken this'
+    has at least one concrete (non-placeholder) bullet."""
+    section = _section(memo_text, "What would weaken this")
+    return any(
+        ln.strip().startswith("-") and not ln.strip().lstrip("- ").startswith("_")
+        for ln in section.splitlines()
+    )
+
+
 def _select_angle(
     topic: str,
     headline: str,
@@ -360,6 +408,7 @@ def _select_angle(
     context_ids: list[str],
     verdict: dict[str, Any] | None,
     source_count: int,
+    recent_kinds: dict[str, int] | None = None,
 ) -> dict[str, str]:
     lead = _clip(_fact_phrase(facts.get(lead_ids[0]) or {}), 220) if lead_ids else ""
     context = _clip(_fact_phrase(facts.get(context_ids[0]) or {}), 220) if context_ids else ""
@@ -393,7 +442,12 @@ def _select_angle(
         }))
     limit = max(1, min(5, _memo_alpha_int("angle_candidates", 5)))
     floor = max(0, min(100, _memo_alpha_int("min_angle_score", 45)))
-    score, winner = max(candidates[:limit], key=lambda item: item[0])
+    penalty = max(0, min(80, _memo_alpha_int("angle_repeat_penalty", 20)))
+    recent = recent_kinds or {}
+    score, winner = max(
+        candidates[:limit],
+        key=lambda item: item[0] - penalty * recent.get(item[1]["kind"], 0),
+    )
     return winner if score >= floor else base
 
 
@@ -641,6 +695,7 @@ def render_signal_memo(
     angle = _select_angle(
         topic, headline, thesis, why_surprising, facts, lead_ids,
         context_ids, publish_verdict, source_count,
+        recent_kinds=_recent_angle_kinds(run_dir),
     )
     if grounded:
         # Repair mode for scope/grounding rejects: drop the speculative

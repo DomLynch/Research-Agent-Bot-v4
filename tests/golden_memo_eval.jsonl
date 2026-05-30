@@ -1,0 +1,1 @@
+{"id": "carbon_tax_source", "topic": "carbon_tax", "expect_angle": true, "expect_falsifier": true, "min_receipts": 1, "min_source_breadth": 1}
