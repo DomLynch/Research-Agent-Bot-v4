@@ -417,6 +417,79 @@ def build_claim_receipt_matrix(
     }
 
 
+def _counter_items(verdict: dict[str, Any] | None) -> list[dict[str, Any]]:
+    """Structured contradiction receipts (fact_id + snippet + source) — the data
+    behind the rendered 'Strongest counter-evidence' lines."""
+    counter = (verdict or {}).get("counter_evidence")
+    raw = counter.get("items", []) if isinstance(counter, dict) else []
+    out: list[dict[str, Any]] = []
+    for item in raw if isinstance(raw, list) else []:
+        if not isinstance(item, dict):
+            continue
+        paper = item.get("source_paper")
+        paper = paper if isinstance(paper, dict) else {}
+        out.append({
+            "fact_id": str(item.get("fact_id") or ""),
+            "lane": str(item.get("lane") or ""),
+            "snippet": _clip(item.get("phrase"), 240),
+            "source": str(paper.get("title") or paper.get("doi") or "").strip()[:140],
+        })
+    return out
+
+
+def _memo_verdict(direct_sources: int, conflicts: int, min_direct: int) -> str:
+    """FactReview-style verdict from signals v4 already computes: a live
+    contradiction -> in_conflict; >=floor direct sources -> supported; >=2 ->
+    partially_supported; else inconclusive."""
+    if conflicts:
+        return "in_conflict"
+    if direct_sources >= min_direct:
+        return "supported"
+    if direct_sources >= 2:
+        return "partially_supported"
+    return "inconclusive"
+
+
+def build_memo_audit(
+    claim: set[str], lead_ids: list[str], receipt_ids: list[str],
+    facts: dict[str, dict[str, Any]], verdict: dict[str, Any] | None,
+    *, falsifier: bool, novelty: dict[str, Any], min_direct: int = 5,
+) -> dict[str, Any]:
+    """FactReview-style audit pack: claim units + evidence + contradictions +
+    novelty + source hygiene + a derived verdict. Aggregates signals v4 already
+    computes; pure, no LLM/network. Heavy borrows (OpenScholar nearest-lit delta,
+    RoBBR risk-of-bias) are typed placeholders pending infra/model approval."""
+    matrix = build_claim_receipt_matrix(claim, lead_ids, receipt_ids, facts)
+    contradictions = _counter_items(verdict)
+    lead = set(lead_ids)
+    units = [
+        {
+            "fact_id": fid,
+            "snippet": _fact_phrase(facts.get(fid, {}))[:240],
+            "source": _source_key(facts.get(fid, {})),
+            "support": "direct" if fid in lead else "context",
+        }
+        for fid in receipt_ids if _fact_coheres(facts.get(fid, {}), claim, "")
+    ]
+    repeats = int(novelty.get("repeats", 0))
+    return {
+        "claim_tokens": sorted(claim),
+        "verdict": _memo_verdict(matrix["direct_sources"], len(contradictions), min_direct),
+        "support_level": matrix["support_level"],
+        "claim_units": units,
+        "contradiction_receipts": contradictions,
+        "novelty": {
+            "selected_angle": str(novelty.get("selected") or ""),
+            "recent_repeats": repeats,
+            "signal": "repeated" if repeats else "fresh",
+        },
+        "source_hygiene": matrix["journal_quality"],
+        "falsifier_present": falsifier,
+        "risk_of_bias": "not_assessed",  # follow-up: RoBBR (LLM, locked stack)
+        "nearest_literature": None,      # follow-up: OpenScholar datastore
+    }
+
+
 def falsifier_present(memo_text: str) -> bool:
     """A memo must say what would disprove it: True iff 'What would weaken this'
     has at least one concrete (non-placeholder) bullet."""
@@ -726,10 +799,11 @@ def render_signal_memo(
         _section(signal_md, "Why this is surprising"),
         context_ids,
     )
+    recent_kinds = _recent_angle_kinds(run_dir)
     angle = _select_angle(
         topic, headline, thesis, why_surprising, facts, lead_ids,
         context_ids, publish_verdict, source_count,
-        recent_kinds=_recent_angle_kinds(run_dir),
+        recent_kinds=recent_kinds,
     )
     if grounded:
         # Repair mode for scope/grounding rejects: drop the speculative
@@ -817,6 +891,16 @@ def render_signal_memo(
     if subtopic_lines:
         lines.extend(["", "## Subtopic recommendations", "", *subtopic_lines])
     body = "\n".join(lines) + "\n"
+    with suppress(OSError):  # FactReview-style consolidated audit pack
+        (run_dir / "memo_audit.json").write_text(
+            json.dumps(build_memo_audit(
+                claim, lead_ids, receipt_ids, facts, publish_verdict,
+                falsifier=falsifier_present(body),
+                novelty={"selected": angle["kind"],
+                         "repeats": recent_kinds.get(angle["kind"], 0)},
+                min_direct=min_direct_sources,
+            ), indent=2, sort_keys=True),
+            encoding="utf-8")
     lines.extend(["", *_provenance_block(run_dir, topic, snapshot, headline, body)])
     return "\n".join(lines) + "\n"
 

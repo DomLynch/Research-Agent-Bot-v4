@@ -426,3 +426,54 @@ def test_claim_receipt_matrix_carries_journal_quality() -> None:
     matrix = build_claim_receipt_matrix({"emissions", "fell"}, ["1"], ["1"], facts)
     assert matrix["journal_quality"]["with_journal"] == 1
     assert matrix["journal_quality"]["mean_quality_score"] == 88.0
+
+
+def test_memo_audit_verdict_thresholds() -> None:
+    """FactReview-style verdict from v4's own signals: 1 direct -> inconclusive,
+    2 -> partially_supported, >=floor -> supported, any conflict -> in_conflict."""
+    from agent.signal_memo_writer import build_memo_audit
+
+    facts = {
+        str(i): {"canonical_phrase": "Emissions fell after carbon pricing",
+                 "source_paper": {"doi": f"10.x/{i}", "journal_name": "Nature",
+                                  "quality_score": 80}}
+        for i in range(1, 6)
+    }
+    claim = {"emissions", "fell"}
+    nov = {"selected": "source", "repeats": 0}
+
+    a1 = build_memo_audit(claim, ["1"], ["1"], facts, None, falsifier=True, novelty=nov)
+    assert a1["verdict"] == "inconclusive"
+    a2 = build_memo_audit(claim, ["1", "2"], ["1", "2"], facts, None,
+                          falsifier=True, novelty=nov)
+    assert a2["verdict"] == "partially_supported"
+    a5 = build_memo_audit(claim, list("12345"), list("12345"), facts, None,
+                          falsifier=True, novelty=nov, min_direct=5)
+    assert a5["verdict"] == "supported"
+    conflict = {"counter_evidence": {"items": [
+        {"fact_id": "9", "lane": "A_core", "phrase": "No effect found",
+         "source_paper": {"title": "Null study"}}]}}
+    ac = build_memo_audit(claim, list("12345"), list("12345"), facts, conflict,
+                          falsifier=True, novelty=nov, min_direct=5)
+    assert ac["verdict"] == "in_conflict"
+    assert len(ac["contradiction_receipts"]) == 1
+    assert ac["contradiction_receipts"][0]["snippet"] == "No effect found"
+
+
+def test_memo_audit_carries_signals_and_honest_placeholders() -> None:
+    """Audit pack aggregates v4's signals and keeps heavy borrows as honest
+    typed placeholders (no fabricated RoBBR / nearest-literature)."""
+    from agent.signal_memo_writer import build_memo_audit
+
+    facts = {"1": {"canonical_phrase": "Emissions fell 8%",
+                   "source_paper": {"doi": "10.x/a", "journal_name": "Nature",
+                                    "quality_score": 90}}}
+    audit = build_memo_audit({"emissions", "fell"}, ["1"], ["1"], facts, None,
+                             falsifier=False, novelty={"selected": "boundary_condition",
+                                                       "repeats": 3})
+    assert audit["falsifier_present"] is False
+    assert audit["novelty"] == {"selected_angle": "boundary_condition",
+                                "recent_repeats": 3, "signal": "repeated"}
+    assert audit["source_hygiene"]["mean_quality_score"] == 90.0
+    assert audit["risk_of_bias"] == "not_assessed"
+    assert audit["nearest_literature"] is None
