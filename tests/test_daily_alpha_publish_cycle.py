@@ -319,7 +319,10 @@ def test_repairable_reject_refresher_handles_scope_reset_notes(tmp_path: Path) -
 
     memo = run.joinpath("alpha_memo.md").read_text(encoding="utf-8")
     assert changed is True
-    assert "Scope clarification" in memo
+    # A scope reset rebuilds the memo around the grounded source angle on the
+    # FIRST repair pass; it must not short-circuit to a cosmetic clarification.
+    assert "**Selected angle:** `source`" in memo
+    assert "Scope clarification" not in memo
 
 
 def test_scope_reject_repair_regenerates_in_grounded_mode(

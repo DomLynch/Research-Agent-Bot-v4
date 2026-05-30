@@ -105,14 +105,18 @@ _REPAIRABLE_REJECTION_REASONS = {
     "source_bundle_schema",
     "title/abstract",
 }
-# Reject notes that mean "title/thesis must be re-grounded in the cited bundle".
-# A repair for these is regenerated in grounded mode (forces the source angle)
-# rather than only cosmetically softened, so the resubmit is a genuinely
-# different, bundle-aligned memo instead of byte-identical (duplicate-blocked).
-_GROUNDING_REJECT_TERMS = (
-    "cited doi", "context receipts", "contextual support",
-    "not verifiably grounded", "provided source bundle", "scope reset",
-    "single primary", "source bundle", "title/abstract",
+# Hard scope-reset rejects: the title/claims fundamentally miss the cited
+# bundle, so the repair skips the cosmetic note and rebuilds the memo around
+# the grounded source angle (a genuinely different, bundle-aligned memo instead
+# of a byte-identical resubmit that gets duplicate-blocked).
+_SCOPE_RESET_TERMS = (
+    "scope reset", "not verifiably grounded", "provided source bundle",
+    "source bundle", "title/abstract", "cited doi",
+)
+# Broader set adds clarification-level cues; these only trigger the cosmetic
+# scope-clarification note in _apply_reviewer_revision_notes, not a full rebuild.
+_GROUNDING_REJECT_TERMS = _SCOPE_RESET_TERMS + (
+    "context receipts", "contextual support", "single primary",
 )
 
 
@@ -259,23 +263,28 @@ def _refresh_alpha_memo(run_dir: Path, verdict: Json) -> bool:
     if not (run_dir / "signal_post.md").exists():
         return False
     decision = verdict.get("_repair_decision")
-    if isinstance(decision, dict) and _apply_reviewer_revision_notes(run_dir, decision):
+    grounded = isinstance(decision, dict) and _is_grounding_reject(decision)
+    # Scope/grounding rejects need the memo rebuilt around the source angle, not
+    # a cosmetic clarification line; only let prose-softening short-circuit when
+    # the reject is NOT a grounding one.
+    if not grounded and isinstance(decision, dict) and _apply_reviewer_revision_notes(
+        run_dir, decision,
+    ):
         return True
     from agent.signal_memo_writer import write_signal_memo
 
-    grounded = isinstance(decision, dict) and _is_grounding_reject(decision)
     write_signal_memo(run_dir, publish_verdict=verdict, grounded=grounded)
     return True
 
 
 def _is_grounding_reject(decision: Json) -> bool:
-    """True when the reviewer asked for the title/thesis to be re-grounded in
-    the cited bundle (scope reset). Such a repair must regenerate the memo in
-    grounded mode, not just soften prose, or the resubmit is byte-identical."""
+    """True when the reviewer demanded a scope reset — the title/claims must be
+    rebuilt around the cited bundle. Such a repair regenerates in grounded mode
+    instead of softening prose, or the resubmit is byte-identical."""
     if decision.get("decision") not in {"reject", "revise"}:
         return False
     notes = _norm(_revision_notes(decision))
-    return any(term in notes for term in _GROUNDING_REJECT_TERMS)
+    return any(term in notes for term in _SCOPE_RESET_TERMS)
 
 
 def _revision_notes(decision: Json) -> str:
