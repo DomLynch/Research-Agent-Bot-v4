@@ -105,6 +105,15 @@ _REPAIRABLE_REJECTION_REASONS = {
     "source_bundle_schema",
     "title/abstract",
 }
+# Reject notes that mean "title/thesis must be re-grounded in the cited bundle".
+# A repair for these is regenerated in grounded mode (forces the source angle)
+# rather than only cosmetically softened, so the resubmit is a genuinely
+# different, bundle-aligned memo instead of byte-identical (duplicate-blocked).
+_GROUNDING_REJECT_TERMS = (
+    "cited doi", "context receipts", "contextual support",
+    "not verifiably grounded", "provided source bundle", "scope reset",
+    "single primary", "source bundle", "title/abstract",
+)
 
 
 def _json(path: Path, default: Any) -> Any:
@@ -254,8 +263,19 @@ def _refresh_alpha_memo(run_dir: Path, verdict: Json) -> bool:
         return True
     from agent.signal_memo_writer import write_signal_memo
 
-    write_signal_memo(run_dir, publish_verdict=verdict)
+    grounded = isinstance(decision, dict) and _is_grounding_reject(decision)
+    write_signal_memo(run_dir, publish_verdict=verdict, grounded=grounded)
     return True
+
+
+def _is_grounding_reject(decision: Json) -> bool:
+    """True when the reviewer asked for the title/thesis to be re-grounded in
+    the cited bundle (scope reset). Such a repair must regenerate the memo in
+    grounded mode, not just soften prose, or the resubmit is byte-identical."""
+    if decision.get("decision") not in {"reject", "revise"}:
+        return False
+    notes = _norm(_revision_notes(decision))
+    return any(term in notes for term in _GROUNDING_REJECT_TERMS)
 
 
 def _revision_notes(decision: Json) -> str:
@@ -334,20 +354,7 @@ def _apply_reviewer_revision_notes(run_dir: Path, decision: Json) -> bool:
                     line = _clean_title_claim(line)
                 lines.append(line)
             revised = "\n".join(lines) + ("\n" if original.endswith("\n") else "")
-        if any(
-            term in notes_norm
-            for term in (
-                "cited doi",
-                "context receipts",
-                "contextual support",
-                "not verifiably grounded",
-                "provided source bundle",
-                "scope reset",
-                "single primary",
-                "source bundle",
-                "title/abstract",
-            )
-        ):
+        if any(term in notes_norm for term in _GROUNDING_REJECT_TERMS):
             revised = _insert_scope_clarification(revised)
         if any(
             term in notes_norm

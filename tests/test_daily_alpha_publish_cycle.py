@@ -322,6 +322,48 @@ def test_repairable_reject_refresher_handles_scope_reset_notes(tmp_path: Path) -
     assert "Scope clarification" in memo
 
 
+def test_scope_reject_repair_regenerates_in_grounded_mode(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    scope_reject = {
+        "decision": "reject",
+        "required_revisions": [
+            "A complete scope reset is required.",
+            "Claims must be verifiably grounded in the provided source bundle.",
+        ],
+    }
+    assert daily._is_grounding_reject(scope_reject) is True
+    assert daily._is_grounding_reject(
+        {"decision": "reject", "review_summary": "Tone too casual."}) is False
+
+    # Cosmetic repair is a no-op here (the scope note is already present), so the
+    # memo must be regenerated in grounded mode rather than left byte-identical.
+    run = tmp_path / "runs" / "glp-evidence-ts"
+    run.mkdir(parents=True)
+    run.joinpath("signal_post.md").write_text("# Signal\n", encoding="utf-8")
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n**Headline:** Bounded signal\n\n"
+        "## One-sentence thesis\n\nNarrow claim.\n\n"
+        "**Scope clarification:** The lead claim should be read as a narrow "
+        "direct-source signal. Other cited sources provide context and boundary "
+        "checks, not independent confirmation of the lead claim.\n\n"
+        "## Why this is surprising\n\nBody.\n",
+        encoding="utf-8",
+    )
+    captured: dict[str, Any] = {}
+    import agent.signal_memo_writer as smw
+
+    def _fake(run_dir: Path, signal_text: Any = None,
+              publish_verdict: Any = None, *, grounded: bool = False) -> Any:
+        captured["grounded"] = grounded
+        return run_dir / "alpha_memo.md", ""
+
+    monkeypatch.setattr(smw, "write_signal_memo", _fake)
+    changed = daily._refresh_alpha_memo(run, {"_repair_decision": scope_reject})
+    assert changed is True
+    assert captured["grounded"] is True
+
+
 def test_repairable_rejected_submission_can_retry_once(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("retryable")

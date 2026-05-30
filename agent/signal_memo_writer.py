@@ -595,6 +595,8 @@ def render_signal_memo(
     run_dir: Path,
     signal_text: str | None = None,
     publish_verdict: dict[str, Any] | None = None,
+    *,
+    grounded: bool = False,
 ) -> str:
     signal_md = signal_text if signal_text is not None else _read(
         run_dir / "signal_post.md")
@@ -640,6 +642,12 @@ def render_signal_memo(
         topic, headline, thesis, why_surprising, facts, lead_ids,
         context_ids, publish_verdict, source_count,
     )
+    if grounded:
+        # Repair mode for scope/grounding rejects: drop the speculative
+        # boundary/counter angle and tie title + thesis back to the cited
+        # direct-source receipts, so the memo provably matches its bundle.
+        angle = {"kind": "source", "headline": headline,
+                 "thesis": thesis, "why": why_surprising}
     if publish_verdict and publish_verdict.get("surface_type") == "publish_alpha_memo":
         headline = angle["headline"]
     thesis = angle["thesis"]
@@ -728,8 +736,11 @@ def write_signal_memo(
     run_dir: Path,
     signal_text: str | None = None,
     publish_verdict: dict[str, Any] | None = None,
+    *,
+    grounded: bool = False,
 ) -> tuple[Path, str]:
-    text = render_signal_memo(run_dir, signal_text, publish_verdict)
+    text = render_signal_memo(
+        run_dir, signal_text, publish_verdict, grounded=grounded)
     out = run_dir / "alpha_memo.md"
     out.write_text(text, encoding="utf-8")
     return out, text
