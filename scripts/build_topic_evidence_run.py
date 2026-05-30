@@ -299,12 +299,18 @@ def _fetch_one(
         return []
 
 
-def _fetch_facts(topic: str) -> list[dict[str, Any]]:
+def _fetch_facts(
+    topic: str, trace: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
     """Pull facts across diverse slices CONCURRENTLY, then dedup. The Researka
     search runs 15-25s/query (strict-audited can 504), so a serial cascade
     exhausted the budget on the first slow query before the diverse outcome
     slices ran. Parallel fetch lets a slow/504 query fail without blocking the
-    rest, so a broad SAME-claim bundle can actually be assembled."""
+    rest, so a broad SAME-claim bundle can actually be assembled.
+
+    When `trace` is given, each query records {kind, query, facts, status} —
+    an OpenSeeker-style search trajectory (ok / empty / timeout) for receipts
+    and auditability of which slices contributed vs failed."""
     settings = load_settings()
     base = settings.researka_database_url.rstrip("/")
     token = settings.researka_database_token.strip()
@@ -318,13 +324,26 @@ def _fetch_facts(topic: str) -> list[dict[str, Any]]:
         + [("normal", q) for q in queries]
     )
     facts: list[dict[str, Any]] = []
+    done: set[int] = set()
     with ThreadPoolExecutor(max_workers=_FETCH_WORKERS) as pool:
-        futures = [pool.submit(_fetch_one, job, base, hdr, topic) for job in jobs]
+        fut_job = {pool.submit(_fetch_one, j, base, hdr, topic): j for j in jobs}
         try:
-            for fut in as_completed(futures, timeout=_FACT_FETCH_BUDGET_SECONDS):
-                facts.extend(fut.result())
+            for fut in as_completed(fut_job, timeout=_FACT_FETCH_BUDGET_SECONDS):
+                rows = fut.result()
+                facts.extend(rows)
+                done.add(id(fut))
+                if trace is not None:
+                    kind, query = fut_job[fut]
+                    trace.append({"kind": kind, "query": query,
+                                  "facts": len(rows),
+                                  "status": "ok" if rows else "empty"})
         except TimeoutError:
             pass  # keep whatever finished within the overall budget
+    if trace is not None:
+        for fut, (kind, query) in fut_job.items():
+            if id(fut) not in done:
+                trace.append({"kind": kind, "query": query,
+                              "facts": 0, "status": "timeout"})
     return _dedup_facts(facts)
 
 
@@ -768,7 +787,8 @@ def main() -> int:
     out_dir = _RUNS / f"{args.topic}-evidence-{ts}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    facts = _fetch_facts(args.topic)
+    search_trace: list[dict[str, Any]] = []
+    facts = _fetch_facts(args.topic, trace=search_trace)
     pico_result = None
     if not args.no_pico_enrich and facts:
         facts, pico_result = enrich_facts_pico(facts, settings=load_settings())
@@ -794,6 +814,13 @@ def main() -> int:
             selected_theme, top = None, source_diverse
     all_facet_counts = facet_counts([f for _score, f in deduped])
     aggregated = _aggregate(facts)
+
+    # OpenSeeker-style search trajectory: which query slices hit / were empty /
+    # timed out, for receipts + auditability of the retrieval that fed this run.
+    (out_dir / "search_trace.json").write_text(
+        json.dumps({"topic": args.topic, "snapshot_utc": ts,
+                    "queries": search_trace}, indent=2, ensure_ascii=False),
+        encoding="utf-8")
 
     raw_path = out_dir / "all_facts.json"
     raw_text = json.dumps(facts, indent=2, ensure_ascii=False)

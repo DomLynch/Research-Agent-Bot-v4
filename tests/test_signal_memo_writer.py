@@ -398,3 +398,31 @@ def test_recent_angle_kinds_reads_sibling_memos(tmp_path: Path) -> None:
     target.mkdir()
     counts = _recent_angle_kinds(target)
     assert counts == {"source": 1, "boundary_condition": 1}
+
+
+def test_journal_quality_signal_summarizes_cited_sources() -> None:
+    """paper-qa-style source-quality signal: counts journal-named sources and
+    means the curated quality_score over the cited receipts."""
+    from agent.signal_memo_writer import journal_quality
+
+    facts = {
+        "1": {"source_paper": {"doi": "10.x/a", "journal_name": "Nature", "quality_score": 90}},
+        "2": {"source_paper": {"doi": "10.x/b", "journal_name": "", "quality_score": 50}},
+        "3": {"source_paper": {"doi": "10.x/c", "title": "Preprint"}},  # no journal/score
+    }
+    q = journal_quality(facts, ["1", "2", "3"])
+    assert q["sources"] == 3
+    assert q["with_journal"] == 1            # only "Nature" is named
+    assert q["mean_quality_score"] == 70.0   # (90 + 50) / 2
+    assert journal_quality({}, [])["mean_quality_score"] is None
+
+
+def test_claim_receipt_matrix_carries_journal_quality() -> None:
+    from agent.signal_memo_writer import build_claim_receipt_matrix
+
+    facts = {"1": {"canonical_phrase": "Emissions fell 8%",
+                   "source_paper": {"doi": "10.x/a", "journal_name": "Nature",
+                                    "quality_score": 88}}}
+    matrix = build_claim_receipt_matrix({"emissions", "fell"}, ["1"], ["1"], facts)
+    assert matrix["journal_quality"]["with_journal"] == 1
+    assert matrix["journal_quality"]["mean_quality_score"] == 88.0

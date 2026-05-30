@@ -369,13 +369,40 @@ def _recent_angle_kinds(run_dir: Path, *, limit: int = 8) -> dict[str, int]:
     return counts
 
 
+def journal_quality(facts: dict[str, dict[str, Any]], ids: list[str]) -> dict[str, Any]:
+    """paper-qa-style source-quality signal over cited papers: how many name a
+    journal and the mean curated quality_score (0..100). A signal for review,
+    not a hard gate — venue metadata is sparse in the corpus."""
+    seen: dict[str, dict[str, Any]] = {}
+    for fid in ids:
+        paper = facts.get(fid, {}).get("source_paper")
+        key = _source_key(facts.get(fid, {}))
+        if isinstance(paper, dict) and key and key not in seen:
+            seen[key] = paper
+    papers = list(seen.values())
+    named = [p for p in papers if str(p.get("journal_name") or p.get("journal") or "").strip()]
+    scores: list[float] = []
+    for p in papers:
+        with suppress(TypeError, ValueError):
+            raw = p.get("quality_score")
+            if raw is not None and not isinstance(raw, bool):
+                scores.append(float(raw))
+    return {
+        "sources": len(papers),
+        "with_journal": len(named),
+        "journal_named_ratio": round(len(named) / len(papers), 2) if papers else 0.0,
+        "mean_quality_score": round(sum(scores) / len(scores), 1) if scores else None,
+    }
+
+
 def build_claim_receipt_matrix(
     claim: set[str], lead_ids: list[str],
     receipt_ids: list[str], facts: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
     """Claim -> receipts -> support level, as an auditable structure. Surfaces
     what the coherence filter + direct-source floor already enforce at submit
-    time: direct>=5 strong, >=2 moderate, else weak (pure; no side effects)."""
+    time: direct>=5 strong, >=2 moderate, else weak (pure; no side effects).
+    Carries a paper-qa-style journal_quality signal over the cited sources."""
     direct = _source_count_for_ids(lead_ids, facts)
     return {
         "claim_tokens": sorted(claim),
@@ -386,6 +413,7 @@ def build_claim_receipt_matrix(
         "direct_sources": direct,
         "total_sources": _source_count_for_ids(receipt_ids, facts),
         "support_level": "strong" if direct >= 5 else "moderate" if direct >= 2 else "weak",
+        "journal_quality": journal_quality(facts, receipt_ids),
     }
 
 
