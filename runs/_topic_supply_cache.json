@@ -1,0 +1,82 @@
+{
+  "strong_topic": {
+    "count": 0,
+    "ts": 1780047653.623185
+  },
+  "weak_topic": {
+    "count": 0,
+    "ts": 1780047653.623185
+  },
+  "topic_a": {
+    "count": 0,
+    "ts": 1780047653.627758
+  },
+  "carbon_tax": {
+    "count": 0,
+    "ts": 1780047653.630242
+  },
+  "renewable_subsidy": {
+    "count": 0,
+    "ts": 1780047653.630242
+  },
+  "topic_c": {
+    "count": 0,
+    "ts": 1780047653.631804
+  },
+  "topic_d": {
+    "count": 0,
+    "ts": 1780047653.631804
+  },
+  "topic_b": {
+    "count": 0,
+    "ts": 1780047653.631804
+  },
+  "fast_topic": {
+    "count": 1,
+    "ts": 1780047653.6329322
+  },
+  "rich_topic": {
+    "count": 5,
+    "ts": 1780047653.6329322
+  },
+  "omega_3_longevity": {
+    "count": 5,
+    "ts": 1780047653.634069
+  },
+  "seed_topic": {
+    "count": 0,
+    "ts": 1780081806.5996501
+  },
+  "grid_storage": {
+    "count": 0,
+    "ts": 1780081806.5996501
+  },
+  "pricing_grid_storage": {
+    "count": 0,
+    "ts": 1780081806.5996501
+  },
+  "grid_storage_improve": {
+    "count": 0,
+    "ts": 1780081806.5996501
+  },
+  "carbon_pricing": {
+    "count": 0,
+    "ts": 1780081806.5996501
+  },
+  "pricing_grid": {
+    "count": 0,
+    "ts": 1780081806.5996501
+  },
+  "storage_improve": {
+    "count": 0,
+    "ts": 1780081806.5996501
+  },
+  "improve_adoption": {
+    "count": 0,
+    "ts": 1780081806.5996501
+  },
+  "carbon_pricing_grid": {
+    "count": 0,
+    "ts": 1780081806.5996501
+  }
+}
