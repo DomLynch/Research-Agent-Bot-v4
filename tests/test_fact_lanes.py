@@ -51,9 +51,13 @@ def test_missing_only_intervention_is_b_context_not_d_bad() -> None:
     assert v.lane == "B_context"
 
 
-def test_missing_only_population_is_b_context_not_d_bad() -> None:
+def test_missing_only_population_is_not_d_bad() -> None:
+    """One empty PICO slot (population) no longer discards the fact as D_bad.
+    Here intervention + numeric effect + topic-in-intervention remain, so it
+    still earns A_core — the point is it is NOT thrown away for one empty slot."""
     v = classify_lane(_fact(population=""), topic="rapamycin")
-    assert v.lane == "B_context"
+    assert v.lane != "D_bad_extraction"
+    assert v.lane == "A_core"
 
 
 def test_duration_numeric_is_b_context_not_a_core() -> None:

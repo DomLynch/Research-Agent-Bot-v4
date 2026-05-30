@@ -109,7 +109,7 @@ instances = [
 ]
 
 [klotho]
-instances = ["klotho", "alpha-klotho", "α-klotho", "s-klotho", "soluble klotho"]
+instances = ["klotho", "alpha-klotho", "α-klotho", "s-klotho", "soluble klotho", "KL gene"]
 
 [hyperbaric_oxygen_hbot]
 instances = [
@@ -130,3 +130,23 @@ instances = [
     "near infrared light", "PBM", "LLLT",
     "low-level laser therapy", "low level light therapy",
 ]
+
+# Single-compound topics that are pipeline-thin, not science-thin: the bot was
+# only binding 2-4 unique sources from corpora with thousands of papers. Broader
+# accepted match strings (salt forms, source plant, common abbreviation) widen
+# retrieval + lane-matching without hardcoding anything in code. Tight lists —
+# precise compound aliases only, no over-broad mechanism words that pull noise.
+[berberine]
+instances = [
+    "berberine", "berberine chloride", "berberine hydrochloride",
+    "berberine hcl", "dihydroberberine", "Coptis chinensis", "goldenseal",
+]
+
+[quercetin]
+instances = [
+    "quercetin", "quercetin dihydrate", "quercetin glycoside",
+    "isoquercetin", "quercetin-3-glucoside", "flavonol",
+]
+
+[dasatinib]
+instances = ["dasatinib", "BMS-354825", "Sprycel", "D + Q", "dasatinib and quercetin"]
