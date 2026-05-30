@@ -73,10 +73,15 @@ def classify_lane(fact: dict[str, Any], topic: str) -> LaneVerdict:
     units = str(fact.get("units") or "")
     role = classify_numeric_role(nv_f, units, phrase)
 
-    if not _has_field(fact, "population") or not _has_field(fact, "intervention"):
+    # D_bad only when PICO is essentially absent (BOTH population AND
+    # intervention empty). A single missing slot is incomplete, not unusable:
+    # it can still bind as B_context support below (it just can't lead as
+    # A_core, which requires topic-in-intervention). This stops well-sourced
+    # mechanistic/clinical facts being discarded for one empty column.
+    if not _has_field(fact, "population") and not _has_field(fact, "intervention"):
         return LaneVerdict(
             fact_id=fact_id, lane="D_bad_extraction",
-            numeric_role=role, reason="missing_population_or_intervention",
+            numeric_role=role, reason="missing_population_and_intervention",
         )
 
     # Sprint 62: class queries (senolytic) match instance words

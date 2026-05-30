@@ -150,7 +150,11 @@ def _lead_audit(run_dir: Path) -> dict[str, Any]:
 
 def _source_key(fact: dict[str, Any]) -> str:
     paper = fact.get("source_paper") or {}
-    return str(paper.get("doi") or paper.get("pmid") or paper.get("title") or "").strip() if isinstance(paper, dict) else ""
+    if not isinstance(paper, dict):
+        return ""
+    return str(paper.get("doi") or paper.get("pmid") or paper.get("pmcid")
+               or paper.get("paper_id") or paper.get("id")
+               or paper.get("title") or "").strip()
 
 
 def _claim_token_set(*values: Any) -> set[str]:

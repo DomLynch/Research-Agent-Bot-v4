@@ -1572,10 +1572,10 @@ def test_refresh_candidates_builds_one_topic_per_submit_batch(
     )
 
     assert ledger["refresh_candidates"]["ok"] is True
-    assert ledger["refresh_top"] == 1
+    assert ledger["refresh_top"] == 5
     assert "--stop-on-ready" in calls[0][0]
     assert "--with-pico-enrich" not in calls[0][0]
-    assert calls[0][0][-4:] == ["--top", "1", "--cooldown-hours", "2"]
+    assert calls[0][0][-4:] == ["--top", "5", "--cooldown-hours", "2"]
     assert calls[0][1] == 5400
 
 
@@ -1598,7 +1598,7 @@ def test_refresh_cooldown_is_cycle_configurable(
         queue=_queue(),
     )
 
-    assert calls[0][-4:] == ["--top", "1", "--cooldown-hours", "0.5"]
+    assert calls[0][-4:] == ["--top", "5", "--cooldown-hours", "0.5"]
 
 
 def test_empty_refresh_escalates_to_zero_cooldown(

@@ -627,7 +627,13 @@ def _source_key_from_fact(fact: Json) -> str:
     paper = fact.get("source_paper") or {}
     if not isinstance(paper, dict):
         return ""
-    return _norm(paper.get("doi") or paper.get("pmid") or paper.get("title"))
+    # Identity order: DOI > PMID > PMCID > DB paper id > title. A blank key is
+    # NOT a source — never collapse identifier-less papers into one phantom
+    # source (that under-counts unique sources and can sink a topic below floor).
+    return _norm(
+        paper.get("doi") or paper.get("pmid") or paper.get("pmcid")
+        or paper.get("paper_id") or paper.get("id") or paper.get("title")
+    )
 
 
 def _memo_source_papers(

@@ -61,7 +61,7 @@ def test_d_bad_citation_rejects_thesis() -> None:
     facts = [
         _fact("f/dur",
               canonical_phrase="rapamycin CR at 66 weeks of treatment",
-              intervention="",  # missing intervention -> D_bad_extraction
+              intervention="", population="",  # no PICO at all -> D_bad_extraction
               numeric_value=66.0, units="weeks"),
         _fact("f/ok"),
     ]

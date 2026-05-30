@@ -29,10 +29,10 @@ def test_a_core_facts_only_in_a_core() -> None:
 
 
 def test_d_bad_extraction_excluded(monkeypatch: Any = None) -> None:
-    # Genuine D_bad now means incomplete PICO (missing intervention). A bare
-    # methodological number like '66 weeks' with full PICO binds as B_context.
+    # Genuine D_bad now means PICO essentially absent (both population AND
+    # intervention empty). A single empty slot would bind as B_context instead.
     pack = build_input_pack([
-        _fact("f/bad", intervention="",
+        _fact("f/bad", intervention="", population="",
               canonical_phrase="rapamycin treated for 66 weeks"),
     ], topic="rapamycin")
     assert pack.a_core == ()

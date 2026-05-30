@@ -36,15 +36,24 @@ def test_complete_pico_with_effect_size_is_a_core() -> None:
     assert v.numeric_role == "effect_size"
 
 
-def test_missing_intervention_is_d_bad_extraction() -> None:
+def test_missing_both_pico_fields_is_d_bad_extraction() -> None:
+    """D_bad now requires BOTH population AND intervention empty (essentially
+    no PICO). A single empty slot is recoverable as B_context, not discarded."""
+    v = classify_lane(_fact(intervention="", population=""), topic="rapamycin")
+    assert v.lane == "D_bad_extraction"
+    assert v.reason == "missing_population_and_intervention"
+
+
+def test_missing_only_intervention_is_b_context_not_d_bad() -> None:
+    """One empty PICO slot (intervention) no longer discards the fact: topic
+    still matches via population/phrase, so it binds as usable B_context."""
     v = classify_lane(_fact(intervention=""), topic="rapamycin")
-    assert v.lane == "D_bad_extraction"
-    assert v.reason == "missing_population_or_intervention"
+    assert v.lane == "B_context"
 
 
-def test_missing_population_is_d_bad_extraction() -> None:
+def test_missing_only_population_is_b_context_not_d_bad() -> None:
     v = classify_lane(_fact(population=""), topic="rapamycin")
-    assert v.lane == "D_bad_extraction"
+    assert v.lane == "B_context"
 
 
 def test_duration_numeric_is_b_context_not_a_core() -> None:
