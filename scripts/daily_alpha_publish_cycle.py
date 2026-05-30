@@ -115,7 +115,8 @@ _SCOPE_RESET_TERMS = (
 )
 # Broader set adds clarification-level cues; these only trigger the cosmetic
 # scope-clarification note in _apply_reviewer_revision_notes, not a full rebuild.
-_GROUNDING_REJECT_TERMS = _SCOPE_RESET_TERMS + (
+_GROUNDING_REJECT_TERMS = (
+    *_SCOPE_RESET_TERMS,
     "context receipts", "contextual support", "single primary",
 )
 
