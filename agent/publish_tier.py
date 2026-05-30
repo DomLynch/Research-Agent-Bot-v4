@@ -153,7 +153,8 @@ def _source_papers(
         paper = facts.get(fid, {}).get("source_paper") or {}
         if not isinstance(paper, dict):
             continue
-        key = str(paper.get("doi") or paper.get("pmid") or paper.get("title") or "")
+        key = str(paper.get("doi") or paper.get("pmid") or paper.get("pmcid")
+                  or paper.get("paper_id") or paper.get("id") or paper.get("title") or "")
         if key and key not in seen:
             seen.add(key)
             papers.append(paper)
@@ -161,10 +162,12 @@ def _source_papers(
 
 
 def _source_key(fact: dict[str, Any]) -> str:
+    # P5 hardening: identity order DOI > PMID > PMCID > paper_id > id > title.
     paper = fact.get("source_paper") or {}
     if not isinstance(paper, dict):
         return ""
-    return str(paper.get("doi") or paper.get("pmid") or paper.get("title") or "")
+    return str(paper.get("doi") or paper.get("pmid") or paper.get("pmcid")
+               or paper.get("paper_id") or paper.get("id") or paper.get("title") or "")
 
 
 def _paper_summary(fact: dict[str, Any]) -> dict[str, Any]:
@@ -352,7 +355,8 @@ def _source_concentrated(
     dois = []
     for fid in cited_ids:
         paper = facts.get(fid, {}).get("source_paper") or {}
-        doi = str(paper.get("doi") or paper.get("pmid") or paper.get("title") or "")
+        doi = str(paper.get("doi") or paper.get("pmid") or paper.get("pmcid")
+                  or paper.get("paper_id") or paper.get("id") or paper.get("title") or "")
         if doi:
             dois.append(doi)
     if not dois:

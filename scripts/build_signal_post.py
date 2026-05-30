@@ -94,10 +94,14 @@ def _bound_fact_count(
 
 
 def _source_key(fact: dict[str, Any]) -> str:
+    # Identity order DOI > PMID > PMCID > paper_id > id > title (P5 hardening,
+    # matches the cycle + writer); never collapse identifier-less papers into one.
     paper = fact.get("source_paper") or {}
     if not isinstance(paper, dict):
         return ""
-    return str(paper.get("doi") or paper.get("pmid") or paper.get("title") or "").strip()
+    return str(paper.get("doi") or paper.get("pmid") or paper.get("pmcid")
+               or paper.get("paper_id") or paper.get("id")
+               or paper.get("title") or "").strip()
 
 
 def _repair_source_dispersion(
