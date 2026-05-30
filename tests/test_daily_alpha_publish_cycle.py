@@ -50,10 +50,18 @@ def _queue(*verdicts: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
     }
 
 
+# Every rendered memo carries a "What would weaken this" section; the submit
+# falsifier gate (memo_missing_falsifier) requires it, so fixtures include it.
+_FALSIFIER = (
+    "\n## What would weaken this\n\n"
+    "- Independent receipts fail to reproduce the claimed contrast.\n"
+)
+
+
 def _memo(root: Path, verdict: dict[str, Any]) -> None:
     run = root / str(verdict["run_dir"])
     run.mkdir(parents=True)
-    (run / "alpha_memo.md").write_text("# Alpha memo\n", encoding="utf-8")
+    (run / "alpha_memo.md").write_text("# Alpha memo\n" + _FALSIFIER, encoding="utf-8")
 
 
 def _memo_with_source_receipts(root: Path, verdict: dict[str, Any], count: int) -> None:
@@ -63,7 +71,7 @@ def _memo_with_source_receipts(root: Path, verdict: dict[str, Any], count: int) 
     run.joinpath("alpha_memo.md").write_text(
         "# Alpha memo\n\n## Evidence receipts\n\n"
         + "\n".join(f"- `fact_id={fid}` (`A_core`) - receipt" for fid in ids)
-        + "\n",
+        + "\n" + _FALSIFIER,
         encoding="utf-8",
     )
     run.joinpath("all_facts.json").write_text(json.dumps([
@@ -172,7 +180,7 @@ def test_duplicate_underexpanded_memo_refreshes_before_reporting(tmp_path: Path)
             + "\n".join(
                 f"- `fact_id={i + 1}` (`A_core`) - receipt" for i in range(5)
             )
-            + "\n",
+            + "\n" + _FALSIFIER,
             encoding="utf-8",
         )
         return True
@@ -864,7 +872,7 @@ def test_submit_floor_blocks_context_only_source_padding(tmp_path: Path) -> None
         "- `fact_id=1` (`A_core`) - direct\n\n"
         "## Context receipts\n\n"
         + "\n".join(f"- `fact_id={i}` (`A_core`) - context" for i in range(2, 6))
-        + "\n",
+        + "\n" + _FALSIFIER,
         encoding="utf-8",
     )
     facts = json.loads(run.joinpath("all_facts.json").read_text(encoding="utf-8"))
@@ -905,7 +913,7 @@ def test_submit_floor_allows_broad_context_when_direct_sources_pass(tmp_path: Pa
         + "\n\n"
         "## Context receipts\n\n"
         + "\n".join(f"- `fact_id={i}` (`B_context`) - context" for i in range(6, 8))
-        + "\n",
+        + "\n" + _FALSIFIER,
         encoding="utf-8",
     )
     facts = [
@@ -1048,7 +1056,7 @@ def test_submit_refreshes_underexpanded_memo_once(tmp_path: Path) -> None:
             + "\n".join(
                 f"- `fact_id={i + 1}` (`A_core`) - receipt" for i in range(5)
             )
-            + "\n",
+            + "\n" + _FALSIFIER,
             encoding="utf-8",
         )
         return True
@@ -1129,7 +1137,7 @@ def test_submission_payload_preserves_alpha_memo_contract(tmp_path: Path) -> Non
     assert payload["author_agent_id"] == "agent-v4-alpha-memo"
     assert payload["agent_id"] == "agent-v4-alpha-memo"
     assert payload["topic"] == "grid_storage"
-    assert payload["markdown"] == "\n"
+    assert "What would weaken this" in payload["markdown"]
     assert "sections" not in payload
     assert "source_bundle" in payload
     assert "source_papers" in payload["evidence_bundle"]
@@ -2052,21 +2060,18 @@ def test_accepted_shape_bias_breaks_candidate_tie(tmp_path: Path) -> None:
 
 def test_memo_without_falsifier_is_blocked(tmp_path: Path) -> None:
     """C4 submit gate: an approved memo that omits 'What would weaken this' is
-    held as memo_missing_falsifier and never submitted."""
+    held as memo_missing_falsifier and never selected."""
     root = tmp_path / "repo"
     verdict = _verdict("no_falsifier")
-    _queue_file(root, verdict)
-    queue = daily._build_queue(root / "runs", include_archive=False)
-    run_dir = root / "runs" / "no_falsifier-evidence-ts"
+    run_dir = root / str(verdict["run_dir"])
     run_dir.mkdir(parents=True)
-    (run_dir / "signal_post.md").write_text("# Signal\n", encoding="utf-8")
     (run_dir / "alpha_memo.md").write_text(
         "# Alpha memo\n\n**Headline:** A bounded signal\n\n"
         "## Evidence receipts\n\n- `fact_id=1` (`A_core`) - receipt\n",
         encoding="utf-8",
     )
     cand, considered = daily.select_candidate(
-        queue, runs_root=root / "runs", submitted_path=root / "submitted.json",
+        _queue(verdict), runs_root=root, submitted_path=root / "submitted.json",
         min_source_count=5, min_direct_source_count=2,
     )
     assert cand is None
@@ -2078,11 +2083,8 @@ def test_memo_with_falsifier_passes_the_gate(tmp_path: Path) -> None:
     falsifier gate (it then proceeds to the normal source-floor checks)."""
     root = tmp_path / "repo"
     verdict = _verdict("has_falsifier")
-    _queue_file(root, verdict)
-    queue = daily._build_queue(root / "runs", include_archive=False)
-    run_dir = root / "runs" / "has_falsifier-evidence-ts"
+    run_dir = root / str(verdict["run_dir"])
     run_dir.mkdir(parents=True)
-    (run_dir / "signal_post.md").write_text("# Signal\n", encoding="utf-8")
     (run_dir / "alpha_memo.md").write_text(
         "# Alpha memo\n\n**Headline:** A bounded signal\n\n"
         "## What would weaken this\n\n"
@@ -2090,7 +2092,7 @@ def test_memo_with_falsifier_passes_the_gate(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     _cand, considered = daily.select_candidate(
-        queue, runs_root=root / "runs", submitted_path=root / "submitted.json",
+        _queue(verdict), runs_root=root, submitted_path=root / "submitted.json",
         min_source_count=5, min_direct_source_count=2,
     )
     assert considered[0]["status"] != "memo_missing_falsifier"
