@@ -132,6 +132,13 @@ def test_multiword_synonym_not_trimmed_to_generic_fragment() -> None:
     assert not text_matches_topic("low-level weight loss intervention", t)
 
 
+def test_brain_age_mri_requires_brain_age_not_generic_mri() -> None:
+    assert text_matches_topic("BrainAGE predicted dementia conversion", "brain_age_MRI")
+    assert text_matches_topic("brain age gap differed by diagnosis", "brain_age_MRI")
+    assert not text_matches_topic("MRI classified brain tumors", "brain_age_MRI")
+    assert not text_matches_topic("magnetic resonance imaging classified Parkinson disease", "brain_age_MRI")
+
+
 def test_load_synonyms_missing_file_returns_empty() -> None:
     """Pointing at a nonexistent path returns {} (graceful)."""
     load_synonyms.cache_clear()

@@ -68,7 +68,6 @@ instances = [
 [brain_age_mri]
 instances = [
     "brain age", "brainAGE", "brain age gap", "predicted brain age",
-    "magnetic resonance imaging", "MRI",
 ]
 
 [omega_3_longevity]
