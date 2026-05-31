@@ -572,6 +572,25 @@ def test_scope_reject_repair_regenerates_in_grounded_mode(
     assert captured["grounded"] is True
 
 
+def test_resubmission_allowed_claim_alignment_reject_is_repairable() -> None:
+    decision = {
+        "decision": "reject",
+        "major_issues": [
+            "The claim_evidence_alignment is critically low.",
+            "The strongest counter-evidence is irrelevant counter-evidence.",
+        ],
+        "required_revisions": [
+            "Define a single, specific, and bounded research question.",
+            "Restructure the evidence presentation around the cited bundle.",
+            "Ensure the one-sentence thesis is directly supported.",
+        ],
+        "resubmission": {"allowed": True},
+    }
+
+    assert daily._repairable_rejection(decision) is True
+    assert daily._is_grounding_reject(decision) is True
+
+
 def test_repairable_rejected_submission_can_retry_once(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("retryable")

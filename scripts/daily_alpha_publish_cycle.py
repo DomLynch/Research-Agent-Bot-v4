@@ -116,6 +116,8 @@ _REPAIRABLE_REJECTION_REASONS = {
 _SCOPE_RESET_TERMS = (
     "scope reset", "not verifiably grounded", "provided source bundle",
     "source bundle", "title/abstract", "cited doi",
+    "cited bundle", "directly supported", "coherent research question",
+    "irrelevant counter-evidence", "claim_evidence_alignment",
 )
 # Broader set adds clarification-level cues; these only trigger the cosmetic
 # scope-clarification note in _apply_reviewer_revision_notes, not a full rebuild.
@@ -643,6 +645,20 @@ def _repairable_rejection(decision: Json) -> bool:
             reasons.add(str(gate.get("reason") or ""))
     text = " ".join(reasons).lower()
     text = f"{text} {_revision_notes(decision).lower()}"
+    resubmission = decision.get("resubmission")
+    if (
+        isinstance(resubmission, dict)
+        and resubmission.get("allowed") is True
+        and any(
+            term in text for term in (
+                "bounded research question", "claim_evidence_alignment",
+                "cited bundle", "directly supported", "evidence presentation",
+                "irrelevant counter-evidence", "restructure",
+                "source_grounding",
+            )
+        )
+    ):
+        return True
     return any(reason in text for reason in _REPAIRABLE_REJECTION_REASONS)
 
 
