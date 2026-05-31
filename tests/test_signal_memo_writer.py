@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 from agent.publish_tier import publish_verdict
 from agent.signal_memo_writer import _memo_alpha_int, render_signal_memo, write_signal_memo
@@ -265,6 +266,44 @@ def test_alpha_memo_does_not_pad_with_off_claim_receipts(tmp_path: Path) -> None
     assert "`fact_id=303` (`A_core`)" in memo
 
 
+def test_alpha_memo_uses_gate_receipt_expansion_candidates(tmp_path: Path) -> None:
+    """When publish_tier says a memo underuses available bound receipts, the
+    writer should bind those vetted receipts instead of merely listing them."""
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    for fid, phrase in (
+        ("303", "Dividend timing changed adoption in border regions."),
+        ("404", "Compliance costs shifted firms toward audited suppliers."),
+        ("505", "Rebate design altered participation in small exporters."),
+        ("606", "Administrative delays limited uptake in rural firms."),
+    ):
+        facts.append({
+            "fact_id": fid,
+            "canonical_phrase": phrase,
+            "source_paper": {"doi": f"10.x/expansion-{fid}"},
+        })
+        lanes["verdicts"].append({"fact_id": fid, "lane": "A_core"})
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "publish_alpha_memo",
+        "receipt_expansion": {
+            "needed": True,
+            "cited_bound_fact_ids": ["101"],
+            "available_bound_fact_ids": ["101", "303", "404", "505", "606"],
+            "candidate_receipts": [{"fact_id": "606", "lane": "A_core"}],
+        },
+    })
+
+    assert "**Direct source breadth:** `5` direct cited source(s)" in memo
+    assert "**Source breadth:** `5/5` unique cited source(s)" in memo
+    assert "`fact_id=606` (`A_core`)" in memo
+    assert "10.x/expansion-606" in memo
+
+
 def test_alpha_memo_turns_repeated_title_into_declarative_thesis(
     tmp_path: Path,
 ) -> None:
@@ -370,7 +409,7 @@ def test_recent_angle_history_flips_selection() -> None:
     penalty rejects it and a different angle is selected."""
     from agent.signal_memo_writer import _select_angle
 
-    facts = {
+    facts: dict[str, dict[str, Any]] = {
         "a": {"canonical_phrase": "Primary outcome improved by 30%"},
         "b": {"canonical_phrase": "Effect differs in older adults"},
     }
@@ -405,7 +444,7 @@ def test_journal_quality_signal_summarizes_cited_sources() -> None:
     means the curated quality_score over the cited receipts."""
     from agent.signal_memo_writer import journal_quality
 
-    facts = {
+    facts: dict[str, dict[str, Any]] = {
         "1": {"source_paper": {"doi": "10.x/a", "journal_name": "Nature", "quality_score": 90}},
         "2": {"source_paper": {"doi": "10.x/b", "journal_name": "", "quality_score": 50}},
         "3": {"source_paper": {"doi": "10.x/c", "title": "Preprint"}},  # no journal/score

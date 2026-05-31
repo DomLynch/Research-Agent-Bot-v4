@@ -188,6 +188,7 @@ def _expanded_receipt_ids(
     allowed_lanes: frozenset[str] = _BINDABLE,
     claim: set[str] | None = None,
     topic: str = "",
+    preferred_ids: list[str] | None = None,
 ) -> list[str]:
     selected: list[str] = []
     seen_ids: set[str] = set()
@@ -204,6 +205,10 @@ def _expanded_receipt_ids(
 
     for fid in [str(x) for x in audit.get("cited_fact_ids", [])]:
         add(fid)
+    for fid in preferred_ids or []:
+        if len(sources) >= min_sources:
+            break
+        add(str(fid))
     for fid, fact in facts.items():
         if len(sources) >= min_sources:
             break
@@ -219,6 +224,34 @@ def _expanded_receipt_ids(
             continue
         add(fid)
     return selected
+
+
+def _preferred_receipt_ids(
+    verdict: dict[str, Any] | None,
+    lanes: dict[str, str],
+    allowed_lanes: frozenset[str],
+) -> list[str]:
+    expansion = (verdict or {}).get("receipt_expansion")
+    if not isinstance(expansion, dict) or not expansion.get("needed"):
+        return []
+    ids: list[str] = []
+
+    def add(value: Any) -> None:
+        fid = str(value or "").strip()
+        if fid and fid not in ids and lanes.get(fid) in allowed_lanes:
+            ids.append(fid)
+
+    for key in ("available_bound_fact_ids", "cited_bound_fact_ids"):
+        values = expansion.get(key)
+        if isinstance(values, list):
+            for fid in values:
+                add(fid)
+    candidates = expansion.get("candidate_receipts")
+    if isinstance(candidates, list):
+        for item in candidates:
+            if isinstance(item, dict):
+                add(item.get("fact_id"))
+    return ids
 
 
 def _source_count_for_ids(ids: list[str], facts: dict[str, dict[str, Any]]) -> int:
@@ -774,14 +807,18 @@ def render_signal_memo(
     claim = _claim_signal(
         [str(x) for x in audit.get("cited_fact_ids", [])], facts, topic,
     )
+    preferred_bound_ids = _preferred_receipt_ids(publish_verdict, lanes, _BINDABLE)
+    preferred_direct_ids = _preferred_receipt_ids(publish_verdict, lanes, _DIRECT)
     expanded_ids = _expanded_receipt_ids(
         audit, facts, lanes, min_sources=min_sources, claim=claim, topic=topic,
+        preferred_ids=preferred_bound_ids,
     )
     lead_ids = _expanded_receipt_ids(
         audit, facts, lanes,
         min_sources=min_direct_sources,
         allowed_lanes=_DIRECT,
         claim=claim, topic=topic,
+        preferred_ids=preferred_direct_ids,
     )
     if not lead_ids:
         lead_ids = expanded_ids[:1]
