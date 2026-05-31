@@ -479,11 +479,11 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     forced = _domain_forced(
         papers, topic, cfg["generic_tokens"], float(cfg["domain_overlap_min"]),
     )
-    tension = _has_tension(md, cfg["tension_markers"])
     off_scope = _off_scope(papers, cfg["off_scope_markers"])
     counter_evidence = _counter_evidence(
         bound_ids, facts, lanes, cfg["counter_markers"],
     )
+    tension = _has_tension(md, cfg["tension_markers"]) or bool(counter_evidence)
     expansion_candidates = _expansion_candidates(bound_ids, facts, lanes)
     blockers: list[str] = []
     if label in _BLOCKED_LABELS:

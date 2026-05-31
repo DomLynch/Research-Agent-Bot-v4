@@ -331,6 +331,42 @@ def test_counter_evidence_prefers_load_bearing_contradiction(tmp_path: Path) -> 
     assert verdict["counter_evidence"]["items"][0]["fact_id"] == "4"
 
 
+def test_counter_evidence_satisfies_tension_gate(tmp_path: Path) -> None:
+    run = _run(
+        tmp_path,
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+        dois=("10.a", "10.b", "10.c", "10.d", "10.e"),
+        titles=(
+            "Reserve dispatch improves grid storage reliability",
+            "Reserve auctions improve grid storage reliability",
+            "Reserve pricing improves grid storage reliability",
+            "Reserve thresholds improve grid storage reliability",
+            "Reserve contracts improve grid storage reliability",
+        ),
+        tension=False,
+    )
+    for fid in ("1", "2", "3", "4", "5"):
+        _set_phrase(
+            run, fid,
+            "Grid storage dispatch improved reserve reliability after threshold changes.",
+        )
+    _add_fact(
+        run,
+        fact_id="6",
+        lane="A_core",
+        doi="10.counter/on",
+        title="Reserve reliability counter-audit",
+        phrase="Grid storage dispatch did not improve reserve reliability.",
+    )
+
+    verdict = publish_verdict(run)
+
+    assert verdict["counter_evidence"]["status"] == "found"
+    assert verdict["axes"]["counter_consensus_tension"] is True
+    assert "weak_counter_consensus_tension" not in verdict["blockers"]
+    assert verdict["decision"] == "ready_to_publish"
+
+
 def test_noisy_broad_topic_gets_subtopic_recommendations(tmp_path: Path) -> None:
     run = _run(
         tmp_path,
