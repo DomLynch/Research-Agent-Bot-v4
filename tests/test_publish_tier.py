@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from agent import publish_tier as tier
 from agent.publish_tier import publish_verdict, write_publish_verdict
 
 
@@ -103,6 +104,20 @@ def _add_fact(
     lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
     lanes["verdicts"].append({"fact_id": fact_id, "lane": lane})
     (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+
+
+def _set_phrase(run: Path, fact_id: str, phrase: str) -> None:
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    for fact in facts:
+        if str(fact.get("fact_id")) == fact_id:
+            fact["canonical_phrase"] = phrase
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+
+def test_source_key_uses_full_identifier_order() -> None:
+    assert tier._source_key({"source_paper": {"pmcid": "PMC1", "title": "T"}}) == "PMC1"
+    assert tier._source_key({"source_paper": {"paper_id": "P2", "title": "T"}}) == "P2"
+    assert tier._source_key({"source_paper": {"id": "I3", "title": "T"}}) == "I3"
 
 
 def test_ready_to_publish_requires_bound_concentrated_tension(tmp_path: Path) -> None:
@@ -233,6 +248,25 @@ def test_thin_memo_with_unused_bound_receipts_gets_context_surface(
     assert len(verdict["receipt_expansion"]["candidate_receipts"]) == 3
 
 
+def test_receipt_expansion_candidates_are_ranked_by_claim_fit(tmp_path: Path) -> None:
+    run = _run(tmp_path, lanes=("A_core", "A_core"), dois=("10.same/a", "10.same/a"))
+    _set_phrase(run, "1", "Reserve reliability improved after storage threshold changes.")
+    _set_phrase(run, "2", "Reserve reliability improved after storage threshold changes.")
+    _add_fact(
+        run, fact_id="3", lane="A_core", doi="10.extra/off",
+        title="Payroll audit", phrase="Payroll timing changed for rural exporters.",
+    )
+    _add_fact(
+        run, fact_id="4", lane="A_core", doi="10.extra/on",
+        title="Reserve reliability audit",
+        phrase="Reserve reliability improved after independent threshold changes.",
+    )
+
+    verdict = publish_verdict(run)
+
+    assert verdict["receipt_expansion"]["candidate_receipts"][0]["fact_id"] == "4"
+
+
 def test_counter_evidence_is_explicit_when_a_bound_opposing_fact_exists(
     tmp_path: Path,
 ) -> None:
@@ -250,6 +284,25 @@ def test_counter_evidence_is_explicit_when_a_bound_opposing_fact_exists(
 
     assert verdict["counter_evidence"]["status"] == "found"
     assert verdict["counter_evidence"]["items"][0]["fact_id"] == "3"
+
+
+def test_counter_evidence_prefers_load_bearing_contradiction(tmp_path: Path) -> None:
+    run = _run(tmp_path, lanes=("A_core", "A_core"))
+    _set_phrase(run, "1", "Reserve reliability improved after storage dispatch changes.")
+    _set_phrase(run, "2", "Reserve reliability improved after storage dispatch changes.")
+    _add_fact(
+        run, fact_id="3", lane="A_core", doi="10.counter/off",
+        title="Payroll audit", phrase="The intervention did not change payroll timing.",
+    )
+    _add_fact(
+        run, fact_id="4", lane="A_core", doi="10.counter/on",
+        title="Reserve reliability counter-audit",
+        phrase="Storage dispatch did not improve reserve reliability.",
+    )
+
+    verdict = publish_verdict(run)
+
+    assert verdict["counter_evidence"]["items"][0]["fact_id"] == "4"
 
 
 def test_noisy_broad_topic_gets_subtopic_recommendations(tmp_path: Path) -> None:

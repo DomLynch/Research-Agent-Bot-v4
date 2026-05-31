@@ -143,6 +143,23 @@ def _tokens(text: str, topic: str, generic: frozenset[str]) -> set[str]:
     return {t for t in out if t not in generic and t not in topic_tokens}
 
 
+def _semantic_score(left: set[str], right: set[str]) -> float:
+    if not left or not right:
+        return 0.0
+    left_roots = {t[:6] for t in left if len(t) >= 6}
+    right_roots = {t[:6] for t in right if len(t) >= 6}
+    exact = len(left & right) * 2
+    rooted = len(left_roots & right_roots)
+    return (exact + rooted) / max(1, len(left) + len(right))
+
+
+def _claim_tokens(cited_ids: list[str], facts: dict[str, dict[str, Any]]) -> set[str]:
+    return set().union(*(
+        set(re.findall(r"[a-z0-9]{3,}", str(facts.get(fid, {}).get("canonical_phrase") or "").lower()))
+        for fid in cited_ids
+    )) if cited_ids else set()
+
+
 def _source_papers(
     cited_ids: list[str],
     facts: dict[str, dict[str, Any]],
@@ -213,6 +230,7 @@ def _counter_evidence(
 ) -> list[dict[str, Any]]:
     cited = set(cited_ids)
     out: list[dict[str, Any]] = []
+    claim = _claim_tokens(cited_ids, facts)
     for fid in _bound_ids_in_fact_order(facts, lanes):
         if fid in cited:
             continue
@@ -223,8 +241,15 @@ def _counter_evidence(
         haystack = str(fact.get("canonical_phrase") or "").lower()
         if markers and not any(marker in haystack for marker in markers):
             continue
-        out.append(_fact_summary(fid, fact, lanes.get(fid, "")))
-    out.sort(key=lambda item: (item["lane"] != "A_core", item["fact_id"]))
+        item = _fact_summary(fid, fact, lanes.get(fid, ""))
+        item["_rank"] = _semantic_score(
+            set(re.findall(r"[a-z0-9]{3,}", str(fact.get("canonical_phrase") or "").lower())),
+            claim,
+        )
+        out.append(item)
+    out.sort(key=lambda item: (item["lane"] != "A_core", -float(item["_rank"]), item["fact_id"]))
+    for item in out:
+        item.pop("_rank", None)
     return out[:3]
 
 
@@ -236,6 +261,7 @@ def _expansion_candidates(
 ) -> list[dict[str, Any]]:
     cited = set(cited_ids)
     out: list[dict[str, Any]] = []
+    claim = _claim_tokens(cited_ids, facts)
     cited_sources = {
         _source_key(facts[fid]) for fid in cited if fid in facts
     }
@@ -245,12 +271,19 @@ def _expansion_candidates(
         fact = facts.get(fid) or {}
         item = _fact_summary(fid, fact, lanes.get(fid, ""))
         item["same_source_as_lead"] = _source_key(fact) in cited_sources
+        item["_rank"] = _semantic_score(
+            set(re.findall(r"[a-z0-9]{3,}", str(fact.get("canonical_phrase") or "").lower())),
+            claim,
+        )
         out.append(item)
     out.sort(key=lambda item: (
         item["same_source_as_lead"],
         item["lane"] != "A_core",
+        -float(item["_rank"]),
         item["fact_id"],
     ))
+    for item in out:
+        item.pop("_rank", None)
     return out[:limit]
 
 

@@ -32,7 +32,9 @@ from agent.fact_lanes import classify_lanes  # noqa: E402
 
 def _source(fact: dict[str, Any]) -> str:
     paper = fact.get("source_paper") or {}
-    return str(paper.get("doi") or paper.get("pmid") or paper.get("title") or "").strip()
+    return str(paper.get("doi") or paper.get("pmid") or paper.get("pmcid")
+               or paper.get("paper_id") or paper.get("id")
+               or paper.get("title") or "").strip()
 
 
 def scan_topic(topic: str) -> dict[str, Any]:

@@ -266,6 +266,33 @@ def test_alpha_memo_does_not_pad_with_off_claim_receipts(tmp_path: Path) -> None
     assert "`fact_id=303` (`A_core`)" in memo
 
 
+def test_alpha_memo_semantic_receipt_fallback_uses_word_roots(tmp_path: Path) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    facts[0]["canonical_phrase"] = "Emissions reduction followed carbon price adoption."
+    for fid, phrase in (
+        ("303", "Emission reductions followed carbon pricing in port cities."),
+        ("404", "Reduction in emissions followed carbon-price compliance audits."),
+        ("505", "Carbon pricing reduced emissions in cross-border firms."),
+        ("606", "Emissions reductions followed price changes in exporters."),
+    ):
+        facts.append({
+            "fact_id": fid,
+            "canonical_phrase": phrase,
+            "source_paper": {"doi": f"10.x/root-{fid}"},
+        })
+        lanes["verdicts"].append({"fact_id": fid, "lane": "A_core"})
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+
+    memo = render_signal_memo(run)
+
+    assert "**Direct source breadth:** `5` direct cited source(s)" in memo
+    assert "`fact_id=606` (`A_core`)" in memo
+
+
 def test_alpha_memo_uses_gate_receipt_expansion_candidates(tmp_path: Path) -> None:
     """When publish_tier says a memo underuses available bound receipts, the
     writer should bind those vetted receipts instead of merely listing them."""
@@ -516,3 +543,21 @@ def test_memo_audit_carries_signals_and_honest_placeholders() -> None:
     assert audit["source_hygiene"]["mean_quality_score"] == 90.0
     assert audit["risk_of_bias"] == "not_assessed"
     assert audit["nearest_literature"] is None
+
+
+def test_memo_audit_schema_is_strictly_typed() -> None:
+    from agent.signal_memo_writer import build_memo_audit, validate_memo_audit_schema
+
+    facts = {
+        str(i): {"canonical_phrase": "Emissions fell after carbon pricing",
+                 "source_paper": {"doi": f"10.x/{i}"}}
+        for i in range(1, 6)
+    }
+    audit = build_memo_audit(
+        {"emissions", "fell"}, list("12345"), list("12345"), facts, None,
+        falsifier=True, novelty={"selected": "source", "repeats": 0},
+    )
+
+    assert validate_memo_audit_schema(audit) == []
+    broken = audit | {"claim_units": "not-a-list"}
+    assert validate_memo_audit_schema(broken) == ["claim_units"]

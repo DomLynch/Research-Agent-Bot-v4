@@ -161,6 +161,16 @@ def _claim_token_set(*values: Any) -> set[str]:
     return {t for value in values for t in _WORD.findall(str(value or "").lower()) if len(t) >= 2}
 
 
+def _semantic_score(left: set[str], right: set[str]) -> float:
+    if not left or not right:
+        return 0.0
+    left_roots = {t[:6] for t in left if len(t) >= 6}
+    right_roots = {t[:6] for t in right if len(t) >= 6}
+    exact = len(left & right) * 2
+    rooted = len(left_roots & right_roots)
+    return (exact + rooted) / max(1, len(left) + len(right))
+
+
 def _claim_signal(
     seed_ids: list[str], facts: dict[str, dict[str, Any]], topic: str,
 ) -> set[str]:
@@ -176,7 +186,10 @@ def _fact_coheres(fact: dict[str, Any], claim: set[str], topic: str) -> bool:
         return True
     cand = _claim_token_set(*(fact.get(k) for k in _CLAIM_FIELDS))
     cand -= _claim_token_set(topic) | _GENERIC_TOKENS
-    return len(cand & claim) >= _CLAIM_MIN_OVERLAP
+    return (
+        len(cand & claim) >= _CLAIM_MIN_OVERLAP
+        or _semantic_score(cand, claim) >= 0.2
+    )
 
 
 def _expanded_receipt_ids(
@@ -209,7 +222,18 @@ def _expanded_receipt_ids(
         if len(sources) >= min_sources:
             break
         add(str(fid))
-    for fid, fact in facts.items():
+    ranked_facts = sorted(
+        facts.items(),
+        key=lambda item: (
+            -_semantic_score(
+                _claim_token_set(*(item[1].get(k) for k in _CLAIM_FIELDS))
+                - _claim_token_set(topic) - _GENERIC_TOKENS,
+                claim or set(),
+            ),
+            item[0],
+        ),
+    )
+    for fid, fact in ranked_facts:
         if len(sources) >= min_sources:
             break
         if claim is not None and not _fact_coheres(fact, claim, topic):
@@ -510,6 +534,7 @@ def build_memo_audit(
     ]
     repeats = int(novelty.get("repeats", 0))
     return {
+        "schema_version": 1,
         "claim_tokens": sorted(claim),
         "verdict": _memo_verdict(matrix["direct_sources"], len(contradictions), min_direct),
         "support_level": matrix["support_level"],
@@ -525,6 +550,26 @@ def build_memo_audit(
         "risk_of_bias": "not_assessed",  # follow-up: RoBBR (LLM, locked stack)
         "nearest_literature": None,      # follow-up: OpenScholar datastore
     }
+
+
+def validate_memo_audit_schema(audit: dict[str, Any]) -> list[str]:
+    expected = {
+        "schema_version": int,
+        "claim_tokens": list,
+        "verdict": str,
+        "support_level": str,
+        "claim_units": list,
+        "contradiction_receipts": list,
+        "novelty": dict,
+        "source_hygiene": dict,
+        "falsifier_present": bool,
+        "risk_of_bias": str,
+    }
+    errors: list[str] = []
+    for key, typ in expected.items():
+        if not isinstance(audit.get(key), typ):
+            errors.append(key)
+    return errors
 
 
 def falsifier_present(memo_text: str) -> bool:
