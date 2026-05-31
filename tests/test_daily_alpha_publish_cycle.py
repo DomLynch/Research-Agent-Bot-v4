@@ -591,6 +591,75 @@ def test_resubmission_allowed_claim_alignment_reject_is_repairable() -> None:
     assert daily._is_grounding_reject(decision) is True
 
 
+def test_resubmission_allowed_alignment_reject_triggers_regeneration(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("alignment_retry")
+    _memo_with_source_receipts(root, verdict, 5)
+    fp = daily.memo_fingerprint(verdict)
+    old_sha = daily._memo_sha256(verdict, root)
+    decision = {
+        "decision": "reject",
+        "major_issues": ["The claim_evidence_alignment is critically low."],
+        "required_revisions": [
+            "Define a single, specific, and bounded research question.",
+            "Restructure the evidence presentation around the cited bundle.",
+            "Ensure the thesis is directly supported.",
+        ],
+        "resubmission": {"allowed": True},
+    }
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
+        {
+            "fingerprint": fp,
+            "topic": "alignment_retry",
+            "run_dir": verdict["run_dir"],
+            "submission_id": "old-sub",
+            "memo_sha256": old_sha,
+        },
+    ])
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "reviewer_rejected",
+        "final_verdict": "rejected",
+        "candidate": {
+            "fingerprint": fp,
+            "topic": "alignment_retry",
+            "run_dir": verdict["run_dir"],
+        },
+        "researka_decision": decision,
+    })
+    refreshed: dict[str, Any] = {}
+
+    def refresh(run_dir: Path, refresh_verdict: dict[str, Any]) -> bool:
+        refreshed["decision"] = refresh_verdict["_repair_decision"]
+        path = run_dir / "alpha_memo.md"
+        path.write_text(
+            path.read_text(encoding="utf-8") + "\nGrounded regenerated memo.\n",
+            encoding="utf-8",
+        )
+        return True
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": "new-sub"}},
+        },
+        memo_refresher=refresh,
+    )
+
+    assert refreshed["decision"] == decision
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["considered"][0]["memo_refreshed"] is True
+    assert ledger["considered"][0]["status"] == "eligible"
+
+
 def test_repairable_rejected_submission_can_retry_once(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("retryable")
