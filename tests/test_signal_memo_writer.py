@@ -7,6 +7,8 @@ universal.
 from __future__ import annotations
 
 import json
+import re
+import tomllib
 from pathlib import Path
 from typing import Any
 
@@ -561,3 +563,38 @@ def test_memo_audit_schema_is_strictly_typed() -> None:
     assert validate_memo_audit_schema(audit) == []
     broken = audit | {"claim_units": "not-a-list"}
     assert validate_memo_audit_schema(broken) == ["claim_units"]
+
+
+def test_alpha_memo_runtime_excludes_full_paper_and_ingestion_deps() -> None:
+    """v4 alpha memos borrow patterns from heavier tools without adding them
+    to the runtime/parser surface."""
+    config = tomllib.loads(
+        (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(encoding="utf-8")
+    )
+
+    def package_name(dependency: str) -> str:
+        return re.split(r"[<>=!~\[]", dependency, maxsplit=1)[0].lower().replace("_", "-")
+
+    runtime_deps = {
+        package_name(str(dep)) for dep in config["project"].get("dependencies", [])
+    }
+    dev_deps = {
+        package_name(str(dep))
+        for dep in config["project"].get("optional-dependencies", {}).get("dev", [])
+    }
+    alpha_runtime_exclusions = {
+        "deepeval",
+        "docling",
+        "dspy",
+        "flagembedding",
+        "outlines",
+        "scispacy",
+        "sciwrite-lint",
+        "sentence-transformers",
+        "textgrad",
+        "typst",
+    }
+    full_paper_or_parser_deps = {"docling", "scispacy", "sciwrite-lint", "typst"}
+
+    assert not runtime_deps & alpha_runtime_exclusions
+    assert not dev_deps & full_paper_or_parser_deps
