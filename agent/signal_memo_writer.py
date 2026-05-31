@@ -232,6 +232,8 @@ def _expanded_receipt_ids(
     def add(fid: str) -> None:
         if fid in seen_ids or lanes.get(fid) not in allowed_lanes or fid not in facts:
             return
+        if claim is not None and not _angle_text_coheres(_fact_phrase(facts[fid]), claim, topic):
+            return
         selected.append(fid)
         seen_ids.add(fid)
         key = _source_key(facts[fid])
@@ -258,16 +260,12 @@ def _expanded_receipt_ids(
     for fid, fact in ranked_facts:
         if len(sources) >= min_sources:
             break
-        if claim is not None and not _fact_coheres(fact, claim, topic):
-            continue
         key = _source_key(fact)
         if key and key not in sources:
             add(fid)
     for fid in facts:
         if len(sources) >= min_sources:
             break
-        if claim is not None and not _fact_coheres(facts[fid], claim, topic):
-            continue
         add(fid)
     return selected
 
@@ -880,7 +878,12 @@ def _counter_lines(verdict: dict[str, Any] | None) -> list[str]:
     return out or ["- _No A_core/B_context counter-evidence found in this run._"]
 
 
-def _receipt_expansion_lines(verdict: dict[str, Any] | None) -> list[str]:
+def _receipt_expansion_lines(
+    verdict: dict[str, Any] | None,
+    facts: dict[str, dict[str, Any]] | None = None,
+    claim: set[str] | None = None,
+    topic: str = "",
+) -> list[str]:
     if not verdict:
         return []
     expansion = verdict.get("receipt_expansion")
@@ -889,19 +892,33 @@ def _receipt_expansion_lines(verdict: dict[str, Any] | None) -> list[str]:
     items = expansion.get("candidate_receipts", [])
     if not isinstance(items, list) or not items:
         return ["- More receipts are needed, but no unused A/B candidates were found in this run."]
+    filtered = [
+        item for item in items
+        if isinstance(item, dict)
+        and (
+            facts is None or claim is None
+            or _angle_text_coheres(
+                _fact_phrase(facts.get(str(item.get("fact_id") or "")) or {})
+                or item.get("phrase"),
+                claim,
+                topic,
+            )
+        )
+    ]
+    if not filtered:
+        return []
     lines = [
         "- The lead thesis is thinner than the available corpus: it cites "
         f"{len(expansion.get('cited_bound_fact_ids') or [])} bound receipt(s) "
         f"while {len(expansion.get('available_bound_fact_ids') or [])} A/B "
         "receipt(s) exist in this run.",
     ]
-    for item in items[:5]:
-        if isinstance(item, dict):
-            phrase = str(item.get("phrase") or "").strip()
-            lines.append(
-                f"- Candidate `fact_id={item.get('fact_id')}` "
-                f"(`{item.get('lane')}`) — {phrase[:220].rstrip()}"
-            )
+    for item in filtered[:5]:
+        phrase = str(item.get("phrase") or "").strip()
+        lines.append(
+            f"- Candidate `fact_id={item.get('fact_id')}` "
+            f"(`{item.get('lane')}`) — {phrase[:220].rstrip()}"
+        )
     return lines
 
 
@@ -1158,7 +1175,7 @@ def render_signal_memo(
         "",
     ])
     lines.extend(_next_extraction_lines(context_ids))
-    expansion_lines = _receipt_expansion_lines(publish_verdict)
+    expansion_lines = _receipt_expansion_lines(publish_verdict, facts, claim, topic)
     if expansion_lines:
         lines.extend(["", "## Receipt expansion candidates", "", *expansion_lines])
     subtopic_lines = _subtopic_lines(publish_verdict)

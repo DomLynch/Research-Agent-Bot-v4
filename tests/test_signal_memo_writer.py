@@ -141,7 +141,7 @@ def test_signal_memo_renders_publish_verdict_sections(tmp_path: Path) -> None:
             "candidate_receipts": [{
                 "fact_id": "303",
                 "lane": "A_core",
-                "phrase": "Output did not improve in the comparison market.",
+                "phrase": "Emissions fell after the intervention in the comparison market.",
             }],
         },
         "subtopic_recommendations": {
@@ -307,10 +307,10 @@ def test_alpha_memo_uses_gate_receipt_expansion_candidates(tmp_path: Path) -> No
     facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
     lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
     for fid, phrase in (
-        ("303", "Dividend timing changed adoption in border regions."),
-        ("404", "Compliance costs shifted firms toward audited suppliers."),
-        ("505", "Rebate design altered participation in small exporters."),
-        ("606", "Administrative delays limited uptake in rural firms."),
+        ("303", "Emissions fell after the intervention in border regions."),
+        ("404", "Emissions fell after the intervention among audited suppliers."),
+        ("505", "Emissions fell after the intervention for small exporters."),
+        ("606", "Emissions fell after the intervention despite administrative delays."),
     ):
         facts.append({
             "fact_id": fid,
@@ -453,7 +453,7 @@ def test_alpha_memo_rejects_incoherent_counter_and_boundary_angles(
         "canonical_phrase": "Hospital payroll timing did not change after a staffing audit.",
         "source_paper": {"doi": "10.x/payroll"},
     })
-    lanes["verdicts"].append({"fact_id": "303", "lane": "B_context"})
+    lanes["verdicts"].append({"fact_id": "303", "lane": "A_core"})
     (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
     (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
 
@@ -464,9 +464,15 @@ def test_alpha_memo_rejects_incoherent_counter_and_boundary_angles(
             "lane": "A_core",
             "phrase": "Hepatic exposure did not change in a pharmacokinetic substudy.",
         }]},
+        "receipt_expansion": {
+            "needed": True,
+            "available_bound_fact_ids": ["101", "303"],
+            "candidate_receipts": [{"fact_id": "303", "lane": "A_core"}],
+        },
     })
 
     assert "**Selected angle:** `source`" in memo
+    assert "fact_id=303" not in memo
     assert "has a live counter-signal" not in memo
     assert "may hinge on a boundary condition" not in memo
 
