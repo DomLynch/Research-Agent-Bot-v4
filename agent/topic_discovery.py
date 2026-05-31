@@ -49,7 +49,8 @@ _SUPPLY_CACHE_PATH = (Path(__file__).resolve().parent.parent
                       / "runs" / "_topic_supply_cache.json")
 _SUPPLY_CACHE_TTL_SECONDS = 86_400.0  # re-probe a topic at most once/day
 _PROBE_INCONCLUSIVE = -1  # all queries failed (timeout/error), not a real 0
-_FACT_PROBE_TOPICS = 100
+# All configured seeds are probed; this caps only extra velocity/derived topics.
+_FACT_PROBE_TOPICS = 20
 _FACT_PROBE_TIMEOUT_SECONDS = 8.0
 _FACT_PROBE_BUDGET_SECONDS = 24.0
 _PAPER_FETCH_WORKERS = 8
