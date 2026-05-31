@@ -143,7 +143,7 @@ def _tokens(text: str, topic: str, generic: frozenset[str]) -> set[str]:
     return {t for t in out if t not in generic and t not in topic_tokens}
 
 
-def _semantic_score(left: set[str], right: set[str]) -> float:
+def _claim_fit_score(left: set[str], right: set[str]) -> float:
     if not left or not right:
         return 0.0
     left_roots = {t[:6] for t in left if len(t) >= 6}
@@ -242,7 +242,7 @@ def _counter_evidence(
         if markers and not any(marker in haystack for marker in markers):
             continue
         item = _fact_summary(fid, fact, lanes.get(fid, ""))
-        item["_rank"] = _semantic_score(
+        item["_rank"] = _claim_fit_score(
             set(re.findall(r"[a-z0-9]{3,}", str(fact.get("canonical_phrase") or "").lower())),
             claim,
         )
@@ -271,7 +271,7 @@ def _expansion_candidates(
         fact = facts.get(fid) or {}
         item = _fact_summary(fid, fact, lanes.get(fid, ""))
         item["same_source_as_lead"] = _source_key(fact) in cited_sources
-        item["_rank"] = _semantic_score(
+        item["_rank"] = _claim_fit_score(
             set(re.findall(r"[a-z0-9]{3,}", str(fact.get("canonical_phrase") or "").lower())),
             claim,
         )

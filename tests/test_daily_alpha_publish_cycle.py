@@ -96,6 +96,21 @@ def test_memo_fingerprint_is_stable_across_headline_rewording() -> None:
     assert daily.memo_fingerprint(left) == daily.memo_fingerprint(right)
 
 
+def test_memo_fingerprint_and_source_count_use_full_source_identity() -> None:
+    left = _verdict()
+    right = _verdict()
+    papers = [
+        {"pmcid": "PMC1", "title": "Same title"},
+        {"paper_id": "P2", "title": "Same title"},
+        {"id": "I3", "title": "Same title"},
+    ]
+    left["axes"]["source_papers"] = papers
+    right["axes"]["source_papers"] = [*papers[:2], papers[2] | {"id": "I9"}]
+
+    assert daily.memo_fingerprint(left) != daily.memo_fingerprint(right)
+    assert daily._source_count_from_verdict(left) == 3
+
+
 def test_ledger_stamp_includes_utc_time_for_twice_daily_runs() -> None:
     stamp = daily._ledger_stamp(dt.datetime(2026, 5, 26, 17, 30, 1, tzinfo=dt.UTC))
 

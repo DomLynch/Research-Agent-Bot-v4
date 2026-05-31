@@ -161,7 +161,7 @@ def _claim_token_set(*values: Any) -> set[str]:
     return {t for value in values for t in _WORD.findall(str(value or "").lower()) if len(t) >= 2}
 
 
-def _semantic_score(left: set[str], right: set[str]) -> float:
+def _claim_fit_score(left: set[str], right: set[str]) -> float:
     if not left or not right:
         return 0.0
     left_roots = {t[:6] for t in left if len(t) >= 6}
@@ -188,7 +188,7 @@ def _fact_coheres(fact: dict[str, Any], claim: set[str], topic: str) -> bool:
     cand -= _claim_token_set(topic) | _GENERIC_TOKENS
     return (
         len(cand & claim) >= _CLAIM_MIN_OVERLAP
-        or _semantic_score(cand, claim) >= 0.2
+        or _claim_fit_score(cand, claim) >= 0.2
     )
 
 
@@ -225,7 +225,7 @@ def _expanded_receipt_ids(
     ranked_facts = sorted(
         facts.items(),
         key=lambda item: (
-            -_semantic_score(
+            -_claim_fit_score(
                 _claim_token_set(*(item[1].get(k) for k in _CLAIM_FIELDS))
                 - _claim_token_set(topic) - _GENERIC_TOKENS,
                 claim or set(),

@@ -140,6 +140,30 @@ def test_accepted_shape_bonus_rewards_prior_accepted_profile() -> None:
     assert accepted_shape_bonus(matching, []) == 0
 
 
+def test_accepted_shape_bonus_counts_full_source_identity() -> None:
+    profile = {
+        "source_count": 3,
+        "alpha_score": 90,
+        "publish_tier": "TIER_1",
+        "surface_type": "publish_alpha_memo",
+    }
+    matching = {
+        "alpha_score": 90,
+        "publish_tier": "TIER_1",
+        "surface_type": "publish_alpha_memo",
+        "axes": {"source_papers": [
+            {"pmcid": "PMC1", "title": "Same title"},
+            {"paper_id": "P2", "title": "Same title"},
+            {"id": "I3", "title": "Same title"},
+        ]},
+    }
+    collapsed = matching | {
+        "axes": {"source_papers": [{"title": "Same title"} for _ in range(3)]},
+    }
+
+    assert accepted_shape_bonus(matching, [profile]) > accepted_shape_bonus(collapsed, [profile])
+
+
 def test_fact_facets_code_has_no_domain_vocabulary() -> None:
     text = Path("agent/fact_facets.py").read_text(encoding="utf-8").lower()
     forbidden = {

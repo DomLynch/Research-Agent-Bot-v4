@@ -193,6 +193,15 @@ def _norm(value: Any) -> str:
     return " ".join(str(value or "").lower().split())
 
 
+def _source_key_from_paper(paper: Json) -> str:
+    if not isinstance(paper, dict):
+        return ""
+    return _norm(
+        paper.get("doi") or paper.get("pmid") or paper.get("pmcid")
+        or paper.get("paper_id") or paper.get("id") or paper.get("title")
+    )
+
+
 def _run_path(root: Path, run_ref: Any) -> Path:
     ref = Path(str(run_ref or ""))
     if ref.parts[:1] == ("runs",):
@@ -208,7 +217,7 @@ def memo_fingerprint(verdict: Json) -> str:
     cited = sorted(str(x) for x in receipts.get("cited_bound_fact_ids", []))[:3]
     papers = axes.get("source_papers", [])
     dois = sorted(
-        _norm((p or {}).get("doi") or (p or {}).get("title"))
+        _source_key_from_paper(p)
         for p in papers if isinstance(p, dict)
     )[:2]
     direction = "|".join([
@@ -636,15 +645,10 @@ def _memo_receipt_ids(
 
 def _source_key_from_fact(fact: Json) -> str:
     paper = fact.get("source_paper") or {}
-    if not isinstance(paper, dict):
-        return ""
     # Identity order: DOI > PMID > PMCID > DB paper id > title. A blank key is
     # NOT a source — never collapse identifier-less papers into one phantom
     # source (that under-counts unique sources and can sink a topic below floor).
-    return _norm(
-        paper.get("doi") or paper.get("pmid") or paper.get("pmcid")
-        or paper.get("paper_id") or paper.get("id") or paper.get("title")
-    )
+    return _source_key_from_paper(paper)
 
 
 def _memo_source_papers(
@@ -750,7 +754,7 @@ def _source_count_from_verdict(verdict: Json) -> int:
     papers = axes.get("source_papers") or []
     if isinstance(papers, list):
         keys = {
-            _norm((p or {}).get("doi") or (p or {}).get("title"))
+            _source_key_from_paper(p)
             for p in papers if isinstance(p, dict)
         }
         if keys:

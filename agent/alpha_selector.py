@@ -109,7 +109,11 @@ def _shape_source_count(verdict: dict[str, Any]) -> int:
         papers = axes.get("source_papers")
         if isinstance(papers, list):
             keys = {
-                str((p or {}).get("doi") or (p or {}).get("title") or "").lower()
+                str(
+                    (p or {}).get("doi") or (p or {}).get("pmid")
+                    or (p or {}).get("pmcid") or (p or {}).get("paper_id")
+                    or (p or {}).get("id") or (p or {}).get("title") or ""
+                ).lower()
                 for p in papers if isinstance(p, dict)
             }
             return len({k for k in keys if k})
