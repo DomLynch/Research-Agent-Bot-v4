@@ -119,6 +119,25 @@ def _lead_audit(run_dir: Path) -> dict[str, Any]:
     )
 
 
+def _memo_receipt_ids(
+    text: str,
+    section_names: tuple[str, ...] = ("Evidence", "Context"),
+) -> list[str]:
+    names = "|".join(re.escape(name) for name in section_names)
+    sections = re.findall(
+        rf"^## (?:{names}) receipts\n\n(.*?)(?=\n## |\Z)",
+        text,
+        flags=re.M | re.S,
+    )
+    seen: set[str] = set()
+    out: list[str] = []
+    for fid in re.findall(r"`fact_id=([^`\s]+)`", "\n".join(sections)):
+        if fid not in seen:
+            seen.add(fid)
+            out.append(fid)
+    return out
+
+
 def _facts_by_id(run_dir: Path) -> dict[str, dict[str, Any]]:
     data = _json(run_dir / "all_facts.json", [])
     if not isinstance(data, list):
@@ -463,7 +482,9 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     except ValueError:
         alpha_score = 0
     audit = _lead_audit(run_dir)
-    cited_ids = [str(x) for x in audit.get("cited_fact_ids", [])]
+    cited_ids = _memo_receipt_ids(md) or [
+        str(x) for x in audit.get("cited_fact_ids", [])
+    ]
     facts = _facts_by_id(run_dir)
     lanes = _lane_map(run_dir)
     bound_ids = [fid for fid in cited_ids if lanes.get(fid) in _BINDABLE]

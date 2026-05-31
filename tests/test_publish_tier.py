@@ -184,6 +184,42 @@ def test_claim_coherent_source_diversity_is_publishable(tmp_path: Path) -> None:
     assert "cross_domain_forced" not in verdict["blockers"]
 
 
+def test_publish_tier_judges_rendered_memo_receipts_before_lead_audit(
+    tmp_path: Path,
+) -> None:
+    run = _run(
+        tmp_path,
+        lanes=("A_core", "A_core", "A_core", "A_core"),
+        dois=("10.a", "10.b", "10.c", "10.d"),
+        titles=(
+            "Reserve markets threshold changes grid storage reliability",
+            "Reserve auctions threshold changes grid storage reliability",
+            "Reserve dispatch threshold changes grid storage reliability",
+            "Ceramic kiln pigment adhesion after firing",
+        ),
+        journals=("Grid Review", "Grid Letters", "Grid Reports", "Craft Notes"),
+    )
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo - grid_storage\n\n"
+        "**Headline:** Storage threshold paradox in reserve markets\n"
+        "**Alpha score:** 80/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## Why this is surprising\n\n"
+        "Real tension: reserve reliability rises while costs fall.\n\n"
+        "## Evidence receipts\n\n"
+        "- `fact_id=1` (`A_core`) - receipt\n"
+        "- `fact_id=2` (`A_core`) - receipt\n"
+        "- `fact_id=3` (`A_core`) - receipt\n",
+        encoding="utf-8",
+    )
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "ready_to_publish"
+    assert verdict["axes"]["bound_receipts"] == 3
+    assert "source_dispersion" not in verdict["blockers"]
+
+
 def test_incoherent_source_dispersion_routes_to_operator_review(
     tmp_path: Path,
 ) -> None:
