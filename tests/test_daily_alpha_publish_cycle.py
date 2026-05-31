@@ -141,6 +141,34 @@ def test_dry_run_selects_best_candidate_and_writes_ledger(tmp_path: Path) -> Non
     assert written["queue_counts"]["ready_to_publish"] == 2
 
 
+def test_refresh_cycle_probes_existing_ready_queue_before_discovery(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("ready")
+    _memo(root, verdict)
+    run = root / str(verdict["run_dir"])
+    run.joinpath("publish_verdict.json").write_text(
+        json.dumps(verdict), encoding="utf-8",
+    )
+
+    def fail_refresh(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise AssertionError("discovery refresh should not run before ready queue")
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", fail_refresh)
+
+    ledger = daily.run_cycle(
+        runs_root=root / "runs",
+        date="2026-05-22",
+        refresh_candidates=True,
+        retraction_mode="metadata",
+    )
+
+    assert ledger["status"] == "dry_run_selected"
+    assert ledger["candidate"]["topic"] == "ready"
+    assert ledger["refresh_batches"][0]["note"] == "skipped_initial_queue_probe"
+
+
 def test_duplicate_fingerprint_skips_previous_submission(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     first = _verdict("first")

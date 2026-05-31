@@ -1582,18 +1582,26 @@ def run_cycle(
         ledger["submit_token_env"] = token_env
         submitter = _http_submitter(url, token)
     prev_queue_sig: frozenset[str] = frozenset()
-    skip_next_refresh = False
+    preflight_queue = None
+    skip_refresh_note = "skipped_after_repairable_submission"
+    if refresh_candidates and queue is None and queue_builder is _build_queue:
+        candidate_queue = queue_builder(runs_root, include_archive)
+        if candidate_queue.get("ready_to_publish"):
+            preflight_queue = candidate_queue
+            skip_refresh_note = "skipped_initial_queue_probe"
+    skip_next_refresh = preflight_queue is not None
     for batch in range(1, batch_limit + 1):
         refresh: Json = {}
         if refresh_candidates and skip_next_refresh:
             refresh = {
                 "ok": True,
-                "note": "skipped_after_repairable_submission",
+                "note": skip_refresh_note,
                 "top": refresh_top,
                 "cooldown_hours": refresh_cooldown_hours,
                 "excluded_topics": sorted(blocked_topics),
             }
             skip_next_refresh = False
+            skip_refresh_note = "skipped_after_repairable_submission"
             refresh["batch"] = batch
             ledger["refresh_batches"].append(refresh)
             ledger["refresh_candidates"] = refresh
@@ -1616,7 +1624,11 @@ def run_cycle(
                 ledger.update({"status": "candidate_refresh_failed"})
                 _write_json(ledger_path, ledger)
                 return ledger
-        current_queue = queue if queue is not None else queue_builder(runs_root, include_archive)
+        current_queue = (
+            queue if queue is not None else preflight_queue
+            if preflight_queue is not None else queue_builder(runs_root, include_archive)
+        )
+        preflight_queue = None
         current_queue = _with_repairable_candidates(current_queue, runs_root)
         # Fingerprint the queue so we can detect a refresh batch that changed
         # nothing. memo_fingerprint shifts when a candidate's cited receipts
