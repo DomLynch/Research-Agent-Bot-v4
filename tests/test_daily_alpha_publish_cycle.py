@@ -591,6 +591,20 @@ def test_resubmission_allowed_claim_alignment_reject_is_repairable() -> None:
     assert daily._is_grounding_reject(decision) is True
 
 
+def test_resubmission_alignment_reject_requires_explicit_allow() -> None:
+    decision = {
+        "decision": "reject",
+        "major_issues": ["The claim_evidence_alignment is critically low."],
+        "required_revisions": [
+            "Define a single, specific, and bounded research question.",
+            "Restructure the evidence presentation around the cited bundle.",
+        ],
+        "resubmission": {"allowed": "true"},
+    }
+
+    assert daily._repairable_rejection(decision) is False
+
+
 def test_resubmission_allowed_alignment_reject_triggers_regeneration(
     tmp_path: Path,
 ) -> None:

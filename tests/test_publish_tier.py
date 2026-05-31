@@ -220,6 +220,19 @@ def test_publish_tier_judges_rendered_memo_receipts_before_lead_audit(
     assert "source_dispersion" not in verdict["blockers"]
 
 
+def test_memo_receipt_ids_dedupes_evidence_and_context() -> None:
+    memo = (
+        "## Evidence receipts\n\n"
+        "- `fact_id=1` (`A_core`) - receipt\n"
+        "- `fact_id=2` (`A_core`) - receipt\n\n"
+        "## Context receipts\n\n"
+        "- `fact_id=2` (`B_context`) - repeated\n"
+        "- `fact_id=3` (`B_context`) - receipt\n"
+    )
+
+    assert tier._memo_receipt_ids(memo) == ["1", "2", "3"]
+
+
 def test_incoherent_source_dispersion_routes_to_operator_review(
     tmp_path: Path,
 ) -> None:
