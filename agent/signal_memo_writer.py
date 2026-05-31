@@ -207,6 +207,13 @@ def _fact_coheres(fact: dict[str, Any], claim: set[str], topic: str) -> bool:
     )
 
 
+def _angle_text_coheres(text: Any, claim: set[str], topic: str) -> bool:
+    if not claim:
+        return True
+    cand = _claim_token_set(text) - _claim_token_set(topic) - _GENERIC_TOKENS
+    return len(cand & claim) >= 2 or _claim_fit_score(cand, claim) >= 0.2
+
+
 def _expanded_receipt_ids(
     audit: dict[str, Any],
     facts: dict[str, dict[str, Any]],
@@ -771,12 +778,17 @@ def _select_angle(
     recent_kinds: dict[str, int] | None = None,
 ) -> dict[str, str]:
     lead = _clip(_fact_phrase(facts.get(lead_ids[0]) or {}), 220) if lead_ids else ""
-    context = _clip(_fact_phrase(facts.get(context_ids[0]) or {}), 220) if context_ids else ""
+    claim = _claim_signal(lead_ids, facts, topic)
+    context = next((
+        _clip(_fact_phrase(facts.get(fid) or {}), 220) for fid in context_ids
+        if _angle_text_coheres(_fact_phrase(facts.get(fid) or {}), claim, topic)
+    ), "")
     raw = verdict.get("counter_evidence") if verdict else None
     raw_items = raw.get("items", []) if isinstance(raw, dict) else []
     counter = next((
         _clip(item.get("phrase"), 220) for item in raw_items
         if isinstance(item, dict)
+        and _angle_text_coheres(item.get("phrase"), claim, topic)
     ), "") if isinstance(raw_items, list) else ""
     base = {"kind": "source", "headline": headline, "thesis": thesis, "why": why}
     candidates: list[tuple[int, dict[str, str]]] = [(source_count * 8, base)]

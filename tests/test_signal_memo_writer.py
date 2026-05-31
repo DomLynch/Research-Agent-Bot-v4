@@ -441,6 +441,36 @@ def test_alpha_memo_selects_counter_signal_angle_when_counter_receipt_exists(
     assert "matched market" in memo
 
 
+def test_alpha_memo_rejects_incoherent_counter_and_boundary_angles(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    facts.append({
+        "fact_id": "303",
+        "canonical_phrase": "Hospital payroll timing did not change after a staffing audit.",
+        "source_paper": {"doi": "10.x/payroll"},
+    })
+    lanes["verdicts"].append({"fact_id": "303", "lane": "B_context"})
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "publish_alpha_memo",
+        "counter_evidence": {"items": [{
+            "fact_id": "404",
+            "lane": "A_core",
+            "phrase": "Hepatic exposure did not change in a pharmacokinetic substudy.",
+        }]},
+    })
+
+    assert "**Selected angle:** `source`" in memo
+    assert "has a live counter-signal" not in memo
+    assert "may hinge on a boundary condition" not in memo
+
+
 def test_alpha_angle_selection_uses_live_publication_config(tmp_path: Path) -> None:
     run = tmp_path / "grid_storage_tariff-evidence-ts"
     _write_run(run)
@@ -474,7 +504,7 @@ def test_recent_angle_history_flips_selection() -> None:
 
     facts: dict[str, dict[str, Any]] = {
         "a": {"canonical_phrase": "Primary outcome improved by 30%"},
-        "b": {"canonical_phrase": "Effect differs in older adults"},
+        "b": {"canonical_phrase": "Primary outcome improved differently in older adults"},
     }
     kw = dict(
         topic="t", headline="H", thesis="T", why="W", facts=facts,

@@ -297,6 +297,8 @@ def test_counter_evidence_is_explicit_when_a_bound_opposing_fact_exists(
     tmp_path: Path,
 ) -> None:
     run = _run(tmp_path, lanes=("A_core", "A_core"))
+    _set_phrase(run, "1", "Reserve reliability improved after storage dispatch changes.")
+    _set_phrase(run, "2", "Reserve reliability improved after storage dispatch changes.")
     _add_fact(
         run,
         fact_id="3",
@@ -329,6 +331,21 @@ def test_counter_evidence_prefers_load_bearing_contradiction(tmp_path: Path) -> 
     verdict = publish_verdict(run)
 
     assert verdict["counter_evidence"]["items"][0]["fact_id"] == "4"
+
+
+def test_counter_evidence_ignores_marker_without_claim_overlap(tmp_path: Path) -> None:
+    run = _run(tmp_path, lanes=("A_core", "A_core"))
+    _set_phrase(run, "1", "Reserve reliability improved after storage dispatch changes.")
+    _set_phrase(run, "2", "Reserve reliability improved after storage dispatch changes.")
+    _add_fact(
+        run, fact_id="3", lane="A_core", doi="10.counter/off",
+        title="Payroll audit", phrase="The intervention did not change payroll timing.",
+    )
+
+    verdict = publish_verdict(run)
+
+    assert verdict["counter_evidence"]["status"] == "none_found"
+    assert verdict["counter_evidence"]["items"] == []
 
 
 def test_counter_evidence_satisfies_tension_gate(tmp_path: Path) -> None:

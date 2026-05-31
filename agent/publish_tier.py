@@ -17,6 +17,7 @@ from typing import Any
 _ROOT = Path(__file__).resolve().parent.parent
 _CFG_PATH = _ROOT / "topic_packs" / "publish_tier.toml"
 _BINDABLE = frozenset({"A_core", "B_context"})
+_COUNTER_MIN_CLAIM_FIT = 0.2
 _BLOCKED_LABELS = frozenset({
     "curation_needed", "evidence_binding_failed", "no_signal", "discard",
 })
@@ -241,11 +242,14 @@ def _counter_evidence(
         haystack = str(fact.get("canonical_phrase") or "").lower()
         if markers and not any(marker in haystack for marker in markers):
             continue
-        item = _fact_summary(fid, fact, lanes.get(fid, ""))
-        item["_rank"] = _claim_fit_score(
+        rank = _claim_fit_score(
             set(re.findall(r"[a-z0-9]{3,}", str(fact.get("canonical_phrase") or "").lower())),
             claim,
         )
+        if rank < _COUNTER_MIN_CLAIM_FIT:
+            continue
+        item = _fact_summary(fid, fact, lanes.get(fid, ""))
+        item["_rank"] = rank
         out.append(item)
     out.sort(key=lambda item: (item["lane"] != "A_core", -float(item["_rank"]), item["fact_id"]))
     for item in out:
