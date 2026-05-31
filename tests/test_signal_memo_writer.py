@@ -163,6 +163,10 @@ def test_signal_memo_renders_publish_verdict_sections(tmp_path: Path) -> None:
     assert "lead thesis is thinner than the available corpus" in memo
     assert "## Subtopic recommendations" in memo
     assert "`market_comparison`" in memo
+    typed = json.loads((run / "typed_counter_evidence.json").read_text(encoding="utf-8"))
+    novelty = json.loads((run / "novelty_delta.json").read_text(encoding="utf-8"))
+    assert typed["items"][0]["type"] == "null_result"
+    assert novelty["novelty_delta"]["label"] == "contradictory"
 
 
 def test_publish_alpha_surface_is_not_rendered_as_publish_command(tmp_path: Path) -> None:
@@ -528,9 +532,9 @@ def test_memo_audit_verdict_thresholds() -> None:
     assert ac["contradiction_receipts"][0]["snippet"] == "No effect found"
 
 
-def test_memo_audit_carries_signals_and_honest_placeholders() -> None:
-    """Audit pack aggregates v4's signals and keeps heavy borrows as honest
-    typed placeholders (no fabricated RoBBR / nearest-literature)."""
+def test_memo_audit_carries_novelty_delta_and_gate_failures() -> None:
+    """Audit pack aggregates v4's deterministic novelty signals without new
+    model calls or external datastore dependencies."""
     from agent.signal_memo_writer import build_memo_audit
 
     facts = {"1": {"canonical_phrase": "Emissions fell 8%",
@@ -543,8 +547,45 @@ def test_memo_audit_carries_signals_and_honest_placeholders() -> None:
     assert audit["novelty"] == {"selected_angle": "boundary_condition",
                                 "recent_repeats": 3, "signal": "repeated"}
     assert audit["source_hygiene"]["mean_quality_score"] == 90.0
-    assert audit["risk_of_bias"] == "not_assessed"
-    assert audit["nearest_literature"] is None
+    assert audit["risk_of_bias"] == "not_required"
+    assert audit["nearest_literature"] == []
+    assert audit["novelty_delta"]["label"] == "repeated"
+    assert audit["audit_gate"] == {
+        "passed": False,
+        "failures": ["novelty_delta_repeated", "memo_missing_falsifier"],
+    }
+
+
+def test_memo_audit_types_counter_evidence_and_nearest_claims() -> None:
+    from agent.signal_memo_writer import build_memo_audit
+
+    facts = {
+        "1": {
+            "canonical_phrase": "Emissions fell after carbon pricing",
+            "source_paper": {"doi": "10.x/a", "title": "Randomized trial in patients"},
+        },
+        "2": {
+            "canonical_phrase": "Emissions were unchanged after carbon pricing",
+            "source_paper": {"doi": "10.x/b", "title": "Null result in patients"},
+        },
+    }
+    verdict = {"counter_evidence": {"items": [{
+        "fact_id": "2", "lane": "A_core",
+        "phrase": "Emissions were unchanged after carbon pricing",
+        "source_paper": {"doi": "10.x/b", "title": "Null result in patients"},
+    }]}}
+
+    audit = build_memo_audit(
+        {"emissions", "carbon", "pricing"}, ["1"], ["1"], facts, verdict,
+        falsifier=True, novelty={"selected": "counter_signal", "repeats": 0},
+    )
+
+    assert audit["contradiction_receipts"][0]["type"] == "null_result"
+    assert audit["contradiction_receipts"][0]["opposition_strength"] == 80
+    assert audit["nearest_literature"][0]["reference"] == "2"
+    assert audit["novelty_delta"]["label"] == "contradictory"
+    assert audit["risk_of_bias"] == "missing_for_human_claim"
+    assert "risk_of_bias_missing_for_human_claim" in audit["audit_gate"]["failures"]
 
 
 def test_memo_audit_schema_is_strictly_typed() -> None:

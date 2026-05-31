@@ -23,6 +23,13 @@ _GENERIC_TOKENS = frozenset({
     "effects", "increased", "decreased", "reduced", "change", "results", "significant",
     "versus", "compared", "control", "treated", "ci", "rr", "hr", "nnt", "rct", "rcts",
 })
+_NULL_MARKERS = ("no effect", "null", "unchanged", "failed", "did not", "without")
+_ADVERSE_MARKERS = ("mortality", "adverse", "toxicity", "harm", "worsen", "risk")
+_DOSE_MARKERS = ("dose", "low-dose", "high-dose", "threshold")
+_SUBGROUP_MARKERS = ("subgroup", "strata", "sex", "male", "female", "baseline")
+_MODEL_MARKERS = ("mouse", "mice", "rat", "animal", "cell", "in vitro", "human")
+_ENDPOINT_MARKERS = ("biomarker", "surrogate", "mortality", "survival", "endpoint")
+
 def _read(path: Path) -> str:
     try:
         return path.read_text(encoding="utf-8")
@@ -169,6 +176,14 @@ def _claim_fit_score(left: set[str], right: set[str]) -> float:
     exact = len(left & right) * 2
     rooted = len(left_roots & right_roots)
     return (exact + rooted) / max(1, len(left) + len(right))
+
+
+def _counts(values: list[str]) -> dict[str, int]:
+    out: dict[str, int] = {}
+    for value in values:
+        if value:
+            out[value] = out.get(value, 0) + 1
+    return out
 
 
 def _claim_signal(
@@ -448,11 +463,52 @@ def journal_quality(facts: dict[str, dict[str, Any]], ids: list[str]) -> dict[st
             raw = p.get("quality_score")
             if raw is not None and not isinstance(raw, bool):
                 scores.append(float(raw))
+    profiles = [_source_profile(p, facts.get(fid, {})) for fid in ids
+                for p in [facts.get(fid, {}).get("source_paper")]
+                if isinstance(p, dict)]
+    source_types = _counts([p["source_type"] for p in profiles])
+    study_designs = _counts([p["study_design"] for p in profiles])
     return {
         "sources": len(papers),
         "with_journal": len(named),
         "journal_named_ratio": round(len(named) / len(papers), 2) if papers else 0.0,
         "mean_quality_score": round(sum(scores) / len(scores), 1) if scores else None,
+        "source_types": source_types,
+        "study_designs": study_designs,
+        "source_profiles": profiles[:5],
+    }
+
+
+def _source_profile(paper: dict[str, Any], fact: dict[str, Any]) -> dict[str, str]:
+    text = " ".join(str(paper.get(k) or "") for k in ("title", "journal", "journal_name"))
+    text += " " + _fact_phrase(fact)
+    lower = text.lower()
+    if "meta-analysis" in lower or "systematic review" in lower:
+        design = "meta_analysis"
+    elif any(w in lower for w in ("randomized", "trial", "rct")):
+        design = "clinical_trial"
+    elif any(w in lower for w in ("cohort", "observational", "participants", "patients")):
+        design = "observational"
+    elif any(w in lower for w in ("mouse", "mice", "rat", "animal")):
+        design = "preclinical"
+    elif any(w in lower for w in ("cell", "in vitro", "assay")):
+        design = "mechanistic"
+    else:
+        design = "unknown"
+    if design in {"clinical_trial", "observational"}:
+        source_type = "human"
+    elif design == "preclinical":
+        source_type = "preclinical"
+    elif design == "mechanistic":
+        source_type = "mechanistic"
+    elif design == "meta_analysis":
+        source_type = "review"
+    else:
+        source_type = "unknown"
+    return {
+        "source": str(paper.get("title") or paper.get("doi") or "")[:140],
+        "source_type": source_type,
+        "study_design": design,
     }
 
 
@@ -489,13 +545,111 @@ def _counter_items(verdict: dict[str, Any] | None) -> list[dict[str, Any]]:
             continue
         paper = item.get("source_paper")
         paper = paper if isinstance(paper, dict) else {}
+        ctype, strength = _counter_type(str(item.get("phrase") or ""), paper)
         out.append({
             "fact_id": str(item.get("fact_id") or ""),
             "lane": str(item.get("lane") or ""),
+            "type": ctype,
+            "opposition_strength": strength,
             "snippet": _clip(item.get("phrase"), 240),
             "source": str(paper.get("title") or paper.get("doi") or "").strip()[:140],
         })
     return out
+
+
+def _counter_type(phrase: str, paper: dict[str, Any]) -> tuple[str, int]:
+    text = f"{phrase} {paper.get('title') or ''}".lower()
+    if any(m in text for m in _ADVERSE_MARKERS):
+        return "adverse_signal", 85
+    if any(m in text for m in _NULL_MARKERS):
+        return "null_result", 80
+    if any(m in text for m in _DOSE_MARKERS):
+        return "dose_response_inversion", 70
+    if any(m in text for m in _SUBGROUP_MARKERS):
+        return "subgroup_reversal", 65
+    if any(m in text for m in _MODEL_MARKERS):
+        return "model_translation_gap", 60
+    if any(m in text for m in _ENDPOINT_MARKERS):
+        return "endpoint_mismatch", 55
+    return "direction_reversal", 50
+
+
+def _nearest_known_claims(
+    claim: set[str],
+    facts: dict[str, dict[str, Any]],
+    receipt_ids: list[str],
+    run_dir: Path | None,
+) -> list[dict[str, Any]]:
+    current = set(receipt_ids)
+    rows: list[dict[str, Any]] = []
+
+    def add(source: str, text: str, ref: str) -> None:
+        tokens = _claim_token_set(text) - _GENERIC_TOKENS
+        score = round(_claim_fit_score(tokens, claim), 3)
+        if score >= 0.08:
+            rows.append({"source": source, "score": score, "reference": ref, "claim": _clip(text, 240)})
+
+    for fid, fact in facts.items():
+        if fid not in current:
+            add("all_facts", _fact_phrase(fact), fid)
+        paper = fact.get("source_paper")
+        if isinstance(paper, dict):
+            title = str(paper.get("title") or "")
+            if title:
+                add("source_title", title, _source_key(fact))
+    if run_dir:
+        siblings = sorted(
+            (p for p in run_dir.parent.glob("*-evidence-*/alpha_memo.md")
+             if p.parent != run_dir),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )[:50]
+        for path in siblings:
+            add("prior_alpha_memo", _read(path)[:900], path.parent.name)
+    rows.sort(key=lambda r: (-float(r["score"]), str(r["reference"])))
+    return rows[:5]
+
+
+def _novelty_delta(
+    nearest: list[dict[str, Any]],
+    contradictions: list[dict[str, Any]],
+    novelty: dict[str, Any],
+    direct_sources: int,
+) -> dict[str, Any]:
+    top = float(nearest[0]["score"]) if nearest else 0.0
+    repeats = int(novelty.get("repeats", 0))
+    prior_repeat = any(
+        row.get("source") == "prior_alpha_memo" and float(row.get("score") or 0) >= 0.55
+        for row in nearest
+    )
+    if repeats or prior_repeat:
+        label = "repeated"
+    elif contradictions:
+        label = "contradictory"
+    elif top >= 0.28:
+        label = "incremental"
+    elif direct_sources >= 5:
+        label = "high-novelty"
+    else:
+        label = "under-discussed"
+    return {
+        "label": label,
+        "nearest_score": round(top, 3),
+        "counter_evidence_types": sorted({str(c.get("type")) for c in contradictions}),
+        "rationale": (
+            "Prior/current claims are close." if label == "repeated"
+            else "Claim is defined by an opposing receipt." if label == "contradictory"
+            else "Nearby literature exists but does not fully cover the claim." if label == "incremental"
+            else "Direct support exists with low nearest-claim overlap." if label == "high-novelty"
+            else "Weak direct support; treat as curation until better receipts arrive."
+        ),
+    }
+
+
+def _risk_of_bias_signal(source_hygiene: dict[str, Any]) -> str:
+    types = source_hygiene.get("source_types")
+    humanish = isinstance(types, dict) and any(types.get(k, 0) for k in ("human", "review"))
+    return "missing_for_human_claim" if humanish else "not_required"
 
 
 def _memo_verdict(direct_sources: int, conflicts: int, min_direct: int) -> str:
@@ -515,28 +669,45 @@ def build_memo_audit(
     claim: set[str], lead_ids: list[str], receipt_ids: list[str],
     facts: dict[str, dict[str, Any]], verdict: dict[str, Any] | None,
     *, falsifier: bool, novelty: dict[str, Any], min_direct: int = 5,
+    run_dir: Path | None = None,
 ) -> dict[str, Any]:
     """FactReview-style audit pack: claim units + evidence + contradictions +
     novelty + source hygiene + a derived verdict. Aggregates signals v4 already
-    computes; pure, no LLM/network. Heavy borrows (OpenScholar nearest-lit delta,
-    RoBBR risk-of-bias) are typed placeholders pending infra/model approval."""
+    computes; pure, no LLM/network."""
     matrix = build_claim_receipt_matrix(claim, lead_ids, receipt_ids, facts)
     contradictions = _counter_items(verdict)
+    nearest = _nearest_known_claims(claim, facts, receipt_ids, run_dir)
+    delta = _novelty_delta(nearest, contradictions, novelty, matrix["direct_sources"])
+    risk = _risk_of_bias_signal(matrix["journal_quality"])
     lead = set(lead_ids)
     units = [
         {
             "fact_id": fid,
             "snippet": _fact_phrase(facts.get(fid, {}))[:240],
             "source": _source_key(facts.get(fid, {})),
+            "source_span": _source_profile(
+                facts.get(fid, {}).get("source_paper", {})
+                if isinstance(facts.get(fid, {}).get("source_paper"), dict) else {},
+                facts.get(fid, {}),
+            ),
             "support": "direct" if fid in lead else "context",
         }
         for fid in receipt_ids if _fact_coheres(facts.get(fid, {}), claim, "")
     ]
     repeats = int(novelty.get("repeats", 0))
+    gate_failures = [
+        *([] if delta["label"] != "repeated" else ["novelty_delta_repeated"]),
+        *([] if falsifier else ["memo_missing_falsifier"]),
+        *([] if matrix["direct_sources"] else ["no_direct_source"]),
+        *([] if risk != "missing_for_human_claim" else ["risk_of_bias_missing_for_human_claim"]),
+    ]
     return {
         "schema_version": 1,
         "claim_tokens": sorted(claim),
-        "verdict": _memo_verdict(matrix["direct_sources"], len(contradictions), min_direct),
+        "verdict": (
+            "inconclusive" if gate_failures
+            else _memo_verdict(matrix["direct_sources"], len(contradictions), min_direct)
+        ),
         "support_level": matrix["support_level"],
         "claim_units": units,
         "contradiction_receipts": contradictions,
@@ -545,10 +716,12 @@ def build_memo_audit(
             "recent_repeats": repeats,
             "signal": "repeated" if repeats else "fresh",
         },
+        "nearest_literature": nearest,
+        "novelty_delta": delta,
         "source_hygiene": matrix["journal_quality"],
         "falsifier_present": falsifier,
-        "risk_of_bias": "not_assessed",  # follow-up: RoBBR (LLM, locked stack)
-        "nearest_literature": None,      # follow-up: OpenScholar datastore
+        "risk_of_bias": risk,
+        "audit_gate": {"passed": not gate_failures, "failures": gate_failures},
     }
 
 
@@ -564,6 +737,9 @@ def validate_memo_audit_schema(audit: dict[str, Any]) -> list[str]:
         "source_hygiene": dict,
         "falsifier_present": bool,
         "risk_of_bias": str,
+        "nearest_literature": list,
+        "novelty_delta": dict,
+        "audit_gate": dict,
     }
     errors: list[str] = []
     for key, typ in expected.items():
@@ -978,14 +1154,26 @@ def render_signal_memo(
         lines.extend(["", "## Subtopic recommendations", "", *subtopic_lines])
     body = "\n".join(lines) + "\n"
     with suppress(OSError):  # FactReview-style consolidated audit pack
+        memo_audit = build_memo_audit(
+            claim, lead_ids, receipt_ids, facts, publish_verdict,
+            falsifier=falsifier_present(body),
+            novelty={"selected": angle["kind"],
+                     "repeats": recent_kinds.get(angle["kind"], 0)},
+            min_direct=min_direct_sources,
+            run_dir=run_dir,
+        )
+        (run_dir / "typed_counter_evidence.json").write_text(
+            json.dumps({"items": memo_audit["contradiction_receipts"]},
+                       indent=2, sort_keys=True),
+            encoding="utf-8")
+        (run_dir / "novelty_delta.json").write_text(
+            json.dumps({
+                "novelty_delta": memo_audit["novelty_delta"],
+                "nearest_literature": memo_audit["nearest_literature"],
+            }, indent=2, sort_keys=True),
+            encoding="utf-8")
         (run_dir / "memo_audit.json").write_text(
-            json.dumps(build_memo_audit(
-                claim, lead_ids, receipt_ids, facts, publish_verdict,
-                falsifier=falsifier_present(body),
-                novelty={"selected": angle["kind"],
-                         "repeats": recent_kinds.get(angle["kind"], 0)},
-                min_direct=min_direct_sources,
-            ), indent=2, sort_keys=True),
+            json.dumps(memo_audit, indent=2, sort_keys=True),
             encoding="utf-8")
     lines.extend(["", *_provenance_block(run_dir, topic, snapshot, headline, body)])
     return "\n".join(lines) + "\n"
