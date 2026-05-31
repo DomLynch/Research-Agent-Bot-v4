@@ -271,7 +271,7 @@ def _preferred_receipt_ids(
     allowed_lanes: frozenset[str],
 ) -> list[str]:
     expansion = (verdict or {}).get("receipt_expansion")
-    if not isinstance(expansion, dict) or not expansion.get("needed"):
+    if not isinstance(expansion, dict):
         return []
     ids: list[str] = []
 

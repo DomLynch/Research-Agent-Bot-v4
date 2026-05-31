@@ -337,6 +337,36 @@ def test_alpha_memo_uses_gate_receipt_expansion_candidates(tmp_path: Path) -> No
     assert "10.x/expansion-606" in memo
 
 
+def test_alpha_memo_uses_available_receipts_when_sources_are_concentrated(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    for fid in ("303", "404", "505", "606"):
+        facts.append({
+            "fact_id": fid,
+            "canonical_phrase": "Emissions reduction followed carbon pricing.",
+            "source_paper": {"doi": f"10.x/diverse-{fid}"},
+        })
+        lanes["verdicts"].append({"fact_id": fid, "lane": "A_core"})
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "publish_alpha_memo",
+        "receipt_expansion": {
+            "needed": False,
+            "cited_bound_fact_ids": ["101"],
+            "available_bound_fact_ids": ["101", "303", "404", "505", "606"],
+        },
+    })
+
+    assert "**Direct source breadth:** `5` direct cited source(s)" in memo
+    assert "`fact_id=606` (`A_core`)" in memo
+
+
 def test_alpha_memo_turns_repeated_title_into_declarative_thesis(
     tmp_path: Path,
 ) -> None:
