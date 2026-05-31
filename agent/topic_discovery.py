@@ -473,10 +473,12 @@ def discover_topics(
             key=lambda c: c.velocity_score,
             reverse=True,
         )
+        probe_topics = list(dict.fromkeys([
+            *(topic for topic in topics if topic in papers_by_topic),
+            *(cand.topic for cand in velocity_ranked[:_FACT_PROBE_TOPICS]),
+        ]))
         fact_sources_by_topic = _fetch_fact_source_counts(
-            [cand.topic for cand in velocity_ranked[:_FACT_PROBE_TOPICS]],
-            client=c,
-            settings=settings,
+            probe_topics, client=c, settings=settings,
         )
         candidates = [
             _score_topic(

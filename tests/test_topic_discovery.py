@@ -348,6 +348,50 @@ def test_discover_topics_prefers_fact_source_breadth() -> None:
     assert out[1].fact_source_count == 1
 
 
+def test_discover_topics_probes_all_seed_topics_for_fact_breadth(
+    monkeypatch: Any,
+) -> None:
+    """Low-velocity seeds still need supply counts; otherwise rich seeds below
+    the velocity probe window look thin and never enter the publish queue."""
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_FACT_PROBE_TOPICS", 1)
+    fast_thin = [_paper(doi="10.1/fast", fwci=20.0, cited_by_count=2000)]
+    slow_rich = [_paper(doi="10.1/rich", fwci=0.2, cited_by_count=10)]
+
+    def facts(n: int, topic: str) -> list[dict[str, Any]]:
+        return [
+            {
+                "id": f"f{i}", "paper_id": f"10.2/{topic}/{i}",
+                "paper": {"doi": f"10.2/{topic}/{i}"},
+                "numeric_value": 10, "units": "%",
+                "population": "adults",
+                "intervention": topic.replace("_", " "),
+                "comparator": "usual care",
+                "canonical_phrase": f"{topic.replace('_', ' ')} improved risk by 10%",
+            }
+            for i in range(n)
+        ]
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        body = req.read().decode("utf-8") if req.content else "{}"
+        if req.url.path.endswith("/tier2/facts/search"):
+            topic = "slow_rich_topic" if "slow rich" in body else "fast_thin_topic"
+            return httpx.Response(200, json=facts(5 if "slow rich" in body else 1, topic))
+        if "slow_rich" in body:
+            return httpx.Response(200, json=slow_rich)
+        return httpx.Response(200, json=fast_thin)
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        out = td.discover_topics(
+            seeds=("fast_thin_topic", "slow_rich_topic"),
+            settings=_settings(), client=c, current_year=2024,
+        )
+
+    assert out[0].topic == "slow_rich_topic"
+    assert out[0].fact_source_count == 5
+
+
 def test_discover_topics_can_rank_derived_title_candidates() -> None:
     seed_papers = [_paper(
         doi="10.1/seed",
