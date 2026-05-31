@@ -398,6 +398,39 @@ def _source_concentrated(
     return max(counts.values()) / len(dois) >= threshold or len(counts) <= 2
 
 
+def _claim_coherent_source_diversity(
+    cited_ids: list[str],
+    facts: dict[str, dict[str, Any]],
+    topic: str,
+    generic: frozenset[str],
+    min_overlap: float,
+) -> bool:
+    source_tokens: list[set[str]] = []
+    for fid in cited_ids:
+        fact = facts.get(fid) or {}
+        paper = fact.get("source_paper") or {}
+        if not isinstance(paper, dict):
+            continue
+        tokens = _tokens(" ".join([
+            str(fact.get("canonical_phrase") or ""),
+            str(fact.get("population") or ""),
+            str(fact.get("intervention") or ""),
+            str(paper.get("title") or ""),
+            str(paper.get("journal") or ""),
+        ]), topic, generic)
+        if tokens:
+            source_tokens.append(tokens)
+    if len(source_tokens) < 3:
+        return False
+    return all(
+        any(
+            i != j and len(left & right) / max(1, len(left | right)) >= min_overlap
+            for j, right in enumerate(source_tokens)
+        )
+        for i, left in enumerate(source_tokens)
+    )
+
+
 def _has_tension(md: str, markers: tuple[str, ...]) -> bool:
     text = (
         _field(md, "Headline") + "\n" + _section(md, "Why this is surprising")
@@ -439,6 +472,10 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     source_concentrated = _source_concentrated(
         bound_ids, facts, float(cfg["source_concentration_share"]),
     )
+    source_coherent = source_concentrated or _claim_coherent_source_diversity(
+        bound_ids, facts, topic, cfg["generic_tokens"],
+        float(cfg["domain_overlap_min"]),
+    )
     forced = _domain_forced(
         papers, topic, cfg["generic_tokens"], float(cfg["domain_overlap_min"]),
     )
@@ -455,7 +492,7 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         blockers.append("no_bound_receipts")
     if forced:
         blockers.append("cross_domain_forced")
-    if not source_concentrated and bound_ids:
+    if not source_coherent and bound_ids:
         blockers.append("source_dispersion")
     if not tension and bound_ids:
         blockers.append("weak_counter_consensus_tension")
@@ -531,6 +568,7 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
             "available_source_contexts": available_source_count,
             "a_core_receipts": a_core,
             "source_concentrated": source_concentrated,
+            "claim_coherent_source_diversity": source_coherent,
             "counter_consensus_tension": tension,
             "cross_domain_forced": forced,
             "feed_scope_mismatch": off_scope,

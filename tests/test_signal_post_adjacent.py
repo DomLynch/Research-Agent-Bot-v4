@@ -173,7 +173,7 @@ def test_main_writes_curation_brief_and_manifest(
     assert "curation_brief_md" in manifest["files"]
 
 
-def test_main_repairs_source_dispersion_before_verdict(
+def test_main_preserves_claim_coherent_source_diversity(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
     run = tmp_path / "grid_storage-evidence-ts"
@@ -214,8 +214,9 @@ def test_main_repairs_source_dispersion_before_verdict(
 
     gate = json.loads((run / "opportunities_gate.json").read_text())
     audit = gate["audits"][0]
-    assert audit["cited_fact_ids"] == ["f1", "f2", "f3"]
-    assert audit["self_repair"]["reason"] == "source_dispersion"
+    assert audit["cited_fact_ids"] == ["f1", "f4", "f5", "f6"]
+    assert "self_repair" not in audit
     verdict = json.loads((run / "publish_verdict.json").read_text())
     assert verdict["decision"] == "ready_to_publish"
     assert "source_dispersion" not in verdict["blockers"]
+    assert verdict["axes"]["claim_coherent_source_diversity"] is True

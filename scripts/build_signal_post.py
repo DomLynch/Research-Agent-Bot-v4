@@ -93,62 +93,6 @@ def _bound_fact_count(
     return n
 
 
-def _source_key(fact: dict[str, Any]) -> str:
-    # Identity order DOI > PMID > PMCID > paper_id > id > title (P5 hardening,
-    # matches the cycle + writer); never collapse identifier-less papers into one.
-    paper = fact.get("source_paper") or {}
-    if not isinstance(paper, dict):
-        return ""
-    return str(paper.get("doi") or paper.get("pmid") or paper.get("pmcid")
-               or paper.get("paper_id") or paper.get("id")
-               or paper.get("title") or "").strip()
-
-
-def _repair_source_dispersion(
-    audit: dict[str, Any],
-    facts_by_id: dict[str, dict[str, Any]],
-    lane_verdicts: dict[str, str],
-    *,
-    min_receipts: int = 3,
-) -> bool:
-    """Concentrate a scattered lead on bindable facts before verdicting."""
-    groups: dict[str, list[str]] = {}
-    for fid, fact in facts_by_id.items():
-        if lane_verdicts.get(fid) not in _BINDABLE_LANES:
-            continue
-        key = _source_key(fact)
-        if key:
-            groups.setdefault(key, []).append(fid)
-    if not groups:
-        return False
-    ranked = sorted(
-        groups.values(),
-        key=lambda ids: (
-            sum(1 for fid in ids if lane_verdicts.get(fid) == "A_core"),
-            len(ids),
-        ),
-        reverse=True,
-    )
-    selected = ranked[0][:min_receipts]
-    if len(selected) < min_receipts and len(ranked) > 1:
-        selected.extend(ranked[1][:min_receipts - len(selected)])
-    if (
-        len(selected) < min_receipts
-        or sum(1 for fid in selected if lane_verdicts.get(fid) == "A_core") < 2
-    ):
-        return False
-    old = [str(x) for x in audit.get("cited_fact_ids") or []]
-    if old == selected:
-        return False
-    audit["cited_fact_ids"] = selected
-    audit["self_repair"] = {
-        "reason": "source_dispersion",
-        "old_cited_fact_ids": old,
-        "new_cited_fact_ids": selected,
-    }
-    return True
-
-
 def _adjacent_signals_block(
     facts_by_id: dict[str, dict[str, Any]],
     lane_verdicts: dict[str, str],
@@ -491,8 +435,6 @@ def main() -> int:
     topic = str(review.get("topic") or run_dir.name.split("-evidence-")[0])
     snapshot = str(review.get("snapshot_utc") or run_dir.name)
     lane_verdicts = _read_lane_verdicts(run_dir)
-    if lead and _repair_source_dispersion(lead, facts_by_id, lane_verdicts):
-        gate_path.write_text(json.dumps(gate, indent=2), encoding="utf-8")
     bound_count = (_bound_fact_count(
         list(lead.get("cited_fact_ids") or []), facts_by_id, lane_verdicts,
     ) if lead else 0)

@@ -120,7 +120,7 @@ def test_source_key_uses_full_identifier_order() -> None:
     assert tier._source_key({"source_paper": {"id": "I3", "title": "T"}}) == "I3"
 
 
-def test_ready_to_publish_requires_bound_concentrated_tension(tmp_path: Path) -> None:
+def test_ready_to_publish_accepts_bound_concentrated_tension(tmp_path: Path) -> None:
     verdict = publish_verdict(_run(tmp_path))
 
     assert verdict["decision"] == "ready_to_publish"
@@ -161,7 +161,7 @@ def test_cross_domain_forced_routes_to_operator_review(tmp_path: Path) -> None:
     assert "cross_domain_forced" in verdict["blockers"]
 
 
-def test_source_dispersion_routes_to_operator_review(tmp_path: Path) -> None:
+def test_claim_coherent_source_diversity_is_publishable(tmp_path: Path) -> None:
     run = _run(
         tmp_path,
         lanes=("A_core", "A_core", "A_core", "A_core"),
@@ -177,8 +177,34 @@ def test_source_dispersion_routes_to_operator_review(tmp_path: Path) -> None:
 
     verdict = publish_verdict(run)
 
+    assert verdict["decision"] == "ready_to_publish"
+    assert "source_dispersion" not in verdict["blockers"]
+    assert verdict["axes"]["source_concentrated"] is False
+    assert verdict["axes"]["claim_coherent_source_diversity"] is True
+    assert "cross_domain_forced" not in verdict["blockers"]
+
+
+def test_incoherent_source_dispersion_routes_to_operator_review(
+    tmp_path: Path,
+) -> None:
+    run = _run(
+        tmp_path,
+        lanes=("A_core", "A_core", "A_core", "A_core"),
+        dois=("10.a", "10.b", "10.c", "10.d"),
+        titles=(
+            "Reserve markets threshold changes grid storage reliability",
+            "Ceramic kiln pigment adhesion after firing",
+            "Maritime insurance premiums after port dredging",
+            "Retail payroll compliance after tax notices",
+        ),
+        journals=("Grid Review", "Craft Notes", "Port Reports", "Payroll Notes"),
+    )
+
+    verdict = publish_verdict(run)
+
     assert verdict["decision"] == "needs_operator_review"
     assert "source_dispersion" in verdict["blockers"]
+    assert verdict["axes"]["claim_coherent_source_diversity"] is False
     assert "cross_domain_forced" not in verdict["blockers"]
 
 
