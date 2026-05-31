@@ -246,6 +246,38 @@ def test_duplicate_underexpanded_memo_refreshes_before_reporting(tmp_path: Path)
     assert row["corpus_ab_paper_count"] == 5
 
 
+def test_sync_backfills_decision_for_submitted_fingerprint_only_record(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("repairable")
+    _memo(root, verdict)
+    fp = daily.memo_fingerprint(verdict)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+        "date": "2026-05-22T00-00-00Z",
+        "topic": "repairable",
+        "run_dir": verdict["run_dir"],
+        "fingerprint": fp,
+        "submission_id": "sub-1",
+    }])
+
+    summary = daily.sync_submission_decisions(
+        root,
+        fetcher=lambda _sid: {
+            "status": "complete",
+            "decision": "reject",
+            "required_revisions": ["A complete scope reset is required."],
+            "resubmission": {"allowed": True},
+        },
+        page_fetcher=lambda _url: {"ok": False, "status": 0},
+    )
+
+    assert summary["updated"] == 1
+    ledgers = list((root / "_daily_ledger").glob("*decision-sub-1.json"))
+    assert len(ledgers) == 1
+    assert fp in daily._repairable_rejected_fingerprints(root / "_daily_ledger")
+
+
 def test_default_memo_refresher_never_mutates_archive(tmp_path: Path) -> None:
     run = tmp_path / "runs" / "_archive" / "cycle" / "topic-evidence-ts"
     run.mkdir(parents=True)

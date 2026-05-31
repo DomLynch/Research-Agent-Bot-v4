@@ -1167,8 +1167,15 @@ def sync_submission_decisions(
 ) -> Json:
     ledger_dir = runs_root / "_daily_ledger"
     summary: Json = {"checked": 0, "updated": 0, "published": 0, "pending": 0, "errors": []}
+    seen_submission_ids: set[str] = set()
     for path in sorted(ledger_dir.glob("*.json")):
         ledger = _json(path, {})
+        if isinstance(ledger, dict):
+            sid = str(ledger.get("submission_id") or "") or _submission_id(
+                ledger.get("submission", {}),
+            )
+            if sid:
+                seen_submission_ids.add(sid)
         if not isinstance(ledger, dict) or ledger.get("status") != "submitted_to_researka":
             continue
         if ledger.get("final_verdict") in {"accepted", "rejected", "revise"}:
@@ -1200,6 +1207,54 @@ def sync_submission_decisions(
         if final != "pending":
             summary["updated"] += 1
         _write_json(path, ledger)
+    submitted = _json(ledger_dir / "_submitted_fingerprints.json", [])
+    if isinstance(submitted, list):
+        for row in submitted:
+            if not isinstance(row, dict):
+                continue
+            submission_id = str(row.get("submission_id") or "")
+            if not submission_id or submission_id in seen_submission_ids:
+                continue
+            summary["checked"] += 1
+            try:
+                decision = fetcher(submission_id)
+            except Exception as exc:  # pragma: no cover - network defensive path
+                summary["errors"].append({
+                    "ledger": "_submitted_fingerprints.json",
+                    "submission_id": submission_id,
+                    "error": type(exc).__name__,
+                    "detail": str(exc)[:180],
+                })
+                continue
+            synthetic_ledger: Json = {
+                "date": row.get("date"),
+                "status": "submitted_to_researka",
+                "submitted": 1,
+                "published": 0,
+                "submitted_topic": row.get("topic"),
+                "submission_id": submission_id,
+                "candidate": {
+                    "topic": row.get("topic"),
+                    "run_dir": row.get("run_dir"),
+                    "fingerprint": row.get("fingerprint"),
+                },
+            }
+            final = _apply_submission_decision(
+                synthetic_ledger,
+                submission_id=submission_id,
+                decision=decision,
+                page_fetcher=page_fetcher,
+            )
+            summary["pending"] += int(final == "pending")
+            summary["published"] += int(final == "accepted")
+            if final != "pending":
+                summary["updated"] += 1
+            stamp = _norm(row.get("date")).replace(" ", "-") or "undated"
+            _write_json(
+                ledger_dir / f"{stamp}-decision-{submission_id[:8]}.json",
+                synthetic_ledger,
+            )
+            seen_submission_ids.add(submission_id)
     return summary
 
 
