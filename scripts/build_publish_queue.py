@@ -52,8 +52,17 @@ def _read_json(path: Path) -> dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
+def _can_recompute_verdict(run: Path) -> bool:
+    return all(
+        run.joinpath(name).exists()
+        for name in ("alpha_memo.md", "opportunities_gate.json", "fact_lanes.json", "all_facts.json")
+    )
+
+
 def _verdict_for_run(run: Path) -> dict[str, Any]:
-    return _read_json(run / "publish_verdict.json") or publish_verdict(run)
+    if _can_recompute_verdict(run):
+        return publish_verdict(run)
+    return _read_json(run / "publish_verdict.json")
 
 
 def build_queue(include_archive: bool = True) -> dict[str, list[dict[str, Any]]]:

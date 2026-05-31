@@ -107,3 +107,27 @@ def test_build_queue_does_not_mutate_run_verdict_files(
     assert [r["topic"] for r in out["ready_to_publish"]] == ["archived", "current"]
     assert not archived_run.joinpath("publish_verdict.json").exists()
     assert not current_run.joinpath("publish_verdict.json").exists()
+
+
+def test_build_queue_recomputes_stale_verdict_sidecar(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    runs = tmp_path / "runs"
+    run = _run(
+        runs,
+        "grid_storage-evidence-2026-02-01T00-00-00Z",
+        label="evidence_backed_signal",
+        lanes=("A_core", "A_core", "A_core"),
+    )
+    run.joinpath("publish_verdict.json").write_text(json.dumps({
+        "topic": "grid_storage",
+        "decision": "curation_needed",
+        "publish_tier": "TIER_3",
+        "alpha_score": 0,
+    }), encoding="utf-8")
+    monkeypatch.setattr(queue, "_RUNS", runs)
+
+    out = queue.build_queue(include_archive=True)
+
+    assert [r["topic"] for r in out["ready_to_publish"]] == ["grid_storage"]

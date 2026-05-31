@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any
 
 from agent.alpha_selector import accepted_shape_bonus
+from agent.publish_tier import publish_verdict
 
 _ROOT = Path(__file__).resolve().parent.parent
 _RUNS = _ROOT / "runs"
@@ -158,11 +159,28 @@ def _topic(run: Path) -> str:
     return run.name.split("-evidence-", 1)[0]
 
 
+def _can_recompute_verdict(run: Path) -> bool:
+    return all(
+        run.joinpath(name).exists()
+        for name in ("alpha_memo.md", "opportunities_gate.json", "fact_lanes.json", "all_facts.json")
+    )
+
+
+def _verdict_for_run(run: Path) -> Json:
+    if _can_recompute_verdict(run):
+        return publish_verdict(run)
+    data = _json(run / "publish_verdict.json", {})
+    return data if isinstance(data, dict) else {}
+
+
 def _build_queue(runs_root: Path, include_archive: bool) -> Json:
-    """Read existing verdicts; do not recompute or mutate run artifacts."""
-    patterns = ["*-evidence-*/publish_verdict.json"]
+    """Build current verdicts without mutating run artifacts."""
+    patterns = ["*-evidence-*/alpha_memo.md", "*-evidence-*/publish_verdict.json"]
     if include_archive:
-        patterns.append("_archive/*/*-evidence-*/publish_verdict.json")
+        patterns += [
+            "_archive/*/*-evidence-*/alpha_memo.md",
+            "_archive/*/*-evidence-*/publish_verdict.json",
+        ]
     latest: dict[str, Path] = {}
     for pattern in patterns:
         for path in runs_root.glob(pattern):
@@ -170,10 +188,7 @@ def _build_queue(runs_root: Path, include_archive: bool) -> Json:
             topic = _topic(run)
             if topic not in latest or run.name > latest[topic].name:
                 latest[topic] = run
-    rows = [
-        _json(run / "publish_verdict.json", {})
-        for run in latest.values()
-    ]
+    rows = [_verdict_for_run(run) for run in latest.values()]
     valid = [r for r in rows if isinstance(r, dict)]
     rank = {"TIER_1": 0, "TIER_2": 1, "TIER_3": 2}
     valid.sort(key=lambda r: (

@@ -89,6 +89,62 @@ def _memo_with_source_receipts(root: Path, verdict: dict[str, Any], count: int) 
     }), encoding="utf-8")
 
 
+def _publish_tier_run(root: Path, topic: str, *, stale: dict[str, Any]) -> None:
+    run = root / "runs" / f"{topic}-evidence-ts"
+    run.mkdir(parents=True)
+    ids = [str(i + 1) for i in range(5)]
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n"
+        "**Headline:** Storage dispatch changes reserve reliability\n"
+        "**Alpha score:** 80/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## Why this is surprising\n\nExpected result without a clear contrast.\n\n"
+        "## Evidence receipts\n\n"
+        + "\n".join(f"- `fact_id={fid}` (`A_core`) - receipt" for fid in ids)
+        + "\n" + _FALSIFIER,
+        encoding="utf-8",
+    )
+    run.joinpath("opportunities_gate.json").write_text(json.dumps({
+        "audits": [{
+            "status": "survives",
+            "capped_opportunity": 80,
+            "cited_fact_ids": ids,
+        }],
+    }), encoding="utf-8")
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [
+            {"fact_id": fid, "lane": "A_core"}
+            for fid in [*ids, "6"]
+        ],
+    }), encoding="utf-8")
+    run.joinpath("all_facts.json").write_text(json.dumps([
+        {
+            "fact_id": fid,
+            "canonical_phrase": (
+                "Grid storage dispatch improved reserve reliability "
+                "after threshold changes."
+            ),
+            "source_paper": {
+                "doi": f"10.1000/{fid}",
+                "title": f"Reserve reliability dispatch paper {fid}",
+                "journal": "Grid Systems",
+                "year": 2026,
+            },
+        }
+        for fid in ids
+    ] + [{
+        "fact_id": "6",
+        "canonical_phrase": "Grid storage dispatch did not improve reserve reliability.",
+        "source_paper": {
+            "doi": "10.1000/counter",
+            "title": "Reserve reliability counter-audit",
+            "journal": "Grid Systems",
+            "year": 2026,
+        },
+    }]), encoding="utf-8")
+    run.joinpath("publish_verdict.json").write_text(json.dumps(stale), encoding="utf-8")
+
+
 def test_memo_fingerprint_is_stable_across_headline_rewording() -> None:
     left = _verdict()
     right = _verdict() | {"headline": "Reworded public headline"}
@@ -166,6 +222,36 @@ def test_refresh_cycle_probes_existing_ready_queue_before_discovery(
 
     assert ledger["status"] == "dry_run_selected"
     assert ledger["candidate"]["topic"] == "ready"
+    assert ledger["refresh_batches"][0]["note"] == "skipped_initial_queue_probe"
+
+
+def test_refresh_cycle_recomputes_stale_verdict_before_discovery(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    _publish_tier_run(root, "grid_storage", stale={
+        "topic": "grid_storage",
+        "decision": "needs_operator_review",
+        "publish_tier": "TIER_2",
+        "alpha_score": 80,
+        "blockers": ["weak_counter_consensus_tension"],
+    })
+
+    def fail_refresh(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise AssertionError("discovery refresh should not hide recomputed ready queue")
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", fail_refresh)
+
+    ledger = daily.run_cycle(
+        runs_root=root / "runs",
+        date="2026-05-22",
+        refresh_candidates=True,
+        retraction_mode="metadata",
+    )
+
+    assert ledger["status"] == "dry_run_selected"
+    assert ledger["candidate"]["topic"] == "grid_storage"
     assert ledger["refresh_batches"][0]["note"] == "skipped_initial_queue_probe"
 
 
