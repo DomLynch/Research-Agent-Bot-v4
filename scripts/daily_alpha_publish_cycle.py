@@ -88,11 +88,13 @@ _EXHAUSTED_STATUSES = {
     "missing_alpha_memo",
     "needs_operator_approval",
     "memo_missing_falsifier",
+    "cycle_failed_submission",
+    "held_retraction_check",
+}
+_REFRESHABLE_SOURCE_FLOOR_STATUSES = {
     "corpus_source_floor_below_min",
     "memo_source_floor_below_min",
     "direct_source_floor_below_min",
-    "cycle_failed_submission",
-    "held_retraction_check",
 }
 _REPAIRABLE_REJECTION_REASONS = {
     "cited doi",
@@ -1627,6 +1629,13 @@ def run_cycle(
         for row in considered:
             if refresh_candidates:
                 row["batch"] = batch
+            if row.get("status") in _REFRESHABLE_SOURCE_FLOOR_STATUSES:
+                topic = str(row.get("topic") or "")
+                if topic:
+                    ledger.setdefault("source_floor_refresh_topics", [])
+                    if topic not in ledger["source_floor_refresh_topics"]:
+                        ledger["source_floor_refresh_topics"].append(topic)
+                continue
             if row.get("status") in _EXHAUSTED_STATUSES:
                 fingerprint = str(row.get("fingerprint") or "")
                 topic = str(row.get("topic") or "")

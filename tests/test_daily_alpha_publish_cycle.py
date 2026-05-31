@@ -1723,6 +1723,42 @@ def test_refresh_batches_continue_until_eligible_candidate(
     assert ledger["considered"][1]["status"] == "eligible"
 
 
+def test_source_floor_topics_stay_refreshable_next_batch(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    thin = _verdict("thin") | {
+        "axes": {"source_papers": [{"doi": "10.1000/thin", "title": "Thin source"}]},
+    }
+    fresh = _verdict("fresh")
+    _memo_with_source_receipts(root, thin, 1)
+    _memo_with_source_receipts(root, fresh, 5)
+    calls: list[list[str]] = []
+    queues = iter([_queue(thin), _queue(fresh)])
+
+    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        calls.append(args)
+        return True, "ok"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        refresh_candidates=True,
+        max_refresh_batches=2,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+        queue_builder=lambda _root, _include_archive: next(queues),
+    )
+
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["source_floor_refresh_topics"] == ["thin"]
+    assert "--exclude-topic" not in calls[1]
+
+
 def test_sync_rejection_tries_next_refresh_batch(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

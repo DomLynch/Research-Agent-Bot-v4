@@ -248,6 +248,7 @@ def _plan_topics(
     skipped: list[str] = []
     skipped_excluded: list[str] = []
     below_floor: list[str] = []
+    below_floor_reserve: list[dict[str, Any]] = []
     for c in ranked:
         topic = str(c.get("topic") or "")
         if not topic:
@@ -259,10 +260,12 @@ def _plan_topics(
             skipped.append(topic)
             continue
         count = int(c.get("fact_source_count") or 0)
-        # Hard floor first: a sub-floor topic is dropped outright and is never
-        # eligible for the last-resort fallback below — building it cannot pass.
+        # Hard floor first: sub-floor topics do not displace stronger
+        # candidates, but nonzero topics remain a last-resort stale-run rebuild.
         if hard_floor and count < hard_floor:
             below_floor.append(topic)
+            if count > 0:
+                below_floor_reserve.append(c)
             continue
         if min_fact_sources and count < min_fact_sources:
             underfloor.append(c)
@@ -270,14 +273,24 @@ def _plan_topics(
         plan.append(c)
         if len(plan) >= top:
             break
-    # Rescue only candidates that cleared the hard floor (underfloor already
-    # excludes sub-floor topics), so a zero/low-source topic is never built.
+    # Rescue preferred-underfloor candidates first. If the pool is otherwise
+    # empty, rebuild nonzero sub-floor topics so stale local artifacts can be
+    # retested against the current classifier/DB. Zero-source topics stay dead.
     if not plan:
         for c in underfloor:
             if len(plan) >= top:
                 break
             plan.append(c)
-    return plan, skipped, skipped_excluded, below_floor
+    if not plan:
+        for c in below_floor_reserve:
+            if len(plan) >= top:
+                break
+            plan.append(c)
+    planned_topics = {str(c.get("topic") or "") for c in plan}
+    return (
+        plan, skipped, skipped_excluded,
+        [topic for topic in below_floor if topic not in planned_topics],
+    )
 
 
 def _summarize_md(
