@@ -354,7 +354,55 @@ def test_discover_topics_can_rank_derived_title_candidates() -> None:
 
     topics = [c.topic for c in out]
     assert "grid_storage" in topics
-    assert topics.index("grid_storage") < topics.index("seed_topic")
+    assert topics.index("seed_topic") < topics.index("grid_storage")
+
+
+def test_discover_topics_lets_fact_rich_derived_candidate_outrank_seed(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    seed_papers = [_paper(
+        doi="10.1/seed",
+        title="Carbon pricing and grid storage improve adoption",
+        fwci=10.0,
+    )]
+    derived_papers = [_paper(
+        doi="10.1/derived",
+        title="Grid storage tariffs improve adoption",
+        fwci=2.0,
+    )]
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        body = req.read().decode("utf-8") if req.content else "{}"
+        if req.url.path.endswith("/tier2/facts/search"):
+            if "grid" not in body:
+                return httpx.Response(200, json=[])
+            return httpx.Response(200, json=[
+                {
+                    "id": f"f{i}", "paper_id": f"10.2/{i}",
+                    "paper": {"doi": f"10.2/{i}"},
+                    "numeric_value": 10, "units": "%",
+                    "population": "adults",
+                    "intervention": "grid storage tariffs",
+                    "comparator": "usual care",
+                    "canonical_phrase": "grid storage tariffs improved adoption by 10%",
+                }
+                for i in range(5)
+            ])
+        if "grid_storage" in body:
+            return httpx.Response(200, json=derived_papers)
+        return httpx.Response(200, json=seed_papers)
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        out = discover_topics(
+            seeds=("seed_topic",), settings=_settings(), client=c,
+            current_year=2024, derived_topic_limit=8,
+        )
+
+    assert out[0].topic == "grid_storage"
+    assert out[0].fact_source_count == 5
 
 
 def test_discover_topics_counts_slug_prefix_fact_sources() -> None:

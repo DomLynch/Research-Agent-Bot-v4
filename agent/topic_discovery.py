@@ -470,8 +470,14 @@ def discover_topics(
     finally:
         if own_client:
             c.close()
+    seed_set = set(topics)
     candidates.sort(
-        key=lambda c: (c.fact_source_count >= 5, c.fact_source_count, c.velocity_score),
+        key=lambda c: (
+            c.fact_source_count >= 5,
+            c.fact_source_count,
+            c.topic in seed_set,
+            c.velocity_score,
+        ),
         reverse=True,
     )
     return tuple(candidates)
