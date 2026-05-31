@@ -15,12 +15,20 @@ with explicit blocking_flags for downstream operators.
 """
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any
 
 from agent.fact_lanes import LaneVerdict
 
 AUDIT_STATUSES = ("survives", "needs_source_audit", "rejected")
+_TOKEN_RE = re.compile(r"[a-z0-9]+")
+_GENERIC = frozenset({
+    "and", "are", "for", "from", "into", "may", "not", "the", "this", "with",
+    "versus", "between", "signal", "specific", "marker", "differential",
+    "both", "could", "literature", "suggests", "synthesized", "that", "while",
+    "year", "years",
+})
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,6 +86,72 @@ def _cited_fact_ids(
     return tuple(cited)
 
 
+def _tokens(text: str) -> set[str]:
+    text = re.sub(r"([a-z])([A-Z])", r"\1 \2", text)
+    return {t for t in _TOKEN_RE.findall(text.lower())
+            if len(t) > 2 and t not in _GENERIC}
+
+
+def _paper(fact: dict[str, Any]) -> dict[str, Any]:
+    paper = fact.get("source_paper") or {}
+    return paper if isinstance(paper, dict) else {}
+
+
+def _fact_text(fact: dict[str, Any]) -> str:
+    return " ".join(str(x or "") for x in (
+        fact.get("canonical_phrase"), fact.get("population"),
+    ))
+
+
+def _repair_a_core_citations(
+    cited: tuple[str, ...],
+    thesis: dict[str, Any],
+    facts: list[dict[str, Any]],
+    lane_verdicts: list[LaneVerdict],
+    *,
+    a_core_min: int,
+) -> tuple[str, ...]:
+    """Append on-thesis A_core receipts when the model cited context facts.
+
+    The LLM can propose a thesis, but the gate owns evidence binding. This is
+    intentionally conservative: only A_core facts with source metadata and
+    lexical overlap with the thesis can repair the cited set.
+    """
+    by_id = {v.fact_id: v for v in lane_verdicts}
+    have = [fid for fid in cited if by_id.get(fid)
+            and by_id[fid].lane == "A_core"]
+    if len(have) >= a_core_min:
+        return cited
+    thesis_tokens = _tokens(
+        f"{thesis.get('title') or ''} {thesis.get('rationale') or ''}",
+    )
+    if not thesis_tokens:
+        return cited
+    cited_set = set(cited)
+    ranked: list[tuple[float, str]] = []
+    for fact in facts:
+        if not isinstance(fact, dict):
+            continue
+        fid = str(fact.get("fact_id") or "")
+        if fid in cited_set or by_id.get(fid) is None:
+            continue
+        if by_id[fid].lane != "A_core":
+            continue
+        paper = _paper(fact)
+        if not paper.get("doi") and not paper.get("pmid"):
+            continue
+        fact_tokens = _tokens(_fact_text(fact))
+        overlap = thesis_tokens & fact_tokens
+        if len(overlap) < 2:
+            continue
+        score = len(overlap) / max(1, len(thesis_tokens))
+        ranked.append((score, fid))
+    ranked.sort(key=lambda x: (-x[0], x[1]))
+    needed = a_core_min - len(have)
+    added = [fid for _, fid in ranked[:needed]]
+    return cited + tuple(added)
+
+
 def audit_thesis(
     thesis: dict[str, Any], thesis_idx: int,
     facts: list[dict[str, Any]],
@@ -90,7 +164,10 @@ def audit_thesis(
     opp = int(thesis.get("opportunity_score") or 0)
     flags: list[str] = []
 
-    cited = _cited_fact_ids(thesis, facts)
+    cited = _repair_a_core_citations(
+        _cited_fact_ids(thesis, facts), thesis, facts, lane_verdicts,
+        a_core_min=a_core_min,
+    )
     by_id = {v.fact_id: v for v in lane_verdicts}
     fact_by_id = {str(f.get("fact_id") or ""): f
                   for f in facts if isinstance(f, dict)}

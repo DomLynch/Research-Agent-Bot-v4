@@ -94,6 +94,42 @@ def test_low_a_core_density_needs_source_audit() -> None:
                for f in audits[0].blocking_flags)
 
 
+def test_context_only_citations_repair_to_matching_a_core() -> None:
+    """If the reviewer cites B_context while matching A_core receipts exist,
+    the gate deterministically binds those A_core facts before density checks."""
+    facts = [
+        _fact("b/1",
+              canonical_phrase="brain age MRI conversion model described",
+              numeric_value=None, units=""),
+        _fact("a/1",
+              canonical_phrase="brain age MRI predicted dementia risk by 11%",
+              intervention="brain age MRI",
+              numeric_value=11.0, source_paper={"doi": "10.1/a1", "pmid": "1"}),
+        _fact("a/2",
+              canonical_phrase="brain age MRI predicted conversion to AD by 10%",
+              intervention="brain age MRI",
+              numeric_value=10.0, source_paper={"doi": "10.1/a2", "pmid": "2"}),
+        _fact("a/3",
+              canonical_phrase="brain age MRI classified Parkinson disease with 80%",
+              intervention="brain age MRI",
+              numeric_value=80.0, source_paper={"doi": "10.1/a3", "pmid": "3"}),
+    ]
+    lanes = classify_lanes(facts, topic="brain_age_MRI")
+    review = {"theses": [{
+        "title": "Brain age MRI as a differential diagnostic marker",
+        "rationale": "The brain age MRI signal predicts dementia conversion.",
+        "opportunity_score": 90,
+        "cited_fact_ids": ["b/1"],
+    }]}
+
+    audits = audit_frontier_review(review, facts, lanes, a_core_min=3)
+
+    assert audits[0].status == "survives"
+    assert list(audits[0].cited_fact_ids) == ["b/1", "a/1", "a/2", "a/3"]
+    assert not any(f.startswith("a_core_density_too_low")
+                   for f in audits[0].blocking_flags)
+
+
 def test_missing_source_metadata_flag() -> None:
     """Fact has no DOI and no PMID -> missing_source_metadata flag."""
     facts = [
