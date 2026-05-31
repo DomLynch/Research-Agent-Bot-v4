@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import json
 import math
+import threading
+import time
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
@@ -136,6 +138,26 @@ def test_discover_topics_empty_seeds_returns_empty() -> None:
         seeds=(), settings=_settings(), client=None,
     )
     assert out == ()
+
+
+def test_fetch_papers_by_topic_uses_bounded_parallelism(monkeypatch: Any) -> None:
+    from agent import topic_discovery as td
+
+    seen_threads: set[int] = set()
+
+    def fake_fetch(topic: str, **_kw: Any) -> list[dict[str, Any]]:
+        seen_threads.add(threading.get_ident())
+        time.sleep(0.01)
+        return [_paper(doi=f"10.1/{topic}")]
+
+    monkeypatch.setattr(td, "_fetch_topic_papers", fake_fetch)
+
+    out = td._fetch_papers_by_topic(
+        [f"topic_{i}" for i in range(12)], client=MagicMock(), settings=_settings())
+
+    assert len(out) == 12
+    assert len(seen_threads) > 1
+    assert len(seen_threads) <= td._PAPER_FETCH_WORKERS
 
 
 def test_no_token_returns_zero_papers() -> None:

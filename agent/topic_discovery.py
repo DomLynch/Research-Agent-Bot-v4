@@ -52,6 +52,7 @@ _PROBE_INCONCLUSIVE = -1  # all queries failed (timeout/error), not a real 0
 _FACT_PROBE_TOPICS = 100
 _FACT_PROBE_TIMEOUT_SECONDS = 8.0
 _FACT_PROBE_BUDGET_SECONDS = 24.0
+_PAPER_FETCH_WORKERS = 8
 # Concurrent probe workers, capped to what the shared Researka DB sustains.
 # Measured capacity: at <=4 concurrent the facts endpoint answers in <8s (the
 # per-query timeout) and every probe succeeds; at 6-8 concurrent its latency
@@ -419,6 +420,24 @@ def _fetch_topic_papers(
     return [p for p in data if isinstance(p, dict)]
 
 
+def _fetch_papers_by_topic(
+    topics: list[str], *, client: httpx.Client, settings: Settings,
+) -> dict[str, list[dict[str, Any]]]:
+    if not topics:
+        return {}
+    out: dict[str, list[dict[str, Any]]] = {}
+    workers = min(_PAPER_FETCH_WORKERS, len(topics))
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = {
+            pool.submit(_fetch_topic_papers, topic, client=client, settings=settings): topic
+            for topic in topics
+        }
+        for fut in as_completed(futures):
+            topic = futures[fut]
+            out[topic] = fut.result()
+    return out
+
+
 def discover_topics(
     seeds: tuple[str, ...] | None = None, *,
     settings: Settings, client: httpx.Client | None = None,
@@ -434,18 +453,17 @@ def discover_topics(
     own_client = client is None
     c = client or httpx.Client()
     try:
-        papers_by_topic: dict[str, list[dict[str, Any]]] = {}
-        for topic in topics:
-            papers_by_topic[topic] = _fetch_topic_papers(
-                topic, client=c, settings=settings)
+        papers_by_topic = _fetch_papers_by_topic(
+            list(topics), client=c, settings=settings)
         known = set(papers_by_topic)
         if derived_topic_limit:
-            for topic in _title_topic_slugs(papers_by_topic, year_now,
-                                           limit=derived_topic_limit):
-                if topic not in known:
-                    papers_by_topic[topic] = _fetch_topic_papers(
-                        topic, client=c, settings=settings)
-                    known.add(topic)
+            derived = [
+                topic for topic in _title_topic_slugs(
+                    papers_by_topic, year_now, limit=derived_topic_limit)
+                if topic not in known
+            ]
+            papers_by_topic.update(_fetch_papers_by_topic(
+                derived, client=c, settings=settings))
         anchorage = _anchorage_counts(papers_by_topic, year_now)
         velocity_ranked = sorted(
             [
