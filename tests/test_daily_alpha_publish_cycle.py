@@ -502,6 +502,59 @@ def test_repairable_retry_refreshes_even_when_source_floor_passes(tmp_path: Path
     assert ledger["status"] == "submitted_to_researka"
 
 
+def test_repairable_cycle_attempt_enables_duplicate_retry(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("cycle_attempt_retry")
+    _memo_with_source_receipts(root, verdict, 5)
+    fp = daily.memo_fingerprint(verdict)
+    old_sha = daily._memo_sha256(verdict, root)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
+        {
+            "fingerprint": fp,
+            "topic": "cycle_attempt_retry",
+            "submission_id": "old-sub",
+            "memo_sha256": old_sha,
+        },
+    ])
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submit_retry_exhausted",
+        "final_verdict": "revise",
+        "candidate": {"fingerprint": "other", "topic": "other"},
+        "cycle_attempts": [{
+            "fingerprint": fp,
+            "topic": "cycle_attempt_retry",
+            "run_dir": verdict["run_dir"],
+            "status": "reviewer_rejected",
+            "researka_decision": {
+                "status": "complete",
+                "decision": "reject",
+                "required_revisions": ["Complete scope reset required."],
+            },
+        }],
+    })
+
+    def refresh(run_dir: Path, _verdict: dict[str, Any]) -> bool:
+        text = run_dir.joinpath("alpha_memo.md").read_text(encoding="utf-8")
+        run_dir.joinpath("alpha_memo.md").write_text(
+            text + "\nCycle attempt repair.\n", encoding="utf-8")
+        return True
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+        memo_refresher=refresh,
+    )
+
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["considered"][0]["retry_after_rejection"] is True
+    assert ledger["considered"][0]["memo_refreshed"] is True
+
+
 def test_recently_published_topic_is_skipped_for_fresh_topic(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     published = _verdict("published", score=100)

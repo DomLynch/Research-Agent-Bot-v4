@@ -465,15 +465,9 @@ def _repairable_rejected_fingerprints(ledger_dir: Path) -> set[str]:
     retryable: set[str] = set()
     for path in ledger_dir.glob("*.json"):
         ledger = _json(path, {})
-        if (
-            not isinstance(ledger, dict)
-            or ledger.get("final_verdict") not in {"rejected", "revise"}
-        ):
+        if not isinstance(ledger, dict):
             continue
-        if not _repairable_ledger(ledger):
-            continue
-        fp = str((ledger.get("candidate") or {}).get("fingerprint") or "")
-        if fp:
+        for fp, _run_ref, _decision in _repairable_submission_records(ledger):
             retryable.add(fp)
     return retryable
 
@@ -482,15 +476,11 @@ def _repairable_decisions_by_fingerprint(ledger_dir: Path) -> dict[str, Json]:
     retryable: dict[str, Json] = {}
     for path in sorted(ledger_dir.glob("*.json"), reverse=True):
         ledger = _json(path, {})
-        if (
-            not isinstance(ledger, dict)
-            or ledger.get("final_verdict") not in {"rejected", "revise"}
-            or not _repairable_ledger(ledger)
-        ):
+        if not isinstance(ledger, dict):
             continue
-        fp = str((ledger.get("candidate") or {}).get("fingerprint") or "")
-        decision = ledger.get("researka_decision")
-        if fp and isinstance(decision, dict) and fp not in retryable:
+        for fp, _run_ref, decision in _repairable_submission_records(ledger):
+            if fp in retryable:
+                continue
             retryable[fp] = decision
     return retryable
 
@@ -500,23 +490,42 @@ def _repairable_candidate_verdicts(runs_root: Path) -> list[Json]:
     seen: set[str] = set()
     for path in sorted((runs_root / "_daily_ledger").glob("*.json"), reverse=True):
         ledger = _json(path, {})
-        if (
-            not isinstance(ledger, dict)
-            or ledger.get("final_verdict") not in {"rejected", "revise"}
-        ):
+        if not isinstance(ledger, dict):
             continue
-        if not _repairable_ledger(ledger):
-            continue
-        run_dir = _run_path(runs_root, (ledger.get("candidate") or {}).get("run_dir"))
-        verdict = _json(run_dir / "publish_verdict.json", {})
-        if not isinstance(verdict, dict) or not verdict:
-            continue
-        fp = memo_fingerprint(verdict)
-        if fp in seen:
-            continue
-        seen.add(fp)
-        verdicts.append(verdict)
+        for fp, run_ref, _decision in _repairable_submission_records(ledger):
+            if fp in seen:
+                continue
+            run_dir = _run_path(runs_root, run_ref)
+            verdict = _json(run_dir / "publish_verdict.json", {})
+            if not isinstance(verdict, dict) or not verdict:
+                continue
+            seen.add(fp)
+            verdicts.append(verdict)
     return verdicts
+
+
+def _repairable_submission_records(ledger: Json) -> list[tuple[str, Any, Json]]:
+    records: list[tuple[str, Any, Json]] = []
+    decision = ledger.get("researka_decision")
+    candidate = ledger.get("candidate")
+    if (
+        isinstance(decision, dict)
+        and isinstance(candidate, dict)
+        and _repairable_rejection(decision)
+    ):
+        fp = str(candidate.get("fingerprint") or "")
+        if fp:
+            records.append((fp, candidate.get("run_dir"), decision))
+    for attempt in ledger.get("cycle_attempts") or []:
+        if not isinstance(attempt, dict):
+            continue
+        decision = attempt.get("researka_decision")
+        if not isinstance(decision, dict) or not _repairable_rejection(decision):
+            continue
+        fp = str(attempt.get("fingerprint") or "")
+        if fp:
+            records.append((fp, attempt.get("run_dir"), decision))
+    return records
 
 
 def _accepted_shape_profiles(runs_root: Path, *, limit: int = 25) -> list[Json]:
