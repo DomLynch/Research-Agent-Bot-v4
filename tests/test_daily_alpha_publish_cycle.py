@@ -375,6 +375,42 @@ def test_repairable_reject_refresher_softens_gate_reported_novelty(tmp_path: Pat
     assert "`fact_id=1`" in memo
 
 
+def test_revision_refresher_materially_narrows_reviewer_revise_notes(tmp_path: Path) -> None:
+    run = tmp_path / "runs" / "glp-evidence-ts"
+    run.mkdir(parents=True)
+    run.joinpath("signal_post.md").write_text("# Signal\n", encoding="utf-8")
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n"
+        "## One-sentence thesis\n\n"
+        "The broad context settles the signal.\n\n"
+        "## Why this is surprising\n\n"
+        "Real tension: the effect is broader than expected.\n\n"
+        "## Evidence receipts\n\n"
+        "- `fact_id=1` (`A_core`) - receipt\n",
+        encoding="utf-8",
+    )
+
+    changed = daily._refresh_alpha_memo(run, {
+        "_repair_decision": {
+            "decision": "revise",
+            "required_revisions": [
+                "Clarify the bounded research signal by separating the direct "
+                "claim from broader context.",
+                "Explicitly state the claim is hypothesis-generating.",
+                "Ensure the surprising section does not overstate tension or novelty.",
+            ],
+        },
+    })
+
+    memo = run.joinpath("alpha_memo.md").read_text(encoding="utf-8")
+    assert changed is True
+    assert "Reviewer revision" in memo
+    assert "hypothesis-generating" in memo
+    assert "Real tension:" not in memo
+    assert "Bounded signal:" in memo
+    assert "`fact_id=1`" in memo
+
+
 def test_repairable_reject_refresher_handles_scope_reset_notes(tmp_path: Path) -> None:
     run = tmp_path / "runs" / "glp-evidence-ts"
     run.mkdir(parents=True)
@@ -628,6 +664,63 @@ def test_repairable_cycle_attempt_enables_duplicate_retry(tmp_path: Path) -> Non
     assert ledger["status"] == "submitted_to_researka"
     assert ledger["considered"][0]["retry_after_rejection"] is True
     assert ledger["considered"][0]["memo_refreshed"] is True
+
+
+def test_reviewer_revise_refresh_changes_memo_sha_before_retry(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("bounded_retry")
+    _memo_with_source_receipts(root, verdict, 5)
+    run = root / str(verdict["run_dir"])
+    run.joinpath("signal_post.md").write_text("# Signal\n", encoding="utf-8")
+    memo_path = run / "alpha_memo.md"
+    memo_path.write_text(
+        memo_path.read_text(encoding="utf-8").replace(
+            "## Evidence receipts",
+            "## Why this is surprising\n\n"
+            "Real tension: broader context makes this settled.\n\n"
+            "## Evidence receipts",
+        ),
+        encoding="utf-8",
+    )
+    fp = daily.memo_fingerprint(verdict)
+    old_sha = daily._memo_sha256(verdict, root)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
+        {
+            "fingerprint": fp,
+            "topic": "bounded_retry",
+            "submission_id": "old-sub",
+            "memo_sha256": old_sha,
+        },
+    ])
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submitted_to_researka",
+        "final_verdict": "revise",
+        "candidate": {"fingerprint": fp, "topic": "bounded_retry"},
+        "researka_decision": {
+            "status": "complete",
+            "decision": "revise",
+            "required_revisions": [
+                "Clarify the bounded research signal and state it is "
+                "hypothesis-generating.",
+                "Ensure the surprising section does not overstate tension or novelty.",
+            ],
+        },
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+    )
+
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["considered"][0]["memo_refreshed"] is True
+    assert ledger["considered"][0]["status"] == "eligible"
+    assert daily._memo_sha256(verdict, root) != old_sha
 
 
 def test_recently_published_topic_is_skipped_for_fresh_topic(tmp_path: Path) -> None:

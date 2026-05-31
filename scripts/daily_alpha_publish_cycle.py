@@ -122,6 +122,11 @@ _GROUNDING_REJECT_TERMS = (
     *_SCOPE_RESET_TERMS,
     "context receipts", "contextual support", "single primary",
 )
+_REVISION_NARROWING_TERMS = (
+    "bounded research signal", "hypothesis-generating", "hypothesis generating",
+    "integrate evidence", "overstate tension", "overstate", "redundant",
+    "repetition", "separate", "surprising section",
+)
 
 
 def _json(path: Path, default: Any) -> Any:
@@ -363,6 +368,25 @@ def _soften_overclaim_language(text: str) -> str:
     return out
 
 
+def _insert_reviewer_revision_note(text: str) -> str:
+    note = (
+        "**Reviewer revision:** The memo is narrowed to the direct receipts "
+        "named below. Treat the lead claim as hypothesis-generating; broader "
+        "context is background only unless it shares the same endpoint, "
+        "comparator, and population.\n"
+    )
+    if note in text:
+        return text
+    marker = "\n## Why this is surprising"
+    if marker in text:
+        return text.replace(marker, f"\n\n{note}{marker}", 1)
+    return text.rstrip() + "\n\n" + note
+
+
+def _soften_surprise_language(text: str) -> str:
+    return re.sub(r"(?im)^Real tension:", "Bounded signal:", text)
+
+
 def _apply_reviewer_revision_notes(run_dir: Path, decision: Json) -> bool:
     if decision.get("decision") not in {"reject", "revise"}:
         return False
@@ -386,6 +410,9 @@ def _apply_reviewer_revision_notes(run_dir: Path, decision: Json) -> bool:
             revised = "\n".join(lines) + ("\n" if original.endswith("\n") else "")
         if any(term in notes_norm for term in _GROUNDING_REJECT_TERMS):
             revised = _insert_scope_clarification(revised)
+        if any(term in notes_norm for term in _REVISION_NARROWING_TERMS):
+            revised = _insert_reviewer_revision_note(revised)
+            revised = _soften_surprise_language(revised)
         if any(
             term in notes_norm
             for term in (
