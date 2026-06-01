@@ -153,6 +153,27 @@ def test_versus_word_marker_is_effect_size() -> None:
     ) == "effect_size"
 
 
+def test_weighted_mean_difference_with_measurement_unit_is_effect_size() -> None:
+    """Explicit comparative-estimate syntax makes the value a finding,
+    even when the outcome's unit also looks like a concentration unit."""
+    assert classify_numeric_role(
+        1.16, "mmol/L",
+        "outcome changed (WMD = -1.16 mmol/L, 95% CI -1.36 to -0.96)",
+    ) == "effect_size"
+
+
+def test_standardized_mean_difference_is_effect_size() -> None:
+    assert classify_numeric_role(
+        1.06, "", "TC (SMD: 1.06; 95%CI: 0.64, 1.48; p = 0.00)",
+    ) == "effect_size"
+
+
+def test_p_value_near_effect_estimate_stays_p_value() -> None:
+    assert classify_numeric_role(
+        0.00, "", "TC (SMD: 1.06; 95%CI: 0.64, 1.48; p = 0.00)",
+    ) == "p_value"
+
+
 def test_unitless_positive_without_comparison_stays_unknown() -> None:
     """A bare unitless number with no stats marker stays unknown
     (no false-positive promotion)."""

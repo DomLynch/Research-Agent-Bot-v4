@@ -86,9 +86,37 @@ _RATIO_UNITS = frozenset([
 # 'p = 2.98e-9 for highest vs lowest quintile' was promoted to
 # effect_size because 'vs' fired before p-prefix was checked.
 _PVALUE_PREFIX_MARKERS = ("p=", "p =", "p<", "p <", "p<=", "p <=")
+_EFFECT_ESTIMATE_RE = re.compile(
+    r"\b(?:wmd|smd|md)\s*[:=]|"
+    r"\b(?:weighted|standardized)\s+mean\s+difference\b|"
+    r"\bmean\s+difference\b"
+)
 
 # Roles that actually constitute a research finding
 _REAL_FINDING_ROLES = frozenset(["effect_size", "fold_change", "correlation"])
+
+
+def _value_matches(value: float) -> list[str]:
+    base = f"{int(value)}" if value == int(value) else f"{value:g}"
+    return [base] if value >= 0 else [base, base.lstrip("-")]
+
+
+def _has_pvalue_prefix(value: float, ctx: str) -> bool:
+    for val_str in _value_matches(value):
+        for m in re.finditer(re.escape(val_str), ctx):
+            before = ctx[max(0, m.start() - 5):m.start()]
+            if any(p in before for p in _PVALUE_PREFIX_MARKERS):
+                return True
+    return False
+
+
+def _has_effect_estimate_marker(value: float, ctx: str) -> bool:
+    for val_str in _value_matches(value):
+        for m in re.finditer(re.escape(val_str), ctx):
+            window = ctx[max(0, m.start() - 45):m.end() + 25]
+            if _EFFECT_ESTIMATE_RE.search(window):
+                return True
+    return False
 
 
 def classify_numeric_role(
@@ -98,6 +126,10 @@ def classify_numeric_role(
     u = (units or "").lower().strip()
     ctx = (context or "").lower()
 
+    if value is not None and _has_pvalue_prefix(value, ctx):
+        return "p_value"
+    if value is not None and _has_effect_estimate_marker(value, ctx):
+        return "effect_size"
     if u in _TIME_UNITS:
         return "duration"
     if u in _DOSE_UNITS:
@@ -143,13 +175,6 @@ def classify_numeric_role(
     # the Apc(1638N/+) effect-size case 'macroadenoma count was 1.33
     # vs 2.50 (P<0.01)' from being mis-classified as p_value because
     # the P< marker applies to a different stat in the same phrase.
-    if value is not None:
-        val_str = (f"{int(value)}" if value == int(value)
-                   else f"{value:g}")
-        for m in re.finditer(re.escape(val_str), ctx):
-            before = ctx[max(0, m.start() - 5):m.start()]
-            if any(p in before for p in _PVALUE_PREFIX_MARKERS):
-                return "p_value"
     # Paired-comparison fallback (Sprint 67): a unitless positive
     # number appearing alongside 'vs' / 'versus' / '±' is an effect-
     # style comparison (e.g. macroadenoma count 1.33 vs 2.50).
