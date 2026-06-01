@@ -1102,12 +1102,16 @@ def test_fact_source_profile_emits_source_backed_child_topics() -> None:
     def handler(_req: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json=rows)
 
+    child_source_papers: dict[str, dict[str, dict[str, Any]]] = {}
     with httpx.Client(transport=httpx.MockTransport(handler)) as c:
         count, children = topic_discovery._fetch_topic_fact_source_profile(
-            "sarcopenia_muscle_preservation", client=c, settings=_settings())
+            "sarcopenia_muscle_preservation", client=c, settings=_settings(),
+            child_source_papers=child_source_papers)
 
     assert count == 5
     assert ("resistance_training", 5) in children
+    assert len(child_source_papers["resistance_training"]) == 5
+    assert child_source_papers["resistance_training"]["10.1/rt-0"]["title"] == "Trial 0"
 
 
 def test_fact_source_profile_empty_rows_emit_no_sources_or_children() -> None:
@@ -1151,6 +1155,58 @@ def test_disease_population_context_facts_emit_children_not_parent_sources() -> 
 
     assert count == 0
     assert ("resistance_training", 5) in children
+
+
+def test_discover_topics_uses_fact_source_papers_for_child_candidates(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    rows = [
+        {
+            "id": f"fact-{i}",
+            "paper_id": f"paper-{i}",
+            "paper": {
+                "doi": f"10.1/child-{i}",
+                "title": f"Target intervention outcome trial {i}",
+                "publication_year": 2024,
+                "fwci": 1.0,
+                "cited_by_count": 10,
+                "quality_score": 80,
+            },
+            "numeric_value": 10,
+            "units": "%",
+            "population": "adults with parent condition",
+            "intervention": "target intervention",
+            "comparator": "usual care",
+            "canonical_phrase": "target intervention improved function by 10%",
+        }
+        for i in range(5)
+    ]
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.path.endswith("/api/v1/tier2/facts/search"):
+            return httpx.Response(200, json=rows)
+        body = req.read().decode("utf-8") if req.content else "{}"
+        if req.url.path.endswith("/api/v1/papers/topic") and "parent_condition" in body:
+            return httpx.Response(200, json=[
+                _paper(doi="10.1/parent", title="Parent condition overview"),
+            ])
+        return httpx.Response(200, json=[])
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        out = td.discover_topics(
+            seeds=("parent_condition",), settings=_settings(), client=c,
+            current_year=2024, derived_topic_limit=0, fact_probe_topics=1,
+            refresh_low_source_counts=True,
+        )
+
+    by_topic = {candidate.topic: candidate for candidate in out}
+    assert by_topic["parent_condition"].fact_source_count == 0
+    assert by_topic["target_intervention"].fact_source_count == 5
+    assert by_topic["target_intervention"].paper_count == 5
+    assert by_topic["target_intervention"].top_paper_doi == "10.1/child-0"
 
 
 def test_disease_population_context_count_does_not_clear_parent_floor() -> None:

@@ -210,6 +210,10 @@ def _fact_for_lane(item: dict[str, Any], topic: str) -> dict[str, Any]:
             "paper_id": paper.get("paper_id") or item.get("paper_id"),
             "id": paper.get("id"),
             "title": paper.get("title"),
+            "publication_year": paper.get("publication_year") or paper.get("year"),
+            "fwci": paper.get("fwci"),
+            "cited_by_count": paper.get("cited_by_count"),
+            "quality_score": paper.get("quality_score"),
         },
         "numeric_value": item.get("numeric_value"),
         "units": item.get("units"),
@@ -357,6 +361,7 @@ def _topic_fact_keys(topic: str, *, max_keys: int = 4) -> tuple[str, ...]:
 def _add_source_profile(
     rows: list[dict[str, Any]], topic: str, *,
     source_keys: set[str], child_sources: dict[str, set[str]],
+    child_source_papers: dict[str, dict[str, dict[str, Any]]] | None = None,
 ) -> None:
     facts = [_fact_for_lane(row, topic) for row in rows]
     verdicts = classify_lanes(facts, topic)
@@ -378,12 +383,17 @@ def _add_source_profile(
         # intervention/endpoint cluster can still seed a child topic.
         for slug in _fact_child_slugs(fact, topic):
             child_sources.setdefault(slug, set()).add(key)
+            if child_source_papers is not None:
+                paper = fact.get("source_paper")
+                if isinstance(paper, dict):
+                    child_source_papers.setdefault(slug, {}).setdefault(key, paper)
 
 
 def _fetch_topic_fact_source_profile(
     topic: str, *, client: httpx.Client, settings: Settings,
     limit: int = 50, facets: tuple[str, ...] = (),
     mine_children: bool = False,
+    child_source_papers: dict[str, dict[str, dict[str, Any]]] | None = None,
 ) -> tuple[int, tuple[tuple[str, int], ...]]:
     """Count unique direct bindable fact-backed sources for ranking."""
     base = settings.researka_database_url.rstrip("/")
@@ -414,7 +424,8 @@ def _fetch_topic_fact_source_profile(
         any_success = True
         _add_source_profile(
             rows, topic, source_keys=source_keys,
-            child_sources=child_sources)
+            child_sources=child_sources,
+            child_source_papers=child_source_papers)
         if not mine_children and len(source_keys) >= _PUBLISHABLE_SOURCE_FLOOR:
             break
     for idx, query in enumerate(_fact_probe_queries(topic, facets=facets)):
@@ -445,7 +456,8 @@ def _fetch_topic_fact_source_profile(
         any_success = True
         _add_source_profile(
             rows, topic, source_keys=source_keys,
-            child_sources=child_sources)
+            child_sources=child_sources,
+            child_source_papers=child_source_papers)
         if (
             not mine_children
             and len(source_keys) >= _PUBLISHABLE_SOURCE_FLOOR
@@ -587,6 +599,7 @@ def _fetch_fact_source_counts(
     refresh_low_source_counts: bool = False,
     facets_by_topic: dict[str, tuple[str, ...]] | None = None,
     child_source_counts: dict[str, int] | None = None,
+    child_source_papers: dict[str, dict[str, dict[str, Any]]] | None = None,
 ) -> dict[str, int]:
     if not topics:
         return {}
@@ -613,17 +626,34 @@ def _fetch_fact_source_counts(
     # only stale/missing topics reach here, so steady-state pressure is low;
     # the cap protects the cold first-fill from overloading the endpoint.
     workers = min(_FACT_PROBE_WORKERS, len(to_probe))
-    probed: dict[str, tuple[int, tuple[tuple[str, int], ...]]] = {}
+    probed: dict[
+        str,
+        tuple[
+            int,
+            tuple[tuple[str, int], ...],
+            dict[str, dict[str, dict[str, Any]]],
+        ],
+    ] = {}
+
+    def _probe(topic: str) -> tuple[
+        int,
+        tuple[tuple[str, int], ...],
+        dict[str, dict[str, dict[str, Any]]],
+    ]:
+        papers: dict[str, dict[str, dict[str, Any]]] = {}
+        count, children = _fetch_topic_fact_source_profile(
+            topic,
+            client=client,
+            settings=settings,
+            facets=(facets_by_topic or {}).get(topic, ()),
+            mine_children=refresh_low_source_counts,
+            child_source_papers=papers,
+        )
+        return count, children, papers
+
     with ThreadPoolExecutor(max_workers=workers) as pool:
         futures = {
-            pool.submit(
-                _fetch_topic_fact_source_profile,
-                topic,
-                client=client,
-                settings=settings,
-                facets=(facets_by_topic or {}).get(topic, ()),
-                mine_children=refresh_low_source_counts,
-            ): topic
+            pool.submit(_probe, topic): topic
             for topic in to_probe
         }
         for fut in as_completed(futures):
@@ -631,12 +661,15 @@ def _fetch_fact_source_counts(
     # Successful probe (>=0): refresh cache + use it. Inconclusive (-1):
     # keep the last cached count if any, else fall back to 0; never cache
     # a failure as a real count.
-    for topic, (count, children) in probed.items():
+    for topic, (count, children, child_papers) in probed.items():
         if count >= 0:
             cache[topic] = {
                 "count": count, "ts": now, "version": _SUPPLY_CACHE_VERSION,
             }
             out[topic] = count
+            if child_source_papers is not None:
+                for child, papers in child_papers.items():
+                    child_source_papers.setdefault(child, {}).update(papers)
             for child, child_count in children:
                 if child_source_counts is not None:
                     child_source_counts[child] = max(
@@ -938,6 +971,7 @@ def discover_topics(
             *derived_cycle_topics, *seed_probe_topics,
         ]))[:probe_limit]
         fact_child_counts: dict[str, int] = {}
+        fact_child_source_papers: dict[str, dict[str, dict[str, Any]]] = {}
         fact_sources_by_topic = _fetch_fact_source_counts(
             probe_topics, client=c, settings=settings,
             refresh_low_source_counts=refresh_low_source_counts,
@@ -946,6 +980,7 @@ def discover_topics(
                 for topic, papers in papers_by_topic.items()
             },
             child_source_counts=fact_child_counts,
+            child_source_papers=fact_child_source_papers,
         )
         fact_sources_by_topic.update(cached_fact_counts)
         fact_child_topics = [
@@ -961,7 +996,11 @@ def discover_topics(
                 new_fact_child_topics, client=c, settings=settings,
                 require_title_support=True, current_year=year_now)
             for topic in new_fact_child_topics:
-                papers_by_topic.setdefault(topic, fact_child_papers.get(topic, []))
+                papers = (
+                    fact_child_papers.get(topic)
+                    or list((fact_child_source_papers.get(topic) or {}).values())
+                )
+                papers_by_topic.setdefault(topic, papers)
         for topic, count in fact_child_topics:
             fact_sources_by_topic[topic] = max(
                 fact_sources_by_topic.get(topic, 0), count)
