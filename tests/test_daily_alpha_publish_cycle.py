@@ -2032,6 +2032,15 @@ def test_submission_payload_preserves_alpha_memo_contract(tmp_path: Path) -> Non
     root = tmp_path / "repo"
     verdict = _verdict()
     _memo(root, verdict)
+    run = root / str(verdict["run_dir"])
+    run.joinpath("memo_audit.json").write_text(
+        json.dumps({"verdict": "supported"}), encoding="utf-8")
+    run.joinpath("novelty_delta.json").write_text(
+        json.dumps({"novelty_delta": {"label": "contradictory"}}), encoding="utf-8")
+    run.joinpath("typed_counter_evidence.json").write_text(
+        json.dumps({"items": []}), encoding="utf-8")
+    run.joinpath("claim_receipt_matrix.json").write_text(
+        json.dumps({"direct_sources": 5}), encoding="utf-8")
 
     payload = daily._submission_payload(verdict, root / "runs")
 
@@ -2044,6 +2053,12 @@ def test_submission_payload_preserves_alpha_memo_contract(tmp_path: Path) -> Non
     assert "sections" not in payload
     assert "source_bundle" in payload
     assert "source_papers" in payload["evidence_bundle"]
+    assert payload["evidence_bundle"]["audit_sidecars"] == {
+        "claim_receipt_matrix": {"direct_sources": 5},
+        "memo_audit": {"verdict": "supported"},
+        "novelty_delta": {"novelty_delta": {"label": "contradictory"}},
+        "typed_counter_evidence": {"items": []},
+    }
 
 
 def test_submission_payload_strips_internal_alpha_scores(tmp_path: Path) -> None:

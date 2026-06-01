@@ -62,17 +62,12 @@ _FACT_FETCH_TIMEOUT_SECONDS = 25.0  # per-query; search runs 15-22s under load
 _FACT_FETCH_BUDGET_SECONDS = 90.0  # overall wall-cap across concurrent queries
 _FETCH_WORKERS = 6  # concurrent queries: serial cascade exhausted the budget
 _FETCH_TOP_K = 500  # Researka per-query cap (raised to 500, confirmed live)
-# Universal scientific slice terms (NOT domain literals): outcome, dose, safety,
-# subgroup, and study-design. Combined with the topic they each pull a DIFFERENT
-# fact slice, instead of near-duplicate topic-name queries returning the same
-# ~50 facts. Dedup + rank happens after the merge.
-_OUTCOME_TERMS = (
-    "mortality", "survival", "lifespan", "healthspan", "risk", "incidence",
-    "effect", "reduction", "dose", "adverse", "sex", "age", "subgroup",
-    "randomized", "meta analysis", "cohort",
-)
 _FETCH_FAILURE_STATUSES = frozenset({
     "timeout", "auth_failed", "server_error", "bad_json", "missing_token",
+})
+_QUERY_WORD = re.compile(r"[a-z0-9]+")
+_QUERY_STOPWORDS = frozenset({
+    "and", "are", "for", "from", "into", "not", "the", "this", "with",
 })
 
 
@@ -280,17 +275,81 @@ def _post_tier2_facts(
     return FetchResult(hits, "ok")
 
 
-def _diverse_queries(topic: str) -> list[str]:
-    """Topic-name variants PLUS topic x universal outcome terms, so each query
-    pulls a *different* fact slice (heart-attack, mortality, ...) instead of
-    near-duplicate name queries that return the same facts. Universal — the
-    outcome terms are generic endpoints, never topic/domain literals."""
+def _query_tokens(text: str) -> list[str]:
+    return [
+        word for word in _QUERY_WORD.findall(text.lower())
+        if len(word) >= 4 and word not in _QUERY_STOPWORDS
+    ]
+
+
+def _fact_title_facets(
+    topic: str, facts: list[dict[str, Any]], *, limit: int = 8,
+) -> tuple[str, ...]:
+    """Derive second-wave fact queries from the topic's own returned sources."""
+    topic_words = set(_query_tokens(" ".join(expand_topic_queries(topic, max_queries=8))))
+    scores: dict[str, int] = {}
+    for fact in facts:
+        paper = fact.get("source_paper")
+        if not isinstance(paper, dict):
+            continue
+        words = [w for w in _query_tokens(str(paper.get("title") or ""))
+                 if w not in topic_words][:12]
+        for width in (2, 3):
+            for idx in range(0, max(0, len(words) - width + 1)):
+                phrase = " ".join(words[idx:idx + width])
+                scores[phrase] = scores.get(phrase, 0) + 1
+    return tuple(k for k, _v in sorted(
+        scores.items(), key=lambda item: (-item[1], item[0]),
+    )[:limit])
+
+
+def _diverse_queries(topic: str, *, facets: tuple[str, ...] = ()) -> list[str]:
+    """Topic-name variants plus data-derived facets from retrieved source titles."""
     base = list(expand_topic_queries(topic, max_queries=16))
-    stem = base[-1] if base else topic.replace("_", " ").strip()
     seen: dict[str, None] = dict.fromkeys(base)
-    for term in _OUTCOME_TERMS:
-        seen.setdefault(f"{stem} {term}", None)
+    for facet in facets:
+        cleaned = re.sub(r"[\W_]+", " ", facet.lower()).strip()
+        if cleaned:
+            seen.setdefault(cleaned, None)
     return list(seen)
+
+
+def _fetch_fact_jobs(
+    jobs: list[tuple[str, str]],
+    base: str,
+    hdr: dict[str, str],
+    topic: str,
+    *,
+    trace: list[dict[str, Any]] | None,
+    deadline: float,
+) -> list[dict[str, Any]]:
+    if not jobs or time.monotonic() >= deadline:
+        return []
+    facts: list[dict[str, Any]] = []
+    done: set[int] = set()
+    with ThreadPoolExecutor(max_workers=min(_FETCH_WORKERS, len(jobs))) as pool:
+        fut_job = {pool.submit(_fetch_one, j, base, hdr, topic): j for j in jobs}
+        try:
+            for fut in as_completed(fut_job, timeout=max(0.1, deadline - time.monotonic())):
+                result = _coerce_fetch_result(fut.result())
+                rows = result.hits
+                facts.extend(rows)
+                done.add(id(fut))
+                if trace is not None:
+                    kind, query = fut_job[fut]
+                    trace.append({"kind": kind, "query": query,
+                                  "facts": len(rows),
+                                  "status": result.status,
+                                  "errors": list(result.errors)})
+        except TimeoutError:
+            pass
+    if trace is not None:
+        for fut, (kind, query) in fut_job.items():
+            if id(fut) not in done:
+                trace.append({"kind": kind, "query": query,
+                              "facts": 0, "status": "timeout",
+                              "errors": ["fetch_budget_timeout"]})
+    return facts
 
 
 def _fetch_one(
@@ -344,8 +403,8 @@ def _fetch_facts(
 ) -> list[dict[str, Any]]:
     """Pull facts across diverse slices CONCURRENTLY, then dedup. The Researka
     search runs 15-25s/query (strict-audited can 504), so a serial cascade
-    exhausted the budget on the first slow query before the diverse outcome
-    slices ran. Parallel fetch lets a slow/504 query fail without blocking the
+    exhausted the budget on the first slow query before extra title-derived
+    facets ran. Parallel fetch lets a slow/504 query fail without blocking the
     rest, so a broad SAME-claim bundle can actually be assembled.
 
     When `trace` is given, each query records {kind, query, facts, status} —
@@ -367,36 +426,24 @@ def _fetch_facts(
                           "errors": ["fetch_budget_disabled"]})
         return []
     hdr = {"X-Researka-Token": token}
+    deadline = time.monotonic() + _FACT_FETCH_BUDGET_SECONDS
     queries = _diverse_queries(topic)
-    jobs: list[tuple[str, str]] = (
+    strict_jobs: list[tuple[str, str]] = (
         [("tier1", k) for k in _topic_fact_keys(topic)]
         + [("strict", q) for q in queries[:2]]
-        + [("normal", q) for q in queries]
     )
-    facts: list[dict[str, Any]] = []
-    done: set[int] = set()
-    with ThreadPoolExecutor(max_workers=_FETCH_WORKERS) as pool:
-        fut_job = {pool.submit(_fetch_one, j, base, hdr, topic): j for j in jobs}
-        try:
-            for fut in as_completed(fut_job, timeout=_FACT_FETCH_BUDGET_SECONDS):
-                result = _coerce_fetch_result(fut.result())
-                rows = result.hits
-                facts.extend(rows)
-                done.add(id(fut))
-                if trace is not None:
-                    kind, query = fut_job[fut]
-                    trace.append({"kind": kind, "query": query,
-                                  "facts": len(rows),
-                                  "status": result.status,
-                                  "errors": list(result.errors)})
-        except TimeoutError:
-            pass  # keep whatever finished within the overall budget
-    if trace is not None:
-        for fut, (kind, query) in fut_job.items():
-            if id(fut) not in done:
-                trace.append({"kind": kind, "query": query,
-                              "facts": 0, "status": "timeout",
-                              "errors": ["fetch_budget_timeout"]})
+    facts = _fetch_fact_jobs(strict_jobs, base, hdr, topic, trace=trace, deadline=deadline)
+    seen_queries = set(queries)
+    extra_queries = [
+        query for query in _diverse_queries(
+            topic, facets=_fact_title_facets(topic, facts),
+        )
+        if query not in seen_queries
+    ]
+    facts.extend(_fetch_fact_jobs(
+        [("normal", query) for query in [*queries, *extra_queries]],
+        base, hdr, topic, trace=trace, deadline=deadline,
+    ))
     return _dedup_facts(facts)
 
 

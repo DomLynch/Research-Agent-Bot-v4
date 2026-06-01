@@ -262,13 +262,15 @@ def test_fetch_facts_queries_tier1_synonym_topic_keys(monkeypatch: Any) -> None:
     ) == 5
 
 
-def test_diverse_queries_add_targeted_outcome_slices() -> None:
-    """The fetch must ask targeted slices, not 3 near-duplicate name queries."""
-    qs = evidence_run._diverse_queries("rapamycin")
+def test_diverse_queries_add_data_derived_facets() -> None:
+    """The fetch can widen beyond near-duplicate name queries without static slices."""
+    qs = evidence_run._diverse_queries(
+        "rapamycin", facets=("mammalian lifespan", "immune function"),
+    )
     assert "rapamycin" in qs
-    assert any("mortality" in q for q in qs)
-    assert any("lifespan" in q for q in qs)
-    assert any("cohort" in q for q in qs)
+    assert "mammalian lifespan" in qs
+    assert "immune function" in qs
+    assert not any(q == "rapamycin mortality" for q in qs)
     # materially more than the bare name variants that returned the same facts
     assert len(qs) > len(evidence_run.expand_topic_queries("rapamycin", max_queries=16))
 
@@ -285,6 +287,13 @@ def test_fetch_merges_and_dedups_distinct_slice_results(monkeypatch: Any) -> Non
         fired.append(q)
         slug = q.replace(" ", "_")
         # query-specific facts, plus one shared fact to prove dedup works
+        if q == "topicA":
+            return httpx.Response(200, json=[
+                _fact("seed", "10.1/seed") | {
+                    "paper": {"doi": "10.1/seed", "title": "topicA reserve reliability"},
+                },
+                _fact("shared", "10.1/shared"),
+            ])
         return httpx.Response(200, json=(
             [_fact(f"{slug}-{i}", f"10.1/{slug}-{i}") for i in range(3)]
             + [_fact("shared", "10.1/shared")]
@@ -293,10 +302,10 @@ def test_fetch_merges_and_dedups_distinct_slice_results(monkeypatch: Any) -> Non
     _mock_client(monkeypatch, handler)
     facts = evidence_run._fetch_facts("topicA")
 
-    assert any("mortality" in q for q in fired)  # targeted slice was queried
+    assert "reserve reliability" in fired  # source-title facet was queried
     assert sum(1 for f in facts if f["fact_id"] == "shared") == 1  # deduped
-    # old name-only path yielded ~3-6 sources; diverse slices yield many more
-    assert evidence_run._source_count(facts) >= 12
+    # old name-only path yielded ~2 sources; title facets yield more.
+    assert evidence_run._source_count(facts) >= 5
 
 
 def test_fetch_papers_merges_elite_topic_and_broad_search(

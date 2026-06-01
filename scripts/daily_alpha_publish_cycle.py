@@ -1715,6 +1715,20 @@ def _public_submission_markdown(memo: str) -> str:
     )
 
 
+def _audit_sidecars(run_dir: Path) -> Json:
+    out: Json = {}
+    for name in (
+        "claim_receipt_matrix.json",
+        "typed_counter_evidence.json",
+        "novelty_delta.json",
+        "memo_audit.json",
+    ):
+        data = _json(run_dir / name, None)
+        if isinstance(data, (dict, list)):
+            out[name.removesuffix(".json")] = data
+    return out
+
+
 def _submission_payload(verdict: Json, root: Path) -> Json:
     run_dir = _run_path(root, verdict.get("run_dir"))
     memo = ""
@@ -1754,6 +1768,7 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         "evidence_bundle": {
             "publish_verdict": verdict,
             "run_dir": verdict.get("run_dir"),
+            "audit_sidecars": _audit_sidecars(run_dir),
             "source_papers": source_papers,
             "direct_source_papers": direct_source_papers,
             "bound_receipt_count": receipt_count,

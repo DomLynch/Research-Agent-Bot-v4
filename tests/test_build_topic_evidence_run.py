@@ -13,7 +13,7 @@ def test_fetch_facts_records_search_trace(monkeypatch) -> None:  # type: ignore[
 
     monkeypatch.setattr(er, "load_settings", lambda: _S())
     monkeypatch.setattr(er, "_topic_fact_keys", lambda _t: ["k1"])
-    monkeypatch.setattr(er, "_diverse_queries", lambda _t: ["q1", "q2"])
+    monkeypatch.setattr(er, "_diverse_queries", lambda _t, **_kw: ["q1", "q2"])
 
     def _fake_fetch_one(job, _base, _hdr, _topic):  # type: ignore[no-untyped-def]
         kind, _value = job
@@ -38,7 +38,7 @@ def test_fetch_timeout_is_not_empty_evidence(monkeypatch) -> None:  # type: igno
 
     monkeypatch.setattr(er, "load_settings", lambda: _S())
     monkeypatch.setattr(er, "_topic_fact_keys", lambda _t: ["k1"])
-    monkeypatch.setattr(er, "_diverse_queries", lambda _t: ["q1"])
+    monkeypatch.setattr(er, "_diverse_queries", lambda _t, **_kw: ["q1"])
     monkeypatch.setattr(
         er, "_fetch_one",
         lambda *_args: er.FetchResult([], "timeout", ("read_timeout",)),
@@ -102,3 +102,50 @@ def test_primary_fetch_failure_does_not_write_empty_frontier(monkeypatch, tmp_pa
 
     assert status == {"status": "failed", "reason": "all_primary_fetches_failed"}
     assert not (run_dir / "frontier_review.json").exists()
+
+
+def test_diverse_queries_use_data_facets_not_static_runtime_terms() -> None:
+    queries = er._diverse_queries(
+        "berberine", facets=("glucose metabolism", "randomized trials"),
+    )
+
+    assert "berberine" in queries
+    assert "glucose metabolism" in queries
+    assert "randomized trials" in queries
+    assert not any(q == "berberine mortality" for q in queries)
+
+
+def test_fetch_facts_expands_with_source_title_facets(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    class _S:
+        researka_database_url = "https://db.example"
+        researka_database_token = "tok"
+
+    calls: list[str] = []
+
+    def _fake_fetch_one(job, _base, _hdr, _topic):  # type: ignore[no-untyped-def]
+        _kind, query = job
+        calls.append(query)
+        if query == "berberine":
+            return er.FetchResult([{
+                "fact_id": "1",
+                "canonical_phrase": "berberine improved a measured endpoint",
+                "source_paper": {"title": "Berberine improves glucose metabolism"},
+            }], "ok")
+        if query == "glucose metabolism":
+            return er.FetchResult([{
+                "fact_id": "2",
+                "canonical_phrase": "glucose metabolism changed in an independent source",
+                "source_paper": {"title": "Independent glucose metabolism trial"},
+            }], "ok")
+        return er.FetchResult([], "ok")
+
+    monkeypatch.setattr(er, "load_settings", lambda: _S())
+    monkeypatch.setattr(er, "_topic_fact_keys", lambda _t: [])
+    monkeypatch.setattr(er, "_fetch_one", _fake_fetch_one)
+
+    trace: list[dict[str, Any]] = []
+    facts = er._fetch_facts("berberine", trace=trace)
+
+    assert {fact["fact_id"] for fact in facts} == {"1", "2"}
+    assert "glucose metabolism" in calls
+    assert any(row["query"] == "glucose metabolism" for row in trace)
