@@ -419,6 +419,7 @@ def test_stop_on_ready_uses_cache_first_discovery(
 
     assert run_curator_cycle.main() == 1
     assert "--cache-first" in calls[0]
+    assert calls[0][calls[0].index("--top") + 1] == "5"
 
 
 def test_stop_on_ready_halts_plan(
