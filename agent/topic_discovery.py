@@ -48,7 +48,7 @@ _SEEDS_TOML = (Path(__file__).resolve().parent.parent
 # also slashes per-cycle DB load). Universal — no domain literals.
 _SUPPLY_CACHE_PATH = (Path(__file__).resolve().parent.parent
                       / "runs" / "_topic_supply_cache.json")
-_SUPPLY_CACHE_VERSION = 9
+_SUPPLY_CACHE_VERSION = 10
 _PUBLISHABLE_SOURCE_FLOOR = 5
 _PROBE_INCONCLUSIVE = -1  # all queries failed (timeout/error), not a real 0
 _DERIVED_TOPIC_LIMIT = 5_000
@@ -353,19 +353,28 @@ def _topic_fact_keys(topic: str, *, max_keys: int = 4) -> tuple[str, ...]:
     return tuple(seen)
 
 
-def _add_a_core_sources(
+def _add_source_profile(
     rows: list[dict[str, Any]], topic: str, *,
     source_keys: set[str], child_sources: dict[str, set[str]],
 ) -> None:
     facts = [_fact_for_lane(row, topic) for row in rows]
-    lanes = {verdict.fact_id: verdict.lane for verdict in classify_lanes(facts, topic)}
+    verdicts = classify_lanes(facts, topic)
+    lanes = {verdict.fact_id: verdict.lane for verdict in verdicts}
+    reasons = {verdict.fact_id: verdict.reason for verdict in verdicts}
     for fact in facts:
-        if lanes.get(str(fact.get("fact_id") or "")) != "A_core":
+        fact_id = str(fact.get("fact_id") or "")
+        lane = lanes.get(fact_id)
+        if lane not in {"A_core", "B_context"}:
             continue
         key = _fact_source_key(fact)
         if not key:
             continue
-        source_keys.add(key)
+        if lane == "A_core":
+            source_keys.add(key)
+        elif reasons.get(fact_id) != "topic_in_population_context_only":
+            continue
+        # Population-only broad parents stay underfloor; their direct
+        # intervention/endpoint cluster can still seed a child topic.
         for slug in _fact_child_slugs(fact, topic):
             child_sources.setdefault(slug, set()).add(key)
 
@@ -401,7 +410,7 @@ def _fetch_topic_fact_source_profile(
             continue
         rows = [row for row in data if isinstance(row, dict)]
         any_success = True
-        _add_a_core_sources(
+        _add_source_profile(
             rows, topic, source_keys=source_keys,
             child_sources=child_sources)
         if len(source_keys) >= _PUBLISHABLE_SOURCE_FLOOR:
@@ -432,7 +441,7 @@ def _fetch_topic_fact_source_profile(
             continue
         rows = [row for row in data if isinstance(row, dict)]
         any_success = True
-        _add_a_core_sources(
+        _add_source_profile(
             rows, topic, source_keys=source_keys,
             child_sources=child_sources)
         if (
