@@ -484,15 +484,47 @@ def test_discover_topics_lets_fact_rich_derived_candidate_outrank_seed(
     assert out[0].fact_source_count == 5
 
 
-def test_default_probe_window_covers_derived_topic_pool() -> None:
-    """Derived alpha candidates must receive source counts before ranking.
-
-    If the probe window is narrower than the configured derived pool, rich
-    long-tail topics remain at 0 and the cycle falls back to exhausted seeds.
-    """
+def test_backlog_probe_window_can_cover_derived_topic_pool() -> None:
+    """Backlog warming can probe every derived topic without slowing publish."""
     from agent import topic_discovery as td
 
-    assert td.load_derived_topic_limit() <= td._FACT_PROBE_TOPICS
+    assert td.load_derived_topic_limit() > td._FACT_PROBE_TOPICS
+    assert td.load_derived_topic_limit() <= td._DERIVED_TOPIC_LIMIT
+
+
+def test_discover_topics_fact_probe_limit_keeps_submit_path_bounded(
+    monkeypatch: Any,
+) -> None:
+    from agent import topic_discovery as td
+
+    def fake_fetch(topics: list[str], **_: Any) -> dict[str, list[dict[str, Any]]]:
+        return {
+            topic: [_paper(
+                doi=f"10.1/{topic}",
+                fwci=4.0 if topic.startswith("derived_") else 1.0,
+            )]
+            for topic in topics
+        }
+
+    seen: list[str] = []
+
+    def capture_fact_source_counts(topics: list[str], **_: Any) -> dict[str, int]:
+        seen.extend(topics)
+        return {}
+
+    monkeypatch.setattr(td, "_fetch_papers_by_topic", fake_fetch)
+    monkeypatch.setattr(td, "_title_topic_slugs", lambda *_args, **_kw: [
+        "derived_one", "derived_two", "derived_three",
+    ])
+    monkeypatch.setattr(td, "_fetch_fact_source_counts", capture_fact_source_counts)
+
+    td.discover_topics(
+        seeds=("seed_topic",), settings=_settings(), client=httpx.Client(),
+        current_year=2024, derived_topic_limit=3, fact_probe_topics=1,
+    )
+
+    assert "seed_topic" in seen
+    assert len([topic for topic in seen if topic.startswith("derived_")]) == 1
 
 
 def test_discover_topics_counts_slug_prefix_fact_sources() -> None:

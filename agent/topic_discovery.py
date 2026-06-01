@@ -52,10 +52,10 @@ _SUPPLY_CACHE_VERSION = 3
 _PUBLISHABLE_SOURCE_FLOOR = 5
 _PROBE_INCONCLUSIVE = -1  # all queries failed (timeout/error), not a real 0
 _DERIVED_TOPIC_LIMIT = 250
-# All configured seeds are probed, and derived candidates must be probed too;
-# otherwise the long-tail source-rich topics stay at fact_source_count=0 and
-# never replace exhausted/cooldown winners.
-_FACT_PROBE_TOPICS = _DERIVED_TOPIC_LIMIT
+# All configured seeds are probed; this caps extra velocity/derived topics on
+# the latency-sensitive publish path. Full-pool probing is an explicit backlog
+# warming mode, not something the 2-hour submit cycle should wait on.
+_FACT_PROBE_TOPICS = 20
 _FACT_PROBE_TIMEOUT_SECONDS = 8.0
 _FACT_PROBE_BUDGET_SECONDS = 24.0
 _PAPER_FETCH_WORKERS = 8
@@ -481,6 +481,7 @@ def discover_topics(
     settings: Settings, client: httpx.Client | None = None,
     current_year: int | None = None,
     derived_topic_limit: int = 0,
+    fact_probe_topics: int | None = None,
 ) -> tuple[TopicCandidate, ...]:
     """Score every seed topic; return ranked tuple (highest velocity first).
     Never raises — degrades silently on HTTP/JSON errors per topic."""
@@ -511,9 +512,13 @@ def discover_topics(
             key=lambda c: c.velocity_score,
             reverse=True,
         )
+        extra_probe_limit = (
+            _FACT_PROBE_TOPICS if fact_probe_topics is None
+            else max(0, fact_probe_topics)
+        )
         probe_topics = list(dict.fromkeys([
             *(topic for topic in topics if topic in papers_by_topic),
-            *(cand.topic for cand in velocity_ranked[:_FACT_PROBE_TOPICS]),
+            *(cand.topic for cand in velocity_ranked[:extra_probe_limit]),
         ]))
         fact_sources_by_topic = _fetch_fact_source_counts(
             probe_topics, client=c, settings=settings,

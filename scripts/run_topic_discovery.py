@@ -61,6 +61,10 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--top", type=int, default=10,
                         help="Emit top-N candidates (default 10)")
+    parser.add_argument(
+        "--warm-backlog", action="store_true",
+        help="Probe source breadth for the full derived pool; slower, for backlog warming.",
+    )
     args = parser.parse_args()
     seeds = load_seed_topics()
     if not seeds:
@@ -71,7 +75,11 @@ def main() -> int:
     with httpx.Client() as client:
         ranked = discover_topics(seeds=seeds, settings=settings,
                                  client=client,
-                                 derived_topic_limit=load_derived_topic_limit())
+                                 derived_topic_limit=load_derived_topic_limit(),
+                                 fact_probe_topics=(
+                                     load_derived_topic_limit()
+                                     if args.warm_backlog else None
+                                 ))
     top = ranked[: args.top]
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
     year = dt.datetime.now(dt.UTC).year
