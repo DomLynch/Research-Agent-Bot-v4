@@ -1300,12 +1300,16 @@ def render_signal_memo(
             preferred_direct_ids = coherent_direct + [
                 fid for fid in preferred_direct_ids if fid not in coherent_direct
             ]
-    trusted_bound_ids = _cited_receipt_ids(
-        publish_verdict, lanes, _BINDABLE,
-    ) if grounded else _candidate_receipt_ids(publish_verdict, lanes, _BINDABLE)
-    trusted_direct_ids = _cited_receipt_ids(
-        publish_verdict, lanes, _DIRECT,
-    ) if grounded else _candidate_receipt_ids(publish_verdict, lanes, _DIRECT)
+    trusted_bound_ids = (
+        _cited_receipt_ids(publish_verdict, lanes, _BINDABLE)
+        | _candidate_receipt_ids(publish_verdict, lanes, _BINDABLE)
+        if grounded else _candidate_receipt_ids(publish_verdict, lanes, _BINDABLE)
+    )
+    trusted_direct_ids = (
+        _cited_receipt_ids(publish_verdict, lanes, _DIRECT)
+        | _candidate_receipt_ids(publish_verdict, lanes, _DIRECT)
+        if grounded else _candidate_receipt_ids(publish_verdict, lanes, _DIRECT)
+    )
     expanded_ids = _expanded_receipt_ids(
         audit, facts, lanes, min_sources=min_sources, claim=claim, topic=topic,
         preferred_ids=preferred_bound_ids, trusted_ids=trusted_bound_ids,
