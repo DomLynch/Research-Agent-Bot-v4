@@ -700,7 +700,12 @@ def test_derived_cycle_keeps_rich_visible_and_warms_tail(
     assert out == ["rich_one", "new_one"]
 
 
-def test_discover_topics_counts_slug_prefix_fact_sources() -> None:
+def test_discover_topics_counts_slug_prefix_fact_sources(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
     papers = [_paper(doi="10.1/omega", fwci=2.0, cited_by_count=100)]
 
     def handler(req: httpx.Request) -> httpx.Response:
