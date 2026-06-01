@@ -119,9 +119,20 @@ def summarize_latest(
     *,
     check_url: bool = False,
     show_next_candidate: bool = False,
+    sync_pending_decisions: bool = False,
+    cycle_module: Any | None = None,
     timeout: float = 15.0,
     now: dt.datetime | None = None,
 ) -> Json:
+    decision_sync: Json | None = None
+    if sync_pending_decisions:
+        cycle: Any = cycle_module
+        if cycle is None:
+            try:
+                cycle = importlib.import_module("scripts.daily_alpha_publish_cycle")
+            except ModuleNotFoundError:
+                cycle = importlib.import_module("daily_alpha_publish_cycle")
+        decision_sync = cycle.sync_submission_decisions(runs_root)
     paths = _ledger_paths(runs_root)
     if not paths:
         return {"ok": False, "reason": "no_daily_ledger", "runs_root": str(runs_root)}
@@ -148,6 +159,8 @@ def summarize_latest(
         "considered_counts": _considered_counts(ledger),
         "reason": ledger.get("reason"),
     }
+    if decision_sync is not None:
+        summary["decision_sync"] = decision_sync
     if show_next_candidate:
         try:
             summary["next_candidate"] = summarize_next_candidate(runs_root)
@@ -162,6 +175,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--expect-published", action="store_true")
     parser.add_argument("--check-url", action="store_true")
     parser.add_argument("--show-next-candidate", action="store_true")
+    parser.add_argument("--sync-pending-decisions", action="store_true")
     parser.add_argument("--max-age-minutes", type=float, default=0.0)
     parser.add_argument("--timeout", type=float, default=15.0)
     args = parser.parse_args(argv)
@@ -170,6 +184,7 @@ def main(argv: list[str] | None = None) -> int:
         args.runs_root,
         check_url=args.check_url,
         show_next_candidate=args.show_next_candidate,
+        sync_pending_decisions=args.sync_pending_decisions,
         timeout=args.timeout,
     )
     if args.max_age_minutes > 0 and float(summary.get("ledger_age_minutes") or 0) > args.max_age_minutes:

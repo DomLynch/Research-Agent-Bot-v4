@@ -88,3 +88,41 @@ def test_next_candidate_summary_reports_retry_risk(tmp_path: Path) -> None:
     assert summary["retry_after_rejection"] is True
     assert summary["retry_attempt_count"] == 2
     assert summary["considered_counts"] == {"cycle_exhausted_topic": 1, "eligible": 1}
+
+
+def test_health_summary_can_sync_pending_submission(tmp_path: Path) -> None:
+    ledger = _write_ledger(tmp_path, "2026-06-01T08-29-49Z.json", {
+        "status": "submitted_to_researka",
+        "submitted": 1,
+        "published": 0,
+        "submitted_topic": "klotho",
+        "submission_id": "sub-1",
+    })
+
+    def sync_submission_decisions(runs_root: Path) -> dict[str, int]:
+        data = json.loads(ledger.read_text(encoding="utf-8"))
+        data.update({
+            "status": "published",
+            "published": 1,
+            "published_topic": "klotho",
+            "public_url": "https://researka.org/alpha/klotho",
+            "final_verdict": "accepted",
+        })
+        ledger.write_text(json.dumps(data), encoding="utf-8")
+        return {"checked": 1, "updated": 1, "published": 1, "pending": 0}
+
+    fake_cycle = SimpleNamespace(sync_submission_decisions=sync_submission_decisions)
+
+    summary = health.summarize_latest(
+        tmp_path,
+        sync_pending_decisions=True,
+        cycle_module=fake_cycle,
+        now=dt.datetime.fromtimestamp(ledger.stat().st_mtime, tz=dt.UTC),
+    )
+
+    assert summary["ok"] is True
+    assert summary["status"] == "published"
+    assert summary["published"] == 1
+    assert summary["decision_sync"] == {
+        "checked": 1, "updated": 1, "published": 1, "pending": 0,
+    }
