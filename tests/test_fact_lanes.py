@@ -158,6 +158,23 @@ def test_topic_in_population_with_effect_is_a_core() -> None:
     assert v.reason == "topic_in_population_pico_complete"
 
 
+def test_long_head_population_fallback_is_universal() -> None:
+    """The compound-topic head fallback is structural, not biomedical:
+    long, specific head words can define a studied population in any domain."""
+    v = classify_lane({
+        "fact_id": "mw/1",
+        "canonical_phrase": "filtration policy reduced contamination by 12%",
+        "population": "microplastic-contaminated rivers",
+        "intervention": "filtration policy",
+        "comparator": "usual monitoring",
+        "numeric_value": 12.0,
+        "units": "%",
+    }, topic="microplastic_water_quality")
+
+    assert v.lane == "A_core"
+    assert v.reason == "topic_in_population_pico_complete"
+
+
 def test_classify_lanes_batch_returns_one_per_fact() -> None:
     out = classify_lanes(
         [_fact(fact_id="f/1"), _fact(fact_id="f/2"), _fact(fact_id="f/3")],
