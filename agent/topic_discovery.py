@@ -58,6 +58,7 @@ _DERIVED_TOPIC_LIMIT = 5_000
 _FACT_PROBE_TOPICS = 20
 _FACT_PROBE_TIMEOUT_SECONDS = 8.0
 _FACT_PROBE_BUDGET_SECONDS = 24.0
+_EXACT_FACT_PROBE_LIMIT = 500
 _PAPER_FETCH_WORKERS = 8
 # Concurrent probe workers, capped to what the shared Researka DB sustains.
 # Measured capacity: at <=4 concurrent the facts endpoint answers in <8s (the
@@ -405,7 +406,7 @@ def _fetch_topic_fact_source_profile(
             child_sources=child_sources)
         if len(source_keys) >= _PUBLISHABLE_SOURCE_FLOOR:
             break
-    for query in _fact_probe_queries(topic, facets=facets):
+    for idx, query in enumerate(_fact_probe_queries(topic, facets=facets)):
         if time.monotonic() >= deadline:
             break
         try:
@@ -414,7 +415,10 @@ def _fetch_topic_fact_source_profile(
                 headers={"X-Researka-Token": tok},
                 json={
                     "query": query,
-                    "top_k": limit,
+                    "top_k": (
+                        max(limit, _EXACT_FACT_PROBE_LIMIT)
+                        if idx == 0 else limit
+                    ),
                     "min_confidence": "medium",
                     "numeric_only": True,
                 },

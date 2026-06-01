@@ -780,7 +780,7 @@ def test_fact_source_count_respects_probe_budget(monkeypatch: Any) -> None:
     assert out == topic_discovery._PROBE_INCONCLUSIVE
 
 
-def test_fact_source_probe_uses_submit_sized_top_k() -> None:
+def test_fact_source_probe_deepens_exact_query_then_bounds_facets() -> None:
     from agent import topic_discovery
 
     bodies: list[dict[str, Any]] = []
@@ -794,7 +794,8 @@ def test_fact_source_probe_uses_submit_sized_top_k() -> None:
             "omega_3_longevity", client=c, settings=_settings(),
         )
 
-    assert bodies[0]["top_k"] == 50
+    assert bodies[0]["top_k"] == 500
+    assert bodies[1]["top_k"] == 50
     assert bodies[0]["min_confidence"] == "medium"
     assert bodies[0]["numeric_only"] is True
 
