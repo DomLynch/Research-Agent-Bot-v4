@@ -1226,15 +1226,9 @@ def test_discover_topics_reuses_cached_source_rich_fact_children(
         },
     }), encoding="utf-8")
     seed_papers = [_paper(doi="10.1/seed", title="Seed topic trial", fwci=2.0)]
-    child_papers = [_paper(
-        doi="10.1/child", title="Cached child topic trial", fwci=1.5)]
-
     def handler(req: httpx.Request) -> httpx.Response:
-        body = req.read().decode("utf-8") if req.content else "{}"
         if req.url.path.endswith("/tier2/facts/search"):
             return httpx.Response(200, json=[])
-        if "cached_child_topic" in body:
-            return httpx.Response(200, json=child_papers)
         return httpx.Response(200, json=seed_papers)
 
     with httpx.Client(transport=httpx.MockTransport(handler)) as c:
@@ -1245,7 +1239,7 @@ def test_discover_topics_reuses_cached_source_rich_fact_children(
 
     by_topic = {candidate.topic: candidate for candidate in out}
     assert by_topic["cached_child_topic"].fact_source_count == 8
-    assert by_topic["cached_child_topic"].paper_count == 1
+    assert by_topic["cached_child_topic"].paper_count == 0
 
 
 def test_cached_source_rich_topics_shrink_derived_fetch_window(
@@ -1286,12 +1280,11 @@ def test_cached_source_rich_topics_shrink_derived_fetch_window(
         current_year=2024, derived_topic_limit=3, fact_probe_topics=1,
     )
 
-    assert ("cached_child_topic",) in calls
-    assert not any(topic.startswith("derived_") for call in calls for topic in call)
+    assert calls == [("seed_topic",)]
     assert not any(topic.startswith("derived_") for topic in seen_probe_topics)
 
 
-def test_discover_topics_ignores_cached_source_rich_hint_without_papers(
+def test_discover_topics_uses_cached_source_rich_hint_without_papers(
     monkeypatch: Any, tmp_path: Path,
 ) -> None:
     from agent import topic_discovery as td
@@ -1320,7 +1313,9 @@ def test_discover_topics_ignores_cached_source_rich_hint_without_papers(
             current_year=2024, derived_topic_limit=5, fact_probe_topics=5,
         )
 
-    assert "cached_orphan_topic" not in {candidate.topic for candidate in out}
+    by_topic = {candidate.topic: candidate for candidate in out}
+    assert by_topic["cached_orphan_topic"].fact_source_count == 8
+    assert by_topic["cached_orphan_topic"].paper_count == 0
 
 
 def test_cached_source_rich_topics_can_use_previous_version_as_hint(

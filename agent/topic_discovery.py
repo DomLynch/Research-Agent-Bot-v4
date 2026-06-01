@@ -863,15 +863,9 @@ def discover_topics(
             cached_fact_topics = _cached_source_rich_topics(
                 exclude=set(papers_by_topic), limit=extra_probe_limit)
             if cached_fact_topics:
-                cached_papers = _fetch_papers_by_topic(
-                    [topic for topic, _count in cached_fact_topics],
-                    client=c, settings=settings,
-                    require_title_support=True, current_year=year_now)
                 for topic, count in cached_fact_topics:
-                    papers = cached_papers.get(topic, [])
-                    if papers:
-                        papers_by_topic[topic] = papers
-                        cached_fact_counts[topic] = count
+                    papers_by_topic[topic] = []
+                    cached_fact_counts[topic] = count
         derived_cycle_topics: list[str] = []
         if derived_topic_limit:
             derived = [
