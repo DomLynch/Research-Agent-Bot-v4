@@ -362,6 +362,7 @@ def _add_source_profile(
     rows: list[dict[str, Any]], topic: str, *,
     source_keys: set[str], child_sources: dict[str, set[str]],
     child_source_papers: dict[str, dict[str, dict[str, Any]]] | None = None,
+    source_papers: dict[str, dict[str, Any]] | None = None,
 ) -> None:
     facts = [_fact_for_lane(row, topic) for row in rows]
     verdicts = classify_lanes(facts, topic)
@@ -377,6 +378,10 @@ def _add_source_profile(
             continue
         if lane == "A_core":
             source_keys.add(key)
+            if source_papers is not None:
+                paper = fact.get("source_paper")
+                if isinstance(paper, dict):
+                    source_papers.setdefault(key, paper)
         elif reasons.get(fact_id) != "topic_in_population_context_only":
             continue
         # Population-only broad parents stay underfloor; their direct
@@ -394,6 +399,7 @@ def _fetch_topic_fact_source_profile(
     limit: int = 50, facets: tuple[str, ...] = (),
     mine_children: bool = False,
     child_source_papers: dict[str, dict[str, dict[str, Any]]] | None = None,
+    source_papers: dict[str, dict[str, Any]] | None = None,
 ) -> tuple[int, tuple[tuple[str, int], ...]]:
     """Count unique direct bindable fact-backed sources for ranking."""
     base = settings.researka_database_url.rstrip("/")
@@ -425,7 +431,8 @@ def _fetch_topic_fact_source_profile(
         _add_source_profile(
             rows, topic, source_keys=source_keys,
             child_sources=child_sources,
-            child_source_papers=child_source_papers)
+            child_source_papers=child_source_papers,
+            source_papers=source_papers)
         if not mine_children and len(source_keys) >= _PUBLISHABLE_SOURCE_FLOOR:
             break
     for idx, query in enumerate(_fact_probe_queries(topic, facets=facets)):
@@ -457,7 +464,8 @@ def _fetch_topic_fact_source_profile(
         _add_source_profile(
             rows, topic, source_keys=source_keys,
             child_sources=child_sources,
-            child_source_papers=child_source_papers)
+            child_source_papers=child_source_papers,
+            source_papers=source_papers)
         if (
             not mine_children
             and len(source_keys) >= _PUBLISHABLE_SOURCE_FLOOR
@@ -599,14 +607,21 @@ def _cached_supply_counts(
 
 
 def cached_source_rich_candidates(*, limit: int) -> tuple[TopicCandidate, ...]:
-    return tuple(
-        TopicCandidate(
-            topic=topic, paper_count=0, fact_source_count=count,
-            top_paper_doi="", top_paper_title="", velocity_score=0.0,
-            mean_fwci=0.0, mean_cited_by=0.0,
+    cache = _load_supply_cache()
+    year_now = dt.datetime.now(dt.UTC).year
+    candidates: list[TopicCandidate] = []
+    for topic, count in _cached_source_rich_topics(exclude=set(), limit=limit):
+        papers = _cached_source_papers(cache.get(topic))
+        candidates.append(
+            _score_topic(topic, papers, year_now, fact_source_count=count)
+            if papers else
+            TopicCandidate(
+                topic=topic, paper_count=0, fact_source_count=count,
+                top_paper_doi="", top_paper_title="", velocity_score=0.0,
+                mean_fwci=0.0, mean_cited_by=0.0,
+            )
         )
-        for topic, count in _cached_source_rich_topics(exclude=set(), limit=limit)
-    )
+    return tuple(candidates)
 
 
 def _fetch_fact_source_counts(
@@ -647,6 +662,7 @@ def _fetch_fact_source_counts(
             int,
             tuple[tuple[str, int], ...],
             dict[str, dict[str, dict[str, Any]]],
+            dict[str, dict[str, Any]],
         ],
     ] = {}
 
@@ -654,17 +670,20 @@ def _fetch_fact_source_counts(
         int,
         tuple[tuple[str, int], ...],
         dict[str, dict[str, dict[str, Any]]],
+        dict[str, dict[str, Any]],
     ]:
-        papers: dict[str, dict[str, dict[str, Any]]] = {}
+        child_papers: dict[str, dict[str, dict[str, Any]]] = {}
+        root_papers: dict[str, dict[str, Any]] = {}
         count, children = _fetch_topic_fact_source_profile(
             topic,
             client=client,
             settings=settings,
             facets=(facets_by_topic or {}).get(topic, ()),
             mine_children=refresh_low_source_counts,
-            child_source_papers=papers,
+            child_source_papers=child_papers,
+            source_papers=root_papers,
         )
-        return count, children, papers
+        return count, children, child_papers, root_papers
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         futures = {
@@ -676,11 +695,15 @@ def _fetch_fact_source_counts(
     # Successful probe (>=0): refresh cache + use it. Inconclusive (-1):
     # keep the last cached count if any, else fall back to 0; never cache
     # a failure as a real count.
-    for topic, (count, children, child_papers) in probed.items():
+    for topic, (count, children, child_papers, root_papers) in probed.items():
         if count >= 0:
-            cache[topic] = {
+            entry: dict[str, Any] = {
                 "count": count, "ts": now, "version": _SUPPLY_CACHE_VERSION,
             }
+            source_paper_list = list(root_papers.values())[:25]
+            if source_paper_list:
+                entry["source_papers"] = source_paper_list
+            cache[topic] = entry
             out[topic] = count
             if child_source_papers is not None:
                 for child, papers in child_papers.items():
@@ -689,14 +712,14 @@ def _fetch_fact_source_counts(
                 if child_source_counts is not None:
                     child_source_counts[child] = max(
                         child_source_counts.get(child, 0), child_count)
-                entry: dict[str, Any] = {
+                child_entry: dict[str, Any] = {
                     "count": child_count, "ts": now,
                     "version": _SUPPLY_CACHE_VERSION,
                 }
                 source_paper_list = list((child_papers.get(child) or {}).values())[:25]
                 if source_paper_list:
-                    entry["source_papers"] = source_paper_list
-                cache[child] = entry
+                    child_entry["source_papers"] = source_paper_list
+                cache[child] = child_entry
         else:
             prior = cache.get(topic)
             out[topic] = (

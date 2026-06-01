@@ -1687,8 +1687,11 @@ def test_warm_backlog_refreshes_source_rich_cache_missing_papers(
     }), encoding="utf-8")
     calls: list[str] = []
 
-    def probe(topic: str, *_a: Any, **_k: Any) -> tuple[int, tuple[tuple[str, int], ...]]:
+    def probe(topic: str, *_a: Any, **kwargs: Any) -> tuple[int, tuple[tuple[str, int], ...]]:
         calls.append(topic)
+        papers = kwargs.get("source_papers")
+        if isinstance(papers, dict):
+            papers["doi:10.1/root"] = {"title": "Root source", "doi": "10.1/root"}
         return 8, ()
 
     monkeypatch.setattr(td, "_fetch_topic_fact_source_profile", probe)
@@ -1699,6 +1702,10 @@ def test_warm_backlog_refreshes_source_rich_cache_missing_papers(
 
     assert out == {"rich": 8, "hydrated": 6}
     assert calls == ["rich"]
+    cache = json.loads((tmp_path / "supply.json").read_text(encoding="utf-8"))
+    assert cache["rich"]["source_papers"] == [
+        {"title": "Root source", "doi": "10.1/root"},
+    ]
 
 
 def test_supply_cache_version_mismatch_reprobes(

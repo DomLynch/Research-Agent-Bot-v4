@@ -288,6 +288,26 @@ def test_plan_topics_builds_candidate_meeting_preferred_floor() -> None:
     assert below_floor == ["dead"]  # <3 dropped; 'mid' (3) kept in reserve
 
 
+def test_submit_plan_skips_zero_paper_cached_candidates() -> None:
+    ranked = [
+        {"topic": "count_only", "velocity_score": 9.0, "fact_source_count": 12, "paper_count": 0},
+        {"topic": "paper_backed", "velocity_score": 8.0, "fact_source_count": 5, "paper_count": 3},
+    ]
+
+    plan, _skipped, _excluded, below_floor = _plan_topics(
+        ranked,
+        recent=set(),
+        excluded=set(),
+        top=1,
+        min_fact_sources=5,
+        hard_floor=3,
+        require_papers=True,
+    )
+
+    assert [row["topic"] for row in plan] == ["paper_backed"]
+    assert below_floor == ["count_only"]
+
+
 def test_summarize_md_renders_table() -> None:
     results = [
         TopicResult(topic="rapamycin", velocity=0.91, status="ran",
@@ -465,8 +485,8 @@ def test_stop_on_ready_halts_plan(
     monkeypatch.setattr(
         run_curator_cycle, "_read_discovery_top",
         lambda _out: [
-            {"topic": "ready", "velocity_score": 2.0, "fact_source_count": 5},
-            {"topic": "later", "velocity_score": 1.0, "fact_source_count": 5},
+            {"topic": "ready", "velocity_score": 2.0, "fact_source_count": 5, "paper_count": 3},
+            {"topic": "later", "velocity_score": 1.0, "fact_source_count": 5, "paper_count": 3},
         ],
     )
     monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",
@@ -515,8 +535,8 @@ def test_stop_on_ready_ignores_under_source_candidate(
     monkeypatch.setattr(
         run_curator_cycle, "_read_discovery_top",
         lambda _out: [
-            {"topic": "thin", "velocity_score": 2.0, "fact_source_count": 5},
-            {"topic": "ready", "velocity_score": 1.0, "fact_source_count": 5},
+            {"topic": "thin", "velocity_score": 2.0, "fact_source_count": 5, "paper_count": 3},
+            {"topic": "ready", "velocity_score": 1.0, "fact_source_count": 5, "paper_count": 3},
         ],
     )
     monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",

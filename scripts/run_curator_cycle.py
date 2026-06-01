@@ -253,6 +253,7 @@ def _plan_topics(
     top: int,
     min_fact_sources: int = 0,
     hard_floor: int = 0,
+    require_papers: bool = False,
 ) -> tuple[list[dict[str, Any]], list[str], list[str], list[str]]:
     plan: list[dict[str, Any]] = []
     underfloor: list[dict[str, Any]] = []
@@ -269,6 +270,9 @@ def _plan_topics(
             continue
         if topic in recent:
             skipped.append(topic)
+            continue
+        if require_papers and int(c.get("paper_count") or 0) <= 0:
+            below_floor.append(topic)
             continue
         count = int(c.get("fact_source_count") or 0)
         # Hard floor first: sub-floor topics do not displace stronger
@@ -416,6 +420,7 @@ def main() -> int:
             _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES if args.stop_on_ready else 0
         ),
         hard_floor=_PREBUILD_MIN_SOURCE_FLOOR,
+        require_papers=args.stop_on_ready,
     )
 
     print(f"[cycle] plan: {len(plan)} topics to run, {len(skipped)} skipped "

@@ -173,3 +173,34 @@ def test_cache_first_falls_back_when_cache_is_underfilled(
     out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
     assert [row["topic"] for row in payload["top"]] == ["cached_rich", "fresh_rich"]
+
+
+def test_cache_first_preserves_cached_source_papers(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import agent.topic_discovery as discovery
+
+    cache_path = tmp_path / "supply_cache.json"
+    cache_path.write_text(json.dumps({
+        "paper_backed": {
+            "count": 6,
+            "ts": 4_100_000_000,
+            "version": discovery._SUPPLY_CACHE_VERSION,
+            "source_papers": [{
+                "doi": "10.1/cache",
+                "title": "Cached paper",
+                "fwci": 2.0,
+                "cited_by_count": 100,
+                "publication_year": 2025,
+                "quality_score": 80,
+            }],
+        },
+    }), encoding="utf-8")
+    monkeypatch.setattr(discovery, "_SUPPLY_CACHE_PATH", cache_path)
+
+    rows = discovery.cached_source_rich_candidates(limit=1)
+
+    assert len(rows) == 1
+    assert rows[0].topic == "paper_backed"
+    assert rows[0].paper_count == 1
+    assert rows[0].top_paper_doi == "10.1/cache"
