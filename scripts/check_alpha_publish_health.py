@@ -9,6 +9,7 @@ import argparse
 import datetime as dt
 import importlib
 import json
+import re
 import sys
 import urllib.error
 import urllib.request
@@ -16,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 Json = dict[str, Any]
+_CYCLE_LEDGER_RE = re.compile(r"^\d{4}-\d{2}-\d{2}t\d{2}-\d{2}-\d{2}z\.json$", re.I)
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
@@ -27,9 +29,9 @@ def _ledger_paths(runs_root: Path) -> list[Path]:
         (
             path
             for path in ledger_dir.glob("*.json")
-            if not path.name.startswith("_") and "decision" not in path.name
+            if _CYCLE_LEDGER_RE.match(path.name)
         ),
-        key=lambda path: path.stat().st_mtime,
+        key=lambda path: path.name.lower(),
         reverse=True,
     )
 

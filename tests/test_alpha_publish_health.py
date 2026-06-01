@@ -47,6 +47,55 @@ def test_health_summary_reports_latest_published_ledger(tmp_path: Path) -> None:
     assert summary["considered_counts"] == {"cycle_exhausted_topic": 1, "eligible": 1}
 
 
+def test_health_summary_prefers_ledger_timestamp_over_sync_mtime(tmp_path: Path) -> None:
+    latest = _write_ledger(tmp_path, "2026-06-01T21-59-41Z.json", {
+        "status": "published",
+        "submitted": 1,
+        "published": 1,
+        "published_topic": "caloric_restriction",
+        "public_url": "https://researka.org/alpha/latest",
+    })
+    stale_pending = _write_ledger(tmp_path, "2026-06-01T08-29-49Z.json", {
+        "status": "submitted_to_researka",
+        "submitted": 1,
+        "published": 0,
+        "submitted_topic": "klotho",
+    })
+    os.utime(latest, (1, 1))
+    os.utime(stale_pending, (2, 2))
+
+    summary = health.summarize_latest(tmp_path)
+
+    assert summary["ledger"] == "2026-06-01T21-59-41Z.json"
+    assert summary["ok"] is True
+    assert summary["topic"] == "caloric_restriction"
+
+
+def test_health_summary_ignores_probe_and_decision_ledgers(tmp_path: Path) -> None:
+    _write_ledger(tmp_path, "probe-20260601T080818Z.json", {
+        "status": "dry_run_selected",
+        "submitted": 0,
+        "published": 0,
+    })
+    _write_ledger(tmp_path, "2026-06-01t21-59-41z-decision-f61706f7.json", {
+        "status": "reviewer_revise",
+        "submitted": 1,
+        "published": 0,
+    })
+    _write_ledger(tmp_path, "2026-06-01T21-59-41Z.json", {
+        "status": "published",
+        "submitted": 1,
+        "published": 1,
+        "published_topic": "caloric_restriction",
+        "public_url": "https://researka.org/alpha/latest",
+    })
+
+    summary = health.summarize_latest(tmp_path)
+
+    assert summary["ledger"] == "2026-06-01T21-59-41Z.json"
+    assert summary["ok"] is True
+
+
 def test_expect_published_exits_nonzero_for_failed_latest_ledger(tmp_path: Path) -> None:
     _write_ledger(tmp_path, "2026-06-01T01-04-07Z.json", {
         "status": "no_publishable_candidate",
