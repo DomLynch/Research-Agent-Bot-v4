@@ -791,6 +791,28 @@ def test_partially_supported_revision_without_resubmission_allowed_is_not_retrie
     assert daily._repairable_rejection(decision) is False
 
 
+def test_partially_supported_reject_with_resubmission_allowed_is_not_retried() -> None:
+    decision = {
+        "claim_support_verdict": "partially_supported",
+        "decision": "reject",
+        "major_issues": ["The cited bundle mixes unrelated populations."],
+        "resubmission": {"allowed": True},
+    }
+
+    assert daily._repairable_rejection(decision) is False
+
+
+def test_unsupported_reject_with_resubmission_allowed_is_not_retried() -> None:
+    decision = {
+        "claim_support_verdict": "unsupported",
+        "decision": "reject",
+        "major_issues": ["The cited receipts do not support the thesis."],
+        "resubmission": {"allowed": True},
+    }
+
+    assert daily._repairable_rejection(decision) is False
+
+
 def test_supported_revision_stays_repairable() -> None:
     decision = {
         "claim_support_verdict": "supported",
