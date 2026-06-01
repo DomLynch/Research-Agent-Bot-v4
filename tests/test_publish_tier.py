@@ -363,6 +363,18 @@ def test_counter_evidence_is_explicit_when_a_bound_opposing_fact_exists(
     assert verdict["counter_evidence"]["items"][0]["fact_id"] == "3"
 
 
+def test_cited_opposing_receipt_still_counts_as_counter_evidence(tmp_path: Path) -> None:
+    run = _run(tmp_path, lanes=("A_core", "A_core", "A_core"))
+    _set_phrase(run, "1", "Reserve reliability improved after storage dispatch changes.")
+    _set_phrase(run, "2", "Storage dispatch did not improve reserve reliability.")
+    _set_phrase(run, "3", "Reserve reliability improved after storage dispatch changes.")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["counter_evidence"]["status"] == "found"
+    assert verdict["counter_evidence"]["items"][0]["fact_id"] == "2"
+
+
 def test_counter_evidence_prefers_load_bearing_contradiction(tmp_path: Path) -> None:
     run = _run(tmp_path, lanes=("A_core", "A_core"))
     _set_phrase(run, "1", "Reserve reliability improved after storage dispatch changes.")

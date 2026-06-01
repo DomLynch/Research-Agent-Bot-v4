@@ -248,12 +248,9 @@ def _counter_evidence(
     lanes: dict[str, str],
     markers: tuple[str, ...],
 ) -> list[dict[str, Any]]:
-    cited = set(cited_ids)
     out: list[dict[str, Any]] = []
     claim = _claim_tokens(cited_ids, facts)
     for fid in _bound_ids_in_fact_order(facts, lanes):
-        if fid in cited:
-            continue
         fact = facts.get(fid) or {}
         # Counter markers must live in the asserted finding itself. Comparator
         # text often says "without X" for ordinary controls; treating that as
