@@ -68,9 +68,10 @@ _TITLE_WORD = re.compile(r"[a-z][a-z0-9]+")
 _DERIVED_TOPIC_LIMIT = 250
 _TITLE_STOPWORDS = frozenset({
     "and", "the", "for", "with", "from", "into", "using", "among", "after",
-    "before", "during", "study", "trial", "review", "analysis", "effect",
-    "effects", "association", "associated", "based", "between", "patients",
-    "adults", "human", "mouse", "mice", "model", "models", "new", "novel",
+    "before", "during", "across", "study", "trial", "review", "analysis",
+    "effect", "effects", "association", "associated", "based", "between",
+    "patients", "adults", "human", "mouse", "mice", "model", "models",
+    "new", "novel",
 })
 
 

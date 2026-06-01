@@ -204,6 +204,19 @@ def test_title_topic_slugs_derive_candidates_from_paper_titles() -> None:
     assert all("study" not in slug for slug in out)
 
 
+def test_title_topic_slugs_drop_cross_scope_connectors() -> None:
+    out = _title_topic_slugs({
+        "seed": [_paper(
+            title="Risk factors across cohorts predict healthy aging outcomes",
+            fwci=10.0,
+            cited_by_count=1000,
+        )],
+    }, current_year=2024, limit=20)
+
+    assert "risk_factors_across" not in out
+    assert all("across" not in slug.split("_") for slug in out)
+
+
 def test_candidate_as_dict_round_trip() -> None:
     c = TopicCandidate(
         topic="rapamycin", paper_count=10, fact_source_count=6,
