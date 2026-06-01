@@ -383,6 +383,50 @@ def test_alpha_memo_trusts_gate_candidate_receipts_for_source_floor(
     assert "10.x/gate-candidate-606" in memo
 
 
+def test_dispersion_repair_reselects_coherent_receipt_cluster(tmp_path: Path) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    additions = {
+        "303": ("Carbon pricing reduced port emissions after audit checks.", "A_core"),
+        "404": ("Carbon pricing reduced port emissions in border regions.", "A_core"),
+        "505": ("Carbon pricing reduced port emissions for regulated firms.", "A_core"),
+        "606": ("Carbon pricing reduced port emissions after compliance checks.", "A_core"),
+        "707": ("Carbon pricing reduced port emissions in audited suppliers.", "A_core"),
+        "808": ("Carbon pricing effects hinge on exporter compliance context.", "B_context"),
+        "909": ("Ceramic kiln pigment adhesion improved after firing.", "A_core"),
+    }
+    for fid, (phrase, lane) in additions.items():
+        facts.append({
+            "fact_id": fid,
+            "canonical_phrase": phrase,
+            "population": "regulated port firms" if fid != "909" else "ceramic studios",
+            "source_paper": {"doi": f"10.x/{fid}"},
+        })
+        lanes["verdicts"].append({"fact_id": fid, "lane": lane})
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+    (run / "opportunities_gate.json").write_text(json.dumps({
+        "audits": [{
+            "title": "Carbon pricing port-emissions signal",
+            "status": "survives",
+            "capped_opportunity": 88,
+            "cited_fact_ids": ["909", "303", "101"],
+        }],
+    }), encoding="utf-8")
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "publish_alpha_memo",
+        "blockers": ["source_dispersion", "weak_counter_consensus_tension"],
+    })
+
+    assert "**Direct source breadth:** `5` direct cited source(s)" in memo
+    assert "fact_id=909" not in memo
+    assert "`fact_id=808` (`B_context`)" in memo
+    assert "Real tension:" in memo
+
+
 def test_counter_signal_names_collision_and_testable_split(tmp_path: Path) -> None:
     run = tmp_path / "carbon_tax-evidence-ts"
     _write_run(run)

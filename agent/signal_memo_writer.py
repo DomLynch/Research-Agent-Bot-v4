@@ -218,6 +218,78 @@ def _angle_text_coheres(text: Any, claim: set[str], topic: str) -> bool:
     return len(cand & claim) >= 2 or _claim_fit_score(cand, claim) >= 0.2
 
 
+def _needs_coherent_repick(verdict: dict[str, Any] | None) -> bool:
+    blockers = set(str(x) for x in (verdict or {}).get("blockers") or [])
+    return bool(blockers & {
+        "source_dispersion", "weak_counter_consensus_tension",
+        "cross_domain_forced",
+    })
+
+
+def _receipt_tokens(fact: dict[str, Any], topic: str) -> set[str]:
+    paper = fact.get("source_paper") or {}
+    return (
+        _claim_token_set(
+            fact.get("canonical_phrase"),
+            fact.get("population"),
+            fact.get("intervention"),
+            paper.get("title") if isinstance(paper, dict) else "",
+        )
+        - _claim_token_set(topic) - _GENERIC_TOKENS
+    )
+
+
+def _coherent_receipt_ids(
+    facts: dict[str, dict[str, Any]],
+    lanes: dict[str, str],
+    *,
+    min_sources: int,
+    allowed_lanes: frozenset[str],
+    claim: set[str],
+    topic: str,
+) -> list[str]:
+    candidates = [
+        fid for fid, fact in facts.items()
+        if lanes.get(fid) in allowed_lanes and _source_key(fact)
+        and (not claim or _fact_coheres(fact, claim, topic))
+    ]
+    best: tuple[tuple[float, int, int], list[str]] = ((0.0, 0, 0), [])
+    for anchor in candidates:
+        anchor_tokens = _receipt_tokens(facts[anchor], topic)
+        if not anchor_tokens:
+            continue
+        ranked = sorted(
+            candidates,
+            key=lambda fid: (
+                -_claim_fit_score(_receipt_tokens(facts[fid], topic), anchor_tokens),
+                -_claim_fit_score(_receipt_tokens(facts[fid], topic), claim),
+                fid,
+            ),
+        )
+        picked: list[str] = []
+        sources: set[str] = set()
+        for fid in ranked:
+            source = _source_key(facts[fid])
+            if source in sources:
+                continue
+            tokens = _receipt_tokens(facts[fid], topic)
+            if fid != anchor and _claim_fit_score(tokens, anchor_tokens) < 0.08:
+                continue
+            picked.append(fid)
+            sources.add(source)
+            if len(sources) >= min_sources:
+                break
+        score = (
+            sum(_claim_fit_score(_receipt_tokens(facts[fid], topic), anchor_tokens)
+                for fid in picked),
+            sum(1 for fid in picked if lanes.get(fid) == "A_core"),
+            len(sources),
+        )
+        if len(sources) >= min_sources and score > best[0]:
+            best = (score, picked)
+    return best[1]
+
+
 def _expanded_receipt_ids(
     audit: dict[str, Any],
     facts: dict[str, dict[str, Any]],
@@ -922,7 +994,7 @@ def _select_angle(
             "headline": f"{_topic_title(topic)} may hinge on a boundary condition",
             "thesis": f"{lead}. Boundary receipts add a second constraint: {context}.",
             "why": (
-                "The interesting signal is where the evidence stops generalizing: "
+                "Real tension: the interesting signal is where the evidence stops generalizing: "
                 "the memo is not a broad topic summary, but a testable boundary condition."
             ),
         }))
@@ -935,7 +1007,7 @@ def _select_angle(
             "thesis": collision,
             "question": _counter_question(facts.get(lead_ids[0]) or {}, counter_item),
             "why": (
-                "The alpha signal is the named split between a positive receipt "
+                "Real tension: the alpha signal is the named split between a positive receipt "
                 "and an opposing endpoint, not a generic claim that the topic works."
             ),
             "what_changes": (
@@ -1195,6 +1267,24 @@ def render_signal_memo(
     )
     preferred_bound_ids = _preferred_receipt_ids(publish_verdict, lanes, _BINDABLE)
     preferred_direct_ids = _preferred_receipt_ids(publish_verdict, lanes, _DIRECT)
+    if _needs_coherent_repick(publish_verdict):
+        coherent_direct = _coherent_receipt_ids(
+            facts, lanes, min_sources=min_direct_sources, allowed_lanes=_DIRECT,
+            claim=claim, topic=topic,
+        )
+        if coherent_direct:
+            coherent_bound = _coherent_receipt_ids(
+                facts, lanes, min_sources=min_sources + 1,
+                allowed_lanes=_BINDABLE, claim=claim, topic=topic,
+            )
+            audit = audit | {"cited_fact_ids": coherent_bound or coherent_direct}
+            claim = _claim_signal(coherent_direct, facts, topic)
+            preferred_bound_ids = coherent_direct + [
+                fid for fid in preferred_bound_ids if fid not in coherent_direct
+            ]
+            preferred_direct_ids = coherent_direct + [
+                fid for fid in preferred_direct_ids if fid not in coherent_direct
+            ]
     trusted_bound_ids = (
         set() if grounded else _candidate_receipt_ids(publish_verdict, lanes, _BINDABLE)
     )
