@@ -80,6 +80,16 @@ def _render_md(stamps: dict[str, str],
     return "\n".join(lines) + "\n"
 
 
+def _merge_candidates(
+    first: tuple[TopicCandidate, ...],
+    second: tuple[TopicCandidate, ...],
+) -> tuple[TopicCandidate, ...]:
+    merged: dict[str, TopicCandidate] = {}
+    for candidate in (*first, *second):
+        merged.setdefault(candidate.topic, candidate)
+    return tuple(merged.values())
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--top", type=int, default=10,
@@ -120,11 +130,13 @@ def main() -> int:
     )
     if len(ranked) < args.top:
         with httpx.Client() as client:
-            ranked = discover_topics(seeds=seeds, settings=settings,
-                                     client=client,
-                                     derived_topic_limit=derived_limit,
-                                     fact_probe_topics=fact_probe_topics,
-                                     refresh_low_source_counts=args.warm_backlog)
+            discovered = discover_topics(
+                seeds=seeds, settings=settings, client=client,
+                derived_topic_limit=derived_limit,
+                fact_probe_topics=fact_probe_topics,
+                refresh_low_source_counts=args.warm_backlog,
+            )
+        ranked = _merge_candidates(ranked, discovered)
     top = ranked[: args.top]
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
     year = dt.datetime.now(dt.UTC).year

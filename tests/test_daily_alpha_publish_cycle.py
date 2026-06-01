@@ -886,6 +886,40 @@ def test_unsupported_scope_reset_reject_with_resubmission_allowed_is_retried() -
     assert daily._repairable_rejection(decision) is True
 
 
+def test_reviewer_reject_repair_budget_stops_after_one_repair() -> None:
+    decision = {
+        "claim_support_verdict": "partially_supported",
+        "decision": "reject",
+        "required_revisions": ["Complete scope reset: define one bounded claim."],
+        "resubmission": {"allowed": True},
+    }
+    decisions = {"fp": decision}
+
+    assert daily._retry_after_rejection(
+        "fp", attempt_count=1, retryable={"fp"}, decisions=decisions,
+    ) is True
+    assert daily._retry_after_rejection(
+        "fp", attempt_count=2, retryable={"fp"}, decisions=decisions,
+    ) is False
+
+
+def test_reviewer_revise_keeps_existing_repair_budget() -> None:
+    decision = {
+        "claim_support_verdict": "partially_supported",
+        "decision": "revise",
+        "required_revisions": ["Tighten the evidence receipts."],
+        "resubmission": {"allowed": True},
+    }
+    decisions = {"fp": decision}
+
+    assert daily._retry_after_rejection(
+        "fp", attempt_count=3, retryable={"fp"}, decisions=decisions,
+    ) is True
+    assert daily._retry_after_rejection(
+        "fp", attempt_count=4, retryable={"fp"}, decisions=decisions,
+    ) is False
+
+
 def test_supported_revision_stays_repairable() -> None:
     decision = {
         "claim_support_verdict": "supported",

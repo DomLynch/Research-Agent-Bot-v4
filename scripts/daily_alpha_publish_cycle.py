@@ -137,6 +137,7 @@ _REFRESH_TIMEOUT_SECONDS = 1200
 # User-facing "3x" repair limit: one initial submit plus three repaired
 # resubmits for the same evidence fingerprint.
 _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT = 4
+_MAX_REJECT_ATTEMPTS_PER_FINGERPRINT = 2
 _EXHAUSTED_STATUSES = {
     "duplicate_submission_fingerprint",
     "missing_alpha_memo",
@@ -793,6 +794,25 @@ def _repairable_rejection(decision: Json) -> bool:
     return any(reason in text for reason in _REPAIRABLE_REJECTION_REASONS)
 
 
+def _submission_attempt_budget(decision: Any) -> int:
+    if isinstance(decision, dict) and decision.get("decision") == "reject":
+        return _MAX_REJECT_ATTEMPTS_PER_FINGERPRINT
+    return _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
+
+
+def _retry_after_rejection(
+    fingerprint: str,
+    *,
+    attempt_count: int,
+    retryable: set[str],
+    decisions: dict[str, Json],
+) -> bool:
+    return (
+        fingerprint in retryable
+        and attempt_count < _submission_attempt_budget(decisions.get(fingerprint))
+    )
+
+
 def _resubmission_allowed(decision: Json) -> bool:
     resubmission = decision.get("resubmission")
     return isinstance(resubmission, dict) and resubmission.get("allowed") is True
@@ -1047,13 +1067,15 @@ def select_candidate(
         cycle_blocked = fp in blocked
         exhausted_topic = str(verdict.get("topic") or "") in topic_blocked
         attempt_count = _fingerprint_attempt_count(submitted_path, fp)
-        retry_after_rejection = (
-            fp in retryable
-            and attempt_count < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
+        retry_after_rejection = _retry_after_rejection(
+            fp,
+            attempt_count=attempt_count,
+            retryable=retryable,
+            decisions=retry_decisions,
         )
         retry_budget_exhausted = (
             fp in seen
-            and attempt_count >= _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
+            and attempt_count >= _submission_attempt_budget(retry_decisions.get(fp))
         )
         if (
             not cycle_blocked
@@ -1083,9 +1105,11 @@ def select_candidate(
                 approved = _approved(verdict, runs_root)
                 cycle_blocked = fp in blocked
                 attempt_count = _fingerprint_attempt_count(submitted_path, fp)
-                retry_after_rejection = (
-                    fp in retryable
-                    and attempt_count < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
+                retry_after_rejection = _retry_after_rejection(
+                    fp,
+                    attempt_count=attempt_count,
+                    retryable=retryable,
+                    decisions=retry_decisions,
                 )
         if (
             not cycle_blocked
@@ -1108,9 +1132,11 @@ def select_candidate(
                 approved = _approved(verdict, runs_root)
                 cycle_blocked = fp in blocked
                 attempt_count = _fingerprint_attempt_count(submitted_path, fp)
-                retry_after_rejection = (
-                    fp in retryable
-                    and attempt_count < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
+                retry_after_rejection = _retry_after_rejection(
+                    fp,
+                    attempt_count=attempt_count,
+                    retryable=retryable,
+                    decisions=retry_decisions,
                 )
         if (
             not cycle_blocked
@@ -1131,9 +1157,11 @@ def select_candidate(
                 approved = _approved(verdict, runs_root)
                 cycle_blocked = fp in blocked
                 attempt_count = _fingerprint_attempt_count(submitted_path, fp)
-                retry_after_rejection = (
-                    fp in retryable
-                    and attempt_count < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
+                retry_after_rejection = _retry_after_rejection(
+                    fp,
+                    attempt_count=attempt_count,
+                    retryable=retryable,
+                    decisions=retry_decisions,
                 )
         missing_audit_sidecars: list[str] = []
         if exhausted_topic:
@@ -1164,9 +1192,11 @@ def select_candidate(
                     approved = _approved(verdict, runs_root)
                     cycle_blocked = fp in blocked
                     attempt_count = _fingerprint_attempt_count(submitted_path, fp)
-                    retry_after_rejection = (
-                        fp in retryable
-                        and attempt_count < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
+                    retry_after_rejection = _retry_after_rejection(
+                        fp,
+                        attempt_count=attempt_count,
+                        retryable=retryable,
+                        decisions=retry_decisions,
                     )
                     missing_audit_sidecars = _missing_audit_sidecars(verdict, runs_root)
             if status == "eligible" and retry_after_rejection and memo_refresher and not memo_refreshed:
@@ -1183,9 +1213,11 @@ def select_candidate(
                     approved = _approved(verdict, runs_root)
                     cycle_blocked = fp in blocked
                     attempt_count = _fingerprint_attempt_count(submitted_path, fp)
-                    retry_after_rejection = (
-                        fp in retryable
-                        and attempt_count < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
+                    retry_after_rejection = _retry_after_rejection(
+                        fp,
+                        attempt_count=attempt_count,
+                        retryable=retryable,
+                        decisions=retry_decisions,
                     )
                     missing_audit_sidecars = _missing_audit_sidecars(verdict, runs_root)
             if missing_audit_sidecars:
