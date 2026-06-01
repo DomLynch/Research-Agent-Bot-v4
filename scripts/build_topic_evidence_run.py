@@ -69,6 +69,10 @@ _QUERY_WORD = re.compile(r"[a-z0-9]+")
 _QUERY_STOPWORDS = frozenset({
     "and", "are", "for", "from", "into", "not", "the", "this", "with",
 })
+_TITLE_FACET_STOPWORDS = _QUERY_STOPWORDS | frozenset({
+    "analysis", "controlled", "evidence", "meta", "randomised", "randomized",
+    "review", "reviews", "study", "studies", "systematic", "trial", "trials",
+})
 
 
 @dataclass(frozen=True, slots=True)
@@ -292,8 +296,10 @@ def _fact_title_facets(
         paper = fact.get("source_paper")
         if not isinstance(paper, dict):
             continue
-        words = [w for w in _query_tokens(str(paper.get("title") or ""))
-                 if w not in topic_words][:12]
+        words = [
+            w for w in _query_tokens(str(paper.get("title") or ""))
+            if w not in topic_words and w not in _TITLE_FACET_STOPWORDS
+        ][:12]
         for width in (2, 3):
             for idx in range(0, max(0, len(words) - width + 1)):
                 phrase = " ".join(words[idx:idx + width])

@@ -129,7 +129,9 @@ def test_fetch_facts_expands_with_source_title_facets(monkeypatch) -> None:  # t
             return er.FetchResult([{
                 "fact_id": "1",
                 "canonical_phrase": "berberine improved a measured endpoint",
-                "source_paper": {"title": "Berberine improves glucose metabolism"},
+                "source_paper": {
+                    "title": "Meta-analysis review: berberine improves glucose metabolism",
+                },
             }], "ok")
         if query == "glucose metabolism":
             return er.FetchResult([{
@@ -148,4 +150,6 @@ def test_fetch_facts_expands_with_source_title_facets(monkeypatch) -> None:  # t
 
     assert {fact["fact_id"] for fact in facts} == {"1", "2"}
     assert "glucose metabolism" in calls
+    assert "meta analysis" not in calls
+    assert "analysis review" not in calls
     assert any(row["query"] == "glucose metabolism" for row in trace)
