@@ -196,7 +196,7 @@ def _fact_source_key(item: dict[str, Any]) -> str:
 
 
 def _fact_for_lane(item: dict[str, Any], topic: str) -> dict[str, Any]:
-    paper_raw = item.get("paper")
+    paper_raw = item.get("paper") or item.get("source_paper")
     paper = paper_raw if isinstance(paper_raw, dict) else {}
     return {
         "fact_id": item.get("id") or item.get("fact_id"),
@@ -341,6 +341,34 @@ def _fact_child_slugs(
     return tuple(seen)
 
 
+def _topic_fact_keys(topic: str, *, max_keys: int = 4) -> tuple[str, ...]:
+    seen: dict[str, None] = {}
+    for query in expand_topic_queries(topic, max_queries=max_keys * 3):
+        key = re.sub(r"[\W]+", "_", query).strip("_")
+        if key:
+            seen.setdefault(key, None)
+        if len(seen) >= max_keys:
+            break
+    return tuple(seen)
+
+
+def _add_a_core_sources(
+    rows: list[dict[str, Any]], topic: str, *,
+    source_keys: set[str], child_sources: dict[str, set[str]],
+) -> None:
+    facts = [_fact_for_lane(row, topic) for row in rows]
+    lanes = {verdict.fact_id: verdict.lane for verdict in classify_lanes(facts, topic)}
+    for fact in facts:
+        if lanes.get(str(fact.get("fact_id") or "")) != "A_core":
+            continue
+        key = _fact_source_key(fact)
+        if not key:
+            continue
+        source_keys.add(key)
+        for slug in _fact_child_slugs(fact, topic):
+            child_sources.setdefault(slug, set()).add(key)
+
+
 def _fetch_topic_fact_source_profile(
     topic: str, *, client: httpx.Client, settings: Settings,
     limit: int = 50, facets: tuple[str, ...] = (),
@@ -354,6 +382,29 @@ def _fetch_topic_fact_source_profile(
     child_sources: dict[str, set[str]] = {}
     any_success = False
     deadline = time.monotonic() + _FACT_PROBE_BUDGET_SECONDS
+    for key in _topic_fact_keys(topic):
+        if time.monotonic() >= deadline:
+            break
+        try:
+            r = client.get(
+                f"{base}/api/v1/topics/{key}/facts",
+                headers={"X-Researka-Token": tok},
+                params={"validated_only": "true"},
+                timeout=_FACT_PROBE_TIMEOUT_SECONDS,
+            )
+            r.raise_for_status()
+            data = r.json()
+        except (httpx.HTTPError, ValueError):
+            continue
+        if not isinstance(data, list):
+            continue
+        rows = [row for row in data if isinstance(row, dict)]
+        any_success = True
+        _add_a_core_sources(
+            rows, topic, source_keys=source_keys,
+            child_sources=child_sources)
+        if len(source_keys) >= _PUBLISHABLE_SOURCE_FLOOR:
+            break
     for query in _fact_probe_queries(topic, facets=facets):
         if time.monotonic() >= deadline:
             break
@@ -375,21 +426,11 @@ def _fetch_topic_fact_source_profile(
             continue
         if not isinstance(data, list):
             continue
-        facts = [_fact_for_lane(row, topic) for row in data if isinstance(row, dict)]
-        lanes = {
-            verdict.fact_id: verdict.lane
-            for verdict in classify_lanes(facts, topic)
-        }
+        rows = [row for row in data if isinstance(row, dict)]
         any_success = True
-        for fact in facts:
-            if lanes.get(str(fact.get("fact_id") or "")) != "A_core":
-                continue
-            key = _fact_source_key(fact)
-            if not key:
-                continue
-            source_keys.add(key)
-            for slug in _fact_child_slugs(fact, topic):
-                child_sources.setdefault(slug, set()).add(key)
+        _add_a_core_sources(
+            rows, topic, source_keys=source_keys,
+            child_sources=child_sources)
         if (
             len(source_keys) >= _PUBLISHABLE_SOURCE_FLOOR
             and any(len(keys) >= _PUBLISHABLE_SOURCE_FLOOR for keys in child_sources.values())

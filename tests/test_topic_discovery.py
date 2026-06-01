@@ -929,6 +929,39 @@ def test_fact_source_count_uses_pmcid_and_paper_id_source_keys() -> None:
     assert out == 5
 
 
+def test_fact_source_probe_counts_canonical_topic_endpoint() -> None:
+    from agent import topic_discovery
+
+    rows = [
+        {
+            "fact_id": f"fact-{i}",
+            "paper_id": f"paper-{i}",
+            "source_paper": {"doi": f"10.1/brain-{i}", "title": f"Trial {i}"},
+            "numeric_value": 10,
+            "units": "%",
+            "population": "brain age MRI cohort",
+            "intervention": "exercise",
+            "comparator": "usual care",
+            "canonical_phrase": "exercise reduced brain age MRI gap by 10%",
+        }
+        for i in range(5)
+    ]
+    seen_paths: list[str] = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        seen_paths.append(req.url.path)
+        if req.url.path.endswith("/api/v1/topics/brain_age_MRI/facts"):
+            return httpx.Response(200, json=rows)
+        return httpx.Response(200, json=[])
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        out = topic_discovery._fetch_topic_fact_source_count(
+            "brain_age_MRI", client=c, settings=_settings())
+
+    assert out == 5
+    assert "/api/v1/topics/brain_age_MRI/facts" in seen_paths
+
+
 def test_fact_source_profile_emits_source_backed_child_topics() -> None:
     from agent import topic_discovery
 
