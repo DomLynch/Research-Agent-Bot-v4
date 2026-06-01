@@ -390,6 +390,22 @@ def _public_headline(topic: str, headline: str, verdict: dict[str, Any] | None) 
     return headline
 
 
+def _grounded_headline(
+    topic: str,
+    lead_ids: list[str],
+    facts: dict[str, dict[str, Any]],
+    fallback: str,
+) -> str:
+    phrase = next(
+        (_fact_phrase(facts.get(fid) or {}) for fid in lead_ids
+         if _fact_phrase(facts.get(fid) or {})),
+        "",
+    )
+    if not phrase:
+        return fallback
+    return f"Bounded {_topic_title(topic)} signal: {phrase[:120].rstrip()}"
+
+
 def _context_subline(verdict: dict[str, Any] | None, fallback: str) -> str:
     if not verdict or verdict.get("surface_type") != "context_dependence_memo":
         return fallback
@@ -1100,6 +1116,7 @@ def render_signal_memo(
         # Repair mode for scope/grounding rejects: drop the speculative
         # boundary/counter angle and tie title + thesis back to the cited
         # direct-source receipts, so the memo provably matches its bundle.
+        headline = _grounded_headline(topic, lead_ids, facts, headline)
         angle = {"kind": "source", "headline": headline,
                  "thesis": thesis, "why": why_surprising}
     if publish_verdict and publish_verdict.get("surface_type") == "publish_alpha_memo":

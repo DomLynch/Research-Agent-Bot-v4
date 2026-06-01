@@ -420,6 +420,26 @@ def test_alpha_memo_abandons_weak_angles_below_config_floor(tmp_path: Path) -> N
     assert "may hinge on a boundary condition" not in memo
 
 
+def test_grounded_repair_rebuilds_headline_from_direct_receipts(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+
+    memo = render_signal_memo(
+        run,
+        publish_verdict={"surface_type": "publish_alpha_memo"},
+        grounded=True,
+    )
+
+    assert "**Selected angle:** `source`" in memo
+    assert (
+        "**Headline:** Bounded Carbon tax signal: "
+        "Emissions fell 8% after the intervention"
+    ) in memo
+    assert "**Source thesis:** Carbon pricing may cut emissions" in memo
+
+
 def test_alpha_memo_selects_counter_signal_angle_when_counter_receipt_exists(
     tmp_path: Path,
 ) -> None:
