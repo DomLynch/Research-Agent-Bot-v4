@@ -511,6 +511,28 @@ def _fresh_cached_supply_count(
     return None
 
 
+def _cached_source_rich_topics(
+    *, exclude: set[str], limit: int, refresh_low_source_counts: bool,
+) -> tuple[tuple[str, int], ...]:
+    if limit <= 0:
+        return ()
+    cache = _load_supply_cache()
+    now = time.time()
+    ranked: list[tuple[int, str]] = []
+    for topic, entry in cache.items():
+        if topic in exclude:
+            continue
+        count = _fresh_cached_supply_count(
+            entry, now=now,
+            refresh_low_source_counts=refresh_low_source_counts)
+        if count is not None and count >= _PUBLISHABLE_SOURCE_FLOOR:
+            ranked.append((count, topic))
+    return tuple(
+        (topic, count) for count, topic in sorted(
+            ranked, key=lambda item: (-item[0], item[1]))[:limit]
+    )
+
+
 def _fetch_fact_source_counts(
     topics: list[str], *, client: httpx.Client, settings: Settings,
     refresh_low_source_counts: bool = False,
@@ -867,14 +889,26 @@ def discover_topics(
                 fact_child_counts.items(), key=lambda item: item[1], reverse=True)
             if count >= _PUBLISHABLE_SOURCE_FLOOR and topic not in papers_by_topic
         ][:extra_probe_limit]
-        if fact_child_topics:
+        cached_fact_topics = (
+            _cached_source_rich_topics(
+                exclude=set(papers_by_topic) | set(fact_child_topics),
+                limit=extra_probe_limit,
+                refresh_low_source_counts=refresh_low_source_counts,
+            )
+            if derived_topic_limit else ()
+        )
+        fact_topic_counts = {
+            **{topic: fact_child_counts[topic] for topic in fact_child_topics},
+            **dict(cached_fact_topics),
+        }
+        if fact_topic_counts:
             fact_child_papers = _fetch_papers_by_topic(
-                fact_child_topics, client=c, settings=settings,
+                list(fact_topic_counts), client=c, settings=settings,
                 require_title_support=True, current_year=year_now)
-            for topic in fact_child_topics:
+            for topic, count in fact_topic_counts.items():
                 papers_by_topic.setdefault(topic, fact_child_papers.get(topic, []))
                 fact_sources_by_topic[topic] = max(
-                    fact_sources_by_topic.get(topic, 0), fact_child_counts[topic])
+                    fact_sources_by_topic.get(topic, 0), count)
         candidates = [
             _score_topic(
                 topic, papers, year_now, anchorage=anchorage,

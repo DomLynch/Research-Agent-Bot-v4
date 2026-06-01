@@ -1138,6 +1138,42 @@ def test_discover_topics_adds_fact_derived_source_rich_children(
     assert by_topic["resistance_training"].paper_count == 1
 
 
+def test_discover_topics_reuses_cached_source_rich_fact_children(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "cached_child_topic": {
+            "count": 8,
+            "ts": time.time(),
+            "version": td._SUPPLY_CACHE_VERSION,
+        },
+    }), encoding="utf-8")
+    seed_papers = [_paper(doi="10.1/seed", title="Seed topic trial", fwci=2.0)]
+    child_papers = [_paper(
+        doi="10.1/child", title="Cached child topic trial", fwci=1.5)]
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        body = req.read().decode("utf-8") if req.content else "{}"
+        if req.url.path.endswith("/tier2/facts/search"):
+            return httpx.Response(200, json=[])
+        if "cached_child_topic" in body:
+            return httpx.Response(200, json=child_papers)
+        return httpx.Response(200, json=seed_papers)
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        out = td.discover_topics(
+            seeds=("seed_topic",), settings=_settings(), client=c,
+            current_year=2024, derived_topic_limit=5, fact_probe_topics=5,
+        )
+
+    by_topic = {candidate.topic: candidate for candidate in out}
+    assert by_topic["cached_child_topic"].fact_source_count == 8
+    assert by_topic["cached_child_topic"].paper_count == 1
+
+
 def test_supply_cache_hit_skips_reprobe(monkeypatch: Any, tmp_path: Path) -> None:
     """A fresh cached count is reused without re-probing the DB — the load
     reduction that also shrinks the window for transient false-zeros."""
