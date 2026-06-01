@@ -801,6 +801,14 @@ def test_fact_probe_queries_keep_compound_topic_root_early() -> None:
     )
 
 
+def test_fact_probe_queries_skip_generic_low_dose_root() -> None:
+    queries = _fact_probe_queries("low_dose_naltrexone_inflammation", max_queries=8)
+
+    assert "low dose naltrexone" in queries
+    assert "low dose" not in queries
+    assert "low dose therapy" not in queries
+
+
 def test_fact_source_probe_finds_sources_from_data_derived_facets() -> None:
     from agent import topic_discovery
 

@@ -24,6 +24,13 @@ def _norm(s: str) -> str:
     return _NORM.sub(" ", s.lower()).strip()
 
 
+def _specific_trimmed_query(query: str) -> bool:
+    parts = query.split()
+    return len(parts) >= 3 or any(
+        len(part) >= 6 or any(ch.isdigit() for ch in part) for part in parts
+    )
+
+
 def phrase_in_text(needle: str, haystack: str) -> bool:
     """Word-boundary match (normalised inputs): `epa` must not hit `heparin`."""
     return bool(needle) and re.search(rf"\b{re.escape(needle)}\b", haystack) is not None
@@ -93,10 +100,12 @@ def expand_topic_queries(topic: str, *, max_queries: int = 4) -> tuple[str, ...]
             while len(parts) > 2:
                 parts = parts[:-1]
                 root = " ".join(parts)
-                seen.setdefault(root, None)
+                if _specific_trimmed_query(root):
+                    seen.setdefault(root, None)
             if root:
                 for suffix in _UNREGISTERED_QUERY_SUFFIXES:
-                    seen.setdefault(f"{root} {suffix}", None)
+                    if _specific_trimmed_query(root):
+                        seen.setdefault(f"{root} {suffix}", None)
         if len(seen) >= max_queries:
             break
     return tuple(seen)[:max_queries]

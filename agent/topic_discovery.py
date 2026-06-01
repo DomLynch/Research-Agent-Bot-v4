@@ -48,7 +48,7 @@ _SEEDS_TOML = (Path(__file__).resolve().parent.parent
 # also slashes per-cycle DB load). Universal — no domain literals.
 _SUPPLY_CACHE_PATH = (Path(__file__).resolve().parent.parent
                       / "runs" / "_topic_supply_cache.json")
-_SUPPLY_CACHE_VERSION = 5
+_SUPPLY_CACHE_VERSION = 6
 _PUBLISHABLE_SOURCE_FLOOR = 5
 _PROBE_INCONCLUSIVE = -1  # all queries failed (timeout/error), not a real 0
 _DERIVED_TOPIC_LIMIT = 5_000
@@ -216,6 +216,16 @@ def _topic_root(topic: str) -> str:
     base = list(expand_topic_queries(topic, max_queries=8))
     if not base:
         return ""
+    full = re.sub(r"[\W_]+", " ", topic.lower()).strip()
+    for query in base[1:]:
+        normed = re.sub(r"[\W_]+", " ", query.lower()).strip()
+        if normed and normed != full:
+            parts = normed.split()
+            if len(parts) >= 3 or any(
+                len(part) >= 6 or any(ch.isdigit() for ch in part)
+                for part in parts
+            ):
+                return normed
     normed = re.sub(r"[\W_]+", " ", base[0].lower()).strip()
     parts = normed.split()
     return " ".join(parts[:2]) if len(parts) > 1 else normed
