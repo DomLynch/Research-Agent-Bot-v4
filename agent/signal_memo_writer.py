@@ -584,6 +584,43 @@ def _source_profile(paper: dict[str, Any], fact: dict[str, Any]) -> dict[str, st
     }
 
 
+def _fact_context(fact: dict[str, Any]) -> str:
+    paper = fact.get("source_paper")
+    paper = paper if isinstance(paper, dict) else {}
+    return _clip(
+        fact.get("population")
+        or paper.get("title")
+        or paper.get("doi")
+        or "the cited source",
+        120,
+    )
+
+
+def _counter_context(item: dict[str, Any]) -> str:
+    paper = item.get("source_paper")
+    paper = paper if isinstance(paper, dict) else {}
+    return _clip(
+        item.get("population")
+        or paper.get("title")
+        or paper.get("doi")
+        or "the opposing source",
+        120,
+    )
+
+
+def _counter_collision(
+    lead: str,
+    lead_fact: dict[str, Any],
+    counter: str,
+    counter_item: dict[str, Any],
+) -> str:
+    return (
+        f"The collision is between a positive direct signal in {_fact_context(lead_fact)} "
+        f"({lead}) and an opposing endpoint in {_counter_context(counter_item)} "
+        f"({counter})."
+    )
+
+
 def build_claim_receipt_matrix(
     claim: set[str], lead_ids: list[str],
     receipt_ids: list[str], facts: dict[str, dict[str, Any]],
@@ -850,11 +887,12 @@ def _select_angle(
     ), "")
     raw = verdict.get("counter_evidence") if verdict else None
     raw_items = raw.get("items", []) if isinstance(raw, dict) else []
-    counter = next((
-        _clip(item.get("phrase"), 220) for item in raw_items
+    counter_item = next((
+        item for item in raw_items
         if isinstance(item, dict)
         and _angle_text_coheres(item.get("phrase"), claim, topic)
-    ), "") if isinstance(raw_items, list) else ""
+    ), {}) if isinstance(raw_items, list) else {}
+    counter = _clip(counter_item.get("phrase"), 220) if counter_item else ""
     base = {"kind": "source", "headline": headline, "thesis": thesis, "why": why}
     candidates: list[tuple[int, dict[str, str]]] = [(source_count * 8, base)]
     if lead and context:
@@ -868,13 +906,20 @@ def _select_angle(
             ),
         }))
     if lead and counter:
+        collision = _counter_collision(
+            lead, facts.get(lead_ids[0]) or {}, counter, counter_item)
         candidates.append((source_count * 8 + 44, {
             "kind": "counter_signal",
             "headline": f"{_topic_title(topic)} has a live counter-signal",
-            "thesis": f"{lead}. The strongest opposing receipt says: {counter}.",
+            "thesis": collision,
             "why": (
-                "The value is the collision between receipts, not the isolated positive "
-                "finding; this is the branch worth testing next."
+                "The alpha signal is the named split between a positive receipt "
+                "and an opposing endpoint, not a generic claim that the topic works."
+            ),
+            "what_changes": (
+                "Test the endpoint-specific split directly: do the positive and "
+                "opposing receipts align on population, endpoint, comparator, and "
+                "time window, or is this a boundary condition rather than broad benefit?"
             ),
         }))
     limit = max(1, min(5, _memo_alpha_int("angle_candidates", 5)))
@@ -1187,6 +1232,13 @@ def render_signal_memo(
         headline = angle["headline"]
     thesis = angle["thesis"]
     why_surprising = angle["why"]
+    what_changes = angle.get("what_changes") or (
+        "Treat this as a focused working signal, not a broad topic claim. "
+        "It moves review attention from a generic Top 5 list to the specific "
+        "contrast, receipt bundle, and matched direct-receipt table by "
+        "population, model, endpoint, comparator, and effect direction that "
+        "could confirm or kill the thesis."
+    )
 
     score = _alpha_score(audit, label)
     lines = [
@@ -1232,13 +1284,7 @@ def render_signal_memo(
         "",
         "## What this changes",
         "",
-        (
-            "Treat this as a focused working signal, not a broad topic claim. "
-            "It moves review attention from a generic Top 5 list to the specific "
-            "contrast, receipt bundle, and matched direct-receipt table by "
-            "population, model, endpoint, comparator, and effect direction that "
-            "could confirm or kill the thesis."
-        ),
+        what_changes,
         "",
         "## Limitations",
         "",

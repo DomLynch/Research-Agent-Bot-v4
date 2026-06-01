@@ -695,6 +695,44 @@ def test_tighten_evidence_receipts_revision_forces_grounded_regen() -> None:
     assert daily._is_grounding_reject(decision) is True
 
 
+def test_counter_signal_revision_forces_structural_rerender(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    decision = {
+        "decision": "revise",
+        "required_revisions": [
+            "Clarify the precise nature of the counter-signal: what exactly collides.",
+            "Integrate the clinical endpoints into a comparative framework.",
+            "Tighten What this changes into a bounded testable hypothesis.",
+        ],
+        "resubmission": {"allowed": True},
+    }
+    assert daily._needs_structural_rewrite(decision) is True
+
+    run = tmp_path / "runs" / "hbot-evidence-ts"
+    run.mkdir(parents=True)
+    run.joinpath("signal_post.md").write_text("# Signal\n", encoding="utf-8")
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n"
+        "## One-sentence thesis\n\nOld thesis.\n\n"
+        "## Why this is surprising\n\nOld vague collision.\n",
+        encoding="utf-8",
+    )
+    captured: dict[str, Any] = {}
+    import agent.signal_memo_writer as smw
+
+    def _fake(run_dir: Path, signal_text: Any = None,
+              publish_verdict: Any = None, *, grounded: bool = False) -> Any:
+        captured["run_dir"] = run_dir
+        captured["grounded"] = grounded
+        return run_dir / "alpha_memo.md", ""
+
+    monkeypatch.setattr(smw, "write_signal_memo", _fake)
+
+    assert daily._refresh_alpha_memo(run, {"_repair_decision": decision}) is True
+    assert captured == {"run_dir": run, "grounded": False}
+
+
 def test_resubmission_alignment_reject_requires_explicit_allow() -> None:
     decision = {
         "decision": "reject",

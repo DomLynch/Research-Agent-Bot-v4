@@ -132,6 +132,11 @@ _REVISION_NARROWING_TERMS = (
     "integrate evidence", "overstate tension", "overstate", "redundant",
     "repetition", "separate", "surprising section",
 )
+_STRUCTURAL_REWRITE_TERMS = (
+    "counter-signal", "what exactly collides", "clinical endpoints",
+    "comparative framework", "testable hypothesis", "research implication",
+    "what this changes",
+)
 
 
 def _json(path: Path, default: Any) -> Any:
@@ -344,10 +349,11 @@ def _refresh_alpha_memo(run_dir: Path, verdict: Json) -> bool:
         return False
     decision = verdict.get("_repair_decision")
     grounded = isinstance(decision, dict) and _is_grounding_reject(decision)
+    structural = isinstance(decision, dict) and _needs_structural_rewrite(decision)
     # Scope/grounding rejects need the memo rebuilt around the source angle, not
     # a cosmetic clarification line; only let prose-softening short-circuit when
     # the reject is NOT a grounding one.
-    if not grounded and isinstance(decision, dict) and _apply_reviewer_revision_notes(
+    if not grounded and not structural and isinstance(decision, dict) and _apply_reviewer_revision_notes(
         run_dir, decision,
     ):
         return True
@@ -365,6 +371,13 @@ def _is_grounding_reject(decision: Json) -> bool:
         return False
     notes = _norm(_revision_notes(decision))
     return any(term in notes for term in _SCOPE_RESET_TERMS)
+
+
+def _needs_structural_rewrite(decision: Json) -> bool:
+    if decision.get("decision") not in {"reject", "revise"}:
+        return False
+    notes = _norm(_revision_notes(decision))
+    return any(term in notes for term in _STRUCTURAL_REWRITE_TERMS)
 
 
 def _revision_notes(decision: Json) -> str:

@@ -378,6 +378,48 @@ def test_alpha_memo_trusts_gate_candidate_receipts_for_source_floor(
     assert "10.x/gate-candidate-606" in memo
 
 
+def test_counter_signal_names_collision_and_testable_split(tmp_path: Path) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    for fid, phrase in (
+        ("303", "Carbon pricing reduced emissions in port cities."),
+        ("404", "Carbon pricing reduced emissions in audited suppliers."),
+        ("505", "Carbon pricing reduced emissions in small exporters."),
+        ("606", "Carbon pricing reduced emissions after compliance checks."),
+    ):
+        facts.append({
+            "fact_id": fid,
+            "canonical_phrase": phrase,
+            "population": "regulated firms",
+            "source_paper": {"doi": f"10.x/counter-{fid}"},
+        })
+        lanes["verdicts"].append({"fact_id": fid, "lane": "A_core"})
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "publish_alpha_memo",
+        "counter_evidence": {
+            "status": "found",
+            "items": [{
+                "fact_id": "909",
+                "lane": "A_core",
+                "phrase": "Carbon pricing did not reduce emissions in heavy industry.",
+                "population": "heavy industry firms",
+                "source_paper": {"title": "Independent output endpoint study"},
+            }],
+        },
+    })
+
+    assert "**Selected angle:** `counter_signal`" in memo
+    assert "The collision is between a positive direct signal" in memo
+    assert "heavy industry firms" in memo
+    assert "Test the endpoint-specific split directly" in memo
+    assert "The value is the collision between receipts" not in memo
+
+
 def test_grounded_repair_does_not_trust_off_claim_candidate_receipts(
     tmp_path: Path,
 ) -> None:
@@ -560,7 +602,9 @@ def test_alpha_memo_selects_counter_signal_angle_when_counter_receipt_exists(
 
     assert "**Selected angle:** `counter_signal`" in memo
     assert "**Headline:** Carbon tax has a live counter-signal" in memo
-    assert "The strongest opposing receipt says" in memo
+    assert "The collision is between a positive direct signal" in memo
+    assert "opposing endpoint" in memo
+    assert "Test the endpoint-specific split directly" in memo
     assert "matched market" in memo
 
 
