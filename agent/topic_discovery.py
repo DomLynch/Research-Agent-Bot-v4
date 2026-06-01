@@ -51,7 +51,7 @@ _SUPPLY_CACHE_PATH = (Path(__file__).resolve().parent.parent
 _SUPPLY_CACHE_VERSION = 3
 _PUBLISHABLE_SOURCE_FLOOR = 5
 _PROBE_INCONCLUSIVE = -1  # all queries failed (timeout/error), not a real 0
-_DERIVED_TOPIC_LIMIT = 250
+_DERIVED_TOPIC_LIMIT = 5_000
 # All configured seeds are probed; this caps extra velocity/derived topics on
 # the latency-sensitive publish path. Full-pool probing is an explicit backlog
 # warming mode, not something the 2-hour submit cycle should wait on.
@@ -354,7 +354,7 @@ def _title_topic_slugs(
     scores: dict[str, float] = {}
     for papers in papers_by_topic.values():
         ranked = sorted(papers, key=lambda p: _paper_score(p, current_year), reverse=True)
-        for paper in ranked[:5]:
+        for paper in ranked:
             paper_score = _paper_score(paper, current_year)
             words = [
                 w for w in _TITLE_WORD.findall(str(paper.get("title") or "").lower())

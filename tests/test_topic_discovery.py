@@ -191,7 +191,7 @@ def test_load_seed_topics_real_seeds_loaded() -> None:
 
 
 def test_load_derived_topic_limit_from_real_config() -> None:
-    assert load_derived_topic_limit() >= 100
+    assert load_derived_topic_limit() >= 5_000
 
 
 def test_title_topic_slugs_derive_candidates_from_paper_titles() -> None:
@@ -202,6 +202,24 @@ def test_title_topic_slugs_derive_candidates_from_paper_titles() -> None:
     assert "carbon_pricing" in out
     assert "grid_storage" in out
     assert all("study" not in slug for slug in out)
+
+
+def test_title_topic_slugs_can_emit_5000_unique_candidates() -> None:
+    papers = [
+        _paper(
+            title=(
+                f"alpha{i} beta{i} gamma{i} delta{i} epsilon{i} "
+                f"zeta{i} eta{i} theta{i}"
+            ),
+            doi=f"10.1/{i}",
+        )
+        for i in range(300)
+    ]
+
+    out = _title_topic_slugs({"seed": papers}, current_year=2024, limit=5_000)
+
+    assert len(out) >= 5_000
+    assert len(out) == len(set(out))
 
 
 def test_title_topic_slugs_drop_cross_scope_connectors() -> None:

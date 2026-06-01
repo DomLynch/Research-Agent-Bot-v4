@@ -31,6 +31,21 @@ from agent.topic_discovery import (
     load_seed_topics,
 )
 
+_FAST_DERIVED_TOPIC_LIMIT = 250
+
+
+def _resolve_limits(
+    *, warm_backlog: bool, derived_topic_limit: int | None,
+    fact_probe_topics: int | None, configured_limit: int,
+) -> tuple[int, int | None]:
+    derived = (
+        max(0, derived_topic_limit)
+        if derived_topic_limit is not None
+        else configured_limit if warm_backlog
+        else min(configured_limit, _FAST_DERIVED_TOPIC_LIMIT)
+    )
+    return derived, derived if warm_backlog else fact_probe_topics
+
 
 def _render_md(stamps: dict[str, str],
                candidates: tuple[TopicCandidate, ...]) -> str:
@@ -57,16 +72,18 @@ def _render_md(stamps: dict[str, str],
     return "\n".join(lines) + "\n"
 
 
-def _source_rich_count(
-    candidates: tuple[TopicCandidate, ...], *, floor: int = 5,
-) -> int:
-    return sum(1 for c in candidates if c.fact_source_count >= floor)
-
-
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--top", type=int, default=10,
                         help="Emit top-N candidates (default 10)")
+    parser.add_argument(
+        "--derived-topic-limit", type=int, default=None,
+        help="Override configured derived-topic candidate cap.",
+    )
+    parser.add_argument(
+        "--fact-probe-topics", type=int, default=None,
+        help="Override extra derived topics probed for source breadth.",
+    )
     parser.add_argument(
         "--warm-backlog", action="store_true",
         help="Probe source breadth for the full derived pool; slower, for backlog warming.",
@@ -78,14 +95,17 @@ def main() -> int:
               file=sys.stderr)
         return 1
     settings = load_settings()
+    derived_limit, fact_probe_topics = _resolve_limits(
+        warm_backlog=args.warm_backlog,
+        derived_topic_limit=args.derived_topic_limit,
+        fact_probe_topics=args.fact_probe_topics,
+        configured_limit=load_derived_topic_limit(),
+    )
     with httpx.Client() as client:
         ranked = discover_topics(seeds=seeds, settings=settings,
                                  client=client,
-                                 derived_topic_limit=load_derived_topic_limit(),
-                                 fact_probe_topics=(
-                                     load_derived_topic_limit()
-                                     if args.warm_backlog else None
-                                 ),
+                                 derived_topic_limit=derived_limit,
+                                 fact_probe_topics=fact_probe_topics,
                                  refresh_low_source_counts=args.warm_backlog)
     top = ranked[: args.top]
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
@@ -96,9 +116,11 @@ def main() -> int:
     json_payload = {
         "snapshot_utc": ts, "year": year,
         "seed_count": len(seeds), "candidate_count": len(ranked),
+        "derived_topic_limit": derived_limit,
+        "fact_probe_topics": fact_probe_topics,
         "warm_backlog": bool(args.warm_backlog),
         "source_rich_floor": 5,
-        "source_rich_count": _source_rich_count(ranked),
+        "source_rich_count": sum(1 for c in ranked if c.fact_source_count >= 5),
         "top": [c.as_dict() for c in top],
         "all": [c.as_dict() for c in ranked],
     }
