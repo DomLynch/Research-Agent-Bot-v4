@@ -405,6 +405,21 @@ def _candidate_receipt_ids(
     return out
 
 
+def _cited_receipt_ids(
+    verdict: dict[str, Any] | None,
+    lanes: dict[str, str],
+    allowed_lanes: frozenset[str],
+) -> set[str]:
+    expansion = (verdict or {}).get("receipt_expansion")
+    values = expansion.get("cited_bound_fact_ids") if isinstance(expansion, dict) else []
+    if not isinstance(values, list):
+        return set()
+    return {
+        fid for fid in (str(value or "").strip() for value in values)
+        if fid and lanes.get(fid) in allowed_lanes
+    }
+
+
 def _source_count_for_ids(ids: list[str], facts: dict[str, dict[str, Any]]) -> int:
     return len({
         _source_key(facts[fid])
@@ -1066,9 +1081,9 @@ def _counter_lines(verdict: dict[str, Any] | None) -> list[str]:
     items = counter.get("items", []) if isinstance(counter, dict) else []
     if not isinstance(items, list) or not items:
         return [
-            "- _No A_core/B_context counter-evidence found in this run; "
-            "treat this as a single-direction signal until a broader receipt "
-            "expansion finds a real opposing fact._",
+            "- _Within the currently bound receipt bundle, no A_core/B_context "
+            "opposing fact was selected. Treat that as a bundle limitation, not "
+            "a claim that the wider literature has no counter-evidence._",
         ]
     out = []
     for item in items[:3]:
@@ -1285,12 +1300,12 @@ def render_signal_memo(
             preferred_direct_ids = coherent_direct + [
                 fid for fid in preferred_direct_ids if fid not in coherent_direct
             ]
-    trusted_bound_ids = (
-        set() if grounded else _candidate_receipt_ids(publish_verdict, lanes, _BINDABLE)
-    )
-    trusted_direct_ids = (
-        set() if grounded else _candidate_receipt_ids(publish_verdict, lanes, _DIRECT)
-    )
+    trusted_bound_ids = _cited_receipt_ids(
+        publish_verdict, lanes, _BINDABLE,
+    ) if grounded else _candidate_receipt_ids(publish_verdict, lanes, _BINDABLE)
+    trusted_direct_ids = _cited_receipt_ids(
+        publish_verdict, lanes, _DIRECT,
+    ) if grounded else _candidate_receipt_ids(publish_verdict, lanes, _DIRECT)
     expanded_ids = _expanded_receipt_ids(
         audit, facts, lanes, min_sources=min_sources, claim=claim, topic=topic,
         preferred_ids=preferred_bound_ids, trusted_ids=trusted_bound_ids,
