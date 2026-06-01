@@ -757,7 +757,9 @@ def _repairable_rejection(decision: Json) -> bool:
     support = str(decision.get("claim_support_verdict") or "").lower()
     if decision.get("decision") == "revise":
         return _resubmission_allowed(decision) or support != "partially_supported"
-    if decision.get("decision") == "reject" and support in {"partially_supported", "unsupported"}:
+    if decision.get("decision") == "reject" and support == "partially_supported":
+        return _resubmission_allowed(decision) and bool(_revision_notes(decision).strip())
+    if decision.get("decision") == "reject" and support == "unsupported":
         return _resubmission_allowed(decision) and _is_explicit_scope_reset(decision)
     reasons = {
         str(decision.get("failure_category") or ""),
