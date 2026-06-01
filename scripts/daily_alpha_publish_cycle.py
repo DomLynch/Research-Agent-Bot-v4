@@ -390,6 +390,23 @@ def _has_falsifier(verdict: Json, root: Path) -> bool:
     return falsifier_present(_read_text(run_dir / "alpha_memo.md"))
 
 
+_REQUIRED_AUDIT_SIDECARS = (
+    "claim_receipt_matrix.json",
+    "typed_counter_evidence.json",
+    "novelty_delta.json",
+    "memo_audit.json",
+)
+
+
+def _missing_audit_sidecars(verdict: Json, root: Path) -> list[str]:
+    run_dir = _run_path(root, verdict.get("run_dir"))
+    missing: list[str] = []
+    for name in _REQUIRED_AUDIT_SIDECARS:
+        if not isinstance(_json(run_dir / name, None), (dict, list)):
+            missing.append(name)
+    return missing
+
+
 def _refresh_alpha_memo(run_dir: Path, verdict: Json) -> bool:
     if "_archive" in run_dir.parts:
         return False
@@ -1118,6 +1135,7 @@ def select_candidate(
                     fp in retryable
                     and attempt_count < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
                 )
+        missing_audit_sidecars: list[str] = []
         if exhausted_topic:
             status = "cycle_exhausted_topic"
         elif cycle_blocked:
@@ -1131,7 +1149,8 @@ def select_candidate(
         elif not _has_falsifier(verdict, runs_root):
             status = "memo_missing_falsifier"
         else:
-            if retry_after_rejection and memo_refresher and not memo_refreshed:
+            missing_audit_sidecars = _missing_audit_sidecars(verdict, runs_root)
+            if missing_audit_sidecars and memo_refresher and not memo_refreshed:
                 run_dir = _run_path(runs_root, verdict.get("run_dir"))
                 refresh_verdict = verdict | {"_repair_decision": retry_decisions.get(fp)}
                 memo_refreshed = memo_refresher(run_dir, refresh_verdict)
@@ -1149,18 +1168,41 @@ def select_candidate(
                         fp in retryable
                         and attempt_count < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
                     )
-            if fp in seen and _same_memo_seen(submitted_path, fp, memo_sha256):
-                status = "duplicate_submission_fingerprint"
-            elif source_count < min_source_count:
-                status = (
-                    "corpus_source_floor_below_min"
-                    if corpus_source_count < min_source_count else
-                    "memo_source_floor_below_min"
-                )
-                if source_count >= min_source_count:
-                    status = "eligible"
-            elif direct_source_count < min_direct_source_count:
-                status = "direct_source_floor_below_min"
+                    missing_audit_sidecars = _missing_audit_sidecars(verdict, runs_root)
+            if status == "eligible" and retry_after_rejection and memo_refresher and not memo_refreshed:
+                run_dir = _run_path(runs_root, verdict.get("run_dir"))
+                refresh_verdict = verdict | {"_repair_decision": retry_decisions.get(fp)}
+                memo_refreshed = memo_refresher(run_dir, refresh_verdict)
+                if memo_refreshed:
+                    verdict = _reload_verdict_after_memo_refresh(refresh_verdict, run_dir)
+                    fp = memo_fingerprint(verdict)
+                    source_count = _source_count(verdict, runs_root)
+                    direct_source_count = _direct_source_count(verdict, runs_root)
+                    corpus_source_count = _corpus_source_count(verdict, runs_root)
+                    memo_sha256 = _memo_sha256(verdict, runs_root)
+                    approved = _approved(verdict, runs_root)
+                    cycle_blocked = fp in blocked
+                    attempt_count = _fingerprint_attempt_count(submitted_path, fp)
+                    retry_after_rejection = (
+                        fp in retryable
+                        and attempt_count < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
+                    )
+                    missing_audit_sidecars = _missing_audit_sidecars(verdict, runs_root)
+            if missing_audit_sidecars:
+                status = "memo_missing_audit_sidecars"
+            if status == "eligible":
+                if fp in seen and _same_memo_seen(submitted_path, fp, memo_sha256):
+                    status = "duplicate_submission_fingerprint"
+                elif source_count < min_source_count:
+                    status = (
+                        "corpus_source_floor_below_min"
+                        if corpus_source_count < min_source_count else
+                        "memo_source_floor_below_min"
+                    )
+                    if source_count >= min_source_count:
+                        status = "eligible"
+                elif direct_source_count < min_direct_source_count:
+                    status = "direct_source_floor_below_min"
         row = {
             "topic": verdict.get("topic"),
             "decision": verdict.get("decision"),
@@ -1181,6 +1223,8 @@ def select_candidate(
         if retry_after_rejection:
             row["retry_after_rejection"] = True
             row["retry_attempt_count"] = attempt_count
+        if missing_audit_sidecars:
+            row["missing_audit_sidecars"] = missing_audit_sidecars
         considered.append(row)
         if status == "eligible":
             return verdict | {"memo_fingerprint": fp}, considered
@@ -1719,12 +1763,7 @@ def _public_submission_markdown(memo: str) -> str:
 
 def _audit_sidecars(run_dir: Path) -> Json:
     out: Json = {}
-    for name in (
-        "claim_receipt_matrix.json",
-        "typed_counter_evidence.json",
-        "novelty_delta.json",
-        "memo_audit.json",
-    ):
+    for name in _REQUIRED_AUDIT_SIDECARS:
         data = _json(run_dir / name, None)
         if isinstance(data, (dict, list)):
             out[name.removesuffix(".json")] = data

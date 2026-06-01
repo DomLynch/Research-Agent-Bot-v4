@@ -93,6 +93,18 @@ def _memo(root: Path, verdict: dict[str, Any]) -> None:
     run = root / str(verdict["run_dir"])
     run.mkdir(parents=True)
     (run / "alpha_memo.md").write_text("# Alpha memo\n" + _FALSIFIER, encoding="utf-8")
+    _audit_sidecars(run)
+
+
+def _audit_sidecars(run: Path) -> None:
+    run.joinpath("claim_receipt_matrix.json").write_text(
+        json.dumps({"direct_sources": 5}), encoding="utf-8")
+    run.joinpath("typed_counter_evidence.json").write_text(
+        json.dumps({"items": []}), encoding="utf-8")
+    run.joinpath("novelty_delta.json").write_text(
+        json.dumps({"novelty_delta": {"label": "contradictory"}}), encoding="utf-8")
+    run.joinpath("memo_audit.json").write_text(
+        json.dumps({"verdict": "supported"}), encoding="utf-8")
 
 
 def _memo_with_source_receipts(root: Path, verdict: dict[str, Any], count: int) -> None:
@@ -118,6 +130,7 @@ def _memo_with_source_receipts(root: Path, verdict: dict[str, Any], count: int) 
     run.joinpath("fact_lanes.json").write_text(json.dumps({
         "verdicts": [{"fact_id": fid, "lane": "A_core"} for fid in ids],
     }), encoding="utf-8")
+    _audit_sidecars(run)
 
 
 def _publish_tier_run(root: Path, topic: str, *, stale: dict[str, Any]) -> None:
@@ -174,6 +187,7 @@ def _publish_tier_run(root: Path, topic: str, *, stale: dict[str, Any]) -> None:
         },
     }]), encoding="utf-8")
     run.joinpath("publish_verdict.json").write_text(json.dumps(stale), encoding="utf-8")
+    _audit_sidecars(run)
 
 
 def test_memo_fingerprint_is_stable_across_headline_rewording() -> None:
@@ -339,6 +353,7 @@ def test_weak_tension_candidate_enriches_before_rotation(tmp_path: Path) -> None
             ),
             encoding="utf-8",
         )
+        _audit_sidecars(run_dir)
         return True
 
     ledger = daily.run_cycle(
@@ -1077,6 +1092,7 @@ def test_repaired_resubmission_payload_uses_recomputed_verdict(
             memo.read_text(encoding="utf-8") + "\nSource-bundle repair.\n",
             encoding="utf-8",
         )
+        _audit_sidecars(run_dir)
         return True
 
     def submitter(payload: dict[str, Any]) -> dict[str, Any]:
@@ -2000,6 +2016,36 @@ def test_submit_refreshes_underexpanded_memo_once(tmp_path: Path) -> None:
     assert row["status"] == "eligible"
     assert ledger["status"] == "submitted_to_researka"
     assert len(seen_payload["source_bundle"]) == 5
+
+
+def test_submit_refreshes_missing_audit_sidecars_before_submission(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("missing_sidecars")
+    _memo_with_source_receipts(root, verdict, 5)
+    run = root / str(verdict["run_dir"])
+    for name in daily._REQUIRED_AUDIT_SIDECARS:
+        run.joinpath(name).unlink()
+
+    def refresh(run_dir: Path, _verdict: dict[str, Any]) -> bool:
+        _audit_sidecars(run_dir)
+        return True
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+        memo_refresher=refresh,
+    )
+
+    row = ledger["considered"][0]
+    assert row["memo_refreshed"] is True
+    assert row["status"] == "eligible"
+    assert "missing_audit_sidecars" not in row
+    assert ledger["status"] == "submitted_to_researka"
 
 
 def test_retraction_check_blocks_submission_and_writes_hold(tmp_path: Path) -> None:
@@ -3112,6 +3158,24 @@ def test_memo_without_falsifier_is_blocked(tmp_path: Path) -> None:
     )
     assert cand is None
     assert considered[0]["status"] == "memo_missing_falsifier"
+
+
+def test_memo_missing_audit_sidecars_is_blocked(tmp_path: Path) -> None:
+    """Published alpha memos must carry the machine-readable audit pack."""
+    root = tmp_path / "repo"
+    verdict = _verdict("missing_sidecars")
+    _memo_with_source_receipts(root, verdict, 5)
+    run_dir = root / str(verdict["run_dir"])
+    run_dir.joinpath("memo_audit.json").unlink()
+
+    cand, considered = daily.select_candidate(
+        _queue(verdict), runs_root=root, submitted_path=root / "submitted.json",
+        min_source_count=5, min_direct_source_count=5,
+    )
+
+    assert cand is None
+    assert considered[0]["status"] == "memo_missing_audit_sidecars"
+    assert considered[0]["missing_audit_sidecars"] == ["memo_audit.json"]
 
 
 def test_memo_with_falsifier_passes_the_gate(tmp_path: Path) -> None:
