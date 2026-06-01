@@ -26,6 +26,7 @@ from agent.topic_discovery import (
     _anchorage_counts,
     _fact_probe_queries,
     _paper_score,
+    _paper_title_facets,
     _score_topic,
     _title_topic_slugs,
     discover_topics,
@@ -613,25 +614,36 @@ def test_fact_source_probe_uses_submit_sized_top_k() -> None:
     assert bodies[0]["numeric_only"] is True
 
 
-def test_fact_probe_queries_include_universal_source_slices() -> None:
-    queries = _fact_probe_queries("berberine")
+def test_paper_title_facets_are_data_derived() -> None:
+    facets = _paper_title_facets("berberine", [
+        _paper(title="Berberine improves glucose metabolism in randomized trials"),
+        _paper(title="Berberine and lipid control in metabolic disease"),
+    ], 2024)
+
+    assert "glucose metabolism" in facets
+    assert "randomized trials" in facets
+
+
+def test_fact_probe_queries_include_data_derived_facets() -> None:
+    queries = _fact_probe_queries(
+        "berberine", facets=("glucose metabolism", "randomized trials"),
+    )
 
     assert queries[0] == "berberine"
-    assert "berberine mortality" in queries
-    assert "berberine randomized" in queries
+    assert "glucose metabolism" in queries
+    assert "randomized trials" in queries
 
 
 def test_fact_probe_queries_keep_compound_topic_root_early() -> None:
     queries = _fact_probe_queries("vitamin_K2_vascular_aging")
 
-    assert queries[:3] == (
+    assert queries[:2] == (
         "vitamin_K2_vascular_aging",
         "vitamin k2",
-        "vitamin k2 mortality",
     )
 
 
-def test_fact_source_probe_finds_sources_from_universal_slices() -> None:
+def test_fact_source_probe_finds_sources_from_data_derived_facets() -> None:
     from agent import topic_discovery
 
     bodies: list[dict[str, Any]] = []
@@ -639,7 +651,7 @@ def test_fact_source_probe_finds_sources_from_universal_slices() -> None:
     def handler(req: httpx.Request) -> httpx.Response:
         body = json.loads(req.content)
         bodies.append(body)
-        if body["query"] != "berberine mortality":
+        if body["query"] != "glucose metabolism":
             return httpx.Response(200, json=[])
         return httpx.Response(200, json=[
             {
@@ -659,10 +671,11 @@ def test_fact_source_probe_finds_sources_from_universal_slices() -> None:
     with httpx.Client(transport=httpx.MockTransport(handler)) as c:
         out = topic_discovery._fetch_topic_fact_source_count(
             "berberine", client=c, settings=_settings(),
+            facets=("glucose metabolism",),
         )
 
     assert out == 5
-    assert [b["query"] for b in bodies[:2]] == ["berberine", "berberine mortality"]
+    assert [b["query"] for b in bodies[:2]] == ["berberine", "glucose metabolism"]
 
 
 def test_fact_source_count_uses_pmcid_and_paper_id_source_keys() -> None:

@@ -75,11 +75,6 @@ _TITLE_STOPWORDS = frozenset({
     "patients", "adults", "human", "mouse", "mice", "model", "models",
     "new", "novel",
 })
-_FACT_PROBE_SLICE_TERMS = (
-    "mortality", "survival", "lifespan", "healthspan", "risk", "incidence",
-    "effect", "reduction", "dose", "adverse", "sex", "age", "subgroup",
-    "randomized", "meta analysis", "cohort",
-)
 
 
 def _float_env(name: str, default: float) -> float:
@@ -210,20 +205,59 @@ def _fact_for_lane(item: dict[str, Any], topic: str) -> dict[str, Any]:
     }
 
 
-def _fact_probe_queries(topic: str, *, max_queries: int = 16) -> tuple[str, ...]:
+def _topic_root(topic: str) -> str:
+    base = list(expand_topic_queries(topic, max_queries=8))
+    if not base:
+        return ""
+    normed = re.sub(r"[\W_]+", " ", base[0].lower()).strip()
+    parts = normed.split()
+    return " ".join(parts[:2]) if len(parts) > 1 else normed
+
+
+def _paper_title_facets(
+    topic: str, papers: list[dict[str, Any]], current_year: int, *,
+    limit: int = 12,
+) -> tuple[str, ...]:
+    """Data-derived query facets from the topic's own retrieved papers.
+
+    This replaces static domain slice terms. It is universal: a physics topic
+    contributes physics title phrases, a policy topic contributes policy title
+    phrases, and biomedical topics contribute biomedical title phrases.
+    """
+    root_words = set(_topic_root(topic).split())
+    scores: dict[str, float] = {}
+    ranked = sorted(papers, key=lambda p: _paper_score(p, current_year), reverse=True)
+    for paper in ranked[:10]:
+        words = [
+            w for w in _TITLE_WORD.findall(str(paper.get("title") or "").lower())
+            if len(w) > 2 and w not in _TITLE_STOPWORDS and w not in root_words
+        ][:10]
+        paper_score = _paper_score(paper, current_year) or 1.0
+        for width in (2, 3):
+            for i in range(0, max(0, len(words) - width + 1)):
+                phrase = " ".join(words[i:i + width])
+                scores[phrase] = scores.get(phrase, 0.0) + paper_score / width
+    return tuple(k for k, _ in sorted(
+        scores.items(), key=lambda item: item[1], reverse=True,
+    )[:limit])
+
+
+def _fact_probe_queries(
+    topic: str, *, facets: tuple[str, ...] = (), max_queries: int = 16,
+) -> tuple[str, ...]:
     base = list(expand_topic_queries(topic, max_queries=8))
     if not base:
         return ()
-    normed = re.sub(r"[\W_]+", " ", base[0].lower()).strip()
-    parts = normed.split()
-    stem = " ".join(parts[:2]) if len(parts) > 1 else normed
+    stem = _topic_root(topic)
     seen: dict[str, None] = {}
     for query in base[:1]:
         seen.setdefault(query, None)
     if stem:
         seen.setdefault(stem, None)
-        for term in _FACT_PROBE_SLICE_TERMS:
-            seen.setdefault(f"{stem} {term}", None)
+    for facet in facets:
+        cleaned = re.sub(r"[\W_]+", " ", facet.lower()).strip()
+        if cleaned:
+            seen.setdefault(cleaned, None)
     for query in base[1:]:
         seen.setdefault(query, None)
     return tuple(seen)[:max_queries]
@@ -231,7 +265,7 @@ def _fact_probe_queries(topic: str, *, max_queries: int = 16) -> tuple[str, ...]
 
 def _fetch_topic_fact_source_count(
     topic: str, *, client: httpx.Client, settings: Settings,
-    limit: int = 50,
+    limit: int = 50, facets: tuple[str, ...] = (),
 ) -> int:
     """Count unique direct bindable fact-backed sources for ranking."""
     base = settings.researka_database_url.rstrip("/")
@@ -241,7 +275,7 @@ def _fetch_topic_fact_source_count(
     source_keys: set[str] = set()
     any_success = False
     deadline = time.monotonic() + _FACT_PROBE_BUDGET_SECONDS
-    for query in _fact_probe_queries(topic):
+    for query in _fact_probe_queries(topic, facets=facets):
         if time.monotonic() >= deadline:
             break
         try:
@@ -310,6 +344,7 @@ def _supply_cache_ttl(count: int) -> float:
 def _fetch_fact_source_counts(
     topics: list[str], *, client: httpx.Client, settings: Settings,
     refresh_low_source_counts: bool = False,
+    facets_by_topic: dict[str, tuple[str, ...]] | None = None,
 ) -> dict[str, int]:
     if not topics:
         return {}
@@ -349,6 +384,7 @@ def _fetch_fact_source_counts(
                 topic,
                 client=client,
                 settings=settings,
+                facets=(facets_by_topic or {}).get(topic, ()),
             ): topic
             for topic in to_probe
         }
@@ -555,6 +591,10 @@ def discover_topics(
         fact_sources_by_topic = _fetch_fact_source_counts(
             probe_topics, client=c, settings=settings,
             refresh_low_source_counts=refresh_low_source_counts,
+            facets_by_topic={
+                topic: _paper_title_facets(topic, papers, year_now)
+                for topic, papers in papers_by_topic.items()
+            },
         )
         candidates = [
             _score_topic(
