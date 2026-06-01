@@ -436,26 +436,34 @@ def _title_topic_slugs(
     return tuple(k for k, _ in sorted(scores.items(), key=lambda item: item[1], reverse=True)[:limit])
 
 
-def _next_uncached_topics(
+def _derived_cycle_topics(
     topics: list[str], *, limit: int, refresh_low_source_counts: bool,
 ) -> list[str]:
-    """Pick the next derived topics whose supply counts need warming.
+    """Pick derived topics to fetch/probe this cycle.
 
-    The submit path stays bounded by `limit`, but each cycle advances through
-    the derived pool instead of re-checking the same already-cached head.
+    Keep cached source-rich topics visible while reserving part of the bounded
+    window to advance through uncached/stale candidates.
     """
     if limit <= 0:
         return []
     cache = _load_supply_cache()
     now = time.time()
-    due = [
-        topic for topic in topics
-        if _fresh_cached_supply_count(
+    rich: list[str] = []
+    due: list[str] = []
+    for topic in topics:
+        count = _fresh_cached_supply_count(
             cache.get(topic), now=now,
             refresh_low_source_counts=refresh_low_source_counts,
-        ) is None
-    ]
-    return (due or topics)[:limit]
+        )
+        if count is None:
+            due.append(topic)
+        elif count >= _PUBLISHABLE_SOURCE_FLOOR:
+            rich.append(topic)
+    rich_slots = min(len(rich), max(0, limit // 2)) if due else min(len(rich), limit)
+    picked = [*rich[:rich_slots], *due[:max(0, limit - rich_slots)]]
+    if len(picked) < limit:
+        picked.extend(rich[rich_slots:limit])
+    return list(dict.fromkeys(picked))[:limit]
 
 
 def _anchorage_counts(
@@ -593,37 +601,27 @@ def discover_topics(
     try:
         papers_by_topic = _fetch_papers_by_topic(
             list(topics), client=c, settings=settings)
-        known = set(papers_by_topic)
-        if derived_topic_limit:
-            derived = [
-                topic for topic in _title_topic_slugs(
-                    papers_by_topic, year_now, limit=derived_topic_limit)
-                if topic not in known
-            ]
-            papers_by_topic.update(_fetch_papers_by_topic(
-                derived, client=c, settings=settings))
-        anchorage = _anchorage_counts(papers_by_topic, year_now)
-        velocity_ranked = sorted(
-            [
-                _score_topic(topic, papers, year_now, anchorage=anchorage)
-                for topic, papers in papers_by_topic.items()
-            ],
-            key=lambda c: c.velocity_score,
-            reverse=True,
-        )
         extra_probe_limit = (
             _FACT_PROBE_TOPICS if fact_probe_topics is None
             else max(0, fact_probe_topics)
         )
-        seed_set = set(topics)
-        extra_probe_topics = _next_uncached_topics(
-            [cand.topic for cand in velocity_ranked if cand.topic not in seed_set],
-            limit=extra_probe_limit,
-            refresh_low_source_counts=refresh_low_source_counts,
-        )
+        derived_cycle_topics: list[str] = []
+        if derived_topic_limit:
+            derived = [
+                topic for topic in _title_topic_slugs(
+                    papers_by_topic, year_now, limit=derived_topic_limit)
+                if topic not in papers_by_topic
+            ]
+            derived_cycle_topics = _derived_cycle_topics(
+                derived, limit=extra_probe_limit,
+                refresh_low_source_counts=refresh_low_source_counts,
+            )
+            papers_by_topic.update(_fetch_papers_by_topic(
+                derived_cycle_topics, client=c, settings=settings))
+        anchorage = _anchorage_counts(papers_by_topic, year_now)
         probe_topics = list(dict.fromkeys([
             *(topic for topic in topics if topic in papers_by_topic),
-            *extra_probe_topics,
+            *derived_cycle_topics,
         ]))
         fact_sources_by_topic = _fetch_fact_source_counts(
             probe_topics, client=c, settings=settings,

@@ -425,7 +425,12 @@ def test_discover_topics_probes_all_seed_topics_for_fact_breadth(
     assert out[0].fact_source_count == 5
 
 
-def test_discover_topics_can_rank_derived_title_candidates() -> None:
+def test_discover_topics_can_rank_derived_title_candidates(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
     seed_papers = [_paper(
         doi="10.1/seed",
         title="Carbon pricing and grid storage improve adoption",
@@ -446,7 +451,7 @@ def test_discover_topics_can_rank_derived_title_candidates() -> None:
         return httpx.Response(200, json=seed_papers)
 
     with httpx.Client(transport=httpx.MockTransport(handler)) as c:
-        out = discover_topics(
+        out = td.discover_topics(
             seeds=("seed_topic",), settings=_settings(), client=c,
             current_year=2024, derived_topic_limit=8,
         )
@@ -581,6 +586,29 @@ def test_discover_topics_advances_derived_probe_window_past_cached_head(
 
     assert "derived_one" not in seen
     assert "derived_two" in seen
+
+
+def test_derived_cycle_keeps_rich_visible_and_warms_tail(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "rich_one": {
+            "count": 6, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION,
+        },
+        "thin_one": {
+            "count": 1, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION,
+        },
+    }), encoding="utf-8")
+
+    out = td._derived_cycle_topics(
+        ["rich_one", "thin_one", "new_one", "new_two"],
+        limit=2, refresh_low_source_counts=False,
+    )
+
+    assert out == ["rich_one", "new_one"]
 
 
 def test_discover_topics_counts_slug_prefix_fact_sources() -> None:
