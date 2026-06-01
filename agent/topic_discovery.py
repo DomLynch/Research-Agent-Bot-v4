@@ -511,8 +511,26 @@ def _fresh_cached_supply_count(
     return None
 
 
+def _cached_source_rich_hint_count(entry: Any, *, now: float) -> int | None:
+    if not isinstance(entry, dict):
+        return None
+    version = entry.get("version")
+    if version == _SUPPLY_CACHE_VERSION:
+        count = _fresh_cached_supply_count(
+            entry, now=now, refresh_low_source_counts=False)
+    elif version == _SUPPLY_CACHE_VERSION - 1:
+        count = int(entry.get("count", 0))
+        if now - float(entry.get("ts", 0.0)) >= _SUPPLY_CACHE_TTL_SECONDS:
+            count = None
+    else:
+        count = None
+    if count is not None and count >= _PUBLISHABLE_SOURCE_FLOOR:
+        return count
+    return None
+
+
 def _cached_source_rich_topics(
-    *, exclude: set[str], limit: int, refresh_low_source_counts: bool,
+    *, exclude: set[str], limit: int,
 ) -> tuple[tuple[str, int], ...]:
     if limit <= 0:
         return ()
@@ -522,10 +540,8 @@ def _cached_source_rich_topics(
     for topic, entry in cache.items():
         if topic in exclude:
             continue
-        count = _fresh_cached_supply_count(
-            entry, now=now,
-            refresh_low_source_counts=refresh_low_source_counts)
-        if count is not None and count >= _PUBLISHABLE_SOURCE_FLOOR:
+        count = _cached_source_rich_hint_count(entry, now=now)
+        if count is not None:
             ranked.append((count, topic))
     return tuple(
         (topic, count) for count, topic in sorted(
@@ -893,7 +909,6 @@ def discover_topics(
             _cached_source_rich_topics(
                 exclude=set(papers_by_topic) | set(fact_child_topics),
                 limit=extra_probe_limit,
-                refresh_low_source_counts=refresh_low_source_counts,
             )
             if derived_topic_limit else ()
         )
