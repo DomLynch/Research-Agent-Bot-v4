@@ -1971,7 +1971,11 @@ def run_cycle(
     force_refresh = False
     accepted_shape_profiles = _accepted_shape_profiles(runs_root)
     all_considered: list[Json] = []
-    batch_limit = max(1, max_refresh_batches if refresh_candidates else 1)
+    search_batch_limit = max(1, max_refresh_batches if refresh_candidates else 1)
+    batch_limit = search_batch_limit + (
+        _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
+        if submit and refresh_candidates else 0
+    )
     default_submitter = submitter is None
     if submit and submitter is None:
         url = os.environ.get("RESEARKA_SUBMIT_URL", "https://api.researka.org/submissions")
@@ -1997,6 +2001,8 @@ def run_cycle(
     skip_next_refresh = preflight_queue is not None
     warm_backlog_next = False
     for batch in range(1, batch_limit + 1):
+        if refresh_candidates and batch > search_batch_limit and not skip_next_refresh:
+            break
         refresh: Json = {}
         if refresh_candidates and skip_next_refresh:
             refresh = {
@@ -2089,7 +2095,7 @@ def run_cycle(
                 # no publishable candidate. Escalate once into progressive
                 # backlog warming before stopping; this lets the source-rich
                 # cache grow when the normal fast window is exhausted.
-                if not refresh.get("warm_backlog") and batch < batch_limit:
+                if not refresh.get("warm_backlog") and batch < search_batch_limit:
                     ledger["refresh_backlog_escalation"] = {
                         "after_batch": batch,
                         "reason": "queue_unchanged_no_candidate",
@@ -2132,7 +2138,7 @@ def run_cycle(
                 runs_root / "_retracted_holds" / f"{candidate.get('topic')}-{date}.json",
                 ledger,
             )
-            if not refresh_candidates or batch == batch_limit:
+            if not refresh_candidates or batch >= search_batch_limit:
                 ledger.update({
                     "status": "held_retraction_check",
                     "candidate": candidate.get("topic"),
@@ -2215,7 +2221,7 @@ def run_cycle(
                         topic = str(candidate.get("topic") or "")
                         if topic:
                             blocked_topics.add(topic)
-                        if not refresh_candidates or batch == batch_limit:
+                        if not refresh_candidates or batch >= search_batch_limit:
                             ledger.update({"status": attempt["status"], "published": 0})
                             _write_json(ledger_path, ledger)
                             return ledger
@@ -2244,7 +2250,7 @@ def run_cycle(
         topic = str(candidate.get("topic") or "")
         if topic:
             blocked_topics.add(topic)
-        if not refresh_candidates or batch == batch_limit:
+        if not refresh_candidates or batch >= search_batch_limit:
             ledger.update({"status": result["status"], "published": 0})
             _write_json(ledger_path, ledger)
             return ledger

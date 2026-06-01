@@ -3133,6 +3133,82 @@ def test_repairable_revise_stops_at_fingerprint_attempt_cap(
     assert not ledger["considered"][-1].get("retry_after_rejection")
 
 
+def test_repairable_revise_on_final_search_batch_gets_repair_slot(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("final_batch_repair")
+    _memo_with_source_receipts(root, verdict, 5)
+    submitted: list[str] = []
+    refreshes = 0
+    decisions: list[dict[str, Any]] = [
+        {
+            "status": "complete",
+            "decision": "revise",
+            "claim_support_verdict": "partially_supported",
+            "required_revisions": ["Narrow the source bundle before resubmission."],
+            "resubmission": {"allowed": True},
+        },
+        {
+            "status": "complete",
+            "decision": "accept",
+            "public_url": "https://researka.org/alpha/final-batch-repair",
+        },
+    ]
+
+    def fake_step(_args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        return True, "ok"
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submitted.append(str(payload["topic"]))
+        return {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": f"sub-{len(submitted)}"}},
+        }
+
+    def refresh(run_dir: Path, _verdict: dict[str, Any]) -> bool:
+        nonlocal refreshes
+        refreshes += 1
+        path = run_dir / "alpha_memo.md"
+        path.write_text(
+            path.read_text(encoding="utf-8") + "\nRepair slot used.\n",
+            encoding="utf-8",
+        )
+        return True
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        refresh_candidates=True,
+        max_refresh_batches=1,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+        decision_fetcher=lambda _submission_id: decisions.pop(0),
+        page_fetcher=lambda _url: {
+            "ok": True,
+            "status": 200,
+            "body": "<html><title>Alpha memo</title></html>",
+        },
+        memo_refresher=refresh,
+        sleep=lambda _seconds: None,
+    )
+
+    assert submitted == ["final_batch_repair", "final_batch_repair"]
+    assert refreshes == 2
+    assert ledger["status"] == "published"
+    assert ledger["refresh_batches"][1]["note"] == "skipped_after_repairable_submission"
+    assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == [
+        "reviewer_revise",
+        "published",
+    ]
+
+
 def test_accepted_shape_bias_breaks_candidate_tie(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     matching = _verdict("matching", score=90) | {
