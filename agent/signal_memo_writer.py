@@ -27,7 +27,7 @@ _GENERIC_TOKENS = frozenset({
     "improvements", "increase", "reduction", "disease", "review", "comprehensive",
     "device", "majority",
 })
-_NULL_MARKERS = ("no effect", "null", "unchanged", "failed", "did not", "without")
+_NULL_MARKERS = ("no effect", "no difference", "null", "unchanged", "failed", "did not", "without")
 _ADVERSE_MARKERS = ("mortality", "adverse", "toxicity", "harm", "worsen", "risk")
 _DOSE_MARKERS = ("dose", "low-dose", "high-dose", "threshold")
 _SUBGROUP_MARKERS = ("subgroup", "strata", "sex", "male", "female", "baseline")
@@ -805,10 +805,10 @@ def _counter_items(verdict: dict[str, Any] | None) -> list[dict[str, Any]]:
 
 def _counter_type(phrase: str, paper: dict[str, Any]) -> tuple[str, int]:
     text = f"{phrase} {paper.get('title') or ''}".lower()
-    if any(m in text for m in _ADVERSE_MARKERS):
-        return "adverse_signal", 85
     if any(m in text for m in _NULL_MARKERS):
         return "null_result", 80
+    if any(m in text for m in _ADVERSE_MARKERS):
+        return "adverse_signal", 85
     if any(m in text for m in _DOSE_MARKERS):
         return "dose_response_inversion", 70
     if any(m in text for m in _SUBGROUP_MARKERS):
@@ -869,13 +869,13 @@ def _novelty_delta(
         for row in nearest
     )
     if repeats or prior_repeat:
-        label = "repeated"
+        label = "locally_repeated"
     elif contradictions:
         label = "contradictory"
     elif top >= 0.28:
         label = "incremental"
     elif direct_sources >= 5:
-        label = "high-novelty"
+        label = "local_high_novelty"
     else:
         label = "under-discussed"
     return {
@@ -883,10 +883,10 @@ def _novelty_delta(
         "nearest_score": round(top, 3),
         "counter_evidence_types": sorted({str(c.get("type")) for c in contradictions}),
         "rationale": (
-            "Prior/current claims are close." if label == "repeated"
+            "Prior/current claims are close." if label == "locally_repeated"
             else "Claim is defined by an opposing receipt." if label == "contradictory"
             else "Nearby literature exists but does not fully cover the claim." if label == "incremental"
-            else "Direct support exists with low nearest-claim overlap." if label == "high-novelty"
+            else "Direct support exists with low nearest-claim overlap." if label == "local_high_novelty"
             else "Weak direct support; treat as curation until better receipts arrive."
         ),
     }
@@ -942,7 +942,7 @@ def build_memo_audit(
     ]
     repeats = int(novelty.get("repeats", 0))
     gate_failures = [
-        *([] if delta["label"] != "repeated" else ["novelty_delta_repeated"]),
+        *([] if delta["label"] != "locally_repeated" else ["novelty_delta_locally_repeated"]),
         *([] if falsifier else ["memo_missing_falsifier"]),
         *([] if matrix["direct_sources"] else ["no_direct_source"]),
         *([] if risk != "missing_for_human_claim" else ["risk_of_bias_missing_for_human_claim"]),
@@ -960,7 +960,7 @@ def build_memo_audit(
         "novelty": {
             "selected_angle": str(novelty.get("selected") or ""),
             "recent_repeats": repeats,
-            "signal": "repeated" if repeats else "fresh",
+            "signal": "locally_repeated" if repeats else "fresh",
         },
         "nearest_literature": nearest,
         "novelty_delta": delta,
@@ -1366,11 +1366,10 @@ def render_signal_memo(
     lead_set = set(lead_ids)
     receipt_ids = lead_ids + [fid for fid in expanded_ids if fid not in lead_set]
     context_ids = [fid for fid in receipt_ids if fid not in lead_set]
-    with suppress(OSError):  # sidecar: claim -> receipts -> support, for audit
-        (run_dir / "claim_receipt_matrix.json").write_text(
-            json.dumps(build_claim_receipt_matrix(claim, lead_ids, receipt_ids, facts),
-                       indent=2, sort_keys=True),
-            encoding="utf-8")
+    (run_dir / "claim_receipt_matrix.json").write_text(
+        json.dumps(build_claim_receipt_matrix(claim, lead_ids, receipt_ids, facts),
+                   indent=2, sort_keys=True),
+        encoding="utf-8")
     lead_source_count = _source_count_for_ids(lead_ids, facts)
     source_count = _source_count_for_ids(receipt_ids, facts)
     thesis = _receipt_thesis(
@@ -1493,28 +1492,27 @@ def render_signal_memo(
     if subtopic_lines:
         lines.extend(["", "## Subtopic recommendations", "", *subtopic_lines])
     body = "\n".join(lines) + "\n"
-    with suppress(OSError):  # FactReview-style consolidated audit pack
-        memo_audit = build_memo_audit(
-            claim, lead_ids, receipt_ids, facts, publish_verdict,
-            falsifier=falsifier_present(body),
-            novelty={"selected": angle["kind"],
-                     "repeats": recent_kinds.get(angle["kind"], 0)},
-            min_direct=min_direct_sources,
-            run_dir=run_dir,
-        )
-        (run_dir / "typed_counter_evidence.json").write_text(
-            json.dumps({"items": memo_audit["contradiction_receipts"]},
-                       indent=2, sort_keys=True),
-            encoding="utf-8")
-        (run_dir / "novelty_delta.json").write_text(
-            json.dumps({
-                "novelty_delta": memo_audit["novelty_delta"],
-                "nearest_literature": memo_audit["nearest_literature"],
-            }, indent=2, sort_keys=True),
-            encoding="utf-8")
-        (run_dir / "memo_audit.json").write_text(
-            json.dumps(memo_audit, indent=2, sort_keys=True),
-            encoding="utf-8")
+    memo_audit = build_memo_audit(
+        claim, lead_ids, receipt_ids, facts, publish_verdict,
+        falsifier=falsifier_present(body),
+        novelty={"selected": angle["kind"],
+                 "repeats": recent_kinds.get(angle["kind"], 0)},
+        min_direct=min_direct_sources,
+        run_dir=run_dir,
+    )
+    (run_dir / "typed_counter_evidence.json").write_text(
+        json.dumps({"items": memo_audit["contradiction_receipts"]},
+                   indent=2, sort_keys=True),
+        encoding="utf-8")
+    (run_dir / "novelty_delta.json").write_text(
+        json.dumps({
+            "novelty_delta": memo_audit["novelty_delta"],
+            "nearest_literature": memo_audit["nearest_literature"],
+        }, indent=2, sort_keys=True),
+        encoding="utf-8")
+    (run_dir / "memo_audit.json").write_text(
+        json.dumps(memo_audit, indent=2, sort_keys=True),
+        encoding="utf-8")
     lines.extend(["", *_provenance_block(run_dir, topic, snapshot, headline, body)])
     return "\n".join(lines) + "\n"
 

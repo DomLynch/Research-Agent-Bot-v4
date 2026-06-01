@@ -398,16 +398,20 @@ def _refresh_alpha_memo(run_dir: Path, verdict: Json) -> bool:
     decision = verdict.get("_repair_decision")
     grounded = isinstance(decision, dict) and _is_grounding_reject(decision)
     structural = isinstance(decision, dict) and _resubmission_allowed(decision)
-    # Scope/grounding rejects need the memo rebuilt around the source angle, not
-    # a cosmetic clarification line; only let prose-softening short-circuit when
-    # the reject is NOT a grounding one.
-    if not grounded and not structural and isinstance(decision, dict) and _apply_reviewer_revision_notes(
-        run_dir, decision,
-    ):
-        return True
     from agent.signal_memo_writer import write_signal_memo
 
+    # Direct text edits are only a compatibility shim for reviewer wording.
+    # Every successful repair still regenerates the memo sidecars and verdict
+    # below, so published text and machine-readable audit artifacts cannot drift.
+    patched = (
+        not grounded and not structural and isinstance(decision, dict)
+        and _apply_reviewer_revision_notes(run_dir, decision)
+    )
+    if patched and not _can_recompute_verdict(run_dir):
+        return True
     write_signal_memo(run_dir, publish_verdict=verdict, grounded=grounded)
+    if _can_recompute_verdict(run_dir):
+        _write_publish_verdict(run_dir)
     return True
 
 

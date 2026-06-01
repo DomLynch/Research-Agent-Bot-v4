@@ -27,6 +27,7 @@ import sys
 import time
 import tomllib
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -70,6 +71,28 @@ _OUTCOME_TERMS = (
     "effect", "reduction", "dose", "adverse", "sex", "age", "subgroup",
     "randomized", "meta analysis", "cohort",
 )
+_FETCH_FAILURE_STATUSES = frozenset({
+    "timeout", "auth_failed", "server_error", "bad_json", "missing_token",
+})
+
+
+@dataclass(frozen=True, slots=True)
+class FetchResult:
+    hits: list[dict[str, Any]]
+    status: str
+    errors: tuple[str, ...] = ()
+
+
+def _fetch_error_result(exc: BaseException) -> FetchResult:
+    if isinstance(exc, httpx.TimeoutException):
+        return FetchResult([], "timeout", (exc.__class__.__name__,))
+    if isinstance(exc, httpx.HTTPStatusError):
+        code = exc.response.status_code
+        status = "auth_failed" if code in {401, 403} else "server_error"
+        return FetchResult([], status, (f"http_{code}",))
+    if isinstance(exc, ValueError):
+        return FetchResult([], "bad_json", (exc.__class__.__name__,))
+    return FetchResult([], "server_error", (exc.__class__.__name__,))
 
 
 def _safe_float(v: Any) -> float | None:
@@ -236,7 +259,7 @@ def _post_tier2_facts(
     *,
     numeric_only: bool,
     strict_audit_required: bool,
-) -> list[dict[str, Any]]:
+) -> FetchResult:
     body: dict[str, Any] = {
         "query": topic,
         "top_k": _FETCH_TOP_K,
@@ -251,9 +274,10 @@ def _post_tier2_facts(
         )
         r.raise_for_status()
         data = r.json()
-    except (httpx.HTTPError, ValueError):
-        return []
-    return [x for x in data if isinstance(x, dict)] if isinstance(data, list) else []
+    except (httpx.HTTPError, ValueError) as exc:
+        return _fetch_error_result(exc)
+    hits = [x for x in data if isinstance(x, dict)] if isinstance(data, list) else []
+    return FetchResult(hits, "ok")
 
 
 def _diverse_queries(topic: str) -> list[str]:
@@ -271,8 +295,8 @@ def _diverse_queries(topic: str) -> list[str]:
 
 def _fetch_one(
     job: tuple[str, str], base: str, hdr: dict[str, str], topic: str,
-) -> list[dict[str, Any]]:
-    """One fetch unit (own client = thread-safe). Tolerant: any error -> []."""
+) -> FetchResult:
+    """One fetch unit (own client = thread-safe). Errors stay typed."""
     kind, value = job
     try:
         with httpx.Client(timeout=_FACT_FETCH_TIMEOUT_SECONDS) as c:
@@ -288,15 +312,31 @@ def _fetch_one(
                     if isinstance(f, dict):
                         f["_tier"] = "tier1_canonical"
                         out.append(f)
-                return out
-            items = _post_tier2_facts(
+                return FetchResult(out, "ok")
+            result = _post_tier2_facts(
                 c, base, hdr, value, numeric_only=True,
                 strict_audit_required=(kind == "strict"),
             )
-            rows = items if kind == "strict" else _select_tier2_items(items, topic)
-            return [_normalize_tier2(it, topic) for it in rows]
-    except (httpx.HTTPError, ValueError):
-        return []
+            if result.status != "ok":
+                return result
+            rows = result.hits if kind == "strict" else _select_tier2_items(result.hits, topic)
+            return FetchResult([_normalize_tier2(it, topic) for it in rows], "ok")
+    except (httpx.HTTPError, ValueError) as exc:
+        return _fetch_error_result(exc)
+
+
+def _coerce_fetch_result(value: Any) -> FetchResult:
+    if isinstance(value, FetchResult):
+        return value
+    hits = value if isinstance(value, list) else []
+    return FetchResult([row for row in hits if isinstance(row, dict)], "ok")
+
+
+def _all_primary_fetches_failed(trace: list[dict[str, Any]]) -> bool:
+    return bool(trace) and all(
+        str(row.get("status") or "") in _FETCH_FAILURE_STATUSES
+        for row in trace
+    )
 
 
 def _fetch_facts(
@@ -314,7 +354,17 @@ def _fetch_facts(
     settings = load_settings()
     base = settings.researka_database_url.rstrip("/")
     token = settings.researka_database_token.strip()
-    if not base or not token or _FACT_FETCH_BUDGET_SECONDS <= 0:
+    if not base or not token:
+        if trace is not None:
+            trace.append({"kind": "setup", "query": topic, "facts": 0,
+                          "status": "missing_token",
+                          "errors": ["missing_database_url_or_token"]})
+        return []
+    if _FACT_FETCH_BUDGET_SECONDS <= 0:
+        if trace is not None:
+            trace.append({"kind": "setup", "query": topic, "facts": 0,
+                          "status": "timeout",
+                          "errors": ["fetch_budget_disabled"]})
         return []
     hdr = {"X-Researka-Token": token}
     queries = _diverse_queries(topic)
@@ -329,21 +379,24 @@ def _fetch_facts(
         fut_job = {pool.submit(_fetch_one, j, base, hdr, topic): j for j in jobs}
         try:
             for fut in as_completed(fut_job, timeout=_FACT_FETCH_BUDGET_SECONDS):
-                rows = fut.result()
+                result = _coerce_fetch_result(fut.result())
+                rows = result.hits
                 facts.extend(rows)
                 done.add(id(fut))
                 if trace is not None:
                     kind, query = fut_job[fut]
                     trace.append({"kind": kind, "query": query,
                                   "facts": len(rows),
-                                  "status": "ok" if rows else "empty"})
+                                  "status": result.status,
+                                  "errors": list(result.errors)})
         except TimeoutError:
             pass  # keep whatever finished within the overall budget
     if trace is not None:
         for fut, (kind, query) in fut_job.items():
             if id(fut) not in done:
                 trace.append({"kind": kind, "query": query,
-                              "facts": 0, "status": "timeout"})
+                              "facts": 0, "status": "timeout",
+                              "errors": ["fetch_budget_timeout"]})
     return _dedup_facts(facts)
 
 
@@ -789,6 +842,16 @@ def main() -> int:
 
     search_trace: list[dict[str, Any]] = []
     facts = _fetch_facts(args.topic, trace=search_trace)
+    if _all_primary_fetches_failed(search_trace):
+        (out_dir / "search_trace.json").write_text(
+            json.dumps({"topic": args.topic, "snapshot_utc": ts,
+                        "queries": search_trace}, indent=2, ensure_ascii=False),
+            encoding="utf-8")
+        (out_dir / "retrieval_status.json").write_text(
+            json.dumps({"status": "failed", "reason": "all_primary_fetches_failed"},
+                       indent=2, sort_keys=True),
+            encoding="utf-8")
+        return 2
     pico_result = None
     if not args.no_pico_enrich and facts:
         facts, pico_result = enrich_facts_pico(facts, settings=load_settings())

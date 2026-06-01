@@ -12,6 +12,8 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
+from pytest import MonkeyPatch
+
 from agent.publish_tier import publish_verdict
 from agent.signal_memo_writer import (
     _format_large_numbers,
@@ -173,6 +175,27 @@ def test_signal_memo_renders_publish_verdict_sections(tmp_path: Path) -> None:
     novelty = json.loads((run / "novelty_delta.json").read_text(encoding="utf-8"))
     assert typed["items"][0]["type"] == "null_result"
     assert novelty["novelty_delta"]["label"] == "contradictory"
+
+
+def test_sidecar_write_failure_blocks_memo_publish(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    original = Path.write_text
+
+    def _write_text(path: Path, *args: Any, **kwargs: Any) -> int:
+        if path.name == "memo_audit.json":
+            raise OSError("disk full")
+        return original(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "write_text", _write_text)
+    try:
+        render_signal_memo(run)
+    except OSError as exc:
+        assert "disk full" in str(exc)
+    else:  # pragma: no cover - safety assertion
+        raise AssertionError("sidecar write failure must fail closed")
 
 
 def test_publish_alpha_surface_is_not_rendered_as_publish_command(tmp_path: Path) -> None:
@@ -966,6 +989,13 @@ def test_memo_audit_verdict_thresholds() -> None:
     assert ac["verdict"] == "in_conflict"
     assert len(ac["contradiction_receipts"]) == 1
     assert ac["contradiction_receipts"][0]["snippet"] == "No effect found"
+    adverse_null = {"counter_evidence": {"items": [
+        {"fact_id": "9", "lane": "A_core",
+         "phrase": "No difference in adverse events was observed",
+         "source_paper": {"title": "Adverse event comparison"}}]}}
+    an = build_memo_audit(claim, list("12345"), list("12345"), facts, adverse_null,
+                          falsifier=True, novelty=nov, min_direct=5)
+    assert an["contradiction_receipts"][0]["type"] == "null_result"
 
 
 def test_memo_audit_carries_novelty_delta_and_gate_failures() -> None:
@@ -981,14 +1011,14 @@ def test_memo_audit_carries_novelty_delta_and_gate_failures() -> None:
                                                        "repeats": 3})
     assert audit["falsifier_present"] is False
     assert audit["novelty"] == {"selected_angle": "boundary_condition",
-                                "recent_repeats": 3, "signal": "repeated"}
+                                "recent_repeats": 3, "signal": "locally_repeated"}
     assert audit["source_hygiene"]["mean_quality_score"] == 90.0
     assert audit["risk_of_bias"] == "not_required"
     assert audit["nearest_literature"] == []
-    assert audit["novelty_delta"]["label"] == "repeated"
+    assert audit["novelty_delta"]["label"] == "locally_repeated"
     assert audit["audit_gate"] == {
         "passed": False,
-        "failures": ["novelty_delta_repeated", "memo_missing_falsifier"],
+        "failures": ["novelty_delta_locally_repeated", "memo_missing_falsifier"],
     }
 
 

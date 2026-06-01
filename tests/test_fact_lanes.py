@@ -158,6 +158,20 @@ def test_topic_in_population_with_effect_is_a_core() -> None:
     assert v.reason == "topic_in_population_pico_complete"
 
 
+def test_disease_topic_population_match_is_context_not_a_core() -> None:
+    v = classify_lane(_fact(
+        canonical_phrase="exercise improved mobility by 8%",
+        population="older adults with alzheimer disease",
+        intervention="resistance exercise",
+        comparator="usual care",
+        numeric_value=8.0,
+        units="%",
+    ), topic="alzheimer_disease")
+
+    assert v.lane == "B_context"
+    assert v.reason == "topic_in_population_context_only"
+
+
 def test_long_head_population_fallback_is_universal() -> None:
     """The compound-topic head fallback is structural, not biomedical:
     long, specific head words can define a studied population in any domain."""

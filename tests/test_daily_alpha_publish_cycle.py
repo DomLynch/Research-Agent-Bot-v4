@@ -608,6 +608,44 @@ def test_revision_refresher_materially_narrows_reviewer_revise_notes(tmp_path: P
     assert "`fact_id=1`" in memo
 
 
+def test_reviewer_text_repair_regenerates_sidecars_and_verdict(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    run = tmp_path / "runs" / "topic-evidence-ts"
+    run.mkdir(parents=True)
+    for name in ("signal_post.md", "alpha_memo.md", "opportunities_gate.json",
+                 "fact_lanes.json", "all_facts.json"):
+        run.joinpath(name).write_text("{}" if name.endswith(".json") else "# Signal\n",
+                                      encoding="utf-8")
+    import agent.signal_memo_writer as smw
+
+    called: dict[str, bool] = {}
+
+    def _fake_write(run_dir: Path, signal_text: Any = None,
+                    publish_verdict: Any = None, *, grounded: bool = False) -> Any:
+        called["memo"] = True
+        run_dir.joinpath("memo_audit.json").write_text("{}", encoding="utf-8")
+        return run_dir / "alpha_memo.md", "# regenerated\n"
+
+    def _fake_verdict(run_dir: Path) -> dict[str, Any]:
+        called["verdict"] = True
+        run_dir.joinpath("publish_verdict.json").write_text("{}", encoding="utf-8")
+        return {}
+
+    monkeypatch.setattr(smw, "write_signal_memo", _fake_write)
+    monkeypatch.setattr(daily, "_write_publish_verdict", _fake_verdict)
+    assert daily._refresh_alpha_memo(run, {
+        "_repair_decision": {
+            "decision": "revise",
+            "required_revisions": ["Revise the title to remove 'systematic review'."],
+        },
+    }) is True
+
+    assert called == {"memo": True, "verdict": True}
+    assert run.joinpath("memo_audit.json").exists()
+    assert run.joinpath("publish_verdict.json").exists()
+
+
 def test_repairable_reject_refresher_handles_scope_reset_notes(tmp_path: Path) -> None:
     run = tmp_path / "runs" / "glp-evidence-ts"
     run.mkdir(parents=True)

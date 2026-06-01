@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 from agent.numeric_role_classifier import (
     classify_numeric_role,
@@ -31,6 +31,12 @@ from agent.topic_synonyms import expand_topic_queries, phrase_in_text
 LANES = ("A_core", "B_context", "C_noise", "D_bad_extraction")
 _NORM_PUNCT = re.compile(r"[\W_]+")
 _MIN_SPECIFIC_HEAD_CHARS = 8
+TopicType = Literal[
+    "intervention", "exposure", "disease_or_condition", "biomarker", "broad_risk_factor",
+]
+_POPULATION_CONTEXT_ONLY: frozenset[TopicType] = frozenset({
+    "disease_or_condition", "broad_risk_factor",
+})
 
 
 def _norm(s: str) -> str:
@@ -78,6 +84,19 @@ def _topic_keywords(topic: str) -> list[str]:
     return list(seen)
 
 
+def _topic_type(topic: str) -> TopicType:
+    tokens = set(_norm(topic).split())
+    if {"risk", "factor"} <= tokens or {"risk", "factors"} <= tokens:
+        return "broad_risk_factor"
+    if tokens & {"disease", "condition", "disorder", "syndrome"}:
+        return "disease_or_condition"
+    if tokens & {"biomarker", "marker"}:
+        return "biomarker"
+    if "exposure" in tokens:
+        return "exposure"
+    return "intervention"
+
+
 def classify_lane(fact: dict[str, Any], topic: str) -> LaneVerdict:
     """Single-fact lane classification."""
     fact_id = str(fact.get("fact_id") or "")
@@ -111,27 +130,29 @@ def classify_lane(fact: dict[str, Any], topic: str) -> LaneVerdict:
             reason="topic_word_absent_from_pico_fields",
         )
 
-    # A_core is the quantitative LEAD. For intervention topics, topic-in-
-    # intervention is direct. For condition/outcome topics, topic-in-population
-    # is also direct: "exercise improved muscle mass in sarcopenia" is direct
-    # evidence for a sarcopenia alpha topic even though sarcopenia is not the
-    # intervention. Phrase-only matches still bind as B_context to avoid
-    # promoting inconsistent extractions.
+    # A_core is the quantitative LEAD. Topic-in-intervention is always direct.
+    # Topic-in-population stays direct for specific non-disease outcome topics
+    # but not for broad risk-factor / disease topics, where a population-only
+    # match is context until the receipt itself names the target intervention.
     real = is_real_finding(role)
     intervention_norm = _norm(str(fact.get("intervention") or ""))
     population_norm = _norm(str(fact.get("population") or ""))
-    if real and any(
-        phrase_in_text(kw, intervention_norm)
-        or phrase_in_text(kw, population_norm)
-        for kw in keywords if kw
-    ):
+    topic_in_intervention = any(phrase_in_text(kw, intervention_norm) for kw in keywords if kw)
+    topic_in_population = any(phrase_in_text(kw, population_norm) for kw in keywords if kw)
+    if real and (topic_in_intervention or (
+        topic_in_population and _topic_type(topic) not in _POPULATION_CONTEXT_ONLY
+    )):
         return LaneVerdict(
             fact_id=fact_id, lane="A_core",
             numeric_role=role,
             reason=("topic_in_intervention_pico_complete"
-                    if any(phrase_in_text(kw, intervention_norm)
-                           for kw in keywords if kw)
+                    if topic_in_intervention
                     else "topic_in_population_pico_complete"),
+        )
+    if real and topic_in_population:
+        return LaneVerdict(
+            fact_id=fact_id, lane="B_context",
+            numeric_role=role, reason="topic_in_population_context_only",
         )
     return LaneVerdict(
         fact_id=fact_id, lane="B_context",
