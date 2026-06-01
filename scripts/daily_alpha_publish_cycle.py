@@ -12,6 +12,7 @@ import hashlib
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
 import time
@@ -44,6 +45,58 @@ _SUBMIT_TOKEN_ENVS = (
     "RESEARKA_AGENT_TOKEN_V4",
     "RESEARCH_API_KEY_V4",
 )
+
+
+def _terminate_process_group(proc: subprocess.Popen[str], sig: signal.Signals | int) -> None:
+    if proc.poll() is not None:
+        return
+    with suppress(ProcessLookupError):
+        os.killpg(proc.pid, int(sig))
+
+
+def _run_subprocess(args: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+    """Run child pipelines in one process group so stop/timeout kills descendants."""
+    proc = subprocess.Popen(
+        args,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    )
+    previous: dict[signal.Signals, Any] = {}
+
+    def forward_stop(signum: int, _frame: object) -> None:
+        stop_signal = signal.Signals(signum)
+        _terminate_process_group(proc, stop_signal)
+        with suppress(subprocess.TimeoutExpired):
+            proc.wait(timeout=5)
+        if proc.poll() is None:
+            _terminate_process_group(proc, signal.SIGKILL)
+        signal.signal(stop_signal, previous.get(stop_signal, signal.SIG_DFL))
+        os.kill(os.getpid(), signum)
+
+    for managed_signal in (signal.SIGTERM, signal.SIGINT):
+        previous[managed_signal] = signal.getsignal(managed_signal)
+        signal.signal(managed_signal, forward_stop)
+    try:
+        stdout, stderr = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired as exc:
+        _terminate_process_group(proc, signal.SIGTERM)
+        with suppress(subprocess.TimeoutExpired):
+            proc.wait(timeout=5)
+        if proc.poll() is None:
+            _terminate_process_group(proc, signal.SIGKILL)
+        stdout, stderr = proc.communicate()
+        raise subprocess.TimeoutExpired(
+            args, timeout, output=stdout, stderr=stderr,
+        ) from exc
+    finally:
+        for managed_signal, handler in previous.items():
+            if signal.getsignal(managed_signal) is forward_stop:
+                signal.signal(managed_signal, handler)
+    return subprocess.CompletedProcess(args, proc.returncode, stdout, stderr)
+
+
 def _alpha_memo_int(name: str, default: int) -> int:
     try:
         data = tomllib.loads(_PUBLICATION_PATH.read_text(encoding="utf-8"))
@@ -1490,9 +1543,7 @@ def retraction_check(
 
 def _run_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
     try:
-        result = subprocess.run(
-            args, capture_output=True, text=True, timeout=timeout, check=False,
-        )
+        result = _run_subprocess(args, timeout=timeout)
     except (OSError, subprocess.SubprocessError) as exc:
         return False, f"{type(exc).__name__}: {exc}"
     lines = ((result.stdout or "") + "\n" + (result.stderr or "")).strip().splitlines()

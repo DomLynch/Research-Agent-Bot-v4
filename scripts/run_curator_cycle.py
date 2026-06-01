@@ -36,6 +36,7 @@ from daily_alpha_publish_cycle import (
     _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES,
     _DEFAULT_MIN_SUBMIT_SOURCES,
     _direct_source_count,
+    _run_subprocess,
     _source_count,
 )
 
@@ -143,8 +144,7 @@ def _run_step(
 ) -> tuple[bool, str]:
     """Run a subprocess; return (ok, last_line). Never raises."""
     try:
-        r = subprocess.run(args, capture_output=True, text=True,
-                           timeout=timeout, check=False)
+        r = _run_subprocess(args, timeout=timeout)
     except (subprocess.SubprocessError, OSError) as e:
         return False, f"{step_name}: {type(e).__name__}: {e}"
     out = (r.stdout or "").strip().splitlines()

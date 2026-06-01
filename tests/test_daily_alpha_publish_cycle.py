@@ -7,6 +7,9 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import subprocess
+import sys
+import time
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -15,6 +18,34 @@ from urllib.request import Request
 from pytest import MonkeyPatch
 
 import scripts.daily_alpha_publish_cycle as daily
+
+
+def test_run_subprocess_timeout_kills_descendant_process(tmp_path: Path) -> None:
+    marker = tmp_path / "orphan-marker"
+    grandchild = tmp_path / "grandchild.py"
+    child = tmp_path / "child.py"
+    grandchild.write_text(
+        "import pathlib, sys, time\n"
+        "time.sleep(2)\n"
+        "pathlib.Path(sys.argv[1]).write_text('orphan', encoding='utf-8')\n",
+        encoding="utf-8",
+    )
+    child.write_text(
+        "import subprocess, sys, time\n"
+        f"subprocess.Popen([sys.executable, {str(grandchild)!r}, {str(marker)!r}])\n"
+        "time.sleep(30)\n",
+        encoding="utf-8",
+    )
+
+    try:
+        daily._run_subprocess([sys.executable, str(child)], timeout=1)
+    except subprocess.TimeoutExpired:
+        pass
+    else:  # pragma: no cover - defensive: the child should never finish.
+        raise AssertionError("child unexpectedly completed")
+
+    time.sleep(2.5)
+    assert not marker.exists()
 
 
 def _verdict(topic: str = "grid_storage", *, score: int = 90) -> dict[str, Any]:
