@@ -695,19 +695,17 @@ def test_tighten_evidence_receipts_revision_forces_grounded_regen() -> None:
     assert daily._is_grounding_reject(decision) is True
 
 
-def test_counter_signal_revision_forces_structural_rerender(
+def test_resubmission_allowed_revision_forces_structural_rerender(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     decision = {
         "decision": "revise",
         "required_revisions": [
-            "Clarify the precise nature of the counter-signal: what exactly collides.",
-            "Integrate the clinical endpoints into a comparative framework.",
-            "Tighten What this changes into a bounded testable hypothesis.",
+            "Use clearer language and make the memo's purpose explicit.",
         ],
         "resubmission": {"allowed": True},
     }
-    assert daily._needs_structural_rewrite(decision) is True
+    assert daily._resubmission_allowed(decision) is True
 
     run = tmp_path / "runs" / "hbot-evidence-ts"
     run.mkdir(parents=True)

@@ -132,13 +132,6 @@ _REVISION_NARROWING_TERMS = (
     "integrate evidence", "overstate tension", "overstate", "redundant",
     "repetition", "separate", "surprising section",
 )
-_STRUCTURAL_REWRITE_TERMS = (
-    "counter-signal", "what exactly collides", "clinical endpoints",
-    "comparative framework", "testable hypothesis", "research implication",
-    "what this changes",
-)
-
-
 def _json(path: Path, default: Any) -> Any:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -349,7 +342,7 @@ def _refresh_alpha_memo(run_dir: Path, verdict: Json) -> bool:
         return False
     decision = verdict.get("_repair_decision")
     grounded = isinstance(decision, dict) and _is_grounding_reject(decision)
-    structural = isinstance(decision, dict) and _needs_structural_rewrite(decision)
+    structural = isinstance(decision, dict) and _resubmission_allowed(decision)
     # Scope/grounding rejects need the memo rebuilt around the source angle, not
     # a cosmetic clarification line; only let prose-softening short-circuit when
     # the reject is NOT a grounding one.
@@ -371,13 +364,6 @@ def _is_grounding_reject(decision: Json) -> bool:
         return False
     notes = _norm(_revision_notes(decision))
     return any(term in notes for term in _SCOPE_RESET_TERMS)
-
-
-def _needs_structural_rewrite(decision: Json) -> bool:
-    if decision.get("decision") not in {"reject", "revise"}:
-        return False
-    notes = _norm(_revision_notes(decision))
-    return any(term in notes for term in _STRUCTURAL_REWRITE_TERMS)
 
 
 def _revision_notes(decision: Json) -> str:
@@ -703,13 +689,14 @@ def _repairable_rejection(decision: Json) -> bool:
             reasons.add(str(gate.get("reason") or ""))
     text = " ".join(reasons).lower()
     text = f"{text} {_revision_notes(decision).lower()}"
-    resubmission = decision.get("resubmission")
-    if (
-        isinstance(resubmission, dict)
-        and resubmission.get("allowed") is True
-    ):
+    if _resubmission_allowed(decision):
         return True
     return any(reason in text for reason in _REPAIRABLE_REJECTION_REASONS)
+
+
+def _resubmission_allowed(decision: Json) -> bool:
+    resubmission = decision.get("resubmission")
+    return isinstance(resubmission, dict) and resubmission.get("allowed") is True
 
 
 def _repairable_ledger(ledger: Json) -> bool:
