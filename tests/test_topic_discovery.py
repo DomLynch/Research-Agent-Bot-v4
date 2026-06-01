@@ -1213,6 +1213,39 @@ def test_discover_topics_adds_fact_derived_source_rich_children(
     assert by_topic["resistance_training"].paper_count == 1
 
 
+def test_discover_topics_applies_fact_child_count_to_existing_candidate(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    monkeypatch.setattr(td, "_title_topic_slugs", lambda *_args, **_kw: ())
+
+    def fake_fetch(topics: list[str], **_: Any) -> dict[str, list[dict[str, Any]]]:
+        return {
+            topic: [_paper(doi=f"10.1/{topic}", title=topic.replace("_", " "))]
+            for topic in topics
+        }
+
+    def fake_fact_counts(
+        _topics: list[str], **kwargs: Any,
+    ) -> dict[str, int]:
+        kwargs["child_source_counts"]["resistance_training"] = 7
+        return {"sarcopenia_muscle_preservation": 2}
+
+    monkeypatch.setattr(td, "_fetch_papers_by_topic", fake_fetch)
+    monkeypatch.setattr(td, "_fetch_fact_source_counts", fake_fact_counts)
+
+    out = td.discover_topics(
+        seeds=("sarcopenia_muscle_preservation", "resistance_training"),
+        settings=_settings(), client=httpx.Client(), current_year=2024,
+        fact_probe_topics=1,
+    )
+
+    by_topic = {candidate.topic: candidate for candidate in out}
+    assert by_topic["resistance_training"].fact_source_count == 7
+
+
 def test_discover_topics_reuses_cached_source_rich_fact_children(
     monkeypatch: Any, tmp_path: Path,
 ) -> None:

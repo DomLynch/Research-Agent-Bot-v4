@@ -926,24 +926,22 @@ def discover_topics(
         )
         fact_sources_by_topic.update(cached_fact_counts)
         fact_child_topics = [
-            topic for topic, count in sorted(
+            (topic, count) for topic, count in sorted(
                 fact_child_counts.items(), key=lambda item: item[1], reverse=True)
-            if count >= _PUBLISHABLE_SOURCE_FLOOR and topic not in papers_by_topic
+            if count >= _PUBLISHABLE_SOURCE_FLOOR
         ][:extra_probe_limit]
-        fact_topic_counts = {
-            **{topic: fact_child_counts[topic] for topic in fact_child_topics},
-        }
-        if fact_topic_counts:
+        new_fact_child_topics = [
+            topic for topic, _count in fact_child_topics if topic not in papers_by_topic
+        ]
+        if new_fact_child_topics:
             fact_child_papers = _fetch_papers_by_topic(
-                list(fact_topic_counts), client=c, settings=settings,
+                new_fact_child_topics, client=c, settings=settings,
                 require_title_support=True, current_year=year_now)
-            for topic, count in fact_topic_counts.items():
-                papers = fact_child_papers.get(topic, [])
-                if topic not in fact_child_topics and not papers:
-                    continue
-                papers_by_topic.setdefault(topic, papers)
-                fact_sources_by_topic[topic] = max(
-                    fact_sources_by_topic.get(topic, 0), count)
+            for topic in new_fact_child_topics:
+                papers_by_topic.setdefault(topic, fact_child_papers.get(topic, []))
+        for topic, count in fact_child_topics:
+            fact_sources_by_topic[topic] = max(
+                fact_sources_by_topic.get(topic, 0), count)
         candidates = [
             _score_topic(
                 topic, papers, year_now, anchorage=anchorage,
