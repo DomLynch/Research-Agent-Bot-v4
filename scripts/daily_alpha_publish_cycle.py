@@ -117,6 +117,7 @@ _SCOPE_RESET_TERMS = (
     "scope reset", "not verifiably grounded", "provided source bundle",
     "source bundle", "title/abstract", "cited doi",
     "title and abstract", "actual scope",
+    "narrow the title", "scope mismatch", "core evidence bundle",
     "cited bundle", "directly supported", "coherent research question",
     "irrelevant counter-evidence", "claim_evidence_alignment",
     "tighten the evidence receipts", "single systematic review",

@@ -708,6 +708,23 @@ def test_title_abstract_scope_revision_forces_grounded_regen() -> None:
     assert daily._is_grounding_reject(decision) is True
 
 
+def test_scope_mismatch_revision_forces_grounded_regen() -> None:
+    decision = {
+        "decision": "revise",
+        "minor_issues": [
+            "The title mentions a broad endpoint, but the core evidence bundle "
+            "and thesis are focused more tightly, creating a scope mismatch.",
+        ],
+        "required_revisions": [
+            "Either narrow the title and thesis to better reflect the primary "
+            "focus, or expand the synthesis to integrate the extra endpoint.",
+        ],
+        "resubmission": {"allowed": True},
+    }
+
+    assert daily._is_grounding_reject(decision) is True
+
+
 def test_resubmission_allowed_revision_forces_structural_rerender(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
