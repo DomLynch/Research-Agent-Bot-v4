@@ -17,14 +17,19 @@ def _run(
     *,
     label: str = "evidence_backed_signal",
     score: int = 80,
-    lanes: tuple[str, ...] = ("A_core", "A_core", "A_core"),
-    dois: tuple[str, ...] = ("10.same/a", "10.same/a", "10.same/a"),
+    lanes: tuple[str, ...] = ("A_core", "A_core", "A_core", "A_core", "A_core"),
+    dois: tuple[str, ...] = ("10.a", "10.b", "10.c", "10.d", "10.e"),
     titles: tuple[str, ...] = (
         "Grid storage threshold improves reserve reliability",
         "Grid storage threshold improves reserve reliability",
         "Grid storage threshold improves reserve reliability",
+        "Grid storage threshold improves reserve reliability",
+        "Grid storage threshold improves reserve reliability",
     ),
-    journals: tuple[str, ...] = ("Energy Systems", "Energy Systems", "Energy Systems"),
+    journals: tuple[str, ...] = (
+        "Energy Systems", "Energy Systems", "Energy Systems",
+        "Energy Systems", "Energy Systems",
+    ),
     tension: bool = True,
 ) -> Path:
     run = root / "grid_storage-evidence-ts"
@@ -164,15 +169,16 @@ def test_cross_domain_forced_routes_to_operator_review(tmp_path: Path) -> None:
 def test_claim_coherent_source_diversity_is_publishable(tmp_path: Path) -> None:
     run = _run(
         tmp_path,
-        lanes=("A_core", "A_core", "A_core", "A_core"),
-        dois=("10.a", "10.b", "10.c", "10.d"),
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+        dois=("10.a", "10.b", "10.c", "10.d", "10.e"),
         titles=(
             "Reserve markets threshold changes grid storage reliability",
             "Reserve auctions threshold changes grid storage reliability",
             "Reserve dispatch threshold changes grid storage reliability",
             "Reserve pricing threshold changes grid storage reliability",
+            "Reserve settlement threshold changes grid storage reliability",
         ),
-        journals=("Grid Review", "Grid Letters", "Grid Reports", "Grid Notes"),
+        journals=("Grid Review", "Grid Letters", "Grid Reports", "Grid Notes", "Grid Briefs"),
     )
 
     verdict = publish_verdict(run)
@@ -215,8 +221,11 @@ def test_publish_tier_judges_rendered_memo_receipts_before_lead_audit(
 
     verdict = publish_verdict(run)
 
-    assert verdict["decision"] == "ready_to_publish"
+    assert verdict["decision"] == "needs_operator_review"
     assert verdict["axes"]["bound_receipts"] == 3
+    assert verdict["axes"]["direct_source_papers"] == 3
+    assert "source_floor_below_min" in verdict["blockers"]
+    assert "direct_source_floor_below_min" in verdict["blockers"]
     assert "source_dispersion" not in verdict["blockers"]
 
 
@@ -231,6 +240,47 @@ def test_memo_receipt_ids_dedupes_evidence_and_context() -> None:
     )
 
     assert tier._memo_receipt_ids(memo) == ["1", "2", "3"]
+
+
+def test_context_sources_do_not_satisfy_direct_source_floor(tmp_path: Path) -> None:
+    run = _run(
+        tmp_path,
+        lanes=("A_core", "A_core", "A_core", "B_context", "B_context", "B_context"),
+        dois=("10.a", "10.a", "10.a", "10.b", "10.c", "10.d"),
+        titles=(
+            "Grid storage threshold changes reserve reliability",
+            "Grid storage threshold changes reserve reliability",
+            "Grid storage threshold changes reserve reliability",
+            "Grid storage context changes reserve reliability",
+            "Grid storage context changes reserve reliability",
+            "Grid storage context changes reserve reliability",
+        ),
+        journals=("Grid Review", "Grid Review", "Grid Review", "Grid Notes", "Grid Letters", "Grid Briefs"),
+    )
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo - grid_storage\n\n"
+        "**Headline:** Storage threshold paradox in reserve markets\n"
+        "**Alpha score:** 90/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## Why this is surprising\n\n"
+        "Real tension: reserve reliability rises while costs fall.\n\n"
+        "## Evidence receipts\n\n"
+        "- `fact_id=1` (`A_core`) - receipt\n"
+        "- `fact_id=2` (`A_core`) - receipt\n"
+        "- `fact_id=3` (`A_core`) - receipt\n\n"
+        "## Context receipts\n\n"
+        "- `fact_id=4` (`B_context`) - receipt\n"
+        "- `fact_id=5` (`B_context`) - receipt\n"
+        "- `fact_id=6` (`B_context`) - receipt\n",
+        encoding="utf-8",
+    )
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "needs_operator_review"
+    assert verdict["axes"]["source_papers"]
+    assert verdict["axes"]["direct_source_papers"] == 1
+    assert "direct_source_floor_below_min" in verdict["blockers"]
 
 
 def test_incoherent_source_dispersion_routes_to_operator_review(

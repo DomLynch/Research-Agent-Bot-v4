@@ -186,7 +186,7 @@ def test_main_preserves_claim_coherent_source_diversity(
     }), encoding="utf-8")
     facts = [
         _fact("f1", 50.0, "storage threshold improved reliability", "10.same/a"),
-        _fact("f2", 40.0, "storage threshold reduced outages", "10.same/a"),
+        _fact("f2", 40.0, "storage threshold reduced outages", "10.other/e"),
         _fact("f3", 30.0, "storage threshold lowered costs", "10.same/a"),
         _fact("f4", 20.0, "storage reserve changed prices", "10.other/b"),
         _fact("f5", 10.0, "storage reserve shifted dispatch", "10.other/c"),

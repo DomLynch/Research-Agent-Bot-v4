@@ -16,7 +16,9 @@ from typing import Any
 
 _ROOT = Path(__file__).resolve().parent.parent
 _CFG_PATH = _ROOT / "topic_packs" / "publish_tier.toml"
+_PUBLICATION_PATH = _ROOT / "topic_packs" / "publication.toml"
 _BINDABLE = frozenset({"A_core", "B_context"})
+_DIRECT = frozenset({"A_core"})
 _COUNTER_MIN_CLAIM_FIT = 0.2
 _BLOCKED_LABELS = frozenset({
     "curation_needed", "evidence_binding_failed", "no_signal", "discard",
@@ -87,6 +89,20 @@ def _cfg() -> dict[str, Any]:
             for x in (data.get("feed_scope") or {}).get("off_scope_markers", [])
         ),
     }
+
+
+def _publication_int(key: str, default: int) -> int:
+    try:
+        data = tomllib.loads(_PUBLICATION_PATH.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return default
+    alpha = data.get("alpha_memo") if isinstance(data, dict) else {}
+    if not isinstance(alpha, dict):
+        return default
+    try:
+        return int(alpha.get(key, default))
+    except (TypeError, ValueError):
+        return default
 
 
 def _field(md: str, name: str) -> str:
@@ -493,11 +509,16 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     cited_ids = _memo_receipt_ids(md) or [
         str(x) for x in audit.get("cited_fact_ids", [])
     ]
+    evidence_ids = _memo_receipt_ids(md, ("Evidence",))
     facts = _facts_by_id(run_dir)
     lanes = _lane_map(run_dir)
     bound_ids = [fid for fid in cited_ids if lanes.get(fid) in _BINDABLE]
+    direct_ids = [fid for fid in evidence_ids if lanes.get(fid) in _DIRECT]
     a_core = sum(1 for fid in bound_ids if lanes.get(fid) == "A_core")
     papers = _source_papers(bound_ids, facts)
+    direct_papers = _source_papers(direct_ids, facts)
+    min_source_papers = _publication_int("min_source_papers", 5)
+    min_direct_source_papers = _publication_int("min_direct_source_papers", 5)
     all_bound_ids = _bound_ids_in_fact_order(facts, lanes)
     available_source_count = len({
         _source_key(facts[fid]) for fid in all_bound_ids if fid in facts
@@ -533,6 +554,10 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         blockers.append("low_alpha_score")
     if off_scope:
         blockers.append("feed_scope_mismatch")
+    if len(papers) < min_source_papers:
+        blockers.append("source_floor_below_min")
+    if len(direct_papers) < min_direct_source_papers:
+        blockers.append("direct_source_floor_below_min")
 
     ready = (
         not blockers
@@ -597,6 +622,7 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         "surface_type": surface_type,
         "axes": {
             "bound_receipts": len(bound_ids),
+            "direct_source_papers": len(direct_papers),
             "available_bound_receipts": len(all_bound_ids),
             "available_source_contexts": available_source_count,
             "a_core_receipts": a_core,
