@@ -255,6 +255,86 @@ def test_refresh_cycle_recomputes_stale_verdict_before_discovery(
     assert ledger["refresh_batches"][0]["note"] == "skipped_initial_queue_probe"
 
 
+def test_weak_tension_candidate_enriches_before_rotation(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("weak_tension") | {
+        "decision": "needs_operator_review",
+        "publish_tier": "TIER_2",
+        "blockers": ["weak_counter_consensus_tension"],
+    }
+    run = root / str(verdict["run_dir"])
+    run.mkdir(parents=True)
+    ids = [str(i + 1) for i in range(5)]
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n"
+        "**Headline:** Storage reserves flip after threshold pricing\n"
+        "**Alpha score:** 90/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## Why this is surprising\n\n"
+        "Expected result without a clear contrast.\n\n"
+        "## Evidence receipts\n\n"
+        + "\n".join(f"- `fact_id={fid}` (`A_core`) - receipt" for fid in ids)
+        + "\n" + _FALSIFIER,
+        encoding="utf-8",
+    )
+    run.joinpath("all_facts.json").write_text(json.dumps([
+        {
+            "fact_id": fid,
+            "canonical_phrase": (
+                "Storage reserve reliability improves after threshold pricing."
+            ),
+            "population": "grid storage reserve markets",
+            "intervention": "threshold pricing",
+            "source_paper": {
+                "doi": f"10.1000/weak-{fid}",
+                "title": f"Storage reserve threshold paper {fid}",
+                "journal": "Energy Systems",
+            },
+        }
+        for fid in ids
+    ]), encoding="utf-8")
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": fid, "lane": "A_core"} for fid in ids],
+    }), encoding="utf-8")
+
+    def enrich(run_dir: Path, candidate: dict[str, Any]) -> bool:
+        assert candidate["blockers"] == ["weak_counter_consensus_tension"]
+        memo_path = run_dir / "alpha_memo.md"
+        memo_path.write_text(
+            memo_path.read_text(encoding="utf-8").replace(
+                "Expected result without a clear contrast.",
+                "Real tension: reliability improves while reserve pricing "
+                "thresholds narrow where the result should generalize.",
+            ),
+            encoding="utf-8",
+        )
+        return True
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue={
+            "ready_to_publish": [],
+            "needs_operator_review": [verdict],
+            "curation_needed": [],
+        },
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {
+            "ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}},
+        },
+        memo_refresher=enrich,
+    )
+
+    refreshed = json.loads((run / "publish_verdict.json").read_text(encoding="utf-8"))
+    assert refreshed["decision"] == "ready_to_publish"
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["submitted_topic"] == "weak_tension"
+    assert ledger["considered"][0]["memo_refreshed"] is True
+    assert ledger["considered"][0]["status"] == "eligible"
+
+
 def test_duplicate_fingerprint_skips_previous_submission(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     first = _verdict("first")

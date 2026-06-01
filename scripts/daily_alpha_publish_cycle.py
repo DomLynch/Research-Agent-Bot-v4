@@ -175,6 +175,12 @@ def _verdict_for_run(run: Path) -> Json:
     return data if isinstance(data, dict) else {}
 
 
+def _write_publish_verdict(run: Path) -> Json:
+    verdict = publish_verdict(run)
+    _write_json(run / "publish_verdict.json", verdict)
+    return verdict
+
+
 def _build_queue(runs_root: Path, include_archive: bool) -> Json:
     """Build current verdicts without mutating run artifacts."""
     patterns = ["*-evidence-*/alpha_memo.md", "*-evidence-*/publish_verdict.json"]
@@ -256,10 +262,26 @@ def memo_fingerprint(verdict: Json) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-def _rows(queue: Json, *, allow_tier2: bool) -> list[Json]:
+def _needs_tension_enrichment(verdict: Json) -> bool:
+    blockers = {str(x) for x in verdict.get("blockers") or []}
+    return (
+        verdict.get("decision") == "needs_operator_review"
+        and "weak_counter_consensus_tension" in blockers
+        and not blockers - {"weak_counter_consensus_tension"}
+    )
+
+
+def _rows(
+    queue: Json, *, allow_tier2: bool, enrich_weak_tension: bool = False,
+) -> list[Json]:
     out = list(queue.get("ready_to_publish") or [])
     if allow_tier2:
         out.extend(queue.get("needs_operator_review") or [])
+    elif enrich_weak_tension:
+        out.extend(
+            r for r in queue.get("needs_operator_review") or []
+            if isinstance(r, dict) and _needs_tension_enrichment(r)
+        )
     return [r for r in out if isinstance(r, dict)]
 
 
@@ -874,7 +896,10 @@ def select_candidate(
     shape_profiles = accepted_shape_profiles or []
     considered: list[Json] = []
     candidates = sorted(
-        _rows(queue, allow_tier2=allow_tier2),
+        _rows(
+            queue, allow_tier2=allow_tier2,
+            enrich_weak_tension=memo_refresher is not None,
+        ),
         key=lambda r: (
             0 if r.get("decision") == "ready_to_publish" else 1,
             -(int(r.get("alpha_score") or 0) + accepted_shape_bonus(r, shape_profiles)),
@@ -941,6 +966,28 @@ def select_candidate(
                 direct_source_count = _direct_source_count(verdict, runs_root)
                 corpus_source_count = _corpus_source_count(verdict, runs_root)
                 memo_sha256 = _memo_sha256(verdict, runs_root)
+                attempt_count = _fingerprint_attempt_count(submitted_path, fp)
+                retry_after_rejection = (
+                    fp in retryable
+                    and attempt_count < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
+                )
+        if (
+            not cycle_blocked
+            and has_memo
+            and memo_refresher
+            and _needs_tension_enrichment(verdict)
+        ):
+            run_dir = _run_path(runs_root, verdict.get("run_dir"))
+            memo_refreshed = memo_refresher(run_dir, verdict)
+            if memo_refreshed:
+                verdict = _write_publish_verdict(run_dir)
+                fp = memo_fingerprint(verdict)
+                source_count = _source_count(verdict, runs_root)
+                direct_source_count = _direct_source_count(verdict, runs_root)
+                corpus_source_count = _corpus_source_count(verdict, runs_root)
+                memo_sha256 = _memo_sha256(verdict, runs_root)
+                approved = _approved(verdict, runs_root)
+                cycle_blocked = fp in blocked
                 attempt_count = _fingerprint_attempt_count(submitted_path, fp)
                 retry_after_rejection = (
                     fp in retryable
