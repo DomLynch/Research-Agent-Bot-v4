@@ -913,8 +913,8 @@ def main() -> int:
     }
 
     review_model = "skipped"
-    if not args.no_frontier and facts:
-        papers = _fetch_papers(args.topic)
+    if not args.no_frontier:
+        papers = _fetch_papers(args.topic) if facts else []
         # Sprint 75 — split facts by lane before handing to the
         # frontier reviewer. EVIDENCE (A_core/B_context) is citable;
         # ALPHA HINTS (C_noise/D_bad_extraction) are inspiration only.

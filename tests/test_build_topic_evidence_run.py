@@ -1,3 +1,5 @@
+import json
+import sys
 from typing import Any
 
 import scripts.build_topic_evidence_run as er
@@ -47,3 +49,56 @@ def test_fetch_timeout_is_not_empty_evidence(monkeypatch) -> None:  # type: igno
     assert trace
     assert {row["status"] for row in trace} == {"timeout"}
     assert er._all_primary_fetches_failed(trace) is True
+
+
+def test_empty_fact_run_writes_empty_frontier_sidecars(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
+    class _S:
+        writer_configured = False
+
+    def _fetch_empty(_topic: str, *, trace: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        trace.append({
+            "kind": "tier1", "query": "empty_topic", "facts": 0,
+            "status": "ok", "errors": [],
+        })
+        return []
+
+    monkeypatch.setattr(er, "_RUNS", tmp_path / "runs")
+    monkeypatch.setattr(er, "_fetch_facts", _fetch_empty)
+    monkeypatch.setattr(er, "load_settings", lambda: _S())
+    monkeypatch.setattr(
+        sys, "argv",
+        ["build_topic_evidence_run.py", "--topic", "empty_topic", "--top", "5"],
+    )
+
+    assert er.main() == 0
+    run_dir = next((tmp_path / "runs").glob("empty_topic-evidence-*"))
+    review = json.loads((run_dir / "frontier_review.json").read_text())
+    manifest = json.loads((run_dir / "MANIFEST.json").read_text())
+
+    assert (run_dir / "frontier_review.md").exists()
+    assert review["model"] == "error:no_facts"
+    assert manifest["frontier_model"] == "error:no_facts"
+    assert "frontier_json" in manifest["files"]
+
+
+def test_primary_fetch_failure_does_not_write_empty_frontier(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
+    def _fetch_timeout(_topic: str, *, trace: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        trace.append({
+            "kind": "tier1", "query": "empty_topic", "facts": 0,
+            "status": "timeout", "errors": ["ReadTimeout"],
+        })
+        return []
+
+    monkeypatch.setattr(er, "_RUNS", tmp_path / "runs")
+    monkeypatch.setattr(er, "_fetch_facts", _fetch_timeout)
+    monkeypatch.setattr(
+        sys, "argv",
+        ["build_topic_evidence_run.py", "--topic", "empty_topic", "--top", "5"],
+    )
+
+    assert er.main() == 2
+    run_dir = next((tmp_path / "runs").glob("empty_topic-evidence-*"))
+    status = json.loads((run_dir / "retrieval_status.json").read_text())
+
+    assert status == {"status": "failed", "reason": "all_primary_fetches_failed"}
+    assert not (run_dir / "frontier_review.json").exists()
