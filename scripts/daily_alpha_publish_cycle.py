@@ -181,6 +181,19 @@ def _write_publish_verdict(run: Path) -> Json:
     return verdict
 
 
+def _reload_verdict_after_memo_refresh(verdict: Json, run_dir: Path) -> Json:
+    if not _can_recompute_verdict(run_dir):
+        return verdict
+    try:
+        refreshed = _write_publish_verdict(run_dir)
+    except (OSError, ValueError, TypeError, KeyError):
+        return verdict
+    repair_decision = verdict.get("_repair_decision")
+    if repair_decision is not None:
+        refreshed["_repair_decision"] = repair_decision
+    return refreshed
+
+
 def _build_queue(runs_root: Path, include_archive: bool) -> Json:
     """Build current verdicts without mutating run artifacts."""
     patterns = ["*-evidence-*/alpha_memo.md", "*-evidence-*/publish_verdict.json"]
@@ -934,10 +947,14 @@ def select_candidate(
             refresh_verdict = verdict | {"_repair_decision": retry_decisions.get(fp)}
             memo_refreshed = memo_refresher(run_dir, refresh_verdict)
             if memo_refreshed:
+                verdict = _reload_verdict_after_memo_refresh(refresh_verdict, run_dir)
+                fp = memo_fingerprint(verdict)
                 source_count = _source_count(verdict, runs_root)
                 direct_source_count = _direct_source_count(verdict, runs_root)
                 corpus_source_count = _corpus_source_count(verdict, runs_root)
                 memo_sha256 = _memo_sha256(verdict, runs_root)
+                approved = _approved(verdict, runs_root)
+                cycle_blocked = fp in blocked
                 attempt_count = _fingerprint_attempt_count(submitted_path, fp)
                 retry_after_rejection = (
                     fp in retryable
@@ -954,10 +971,14 @@ def select_candidate(
             refresh_verdict = verdict | {"_repair_decision": retry_decisions.get(fp)}
             memo_refreshed = memo_refresher(run_dir, refresh_verdict)
             if memo_refreshed:
+                verdict = _reload_verdict_after_memo_refresh(refresh_verdict, run_dir)
+                fp = memo_fingerprint(verdict)
                 source_count = _source_count(verdict, runs_root)
                 direct_source_count = _direct_source_count(verdict, runs_root)
                 corpus_source_count = _corpus_source_count(verdict, runs_root)
                 memo_sha256 = _memo_sha256(verdict, runs_root)
+                approved = _approved(verdict, runs_root)
+                cycle_blocked = fp in blocked
                 attempt_count = _fingerprint_attempt_count(submitted_path, fp)
                 retry_after_rejection = (
                     fp in retryable
@@ -1003,10 +1024,14 @@ def select_candidate(
                 refresh_verdict = verdict | {"_repair_decision": retry_decisions.get(fp)}
                 memo_refreshed = memo_refresher(run_dir, refresh_verdict)
                 if memo_refreshed:
+                    verdict = _reload_verdict_after_memo_refresh(refresh_verdict, run_dir)
+                    fp = memo_fingerprint(verdict)
                     source_count = _source_count(verdict, runs_root)
                     direct_source_count = _direct_source_count(verdict, runs_root)
                     corpus_source_count = _corpus_source_count(verdict, runs_root)
                     memo_sha256 = _memo_sha256(verdict, runs_root)
+                    approved = _approved(verdict, runs_root)
+                    cycle_blocked = fp in blocked
                     attempt_count = _fingerprint_attempt_count(submitted_path, fp)
                     retry_after_rejection = (
                         fp in retryable

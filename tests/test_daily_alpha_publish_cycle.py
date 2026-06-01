@@ -765,6 +765,80 @@ def test_resubmission_allowed_alignment_reject_triggers_regeneration(
     assert ledger["considered"][0]["status"] == "eligible"
 
 
+def test_repaired_resubmission_payload_uses_recomputed_verdict(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    stale = _verdict("retry_reload") | {
+        "headline": "Stale paradox headline",
+        "receipt_expansion": {"cited_bound_fact_ids": ["1", "2", "3"]},
+    }
+    _publish_tier_run(root, "retry_reload", stale=stale)
+    fp = daily.memo_fingerprint(stale)
+    old_sha = daily._memo_sha256(stale, root / "runs")
+    decision = {
+        "decision": "reject",
+        "major_issues": ["The claim_evidence_alignment is critically low."],
+        "required_revisions": ["Rewrite around the cited source bundle."],
+        "resubmission": {"allowed": True},
+    }
+    daily._write_json(root / "runs" / "_daily_ledger" / "_submitted_fingerprints.json", [
+        {
+            "fingerprint": fp,
+            "topic": "retry_reload",
+            "run_dir": stale["run_dir"],
+            "submission_id": "old-sub",
+            "memo_sha256": old_sha,
+        },
+    ])
+    daily._write_json(root / "runs" / "_daily_ledger" / "2026-05-21.json", {
+        "status": "reviewer_rejected",
+        "final_verdict": "rejected",
+        "candidate": {
+            "fingerprint": fp,
+            "topic": "retry_reload",
+            "run_dir": stale["run_dir"],
+        },
+        "researka_decision": decision,
+    })
+    payloads: list[dict[str, Any]] = []
+
+    def refresh(run_dir: Path, refresh_verdict: dict[str, Any]) -> bool:
+        assert refresh_verdict["_repair_decision"] == decision
+        memo = run_dir / "alpha_memo.md"
+        memo.write_text(
+            memo.read_text(encoding="utf-8") + "\nSource-bundle repair.\n",
+            encoding="utf-8",
+        )
+        return True
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        payloads.append(payload)
+        return {"ok": True, "status": 200, "response": {"submission": {"id": "new-sub"}}}
+
+    ledger = daily.run_cycle(
+        runs_root=root / "runs",
+        date="2026-05-22",
+        queue=_queue(stale),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+        decision_poll_attempts=0,
+        memo_refresher=refresh,
+    )
+
+    verdict = payloads[0]["evidence_bundle"]["publish_verdict"]
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["considered"][0]["memo_refreshed"] is True
+    assert verdict["headline"] == "Storage dispatch changes reserve reliability"
+    assert verdict["headline"] != stale["headline"]
+    assert verdict["counter_evidence"]["status"] == "found"
+    assert verdict["receipt_expansion"]["cited_bound_fact_ids"] == [
+        "1", "2", "3", "4", "5",
+    ]
+
+
 def test_repairable_rejected_submission_can_retry_once(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("retryable")
