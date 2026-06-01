@@ -992,6 +992,20 @@ def test_fact_source_profile_emits_source_backed_child_topics() -> None:
     assert ("resistance_training", 5) in children
 
 
+def test_fact_source_profile_empty_rows_emit_no_sources_or_children() -> None:
+    from agent import topic_discovery
+
+    def handler(_req: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=[])
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        count, children = topic_discovery._fetch_topic_fact_source_profile(
+            "alzheimer_disease", client=c, settings=_settings())
+
+    assert count == 0
+    assert children == ()
+
+
 def test_disease_population_context_facts_emit_children_not_parent_sources() -> None:
     from agent import topic_discovery
 
@@ -1019,6 +1033,34 @@ def test_disease_population_context_facts_emit_children_not_parent_sources() -> 
 
     assert count == 0
     assert ("resistance_training", 5) in children
+
+
+def test_disease_population_context_count_does_not_clear_parent_floor() -> None:
+    from agent import topic_discovery
+
+    rows = [
+        {
+            "id": f"fact-{i}",
+            "paper_id": f"paper-{i}",
+            "paper": {"doi": f"10.1/pop-{i}", "title": f"Trial {i}"},
+            "numeric_value": 10,
+            "units": "%",
+            "population": "patients with alzheimer disease",
+            "intervention": "cognitive training",
+            "comparator": "usual care",
+            "canonical_phrase": "cognitive training improved memory by 10%",
+        }
+        for i in range(5)
+    ]
+
+    def handler(_req: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=rows)
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        count = topic_discovery._fetch_topic_fact_source_count(
+            "alzheimer_disease", client=c, settings=_settings())
+
+    assert count == 0
 
 
 def test_fact_source_profile_emits_claim_phrase_child_topics() -> None:
