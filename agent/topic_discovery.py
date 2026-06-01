@@ -382,6 +382,7 @@ def _add_source_profile(
 def _fetch_topic_fact_source_profile(
     topic: str, *, client: httpx.Client, settings: Settings,
     limit: int = 50, facets: tuple[str, ...] = (),
+    mine_children: bool = False,
 ) -> tuple[int, tuple[tuple[str, int], ...]]:
     """Count unique direct bindable fact-backed sources for ranking."""
     base = settings.researka_database_url.rstrip("/")
@@ -413,7 +414,7 @@ def _fetch_topic_fact_source_profile(
         _add_source_profile(
             rows, topic, source_keys=source_keys,
             child_sources=child_sources)
-        if len(source_keys) >= _PUBLISHABLE_SOURCE_FLOOR:
+        if not mine_children and len(source_keys) >= _PUBLISHABLE_SOURCE_FLOOR:
             break
     for idx, query in enumerate(_fact_probe_queries(topic, facets=facets)):
         if time.monotonic() >= deadline:
@@ -445,7 +446,8 @@ def _fetch_topic_fact_source_profile(
             rows, topic, source_keys=source_keys,
             child_sources=child_sources)
         if (
-            len(source_keys) >= _PUBLISHABLE_SOURCE_FLOOR
+            not mine_children
+            and len(source_keys) >= _PUBLISHABLE_SOURCE_FLOOR
             and any(len(keys) >= _PUBLISHABLE_SOURCE_FLOOR for keys in child_sources.values())
         ):
             break
@@ -600,6 +602,7 @@ def _fetch_fact_source_counts(
                 client=client,
                 settings=settings,
                 facets=(facets_by_topic or {}).get(topic, ()),
+                mine_children=refresh_low_source_counts,
             ): topic
             for topic in to_probe
         }

@@ -1168,6 +1168,54 @@ def test_fact_source_profile_emits_claim_phrase_child_topics() -> None:
     assert ("berberine_glucose_metabolism", 5) in children
 
 
+def test_fact_source_profile_mines_multiple_children_in_backlog_mode() -> None:
+    from agent import topic_discovery
+
+    def rows(endpoint: str) -> list[dict[str, Any]]:
+        return [
+            {
+                "id": f"{endpoint}-{i}",
+                "paper_id": f"{endpoint}-paper-{i}",
+                "paper": {"doi": f"10.1/{endpoint}-{i}"},
+                "numeric_value": 10,
+                "units": "%",
+                "population": "older adults",
+                "intervention": "resistance training",
+                "comparator": "usual care",
+                "canonical_phrase": f"resistance training improved {endpoint} by 10%",
+            }
+            for i in range(5)
+        ]
+
+    def profile(*, mine_children: bool) -> tuple[int, tuple[tuple[str, int], ...]]:
+        seen: list[str] = []
+
+        def handler(req: httpx.Request) -> httpx.Response:
+            body = req.read().decode("utf-8") if req.content else ""
+            seen.append(body)
+            if req.method == "GET":
+                return httpx.Response(200, json=[])
+            return httpx.Response(
+                200,
+                json=rows("muscle mass") if len(seen) == 2 else rows("gait speed"),
+            )
+
+        with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+            _count, children = topic_discovery._fetch_topic_fact_source_profile(
+                "resistance_training", client=c, settings=_settings(),
+                mine_children=mine_children)
+        return len(seen), children
+
+    normal_calls, normal_children = profile(mine_children=False)
+    backlog_calls, backlog_children = profile(mine_children=True)
+
+    assert normal_calls == 2
+    assert ("resistance_training_gait_speed", 5) not in normal_children
+    assert backlog_calls > normal_calls
+    assert ("resistance_training_muscle_mass", 5) in backlog_children
+    assert ("resistance_training_gait_speed", 5) in backlog_children
+
+
 def test_discover_topics_adds_fact_derived_source_rich_children(
     monkeypatch: Any, tmp_path: Path,
 ) -> None:
