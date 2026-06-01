@@ -560,9 +560,10 @@ def test_backlog_probe_window_can_cover_derived_topic_pool() -> None:
 
 
 def test_discover_topics_fact_probe_limit_keeps_submit_path_bounded(
-    monkeypatch: Any,
+    monkeypatch: Any, tmp_path: Path,
 ) -> None:
     from agent import topic_discovery as td
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
 
     def fake_fetch(topics: list[str], **_: Any) -> dict[str, list[dict[str, Any]]]:
         return {
@@ -1172,6 +1173,49 @@ def test_discover_topics_reuses_cached_source_rich_fact_children(
     by_topic = {candidate.topic: candidate for candidate in out}
     assert by_topic["cached_child_topic"].fact_source_count == 8
     assert by_topic["cached_child_topic"].paper_count == 1
+
+
+def test_cached_source_rich_topics_shrink_derived_fetch_window(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "cached_child_topic": {
+            "count": 8,
+            "ts": time.time(),
+            "version": td._SUPPLY_CACHE_VERSION,
+        },
+    }), encoding="utf-8")
+    monkeypatch.setattr(td, "_title_topic_slugs", lambda *_a, **_k: (
+        "derived_one", "derived_two", "derived_three"))
+    calls: list[tuple[str, ...]] = []
+
+    def fake_fetch(topics: list[str], **_: Any) -> dict[str, list[dict[str, Any]]]:
+        calls.append(tuple(topics))
+        return {
+            topic: [_paper(doi=f"10.1/{topic}", title=topic.replace("_", " "))]
+            for topic in topics
+        }
+
+    seen_probe_topics: list[str] = []
+
+    def fake_fact_counts(topics: list[str], **_: Any) -> dict[str, int]:
+        seen_probe_topics.extend(topics)
+        return {}
+
+    monkeypatch.setattr(td, "_fetch_papers_by_topic", fake_fetch)
+    monkeypatch.setattr(td, "_fetch_fact_source_counts", fake_fact_counts)
+
+    td.discover_topics(
+        seeds=("seed_topic",), settings=_settings(), client=httpx.Client(),
+        current_year=2024, derived_topic_limit=3, fact_probe_topics=1,
+    )
+
+    assert ("cached_child_topic",) in calls
+    assert not any(topic.startswith("derived_") for call in calls for topic in call)
+    assert not any(topic.startswith("derived_") for topic in seen_probe_topics)
 
 
 def test_discover_topics_ignores_cached_source_rich_hint_without_papers(

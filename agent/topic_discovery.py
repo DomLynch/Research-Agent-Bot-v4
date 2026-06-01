@@ -858,6 +858,20 @@ def discover_topics(
             _FACT_PROBE_TOPICS if fact_probe_topics is None
             else max(0, fact_probe_topics)
         )
+        cached_fact_counts: dict[str, int] = {}
+        if derived_topic_limit:
+            cached_fact_topics = _cached_source_rich_topics(
+                exclude=set(papers_by_topic), limit=extra_probe_limit)
+            if cached_fact_topics:
+                cached_papers = _fetch_papers_by_topic(
+                    [topic for topic, _count in cached_fact_topics],
+                    client=c, settings=settings,
+                    require_title_support=True, current_year=year_now)
+                for topic, count in cached_fact_topics:
+                    papers = cached_papers.get(topic, [])
+                    if papers:
+                        papers_by_topic[topic] = papers
+                        cached_fact_counts[topic] = count
         derived_cycle_topics: list[str] = []
         if derived_topic_limit:
             derived = [
@@ -865,24 +879,27 @@ def discover_topics(
                     papers_by_topic, year_now, limit=derived_topic_limit)
                 if topic not in papers_by_topic
             ]
+            derived_slots = max(0, extra_probe_limit - len(cached_fact_counts))
             # Fetch a bounded over-sample so unsupported generic fragments do
             # not consume the whole derived fact-probe window.
             derived_fetch_limit = min(len(derived), max(
-                extra_probe_limit, extra_probe_limit * 3))
+                derived_slots, derived_slots * 3))
             derived_fetch_topics = _derived_cycle_topics(
                 derived, limit=derived_fetch_limit,
                 refresh_low_source_counts=refresh_low_source_counts,
             )
-            derived_papers = _fetch_papers_by_topic(
-                derived_fetch_topics, client=c, settings=settings,
-                require_title_support=True, current_year=year_now)
-            derived_papers = {topic: papers for topic, papers in derived_papers.items() if papers}
-            derived_cycle_topics = [
-                topic for topic in derived_fetch_topics if topic in derived_papers
-            ][:extra_probe_limit]
-            papers_by_topic.update({
-                topic: derived_papers[topic] for topic in derived_cycle_topics
-            })
+            if derived_fetch_topics:
+                derived_papers = _fetch_papers_by_topic(
+                    derived_fetch_topics, client=c, settings=settings,
+                    require_title_support=True, current_year=year_now)
+                derived_papers = {
+                    topic: papers for topic, papers in derived_papers.items() if papers}
+                derived_cycle_topics = [
+                    topic for topic in derived_fetch_topics if topic in derived_papers
+                ][:derived_slots]
+                papers_by_topic.update({
+                    topic: derived_papers[topic] for topic in derived_cycle_topics
+                })
         anchorage = _anchorage_counts(papers_by_topic, year_now)
         seed_probe_topics = _seed_probe_topics(
             topics, papers_by_topic, year_now, limit=max(1, extra_probe_limit),
@@ -900,21 +917,14 @@ def discover_topics(
             },
             child_source_counts=fact_child_counts,
         )
+        fact_sources_by_topic.update(cached_fact_counts)
         fact_child_topics = [
             topic for topic, count in sorted(
                 fact_child_counts.items(), key=lambda item: item[1], reverse=True)
             if count >= _PUBLISHABLE_SOURCE_FLOOR and topic not in papers_by_topic
         ][:extra_probe_limit]
-        cached_fact_topics = (
-            _cached_source_rich_topics(
-                exclude=set(papers_by_topic) | set(fact_child_topics),
-                limit=extra_probe_limit,
-            )
-            if derived_topic_limit else ()
-        )
         fact_topic_counts = {
             **{topic: fact_child_counts[topic] for topic in fact_child_topics},
-            **dict(cached_fact_topics),
         }
         if fact_topic_counts:
             fact_child_papers = _fetch_papers_by_topic(
