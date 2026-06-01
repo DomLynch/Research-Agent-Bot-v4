@@ -675,7 +675,26 @@ def test_fact_source_probe_finds_sources_from_data_derived_facets() -> None:
         )
 
     assert out == 5
-    assert [b["query"] for b in bodies[:2]] == ["berberine", "glucose metabolism"]
+    assert "glucose metabolism" in [b["query"] for b in bodies]
+
+
+def test_registered_synonyms_precede_title_facets() -> None:
+    queries = _fact_probe_queries(
+        "vitamin_K2_vascular_aging",
+        facets=("oxidative stress", "aging mechanisms"),
+    )
+
+    assert queries[:8] == (
+        "vitamin_K2_vascular_aging",
+        "vitamin k2",
+        "vitamin k2 vascular aging",
+        "vitamin K2",
+        "menaquinone",
+        "menaquinone-7",
+        "menaquinone 7",
+        "MK-7",
+    )
+    assert "oxidative stress" in queries
 
 
 def test_fact_source_count_uses_pmcid_and_paper_id_source_keys() -> None:

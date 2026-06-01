@@ -254,12 +254,12 @@ def _fact_probe_queries(
         seen.setdefault(query, None)
     if stem:
         seen.setdefault(stem, None)
+    for query in base[1:]:
+        seen.setdefault(query, None)
     for facet in facets:
         cleaned = re.sub(r"[\W_]+", " ", facet.lower()).strip()
         if cleaned:
             seen.setdefault(cleaned, None)
-    for query in base[1:]:
-        seen.setdefault(query, None)
     return tuple(seen)[:max_queries]
 
 
