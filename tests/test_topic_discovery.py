@@ -958,6 +958,36 @@ def test_fact_source_profile_emits_source_backed_child_topics() -> None:
     assert ("resistance_training", 5) in children
 
 
+def test_fact_source_profile_emits_claim_phrase_child_topics() -> None:
+    from agent import topic_discovery
+
+    rows = [
+        {
+            "id": f"fact-{i}",
+            "paper_id": f"paper-{i}",
+            "paper": {"doi": f"10.1/bg-{i}", "title": f"Trial {i}"},
+            "numeric_value": 10,
+            "units": "%",
+            "population": "adults",
+            "intervention": "berberine",
+            "comparator": "placebo",
+            "canonical_phrase": (
+                "berberine improved glucose metabolism by 10 percent"),
+        }
+        for i in range(5)
+    ]
+
+    def handler(_req: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=rows)
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        count, children = topic_discovery._fetch_topic_fact_source_profile(
+            "berberine", client=c, settings=_settings())
+
+    assert count == 5
+    assert ("berberine_glucose_metabolism", 5) in children
+
+
 def test_discover_topics_adds_fact_derived_source_rich_children(
     monkeypatch: Any, tmp_path: Path,
 ) -> None:

@@ -75,6 +75,12 @@ _TITLE_STOPWORDS = frozenset({
     "patients", "adults", "human", "mouse", "mice", "model", "models",
     "new", "novel",
 })
+_CHILD_TOPIC_STOPWORDS = _TITLE_STOPWORDS | frozenset({
+    "change", "changed", "changes", "improve", "improved", "improves",
+    "increase", "increased", "increases", "reduce", "reduced", "reduces",
+    "decrease", "decreased", "decreases", "lower", "lowered", "lowers",
+    "higher", "versus", "compared", "percentage", "percent",
+})
 
 
 def _title_tokens(text: str) -> tuple[str, ...]:
@@ -292,23 +298,46 @@ def _fact_probe_queries(
 
 
 def _fact_child_slugs(
-    fact: dict[str, Any], topic: str, *, limit: int = 4,
+    fact: dict[str, Any], topic: str, *, limit: int = 6,
 ) -> tuple[str, ...]:
     """Derive child-topic slugs from direct fact structure, not static terms."""
     topic_words = set(_title_tokens(topic.replace("_", " ")))
     seen: dict[str, None] = {}
+
+    def _add_ngrams(words: list[str], *, prefix: tuple[str, ...] = ()) -> bool:
+        for width in (3, 2):
+            for i in range(0, max(0, len(words) - width + 1)):
+                slug = "_".join((*prefix, *words[i:i + width]))
+                if slug and slug != topic:
+                    seen.setdefault(slug, None)
+                if len(seen) >= limit:
+                    return True
+        return False
+
     for field in ("intervention", "population"):
         words = [
             word for word in _title_tokens(str(fact.get(field) or ""))
             if word not in topic_words
         ][:8]
-        for width in (3, 2):
-            for i in range(0, max(0, len(words) - width + 1)):
-                slug = "_".join(words[i:i + width])
-                if slug and slug != topic:
-                    seen.setdefault(slug, None)
-                if len(seen) >= limit:
-                    return tuple(seen)
+        if _add_ngrams(words):
+            return tuple(seen)
+    intervention_words = _title_tokens(str(fact.get("intervention") or ""))[:2]
+    phrase_words = [
+        word for word in _TITLE_WORD.findall(
+            str(fact.get("canonical_phrase") or "").lower())
+        if (
+            len(word) > 2
+            and word not in _CHILD_TOPIC_STOPWORDS
+            and word not in topic_words
+            and word not in intervention_words
+        )
+    ][:10]
+    if phrase_words:
+        if intervention_words:
+            if _add_ngrams(phrase_words, prefix=intervention_words):
+                return tuple(seen)
+        else:
+            _add_ngrams(phrase_words)
     return tuple(seen)
 
 
