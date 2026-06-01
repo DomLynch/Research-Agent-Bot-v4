@@ -695,6 +695,19 @@ def test_tighten_evidence_receipts_revision_forces_grounded_regen() -> None:
     assert daily._is_grounding_reject(decision) is True
 
 
+def test_title_abstract_scope_revision_forces_grounded_regen() -> None:
+    decision = {
+        "decision": "revise",
+        "required_revisions": [
+            "Tighten the title and abstract to the actual scope of the cited evidence.",
+            "State that the extra endpoint is a separate parallel signal or remove it.",
+        ],
+        "resubmission": {"allowed": True},
+    }
+
+    assert daily._is_grounding_reject(decision) is True
+
+
 def test_resubmission_allowed_revision_forces_structural_rerender(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

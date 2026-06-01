@@ -116,6 +116,7 @@ _REPAIRABLE_REJECTION_REASONS = {
 _SCOPE_RESET_TERMS = (
     "scope reset", "not verifiably grounded", "provided source bundle",
     "source bundle", "title/abstract", "cited doi",
+    "title and abstract", "actual scope",
     "cited bundle", "directly supported", "coherent research question",
     "irrelevant counter-evidence", "claim_evidence_alignment",
     "tighten the evidence receipts", "single systematic review",
