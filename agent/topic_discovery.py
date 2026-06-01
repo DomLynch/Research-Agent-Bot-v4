@@ -48,7 +48,7 @@ _SEEDS_TOML = (Path(__file__).resolve().parent.parent
 # also slashes per-cycle DB load). Universal — no domain literals.
 _SUPPLY_CACHE_PATH = (Path(__file__).resolve().parent.parent
                       / "runs" / "_topic_supply_cache.json")
-_SUPPLY_CACHE_VERSION = 3
+_SUPPLY_CACHE_VERSION = 4
 _PUBLISHABLE_SOURCE_FLOOR = 5
 _PROBE_INCONCLUSIVE = -1  # all queries failed (timeout/error), not a real 0
 _DERIVED_TOPIC_LIMIT = 5_000
@@ -75,6 +75,11 @@ _TITLE_STOPWORDS = frozenset({
     "patients", "adults", "human", "mouse", "mice", "model", "models",
     "new", "novel",
 })
+_FACT_PROBE_SLICE_TERMS = (
+    "mortality", "survival", "lifespan", "healthspan", "risk", "incidence",
+    "effect", "reduction", "dose", "adverse", "sex", "age", "subgroup",
+    "randomized", "meta analysis", "cohort",
+)
 
 
 def _float_env(name: str, default: float) -> float:
@@ -205,6 +210,25 @@ def _fact_for_lane(item: dict[str, Any], topic: str) -> dict[str, Any]:
     }
 
 
+def _fact_probe_queries(topic: str, *, max_queries: int = 16) -> tuple[str, ...]:
+    base = list(expand_topic_queries(topic, max_queries=8))
+    if not base:
+        return ()
+    normed = re.sub(r"[\W_]+", " ", base[0].lower()).strip()
+    parts = normed.split()
+    stem = " ".join(parts[:2]) if len(parts) > 1 else normed
+    seen: dict[str, None] = {}
+    for query in base[:1]:
+        seen.setdefault(query, None)
+    if stem:
+        seen.setdefault(stem, None)
+        for term in _FACT_PROBE_SLICE_TERMS:
+            seen.setdefault(f"{stem} {term}", None)
+    for query in base[1:]:
+        seen.setdefault(query, None)
+    return tuple(seen)[:max_queries]
+
+
 def _fetch_topic_fact_source_count(
     topic: str, *, client: httpx.Client, settings: Settings,
     limit: int = 50,
@@ -217,7 +241,7 @@ def _fetch_topic_fact_source_count(
     source_keys: set[str] = set()
     any_success = False
     deadline = time.monotonic() + _FACT_PROBE_BUDGET_SECONDS
-    for query in expand_topic_queries(topic, max_queries=8):
+    for query in _fact_probe_queries(topic):
         if time.monotonic() >= deadline:
             break
         try:

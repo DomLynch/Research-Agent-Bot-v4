@@ -24,6 +24,7 @@ import httpx
 from agent.topic_discovery import (
     TopicCandidate,
     _anchorage_counts,
+    _fact_probe_queries,
     _paper_score,
     _score_topic,
     _title_topic_slugs,
@@ -610,6 +611,58 @@ def test_fact_source_probe_uses_submit_sized_top_k() -> None:
     assert bodies[0]["top_k"] == 50
     assert bodies[0]["min_confidence"] == "medium"
     assert bodies[0]["numeric_only"] is True
+
+
+def test_fact_probe_queries_include_universal_source_slices() -> None:
+    queries = _fact_probe_queries("berberine")
+
+    assert queries[0] == "berberine"
+    assert "berberine mortality" in queries
+    assert "berberine randomized" in queries
+
+
+def test_fact_probe_queries_keep_compound_topic_root_early() -> None:
+    queries = _fact_probe_queries("vitamin_K2_vascular_aging")
+
+    assert queries[:3] == (
+        "vitamin_K2_vascular_aging",
+        "vitamin k2",
+        "vitamin k2 mortality",
+    )
+
+
+def test_fact_source_probe_finds_sources_from_universal_slices() -> None:
+    from agent import topic_discovery
+
+    bodies: list[dict[str, Any]] = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        body = json.loads(req.content)
+        bodies.append(body)
+        if body["query"] != "berberine mortality":
+            return httpx.Response(200, json=[])
+        return httpx.Response(200, json=[
+            {
+                "id": f"fact-{i}",
+                "paper_id": f"paper-{i}",
+                "paper": {"doi": f"10.1/berb-{i}", "title": f"Trial {i}"},
+                "numeric_value": 10,
+                "units": "%",
+                "population": "adults",
+                "intervention": "berberine",
+                "comparator": "placebo",
+                "canonical_phrase": "berberine reduced mortality risk by 10%",
+            }
+            for i in range(5)
+        ])
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        out = topic_discovery._fetch_topic_fact_source_count(
+            "berberine", client=c, settings=_settings(),
+        )
+
+    assert out == 5
+    assert [b["query"] for b in bodies[:2]] == ["berberine", "berberine mortality"]
 
 
 def test_fact_source_count_uses_pmcid_and_paper_id_source_keys() -> None:
