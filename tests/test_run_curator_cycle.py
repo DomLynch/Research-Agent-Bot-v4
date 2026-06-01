@@ -209,7 +209,23 @@ def test_plan_topics_skips_below_direct_source_floor() -> None:
     assert below_floor == []
 
 
-def test_plan_topics_falls_back_to_underfloor_when_ready_pool_empty() -> None:
+def test_plan_topics_falls_back_to_underfloor_for_exploratory_cycles() -> None:
+    ranked = [
+        {"topic": "blocked", "velocity_score": 9.0, "fact_source_count": 5},
+        {"topic": "thin", "velocity_score": 8.0, "fact_source_count": 2},
+    ]
+
+    plan, skipped, skipped_excluded, below_floor = _plan_topics(
+        ranked, recent=set(), excluded={"blocked"}, top=1,
+    )
+
+    assert [row["topic"] for row in plan] == ["thin"]
+    assert skipped == []
+    assert skipped_excluded == ["blocked"]
+    assert below_floor == []
+
+
+def test_plan_topics_does_not_rescue_underfloor_in_submit_cycle() -> None:
     ranked = [
         {"topic": "blocked", "velocity_score": 9.0, "fact_source_count": 5},
         {"topic": "thin", "velocity_score": 8.0, "fact_source_count": 2},
@@ -219,15 +235,14 @@ def test_plan_topics_falls_back_to_underfloor_when_ready_pool_empty() -> None:
         ranked, recent=set(), excluded={"blocked"}, top=1, min_fact_sources=5,
     )
 
-    assert [row["topic"] for row in plan] == ["thin"]
+    assert plan == []
     assert skipped == []
     assert skipped_excluded == ["blocked"]
     assert below_floor == []
 
 
 def test_plan_topics_never_builds_zero_source_candidate() -> None:
-    """A zero-source topic stays dead, but nonzero sub-floor topics can be
-    rebuilt as the last resort so stale local artifacts can be reclassified."""
+    """Submit-seeking cycles do not build known-underfloor topics."""
     ranked = [
         {"topic": "dead", "velocity_score": 9.0, "fact_source_count": 0},
         {"topic": "thin", "velocity_score": 8.0, "fact_source_count": 2},
@@ -238,8 +253,8 @@ def test_plan_topics_never_builds_zero_source_candidate() -> None:
         min_fact_sources=5, hard_floor=3,
     )
 
-    assert [row["topic"] for row in plan] == ["thin"]
-    assert below_floor == ["dead"]
+    assert plan == []
+    assert below_floor == ["dead", "thin"]
 
 
 def test_plan_topics_builds_candidate_meeting_preferred_floor() -> None:

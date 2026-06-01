@@ -273,15 +273,16 @@ def _plan_topics(
         plan.append(c)
         if len(plan) >= top:
             break
-    # Rescue preferred-underfloor candidates first. If the pool is otherwise
-    # empty, rebuild nonzero sub-floor topics so stale local artifacts can be
-    # retested against the current classifier/DB. Zero-source topics stay dead.
-    if not plan:
+    # Rescue underfloor candidates only for exploratory/non-submit cycles.
+    # A stop-on-ready publish cycle is looking for a candidate that can clear
+    # the source floor now; rebuilding known-underfloor topics just burns the
+    # cycle and cannot produce a valid submission.
+    if not plan and not min_fact_sources:
         for c in underfloor:
             if len(plan) >= top:
                 break
             plan.append(c)
-    if not plan:
+    if not plan and not min_fact_sources:
         for c in below_floor_reserve:
             if len(plan) >= top:
                 break

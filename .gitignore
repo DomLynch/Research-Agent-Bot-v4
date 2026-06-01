@@ -29,6 +29,7 @@ runs/_publish_queue.json.tmp
 # macOS Finder dedup-on-copy artifacts ("foo 2.json", "main_draft 2.md", etc.).
 # Never canonical; have polluted run-dir bundles before.
 * 2.*
+* [0-9].*
 
 # Harness-local state
 .claude/

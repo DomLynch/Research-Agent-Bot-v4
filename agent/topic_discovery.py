@@ -51,8 +51,11 @@ _SUPPLY_CACHE_PATH = (Path(__file__).resolve().parent.parent
 _SUPPLY_CACHE_VERSION = 3
 _PUBLISHABLE_SOURCE_FLOOR = 5
 _PROBE_INCONCLUSIVE = -1  # all queries failed (timeout/error), not a real 0
-# All configured seeds are probed; this caps only extra velocity/derived topics.
-_FACT_PROBE_TOPICS = 20
+_DERIVED_TOPIC_LIMIT = 250
+# All configured seeds are probed, and derived candidates must be probed too;
+# otherwise the long-tail source-rich topics stay at fact_source_count=0 and
+# never replace exhausted/cooldown winners.
+_FACT_PROBE_TOPICS = _DERIVED_TOPIC_LIMIT
 _FACT_PROBE_TIMEOUT_SECONDS = 8.0
 _FACT_PROBE_BUDGET_SECONDS = 24.0
 _PAPER_FETCH_WORKERS = 8
@@ -65,7 +68,6 @@ _PAPER_FETCH_WORKERS = 8
 # the cache fills and steady-state load collapses to near zero.
 _FACT_PROBE_WORKERS = 4
 _TITLE_WORD = re.compile(r"[a-z][a-z0-9]+")
-_DERIVED_TOPIC_LIMIT = 250
 _TITLE_STOPWORDS = frozenset({
     "and", "the", "for", "with", "from", "into", "using", "among", "after",
     "before", "during", "across", "study", "trial", "review", "analysis",

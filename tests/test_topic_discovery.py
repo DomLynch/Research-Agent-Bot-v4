@@ -484,6 +484,17 @@ def test_discover_topics_lets_fact_rich_derived_candidate_outrank_seed(
     assert out[0].fact_source_count == 5
 
 
+def test_default_probe_window_covers_derived_topic_pool() -> None:
+    """Derived alpha candidates must receive source counts before ranking.
+
+    If the probe window is narrower than the configured derived pool, rich
+    long-tail topics remain at 0 and the cycle falls back to exhausted seeds.
+    """
+    from agent import topic_discovery as td
+
+    assert td.load_derived_topic_limit() <= td._FACT_PROBE_TOPICS
+
+
 def test_discover_topics_counts_slug_prefix_fact_sources() -> None:
     papers = [_paper(doi="10.1/omega", fwci=2.0, cited_by_count=100)]
 
