@@ -1126,8 +1126,12 @@ def render_signal_memo(
     )
     preferred_bound_ids = _preferred_receipt_ids(publish_verdict, lanes, _BINDABLE)
     preferred_direct_ids = _preferred_receipt_ids(publish_verdict, lanes, _DIRECT)
-    trusted_bound_ids = _candidate_receipt_ids(publish_verdict, lanes, _BINDABLE)
-    trusted_direct_ids = _candidate_receipt_ids(publish_verdict, lanes, _DIRECT)
+    trusted_bound_ids = (
+        set() if grounded else _candidate_receipt_ids(publish_verdict, lanes, _BINDABLE)
+    )
+    trusted_direct_ids = (
+        set() if grounded else _candidate_receipt_ids(publish_verdict, lanes, _DIRECT)
+    )
     expanded_ids = _expanded_receipt_ids(
         audit, facts, lanes, min_sources=min_sources, claim=claim, topic=topic,
         preferred_ids=preferred_bound_ids, trusted_ids=trusted_bound_ids,

@@ -682,6 +682,19 @@ def test_explicit_resubmission_allowed_reject_is_repairable() -> None:
     assert daily._repairable_rejection(decision) is True
 
 
+def test_tighten_evidence_receipts_revision_forces_grounded_regen() -> None:
+    decision = {
+        "decision": "revise",
+        "required_revisions": [
+            "Tighten the evidence receipts to those directly related to the thesis.",
+            "State that the lead claim rests on a single systematic review.",
+        ],
+        "resubmission": {"allowed": True},
+    }
+
+    assert daily._is_grounding_reject(decision) is True
+
+
 def test_resubmission_alignment_reject_requires_explicit_allow() -> None:
     decision = {
         "decision": "reject",

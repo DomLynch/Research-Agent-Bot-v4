@@ -118,6 +118,8 @@ _SCOPE_RESET_TERMS = (
     "source bundle", "title/abstract", "cited doi",
     "cited bundle", "directly supported", "coherent research question",
     "irrelevant counter-evidence", "claim_evidence_alignment",
+    "tighten the evidence receipts", "single systematic review",
+    "single meta-analysis",
 )
 # Broader set adds clarification-level cues; these only trigger the cosmetic
 # scope-clarification note in _apply_reviewer_revision_notes, not a full rebuild.
