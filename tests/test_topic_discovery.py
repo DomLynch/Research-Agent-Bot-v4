@@ -1345,6 +1345,26 @@ def test_cached_source_rich_topics_can_use_previous_version_as_hint(
     assert out == (("legacy_rich", 7),)
 
 
+def test_cached_source_rich_candidates_round_trip(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    now = time.time()
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "rich_a": {"count": 8, "ts": now, "version": td._SUPPLY_CACHE_VERSION},
+        "rich_b": {"count": 6, "ts": now, "version": td._SUPPLY_CACHE_VERSION},
+        "thin": {"count": 4, "ts": now, "version": td._SUPPLY_CACHE_VERSION},
+    }), encoding="utf-8")
+
+    out = td.cached_source_rich_candidates(limit=5)
+
+    assert [(c.topic, c.fact_source_count, c.paper_count) for c in out] == [
+        ("rich_a", 8, 0), ("rich_b", 6, 0),
+    ]
+
+
 def test_supply_cache_hit_skips_reprobe(monkeypatch: Any, tmp_path: Path) -> None:
     """A fresh cached count is reused without re-probing the DB — the load
     reduction that also shrinks the window for transient false-zeros."""

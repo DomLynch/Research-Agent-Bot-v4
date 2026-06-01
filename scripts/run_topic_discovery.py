@@ -26,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from agent.settings import load_settings
 from agent.topic_discovery import (
     TopicCandidate,
+    cached_source_rich_candidates,
     discover_topics,
     load_derived_topic_limit,
     load_seed_topics,
@@ -95,6 +96,10 @@ def main() -> int:
         "--warm-backlog", action="store_true",
         help="Probe source breadth for the full derived pool; slower, for backlog warming.",
     )
+    parser.add_argument(
+        "--cache-first", action="store_true",
+        help="Use fresh cached source-rich topics when they fill the requested window.",
+    )
     args = parser.parse_args()
     seeds = load_seed_topics()
     if not seeds:
@@ -108,12 +113,18 @@ def main() -> int:
         fact_probe_topics=args.fact_probe_topics,
         configured_limit=load_derived_topic_limit(),
     )
-    with httpx.Client() as client:
-        ranked = discover_topics(seeds=seeds, settings=settings,
-                                 client=client,
-                                 derived_topic_limit=derived_limit,
-                                 fact_probe_topics=fact_probe_topics,
-                                 refresh_low_source_counts=args.warm_backlog)
+    cache_limit = max(args.top, fact_probe_topics or 0)
+    ranked = (
+        cached_source_rich_candidates(limit=cache_limit)
+        if args.cache_first and cache_limit > 0 else ()
+    )
+    if len(ranked) < args.top:
+        with httpx.Client() as client:
+            ranked = discover_topics(seeds=seeds, settings=settings,
+                                     client=client,
+                                     derived_topic_limit=derived_limit,
+                                     fact_probe_topics=fact_probe_topics,
+                                     refresh_low_source_counts=args.warm_backlog)
     top = ranked[: args.top]
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
     year = dt.datetime.now(dt.UTC).year
@@ -126,6 +137,7 @@ def main() -> int:
         "derived_topic_limit": derived_limit,
         "fact_probe_topics": fact_probe_topics,
         "warm_backlog": bool(args.warm_backlog),
+        "cache_first": bool(args.cache_first),
         "source_rich_floor": 5,
         "source_rich_count": sum(1 for c in ranked if c.fact_source_count >= 5),
         "top": [c.as_dict() for c in top],

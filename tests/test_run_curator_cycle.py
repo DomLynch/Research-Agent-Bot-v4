@@ -397,6 +397,30 @@ def test_warm_backlog_passes_full_probe_flag_to_discovery(
     assert "--warm-backlog" in calls[0]
 
 
+def test_stop_on_ready_uses_cache_first_discovery(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    calls: list[list[str]] = []
+
+    def fake_step(
+        args: list[str], step_name: str, *, timeout: int = 600,
+    ) -> tuple[bool, str]:
+        calls.append(args)
+        return False, "stop after discovery"
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", tmp_path / "runs")
+    monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
+    monkeypatch.setattr(sys, "argv", [
+        "run_curator_cycle.py", "--stop-on-ready",
+    ])
+
+    assert run_curator_cycle.main() == 1
+    assert "--cache-first" in calls[0]
+
+
 def test_stop_on_ready_halts_plan(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

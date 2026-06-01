@@ -549,6 +549,17 @@ def _cached_source_rich_topics(
     )
 
 
+def cached_source_rich_candidates(*, limit: int) -> tuple[TopicCandidate, ...]:
+    return tuple(
+        TopicCandidate(
+            topic=topic, paper_count=0, fact_source_count=count,
+            top_paper_doi="", top_paper_title="", velocity_score=0.0,
+            mean_fwci=0.0, mean_cited_by=0.0,
+        )
+        for topic, count in _cached_source_rich_topics(exclude=set(), limit=limit)
+    )
+
+
 def _fetch_fact_source_counts(
     topics: list[str], *, client: httpx.Client, settings: Settings,
     refresh_low_source_counts: bool = False,

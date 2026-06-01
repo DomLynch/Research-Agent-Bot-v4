@@ -374,6 +374,8 @@ def main() -> int:
     print("[cycle] step 1: topic discovery")
     if not args.dry_run:
         discovery_args = [py, "scripts/run_topic_discovery.py", "--top", "20"]
+        if args.stop_on_ready:
+            discovery_args.append("--cache-first")
         if args.warm_backlog:
             discovery_args.append("--warm-backlog")
         ok, last = _run_step(
