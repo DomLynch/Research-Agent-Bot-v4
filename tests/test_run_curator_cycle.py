@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 from run_curator_cycle import (
     TopicResult,
+    _discovery_top_for_plan,
     _plan_topics,
     _read_discovery_top,
     _recent_signal_topics,
@@ -171,6 +172,18 @@ def test_read_discovery_top_skips_topicless_entries(tmp_path: Path) -> None:
     }), encoding="utf-8")
     out = _read_discovery_top(tmp_path)
     assert len(out) == 1
+
+
+def test_stop_on_ready_discovery_overfetches_past_exclusions() -> None:
+    assert _discovery_top_for_plan(
+        1, stop_on_ready=True, excluded_count=46,
+    ) == 47
+    assert _discovery_top_for_plan(
+        1, stop_on_ready=True, excluded_count=0,
+    ) == 20
+    assert _discovery_top_for_plan(
+        2, stop_on_ready=False, excluded_count=46,
+    ) == 20
 
 
 def test_plan_topics_honors_excluded_before_cooldown() -> None:
@@ -419,7 +432,7 @@ def test_stop_on_ready_uses_cache_first_discovery(
 
     assert run_curator_cycle.main() == 1
     assert "--cache-first" in calls[0]
-    assert calls[0][calls[0].index("--top") + 1] == "5"
+    assert calls[0][calls[0].index("--top") + 1] == "20"
 
 
 def test_stop_on_ready_halts_plan(

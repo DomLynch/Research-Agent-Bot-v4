@@ -52,6 +52,17 @@ _DISCOVERY_TIMEOUT_SECONDS = 1800
 # not even as a last-resort fallback — which stops the cycle burning ~an hour
 # on dozens of zero/low-source dead candidates.
 _PREBUILD_MIN_SOURCE_FLOOR = max(1, _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES - 2)
+_STOP_ON_READY_DISCOVERY_FLOOR = 20
+
+
+def _discovery_top_for_plan(
+    top: int, *, stop_on_ready: bool, excluded_count: int,
+) -> int:
+    """Over-fetch candidates before cooldown/exclusion filters in submit mode."""
+    requested = max(1, top)
+    if not stop_on_ready:
+        return max(requested, _STOP_ON_READY_DISCOVERY_FLOOR)
+    return max(requested + max(0, excluded_count), _STOP_ON_READY_DISCOVERY_FLOOR)
 
 
 @dataclass(frozen=True, slots=True)
@@ -373,7 +384,11 @@ def main() -> int:
     # Step 1: refresh discovery
     print("[cycle] step 1: topic discovery")
     if not args.dry_run:
-        discovery_top = args.top if args.stop_on_ready else 20
+        discovery_top = _discovery_top_for_plan(
+            args.top,
+            stop_on_ready=args.stop_on_ready,
+            excluded_count=len(args.exclude_topic),
+        )
         discovery_args = [py, "scripts/run_topic_discovery.py", "--top", str(discovery_top)]
         if args.stop_on_ready:
             discovery_args.append("--cache-first")
