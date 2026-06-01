@@ -224,15 +224,25 @@ def _expanded_receipt_ids(
     claim: set[str] | None = None,
     topic: str = "",
     preferred_ids: list[str] | None = None,
+    trusted_ids: set[str] | None = None,
 ) -> list[str]:
     selected: list[str] = []
     seen_ids: set[str] = set()
     sources: set[str] = set()
+    trusted = trusted_ids or set()
 
     def add(fid: str) -> None:
         if fid in seen_ids or lanes.get(fid) not in allowed_lanes or fid not in facts:
             return
-        if claim is not None and not _angle_text_coheres(_fact_phrase(facts[fid]), claim, topic):
+        trusted_topic_match = (
+            fid in trusted
+            and _angle_text_coheres(_fact_phrase(facts[fid]), _claim_token_set(topic), "")
+        )
+        if (
+            claim is not None
+            and not trusted_topic_match
+            and not _angle_text_coheres(_fact_phrase(facts[fid]), claim, topic)
+        ):
             return
         selected.append(fid)
         seen_ids.add(fid)
@@ -285,17 +295,38 @@ def _preferred_receipt_ids(
         if fid and fid not in ids and lanes.get(fid) in allowed_lanes:
             ids.append(fid)
 
-    for key in ("available_bound_fact_ids", "cited_bound_fact_ids"):
-        values = expansion.get(key)
-        if isinstance(values, list):
-            for fid in values:
-                add(fid)
+    values = expansion.get("cited_bound_fact_ids")
+    if isinstance(values, list):
+        for fid in values:
+            add(fid)
     candidates = expansion.get("candidate_receipts")
     if isinstance(candidates, list):
         for item in candidates:
             if isinstance(item, dict):
                 add(item.get("fact_id"))
+    values = expansion.get("available_bound_fact_ids")
+    if isinstance(values, list):
+        for fid in values:
+            add(fid)
     return ids
+
+
+def _candidate_receipt_ids(
+    verdict: dict[str, Any] | None,
+    lanes: dict[str, str],
+    allowed_lanes: frozenset[str],
+) -> set[str]:
+    expansion = (verdict or {}).get("receipt_expansion")
+    candidates = expansion.get("candidate_receipts") if isinstance(expansion, dict) else []
+    out: set[str] = set()
+    if isinstance(candidates, list):
+        for item in candidates:
+            if not isinstance(item, dict):
+                continue
+            fid = str(item.get("fact_id") or "").strip()
+            if fid and lanes.get(fid) in allowed_lanes:
+                out.add(fid)
+    return out
 
 
 def _source_count_for_ids(ids: list[str], facts: dict[str, dict[str, Any]]) -> int:
@@ -1075,9 +1106,11 @@ def render_signal_memo(
     )
     preferred_bound_ids = _preferred_receipt_ids(publish_verdict, lanes, _BINDABLE)
     preferred_direct_ids = _preferred_receipt_ids(publish_verdict, lanes, _DIRECT)
+    trusted_bound_ids = _candidate_receipt_ids(publish_verdict, lanes, _BINDABLE)
+    trusted_direct_ids = _candidate_receipt_ids(publish_verdict, lanes, _DIRECT)
     expanded_ids = _expanded_receipt_ids(
         audit, facts, lanes, min_sources=min_sources, claim=claim, topic=topic,
-        preferred_ids=preferred_bound_ids,
+        preferred_ids=preferred_bound_ids, trusted_ids=trusted_bound_ids,
     )
     lead_ids = _expanded_receipt_ids(
         audit, facts, lanes,
@@ -1085,6 +1118,7 @@ def render_signal_memo(
         allowed_lanes=_DIRECT,
         claim=claim, topic=topic,
         preferred_ids=preferred_direct_ids,
+        trusted_ids=trusted_direct_ids,
     )
     if not lead_ids:
         lead_ids = expanded_ids[:1]
