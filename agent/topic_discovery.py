@@ -48,7 +48,7 @@ _SEEDS_TOML = (Path(__file__).resolve().parent.parent
 # also slashes per-cycle DB load). Universal — no domain literals.
 _SUPPLY_CACHE_PATH = (Path(__file__).resolve().parent.parent
                       / "runs" / "_topic_supply_cache.json")
-_SUPPLY_CACHE_VERSION = 6
+_SUPPLY_CACHE_VERSION = 8
 _PUBLISHABLE_SOURCE_FLOOR = 5
 _PROBE_INCONCLUSIVE = -1  # all queries failed (timeout/error), not a real 0
 _DERIVED_TOPIC_LIMIT = 5_000
@@ -231,6 +231,17 @@ def _topic_root(topic: str) -> str:
     return " ".join(parts[:2]) if len(parts) > 1 else normed
 
 
+def _topic_atoms(topic: str, *, limit: int = 1) -> tuple[str, ...]:
+    """Distinctive slug atoms for unregistered compound topics."""
+    out: dict[str, None] = {}
+    for word in _title_tokens(topic.replace("_", " ")):
+        if len(word) >= 6 or any(ch.isdigit() for ch in word):
+            out.setdefault(word, None)
+        if len(out) >= limit:
+            break
+    return tuple(out)
+
+
 def _paper_title_facets(
     topic: str, papers: list[dict[str, Any]], current_year: int, *,
     limit: int = 12,
@@ -271,6 +282,8 @@ def _fact_probe_queries(
         seen.setdefault(stem, None)
     for query in base[1:]:
         seen.setdefault(query, None)
+    for atom in _topic_atoms(topic):
+        seen.setdefault(atom, None)
     for facet in facets:
         cleaned = re.sub(r"[\W_]+", " ", facet.lower()).strip()
         if cleaned:
@@ -278,16 +291,38 @@ def _fact_probe_queries(
     return tuple(seen)[:max_queries]
 
 
-def _fetch_topic_fact_source_count(
+def _fact_child_slugs(
+    fact: dict[str, Any], topic: str, *, limit: int = 4,
+) -> tuple[str, ...]:
+    """Derive child-topic slugs from direct fact structure, not static terms."""
+    topic_words = set(_title_tokens(topic.replace("_", " ")))
+    seen: dict[str, None] = {}
+    for field in ("intervention", "population"):
+        words = [
+            word for word in _title_tokens(str(fact.get(field) or ""))
+            if word not in topic_words
+        ][:8]
+        for width in (3, 2):
+            for i in range(0, max(0, len(words) - width + 1)):
+                slug = "_".join(words[i:i + width])
+                if slug and slug != topic:
+                    seen.setdefault(slug, None)
+                if len(seen) >= limit:
+                    return tuple(seen)
+    return tuple(seen)
+
+
+def _fetch_topic_fact_source_profile(
     topic: str, *, client: httpx.Client, settings: Settings,
     limit: int = 50, facets: tuple[str, ...] = (),
-) -> int:
+) -> tuple[int, tuple[tuple[str, int], ...]]:
     """Count unique direct bindable fact-backed sources for ranking."""
     base = settings.researka_database_url.rstrip("/")
     tok = settings.researka_database_token.strip()
     if not base or not tok:
-        return 0
+        return 0, ()
     source_keys: set[str] = set()
+    child_sources: dict[str, set[str]] = {}
     any_success = False
     deadline = time.monotonic() + _FACT_PROBE_BUDGET_SECONDS
     for query in _fact_probe_queries(topic, facets=facets):
@@ -317,19 +352,42 @@ def _fetch_topic_fact_source_count(
             for verdict in classify_lanes(facts, topic)
         }
         any_success = True
-        source_keys.update(
-            key for fact in facts
-            if lanes.get(str(fact.get("fact_id") or "")) == "A_core"
-            for key in (_fact_source_key(fact),) if key
-        )
-        if len(source_keys) >= 5:
+        for fact in facts:
+            if lanes.get(str(fact.get("fact_id") or "")) != "A_core":
+                continue
+            key = _fact_source_key(fact)
+            if not key:
+                continue
+            source_keys.add(key)
+            for slug in _fact_child_slugs(fact, topic):
+                child_sources.setdefault(slug, set()).add(key)
+        if (
+            len(source_keys) >= _PUBLISHABLE_SOURCE_FLOOR
+            and any(len(keys) >= _PUBLISHABLE_SOURCE_FLOOR for keys in child_sources.values())
+        ):
             break
     # Distinguish "genuinely 0 A_core" (queries ran, found none) from
     # "probe failed" (every query timed out/errored). The latter must
     # NOT masquerade as a real 0 — that is what mis-ranked rich topics.
     if not any_success:
-        return _PROBE_INCONCLUSIVE
-    return len(source_keys)
+        return _PROBE_INCONCLUSIVE, ()
+    children = tuple(
+        (slug, len(keys)) for slug, keys in sorted(
+            child_sources.items(),
+            key=lambda item: (len(item[1]), item[0]),
+            reverse=True,
+        )
+        if len(keys) >= _PUBLISHABLE_SOURCE_FLOOR
+    )
+    return len(source_keys), children
+
+
+def _fetch_topic_fact_source_count(
+    topic: str, *, client: httpx.Client, settings: Settings,
+    limit: int = 50, facets: tuple[str, ...] = (),
+) -> int:
+    return _fetch_topic_fact_source_profile(
+        topic, client=client, settings=settings, limit=limit, facets=facets)[0]
 
 
 def _load_supply_cache() -> dict[str, dict[str, Any]]:
@@ -374,6 +432,7 @@ def _fetch_fact_source_counts(
     topics: list[str], *, client: httpx.Client, settings: Settings,
     refresh_low_source_counts: bool = False,
     facets_by_topic: dict[str, tuple[str, ...]] | None = None,
+    child_source_counts: dict[str, int] | None = None,
 ) -> dict[str, int]:
     if not topics:
         return {}
@@ -400,11 +459,11 @@ def _fetch_fact_source_counts(
     # only stale/missing topics reach here, so steady-state pressure is low;
     # the cap protects the cold first-fill from overloading the endpoint.
     workers = min(_FACT_PROBE_WORKERS, len(to_probe))
-    probed: dict[str, int] = {}
+    probed: dict[str, tuple[int, tuple[tuple[str, int], ...]]] = {}
     with ThreadPoolExecutor(max_workers=workers) as pool:
         futures = {
             pool.submit(
-                _fetch_topic_fact_source_count,
+                _fetch_topic_fact_source_profile,
                 topic,
                 client=client,
                 settings=settings,
@@ -417,12 +476,20 @@ def _fetch_fact_source_counts(
     # Successful probe (>=0): refresh cache + use it. Inconclusive (-1):
     # keep the last cached count if any, else fall back to 0; never cache
     # a failure as a real count.
-    for topic, count in probed.items():
+    for topic, (count, children) in probed.items():
         if count >= 0:
             cache[topic] = {
                 "count": count, "ts": now, "version": _SUPPLY_CACHE_VERSION,
             }
             out[topic] = count
+            for child, child_count in children:
+                if child_source_counts is not None:
+                    child_source_counts[child] = max(
+                        child_source_counts.get(child, 0), child_count)
+                cache[child] = {
+                    "count": child_count, "ts": now,
+                    "version": _SUPPLY_CACHE_VERSION,
+                }
         else:
             prior = cache.get(topic)
             out[topic] = (
@@ -506,6 +573,20 @@ def _derived_cycle_topics(
     if len(picked) < limit:
         picked.extend(rich[rich_slots:limit])
     return list(dict.fromkeys(picked))[:limit]
+
+
+def _seed_probe_topics(
+    topics: tuple[str, ...], papers_by_topic: dict[str, list[dict[str, Any]]],
+    current_year: int, *, limit: int, refresh_low_source_counts: bool,
+) -> list[str]:
+    ranked = sorted(
+        (topic for topic in topics if topic in papers_by_topic),
+        key=lambda topic: _score_topic(
+            topic, papers_by_topic.get(topic, []), current_year).velocity_score,
+        reverse=True,
+    )
+    return _derived_cycle_topics(
+        ranked, limit=limit, refresh_low_source_counts=refresh_low_source_counts)
 
 
 def _anchorage_counts(
@@ -682,10 +763,13 @@ def discover_topics(
                 topic: derived_papers[topic] for topic in derived_cycle_topics
             })
         anchorage = _anchorage_counts(papers_by_topic, year_now)
+        seed_probe_topics = _seed_probe_topics(
+            topics, papers_by_topic, year_now, limit=max(1, extra_probe_limit),
+            refresh_low_source_counts=refresh_low_source_counts)
         probe_topics = list(dict.fromkeys([
-            *(topic for topic in topics if topic in papers_by_topic),
-            *derived_cycle_topics,
+            *seed_probe_topics, *derived_cycle_topics,
         ]))
+        fact_child_counts: dict[str, int] = {}
         fact_sources_by_topic = _fetch_fact_source_counts(
             probe_topics, client=c, settings=settings,
             refresh_low_source_counts=refresh_low_source_counts,
@@ -693,7 +777,21 @@ def discover_topics(
                 topic: _paper_title_facets(topic, papers, year_now)
                 for topic, papers in papers_by_topic.items()
             },
+            child_source_counts=fact_child_counts,
         )
+        fact_child_topics = [
+            topic for topic, count in sorted(
+                fact_child_counts.items(), key=lambda item: item[1], reverse=True)
+            if count >= _PUBLISHABLE_SOURCE_FLOOR and topic not in papers_by_topic
+        ][:extra_probe_limit]
+        if fact_child_topics:
+            fact_child_papers = _fetch_papers_by_topic(
+                fact_child_topics, client=c, settings=settings,
+                require_title_support=True, current_year=year_now)
+            for topic in fact_child_topics:
+                papers_by_topic.setdefault(topic, fact_child_papers.get(topic, []))
+                fact_sources_by_topic[topic] = max(
+                    fact_sources_by_topic.get(topic, 0), fact_child_counts[topic])
         candidates = [
             _score_topic(
                 topic, papers, year_now, anchorage=anchorage,

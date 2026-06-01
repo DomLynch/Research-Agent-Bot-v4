@@ -380,8 +380,13 @@ def test_discover_topics_dampens_acc_aha_style_anchor() -> None:
     assert all(o.velocity_score > 0 for o in out)
 
 
-def test_discover_topics_prefers_fact_source_breadth() -> None:
+def test_discover_topics_prefers_fact_source_breadth(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
     """Paper velocity alone should not outrank a submit-floor-sized fact shelf."""
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
     fast_thin = [_paper(doi="10.1/fast", fwci=20.0, cited_by_count=2000)]
     slower_rich = [_paper(doi="10.1/rich", fwci=2.0, cited_by_count=100)]
 
@@ -418,11 +423,10 @@ def test_discover_topics_prefers_fact_source_breadth() -> None:
     assert out[1].fact_source_count == 1
 
 
-def test_discover_topics_probes_all_seed_topics_for_fact_breadth(
+def test_discover_topics_warm_backlog_can_probe_all_seed_topics(
     monkeypatch: Any,
 ) -> None:
-    """Low-velocity seeds still need supply counts; otherwise rich seeds below
-    the velocity probe window look thin and never enter the publish queue."""
+    """Submit path stays bounded; backlog mode can still cover the seed pool."""
     from agent import topic_discovery as td
 
     monkeypatch.setattr(td, "_FACT_PROBE_TOPICS", 1)
@@ -456,6 +460,7 @@ def test_discover_topics_probes_all_seed_topics_for_fact_breadth(
         out = td.discover_topics(
             seeds=("fast_thin_topic", "slow_rich_topic"),
             settings=_settings(), client=c, current_year=2024,
+            fact_probe_topics=2,
         )
 
     assert out[0].topic == "slow_rich_topic"
@@ -827,8 +832,16 @@ def test_fact_probe_queries_skip_generic_low_dose_root() -> None:
     queries = _fact_probe_queries("low_dose_naltrexone_inflammation", max_queries=8)
 
     assert "low dose naltrexone" in queries
+    assert "naltrexone" in queries
     assert "low dose" not in queries
     assert "low dose therapy" not in queries
+
+
+def test_fact_probe_queries_include_distinctive_compound_atoms() -> None:
+    queries = _fact_probe_queries("berberine_longevity", max_queries=8)
+
+    assert "berberine" in queries
+    assert "berberine longevity" in queries
 
 
 def test_fact_source_probe_finds_sources_from_data_derived_facets() -> None:
@@ -916,6 +929,80 @@ def test_fact_source_count_uses_pmcid_and_paper_id_source_keys() -> None:
     assert out == 5
 
 
+def test_fact_source_profile_emits_source_backed_child_topics() -> None:
+    from agent import topic_discovery
+
+    rows = [
+        {
+            "id": f"fact-{i}",
+            "paper_id": f"paper-{i}",
+            "paper": {"doi": f"10.1/rt-{i}", "title": f"Trial {i}"},
+            "numeric_value": 10,
+            "units": "%",
+            "population": "older adults with sarcopenia",
+            "intervention": "resistance training",
+            "comparator": "usual care",
+            "canonical_phrase": "resistance training improved muscle mass by 10%",
+        }
+        for i in range(5)
+    ]
+
+    def handler(_req: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=rows)
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        count, children = topic_discovery._fetch_topic_fact_source_profile(
+            "sarcopenia_muscle_preservation", client=c, settings=_settings())
+
+    assert count == 5
+    assert ("resistance_training", 5) in children
+
+
+def test_discover_topics_adds_fact_derived_source_rich_children(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    seed_papers = [_paper(
+        doi="10.1/seed", title="Sarcopenia muscle preservation review", fwci=3.0)]
+    child_papers = [_paper(
+        doi="10.1/child", title="Resistance training improves muscle mass", fwci=2.0)]
+    rows = [
+        {
+            "id": f"fact-{i}",
+            "paper_id": f"paper-{i}",
+            "paper": {"doi": f"10.1/rt-{i}", "title": f"Trial {i}"},
+            "numeric_value": 10,
+            "units": "%",
+            "population": "older adults with sarcopenia",
+            "intervention": "resistance training",
+            "comparator": "usual care",
+            "canonical_phrase": "resistance training improved muscle mass by 10%",
+        }
+        for i in range(5)
+    ]
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        body = req.read().decode("utf-8") if req.content else "{}"
+        if req.url.path.endswith("/tier2/facts/search"):
+            return httpx.Response(200, json=rows)
+        if "resistance_training" in body:
+            return httpx.Response(200, json=child_papers)
+        return httpx.Response(200, json=seed_papers)
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        out = discover_topics(
+            seeds=("sarcopenia_muscle_preservation",),
+            settings=_settings(), client=c, current_year=2024,
+            fact_probe_topics=5,
+        )
+
+    by_topic = {candidate.topic: candidate for candidate in out}
+    assert by_topic["resistance_training"].fact_source_count == 5
+    assert by_topic["resistance_training"].paper_count == 1
+
+
 def test_supply_cache_hit_skips_reprobe(monkeypatch: Any, tmp_path: Path) -> None:
     """A fresh cached count is reused without re-probing the DB — the load
     reduction that also shrinks the window for transient false-zeros."""
@@ -924,11 +1011,11 @@ def test_supply_cache_hit_skips_reprobe(monkeypatch: Any, tmp_path: Path) -> Non
     monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
     calls = {"n": 0}
 
-    def probe(*_a: Any, **_k: Any) -> int:
+    def probe(*_a: Any, **_k: Any) -> tuple[int, tuple[tuple[str, int], ...]]:
         calls["n"] += 1
-        return 9
+        return 9, ()
 
-    monkeypatch.setattr(td, "_fetch_topic_fact_source_count", probe)
+    monkeypatch.setattr(td, "_fetch_topic_fact_source_profile", probe)
     first = td._fetch_fact_source_counts(
         ["rapamycin"], client=MagicMock(), settings=_settings())
     second = td._fetch_fact_source_counts(
@@ -954,11 +1041,11 @@ def test_low_supply_cache_expires_faster_than_publishable_cache(
     }), encoding="utf-8")
     calls: list[str] = []
 
-    def probe(topic: str, *_a: Any, **_k: Any) -> int:
+    def probe(topic: str, *_a: Any, **_k: Any) -> tuple[int, tuple[tuple[str, int], ...]]:
         calls.append(topic)
-        return 6
+        return 6, ()
 
-    monkeypatch.setattr(td, "_fetch_topic_fact_source_count", probe)
+    monkeypatch.setattr(td, "_fetch_topic_fact_source_profile", probe)
     out = td._fetch_fact_source_counts(
         ["thin", "rich"], client=MagicMock(), settings=_settings())
 
@@ -978,11 +1065,11 @@ def test_warm_backlog_refreshes_fresh_underfloor_cache(
     }), encoding="utf-8")
     calls: list[str] = []
 
-    def probe(topic: str, *_a: Any, **_k: Any) -> int:
+    def probe(topic: str, *_a: Any, **_k: Any) -> tuple[int, tuple[tuple[str, int], ...]]:
         calls.append(topic)
-        return 6
+        return 6, ()
 
-    monkeypatch.setattr(td, "_fetch_topic_fact_source_count", probe)
+    monkeypatch.setattr(td, "_fetch_topic_fact_source_profile", probe)
     out = td._fetch_fact_source_counts(
         ["thin", "rich"], client=MagicMock(), settings=_settings(),
         refresh_low_source_counts=True,
@@ -1002,7 +1089,7 @@ def test_supply_cache_version_mismatch_reprobes(
         "topic": {"count": 1, "ts": time.time(), "version": 1},
     }), encoding="utf-8")
     monkeypatch.setattr(
-        td, "_fetch_topic_fact_source_count", lambda *_a, **_k: 7)
+        td, "_fetch_topic_fact_source_profile", lambda *_a, **_k: (7, ()))
 
     out = td._fetch_fact_source_counts(
         ["topic"], client=MagicMock(), settings=_settings())
@@ -1021,7 +1108,8 @@ def test_supply_cache_failure_keeps_prior_count(
     monkeypatch.setattr(td, "_SUPPLY_CACHE_TTL_SECONDS", 0.0)  # force re-probe
     counts = iter([16, td._PROBE_INCONCLUSIVE])
     monkeypatch.setattr(
-        td, "_fetch_topic_fact_source_count", lambda *_a, **_k: next(counts))
+        td, "_fetch_topic_fact_source_profile",
+        lambda *_a, **_k: (next(counts), ()))
 
     first = td._fetch_fact_source_counts(
         ["rapamycin"], client=MagicMock(), settings=_settings())
@@ -1041,8 +1129,8 @@ def test_supply_cache_failure_without_prior_is_zero(
 
     monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
     monkeypatch.setattr(
-        td, "_fetch_topic_fact_source_count",
-        lambda *_a, **_k: td._PROBE_INCONCLUSIVE)
+        td, "_fetch_topic_fact_source_profile",
+        lambda *_a, **_k: (td._PROBE_INCONCLUSIVE, ()))
 
     out = td._fetch_fact_source_counts(
         ["rapamycin"], client=MagicMock(), settings=_settings())

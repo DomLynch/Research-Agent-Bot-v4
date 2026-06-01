@@ -440,10 +440,14 @@ def _claim_coherent_source_diversity(
     topic: str,
     generic: frozenset[str],
     min_overlap: float,
+    min_sources: int,
 ) -> bool:
-    source_tokens: list[set[str]] = []
+    by_source: dict[str, set[str]] = {}
     for fid in cited_ids:
         fact = facts.get(fid) or {}
+        source = _source_key(fact)
+        if not source:
+            continue
         paper = fact.get("source_paper") or {}
         if not isinstance(paper, dict):
             continue
@@ -455,16 +459,33 @@ def _claim_coherent_source_diversity(
             str(paper.get("journal") or ""),
         ]), topic, generic)
         if tokens:
-            source_tokens.append(tokens)
-    if len(source_tokens) < 3:
+            by_source.setdefault(source, set()).update(tokens)
+    source_tokens = list(by_source.values())
+    if len(source_tokens) < min_sources:
         return False
-    return all(
-        any(
-            i != j and len(left & right) / max(1, len(left | right)) >= min_overlap
-            for j, right in enumerate(source_tokens)
-        )
-        for i, left in enumerate(source_tokens)
-    )
+    links: dict[int, set[int]] = {i: set() for i in range(len(source_tokens))}
+    for i, left in enumerate(source_tokens):
+        for j, right in enumerate(source_tokens[i + 1:], start=i + 1):
+            overlap = len(left & right) / max(1, len(left | right))
+            if overlap >= min_overlap:
+                links[i].add(j)
+                links[j].add(i)
+    seen: set[int] = set()
+    for start in links:
+        if start in seen:
+            continue
+        stack = [start]
+        component: set[int] = set()
+        while stack:
+            node = stack.pop()
+            if node in component:
+                continue
+            component.add(node)
+            stack.extend(links[node] - component)
+        seen.update(component)
+        if len(component) >= min_sources:
+            return True
+    return False
 
 
 def _has_tension(md: str, markers: tuple[str, ...]) -> bool:
@@ -528,7 +549,7 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     )
     source_coherent = source_concentrated or _claim_coherent_source_diversity(
         bound_ids, facts, topic, cfg["generic_tokens"],
-        float(cfg["domain_overlap_min"]),
+        float(cfg["domain_overlap_min"]), min_source_papers,
     )
     forced = _domain_forced(
         papers, topic, cfg["generic_tokens"], float(cfg["domain_overlap_min"]),
@@ -546,7 +567,7 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         blockers.append("no_bound_receipts")
     if forced:
         blockers.append("cross_domain_forced")
-    if not source_coherent and bound_ids:
+    if not source_coherent and bound_ids and len(papers) >= min_source_papers:
         blockers.append("source_dispersion")
     if not tension and bound_ids:
         blockers.append("weak_counter_consensus_tension")
@@ -561,7 +582,7 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
 
     ready = (
         not blockers
-        and label == "evidence_backed_signal"
+        and label not in _BLOCKED_LABELS
         and len(bound_ids) >= int(cfg["ready_min_bound_receipts"])
         and a_core >= int(cfg["ready_min_a_core_receipts"])
         and alpha_score >= int(cfg["ready_min_alpha_score"])

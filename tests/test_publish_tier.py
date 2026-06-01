@@ -190,6 +190,43 @@ def test_claim_coherent_source_diversity_is_publishable(tmp_path: Path) -> None:
     assert "cross_domain_forced" not in verdict["blockers"]
 
 
+def test_claim_coherence_accepts_source_cluster_not_every_receipt(
+    tmp_path: Path,
+) -> None:
+    run = _run(
+        tmp_path,
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core", "B_context", "B_context"),
+        dois=("10.a", "10.b", "10.c", "10.d", "10.e", "10.x", "10.y"),
+        titles=(
+            "Reserve markets threshold changes grid storage reliability",
+            "Reserve auctions threshold changes grid storage reliability",
+            "Reserve dispatch threshold changes grid storage reliability",
+            "Reserve pricing threshold changes grid storage reliability",
+            "Reserve settlement threshold changes grid storage reliability",
+            "Operations handbook for unrelated market oversight",
+            "Governance report for unrelated tariff offices",
+        ),
+        journals=(
+            "Grid Review", "Grid Letters", "Grid Reports", "Grid Notes",
+            "Grid Briefs", "Admin Review", "Policy Notes",
+        ),
+    )
+
+    verdict = publish_verdict(run)
+
+    assert "source_dispersion" not in verdict["blockers"]
+    assert verdict["axes"]["claim_coherent_source_diversity"] is True
+
+
+def test_structural_ready_can_publish_frontier_label(tmp_path: Path) -> None:
+    run = _run(tmp_path, label="frontier_hypothesis")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "ready_to_publish"
+    assert verdict["blockers"] == []
+
+
 def test_publish_tier_judges_rendered_memo_receipts_before_lead_audit(
     tmp_path: Path,
 ) -> None:
@@ -288,15 +325,19 @@ def test_incoherent_source_dispersion_routes_to_operator_review(
 ) -> None:
     run = _run(
         tmp_path,
-        lanes=("A_core", "A_core", "A_core", "A_core"),
-        dois=("10.a", "10.b", "10.c", "10.d"),
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+        dois=("10.a", "10.b", "10.c", "10.d", "10.e"),
         titles=(
             "Reserve markets threshold changes grid storage reliability",
             "Ceramic kiln pigment adhesion after firing",
             "Maritime insurance premiums after port dredging",
             "Retail payroll compliance after tax notices",
+            "Aquifer sediment maps after flood plain surveys",
         ),
-        journals=("Grid Review", "Craft Notes", "Port Reports", "Payroll Notes"),
+        journals=(
+            "Grid Review", "Craft Notes", "Port Reports", "Payroll Notes",
+            "Hydrology Notes",
+        ),
     )
 
     verdict = publish_verdict(run)
