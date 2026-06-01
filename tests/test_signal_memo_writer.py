@@ -13,7 +13,12 @@ from pathlib import Path
 from typing import Any
 
 from agent.publish_tier import publish_verdict
-from agent.signal_memo_writer import _memo_alpha_int, render_signal_memo, write_signal_memo
+from agent.signal_memo_writer import (
+    _format_large_numbers,
+    _memo_alpha_int,
+    render_signal_memo,
+    write_signal_memo,
+)
 
 
 def _write_run(run: Path) -> None:
@@ -384,7 +389,7 @@ def test_counter_signal_names_collision_and_testable_split(tmp_path: Path) -> No
     facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
     lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
     for fid, phrase in (
-        ("303", "Carbon pricing reduced emissions in port cities."),
+        ("303", "Carbon pricing reduced emissions in 1570,975 audited port-city records."),
         ("404", "Carbon pricing reduced emissions in audited suppliers."),
         ("505", "Carbon pricing reduced emissions in small exporters."),
         ("606", "Carbon pricing reduced emissions after compliance checks."),
@@ -414,13 +419,20 @@ def test_counter_signal_names_collision_and_testable_split(tmp_path: Path) -> No
     })
 
     assert "**Selected angle:** `counter_signal`" in memo
-    assert "The collision is between a positive direct signal" in memo
+    assert "The cited receipts show an apparent collision" in memo
     assert "heavy industry firms" in memo
     assert "## Evidence Landscape" in memo
     assert "**Bounded research question:** Does the contrast between" in memo
     assert "population, endpoint, comparator, and time window" in memo
     assert "Testable hypothesis:" in memo
     assert "The value is the collision between receipts" not in memo
+
+
+def test_counter_signal_formats_malformed_large_numbers() -> None:
+    assert (
+        _format_large_numbers("659,640 of 1570,975 cancers")
+        == "659,640 of 1,570,975 cancers"
+    )
 
 
 def test_grounded_repair_does_not_trust_off_claim_candidate_receipts(
@@ -605,10 +617,11 @@ def test_alpha_memo_selects_counter_signal_angle_when_counter_receipt_exists(
 
     assert "**Selected angle:** `counter_signal`" in memo
     assert "**Headline:** Carbon tax has a live counter-signal" in memo
-    assert "The collision is between a positive direct signal" in memo
+    assert "The cited receipts show an apparent collision" in memo
     assert "opposing endpoint" in memo
     assert "**Bounded research question:** Does the contrast between" in memo
     assert "Testable hypothesis:" in memo
+    assert "not a generalizable finding" in memo
     assert "matched market" in memo
 
 

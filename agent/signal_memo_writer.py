@@ -608,15 +608,28 @@ def _counter_context(item: dict[str, Any]) -> str:
     )
 
 
+def _format_large_numbers(text: str) -> str:
+    def repl(match: re.Match[str]) -> str:
+        head, tail = match.group(1), match.group(2)
+        if len(head) <= 3:
+            return match.group(0)
+        return f"{head[:-3]},{head[-3:]},{tail}"
+
+    return re.sub(r"\b(\d+),(\d{3})\b", repl, text)
+
+
 def _counter_collision(
     lead: str,
     lead_fact: dict[str, Any],
     counter: str,
     counter_item: dict[str, Any],
 ) -> str:
+    lead = _format_large_numbers(lead)
+    counter = _format_large_numbers(counter)
     return (
-        f"The collision is between a positive direct signal in {_fact_context(lead_fact)} "
-        f"({lead}) and an opposing endpoint in {_counter_context(counter_item)} "
+        f"The cited receipts show an apparent collision between a positive "
+        f"direct signal in {_fact_context(lead_fact)} ({lead}) and an opposing "
+        f"endpoint in {_counter_context(counter_item)} "
         f"({counter})."
     )
 
@@ -929,8 +942,8 @@ def _select_angle(
                 "Testable hypothesis: within the cited receipts, the apparent "
                 "split persists only if the positive and opposing endpoints remain "
                 "separated after aligning population, endpoint, comparator, and "
-                "time window. Audit those fields before treating this as a "
-                "general signal."
+                "time window. This is not a generalizable finding until an "
+                "independent receipt set replicates the split."
             ),
         }))
     limit = max(1, min(5, _memo_alpha_int("angle_candidates", 5)))
