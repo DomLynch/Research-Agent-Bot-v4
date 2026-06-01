@@ -7,7 +7,8 @@ the topic. Universal: rules use fact structural fields + topic-word
 co-occurrence + numeric role; no biomedical domain literals.
 
 Lanes:
-  A_core           — topic in intervention + clean PICO + real numeric effect
+  A_core           — topic in intervention OR population + clean PICO +
+                     real numeric effect
   B_context        — topic matched + clean PICO, but either topic only in the
                      phrase OR no clean numeric effect (qualitative finding /
                      methodological number); usable as mechanism / context
@@ -29,6 +30,7 @@ from agent.topic_synonyms import expand_topic_queries, phrase_in_text
 
 LANES = ("A_core", "B_context", "C_noise", "D_bad_extraction")
 _NORM_PUNCT = re.compile(r"[\W_]+")
+_MIN_SPECIFIC_HEAD_CHARS = 8
 
 
 def _norm(s: str) -> str:
@@ -64,6 +66,18 @@ def _topic_haystack(fact: dict[str, Any]) -> str:
     ]).lower()
 
 
+def _topic_keywords(topic: str) -> list[str]:
+    seen: dict[str, None] = {}
+    for kw in expand_topic_queries(topic, max_queries=64):
+        normed = _norm(kw)
+        if normed:
+            seen.setdefault(normed, None)
+    head = _norm(topic).split()[:1]
+    if head and len(head[0]) >= _MIN_SPECIFIC_HEAD_CHARS:
+        seen.setdefault(head[0], None)
+    return list(seen)
+
+
 def classify_lane(fact: dict[str, Any], topic: str) -> LaneVerdict:
     """Single-fact lane classification."""
     fact_id = str(fact.get("fact_id") or "")
@@ -88,7 +102,7 @@ def classify_lane(fact: dict[str, Any], topic: str) -> LaneVerdict:
     # (dasatinib, quercetin). expand_topic_keywords always includes
     # the topic itself first, so behavior is unchanged for unregistered
     # topics.
-    keywords = [_norm(kw) for kw in expand_topic_queries(topic, max_queries=64)]
+    keywords = _topic_keywords(topic)
     haystack = _norm(_topic_haystack(fact))
     if not any(phrase_in_text(kw, haystack) for kw in keywords if kw):
         return LaneVerdict(
@@ -97,18 +111,27 @@ def classify_lane(fact: dict[str, Any], topic: str) -> LaneVerdict:
             reason="topic_word_absent_from_pico_fields",
         )
 
-    # A_core is the quantitative LEAD: topic in intervention + clean PICO +
-    # a real numeric effect. Anything else that is PICO-complete and topic-
-    # matched binds as B_context (mechanism / qualitative / context support),
-    # rather than being discarded — a numeric_role that is not an effect
-    # (or absent) only blocks the lead, it does not make the fact unusable.
+    # A_core is the quantitative LEAD. For intervention topics, topic-in-
+    # intervention is direct. For condition/outcome topics, topic-in-population
+    # is also direct: "exercise improved muscle mass in sarcopenia" is direct
+    # evidence for a sarcopenia alpha topic even though sarcopenia is not the
+    # intervention. Phrase-only matches still bind as B_context to avoid
+    # promoting inconsistent extractions.
     real = is_real_finding(role)
     intervention_norm = _norm(str(fact.get("intervention") or ""))
-    if real and any(phrase_in_text(kw, intervention_norm) for kw in keywords if kw):
+    population_norm = _norm(str(fact.get("population") or ""))
+    if real and any(
+        phrase_in_text(kw, intervention_norm)
+        or phrase_in_text(kw, population_norm)
+        for kw in keywords if kw
+    ):
         return LaneVerdict(
             fact_id=fact_id, lane="A_core",
             numeric_role=role,
-            reason="topic_in_intervention_pico_complete",
+            reason=("topic_in_intervention_pico_complete"
+                    if any(phrase_in_text(kw, intervention_norm)
+                           for kw in keywords if kw)
+                    else "topic_in_population_pico_complete"),
         )
     return LaneVerdict(
         fact_id=fact_id, lane="B_context",

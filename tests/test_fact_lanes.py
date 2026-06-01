@@ -142,6 +142,22 @@ def test_topic_in_phrase_only_is_b_context() -> None:
     assert v.lane == "B_context"
 
 
+def test_topic_in_population_with_effect_is_a_core() -> None:
+    """Condition/outcome topics can be direct when the topic is the studied
+    population and the intervention has a real numeric effect."""
+    v = classify_lane(_fact(
+        canonical_phrase="exercise improved appendicular muscle mass by 8%",
+        population="older adults with sarcopenia",
+        intervention="resistance exercise",
+        comparator="usual care",
+        numeric_value=8.0,
+        units="%",
+    ), topic="sarcopenia_muscle_preservation")
+
+    assert v.lane == "A_core"
+    assert v.reason == "topic_in_population_pico_complete"
+
+
 def test_classify_lanes_batch_returns_one_per_fact() -> None:
     out = classify_lanes(
         [_fact(fact_id="f/1"), _fact(fact_id="f/2"), _fact(fact_id="f/3")],
