@@ -341,6 +341,20 @@ def _supply_cache_ttl(count: int) -> float:
     return _SUPPLY_CACHE_TTL_SECONDS
 
 
+def _fresh_cached_supply_count(
+    entry: Any, *, now: float, refresh_low_source_counts: bool,
+) -> int | None:
+    if not isinstance(entry, dict) or entry.get("version") != _SUPPLY_CACHE_VERSION:
+        return None
+    count = int(entry.get("count", 0))
+    if (
+        now - float(entry.get("ts", 0.0)) < _supply_cache_ttl(count)
+        and not (refresh_low_source_counts and count < _PUBLISHABLE_SOURCE_FLOOR)
+    ):
+        return count
+    return None
+
+
 def _fetch_fact_source_counts(
     topics: list[str], *, client: httpx.Client, settings: Settings,
     refresh_low_source_counts: bool = False,
@@ -356,18 +370,13 @@ def _fetch_fact_source_counts(
     out: dict[str, int] = {}
     to_probe: list[str] = []
     for topic in topics:
-        entry = cache.get(topic)
-        if isinstance(entry, dict) and entry.get("version") == _SUPPLY_CACHE_VERSION:
-            count = int(entry.get("count", 0))
-            if (
-                now - float(entry.get("ts", 0.0)) < _supply_cache_ttl(count)
-                and not (
-                    refresh_low_source_counts
-                    and count < _PUBLISHABLE_SOURCE_FLOOR
-                )
-            ):
-                out[topic] = count
-                continue
+        count = _fresh_cached_supply_count(
+            cache.get(topic), now=now,
+            refresh_low_source_counts=refresh_low_source_counts,
+        )
+        if count is not None:
+            out[topic] = count
+            continue
         to_probe.append(topic)
     if not to_probe:
         return out
@@ -425,6 +434,28 @@ def _title_topic_slugs(
                     slug = "_".join(words[i:i + width])
                     scores[slug] = scores.get(slug, 0.0) + paper_score / width
     return tuple(k for k, _ in sorted(scores.items(), key=lambda item: item[1], reverse=True)[:limit])
+
+
+def _next_uncached_topics(
+    topics: list[str], *, limit: int, refresh_low_source_counts: bool,
+) -> list[str]:
+    """Pick the next derived topics whose supply counts need warming.
+
+    The submit path stays bounded by `limit`, but each cycle advances through
+    the derived pool instead of re-checking the same already-cached head.
+    """
+    if limit <= 0:
+        return []
+    cache = _load_supply_cache()
+    now = time.time()
+    due = [
+        topic for topic in topics
+        if _fresh_cached_supply_count(
+            cache.get(topic), now=now,
+            refresh_low_source_counts=refresh_low_source_counts,
+        ) is None
+    ]
+    return (due or topics)[:limit]
 
 
 def _anchorage_counts(
@@ -584,9 +615,15 @@ def discover_topics(
             _FACT_PROBE_TOPICS if fact_probe_topics is None
             else max(0, fact_probe_topics)
         )
+        seed_set = set(topics)
+        extra_probe_topics = _next_uncached_topics(
+            [cand.topic for cand in velocity_ranked if cand.topic not in seed_set],
+            limit=extra_probe_limit,
+            refresh_low_source_counts=refresh_low_source_counts,
+        )
         probe_topics = list(dict.fromkeys([
             *(topic for topic in topics if topic in papers_by_topic),
-            *(cand.topic for cand in velocity_ranked[:extra_probe_limit]),
+            *extra_probe_topics,
         ]))
         fact_sources_by_topic = _fetch_fact_source_counts(
             probe_topics, client=c, settings=settings,

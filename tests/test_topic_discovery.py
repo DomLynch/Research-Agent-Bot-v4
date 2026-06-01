@@ -547,6 +547,42 @@ def test_discover_topics_fact_probe_limit_keeps_submit_path_bounded(
     assert len([topic for topic in seen if topic.startswith("derived_")]) == 1
 
 
+def test_discover_topics_advances_derived_probe_window_past_cached_head(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "derived_one": {
+            "count": 0, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION,
+        },
+    }), encoding="utf-8")
+
+    def fake_fetch(topics: list[str], **_: Any) -> dict[str, list[dict[str, Any]]]:
+        return {topic: [_paper(doi=f"10.1/{topic}", fwci=4.0)] for topic in topics}
+
+    seen: list[str] = []
+
+    def capture_fact_source_counts(topics: list[str], **_: Any) -> dict[str, int]:
+        seen.extend(topics)
+        return {}
+
+    monkeypatch.setattr(td, "_fetch_papers_by_topic", fake_fetch)
+    monkeypatch.setattr(td, "_title_topic_slugs", lambda *_args, **_kw: [
+        "derived_one", "derived_two", "derived_three",
+    ])
+    monkeypatch.setattr(td, "_fetch_fact_source_counts", capture_fact_source_counts)
+
+    td.discover_topics(
+        seeds=("seed_topic",), settings=_settings(), client=httpx.Client(),
+        current_year=2024, derived_topic_limit=3, fact_probe_topics=1,
+    )
+
+    assert "derived_one" not in seen
+    assert "derived_two" in seen
+
+
 def test_discover_topics_counts_slug_prefix_fact_sources() -> None:
     papers = [_paper(doi="10.1/omega", fwci=2.0, cited_by_count=100)]
 
