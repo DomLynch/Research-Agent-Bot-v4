@@ -358,6 +358,10 @@ def main() -> int:
                         help="Stop after the first ready_to_publish verdict")
     parser.add_argument("--exclude-topic", action="append", default=[],
                         help="Skip a topic for this cycle; repeatable")
+    parser.add_argument(
+        "--warm-backlog", action="store_true",
+        help="Probe the full derived topic pool before planning; slower.",
+    )
     parser.add_argument("--dry-run", action="store_true",
                         help="Print plan; do not invoke the pipeline")
     args = parser.parse_args()
@@ -369,8 +373,11 @@ def main() -> int:
     # Step 1: refresh discovery
     print("[cycle] step 1: topic discovery")
     if not args.dry_run:
+        discovery_args = [py, "scripts/run_topic_discovery.py", "--top", "20"]
+        if args.warm_backlog:
+            discovery_args.append("--warm-backlog")
         ok, last = _run_step(
-            [py, "scripts/run_topic_discovery.py", "--top", "20"],
+            discovery_args,
             "discovery",
             timeout=_DISCOVERY_TIMEOUT_SECONDS,
         )

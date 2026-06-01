@@ -57,6 +57,12 @@ def _render_md(stamps: dict[str, str],
     return "\n".join(lines) + "\n"
 
 
+def _source_rich_count(
+    candidates: tuple[TopicCandidate, ...], *, floor: int = 5,
+) -> int:
+    return sum(1 for c in candidates if c.fact_source_count >= floor)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--top", type=int, default=10,
@@ -89,6 +95,9 @@ def main() -> int:
     json_payload = {
         "snapshot_utc": ts, "year": year,
         "seed_count": len(seeds), "candidate_count": len(ranked),
+        "warm_backlog": bool(args.warm_backlog),
+        "source_rich_floor": 5,
+        "source_rich_count": _source_rich_count(ranked),
         "top": [c.as_dict() for c in top],
         "all": [c.as_dict() for c in ranked],
     }
@@ -100,6 +109,7 @@ def main() -> int:
                     "year": str(year)}, top),
         encoding="utf-8")
     print(f"[topic-discovery] seeds={len(seeds)} ranked={len(ranked)} "
+          f"source_rich={json_payload['source_rich_count']} "
           f"-> runs/_topics_discovery/{ts}.json")
     for i, c in enumerate(top, start=1):
         print(f"  #{i}  velocity={c.velocity_score:6.2f}  "
