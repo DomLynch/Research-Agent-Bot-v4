@@ -525,7 +525,8 @@ def _grounded_headline(
     )
     if not phrase:
         return fallback
-    return f"Bounded {_topic_title(topic)} signal: {phrase[:120].rstrip()}"
+    label = " ".join(topic.replace("-", "_").split("_")[:2]) or topic
+    return f"Bounded {_topic_title(label)} signal: {phrase[:180].rstrip()}"
 
 
 def _has_counter_items(verdict: dict[str, Any] | None) -> bool:

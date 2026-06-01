@@ -15,6 +15,7 @@ from typing import Any
 from agent.publish_tier import publish_verdict
 from agent.signal_memo_writer import (
     _format_large_numbers,
+    _grounded_headline,
     _memo_alpha_int,
     render_signal_memo,
     write_signal_memo,
@@ -650,6 +651,18 @@ def test_grounded_repair_rebuilds_headline_from_direct_receipts(
         "Emissions fell 8% after the intervention"
     ) in memo
     assert "**Source thesis:** Carbon pricing may cut emissions" in memo
+
+
+def test_grounded_headline_uses_short_topic_label_not_broad_slug() -> None:
+    headline = _grounded_headline(
+        "plant_based_diet_biological_age",
+        ["1"],
+        {"1": {"canonical_phrase": "cardiovascular mortality increased 5%."}},
+        "fallback",
+    )
+
+    assert headline == "Bounded Plant based signal: cardiovascular mortality increased 5%"
+    assert "biological age" not in headline.lower()
 
 
 def test_source_angle_grounds_unsupported_tension_headline(
