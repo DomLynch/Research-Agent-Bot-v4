@@ -24,13 +24,22 @@ def test_default_discovery_keeps_publish_path_bounded() -> None:
     ) == (250, None)
 
 
-def test_warm_backlog_uses_full_configured_pool() -> None:
+def test_warm_backlog_uses_full_pool_with_bounded_probe_window() -> None:
     assert _resolve_limits(
         warm_backlog=True,
         derived_topic_limit=None,
         fact_probe_topics=None,
         configured_limit=5_000,
-    ) == (5_000, 5_000)
+    ) == (5_000, 250)
+
+
+def test_warm_backlog_respects_explicit_probe_override() -> None:
+    assert _resolve_limits(
+        warm_backlog=True,
+        derived_topic_limit=None,
+        fact_probe_topics=80,
+        configured_limit=5_000,
+    ) == (5_000, 80)
 
 
 def test_operator_overrides_discovery_limits() -> None:

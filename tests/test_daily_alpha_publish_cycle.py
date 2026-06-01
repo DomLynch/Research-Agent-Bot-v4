@@ -1571,18 +1571,22 @@ def test_refresh_exits_early_when_queue_unchanged_across_batches(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     """A refresh batch that yields an identical candidate queue and no
-    publishable candidate must stop the loop instead of re-running a full
-    discovery cycle for every remaining batch. (Post slice-4 the curator builds
-    nothing for below-floor topics, so the only remaining cost is the futile
-    per-batch re-discovery — this caps it.)"""
+    publishable candidate escalates once to backlog warming, then stops
+    instead of re-running discovery for every remaining batch."""
     root = tmp_path / "repo"
     thin = _verdict("thin")
     _memo_with_source_receipts(root, thin, 1)  # 1 cited source -> below 5 floor
     calls = {"n": 0}
 
-    def fake_batch(*_a: Any, **_k: Any) -> dict[str, Any]:
+    warm_flags: list[bool] = []
+
+    def fake_batch(*_a: Any, **kwargs: Any) -> dict[str, Any]:
         calls["n"] += 1
-        return {"ok": True, "ran_topics": [], "top": 20}
+        warm_flags.append(bool(kwargs.get("warm_backlog")))
+        return {
+            "ok": True, "ran_topics": [], "top": 20,
+            "warm_backlog": bool(kwargs.get("warm_backlog")),
+        }
 
     monkeypatch.setattr(daily, "_refresh_candidate_batch", fake_batch)
 
@@ -1594,10 +1598,34 @@ def test_refresh_exits_early_when_queue_unchanged_across_batches(
         submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
     )
 
-    assert calls["n"] == 2  # batch 1 sets baseline, batch 2 detects no change
+    assert calls["n"] == 3  # baseline, fast unchanged, one warm-backlog try
+    assert warm_flags == [False, False, True]
     assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["refresh_backlog_escalation"] == {
+        "after_batch": 2,
+        "reason": "queue_unchanged_no_candidate",
+    }
     assert (ledger.get("refresh_early_exit", {}).get("reason")
             == "queue_unchanged_no_candidate")
+
+
+def test_refresh_candidate_batch_can_warm_backlog(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+
+    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        calls.append(args)
+        return True, "ok"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    out = daily._refresh_candidate_batch(
+        5, runs_root=tmp_path, warm_backlog=True)
+
+    assert out["ok"] is True
+    assert out["warm_backlog"] is True
+    assert "--warm-backlog" in calls[0]
 
 
 def test_submit_mode_holds_thin_source_memos(tmp_path: Path) -> None:

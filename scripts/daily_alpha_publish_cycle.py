@@ -1603,6 +1603,7 @@ def _refresh_candidate_batch(
     excluded_topics: set[str] | None = None,
     cooldown_hours: float = _DEFAULT_REFRESH_COOLDOWN_HOURS,
     runs_root: Path = _RUNS,
+    warm_backlog: bool = False,
 ) -> Json:
     exclusions = sorted(t for t in (excluded_topics or set()) if t)
     args = [
@@ -1610,6 +1611,8 @@ def _refresh_candidate_batch(
         "--stop-on-ready", "--top", str(refresh_top),
         "--cooldown-hours", f"{cooldown_hours:g}",
     ]
+    if warm_backlog:
+        args.append("--warm-backlog")
     for topic in exclusions:
         args.extend(["--exclude-topic", topic])
     ok, note = _run_step(args, timeout=_REFRESH_TIMEOUT_SECONDS)
@@ -1619,6 +1622,7 @@ def _refresh_candidate_batch(
         "top": refresh_top,
         "cooldown_hours": cooldown_hours,
         "excluded_topics": exclusions,
+        "warm_backlog": warm_backlog,
     } | _latest_cycle_topics(runs_root)
 
 
@@ -1885,6 +1889,7 @@ def run_cycle(
             preflight_queue = candidate_queue
             skip_refresh_note = "skipped_initial_queue_probe"
     skip_next_refresh = preflight_queue is not None
+    warm_backlog_next = False
     for batch in range(1, batch_limit + 1):
         refresh: Json = {}
         if refresh_candidates and skip_next_refresh:
@@ -1904,6 +1909,7 @@ def run_cycle(
             cooldown = 0.0 if blocked_topics or force_refresh else refresh_cooldown_hours
             refresh = _refresh_candidate_batch(
                 refresh_top, blocked_topics, cooldown, runs_root,
+                warm_backlog=warm_backlog_next,
             )
             if cooldown != refresh_cooldown_hours:
                 refresh["cooldown_reason"] = (
@@ -1911,6 +1917,7 @@ def run_cycle(
                     if blocked_topics else "retry_after_empty_refresh"
                 )
             force_refresh = False
+            warm_backlog_next = False
             refresh["batch"] = batch
             ledger["refresh_batches"].append(refresh)
             ledger["refresh_candidates"] = refresh
@@ -1973,9 +1980,17 @@ def run_cycle(
                 force_refresh = True
             elif refresh_candidates and queue_unchanged:
                 # This refresh batch produced an identical candidate queue and
-                # no publishable candidate, so further batches would just
-                # re-run discovery to the same below-floor result. Stop instead
-                # of burning a full discovery cycle per remaining batch.
+                # no publishable candidate. Escalate once into progressive
+                # backlog warming before stopping; this lets the source-rich
+                # cache grow when the normal fast window is exhausted.
+                if not refresh.get("warm_backlog") and batch < batch_limit:
+                    ledger["refresh_backlog_escalation"] = {
+                        "after_batch": batch,
+                        "reason": "queue_unchanged_no_candidate",
+                    }
+                    warm_backlog_next = True
+                    force_refresh = True
+                    continue
                 ledger["refresh_early_exit"] = {
                     "batch": batch, "reason": "queue_unchanged_no_candidate",
                 }

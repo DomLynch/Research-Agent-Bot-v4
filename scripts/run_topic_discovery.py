@@ -44,7 +44,14 @@ def _resolve_limits(
         else configured_limit if warm_backlog
         else min(configured_limit, _FAST_DERIVED_TOPIC_LIMIT)
     )
-    return derived, derived if warm_backlog else fact_probe_topics
+    if warm_backlog:
+        probes = (
+            max(0, fact_probe_topics)
+            if fact_probe_topics is not None
+            else min(configured_limit, _FAST_DERIVED_TOPIC_LIMIT)
+        )
+        return derived, probes
+    return derived, fact_probe_topics
 
 
 def _render_md(stamps: dict[str, str],
