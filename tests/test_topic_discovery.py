@@ -536,6 +536,37 @@ def test_fact_source_probe_uses_submit_sized_top_k() -> None:
     assert bodies[0]["top_k"] == 50
 
 
+def test_fact_source_count_uses_pmcid_and_paper_id_source_keys() -> None:
+    """Source breadth uses the same DOI > PMID > PMCID > paper_id identity
+    order as the publish gate, so no-DOI papers do not collapse by title."""
+    from agent import topic_discovery
+
+    rows = [
+        {
+            "id": f"fact-{i}",
+            "paper_id": f"paper-{i}",
+            "paper": {"pmcid": f"PMC{i}", "title": "Shared title"},
+            "numeric_value": 10,
+            "units": "%",
+            "population": "adults",
+            "intervention": "omega 3",
+            "comparator": "usual care",
+            "canonical_phrase": "omega 3 improved risk by 10%",
+        }
+        for i in range(5)
+    ]
+
+    def handler(_req: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=rows)
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        out = topic_discovery._fetch_topic_fact_source_count(
+            "omega_3_longevity", client=c, settings=_settings(),
+        )
+
+    assert out == 5
+
+
 def test_supply_cache_hit_skips_reprobe(monkeypatch: Any, tmp_path: Path) -> None:
     """A fresh cached count is reused without re-probing the DB — the load
     reduction that also shrinks the window for transient false-zeros."""
@@ -556,6 +587,52 @@ def test_supply_cache_hit_skips_reprobe(monkeypatch: Any, tmp_path: Path) -> Non
 
     assert first == second == {"rapamycin": 9}
     assert calls["n"] == 1  # second call served from fresh cache
+
+
+def test_low_supply_cache_expires_faster_than_publishable_cache(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    """Underfloor counts are refreshed on the publish cadence, while rich
+    counts keep the longer DB-protection TTL."""
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    monkeypatch.setattr(td, "_LOW_SUPPLY_CACHE_TTL_SECONDS", 10.0)
+    now = time.time()
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "thin": {"count": 4, "ts": now - 11, "version": td._SUPPLY_CACHE_VERSION},
+        "rich": {"count": 5, "ts": now - 11, "version": td._SUPPLY_CACHE_VERSION},
+    }), encoding="utf-8")
+    calls: list[str] = []
+
+    def probe(topic: str, *_a: Any, **_k: Any) -> int:
+        calls.append(topic)
+        return 6
+
+    monkeypatch.setattr(td, "_fetch_topic_fact_source_count", probe)
+    out = td._fetch_fact_source_counts(
+        ["thin", "rich"], client=MagicMock(), settings=_settings())
+
+    assert out == {"thin": 6, "rich": 5}
+    assert calls == ["thin"]
+
+
+def test_supply_cache_version_mismatch_reprobes(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "topic": {"count": 1, "ts": time.time(), "version": 1},
+    }), encoding="utf-8")
+    monkeypatch.setattr(
+        td, "_fetch_topic_fact_source_count", lambda *_a, **_k: 7)
+
+    out = td._fetch_fact_source_counts(
+        ["topic"], client=MagicMock(), settings=_settings())
+
+    assert out == {"topic": 7}
 
 
 def test_supply_cache_failure_keeps_prior_count(

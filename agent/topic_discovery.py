@@ -21,6 +21,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import math
+import os
 import re
 import time
 import tomllib
@@ -47,7 +48,8 @@ _SEEDS_TOML = (Path(__file__).resolve().parent.parent
 # also slashes per-cycle DB load). Universal — no domain literals.
 _SUPPLY_CACHE_PATH = (Path(__file__).resolve().parent.parent
                       / "runs" / "_topic_supply_cache.json")
-_SUPPLY_CACHE_TTL_SECONDS = 86_400.0  # re-probe a topic at most once/day
+_SUPPLY_CACHE_VERSION = 2
+_PUBLISHABLE_SOURCE_FLOOR = 5
 _PROBE_INCONCLUSIVE = -1  # all queries failed (timeout/error), not a real 0
 # All configured seeds are probed; this caps only extra velocity/derived topics.
 _FACT_PROBE_TOPICS = 20
@@ -70,6 +72,18 @@ _TITLE_STOPWORDS = frozenset({
     "effects", "association", "associated", "based", "between", "patients",
     "adults", "human", "mouse", "mice", "model", "models", "new", "novel",
 })
+
+
+def _float_env(name: str, default: float) -> float:
+    try:
+        return max(0.0, float(os.environ.get(name, default)))
+    except (TypeError, ValueError):
+        return default
+
+
+_SUPPLY_CACHE_TTL_SECONDS = 86_400.0  # re-probe rich topics at most once/day
+_LOW_SUPPLY_CACHE_TTL_SECONDS = _float_env(
+    "RESEARCH_AGENT_LOW_TOPIC_SUPPLY_CACHE_TTL_SECONDS", 7200.0)
 
 
 @dataclass(frozen=True, slots=True)
@@ -155,8 +169,11 @@ def _fact_source_key(item: dict[str, Any]) -> str:
     paper = paper_raw if isinstance(paper_raw, dict) else {}
     return str(
         paper.get("doi")
-        or item.get("paper_id")
         or paper.get("pmid")
+        or paper.get("pmcid")
+        or paper.get("paper_id")
+        or item.get("paper_id")
+        or paper.get("id")
         or paper.get("title")
         or "",
     ).strip().lower()[:200]
@@ -171,6 +188,9 @@ def _fact_for_lane(item: dict[str, Any], topic: str) -> dict[str, Any]:
         "sub_topic": item.get("claim_type") or item.get("sub_topic") or "",
         "source_paper": {
             "doi": paper.get("doi"), "pmid": paper.get("pmid"),
+            "pmcid": paper.get("pmcid"),
+            "paper_id": paper.get("paper_id") or item.get("paper_id"),
+            "id": paper.get("id"),
             "title": paper.get("title"),
         },
         "numeric_value": item.get("numeric_value"),
@@ -249,6 +269,12 @@ def _save_supply_cache(cache: dict[str, dict[str, Any]]) -> None:
         pass
 
 
+def _supply_cache_ttl(count: int) -> float:
+    if count < _PUBLISHABLE_SOURCE_FLOOR:
+        return _LOW_SUPPLY_CACHE_TTL_SECONDS
+    return _SUPPLY_CACHE_TTL_SECONDS
+
+
 def _fetch_fact_source_counts(
     topics: list[str], *, client: httpx.Client, settings: Settings,
 ) -> dict[str, int]:
@@ -263,11 +289,12 @@ def _fetch_fact_source_counts(
     to_probe: list[str] = []
     for topic in topics:
         entry = cache.get(topic)
-        if (isinstance(entry, dict)
-                and now - float(entry.get("ts", 0.0)) < _SUPPLY_CACHE_TTL_SECONDS):
-            out[topic] = int(entry.get("count", 0))
-        else:
-            to_probe.append(topic)
+        if isinstance(entry, dict) and entry.get("version") == _SUPPLY_CACHE_VERSION:
+            count = int(entry.get("count", 0))
+            if now - float(entry.get("ts", 0.0)) < _supply_cache_ttl(count):
+                out[topic] = count
+                continue
+        to_probe.append(topic)
     if not to_probe:
         return out
     # Concurrency for the per-topic A_core source probe, capped to the
@@ -293,7 +320,9 @@ def _fetch_fact_source_counts(
     # a failure as a real count.
     for topic, count in probed.items():
         if count >= 0:
-            cache[topic] = {"count": count, "ts": now}
+            cache[topic] = {
+                "count": count, "ts": now, "version": _SUPPLY_CACHE_VERSION,
+            }
             out[topic] = count
         else:
             prior = cache.get(topic)
@@ -494,7 +523,7 @@ def discover_topics(
     seed_set = set(topics)
     candidates.sort(
         key=lambda c: (
-            c.fact_source_count >= 5,
+            c.fact_source_count >= _PUBLISHABLE_SOURCE_FLOOR,
             c.fact_source_count,
             c.topic in seed_set,
             c.velocity_score,
