@@ -931,8 +931,13 @@ def select_candidate(
             fp in retryable
             and attempt_count < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
         )
+        retry_budget_exhausted = (
+            fp in seen
+            and attempt_count >= _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
+        )
         if (
             not cycle_blocked
+            and not retry_budget_exhausted
             and has_memo
             and approved
             and (
@@ -964,6 +969,7 @@ def select_candidate(
                 )
         if (
             not cycle_blocked
+            and not retry_budget_exhausted
             and has_memo
             and approved
             and memo_refresher
@@ -988,6 +994,7 @@ def select_candidate(
                 )
         if (
             not cycle_blocked
+            and not retry_budget_exhausted
             and has_memo
             and memo_refresher
             and _needs_tension_enrichment(verdict)

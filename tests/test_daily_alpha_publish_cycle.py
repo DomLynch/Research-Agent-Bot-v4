@@ -2687,6 +2687,78 @@ def test_repairable_reject_retries_same_topic_before_refreshing(
     ]
 
 
+def test_repairable_revise_stops_at_fingerprint_attempt_cap(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("never_satisfies_reviewer")
+    _memo_with_source_receipts(root, verdict, 5)
+    submitted: list[str] = []
+    refreshes = 0
+
+    def fake_step(_args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        return True, "ok"
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submitted.append(str(payload["topic"]))
+        return {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": f"sub-{len(submitted)}"}},
+        }
+
+    def refresh(run_dir: Path, _verdict: dict[str, Any]) -> bool:
+        nonlocal refreshes
+        refreshes += 1
+        path = run_dir / "alpha_memo.md"
+        path.write_text(
+            path.read_text(encoding="utf-8") + f"\nRevision attempt {refreshes}.\n",
+            encoding="utf-8",
+        )
+        return True
+
+    def revise(_submission_id: str) -> dict[str, Any]:
+        return {
+            "status": "complete",
+            "decision": "revise",
+            "required_revisions": [
+                "Tighten the evidence receipts to those directly related to the thesis.",
+            ],
+            "resubmission": {"allowed": True},
+        }
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        refresh_candidates=True,
+        max_refresh_batches=5,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+        decision_fetcher=revise,
+        page_fetcher=lambda _url: {"ok": False, "status": 0},
+        memo_refresher=refresh,
+        sleep=lambda _seconds: None,
+    )
+
+    assert submitted == ["never_satisfies_reviewer"] * 4
+    assert refreshes == 4
+    assert ledger["status"] == "submit_retry_exhausted"
+    assert ledger["last_attempt_status"] == "reviewer_revise"
+    assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == [
+        "reviewer_revise",
+        "reviewer_revise",
+        "reviewer_revise",
+        "reviewer_revise",
+    ]
+    assert ledger["considered"][-1]["status"] == "duplicate_submission_fingerprint"
+    assert not ledger["considered"][-1].get("retry_after_rejection")
+
+
 def test_accepted_shape_bias_breaks_candidate_tie(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     matching = _verdict("matching", score=90) | {
