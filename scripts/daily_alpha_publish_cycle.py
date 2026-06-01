@@ -24,10 +24,13 @@ from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
-from agent.alpha_selector import accepted_shape_bonus
-from agent.publish_tier import publish_verdict
-
 _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from agent.alpha_selector import accepted_shape_bonus  # noqa: E402
+from agent.publish_tier import publish_verdict  # noqa: E402
+
 _RUNS = _ROOT / "runs"
 _PUBLICATION_PATH = _ROOT / "topic_packs" / "publication.toml"
 
