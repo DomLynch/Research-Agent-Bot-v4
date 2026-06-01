@@ -458,6 +458,11 @@ def _has_tension(md: str, markers: tuple[str, ...]) -> bool:
     return "real tension:" in text or any(marker in text for marker in markers)
 
 
+def _marker_in_text(marker: str, text: str) -> bool:
+    pattern = r"(?<![a-z0-9])" + re.escape(marker).replace(r"\ ", r"\s+") + r"(?![a-z0-9])"
+    return re.search(pattern, text) is not None
+
+
 def _off_scope(papers: list[dict[str, Any]], markers: tuple[str, ...]) -> bool:
     if not markers:
         return False
@@ -465,7 +470,7 @@ def _off_scope(papers: list[dict[str, Any]], markers: tuple[str, ...]) -> bool:
         f"{p.get('title') or ''} {p.get('journal') or ''}".lower()
         for p in papers
     )
-    return any(marker in text for marker in markers)
+    return any(_marker_in_text(marker, text) for marker in markers)
 
 
 def publish_verdict(run_dir: Path) -> dict[str, Any]:

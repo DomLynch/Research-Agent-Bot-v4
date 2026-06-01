@@ -281,6 +281,21 @@ def test_feed_scope_mismatch_routes_to_curation(tmp_path: Path) -> None:
     assert "feed_scope_mismatch" in verdict["blockers"]
 
 
+def test_feed_scope_marker_does_not_match_inside_word(tmp_path: Path) -> None:
+    run = _run(
+        tmp_path,
+        titles=(
+            "Kidney transplant threshold improves reserve reliability",
+            "Kidney transplant threshold improves reserve reliability",
+            "Kidney transplant threshold improves reserve reliability",
+        ),
+    )
+
+    verdict = publish_verdict(run)
+
+    assert "feed_scope_mismatch" not in verdict["blockers"]
+
+
 def test_write_publish_verdict_writes_file(tmp_path: Path) -> None:
     run = _run(tmp_path)
 
