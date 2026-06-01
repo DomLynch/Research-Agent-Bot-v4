@@ -463,14 +463,20 @@ def _marker_in_text(marker: str, text: str) -> bool:
     return re.search(pattern, text) is not None
 
 
-def _off_scope(papers: list[dict[str, Any]], markers: tuple[str, ...]) -> bool:
+def _off_scope(
+    papers: list[dict[str, Any]], topic: str, markers: tuple[str, ...],
+) -> bool:
     if not markers:
         return False
+    topic_text = topic.replace("_", " ").replace("-", " ").lower()
     text = "\n".join(
         f"{p.get('title') or ''} {p.get('journal') or ''}".lower()
         for p in papers
     )
-    return any(_marker_in_text(marker, text) for marker in markers)
+    return any(
+        not _marker_in_text(marker, topic_text) and _marker_in_text(marker, text)
+        for marker in markers
+    )
 
 
 def publish_verdict(run_dir: Path) -> dict[str, Any]:
@@ -506,7 +512,7 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     forced = _domain_forced(
         papers, topic, cfg["generic_tokens"], float(cfg["domain_overlap_min"]),
     )
-    off_scope = _off_scope(papers, cfg["off_scope_markers"])
+    off_scope = _off_scope(papers, topic, cfg["off_scope_markers"])
     counter_evidence = _counter_evidence(
         bound_ids, facts, lanes, cfg["counter_markers"],
     )

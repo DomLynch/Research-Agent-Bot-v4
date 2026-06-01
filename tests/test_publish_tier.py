@@ -296,6 +296,25 @@ def test_feed_scope_marker_does_not_match_inside_word(tmp_path: Path) -> None:
     assert "feed_scope_mismatch" not in verdict["blockers"]
 
 
+def test_feed_scope_marker_is_allowed_when_marker_is_topic_term(
+    tmp_path: Path,
+) -> None:
+    run = _run(
+        tmp_path,
+        titles=(
+            "Plant based diet threshold improves reserve reliability",
+            "Plant based diet threshold improves reserve reliability",
+            "Plant based diet threshold improves reserve reliability",
+        ),
+    )
+    topic_run = tmp_path / "plant_based_diet-evidence-ts"
+    run.rename(topic_run)
+
+    verdict = publish_verdict(topic_run)
+
+    assert "feed_scope_mismatch" not in verdict["blockers"]
+
+
 def test_write_publish_verdict_writes_file(tmp_path: Path) -> None:
     run = _run(tmp_path)
 
