@@ -425,8 +425,12 @@ def _fetch_fact_source_counts(
             out[topic] = count
         else:
             prior = cache.get(topic)
-            out[topic] = (int(prior.get("count", 0))
-                          if isinstance(prior, dict) else 0)
+            out[topic] = (
+                int(prior.get("count", 0))
+                if isinstance(prior, dict)
+                and prior.get("version") == _SUPPLY_CACHE_VERSION
+                else 0
+            )
     _save_supply_cache(cache)
     return out
 

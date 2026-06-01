@@ -700,6 +700,28 @@ def test_derived_cycle_keeps_rich_visible_and_warms_tail(
     assert out == ["rich_one", "new_one"]
 
 
+def test_inconclusive_probe_ignores_stale_cache_version(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "topic_a": {
+            "count": 10, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION - 1,
+        },
+    }), encoding="utf-8")
+    monkeypatch.setattr(
+        td, "_fetch_topic_fact_source_count",
+        lambda *_args, **_kwargs: td._PROBE_INCONCLUSIVE,
+    )
+
+    out = td._fetch_fact_source_counts(
+        ["topic_a"], client=httpx.Client(), settings=_settings())
+
+    assert out["topic_a"] == 0
+
+
 def test_discover_topics_counts_slug_prefix_fact_sources(
     monkeypatch: Any, tmp_path: Path,
 ) -> None:
