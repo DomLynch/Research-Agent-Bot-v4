@@ -67,6 +67,13 @@ def test_expand_topic_queries_adds_normalized_prefixes() -> None:
     )
 
 
+def test_unregistered_slug_queries_include_intervention_forms() -> None:
+    out = expand_topic_queries("vitamin_D_healthspan", max_queries=8)
+
+    assert "vitamin d" in out
+    assert "vitamin d supplementation" in out
+
+
 def test_expand_topic_queries_can_reach_registered_instances() -> None:
     out = expand_topic_queries("carnosine_anti_glycation", max_queries=16)
 

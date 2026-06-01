@@ -14,6 +14,9 @@ from pathlib import Path
 _TOML = (Path(__file__).resolve().parent.parent
          / "topic_packs" / "topic_synonyms.toml")
 _NORM = re.compile(r"[\W_]+")
+_UNREGISTERED_QUERY_SUFFIXES = (
+    "supplementation", "therapy", "treatment", "intervention",
+)
 
 
 def _norm(s: str) -> str:
@@ -86,9 +89,14 @@ def expand_topic_queries(topic: str, *, max_queries: int = 4) -> tuple[str, ...]
             seen.setdefault(normed, None)
         if idx == 0 and not registered:
             parts = normed.split()
+            root = ""
             while len(parts) > 2:
                 parts = parts[:-1]
-                seen.setdefault(" ".join(parts), None)
+                root = " ".join(parts)
+                seen.setdefault(root, None)
+            if root:
+                for suffix in _UNREGISTERED_QUERY_SUFFIXES:
+                    seen.setdefault(f"{root} {suffix}", None)
         if len(seen) >= max_queries:
             break
     return tuple(seen)[:max_queries]
