@@ -711,6 +711,17 @@ def test_partially_supported_major_revision_is_not_retried() -> None:
     assert daily._repairable_rejection(decision) is False
 
 
+def test_partially_supported_revision_without_major_issues_is_not_retried() -> None:
+    decision = {
+        "claim_support_verdict": "partially_supported",
+        "decision": "revise",
+        "required_revisions": ["Clarify the exact supported claim."],
+        "resubmission": {"allowed": True},
+    }
+
+    assert daily._repairable_rejection(decision) is False
+
+
 def test_supported_revision_stays_repairable() -> None:
     decision = {
         "claim_support_verdict": "supported",

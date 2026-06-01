@@ -680,10 +680,7 @@ def _recently_published_topics(ledger_dir: Path, *, days: int) -> set[str]:
 
 def _repairable_rejection(decision: Json) -> bool:
     if decision.get("decision") == "revise":
-        return not (
-            decision.get("claim_support_verdict") == "partially_supported"
-            and bool(decision.get("major_issues"))
-        )
+        return decision.get("claim_support_verdict") != "partially_supported"
     reasons = {
         str(decision.get("failure_category") or ""),
         *(str(x) for x in decision.get("failed_checks") or []),
