@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import os
 from pathlib import Path
 
 import scripts.check_alpha_publish_health as health
@@ -29,8 +30,8 @@ def test_health_summary_reports_latest_published_ledger(tmp_path: Path) -> None:
         "cycle_attempts": [{"batch": 1, "topic": "grid_storage", "status": "published"}],
         "considered": [{"status": "eligible"}, {"status": "cycle_exhausted_topic"}],
     })
-    stale.touch()
-    latest.touch()
+    os.utime(stale, (1, 1))
+    os.utime(latest, (2, 2))
 
     summary = health.summarize_latest(
         tmp_path,
