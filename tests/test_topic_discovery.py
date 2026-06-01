@@ -547,6 +547,8 @@ def test_fact_source_probe_uses_submit_sized_top_k() -> None:
         )
 
     assert bodies[0]["top_k"] == 50
+    assert bodies[0]["min_confidence"] == "medium"
+    assert bodies[0]["numeric_only"] is True
 
 
 def test_fact_source_count_uses_pmcid_and_paper_id_source_keys() -> None:

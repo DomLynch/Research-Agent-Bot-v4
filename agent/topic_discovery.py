@@ -222,7 +222,12 @@ def _fetch_topic_fact_source_count(
             r = client.post(
                 f"{base}/api/v1/tier2/facts/search",
                 headers={"X-Researka-Token": tok},
-                json={"query": query, "top_k": limit, "numeric_only": True},
+                json={
+                    "query": query,
+                    "top_k": limit,
+                    "min_confidence": "medium",
+                    "numeric_only": True,
+                },
                 timeout=_FACT_PROBE_TIMEOUT_SECONDS,
             )
             r.raise_for_status()
