@@ -764,7 +764,7 @@ def test_tighten_evidence_receipts_revision_forces_grounded_regen() -> None:
     assert daily._is_grounding_reject(decision) is True
 
 
-def test_partially_supported_major_revision_is_not_retried() -> None:
+def test_partially_supported_major_revision_with_resubmission_allowed_is_retried() -> None:
     decision = {
         "claim_support_verdict": "partially_supported",
         "decision": "revise",
@@ -777,15 +777,15 @@ def test_partially_supported_major_revision_is_not_retried() -> None:
         "resubmission": {"allowed": True},
     }
 
-    assert daily._repairable_rejection(decision) is False
+    assert daily._repairable_rejection(decision) is True
 
 
-def test_partially_supported_revision_without_major_issues_is_not_retried() -> None:
+def test_partially_supported_revision_without_resubmission_allowed_is_not_retried() -> None:
     decision = {
         "claim_support_verdict": "partially_supported",
         "decision": "revise",
         "required_revisions": ["Clarify the exact supported claim."],
-        "resubmission": {"allowed": True},
+        "resubmission": {"allowed": False},
     }
 
     assert daily._repairable_rejection(decision) is False
