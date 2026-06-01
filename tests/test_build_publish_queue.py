@@ -18,7 +18,13 @@ def _run(root: Path, name: str, *, label: str, lanes: tuple[str, ...]) -> Path:
         "**Headline:** Dispatch threshold paradox\n"
         "**Alpha score:** 80/100\n"
         f"**Confidence:** `{label}`\n\n"
-        "## Why this is surprising\n\nReal tension: costs fall while reserves rise.\n",
+        "## Why this is surprising\n\nReal tension: costs fall while reserves rise.\n\n"
+        "## Evidence receipts\n\n"
+        + "\n".join(
+            f"- `fact_id={fid}` (`{lane}`) - receipt"
+            for fid, lane in zip(ids, lanes, strict=True)
+        )
+        + "\n",
         encoding="utf-8",
     )
     run.joinpath("opportunities_gate.json").write_text(json.dumps({
@@ -39,7 +45,7 @@ def _run(root: Path, name: str, *, label: str, lanes: tuple[str, ...]) -> Path:
             "fact_id": fid,
             "canonical_phrase": f"Receipt {fid}",
             "source_paper": {
-                "doi": "10.same/a",
+                "doi": f"10.same/{fid}",
                 "title": "Grid dispatch threshold improves reserve reliability",
                 "journal": "Grid Systems",
                 "year": 2026,
@@ -60,7 +66,7 @@ def test_build_queue_keeps_latest_run_per_topic(
         archive,
         "grid_storage-evidence-2026-01-01T00-00-00Z",
         label="evidence_backed_signal",
-        lanes=("A_core", "A_core", "A_core"),
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
     )
     _run(
         runs,
@@ -72,7 +78,7 @@ def test_build_queue_keeps_latest_run_per_topic(
         runs,
         "tariff-evidence-2026-02-01T00-00-00Z",
         label="evidence_backed_signal",
-        lanes=("A_core", "A_core", "A_core"),
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
     )
     monkeypatch.setattr(queue, "_RUNS", runs)
 
@@ -92,13 +98,13 @@ def test_build_queue_does_not_mutate_run_verdict_files(
         archive,
         "archived-evidence-2026-01-01T00-00-00Z",
         label="evidence_backed_signal",
-        lanes=("A_core", "A_core", "A_core"),
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
     )
     current_run = _run(
         runs,
         "current-evidence-2026-02-01T00-00-00Z",
         label="evidence_backed_signal",
-        lanes=("A_core", "A_core", "A_core"),
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
     )
     monkeypatch.setattr(queue, "_RUNS", runs)
 
@@ -118,7 +124,7 @@ def test_build_queue_recomputes_stale_verdict_sidecar(
         runs,
         "grid_storage-evidence-2026-02-01T00-00-00Z",
         label="evidence_backed_signal",
-        lanes=("A_core", "A_core", "A_core"),
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
     )
     run.joinpath("publish_verdict.json").write_text(json.dumps({
         "topic": "grid_storage",
