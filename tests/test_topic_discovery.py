@@ -753,6 +753,52 @@ def test_discover_topics_uses_cached_seed_counts_outside_probe_window(
     assert out[0].topic == "seed_b"
 
 
+def test_discover_topics_hydrates_cached_source_rich_topic_papers(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "child_topic": {
+            "count": 7,
+            "ts": time.time(),
+            "version": td._SUPPLY_CACHE_VERSION,
+            "source_papers": [
+                {
+                    "doi": "10.1/child",
+                    "title": "Child topic source paper",
+                    "publication_year": 2024,
+                    "fwci": 2.0,
+                    "cited_by_count": 20,
+                    "quality_score": 80,
+                },
+            ],
+        },
+    }), encoding="utf-8")
+    monkeypatch.setattr(td, "_title_topic_slugs", lambda *_args, **_kw: [])
+
+    def fake_fetch(topics: list[str], **_: Any) -> dict[str, list[dict[str, Any]]]:
+        return {
+            topic: [_paper(
+                doi=f"10.1/{topic}", title=topic.replace("_", " "))]
+            for topic in topics
+        }
+
+    monkeypatch.setattr(td, "_fetch_papers_by_topic", fake_fetch)
+    monkeypatch.setattr(td, "_fetch_fact_source_counts", lambda *_a, **_k: {})
+
+    out = td.discover_topics(
+        seeds=("seed_topic",), settings=_settings(), client=httpx.Client(),
+        current_year=2024, derived_topic_limit=1, fact_probe_topics=1,
+    )
+
+    by_topic = {candidate.topic: candidate for candidate in out}
+    assert by_topic["child_topic"].fact_source_count == 7
+    assert by_topic["child_topic"].paper_count == 1
+    assert by_topic["child_topic"].top_paper_doi == "10.1/child"
+
+
 def test_discover_topics_backfills_after_unsupported_derived_titles(
     monkeypatch: Any, tmp_path: Path,
 ) -> None:
@@ -1207,6 +1253,8 @@ def test_discover_topics_uses_fact_source_papers_for_child_candidates(
     assert by_topic["target_intervention"].fact_source_count == 5
     assert by_topic["target_intervention"].paper_count == 5
     assert by_topic["target_intervention"].top_paper_doi == "10.1/child-0"
+    cached = json.loads((tmp_path / "supply.json").read_text(encoding="utf-8"))
+    assert len(cached["target_intervention"]["source_papers"]) == 5
 
 
 def test_disease_population_context_count_does_not_clear_parent_floor() -> None:

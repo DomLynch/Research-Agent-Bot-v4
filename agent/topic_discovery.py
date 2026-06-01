@@ -564,6 +564,15 @@ def _cached_source_rich_topics(
     )
 
 
+def _cached_source_papers(entry: Any) -> list[dict[str, Any]]:
+    if not isinstance(entry, dict):
+        return []
+    raw = entry.get("source_papers")
+    if not isinstance(raw, list):
+        return []
+    return [paper for paper in raw if isinstance(paper, dict)][:25]
+
+
 def _cached_supply_counts(
     topics: Iterable[str], *, refresh_low_source_counts: bool,
 ) -> dict[str, int]:
@@ -674,10 +683,14 @@ def _fetch_fact_source_counts(
                 if child_source_counts is not None:
                     child_source_counts[child] = max(
                         child_source_counts.get(child, 0), child_count)
-                cache[child] = {
+                entry: dict[str, Any] = {
                     "count": child_count, "ts": now,
                     "version": _SUPPLY_CACHE_VERSION,
                 }
+                source_paper_list = list((child_papers.get(child) or {}).values())[:25]
+                if source_paper_list:
+                    entry["source_papers"] = source_paper_list
+                cache[child] = entry
         else:
             prior = cache.get(topic)
             out[topic] = (
@@ -930,8 +943,10 @@ def discover_topics(
             cached_fact_topics = _cached_source_rich_topics(
                 exclude=set(papers_by_topic), limit=extra_probe_limit)
             if cached_fact_topics:
+                supply_cache = _load_supply_cache()
                 for topic, count in cached_fact_topics:
-                    papers_by_topic[topic] = []
+                    papers_by_topic[topic] = _cached_source_papers(
+                        supply_cache.get(topic))
                     cached_fact_counts[topic] = count
         derived_cycle_topics: list[str] = []
         if derived_topic_limit:
