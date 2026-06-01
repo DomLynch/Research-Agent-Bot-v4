@@ -7,13 +7,18 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import importlib
 import json
+import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
 
 Json = dict[str, Any]
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
 
 def _ledger_paths(runs_root: Path) -> list[Path]:
@@ -55,6 +60,47 @@ def _attempts(ledger: Json) -> list[Json]:
     return rows
 
 
+def summarize_next_candidate(
+    runs_root: Path,
+    *,
+    cycle_module: Any | None = None,
+) -> Json:
+    cycle: Any = cycle_module
+    if cycle is None:
+        try:
+            cycle = importlib.import_module("scripts.daily_alpha_publish_cycle")
+        except ModuleNotFoundError:
+            cycle = importlib.import_module("daily_alpha_publish_cycle")
+
+    submitted_path = runs_root / "_daily_ledger" / "_submitted_fingerprints.json"
+    queue = cycle._build_queue(runs_root, include_archive=False)
+    blocked = cycle._recently_published_topics(
+        runs_root / "_daily_ledger",
+        days=cycle._DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS,
+    )
+    candidate, considered = cycle.select_candidate(
+        queue,
+        runs_root=runs_root,
+        submitted_path=submitted_path,
+        min_source_count=cycle._DEFAULT_MIN_SUBMIT_SOURCES,
+        min_direct_source_count=cycle._DEFAULT_MIN_DIRECT_SUBMIT_SOURCES,
+        blocked_topics=blocked,
+        memo_refresher=None,
+    )
+    eligible_row = next(
+        (row for row in considered if isinstance(row, dict) and row.get("status") == "eligible"),
+        {},
+    )
+    return {
+        "topic": (candidate or {}).get("topic"),
+        "decision": (candidate or {}).get("decision"),
+        "run_dir": (candidate or {}).get("run_dir"),
+        "considered_counts": _considered_counts({"considered": considered}),
+        "retry_after_rejection": bool(eligible_row.get("retry_after_rejection")),
+        "retry_attempt_count": eligible_row.get("retry_attempt_count"),
+    }
+
+
 def _public_url_status(url: str, *, timeout: float) -> int | None:
     if not url:
         return None
@@ -72,6 +118,7 @@ def summarize_latest(
     runs_root: Path,
     *,
     check_url: bool = False,
+    show_next_candidate: bool = False,
     timeout: float = 15.0,
     now: dt.datetime | None = None,
 ) -> Json:
@@ -85,7 +132,7 @@ def summarize_latest(
     url = str(ledger.get("public_url") or "")
     url_status = _public_url_status(url, timeout=timeout) if check_url else None
     published = int(ledger.get("published") or 0) == 1
-    return {
+    summary = {
         "ok": published and (not check_url or bool(url_status and 200 <= url_status < 400)),
         "ledger": path.name,
         "ledger_mtime": mtime.isoformat(),
@@ -101,6 +148,12 @@ def summarize_latest(
         "considered_counts": _considered_counts(ledger),
         "reason": ledger.get("reason"),
     }
+    if show_next_candidate:
+        try:
+            summary["next_candidate"] = summarize_next_candidate(runs_root)
+        except Exception as exc:  # pragma: no cover - monitor should report, not crash.
+            summary["next_candidate_error"] = f"{type(exc).__name__}: {exc}"
+    return summary
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -108,6 +161,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--runs-root", type=Path, default=Path("runs"))
     parser.add_argument("--expect-published", action="store_true")
     parser.add_argument("--check-url", action="store_true")
+    parser.add_argument("--show-next-candidate", action="store_true")
     parser.add_argument("--max-age-minutes", type=float, default=0.0)
     parser.add_argument("--timeout", type=float, default=15.0)
     args = parser.parse_args(argv)
@@ -115,6 +169,7 @@ def main(argv: list[str] | None = None) -> int:
     summary = summarize_latest(
         args.runs_root,
         check_url=args.check_url,
+        show_next_candidate=args.show_next_candidate,
         timeout=args.timeout,
     )
     if args.max_age_minutes > 0 and float(summary.get("ledger_age_minutes") or 0) > args.max_age_minutes:
