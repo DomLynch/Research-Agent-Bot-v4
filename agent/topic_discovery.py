@@ -25,6 +25,7 @@ import os
 import re
 import time
 import tomllib
+from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from functools import lru_cache
@@ -551,6 +552,22 @@ def _cached_source_rich_topics(
     )
 
 
+def _cached_supply_counts(
+    topics: Iterable[str], *, refresh_low_source_counts: bool,
+) -> dict[str, int]:
+    cache = _load_supply_cache()
+    now = time.time()
+    out: dict[str, int] = {}
+    for topic in topics:
+        count = _fresh_cached_supply_count(
+            cache.get(topic), now=now,
+            refresh_low_source_counts=refresh_low_source_counts,
+        )
+        if count is not None:
+            out[topic] = count
+    return out
+
+
 def cached_source_rich_candidates(*, limit: int) -> tuple[TopicCandidate, ...]:
     return tuple(
         TopicCandidate(
@@ -943,6 +960,11 @@ def discover_topics(
             for topic in new_fact_child_topics:
                 papers_by_topic.setdefault(topic, fact_child_papers.get(topic, []))
         for topic, count in fact_child_topics:
+            fact_sources_by_topic[topic] = max(
+                fact_sources_by_topic.get(topic, 0), count)
+        for topic, count in _cached_supply_counts(
+            papers_by_topic, refresh_low_source_counts=refresh_low_source_counts,
+        ).items():
             fact_sources_by_topic[topic] = max(
                 fact_sources_by_topic.get(topic, 0), count)
         candidates = [

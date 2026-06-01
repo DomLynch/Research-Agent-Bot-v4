@@ -710,6 +710,49 @@ def test_discover_topics_probe_budget_falls_back_to_seed_when_no_derived(
     assert set(seen) <= {"seed_a", "seed_b", "seed_c"}
 
 
+def test_discover_topics_uses_cached_seed_counts_outside_probe_window(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "seed_b": {
+            "count": 9, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION,
+        },
+    }), encoding="utf-8")
+    monkeypatch.setattr(td, "_title_topic_slugs", lambda *_args, **_kw: [])
+
+    def fake_fetch(topics: list[str], **_: Any) -> dict[str, list[dict[str, Any]]]:
+        return {
+            topic: [_paper(
+                doi=f"10.1/{topic}", title=topic.replace("_", " "),
+                fwci=3.0,
+            )]
+            for topic in topics
+        }
+
+    seen: list[str] = []
+
+    def capture_fact_source_counts(topics: list[str], **_: Any) -> dict[str, int]:
+        seen.extend(topics)
+        return {"seed_a": 1}
+
+    monkeypatch.setattr(td, "_fetch_papers_by_topic", fake_fetch)
+    monkeypatch.setattr(td, "_fetch_fact_source_counts", capture_fact_source_counts)
+
+    out = td.discover_topics(
+        seeds=("seed_a", "seed_b"), settings=_settings(), client=httpx.Client(),
+        current_year=2024, derived_topic_limit=0, fact_probe_topics=1,
+    )
+
+    by_topic = {candidate.topic: candidate for candidate in out}
+    assert seen == ["seed_a"]
+    assert by_topic["seed_a"].fact_source_count == 1
+    assert by_topic["seed_b"].fact_source_count == 9
+    assert out[0].topic == "seed_b"
+
+
 def test_discover_topics_backfills_after_unsupported_derived_titles(
     monkeypatch: Any, tmp_path: Path,
 ) -> None:
