@@ -1,0 +1,293 @@
+{
+  "topic": "acarbose",
+  "snapshot_utc": "2026-05-27T09-58-52Z",
+  "claim_count": 32,
+  "claims": [
+    {
+      "claim_text": "The hazard ratio for ever users versus never users was 0.841 (95% confidence interval, 0.704-1.005)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.14336/ad.2019.0621"
+      ]
+    },
+    {
+      "claim_text": "Acarbose increased male median lifespan by 22% (P < 0.0001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.12170"
+      ]
+    },
+    {
+      "claim_text": "Mean changes in MBG, MAGE, MODD and AUC(pp) were significantly greater in the combination therapy group than in the monotherapy group (all P < 0.01).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/j.1440-1681.2010.05361.x"
+      ]
+    },
+    {
+      "claim_text": "acarbose, at a concentration previously tested (1000 ppm), significantly increased median longevity in males and 90th percentile lifespan in both sexes.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.12496"
+      ]
+    },
+    {
+      "claim_text": "increased female median lifespan by only 5% (P = 0.01)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.12170"
+      ]
+    },
+    {
+      "claim_text": "showed potent inhibitory activity (IC(50) = 0.169 vs 1.12 mg/mL for acarbose) against yeast α-glucosidase.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1021/np300204p"
+      ]
+    },
+    {
+      "claim_text": "acarbose produced 51% decrease in maltose loaded diabetic rats",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.4236/jdm.2012.21013"
+      ]
+    },
+    {
+      "claim_text": "acarbose produced 54% decrease in normal rats loaded with maltose",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.4236/jdm.2012.21013"
+      ]
+    },
+    {
+      "claim_text": "acarbose drug (IC50 = 10.30 ± 0.20 μM for α-amylase and IC50 = 9.80 ± 0.20 μM for α-glucosidase)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1021/acsomega.3c00702"
+      ]
+    },
+    {
+      "claim_text": "significantly increased (3%) in females only at 1,000 ppm",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.12898"
+      ]
+    },
+    {
+      "claim_text": "fasting and postprandial blood glucose, HbA1c, GA, MBG, MAGE, AUC(pp) and HOMA-IR decreased significantly in both groups (P < 0.01).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/j.1440-1681.2010.05361.x"
+      ]
+    },
+    {
+      "claim_text": "positive control acarbose (IC50 = 564.28 μM)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.ejmech.2024.116595"
+      ]
+    },
+    {
+      "claim_text": "lower CCA-IMT value than that in the acarbose-donepezil group after a year of treatment (P < 0.05)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fnagi.2018.00227"
+      ]
+    },
+    {
+      "claim_text": "Quercetin in 600 mg/kg dose produces significantly more reduction in postprandial hyperglycemia compared to acarbose",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.4236/jdm.2012.21013"
+      ]
+    },
+    {
+      "claim_text": "binding affinities that ranged from ΔG = -7.3 to -9.0 kcal/mol (compared with acarbose ΔG = -6.3 kcal/mol) for α-glucosidase",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/molecules27010155"
+      ]
+    },
+    {
+      "claim_text": "binding affinities that ranged from ΔG = -7.2 to -9.6 kcal/mol (compared with acarbose ΔG = -6.1 kcal/mol) for α-amylase",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/molecules27010155"
+      ]
+    },
+    {
+      "claim_text": "Compounds 2, 4, 7, and 9 inhibited the activity of yeast α-glucosidase with IC(50) ... 0.16 mM ... vs 1.7 mM for acarbose.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1021/np300204p"
+      ]
+    },
+    {
+      "claim_text": "CH, CR, CGp, CZ, and PT were found to significantly inhibit α-glucosidase (276.70 ± 0.73 μg/mL, 169.90 ± 0.58 μg/mL, 240.60 ± 6.50 μg/mL, 64.52 ± 0.69 μg/mL, and 313.0 ± 5.0 μg/mL, respectively), compared to acarbose (448.80 ± 0.81 μg/mL).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.jfda.2017.03.002"
+      ]
+    },
+    {
+      "claim_text": "Detailed imaging studies of gas cysts in the intestinal mucosa (pneumatosis cystoides intestinalis) have been reported in around 20 patients taking acarbose, miglitolor voglibose",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "The most common medications used to treat diabetes and hypertension were metformin and acarbose, respectively, at 28.5 and 20.9% as first-line medication.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1007/s10916-018-1076-5"
+      ]
+    },
+    {
+      "claim_text": "0.918 (0.845-0.998) for every 1-year increment of cumulative duration of acarbose therapy",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "duration",
+      "supporting_study_ids": [
+        "10.14336/ad.2019.0621"
+      ]
+    },
+    {
+      "claim_text": "reduced risk associated with acarbose was only observed... in non-users of metformin (adjusted hazard ratio, 0.635; 95% confidence interval, 0.481-0.837)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.14336/ad.2019.0621"
+      ]
+    },
+    {
+      "claim_text": "reduced risk associated with acarbose was only observed in women (adjusted hazard ratio, 0.783; 95% confidence interval, 0.618-0.992)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.14336/ad.2019.0621"
+      ]
+    },
+    {
+      "claim_text": "users of all three drugs had the lowest risk of dementia (hazard ratio, 0.406; 95% confidence interval, 0.178-0.925)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.14336/ad.2019.0621"
+      ]
+    },
+    {
+      "claim_text": "positive drug acarbose (IC50 = 479.2 μM)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1155/2017/1206015"
+      ]
+    },
+    {
+      "claim_text": "a high dose of acarbose (400 ppm) with the HS diet resulted in a substantial change to the microbiota structure.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1128/msphere.00528-18"
+      ]
+    },
+    {
+      "claim_text": "The mean HbA1c at week 24 was significantly decreased approximately 0.7% from baseline in both acarbose and voglibose groups.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3346/jkms.2014.29.1.90"
+      ]
+    },
+    {
+      "claim_text": "QE (0.08% of diet) or acarbose (0.03% of diet) offered to db/db mice significantly reduced both plasma glucose and blood glycated hemoglobin compared to controls",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.4162/nrp.2011.5.2.107"
+      ]
+    },
+    {
+      "claim_text": "Oral administration of QE (100 mg/kg) or acarbose (40 mg/kg) to STZ-treated rats significantly decreased incremental plasma glucose levels",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.4162/nrp.2011.5.2.107"
+      ]
+    },
+    {
+      "claim_text": "The fecal microbiota of animals consuming a low dose of acarbose (25 ppm) was not significantly different from that of control animals.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1128/msphere.00528-18"
+      ]
+    },
+    {
+      "claim_text": "the values of (μg/ml) 3.038 and 7.672 α-amylase enzyme inhibition were excellent activity when compared to the acarbose.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.22159/ajpcr.2018.v11i3.22393"
+      ]
+    },
+    {
+      "claim_text": "Docking analysis predicted that 3 binds to the enzyme in a pocket close to the catalytic site, but different from that for acarbose, with a Ki of 11.48 mM",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1021/np100447a"
+      ]
+    }
+  ]
+}

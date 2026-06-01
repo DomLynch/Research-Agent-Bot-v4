@@ -1,0 +1,30 @@
+{
+  "topic": "urolithin_A",
+  "snapshot_utc": "2026-05-27T09-35-54Z",
+  "input_pack": {
+    "topic": "urolithin_A",
+    "a_core_count": 3,
+    "b_context_count": 0,
+    "excluded_counts": {
+      "C_noise": 5,
+      "D_bad_extraction": 11
+    },
+    "has_minimum_a_core": true,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Bridging the Translational Gap in Urolithin A Research: A Scoping Review of Divergent Preclinical and Clinical Outcomes",
+      "status": "survives",
+      "blocking_flags": [],
+      "original_opportunity": 32,
+      "capped_opportunity": 32,
+      "cited_fact_ids": [
+        "135398",
+        "165756",
+        "85415"
+      ]
+    }
+  ]
+}

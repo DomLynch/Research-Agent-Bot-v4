@@ -1,0 +1,114 @@
+{
+  "run_dir": "runs/magnesium_longevity-evidence-2026-05-27T06-33-03Z",
+  "topic": "magnesium_longevity",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 magnesium_longevity",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 0,
+    "available_source_contexts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 0.8,
+    "source_count": 6,
+    "clusters": [
+      {
+        "label": "disease_sulfate_cochrane",
+        "member_fact_ids": [
+          "77982",
+          "77980",
+          "77984"
+        ],
+        "source_paper": {
+          "doi": "10.1002/14651858.cd013506.pub2",
+          "title": "Magnesium sulfate for acute exacerbations of chronic obstructive pulmonary disease",
+          "journal": "Cochrane Database of Systematic Reviews",
+          "year": 2022
+        },
+        "example_phrase": "Magnesium infusion may improve dyspnoea score by a standardised mean difference of -1.40 (95% CI -1.83 to -0.96)"
+      },
+      {
+        "label": "supplements_their_ratio",
+        "member_fact_ids": [
+          "185398",
+          "185395"
+        ],
+        "source_paper": {
+          "doi": "10.1093/advances/nmaa160",
+          "title": "Perspective: Characterization of Dietary Supplements Containing Calcium and Magnesium and Their Respective Ratio\u2014Is a Rising Ratio a Cause for Concern?",
+          "journal": "Advances in Nutrition",
+          "year": 2020
+        },
+        "example_phrase": "One-third of Americans consume a magnesium supplement with a mean dose of 146 mg/d"
+      },
+      {
+        "label": "could_threshold_disease",
+        "member_fact_ids": [
+          "184605",
+          "184604"
+        ],
+        "source_paper": {
+          "doi": "10.3390/biology12050735",
+          "title": "Importance of Magnesium Status in COVID-19",
+          "journal": "Biology",
+          "year": 2023
+        },
+        "example_phrase": "dietary Mg intakes > 329 mg/day could be protective during the disease course"
+      },
+      {
+        "label": "mol_every_dissolved",
+        "member_fact_ids": [
+          "76905"
+        ],
+        "source_paper": {
+          "doi": "10.1002/2016rg000533",
+          "title": "Assessing ocean alkalinity for carbon sequestration",
+          "journal": "Reviews of Geophysics",
+          "year": 2017
+        },
+        "example_phrase": ">1.5 mol of carbon are removed from the atmosphere for every mole of magnesium or calcium dissolved"
+      },
+      {
+        "label": "total_size_journal",
+        "member_fact_ids": [
+          "38320"
+        ],
+        "source_paper": {
+          "doi": "10.1161/jaha.123.030077",
+          "title": "Association of Magnesium Depletion Score With Cardiovascular Disease and Its Association With Longitudinal Mortality in Patients With Cardiovascular Disease",
+          "journal": "Journal of the American Heart Association",
+          "year": 2023
+        },
+        "example_phrase": "individuals with MDS of 2 and \u22653 had higher odds of total CVD and specific CVD than those with MDS of 0."
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "topic": "curcumin_inflammaging",
+  "snapshot_utc": "2026-05-27T09-27-16Z",
+  "claim_count": 13,
+  "claims": [
+    {
+      "claim_text": "curcumin is safe at the doses of 12 g/day but exhibits poor systemic bioavailability",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1080/10408398.2018.1552244"
+      ]
+    },
+    {
+      "claim_text": "showed 69.78 times higher oral bioavailability with respect to free curcumin",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fbioe.2020.00879"
+      ]
+    },
+    {
+      "claim_text": "9.00 times higher than a bioavailable marketed formulation (CurcuWIN®)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fbioe.2020.00879"
+      ]
+    },
+    {
+      "claim_text": "containing 15 mg curcumin per ml of the SLN dispersion",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3389/fbioe.2020.00879"
+      ]
+    },
+    {
+      "claim_text": "showed 104, 13.3, and 10-times enhanced stability at pH 6.8, 1.2, and 7.4, respectively",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fbioe.2020.00879"
+      ]
+    },
+    {
+      "claim_text": "patients in the study group received curcumin (525 mg) with piperine (2.5 mg) in tablet form twice a day",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.3389/fphar.2021.669362"
+      ]
+    },
+    {
+      "claim_text": "Akt at -15.16 kcal/mol",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fphar.2023.1276209"
+      ]
+    },
+    {
+      "claim_text": "mTOR at -10.24 kcal/mol",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fphar.2023.1276209"
+      ]
+    },
+    {
+      "claim_text": "PI3K at -11.20 kcal/mol",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fphar.2023.1276209"
+      ]
+    },
+    {
+      "claim_text": "mean diameters of 34.67 ± 4.32 nm",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1038/s41598-024-82687-y"
+      ]
+    },
+    {
+      "claim_text": "23 out of 42 (55%) outcomes reported statistically significant effect sizes.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/ptr.8340"
+      ]
+    },
+    {
+      "claim_text": "Clinical studies have shown that curcumin is safe at the doses of 12 g/day",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.1080/10408398.2018.1552244"
+      ]
+    },
+    {
+      "claim_text": "better ability to maintain oxygen saturation above 94% on room air",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3389/fphar.2021.669362"
+      ]
+    }
+  ]
+}

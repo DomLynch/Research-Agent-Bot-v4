@@ -1,0 +1,113 @@
+{
+  "run_dir": "runs/microbiome_longevity-evidence-2026-05-27T05-58-24Z",
+  "topic": "microbiome_longevity",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 microbiome_longevity",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 0,
+    "available_source_contexts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 0.778,
+    "source_count": 6,
+    "clusters": [
+      {
+        "label": "skin_predict_years",
+        "member_fact_ids": [
+          "98221",
+          "98222",
+          "98220"
+        ],
+        "source_paper": {
+          "doi": "10.1128/msystems.00630-19",
+          "title": "Human Skin, Oral, and Gut Microbiomes Predict Chronological Age",
+          "journal": "mSystems",
+          "year": 2020
+        },
+        "example_phrase": "4.5 \u00b1 0.14 years for the oral microbiome"
+      },
+      {
+        "label": "isme_meta_chronic",
+        "member_fact_ids": [
+          "186205",
+          "186206"
+        ],
+        "source_paper": {
+          "doi": "10.1038/s41396-020-0727-y",
+          "title": "Multi-omic meta-analysis identifies functional signatures of airway microbiome in chronic obstructive pulmonary disease",
+          "journal": "The ISME Journal",
+          "year": 2020
+        },
+        "example_phrase": "29.6% of differentially expressed human pathways were predicted to be targeted by microbiome metabolism."
+      },
+      {
+        "label": "lifestyle_american_subjects",
+        "member_fact_ids": [
+          "76844"
+        ],
+        "source_paper": {
+          "doi": "10.1128/mbio.00839-19",
+          "title": "New Insights into the Intrinsic and Extrinsic Factors That Shape the Human Skin Microbiome",
+          "journal": "mBio",
+          "year": 2019
+        },
+        "example_phrase": "demographic, lifestyle, and physiological factors collectively explained 12 to 20% of the variability in microbiome composition."
+      },
+      {
+        "label": "fecal_gut_size",
+        "member_fact_ids": [
+          "102030"
+        ],
+        "source_paper": {
+          "doi": "10.3390/ani11041113",
+          "title": "Dynamic Changes in Fecal Microbial Communities of Neonatal Dairy Calves by Aging and Diarrhea",
+          "journal": "Animals",
+          "year": 2021
+        },
+        "example_phrase": "increasing gut microbiome diversity, occurred from 1 to 5 weeks of age."
+      },
+      {
+        "label": "use_science_ambient",
+        "member_fact_ids": [
+          "151031"
+        ],
+        "source_paper": {
+          "doi": "10.1016/j.scitotenv.2023.162769",
+          "title": "Ambient particulate air pollution and the intestinal microbiome; a systematic review of epidemiological, in vivo and, in vitro studies",
+          "journal": "The Science of The Total Environment",
+          "year": 2023
+        },
+        "example_phrase": "well-established factors such as diet and antibiotic use only explain 16 % of the inter-individual variation in gut microbiome composition"
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

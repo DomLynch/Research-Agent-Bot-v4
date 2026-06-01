@@ -1,0 +1,240 @@
+{
+  "topic": "hormone_optimization_HRT",
+  "snapshot_utc": "2026-05-27T09-06-44Z",
+  "counts": {
+    "A_core": 0,
+    "B_context": 0,
+    "C_noise": 12,
+    "D_bad_extraction": 26
+  },
+  "verdicts": [
+    {
+      "fact_id": "140753",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "145680",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "145678",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "146997",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "146001",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "numeric_role=concentration_not_effect_finding"
+    },
+    {
+      "fact_id": "146003",
+      "lane": "D_bad_extraction",
+      "numeric_role": "concentration",
+      "reason": "numeric_role=concentration_not_effect_finding"
+    },
+    {
+      "fact_id": "95431",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "139031",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "73381",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "1217",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "1215",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "1216",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "138998",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "138999",
+      "lane": "D_bad_extraction",
+      "numeric_role": "dose",
+      "reason": "numeric_role=dose_not_effect_finding"
+    },
+    {
+      "fact_id": "140749",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "140750",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "140751",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "145679",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "145677",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "145674",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "145675",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "137275",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "137276",
+      "lane": "D_bad_extraction",
+      "numeric_role": "dose",
+      "reason": "numeric_role=dose_not_effect_finding"
+    },
+    {
+      "fact_id": "137278",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "137277",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "137645",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "139028",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "139027",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "139030",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "139029",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "142502",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "180516",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "180518",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "173931",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "104878",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "171846",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "171843",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "171839",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    }
+  ]
+}

@@ -1,0 +1,178 @@
+{
+  "topic": "creatine",
+  "snapshot_utc": "2026-05-27T09-38-42Z",
+  "claim_count": 19,
+  "claims": [
+    {
+      "claim_text": "The risk of statin-induced serious muscle injury, including rhabdomyolysis, is <0.1%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1161/atv.0000000000000073"
+      ]
+    },
+    {
+      "claim_text": "the risk of serious hepatotoxicity is ≈0.001%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1161/atv.0000000000000073"
+      ]
+    },
+    {
+      "claim_text": "risk of statin-induced newly diagnosed diabetes mellitus is ≈0.2% per year of treatment",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1161/atv.0000000000000073"
+      ]
+    },
+    {
+      "claim_text": "roughly 10% of patients stop taking a statin because of subjective complaints, most commonly muscle symptoms",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1161/atv.0000000000000073"
+      ]
+    },
+    {
+      "claim_text": "it is even smaller (0.1%) for patients who discontinued treatment because of such muscle symptoms",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1161/atv.0000000000000073"
+      ]
+    },
+    {
+      "claim_text": "difference in incidence of muscle symptoms without significantly raised creatinine kinase in statin-treated compared with placebo-treated participants is <1%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1161/atv.0000000000000073"
+      ]
+    },
+    {
+      "claim_text": "Creatine supplementation resulted in greater increases in lean tissue mass (mean difference =1.37 kg [95% CI =0.97–1.76]; p <0.00001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2147/oajsm.s123529"
+      ]
+    },
+    {
+      "claim_text": "leg press strength (SMD =0.24 [0.05–0.43]; p =0.01)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2147/oajsm.s123529"
+      ]
+    },
+    {
+      "claim_text": "chest press strength (standardized mean difference [SMD] =0.35 [0.16–0.53]; p =0.0002)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2147/oajsm.s123529"
+      ]
+    },
+    {
+      "claim_text": "short and long-term supplementation (up to 30 g/day for 5 years) is safe and well-tolerated",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.1186/s12970-017-0173-z"
+      ]
+    },
+    {
+      "claim_text": "21 biomarkers such as L-octanoylcarnitine, alpha-ketoglutarate, glutamine, creatine, and sphingosine were detected.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fphar.2020.600561"
+      ]
+    },
+    {
+      "claim_text": "Not all tracer is distributed in skeletal muscle with non-muscle creatine sources ranging from 2% to 10%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13083"
+      ]
+    },
+    {
+      "claim_text": "assuming a constant value for whole-body skeletal muscle creatine concentration of 4.3 g/kg wet weight.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13083"
+      ]
+    },
+    {
+      "claim_text": "Not all tracer is retained with urinary isotope losses ranging from 0% to 9%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13083"
+      ]
+    },
+    {
+      "claim_text": "varies between muscles (e.g. 3.89-4.62 g/kg)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13083"
+      ]
+    },
+    {
+      "claim_text": "Consumption of 30 g dry beef can fully meet daily physiological needs of the healthy 70-kg adult human for taurine and carnosine",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1007/s00726-020-02823-6"
+      ]
+    },
+    {
+      "claim_text": "significant health benefits may be provided by ensuring habitual low dietary creatine ingestion (e.g., 3 g/day) throughout the lifespan.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1186/s12970-017-0173-z"
+      ]
+    },
+    {
+      "claim_text": "varies across age groups (e.g. middle-age, ~4.5 g/kg; old-age, 4.0 g/kg)",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13083"
+      ]
+    },
+    {
+      "claim_text": "Post-menopausal females may also experience benefits in skeletal muscle size and function when consuming high doses of creatine (0.3 g·kg⁻¹·d⁻¹)",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.3390/nu13030877"
+      ]
+    }
+  ]
+}

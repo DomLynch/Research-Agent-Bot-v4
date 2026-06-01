@@ -1,0 +1,114 @@
+{
+  "run_dir": "runs/glycomic_age_clocks-evidence-2026-05-27T06-08-42Z",
+  "topic": "glycomic_age_clocks",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 glycomic_age_clocks",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 0,
+    "available_source_contexts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 0.75,
+    "source_count": 12,
+    "clusters": [
+      {
+        "label": "related_nature_proteomic",
+        "member_fact_ids": [
+          "143013",
+          "143012",
+          "143009",
+          "143010"
+        ],
+        "source_paper": {
+          "doi": "10.1038/s41591-024-03164-7",
+          "title": "Proteomic aging clock predicts mortality and risk of common age-related diseases in diverse populations",
+          "journal": "Nature Medicine",
+          "year": 2024
+        },
+        "example_phrase": "biobanks in China (n = 3,977) and Finland (n = 1,990), the proteomic age clock showed similar age prediction accuracy (Pearson r = 0.92 and r = 0.94, respectively)"
+      },
+      {
+        "label": "reduced_circadian_increases",
+        "member_fact_ids": [
+          "135952",
+          "135953"
+        ],
+        "source_paper": {
+          "doi": "10.18632/aging.100241",
+          "title": "Deficiency of circadian protein CLOCK reduces lifespan and increases age-related cataract development in mice.",
+          "journal": "Aging",
+          "year": 2010
+        },
+        "example_phrase": "the average lifespan of Clock-/- mice is reduced by 15% compared with wild type mice"
+      },
+      {
+        "label": "ultra_highly_machine",
+        "member_fact_ids": [
+          "5508"
+        ],
+        "source_paper": {
+          "doi": "10.1111/acel.13256",
+          "title": "Data mining of human plasma proteins generates a multitude of highly predictive aging clocks that reflect different aspects of aging",
+          "journal": "Aging Cell",
+          "year": 2020
+        },
+        "example_phrase": "an ultra-predictive aging clock comprised of 491 protein entries with Pearson correlation 0.98 in the learning set and 0.96 in the test set"
+      },
+      {
+        "label": "dna_fisetin_longitudinal",
+        "member_fact_ids": [
+          "90736"
+        ],
+        "source_paper": {
+          "doi": "10.18632/aging.205581",
+          "title": "Exploring the effects of Dasatinib, Quercetin, and Fisetin on DNA methylation clocks: a longitudinal study on senolytic interventions",
+          "journal": "Aging",
+          "year": 2024
+        },
+        "example_phrase": "Significant increases in epigenetic age acceleration were observed in first-generation epigenetic clocks and mitotic clocks at 3 and 6 months"
+      },
+      {
+        "label": "robust_adulthood_grimage",
+        "member_fact_ids": [
+          "169061"
+        ],
+        "source_paper": {
+          "doi": "10.1080/15592294.2021.1939479",
+          "title": "The Socioeconomic Gradient in Epigenetic Ageing Clocks: Evidence from the Multi-Ethnic Study of Atherosclerosis and the Health and Retirement Study",
+          "journal": "Epigenetics",
+          "year": 2021
+        },
+        "example_phrase": "we found robust associations between SES measures in adulthood and the GrimAge and DunedinPoAm clocks (Bonferroni-corrected p-value < 0.01)."
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

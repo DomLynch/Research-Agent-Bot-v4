@@ -1,0 +1,322 @@
+{
+  "topic": "circadian_light_timing",
+  "snapshot_utc": "2026-05-27T09-24-30Z",
+  "claim_count": 35,
+  "claims": [
+    {
+      "claim_text": "Individuals with brighter day light had incrementally lower all-cause mortality risk (adjusted-HR ranges: 0.66 to 0.83 [90 to 100th])",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1073/pnas.2405924121"
+      ]
+    },
+    {
+      "claim_text": "those with brighter night light had incrementally higher all-cause mortality risk (aHR ranges: 1.21 to 1.34 [90 to 100th])",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1073/pnas.2405924121"
+      ]
+    },
+    {
+      "claim_text": "Air pollution, particularly fine particulate matter (PM2.5), contributes to approximately 8.3 million deaths annually, with over half attributed to CVD.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/cvr/cvaf119"
+      ]
+    },
+    {
+      "claim_text": "Cardiovascular disease (CVD) is the leading cause of mortality globally, with over 20 million deaths each year.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/cvr/cvaf119"
+      ]
+    },
+    {
+      "claim_text": "91% of the differentially expressed genes down-regulated during ripening had a higher expression in the 72% compared to 24% blue light treatment.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.postharvbio.2022.112024"
+      ]
+    },
+    {
+      "claim_text": "there was no significant difference in carbon emissions between the light steel and the light timber building, with the difference being only 12.3%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/buildings12010050"
+      ]
+    },
+    {
+      "claim_text": "the net photosynthetic rate of SN98A was 10.12% lower than SN98B on the 20th day",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fpls.2023.1128780"
+      ]
+    },
+    {
+      "claim_text": "Compared with CK group, the seed setting rate increased by 33.87%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fpls.2023.1128780"
+      ]
+    },
+    {
+      "claim_text": "the light steel house had 12.3% more carbon in total",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/buildings12010050"
+      ]
+    },
+    {
+      "claim_text": "malondialdehyde content of SN98A sprayed with 60 mg L^-1 GA3 decreased by 50.33% compared with CK group",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fpls.2023.1128780"
+      ]
+    },
+    {
+      "claim_text": "the superoxide anion production rate of SN98A sprayed with 60 mg L^-1 GA3 decreased by 17.32% compared with CK group",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fpls.2023.1128780"
+      ]
+    },
+    {
+      "claim_text": "H2O2 content of SN98A sprayed with 60 mg L^-1 GA3 decreased by 10.44% compared with CK group",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fpls.2023.1128780"
+      ]
+    },
+    {
+      "claim_text": "the most effective treatment was 60 mg L^-1 GA3",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.3389/fpls.2023.1128780"
+      ]
+    },
+    {
+      "claim_text": "the manufacturing of two houses had a difference of 50.4% in terms of carbon emissions",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/buildings12010050"
+      ]
+    },
+    {
+      "claim_text": "when combined with clinical information, plasma phosphorylated-tau at threonine-181 and neurofilament light biomarkers, and an MRI-score could effectively identify β-amyloid+ cognitively unimpaired and impaired (area under curve, 0.80-0.90).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/braincomms/fcab008"
+      ]
+    },
+    {
+      "claim_text": "a daily fasting interval and circadian alignment of feeding acted together to extend life span by 35% in male C57BL/6J mice",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1126/science.abk0297"
+      ]
+    },
+    {
+      "claim_text": "Plasma brain-derived tau (rho = 0.52-0.67, P = 0.003), but not neurofilament light (rho = -0.14-0.17, P = 0.501), was associated with global and regional amyloid plaque and neurofibrillary tangle counts.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/brain/awac407"
+      ]
+    },
+    {
+      "claim_text": "18.8% of these cases affecting women who were light alcohol consumers",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1111/acer.13071"
+      ]
+    },
+    {
+      "claim_text": "17.5% of these deaths affecting women who were light alcohol consumers",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1111/acer.13071"
+      ]
+    },
+    {
+      "claim_text": "Neurofilament light chain and glial fibrillary acidic protein in serum were substantially increased (71.1 ± 103.9 pg/ml and 126.7 ± 73.3 pg/ml, respectively)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1093/brain/awac090"
+      ]
+    },
+    {
+      "claim_text": "Plasma NFL correlated with CSF NFL (Spearman ρ = 0.59, P < .001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1001/jamaneurol.2016.6117"
+      ]
+    },
+    {
+      "claim_text": "Plasma NFL had high diagnostic accuracy for patients with AD with dementia vs controls (area under the receiver operating characteristic curve, 0.87).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1001/jamaneurol.2016.6117"
+      ]
+    },
+    {
+      "claim_text": "Plasma NFL was increased in patients with MCI (mean, 42.8 ng/L) compared with controls (mean, 34.7 ng/L) (P < .001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1001/jamaneurol.2016.6117"
+      ]
+    },
+    {
+      "claim_text": "Plasma NFL was increased in patients with AD dementia (mean, 51.0 ng/L) compared with controls (mean, 34.7 ng/L) (P < .001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1001/jamaneurol.2016.6117"
+      ]
+    },
+    {
+      "claim_text": "improved rapidly with time post-fledging (week 4 median rate = 0.96)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1111/jofo.12157"
+      ]
+    },
+    {
+      "claim_text": "Reducing D2B time within 45 minutes showed further decreased risk of mortality compared with D2B time >90 minutes (adjusted hazard ratio, 0.30; 95% CI , 0.19-0.42; P<0.001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.012188"
+      ]
+    },
+    {
+      "claim_text": "In multivariable analysis, D2B time showed an independent association with mortality (adjusted hazard ratio, 1.90; 95% CI , 1.51-2.39; P<0.001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.012188"
+      ]
+    },
+    {
+      "claim_text": "Individuals with lower circadian amplitude (aHR range: 0.90 to 0.96 per SD) had higher all-cause mortality risks",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1073/pnas.2405924121"
+      ]
+    },
+    {
+      "claim_text": "earlier circadian phase (aHR range: 1.16 to 1.30) had higher all-cause mortality risks",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1073/pnas.2405924121"
+      ]
+    },
+    {
+      "claim_text": "later circadian phase (aHR range: 1.13 to 1.20) had higher all-cause mortality risks",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1073/pnas.2405924121"
+      ]
+    },
+    {
+      "claim_text": "eTRF altered the diurnal patterns in cortisol and the expression of several circadian clock genes (p < 0.05)",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu11061234"
+      ]
+    },
+    {
+      "claim_text": "In univariable analysis, 1-hour delay of O2D time was associated with a 4% increased 1-year mortality.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.012188"
+      ]
+    },
+    {
+      "claim_text": "1-hour delay of D2B time was associated with a 55% increased 1-year mortality.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.012188"
+      ]
+    },
+    {
+      "claim_text": "60 to 30 minutes: absolute risk reduction, 2.0%; number needed to treat, 49.2",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.012188"
+      ]
+    },
+    {
+      "claim_text": "90 to 60 minutes: absolute risk reduction, 2.4%; number needed to treat, 41.9",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.012188"
+      ]
+    }
+  ]
+}

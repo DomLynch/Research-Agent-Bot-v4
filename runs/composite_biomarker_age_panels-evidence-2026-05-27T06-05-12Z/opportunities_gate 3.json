@@ -1,0 +1,16 @@
+{
+  "topic": "composite_biomarker_age_panels",
+  "snapshot_utc": "2026-05-27T06-05-12Z",
+  "input_pack": {
+    "topic": "composite_biomarker_age_panels",
+    "a_core_count": 0,
+    "b_context_count": 0,
+    "excluded_counts": {
+      "C_noise": 8,
+      "D_bad_extraction": 30
+    },
+    "has_minimum_a_core": false,
+    "a_core_min": 3
+  },
+  "audits": []
+}

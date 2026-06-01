@@ -1,0 +1,79 @@
+{
+  "topic": "taurine",
+  "snapshot_utc": "2026-05-27T08-59-41Z",
+  "claim_count": 8,
+  "claims": [
+    {
+      "claim_text": "Consumption of 30 g dry beef can fully meet daily physiological needs of the healthy 70-kg adult human for taurine and carnosine",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1007/s00726-020-02823-6"
+      ]
+    },
+    {
+      "claim_text": "These analyses identify the taurine-taurine transporter (TAUT) axis as a critical dependency of aggressive myeloid leukaemias.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41586-025-09018-7"
+      ]
+    },
+    {
+      "claim_text": "PASC plasma exhibited significantly higher free- and carnitine-conjugated fatty acids and markedly lower carboxylates, polyamines, and taurine.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/metabo12111026"
+      ]
+    },
+    {
+      "claim_text": "are beneficial for preventing and treating obesity, cardiovascular dysfunction, and ageing-related disorders",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s00726-020-02823-6"
+      ]
+    },
+    {
+      "claim_text": "have important physiological roles in anti-oxidative and anti-inflammatory reactions, as well as neurological, muscular, retinal, immunological and cardiovascular function",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s00726-020-02823-6"
+      ]
+    },
+    {
+      "claim_text": "The disturbance of the microbiota composition led to an increase in the abundance of histamine and a decrease in the abundance of taurine.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1128/spectrum.04698-22"
+      ]
+    },
+    {
+      "claim_text": "markedly lower levels of mono-, di- and tricarboxylates, polyamines (spermine) and taurine in PASC plasma.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/metabo12111026"
+      ]
+    },
+    {
+      "claim_text": "Plasma from recovered individuals exhibited an intermediary metabolic phenotype with milder disturbances and higher spermine and taurine.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/metabo12111026"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "topic": "rapamycin",
+  "snapshot_utc": "2026-05-27T05-30-47Z",
+  "input_pack": {
+    "topic": "rapamycin",
+    "a_core_count": 4,
+    "b_context_count": 0,
+    "excluded_counts": {
+      "C_noise": 2,
+      "D_bad_extraction": 0
+    },
+    "has_minimum_a_core": true,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Sex and Regimen Dependencies in Rapamycin's Longevity Effects: A Scoping Review of Preclinical Evidence",
+      "status": "survives",
+      "blocking_flags": [],
+      "original_opportunity": 100,
+      "capped_opportunity": 100,
+      "cited_fact_ids": [
+        "rapamycin/transient/bitto_2016/lifespan_extension",
+        "rapamycin/itp/harrison_2009/lifespan_female",
+        "rapamycin/itp/miller_2014/dose_response_high_male",
+        "rapamycin/itp/miller_2014/dose_response_high_female"
+      ]
+    }
+  ]
+}

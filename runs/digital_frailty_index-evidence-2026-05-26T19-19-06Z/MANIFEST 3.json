@@ -1,0 +1,79 @@
+{
+  "topic": "digital_frailty_index",
+  "snapshot_utc": "2026-05-26T19-19-06Z",
+  "top_n": 5,
+  "facts_inspected": 46,
+  "aggregated_claims": 46,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "mode": "alpha",
+  "selected_theme": null,
+  "facet_counts": {},
+  "numeric_artifacts_filtered": 4,
+  "fact_fetch_plan": [
+    "strict audited numeric facts via POST /api/v1/tier2/facts/search",
+    "validated topic facts via GET /api/v1/topics/{topic}/facts",
+    "normal numeric fact graph via POST /api/v1/tier2/facts/search",
+    "normal all-fact graph when source diversity is still thin"
+  ],
+  "paper_context_source": "POST /api/v1/papers/topic + POST /api/v1/search",
+  "pico_enrichment": {
+    "facts_inspected": 50,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "mimo-v2.5-pro"
+  },
+  "ranking": "alpha: deterministic validation*magnitude*precision*recency + data-driven contrast/subgroup boosts + theme coherence",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "5e7e1eaf3ad771368c79e2e761641314c5fe30cd67073c4c11bd75e212993e1e"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "055d25225e0d96857f3b03b88eb7ae0df34a0a9c27bbe41a4dd62c71dfc29322"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "a2c755243b7ffeb5455cde80ee5b91b603987da711f796c73887c12da641b92a"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "79c6d359a16bea5e25498cf1eaf0fc7249b2c484a1a6a17dcd7447872a08f81b"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "43d40ce93455fb1465fbd5be2c76bde3e3bd1bb2bcdb8cad0e8998e9eac1ddee"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "ac8c71ca7eb913fcdaaec5879ba4b3baf5e4670911082a0ffb5f898078d057f9"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "04a8ed786f2afc9794785f6649497de35f9a1919b2d1bb4fe752eb64b61b7bd4"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "9d68019a560556d6d93ec70b478a8e009e547f047003dccd02ac456463d45b40"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "3d490f74e57b42d82e870cf9826930155241cd4eb2ca424cda3a927533609856"
+    },
+    "signal_post_md": {
+      "name": "signal_post.md",
+      "sha256": "f8d1e7b7483ce910932a6c6aeec96fc703f32b31b20005c6d00da4de23818195"
+    },
+    "alpha_memo_md": {
+      "name": "alpha_memo.md",
+      "sha256": "17b13df055e34754f5320d22dc93055600fb67a7d7f2a07e56f3715c72b7e51f"
+    },
+    "publish_verdict_json": {
+      "name": "publish_verdict.json",
+      "sha256": "4b39e0f930427f65b40069f91d45c6afa7c37f4604bb928cab88453fa834c799"
+    }
+  }
+}

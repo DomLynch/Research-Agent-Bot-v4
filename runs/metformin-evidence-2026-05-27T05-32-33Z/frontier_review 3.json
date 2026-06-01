@@ -1,0 +1,18 @@
+{
+  "topic": "metformin",
+  "snapshot_utc": "2026-05-27T05-32-33Z",
+  "model": "mimo-v2.5-pro",
+  "lens": "Metformin's efficacy is strikingly context-dependent: it shows robust survival benefits in WHO grade III gliomas and acute infection mortality in diabetic patients, yet fails in grade IV gliomas, suggesting disease-specific biological mechanisms that could guide precision repurposing.",
+  "known_to_ignore": [
+    "Metformin's primary role in glycemic control for type 2 diabetes",
+    "Standard use of metformin versus insulin in gestational diabetes management"
+  ],
+  "tensions": [
+    "Significant survival benefit in WHO grade III glioma (HR 0.30 for OS) versus no benefit in grade IV glioma (HR 0.83 for OS)"
+  ],
+  "gaps": [],
+  "theses": [],
+  "reviewer_objections": [],
+  "next_extractions": [],
+  "raw_response": "{\n  \"lens\": \"Metformin's efficacy is strikingly context-dependent: it shows robust survival benefits in WHO grade III gliomas and acute infection mortality in diabetic patients, yet fails in grade IV gliomas, suggesting disease-specific biological mechanisms that could guide precision repurposing.\",\n  \"known_to_ignore\": [\"Metformin's primary role in glycemic control for type 2 diabetes\", \"Standard use of metformin versus insulin in gestational diabetes management\"],\n  \"tensions\": [\"Significant survival benefit in WHO grade III glioma (HR 0.30 for OS) versus no benefit in grade IV glioma (HR 0.83 for OS)\", \"Consistent mortality reduction in seps"
+}

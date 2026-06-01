@@ -1,0 +1,18 @@
+{
+  "topic": "ergothioneine",
+  "snapshot_utc": "2026-05-26T19-33-19Z",
+  "counts": {
+    "A_core": 0,
+    "B_context": 0,
+    "C_noise": 0,
+    "D_bad_extraction": 1
+  },
+  "verdicts": [
+    {
+      "fact_id": "186885",
+      "lane": "D_bad_extraction",
+      "numeric_role": "dose",
+      "reason": "numeric_role=dose_not_effect_finding"
+    }
+  ]
+}

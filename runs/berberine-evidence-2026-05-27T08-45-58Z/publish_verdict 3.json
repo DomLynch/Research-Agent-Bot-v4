@@ -1,0 +1,148 @@
+{
+  "run_dir": "runs/berberine-evidence-2026-05-27T08-45-58Z",
+  "topic": "berberine",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "Reconciling Lipid Paradox and Glycemic Benefits: A Dose-Stratified Meta-Analysis of Berberine in Metabolic Syndrome",
+  "confidence_label": "evidence_backed_signal",
+  "alpha_score": 0,
+  "surface_type": "curation_brief",
+  "axes": {
+    "bound_receipts": 5,
+    "available_bound_receipts": 9,
+    "available_source_contexts": 2,
+    "a_core_receipts": 5,
+    "source_concentrated": true,
+    "counter_consensus_tension": true,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": [
+      {
+        "doi": "10.3389/fphar.2022.1015045",
+        "title": "Glucose-lowering effect of berberine on type 2 diabetes: A systematic review and meta-analysis",
+        "journal": "Frontiers in Pharmacology",
+        "year": 2022
+      },
+      {
+        "doi": "10.3389/fphar.2021.653887",
+        "title": "Efficacy and Safety of Berberine Alone for Several Metabolic Disorders: A Systematic Review and Meta-Analysis of Randomized Clinical Trials",
+        "journal": "Frontiers in Pharmacology",
+        "year": 2021
+      }
+    ]
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [
+      "141969",
+      "142311",
+      "142313",
+      "142314",
+      "141973"
+    ],
+    "available_bound_fact_ids": [
+      "141969",
+      "142311",
+      "142312",
+      "142315",
+      "142316",
+      "142314",
+      "142313",
+      "141973",
+      "141972"
+    ],
+    "candidate_receipts": [
+      {
+        "fact_id": "141972",
+        "lane": "A_core",
+        "phrase": "did not significantly increase the incidence of total adverse events (RR = 0.73, 95% CI (0.55, 0.97), p = 0.03)",
+        "sub_topic": "adverse",
+        "population": "patients with type 2 diabetes mellitus",
+        "intervention": "berberine alone or in combination with oral hypoglycemic agents",
+        "source_paper": {
+          "doi": "10.3389/fphar.2022.1015045",
+          "title": "Glucose-lowering effect of berberine on type 2 diabetes: A systematic review and meta-analysis",
+          "journal": "Frontiers in Pharmacology",
+          "year": 2022
+        },
+        "same_source_as_lead": true
+      },
+      {
+        "fact_id": "142312",
+        "lane": "A_core",
+        "phrase": "TC (SMD: 1.06; 95%CI: 0.64, 1.48; p = 0.00)",
+        "sub_topic": "effect_size",
+        "population": "patients with metabolic disorders from included RCTs",
+        "intervention": "berberine alone",
+        "source_paper": {
+          "doi": "10.3389/fphar.2021.653887",
+          "title": "Efficacy and Safety of Berberine Alone for Several Metabolic Disorders: A Systematic Review and Meta-Analysis of Randomized Clinical Trials",
+          "journal": "Frontiers in Pharmacology",
+          "year": 2021
+        },
+        "same_source_as_lead": true
+      },
+      {
+        "fact_id": "142315",
+        "lane": "A_core",
+        "phrase": "HOMA-IR (SMD: 1.25; 95%CI: 0.25,2.24; p = 0.01)",
+        "sub_topic": "effect_size",
+        "population": "patients with metabolic disorders from included RCTs",
+        "intervention": "berberine alone",
+        "source_paper": {
+          "doi": "10.3389/fphar.2021.653887",
+          "title": "Efficacy and Safety of Berberine Alone for Several Metabolic Disorders: A Systematic Review and Meta-Analysis of Randomized Clinical Trials",
+          "journal": "Frontiers in Pharmacology",
+          "year": 2021
+        },
+        "same_source_as_lead": true
+      },
+      {
+        "fact_id": "142316",
+        "lane": "A_core",
+        "phrase": "FPG (SMD: 0.65; 95%CI: 0.28,1.03; p = 0.00)",
+        "sub_topic": "effect_size",
+        "population": "patients with metabolic disorders from included RCTs",
+        "intervention": "berberine alone",
+        "source_paper": {
+          "doi": "10.3389/fphar.2021.653887",
+          "title": "Efficacy and Safety of Berberine Alone for Several Metabolic Disorders: A Systematic Review and Meta-Analysis of Randomized Clinical Trials",
+          "journal": "Frontiers in Pharmacology",
+          "year": 2021
+        },
+        "same_source_as_lead": true
+      }
+    ]
+  },
+  "counter_evidence": {
+    "status": "found",
+    "items": [
+      {
+        "fact_id": "141972",
+        "lane": "A_core",
+        "phrase": "did not significantly increase the incidence of total adverse events (RR = 0.73, 95% CI (0.55, 0.97), p = 0.03)",
+        "sub_topic": "adverse",
+        "population": "patients with type 2 diabetes mellitus",
+        "intervention": "berberine alone or in combination with oral hypoglycemic agents",
+        "source_paper": {
+          "doi": "10.3389/fphar.2022.1015045",
+          "title": "Glucose-lowering effect of berberine on type 2 diabetes: A systematic review and meta-analysis",
+          "journal": "Frontiers in Pharmacology",
+          "year": 2022
+        }
+      }
+    ]
+  },
+  "subtopic_recommendations": {
+    "recommended": false,
+    "reason": "not_broad_or_not_noisy_enough",
+    "d_bad_share": 0.471,
+    "source_count": 4,
+    "clusters": []
+  },
+  "blockers": [
+    "low_alpha_score"
+  ]
+}

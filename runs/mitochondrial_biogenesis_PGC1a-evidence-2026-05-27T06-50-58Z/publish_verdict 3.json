@@ -1,0 +1,124 @@
+{
+  "run_dir": "runs/mitochondrial_biogenesis_PGC1a-evidence-2026-05-27T06-50-58Z",
+  "topic": "mitochondrial_biogenesis_PGC1a",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 mitochondrial_biogenesis_PGC1a",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 0,
+    "available_source_contexts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 1.0,
+    "source_count": 20,
+    "clusters": [
+      {
+        "label": "size_via_reducing",
+        "member_fact_ids": [
+          "145783",
+          "145786",
+          "145780",
+          "145785"
+        ],
+        "source_paper": {
+          "doi": "10.1016/j.redox.2024.103406",
+          "title": "Isoliquiritigenin alleviates cerebral ischemia-reperfusion injury by reducing oxidative stress and ameliorating mitochondrial dysfunction via activating the Nrf2 pathway",
+          "journal": "Redox Biology",
+          "year": 2024
+        },
+        "example_phrase": "ISL evidently improved redox homeostasis and restored mitochondrial function via inhibiting oxidative stress injury and ameliorating mitochondrial biogenesis, mitochondrial fusion-fission balance, and mitophagy."
+      },
+      {
+        "label": "size_pc12_degeneration",
+        "member_fact_ids": [
+          "171586",
+          "171590",
+          "171585",
+          "171587"
+        ],
+        "source_paper": {
+          "doi": "10.1038/s41420-024-01953-0",
+          "title": "PGC-1a mediated mitochondrial biogenesis promotes recovery and survival of neuronal cells from cellular degeneration",
+          "journal": "Cell Death Discovery",
+          "year": 2024
+        },
+        "example_phrase": "exposure to ethanol (EtOH) induced massive neurite loss along with widespread mitochondrial fragmentation, mitochondrial membrane potential loss, reduced ATP production, and decreased total mitochondrial volume."
+      },
+      {
+        "label": "size_tax1bp1_attenuates",
+        "member_fact_ids": [
+          "141806",
+          "141808",
+          "141807",
+          "141805"
+        ],
+        "source_paper": {
+          "doi": "10.1186/s12951-022-01338-4",
+          "title": "PINK1/TAX1BP1-directed mitophagy attenuates vascular endothelial injury induced by copper oxide nanoparticles",
+          "journal": "Journal of Nanobiotechnology",
+          "year": 2022
+        },
+        "example_phrase": "CuONPs exposure disturbed mitochondrial dynamics through oxidative stress-dependent manner in vascular endothelial cells, as evidenced by the increase of mitochondrial fission and the accumulation of fragmented mitochond"
+      },
+      {
+        "label": "size_doxorubicin_amount",
+        "member_fact_ids": [
+          "186576",
+          "186572",
+          "186574",
+          "186571"
+        ],
+        "source_paper": {
+          "doi": "10.1002/advs.202412017",
+          "title": "Mitochondrial Amount Determines Doxorubicin\u2010Induced Cardiotoxicity in Cardiomyocytes",
+          "journal": "Advanced Science",
+          "year": 2025
+        },
+        "example_phrase": "over expression of mitochondrial tagged DNase1 in mice partially rescue doxorubicin-induced cardiac dysfunction"
+      },
+      {
+        "label": "size_via_admsc",
+        "member_fact_ids": [
+          "145538",
+          "145541",
+          "145540"
+        ],
+        "source_paper": {
+          "doi": "10.7150/thno.69533",
+          "title": "AdMSC-derived exosomes alleviate acute lung injury via transferring mitochondrial component to improve homeostasis of alveolar macrophages",
+          "journal": "Theranostics",
+          "year": 2022
+        },
+        "example_phrase": "AdMSC-Exos can effectively donate mitochondria component improved macrophages mitochondrial integrity"
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

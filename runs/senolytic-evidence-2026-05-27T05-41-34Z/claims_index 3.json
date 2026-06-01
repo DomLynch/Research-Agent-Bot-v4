@@ -1,0 +1,160 @@
+{
+  "topic": "senolytic",
+  "snapshot_utc": "2026-05-27T05-41-34Z",
+  "claim_count": 17,
+  "claims": [
+    {
+      "claim_text": "D&Q have senolytic effects, reducing age-related increase in senescence-associated β-galactosidase, expression of p16 and p21 gene and P16 protein in perigonadal white adipose tissue (all p ≤ 0.04)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13767"
+      ]
+    },
+    {
+      "claim_text": "even a relatively low abundance of senescent cells (10–15% in aged primates) is sufficient to cause tissue dysfunction",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1016/j.ebiom.2019.09.053"
+      ]
+    },
+    {
+      "claim_text": "Treatment of GBM cells with a low dose of TMZ for 8-10 days resulted in >80% CSEN.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3390/cells11162588"
+      ]
+    },
+    {
+      "claim_text": "the maximal cytostatic doses for D and/or Q (1 + 1 μM) lacked efficacy in removing doxorubicin-induced β-gal-positive senescent cells",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fonc.2018.00459"
+      ]
+    },
+    {
+      "claim_text": "Doxorubicin reduced tumor growth by 30% compared to control mice",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fonc.2018.00459"
+      ]
+    },
+    {
+      "claim_text": "D&Q improved insulin-stimulated suppression of plasma NEFAs (p = 0.01)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13767"
+      ]
+    },
+    {
+      "claim_text": "D&Q treatment improved fasting blood glucose (p = 0.001) and glucose tolerance (p = 0.007) in old mice that was concomitant with lower hepatic gluconeogenesis",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13767"
+      ]
+    },
+    {
+      "claim_text": "This treatment also suppressed age-related increase in the expression of a subset of pro-inflammatory SASP genes, crown-like structures, abundance of T cells and macrophages in pgWAT (all p ≤ 0.04)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13767"
+      ]
+    },
+    {
+      "claim_text": "D&Q improved systemic lipid tolerance (p = 0.006)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13767"
+      ]
+    },
+    {
+      "claim_text": "D&Q reduced fed and fasted plasma triglycerides (both p ≤ 0.04)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13767"
+      ]
+    },
+    {
+      "claim_text": "Dasatinib (5 mg/kg) and quercetin (50 mg/kg) were administered to diabetic db/db mice by gavage for 20 weeks.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.3892/ijmm.2024.5350"
+      ]
+    },
+    {
+      "claim_text": "BMSC-derived osteoblasts from the navitoclax treated mice were impaired in their ability to produce a mineralized matrix (-88% females, -83% males)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fcell.2020.00354"
+      ]
+    },
+    {
+      "claim_text": "mice were treated with navitoclax (50 mg/kg body mass daily) for 2 weeks",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.3389/fcell.2020.00354"
+      ]
+    },
+    {
+      "claim_text": "Navitoclax also significantly increased metrics of cytotoxicity in both male and female osteogenic cultures (+1.0 to +11.3 fold)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.3389/fcell.2020.00354"
+      ]
+    },
+    {
+      "claim_text": "navitoclax treatment decreased trabecular bone volume fraction in aged female and male mice (-60.1% females, -45.6% males)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fcell.2020.00354"
+      ]
+    },
+    {
+      "claim_text": "Significant increases in epigenetic age acceleration were observed in first-generation epigenetic clocks and mitotic clocks at 3 and 6 months",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18632/aging.205581"
+      ]
+    },
+    {
+      "claim_text": "cardiovascular disease being the cause of death in 40 % of individuals over 65 years old.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/j.mad.2021.111540"
+      ]
+    }
+  ]
+}

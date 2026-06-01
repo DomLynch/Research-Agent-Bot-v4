@@ -1,0 +1,66 @@
+{
+  "topic": "microbiome_longevity",
+  "snapshot_utc": "2026-05-27T05-58-24Z",
+  "counts": {
+    "A_core": 0,
+    "B_context": 0,
+    "C_noise": 2,
+    "D_bad_extraction": 7
+  },
+  "verdicts": [
+    {
+      "fact_id": "98221",
+      "lane": "D_bad_extraction",
+      "numeric_role": "duration",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "98222",
+      "lane": "D_bad_extraction",
+      "numeric_role": "duration",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "98220",
+      "lane": "D_bad_extraction",
+      "numeric_role": "duration",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "76844",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "186205",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "186206",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "102030",
+      "lane": "D_bad_extraction",
+      "numeric_role": "duration",
+      "reason": "numeric_role=duration_not_effect_finding"
+    },
+    {
+      "fact_id": "151031",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "157709",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    }
+  ]
+}

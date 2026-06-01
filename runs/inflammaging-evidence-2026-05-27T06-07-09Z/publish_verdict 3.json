@@ -1,0 +1,84 @@
+{
+  "run_dir": "runs/inflammaging-evidence-2026-05-27T06-07-09Z",
+  "topic": "inflammaging",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 inflammaging",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 0,
+    "available_source_contexts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 0.667,
+    "source_count": 3,
+    "clusters": [
+      {
+        "label": "score_rheumatic_immunology",
+        "member_fact_ids": [
+          "184395"
+        ],
+        "source_paper": {
+          "doi": "10.1007/s12016-022-08943-z",
+          "title": "Inflammaging and Frailty in Immune-Mediated Rheumatic Diseases: How to Address and Score the Issue",
+          "journal": "Clinical Reviews in Allergy & Immunology",
+          "year": 2022
+        },
+        "example_phrase": "up to 40% in those who are octogenarians"
+      },
+      {
+        "label": "these_macrophages_senescent",
+        "member_fact_ids": [
+          "178286"
+        ],
+        "source_paper": {
+          "doi": "10.1007/s11357-022-00536-0",
+          "title": "Senescent macrophages in the human adipose tissue as a source of inflammaging",
+          "journal": "GeroScience",
+          "year": 2022
+        },
+        "example_phrase": "A significantly higher number of SCs was observed in vWAT compared to scWAT; about 70% of these cells expressed the macrophage marker CD68"
+      },
+      {
+        "label": "inflammatory_insights_size",
+        "member_fact_ids": [
+          "136242"
+        ],
+        "source_paper": {
+          "doi": "10.18632/aging.102826",
+          "title": "Successful aging: insights from proteome analyses of healthy centenarians",
+          "journal": "Aging",
+          "year": 2020
+        },
+        "example_phrase": "lower pro-inflammatory status (less 'inflammaging' and autoimmunity)"
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

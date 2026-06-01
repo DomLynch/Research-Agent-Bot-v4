@@ -1,0 +1,187 @@
+{
+  "topic": "mitochondrial_DNA_damage",
+  "snapshot_utc": "2026-05-26T18-56-35Z",
+  "claim_count": 20,
+  "claims": [
+    {
+      "claim_text": "mtDNA-CN derived from WGS data is significantly more associated with known correlates compared to all other methods (p < 0.001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1371/journal.pone.0228166"
+      ]
+    },
+    {
+      "claim_text": "has effect size estimates 5.8 times more extreme than the current gold standard of qPCR.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1371/journal.pone.0228166"
+      ]
+    },
+    {
+      "claim_text": "mtDNA-CN measured from WGS is on average more significantly associated with traits by 5.6 orders of magnitude",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1371/journal.pone.0228166"
+      ]
+    },
+    {
+      "claim_text": "abnormal mtDNA levels are present in 30% of non-implanting euploid embryos, but are not seen in embryos forming a viable pregnancy",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1371/journal.pgen.1005241"
+      ]
+    },
+    {
+      "claim_text": "almost 90% of non-proliferating cells would be expected to have at least 100 mutations per cell by the age of 70",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3390/cells8060608"
+      ]
+    },
+    {
+      "claim_text": "Growth differentiation factor 15 protects against the aging‐mediated systemic inflammatory response in humans and mice",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13195"
+      ]
+    },
+    {
+      "claim_text": "Complex II activity significantly decreased with age in fibroblasts (P = 0·015), but not in keratinocytes.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/bjd.14906"
+      ]
+    },
+    {
+      "claim_text": "significant decline in protein levels (P = 0·0006) of the SDHA catalytic subunit of complex II.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/bjd.14906"
+      ]
+    },
+    {
+      "claim_text": "significant decline in protein levels (P = 0·005) of the SDHB catalytic subunit of complex II.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/bjd.14906"
+      ]
+    },
+    {
+      "claim_text": "significant decline in transcript expression (P = 0·001) of the SDHB catalytic subunit of complex II.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/bjd.14906"
+      ]
+    },
+    {
+      "claim_text": "significant decline in transcript expression (P = 0·008) of the SDHA catalytic subunit of complex II.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/bjd.14906"
+      ]
+    },
+    {
+      "claim_text": "significant decrease in complex II activity with age (P = 0·029) that was specific to senescent skin cells.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/bjd.14906"
+      ]
+    },
+    {
+      "claim_text": "CKD heritability is estimated to be high (30-75%).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fgene.2019.00453"
+      ]
+    },
+    {
+      "claim_text": "91.5 % of ready-to-sell cocoa beans in Nigeria testing positive for OTA.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/j.heliyon.2024.e39313"
+      ]
+    },
+    {
+      "claim_text": "OTA in 46.7 % of cocoa products in Turkey.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/j.heliyon.2024.e39313"
+      ]
+    },
+    {
+      "claim_text": "32 % of cocoa samples in Côte d'Ivoire exceeding the OTA threshold of 2 μg/kg.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/j.heliyon.2024.e39313"
+      ]
+    },
+    {
+      "claim_text": "UA (1 µM) for 24 h significantly increased expression of genes for mitochondrial biogenesis and OXPHOS",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/ijms22158333"
+      ]
+    },
+    {
+      "claim_text": "at 10 nM, only DMMB could induce mitochondrial damage, triggering cell death",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1080/15548627.2018.1515609"
+      ]
+    },
+    {
+      "claim_text": "MB-induced photodamage was perceived almost instantaneously after irradiation, in response to a massive and nonspecific oxidative stress at a higher concentration range (2 µM).",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1080/15548627.2018.1515609"
+      ]
+    },
+    {
+      "claim_text": "almost no cells would have fewer than 10 mutations",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3390/cells8060608"
+      ]
+    }
+  ]
+}

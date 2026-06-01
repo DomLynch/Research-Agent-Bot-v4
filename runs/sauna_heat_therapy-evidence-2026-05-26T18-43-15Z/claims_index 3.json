@@ -1,0 +1,376 @@
+{
+  "topic": "sauna_heat_therapy",
+  "snapshot_utc": "2026-05-26T18-43-15Z",
+  "claim_count": 41,
+  "claims": [
+    {
+      "claim_text": "Italy (295 deaths per million, 95% CI = 226-364), Greece (280, 95% CI = 201-355), Spain (237, 95% CI = 166-312) and Portugal (211, 95% CI = 162-255) had the highest heat-related mortality rates.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-023-02419-z"
+      ]
+    },
+    {
+      "claim_text": "Relative to population, we estimated 56% more heat-related deaths in women than men.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1038/s41591-023-02419-z"
+      ]
+    },
+    {
+      "claim_text": "the heat transfer coefficient of the orthogonal rib microchannel heat sink increases by 17.9 %",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.csite.2025.105850"
+      ]
+    },
+    {
+      "claim_text": "the heat transfer coefficient of the orthogonal rib microchannel heat sink increases by 182.8 %",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.csite.2025.105850"
+      ]
+    },
+    {
+      "claim_text": "the pressure drop rises by 1000.5 %",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.csite.2025.105850"
+      ]
+    },
+    {
+      "claim_text": "When the rib width is 0.4, the performance evaluation coefficient reaches 1.92.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1016/j.csite.2025.105850"
+      ]
+    },
+    {
+      "claim_text": "the pressure drop rises by 17.5 %",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.csite.2025.105850"
+      ]
+    },
+    {
+      "claim_text": "3.49% (95% eCI, 2.87-4.00%) attributable to heat",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2020.105994"
+      ]
+    },
+    {
+      "claim_text": "In total, 11.98% (95% eCI, 10.46-13.08%) of mortality was attributable to heat and cold",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2020.105994"
+      ]
+    },
+    {
+      "claim_text": "an average of 702 heat-related deaths occurred in the United States annually.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.15585/mmwr.mm6924a1"
+      ]
+    },
+    {
+      "claim_text": "27.97% (95% eCI, 18.42-33.35%) for hypertensive heart disease",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2020.105994"
+      ]
+    },
+    {
+      "claim_text": "16.38% (95% eCI, 7.27-22.31%) for myocardial infarction (MI)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2020.105994"
+      ]
+    },
+    {
+      "claim_text": "12.41% (95% eCI, 8.81-15.07%) for stroke",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2020.105994"
+      ]
+    },
+    {
+      "claim_text": "25.18% (95% eCI, 18.42-29.63%) for chronic obstructive pulmonary disease",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2020.105994"
+      ]
+    },
+    {
+      "claim_text": "28.46% (95% eCI: 4.93-33.57%) for Alzheimer's and dementia",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2020.105994"
+      ]
+    },
+    {
+      "claim_text": "Δ core temperature (Young: 0.58 ± 0.25°C vs. Older: 1.02 ± 0.32°C; P < 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1152/japplphysiol.00285.2023"
+      ]
+    },
+    {
+      "claim_text": "Δ core temperature (Young: 0.68 ± 0.27°C vs. Older: 1.37 ± 0.42°C; P < 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1152/japplphysiol.00285.2023"
+      ]
+    },
+    {
+      "claim_text": "ending core temperature (Young: 37.81 ± 0.26°C vs. Older: 38.15 ± 0.43°C; P = 0.005)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1152/japplphysiol.00285.2023"
+      ]
+    },
+    {
+      "claim_text": "ending core temperature (Young: 37.67 ± 0.34°C vs. Older: 37.83 ± 0.35°C; P = 0.151)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1152/japplphysiol.00285.2023"
+      ]
+    },
+    {
+      "claim_text": "by 16% at Debrecen",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/jxb/erv070"
+      ]
+    },
+    {
+      "claim_text": "by 80% at Seville",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/jxb/erv070"
+      ]
+    },
+    {
+      "claim_text": "by 54% at Seville",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/jxb/erv070"
+      ]
+    },
+    {
+      "claim_text": "by 100% at Debrecen",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/jxb/erv070"
+      ]
+    },
+    {
+      "claim_text": "Tomato seedlings were pretreated with 100 μM MT or water and exposed to high temperature (38/28°C) for 5 days (d).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.3389/fpls.2021.650955"
+      ]
+    },
+    {
+      "claim_text": "acute heat stress (43 °C for 2 h) in vitro",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.3390/cells11091443"
+      ]
+    },
+    {
+      "claim_text": "the number of heat-related deaths associated with the summer UHI will increase from 96 (in 2006) to 221 in the 2080s, based on the RCP8.5 emissions pathway",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2021.106530"
+      ]
+    },
+    {
+      "claim_text": "not including any projected changes in population or demographics leads to underestimation of health burdens of on average 64 %.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2023.107836"
+      ]
+    },
+    {
+      "claim_text": "(>20 times the number of landslides-related deaths for the same period)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1371/journal.pone.0295766"
+      ]
+    },
+    {
+      "claim_text": "Epidemiological data indicate mortality rates of about 27%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1136/bmjmed-2022-000239"
+      ]
+    },
+    {
+      "claim_text": "Out of 12,385 differentially expressed genes (DEGs), 330 significant DEGs (75 upregulated, 225 downregulated)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3390/cells11091443"
+      ]
+    },
+    {
+      "claim_text": "the population-weighted mean winter UHI intensity was +2.3 °C in Birmingham city center",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2021.106530"
+      ]
+    },
+    {
+      "claim_text": "the protective effect of the wintertime UHI is projected to increase only slightly from 266 cold-related deaths avoided in 2009 to 280 avoided in the 2080s",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2021.106530"
+      ]
+    },
+    {
+      "claim_text": "equivalent to 266 cold-related deaths avoided (~15% of total cold-related mortality over ~11 weeks)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2021.106530"
+      ]
+    },
+    {
+      "claim_text": "heat failure increases by more than 100% per degree Celsius across a broad range of taxa",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41586-022-05334-4"
+      ]
+    },
+    {
+      "claim_text": "moderate warming scenarios can increase heat failure rates by 774% (terrestrial) and 180% (aquatic) by 2100",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41586-022-05334-4"
+      ]
+    },
+    {
+      "claim_text": "among which 1 in 5 to 1 in 4 heat-related deaths can be attributed to population aging.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41467-024-45901-z"
+      ]
+    },
+    {
+      "claim_text": "heat-related mortality will increase by 0.5% at 1.5 °C global warming.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41467-024-45901-z"
+      ]
+    },
+    {
+      "claim_text": "heat-related mortality will increase by 1.0% at 2 °C global warming.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41467-024-45901-z"
+      ]
+    },
+    {
+      "claim_text": "the UHI contributes up to 40% of heat related mortality over the summer period.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2019.02.065"
+      ]
+    },
+    {
+      "claim_text": "cool roofs reduced heat related mortality associated with the UHI by ~25% during a heatwave.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2019.02.065"
+      ]
+    },
+    {
+      "claim_text": "cool roofs implemented across the whole city could potentially offset 18% of seasonal heat-related mortality associated with the UHI.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.envint.2019.02.065"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,214 @@
+{
+  "topic": "mesenchymal_stem_cells_MSCs",
+  "snapshot_utc": "2026-05-27T06-38-11Z",
+  "claim_count": 23,
+  "claims": [
+    {
+      "claim_text": "Tx group showed significantly increased levels of anti-Müllerian hormone, follicle stimulating hormone, and estradiol (E2) (*P < 0.05).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41374-020-00513-1"
+      ]
+    },
+    {
+      "claim_text": "histological analysis showed more mature follicles and less atresia and restoration of expanded blood vessels (*P < 0.05).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41374-020-00513-1"
+      ]
+    },
+    {
+      "claim_text": "folliculogenesis-related gene expression was also significantly increased in the PD-MSC Tx group (*P < 0.05).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41374-020-00513-1"
+      ]
+    },
+    {
+      "claim_text": "Vascular endothelial growth factor (VEGF) and VEGF receptor 2 expressions were increased in the ovaries of the OVX PD-MSC Tx group compared to the NTx group.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41374-020-00513-1"
+      ]
+    },
+    {
+      "claim_text": "Four (25%) patients in the MSC group and 21 (58.3%) in the control group died during the follow-up period, and the cumulative surviving portion at 260 weeks was 0.72 in the MSC group and 0.34 in the control group (log-rank; p = .058).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/stem.430"
+      ]
+    },
+    {
+      "claim_text": "three consecutive doses on treatment days 0, 3, and 6, as 3 × 10^6 cells/kg, intravenously",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1177/09636897211024942"
+      ]
+    },
+    {
+      "claim_text": "The median daily rate of National Institutes of Health Stroke Scale change was 0.36 during the first week post-infusion, compared with a median daily rate of change of 0.04 from the first day of testing to immediately before infusion.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/brain/awr063"
+      ]
+    },
+    {
+      "claim_text": "Mean lesion volume as assessed by magnetic resonance imaging was reduced by >20% at 1 week post-cell infusion.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/brain/awr063"
+      ]
+    },
+    {
+      "claim_text": "ex vivo cocultivation of damaged ovaries and PD-MSCs or treatment with recombinant VEGF (50 ng/ml) increased folliculogenic factors and VEGF signaling pathways.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41374-020-00513-1"
+      ]
+    },
+    {
+      "claim_text": "compared to recombinant VEGF, PD-MSCs significantly increased folliculogenesis and angiogenesis (*P < 0.05).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41374-020-00513-1"
+      ]
+    },
+    {
+      "claim_text": "NTA revealed the size of MSC-EM to be around 149 nm",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3389/fphar.2018.01116"
+      ]
+    },
+    {
+      "claim_text": "treatment with recombinant VEGF (50 ng/ml)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1038/s41374-020-00513-1"
+      ]
+    },
+    {
+      "claim_text": "Approximately 10% of adipocytes turn over in human adipose tissue each year",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1242/jcs.079699"
+      ]
+    },
+    {
+      "claim_text": "Lipogems® has been used in more than 7000 patients worldwide in aesthetic medicine and surgery, orthopedic and general surgery",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1007/s40778-016-0053-5"
+      ]
+    },
+    {
+      "claim_text": "We administered 30 μg protein of BMSCs-exosomes or an equal volume of phosphate-buffered saline (PBS) via the retro-orbital route",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.3389/fnins.2019.00014"
+      ]
+    },
+    {
+      "claim_text": "Stem cell therapy improved glycosylated hemoglobin (HbA1c; MD, -3.46; 95% CI, -6.01 to -0.91) for T1DM patients.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.14336/ad.2019.0421"
+      ]
+    },
+    {
+      "claim_text": "For T2DM patients, stem cell therapy improved insulin requirements (MD, -35.76; 95% CI, -40.47 to -31.04).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.14336/ad.2019.0421"
+      ]
+    },
+    {
+      "claim_text": "stem cell therapy improved HbA1c (MD, -0.87; 95% CI, -1.37 to -0.37) and insulin requirements for T2DM patients.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.14336/ad.2019.0421"
+      ]
+    },
+    {
+      "claim_text": "Stem cell therapy improved C-peptide levels (mean difference (MD), 0.41; 95% CI, 0.06 to 0.76) for T1DM patients.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.14336/ad.2019.0421"
+      ]
+    },
+    {
+      "claim_text": "For T2DM patients, stem cell therapy improved C-peptide levels (MD, 0.33; 95% CI, 0.07 to 0.59).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.14336/ad.2019.0421"
+      ]
+    },
+    {
+      "claim_text": "there was no significant change in fasting plasma glucose levels (MD, -0.52; 95% CI, -1.38 to 0.34).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.14336/ad.2019.0421"
+      ]
+    },
+    {
+      "claim_text": "Treatment with MSCs, as compared to controls, significantly decreased the overall odds of death in animals with ALI (Odds Ratio 0.24, 95% Confidence Interval 0.18-0.34, I2 8%).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1371/journal.pone.0147170"
+      ]
+    },
+    {
+      "claim_text": "PTX-MSC-EMs significantly (p < 0.05) decreased the viability of MDA-MB-231 cells in vitro",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fphar.2018.01116"
+      ]
+    }
+  ]
+}

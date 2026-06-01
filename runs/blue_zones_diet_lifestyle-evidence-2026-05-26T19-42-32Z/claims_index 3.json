@@ -1,0 +1,349 @@
+{
+  "topic": "blue_zones_diet_lifestyle",
+  "snapshot_utc": "2026-05-26T19-42-32Z",
+  "claim_count": 38,
+  "claims": [
+    {
+      "claim_text": "Horvath (β = 1.07; p = 0.00378)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fragi.2022.1007098"
+      ]
+    },
+    {
+      "claim_text": "men had lower DNAm-predicted serum IL-6 scores (β = -0.00301, p = 2.84 × 10⁻¹²)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fragi.2022.1007098"
+      ]
+    },
+    {
+      "claim_text": "Pace of Aging (β = 0.0344; p = 1.77 × 10⁻⁰⁸)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fragi.2022.1007098"
+      ]
+    },
+    {
+      "claim_text": "women displayed higher DNAm-predicted proportions of regulatory T cells than men (p = 0.0150, Cohen's d = 0.517)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fragi.2022.1007098"
+      ]
+    },
+    {
+      "claim_text": "men displayed positive epigenetic age acceleration compared to women according to GrimAge (β = 3.55; p = 1.22 × 10⁻¹²)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fragi.2022.1007098"
+      ]
+    },
+    {
+      "claim_text": "The level of adherence to the Mediterranean diet was 62.7%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/ijerph18126602"
+      ]
+    },
+    {
+      "claim_text": "Lifestyle + metformin were associated with lower BMI (mean difference -0.73 kg/m², 95% CI -1.14, -0.32, P = 0.0005)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/humupd/dmv063"
+      ]
+    },
+    {
+      "claim_text": "Diets such as Mediterranean Diet (MedDiet), Dietary Approaches to Stop Hypertension (DASH) diet and Alternate Healthy Eating Index diet (AHEI) were associated with 15–38% reduced relative risk of GDM.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu10060698"
+      ]
+    },
+    {
+      "claim_text": "participants in the highest versus lowest quintile for adherence to overall plant-based diet index had a 31% to 32% lower risk of cardiovascular disease mortality",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.012865"
+      ]
+    },
+    {
+      "claim_text": "Higher adherence to a healthy plant-based diet index was associated with a 19% lower risk of cardiovascular disease mortality",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.012865"
+      ]
+    },
+    {
+      "claim_text": "participants in the highest versus lowest quintile for adherence to overall plant-based diet index had a 18% to 25% lower risk of all-cause mortality",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.012865"
+      ]
+    },
+    {
+      "claim_text": "Higher adherence to a healthy plant-based diet index was associated with a 11% lower risk of all-cause mortality",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.012865"
+      ]
+    },
+    {
+      "claim_text": "participants in the highest versus lowest quintile for adherence to overall plant-based diet index had a 16% lower risk of cardiovascular disease",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.119.012865"
+      ]
+    },
+    {
+      "claim_text": "both exercise and diet cause VAT loss (P < 0.0001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/obr.12406"
+      ]
+    },
+    {
+      "claim_text": "diet caused a larger weight loss (P = 0.04)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/obr.12406"
+      ]
+    },
+    {
+      "claim_text": "The electronic searches yielded 44 documents describing 14 Web-based lifestyle programs",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.2196/12104"
+      ]
+    },
+    {
+      "claim_text": "Adherence to the MIND diet was positively associated with specific domains and global cognitive function (78% of studies) in older adults.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1080/10408398.2021.1925220"
+      ]
+    },
+    {
+      "claim_text": "Lifestyle intervention versus usual care probably reduces large‐for‐gestational age (risk ratio (RR) 0.60, 95% confidence interval (CI) 0.50 to 0.71; 6 RCTs, N = 2994; GRADE moderate‐quality).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/14651858.cd012327.pub2"
+      ]
+    },
+    {
+      "claim_text": "modified DASH diet could reduce mean diastolic (-2.07 mmHg; 95% confidence interval -3.68, -0.46 mmHg; P = 0.01) BP",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fnut.2021.725020"
+      ]
+    },
+    {
+      "claim_text": "modified DASH diet could reduce mean systolic (-3.26 mmHg; 95% confidence interval -5.58, -0.94 mmHg; P = 0.006)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fnut.2021.725020"
+      ]
+    },
+    {
+      "claim_text": "Mediterranean diet showed beneficial effects in weight loss (WC: MD = -1.69; 95% CI: -3.35 to -0.02)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1186/s40795-024-00836-y"
+      ]
+    },
+    {
+      "claim_text": "beneficial effects of Mediterranean diet were not statistically significant in low-density lipoprotein (MD = -2.34; 95% CI -5.67 to 0.99)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1186/s40795-024-00836-y"
+      ]
+    },
+    {
+      "claim_text": "Mediterranean diet led to reduce the level of diastolic blood pressure (MD = -1.20; 95% CI: -2.21 to -0.19)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1186/s40795-024-00836-y"
+      ]
+    },
+    {
+      "claim_text": "Mediterranean diet showed beneficial effects in glycemic control (fasting plasma glucose: MD = -15.12, 95% CI: -24.69 to -5.55)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1186/s40795-024-00836-y"
+      ]
+    },
+    {
+      "claim_text": "Mediterranean diet led to reduce the level of systolic blood pressure (MD = -4.17; 95% CI: -7.12 to -1.22)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1186/s40795-024-00836-y"
+      ]
+    },
+    {
+      "claim_text": "beneficial effects of Mediterranean diet were not statistically significant in high-density lipoprotein (MD = 2.33; 95% CI: -0.27 to 4.92)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1186/s40795-024-00836-y"
+      ]
+    },
+    {
+      "claim_text": "Mediterranean diet showed beneficial effects in glycemic control (HbA1[%]: MD = -0.39, 95% CI: -0.58 to -0.20)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1186/s40795-024-00836-y"
+      ]
+    },
+    {
+      "claim_text": "high fat diet driven age-related changes culminated with alterations in 155 proteins involving primarily the urea cycle.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1074/mcp.m116.065524"
+      ]
+    },
+    {
+      "claim_text": "Age-related changes on low fat diet significantly altered only 18 proteins representing mainly urea cycle.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1074/mcp.m116.065524"
+      ]
+    },
+    {
+      "claim_text": "Long-term high fat diet significantly altered 55 proteins associated with immune response and rennin angiotensin system.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1074/mcp.m116.065524"
+      ]
+    },
+    {
+      "claim_text": "Higher MIND diet adherence was protective of dementia in 7 of 10 cohorts.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.advnut.2024.100184"
+      ]
+    },
+    {
+      "claim_text": "The few studies available on the vegetarian diet failed to support its prevention potential against overall cancer mortality when compared with a non-vegetarian diet (e.g., pooled hazard ratio (HR) = 0.97; 95% confidence interval (CI): 0.88-1.06).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu12072010"
+      ]
+    },
+    {
+      "claim_text": "adherence to the Mediterranean diet is associated with an 11-30% reduction in the risk of age-related cognitive disorders",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s11357-024-01488-3"
+      ]
+    },
+    {
+      "claim_text": "diet showed virtually no change (1.1%)",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1111/obr.12406"
+      ]
+    },
+    {
+      "claim_text": "xylanase improves the digestibility of dietary fiber at least 50% of the time in pigs fed corn-based diets",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/jas/skaa318"
+      ]
+    },
+    {
+      "claim_text": "modified DASH diet could affect mean triglyceride concentration (difference: 1.04 mol/L; 95% confidence interval -1.47, -0.60)",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fnut.2021.725020"
+      ]
+    },
+    {
+      "claim_text": "modified DASH diet could reduce systolic BP to a greater extent in trials with a mean baseline BP ≥ 140/90 mmHg compared with <140/90 mmHg",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.3389/fnut.2021.725020"
+      ]
+    },
+    {
+      "claim_text": "Mediterranean diet showed beneficial effects in weight loss (BMI: MD = -0.71, 95% CI: -1.30 to -0.78)",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1186/s40795-024-00836-y"
+      ]
+    }
+  ]
+}

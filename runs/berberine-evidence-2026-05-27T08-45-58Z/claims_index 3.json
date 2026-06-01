@@ -1,0 +1,160 @@
+{
+  "topic": "berberine",
+  "snapshot_utc": "2026-05-27T08-45-58Z",
+  "claim_count": 17,
+  "claims": [
+    {
+      "claim_text": "berberine could reduce FPG (WMD = -0.82 mmol/L, 95% CI (-0.95, -0.70))",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fphar.2022.1015045"
+      ]
+    },
+    {
+      "claim_text": "berberine could reduce HbA1c (WMD = -0.63%, 95% CI (-0.72, -0.53))",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fphar.2022.1015045"
+      ]
+    },
+    {
+      "claim_text": "berberine could reduce 2hPBG (WMD = -1.16 mmol/L, 95% CI (-1.36, -0.96))",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fphar.2022.1015045"
+      ]
+    },
+    {
+      "claim_text": "Berberine treatment was associated with a better reduction on FPG (WMD = -0.54 mmol/L, 95% CI: -0.77 to -0.30)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1507/endocrj.ej18-0109"
+      ]
+    },
+    {
+      "claim_text": "PPG (WMD = -0.94 mmol/L, 95% CI: -1.27 to -0.61)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1507/endocrj.ej18-0109"
+      ]
+    },
+    {
+      "claim_text": "HbA1c (WMD = -0.54 mmol/L, 95% CI: -0.93 to -0.15)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1507/endocrj.ej18-0109"
+      ]
+    },
+    {
+      "claim_text": "TG (SMD: 0.94; 95%CI: 0.49,1.38; p = 0.00)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fphar.2021.653887"
+      ]
+    },
+    {
+      "claim_text": "TC (SMD: 1.06; 95%CI: 0.64, 1.48; p = 0.00)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fphar.2021.653887"
+      ]
+    },
+    {
+      "claim_text": "HOMA-IR (SMD: 1.25; 95%CI: 0.25,2.24; p = 0.01)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fphar.2021.653887"
+      ]
+    },
+    {
+      "claim_text": "FPG (SMD: 0.65; 95%CI: 0.28,1.03; p = 0.00)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fphar.2021.653887"
+      ]
+    },
+    {
+      "claim_text": "HDL (SMD: -1.59; 95%CI: -2.32, -0.85; p = 0.00)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fphar.2021.653887"
+      ]
+    },
+    {
+      "claim_text": "LDL (SMD: 1.77; 95%CI: 1.11,2.44; p = 0.00)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fphar.2021.653887"
+      ]
+    },
+    {
+      "claim_text": "the risk of hypoglycemia (RR = 0.48, 95% CI (0.21, 1.08), p = 0.08)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.3389/fphar.2022.1015045"
+      ]
+    },
+    {
+      "claim_text": "did not significantly increase the incidence of total adverse events (RR = 0.73, 95% CI (0.55, 0.97), p = 0.03)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.3389/fphar.2022.1015045"
+      ]
+    },
+    {
+      "claim_text": "the daily dosage more than 2 g/d",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1507/endocrj.ej18-0109"
+      ]
+    },
+    {
+      "claim_text": "a study of 28 patients with hyperlipidemia confirmed that oral BBR increased blood/fecal L-dopa by the intestinal bacteria",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41392-020-00456-5"
+      ]
+    },
+    {
+      "claim_text": "the glucose-lowering effect of berberine was associated with baseline mean FPG and HbA1c in type 2 diabetes",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.3389/fphar.2022.1015045"
+      ]
+    }
+  ]
+}

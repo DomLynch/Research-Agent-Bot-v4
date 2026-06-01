@@ -1,0 +1,102 @@
+{
+  "run_dir": "runs/sirtuin-evidence-2026-05-27T05-38-15Z",
+  "topic": "sirtuin",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 sirtuin",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 0,
+    "available_source_contexts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 1.0,
+    "source_count": 4,
+    "clusters": [
+      {
+        "label": "resveratrol_cell_caloric",
+        "member_fact_ids": [
+          "153178",
+          "153181",
+          "153183",
+          "153180",
+          "153182"
+        ],
+        "source_paper": {
+          "doi": "10.1038/cddis.2009.8",
+          "title": "Caloric restriction and resveratrol promote longevity through the Sirtuin-1-dependent induction of autophagy.",
+          "journal": "Cell death & disease",
+          "year": 2010
+        },
+        "example_phrase": "We conclude that autophagy is universally required for the lifespan-prolonging effects of caloric restriction and pharmacological Sirtuin-1 activators."
+      },
+      {
+        "label": "chemoresistance_patients_myofibroblastic",
+        "member_fact_ids": [
+          "153733",
+          "153734"
+        ],
+        "source_paper": {
+          "doi": "10.1126/scitranslmed.adj5705",
+          "title": "TSPAN8 <sup>+</sup> myofibroblastic cancer\u2013associated fibroblasts promote chemoresistance in patients with breast cancer",
+          "journal": "Science Translational Medicine",
+          "year": 2024
+        },
+        "example_phrase": "SIRT6 reduction was responsible for the senescence-like phenotype and tumor-promoting role of TSPAN8+ myCAFs."
+      },
+      {
+        "label": "molecules_srt1720_chemistry",
+        "member_fact_ids": [
+          "135223"
+        ],
+        "source_paper": {
+          "doi": "10.2174/1389557516666160620095103",
+          "title": "Small Molecules as SIRT Modulators",
+          "journal": "Mini-Reviews in Medicinal Chemistry",
+          "year": 2016
+        },
+        "example_phrase": "Some structurally diverse synthetic compounds, such as SRT1720, SRT1460, Selisistat (EX 527), and AGK2 were used as small molecular SIRT modulators (IC50 = 0.04-100 \u03bcM)."
+      },
+      {
+        "label": "age_mechanism_nad",
+        "member_fact_ids": [
+          "151372"
+        ],
+        "source_paper": {
+          "doi": "10.1038/s42255-024-00997-x",
+          "title": "Trigonelline is an NAD+ precursor that improves muscle function during ageing and is reduced in human sarcopenia",
+          "journal": "Nature Metabolism",
+          "year": 2024
+        },
+        "example_phrase": "trigonelline improves mitochondrial respiration and biogenesis, reduces age-related muscle wasting and increases lifespan and mobility through an NAD+-dependent mechanism requiring sirtuin"
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

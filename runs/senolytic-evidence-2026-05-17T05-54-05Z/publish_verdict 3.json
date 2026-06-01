@@ -1,0 +1,73 @@
+{
+  "run_dir": "runs/senolytic-evidence-2026-05-17T05-54-05Z",
+  "topic": "senolytic",
+  "decision": "ready_to_publish",
+  "publish_tier": "TIER_1",
+  "maturity_level": "L5",
+  "headline": "Senolytic-induced EndoMT as a maladaptive response in atherosclerotic plaque regression: implications for therapeutic window optimization",
+  "confidence_label": "evidence_backed_signal",
+  "alpha_score": 83,
+  "surface_type": "publish_alpha_memo",
+  "axes": {
+    "bound_receipts": 3,
+    "available_bound_receipts": 4,
+    "available_source_contexts": 1,
+    "a_core_receipts": 3,
+    "source_concentrated": true,
+    "counter_consensus_tension": true,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": [
+      {
+        "doi": "10.1172/jci.insight.173863",
+        "title": "Treatment of advanced atherosclerotic mice with ABT-263 reduced indices of plaque stability and increased mortality",
+        "journal": "JCI Insight",
+        "year": 2024
+      }
+    ]
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [
+      "12623",
+      "12624",
+      "12622"
+    ],
+    "available_bound_fact_ids": [
+      "12623",
+      "12621",
+      "12622",
+      "12624"
+    ],
+    "candidate_receipts": [
+      {
+        "fact_id": "12621",
+        "lane": "A_core",
+        "phrase": "reduced \u03b1-SMA+ fibrous cap thickness by 60%",
+        "sub_topic": "effect_size",
+        "population": "advanced atherosclerotic Apoe-/- mice fed western diet",
+        "intervention": "ABT-263 at 100 mg/kg or 50 mg/kg",
+        "source_paper": {
+          "doi": "10.1172/jci.insight.173863",
+          "title": "Treatment of advanced atherosclerotic mice with ABT-263 reduced indices of plaque stability and increased mortality",
+          "journal": "JCI Insight",
+          "year": 2024
+        },
+        "same_source_as_lead": true
+      }
+    ]
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": false,
+    "reason": "not_broad_or_not_noisy_enough",
+    "d_bad_share": 0.692,
+    "source_count": 4,
+    "clusters": []
+  },
+  "blockers": []
+}

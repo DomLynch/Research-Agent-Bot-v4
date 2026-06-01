@@ -1,0 +1,132 @@
+{
+  "topic": "partial_epigenetic_reprogramming",
+  "snapshot_utc": "2026-05-27T08-42-38Z",
+  "counts": {
+    "A_core": 0,
+    "B_context": 0,
+    "C_noise": 8,
+    "D_bad_extraction": 12
+  },
+  "verdicts": [
+    {
+      "fact_id": "3362",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "182534",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "182531",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "182533",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "169061",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "164695",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "164694",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "182532",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "numeric_role=unknown_not_effect_finding"
+    },
+    {
+      "fact_id": "170442",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "3361",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "150424",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "150423",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "150425",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "157236",
+      "lane": "D_bad_extraction",
+      "numeric_role": "unknown",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "177034",
+      "lane": "D_bad_extraction",
+      "numeric_role": "sample_size",
+      "reason": "numeric_role=sample_size_not_effect_finding"
+    },
+    {
+      "fact_id": "90736",
+      "lane": "D_bad_extraction",
+      "numeric_role": "duration",
+      "reason": "numeric_role=duration_not_effect_finding"
+    },
+    {
+      "fact_id": "177033",
+      "lane": "D_bad_extraction",
+      "numeric_role": "sample_size",
+      "reason": "numeric_role=sample_size_not_effect_finding"
+    },
+    {
+      "fact_id": "177035",
+      "lane": "D_bad_extraction",
+      "numeric_role": "sample_size",
+      "reason": "numeric_role=sample_size_not_effect_finding"
+    },
+    {
+      "fact_id": "148153",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "174621",
+      "lane": "C_noise",
+      "numeric_role": "correlation",
+      "reason": "topic_word_absent_from_pico_fields"
+    }
+  ]
+}

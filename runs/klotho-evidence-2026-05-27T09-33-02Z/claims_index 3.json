@@ -1,0 +1,61 @@
+{
+  "topic": "klotho",
+  "snapshot_utc": "2026-05-27T09-33-02Z",
+  "claim_count": 6,
+  "claims": [
+    {
+      "claim_text": "the serum Klotho level was reduced by approximately 80% in Six2-KL(-/-) mice compared with wild-type littermates",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1681/asn.2013111209"
+      ]
+    },
+    {
+      "claim_text": "odds ratio, 0.78 [95% confidence interval, 0.66 to 0.93] for 30% decline in eGFR",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1681/asn.2016080828"
+      ]
+    },
+    {
+      "claim_text": "the serum level of Klotho was decreased by ≈45% in patients with arterial stiffness and hypertension.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/hypertensionaha.116.07709"
+      ]
+    },
+    {
+      "claim_text": "incident rate ratio, 0.90 [95% confidence interval, 0.78 to 1.04]",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1681/asn.2016080828"
+      ]
+    },
+    {
+      "claim_text": "0.85 [95% confidence interval, 0.73 to 0.98] for >3 ml/min per year decline in eGFR",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1681/asn.2016080828"
+      ]
+    },
+    {
+      "claim_text": "Deletion of amino acids 954-962 resulted in a 94% reduction in KL shedding.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1021/bi500409n"
+      ]
+    }
+  ]
+}

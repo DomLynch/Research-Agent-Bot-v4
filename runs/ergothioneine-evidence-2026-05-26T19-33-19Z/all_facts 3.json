@@ -1,0 +1,28 @@
+[
+  {
+    "fact_id": 186885,
+    "topic": "ergothioneine",
+    "sub_topic": "effect_size",
+    "source_paper": {
+      "pmid": "38446314",
+      "doi": "10.1007/s11357-024-01111-5",
+      "pmcid": null,
+      "title": "Ergothioneine promotes longevity and healthy aging in male mice",
+      "journal": "GeroScience",
+      "year": 2024
+    },
+    "claim_type": "effect_size",
+    "numeric_value": 4.0,
+    "units": "mg/kg/day",
+    "ci_lower": null,
+    "ci_upper": null,
+    "population": "male mice",
+    "intervention": "ergothioneine (ERGO) dissolved in drinking water",
+    "comparator": "control group",
+    "canonical_phrase": "Ingestion of 4 ~ 5 mg/kg/day of ERGO remarkably extended the lifespan of male mice.",
+    "canonical_year": 2024,
+    "validator": "researka-tier2",
+    "superseded_by": null,
+    "_tier": "tier2"
+  }
+]

@@ -1,0 +1,127 @@
+{
+  "run_dir": "runs/hormone_optimization_HRT-evidence-2026-05-27T09-06-44Z",
+  "topic": "hormone_optimization_HRT",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 hormone_optimization_HRT",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 0,
+    "available_source_contexts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 0.684,
+    "source_count": 16,
+    "clusters": [
+      {
+        "label": "oncology_review_endometrial",
+        "member_fact_ids": [
+          "145680",
+          "145678",
+          "145679",
+          "145677",
+          "145674",
+          "145675"
+        ],
+        "source_paper": {
+          "doi": "10.3389/fonc.2019.00359",
+          "title": "Anti-estrogen Treatment in Endometrial Cancer: A Systematic Review",
+          "journal": "Frontiers in Oncology",
+          "year": 2019
+        },
+        "example_phrase": "First line hormonal therapy consists of treatment with progestins, which has a response rate of 25%"
+      },
+      {
+        "label": "been_hypothyroidism_advances",
+        "member_fact_ids": [
+          "139031",
+          "139028",
+          "139027",
+          "139030",
+          "139029"
+        ],
+        "source_paper": {
+          "doi": "10.1007/s12325-019-01080-8",
+          "title": "Hypothyroidism in Context: Where We\u2019ve Been and Where We\u2019re Going",
+          "journal": "Advances in Therapy",
+          "year": 2019
+        },
+        "example_phrase": "titrated to achieve optimal TSH levels (0.4-4.0 mIU/L)"
+      },
+      {
+        "label": "guidance_current_failure",
+        "member_fact_ids": [
+          "140753",
+          "140749",
+          "140750",
+          "140751"
+        ],
+        "source_paper": {
+          "doi": "10.1002/ejhf.586",
+          "title": "Current Management of Patients with Severe Acute Peripartum Cardiomyopathy: Practical Guidance from the Heart Failure Association of the European Society of Cardiology Study Group on Peripartum Cardiomyopathy",
+          "journal": "European Journal of Heart Failure",
+          "year": 2016
+        },
+        "example_phrase": "cleavage of the nursing hormone prolactin into the angiostatic and proapoptotic 16 kDa subfragment"
+      },
+      {
+        "label": "pharmacotherapy_weight_incretin",
+        "member_fact_ids": [
+          "137275",
+          "137276",
+          "137278",
+          "137277"
+        ],
+        "source_paper": {
+          "doi": "10.2337/dci23-0100",
+          "title": "Incretin-Based Weight Loss Pharmacotherapy: Can Resistance Exercise Optimize Changes in Body Composition?",
+          "journal": "Diabetes Care",
+          "year": 2024
+        },
+        "example_phrase": "cause rapid and significant loss of lean mass (\u223c10% or \u223c6 kg)"
+      },
+      {
+        "label": "carcinoid_guidance_enets",
+        "member_fact_ids": [
+          "1217",
+          "1215",
+          "1216"
+        ],
+        "source_paper": {
+          "doi": "10.1111/jne.13146",
+          "title": "European Neuroendocrine Tumor Society ( <scp>ENETS</scp> ) 2022 Guidance Paper for Carcinoid Syndrome and Carcinoid Heart Disease",
+          "journal": "Journal of Neuroendocrinology",
+          "year": 2022
+        },
+        "example_phrase": "in 5%\u201313% of cases, CS may develop in the absence of liver metastases"
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

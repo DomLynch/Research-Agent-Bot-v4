@@ -1,0 +1,187 @@
+{
+  "topic": "partial_epigenetic_reprogramming",
+  "snapshot_utc": "2026-05-27T08-42-38Z",
+  "claim_count": 20,
+  "claims": [
+    {
+      "claim_text": "45.3% of age-associated proteins were associated with multimorbidity.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.7554/elife.61073"
+      ]
+    },
+    {
+      "claim_text": "aging was not a risk factor for the increased severity of COVID-19 (P > 0.05).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fmed.2022.989950"
+      ]
+    },
+    {
+      "claim_text": "severe COVID-19 infection can slow the acceleration of the epigenetic clock 'GrimAge' (beta = -0.24, se = 0.07, P = 0.00122)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fmed.2022.989950"
+      ]
+    },
+    {
+      "claim_text": "The results of the MR analysis showed no significant differences in susceptibility to aging and COVID-19. (P-values are in the range of 0.05-0.94).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fmed.2022.989950"
+      ]
+    },
+    {
+      "claim_text": "we found robust associations between SES measures in adulthood and the GrimAge and DunedinPoAm clocks (Bonferroni-corrected p-value < 0.01).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1080/15592294.2021.1939479"
+      ]
+    },
+    {
+      "claim_text": "DunedinPoAm38 explained between 2 and 7% of the association between ACEs and adult depressive symptoms",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.ssmph.2022.101071"
+      ]
+    },
+    {
+      "claim_text": "GrimAge explained between 9 and 14% of the association between ACEs and adult depressive symptoms",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.ssmph.2022.101071"
+      ]
+    },
+    {
+      "claim_text": "severe COVID-19 can cause telomere lengths to become shorter (beta = -0.01; se = 0.01; P = 0.02779)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fmed.2022.989950"
+      ]
+    },
+    {
+      "claim_text": "systemically delivered adeno-associated viruses, encoding an inducible OSK system, in 124-week-old male mice extend the median remaining lifespan by 109% over WT controls",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1089/cell.2023.0072"
+      ]
+    },
+    {
+      "claim_text": "33.5% of age-associated proteins were associated with mortality.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.7554/elife.61073"
+      ]
+    },
+    {
+      "claim_text": "strong correlations between the epigenetic clocks and individual's chronological age (r > 0.8, p < 0.0001).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41467-022-29801-8"
+      ]
+    },
+    {
+      "claim_text": "longitudinal increases in gravidity were linked to accelerated epigenetic aging in two epigenetic clocks (n = 331).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1073/pnas.2317290121"
+      ]
+    },
+    {
+      "claim_text": "Cross-sectionally, gravidity was associated with all six measures of accelerated epigenetic aging in women (n = 825).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1073/pnas.2317290121"
+      ]
+    },
+    {
+      "claim_text": "the number of pregnancies a man reported fathering was not associated with epigenetic aging among same-aged cohort men (n = 910).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1073/pnas.2317290121"
+      ]
+    },
+    {
+      "claim_text": "complete or partial response to BT conferred a 42% reduction in disease progression and death after CD19CAR-T therapy",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1182/bloodadvances.2022009019"
+      ]
+    },
+    {
+      "claim_text": "The correlation between white and gray matter disappeared after partial-volume correction in 11C-PIB (r2 = 0)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2967/jnumed.118.224113"
+      ]
+    },
+    {
+      "claim_text": "the mRNA of major vitamin D-25-hydroxylase (CYP2R1) is markedly (~40%) lower in livers of obese mice (fed a high-fat diet) compared with livers from normal mice",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jbmr.3884"
+      ]
+    },
+    {
+      "claim_text": "the serum concentration of 25OHD is substantially lower (~−20%) in serum of obese mice (fed a high-fat diet) compared with normal-weight mice",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jbmr.3884"
+      ]
+    },
+    {
+      "claim_text": "finding lower protein expression (~50% decrease) of CYP2R1",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jbmr.3884"
+      ]
+    },
+    {
+      "claim_text": "Significant increases in epigenetic age acceleration were observed in first-generation epigenetic clocks and mitotic clocks at 3 and 6 months",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18632/aging.205581"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+{
+  "topic": "epigenome_editing_longevity",
+  "snapshot_utc": "2026-05-27T06-35-19Z",
+  "claim_count": 12,
+  "claims": [
+    {
+      "claim_text": "The slope of covariate-adjusted log hazards for sarcoma-specific survival decreases for tumors >8 cm in greatest dimension",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.6004/jnccn.2017.7042"
+      ]
+    },
+    {
+      "claim_text": "high GSS gene editing efficiency in GBM (up to 67.2%) with negligible off-target gene editing",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1021/acsnano.2c12857"
+      ]
+    },
+    {
+      "claim_text": "37% average installation of the desired edit",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1038/s41591-024-03466-w"
+      ]
+    },
+    {
+      "claim_text": "63% average PrP reduction in the mouse brain from a 6.7-fold lower viral dose",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-024-03466-w"
+      ]
+    },
+    {
+      "claim_text": "52% extension of lifespan in transgenic human PRNP mice inoculated with pathogenic human prion isolates",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-024-03466-w"
+      ]
+    },
+    {
+      "claim_text": "T1a, <0.8 mm without ulceration; T1b, 0.8-1.0 mm with or without ulceration or <0.8 mm with ulceration",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3322/caac.21409"
+      ]
+    },
+    {
+      "claim_text": "prognostic stage III groupings are based on N category criteria and T category criteria and increased from 3 to 4 subgroups (stages IIIA-IIID)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3322/caac.21409"
+      ]
+    },
+    {
+      "claim_text": "Six of the 20 VvMLO3/4-edited grapevine lines showed normal growth, while the remaining lines exhibited senescence-like chlorosis and necrosis.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41438-020-0339-8"
+      ]
+    },
+    {
+      "claim_text": "The editing efficiency achieved with different CRISPR/Cas9 constructs varied from 0 to 38.5%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1038/s41438-020-0339-8"
+      ]
+    },
+    {
+      "claim_text": "subdivided the T1 category to T1a and T1b based on a size cutoff of 5 cm",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.21037/cco.2018.07.03"
+      ]
+    },
+    {
+      "claim_text": "showed an improvement in prediction of cancer death with 5% increase in the C-index in a replication cohort",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13608"
+      ]
+    },
+    {
+      "claim_text": "IMPULSED; 11.7% of used techniques",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1002/jmri.29144"
+      ]
+    }
+  ]
+}

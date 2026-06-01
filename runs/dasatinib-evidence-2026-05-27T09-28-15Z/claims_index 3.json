@@ -1,0 +1,187 @@
+{
+  "topic": "dasatinib",
+  "snapshot_utc": "2026-05-27T09-28-15Z",
+  "claim_count": 20,
+  "claims": [
+    {
+      "claim_text": "overall survival is 80.7%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1200/jco.23.01075"
+      ]
+    },
+    {
+      "claim_text": "event-free survival is 74.6%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1200/jco.23.01075"
+      ]
+    },
+    {
+      "claim_text": "disease-free survival is 75.8%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1200/jco.23.01075"
+      ]
+    },
+    {
+      "claim_text": "D&Q treatment improved fasting blood glucose (p = 0.001) and glucose tolerance (p = 0.007) in old mice that was concomitant with lower hepatic gluconeogenesis",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13767"
+      ]
+    },
+    {
+      "claim_text": "D&Q improved insulin-stimulated suppression of plasma NEFAs (p = 0.01)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13767"
+      ]
+    },
+    {
+      "claim_text": "D&Q have senolytic effects, reducing age-related increase in senescence-associated β-galactosidase, expression of p16 and p21 gene and P16 protein in perigonadal white adipose tissue (all p ≤ 0.04)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13767"
+      ]
+    },
+    {
+      "claim_text": "This treatment also suppressed age-related increase in the expression of a subset of pro-inflammatory SASP genes, crown-like structures, abundance of T cells and macrophages in pgWAT (all p ≤ 0.04)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13767"
+      ]
+    },
+    {
+      "claim_text": "D&Q reduced fed and fasted plasma triglycerides (both p ≤ 0.04)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13767"
+      ]
+    },
+    {
+      "claim_text": "D&Q improved systemic lipid tolerance (p = 0.006)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13767"
+      ]
+    },
+    {
+      "claim_text": "At 5 years, overall survival was 36% and up to 45% taking into account deaths unrelated to disease or treatment as competitors.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1182/blood-2016-02-700153"
+      ]
+    },
+    {
+      "claim_text": "Complete remission rate was 96%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1182/blood-2016-02-700153"
+      ]
+    },
+    {
+      "claim_text": "65% of patients achieved a 3-log reduction in BCR-ABL1 transcript levels during consolidation.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1182/blood-2016-02-700153"
+      ]
+    },
+    {
+      "claim_text": "Dasatinib (5 mg/kg) and quercetin (50 mg/kg) were administered to diabetic db/db mice by gavage for 20 weeks.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.3892/ijmm.2024.5350"
+      ]
+    },
+    {
+      "claim_text": "Ten patients (23%) were positive before any therapy and 8 relapsed, all with this mutation.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1182/blood-2016-02-700153"
+      ]
+    },
+    {
+      "claim_text": "36 patients relapsed, 24 were tested for mutation by Sanger sequencing, and 75% were T315I-positive.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1182/blood-2016-02-700153"
+      ]
+    },
+    {
+      "claim_text": "The transplant-related mortality was 12.5% for patients transplanted in first CHR and 13.7% overall",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.1200/jco.23.01075"
+      ]
+    },
+    {
+      "claim_text": "83.3% of patients are in continuous CHR",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1200/jco.23.01075"
+      ]
+    },
+    {
+      "claim_text": "Doxorubicin reduced tumor growth by 30% compared to control mice",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fonc.2018.00459"
+      ]
+    },
+    {
+      "claim_text": "the maximal cytostatic doses for D and/or Q (1 + 1 μM) lacked efficacy in removing doxorubicin-induced β-gal-positive senescent cells",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fonc.2018.00459"
+      ]
+    },
+    {
+      "claim_text": "Significant increases in epigenetic age acceleration were observed in first-generation epigenetic clocks and mitotic clocks at 3 and 6 months",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18632/aging.205581"
+      ]
+    }
+  ]
+}

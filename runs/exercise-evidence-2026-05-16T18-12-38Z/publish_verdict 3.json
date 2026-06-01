@@ -1,0 +1,146 @@
+{
+  "run_dir": "runs/exercise-evidence-2026-05-16T18-12-38Z",
+  "topic": "exercise",
+  "decision": "ready_to_publish",
+  "publish_tier": "TIER_1",
+  "maturity_level": "L5",
+  "headline": "Exercise: single-source alpha signal",
+  "confidence_label": "evidence_backed_signal",
+  "alpha_score": 100,
+  "surface_type": "publish_alpha_memo",
+  "axes": {
+    "bound_receipts": 4,
+    "available_bound_receipts": 16,
+    "available_source_contexts": 10,
+    "a_core_receipts": 4,
+    "source_concentrated": true,
+    "counter_consensus_tension": true,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": [
+      {
+        "doi": "10.1158/1940-6207.capr-20-0188",
+        "title": "Effect of Exercise or Metformin on Biomarkers of Inflammation in Breast and Colorectal Cancer: A Randomized Trial",
+        "journal": "Cancer Prevention Research",
+        "year": 2020
+      }
+    ]
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [
+      "22116",
+      "22117",
+      "22118",
+      "22119"
+    ],
+    "available_bound_fact_ids": [
+      "12572",
+      "12573",
+      "41245",
+      "12544",
+      "22119",
+      "22117",
+      "22118",
+      "22116",
+      "30392",
+      "15480",
+      "29372",
+      "29371",
+      "29370",
+      "19252",
+      "27808",
+      "34200"
+    ],
+    "candidate_receipts": [
+      {
+        "fact_id": "12544",
+        "lane": "A_core",
+        "phrase": "Mortality risk was 11% lower (hazard ratio, 0.89; 95% confidence interval, 0.86-0.93; P<0.001) for every 1-MET increase in exercise capacity.",
+        "sub_topic": "effect_size",
+        "population": "male veterans with hypertension aged \u226570 years",
+        "intervention": "exercise capacity (per 1-MET increase)",
+        "source_paper": {
+          "doi": "10.1161/hypertensionaha.114.03510",
+          "title": "Exercise Capacity and All-Cause Mortality in Male Veterans With Hypertension Aged \u226570 Years",
+          "journal": "Hypertension",
+          "year": 2014
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "12572",
+        "lane": "A_core",
+        "phrase": "Mixed-muscle protein fractional synthetic rate increased by 42% at 3 h postexercise and 69% at 24 h postexercise in CON.",
+        "sub_topic": "effect_size",
+        "population": "sixteen healthy young men (CON group)",
+        "intervention": "BFR exercise (control)",
+        "source_paper": {
+          "doi": "10.1152/ajpendo.00600.2013",
+          "title": "Activation of mTORC1 signaling and protein synthesis in human muscle following blood flow restriction exercise is inhibited by rapamycin",
+          "journal": "American Journal of Physiology-Endocrinology and Metabolism",
+          "year": 2014
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "12573",
+        "lane": "A_core",
+        "phrase": "Mixed-muscle protein fractional synthetic rate increased by 42% at 3 h postexercise and 69% at 24 h postexercise in CON.",
+        "sub_topic": "effect_size",
+        "population": "sixteen healthy young men (CON group)",
+        "intervention": "BFR exercise (control)",
+        "source_paper": {
+          "doi": "10.1152/ajpendo.00600.2013",
+          "title": "Activation of mTORC1 signaling and protein synthesis in human muscle following blood flow restriction exercise is inhibited by rapamycin",
+          "journal": "American Journal of Physiology-Endocrinology and Metabolism",
+          "year": 2014
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "15480",
+        "lane": "A_core",
+        "phrase": "patients with PAD had a greater reduction in SmO2 (-54 \u00b1 10 vs. -12 \u00b1 4%, P = 0.001)",
+        "sub_topic": "effect_size",
+        "population": "patients with peripheral artery disease and age-matched healthy controls",
+        "intervention": "fatiguing plantar flexion exercise (from 0.5 to 7 kg for up to 14 min)",
+        "source_paper": {
+          "doi": "10.1152/japplphysiol.01110.2016",
+          "title": "Blood pressure and calf muscle oxygen extraction during plantar flexion exercise in peripheral artery disease",
+          "journal": "Journal of Applied Physiology",
+          "year": 2017
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "19252",
+        "lane": "A_core",
+        "phrase": "protein synthetic response to exercise was blunted in obese rats: mixed -7%, myofibrillar +6%, cytosolic +7% vs. lean +34%, +40%, +17%.",
+        "sub_topic": "effect_size",
+        "population": "obese Zucker rats and lean littermates",
+        "intervention": "resistance exercise",
+        "source_paper": {
+          "doi": "10.1096/fj.12-224006",
+          "title": "Abnormal protein turnover and anabolic resistance to exercise in sarcopenic obesity",
+          "journal": "The FASEB Journal",
+          "year": 2013
+        },
+        "same_source_as_lead": false
+      }
+    ]
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": false,
+    "reason": "not_broad_or_not_noisy_enough",
+    "d_bad_share": 0.568,
+    "source_count": 25,
+    "clusters": []
+  },
+  "blockers": []
+}

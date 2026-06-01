@@ -1,0 +1,349 @@
+{
+  "topic": "hormone_optimization_HRT",
+  "snapshot_utc": "2026-05-27T09-06-44Z",
+  "claim_count": 38,
+  "claims": [
+    {
+      "claim_text": "cleavage of the nursing hormone prolactin into the angiostatic and proapoptotic 16 kDa subfragment",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1002/ejhf.586"
+      ]
+    },
+    {
+      "claim_text": "First line hormonal therapy consists of treatment with progestins, which has a response rate of 25%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fonc.2019.00359"
+      ]
+    },
+    {
+      "claim_text": "for combined chemo- and hormonal therapy 43%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fonc.2019.00359"
+      ]
+    },
+    {
+      "claim_text": "Overall, ~40% of hormone receptor (HR)+/HER2- MBC cases harbor alterations affecting the (PI3K)/Akt/mammalian target of rapamycin (mTOR) pathway.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3389/fonc.2021.644737"
+      ]
+    },
+    {
+      "claim_text": "maintaining optimal serum levels above 40 ng/mL is vital for health and disease prevention.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3390/nu16111666"
+      ]
+    },
+    {
+      "claim_text": "maintain serum 25(OH)D concentrations above 50 ng/mL (125 nmol/L) for optimal clinical outcomes.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.3390/nu16111666"
+      ]
+    },
+    {
+      "claim_text": "Heritable factors account for 60-80% of optimal bone mineralization.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/ijms20092213"
+      ]
+    },
+    {
+      "claim_text": "titrated to achieve optimal TSH levels (0.4-4.0 mIU/L)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1007/s12325-019-01080-8"
+      ]
+    },
+    {
+      "claim_text": "Amenorrhea or oligomenorrhea are seen in more than 25% of women with advanced liver disease.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1002/hep.31559"
+      ]
+    },
+    {
+      "claim_text": "in 5%–13% of cases, CS may develop in the absence of liver metastases",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1111/jne.13146"
+      ]
+    },
+    {
+      "claim_text": "The prevalence of CS among patients with NETs has varied widely, ranging from 3% to 74% in the past, to 19% to 35% to date.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1111/jne.13146"
+      ]
+    },
+    {
+      "claim_text": "Liver metastases are present in 87%–100% of patients with CS.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1111/jne.13146"
+      ]
+    },
+    {
+      "claim_text": "Daily protein intake should fall within the mid- to upper ranges of current sport nutrition guidelines (1.4-2.2 g·kg⁻¹·day⁻¹) for women at all stages of menstrual function.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1080/15502783.2023.2204066"
+      ]
+    },
+    {
+      "claim_text": "should aim for a bolus of high EAA-containing (~10 g) intact protein sources or supplements to overcome anabolic resistance.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1080/15502783.2023.2204066"
+      ]
+    },
+    {
+      "claim_text": "idiopathic cardiomyopathy frequently presenting with heart failure secondary to LV systolic dysfunction (LVEF <45%) towards the end of pregnancy or in the months following delivery",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1002/ejhf.586"
+      ]
+    },
+    {
+      "claim_text": "systolic blood pressure <90 mmHg",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1002/ejhf.586"
+      ]
+    },
+    {
+      "claim_text": "heart rate >130 b.p.m. or <45 b.p.m.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1002/ejhf.586"
+      ]
+    },
+    {
+      "claim_text": "for combination of anti-estrogenic treatment with mammalian target of rapamycin (mTOR) inhibitors 14-31%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fonc.2019.00359"
+      ]
+    },
+    {
+      "claim_text": "for aromatase inhibitors from 8 to 9%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fonc.2019.00359"
+      ]
+    },
+    {
+      "claim_text": "The RR for tamoxifen ranged from 10 to 53%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fonc.2019.00359"
+      ]
+    },
+    {
+      "claim_text": "for combined tamoxifen/progestin treatment 19-58%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fonc.2019.00359"
+      ]
+    },
+    {
+      "claim_text": "cause rapid and significant loss of lean mass (∼10% or ∼6 kg)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2337/dci23-0100"
+      ]
+    },
+    {
+      "claim_text": "elicit large increases in lean mass (∼3 kg)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2337/dci23-0100"
+      ]
+    },
+    {
+      "claim_text": "elicit large increases in strength (∼25%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2337/dci23-0100"
+      ]
+    },
+    {
+      "claim_text": "induce ∼15-24% weight loss in adults with overweight and obesity",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2337/dci23-0100"
+      ]
+    },
+    {
+      "claim_text": "Pituitary adenomas occur in 10% of the population.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1210/endrev/bnac010"
+      ]
+    },
+    {
+      "claim_text": "with a further estimated 5% being undiagnosed",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1007/s12325-019-01080-8"
+      ]
+    },
+    {
+      "claim_text": "Hypothyroidism affects up to 5% of the general population",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1007/s12325-019-01080-8"
+      ]
+    },
+    {
+      "claim_text": "levothyroxine is usually prescribed at a starting dose of 1.6 µg/kg/day",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1007/s12325-019-01080-8"
+      ]
+    },
+    {
+      "claim_text": "Over 99% of affected patients suffer from primary hypothyroidism",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1007/s12325-019-01080-8"
+      ]
+    },
+    {
+      "claim_text": "for patients with non-pCR, 14 cycles of adjuvant T-DM1 have become a new adjuvant therapy standard",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1016/j.breast.2022.01.006"
+      ]
+    },
+    {
+      "claim_text": "encountered in up to 55% of cases",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1007/s12020-023-03339-1"
+      ]
+    },
+    {
+      "claim_text": "pasireotide (PASI) impairs glycaemic profile in up to 75% of cases",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "adverse",
+      "supporting_study_ids": [
+        "10.1007/s12020-023-03339-1"
+      ]
+    },
+    {
+      "claim_text": "Up to 10% of panNENs develop in patients with syndromes that predispose them to cancer.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1148/rg.2020200025"
+      ]
+    },
+    {
+      "claim_text": "a recent study showing 1.8% of adults with new-onset diabetes should have been classified as DEP.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1111/jgh.14451"
+      ]
+    },
+    {
+      "claim_text": "according to the BI-RADS categorization, accuracy, sensitivity and specificity were 85.6, 98.7, and 63.1%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fonc.2021.623506"
+      ]
+    },
+    {
+      "claim_text": "The diagnostic accuracy was 92.86% with the DLM in BI-RADS 4a patients.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fonc.2021.623506"
+      ]
+    },
+    {
+      "claim_text": "For the external test set, the AUC was 0.90.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fonc.2021.623506"
+      ]
+    }
+  ]
+}

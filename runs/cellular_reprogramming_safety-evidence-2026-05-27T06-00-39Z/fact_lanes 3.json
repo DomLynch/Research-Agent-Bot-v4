@@ -1,0 +1,36 @@
+{
+  "topic": "cellular_reprogramming_safety",
+  "snapshot_utc": "2026-05-27T06-00-39Z",
+  "counts": {
+    "A_core": 0,
+    "B_context": 0,
+    "C_noise": 1,
+    "D_bad_extraction": 3
+  },
+  "verdicts": [
+    {
+      "fact_id": "170442",
+      "lane": "C_noise",
+      "numeric_role": "effect_size",
+      "reason": "topic_word_absent_from_pico_fields"
+    },
+    {
+      "fact_id": "143311",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "143312",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    },
+    {
+      "fact_id": "143313",
+      "lane": "D_bad_extraction",
+      "numeric_role": "effect_size",
+      "reason": "missing_population_or_intervention"
+    }
+  ]
+}

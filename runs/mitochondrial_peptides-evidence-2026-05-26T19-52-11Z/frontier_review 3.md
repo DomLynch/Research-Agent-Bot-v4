@@ -1,0 +1,38 @@
+# Frontier review — mitochondrial_peptides
+
+**Snapshot:** 2026-05-26T19-52-11Z
+**Strategist model:** mimo-v2.5-pro
+
+## The lens
+
+The deterministic layer provided no evidence facts, rendering the evidence pool empty; thus, no non-obvious framing can be derived from cited data. To advance, the evidence must be sourced from primary literature on mitochondrial peptides in cancer therapeutics and metabolic modulation, focusing on specific formulations like C-peptide-SLN-PTX and compounds such as UA.
+
+## Already known — do not publish
+
+- Mitochondrial peptides are generally involved in cellular energy regulation and stress responses.
+- They have established roles in aging, cancer, and metabolic diseases based on prior reviews.
+
+## Tensions / contradictions
+
+- In vitro cytotoxicity enhancements (e.g., with C-peptide-SLN-PTX) may not correlate with in vivo tumor reduction outcomes across different models.
+- The ≈50% decrease in mitochondrial function reported in cardiac contexts conflicts with potential pro-metabolic effects of peptides like UA in other tissues.
+
+## Evidence gaps
+
+- Dose-response relationships for UA (e.g., 1 µM) on mitochondrial biogenesis genes in non-cardiac cell types.
+- The role of nanoparticle encapsulation (e.g., SLN) in enhancing peptide stability and targeting for metastatic cancer models like 4T1.
+
+## Paper theses
+
+_none_
+
+## Reviewer objections to anticipate
+
+- The thesis is entirely speculative without any cited evidence facts, failing to meet empirical standards for publication.
+- The proposed angles lack specificity, as no concrete data points from deterministic facts are referenced.
+
+## Suggested next extractions
+
+- Extract dose-dependent data on UA from paper 10.3390/ijms22158333, focusing on mitochondrial biogenesis markers.
+- Gather in vivo efficacy and metastasis prevention data for C-peptide-SLN-PTX from paper 10.1038/s41598-025-90107-y, including tumor volume metrics.
+- Investigate mechanisms of mitochondrial function decline in cardiac models from paper 10.1161/circresaha.116.307505 to identify potential peptide interventions.

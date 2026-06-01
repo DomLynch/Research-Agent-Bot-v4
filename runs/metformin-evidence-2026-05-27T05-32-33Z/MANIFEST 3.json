@@ -1,0 +1,82 @@
+{
+  "topic": "metformin",
+  "snapshot_utc": "2026-05-27T05-32-33Z",
+  "top_n": 5,
+  "facts_inspected": 32,
+  "aggregated_claims": 32,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "mode": "alpha",
+  "selected_theme": "intervention_signal",
+  "facet_counts": {
+    "clinical_outcome": 8,
+    "regimen_or_dose": 1
+  },
+  "numeric_artifacts_filtered": 18,
+  "fact_fetch_plan": [
+    "strict audited numeric facts via POST /api/v1/tier2/facts/search",
+    "validated topic facts via GET /api/v1/topics/{topic}/facts",
+    "normal numeric fact graph via POST /api/v1/tier2/facts/search",
+    "normal all-fact graph when source diversity is still thin"
+  ],
+  "paper_context_source": "POST /api/v1/papers/topic + POST /api/v1/search",
+  "pico_enrichment": {
+    "facts_inspected": 50,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "skipped_no_candidates"
+  },
+  "ranking": "alpha: deterministic validation*magnitude*precision*recency + data-driven contrast/subgroup boosts + theme coherence",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "b7a474fed9262da2a842c233860a0f408e5162640560b02060b4fc9720d1e498"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "92ae7d3a3bae24ab3a68a06764ce6e707f49c64157cc57f6b92d596ae1c11627"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "b790a74fd92b35e70c4d73c7b46a5fe1a933c7574a8165af54d110f10ab8d54d"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "6d4034b814e2000a362a9b8b74e427a0ca45a2259a446bd7331b49e0affb24a2"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "9c3cfd96beaf051d59ddb4e5e6f6fd3fe8e746e4a78d157571a18c14a112462c"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "90984baae1bd0fabbd956c48df731cb696edc1eb9125c244e1521a8e8514e824"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "476e93b34b52bd616203430d46c9754980399889fe9a9c9bbf246d9d05e4fc63"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "db926814df3ca938ac7b212e099790b87d8e6c5f41a6ceab076afc67a9f06fc9"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "5946be97671447fc9d263cd4f1ab7c4d35742c7698956ee1f3fce88f526c98fb"
+    },
+    "signal_post_md": {
+      "name": "signal_post.md",
+      "sha256": "c6910d2a0a5fff853d157b471771ef14017fd6d259965e5ba33db9e8eec2979d"
+    },
+    "alpha_memo_md": {
+      "name": "alpha_memo.md",
+      "sha256": "6c3633c5704e50191214fc65d26d208ea6d04c3f8ef54288afff765be553bde8"
+    },
+    "publish_verdict_json": {
+      "name": "publish_verdict.json",
+      "sha256": "318a01c3bcea3b4f15796b77f208cf37d89445f5bf57bf3dd6788ccf19fcc4c6"
+    }
+  }
+}

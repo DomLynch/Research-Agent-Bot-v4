@@ -1,0 +1,116 @@
+{
+  "run_dir": "runs/spermidine-evidence-2026-05-27T08-40-53Z",
+  "topic": "spermidine",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 spermidine",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 1,
+    "available_source_contexts": 1,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": true,
+    "why": "lead_thesis_underuses_available_bound_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [
+      "128244"
+    ],
+    "candidate_receipts": [
+      {
+        "fact_id": "128244",
+        "lane": "A_core",
+        "phrase": "life extension of up to 25% can be produced by lifelong administration",
+        "sub_topic": "effect_size",
+        "population": "mice",
+        "intervention": "oral spermidine administration",
+        "source_paper": {
+          "doi": "10.1158/0008-5472.can-16-3462",
+          "title": "Spermidine Prolongs Lifespan and Prevents Liver Fibrosis and Hepatocellular Carcinoma by Activating MAP1S-Mediated Autophagy",
+          "journal": "Cancer Research",
+          "year": 2017
+        },
+        "same_source_as_lead": false
+      }
+    ]
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 0.6,
+    "source_count": 4,
+    "clusters": [
+      {
+        "label": "mice_size_map1s",
+        "member_fact_ids": [
+          "128244",
+          "128246"
+        ],
+        "source_paper": {
+          "doi": "10.1158/0008-5472.can-16-3462",
+          "title": "Spermidine Prolongs Lifespan and Prevents Liver Fibrosis and Hepatocellular Carcinoma by Activating MAP1S-Mediated Autophagy",
+          "journal": "Cancer Research",
+          "year": 2017
+        },
+        "example_phrase": "life extension of up to 25% can be produced by lifelong administration"
+      },
+      {
+        "label": "mice_autophagy_aging",
+        "member_fact_ids": [
+          "100677"
+        ],
+        "source_paper": {
+          "doi": "10.18632/aging.103035",
+          "title": "Spermidine and spermine delay brain aging by inducing autophagy in SAMP8 mice",
+          "journal": "Aging",
+          "year": 2020
+        },
+        "example_phrase": "Spermidine and spermine phosphorylate AMPK and regulate autophagy proteins (LC3, Beclin 1 and p62)."
+      },
+      {
+        "label": "size_vitro_sars",
+        "member_fact_ids": [
+          "157789"
+        ],
+        "source_paper": {
+          "doi": "10.1038/s41467-021-24007-w",
+          "title": "SARS-CoV-2-mediated dysregulation of metabolism and autophagy uncovers host-targeting antivirals",
+          "journal": "Nature Communications",
+          "year": 2021
+        },
+        "example_phrase": "spermidine inhibit SARS-CoV-2 propagation in vitro with IC50 values of 136.7 \u03bcM"
+      },
+      {
+        "label": "rescues_via_autophagy",
+        "member_fact_ids": [
+          "104655"
+        ],
+        "source_paper": {
+          "doi": "10.18632/oncotarget.15728",
+          "title": "Spermidine coupled with exercise rescues skeletal muscle atrophy from D-gal-induced aging rats through enhanced autophagy and reduced apoptosis via AMPK-FOXO3a signal pathway",
+          "journal": "Oncotarget",
+          "year": 2017
+        },
+        "example_phrase": "spermidine (5 mg/kg\u2219d)"
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

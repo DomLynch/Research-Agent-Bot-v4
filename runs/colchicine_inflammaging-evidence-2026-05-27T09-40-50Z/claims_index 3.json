@@ -1,0 +1,16 @@
+{
+  "topic": "colchicine_inflammaging",
+  "snapshot_utc": "2026-05-27T09-40-50Z",
+  "claim_count": 1,
+  "claims": [
+    {
+      "claim_text": "lower pro-inflammatory status (less 'inflammaging' and autoimmunity)",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18632/aging.102826"
+      ]
+    }
+  ]
+}

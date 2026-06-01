@@ -1,0 +1,286 @@
+{
+  "topic": "longevity",
+  "snapshot_utc": "2026-05-26T19-28-36Z",
+  "claim_count": 31,
+  "claims": [
+    {
+      "claim_text": "A randomized effect meta-analysis showed a significant, small effect (likelihood ratio = 1.347; 95% confidence interval [1.300, 1.396]; p < .001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1037/pag0000737"
+      ]
+    },
+    {
+      "claim_text": "genetically associated with better longevity (-0.28 to -0.34)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3168/jds.2019-17290"
+      ]
+    },
+    {
+      "claim_text": "We identified 11 independent loci associated with longevity replicated in Southern-Northern regions of China",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/srep21243"
+      ]
+    },
+    {
+      "claim_text": "The heritability of age at death in adulthood is approximately 25 %.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s00439-013-1342-z"
+      ]
+    },
+    {
+      "claim_text": "In both sexes, we found a dose-dependent association of higher optimism levels at baseline with increased longevity (P trend < 0.01).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1073/pnas.1900712116"
+      ]
+    },
+    {
+      "claim_text": "about 25 % of the variation in human longevity is due to genetic factors.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1186/s12979-016-0066-z"
+      ]
+    },
+    {
+      "claim_text": "C15:0 (17 µM) and rapamycin (9 µM) shared 24 activities across 10 cell systems",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu15214607"
+      ]
+    },
+    {
+      "claim_text": "youthful brains and immune systems were uniquely associated with longevity (youthful both, HR = 0.44)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-025-03798-1"
+      ]
+    },
+    {
+      "claim_text": "We observed genome-wide significant association with longevity, as reflected by survival to ages beyond 90 years, at a novel locus, rs2149954, on chromosome 5q33.3 (OR = 1.10, P = 1.74 × 10(-8)).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/hmg/ddu139"
+      ]
+    },
+    {
+      "claim_text": "centenarians belonged 2.5 times (odds ratio (OR) = 2.52, 95% confidence interval (CI) = 1.23-5.10) more often to the highest third of grip strength in midlife",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s11357-011-9256-y"
+      ]
+    },
+    {
+      "claim_text": "LPJBC5 enhanced the mean lifespan of C. elegans by 27.81% compared with control (untreated).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/antiox11020268"
+      ]
+    },
+    {
+      "claim_text": "discriminated between cases and controls of the discovery set with 89% sensitivity and specificity",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1371/journal.pone.0029848"
+      ]
+    },
+    {
+      "claim_text": "The combination of the warmest winter and the high insecticide dose resulted in a 70% longevity decrease.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/gcb.16928"
+      ]
+    },
+    {
+      "claim_text": "nonagenarians aged 94-98 with better resilience have a 43.1% higher likelihood of becoming a centenarian compared to nonagenarians with lower resilience.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1155/2010/525693"
+      ]
+    },
+    {
+      "claim_text": "acarbose, at a concentration previously tested (1000 ppm), significantly increased median longevity in males and 90th percentile lifespan in both sexes.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.12496"
+      ]
+    },
+    {
+      "claim_text": "Ingestion of 4 ~ 5 mg/kg/day of ERGO remarkably extended the lifespan of male mice.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s11357-024-01111-5"
+      ]
+    },
+    {
+      "claim_text": "showed an improvement in prediction of cancer death with 5% increase in the C-index in a replication cohort",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1111/acel.13608"
+      ]
+    },
+    {
+      "claim_text": "those with good (19.1%) or high (15.5%) adherence",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu15041026"
+      ]
+    },
+    {
+      "claim_text": "Older adults with lower Mediterranean diet adherence had a significantly higher prevalence of probable sarcopenia (25.9%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu15041026"
+      ]
+    },
+    {
+      "claim_text": "230 metabolites associated with extreme longevity",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.celrep.2024.114913"
+      ]
+    },
+    {
+      "claim_text": "C15:0 (n = 36 activities in 10 of 12 cell systems)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu15214607"
+      ]
+    },
+    {
+      "claim_text": "centenarians had participated in physical activity outside work (OR = 1.13 per daily hour, 95% CI = 1.02-1.25)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s11357-011-9256-y"
+      ]
+    },
+    {
+      "claim_text": "centenarians had a long-lived mother (≥80 vs. ≤60 years, OR = 2.3, 95% CI = 1.06-5.01)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s11357-011-9256-y"
+      ]
+    },
+    {
+      "claim_text": "centenarians were never smokers (OR = 5.75 95% CI = 3.06-10.80)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s11357-011-9256-y"
+      ]
+    },
+    {
+      "claim_text": "Removal of this SNP from the model reduced the accuracy by only 1%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1371/journal.pone.0029848"
+      ]
+    },
+    {
+      "claim_text": "90% of centenarians can be grouped into clusters characterized by different 'genetic signatures'",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1371/journal.pone.0029848"
+      ]
+    },
+    {
+      "claim_text": "in an independent cohort with 58% specificity and 60% sensitivity",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1371/journal.pone.0029848"
+      ]
+    },
+    {
+      "claim_text": "applied the model to an additional, unmatched 60 centenarians resulting in 78% sensitivity",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1371/journal.pone.0029848"
+      ]
+    },
+    {
+      "claim_text": "258 metabolites that change over time",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.celrep.2024.114913"
+      ]
+    },
+    {
+      "claim_text": "102 small non-coding RNAs when compared with octogenarians",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/srep00961"
+      ]
+    },
+    {
+      "claim_text": "The correlation between 3 signatures and 3 different life spans was replicated in the combined replication sets.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1371/journal.pone.0029848"
+      ]
+    }
+  ]
+}

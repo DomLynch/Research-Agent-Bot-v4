@@ -1,0 +1,16 @@
+{
+  "topic": "allostatic_load",
+  "snapshot_utc": "2026-05-27T05-36-12Z",
+  "input_pack": {
+    "topic": "allostatic_load",
+    "a_core_count": 0,
+    "b_context_count": 0,
+    "excluded_counts": {
+      "C_noise": 15,
+      "D_bad_extraction": 16
+    },
+    "has_minimum_a_core": false,
+    "a_core_min": 3
+  },
+  "audits": []
+}

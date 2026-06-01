@@ -1,0 +1,83 @@
+{
+  "topic": "caloric_restriction",
+  "snapshot_utc": "2026-05-27T06-24-04Z",
+  "top_n": 5,
+  "facts_inspected": 17,
+  "aggregated_claims": 17,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "mode": "alpha",
+  "selected_theme": "intervention_signal",
+  "facet_counts": {
+    "regimen_or_dose": 3,
+    "biomarker": 1,
+    "clinical_outcome": 3
+  },
+  "numeric_artifacts_filtered": 16,
+  "fact_fetch_plan": [
+    "strict audited numeric facts via POST /api/v1/tier2/facts/search",
+    "validated topic facts via GET /api/v1/topics/{topic}/facts",
+    "normal numeric fact graph via POST /api/v1/tier2/facts/search",
+    "normal all-fact graph when source diversity is still thin"
+  ],
+  "paper_context_source": "POST /api/v1/papers/topic + POST /api/v1/search",
+  "pico_enrichment": {
+    "facts_inspected": 33,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "mimo-v2.5-pro"
+  },
+  "ranking": "alpha: deterministic validation*magnitude*precision*recency + data-driven contrast/subgroup boosts + theme coherence",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "d5331887362b945081331eeddbaa9accbb1fcf31afc204f1be5fda95ce1d79cb"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "7478dd054841fbf35b9ae54cf389fbfc9f28897aa2c753c2121bca2b0a162391"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "b08131ef7acda158081455b7bc3f0de89cdf7f9a92141a985de481d25de50ee1"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "d764a4a46275fa0c1ad05bb3e00d0203cc896c70159f8d1551ebc60890d071ba"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "54c653fe69175415228298ca9fc4470b663f19b3d97231121b9e94a9e9a2f0a1"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "1c6fa6054e8c76ce2a2dc69b28e0e8192b3a98007195f9f9a1da71039f030f90"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "c3273d11a72009ee78439ab87a90e357217c7fda704ca96c0e7119ae084d778e"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "cf1f933e8e0589eeae835e35a255821a3b864088847209d55a1ce87631171fd5"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "21267ef3e8caa2710c504dd2af8f82ebaca1a13373791a4cd028bd4940950266"
+    },
+    "signal_post_md": {
+      "name": "signal_post.md",
+      "sha256": "e10dc86adac61962212d49a063dcf2879fea69278d5f532a1482e34932abd3b4"
+    },
+    "alpha_memo_md": {
+      "name": "alpha_memo.md",
+      "sha256": "a141251d3be7a030c3224519042aec7ad7b4480d5cef1c5f886482370c712fda"
+    },
+    "publish_verdict_json": {
+      "name": "publish_verdict.json",
+      "sha256": "468add46b9950aa1b700a1f23727af96de4c280090698ba626f3eb12299656fb"
+    }
+  }
+}

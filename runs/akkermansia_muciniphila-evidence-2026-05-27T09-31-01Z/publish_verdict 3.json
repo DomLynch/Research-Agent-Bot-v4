@@ -1,0 +1,123 @@
+{
+  "run_dir": "runs/akkermansia_muciniphila-evidence-2026-05-27T09-31-01Z",
+  "topic": "akkermansia_muciniphila",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 akkermansia_muciniphila",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 0,
+    "available_source_contexts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 1.0,
+    "source_count": 7,
+    "clusters": [
+      {
+        "label": "antibiotic_cancer_size",
+        "member_fact_ids": [
+          "171759",
+          "171760",
+          "171765",
+          "171764",
+          "171763",
+          "171761",
+          "171762"
+        ],
+        "source_paper": {
+          "doi": "10.3389/fmicb.2022.932047",
+          "title": "The negative effect of Akkermansia muciniphila-mediated post-antibiotic reconstitution of the gut microbiota on the development of colitis-associated colorectal cancer in mice",
+          "journal": "Frontiers in Microbiology",
+          "year": 2022
+        },
+        "example_phrase": "post-antibiotic replenishment of A. muciniphila worsened the tumorigenesis of CAC as indicated by increased number of large (>2 mm in diameter) tumors and both average and total tumor diameters."
+      },
+      {
+        "label": "related_microbes_irritable",
+        "member_fact_ids": [
+          "93764",
+          "93767",
+          "93766",
+          "93765"
+        ],
+        "source_paper": {
+          "doi": "10.1080/19490976.2023.2298026",
+          "title": "Pasteurized <i>Akkermansia muciniphila</i> improves irritable bowel syndrome-like symptoms and related behavioral disorders in mice",
+          "journal": "Gut Microbes",
+          "year": 2024
+        },
+        "example_phrase": "The administration of pasteurized A. muciniphila significantly reduced colonic hypersensitivity in both IBS mouse models"
+      },
+      {
+        "label": "propionic_microbes_size",
+        "member_fact_ids": [
+          "1412",
+          "1413",
+          "1415"
+        ],
+        "source_paper": {
+          "doi": "10.1080/19490976.2023.2293312",
+          "title": "<i>Akkermansia muciniphila</i> protects the intestine from irradiation-induced injury by secretion of propionic acid",
+          "journal": "Gut Microbes",
+          "year": 2023
+        },
+        "example_phrase": "Administration of A. muciniphila substantially mitigated IR-induced intestinal damage and prevented mouse death."
+      },
+      {
+        "label": "factors_systematic_nutrients",
+        "member_fact_ids": [
+          "93515",
+          "93516",
+          "93512"
+        ],
+        "source_paper": {
+          "doi": "10.3390/nu11071565",
+          "title": "Dietary Factors and Modulation of Bacteria Strains of Akkermansia muciniphila and Faecalibacterium prausnitzii: A Systematic Review",
+          "journal": "Nutrients",
+          "year": 2019
+        },
+        "example_phrase": "A caloric restriction diet and supplementation with pomegranate extract, resveratrol, polydextrose, yeast fermentate, sodium butyrate, and inulin increased the abundance of A. muciniphila"
+      },
+      {
+        "label": "oral_prevents_microbes",
+        "member_fact_ids": [
+          "168998"
+        ],
+        "source_paper": {
+          "doi": "10.1080/19490976.2020.1730149",
+          "title": "Dietary cellulose prevents gut inflammation by modulating lipid metabolism and gut microbiota",
+          "journal": "Gut Microbes",
+          "year": 2020
+        },
+        "example_phrase": "Oral administration of Akkermansia muciniphila to LCD-fed mice elevated crypt length, increased goblet cells, and ameliorated colitis."
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

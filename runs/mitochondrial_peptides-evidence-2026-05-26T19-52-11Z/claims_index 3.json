@@ -1,0 +1,52 @@
+{
+  "topic": "mitochondrial_peptides",
+  "snapshot_utc": "2026-05-26T19-52-11Z",
+  "claim_count": 5,
+  "claims": [
+    {
+      "claim_text": "UA (1 µM) for 24 h significantly increased expression of genes for mitochondrial biogenesis and OXPHOS",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/ijms22158333"
+      ]
+    },
+    {
+      "claim_text": "C-peptide-SLN-PTX markedly improved cytotoxicity against 4T1 carcinoma cells, with an IC50 of 1.2 µg/mL, compared to 3.4 µg/mL for SLN-PTX and 8.9 µg/mL for free PTX",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-025-90107-y"
+      ]
+    },
+    {
+      "claim_text": "encapsulation efficiency over 90%, with favorable release profiles for acidic tumor environments",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-025-90107-y"
+      ]
+    },
+    {
+      "claim_text": "In vivo studies in 4T1 tumor-bearing mice showed an 82% tumor volume reduction and prevented pulmonary metastasis",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-025-90107-y"
+      ]
+    },
+    {
+      "claim_text": "≈50% decrease in mitochondrial function, affecting all substrates.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/circresaha.116.307505"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "topic": "urolithin_A",
+  "snapshot_utc": "2026-05-27T09-35-54Z",
+  "top_n": 5,
+  "facts_inspected": 19,
+  "aggregated_claims": 19,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "mode": "alpha",
+  "selected_theme": "intervention_signal",
+  "facet_counts": {
+    "clinical_outcome": 2,
+    "model_context": 1
+  },
+  "numeric_artifacts_filtered": 18,
+  "fact_fetch_plan": [
+    "strict audited numeric facts via POST /api/v1/tier2/facts/search",
+    "validated topic facts via GET /api/v1/topics/{topic}/facts",
+    "normal numeric fact graph via POST /api/v1/tier2/facts/search",
+    "normal all-fact graph when source diversity is still thin"
+  ],
+  "paper_context_source": "POST /api/v1/papers/topic + POST /api/v1/search",
+  "pico_enrichment": {
+    "facts_inspected": 37,
+    "facts_changed": 1,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 1,
+    "model": "mimo-v2.5-pro"
+  },
+  "ranking": "alpha: deterministic validation*magnitude*precision*recency + data-driven contrast/subgroup boosts + theme coherence",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "2d24e34b29e002f28590c74a6765f4ece8ea8c58f1cbcaec4ebe7ad00d66e513"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "baba027d4643b1ef48cad8b799d14dff559dc9fa73336bd1d7c5d93755d3df6e"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "ebe395ac5a0e238bb9e8fa6d2aa37ccb2b33fd50eb3c7e0533af3a0f97196ba1"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "78c0578d7c5caf78b4ac9ebd027f27e532e9f3bc01049a6d50f997084422bf70"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "3adc2447073803ad92e9c69038053132c5c26b36c877cb3f164e78e16a7e0b71"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "8269dee78d67de397ff860347a42a94f054df2ba2e1883d924fc366cafeba779"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "bed89e001cda3487a5670d82de3b808d013a0edc18e729a48805a52d0f14868b"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "e45847d007e315653a0e813ecd938545ce71c3cb67639bd884d5274542528a67"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "35646457cc3acc4ca3a5ac2c80f017b5c5b53b613cb16f55bfbce903a6076352"
+    },
+    "signal_post_md": {
+      "name": "signal_post.md",
+      "sha256": "32db4d725f21caa01dbf7c566169f62d1e45b24f5957f73fe493c309b9c36ac6"
+    },
+    "alpha_memo_md": {
+      "name": "alpha_memo.md",
+      "sha256": "9e5f020e273181786fa7d2edcba680b7259abb46aed6cd3135c9660f2e0af3c7"
+    },
+    "publish_verdict_json": {
+      "name": "publish_verdict.json",
+      "sha256": "8671fbfd63c1fe99ed4e0fb902773b4fda3a7d2f574026943827c7ab7fc40d5b"
+    }
+  }
+}

@@ -1,0 +1,394 @@
+{
+  "topic": "sarcopenia_muscle_preservation",
+  "snapshot_utc": "2026-05-26T19-01-10Z",
+  "claim_count": 43,
+  "claims": [
+    {
+      "claim_text": "Prevalence was higher in dialysis (50.0%) compared to non-dialysis (19.6%; P<0.01) for low muscle strength",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13425"
+      ]
+    },
+    {
+      "claim_text": "low muscle mass in 29.1% (95% CI: 23.9-34.5)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13425"
+      ]
+    },
+    {
+      "claim_text": "Prevalence of severe sarcopenia was higher in dialysis (26.2%) vs non-dialysis (3.0%; P<0.01)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13425"
+      ]
+    },
+    {
+      "claim_text": "Global prevalence of sarcopenia was 24.5% (95% CI: 20.9-28.3)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13425"
+      ]
+    },
+    {
+      "claim_text": "Prevalence of severe sarcopenia was 21.0% (95% CI: 11.7-32.0)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13425"
+      ]
+    },
+    {
+      "claim_text": "low muscle strength was found in 43.4% (95%CI: 35.0-51.9)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13425"
+      ]
+    },
+    {
+      "claim_text": "low physical performance in 38.6 (95% CI: 30.9-46.6)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13425"
+      ]
+    },
+    {
+      "claim_text": "Sarcopenic obesity was observed in 10.8% (95% CI: 3.5-21.2)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13425"
+      ]
+    },
+    {
+      "claim_text": "Low muscle mass was associated with worsening ADL (pooled odds ratio (95% confidence interval) 3.19 (1.29-7.92))",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jcsm.12502"
+      ]
+    },
+    {
+      "claim_text": "Low muscle mass was associated with worsening IADL (1.28 (1.02-1.61))",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jcsm.12502"
+      ]
+    },
+    {
+      "claim_text": "The prevalence of sarcopenia ranged from 18 % in diabetic patients to 66 % in patients with unresectable esophageal cancer.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/j.metabol.2023.155533"
+      ]
+    },
+    {
+      "claim_text": "Sarcopenia was estimated to influence 10 %-16 % of the elderly worldwide.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/j.metabol.2023.155533"
+      ]
+    },
+    {
+      "claim_text": "The RT group improved their functional fitness, grip strength, gait speed, and isometric muscle strength (p < 0.01, d > 0.99; large)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/ijerph18136762"
+      ]
+    },
+    {
+      "claim_text": "Muscle growth factors such as follistatin were significantly increased in the RT (p < 0.05, 0.81; large)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/ijerph18136762"
+      ]
+    },
+    {
+      "claim_text": "prevalence of sarcopenia ranged from 2.5 to 28.0% in men and 2.3 to 11.7% in women, with muscle mass measured by dual-energy X-ray absorptiometry",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1111/ggi.12723"
+      ]
+    },
+    {
+      "claim_text": "Overall sarcopenia prevalence was 34% (95%CI 20.6-47.3) using muscle mass criteria alone.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1002/jcsm.12600"
+      ]
+    },
+    {
+      "claim_text": "Sarcopenia was present at increasing rates in healthy control subjects without NAFLD (~8%-22%), those with NAFL (~18%-38%), and those with NASH (~35%-63%).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1002/cld.900"
+      ]
+    },
+    {
+      "claim_text": "Among patients without baseline NAFLD, 15% developed incident NAFLD during the 7-year study period, with a higher incidence in the lowest tertile of skeletal muscle mass as compared with the highest tertile.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1002/cld.900"
+      ]
+    },
+    {
+      "claim_text": "a prevalence rate of approximately 60% in those with cirrhosis of all etiologies.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1002/cld.900"
+      ]
+    },
+    {
+      "claim_text": "The prevalence of sarcopenia in patients with CRC ranges between 12%-60%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.12998/wjcc.v8.i7.1188"
+      ]
+    },
+    {
+      "claim_text": "The prevalence of severe sarcopenia was 8.0%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1371/journal.pone.0247617"
+      ]
+    },
+    {
+      "claim_text": "The prevalence of sarcopenia was 18.6%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1371/journal.pone.0247617"
+      ]
+    },
+    {
+      "claim_text": "The prevalence of possible sarcopenia was 38.5%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1371/journal.pone.0247617"
+      ]
+    },
+    {
+      "claim_text": "Not all tracer is distributed in skeletal muscle with non-muscle creatine sources ranging from 2% to 10%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13083"
+      ]
+    },
+    {
+      "claim_text": "varies between muscles (e.g. 3.89-4.62 g/kg)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13083"
+      ]
+    },
+    {
+      "claim_text": "Under one third (27.6%) of studies examined sarcopenia with regard to surgical outcomes.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/jcm7040070"
+      ]
+    },
+    {
+      "claim_text": "Cut-off values for sarcopenia, defined as SMI < 50 cm²/m² in male and < 39 cm²/m² in female patients",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1002/hep.30828"
+      ]
+    },
+    {
+      "claim_text": "assuming a constant value for whole-body skeletal muscle creatine concentration of 4.3 g/kg wet weight.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13083"
+      ]
+    },
+    {
+      "claim_text": "those with sarcopenia were twice as likely to develop end-stage kidney disease (hazard ratio: 1.98; 1.45 to 2.70, P < 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13260"
+      ]
+    },
+    {
+      "claim_text": "participants with CKD and sarcopenia had a 33% higher hazard of mortality compared with those without (7% to 66%, P = 0.011)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13260"
+      ]
+    },
+    {
+      "claim_text": "Prevalence of confirmed sarcopenia was significantly lower using STS compared with grip strength (30CST, 4.6%; 5TSTS, 4.1% vs. grip strength, 7.1%; p < 0.05).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1186/s11556-020-00255-5"
+      ]
+    },
+    {
+      "claim_text": "Poorer exercise tolerance (standardized mean difference -0.8; 95%CI -1.4 to -0.2) in people with sarcopenia.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jcsm.12600"
+      ]
+    },
+    {
+      "claim_text": "People with sarcopenia had lower predicted forced expiratory volume in the first second (mean difference -7.1%; 95%CI -9.0 to -5.1%).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jcsm.12600"
+      ]
+    },
+    {
+      "claim_text": "Muscle wasting was associated with higher mortality risks of all causes (RR = 1.36, 95% CI, 1.28 to 1.44, 49 studies)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13263"
+      ]
+    },
+    {
+      "claim_text": "sarcopenia prevalence could not be affected by average age [regression coefficient 0.004 (95% CI: -0.005 to 0.012), P = 0.406]",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jcsm.12890"
+      ]
+    },
+    {
+      "claim_text": "25.9% (I2 = 94.9%, 95% CI 20.4-31.3%; combined criteria)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jcsm.12890"
+      ]
+    },
+    {
+      "claim_text": "Overall, sarcopenia prevalence was 28.5% (95% CI 22.9-34.1%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jcsm.12890"
+      ]
+    },
+    {
+      "claim_text": "34.6% (I2 = 98.1%, 95% CI 20.9-48.2%; LMM alone)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jcsm.12890"
+      ]
+    },
+    {
+      "claim_text": "muscle mass was improved following probiotics compared with placebo (SMD: 0.42, 95% CI: 0.10-0.74, P = 0.009)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13132"
+      ]
+    },
+    {
+      "claim_text": "a significant increase in global muscle strength was also observed among six RCTs (SMD: 0.69, 95% CI: 0.33-1.06, P = 0.0002)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13132"
+      ]
+    },
+    {
+      "claim_text": "the prevalence rates of pre‐LT sarcopenia ... were 14%‐78%",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1002/lt.25591"
+      ]
+    },
+    {
+      "claim_text": "post‐LT sarcopenia ... were 30%‐100%",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1002/lt.25591"
+      ]
+    },
+    {
+      "claim_text": "varies across age groups (e.g. middle-age, ~4.5 g/kg; old-age, 4.0 g/kg)",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1002/jcsm.13083"
+      ]
+    }
+  ]
+}

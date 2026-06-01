@@ -1,0 +1,412 @@
+{
+  "topic": "sleep_architecture_deep_sleep",
+  "snapshot_utc": "2026-05-26T19-22-33Z",
+  "claim_count": 45,
+  "claims": [
+    {
+      "claim_text": "Long sleep was significantly associated with mortality (RR, 1.39; 95% CI, 1.31-1.47)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.smrv.2017.06.011"
+      ]
+    },
+    {
+      "claim_text": "Short duration of sleep was not associated with total CVD (1.03, 0.93-1.15, P = 0.52)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/eurheartj/ehr007"
+      ]
+    },
+    {
+      "claim_text": "Long duration of sleep was also associated with a greater risk of total CVD (1.41, 1.19-1.68, P < 0.0001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/eurheartj/ehr007"
+      ]
+    },
+    {
+      "claim_text": "Long duration of sleep was also associated with a greater risk of CHD (1.38, 1.15-1.66, P = 0.0005)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/eurheartj/ehr007"
+      ]
+    },
+    {
+      "claim_text": "Long duration of sleep was also associated with a greater risk of stroke (1.65, 1.45-1.87, P < 0.0001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/eurheartj/ehr007"
+      ]
+    },
+    {
+      "claim_text": "Short duration of sleep was associated with a greater risk of stroke (1.15, 1.00-1.31, P = 0.047)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/eurheartj/ehr007"
+      ]
+    },
+    {
+      "claim_text": "obesity (1.08, 1.02-1.15)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.smrv.2017.06.011"
+      ]
+    },
+    {
+      "claim_text": "incident diabetes mellitus (1.26, 1.11-1.43)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.smrv.2017.06.011"
+      ]
+    },
+    {
+      "claim_text": "incident hypertension (1.01, 0.95-1.07)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.smrv.2017.06.011"
+      ]
+    },
+    {
+      "claim_text": "stroke (1.46, 1.26-1.69)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.smrv.2017.06.011"
+      ]
+    },
+    {
+      "claim_text": "coronary heart disease (1.24, 1.13-1.37)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.smrv.2017.06.011"
+      ]
+    },
+    {
+      "claim_text": "accuracies of up to 96.0% for AD classification",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fnagi.2019.00220"
+      ]
+    },
+    {
+      "claim_text": "produced accuracies of up to 98.8% for AD classification",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fnagi.2019.00220"
+      ]
+    },
+    {
+      "claim_text": "accuracies of up to 83.7% for prediction of conversion from mild cognitive impairment (MCI) to AD",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fnagi.2019.00220"
+      ]
+    },
+    {
+      "claim_text": "HS has an estimated global prevalence of 0.00033-4.1%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1111/jdv.16677"
+      ]
+    },
+    {
+      "claim_text": "long sleep [β (95% CI) 0.694 (0.186, 1.203), p = 0.010] were positively associated with phenotypic age using the fully adjusted model.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-024-56316-7"
+      ]
+    },
+    {
+      "claim_text": "extreme short sleep [β (95% CI) 0.582 (0.018, 1.146), p = 0.044] were positively associated with phenotypic age using the fully adjusted model.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-024-56316-7"
+      ]
+    },
+    {
+      "claim_text": "Mortality was reported up to 7.8 years after accelerometer recording in 1859 participants (4.84 deaths per 1000 person-years)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1093/sleep/zsad253"
+      ]
+    },
+    {
+      "claim_text": "Heritability estimates for sleep duration varied with age: 17% infancy, 20-52% childhood, 69% adolescence, 42-45% adulthood.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1016/j.smrv.2021.101448"
+      ]
+    },
+    {
+      "claim_text": "44% of the variability in sleep quality is genetically determined.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.smrv.2021.101448"
+      ]
+    },
+    {
+      "claim_text": "46% of the variability in sleep duration is genetically determined.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.smrv.2021.101448"
+      ]
+    },
+    {
+      "claim_text": "Heritability estimates for sleep duration varied with reporter: 8% for parent-report, 38-52% for self-report.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1016/j.smrv.2021.101448"
+      ]
+    },
+    {
+      "claim_text": "A total of 65.2% of respondents reported a healthy sleep duration",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.15585/mmwr.mm6506a1"
+      ]
+    },
+    {
+      "claim_text": "State-based estimates of healthy sleep duration prevalence ranged from 56.1% in Hawaii to 71.6% in South Dakota",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.15585/mmwr.mm6506a1"
+      ]
+    },
+    {
+      "claim_text": "obstructive sleep apnea (50%–79%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1542/peds.2022-057010"
+      ]
+    },
+    {
+      "claim_text": "Subjective poor sleep quality was associated with coronary heart disease (risk ratio , 1.44; 95% confidence interval, 1.09-1.90)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.118.008552"
+      ]
+    },
+    {
+      "claim_text": "10 h: RR = 1.70, 95% CI = 1.36-2.12",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.3389/fphys.2023.1085091"
+      ]
+    },
+    {
+      "claim_text": "10 h: RR = 1.59, 95% CI = 1.31-1.92",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fphys.2023.1085091"
+      ]
+    },
+    {
+      "claim_text": "9 h: RR = 1.31, 95% CI = 1.17-1.47",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fphys.2023.1085091"
+      ]
+    },
+    {
+      "claim_text": "5 h: risk ratio = 1.09, 95% confidence interval = 1.07-1.12",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fphys.2023.1085091"
+      ]
+    },
+    {
+      "claim_text": "5 h: RR = 1.09; 95% CI = 1.02-1.17",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.3389/fphys.2023.1085091"
+      ]
+    },
+    {
+      "claim_text": "16% of participants reported they had taken sleeping pills during the last 12 months",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1111/jsr.13119"
+      ]
+    },
+    {
+      "claim_text": "Women reported more sleeping problems than men, with greater frequency or severity: 31% vs. 16%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1111/jsr.13119"
+      ]
+    },
+    {
+      "claim_text": "After 2 weeks of confinement, 74% of the participants reported trouble sleeping",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1111/jsr.13119"
+      ]
+    },
+    {
+      "claim_text": "cardiovascular disease (1.25, 1.14-1.37)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.smrv.2017.06.011"
+      ]
+    },
+    {
+      "claim_text": "risk ratio, 1.30 (1.19-1.42) for 10 hours",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.118.008552"
+      ]
+    },
+    {
+      "claim_text": "risk ratio, 1.47 (1.33-1.64) for 11 hours",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.118.008552"
+      ]
+    },
+    {
+      "claim_text": "risk ratio, 1.14 (1.05-1.25) for 9 hours",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1161/jaha.118.008552"
+      ]
+    },
+    {
+      "claim_text": "Self-reported long sleep increased the odds for poor cognitive function by 1.58 times (CI = 1.43-1.74).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.sleep.2015.08.021"
+      ]
+    },
+    {
+      "claim_text": "Self-reported short sleep increased the odds for poor cognitive function by 1.40 (CI = 1.27-1.56).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.sleep.2015.08.021"
+      ]
+    },
+    {
+      "claim_text": "Sleep disorders are frequent (18%-23%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/ijerph13080831"
+      ]
+    },
+    {
+      "claim_text": "1.07 (1.03-1.13) for 4 hours/day of nighttime sleep",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/srep21480"
+      ]
+    },
+    {
+      "claim_text": "1.55 (1.47-1.63) for 11 hours/day of nighttime sleep",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/srep21480"
+      ]
+    },
+    {
+      "claim_text": "1.09 (1.04-1.14) for 4 hours/day of 24-hour sleep",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/srep21480"
+      ]
+    },
+    {
+      "claim_text": "1.84 (1.59-2.13) for 11 hours/day of 24-hour sleep",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/srep21480"
+      ]
+    }
+  ]
+}

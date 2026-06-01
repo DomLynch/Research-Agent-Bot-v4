@@ -1,0 +1,295 @@
+{
+  "topic": "omega_3_longevity",
+  "snapshot_utc": "2026-05-27T06-30-31Z",
+  "claim_count": 32,
+  "claims": [
+    {
+      "claim_text": "Participants who received omega-3 were 700 (65.06%) compared to 376 (34.94%) who received a placebo.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.7759/cureus.30091"
+      ]
+    },
+    {
+      "claim_text": "Comparing the highest to the lowest quintiles, individuals had 31% (95% CI, 10–55%) higher CVD mortality",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.7554/elife.90132.3"
+      ]
+    },
+    {
+      "claim_text": "Comparing the highest to the lowest quintiles, individuals had 26% (95% CI, 15–38%) higher total mortality",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.7554/elife.90132.3"
+      ]
+    },
+    {
+      "claim_text": "Comparing the highest to the lowest quintiles, individuals had 14% (95% CI, 0–31%) higher cancer mortality",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.7554/elife.90132.3"
+      ]
+    },
+    {
+      "claim_text": "omega-3 fatty acid supplements at more than 2 g/day may contribute to muscle mass gain (0.67 kg; 95% CI: 0.16, 1.18)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu12123739"
+      ]
+    },
+    {
+      "claim_text": "standardized effects ranged from 0.16 to 0.32 units (2.9-3.8 months)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s43587-024-00793-y"
+      ]
+    },
+    {
+      "claim_text": "There were minor benefits for timed up and go performance (-0.30 s; 95% CI: -0.43, -0.17)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu12123739"
+      ]
+    },
+    {
+      "claim_text": "There were minor benefits for muscle mass gain (0.33 kg; 95% CI: 0.05, 0.62)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu12123739"
+      ]
+    },
+    {
+      "claim_text": "improve walking speed, especially for those receiving more than 6 months of intervention (1.78 m/sec; 95% CI: 1.38, 2.17)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/nu12123739"
+      ]
+    },
+    {
+      "claim_text": "triglycerides (-44.88 mg/dL 95% CI: -82.6, -7.16, p < 0.0001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-019-54535-x"
+      ]
+    },
+    {
+      "claim_text": "reduction in Apo AII among diabetic patients (-8.0 mg/dL 95% CI: -12.71, -3.29, p = 0.0009)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-019-54535-x"
+      ]
+    },
+    {
+      "claim_text": "HDL (-2.27 mg/dL 95% CI: -3.72, -0.83, p = 0.002)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-019-54535-x"
+      ]
+    },
+    {
+      "claim_text": "increased fasting blood glucose (16.14 mg/dL 95% CI: 6.25, 26.04, p = 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-019-54535-x"
+      ]
+    },
+    {
+      "claim_text": "increased LDL among CVD patients (2.10 mg/dL 95% CI: 1.00, 3.20, p = 0.0002)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-019-54535-x"
+      ]
+    },
+    {
+      "claim_text": "little or no effect of increasing LCn3 on all-cause mortality (risk ratio (RR) 0.97, 95% CI 0.93 to 1.01",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1002/14651858.cd003177.pub5"
+      ]
+    },
+    {
+      "claim_text": "the 3 treatments combined showed a significant 39% decreased odds of becoming prefrail compared to the control",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/gerona/glad073"
+      ]
+    },
+    {
+      "claim_text": "66.7% of RCTs conducted with MCI adults reported a positive cognitive outcome when supplemented with n-3 FA vs. the placebo.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1016/j.arr.2022.101835"
+      ]
+    },
+    {
+      "claim_text": "43.6% reported a positive cognitive outcome after the consumption of n-3 FA compared to the placebo.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1016/j.arr.2022.101835"
+      ]
+    },
+    {
+      "claim_text": "glycated hemoglobulin (HbA1c) (-0.74 (-1.13 to -0.35))",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/metabo11110742"
+      ]
+    },
+    {
+      "claim_text": "total cholesterol (-0.60 (-0.88 to -0.32))",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/metabo11110742"
+      ]
+    },
+    {
+      "claim_text": "low density lipoprotein (LDL) (-0.54 (-0.85 to -0.23))",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/metabo11110742"
+      ]
+    },
+    {
+      "claim_text": "high-density lipoprotein (HDL) (0.60 (0.23 to 0.96))",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/metabo11110742"
+      ]
+    },
+    {
+      "claim_text": "fasting blood sugar (FBS) (-0.36 (-0.71 to -0.01))",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/metabo11110742"
+      ]
+    },
+    {
+      "claim_text": "homeostatic model assessment of insulin resistance (HOMA.IR) (-0.58 (-1.13 to -0.03))",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/metabo11110742"
+      ]
+    },
+    {
+      "claim_text": "triglycerides (TG) (-0.27 (-0.37 to -0.18))",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/metabo11110742"
+      ]
+    },
+    {
+      "claim_text": "Supplementation was associated with reduced risk of MI (relative risk [RR], 0.87; 95% CI, 0.80 to 0.96), high certainty NNT of 272",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.mayocp.2020.08.034"
+      ]
+    },
+    {
+      "claim_text": "but not CVD events (RR, 0.95; 95% CI, 0.90 to 1.00)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.mayocp.2020.08.034"
+      ]
+    },
+    {
+      "claim_text": "CHD events (RR, 0.90; 95% CI, 0.84 to 0.97), high certainty NNT of 192",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.mayocp.2020.08.034"
+      ]
+    },
+    {
+      "claim_text": "fatal MI (RR, 0.65; 95% CI, 0.46 to 0.91), moderate certainty NNT = 128",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.mayocp.2020.08.034"
+      ]
+    },
+    {
+      "claim_text": "CHD mortality (RR, 0.91; 95% CI, 0.85 to 0.98), low certainty NNT = 431",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.mayocp.2020.08.034"
+      ]
+    },
+    {
+      "claim_text": "doses of 4 g/day (instead of the more common <1 g/day)",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1007/s11936-016-0487-1"
+      ]
+    },
+    {
+      "claim_text": "omega-3 fatty acids at a pharmacologic dosage (4 g/day)",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "regimen",
+      "supporting_study_ids": [
+        "10.1007/s11883-019-0762-1"
+      ]
+    }
+  ]
+}

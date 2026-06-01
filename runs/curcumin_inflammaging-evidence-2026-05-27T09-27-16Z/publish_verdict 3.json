@@ -1,0 +1,117 @@
+{
+  "run_dir": "runs/curcumin_inflammaging-evidence-2026-05-27T09-27-16Z",
+  "topic": "curcumin_inflammaging",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 curcumin_inflammaging",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "subtopic_rerun_memo",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 0,
+    "available_source_contexts": 0,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": false,
+    "why": "lead_thesis_uses_available_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [],
+    "candidate_receipts": []
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": true,
+    "reason": "high_d_bad_share_plus_semantic_dispersion",
+    "d_bad_share": 0.846,
+    "source_count": 6,
+    "clusters": [
+      {
+        "label": "frontiers_stability_its",
+        "member_fact_ids": [
+          "179054",
+          "179055",
+          "179060",
+          "179057"
+        ],
+        "source_paper": {
+          "doi": "10.3389/fbioe.2020.00879",
+          "title": "Enhancing Bioavailability and Stability of Curcumin Using Solid Lipid Nanoparticles (CLEN): A Covenant for Its Effectiveness",
+          "journal": "Frontiers in Bioengineering and Biotechnology",
+          "year": 2020
+        },
+        "example_phrase": "showed 69.78 times higher oral bioavailability with respect to free curcumin"
+      },
+      {
+        "label": "mtor_frontiers_size",
+        "member_fact_ids": [
+          "185620",
+          "185621",
+          "185619"
+        ],
+        "source_paper": {
+          "doi": "10.3389/fphar.2023.1276209",
+          "title": "Nanotechnological synergy of mangiferin and curcumin in modulating PI3K/Akt/mTOR pathway: a novel front in ovarian cancer precision therapeutics",
+          "journal": "Frontiers in Pharmacology",
+          "year": 2024
+        },
+        "example_phrase": "Akt at -15.16 kcal/mol"
+      },
+      {
+        "label": "molecular_mechanisms_prevention",
+        "member_fact_ids": [
+          "90523",
+          "90522"
+        ],
+        "source_paper": {
+          "doi": "10.1080/10408398.2018.1552244",
+          "title": "Cellular and molecular mechanisms of curcumin in prevention and treatment of disease",
+          "journal": "Critical Reviews in Food Science and Nutrition",
+          "year": 2019
+        },
+        "example_phrase": "curcumin is safe at the doses of 12 g/day but exhibits poor systemic bioavailability"
+      },
+      {
+        "label": "patients_randomized_oral",
+        "member_fact_ids": [
+          "159329",
+          "159328"
+        ],
+        "source_paper": {
+          "doi": "10.3389/fphar.2021.669362",
+          "title": "Oral Curcumin With Piperine as Adjuvant Therapy for the Treatment of COVID-19: A Randomized Clinical Trial",
+          "journal": "Frontiers in Pharmacology",
+          "year": 2021
+        },
+        "example_phrase": "patients in the study group received curcumin (525 mg) with piperine (2.5 mg) in tablet form twice a day"
+      },
+      {
+        "label": "selenium_anticancer_activity",
+        "member_fact_ids": [
+          "185270"
+        ],
+        "source_paper": {
+          "doi": "10.1038/s41598-024-82687-y",
+          "title": "The anticancer activity of fucoidan coated selenium nanoparticles and curcumin nanoparticles against colorectal cancer lines",
+          "journal": "Scientific Reports",
+          "year": 2025
+        },
+        "example_phrase": "mean diameters of 34.67 \u00b1 4.32 nm"
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

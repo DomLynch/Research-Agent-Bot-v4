@@ -1,0 +1,79 @@
+{
+  "topic": "mesenchymal_stem_cells_MSCs",
+  "snapshot_utc": "2026-05-27T06-38-11Z",
+  "top_n": 5,
+  "facts_inspected": 23,
+  "aggregated_claims": 23,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "mimo-v2.5-pro",
+  "mode": "alpha",
+  "selected_theme": null,
+  "facet_counts": {},
+  "numeric_artifacts_filtered": 15,
+  "fact_fetch_plan": [
+    "strict audited numeric facts via POST /api/v1/tier2/facts/search",
+    "validated topic facts via GET /api/v1/topics/{topic}/facts",
+    "normal numeric fact graph via POST /api/v1/tier2/facts/search",
+    "normal all-fact graph when source diversity is still thin"
+  ],
+  "paper_context_source": "POST /api/v1/papers/topic + POST /api/v1/search",
+  "pico_enrichment": {
+    "facts_inspected": 38,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "mimo-v2.5-pro"
+  },
+  "ranking": "alpha: deterministic validation*magnitude*precision*recency + data-driven contrast/subgroup boosts + theme coherence",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "f7b9034187a6397f23f1da49bd9e4f297227576cbec9bceae4a639cf863bd0b3"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "09921e471d271bbf65c37d3e435f6fa5731fda803b7d21ecb1f468a4ea81216f"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "daf9ea85159e4796cc94dbee8ec3a339e441117c5bbd439e3646d7d23bb3af7a"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "474ae414e24c558ac3de7529267a638697176dc7103cbe2897519f405358527d"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "d26c5f26ac29340dcadaeb92dae45eb11761915133309af6479a8b4b4be3192f"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "570b53e60f65f25c8a8c6efa683317fc905252fe543d6617fd3a2ada5ee51b0e"
+    },
+    "fact_lanes": {
+      "name": "fact_lanes.json",
+      "sha256": "abedc670bc264b015177b01ee7ae13ff72b2fdfb867cc3b15c7abd51625f2eef"
+    },
+    "opportunities_gate": {
+      "name": "opportunities_gate.json",
+      "sha256": "9c311797a6a1d30acf279a964a2e9aa70fe522d4c49c9e7f2ab8433cc6b6e29b"
+    },
+    "paper_opportunities_md": {
+      "name": "paper_opportunities.md",
+      "sha256": "73b0d00142fc6c8896ba63861b24850a6fc10f5e616e9a445d0e50a6874353af"
+    },
+    "signal_post_md": {
+      "name": "signal_post.md",
+      "sha256": "5cb53001f0f2df74d1dcffaae0dd793a398bbdd8d1b89d7b5309f60f81506b6f"
+    },
+    "alpha_memo_md": {
+      "name": "alpha_memo.md",
+      "sha256": "46cc9d15047dde6458f5acf41d74efa89f2b7b2d055cf1ebc38ba7d910032208"
+    },
+    "publish_verdict_json": {
+      "name": "publish_verdict.json",
+      "sha256": "52755599fc88864cd4eeb777b7a2afc18dfc8a986ce8a79fb3fba84b09a43805"
+    }
+  }
+}

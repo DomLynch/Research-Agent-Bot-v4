@@ -1,0 +1,129 @@
+{
+  "run_dir": "runs/quercetin-evidence-2026-05-26T19-55-42Z",
+  "topic": "quercetin",
+  "decision": "curation_needed",
+  "publish_tier": "TIER_3",
+  "maturity_level": "L2",
+  "headline": "No signal \u2014 quercetin",
+  "confidence_label": "no_signal",
+  "alpha_score": 0,
+  "surface_type": "curation_brief",
+  "axes": {
+    "bound_receipts": 0,
+    "available_bound_receipts": 8,
+    "available_source_contexts": 4,
+    "a_core_receipts": 0,
+    "source_concentrated": false,
+    "counter_consensus_tension": false,
+    "cross_domain_forced": false,
+    "feed_scope_mismatch": false,
+    "source_papers": []
+  },
+  "receipt_expansion": {
+    "needed": true,
+    "why": "lead_thesis_underuses_available_bound_receipts",
+    "cited_bound_fact_ids": [],
+    "available_bound_fact_ids": [
+      "135507",
+      "181738",
+      "76030",
+      "135509",
+      "135508",
+      "76032",
+      "174525",
+      "76034"
+    ],
+    "candidate_receipts": [
+      {
+        "fact_id": "135507",
+        "lane": "A_core",
+        "phrase": "it significantly dampened the postprandial hyperglycemia by 64.0% in maltose loaded diabetic rats",
+        "sub_topic": "effect_size",
+        "population": "STZ-induced diabetic rats",
+        "intervention": "quercetin 600 mg/kg",
+        "source_paper": {
+          "doi": "10.4236/jdm.2012.21013",
+          "title": "Effect of quercetin on postprandial glucose excursion after mono- and disaccharides challenge in normal and diabetic rats",
+          "journal": "Journal of Diabetes Mellitus",
+          "year": 2012
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "135508",
+        "lane": "A_core",
+        "phrase": "it significantly dampened the postprandial hyperglycemia by 32.0% in maltose loaded diabetic rats",
+        "sub_topic": "effect_size",
+        "population": "STZ-induced diabetic rats",
+        "intervention": "quercetin 300 mg/kg",
+        "source_paper": {
+          "doi": "10.4236/jdm.2012.21013",
+          "title": "Effect of quercetin on postprandial glucose excursion after mono- and disaccharides challenge in normal and diabetic rats",
+          "journal": "Journal of Diabetes Mellitus",
+          "year": 2012
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "135509",
+        "lane": "A_core",
+        "phrase": "and 30.3% after 300 mg/kg dose in normal rats, compared to control",
+        "sub_topic": "effect_size",
+        "population": "normal male Albino wistar rats",
+        "intervention": "quercetin 300 mg/kg",
+        "source_paper": {
+          "doi": "10.4236/jdm.2012.21013",
+          "title": "Effect of quercetin on postprandial glucose excursion after mono- and disaccharides challenge in normal and diabetic rats",
+          "journal": "Journal of Diabetes Mellitus",
+          "year": 2012
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "174525",
+        "lane": "A_core",
+        "phrase": "quercetin inhibited \u03b1-amylase activity (in vitro) up to 20.30 \u00b1 0.49%",
+        "sub_topic": "effect_size",
+        "population": "in vitro \u03b1-amylase assay",
+        "intervention": "quercetin",
+        "source_paper": {
+          "doi": "10.3390/ph17060757",
+          "title": "Quercetin and Kaempferol as Multi-Targeting Antidiabetic Agents against Mouse Model of Chemically Induced Type 2 Diabetes",
+          "journal": "Pharmaceuticals",
+          "year": 2024
+        },
+        "same_source_as_lead": false
+      },
+      {
+        "fact_id": "181738",
+        "lane": "A_core",
+        "phrase": "Only quercetin and fisetin inhibited DENV-2 and DENV-3 infection in the absence or presence of enhancing antibody (>90%, p<0.001);",
+        "sub_topic": "effect_size",
+        "population": "Human U937-DC-SIGN macrophages infected with dengue virus serotypes 2 or 3",
+        "intervention": "quercetin and fisetin",
+        "source_paper": {
+          "doi": "10.2147/idr.s210890",
+          "title": "&lt;p&gt;Antiviral and immunomodulatory effects of polyphenols on macrophages infected with dengue virus serotypes 2 and 3 enhanced or not with antibodies&lt;/p&gt;",
+          "journal": "Infection and Drug Resistance",
+          "year": 2019
+        },
+        "same_source_as_lead": false
+      }
+    ]
+  },
+  "counter_evidence": {
+    "status": "none_found",
+    "items": []
+  },
+  "subtopic_recommendations": {
+    "recommended": false,
+    "reason": "not_broad_or_not_noisy_enough",
+    "d_bad_share": 0.583,
+    "source_count": 12,
+    "clusters": []
+  },
+  "blockers": [
+    "blocked_label:no_signal",
+    "no_bound_receipts"
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "topic": "resveratrol",
+  "snapshot_utc": "2026-05-17T06-59-01Z",
+  "input_pack": {
+    "topic": "resveratrol",
+    "a_core_count": 6,
+    "b_context_count": 1,
+    "excluded_counts": {
+      "C_noise": 0,
+      "D_bad_extraction": 31
+    },
+    "has_minimum_a_core": true,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Resveratrol at 75 mg twice daily as a targeted intervention for bone resorption in postmenopausal women: evidence from T-score and collagen telopeptide data",
+      "status": "needs_source_audit",
+      "blocking_flags": [
+        "a_core_density_too_low:2<3"
+      ],
+      "original_opportunity": 100,
+      "capped_opportunity": 80,
+      "cited_fact_ids": [
+        "4434",
+        "4433"
+      ]
+    },
+    {
+      "thesis_idx": 1,
+      "title": "Primate gestational resveratrol exposure: fetal pancreatic hypertrophy as a potential marker for developmental metabolic dysregulation",
+      "status": "needs_source_audit",
+      "blocking_flags": [
+        "a_core_density_too_low:2<3"
+      ],
+      "original_opportunity": 42,
+      "capped_opportunity": 42,
+      "cited_fact_ids": [
+        "9268",
+        "9267"
+      ]
+    }
+  ]
+}

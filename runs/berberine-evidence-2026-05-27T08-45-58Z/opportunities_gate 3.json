@@ -1,0 +1,32 @@
+{
+  "topic": "berberine",
+  "snapshot_utc": "2026-05-27T08-45-58Z",
+  "input_pack": {
+    "topic": "berberine",
+    "a_core_count": 9,
+    "b_context_count": 0,
+    "excluded_counts": {
+      "C_noise": 0,
+      "D_bad_extraction": 8
+    },
+    "has_minimum_a_core": true,
+    "a_core_min": 3
+  },
+  "audits": [
+    {
+      "thesis_idx": 0,
+      "title": "Reconciling Lipid Paradox and Glycemic Benefits: A Dose-Stratified Meta-Analysis of Berberine in Metabolic Syndrome",
+      "status": "survives",
+      "blocking_flags": [],
+      "original_opportunity": 73,
+      "capped_opportunity": 73,
+      "cited_fact_ids": [
+        "141969",
+        "142311",
+        "142313",
+        "142314",
+        "141973"
+      ]
+    }
+  ]
+}

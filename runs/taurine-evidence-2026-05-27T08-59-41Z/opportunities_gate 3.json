@@ -1,0 +1,16 @@
+{
+  "topic": "taurine",
+  "snapshot_utc": "2026-05-27T08-59-41Z",
+  "input_pack": {
+    "topic": "taurine",
+    "a_core_count": 0,
+    "b_context_count": 0,
+    "excluded_counts": {
+      "C_noise": 0,
+      "D_bad_extraction": 8
+    },
+    "has_minimum_a_core": false,
+    "a_core_min": 3
+  },
+  "audits": []
+}
