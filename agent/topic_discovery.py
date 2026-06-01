@@ -77,6 +77,13 @@ _TITLE_STOPWORDS = frozenset({
 })
 
 
+def _title_tokens(text: str) -> tuple[str, ...]:
+    return tuple(
+        w for w in _TITLE_WORD.findall(text.lower())
+        if len(w) > 2 and w not in _TITLE_STOPWORDS
+    )
+
+
 def _float_env(name: str, default: float) -> float:
     try:
         return max(0.0, float(os.environ.get(name, default)))
@@ -228,10 +235,8 @@ def _paper_title_facets(
     scores: dict[str, float] = {}
     ranked = sorted(papers, key=lambda p: _paper_score(p, current_year), reverse=True)
     for paper in ranked[:10]:
-        words = [
-            w for w in _TITLE_WORD.findall(str(paper.get("title") or "").lower())
-            if len(w) > 2 and w not in _TITLE_STOPWORDS and w not in root_words
-        ][:10]
+        words = [w for w in _title_tokens(str(paper.get("title") or ""))
+                 if w not in root_words][:10]
         paper_score = _paper_score(paper, current_year) or 1.0
         for width in (2, 3):
             for i in range(0, max(0, len(words) - width + 1)):
@@ -425,15 +430,38 @@ def _title_topic_slugs(
         ranked = sorted(papers, key=lambda p: _paper_score(p, current_year), reverse=True)
         for paper in ranked:
             paper_score = _paper_score(paper, current_year)
-            words = [
-                w for w in _TITLE_WORD.findall(str(paper.get("title") or "").lower())
-                if len(w) > 2 and w not in _TITLE_STOPWORDS
-            ][:12]
+            words = list(_title_tokens(str(paper.get("title") or "")))[:12]
             for width in (2, 3, 4):
                 for i in range(0, max(0, len(words) - width + 1)):
                     slug = "_".join(words[i:i + width])
                     scores[slug] = scores.get(slug, 0.0) + paper_score / width
     return tuple(k for k, _ in sorted(scores.items(), key=lambda item: item[1], reverse=True)[:limit])
+
+
+def _derived_title_supported(
+    topic: str, papers: list[dict[str, Any]], current_year: int, *,
+    top_k: int = 5,
+) -> bool:
+    """Keep derived title candidates only when returned papers still fit them.
+
+    Derived topics come from title n-grams, so their own paper-search result
+    should preserve most of those title tokens. This rejects generic-fragment
+    matches without any biomedical/domain literals.
+    """
+    topic_tokens = set(_title_tokens(topic.replace("_", " ")))
+    if not topic_tokens or not papers:
+        return False
+    needed = max(1, math.ceil(len(topic_tokens) * 0.6))
+    ranked = sorted(papers, key=lambda p: _paper_score(p, current_year), reverse=True)
+    hits = 0
+    for paper in ranked[:top_k]:
+        title_tokens = set(_title_tokens(str(paper.get("title") or "")))
+        overlap = len(topic_tokens & title_tokens)
+        if overlap == len(topic_tokens):
+            return True
+        if overlap >= needed:
+            hits += 1
+    return hits >= min(2, len(ranked[:top_k]))
 
 
 def _derived_cycle_topics(
@@ -566,6 +594,8 @@ def _fetch_topic_papers(
 
 def _fetch_papers_by_topic(
     topics: list[str], *, client: httpx.Client, settings: Settings,
+    require_title_support: bool = False,
+    current_year: int | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
     if not topics:
         return {}
@@ -578,7 +608,14 @@ def _fetch_papers_by_topic(
         }
         for fut in as_completed(futures):
             topic = futures[fut]
-            out[topic] = fut.result()
+            papers = fut.result()
+            if (
+                require_title_support
+                and not _derived_title_supported(
+                    topic, papers, current_year or dt.datetime.now(dt.UTC).year)
+            ):
+                papers = []
+            out[topic] = papers
     return out
 
 
@@ -612,12 +649,24 @@ def discover_topics(
                     papers_by_topic, year_now, limit=derived_topic_limit)
                 if topic not in papers_by_topic
             ]
-            derived_cycle_topics = _derived_cycle_topics(
-                derived, limit=extra_probe_limit,
+            # Fetch a bounded over-sample so unsupported generic fragments do
+            # not consume the whole derived fact-probe window.
+            derived_fetch_limit = min(len(derived), max(
+                extra_probe_limit, extra_probe_limit * 3))
+            derived_fetch_topics = _derived_cycle_topics(
+                derived, limit=derived_fetch_limit,
                 refresh_low_source_counts=refresh_low_source_counts,
             )
-            papers_by_topic.update(_fetch_papers_by_topic(
-                derived_cycle_topics, client=c, settings=settings))
+            derived_papers = _fetch_papers_by_topic(
+                derived_fetch_topics, client=c, settings=settings,
+                require_title_support=True, current_year=year_now)
+            derived_papers = {topic: papers for topic, papers in derived_papers.items() if papers}
+            derived_cycle_topics = [
+                topic for topic in derived_fetch_topics if topic in derived_papers
+            ][:extra_probe_limit]
+            papers_by_topic.update({
+                topic: derived_papers[topic] for topic in derived_cycle_topics
+            })
         anchorage = _anchorage_counts(papers_by_topic, year_now)
         probe_topics = list(dict.fromkeys([
             *(topic for topic in topics if topic in papers_by_topic),

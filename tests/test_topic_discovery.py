@@ -24,6 +24,7 @@ import httpx
 from agent.topic_discovery import (
     TopicCandidate,
     _anchorage_counts,
+    _derived_title_supported,
     _fact_probe_queries,
     _paper_score,
     _paper_title_facets,
@@ -162,6 +163,31 @@ def test_fetch_papers_by_topic_uses_bounded_parallelism(monkeypatch: Any) -> Non
     assert len(seen_threads) <= td._PAPER_FETCH_WORKERS
 
 
+def test_fetch_papers_by_topic_can_require_title_support() -> None:
+    from agent import topic_discovery as td
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        body = req.read().decode("utf-8") if req.content else "{}"
+        if "low_dose_naltrexone_inflammation" in body:
+            return httpx.Response(200, json=[
+                _paper(title="Low dose CT screening in older adults"),
+                _paper(title="Low dose radiation exposure and cancer risk"),
+            ])
+        return httpx.Response(200, json=[
+            _paper(title="Grid storage tariffs improve adoption"),
+        ])
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        out = td._fetch_papers_by_topic(
+            ["low_dose_naltrexone_inflammation", "grid_storage"],
+            client=c, settings=_settings(),
+            require_title_support=True, current_year=2024,
+        )
+
+    assert out["low_dose_naltrexone_inflammation"] == []
+    assert out["grid_storage"]
+
+
 def test_no_token_returns_zero_papers() -> None:
     s = MagicMock()
     s.researka_database_url = "https://x"
@@ -235,6 +261,17 @@ def test_title_topic_slugs_drop_cross_scope_connectors() -> None:
 
     assert "risk_factors_across" not in out
     assert all("across" not in slug.split("_") for slug in out)
+
+
+def test_derived_title_support_filters_generic_fragment_matches() -> None:
+    assert _derived_title_supported("grid_storage", [
+        _paper(title="Grid storage tariffs improve adoption"),
+    ], 2024)
+    assert not _derived_title_supported("low_dose_naltrexone_inflammation", [
+        _paper(title="Low dose CT screening in older adults"),
+        _paper(title="Low dose steroid therapy in chronic inflammation"),
+        _paper(title="Low dose radiation exposure and cancer risk"),
+    ], 2024)
 
 
 def test_candidate_as_dict_round_trip() -> None:
@@ -526,6 +563,7 @@ def test_discover_topics_fact_probe_limit_keeps_submit_path_bounded(
         return {
             topic: [_paper(
                 doi=f"10.1/{topic}",
+                title=topic.replace("_", " "),
                 fwci=4.0 if topic.startswith("derived_") else 1.0,
             )]
             for topic in topics
@@ -565,7 +603,11 @@ def test_discover_topics_advances_derived_probe_window_past_cached_head(
     }), encoding="utf-8")
 
     def fake_fetch(topics: list[str], **_: Any) -> dict[str, list[dict[str, Any]]]:
-        return {topic: [_paper(doi=f"10.1/{topic}", fwci=4.0)] for topic in topics}
+        return {
+            topic: [_paper(
+                doi=f"10.1/{topic}", title=topic.replace("_", " "), fwci=4.0)]
+            for topic in topics
+        }
 
     seen: list[str] = []
 
@@ -586,6 +628,53 @@ def test_discover_topics_advances_derived_probe_window_past_cached_head(
 
     assert "derived_one" not in seen
     assert "derived_two" in seen
+
+
+def test_discover_topics_backfills_after_unsupported_derived_titles(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+
+    def fake_fetch(
+        topics: list[str], *, require_title_support: bool = False,
+        current_year: int | None = None, **_: Any,
+    ) -> dict[str, list[dict[str, Any]]]:
+        out: dict[str, list[dict[str, Any]]] = {}
+        for topic in topics:
+            title = (
+                "Generic low dose screening review"
+                if topic == "low_dose_naltrexone_inflammation"
+                else topic.replace("_", " ")
+            )
+            papers = [_paper(doi=f"10.1/{topic}", title=title, fwci=4.0)]
+            if require_title_support and not td._derived_title_supported(
+                topic, papers, current_year or 2024,
+            ):
+                papers = []
+            out[topic] = papers
+        return out
+
+    seen: list[str] = []
+
+    def capture_fact_source_counts(topics: list[str], **_: Any) -> dict[str, int]:
+        seen.extend(topics)
+        return {}
+
+    monkeypatch.setattr(td, "_fetch_papers_by_topic", fake_fetch)
+    monkeypatch.setattr(td, "_title_topic_slugs", lambda *_args, **_kw: [
+        "low_dose_naltrexone_inflammation", "grid_storage", "carbon_pricing",
+    ])
+    monkeypatch.setattr(td, "_fetch_fact_source_counts", capture_fact_source_counts)
+
+    td.discover_topics(
+        seeds=("seed_topic",), settings=_settings(), client=httpx.Client(),
+        current_year=2024, derived_topic_limit=3, fact_probe_topics=1,
+    )
+
+    assert "low_dose_naltrexone_inflammation" not in seen
+    assert "grid_storage" in seen
 
 
 def test_derived_cycle_keeps_rich_visible_and_warms_tail(
