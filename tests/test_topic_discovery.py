@@ -675,6 +675,32 @@ def test_low_supply_cache_expires_faster_than_publishable_cache(
     assert calls == ["thin"]
 
 
+def test_warm_backlog_refreshes_fresh_underfloor_cache(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "thin": {"count": 0, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION},
+        "rich": {"count": 5, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION},
+    }), encoding="utf-8")
+    calls: list[str] = []
+
+    def probe(topic: str, *_a: Any, **_k: Any) -> int:
+        calls.append(topic)
+        return 6
+
+    monkeypatch.setattr(td, "_fetch_topic_fact_source_count", probe)
+    out = td._fetch_fact_source_counts(
+        ["thin", "rich"], client=MagicMock(), settings=_settings(),
+        refresh_low_source_counts=True,
+    )
+
+    assert out == {"thin": 6, "rich": 5}
+    assert calls == ["thin"]
+
+
 def test_supply_cache_version_mismatch_reprobes(
     monkeypatch: Any, tmp_path: Path,
 ) -> None:

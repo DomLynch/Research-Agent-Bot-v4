@@ -48,7 +48,7 @@ _SEEDS_TOML = (Path(__file__).resolve().parent.parent
 # also slashes per-cycle DB load). Universal — no domain literals.
 _SUPPLY_CACHE_PATH = (Path(__file__).resolve().parent.parent
                       / "runs" / "_topic_supply_cache.json")
-_SUPPLY_CACHE_VERSION = 4
+_SUPPLY_CACHE_VERSION = 3
 _PUBLISHABLE_SOURCE_FLOOR = 5
 _PROBE_INCONCLUSIVE = -1  # all queries failed (timeout/error), not a real 0
 _DERIVED_TOPIC_LIMIT = 250
@@ -285,6 +285,7 @@ def _supply_cache_ttl(count: int) -> float:
 
 def _fetch_fact_source_counts(
     topics: list[str], *, client: httpx.Client, settings: Settings,
+    refresh_low_source_counts: bool = False,
 ) -> dict[str, int]:
     if not topics:
         return {}
@@ -299,7 +300,13 @@ def _fetch_fact_source_counts(
         entry = cache.get(topic)
         if isinstance(entry, dict) and entry.get("version") == _SUPPLY_CACHE_VERSION:
             count = int(entry.get("count", 0))
-            if now - float(entry.get("ts", 0.0)) < _supply_cache_ttl(count):
+            if (
+                now - float(entry.get("ts", 0.0)) < _supply_cache_ttl(count)
+                and not (
+                    refresh_low_source_counts
+                    and count < _PUBLISHABLE_SOURCE_FLOOR
+                )
+            ):
                 out[topic] = count
                 continue
         to_probe.append(topic)
@@ -482,6 +489,7 @@ def discover_topics(
     current_year: int | None = None,
     derived_topic_limit: int = 0,
     fact_probe_topics: int | None = None,
+    refresh_low_source_counts: bool = False,
 ) -> tuple[TopicCandidate, ...]:
     """Score every seed topic; return ranked tuple (highest velocity first).
     Never raises — degrades silently on HTTP/JSON errors per topic."""
@@ -522,6 +530,7 @@ def discover_topics(
         ]))
         fact_sources_by_topic = _fetch_fact_source_counts(
             probe_topics, client=c, settings=settings,
+            refresh_low_source_counts=refresh_low_source_counts,
         )
         candidates = [
             _score_topic(

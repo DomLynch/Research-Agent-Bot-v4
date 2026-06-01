@@ -85,7 +85,8 @@ def main() -> int:
                                  fact_probe_topics=(
                                      load_derived_topic_limit()
                                      if args.warm_backlog else None
-                                 ))
+                                 ),
+                                 refresh_low_source_counts=args.warm_backlog)
     top = ranked[: args.top]
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
     year = dt.datetime.now(dt.UTC).year
