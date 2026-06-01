@@ -219,7 +219,11 @@ def _angle_text_coheres(text: Any, claim: set[str], topic: str) -> bool:
 
 
 def _receipt_topic_coheres(fact: dict[str, Any], topic: str) -> bool:
-    return _angle_text_coheres(" ".join(_receipt_tokens(fact, "")), _claim_token_set(topic), "")
+    topic_tokens = {
+        token for token in _claim_token_set(topic) - _GENERIC_TOKENS
+        if len(token) >= 4
+    }
+    return bool(topic_tokens and (_receipt_tokens(fact, "") & topic_tokens))
 
 
 def _needs_coherent_repick(verdict: dict[str, Any] | None) -> bool:
