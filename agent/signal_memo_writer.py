@@ -218,6 +218,10 @@ def _angle_text_coheres(text: Any, claim: set[str], topic: str) -> bool:
     return len(cand & claim) >= 2 or _claim_fit_score(cand, claim) >= 0.2
 
 
+def _receipt_topic_coheres(fact: dict[str, Any], topic: str) -> bool:
+    return _angle_text_coheres(" ".join(_receipt_tokens(fact, "")), _claim_token_set(topic), "")
+
+
 def _needs_coherent_repick(verdict: dict[str, Any] | None) -> bool:
     blockers = set(str(x) for x in (verdict or {}).get("blockers") or [])
     return bool(blockers & {
@@ -312,7 +316,7 @@ def _expanded_receipt_ids(
             return
         trusted_topic_match = (
             fid in trusted
-            and _angle_text_coheres(_fact_phrase(facts[fid]), _claim_token_set(topic), "")
+            and _receipt_topic_coheres(facts[fid], topic)
         )
         if (
             claim is not None
