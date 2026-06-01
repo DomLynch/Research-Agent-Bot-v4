@@ -15,7 +15,7 @@ _BINDABLE = frozenset({"A_core", "B_context"})
 
 _CLAIM_FIELDS = ("canonical_phrase",)
 _CLAIM_MIN_OVERLAP = 1
-_CLAIM_CLUSTER_MIN_FIT = 0.15
+_CLAIM_CLUSTER_MIN_FIT = 0.06
 _WORD = re.compile(r"[a-z][a-z0-9]*")  # alpha-led: pure numbers aren't claim signal
 _GENERIC_TOKENS = frozenset({
     "the", "of", "to", "in", "and", "or", "for", "with", "from", "by", "on", "at", "an",
@@ -270,25 +270,24 @@ def _coherent_receipt_ids(
         anchor_tokens = _receipt_tokens(facts[anchor], topic)
         if not anchor_tokens:
             continue
-        ranked = sorted(
-            candidates,
-            key=lambda fid: (
-                -_claim_fit_score(_receipt_tokens(facts[fid], topic), anchor_tokens),
-                -_claim_fit_score(_receipt_tokens(facts[fid], topic), claim),
-                fid,
-            ),
-        )
+        component = [
+            fid for fid in candidates
+            if _claim_fit_score(_receipt_tokens(facts[fid], topic), anchor_tokens)
+            >= _CLAIM_CLUSTER_MIN_FIT
+        ]
         picked: list[str] = []
         sources: set[str] = set()
-        for fid in ranked:
+        for fid in sorted(
+            component,
+            key=lambda x: (
+                lanes.get(x) != "A_core",
+                -_claim_fit_score(_receipt_tokens(facts[x], topic), anchor_tokens),
+                -_claim_fit_score(_receipt_tokens(facts[x], topic), claim),
+                x,
+            ),
+        ):
             source = _source_key(facts[fid])
             if source in sources:
-                continue
-            tokens = _receipt_tokens(facts[fid], topic)
-            if (
-                fid != anchor
-                and _claim_fit_score(tokens, anchor_tokens) < _CLAIM_CLUSTER_MIN_FIT
-            ):
                 continue
             picked.append(fid)
             sources.add(source)
@@ -1310,6 +1309,16 @@ def render_signal_memo(
     claim = _claim_signal(
         [str(x) for x in audit.get("cited_fact_ids", [])], facts, topic,
     )
+    coherent_direct = _coherent_receipt_ids(
+        facts, lanes, min_sources=min_direct_sources, allowed_lanes=_DIRECT,
+        claim=claim, topic=topic,
+    ) or _coherent_receipt_ids(
+        facts, lanes, min_sources=min_direct_sources, allowed_lanes=_DIRECT,
+        claim=set(), topic=topic,
+    )
+    if coherent_direct:
+        audit = audit | {"cited_fact_ids": coherent_direct}
+        claim = _claim_signal(coherent_direct, facts, topic)
     preferred_bound_ids = _preferred_receipt_ids(publish_verdict, lanes, _BINDABLE)
     preferred_direct_ids = _preferred_receipt_ids(publish_verdict, lanes, _DIRECT)
     if _needs_coherent_repick(publish_verdict):

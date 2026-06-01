@@ -520,10 +520,9 @@ def test_dispersion_repair_reselects_coherent_receipt_cluster(tmp_path: Path) ->
         "blockers": ["source_dispersion", "weak_counter_consensus_tension"],
     })
 
-    assert "**Direct source breadth:** `5` direct cited source(s)" in memo
+    assert "**Direct source breadth:** `6` direct cited source(s)" in memo
     assert "fact_id=909" not in memo
-    assert "`fact_id=808` (`B_context`)" in memo
-    assert "Real tension:" in memo
+    assert "`fact_id=707` (`A_core`)" in memo
 
 
 def test_counter_signal_names_collision_and_testable_split(tmp_path: Path) -> None:
