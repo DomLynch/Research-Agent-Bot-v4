@@ -559,10 +559,13 @@ def _cached_supply_counts(
     now = time.time()
     out: dict[str, int] = {}
     for topic in topics:
+        entry = cache.get(topic)
         count = _fresh_cached_supply_count(
-            cache.get(topic), now=now,
+            entry, now=now,
             refresh_low_source_counts=refresh_low_source_counts,
         )
+        if count is None:
+            count = _cached_source_rich_hint_count(entry, now=now)
         if count is not None:
             out[topic] = count
     return out

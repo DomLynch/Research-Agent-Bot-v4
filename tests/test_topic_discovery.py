@@ -718,7 +718,7 @@ def test_discover_topics_uses_cached_seed_counts_outside_probe_window(
     monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
     (tmp_path / "supply.json").write_text(json.dumps({
         "seed_b": {
-            "count": 9, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION,
+            "count": 9, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION - 1,
         },
     }), encoding="utf-8")
     monkeypatch.setattr(td, "_title_topic_slugs", lambda *_args, **_kw: [])
