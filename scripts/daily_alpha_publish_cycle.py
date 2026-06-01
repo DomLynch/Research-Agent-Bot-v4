@@ -800,6 +800,25 @@ def _memo_receipt_ids(
     return out
 
 
+def _memo_receipt_lanes(
+    text: str,
+    section_names: tuple[str, ...] = ("Evidence", "Context"),
+) -> dict[str, str]:
+    names = "|".join(re.escape(name) for name in section_names)
+    sections = re.findall(
+        rf"^## (?:{names}) receipts\n\n(.*?)(?=\n## |\Z)",
+        text,
+        flags=re.M | re.S,
+    )
+    lanes: dict[str, str] = {}
+    for fid, lane in re.findall(
+        r"`fact_id=([^`\s]+)`\s+\(`([^`]+)`\)",
+        "\n".join(sections),
+    ):
+        lanes.setdefault(fid, lane)
+    return lanes
+
+
 def _source_key_from_fact(fact: Json) -> str:
     paper = fact.get("source_paper") or {}
     # Identity order: DOI > PMID > PMCID > DB paper id > title. A blank key is
@@ -835,6 +854,8 @@ def _memo_source_papers(
                 for row in lanes_raw.get("verdicts", [])
                 if isinstance(row, dict)
             }
+        if not lanes:
+            lanes = _memo_receipt_lanes(memo, section_names)
     seen: set[str] = set()
     papers: list[Json] = []
     for fid in ids:
@@ -1691,7 +1712,7 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
     )
     source_papers = _memo_source_papers(verdict, root)
     direct_source_papers = _memo_source_papers(verdict, root, ("Evidence",), {"A_core"})
-    source_bundle = _source_bundle(source_papers)
+    source_bundle = _source_bundle(direct_source_papers)
     direct_source_count = len(direct_source_papers)
     receipt_count = len(_memo_receipt_ids(memo))
     return {
@@ -1714,10 +1735,10 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
             "source_papers": source_papers,
             "direct_source_papers": direct_source_papers,
             "bound_receipt_count": receipt_count,
-            "bound_source_count": len(source_bundle),
+            "bound_source_count": len(source_papers),
             "source_bundle_count": len(source_bundle),
             "direct_source_count": direct_source_count,
-            "context_source_count": max(0, len(source_bundle) - direct_source_count),
+            "context_source_count": max(0, len(source_papers) - direct_source_count),
             "context_sources_are_not_direct_support": "## Context receipts" in memo,
         },
         "content_hash": "sha256:" + hashlib.sha256(public_memo.encode("utf-8")).hexdigest(),
