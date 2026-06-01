@@ -801,6 +801,53 @@ def test_repairable_retry_refreshes_even_when_source_floor_passes(tmp_path: Path
     assert ledger["status"] == "submitted_to_researka"
 
 
+def test_stale_memo_headline_refreshes_before_submission(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("stale_surface")
+    _memo_with_source_receipts(root, verdict, 5)
+    run = root / str(verdict["run_dir"])
+    receipts = "\n".join(
+        f"- `fact_id={i}` (`A_core`) - receipt" for i in range(1, 6)
+    )
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n**Headline:** stale speculative title\n\n"
+        "## Evidence receipts\n\n" + receipts + "\n" + _FALSIFIER,
+        encoding="utf-8",
+    )
+    seen_payload: dict[str, Any] = {}
+    refreshed = {"called": False}
+
+    def refresh(run_dir: Path, refresh_verdict: dict[str, Any]) -> bool:
+        refreshed["called"] = True
+        assert refresh_verdict["_repair_decision"] is None
+        run_dir.joinpath("alpha_memo.md").write_text(
+            f"# Alpha memo\n\n**Headline:** {verdict['headline']}\n\n"
+            "## Evidence receipts\n\n" + receipts + "\n" + _FALSIFIER,
+            encoding="utf-8",
+        )
+        return True
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda payload: seen_payload.update(payload) or {
+            "ok": True,
+            "status": 200,
+            "response": {},
+        },
+        memo_refresher=refresh,
+    )
+
+    assert refreshed["called"] is True
+    assert ledger["considered"][0]["memo_refreshed"] is True
+    assert ledger["status"] == "submitted_to_researka"
+    assert seen_payload["title"] == verdict["headline"]
+
+
 def test_repairable_cycle_attempt_enables_duplicate_retry(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("cycle_attempt_retry")

@@ -502,6 +502,14 @@ def _memo_sha256(verdict: Json, root: Path) -> str:
     return hashlib.sha256(memo.encode("utf-8")).hexdigest() if memo else ""
 
 
+def _memo_headline_mismatch(verdict: Json, root: Path) -> bool:
+    expected = str(verdict.get("headline") or "").strip()
+    if not expected:
+        return False
+    run_dir = _run_path(root, verdict.get("run_dir"))
+    return _memo_headline(_read_text(run_dir / "alpha_memo.md")) != expected
+
+
 def _fingerprint_attempt_count(path: Path, fingerprint: str) -> int:
     data = _json(path, [])
     if not isinstance(data, list):
@@ -904,6 +912,26 @@ def select_candidate(
                 or source_count >= min_source_count
             )
             and memo_refresher
+        ):
+            run_dir = _run_path(runs_root, verdict.get("run_dir"))
+            refresh_verdict = verdict | {"_repair_decision": retry_decisions.get(fp)}
+            memo_refreshed = memo_refresher(run_dir, refresh_verdict)
+            if memo_refreshed:
+                source_count = _source_count(verdict, runs_root)
+                direct_source_count = _direct_source_count(verdict, runs_root)
+                corpus_source_count = _corpus_source_count(verdict, runs_root)
+                memo_sha256 = _memo_sha256(verdict, runs_root)
+                attempt_count = _fingerprint_attempt_count(submitted_path, fp)
+                retry_after_rejection = (
+                    fp in retryable
+                    and attempt_count < _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
+                )
+        if (
+            not cycle_blocked
+            and has_memo
+            and approved
+            and memo_refresher
+            and _memo_headline_mismatch(verdict, runs_root)
         ):
             run_dir = _run_path(runs_root, verdict.get("run_dir"))
             refresh_verdict = verdict | {"_repair_decision": retry_decisions.get(fp)}
