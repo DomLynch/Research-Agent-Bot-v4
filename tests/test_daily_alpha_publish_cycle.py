@@ -695,6 +695,34 @@ def test_tighten_evidence_receipts_revision_forces_grounded_regen() -> None:
     assert daily._is_grounding_reject(decision) is True
 
 
+def test_partially_supported_major_revision_is_not_retried() -> None:
+    decision = {
+        "claim_support_verdict": "partially_supported",
+        "decision": "revise",
+        "major_issues": [
+            "The core claim compares different populations and endpoints.",
+        ],
+        "required_revisions": [
+            "Distinguish the biomarker from the intervention practice.",
+        ],
+        "resubmission": {"allowed": True},
+    }
+
+    assert daily._repairable_rejection(decision) is False
+
+
+def test_supported_revision_stays_repairable() -> None:
+    decision = {
+        "claim_support_verdict": "supported",
+        "decision": "revise",
+        "minor_issues": ["Tighten the title to match the receipts."],
+        "required_revisions": ["Tighten the title to match the receipts."],
+        "resubmission": {"allowed": True},
+    }
+
+    assert daily._repairable_rejection(decision) is True
+
+
 def test_title_abstract_scope_revision_forces_grounded_regen() -> None:
     decision = {
         "decision": "revise",
