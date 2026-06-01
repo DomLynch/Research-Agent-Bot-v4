@@ -1174,6 +1174,38 @@ def test_discover_topics_reuses_cached_source_rich_fact_children(
     assert by_topic["cached_child_topic"].paper_count == 1
 
 
+def test_discover_topics_ignores_cached_source_rich_hint_without_papers(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "cached_orphan_topic": {
+            "count": 8,
+            "ts": time.time(),
+            "version": td._SUPPLY_CACHE_VERSION,
+        },
+    }), encoding="utf-8")
+    seed_papers = [_paper(doi="10.1/seed", title="Seed topic trial", fwci=2.0)]
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        body = req.read().decode("utf-8") if req.content else "{}"
+        if req.url.path.endswith("/tier2/facts/search"):
+            return httpx.Response(200, json=[])
+        if "cached_orphan_topic" in body:
+            return httpx.Response(200, json=[])
+        return httpx.Response(200, json=seed_papers)
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        out = td.discover_topics(
+            seeds=("seed_topic",), settings=_settings(), client=c,
+            current_year=2024, derived_topic_limit=5, fact_probe_topics=5,
+        )
+
+    assert "cached_orphan_topic" not in {candidate.topic for candidate in out}
+
+
 def test_cached_source_rich_topics_can_use_previous_version_as_hint(
     monkeypatch: Any, tmp_path: Path,
 ) -> None:

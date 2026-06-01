@@ -921,7 +921,10 @@ def discover_topics(
                 list(fact_topic_counts), client=c, settings=settings,
                 require_title_support=True, current_year=year_now)
             for topic, count in fact_topic_counts.items():
-                papers_by_topic.setdefault(topic, fact_child_papers.get(topic, []))
+                papers = fact_child_papers.get(topic, [])
+                if topic not in fact_child_topics and not papers:
+                    continue
+                papers_by_topic.setdefault(topic, papers)
                 fact_sources_by_topic[topic] = max(
                     fact_sources_by_topic.get(topic, 0), count)
         candidates = [
