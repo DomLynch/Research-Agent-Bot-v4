@@ -424,11 +424,12 @@ def test_discover_topics_prefers_fact_source_breadth(
 
 
 def test_discover_topics_warm_backlog_can_probe_all_seed_topics(
-    monkeypatch: Any,
+    monkeypatch: Any, tmp_path: Path,
 ) -> None:
     """Submit path stays bounded; backlog mode can still cover the seed pool."""
     from agent import topic_discovery as td
 
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
     monkeypatch.setattr(td, "_FACT_PROBE_TOPICS", 1)
     fast_thin = [_paper(doi="10.1/fast", fwci=20.0, cited_by_count=2000)]
     slow_rich = [_paper(doi="10.1/rich", fwci=0.2, cited_by_count=10)]
