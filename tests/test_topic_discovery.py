@@ -1651,7 +1651,10 @@ def test_warm_backlog_refreshes_fresh_underfloor_cache(
     monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
     (tmp_path / "supply.json").write_text(json.dumps({
         "thin": {"count": 0, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION},
-        "rich": {"count": 5, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION},
+        "rich": {
+            "count": 5, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION,
+            "source_papers": [{"title": "Known rich source"}],
+        },
     }), encoding="utf-8")
     calls: list[str] = []
 
@@ -1667,6 +1670,35 @@ def test_warm_backlog_refreshes_fresh_underfloor_cache(
 
     assert out == {"thin": 6, "rich": 5}
     assert calls == ["thin"]
+
+
+def test_warm_backlog_refreshes_source_rich_cache_missing_papers(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "rich": {"count": 7, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION},
+        "hydrated": {
+            "count": 6, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION,
+            "source_papers": [{"title": "Hydrated source"}],
+        },
+    }), encoding="utf-8")
+    calls: list[str] = []
+
+    def probe(topic: str, *_a: Any, **_k: Any) -> tuple[int, tuple[tuple[str, int], ...]]:
+        calls.append(topic)
+        return 8, ()
+
+    monkeypatch.setattr(td, "_fetch_topic_fact_source_profile", probe)
+    out = td._fetch_fact_source_counts(
+        ["rich", "hydrated"], client=MagicMock(), settings=_settings(),
+        refresh_low_source_counts=True,
+    )
+
+    assert out == {"rich": 8, "hydrated": 6}
+    assert calls == ["rich"]
 
 
 def test_supply_cache_version_mismatch_reprobes(

@@ -518,9 +518,15 @@ def _fresh_cached_supply_count(
     if not isinstance(entry, dict) or entry.get("version") != _SUPPLY_CACHE_VERSION:
         return None
     count = int(entry.get("count", 0))
+    missing_source_papers = (
+        refresh_low_source_counts
+        and count >= _PUBLISHABLE_SOURCE_FLOOR
+        and not _cached_source_papers(entry)
+    )
     if (
         now - float(entry.get("ts", 0.0)) < _supply_cache_ttl(count)
         and not (refresh_low_source_counts and count < _PUBLISHABLE_SOURCE_FLOOR)
+        and not missing_source_papers
     ):
         return count
     return None
