@@ -621,6 +621,14 @@ def _counter_collision(
     )
 
 
+def _counter_question(lead_fact: dict[str, Any], counter_item: dict[str, Any]) -> str:
+    return (
+        f"Does the contrast between {_fact_context(lead_fact)} and "
+        f"{_counter_context(counter_item)} persist when the cited receipts are "
+        "aligned on population, endpoint, comparator, and time window?"
+    )
+
+
 def build_claim_receipt_matrix(
     claim: set[str], lead_ids: list[str],
     receipt_ids: list[str], facts: dict[str, dict[str, Any]],
@@ -912,14 +920,17 @@ def _select_angle(
             "kind": "counter_signal",
             "headline": f"{_topic_title(topic)} has a live counter-signal",
             "thesis": collision,
+            "question": _counter_question(facts.get(lead_ids[0]) or {}, counter_item),
             "why": (
                 "The alpha signal is the named split between a positive receipt "
                 "and an opposing endpoint, not a generic claim that the topic works."
             ),
             "what_changes": (
-                "Test the endpoint-specific split directly: do the positive and "
-                "opposing receipts align on population, endpoint, comparator, and "
-                "time window, or is this a boundary condition rather than broad benefit?"
+                "Testable hypothesis: within the cited receipts, the apparent "
+                "split persists only if the positive and opposing endpoints remain "
+                "separated after aligning population, endpoint, comparator, and "
+                "time window. Audit those fields before treating this as a "
+                "general signal."
             ),
         }))
     limit = max(1, min(5, _memo_alpha_int("angle_candidates", 5)))
@@ -1232,6 +1243,10 @@ def render_signal_memo(
         headline = angle["headline"]
     thesis = angle["thesis"]
     why_surprising = angle["why"]
+    bounded_question = angle.get("question") or (
+        "Does the cited receipt bundle still support this bounded claim when "
+        "population, endpoint, comparator, and time window are aligned?"
+    )
     what_changes = angle.get("what_changes") or (
         "Treat this as a focused working signal, not a broad topic claim. "
         "It moves review attention from a generic Top 5 list to the specific "
@@ -1268,6 +1283,10 @@ def render_signal_memo(
         "## Why this is surprising",
         "",
         why_surprising,
+        "",
+        "## Evidence Landscape",
+        "",
+        f"**Bounded research question:** {bounded_question}",
         "",
         "## Evidence receipts",
         "",

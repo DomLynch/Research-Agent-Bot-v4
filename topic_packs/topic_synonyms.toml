@@ -110,6 +110,9 @@ instances = [
 [klotho]
 instances = ["klotho", "alpha-klotho", "α-klotho", "s-klotho", "soluble klotho", "KL gene"]
 
+[low_dose_lithium]
+instances = ["low-dose lithium", "low dose lithium", "lithium", "lithium carbonate"]
+
 [hyperbaric_oxygen_hbot]
 instances = [
     "hyperbaric oxygen", "HBOT", "hyperbaric oxygen therapy",

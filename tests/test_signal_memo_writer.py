@@ -416,7 +416,10 @@ def test_counter_signal_names_collision_and_testable_split(tmp_path: Path) -> No
     assert "**Selected angle:** `counter_signal`" in memo
     assert "The collision is between a positive direct signal" in memo
     assert "heavy industry firms" in memo
-    assert "Test the endpoint-specific split directly" in memo
+    assert "## Evidence Landscape" in memo
+    assert "**Bounded research question:** Does the contrast between" in memo
+    assert "population, endpoint, comparator, and time window" in memo
+    assert "Testable hypothesis:" in memo
     assert "The value is the collision between receipts" not in memo
 
 
@@ -604,7 +607,8 @@ def test_alpha_memo_selects_counter_signal_angle_when_counter_receipt_exists(
     assert "**Headline:** Carbon tax has a live counter-signal" in memo
     assert "The collision is between a positive direct signal" in memo
     assert "opposing endpoint" in memo
-    assert "Test the endpoint-specific split directly" in memo
+    assert "**Bounded research question:** Does the contrast between" in memo
+    assert "Testable hypothesis:" in memo
     assert "matched market" in memo
 
 

@@ -73,6 +73,13 @@ def test_expand_topic_queries_can_reach_registered_instances() -> None:
     assert "carnosine" in out
 
 
+def test_registered_topic_does_not_trim_to_generic_modifier() -> None:
+    out = expand_topic_queries("low_dose_lithium", max_queries=16)
+
+    assert "low dose" not in out
+    assert "lithium" in out
+
+
 def test_text_matches_topic_finds_instance() -> None:
     """senolytic query should match a fact about D+Q senescent-cell clearance."""
     text = "dasatinib + quercetin reduced senescent cell burden by 70%"

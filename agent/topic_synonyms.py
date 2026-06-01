@@ -71,15 +71,20 @@ def expand_topic_queries(topic: str, *, max_queries: int = 4) -> tuple[str, ...]
     never to instances: trimming `low level laser therapy` to the generic
     fragment `low level` false-matched unrelated `low-level ...` text.
     """
+    key = _norm(topic).replace(" ", "_")
+    registered = key in load_synonyms()
     seen: dict[str, None] = {}
     for idx, kw in enumerate(expand_topic_keywords(topic)):
         normed = _norm(kw)
         raw = kw.strip()
         if raw:
             seen.setdefault(raw, None)
-        if normed and normed != raw.casefold():
+        if normed and (
+            normed != raw.casefold()
+            or (" " in raw and raw != raw.casefold())
+        ):
             seen.setdefault(normed, None)
-        if idx == 0:  # trim ONLY the topic slug into short prefixes
+        if idx == 0 and not registered:
             parts = normed.split()
             while len(parts) > 2:
                 parts = parts[:-1]
