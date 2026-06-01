@@ -278,6 +278,72 @@ def test_alpha_memo_does_not_pad_with_off_claim_receipts(tmp_path: Path) -> None
     assert "`fact_id=303` (`A_core`)" in memo
 
 
+def test_alpha_memo_does_not_pad_with_same_topic_different_claim_receipts(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "photobiomodulation_red_light-evidence-ts"
+    _write_run(run)
+    (run / "frontier_review.json").write_text(json.dumps({
+        "topic": "photobiomodulation_red_light",
+        "snapshot_utc": "2026-06-01T00-00-00Z",
+    }), encoding="utf-8")
+    (run / "opportunities_gate.json").write_text(json.dumps({
+        "audits": [{
+            "title": "Photobiomodulation improves parkinsonian signs",
+            "status": "survives",
+            "capped_opportunity": 88,
+            "cited_fact_ids": ["190330"],
+        }],
+    }), encoding="utf-8")
+    facts = [
+        {
+            "fact_id": "190330",
+            "canonical_phrase": (
+                "photobiomodulation from an intranasal device resulted in "
+                "improvements in the majority of parkinsonian signs"
+            ),
+            "source_paper": {"doi": "10.x/parkinson"},
+        },
+        {
+            "fact_id": "195606",
+            "canonical_phrase": "50% reduction in disease activity index",
+            "source_paper": {"doi": "10.x/bowel"},
+        },
+        {
+            "fact_id": "195609",
+            "canonical_phrase": (
+                "photobiomodulation can increase ATP production by up to 70%"
+            ),
+            "source_paper": {"doi": "10.x/atp"},
+        },
+        {
+            "fact_id": "189724",
+            "canonical_phrase": (
+                "near infrared device decreased first-attempt blood withdrawal failure"
+            ),
+            "source_paper": {"doi": "10.x/vascular-device"},
+        },
+        {
+            "fact_id": "189397",
+            "canonical_phrase": (
+                "near infrared light reduced neurological deficits after injury"
+            ),
+            "source_paper": {"doi": "10.x/stroke"},
+        },
+    ]
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": f["fact_id"], "lane": "A_core"} for f in facts],
+    }), encoding="utf-8")
+
+    memo = render_signal_memo(run)
+
+    assert "10.x/vascular-device" not in memo
+    assert "10.x/bowel" not in memo
+    assert "10.x/atp" not in memo
+    assert "**Direct source breadth:** `5` direct cited source(s)" not in memo
+
+
 def test_alpha_memo_semantic_receipt_fallback_uses_word_roots(tmp_path: Path) -> None:
     run = tmp_path / "carbon_tax-evidence-ts"
     _write_run(run)

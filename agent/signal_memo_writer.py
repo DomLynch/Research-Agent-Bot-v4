@@ -15,6 +15,7 @@ _BINDABLE = frozenset({"A_core", "B_context"})
 
 _CLAIM_FIELDS = ("canonical_phrase",)
 _CLAIM_MIN_OVERLAP = 1
+_CLAIM_CLUSTER_MIN_FIT = 0.15
 _WORD = re.compile(r"[a-z][a-z0-9]*")  # alpha-led: pure numbers aren't claim signal
 _GENERIC_TOKENS = frozenset({
     "the", "of", "to", "in", "and", "or", "for", "with", "from", "by", "on", "at", "an",
@@ -22,6 +23,9 @@ _GENERIC_TOKENS = frozenset({
     "group", "groups", "patients", "subjects", "adults", "participants", "risk", "effect",
     "effects", "increased", "decreased", "reduced", "change", "results", "significant",
     "versus", "compared", "control", "treated", "ci", "rr", "hr", "nnt", "rct", "rcts",
+    "can", "resulted", "improve", "improved", "improves", "improving", "improvement",
+    "improvements", "increase", "reduction", "disease", "review", "comprehensive",
+    "device", "majority",
 })
 _NULL_MARKERS = ("no effect", "null", "unchanged", "failed", "did not", "without")
 _ADVERSE_MARKERS = ("mortality", "adverse", "toxicity", "harm", "worsen", "risk")
@@ -281,7 +285,10 @@ def _coherent_receipt_ids(
             if source in sources:
                 continue
             tokens = _receipt_tokens(facts[fid], topic)
-            if fid != anchor and _claim_fit_score(tokens, anchor_tokens) < 0.08:
+            if (
+                fid != anchor
+                and _claim_fit_score(tokens, anchor_tokens) < _CLAIM_CLUSTER_MIN_FIT
+            ):
                 continue
             picked.append(fid)
             sources.add(source)
@@ -326,6 +333,20 @@ def _expanded_receipt_ids(
             claim is not None
             and not trusted_topic_match
             and not _angle_text_coheres(_fact_phrase(facts[fid]), claim, topic)
+        ):
+            return
+        if (
+            claim is not None
+            and selected
+            and fid not in trusted
+            and max(
+                _claim_fit_score(
+                    _receipt_tokens(facts[fid], topic),
+                    _receipt_tokens(facts[other], topic),
+                )
+                for other in selected
+                if other in facts
+            ) < _CLAIM_CLUSTER_MIN_FIT
         ):
             return
         selected.append(fid)
