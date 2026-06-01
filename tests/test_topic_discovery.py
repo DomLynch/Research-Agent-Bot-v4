@@ -592,8 +592,7 @@ def test_discover_topics_fact_probe_limit_keeps_submit_path_bounded(
         current_year=2024, derived_topic_limit=3, fact_probe_topics=1,
     )
 
-    assert "seed_topic" in seen
-    assert len([topic for topic in seen if topic.startswith("derived_")]) == 1
+    assert seen == ["derived_one"]
 
 
 def test_discover_topics_advances_derived_probe_window_past_cached_head(
@@ -634,6 +633,80 @@ def test_discover_topics_advances_derived_probe_window_past_cached_head(
 
     assert "derived_one" not in seen
     assert "derived_two" in seen
+
+
+def test_discover_topics_probe_budget_is_total_not_seed_plus_derived(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    monkeypatch.setattr(td, "_title_topic_slugs", lambda *_args, **_kw: [
+        "derived_one", "derived_two", "derived_three",
+    ])
+
+    def fake_fetch(topics: list[str], **_: Any) -> dict[str, list[dict[str, Any]]]:
+        return {
+            topic: [_paper(
+                doi=f"10.1/{topic}",
+                title=topic.replace("_", " "),
+                fwci=5.0 if topic.startswith("derived_") else 1.0,
+            )]
+            for topic in topics
+        }
+
+    seen: list[str] = []
+
+    def capture_fact_source_counts(topics: list[str], **_: Any) -> dict[str, int]:
+        seen.extend(topics)
+        return {}
+
+    monkeypatch.setattr(td, "_fetch_papers_by_topic", fake_fetch)
+    monkeypatch.setattr(td, "_fetch_fact_source_counts", capture_fact_source_counts)
+
+    td.discover_topics(
+        seeds=("seed_a", "seed_b", "seed_c"), settings=_settings(),
+        client=httpx.Client(), current_year=2024,
+        derived_topic_limit=6, fact_probe_topics=2,
+    )
+
+    assert seen == ["derived_one", "derived_two"]
+
+
+def test_discover_topics_probe_budget_falls_back_to_seed_when_no_derived(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    monkeypatch.setattr(td, "_title_topic_slugs", lambda *_args, **_kw: [])
+
+    def fake_fetch(topics: list[str], **_: Any) -> dict[str, list[dict[str, Any]]]:
+        return {
+            topic: [_paper(
+                doi=f"10.1/{topic}", title=topic.replace("_", " "),
+                fwci=3.0,
+            )]
+            for topic in topics
+        }
+
+    seen: list[str] = []
+
+    def capture_fact_source_counts(topics: list[str], **_: Any) -> dict[str, int]:
+        seen.extend(topics)
+        return {}
+
+    monkeypatch.setattr(td, "_fetch_papers_by_topic", fake_fetch)
+    monkeypatch.setattr(td, "_fetch_fact_source_counts", capture_fact_source_counts)
+
+    td.discover_topics(
+        seeds=("seed_a", "seed_b", "seed_c"), settings=_settings(),
+        client=httpx.Client(), current_year=2024,
+        derived_topic_limit=6, fact_probe_topics=2,
+    )
+
+    assert len(seen) == 2
+    assert set(seen) <= {"seed_a", "seed_b", "seed_c"}
 
 
 def test_discover_topics_backfills_after_unsupported_derived_titles(

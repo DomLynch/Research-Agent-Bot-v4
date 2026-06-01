@@ -901,12 +901,14 @@ def discover_topics(
                     topic: derived_papers[topic] for topic in derived_cycle_topics
                 })
         anchorage = _anchorage_counts(papers_by_topic, year_now)
+        probe_limit = max(1, extra_probe_limit)
+        seed_probe_limit = max(0, probe_limit - len(derived_cycle_topics))
         seed_probe_topics = _seed_probe_topics(
-            topics, papers_by_topic, year_now, limit=max(1, extra_probe_limit),
+            topics, papers_by_topic, year_now, limit=seed_probe_limit,
             refresh_low_source_counts=refresh_low_source_counts)
         probe_topics = list(dict.fromkeys([
-            *seed_probe_topics, *derived_cycle_topics,
-        ]))
+            *derived_cycle_topics, *seed_probe_topics,
+        ]))[:probe_limit]
         fact_child_counts: dict[str, int] = {}
         fact_sources_by_topic = _fetch_fact_source_counts(
             probe_topics, client=c, settings=settings,
