@@ -813,6 +813,24 @@ def test_unsupported_reject_with_resubmission_allowed_is_not_retried() -> None:
     assert daily._repairable_rejection(decision) is False
 
 
+def test_unsupported_scope_reset_reject_with_resubmission_allowed_is_retried() -> None:
+    decision = {
+        "claim_support_verdict": "unsupported",
+        "decision": "reject",
+        "major_issues": [
+            "Fundamental misalignment between the title/thesis and the provided evidence bundle.",
+        ],
+        "required_revisions": [
+            "Complete scope reset: change the title and thesis to match the actual evidence provided.",
+            "The thesis must be a single, bounded research signal.",
+        ],
+        "resubmission": {"allowed": True},
+    }
+
+    assert daily._is_grounding_reject(decision) is True
+    assert daily._repairable_rejection(decision) is True
+
+
 def test_supported_revision_stays_repairable() -> None:
     decision = {
         "claim_support_verdict": "supported",

@@ -425,6 +425,16 @@ def _is_grounding_reject(decision: Json) -> bool:
     return any(term in notes for term in _SCOPE_RESET_TERMS)
 
 
+def _is_explicit_scope_reset(decision: Json) -> bool:
+    notes = _norm(_revision_notes(decision))
+    return (
+        "scope reset" in notes
+        or "claim_evidence_alignment" in notes
+        or "title thesis" in notes
+        or "title and thesis" in notes
+    )
+
+
 def _revision_notes(decision: Json) -> str:
     parts: list[str] = []
     for key in ("failure_category", "review_summary", "notes"):
@@ -740,7 +750,7 @@ def _repairable_rejection(decision: Json) -> bool:
     if decision.get("decision") == "revise":
         return _resubmission_allowed(decision) or support != "partially_supported"
     if decision.get("decision") == "reject" and support in {"partially_supported", "unsupported"}:
-        return False
+        return _resubmission_allowed(decision) and _is_explicit_scope_reset(decision)
     reasons = {
         str(decision.get("failure_category") or ""),
         *(str(x) for x in decision.get("failed_checks") or []),
