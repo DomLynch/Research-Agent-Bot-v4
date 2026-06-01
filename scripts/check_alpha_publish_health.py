@@ -29,7 +29,7 @@ def _ledger_paths(runs_root: Path) -> list[Path]:
             for path in ledger_dir.glob("*.json")
             if not path.name.startswith("_") and "decision" not in path.name
         ),
-        key=lambda path: path.stat().st_mtime,
+        key=lambda path: path.name.lower(),
         reverse=True,
     )
 
