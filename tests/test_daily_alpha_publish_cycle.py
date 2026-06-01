@@ -542,6 +542,31 @@ def test_repairable_reject_refresher_can_patch_existing_memo(tmp_path: Path) -> 
     assert "Meta-analysis" not in run.joinpath("alpha_memo.md").read_text(encoding="utf-8")
 
 
+def test_repairable_reject_refresher_removes_meta_regression_title(tmp_path: Path) -> None:
+    run = tmp_path / "runs" / "topic-evidence-ts"
+    run.mkdir(parents=True)
+    run.joinpath("signal_post.md").write_text("# Signal\n", encoding="utf-8")
+    run.joinpath("alpha_memo.md").write_text(
+        "**Headline:** Claim: A Meta-regression of diagnostic criteria\n\n"
+        "- **Suggested citation:** Claim: A meta regression of diagnostic criteria.\n\n"
+        "## Why this is surprising\n\nBody.\n",
+        encoding="utf-8",
+    )
+
+    changed = daily._refresh_alpha_memo(run, {
+        "_repair_decision": {
+            "decision": "reject",
+            "review_summary": "Title should not claim meta-regression.",
+        },
+    })
+
+    memo = run.joinpath("alpha_memo.md").read_text(encoding="utf-8")
+    assert changed is True
+    assert "Meta-regression" not in memo
+    assert "meta regression" not in memo
+    assert "**Headline:** Claim" in memo
+
+
 def test_repairable_reject_refresher_softens_gate_reported_novelty(tmp_path: Path) -> None:
     run = tmp_path / "runs" / "topic-evidence-ts"
     run.mkdir(parents=True)

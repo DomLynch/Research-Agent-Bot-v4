@@ -455,8 +455,10 @@ def _revision_notes(decision: Json) -> str:
 
 def _clean_title_claim(line: str) -> str:
     return re.sub(
-        r":\s*(?:a\s+)?(?:systematic review|meta-analysis|meta analysis)"
-        r"(?:\s+and\s+(?:meta-analysis|meta analysis))?(?:\s+of\s+[^.\n]+)?",
+        r":\s*(?:a\s+)?(?:systematic review|meta-analysis|meta analysis|"
+        r"meta-regression|meta regression)"
+        r"(?:\s+and\s+(?:meta-analysis|meta analysis|meta-regression|"
+        r"meta regression))?(?:\s+of\s+[^.\n]+)?",
         "",
         line,
         flags=re.I,
@@ -522,7 +524,13 @@ def _apply_reviewer_revision_notes(run_dir: Path, decision: Json) -> bool:
         notes_norm = _norm(notes)
         if "title" in notes_norm and any(
             term in notes_norm
-            for term in ("systematic review", "meta-analysis", "meta analysis")
+            for term in (
+                "systematic review",
+                "meta-analysis",
+                "meta analysis",
+                "meta-regression",
+                "meta regression",
+            )
         ):
             lines = []
             for line in revised.splitlines():
