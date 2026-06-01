@@ -29,6 +29,10 @@ _DOSE_MARKERS = ("dose", "low-dose", "high-dose", "threshold")
 _SUBGROUP_MARKERS = ("subgroup", "strata", "sex", "male", "female", "baseline")
 _MODEL_MARKERS = ("mouse", "mice", "rat", "animal", "cell", "in vitro", "human")
 _ENDPOINT_MARKERS = ("biomarker", "surrogate", "mortality", "survival", "endpoint")
+_UNSUPPORTED_TENSION_HEADLINE_MARKERS = (
+    "paradox", "obscur", "counter", "contradict", "backfire", "reversal",
+    "harm", "adverse", "worsen", "majority subgroup",
+)
 
 def _read(path: Path) -> str:
     try:
@@ -435,6 +439,22 @@ def _grounded_headline(
     if not phrase:
         return fallback
     return f"Bounded {_topic_title(topic)} signal: {phrase[:120].rstrip()}"
+
+
+def _has_counter_items(verdict: dict[str, Any] | None) -> bool:
+    counter = (verdict or {}).get("counter_evidence")
+    items = counter.get("items", []) if isinstance(counter, dict) else []
+    return isinstance(items, list) and bool(items)
+
+
+def _headline_needs_grounding(
+    headline: str,
+    verdict: dict[str, Any] | None,
+) -> bool:
+    if _has_counter_items(verdict):
+        return False
+    lower = headline.lower()
+    return any(marker in lower for marker in _UNSUPPORTED_TENSION_HEADLINE_MARKERS)
 
 
 def _context_subline(verdict: dict[str, Any] | None, fallback: str) -> str:
@@ -1146,6 +1166,12 @@ def render_signal_memo(
         context_ids, publish_verdict, source_count,
         recent_kinds=recent_kinds,
     )
+    if angle["kind"] == "source" and _headline_needs_grounding(
+        angle["headline"], publish_verdict,
+    ):
+        angle = angle | {
+            "headline": _grounded_headline(topic, lead_ids, facts, angle["headline"]),
+        }
     if grounded:
         # Repair mode for scope/grounding rejects: drop the speculative
         # boundary/counter angle and tie title + thesis back to the cited
@@ -1171,8 +1197,12 @@ def render_signal_memo(
         f"**Snapshot:** `{snapshot}`",
         f"**Run:** `{run_dir.name}`",
         f"**Direct source breadth:** `{lead_source_count}` direct cited source(s)",
-        *([f"**Source thesis:** {raw_headline}"]
-          if raw_headline != headline else []),
+        *(
+            [f"**Source thesis:** {raw_headline}"]
+            if raw_headline != headline
+            and not _headline_needs_grounding(raw_headline, publish_verdict)
+            else []
+        ),
         f"**Source breadth:** `{source_count}/{min_sources}` unique cited source(s)",
         "",
         "## One-sentence thesis",

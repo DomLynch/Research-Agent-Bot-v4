@@ -481,6 +481,30 @@ def test_grounded_repair_rebuilds_headline_from_direct_receipts(
     assert "**Source thesis:** Carbon pricing may cut emissions" in memo
 
 
+def test_source_angle_grounds_unsupported_tension_headline(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    (run / "signal_post.md").write_text(
+        "# Signal — carbon_tax\n\n"
+        "## Carbon tax paradox may obscure harm in the majority subgroup\n\n"
+        "## Why this is surprising\n\n"
+        "A speculative tension frame.\n\n"
+        "## Confidence — `evidence_backed_signal`\n",
+        encoding="utf-8",
+    )
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "publish_alpha_memo",
+        "counter_evidence": {"status": "none_found", "items": []},
+    })
+
+    assert "**Selected angle:** `source`" in memo
+    assert "**Headline:** Bounded Carbon tax signal: Emissions fell 8%" in memo
+    assert "Carbon tax paradox may obscure harm" not in memo
+
+
 def test_alpha_memo_selects_counter_signal_angle_when_counter_receipt_exists(
     tmp_path: Path,
 ) -> None:
