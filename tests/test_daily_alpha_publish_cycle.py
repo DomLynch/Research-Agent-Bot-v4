@@ -2431,7 +2431,7 @@ def test_refresh_candidates_builds_one_topic_per_submit_batch(
     assert "--stop-on-ready" in calls[0][0]
     assert "--with-pico-enrich" not in calls[0][0]
     assert calls[0][0][-4:] == ["--top", "5", "--cooldown-hours", "2"]
-    assert calls[0][1] == 5400
+    assert calls[0][1] == 1200
 
 
 def test_refresh_cooldown_is_cycle_configurable(
