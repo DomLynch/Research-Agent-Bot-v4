@@ -671,6 +671,17 @@ def test_resubmission_allowed_claim_alignment_reject_is_repairable() -> None:
     assert daily._is_grounding_reject(decision) is True
 
 
+def test_explicit_resubmission_allowed_reject_is_repairable() -> None:
+    decision = {
+        "decision": "reject",
+        "major_issues": ["The title overstates what the receipts prove."],
+        "required_revisions": ["Rewrite the thesis around the cited receipts."],
+        "resubmission": {"allowed": True},
+    }
+
+    assert daily._repairable_rejection(decision) is True
+
+
 def test_resubmission_alignment_reject_requires_explicit_allow() -> None:
     decision = {
         "decision": "reject",

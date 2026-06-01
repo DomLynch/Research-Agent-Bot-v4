@@ -679,14 +679,6 @@ def _repairable_rejection(decision: Json) -> bool:
     if (
         isinstance(resubmission, dict)
         and resubmission.get("allowed") is True
-        and any(
-            term in text for term in (
-                "bounded research question", "claim_evidence_alignment",
-                "cited bundle", "directly supported", "evidence presentation",
-                "irrelevant counter-evidence", "restructure",
-                "source_grounding",
-            )
-        )
     ):
         return True
     return any(reason in text for reason in _REPAIRABLE_REJECTION_REASONS)
