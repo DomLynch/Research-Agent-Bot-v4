@@ -1310,16 +1310,21 @@ def select_candidate(
             fp in seen
             and attempt_count >= _repair_attempt_limit(retry_decisions.get(fp))
         )
-        operator_repair = _operator_review_repair_candidate(
-            verdict,
-            source_count=source_count,
-            direct_source_count=direct_source_count,
-            corpus_source_count=corpus_source_count,
-            min_source_count=min_source_count,
-            min_direct_source_count=min_direct_source_count,
+        duplicate_without_retry = fp in seen and not retry_after_rejection
+        operator_repair = (
+            not duplicate_without_retry
+            and _operator_review_repair_candidate(
+                verdict,
+                source_count=source_count,
+                direct_source_count=direct_source_count,
+                corpus_source_count=corpus_source_count,
+                min_source_count=min_source_count,
+                min_direct_source_count=min_direct_source_count,
+            )
         )
         if (
             not cycle_blocked
+            and not exhausted_topic
             and not retry_budget_exhausted
             and has_memo
             and (
@@ -1374,6 +1379,7 @@ def select_candidate(
                 operator_repair = False
         if (
             not cycle_blocked
+            and not exhausted_topic
             and not retry_budget_exhausted
             and has_memo
             and approved
@@ -1412,6 +1418,7 @@ def select_candidate(
                 )
         if (
             not cycle_blocked
+            and not exhausted_topic
             and not retry_budget_exhausted
             and has_memo
             and memo_refresher

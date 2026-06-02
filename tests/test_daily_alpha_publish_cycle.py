@@ -3997,6 +3997,45 @@ def test_rich_incoherent_review_candidate_repairs_before_approval(
     assert considered[0]["status"] == "eligible"
 
 
+def test_exhausted_review_candidate_does_not_repair_dirty(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("cooldown_rich_repair") | {
+        "decision": "needs_operator_review",
+        "publish_tier": "TIER_2",
+        "surface_type": "frontier_hypothesis_memo",
+        "alpha_score": 100,
+        "blockers": ["source_dispersion", "weak_counter_consensus_tension"],
+    }
+    _memo_with_source_receipts(root, verdict, 8)
+    refreshed = {"called": False}
+
+    def refresh(_run_dir: Path, _refresh_verdict: dict[str, Any]) -> bool:
+        refreshed["called"] = True
+        return True
+
+    cand, considered = daily.select_candidate(
+        {
+            "ready_to_publish": [],
+            "needs_operator_review": [verdict],
+            "curation_needed": [],
+        },
+        runs_root=root,
+        submitted_path=root / "submitted.json",
+        allow_tier2=True,
+        min_source_count=5,
+        min_direct_source_count=5,
+        memo_refresher=refresh,
+        blocked_topics={"cooldown_rich_repair"},
+    )
+
+    assert refreshed["called"] is False
+    assert cand is None
+    assert considered[0]["status"] == "cycle_exhausted_topic"
+    assert "memo_refreshed" not in considered[0]
+
+
 def test_source_dispersion_direct_floor_review_candidate_repairs_before_approval(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
