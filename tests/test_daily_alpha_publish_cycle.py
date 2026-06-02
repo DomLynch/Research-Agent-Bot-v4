@@ -2527,6 +2527,45 @@ def test_sync_submission_decisions_records_async_rejection(tmp_path: Path) -> No
     assert patched["researka_decision"]["gate_failures"][0]["name"] == "minimum_citations"
 
 
+def test_sync_submission_decisions_expires_stale_pending(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+        "date": "2026-05-21T00-00-00Z",
+        "topic": "old_pending",
+        "submission_id": "sub_pending",
+    }])
+    daily._write_json(root / "_daily_ledger" / "2026-05-21T00-00-00Z.json", {
+        "date": "2026-05-21T00-00-00Z",
+        "status": "submitted_to_researka",
+        "submission_id": "sub_pending",
+        "candidate": {"topic": "old_pending"},
+    })
+
+    summary = daily.sync_submission_decisions(
+        root,
+        fetcher=lambda _submission_id: {"status": "pending", "decision": None},
+        now=dt.datetime(2026, 5, 24, 1, 0, 0, tzinfo=dt.UTC),
+        max_pending_age_hours=72,
+    )
+
+    patched = json.loads(
+        (root / "_daily_ledger" / "2026-05-21T00-00-00Z.json").read_text(
+            encoding="utf-8",
+        )
+    )
+    submitted = json.loads(
+        (root / "_daily_ledger" / "_submitted_fingerprints.json").read_text(
+            encoding="utf-8",
+        )
+    )
+    assert summary["pending"] == 0
+    assert summary["stale"] == 1
+    assert patched["status"] == "decision_stale_pending"
+    assert patched["final_verdict"] == "stale_pending"
+    assert submitted[0]["status"] == "decision_stale_pending"
+    assert submitted[0]["final_verdict"] == "stale_pending"
+
+
 def test_sync_submission_decisions_uses_top_level_submission_id(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
@@ -3897,6 +3936,64 @@ def test_source_rich_tier2_frontier_candidate_can_submit_when_allowed(tmp_path: 
 
     assert cand is not None
     assert cand["topic"] == "source_rich_review"
+    assert considered[0]["status"] == "eligible"
+
+
+def test_rich_incoherent_review_candidate_repairs_before_approval(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("rich_repair") | {
+        "decision": "needs_operator_review",
+        "publish_tier": "TIER_2",
+        "surface_type": "frontier_hypothesis_memo",
+        "alpha_score": 100,
+        "blockers": ["source_dispersion", "weak_counter_consensus_tension"],
+    }
+    _memo_with_source_receipts(root, verdict, 8)
+    refreshed = {"called": False}
+
+    def refresh(run_dir: Path, refresh_verdict: dict[str, Any]) -> bool:
+        refreshed["called"] = True
+        assert refresh_verdict["topic"] == "rich_repair"
+        run_dir.joinpath("alpha_memo.md").write_text(
+            "# Alpha memo\n\n"
+            "**Headline:** Storage reserves flip after threshold pricing\n\n"
+            "## Evidence receipts\n\n"
+            + "\n".join(f"- `fact_id={i}` (`A_core`) - direct" for i in range(1, 6))
+            + "\n" + _FALSIFIER,
+            encoding="utf-8",
+        )
+        return True
+
+    def reload_verdict(refresh_verdict: dict[str, Any], _run_dir: Path) -> dict[str, Any]:
+        return refresh_verdict | {
+            "decision": "ready_to_publish",
+            "publish_tier": "TIER_1",
+            "blockers": [],
+            "receipt_expansion": {"cited_bound_fact_ids": ["1", "2", "3", "4", "5"]},
+        }
+
+    monkeypatch.setattr(daily, "_reload_verdict_after_memo_refresh", reload_verdict)
+
+    cand, considered = daily.select_candidate(
+        {
+            "ready_to_publish": [],
+            "needs_operator_review": [verdict],
+            "curation_needed": [],
+        },
+        runs_root=root,
+        submitted_path=root / "submitted.json",
+        allow_tier2=True,
+        min_source_count=5,
+        min_direct_source_count=5,
+        memo_refresher=refresh,
+    )
+
+    assert refreshed["called"] is True
+    assert cand is not None
+    assert cand["topic"] == "rich_repair"
+    assert considered[0]["memo_refreshed"] is True
     assert considered[0]["status"] == "eligible"
 
 

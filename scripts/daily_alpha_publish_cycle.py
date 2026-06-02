@@ -132,12 +132,16 @@ _DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS = _alpha_memo_int(
 )
 _DEFAULT_DECISION_POLL_ATTEMPTS = _alpha_memo_int("decision_poll_attempts", 30)
 _DEFAULT_DECISION_POLL_SECONDS = _alpha_memo_float("decision_poll_seconds", 10.0)
+_DEFAULT_PENDING_DECISION_MAX_AGE_HOURS = _alpha_memo_float(
+    "pending_decision_max_age_hours", 72.0,
+)
 _DEFAULT_MAX_REFRESH_BATCHES = 5
 _REFRESH_TIMEOUT_SECONDS = 1200
 # User-facing "3x" repair limit: one initial submit plus three repaired
 # resubmits for the same evidence fingerprint.
 _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT = 4
 _MAX_REJECT_ATTEMPTS_PER_FINGERPRINT = 2
+_FINAL_DECISION_VERDICTS = {"accepted", "rejected", "revise", "stale_pending"}
 _EXHAUSTED_STATUSES = {
     "duplicate_submission_fingerprint",
     "missing_alpha_memo",
@@ -383,6 +387,38 @@ def _source_floor_repair_candidate(
         verdict.get("decision") == "needs_operator_review"
         and (measured_floor_gap or bool(blockers & source_floor_blockers))
         and not blockers - repairable_blockers
+    )
+
+
+def _operator_review_repair_candidate(
+    verdict: Json,
+    *,
+    source_count: int,
+    direct_source_count: int,
+    corpus_source_count: int,
+    min_source_count: int,
+    min_direct_source_count: int,
+) -> bool:
+    blockers = {str(x) for x in verdict.get("blockers") or []}
+    repairable = {
+        "source_dispersion",
+        "weak_counter_consensus_tension",
+        "source_floor_below_min",
+        "direct_source_floor_below_min",
+    }
+    has_repair_signal = (
+        direct_source_count < min_direct_source_count
+        or bool(blockers & {"source_dispersion", "weak_counter_consensus_tension"})
+    )
+    has_available_supply = (
+        source_count >= min_source_count
+        or corpus_source_count >= min_source_count
+    )
+    return (
+        verdict.get("decision") == "needs_operator_review"
+        and has_repair_signal
+        and has_available_supply
+        and not blockers - repairable
     )
 
 
@@ -728,6 +764,46 @@ def _submission_record_patch(ledger: Json) -> Json:
         if value not in (None, ""):
             patch[key] = value
     return patch
+
+
+def _stamp_to_utc(value: Any) -> dt.datetime | None:
+    match = re.search(
+        r"(\d{4}-\d{2}-\d{2})[Tt](\d{2})[-:](\d{2})[-:](\d{2})",
+        str(value or ""),
+    )
+    if not match:
+        return None
+    date, hour, minute, second = match.groups()
+    try:
+        year, month, day = (int(part) for part in date.split("-"))
+        return dt.datetime(
+            year, month, day, int(hour), int(minute), int(second), tzinfo=dt.UTC,
+        )
+    except ValueError:
+        return None
+
+
+def _stale_pending_decision(
+    ledger: Json,
+    *,
+    stamp: Any,
+    now: dt.datetime,
+    max_age_hours: float,
+) -> bool:
+    if max_age_hours <= 0:
+        return False
+    started = _stamp_to_utc(ledger.get("date") or stamp)
+    if started is None:
+        return False
+    return (now - started).total_seconds() >= max_age_hours * 3600
+
+
+def _mark_stale_pending_decision(ledger: Json, *, max_age_hours: float) -> None:
+    ledger["status"] = "decision_stale_pending"
+    ledger["final_verdict"] = "stale_pending"
+    ledger["published"] = 0
+    ledger["publish_failure_reason"] = "decision_pending_timeout"
+    ledger["decision_pending_timeout_hours"] = max_age_hours
 
 
 def _merge_submission_record(row: Json, patch: Json) -> bool:
@@ -1234,12 +1310,21 @@ def select_candidate(
             fp in seen
             and attempt_count >= _repair_attempt_limit(retry_decisions.get(fp))
         )
+        operator_repair = _operator_review_repair_candidate(
+            verdict,
+            source_count=source_count,
+            direct_source_count=direct_source_count,
+            corpus_source_count=corpus_source_count,
+            min_source_count=min_source_count,
+            min_direct_source_count=min_direct_source_count,
+        )
         if (
             not cycle_blocked
             and not retry_budget_exhausted
             and has_memo
             and (
                 approved
+                or operator_repair
                 or _source_floor_repair_candidate(
                     verdict,
                     source_count=source_count,
@@ -1251,6 +1336,7 @@ def select_candidate(
             and (
                 source_count < min_source_count
                 or direct_source_count < min_direct_source_count
+                or operator_repair
             )
             and (
                 corpus_source_count >= min_source_count
@@ -1285,6 +1371,7 @@ def select_candidate(
                     retryable=retryable,
                     decisions=retry_decisions,
                 )
+                operator_repair = False
         if (
             not cycle_blocked
             and not retry_budget_exhausted
@@ -1440,7 +1527,9 @@ def select_candidate(
             "topic": verdict.get("topic"),
             "decision": verdict.get("decision"),
             "publish_tier": verdict.get("publish_tier"),
+            "surface_type": verdict.get("surface_type"),
             "alpha_score": verdict.get("alpha_score"),
+            "blockers": verdict.get("blockers"),
             "run_dir": verdict.get("run_dir"),
             "fingerprint": fp,
             "source_count": source_count,
@@ -1703,9 +1792,15 @@ def sync_submission_decisions(
     *,
     fetcher: DecisionFetcher = _decision_fetch,
     page_fetcher: PageFetcher = _fetch_public_page,
+    now: dt.datetime | None = None,
+    max_pending_age_hours: float = _DEFAULT_PENDING_DECISION_MAX_AGE_HOURS,
 ) -> Json:
     ledger_dir = runs_root / "_daily_ledger"
-    summary: Json = {"checked": 0, "updated": 0, "published": 0, "pending": 0, "errors": []}
+    current = now or dt.datetime.now(dt.UTC)
+    summary: Json = {
+        "checked": 0, "updated": 0, "published": 0, "pending": 0,
+        "stale": 0, "errors": [],
+    }
     seen_submission_ids: set[str] = set()
     submission_record_updates: dict[str, Json] = {}
     for path in sorted(ledger_dir.glob("*.json")):
@@ -1721,7 +1816,7 @@ def sync_submission_decisions(
                     submission_record_updates[sid] = patch
         if not isinstance(ledger, dict) or ledger.get("status") != "submitted_to_researka":
             continue
-        if ledger.get("final_verdict") in {"accepted", "rejected", "revise"}:
+        if ledger.get("final_verdict") in _FINAL_DECISION_VERDICTS:
             continue
         submission_id = str(ledger.get("submission_id") or "") or _submission_id(
             ledger.get("submission", {}),
@@ -1747,6 +1842,16 @@ def sync_submission_decisions(
         )
         summary["pending"] += int(final == "pending")
         summary["published"] += int(final == "accepted")
+        if final == "pending" and _stale_pending_decision(
+            ledger, stamp=path.stem, now=current,
+            max_age_hours=max_pending_age_hours,
+        ):
+            _mark_stale_pending_decision(
+                ledger, max_age_hours=max_pending_age_hours,
+            )
+            final = "stale_pending"
+            summary["pending"] -= 1
+            summary["stale"] += 1
         if final != "pending":
             summary["updated"] += 1
         patch = _submission_record_patch(ledger)
@@ -1767,7 +1872,7 @@ def sync_submission_decisions(
                 submitted_changed |= _merge_submission_record(row, row_patch)
             if (
                 submission_id in seen_submission_ids
-                or row.get("final_verdict") in {"accepted", "rejected", "revise"}
+                or row.get("final_verdict") in _FINAL_DECISION_VERDICTS
             ):
                 continue
             summary["checked"] += 1
@@ -1802,6 +1907,16 @@ def sync_submission_decisions(
             )
             summary["pending"] += int(final == "pending")
             summary["published"] += int(final == "accepted")
+            if final == "pending" and _stale_pending_decision(
+                synthetic_ledger, stamp=row.get("date"), now=current,
+                max_age_hours=max_pending_age_hours,
+            ):
+                _mark_stale_pending_decision(
+                    synthetic_ledger, max_age_hours=max_pending_age_hours,
+                )
+                final = "stale_pending"
+                summary["pending"] -= 1
+                summary["stale"] += 1
             if final != "pending":
                 summary["updated"] += 1
             submitted_changed |= _merge_submission_record(
