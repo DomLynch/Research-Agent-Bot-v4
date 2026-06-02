@@ -820,6 +820,21 @@ def _counter_type(phrase: str, paper: dict[str, Any]) -> tuple[str, int]:
     return "direction_reversal", 50
 
 
+def _counter_marked(text: str) -> bool:
+    lowered = text.lower()
+    return any(
+        marker in lowered
+        for marker in (
+            *_NULL_MARKERS,
+            *_ADVERSE_MARKERS,
+            *_DOSE_MARKERS,
+            *_SUBGROUP_MARKERS,
+            *_MODEL_MARKERS,
+            *_ENDPOINT_MARKERS,
+        )
+    )
+
+
 def _nearest_known_claims(
     claim: set[str],
     facts: dict[str, dict[str, Any]],
@@ -1023,9 +1038,11 @@ def _select_angle(
     ), "")
     raw = verdict.get("counter_evidence") if verdict else None
     raw_items = raw.get("items", []) if isinstance(raw, dict) else []
+    primary_lead = set(lead_ids[:1])
     counter_item = next((
         item for item in raw_items
         if isinstance(item, dict)
+        and str(item.get("fact_id") or "") not in primary_lead
         and _angle_text_coheres(item.get("phrase"), claim, topic)
     ), {}) if isinstance(raw_items, list) else {}
     counter = _clip(counter_item.get("phrase"), 220) if counter_item else ""
@@ -1041,7 +1058,7 @@ def _select_angle(
                 "the memo is not a broad topic summary, but a testable boundary condition."
             ),
         }))
-    if lead and counter:
+    if lead and counter and not _counter_marked(lead):
         collision = _counter_collision(
             lead, facts.get(lead_ids[0]) or {}, counter, counter_item)
         candidates.append((source_count * 8 + 44, {

@@ -834,6 +834,30 @@ def test_alpha_memo_selects_counter_signal_angle_when_counter_receipt_exists(
     assert "matched market" in memo
 
 
+def test_alpha_memo_does_not_call_null_lead_a_positive_counter_signal(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    facts[0]["canonical_phrase"] = "The intervention did not reduce emissions."
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "publish_alpha_memo",
+        "counter_evidence": {"items": [{
+            "fact_id": "101",
+            "lane": "A_core",
+            "phrase": "The intervention did not reduce emissions.",
+        }]},
+    })
+
+    assert "**Selected angle:** `source`" in memo
+    assert "positive direct signal" not in memo
+    assert "opposing endpoint" not in memo
+    assert "has a live counter-signal" not in memo
+
+
 def test_alpha_memo_rejects_incoherent_counter_and_boundary_angles(
     tmp_path: Path,
 ) -> None:
