@@ -1833,6 +1833,50 @@ def test_cached_source_rich_topics_does_not_warm_noise_children(
     assert "target_intervention" not in cache
 
 
+def test_cached_source_rich_topics_does_not_warm_context_only_children(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "parent_root": {
+            "count": 8,
+            "ts": time.time(),
+            "version": td._SUPPLY_CACHE_VERSION,
+            "source_papers": [_paper(doi="10.1/parent", title="Parent root")],
+        },
+    }), encoding="utf-8")
+    run = tmp_path / "parent_root-evidence-2026-06-02T00-00-00Z"
+    run.mkdir()
+    facts = [
+        {
+            "id": f"fact-{i}",
+            "paper_id": f"paper-{i}",
+            "source_paper": {
+                "doi": f"10.1/context-{i}",
+                "title": f"Target intervention context {i}",
+            },
+            "numeric_value": 10,
+            "units": "%",
+            "population": "adults",
+            "intervention": "target intervention",
+            "canonical_phrase": "target intervention changed a context marker by 10%",
+        }
+        for i in range(5)
+    ]
+    run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": f"fact-{i}", "lane": "B_context"} for i in range(5)],
+    }), encoding="utf-8")
+
+    out = td._cached_source_rich_topics(exclude=set(), limit=10)
+
+    assert not any(topic == "target_intervention" for topic, _count in out)
+    cache = json.loads((tmp_path / "supply.json").read_text(encoding="utf-8"))
+    assert "target_intervention" not in cache
+
+
 def test_discover_topics_surfaces_cached_paper_backed_rich_topics_beyond_probe_limit(
     monkeypatch: Any, tmp_path: Path,
 ) -> None:
@@ -2078,6 +2122,36 @@ def test_latest_underfloor_run_filters_false_source_rich_cache(
     run.mkdir()
     run.joinpath("fact_lanes.json").write_text(json.dumps({
         "verdicts": [{"fact_id": f"f{i}", "lane": "C_noise"} for i in range(5)],
+    }), encoding="utf-8")
+
+    out = td._cached_source_rich_topics(exclude=set(), limit=5)
+
+    assert out == (("true_rich", 8),)
+
+
+def test_latest_context_only_run_filters_false_source_rich_cache(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "context_rich": {"count": 9, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION},
+        "true_rich": {"count": 8, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION},
+    }), encoding="utf-8")
+    run = tmp_path / "context_rich-evidence-ts"
+    run.mkdir()
+    facts = [
+        {
+            "id": f"f{i}",
+            "source_paper": {"doi": f"10.1/context-{i}"},
+            "canonical_phrase": "context marker changed by 10%",
+        }
+        for i in range(5)
+    ]
+    run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": f"f{i}", "lane": "B_context"} for i in range(5)],
     }), encoding="utf-8")
 
     out = td._cached_source_rich_topics(exclude=set(), limit=5)

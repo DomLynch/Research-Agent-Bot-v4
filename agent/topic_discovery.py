@@ -622,26 +622,40 @@ def _latest_run_dirs(topic: str, *, limit: int = 3) -> tuple[Path, ...]:
     )[:limit])
 
 
-def _latest_run_bound_count(topic: str) -> int | None:
+def _latest_run_direct_source_count(topic: str) -> int | None:
     for run in _latest_run_dirs(topic):
         try:
             lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
+        try:
+            facts_raw = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            facts_raw = []
         if not isinstance(lanes, dict):
             continue
         verdicts = lanes.get("verdicts") or []
         if not isinstance(verdicts, list):
             continue
-        return sum(
-            1 for row in verdicts
-            if isinstance(row, dict) and row.get("lane") in {"A_core", "B_context"}
-        )
+        direct = {
+            str(row.get("fact_id") or row.get("id") or "")
+            for row in verdicts
+            if isinstance(row, dict) and row.get("lane") == "A_core"
+        }
+        if not isinstance(facts_raw, list):
+            return len(direct)
+        sources = {
+            _fact_source_key(_fact_for_lane(row, topic))
+            for row in facts_raw
+            if isinstance(row, dict)
+            and str(_fact_for_lane(row, topic).get("fact_id") or "") in direct
+        }
+        return len({source for source in sources if source})
     return None
 
 
 def _latest_run_disproves_source_rich(topic: str) -> bool:
-    count = _latest_run_bound_count(topic)
+    count = _latest_run_direct_source_count(topic)
     return count is not None and count < _PUBLISHABLE_SOURCE_FLOOR
 
 
@@ -662,7 +676,7 @@ def _latest_run_child_source_papers(
         allowed = {
             str(row.get("fact_id") or row.get("id") or "")
             for row in verdicts
-            if isinstance(row, dict) and row.get("lane") in {"A_core", "B_context"}
+            if isinstance(row, dict) and row.get("lane") == "A_core"
         }
         child_papers: dict[str, dict[str, dict[str, Any]]] = {}
         for row in facts:
