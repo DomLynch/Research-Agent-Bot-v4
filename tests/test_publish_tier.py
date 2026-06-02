@@ -191,6 +191,28 @@ def test_claim_coherent_source_diversity_is_publishable(tmp_path: Path) -> None:
     assert "cross_domain_forced" not in verdict["blockers"]
 
 
+def test_bridge_chain_source_overlap_is_not_claim_coherent(tmp_path: Path) -> None:
+    run = _run(
+        tmp_path,
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+        dois=("10.a", "10.b", "10.c", "10.d", "10.e"),
+        titles=(
+            "Alpha beta",
+            "Beta gamma",
+            "Gamma delta",
+            "Delta epsilon",
+            "Epsilon zeta",
+        ),
+        journals=("Grid A", "Grid B", "Grid C", "Grid D", "Grid E"),
+    )
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "needs_operator_review"
+    assert "source_dispersion" in verdict["blockers"]
+    assert verdict["axes"]["claim_coherent_source_diversity"] is False
+
+
 def test_claim_coherence_accepts_source_cluster_not_every_receipt(
     tmp_path: Path,
 ) -> None:

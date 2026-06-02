@@ -458,27 +458,15 @@ def _claim_coherent_source_diversity(
     source_tokens = list(by_source.values())
     if len(source_tokens) < min_sources:
         return False
-    links: dict[int, set[int]] = {i: set() for i in range(len(source_tokens))}
     for i, left in enumerate(source_tokens):
-        for j, right in enumerate(source_tokens[i + 1:], start=i + 1):
+        cluster_size = 1
+        for j, right in enumerate(source_tokens):
+            if i == j:
+                continue
             overlap = len(left & right) / max(1, len(left | right))
             if overlap >= min_overlap:
-                links[i].add(j)
-                links[j].add(i)
-    seen: set[int] = set()
-    for start in links:
-        if start in seen:
-            continue
-        stack = [start]
-        component: set[int] = set()
-        while stack:
-            node = stack.pop()
-            if node in component:
-                continue
-            component.add(node)
-            stack.extend(links[node] - component)
-        seen.update(component)
-        if len(component) >= min_sources:
+                cluster_size += 1
+        if cluster_size >= min_sources:
             return True
     return False
 
