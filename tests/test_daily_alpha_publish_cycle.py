@@ -3385,3 +3385,108 @@ def test_memo_with_falsifier_passes_the_gate(tmp_path: Path) -> None:
         min_source_count=5, min_direct_source_count=2,
     )
     assert considered[0]["status"] != "memo_missing_falsifier"
+
+
+def test_source_floor_review_candidate_repairs_before_approval(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("repair_sources") | {
+        "decision": "needs_operator_review",
+        "publish_tier": "TIER_2",
+        "blockers": ["direct_source_floor_below_min"],
+        "receipt_expansion": {"cited_bound_fact_ids": ["1", "2", "3", "4"]},
+    }
+    _memo_with_source_receipts(root, verdict, 6)
+    run = root / str(verdict["run_dir"])
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n"
+        "**Headline:** Storage reserves flip after threshold pricing\n\n"
+        "## Evidence receipts\n\n"
+        + "\n".join(f"- `fact_id={i}` (`A_core`) - direct" for i in range(1, 5))
+        + "\n\n## Context receipts\n\n"
+        + "\n".join(f"- `fact_id={i}` (`A_core`) - context" for i in range(5, 7))
+        + "\n" + _FALSIFIER,
+        encoding="utf-8",
+    )
+    refreshed = {"called": False}
+
+    def refresh(run_dir: Path, refresh_verdict: dict[str, Any]) -> bool:
+        refreshed["called"] = True
+        assert refresh_verdict["decision"] == "needs_operator_review"
+        run_dir.joinpath("alpha_memo.md").write_text(
+            "# Alpha memo\n\n"
+            "**Headline:** Storage reserves flip after threshold pricing\n\n"
+            "## Evidence receipts\n\n"
+            + "\n".join(f"- `fact_id={i}` (`A_core`) - direct" for i in range(1, 6))
+            + "\n\n## Context receipts\n\n"
+            "- `fact_id=6` (`A_core`) - context\n"
+            + _FALSIFIER,
+            encoding="utf-8",
+        )
+        return True
+
+    def reload_verdict(refresh_verdict: dict[str, Any], _run_dir: Path) -> dict[str, Any]:
+        return refresh_verdict | {
+            "decision": "ready_to_publish",
+            "publish_tier": "TIER_1",
+            "blockers": [],
+            "receipt_expansion": {
+                "cited_bound_fact_ids": ["1", "2", "3", "4", "5"],
+            },
+        }
+
+    monkeypatch.setattr(daily, "_reload_verdict_after_memo_refresh", reload_verdict)
+
+    cand, considered = daily.select_candidate(
+        {
+            "ready_to_publish": [],
+            "needs_operator_review": [verdict],
+            "curation_needed": [],
+        },
+        runs_root=root,
+        submitted_path=root / "submitted.json",
+        allow_tier2=True,
+        min_source_count=5,
+        min_direct_source_count=5,
+        memo_refresher=refresh,
+    )
+
+    assert refreshed["called"] is True
+    assert cand is not None
+    assert cand["topic"] == "repair_sources"
+    assert considered[0]["memo_refreshed"] is True
+    assert considered[0]["status"] == "eligible"
+    assert considered[0]["direct_source_count"] == 5
+
+
+def test_hard_blocked_review_candidate_does_not_bypass_approval(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("hard_blocked") | {
+        "decision": "needs_operator_review",
+        "publish_tier": "TIER_2",
+        "blockers": ["source_dispersion", "direct_source_floor_below_min"],
+    }
+    _memo_with_source_receipts(root, verdict, 6)
+
+    def refresh(_run_dir: Path, _verdict: dict[str, Any]) -> bool:
+        raise AssertionError("hard-blocked review candidates must not auto-repair")
+
+    cand, considered = daily.select_candidate(
+        {
+            "ready_to_publish": [],
+            "needs_operator_review": [verdict],
+            "curation_needed": [],
+        },
+        runs_root=root,
+        submitted_path=root / "submitted.json",
+        allow_tier2=True,
+        min_source_count=5,
+        min_direct_source_count=5,
+        memo_refresher=refresh,
+    )
+
+    assert cand is None
+    assert considered[0]["status"] == "needs_operator_approval"
+    assert "memo_refreshed" not in considered[0]

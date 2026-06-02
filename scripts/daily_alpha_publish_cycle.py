@@ -345,6 +345,16 @@ def _needs_tension_enrichment(verdict: Json) -> bool:
     )
 
 
+def _source_floor_repair_candidate(verdict: Json) -> bool:
+    blockers = {str(x) for x in verdict.get("blockers") or []}
+    source_floor_blockers = {"source_floor_below_min", "direct_source_floor_below_min"}
+    return (
+        verdict.get("decision") == "needs_operator_review"
+        and bool(blockers)
+        and not blockers - source_floor_blockers
+    )
+
+
 def _rows(
     queue: Json, *, allow_tier2: bool, enrich_weak_tension: bool = False,
 ) -> list[Json]:
@@ -1086,7 +1096,7 @@ def select_candidate(
             not cycle_blocked
             and not retry_budget_exhausted
             and has_memo
-            and approved
+            and (approved or _source_floor_repair_candidate(verdict))
             and (
                 source_count < min_source_count
                 or direct_source_count < min_direct_source_count
