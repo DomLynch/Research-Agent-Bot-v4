@@ -432,6 +432,57 @@ def test_alpha_memo_uses_gate_receipt_expansion_candidates(tmp_path: Path) -> No
     assert "10.x/expansion-606" in memo
 
 
+def test_alpha_memo_duplicate_source_audit_ids_do_not_crowd_out_floor(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    gate = json.loads((run / "opportunities_gate.json").read_text(encoding="utf-8"))
+    gate["audits"][0]["cited_fact_ids"] = ["101", "102", "103"]
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    for fid in ("102", "103"):
+        facts.append({
+            "fact_id": fid,
+            "canonical_phrase": (
+                f"Emissions fell after the carbon pricing intervention in audit {fid}."
+            ),
+            "source_paper": {"doi": "10.x/policy"},
+        })
+        lanes["verdicts"].append({"fact_id": fid, "lane": "A_core"})
+    for fid in ("303", "404", "505", "606"):
+        facts.append({
+            "fact_id": fid,
+            "canonical_phrase": (
+                f"Emissions fell after the carbon pricing intervention in market {fid}."
+            ),
+            "source_paper": {"doi": f"10.x/diverse-{fid}"},
+        })
+        lanes["verdicts"].append({"fact_id": fid, "lane": "A_core"})
+    (run / "opportunities_gate.json").write_text(json.dumps(gate), encoding="utf-8")
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "publish_alpha_memo",
+        "receipt_expansion": {
+            "needed": True,
+            "cited_bound_fact_ids": ["101", "102", "103"],
+            "available_bound_fact_ids": ["101", "102", "103", "303", "404", "505", "606"],
+            "candidate_receipts": [
+                {"fact_id": fid, "lane": "A_core"}
+                for fid in ("303", "404", "505", "606")
+            ],
+        },
+    })
+
+    evidence = memo.split("## Evidence receipts", 1)[1].split("\n## ", 1)[0]
+    assert "**Direct source breadth:** `5` direct cited source(s)" in memo
+    assert evidence.count("doi=10.x/policy") == 1
+    assert "`fact_id=606` (`A_core`)" in evidence
+    assert "doi=10.x/diverse-606" in evidence
+
+
 def test_alpha_memo_trusts_gate_candidate_receipts_for_source_floor(
     tmp_path: Path,
 ) -> None:

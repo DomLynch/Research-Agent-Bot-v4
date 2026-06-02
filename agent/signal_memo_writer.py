@@ -348,9 +348,11 @@ def _expanded_receipt_ids(
             ) < _CLAIM_CLUSTER_MIN_FIT
         ):
             return
+        key = _source_key(facts[fid])
+        if key and key in sources and len(sources) < min_sources:
+            return
         selected.append(fid)
         seen_ids.add(fid)
-        key = _source_key(facts[fid])
         if key:
             sources.add(key)
 
