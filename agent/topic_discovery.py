@@ -51,6 +51,10 @@ _SUPPLY_CACHE_PATH = (Path(__file__).resolve().parent.parent
                       / "runs" / "_topic_supply_cache.json")
 _SUPPLY_CACHE_VERSION = 10
 _PUBLISHABLE_SOURCE_FLOOR = 5
+# Discovery "source-rich" hints must satisfy the same direct-source breadth
+# that the alpha submit gate requires, or the scheduler advertises candidates
+# the publisher will later reject as under-floor.
+_DIRECT_SOURCE_RICH_FLOOR = _PUBLISHABLE_SOURCE_FLOOR
 _PROBE_INCONCLUSIVE = -1  # all queries failed (timeout/error), not a real 0
 _DERIVED_TOPIC_LIMIT = 5_000
 # All configured seeds are probed; this caps extra velocity/derived topics on
@@ -656,7 +660,7 @@ def _latest_run_direct_source_count(topic: str) -> int | None:
 
 def _latest_run_disproves_source_rich(topic: str) -> bool:
     count = _latest_run_direct_source_count(topic)
-    return count is not None and count < _PUBLISHABLE_SOURCE_FLOOR
+    return count is not None and count < _DIRECT_SOURCE_RICH_FLOOR
 
 
 def _latest_run_child_source_papers(
@@ -695,7 +699,7 @@ def _latest_run_child_source_papers(
                 child_papers.setdefault(slug, {}).setdefault(key, paper)
         return {
             slug: papers for slug, papers in child_papers.items()
-            if len(papers) >= _PUBLISHABLE_SOURCE_FLOOR
+            if len(papers) >= _DIRECT_SOURCE_RICH_FLOOR
         }
     return {}
 
