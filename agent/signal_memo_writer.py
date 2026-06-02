@@ -239,13 +239,11 @@ def _needs_coherent_repick(verdict: dict[str, Any] | None) -> bool:
 
 
 def _receipt_tokens(fact: dict[str, Any], topic: str) -> set[str]:
-    paper = fact.get("source_paper") or {}
     return (
         _claim_token_set(
             fact.get("canonical_phrase"),
             fact.get("population"),
             fact.get("intervention"),
-            paper.get("title") if isinstance(paper, dict) else "",
         )
         - _claim_token_set(topic) - _GENERIC_TOKENS
     )

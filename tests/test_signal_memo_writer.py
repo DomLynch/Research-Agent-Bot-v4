@@ -16,6 +16,7 @@ from pytest import MonkeyPatch
 
 from agent.publish_tier import publish_verdict
 from agent.signal_memo_writer import (
+    _expanded_receipt_ids,
     _format_large_numbers,
     _grounded_headline,
     _memo_alpha_int,
@@ -522,6 +523,41 @@ def test_trusted_candidate_receipts_must_fit_selected_claim_cluster(
     assert "**Direct source breadth:** `5` direct cited source(s)" not in memo
     assert "`fact_id=303`" not in evidence
     assert "`fact_id=606`" not in evidence
+
+
+def test_receipt_cluster_ignores_source_title_overlap() -> None:
+    shared_title = "systematic association analysis women glucose fasting metabolic factors"
+    filler = " ".join(f"orthogonal{i}" for i in range(160))
+    facts = {
+        "101": {
+            "fact_id": "101",
+            "canonical_phrase": "Gestational diabetes glucose signal in pregnancy women.",
+            "source_paper": {"doi": "10.x/lead", "title": shared_title},
+        },
+        **{
+            fid: {
+                "fact_id": fid,
+                "canonical_phrase": f"Glucose women {filler} {fid}.",
+                "source_paper": {"doi": f"10.x/{fid}", "title": shared_title},
+            }
+            for fid in ("202", "303", "404", "505")
+        },
+    }
+    lanes = {fid: "A_core" for fid in facts}
+
+    picked = _expanded_receipt_ids(
+        {"cited_fact_ids": ["101"]},
+        facts,
+        lanes,
+        min_sources=5,
+        allowed_lanes=frozenset({"A_core"}),
+        claim={"gestational", "diabetes", "glucose", "pregnancy", "women"},
+        topic="fasting",
+        preferred_ids=["202", "303", "404", "505"],
+        trusted_ids={"202", "303", "404", "505"},
+    )
+
+    assert picked == ["101"]
 
 
 def test_source_angle_publish_memo_replaces_stale_surprise_prose(

@@ -228,9 +228,9 @@ def test_main_preserves_claim_coherent_source_diversity(
         _fact("f1", 50.0, "storage threshold improved reliability", "10.same/a"),
         _fact("f2", 40.0, "storage threshold reduced outages", "10.other/e"),
         _fact("f3", 30.0, "storage threshold lowered costs", "10.same/a"),
-        _fact("f4", 20.0, "storage reserve changed prices", "10.other/b"),
-        _fact("f5", 10.0, "storage reserve shifted dispatch", "10.other/c"),
-        _fact("f6", 5.0, "storage reserve changed risk", "10.other/d"),
+        _fact("f4", 20.0, "storage threshold reserve reliability changed prices", "10.other/b"),
+        _fact("f5", 10.0, "storage threshold reserve reliability shifted dispatch", "10.other/c"),
+        _fact("f6", 5.0, "storage threshold reserve reliability changed risk", "10.other/d"),
     ]
     for f in facts:
         f["source_paper"]["title"] = "Grid storage reserve threshold reliability"
