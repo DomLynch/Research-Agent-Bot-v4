@@ -1258,6 +1258,7 @@ def discover_topics(
                 topic for topic in _title_topic_slugs(
                     papers_by_topic, year_now, limit=derived_topic_limit)
                 if topic not in papers_by_topic
+                and not _latest_run_disproves_source_rich(topic)
             ]
             # Paper-backed cached source-rich topics are cheap supply, not live
             # probes. Only paperless cached hints consume the bounded probe window.
@@ -1322,7 +1323,9 @@ def discover_topics(
             if count >= _PUBLISHABLE_SOURCE_FLOOR
         ][:extra_probe_limit]
         new_fact_child_topics = [
-            topic for topic, _count in fact_child_topics if topic not in papers_by_topic
+            topic for topic, _count in fact_child_topics
+            if topic not in papers_by_topic
+            and not _latest_run_disproves_source_rich(topic)
         ]
         if new_fact_child_topics:
             fact_child_papers = _fetch_papers_by_topic(
