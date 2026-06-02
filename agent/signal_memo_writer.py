@@ -1534,6 +1534,7 @@ def render_signal_memo(
             [f"**Source thesis:** {raw_headline}"]
             if raw_headline != headline
             and not _headline_needs_grounding(raw_headline, publish_verdict)
+            and not _headline_claim_mismatch(raw_headline, claim, topic)
             and "cross_domain_forced" not in publish_blockers
             else []
         ),
