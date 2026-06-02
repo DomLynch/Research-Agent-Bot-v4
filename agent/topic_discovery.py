@@ -605,18 +605,25 @@ def _fresh_cached_supply_count(
     return None
 
 
-def _latest_run_bound_count(topic: str) -> int | None:
+def _latest_run_dirs(topic: str, *, limit: int = 3) -> tuple[Path, ...]:
     runs_root = _SUPPLY_CACHE_PATH.parent
     prefix = f"{topic}-evidence-"
-    runs = sorted(
-        (
+    try:
+        runs = [
             path for path in runs_root.iterdir()
             if path.is_dir() and path.name.startswith(prefix)
-        ),
+        ]
+    except OSError:
+        return ()
+    return tuple(sorted(
+        runs,
         key=lambda path: path.stat().st_mtime if path.exists() else 0.0,
         reverse=True,
-    )
-    for run in runs[:3]:
+    )[:limit])
+
+
+def _latest_run_bound_count(topic: str) -> int | None:
+    for run in _latest_run_dirs(topic):
         try:
             lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
@@ -636,6 +643,77 @@ def _latest_run_bound_count(topic: str) -> int | None:
 def _latest_run_disproves_source_rich(topic: str) -> bool:
     count = _latest_run_bound_count(topic)
     return count is not None and count < _PUBLISHABLE_SOURCE_FLOOR
+
+
+def _latest_run_child_source_papers(
+    topic: str,
+) -> dict[str, dict[str, dict[str, Any]]]:
+    for run in _latest_run_dirs(topic, limit=1):
+        try:
+            lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+            facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(lanes, dict) or not isinstance(facts, list):
+            continue
+        verdicts = lanes.get("verdicts") or []
+        if not isinstance(verdicts, list):
+            continue
+        allowed = {
+            str(row.get("fact_id") or row.get("id") or "")
+            for row in verdicts
+            if isinstance(row, dict) and row.get("lane") in {"A_core", "B_context"}
+        }
+        child_papers: dict[str, dict[str, dict[str, Any]]] = {}
+        for row in facts:
+            if not isinstance(row, dict):
+                continue
+            fact = _fact_for_lane(row, topic)
+            if str(fact.get("fact_id") or "") not in allowed:
+                continue
+            key = _fact_source_key(fact)
+            if not key:
+                continue
+            paper = fact.get("source_paper")
+            if not isinstance(paper, dict):
+                continue
+            for slug in _fact_child_slugs(fact, topic):
+                child_papers.setdefault(slug, {}).setdefault(key, paper)
+        return {
+            slug: papers for slug, papers in child_papers.items()
+            if len(papers) >= _PUBLISHABLE_SOURCE_FLOOR
+        }
+    return {}
+
+
+def _warm_latest_run_children(
+    cache: dict[str, dict[str, Any]], topics: Iterable[str],
+) -> bool:
+    now = time.time()
+    changed = False
+    for topic in topics:
+        entry = cache.get(topic)
+        count = _cached_source_rich_hint_count(entry, now=now)
+        if count is None:
+            continue
+        for child, papers in _latest_run_child_source_papers(topic).items():
+            existing = cache.get(child)
+            child_count = len(papers)
+            if (
+                isinstance(existing, dict)
+                and existing.get("version") == _SUPPLY_CACHE_VERSION
+                and int(existing.get("count", 0)) >= child_count
+                and _cached_source_papers(existing)
+            ):
+                continue
+            cache[child] = {
+                "count": child_count,
+                "ts": now,
+                "version": _SUPPLY_CACHE_VERSION,
+                "source_papers": list(papers.values())[:25],
+            }
+            changed = True
+    return changed
 
 
 def _cached_source_rich_hint_count(entry: Any, *, now: float) -> int | None:
@@ -663,18 +741,25 @@ def _cached_source_rich_topics(
         return ()
     cache = _load_supply_cache()
     now = time.time()
-    ranked: list[tuple[int, str]] = []
-    for topic, entry in cache.items():
-        if topic in exclude:
-            continue
-        if _latest_run_disproves_source_rich(topic):
-            continue
-        count = _cached_source_rich_hint_count(entry, now=now)
-        if count is not None:
-            ranked.append((count, topic))
+
+    def ranked_topics() -> list[tuple[int, str]]:
+        ranked: list[tuple[int, str]] = []
+        for topic, entry in cache.items():
+            if topic in exclude:
+                continue
+            if _latest_run_disproves_source_rich(topic):
+                continue
+            count = _cached_source_rich_hint_count(entry, now=now)
+            if count is not None:
+                ranked.append((count, topic))
+        return sorted(ranked, key=lambda item: (-item[0], item[1]))
+
+    ranked = ranked_topics()
+    if _warm_latest_run_children(cache, (topic for _count, topic in ranked[:limit])):
+        _save_supply_cache(cache)
+        ranked = ranked_topics()
     return tuple(
-        (topic, count) for count, topic in sorted(
-            ranked, key=lambda item: (-item[0], item[1]))[:limit]
+        (topic, count) for count, topic in ranked[:limit]
     )
 
 
