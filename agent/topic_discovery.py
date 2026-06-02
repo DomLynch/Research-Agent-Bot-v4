@@ -1060,6 +1060,10 @@ def discover_topics(
                     elif len(cached_probe_topics) < extra_probe_limit:
                         cached_probe_topics.append(topic)
         derived_cycle_topics: list[str] = []
+        seed_probe_reserve = (
+            min(len(topics), extra_probe_limit // 2)
+            if derived_topic_limit and extra_probe_limit >= 4 else 0
+        )
         if derived_topic_limit:
             derived = [
                 topic for topic in _title_topic_slugs(
@@ -1068,7 +1072,10 @@ def discover_topics(
             ]
             # Paper-backed cached source-rich topics are cheap supply, not live
             # probes. Only paperless cached hints consume the bounded probe window.
-            derived_slots = max(0, extra_probe_limit - len(cached_probe_topics))
+            derived_slots = max(
+                0,
+                extra_probe_limit - len(cached_probe_topics) - seed_probe_reserve,
+            )
             # Fetch a bounded over-sample so unsupported generic fragments do
             # not consume the whole derived fact-probe window.
             derived_fetch_limit = min(len(derived), max(
