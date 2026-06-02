@@ -1663,6 +1663,97 @@ def test_repairable_revision_allows_third_repair_retry_across_fingerprint(
     assert records[-1]["memo_sha256"] == daily._memo_sha256(verdict, root)
 
 
+def test_submit_retry_exhausted_repairable_revise_can_publish_next_cycle(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("exhausted_repair")
+    _memo_with_source_receipts(root, verdict, 5)
+    fp = daily.memo_fingerprint(verdict)
+    old_sha = daily._memo_sha256(verdict, root)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
+        {
+            "fingerprint": fp,
+            "topic": "exhausted_repair",
+            "submission_id": "old-sub",
+            "memo_sha256": old_sha,
+        },
+    ])
+    decision = {
+        "status": "complete",
+        "decision": "revise",
+        "claim_support_verdict": "supported",
+        "required_revisions": ["Remove uncited specifics before resubmission."],
+        "resubmission": {"allowed": True, "parent_submission_id": "old-sub"},
+    }
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submit_retry_exhausted",
+        "final_verdict": "revise",
+        "candidate": {"fingerprint": fp, "topic": "exhausted_repair"},
+        "cycle_attempts": [{
+            "fingerprint": fp,
+            "topic": "exhausted_repair",
+            "run_dir": verdict["run_dir"],
+            "status": "reviewer_revise",
+            "researka_decision": decision,
+        }],
+    })
+    submitted: list[str] = []
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submitted.append(str(payload["topic"]))
+        return {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": "new-sub"}},
+        }
+
+    def decision_fetcher(submission_id: str) -> dict[str, Any]:
+        if submission_id == "old-sub":
+            return {"status": "pending"}
+        return {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/exhausted-repair"},
+        }
+
+    def refresh(run_dir: Path, _verdict: dict[str, Any]) -> bool:
+        path = run_dir / "alpha_memo.md"
+        path.write_text(
+            path.read_text(encoding="utf-8") + "\nRepair changed memo.\n",
+            encoding="utf-8",
+        )
+        return True
+
+    monkeypatch.setattr(daily, "_run_step", lambda *_a, **_k: (True, "ok"))
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        refresh_candidates=True,
+        max_refresh_batches=1,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+        decision_fetcher=decision_fetcher,
+        page_fetcher=lambda _url: {
+            "ok": True,
+            "status": 200,
+            "body": "<html><title>Alpha memo</title></html>",
+        },
+        memo_refresher=refresh,
+        sleep=lambda _seconds: None,
+    )
+
+    assert submitted == ["exhausted_repair"]
+    assert ledger["status"] == "published"
+    assert ledger["considered"][0]["retry_after_rejection"] is True
+    assert ledger["considered"][0]["memo_refreshed"] is True
+    assert ledger["public_url"] == "https://researka.org/alpha/exhausted-repair"
+
+
 def test_missing_alpha_memo_is_not_publishable(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     missing = _verdict("missing")
