@@ -726,6 +726,22 @@ def _memo_headline_mismatch(verdict: Json, root: Path) -> bool:
     return _memo_headline(_read_text(run_dir / "alpha_memo.md")) != expected
 
 
+def _memo_self_counter_signal(verdict: Json, root: Path) -> bool:
+    run_dir = _run_path(root, verdict.get("run_dir"))
+    memo = _read_text(run_dir / "alpha_memo.md")
+    if "**Selected angle:** `counter_signal`" not in memo:
+        return False
+    first_receipt = next(iter(_memo_receipt_ids(memo, ("Evidence",))), "")
+    if not first_receipt:
+        return False
+    audit = _json(run_dir / "memo_audit.json", {})
+    contradictions = audit.get("contradiction_receipts") if isinstance(audit, dict) else []
+    return any(
+        isinstance(item, dict) and str(item.get("fact_id") or "") == first_receipt
+        for item in contradictions or []
+    )
+
+
 def _fingerprint_attempt_count(path: Path, fingerprint: str) -> int:
     data = _json(path, [])
     if not isinstance(data, list):
@@ -1244,7 +1260,10 @@ def select_candidate(
             and has_memo
             and approved
             and memo_refresher
-            and _memo_headline_mismatch(verdict, runs_root)
+            and (
+                _memo_headline_mismatch(verdict, runs_root)
+                or _memo_self_counter_signal(verdict, runs_root)
+            )
         ):
             run_dir = _run_path(runs_root, verdict.get("run_dir"))
             refresh_verdict = verdict | {"_repair_decision": retry_decisions.get(fp)}

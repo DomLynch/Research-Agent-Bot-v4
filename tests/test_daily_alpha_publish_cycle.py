@@ -3605,6 +3605,62 @@ def test_stale_queue_verdict_reloads_current_disk_verdict(tmp_path: Path) -> Non
     assert considered[0]["status"] == "eligible"
 
 
+def test_self_counter_signal_memo_refreshes_before_selection(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("self_counter")
+    _memo_with_source_receipts(root, verdict, 5)
+    run = root / str(verdict["run_dir"])
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n"
+        "**Headline:** Self counter has a live counter-signal\n\n"
+        "**Selected angle:** `counter_signal`\n\n"
+        "## Evidence receipts\n\n"
+        + "\n".join(f"- `fact_id={i}` (`A_core`) - receipt" for i in range(1, 6))
+        + "\n" + _FALSIFIER,
+        encoding="utf-8",
+    )
+    run.joinpath("memo_audit.json").write_text(json.dumps({
+        "contradiction_receipts": [{"fact_id": "1"}],
+    }), encoding="utf-8")
+    refreshed = {"called": False}
+
+    def refresh(run_dir: Path, _verdict: dict[str, Any]) -> bool:
+        refreshed["called"] = True
+        run_dir.joinpath("alpha_memo.md").write_text(
+            "# Alpha memo\n\n"
+            "**Headline:** Self counter bounded signal\n\n"
+            "**Selected angle:** `source`\n\n"
+            "## Evidence receipts\n\n"
+            + "\n".join(f"- `fact_id={i}` (`A_core`) - receipt" for i in range(1, 6))
+            + "\n" + _FALSIFIER,
+            encoding="utf-8",
+        )
+        _audit_sidecars(run_dir)
+        return True
+
+    def reload_verdict(refresh_verdict: dict[str, Any], _run_dir: Path) -> dict[str, Any]:
+        return refresh_verdict
+
+    monkeypatch.setattr(daily, "_reload_verdict_after_memo_refresh", reload_verdict)
+
+    cand, considered = daily.select_candidate(
+        _queue(verdict),
+        runs_root=root,
+        submitted_path=root / "submitted.json",
+        min_source_count=5,
+        min_direct_source_count=5,
+        memo_refresher=refresh,
+    )
+
+    assert refreshed["called"] is True
+    assert cand is not None
+    assert considered[0]["memo_refreshed"] is True
+    assert considered[0]["status"] == "eligible"
+
+
 def test_source_rich_tier2_frontier_candidate_can_submit_when_allowed(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("source_rich_review") | {
