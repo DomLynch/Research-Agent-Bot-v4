@@ -483,6 +483,47 @@ def test_alpha_memo_duplicate_source_audit_ids_do_not_crowd_out_floor(
     assert "doi=10.x/diverse-606" in evidence
 
 
+def test_trusted_candidate_receipts_must_fit_selected_claim_cluster(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    for fid, phrase, population in (
+        ("303", "Carbon tax ceramic glaze adhesion kiln firing.", "ceramic studio"),
+        ("404", "Carbon tax museum visitor attendance exhibit redesign.", "city museum"),
+        ("505", "Carbon tax river sediment acidity dredging.", "river basin"),
+        ("606", "Carbon tax orchard apple yield irrigation.", "orchard growers"),
+    ):
+        facts.append({
+            "fact_id": fid,
+            "canonical_phrase": phrase,
+            "population": population,
+            "source_paper": {"doi": f"10.x/unrelated-{fid}"},
+        })
+        lanes["verdicts"].append({"fact_id": fid, "lane": "A_core"})
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "publish_alpha_memo",
+        "receipt_expansion": {
+            "needed": True,
+            "cited_bound_fact_ids": ["101"],
+            "candidate_receipts": [
+                {"fact_id": fid, "lane": "A_core"}
+                for fid in ("303", "404", "505", "606")
+            ],
+        },
+    })
+
+    evidence = memo.split("## Evidence receipts", 1)[1].split("\n## ", 1)[0]
+    assert "**Direct source breadth:** `5` direct cited source(s)" not in memo
+    assert "`fact_id=303`" not in evidence
+    assert "`fact_id=606`" not in evidence
+
+
 def test_source_angle_publish_memo_replaces_stale_surprise_prose(
     tmp_path: Path,
 ) -> None:
@@ -551,6 +592,7 @@ def test_alpha_memo_trusts_gate_candidate_receipts_for_source_floor(
         ("404", "Carbon tax border regions showed lower administrative burden."),
         ("505", "Carbon tax small exporters reported lower compliance costs."),
         ("606", "Carbon tax late adopters showed lower enforcement volatility."),
+        ("707", "Carbon tax regulated exporters reported lower audit volatility."),
     ):
         facts.append({
             "fact_id": fid,
@@ -568,13 +610,13 @@ def test_alpha_memo_trusts_gate_candidate_receipts_for_source_floor(
             "cited_bound_fact_ids": ["101"],
             "candidate_receipts": [
                 {"fact_id": fid, "lane": "A_core"}
-                for fid in ("303", "404", "505", "606")
+                for fid in ("303", "404", "505", "606", "707")
             ],
         },
     })
 
     assert "**Direct source breadth:** `5` direct cited source(s)" in memo
-    assert "10.x/gate-candidate-606" in memo
+    assert "10.x/gate-candidate-707" in memo
 
 
 def test_candidate_receipt_topic_match_uses_intervention_field(
@@ -584,7 +626,7 @@ def test_candidate_receipt_topic_match_uses_intervention_field(
     _write_run(run)
     facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
     lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
-    for fid in ("303", "404", "505", "606"):
+    for fid in ("303", "404", "505", "606", "707"):
         facts.append({
             "fact_id": fid,
             "canonical_phrase": "Outcome improved 4% in the treated group.",
@@ -600,13 +642,13 @@ def test_candidate_receipt_topic_match_uses_intervention_field(
         "receipt_expansion": {
             "candidate_receipts": [
                 {"fact_id": fid, "lane": "A_core"}
-                for fid in ("303", "404", "505", "606")
+                for fid in ("303", "404", "505", "606", "707")
             ],
         },
     })
 
     assert "**Direct source breadth:** `5` direct cited source(s)" in memo
-    assert "10.x/intervention-606" in memo
+    assert "10.x/intervention-707" in memo
 
 
 def test_dispersion_repair_reselects_coherent_receipt_cluster(tmp_path: Path) -> None:

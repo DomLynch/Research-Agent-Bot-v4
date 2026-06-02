@@ -337,7 +337,6 @@ def _expanded_receipt_ids(
         if (
             claim is not None
             and selected
-            and fid not in trusted
             and max(
                 _claim_fit_score(
                     _receipt_tokens(facts[fid], topic),
