@@ -25,7 +25,7 @@ _GENERIC_TOKENS = frozenset({
     "versus", "compared", "control", "treated", "ci", "rr", "hr", "nnt", "rct", "rcts",
     "can", "resulted", "improve", "improved", "improves", "improving", "improvement",
     "improvements", "increase", "reduction", "disease", "review", "comprehensive",
-    "device", "majority",
+    "device", "majority", "women", "woman", "men", "man", "male", "female", "sex",
 })
 _NULL_MARKERS = ("no effect", "no difference", "null", "unchanged", "failed", "did not", "without")
 _ADVERSE_MARKERS = ("mortality", "adverse", "toxicity", "harm", "worsen", "risk")

@@ -537,7 +537,7 @@ def test_receipt_cluster_ignores_source_title_overlap() -> None:
         **{
             fid: {
                 "fact_id": fid,
-                "canonical_phrase": f"Glucose women {filler} {fid}.",
+                "canonical_phrase": f"Glucose {filler} {fid}.",
                 "source_paper": {"doi": f"10.x/{fid}", "title": shared_title},
             }
             for fid in ("202", "303", "404", "505")
@@ -551,7 +551,7 @@ def test_receipt_cluster_ignores_source_title_overlap() -> None:
         lanes,
         min_sources=5,
         allowed_lanes=frozenset({"A_core"}),
-        claim={"gestational", "diabetes", "glucose", "pregnancy", "women"},
+        claim=set(),
         topic="fasting",
         preferred_ids=["202", "303", "404", "505"],
         trusted_ids={"202", "303", "404", "505"},
