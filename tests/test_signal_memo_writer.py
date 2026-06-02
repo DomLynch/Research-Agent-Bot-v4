@@ -724,10 +724,14 @@ def test_dispersion_repair_reselects_coherent_receipt_cluster(tmp_path: Path) ->
         "surface_type": "publish_alpha_memo",
         "blockers": ["source_dispersion", "weak_counter_consensus_tension"],
     })
+    (run / "alpha_memo.md").write_text(memo, encoding="utf-8")
+    verdict = publish_verdict(run)
 
     assert "**Direct source breadth:** `6` direct cited source(s)" in memo
     assert "fact_id=909" not in memo
     assert "`fact_id=707` (`A_core`)" in memo
+    assert verdict["axes"]["claim_coherent_source_diversity"] is True
+    assert "source_dispersion" not in verdict["blockers"]
 
 
 def test_counter_signal_names_collision_and_testable_split(tmp_path: Path) -> None:

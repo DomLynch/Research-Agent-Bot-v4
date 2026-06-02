@@ -1671,6 +1671,11 @@ def test_submit_retry_exhausted_repairable_revise_can_publish_next_cycle(
     _memo_with_source_receipts(root, verdict, 5)
     fp = daily.memo_fingerprint(verdict)
     old_sha = daily._memo_sha256(verdict, root)
+    old_public_memo = daily._public_submission_markdown(
+        root.joinpath(str(verdict["run_dir"]), "alpha_memo.md").read_text(
+            encoding="utf-8",
+        )
+    )
     daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
         {
             "fingerprint": fp,
@@ -1699,9 +1704,11 @@ def test_submit_retry_exhausted_repairable_revise_can_publish_next_cycle(
         }],
     })
     submitted: list[str] = []
+    submitted_payloads: list[dict[str, Any]] = []
 
     def submitter(payload: dict[str, Any]) -> dict[str, Any]:
         submitted.append(str(payload["topic"]))
+        submitted_payloads.append(payload)
         return {
             "ok": True,
             "status": 200,
@@ -1748,6 +1755,8 @@ def test_submit_retry_exhausted_repairable_revise_can_publish_next_cycle(
     )
 
     assert submitted == ["exhausted_repair"]
+    assert submitted_payloads[0]["markdown"] != old_public_memo
+    assert "Repair changed memo." in submitted_payloads[0]["markdown"]
     assert ledger["status"] == "published"
     assert ledger["decision_sync"]["pending"] == 1
     assert ledger["considered"][0]["retry_after_rejection"] is True
