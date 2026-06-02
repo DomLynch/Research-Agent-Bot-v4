@@ -1009,8 +1009,9 @@ def discover_topics(
         cached_fact_counts: dict[str, int] = {}
         cached_probe_topics: list[str] = []
         if derived_topic_limit:
+            cached_source_limit = max(extra_probe_limit, derived_topic_limit)
             cached_fact_topics = _cached_source_rich_topics(
-                exclude=set(papers_by_topic), limit=extra_probe_limit)
+                exclude=set(papers_by_topic), limit=cached_source_limit)
             if cached_fact_topics:
                 supply_cache = _load_supply_cache()
                 for topic, count in cached_fact_topics:
@@ -1018,7 +1019,7 @@ def discover_topics(
                     if papers:
                         papers_by_topic[topic] = papers
                         cached_fact_counts[topic] = count
-                    else:
+                    elif len(cached_probe_topics) < extra_probe_limit:
                         cached_probe_topics.append(topic)
         derived_cycle_topics: list[str] = []
         if derived_topic_limit:
