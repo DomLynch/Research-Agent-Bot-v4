@@ -554,6 +554,61 @@ def test_stop_on_ready_ignores_under_source_candidate(
     assert payload["stopped_on_ready"] is True
 
 
+def test_stop_on_ready_skips_count_only_cached_candidate(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    runs = tmp_path / "runs"
+    cycles = runs / "_curator_cycles"
+    cycles.mkdir(parents=True)
+    seen: list[str] = []
+
+    def fake_pipeline(
+        topic: str, velocity: float, *, with_editorial: bool,
+        top_n: int, py: str, pico_enrich: bool = False,
+    ) -> TopicResult:
+        seen.append(topic)
+        run_dir = runs / f"{topic}-evidence-ts"
+        _write_ready_alpha_run(run_dir, source_count=5)
+        return TopicResult(
+            topic=topic, velocity=velocity, status="ran",
+            run_dir=f"runs/{topic}-evidence-ts",
+            signal_label="evidence_backed_signal", notes="",
+        )
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
+    monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
+    monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
+    monkeypatch.setattr(
+        run_curator_cycle, "_read_discovery_top",
+        lambda _out: [
+            {
+                "topic": "count_only_cached", "velocity_score": 9.0,
+                "fact_source_count": 12, "paper_count": 0,
+            },
+            {
+                "topic": "paper_backed", "velocity_score": 8.0,
+                "fact_source_count": 5, "paper_count": 3,
+            },
+        ],
+    )
+    monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",
+                        lambda *_args, **_kwargs: set())
+    monkeypatch.setattr(run_curator_cycle, "_run_step",
+                        lambda *_args, **_kwargs: (True, "ok"))
+    monkeypatch.setattr(sys, "argv", [
+        "run_curator_cycle.py", "--top", "1", "--stop-on-ready",
+    ])
+
+    assert run_curator_cycle.main() == 0
+    assert seen == ["paper_backed"]
+    payload = json.loads(next(cycles.glob("*.json")).read_text(encoding="utf-8"))
+    assert payload["skipped_below_source_floor"] == ["count_only_cached"]
+    assert payload["stopped_on_ready"] is True
+
+
 def test_universal_non_biomedical_topic(tmp_path: Path) -> None:
     """Cooldown filter works on any topic identifier — no biomedical
     assumption."""
