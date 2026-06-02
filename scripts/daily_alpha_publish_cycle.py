@@ -715,6 +715,30 @@ def _record_submission_attempt(
     _write_json(path, records)
 
 
+def _submission_record_patch(ledger: Json) -> Json:
+    patch: Json = {}
+    for key in (
+        "final_verdict",
+        "status",
+        "published",
+        "public_url",
+        "publish_failure_reason",
+    ):
+        value = ledger.get(key)
+        if value not in (None, ""):
+            patch[key] = value
+    return patch
+
+
+def _merge_submission_record(row: Json, patch: Json) -> bool:
+    changed = False
+    for key, value in patch.items():
+        if row.get(key) != value:
+            row[key] = value
+            changed = True
+    return changed
+
+
 def _memo_sha256(verdict: Json, root: Path) -> str:
     run_dir = _run_path(root, verdict.get("run_dir"))
     memo = _read_text(run_dir / "alpha_memo.md")
@@ -1683,6 +1707,7 @@ def sync_submission_decisions(
     ledger_dir = runs_root / "_daily_ledger"
     summary: Json = {"checked": 0, "updated": 0, "published": 0, "pending": 0, "errors": []}
     seen_submission_ids: set[str] = set()
+    submission_record_updates: dict[str, Json] = {}
     for path in sorted(ledger_dir.glob("*.json")):
         ledger = _json(path, {})
         if isinstance(ledger, dict):
@@ -1691,6 +1716,9 @@ def sync_submission_decisions(
             )
             if sid:
                 seen_submission_ids.add(sid)
+                patch = _submission_record_patch(ledger)
+                if patch:
+                    submission_record_updates[sid] = patch
         if not isinstance(ledger, dict) or ledger.get("status") != "submitted_to_researka":
             continue
         if ledger.get("final_verdict") in {"accepted", "rejected", "revise"}:
@@ -1721,14 +1749,26 @@ def sync_submission_decisions(
         summary["published"] += int(final == "accepted")
         if final != "pending":
             summary["updated"] += 1
+        patch = _submission_record_patch(ledger)
+        if patch:
+            submission_record_updates[submission_id] = patch
         _write_json(path, ledger)
     submitted = _json(ledger_dir / "_submitted_fingerprints.json", [])
     if isinstance(submitted, list):
+        submitted_changed = False
         for row in submitted:
             if not isinstance(row, dict):
                 continue
             submission_id = str(row.get("submission_id") or "")
-            if not submission_id or submission_id in seen_submission_ids:
+            if not submission_id:
+                continue
+            row_patch = submission_record_updates.get(submission_id)
+            if row_patch:
+                submitted_changed |= _merge_submission_record(row, row_patch)
+            if (
+                submission_id in seen_submission_ids
+                or row.get("final_verdict") in {"accepted", "rejected", "revise"}
+            ):
                 continue
             summary["checked"] += 1
             try:
@@ -1764,12 +1804,17 @@ def sync_submission_decisions(
             summary["published"] += int(final == "accepted")
             if final != "pending":
                 summary["updated"] += 1
+            submitted_changed |= _merge_submission_record(
+                row, _submission_record_patch(synthetic_ledger),
+            )
             stamp = _norm(row.get("date")).replace(" ", "-") or "undated"
             _write_json(
                 ledger_dir / f"{stamp}-decision-{submission_id[:8]}.json",
                 synthetic_ledger,
             )
             seen_submission_ids.add(submission_id)
+        if submitted_changed:
+            _write_json(ledger_dir / "_submitted_fingerprints.json", submitted)
     return summary
 
 

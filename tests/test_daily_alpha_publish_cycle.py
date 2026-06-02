@@ -487,6 +487,13 @@ def test_sync_backfills_decision_for_submitted_fingerprint_only_record(
     assert summary["updated"] == 1
     ledgers = list((root / "_daily_ledger").glob("*decision-sub-1.json"))
     assert len(ledgers) == 1
+    submitted = json.loads(
+        (root / "_daily_ledger" / "_submitted_fingerprints.json").read_text(
+            encoding="utf-8",
+        )
+    )
+    assert submitted[0]["status"] == "reviewer_rejected"
+    assert submitted[0]["final_verdict"] == "rejected"
     assert fp in daily._repairable_rejected_fingerprints(root / "_daily_ledger")
 
 
@@ -2593,6 +2600,11 @@ def test_run_cycle_syncs_prior_submission_decisions(tmp_path: Path) -> None:
         "submission": {"attempts": [{"response": {"submission": {"id": "sub_123"}}}]},
         "submitted_topic": "grid_storage",
     })
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+        "date": "2026-05-21T00-00-00Z",
+        "topic": "grid_storage",
+        "submission_id": "sub_123",
+    }])
 
     ledger = daily.run_cycle(
         runs_root=root,
@@ -2619,6 +2631,14 @@ def test_run_cycle_syncs_prior_submission_decisions(tmp_path: Path) -> None:
     assert patched["final_verdict"] == "accepted"
     assert patched["published"] == 1
     assert patched["public_url"] == "https://researka.org/alpha/pub_123"
+    submitted = json.loads(
+        (root / "_daily_ledger" / "_submitted_fingerprints.json").read_text(
+            encoding="utf-8",
+        )
+    )
+    assert submitted[0]["status"] == "published"
+    assert submitted[0]["final_verdict"] == "accepted"
+    assert submitted[0]["public_url"] == "https://researka.org/alpha/pub_123"
 
 
 def test_run_cycle_polls_pending_submission_until_publication_renders(tmp_path: Path) -> None:
