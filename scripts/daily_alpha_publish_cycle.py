@@ -372,6 +372,7 @@ def _source_floor_repair_candidate(
 ) -> bool:
     blockers = {str(x) for x in verdict.get("blockers") or []}
     source_floor_blockers = {"source_floor_below_min", "direct_source_floor_below_min"}
+    repairable_blockers = source_floor_blockers | {"source_dispersion"}
     measured_floor_gap = (
         source_count < min_source_count
         or direct_source_count < min_direct_source_count
@@ -379,7 +380,7 @@ def _source_floor_repair_candidate(
     return (
         verdict.get("decision") == "needs_operator_review"
         and (measured_floor_gap or bool(blockers & source_floor_blockers))
-        and not blockers - source_floor_blockers
+        and not blockers - repairable_blockers
     )
 
 
@@ -1146,10 +1147,14 @@ def select_candidate(
     blocked_fingerprints: set[str] | None = None,
     blocked_topics: set[str] | None = None,
     accepted_shape_profiles: list[Json] | None = None,
+    retryable_fingerprints: set[str] | None = None,
+    retry_decision_overrides: dict[str, Json] | None = None,
 ) -> tuple[Json | None, list[Json]]:
     seen = _seen_submission_fingerprints(submitted_path)
     retryable = _repairable_rejected_fingerprints(submitted_path.parent)
     retry_decisions = _repairable_decisions_by_fingerprint(submitted_path.parent)
+    retryable.update(retryable_fingerprints or set())
+    retry_decisions.update(retry_decision_overrides or {})
     blocked = blocked_fingerprints or set()
     topic_blocked = blocked_topics or set()
     shape_profiles = accepted_shape_profiles or []
@@ -2135,6 +2140,8 @@ def run_cycle(
         _write_json(ledger_path, ledger)
         return ledger
     blocked_fingerprints: set[str] = set()
+    session_retryable: set[str] = set()
+    session_retry_decisions: dict[str, Json] = {}
     blocked_topics = _recently_published_topics(
         submitted_path.parent, days=published_topic_cooldown_days,
     )
@@ -2245,6 +2252,8 @@ def run_cycle(
             blocked_fingerprints=blocked_fingerprints,
             blocked_topics=blocked_topics,
             accepted_shape_profiles=accepted_shape_profiles,
+            retryable_fingerprints=session_retryable,
+            retry_decision_overrides=session_retry_decisions,
         )
         for row in considered:
             if refresh_candidates:
@@ -2390,6 +2399,10 @@ def run_cycle(
                             and refresh_candidates
                             and batch < batch_limit
                         ):
+                            fingerprint = str(candidate.get("memo_fingerprint") or "")
+                            if fingerprint:
+                                session_retryable.add(fingerprint)
+                                session_retry_decisions[fingerprint] = decision
                             skip_next_refresh = True
                             ledger["repair_retry_scheduled"] = {
                                 "batch": batch + 1,

@@ -3400,6 +3400,88 @@ def test_repairable_revise_on_final_search_batch_gets_repair_slot(
     ]
 
 
+def test_current_cycle_repairable_revise_does_not_depend_on_ledger_rescan(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("current_cycle_repair")
+    _memo_with_source_receipts(root, verdict, 5)
+    submitted: list[str] = []
+    refresh_decisions: list[dict[str, Any] | None] = []
+    decisions: list[dict[str, Any]] = [
+        {
+            "status": "complete",
+            "decision": "revise",
+            "claim_support_verdict": "supported",
+            "required_revisions": ["Remove uncited specifics before resubmission."],
+            "resubmission": {"allowed": True},
+        },
+        {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/current-cycle-repair"},
+        },
+    ]
+
+    def fake_step(_args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        return True, "ok"
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submitted.append(str(payload["topic"]))
+        return {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": f"sub-{len(submitted)}"}},
+        }
+
+    def refresh(run_dir: Path, refresh_verdict: dict[str, Any]) -> bool:
+        refresh_decisions.append(refresh_verdict.get("_repair_decision"))
+        path = run_dir / "alpha_memo.md"
+        path.write_text(
+            path.read_text(encoding="utf-8") + "\nCurrent-cycle repair.\n",
+            encoding="utf-8",
+        )
+        return True
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+    monkeypatch.setattr(daily, "_repairable_rejected_fingerprints", lambda _path: set())
+    monkeypatch.setattr(daily, "_repairable_decisions_by_fingerprint", lambda _path: {})
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        refresh_candidates=True,
+        max_refresh_batches=1,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+        decision_fetcher=lambda _submission_id: decisions.pop(0),
+        page_fetcher=lambda _url: {
+            "ok": True,
+            "status": 200,
+            "body": "<html><title>Alpha memo</title></html>",
+        },
+        memo_refresher=refresh,
+        sleep=lambda _seconds: None,
+    )
+
+    assert submitted == ["current_cycle_repair", "current_cycle_repair"]
+    assert refresh_decisions == [None, {
+        "status": "complete",
+        "decision": "revise",
+        "claim_support_verdict": "supported",
+        "required_revisions": ["Remove uncited specifics before resubmission."],
+        "resubmission": {"allowed": True},
+    }]
+    assert ledger["status"] == "published"
+    assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == [
+        "reviewer_revise",
+        "published",
+    ]
+
+
 def test_accepted_shape_bias_breaks_candidate_tie(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     matching = _verdict("matching", score=90) | {
@@ -3690,17 +3772,83 @@ def test_source_rich_tier2_frontier_candidate_can_submit_when_allowed(tmp_path: 
     assert considered[0]["status"] == "eligible"
 
 
-def test_hard_blocked_review_candidate_does_not_bypass_approval(tmp_path: Path) -> None:
+def test_source_dispersion_direct_floor_review_candidate_repairs_before_approval(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
     root = tmp_path / "repo"
-    verdict = _verdict("hard_blocked") | {
+    verdict = _verdict("source_dispersion_repair") | {
         "decision": "needs_operator_review",
         "publish_tier": "TIER_2",
         "blockers": ["source_dispersion", "direct_source_floor_below_min"],
     }
     _memo_with_source_receipts(root, verdict, 6)
+    run = root / str(verdict["run_dir"])
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n"
+        "**Headline:** Storage reserves flip after threshold pricing\n\n"
+        "## Evidence receipts\n\n"
+        + "\n".join(f"- `fact_id={i}` (`A_core`) - direct" for i in range(1, 4))
+        + "\n\n## Context receipts\n\n"
+        + "\n".join(f"- `fact_id={i}` (`A_core`) - context" for i in range(4, 7))
+        + "\n" + _FALSIFIER,
+        encoding="utf-8",
+    )
+    refreshed = {"called": False}
+
+    def refresh(run_dir: Path, refresh_verdict: dict[str, Any]) -> bool:
+        refreshed["called"] = True
+        run_dir.joinpath("alpha_memo.md").write_text(
+            "# Alpha memo\n\n"
+            "**Headline:** Storage reserves flip after threshold pricing\n\n"
+            "## Evidence receipts\n\n"
+            + "\n".join(f"- `fact_id={i}` (`A_core`) - direct" for i in range(1, 6))
+            + "\n\n## Context receipts\n\n"
+            "- `fact_id=6` (`A_core`) - context\n"
+            + _FALSIFIER,
+            encoding="utf-8",
+        )
+        return True
+
+    def reload_verdict(refresh_verdict: dict[str, Any], _run_dir: Path) -> dict[str, Any]:
+        return refresh_verdict | {
+            "decision": "ready_to_publish",
+            "publish_tier": "TIER_1",
+            "blockers": [],
+            "receipt_expansion": {"cited_bound_fact_ids": ["1", "2", "3", "4", "5"]},
+        }
+
+    monkeypatch.setattr(daily, "_reload_verdict_after_memo_refresh", reload_verdict)
+    cand, considered = daily.select_candidate(
+        {
+            "ready_to_publish": [],
+            "needs_operator_review": [verdict],
+            "curation_needed": [],
+        },
+        runs_root=root,
+        submitted_path=root / "submitted.json",
+        allow_tier2=True,
+        min_source_count=5,
+        min_direct_source_count=5,
+        memo_refresher=refresh,
+    )
+
+    assert refreshed["called"] is True
+    assert cand is not None
+    assert considered[0]["memo_refreshed"] is True
+    assert considered[0]["status"] == "eligible"
+
+
+def test_cross_domain_review_candidate_does_not_bypass_approval(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("hard_blocked") | {
+        "decision": "needs_operator_review",
+        "publish_tier": "TIER_2",
+        "blockers": ["cross_domain_forced", "direct_source_floor_below_min"],
+    }
+    _memo_with_source_receipts(root, verdict, 6)
 
     def refresh(_run_dir: Path, _verdict: dict[str, Any]) -> bool:
-        raise AssertionError("hard-blocked review candidates must not auto-repair")
+        raise AssertionError("cross-domain review candidates must not auto-repair")
 
     cand, considered = daily.select_candidate(
         {
