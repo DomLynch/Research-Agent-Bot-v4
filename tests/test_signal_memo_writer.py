@@ -1015,11 +1015,37 @@ def test_memo_audit_carries_novelty_delta_and_gate_failures() -> None:
     assert audit["source_hygiene"]["mean_quality_score"] == 90.0
     assert audit["risk_of_bias"] == "not_required"
     assert audit["nearest_literature"] == []
-    assert audit["novelty_delta"]["label"] == "locally_repeated"
+    assert audit["novelty_delta"]["label"] == "under-discussed"
     assert audit["audit_gate"] == {
         "passed": False,
-        "failures": ["novelty_delta_locally_repeated", "memo_missing_falsifier"],
+        "failures": ["memo_missing_falsifier"],
     }
+
+
+def test_memo_audit_only_blocks_repeated_when_prior_claim_is_close(
+    tmp_path: Path,
+) -> None:
+    from agent.signal_memo_writer import build_memo_audit
+
+    prior = tmp_path / "prior-evidence-ts"
+    current = tmp_path / "current-evidence-ts"
+    prior.mkdir()
+    current.mkdir()
+    prior.joinpath("alpha_memo.md").write_text(
+        "Alpha memo: emissions fell after carbon pricing in city programs.",
+        encoding="utf-8",
+    )
+    facts = {"1": {"canonical_phrase": "Emissions fell after carbon pricing",
+                   "source_paper": {"doi": "10.x/a"}}}
+
+    audit = build_memo_audit(
+        {"emissions", "fell", "carbon", "pricing"}, ["1"], ["1"], facts, None,
+        falsifier=True, novelty={"selected": "source", "repeats": 0},
+        run_dir=current,
+    )
+
+    assert audit["novelty_delta"]["label"] == "locally_repeated"
+    assert audit["audit_gate"]["failures"] == ["novelty_delta_locally_repeated"]
 
 
 def test_memo_audit_types_counter_evidence_and_nearest_claims() -> None:

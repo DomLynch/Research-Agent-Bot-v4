@@ -863,12 +863,11 @@ def _novelty_delta(
     direct_sources: int,
 ) -> dict[str, Any]:
     top = float(nearest[0]["score"]) if nearest else 0.0
-    repeats = int(novelty.get("repeats", 0))
     prior_repeat = any(
         row.get("source") == "prior_alpha_memo" and float(row.get("score") or 0) >= 0.55
         for row in nearest
     )
-    if repeats or prior_repeat:
+    if prior_repeat:
         label = "locally_repeated"
     elif contradictions:
         label = "contradictory"
