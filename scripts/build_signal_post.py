@@ -262,6 +262,27 @@ def _pick_lead_thesis(
     )
 
 
+def _fallback_review(run_dir: Path) -> dict[str, Any]:
+    manifest_path = run_dir / "MANIFEST.json"
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        manifest = {}
+    if not isinstance(manifest, dict):
+        manifest = {}
+    return {
+        "topic": str(manifest.get("topic") or run_dir.name.split("-evidence-")[0]),
+        "snapshot_utc": str(
+            manifest.get("snapshot_utc") or run_dir.name.split("-evidence-")[-1]),
+        "lens": "Frontier review skipped; using deterministic gate audit.",
+        "known_to_ignore": [],
+        "tensions": [],
+        "theses": [],
+        "next_extractions": [],
+        "model": "skipped",
+    }
+
+
 def _evidence_lines(
     audit: dict[str, Any], facts_by_id: dict[str, dict[str, Any]],
     lane_verdicts: dict[str, str] | None = None,
@@ -401,17 +422,16 @@ def main() -> int:
     parser.add_argument("--run", type=Path, required=True)
     args = parser.parse_args()
     run_dir: Path = args.run
-    if not (run_dir / "frontier_review.json").exists():
-        print(f"[signal-post] no frontier_review.json under {run_dir}",
-              file=sys.stderr)
-        return 1
-    try:
-        review = json.loads(
-            (run_dir / "frontier_review.json").read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as e:
-        print(f"[signal-post] could not parse frontier_review.json: {e}",
-              file=sys.stderr)
-        return 1
+    review_path = run_dir / "frontier_review.json"
+    if review_path.exists():
+        try:
+            review = json.loads(review_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as e:
+            print(f"[signal-post] could not parse frontier_review.json: {e}",
+                  file=sys.stderr)
+            return 1
+    else:
+        review = _fallback_review(run_dir)
     facts: list[Any] = []
     facts_path = run_dir / "all_facts.json"
     if facts_path.exists():

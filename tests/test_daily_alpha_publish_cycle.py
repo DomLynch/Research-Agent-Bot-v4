@@ -2938,6 +2938,63 @@ def test_duplicate_topic_is_excluded_from_next_refresh_batch(
     ]
 
 
+def test_unapproved_review_row_does_not_exhaust_topic_next_batch(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    topic = "shared_topic"
+    review = _verdict(topic) | {
+        "decision": "needs_operator_review",
+        "publish_tier": "TIER_2",
+        "run_dir": f"runs/{topic}-review-ts",
+    }
+    fresh = _verdict(topic) | {"run_dir": f"runs/{topic}-fresh-ts"}
+    _memo_with_source_receipts(root, review, 5)
+    _memo_with_source_receipts(root, fresh, 5)
+    calls: list[list[str]] = []
+    queues = iter([
+        {
+            "ready_to_publish": [],
+            "needs_operator_review": [review],
+            "curation_needed": [],
+        },
+        _queue(fresh),
+    ])
+
+    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        calls.append(args)
+        return True, "ok"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        refresh_candidates=True,
+        allow_tier2=True,
+        max_refresh_batches=2,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+        queue_builder=lambda _root, _include_archive: next(queues),
+    )
+
+    second_call = calls[1]
+    excluded = [
+        second_call[idx + 1]
+        for idx, value in enumerate(second_call[:-1])
+        if value == "--exclude-topic"
+    ]
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["submitted_topic"] == topic
+    assert topic not in excluded
+    assert [row["status"] for row in ledger["considered"]] == [
+        "needs_operator_approval",
+        "eligible",
+    ]
+
+
 def test_submit_duplicates_rotate_topics_until_success(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

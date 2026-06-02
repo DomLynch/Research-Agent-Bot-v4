@@ -173,6 +173,46 @@ def test_main_writes_curation_brief_and_manifest(
     assert "curation_brief_md" in manifest["files"]
 
 
+def test_main_renders_when_frontier_review_was_skipped(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    run = tmp_path / "quercetin-evidence-2026-06-02T04-22-56Z"
+    run.mkdir()
+    (run / "MANIFEST.json").write_text(json.dumps({
+        "topic": "quercetin",
+        "snapshot_utc": "2026-06-02T04-22-56Z",
+        "frontier_model": "skipped",
+        "files": {},
+    }), encoding="utf-8")
+    facts = [
+        _fact(f"f{i}", float(i), "quercetin improved senescence signal",
+              f"10.q/{i}")
+        for i in range(1, 6)
+    ]
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": f"f{i}", "lane": "A_core"} for i in range(1, 6)],
+    }), encoding="utf-8")
+    (run / "opportunities_gate.json").write_text(json.dumps({
+        "audits": [{
+            "title": "Quercetin senescence signal",
+            "status": "survives",
+            "capped_opportunity": 90,
+            "blocking_flags": [],
+            "cited_fact_ids": [f"f{i}" for i in range(1, 6)],
+        }],
+    }), encoding="utf-8")
+
+    monkeypatch.setattr(sys, "argv", ["build_signal_post.py", "--run", str(run)])
+    assert signal_post_main() == 0
+
+    assert "Frontier review skipped" in (run / "signal_post.md").read_text()
+    assert (run / "alpha_memo.md").exists()
+    assert (run / "publish_verdict.json").exists()
+    manifest = json.loads((run / "MANIFEST.json").read_text())
+    assert "signal_post_md" in manifest["files"]
+
+
 def test_main_preserves_claim_coherent_source_diversity(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

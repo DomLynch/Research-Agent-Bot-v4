@@ -146,6 +146,11 @@ _EXHAUSTED_STATUSES = {
     "cycle_failed_submission",
     "held_retraction_check",
 }
+_TOPIC_EXHAUSTED_STATUSES = {
+    "duplicate_submission_fingerprint",
+    "cycle_failed_submission",
+    "held_retraction_check",
+}
 _REFRESHABLE_SOURCE_FLOOR_STATUSES = {
     "corpus_source_floor_below_min",
     "memo_source_floor_below_min",
@@ -2140,7 +2145,7 @@ def run_cycle(
                 topic = str(row.get("topic") or "")
                 if fingerprint:
                     blocked_fingerprints.add(fingerprint)
-                if topic:
+                if topic and row.get("status") in _TOPIC_EXHAUSTED_STATUSES:
                     blocked_topics.add(topic)
         all_considered.extend(considered)
         ledger["considered"] = all_considered
