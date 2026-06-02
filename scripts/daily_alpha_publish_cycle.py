@@ -372,7 +372,9 @@ def _source_floor_repair_candidate(
 ) -> bool:
     blockers = {str(x) for x in verdict.get("blockers") or []}
     source_floor_blockers = {"source_floor_below_min", "direct_source_floor_below_min"}
-    repairable_blockers = source_floor_blockers | {"source_dispersion"}
+    repairable_blockers = source_floor_blockers | {
+        "cross_domain_forced", "source_dispersion",
+    }
     measured_floor_gap = (
         source_count < min_source_count
         or direct_source_count < min_direct_source_count

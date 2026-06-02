@@ -3838,17 +3838,48 @@ def test_source_dispersion_direct_floor_review_candidate_repairs_before_approval
     assert considered[0]["status"] == "eligible"
 
 
-def test_cross_domain_review_candidate_does_not_bypass_approval(tmp_path: Path) -> None:
+def test_cross_domain_direct_floor_candidate_repairs_before_approval(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
     root = tmp_path / "repo"
-    verdict = _verdict("hard_blocked") | {
+    verdict = _verdict("cross_domain_repair") | {
         "decision": "needs_operator_review",
         "publish_tier": "TIER_2",
         "blockers": ["cross_domain_forced", "direct_source_floor_below_min"],
     }
     _memo_with_source_receipts(root, verdict, 6)
+    run = root / str(verdict["run_dir"])
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n"
+        "**Headline:** Storage reserves flip after threshold pricing\n\n"
+        "## Evidence receipts\n\n"
+        + "\n".join(f"- `fact_id={i}` (`A_core`) - direct" for i in range(1, 4))
+        + "\n" + _FALSIFIER,
+        encoding="utf-8",
+    )
+    refreshed = {"called": False}
 
-    def refresh(_run_dir: Path, _verdict: dict[str, Any]) -> bool:
-        raise AssertionError("cross-domain review candidates must not auto-repair")
+    def refresh(run_dir: Path, _verdict: dict[str, Any]) -> bool:
+        refreshed["called"] = True
+        run_dir.joinpath("alpha_memo.md").write_text(
+            "# Alpha memo\n\n"
+            "**Headline:** Storage reserves flip after threshold pricing\n\n"
+            "## Evidence receipts\n\n"
+            + "\n".join(f"- `fact_id={i}` (`A_core`) - direct" for i in range(1, 6))
+            + "\n" + _FALSIFIER,
+            encoding="utf-8",
+        )
+        return True
+
+    def reload_verdict(refresh_verdict: dict[str, Any], _run_dir: Path) -> dict[str, Any]:
+        return refresh_verdict | {
+            "decision": "ready_to_publish",
+            "publish_tier": "TIER_1",
+            "blockers": [],
+            "receipt_expansion": {"cited_bound_fact_ids": ["1", "2", "3", "4", "5"]},
+        }
+
+    monkeypatch.setattr(daily, "_reload_verdict_after_memo_refresh", reload_verdict)
 
     cand, considered = daily.select_candidate(
         {
@@ -3864,6 +3895,7 @@ def test_cross_domain_review_candidate_does_not_bypass_approval(tmp_path: Path) 
         memo_refresher=refresh,
     )
 
-    assert cand is None
-    assert considered[0]["status"] == "needs_operator_approval"
-    assert "memo_refreshed" not in considered[0]
+    assert refreshed["called"] is True
+    assert cand is not None
+    assert considered[0]["memo_refreshed"] is True
+    assert considered[0]["status"] == "eligible"
