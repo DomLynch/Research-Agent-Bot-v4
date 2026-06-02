@@ -374,9 +374,11 @@ def test_topic_pipeline_skips_pico_by_default(
 
     run_curator_cycle._run_topic_pipeline(
         "topic", 1.0, with_editorial=True, top_n=5, py="python",
+        frontier_review=False,
     )
 
     assert "--with-editorial" in calls[0]
+    assert "--no-frontier" in calls[0]
     assert "--no-pico-enrich" in calls[0]
 
 
@@ -468,6 +470,7 @@ def test_stop_on_ready_halts_plan(
     def fake_pipeline(
         topic: str, velocity: float, *, with_editorial: bool,
         top_n: int, py: str, pico_enrich: bool = False,
+        frontier_review: bool = True,
     ) -> TopicResult:
         seen.append(topic)
         run_dir = runs / f"{topic}-evidence-ts"
@@ -517,6 +520,7 @@ def test_stop_on_ready_ignores_under_source_candidate(
     def fake_pipeline(
         topic: str, velocity: float, *, with_editorial: bool,
         top_n: int, py: str, pico_enrich: bool = False,
+        frontier_review: bool = True,
     ) -> TopicResult:
         seen.append(topic)
         top_values.append(top_n)
@@ -567,6 +571,7 @@ def test_stop_on_ready_skips_count_only_cached_candidate(
     def fake_pipeline(
         topic: str, velocity: float, *, with_editorial: bool,
         top_n: int, py: str, pico_enrich: bool = False,
+        frontier_review: bool = True,
     ) -> TopicResult:
         seen.append(topic)
         run_dir = runs / f"{topic}-evidence-ts"

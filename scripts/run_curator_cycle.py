@@ -165,7 +165,7 @@ def _run_step(
 
 def _run_topic_pipeline(
     topic: str, velocity: float, *, with_editorial: bool, top_n: int,
-    py: str, pico_enrich: bool = False,
+    py: str, pico_enrich: bool = False, frontier_review: bool = True,
 ) -> TopicResult:
     """Run build + gate + signal_post for one topic. Returns the
     aggregate result. Each step's failure is recorded; we continue
@@ -174,6 +174,8 @@ def _run_topic_pipeline(
                   "--topic", topic, "--top", str(top_n)]
     if with_editorial:
         build_args.append("--with-editorial")
+    if not frontier_review:
+        build_args.append("--no-frontier")
     if not pico_enrich:
         build_args.append("--no-pico-enrich")
     ok, last = _run_step(build_args, "build")
@@ -367,6 +369,8 @@ def main() -> int:
                              "(default 24)")
     parser.add_argument("--no-editorial", action="store_true",
                         help="Skip MiMo editorial polish on top-5 cards")
+    parser.add_argument("--no-frontier", action="store_true",
+                        help="Skip MiMo frontier-review generation")
     parser.add_argument("--with-pico-enrich", action="store_true",
                         help="Run optional MiMo PICO enrichment in build step")
     parser.add_argument("--stop-on-ready", action="store_true",
@@ -445,6 +449,7 @@ def main() -> int:
         res = _run_topic_pipeline(
             topic, vel, with_editorial=not args.no_editorial,
             top_n=_DEFAULT_PIPELINE_TOP_N, py=py,
+            frontier_review=not args.no_frontier,
             pico_enrich=args.with_pico_enrich,
         )
         elapsed = time.time() - t0

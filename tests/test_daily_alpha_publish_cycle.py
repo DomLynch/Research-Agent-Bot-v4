@@ -1804,6 +1804,7 @@ def test_refresh_candidate_batch_can_warm_backlog(
     assert out["warm_backlog"] is True
     assert "--warm-backlog" in calls[0]
     assert "--no-editorial" in calls[0]
+    assert "--no-frontier" in calls[0]
 
 
 def test_submit_mode_holds_thin_source_memos(tmp_path: Path) -> None:
@@ -2654,6 +2655,7 @@ def test_refresh_candidates_builds_one_topic_per_submit_batch(
     assert "--stop-on-ready" in calls[0][0]
     assert "--with-pico-enrich" not in calls[0][0]
     assert "--no-editorial" in calls[0][0]
+    assert "--no-frontier" in calls[0][0]
     assert calls[0][0][calls[0][0].index("--top") + 1] == "5"
     assert calls[0][0][calls[0][0].index("--cooldown-hours") + 1] == "2"
     assert calls[0][1] == 1200
@@ -2689,6 +2691,7 @@ def test_refresh_cooldown_is_cycle_configurable(
     )
 
     assert "--no-editorial" in calls[0]
+    assert "--no-frontier" in calls[0]
     assert calls[0][calls[0].index("--top") + 1] == "5"
     assert calls[0][calls[0].index("--cooldown-hours") + 1] == "0.5"
 
