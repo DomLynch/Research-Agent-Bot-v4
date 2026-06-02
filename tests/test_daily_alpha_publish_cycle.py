@@ -2587,6 +2587,15 @@ def test_refresh_candidates_builds_one_topic_per_submit_batch(
     assert calls[0][1] == 1200
 
 
+def test_systemd_publish_timer_has_full_refresh_budget() -> None:
+    service = Path("deploy/systemd/researka-alpha-daily.service").read_text(
+        encoding="utf-8",
+    )
+
+    assert "--max-refresh-batches 5" in service
+    assert "--max-refresh-batches 2" not in service
+
+
 def test_refresh_cooldown_is_cycle_configurable(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
