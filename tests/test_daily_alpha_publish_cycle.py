@@ -1753,6 +1753,39 @@ def test_warm_backlog_timeout_degrades_to_no_candidate(
     }
 
 
+def test_refresh_timeout_note_degrades_to_no_candidate(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    thin = _verdict("thin")
+    _memo_with_source_receipts(root, thin, 1)
+
+    def fake_batch(*_a: Any, **_kwargs: Any) -> dict[str, Any]:
+        return {
+            "ok": False,
+            "note": "TimeoutExpired: refresh timed out after 1200 seconds",
+            "ran_topics": [],
+            "top": 20,
+        }
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", fake_batch)
+
+    ledger = daily.run_cycle(
+        runs_root=root, date="2026-05-22",
+        queue=_queue(thin),
+        refresh_candidates=True, max_refresh_batches=5,
+        submit=True,
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+    )
+
+    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["refresh_early_exit"] == {
+        "batch": 1,
+        "reason": "refresh_timeout",
+        "note": "TimeoutExpired: refresh timed out after 1200 seconds",
+    }
+
+
 def test_refresh_candidate_batch_can_warm_backlog(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

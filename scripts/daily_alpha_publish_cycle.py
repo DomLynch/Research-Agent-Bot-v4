@@ -151,6 +151,11 @@ _REFRESHABLE_SOURCE_FLOOR_STATUSES = {
     "memo_source_floor_below_min",
     "direct_source_floor_below_min",
 }
+
+
+def _refresh_timeout_note(refresh: Json) -> bool:
+    note = str(refresh.get("note") or "")
+    return "TimeoutExpired:" in note or " timed out after " in note
 _REPAIRABLE_REJECTION_REASONS = {
     "cited doi",
     "minimum_citations",
@@ -2034,10 +2039,13 @@ def run_cycle(
             ledger["refresh_batches"].append(refresh)
             ledger["refresh_candidates"] = refresh
             if not refresh["ok"]:
-                if refresh.get("warm_backlog"):
+                if refresh.get("warm_backlog") or _refresh_timeout_note(refresh):
                     ledger["refresh_early_exit"] = {
                         "batch": batch,
-                        "reason": "warm_backlog_failed",
+                        "reason": (
+                            "warm_backlog_failed" if refresh.get("warm_backlog")
+                            else "refresh_timeout"
+                        ),
                         "note": str(refresh.get("note") or "")[:240],
                     }
                     break
