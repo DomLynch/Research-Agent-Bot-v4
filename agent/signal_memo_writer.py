@@ -604,6 +604,10 @@ def _headline_needs_grounding(
     return any(marker in lower for marker in _UNSUPPORTED_TENSION_HEADLINE_MARKERS)
 
 
+def _headline_claim_mismatch(headline: str, claim: set[str], topic: str) -> bool:
+    return bool(claim) and not _angle_text_coheres(headline, claim, topic)
+
+
 def _context_subline(verdict: dict[str, Any] | None, fallback: str) -> str:
     if not verdict or verdict.get("surface_type") != "context_dependence_memo":
         return fallback
@@ -1485,12 +1489,17 @@ def render_signal_memo(
             and "limited to the direct cited receipt bundle" not in angle["why"]
         ):
             blockers = {str(x) for x in publish_verdict.get("blockers") or []}
-            if "cross_domain_forced" in blockers or _headline_needs_grounding(headline, publish_verdict):
+            claim_mismatch = _headline_claim_mismatch(headline, claim, topic)
+            force_tension = "cross_domain_forced" in blockers or claim_mismatch
+            if (
+                force_tension
+                or _headline_needs_grounding(headline, publish_verdict)
+            ):
                 headline = _grounded_headline(topic, lead_ids, facts, headline)
             angle = angle | {
                 "headline": headline,
                 "why": _source_bounded_why(
-                    lead_ids, facts, force_tension="cross_domain_forced" in blockers,
+                    lead_ids, facts, force_tension=force_tension,
                 ),
             }
     thesis = angle["thesis"]
