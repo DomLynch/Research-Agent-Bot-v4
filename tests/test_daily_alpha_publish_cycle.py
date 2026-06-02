@@ -1749,9 +1749,17 @@ def test_submit_retry_exhausted_repairable_revise_can_publish_next_cycle(
 
     assert submitted == ["exhausted_repair"]
     assert ledger["status"] == "published"
+    assert ledger["decision_sync"]["pending"] == 1
     assert ledger["considered"][0]["retry_after_rejection"] is True
     assert ledger["considered"][0]["memo_refreshed"] is True
     assert ledger["public_url"] == "https://researka.org/alpha/exhausted-repair"
+    records = json.loads(
+        (root / "_daily_ledger" / "_submitted_fingerprints.json").read_text(
+            encoding="utf-8",
+        )
+    )
+    assert records[-1]["submission_id"] == "new-sub"
+    assert records[-1]["memo_sha256"] != old_sha
 
 
 def test_missing_alpha_memo_is_not_publishable(tmp_path: Path) -> None:
