@@ -885,6 +885,17 @@ def _submission_attempt_budget(decision: Any) -> int:
     return _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
 
 
+def _repair_attempt_limit(decision: Any) -> int:
+    budget = _submission_attempt_budget(decision)
+    if (
+        isinstance(decision, dict)
+        and decision.get("decision") == "reject"
+        and _resubmission_allowed(decision)
+    ):
+        return budget + 1
+    return budget
+
+
 def _retry_after_rejection(
     fingerprint: str,
     *,
@@ -894,7 +905,7 @@ def _retry_after_rejection(
 ) -> bool:
     return (
         fingerprint in retryable
-        and attempt_count < _submission_attempt_budget(decisions.get(fingerprint))
+        and attempt_count < _repair_attempt_limit(decisions.get(fingerprint))
     )
 
 
@@ -1174,7 +1185,7 @@ def select_candidate(
         )
         retry_budget_exhausted = (
             fp in seen
-            and attempt_count >= _submission_attempt_budget(retry_decisions.get(fp))
+            and attempt_count >= _repair_attempt_limit(retry_decisions.get(fp))
         )
         if (
             not cycle_blocked
