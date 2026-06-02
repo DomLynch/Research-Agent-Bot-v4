@@ -1877,6 +1877,86 @@ def test_cached_source_rich_topics_does_not_warm_context_only_children(
     assert "target_intervention" not in cache
 
 
+def _write_direct_a_core_run(root: Path, topic: str, count: int) -> None:
+    run = root / f"{topic}-evidence-ts"
+    run.mkdir()
+    facts = [
+        {
+            "id": f"fact-{i}",
+            "source_paper": {
+                "doi": f"10.1/{topic}-{i}",
+                "title": f"Target intervention outcome trial {i}",
+            },
+            "numeric_value": 10,
+            "units": "%",
+            "population": "adults",
+            "intervention": "target intervention",
+            "canonical_phrase": "target intervention improved function by 10%",
+        }
+        for i in range(count)
+    ]
+    run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": f"fact-{i}", "lane": "A_core"} for i in range(count)],
+    }), encoding="utf-8")
+
+
+def _set_alpha_direct_floor(monkeypatch: Any, tmp_path: Path, floor: int) -> None:
+    from agent import topic_discovery as td
+
+    publication = tmp_path / "publication.toml"
+    publication.write_text(
+        f"[alpha_memo]\nmin_direct_source_papers = {floor}\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(td, "_PUBLICATION_TOML", publication)
+
+
+def test_source_rich_filter_uses_alpha_direct_source_floor_from_config(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    _set_alpha_direct_floor(monkeypatch, tmp_path, 6)
+    now = time.time()
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "five_direct": {"count": 9, "ts": now, "version": td._SUPPLY_CACHE_VERSION},
+        "six_direct": {"count": 9, "ts": now, "version": td._SUPPLY_CACHE_VERSION},
+    }), encoding="utf-8")
+    _write_direct_a_core_run(tmp_path, "five_direct", 5)
+    _write_direct_a_core_run(tmp_path, "six_direct", 6)
+
+    out = td._cached_source_rich_topics(exclude=set(), limit=5)
+
+    assert ("six_direct", 9) in out
+    assert not any(topic == "five_direct" for topic, _count in out)
+
+
+def test_child_warming_uses_alpha_direct_source_floor_from_config(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    _set_alpha_direct_floor(monkeypatch, tmp_path, 6)
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "parent_root": {
+            "count": 8,
+            "ts": time.time(),
+            "version": td._SUPPLY_CACHE_VERSION,
+            "source_papers": [_paper(doi="10.1/parent", title="Parent root")],
+        },
+    }), encoding="utf-8")
+    _write_direct_a_core_run(tmp_path, "parent_root", 5)
+
+    out = td._cached_source_rich_topics(exclude=set(), limit=10)
+
+    assert ("target_intervention", 5) not in out
+    cache = json.loads((tmp_path / "supply.json").read_text(encoding="utf-8"))
+    assert "target_intervention" not in cache
+
+
 def test_discover_topics_surfaces_cached_paper_backed_rich_topics_beyond_probe_limit(
     monkeypatch: Any, tmp_path: Path,
 ) -> None:

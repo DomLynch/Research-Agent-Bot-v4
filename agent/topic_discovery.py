@@ -49,12 +49,10 @@ _SEEDS_TOML = (Path(__file__).resolve().parent.parent
 # also slashes per-cycle DB load). Universal — no domain literals.
 _SUPPLY_CACHE_PATH = (Path(__file__).resolve().parent.parent
                       / "runs" / "_topic_supply_cache.json")
+_PUBLICATION_TOML = (Path(__file__).resolve().parent.parent
+                     / "topic_packs" / "publication.toml")
 _SUPPLY_CACHE_VERSION = 10
 _PUBLISHABLE_SOURCE_FLOOR = 5
-# Discovery "source-rich" hints must satisfy the same direct-source breadth
-# that the alpha submit gate requires, or the scheduler advertises candidates
-# the publisher will later reject as under-floor.
-_DIRECT_SOURCE_RICH_FLOOR = _PUBLISHABLE_SOURCE_FLOOR
 _PROBE_INCONCLUSIVE = -1  # all queries failed (timeout/error), not a real 0
 _DERIVED_TOPIC_LIMIT = 5_000
 # All configured seeds are probed; this caps extra velocity/derived topics on
@@ -82,6 +80,23 @@ _TITLE_STOPWORDS = frozenset({
     "patients", "adults", "human", "mouse", "mice", "model", "models",
     "new", "novel",
 })
+
+
+def _direct_source_rich_floor() -> int:
+    try:
+        data = tomllib.loads(_PUBLICATION_TOML.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return _PUBLISHABLE_SOURCE_FLOOR
+    alpha = data.get("alpha_memo")
+    if not isinstance(alpha, dict):
+        return _PUBLISHABLE_SOURCE_FLOOR
+    try:
+        return max(
+            1,
+            int(alpha.get("min_direct_source_papers", _PUBLISHABLE_SOURCE_FLOOR)),
+        )
+    except (TypeError, ValueError):
+        return _PUBLISHABLE_SOURCE_FLOOR
 _CHILD_TOPIC_STOPWORDS = _TITLE_STOPWORDS | frozenset({
     "change", "changed", "changes", "improve", "improved", "improves",
     "increase", "increased", "increases", "reduce", "reduced", "reduces",
@@ -660,7 +675,7 @@ def _latest_run_direct_source_count(topic: str) -> int | None:
 
 def _latest_run_disproves_source_rich(topic: str) -> bool:
     count = _latest_run_direct_source_count(topic)
-    return count is not None and count < _DIRECT_SOURCE_RICH_FLOOR
+    return count is not None and count < _direct_source_rich_floor()
 
 
 def _latest_run_child_source_papers(
@@ -699,7 +714,7 @@ def _latest_run_child_source_papers(
                 child_papers.setdefault(slug, {}).setdefault(key, paper)
         return {
             slug: papers for slug, papers in child_papers.items()
-            if len(papers) >= _DIRECT_SOURCE_RICH_FLOOR
+            if len(papers) >= _direct_source_rich_floor()
         }
     return {}
 
