@@ -1352,6 +1352,7 @@ def discover_topics(
                 fact_source_count=fact_sources_by_topic.get(topic, 0),
             )
             for topic, papers in papers_by_topic.items()
+            if not _latest_run_disproves_source_rich(topic)
         ]
     finally:
         if own_client:

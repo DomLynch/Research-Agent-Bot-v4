@@ -933,6 +933,44 @@ def test_discover_topics_skips_latest_no_signal_title_derived_candidate(
     assert "bad_title_slug" not in probed
 
 
+def test_discover_topics_skips_latest_no_signal_seed_candidate(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    monkeypatch.setattr(td, "_title_topic_slugs", lambda *_args, **_kw: ())
+    _write_direct_a_core_run(tmp_path, "bad_seed", 5)
+    (tmp_path / "bad_seed-evidence-ts" / "publish_verdict.json").write_text(
+        json.dumps({
+            "publish_tier": "TIER_3",
+            "blockers": ["blocked_label:no_signal"],
+        }),
+        encoding="utf-8",
+    )
+
+    def fake_fetch(topics: list[str], **_: Any) -> dict[str, list[dict[str, Any]]]:
+        return {
+            topic: [_paper(doi=f"10.1/{topic}", title=topic.replace("_", " "))]
+            for topic in topics
+        }
+
+    monkeypatch.setattr(td, "_fetch_papers_by_topic", fake_fetch)
+    monkeypatch.setattr(
+        td, "_fetch_fact_source_counts",
+        lambda topics, **_kw: {topic: 6 for topic in topics},
+    )
+
+    out = td.discover_topics(
+        seeds=("bad_seed", "good_seed"), settings=_settings(), client=httpx.Client(),
+        current_year=2024, fact_probe_topics=2,
+    )
+
+    topics = {candidate.topic for candidate in out}
+    assert "bad_seed" not in topics
+    assert "good_seed" in topics
+
+
 def test_derived_cycle_keeps_rich_visible_and_warms_tail(
     monkeypatch: Any, tmp_path: Path,
 ) -> None:
