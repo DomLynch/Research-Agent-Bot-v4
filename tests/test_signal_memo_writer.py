@@ -483,6 +483,52 @@ def test_alpha_memo_duplicate_source_audit_ids_do_not_crowd_out_floor(
     assert "doi=10.x/diverse-606" in evidence
 
 
+def test_source_angle_publish_memo_replaces_stale_surprise_prose(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    signal = (run / "signal_post.md").read_text(encoding="utf-8")
+    (run / "signal_post.md").write_text(
+        signal.replace(
+            "The signal challenges a simple cost-only story.",
+            "Legacy aerosol-policy theory makes a mechanism-wide claim that the receipts do not test.",
+        ),
+        encoding="utf-8",
+    )
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    for fid in ("303", "404", "505", "606"):
+        facts.append({
+            "fact_id": fid,
+            "canonical_phrase": (
+                f"Emissions fell after the carbon pricing intervention in market {fid}."
+            ),
+            "population": f"market {fid}",
+            "source_paper": {"doi": f"10.x/bounded-{fid}"},
+        })
+        lanes["verdicts"].append({"fact_id": fid, "lane": "A_core"})
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "publish_alpha_memo",
+        "receipt_expansion": {
+            "needed": True,
+            "cited_bound_fact_ids": ["101"],
+            "candidate_receipts": [
+                {"fact_id": fid, "lane": "A_core"}
+                for fid in ("303", "404", "505", "606")
+            ],
+        },
+    })
+
+    why = memo.split("## Why this is surprising", 1)[1].split("\n## ", 1)[0]
+    assert "aerosol-policy" not in memo
+    assert "source-grounded working signal" in why
+    assert "market 303" in why
+
+
 def test_alpha_memo_trusts_gate_candidate_receipts_for_source_floor(
     tmp_path: Path,
 ) -> None:

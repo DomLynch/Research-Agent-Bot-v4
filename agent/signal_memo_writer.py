@@ -559,6 +559,29 @@ def _grounded_headline(
     return f"Bounded {_topic_title(label)} signal: {phrase[:180].rstrip()}"
 
 
+def _source_bounded_why(lead_ids: list[str], facts: dict[str, dict[str, Any]]) -> str:
+    contexts: list[str] = []
+    for fid in lead_ids:
+        fact = facts.get(fid) or {}
+        context = _fact_context(fact)
+        if context and context not in contexts:
+            contexts.append(context)
+        if len(contexts) >= 3:
+            break
+    if contexts:
+        joined = "; ".join(contexts)
+        return (
+            "The surprise is bounded to the cited receipt bundle: separate "
+            f"direct sources report measurable effects in {joined}. Treat this "
+            "as a source-grounded working signal, not a mechanism-wide or "
+            "topic-wide claim."
+        )
+    return (
+        "The surprise is bounded to the cited direct receipts. Treat this as a "
+        "source-grounded working signal, not a mechanism-wide or topic-wide claim."
+    )
+
+
 def _has_counter_items(verdict: dict[str, Any] | None) -> bool:
     counter = (verdict or {}).get("counter_evidence")
     items = counter.get("items", []) if isinstance(counter, dict) else []
@@ -1451,6 +1474,11 @@ def render_signal_memo(
                  "thesis": thesis, "why": why_surprising}
     if publish_verdict and publish_verdict.get("surface_type") == "publish_alpha_memo":
         headline = angle["headline"]
+        if (
+            angle["kind"] == "source"
+            and "limited to the direct cited receipt bundle" not in angle["why"]
+        ):
+            angle = angle | {"why": _source_bounded_why(lead_ids, facts)}
     thesis = angle["thesis"]
     why_surprising = angle["why"]
     bounded_question = angle.get("question") or (
