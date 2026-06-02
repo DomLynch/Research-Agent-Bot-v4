@@ -1066,10 +1066,9 @@ def discover_topics(
                     papers_by_topic, year_now, limit=derived_topic_limit)
                 if topic not in papers_by_topic
             ]
-            derived_slots = max(
-                0,
-                extra_probe_limit - len(cached_fact_counts) - len(cached_probe_topics),
-            )
+            # Paper-backed cached source-rich topics are cheap supply, not live
+            # probes. Only paperless cached hints consume the bounded probe window.
+            derived_slots = max(0, extra_probe_limit - len(cached_probe_topics))
             # Fetch a bounded over-sample so unsupported generic fragments do
             # not consume the whole derived fact-probe window.
             derived_fetch_limit = min(len(derived), max(

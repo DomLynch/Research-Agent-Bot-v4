@@ -1688,6 +1688,53 @@ def test_discover_topics_surfaces_cached_paper_backed_rich_topics_beyond_probe_l
         assert candidate.top_paper_doi == f"10.1/cached-{i}"
 
 
+def test_cached_paper_backed_rich_topics_do_not_consume_probe_window(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "cached_rich": {
+            "count": 9,
+            "ts": time.time(),
+            "version": td._SUPPLY_CACHE_VERSION,
+            "source_papers": [_paper(doi="10.1/cached", title="Cached rich")],
+        },
+    }), encoding="utf-8")
+    monkeypatch.setattr(td, "_title_topic_slugs", lambda *_args, **_kw: (
+        "fresh_derived",))
+
+    fetched: list[tuple[str, ...]] = []
+
+    def fake_fetch(topics: list[str], **_: Any) -> dict[str, list[dict[str, Any]]]:
+        fetched.append(tuple(topics))
+        return {
+            topic: [_paper(doi=f"10.1/{topic}", title=topic.replace("_", " "))]
+            for topic in topics
+        }
+
+    seen_probes: list[str] = []
+
+    def fake_fact_counts(topics: list[str], **_: Any) -> dict[str, int]:
+        seen_probes.extend(topics)
+        return {"fresh_derived": 7, "seed_topic": 0}
+
+    monkeypatch.setattr(td, "_fetch_papers_by_topic", fake_fetch)
+    monkeypatch.setattr(td, "_fetch_fact_source_counts", fake_fact_counts)
+
+    out = td.discover_topics(
+        seeds=("seed_topic",), settings=_settings(), client=httpx.Client(),
+        current_year=2024, derived_topic_limit=2, fact_probe_topics=1,
+    )
+
+    by_topic = {candidate.topic: candidate for candidate in out}
+    assert ("fresh_derived",) in fetched
+    assert seen_probes == ["fresh_derived"]
+    assert by_topic["cached_rich"].fact_source_count == 9
+    assert by_topic["fresh_derived"].fact_source_count == 7
+
+
 def test_cached_source_rich_topics_shrink_derived_fetch_window(
     monkeypatch: Any, tmp_path: Path,
 ) -> None:
