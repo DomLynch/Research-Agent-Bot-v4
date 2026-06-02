@@ -1452,6 +1452,7 @@ def test_discover_topics_reuses_cached_source_rich_fact_children(
             "count": 8,
             "ts": time.time(),
             "version": td._SUPPLY_CACHE_VERSION,
+            "source_papers": [{"doi": "10.1/cached", "title": "Cached child paper"}],
         },
     }), encoding="utf-8")
     seed_papers = [_paper(doi="10.1/seed", title="Seed topic trial", fwci=2.0)]
@@ -1468,7 +1469,8 @@ def test_discover_topics_reuses_cached_source_rich_fact_children(
 
     by_topic = {candidate.topic: candidate for candidate in out}
     assert by_topic["cached_child_topic"].fact_source_count == 8
-    assert by_topic["cached_child_topic"].paper_count == 0
+    assert by_topic["cached_child_topic"].paper_count == 1
+    assert by_topic["cached_child_topic"].top_paper_doi == "10.1/cached"
 
 
 def test_cached_source_rich_topics_shrink_derived_fetch_window(
@@ -1513,38 +1515,50 @@ def test_cached_source_rich_topics_shrink_derived_fetch_window(
     assert not any(topic.startswith("derived_") for topic in seen_probe_topics)
 
 
-def test_discover_topics_uses_cached_source_rich_hint_without_papers(
+def test_discover_topics_reprobes_cached_source_rich_hint_without_papers(
     monkeypatch: Any, tmp_path: Path,
 ) -> None:
     from agent import topic_discovery as td
 
-    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
-    (tmp_path / "supply.json").write_text(json.dumps({
+    cache_path = tmp_path / "supply.json"
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", cache_path)
+    cache_path.write_text(json.dumps({
         "cached_orphan_topic": {
             "count": 8,
             "ts": time.time(),
             "version": td._SUPPLY_CACHE_VERSION,
         },
     }), encoding="utf-8")
-    seed_papers = [_paper(doi="10.1/seed", title="Seed topic trial", fwci=2.0)]
+    monkeypatch.setattr(td, "_title_topic_slugs", lambda *_args, **_kw: [])
 
-    def handler(req: httpx.Request) -> httpx.Response:
-        body = req.read().decode("utf-8") if req.content else "{}"
-        if req.url.path.endswith("/tier2/facts/search"):
-            return httpx.Response(200, json=[])
-        if "cached_orphan_topic" in body:
-            return httpx.Response(200, json=[])
-        return httpx.Response(200, json=seed_papers)
+    def fake_fetch(topics: list[str], **_: Any) -> dict[str, list[dict[str, Any]]]:
+        return {
+            topic: [_paper(doi="10.1/seed", title="Seed topic trial", fwci=2.0)]
+            for topic in topics
+        }
 
-    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
-        out = td.discover_topics(
-            seeds=("seed_topic",), settings=_settings(), client=c,
-            current_year=2024, derived_topic_limit=5, fact_probe_topics=5,
-        )
+    def fake_counts(topics: list[str], **_: Any) -> dict[str, int]:
+        assert "cached_orphan_topic" in topics
+        cache = json.loads(cache_path.read_text(encoding="utf-8"))
+        cache["cached_orphan_topic"]["source_papers"] = [{
+            "doi": "10.1/orphan", "title": "Orphan source paper",
+            "publication_year": 2024, "fwci": 2.0,
+        }]
+        cache_path.write_text(json.dumps(cache), encoding="utf-8")
+        return {"cached_orphan_topic": 8}
+
+    monkeypatch.setattr(td, "_fetch_papers_by_topic", fake_fetch)
+    monkeypatch.setattr(td, "_fetch_fact_source_counts", fake_counts)
+
+    out = td.discover_topics(
+        seeds=("seed_topic",), settings=_settings(), client=httpx.Client(),
+        current_year=2024, derived_topic_limit=5, fact_probe_topics=5,
+    )
 
     by_topic = {candidate.topic: candidate for candidate in out}
     assert by_topic["cached_orphan_topic"].fact_source_count == 8
-    assert by_topic["cached_orphan_topic"].paper_count == 0
+    assert by_topic["cached_orphan_topic"].paper_count == 1
+    assert by_topic["cached_orphan_topic"].top_paper_doi == "10.1/orphan"
 
 
 def test_cached_source_rich_topics_can_use_previous_version_as_hint(

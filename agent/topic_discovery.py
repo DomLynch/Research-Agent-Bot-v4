@@ -968,15 +968,19 @@ def discover_topics(
             else max(0, fact_probe_topics)
         )
         cached_fact_counts: dict[str, int] = {}
+        cached_probe_topics: list[str] = []
         if derived_topic_limit:
             cached_fact_topics = _cached_source_rich_topics(
                 exclude=set(papers_by_topic), limit=extra_probe_limit)
             if cached_fact_topics:
                 supply_cache = _load_supply_cache()
                 for topic, count in cached_fact_topics:
-                    papers_by_topic[topic] = _cached_source_papers(
-                        supply_cache.get(topic))
-                    cached_fact_counts[topic] = count
+                    papers = _cached_source_papers(supply_cache.get(topic))
+                    if papers:
+                        papers_by_topic[topic] = papers
+                        cached_fact_counts[topic] = count
+                    else:
+                        cached_probe_topics.append(topic)
         derived_cycle_topics: list[str] = []
         if derived_topic_limit:
             derived = [
@@ -984,7 +988,10 @@ def discover_topics(
                     papers_by_topic, year_now, limit=derived_topic_limit)
                 if topic not in papers_by_topic
             ]
-            derived_slots = max(0, extra_probe_limit - len(cached_fact_counts))
+            derived_slots = max(
+                0,
+                extra_probe_limit - len(cached_fact_counts) - len(cached_probe_topics),
+            )
             # Fetch a bounded over-sample so unsupported generic fragments do
             # not consume the whole derived fact-probe window.
             derived_fetch_limit = min(len(derived), max(
@@ -1007,12 +1014,15 @@ def discover_topics(
                 })
         anchorage = _anchorage_counts(papers_by_topic, year_now)
         probe_limit = max(1, extra_probe_limit)
-        seed_probe_limit = max(0, probe_limit - len(derived_cycle_topics))
+        seed_probe_limit = max(
+            0,
+            probe_limit - len(cached_probe_topics) - len(derived_cycle_topics),
+        )
         seed_probe_topics = _seed_probe_topics(
             topics, papers_by_topic, year_now, limit=seed_probe_limit,
             refresh_low_source_counts=refresh_low_source_counts)
         probe_topics = list(dict.fromkeys([
-            *derived_cycle_topics, *seed_probe_topics,
+            *cached_probe_topics, *derived_cycle_topics, *seed_probe_topics,
         ]))[:probe_limit]
         fact_child_counts: dict[str, int] = {}
         fact_child_source_papers: dict[str, dict[str, dict[str, Any]]] = {}
@@ -1026,6 +1036,12 @@ def discover_topics(
             child_source_counts=fact_child_counts,
             child_source_papers=fact_child_source_papers,
         )
+        if cached_probe_topics:
+            supply_cache = _load_supply_cache()
+            for topic in cached_probe_topics:
+                papers = _cached_source_papers(supply_cache.get(topic))
+                if papers:
+                    papers_by_topic[topic] = papers
         fact_sources_by_topic.update(cached_fact_counts)
         fact_child_topics = [
             (topic, count) for topic, count in sorted(
