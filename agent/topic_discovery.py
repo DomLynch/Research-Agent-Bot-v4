@@ -304,25 +304,35 @@ def _fact_probe_queries(
     return tuple(seen)[:max_queries]
 
 
-def _fact_source_title_facets(
+def _fact_source_facets(
     rows: list[Any], topic: str, *, limit: int = 6,
 ) -> tuple[str, ...]:
     topic_words = set(_title_tokens(" ".join(expand_topic_queries(topic, max_queries=8))))
     scores: dict[str, int] = {}
+
+    def add_phrases(words: list[str], *, weight: int = 1) -> None:
+        for width in (2, 3):
+            for i in range(0, max(0, len(words) - width + 1)):
+                phrase = " ".join(words[i:i + width])
+                scores[phrase] = scores.get(phrase, 0) + weight
+
     for row in rows:
         if not isinstance(row, dict):
             continue
         paper = row.get("paper") or row.get("source_paper")
         if not isinstance(paper, dict):
-            continue
+            paper = {}
         words = [
             word for word in _title_tokens(str(paper.get("title") or ""))
             if word not in topic_words
         ][:12]
-        for width in (2, 3):
-            for i in range(0, max(0, len(words) - width + 1)):
-                phrase = " ".join(words[i:i + width])
-                scores[phrase] = scores.get(phrase, 0) + 1
+        add_phrases(words)
+        for key in ("intervention", "sub_topic", "claim_type", "canonical_phrase"):
+            field_words = [
+                word for word in _title_tokens(str(row.get(key) or ""))
+                if word not in topic_words
+            ][:12]
+            add_phrases(field_words, weight=2 if key != "canonical_phrase" else 1)
     return tuple(k for k, _ in sorted(
         scores.items(), key=lambda item: (-item[1], item[0]),
     )[:limit])
@@ -516,7 +526,7 @@ def _fetch_topic_fact_source_profile(
             child_sources=child_sources,
             child_source_papers=child_source_papers,
             source_papers=source_papers)
-        for facet in _fact_source_title_facets(rows, topic):
+        for facet in _fact_source_facets(rows, topic):
             if len(queries) >= max_queries:
                 break
             if facet not in seen_queries:

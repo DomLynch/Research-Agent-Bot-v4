@@ -1057,7 +1057,60 @@ def test_fact_source_probe_uses_returned_source_titles_for_second_wave() -> None
     assert any("target intervention" in query for query in seen_queries)
 
 
-def test_fact_source_title_facets_ignore_empty_or_missing_titles() -> None:
+def test_fact_source_probe_uses_returned_fact_metadata_for_second_wave() -> None:
+    from agent import topic_discovery
+
+    seen_queries: list[str] = []
+
+    def seed_rows() -> list[dict[str, Any]]:
+        return [{
+            "id": "seed-fact",
+            "paper_id": "seed-paper",
+            "paper": {"doi": "10.1/seed", "title": "Generic source"},
+            "numeric_value": 10,
+            "units": "%",
+            "population": "adults with parent condition",
+            "intervention": "target intervention",
+            "comparator": "placebo",
+            "canonical_phrase": "target intervention changed function by 10%",
+        }]
+
+    def second_wave_rows() -> list[dict[str, Any]]:
+        return [
+            {
+                "id": f"f{i}",
+                "paper_id": f"paper-{i}",
+                "paper": {"doi": f"10.1/meta-{i}", "title": f"Metadata wave {i}"},
+                "numeric_value": 10,
+                "units": "%",
+                "population": "adults",
+                "intervention": "parent condition therapy",
+                "comparator": "usual care",
+                "canonical_phrase": "parent condition therapy improved outcome by 10%",
+            }
+            for i in range(5)
+        ]
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.path.endswith("/facts"):
+            return httpx.Response(200, json=[])
+        body = json.loads(req.content)
+        query = str(body.get("query") or "")
+        seen_queries.append(query)
+        if "target intervention" in query:
+            return httpx.Response(200, json=second_wave_rows())
+        return httpx.Response(200, json=seed_rows())
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        count = topic_discovery._fetch_topic_fact_source_count(
+            "parent_condition", client=c, settings=_settings(),
+        )
+
+    assert count == 5
+    assert any("target intervention" in query for query in seen_queries)
+
+
+def test_fact_source_facets_ignore_empty_or_missing_titles() -> None:
     from agent import topic_discovery
 
     rows = [
@@ -1067,7 +1120,23 @@ def test_fact_source_title_facets_ignore_empty_or_missing_titles() -> None:
         "not-a-row",
     ]
 
-    assert topic_discovery._fact_source_title_facets(rows, "parent_condition") == ()
+    assert topic_discovery._fact_source_facets(rows, "parent_condition") == ()
+
+
+def test_fact_source_facets_include_structured_fact_metadata() -> None:
+    from agent import topic_discovery
+
+    rows = [{
+        "paper": {"title": "Generic trial"},
+        "intervention": "target intervention",
+        "sub_topic": "functional endpoint",
+        "canonical_phrase": "target intervention improved functional endpoint",
+    }]
+
+    out = topic_discovery._fact_source_facets(rows, "parent_condition")
+
+    assert "target intervention" in out
+    assert "functional endpoint" in out
 
 
 def test_paper_title_facets_are_data_derived() -> None:
