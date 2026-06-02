@@ -310,6 +310,13 @@ def _fact_child_slugs(
     topic_words = set(_title_tokens(topic.replace("_", " ")))
     seen: dict[str, None] = {}
 
+    def _words(value: Any, *, blocked: tuple[str, ...] = ()) -> list[str]:
+        blocked_words = set(blocked)
+        return [
+            word for word in _title_tokens(str(value or ""))
+            if word not in topic_words and word not in blocked_words
+        ][:10]
+
     def _add_ngrams(words: list[str], *, prefix: tuple[str, ...] = ()) -> bool:
         for width in (3, 2):
             for i in range(0, max(0, len(words) - width + 1)):
@@ -320,14 +327,23 @@ def _fact_child_slugs(
                     return True
         return False
 
-    for field in ("intervention", "population"):
-        words = [
-            word for word in _title_tokens(str(fact.get(field) or ""))
-            if word not in topic_words
-        ][:8]
-        if _add_ngrams(words):
-            return tuple(seen)
     intervention_words = _title_tokens(str(fact.get("intervention") or ""))[:2]
+    if _add_ngrams(_words(fact.get("intervention"))[:8]):
+        return tuple(seen)
+
+    paper = fact.get("source_paper")
+    if isinstance(paper, dict):
+        title_words = _words(paper.get("title"))
+        if title_words:
+            if (
+                intervention_words
+                and not set(intervention_words) & set(title_words)
+                and _add_ngrams(title_words, prefix=intervention_words)
+            ):
+                return tuple(seen)
+            if _add_ngrams(title_words):
+                return tuple(seen)
+
     phrase_words = [
         word for word in _TITLE_WORD.findall(
             str(fact.get("canonical_phrase") or "").lower())
@@ -344,6 +360,7 @@ def _fact_child_slugs(
                 return tuple(seen)
         else:
             _add_ngrams(phrase_words)
+    _add_ngrams(_words(fact.get("population"))[:8])
     return tuple(seen)
 
 
@@ -480,8 +497,7 @@ def _fetch_topic_fact_source_profile(
     children = tuple(
         (slug, len(keys)) for slug, keys in sorted(
             child_sources.items(),
-            key=lambda item: (len(item[1]), item[0]),
-            reverse=True,
+            key=lambda item: -len(item[1]),
         )
         if len(keys) >= _PUBLISHABLE_SOURCE_FLOOR
     )

@@ -1315,6 +1315,69 @@ def test_fact_source_profile_emits_claim_phrase_child_topics() -> None:
     assert ("berberine_glucose_metabolism", 5) in children
 
 
+def test_fact_source_profile_emits_title_derived_child_topics() -> None:
+    from agent import topic_discovery
+
+    rows = [
+        {
+            "id": f"fact-{i}",
+            "paper_id": f"paper-{i}",
+            "paper": {
+                "doi": f"10.1/title-child-{i}",
+                "title": f"Mitochondrial oxygen utilization cohort {i}",
+            },
+            "numeric_value": 10,
+            "units": "%",
+            "population": "adults with alzheimer disease",
+            "intervention": "",
+            "comparator": "usual care",
+            "canonical_phrase": "participants changed by 10 percent",
+        }
+        for i in range(5)
+    ]
+
+    def handler(_req: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=rows)
+
+    child_source_papers: dict[str, dict[str, dict[str, Any]]] = {}
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        count, children = topic_discovery._fetch_topic_fact_source_profile(
+            "alzheimer_disease", client=c, settings=_settings(),
+            child_source_papers=child_source_papers)
+
+    assert count == 0
+    assert ("mitochondrial_oxygen_utilization", 5) in children
+    assert len(child_source_papers["mitochondrial_oxygen_utilization"]) == 5
+
+
+def test_fact_source_profile_ignores_title_children_without_source_keys() -> None:
+    from agent import topic_discovery
+
+    rows = [
+        {
+            "id": f"fact-{i}",
+            "paper": {"title": ""},
+            "numeric_value": 10,
+            "units": "%",
+            "population": "adults with alzheimer disease",
+            "intervention": "",
+            "comparator": "usual care",
+            "canonical_phrase": "participants changed by 10 percent",
+        }
+        for i in range(5)
+    ]
+
+    def handler(_req: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=rows)
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        count, children = topic_discovery._fetch_topic_fact_source_profile(
+            "alzheimer_disease", client=c, settings=_settings())
+
+    assert count == 0
+    assert children == ()
+
+
 def test_fact_source_profile_mines_multiple_children_in_backlog_mode() -> None:
     from agent import topic_discovery
 
