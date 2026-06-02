@@ -310,11 +310,10 @@ def _fact_child_slugs(
     topic_words = set(_title_tokens(topic.replace("_", " ")))
     seen: dict[str, None] = {}
 
-    def _words(value: Any, *, blocked: tuple[str, ...] = ()) -> list[str]:
-        blocked_words = set(blocked)
+    def _words(value: Any) -> list[str]:
         return [
             word for word in _title_tokens(str(value or ""))
-            if word not in topic_words and word not in blocked_words
+            if word not in topic_words
         ][:10]
 
     def _add_ngrams(words: list[str], *, prefix: tuple[str, ...] = ()) -> bool:
@@ -329,6 +328,8 @@ def _fact_child_slugs(
 
     intervention_words = _title_tokens(str(fact.get("intervention") or ""))[:2]
     if _add_ngrams(_words(fact.get("intervention"))[:8]):
+        return tuple(seen)
+    if _add_ngrams(_words(fact.get("sub_topic"))[:8]):
         return tuple(seen)
 
     paper = fact.get("source_paper")
