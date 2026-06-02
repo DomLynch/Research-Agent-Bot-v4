@@ -53,6 +53,12 @@ _PUBLICATION_TOML = (Path(__file__).resolve().parent.parent
                      / "topic_packs" / "publication.toml")
 _SUPPLY_CACHE_VERSION = 10
 _PUBLISHABLE_SOURCE_FLOOR = 5
+_NONPUBLISHABLE_SUPPLY_BLOCKERS = frozenset({
+    "blocked_label:no_signal",
+    "cross_domain_forced",
+    "feed_scope_mismatch",
+    "low_alpha_score",
+})
 _PROBE_INCONCLUSIVE = -1  # all queries failed (timeout/error), not a real 0
 _DERIVED_TOPIC_LIMIT = 5_000
 # All configured seeds are probed; this caps extra velocity/derived topics on
@@ -675,7 +681,23 @@ def _latest_run_direct_source_count(topic: str) -> int | None:
 
 def _latest_run_disproves_source_rich(topic: str) -> bool:
     count = _latest_run_direct_source_count(topic)
-    return count is not None and count < _direct_source_rich_floor()
+    if count is not None and count < _direct_source_rich_floor():
+        return True
+    for run in _latest_run_dirs(topic, limit=1):
+        try:
+            verdict = json.loads(
+                (run / "publish_verdict.json").read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(verdict, dict):
+            continue
+        blockers = {str(item) for item in verdict.get("blockers") or []}
+        if (
+            verdict.get("publish_tier") == "TIER_3"
+            and blockers & _NONPUBLISHABLE_SUPPLY_BLOCKERS
+        ):
+            return True
+    return False
 
 
 def _latest_run_child_source_papers(

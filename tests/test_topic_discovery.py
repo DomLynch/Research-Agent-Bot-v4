@@ -2209,6 +2209,34 @@ def test_latest_underfloor_run_filters_false_source_rich_cache(
     assert out == (("true_rich", 8),)
 
 
+def test_latest_no_signal_run_filters_false_source_rich_cache(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "no_signal_rich": {
+            "count": 9,
+            "ts": time.time(),
+            "version": td._SUPPLY_CACHE_VERSION,
+        },
+        "true_rich": {"count": 8, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION},
+    }), encoding="utf-8")
+    _write_direct_a_core_run(tmp_path, "no_signal_rich", 5)
+    (tmp_path / "no_signal_rich-evidence-ts" / "publish_verdict.json").write_text(
+        json.dumps({
+            "publish_tier": "TIER_3",
+            "blockers": ["blocked_label:no_signal", "low_alpha_score"],
+        }),
+        encoding="utf-8",
+    )
+
+    out = td._cached_source_rich_topics(exclude=set(), limit=5)
+
+    assert out == (("true_rich", 8),)
+
+
 def test_latest_context_only_run_filters_false_source_rich_cache(
     monkeypatch: Any, tmp_path: Path,
 ) -> None:
