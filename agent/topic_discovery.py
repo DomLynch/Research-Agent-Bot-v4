@@ -1061,7 +1061,7 @@ def discover_topics(
                         cached_probe_topics.append(topic)
         derived_cycle_topics: list[str] = []
         seed_probe_reserve = (
-            min(len(topics), extra_probe_limit // 2)
+            min(len(topics), extra_probe_limit - extra_probe_limit // 4)
             if derived_topic_limit and extra_probe_limit >= 4 else 0
         )
         if derived_topic_limit:

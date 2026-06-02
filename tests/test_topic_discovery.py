@@ -709,8 +709,8 @@ def test_discover_topics_reserves_seed_probe_window_with_large_derived_pool(
         derived_topic_limit=8, fact_probe_topics=4,
     )
 
-    assert seen[:2] == ["derived_one", "derived_two"]
-    assert set(seen[2:]) <= {"seed_a", "seed_b", "seed_c"}
+    assert seen[:1] == ["derived_one"]
+    assert set(seen[1:]) <= {"seed_a", "seed_b", "seed_c"}
     assert len(seen) == 4
 
 

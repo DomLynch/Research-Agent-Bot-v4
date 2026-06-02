@@ -1754,7 +1754,7 @@ def _refresh_candidate_batch(
     args = [
         sys.executable, "scripts/run_curator_cycle.py",
         "--stop-on-ready", "--top", str(refresh_top),
-        "--cooldown-hours", f"{cooldown_hours:g}",
+        "--cooldown-hours", f"{cooldown_hours:g}", "--no-editorial",
     ]
     if warm_backlog:
         args.append("--warm-backlog")
