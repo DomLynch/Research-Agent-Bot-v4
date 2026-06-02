@@ -38,6 +38,10 @@ generic_tokens = [
   "finding",
   "health",
   "human",
+  "female",
+  "male",
+  "man",
+  "men",
   "model",
   "outcome",
   "paper",
@@ -47,6 +51,9 @@ generic_tokens = [
   "system",
   "therapy",
   "treatment",
+  "sex",
+  "woman",
+  "women",
 ]
 
 cluster_stopwords = [

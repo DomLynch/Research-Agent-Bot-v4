@@ -448,15 +448,10 @@ def _claim_coherent_source_diversity(
         source = _source_key(fact)
         if not source:
             continue
-        paper = fact.get("source_paper") or {}
-        if not isinstance(paper, dict):
-            continue
         tokens = _tokens(" ".join([
             str(fact.get("canonical_phrase") or ""),
             str(fact.get("population") or ""),
             str(fact.get("intervention") or ""),
-            str(paper.get("title") or ""),
-            str(paper.get("journal") or ""),
         ]), topic, generic)
         if tokens:
             by_source.setdefault(source, set()).update(tokens)

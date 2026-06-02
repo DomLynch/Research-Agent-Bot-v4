@@ -74,6 +74,7 @@ def _run(
     run.joinpath("all_facts.json").write_text(json.dumps([
         {
             "fact_id": fid,
+            "canonical_phrase": title,
             "source_paper": {
                 "doi": doi, "title": title, "journal": journal, "year": 2026,
             },
