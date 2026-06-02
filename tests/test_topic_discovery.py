@@ -1831,24 +1831,33 @@ def test_discover_topics_hydrates_cached_source_rich_papers(
         "paperless_rich": {
             "count": 7, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION,
         },
+        "empty_papers_rich": {
+            "count": 6, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION,
+            "source_papers": [],
+        },
     }), encoding="utf-8")
 
     def handler(req: httpx.Request) -> httpx.Response:
         if req.url.path.endswith("/api/v1/papers/topic"):
+            topic = json.loads(req.read().decode("utf-8")).get("topic")
             return httpx.Response(200, json=[
-                _paper(doi="10.1/hydrated", title="Hydrated source-rich topic"),
+                _paper(doi=f"10.1/{topic}", title=f"Hydrated {topic}"),
             ])
         return httpx.Response(200, json=[])
 
     with httpx.Client(transport=httpx.MockTransport(handler)) as c:
         out = td.discover_topics(
-            seeds=("paperless_rich",), settings=_settings(), client=c,
+            seeds=("paperless_rich", "empty_papers_rich"),
+            settings=_settings(), client=c,
             current_year=2024, fact_probe_topics=0,
         )
 
-    assert out[0].fact_source_count == 7
+    by_topic = {candidate.topic: candidate for candidate in out}
+    assert by_topic["paperless_rich"].fact_source_count == 7
+    assert by_topic["empty_papers_rich"].fact_source_count == 6
     cache = json.loads((tmp_path / "supply.json").read_text(encoding="utf-8"))
-    assert cache["paperless_rich"]["source_papers"][0]["doi"] == "10.1/hydrated"
+    assert cache["paperless_rich"]["source_papers"][0]["doi"] == "10.1/paperless_rich"
+    assert cache["empty_papers_rich"]["source_papers"][0]["doi"] == "10.1/empty_papers_rich"
 
 
 def test_supply_cache_version_mismatch_reprobes(
