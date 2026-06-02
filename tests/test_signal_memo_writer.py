@@ -809,6 +809,36 @@ def test_source_angle_grounds_unsupported_tension_headline(
     assert "Carbon tax paradox may obscure harm" not in memo
 
 
+def test_reviewer_revision_removes_uncited_surprise_specifics(tmp_path: Path) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    (run / "signal_post.md").write_text(
+        "# Signal — carbon_tax\n\n"
+        "## Carbon pricing may cut emissions without the expected output penalty\n\n"
+        "## Why this is surprising\n\n"
+        "This also explains offshore wind insolvency and grid congestion.\n\n"
+        "## Confidence — `evidence_backed_signal`\n",
+        encoding="utf-8",
+    )
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "publish_alpha_memo",
+        "_repair_decision": {
+            "decision": "revise",
+            "review_summary": (
+                "Remove or provide citations for the specific claims in the "
+                "Why this is surprising section, as the current source bundle "
+                "does not contain these specific data points."
+            ),
+            "resubmission": {"allowed": True},
+        },
+    })
+
+    assert "offshore wind insolvency" not in memo
+    assert "grid congestion" not in memo
+    assert "limited to the direct cited receipt bundle" in memo
+
+
 def test_alpha_memo_selects_counter_signal_angle_when_counter_receipt_exists(
     tmp_path: Path,
 ) -> None:

@@ -1239,10 +1239,41 @@ def _limitations_lines(
     return [*lines, *weakening[:3]]
 
 
+def _repair_decision_notes(publish_verdict: dict[str, Any] | None) -> str:
+    if not isinstance(publish_verdict, dict):
+        return ""
+    decision = publish_verdict.get("_repair_decision")
+    if not isinstance(decision, dict):
+        return ""
+    parts: list[str] = []
+    for key in ("failure_category", "review_summary", "notes"):
+        value = decision.get(key)
+        if isinstance(value, list):
+            parts.extend(str(item) for item in value if item)
+        elif value:
+            parts.append(str(value))
+    for key in ("required_revisions", "major_issues", "minor_issues", "failed_checks"):
+        value = decision.get(key)
+        if isinstance(value, list):
+            parts.extend(str(item) for item in value if item)
+    return " ".join(parts).lower()
+
+
 def _why_surprising(
     fallback: str,
     context_ids: list[str],
+    publish_verdict: dict[str, Any] | None = None,
 ) -> str:
+    notes = _repair_decision_notes(publish_verdict)
+    if (
+        "why this is surprising" in notes
+        and ("remove or provide citations" in notes or "does not contain" in notes)
+    ):
+        return (
+            "The surprise claim is limited to the direct cited receipt bundle. "
+            "Any broader condition, endpoint, or population contrast should be "
+            "treated as uncited context unless it appears in the receipts below."
+        )
     if context_ids:
         return (
             "Real tension: the useful signal is narrower than the topic label. "
@@ -1395,6 +1426,7 @@ def render_signal_memo(
     why_surprising = _why_surprising(
         _section(signal_md, "Why this is surprising"),
         context_ids,
+        publish_verdict,
     )
     recent_kinds = _recent_angle_kinds(run_dir)
     angle = _select_angle(
