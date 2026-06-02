@@ -345,12 +345,23 @@ def _needs_tension_enrichment(verdict: Json) -> bool:
     )
 
 
-def _source_floor_repair_candidate(verdict: Json) -> bool:
+def _source_floor_repair_candidate(
+    verdict: Json,
+    *,
+    source_count: int,
+    direct_source_count: int,
+    min_source_count: int,
+    min_direct_source_count: int,
+) -> bool:
     blockers = {str(x) for x in verdict.get("blockers") or []}
     source_floor_blockers = {"source_floor_below_min", "direct_source_floor_below_min"}
+    measured_floor_gap = (
+        source_count < min_source_count
+        or direct_source_count < min_direct_source_count
+    )
     return (
         verdict.get("decision") == "needs_operator_review"
-        and bool(blockers)
+        and (measured_floor_gap or bool(blockers & source_floor_blockers))
         and not blockers - source_floor_blockers
     )
 
@@ -1096,7 +1107,16 @@ def select_candidate(
             not cycle_blocked
             and not retry_budget_exhausted
             and has_memo
-            and (approved or _source_floor_repair_candidate(verdict))
+            and (
+                approved
+                or _source_floor_repair_candidate(
+                    verdict,
+                    source_count=source_count,
+                    direct_source_count=direct_source_count,
+                    min_source_count=min_source_count,
+                    min_direct_source_count=min_direct_source_count,
+                )
+            )
             and (
                 source_count < min_source_count
                 or direct_source_count < min_direct_source_count

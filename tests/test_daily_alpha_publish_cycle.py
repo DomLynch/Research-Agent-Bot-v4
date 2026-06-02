@@ -3387,7 +3387,7 @@ def test_memo_with_falsifier_passes_the_gate(tmp_path: Path) -> None:
     assert considered[0]["status"] != "memo_missing_falsifier"
 
 
-def test_source_floor_review_candidate_repairs_before_approval(
+def test_unlabeled_source_floor_review_candidate_repairs_before_approval(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
 ) -> None:
@@ -3395,7 +3395,6 @@ def test_source_floor_review_candidate_repairs_before_approval(
     verdict = _verdict("repair_sources") | {
         "decision": "needs_operator_review",
         "publish_tier": "TIER_2",
-        "blockers": ["direct_source_floor_below_min"],
         "receipt_expansion": {"cited_bound_fact_ids": ["1", "2", "3", "4"]},
     }
     _memo_with_source_receipts(root, verdict, 6)
