@@ -559,7 +559,13 @@ def _grounded_headline(
     return f"Bounded {_topic_title(label)} signal: {phrase[:180].rstrip()}"
 
 
-def _source_bounded_why(lead_ids: list[str], facts: dict[str, dict[str, Any]]) -> str:
+def _source_bounded_why(
+    lead_ids: list[str],
+    facts: dict[str, dict[str, Any]],
+    *,
+    force_tension: bool = False,
+) -> str:
+    prefix = "Real tension: " if force_tension else ""
     contexts: list[str] = []
     for fid in lead_ids:
         fact = facts.get(fid) or {}
@@ -571,13 +577,13 @@ def _source_bounded_why(lead_ids: list[str], facts: dict[str, dict[str, Any]]) -
     if contexts:
         joined = "; ".join(contexts)
         return (
-            "The surprise is bounded to the cited receipt bundle: separate "
+            f"{prefix}the surprise is bounded to the cited receipt bundle; separate "
             f"direct sources report measurable effects in {joined}. Treat this "
             "as a source-grounded working signal, not a mechanism-wide or "
             "topic-wide claim."
         )
     return (
-        "The surprise is bounded to the cited direct receipts. Treat this as a "
+        f"{prefix}the surprise is bounded to the cited direct receipts. Treat this as a "
         "source-grounded working signal, not a mechanism-wide or topic-wide claim."
     )
 
@@ -1478,7 +1484,15 @@ def render_signal_memo(
             angle["kind"] == "source"
             and "limited to the direct cited receipt bundle" not in angle["why"]
         ):
-            angle = angle | {"why": _source_bounded_why(lead_ids, facts)}
+            blockers = {str(x) for x in publish_verdict.get("blockers") or []}
+            if "cross_domain_forced" in blockers or _headline_needs_grounding(headline, publish_verdict):
+                headline = _grounded_headline(topic, lead_ids, facts, headline)
+            angle = angle | {
+                "headline": headline,
+                "why": _source_bounded_why(
+                    lead_ids, facts, force_tension="cross_domain_forced" in blockers,
+                ),
+            }
     thesis = angle["thesis"]
     why_surprising = angle["why"]
     bounded_question = angle.get("question") or (
@@ -1492,6 +1506,7 @@ def render_signal_memo(
         "population, model, endpoint, comparator, and effect direction that "
         "could confirm or kill the thesis."
     )
+    publish_blockers = {str(x) for x in (publish_verdict or {}).get("blockers") or []}
 
     score = _alpha_score(audit, label)
     lines = [
@@ -1510,6 +1525,7 @@ def render_signal_memo(
             [f"**Source thesis:** {raw_headline}"]
             if raw_headline != headline
             and not _headline_needs_grounding(raw_headline, publish_verdict)
+            and "cross_domain_forced" not in publish_blockers
             else []
         ),
         f"**Source breadth:** `{source_count}/{min_sources}` unique cited source(s)",

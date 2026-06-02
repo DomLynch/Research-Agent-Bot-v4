@@ -491,6 +491,9 @@ def test_source_angle_publish_memo_replaces_stale_surprise_prose(
     signal = (run / "signal_post.md").read_text(encoding="utf-8")
     (run / "signal_post.md").write_text(
         signal.replace(
+            "Carbon pricing may cut emissions without the expected output penalty",
+            "Aerosol policy proves a mechanism-wide infrastructure claim",
+        ).replace(
             "The signal challenges a simple cost-only story.",
             "Legacy aerosol-policy theory makes a mechanism-wide claim that the receipts do not test.",
         ),
@@ -513,6 +516,7 @@ def test_source_angle_publish_memo_replaces_stale_surprise_prose(
 
     memo = render_signal_memo(run, publish_verdict={
         "surface_type": "publish_alpha_memo",
+        "blockers": ["cross_domain_forced"],
         "receipt_expansion": {
             "needed": True,
             "cited_bound_fact_ids": ["101"],
@@ -525,7 +529,10 @@ def test_source_angle_publish_memo_replaces_stale_surprise_prose(
 
     why = memo.split("## Why this is surprising", 1)[1].split("\n## ", 1)[0]
     assert "aerosol-policy" not in memo
+    assert "infrastructure claim" not in memo
+    assert "**Headline:** Bounded Carbon tax signal:" in memo
     assert "source-grounded working signal" in why
+    assert "Real tension:" in why
     assert "market 303" in why
 
 
