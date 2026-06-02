@@ -421,6 +421,48 @@ def _approved(verdict: Json, root: Path) -> bool:
     return (run_dir / "approved.flag").exists()
 
 
+def _tier2_auto_approved(
+    verdict: Json,
+    *,
+    allow_tier2: bool,
+    source_count: int,
+    direct_source_count: int,
+    min_source_count: int,
+    min_direct_source_count: int,
+) -> bool:
+    blockers = {str(x) for x in verdict.get("blockers") or []}
+    return (
+        allow_tier2
+        and verdict.get("decision") == "needs_operator_review"
+        and verdict.get("publish_tier") == "TIER_2"
+        and verdict.get("surface_type") == "frontier_hypothesis_memo"
+        and int(verdict.get("alpha_score") or 0) >= 80
+        and blockers <= {"source_dispersion"}
+        and source_count >= min_source_count
+        and direct_source_count >= min_direct_source_count
+    )
+
+
+def _selection_approved(
+    verdict: Json,
+    root: Path,
+    *,
+    allow_tier2: bool,
+    source_count: int,
+    direct_source_count: int,
+    min_source_count: int,
+    min_direct_source_count: int,
+) -> bool:
+    return _approved(verdict, root) or _tier2_auto_approved(
+        verdict,
+        allow_tier2=allow_tier2,
+        source_count=source_count,
+        direct_source_count=direct_source_count,
+        min_source_count=min_source_count,
+        min_direct_source_count=min_direct_source_count,
+    )
+
+
 def _has_memo(verdict: Json, root: Path) -> bool:
     run_dir = _run_path(root, verdict.get("run_dir"))
     return (run_dir / "alpha_memo.md").exists()
@@ -1109,7 +1151,18 @@ def select_candidate(
         memo_refreshed = False
         has_memo = _has_memo(verdict, runs_root)
         memo_sha256 = _memo_sha256(verdict, runs_root) if has_memo else ""
-        approved = _approved(verdict, runs_root) if has_memo else False
+        approved = (
+            has_memo
+            and _selection_approved(
+                verdict,
+                runs_root,
+                allow_tier2=allow_tier2,
+                source_count=source_count,
+                direct_source_count=direct_source_count,
+                min_source_count=min_source_count,
+                min_direct_source_count=min_direct_source_count,
+            )
+        )
         cycle_blocked = fp in blocked
         exhausted_topic = str(verdict.get("topic") or "") in topic_blocked
         attempt_count = _fingerprint_attempt_count(submitted_path, fp)
@@ -1157,7 +1210,15 @@ def select_candidate(
                 direct_source_count = _direct_source_count(verdict, runs_root)
                 corpus_source_count = _corpus_source_count(verdict, runs_root)
                 memo_sha256 = _memo_sha256(verdict, runs_root)
-                approved = _approved(verdict, runs_root)
+                approved = _selection_approved(
+                    verdict,
+                    runs_root,
+                    allow_tier2=allow_tier2,
+                    source_count=source_count,
+                    direct_source_count=direct_source_count,
+                    min_source_count=min_source_count,
+                    min_direct_source_count=min_direct_source_count,
+                )
                 cycle_blocked = fp in blocked
                 attempt_count = _fingerprint_attempt_count(submitted_path, fp)
                 retry_after_rejection = _retry_after_rejection(
@@ -1184,7 +1245,15 @@ def select_candidate(
                 direct_source_count = _direct_source_count(verdict, runs_root)
                 corpus_source_count = _corpus_source_count(verdict, runs_root)
                 memo_sha256 = _memo_sha256(verdict, runs_root)
-                approved = _approved(verdict, runs_root)
+                approved = _selection_approved(
+                    verdict,
+                    runs_root,
+                    allow_tier2=allow_tier2,
+                    source_count=source_count,
+                    direct_source_count=direct_source_count,
+                    min_source_count=min_source_count,
+                    min_direct_source_count=min_direct_source_count,
+                )
                 cycle_blocked = fp in blocked
                 attempt_count = _fingerprint_attempt_count(submitted_path, fp)
                 retry_after_rejection = _retry_after_rejection(
@@ -1209,7 +1278,15 @@ def select_candidate(
                 direct_source_count = _direct_source_count(verdict, runs_root)
                 corpus_source_count = _corpus_source_count(verdict, runs_root)
                 memo_sha256 = _memo_sha256(verdict, runs_root)
-                approved = _approved(verdict, runs_root)
+                approved = _selection_approved(
+                    verdict,
+                    runs_root,
+                    allow_tier2=allow_tier2,
+                    source_count=source_count,
+                    direct_source_count=direct_source_count,
+                    min_source_count=min_source_count,
+                    min_direct_source_count=min_direct_source_count,
+                )
                 cycle_blocked = fp in blocked
                 attempt_count = _fingerprint_attempt_count(submitted_path, fp)
                 retry_after_rejection = _retry_after_rejection(
@@ -1244,7 +1321,15 @@ def select_candidate(
                     direct_source_count = _direct_source_count(verdict, runs_root)
                     corpus_source_count = _corpus_source_count(verdict, runs_root)
                     memo_sha256 = _memo_sha256(verdict, runs_root)
-                    approved = _approved(verdict, runs_root)
+                    approved = _selection_approved(
+                        verdict,
+                        runs_root,
+                        allow_tier2=allow_tier2,
+                        source_count=source_count,
+                        direct_source_count=direct_source_count,
+                        min_source_count=min_source_count,
+                        min_direct_source_count=min_direct_source_count,
+                    )
                     cycle_blocked = fp in blocked
                     attempt_count = _fingerprint_attempt_count(submitted_path, fp)
                     retry_after_rejection = _retry_after_rejection(

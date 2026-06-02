@@ -3602,6 +3602,35 @@ def test_stale_queue_verdict_reloads_current_disk_verdict(tmp_path: Path) -> Non
     assert considered[0]["status"] == "eligible"
 
 
+def test_source_rich_tier2_frontier_candidate_can_submit_when_allowed(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("source_rich_review") | {
+        "decision": "needs_operator_review",
+        "publish_tier": "TIER_2",
+        "surface_type": "frontier_hypothesis_memo",
+        "alpha_score": 100,
+        "blockers": ["source_dispersion"],
+    }
+    _memo_with_source_receipts(root, verdict, 5)
+
+    cand, considered = daily.select_candidate(
+        {
+            "ready_to_publish": [],
+            "needs_operator_review": [verdict],
+            "curation_needed": [],
+        },
+        runs_root=root,
+        submitted_path=root / "submitted.json",
+        allow_tier2=True,
+        min_source_count=5,
+        min_direct_source_count=5,
+    )
+
+    assert cand is not None
+    assert cand["topic"] == "source_rich_review"
+    assert considered[0]["status"] == "eligible"
+
+
 def test_hard_blocked_review_candidate_does_not_bypass_approval(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("hard_blocked") | {
