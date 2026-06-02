@@ -3460,6 +3460,39 @@ def test_unlabeled_source_floor_review_candidate_repairs_before_approval(
     assert considered[0]["direct_source_count"] == 5
 
 
+def test_stale_queue_verdict_reloads_current_disk_verdict(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    stale = _verdict("stale_ready") | {
+        "decision": "needs_operator_review",
+        "publish_tier": "TIER_2",
+        "blockers": ["source_dispersion"],
+    }
+    current = _verdict("stale_ready")
+    _memo_with_source_receipts(root, stale, 5)
+    run = root / str(stale["run_dir"])
+    run.joinpath("publish_verdict.json").write_text(
+        json.dumps(current), encoding="utf-8")
+
+    cand, considered = daily.select_candidate(
+        {
+            "ready_to_publish": [],
+            "needs_operator_review": [stale],
+            "curation_needed": [],
+        },
+        runs_root=root,
+        submitted_path=root / "submitted.json",
+        allow_tier2=True,
+        min_source_count=5,
+        min_direct_source_count=5,
+    )
+
+    assert cand is not None
+    assert cand["topic"] == "stale_ready"
+    assert considered[0]["decision"] == "ready_to_publish"
+    assert considered[0]["publish_tier"] == "TIER_1"
+    assert considered[0]["status"] == "eligible"
+
+
 def test_hard_blocked_review_candidate_does_not_bypass_approval(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("hard_blocked") | {

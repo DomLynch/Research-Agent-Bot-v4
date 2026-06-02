@@ -242,6 +242,17 @@ def _write_publish_verdict(run: Path) -> Json:
     return verdict
 
 
+def _current_selection_verdict(verdict: Json, root: Path) -> Json:
+    run_dir = _run_path(root, verdict.get("run_dir"))
+    if not run_dir.exists():
+        return verdict
+    current = _verdict_for_run(run_dir)
+    if not current:
+        return verdict
+    private = {k: v for k, v in verdict.items() if str(k).startswith("_")}
+    return current | private
+
+
 def _reload_verdict_after_memo_refresh(verdict: Json, run_dir: Path) -> Json:
     if not _can_recompute_verdict(run_dir):
         return verdict
@@ -1080,6 +1091,9 @@ def select_candidate(
         ),
     )
     for verdict in candidates:
+        raw_fp = memo_fingerprint(verdict)
+        if raw_fp not in seen and raw_fp not in retry_decisions:
+            verdict = _current_selection_verdict(verdict, runs_root)
         fp = memo_fingerprint(verdict)
         source_count = _source_count(verdict, runs_root)
         direct_source_count = _direct_source_count(verdict, runs_root)
