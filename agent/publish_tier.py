@@ -531,7 +531,7 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         bound_ids, facts, float(cfg["source_concentration_share"]),
     )
     source_coherent = source_concentrated or _claim_coherent_source_diversity(
-        bound_ids, facts, topic, cfg["generic_tokens"],
+        bound_ids, facts, topic, cfg["generic_tokens"] | cfg["cluster_stopwords"],
         float(cfg["domain_overlap_min"]), min_source_papers,
     )
     forced = _domain_forced(

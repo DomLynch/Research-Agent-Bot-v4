@@ -197,11 +197,11 @@ def test_bridge_chain_source_overlap_is_not_claim_coherent(tmp_path: Path) -> No
         lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
         dois=("10.a", "10.b", "10.c", "10.d", "10.e"),
         titles=(
-            "Alpha beta",
-            "Beta gamma",
-            "Gamma delta",
-            "Delta epsilon",
-            "Epsilon zeta",
+            "Alpha beta levels increased with",
+            "Beta gamma levels increased with",
+            "Gamma delta levels increased with",
+            "Delta epsilon levels increased with",
+            "Epsilon zeta levels increased with",
         ),
         journals=("Grid A", "Grid B", "Grid C", "Grid D", "Grid E"),
     )
