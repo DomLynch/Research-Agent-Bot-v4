@@ -60,6 +60,7 @@ _FACT_PROBE_TOPICS = 20
 _FACT_PROBE_TIMEOUT_SECONDS = 8.0
 _FACT_PROBE_BUDGET_SECONDS = 24.0
 _EXACT_FACT_PROBE_LIMIT = 500
+_FACT_PROBE_SECOND_WAVE_BONUS = 4
 _PAPER_FETCH_WORKERS = 8
 # Concurrent probe workers, capped to what the shared Researka DB sustains.
 # Measured capacity: at <=4 concurrent the facts endpoint answers in <8s (the
@@ -303,6 +304,30 @@ def _fact_probe_queries(
     return tuple(seen)[:max_queries]
 
 
+def _fact_source_title_facets(
+    rows: list[Any], topic: str, *, limit: int = 6,
+) -> tuple[str, ...]:
+    topic_words = set(_title_tokens(" ".join(expand_topic_queries(topic, max_queries=8))))
+    scores: dict[str, int] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        paper = row.get("paper") or row.get("source_paper")
+        if not isinstance(paper, dict):
+            continue
+        words = [
+            word for word in _title_tokens(str(paper.get("title") or ""))
+            if word not in topic_words
+        ][:12]
+        for width in (2, 3):
+            for i in range(0, max(0, len(words) - width + 1)):
+                phrase = " ".join(words[i:i + width])
+                scores[phrase] = scores.get(phrase, 0) + 1
+    return tuple(k for k, _ in sorted(
+        scores.items(), key=lambda item: (-item[1], item[0]),
+    )[:limit])
+
+
 def _fact_child_slugs(
     fact: dict[str, Any], topic: str, *, limit: int = 6,
 ) -> tuple[str, ...]:
@@ -453,7 +478,14 @@ def _fetch_topic_fact_source_profile(
             source_papers=source_papers)
         if not mine_children and len(source_keys) >= _PUBLISHABLE_SOURCE_FLOOR:
             break
-    for idx, query in enumerate(_fact_probe_queries(topic, facets=facets)):
+    queries = list(_fact_probe_queries(topic, facets=facets))
+    max_queries = len(queries) + _FACT_PROBE_SECOND_WAVE_BONUS
+    seen_queries = set(queries)
+    idx = 0
+    while idx < len(queries):
+        query_index = idx
+        query = queries[idx]
+        idx += 1
         if time.monotonic() >= deadline:
             break
         try:
@@ -464,7 +496,7 @@ def _fetch_topic_fact_source_profile(
                     "query": query,
                     "top_k": (
                         max(limit, _EXACT_FACT_PROBE_LIMIT)
-                        if idx == 0 else limit
+                        if query_index == 0 else limit
                     ),
                     "min_confidence": "medium",
                     "numeric_only": True,
@@ -484,6 +516,12 @@ def _fetch_topic_fact_source_profile(
             child_sources=child_sources,
             child_source_papers=child_source_papers,
             source_papers=source_papers)
+        for facet in _fact_source_title_facets(rows, topic):
+            if len(queries) >= max_queries:
+                break
+            if facet not in seen_queries:
+                seen_queries.add(facet)
+                queries.append(facet)
         if (
             not mine_children
             and len(source_keys) >= _PUBLISHABLE_SOURCE_FLOOR
