@@ -1821,6 +1821,36 @@ def test_warm_backlog_refreshes_source_rich_cache_missing_papers(
     ]
 
 
+def test_discover_topics_hydrates_cached_source_rich_papers(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "paperless_rich": {
+            "count": 7, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION,
+        },
+    }), encoding="utf-8")
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.path.endswith("/api/v1/papers/topic"):
+            return httpx.Response(200, json=[
+                _paper(doi="10.1/hydrated", title="Hydrated source-rich topic"),
+            ])
+        return httpx.Response(200, json=[])
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        out = td.discover_topics(
+            seeds=("paperless_rich",), settings=_settings(), client=c,
+            current_year=2024, fact_probe_topics=0,
+        )
+
+    assert out[0].fact_source_count == 7
+    cache = json.loads((tmp_path / "supply.json").read_text(encoding="utf-8"))
+    assert cache["paperless_rich"]["source_papers"][0]["doi"] == "10.1/hydrated"
+
+
 def test_supply_cache_version_mismatch_reprobes(
     monkeypatch: Any, tmp_path: Path,
 ) -> None:

@@ -623,6 +623,28 @@ def _cached_supply_counts(
     return out
 
 
+def _hydrate_cached_source_papers(
+    papers_by_topic: dict[str, list[dict[str, Any]]],
+    fact_sources_by_topic: dict[str, int],
+) -> None:
+    cache = _load_supply_cache()
+    now = time.time()
+    changed = False
+    for topic, papers in papers_by_topic.items():
+        count = fact_sources_by_topic.get(topic, 0)
+        if count < _PUBLISHABLE_SOURCE_FLOOR or not papers:
+            continue
+        entry = cache.get(topic)
+        if not isinstance(entry, dict) or entry.get("version") != _SUPPLY_CACHE_VERSION:
+            entry = {"count": count, "ts": now, "version": _SUPPLY_CACHE_VERSION}
+        if not _cached_source_papers(entry):
+            entry["source_papers"] = papers[:25]
+            cache[topic] = entry
+            changed = True
+    if changed:
+        _save_supply_cache(cache)
+
+
 def cached_source_rich_candidates(*, limit: int) -> tuple[TopicCandidate, ...]:
     cache = _load_supply_cache()
     year_now = dt.datetime.now(dt.UTC).year
@@ -1086,6 +1108,7 @@ def discover_topics(
         ).items():
             fact_sources_by_topic[topic] = max(
                 fact_sources_by_topic.get(topic, 0), count)
+        _hydrate_cached_source_papers(papers_by_topic, fact_sources_by_topic)
         candidates = [
             _score_topic(
                 topic, papers, year_now, anchorage=anchorage,
