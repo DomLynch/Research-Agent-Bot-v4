@@ -2661,6 +2661,7 @@ def test_systemd_publish_timer_has_full_refresh_budget() -> None:
         encoding="utf-8",
     )
 
+    assert "--allow-tier2" in service
     assert "--max-refresh-batches 5" in service
     assert "--max-refresh-batches 2" not in service
 
