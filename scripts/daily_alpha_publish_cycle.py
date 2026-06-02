@@ -1380,6 +1380,7 @@ def select_candidate(
         if (
             not cycle_blocked
             and not exhausted_topic
+            and not duplicate_without_retry
             and not retry_budget_exhausted
             and has_memo
             and approved
@@ -1419,6 +1420,7 @@ def select_candidate(
         if (
             not cycle_blocked
             and not exhausted_topic
+            and not duplicate_without_retry
             and not retry_budget_exhausted
             and has_memo
             and memo_refresher

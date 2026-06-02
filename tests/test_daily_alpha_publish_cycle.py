@@ -4036,6 +4036,36 @@ def test_exhausted_review_candidate_does_not_repair_dirty(
     assert "memo_refreshed" not in considered[0]
 
 
+def test_duplicate_ready_candidate_does_not_repair_dirty(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("duplicate_ready") | {
+        "headline": "Expected headline differs from memo",
+    }
+    _memo_with_source_receipts(root, verdict, 5)
+    fp = daily.memo_fingerprint(verdict)
+    daily._write_json(root / "submitted.json", [{"fingerprint": fp}])
+    refreshed = {"called": False}
+
+    def refresh(_run_dir: Path, _refresh_verdict: dict[str, Any]) -> bool:
+        refreshed["called"] = True
+        return True
+
+    cand, considered = daily.select_candidate(
+        _queue(verdict),
+        runs_root=root,
+        submitted_path=root / "submitted.json",
+        allow_tier2=True,
+        min_source_count=5,
+        min_direct_source_count=5,
+        memo_refresher=refresh,
+    )
+
+    assert refreshed["called"] is False
+    assert cand is None
+    assert considered[0]["status"] == "duplicate_submission_fingerprint"
+    assert "memo_refreshed" not in considered[0]
+
+
 def test_source_dispersion_direct_floor_review_candidate_repairs_before_approval(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
