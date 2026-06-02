@@ -2995,6 +2995,50 @@ def test_unapproved_review_row_does_not_exhaust_topic_next_batch(
     ]
 
 
+def test_unapproved_review_row_does_not_become_cycle_failed(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    review = _verdict("review_topic") | {
+        "decision": "needs_operator_review",
+        "publish_tier": "TIER_2",
+    }
+    _memo_with_source_receipts(root, review, 5)
+    queues = iter([
+        {
+            "ready_to_publish": [],
+            "needs_operator_review": [review],
+            "curation_needed": [],
+        },
+        {
+            "ready_to_publish": [],
+            "needs_operator_review": [review],
+            "curation_needed": [],
+        },
+    ])
+
+    monkeypatch.setattr(daily, "_run_step", lambda *_args, **_kwargs: (True, "ok"))
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        refresh_candidates=True,
+        allow_tier2=True,
+        max_refresh_batches=2,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+        queue_builder=lambda _root, _include_archive: next(queues),
+    )
+
+    assert ledger["status"] == "no_publishable_candidate"
+    assert [row["status"] for row in ledger["considered"]] == [
+        "needs_operator_approval",
+        "needs_operator_approval",
+    ]
+
+
 def test_submit_duplicates_rotate_topics_until_success(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

@@ -151,6 +151,7 @@ _TOPIC_EXHAUSTED_STATUSES = {
     "cycle_failed_submission",
     "held_retraction_check",
 }
+_FINGERPRINT_EXHAUSTED_STATUSES = _TOPIC_EXHAUSTED_STATUSES
 _REFRESHABLE_SOURCE_FLOOR_STATUSES = {
     "corpus_source_floor_below_min",
     "memo_source_floor_below_min",
@@ -2143,7 +2144,7 @@ def run_cycle(
             if row.get("status") in _EXHAUSTED_STATUSES:
                 fingerprint = str(row.get("fingerprint") or "")
                 topic = str(row.get("topic") or "")
-                if fingerprint:
+                if fingerprint and row.get("status") in _FINGERPRINT_EXHAUSTED_STATUSES:
                     blocked_fingerprints.add(fingerprint)
                 if topic and row.get("status") in _TOPIC_EXHAUSTED_STATUSES:
                     blocked_topics.add(topic)
