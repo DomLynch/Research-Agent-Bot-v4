@@ -831,14 +831,14 @@ def test_partially_supported_revision_without_resubmission_allowed_is_not_retrie
     assert daily._repairable_rejection(decision) is False
 
 
-def test_partially_supported_reject_without_revision_text_is_not_retried() -> None:
+def test_partially_supported_reject_with_explicit_resubmission_is_retried() -> None:
     decision = {
         "claim_support_verdict": "partially_supported",
         "decision": "reject",
         "resubmission": {"allowed": True},
     }
 
-    assert daily._repairable_rejection(decision) is False
+    assert daily._repairable_rejection(decision) is True
 
 
 def test_partially_supported_reject_with_resubmission_instructions_is_retried() -> None:
@@ -857,7 +857,7 @@ def test_partially_supported_reject_with_resubmission_instructions_is_retried() 
     assert daily._repairable_rejection(decision) is True
 
 
-def test_unsupported_reject_with_resubmission_allowed_is_not_retried() -> None:
+def test_unsupported_reject_with_resubmission_allowed_is_retried() -> None:
     decision = {
         "claim_support_verdict": "unsupported",
         "decision": "reject",
@@ -865,7 +865,7 @@ def test_unsupported_reject_with_resubmission_allowed_is_not_retried() -> None:
         "resubmission": {"allowed": True},
     }
 
-    assert daily._repairable_rejection(decision) is False
+    assert daily._repairable_rejection(decision) is True
 
 
 def test_unsupported_scope_reset_reject_with_resubmission_allowed_is_retried() -> None:

@@ -857,13 +857,15 @@ def _recently_published_topics(ledger_dir: Path, *, days: int) -> set[str]:
 
 
 def _repairable_rejection(decision: Json) -> bool:
+    if _resubmission_allowed(decision):
+        return True
     support = str(decision.get("claim_support_verdict") or "").lower()
     if decision.get("decision") == "revise":
-        return _resubmission_allowed(decision) or support != "partially_supported"
+        return support != "partially_supported"
     if decision.get("decision") == "reject" and support == "partially_supported":
-        return _resubmission_allowed(decision) and bool(_revision_notes(decision).strip())
+        return False
     if decision.get("decision") == "reject" and support == "unsupported":
-        return _resubmission_allowed(decision) and _is_explicit_scope_reset(decision)
+        return False
     reasons = {
         str(decision.get("failure_category") or ""),
         *(str(x) for x in decision.get("failed_checks") or []),
@@ -874,8 +876,6 @@ def _repairable_rejection(decision: Json) -> bool:
             reasons.add(str(gate.get("reason") or ""))
     text = " ".join(reasons).lower()
     text = f"{text} {_revision_notes(decision).lower()}"
-    if _resubmission_allowed(decision):
-        return True
     return any(reason in text for reason in _REPAIRABLE_REJECTION_REASONS)
 
 
