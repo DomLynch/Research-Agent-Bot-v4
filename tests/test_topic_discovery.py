@@ -1909,6 +1909,56 @@ def test_cached_source_rich_candidates_round_trip(
     ]
 
 
+def test_latest_underfloor_run_filters_false_source_rich_cache(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "false_rich": {"count": 9, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION},
+        "true_rich": {"count": 8, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION},
+    }), encoding="utf-8")
+    run = tmp_path / "false_rich-evidence-ts"
+    run.mkdir()
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": f"f{i}", "lane": "C_noise"} for i in range(5)],
+    }), encoding="utf-8")
+
+    out = td._cached_source_rich_topics(exclude=set(), limit=5)
+
+    assert out == (("true_rich", 8),)
+
+
+def test_disproved_cache_count_is_reprobed(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "topic": {"count": 9, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION},
+    }), encoding="utf-8")
+    run = tmp_path / "topic-evidence-ts"
+    run.mkdir()
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": f"f{i}", "lane": "C_noise"} for i in range(5)],
+    }), encoding="utf-8")
+    calls: list[str] = []
+
+    def probe(topic: str, *_args: Any, **_kwargs: Any) -> tuple[int, tuple[tuple[str, int], ...]]:
+        calls.append(topic)
+        return 0, ()
+
+    monkeypatch.setattr(td, "_fetch_topic_fact_source_profile", probe)
+
+    out = td._fetch_fact_source_counts(
+        ["topic"], client=MagicMock(), settings=_settings())
+
+    assert out == {"topic": 0}
+    assert calls == ["topic"]
+
+
 def test_supply_cache_hit_skips_reprobe(monkeypatch: Any, tmp_path: Path) -> None:
     """A fresh cached count is reused without re-probing the DB — the load
     reduction that also shrinks the window for transient false-zeros."""

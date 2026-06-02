@@ -595,6 +595,39 @@ def _fresh_cached_supply_count(
     return None
 
 
+def _latest_run_bound_count(topic: str) -> int | None:
+    runs_root = _SUPPLY_CACHE_PATH.parent
+    prefix = f"{topic}-evidence-"
+    runs = sorted(
+        (
+            path for path in runs_root.iterdir()
+            if path.is_dir() and path.name.startswith(prefix)
+        ),
+        key=lambda path: path.stat().st_mtime if path.exists() else 0.0,
+        reverse=True,
+    )
+    for run in runs[:3]:
+        try:
+            lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(lanes, dict):
+            continue
+        verdicts = lanes.get("verdicts") or []
+        if not isinstance(verdicts, list):
+            continue
+        return sum(
+            1 for row in verdicts
+            if isinstance(row, dict) and row.get("lane") in {"A_core", "B_context"}
+        )
+    return None
+
+
+def _latest_run_disproves_source_rich(topic: str) -> bool:
+    count = _latest_run_bound_count(topic)
+    return count is not None and count < _PUBLISHABLE_SOURCE_FLOOR
+
+
 def _cached_source_rich_hint_count(entry: Any, *, now: float) -> int | None:
     if not isinstance(entry, dict):
         return None
@@ -624,6 +657,8 @@ def _cached_source_rich_topics(
     for topic, entry in cache.items():
         if topic in exclude:
             continue
+        if _latest_run_disproves_source_rich(topic):
+            continue
         count = _cached_source_rich_hint_count(entry, now=now)
         if count is not None:
             ranked.append((count, topic))
@@ -649,6 +684,8 @@ def _cached_supply_counts(
     now = time.time()
     out: dict[str, int] = {}
     for topic in topics:
+        if _latest_run_disproves_source_rich(topic):
+            continue
         entry = cache.get(topic)
         count = _fresh_cached_supply_count(
             entry, now=now,
@@ -718,9 +755,11 @@ def _fetch_fact_source_counts(
     out: dict[str, int] = {}
     to_probe: list[str] = []
     for topic in topics:
-        count = _fresh_cached_supply_count(
-            cache.get(topic), now=now,
-            refresh_low_source_counts=refresh_low_source_counts,
+        count = None if _latest_run_disproves_source_rich(topic) else (
+            _fresh_cached_supply_count(
+                cache.get(topic), now=now,
+                refresh_low_source_counts=refresh_low_source_counts,
+            )
         )
         if count is not None:
             out[topic] = count
