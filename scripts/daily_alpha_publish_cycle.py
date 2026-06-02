@@ -133,7 +133,7 @@ _DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS = _alpha_memo_int(
 _DEFAULT_DECISION_POLL_ATTEMPTS = _alpha_memo_int("decision_poll_attempts", 30)
 _DEFAULT_DECISION_POLL_SECONDS = _alpha_memo_float("decision_poll_seconds", 10.0)
 _DEFAULT_PENDING_DECISION_MAX_AGE_HOURS = _alpha_memo_float(
-    "pending_decision_max_age_hours", 72.0,
+    "pending_decision_max_age_hours", 24.0,
 )
 _DEFAULT_MAX_REFRESH_BATCHES = 5
 _REFRESH_TIMEOUT_SECONDS = 1200
