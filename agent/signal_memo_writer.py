@@ -302,6 +302,48 @@ def _coherent_receipt_ids(
     return best[1]
 
 
+def _receipt_pair_coheres(left: set[str], right: set[str]) -> bool:
+    return (
+        len(left & right) >= 3
+        and _claim_fit_score(left, right) >= _CLAIM_CLUSTER_MIN_FIT
+    )
+
+
+def _receipt_cluster_coheres(
+    ids: list[str], facts: dict[str, dict[str, Any]], topic: str, min_sources: int,
+) -> bool:
+    sources = {
+        key for fid in ids
+        for key in [_source_key(facts.get(fid) or {})]
+        if key
+    }
+    if len(sources) < min_sources:
+        return False
+    tokens = [_receipt_tokens(facts.get(fid) or {}, topic) for fid in ids]
+    for i, anchor in enumerate(tokens):
+        cluster_size = 1 + sum(
+            1 for j, other in enumerate(tokens)
+            if i != j and _receipt_pair_coheres(anchor, other)
+        )
+        if cluster_size >= min_sources:
+            return True
+    return False
+
+
+def _direct_bundle_needs_narrowing(verdict: dict[str, Any] | None) -> bool:
+    if not isinstance(verdict, dict):
+        return False
+    axes = verdict.get("axes")
+    if (
+        isinstance(axes, dict)
+        and axes.get("claim_coherent_source_diversity") is False
+        and axes.get("source_concentrated") is False
+    ):
+        return True
+    blockers = {str(x) for x in verdict.get("blockers") or []}
+    return {"source_dispersion", "weak_counter_consensus_tension"} <= blockers
+
+
 def _expanded_receipt_ids(
     audit: dict[str, Any],
     facts: dict[str, dict[str, Any]],
@@ -554,6 +596,23 @@ def _grounded_headline(
         return fallback
     label = " ".join(topic.replace("-", "_").split("_")[:2]) or topic
     return f"Bounded {_topic_title(label)} signal: {phrase[:180].rstrip()}"
+
+
+def _context_headline(
+    topic: str,
+    lead_ids: list[str],
+    facts: dict[str, dict[str, Any]],
+    fallback: str,
+) -> str:
+    context = next(
+        (_fact_context(facts.get(fid) or {}) for fid in lead_ids
+         if _fact_context(facts.get(fid) or {})),
+        "",
+    )
+    if not context:
+        return fallback
+    label = " ".join(topic.replace("-", "_").split("_")[:2]) or topic
+    return f"Bounded {_topic_title(label)} signal in {context}"
 
 
 def _source_bounded_why(
@@ -1138,7 +1197,17 @@ def _receipt_thesis(
         return _context_subline(verdict, fallback or headline)
     if fallback and not _same_phrase(fallback, headline):
         return fallback + stream_note
-    phrases = [_fact_phrase(facts.get(fid) or {}) for fid in receipt_ids[:2]]
+    direct_ids = [fid for fid in receipt_ids if fid not in set(context_ids)]
+    if len(direct_ids) == 1 and (
+        context_ids or _direct_bundle_needs_narrowing(verdict)
+    ):
+        context = _fact_context(facts.get(direct_ids[0]) or {})
+        return (
+            f"The lead direct receipt reports a bounded signal in {context}. "
+            "The remaining receipts are separate evidence streams and should "
+            "not be read as one integrated effect estimate."
+        )
+    phrases = [_fact_phrase(facts.get(fid) or {}) for fid in direct_ids[:2]]
     joined = "; ".join(p for p in phrases if p)
     if joined:
         if context_ids:
@@ -1445,6 +1514,23 @@ def render_signal_memo(
     lead_set = set(lead_ids)
     receipt_ids = lead_ids + [fid for fid in expanded_ids if fid not in lead_set]
     context_ids = [fid for fid in receipt_ids if fid not in lead_set]
+    narrowed_direct_bundle = False
+    if (
+        lead_ids
+        and _direct_bundle_needs_narrowing(publish_verdict)
+        and not _receipt_cluster_coheres(
+        lead_ids, facts, topic, min_direct_sources,
+        )
+    ):
+        narrowed_direct_bundle = len(lead_ids) >= min_direct_sources
+        lead_ids = lead_ids[:1]
+        lead_set = set(lead_ids)
+        receipt_ids = lead_ids + [fid for fid in expanded_ids if fid not in lead_set]
+        context_ids = [fid for fid in receipt_ids if fid not in lead_set]
+    narrowed_direct_bundle = narrowed_direct_bundle or (
+        _direct_bundle_needs_narrowing(publish_verdict)
+        and _source_count_for_ids(lead_ids, facts) < min_direct_sources
+    )
     (run_dir / "claim_receipt_matrix.json").write_text(
         json.dumps(build_claim_receipt_matrix(claim, lead_ids, receipt_ids, facts),
                    indent=2, sort_keys=True),
@@ -1479,6 +1565,14 @@ def render_signal_memo(
         headline = _grounded_headline(topic, lead_ids, facts, headline)
         angle = {"kind": "source", "headline": headline,
                  "thesis": thesis, "why": why_surprising}
+    if narrowed_direct_bundle:
+        angle = {
+            **angle,
+            "kind": "source",
+            "headline": _context_headline(topic, lead_ids, facts, angle["headline"]),
+            "thesis": thesis,
+            "why": _source_bounded_why(lead_ids, facts),
+        }
     if publish_verdict and publish_verdict.get("surface_type") == "publish_alpha_memo":
         headline = angle["headline"]
         if (
@@ -1491,14 +1585,20 @@ def render_signal_memo(
             if (
                 force_tension
                 or _headline_needs_grounding(headline, publish_verdict)
+                or narrowed_direct_bundle
             ):
-                headline = _grounded_headline(topic, lead_ids, facts, headline)
+                headline = (
+                    _context_headline(topic, lead_ids, facts, headline)
+                    if narrowed_direct_bundle
+                    else _grounded_headline(topic, lead_ids, facts, headline)
+                )
             angle = angle | {
                 "headline": headline,
                 "why": _source_bounded_why(
                     lead_ids, facts, force_tension=force_tension,
                 ),
             }
+    headline = angle["headline"]
     thesis = angle["thesis"]
     why_surprising = angle["why"]
     bounded_question = angle.get("question") or (

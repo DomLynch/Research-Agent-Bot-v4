@@ -560,6 +560,93 @@ def test_receipt_cluster_ignores_source_title_overlap() -> None:
     assert picked == ["101"]
 
 
+def test_mixed_direct_streams_collapse_to_single_bounded_receipt(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "photobiomodulation_red_light-evidence-ts"
+    _write_run(run)
+    (run / "frontier_review.json").write_text(json.dumps({
+        "topic": "photobiomodulation_red_light",
+        "snapshot_utc": "2026-06-01T10-37-53Z",
+    }), encoding="utf-8")
+    (run / "signal_post.md").write_text(
+        "# Signal — photobiomodulation_red_light\n\n"
+        "## Photobiomodulation has mixed direct effects\n\n"
+        "## Why this is surprising\n\n"
+        "The receipts look broad but may not share one endpoint.\n\n"
+        "## Confidence — `evidence_backed_signal`\n\n"
+        "High.\n",
+        encoding="utf-8",
+    )
+    facts = [
+        {
+            "fact_id": "101",
+            "canonical_phrase": (
+                "light delivered at 24 hours after injury reduced neurological "
+                "deficits by 32%"
+            ),
+            "population": "rodent models of stroke",
+            "source_paper": {"doi": "10.x/stroke"},
+        },
+        {
+            "fact_id": "202",
+            "canonical_phrase": (
+                "near infrared photothermal exposure reached 100% bactericidal "
+                "rates for Staphylococcus aureus"
+            ),
+            "source_paper": {"doi": "10.x/bacteria"},
+        },
+        {
+            "fact_id": "303",
+            "canonical_phrase": (
+                "near infrared visualization reduced pediatric blood withdrawal "
+                "failure at first attempt"
+            ),
+            "population": "pediatric patients",
+            "source_paper": {"doi": "10.x/blood"},
+        },
+        {
+            "fact_id": "404",
+            "canonical_phrase": "near infrared exposure improved retinal function",
+            "population": "aging mice",
+            "source_paper": {"doi": "10.x/retina"},
+        },
+        {
+            "fact_id": "505",
+            "canonical_phrase": "low-level light therapy reduced ulcer area",
+            "population": "patients with diabetic foot ulcers",
+            "source_paper": {"doi": "10.x/ulcer"},
+        },
+    ]
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": f["fact_id"], "lane": "A_core"} for f in facts],
+    }), encoding="utf-8")
+    (run / "opportunities_gate.json").write_text(json.dumps({
+        "audits": [{
+            "title": "Photobiomodulation has mixed direct effects",
+            "status": "survives",
+            "capped_opportunity": 88,
+            "cited_fact_ids": ["101", "202", "303", "404", "505"],
+        }],
+    }), encoding="utf-8")
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "frontier_hypothesis_memo",
+        "blockers": ["source_dispersion", "weak_counter_consensus_tension"],
+    })
+    thesis = memo.split("## One-sentence thesis\n\n", 1)[1].split("\n\n## ", 1)[0]
+    evidence = memo.split("## Evidence receipts", 1)[1].split("\n## ", 1)[0]
+
+    assert "**Direct source breadth:** `1` direct cited source(s)" in memo
+    assert "**Headline:** Bounded Photobiomodulation red signal in rodent models of stroke" in memo
+    assert "32%" not in thesis
+    assert "bactericidal" not in thesis
+    assert "`fact_id=101` (`A_core`)" in evidence
+    assert "`fact_id=202` (`A_core`)" not in evidence
+    assert "fact_id=202" not in memo
+
+
 def test_source_angle_publish_memo_replaces_stale_surprise_prose(
     tmp_path: Path,
 ) -> None:
