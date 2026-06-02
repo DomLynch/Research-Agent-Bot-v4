@@ -1717,6 +1717,42 @@ def test_refresh_exits_early_when_queue_unchanged_across_batches(
             == "queue_unchanged_no_candidate")
 
 
+def test_warm_backlog_timeout_degrades_to_no_candidate(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    thin = _verdict("thin")
+    _memo_with_source_receipts(root, thin, 1)
+
+    def fake_batch(*_a: Any, **kwargs: Any) -> dict[str, Any]:
+        warm = bool(kwargs.get("warm_backlog"))
+        return {
+            "ok": not warm,
+            "note": "TimeoutExpired: warm backlog timed out" if warm else "ok",
+            "ran_topics": [],
+            "top": 20,
+            "warm_backlog": warm,
+        }
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", fake_batch)
+
+    ledger = daily.run_cycle(
+        runs_root=root, date="2026-05-22",
+        queue=_queue(thin),
+        refresh_candidates=True, max_refresh_batches=5,
+        submit=True,
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+    )
+
+    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["published"] == 0
+    assert ledger["refresh_early_exit"] == {
+        "batch": 3,
+        "reason": "warm_backlog_failed",
+        "note": "TimeoutExpired: warm backlog timed out",
+    }
+
+
 def test_refresh_candidate_batch_can_warm_backlog(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

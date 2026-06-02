@@ -2034,6 +2034,13 @@ def run_cycle(
             ledger["refresh_batches"].append(refresh)
             ledger["refresh_candidates"] = refresh
             if not refresh["ok"]:
+                if refresh.get("warm_backlog"):
+                    ledger["refresh_early_exit"] = {
+                        "batch": batch,
+                        "reason": "warm_backlog_failed",
+                        "note": str(refresh.get("note") or "")[:240],
+                    }
+                    break
                 ledger["considered"] = all_considered
                 ledger.update({"status": "candidate_refresh_failed"})
                 _write_json(ledger_path, ledger)
