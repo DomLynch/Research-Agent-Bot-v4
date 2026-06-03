@@ -354,7 +354,7 @@ def _source_diverse_fact_clusters(
     min_overlap: float,
     source_min: int,
 ) -> list[list[dict[str, Any]]]:
-    rows: list[tuple[dict[str, Any], str, set[str]]] = []
+    rows: list[tuple[dict[str, Any], str, set[str], set[str]]] = []
     for fact in facts:
         source = _source_key(fact)
         tokens = _tokens(" ".join([
@@ -362,17 +362,24 @@ def _source_diverse_fact_clusters(
             str(fact.get("intervention") or ""),
             str(fact.get("canonical_phrase") or ""),
         ]), topic, generic | stopwords)
+        claim_tokens = _tokens(" ".join([
+            str(fact.get("population") or ""),
+            str(fact.get("canonical_phrase") or ""),
+        ]), topic, generic | stopwords)
         if source and tokens:
-            rows.append((fact, source, tokens))
+            rows.append((fact, source, tokens, claim_tokens))
     clusters: list[list[dict[str, Any]]] = []
     seen: set[tuple[str, ...]] = set()
-    for seed, seed_source, seed_tokens in rows:
+    for seed, seed_source, seed_tokens, seed_claim_tokens in rows:
         sources = {seed_source}
         cluster = [seed]
-        for fact, source, tokens in rows:
+        for fact, source, tokens, claim_tokens in rows:
             if source in sources:
                 continue
-            if len(seed_tokens & tokens) / max(1, len(seed_tokens | tokens)) >= min_overlap:
+            if (
+                seed_claim_tokens & claim_tokens
+                and len(seed_tokens & tokens) / max(1, len(seed_tokens | tokens)) >= min_overlap
+            ):
                 cluster.append(fact)
                 sources.add(source)
         if len(sources) < source_min:

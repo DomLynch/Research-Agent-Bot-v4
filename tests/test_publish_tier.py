@@ -438,6 +438,49 @@ def test_underfloor_a_core_child_cluster_is_not_recommended(tmp_path: Path) -> N
     assert rec["reason"] == "not_broad_or_not_noisy_enough"
 
 
+def test_intervention_only_child_cluster_is_not_recommended(tmp_path: Path) -> None:
+    run = _run(
+        tmp_path,
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+        dois=("10.a", "10.b", "10.c", "10.d", "10.e"),
+        titles=(
+            "Trauma recovery after shared device exposure",
+            "Blood withdrawal after shared device exposure",
+            "Bacterial removal after shared device exposure",
+            "Cognitive aging after shared device exposure",
+            "Dental recovery after shared device exposure",
+        ),
+    )
+    facts = json.loads((run / "all_facts.json").read_text())
+    for fact, phrase, population in zip(
+        facts,
+        (
+            "neurological deficit scores improved after treatment.",
+            "first-attempt withdrawal failure fell after treatment.",
+            "bactericidal rates increased after treatment.",
+            "meningeal lymphatic drainage changed after treatment.",
+            "oral pathology management improved after treatment.",
+        ),
+        (
+            "traumatic brain injury patients",
+            "pediatric blood withdrawal patients",
+            "pathogenic bacteria samples",
+            "aged Alzheimer model mice",
+            "dental care patients",
+        ),
+        strict=True,
+    ):
+        fact["canonical_phrase"] = phrase
+        fact["population"] = population
+        fact["intervention"] = "near infrared photobiomodulation"
+    (run / "all_facts.json").write_text(json.dumps(facts))
+
+    rec = publish_verdict(run)["subtopic_recommendations"]
+
+    assert rec["recommended"] is False
+    assert rec["reason"] == "not_broad_or_not_noisy_enough"
+
+
 def test_low_alpha_score_routes_to_curation(tmp_path: Path) -> None:
     verdict = publish_verdict(_run(tmp_path, score=0))
 
