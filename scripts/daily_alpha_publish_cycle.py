@@ -161,6 +161,7 @@ _REFRESHABLE_SOURCE_FLOOR_STATUSES = {
     "memo_source_floor_below_min",
     "direct_source_floor_below_min",
 }
+_AGENT_REPAIR_DECISIONS = {"agent_repair_needed", "needs_operator_review"}
 
 
 def _refresh_timeout_note(refresh: Json) -> bool:
@@ -303,8 +304,8 @@ def _build_queue(runs_root: Path, include_archive: bool) -> Json:
         "ready_to_publish": [
             r for r in valid if r.get("decision") == "ready_to_publish"
         ],
-        "needs_operator_review": [
-            r for r in valid if r.get("decision") == "needs_operator_review"
+        "agent_repair_needed": [
+            r for r in valid if r.get("decision") in _AGENT_REPAIR_DECISIONS
         ],
         "curation_needed": [
             r for r in valid if r.get("decision") == "curation_needed"
@@ -360,7 +361,7 @@ def memo_fingerprint(verdict: Json) -> str:
 def _needs_tension_enrichment(verdict: Json) -> bool:
     blockers = {str(x) for x in verdict.get("blockers") or []}
     return (
-        verdict.get("decision") == "needs_operator_review"
+        verdict.get("decision") in _AGENT_REPAIR_DECISIONS
         and "weak_counter_consensus_tension" in blockers
         and not blockers - {"weak_counter_consensus_tension"}
     )
@@ -384,13 +385,13 @@ def _source_floor_repair_candidate(
         or direct_source_count < min_direct_source_count
     )
     return (
-        verdict.get("decision") == "needs_operator_review"
+        verdict.get("decision") in _AGENT_REPAIR_DECISIONS
         and (measured_floor_gap or bool(blockers & source_floor_blockers))
         and not blockers - repairable_blockers
     )
 
 
-def _operator_review_repair_candidate(
+def _agent_repair_candidate(
     verdict: Json,
     *,
     source_count: int,
@@ -415,7 +416,7 @@ def _operator_review_repair_candidate(
         or corpus_source_count >= min_source_count
     )
     return (
-        verdict.get("decision") == "needs_operator_review"
+        verdict.get("decision") in _AGENT_REPAIR_DECISIONS
         and has_repair_signal
         and has_available_supply
         and not blockers - repairable
@@ -441,11 +442,13 @@ def _rows(
     queue: Json, *, allow_tier2: bool, enrich_weak_tension: bool = False,
 ) -> list[Json]:
     out = list(queue.get("ready_to_publish") or [])
+    repair_rows = list(queue.get("agent_repair_needed") or [])
+    repair_rows.extend(queue.get("needs_operator_review") or [])
     if allow_tier2:
-        out.extend(queue.get("needs_operator_review") or [])
+        out.extend(repair_rows)
     elif enrich_weak_tension:
         out.extend(
-            r for r in queue.get("needs_operator_review") or []
+            r for r in repair_rows
             if isinstance(r, dict) and _needs_tension_enrichment(r)
         )
     return [r for r in out if isinstance(r, dict)]
@@ -468,35 +471,6 @@ def _with_repairable_candidates(queue: Json, runs_root: Path) -> Json:
     return merged
 
 
-def _approved(verdict: Json, root: Path) -> bool:
-    if verdict.get("decision") == "ready_to_publish":
-        return True
-    run_dir = _run_path(root, verdict.get("run_dir"))
-    return (run_dir / "approved.flag").exists()
-
-
-def _tier2_auto_approved(
-    verdict: Json,
-    *,
-    allow_tier2: bool,
-    source_count: int,
-    direct_source_count: int,
-    min_source_count: int,
-    min_direct_source_count: int,
-) -> bool:
-    blockers = {str(x) for x in verdict.get("blockers") or []}
-    return (
-        allow_tier2
-        and verdict.get("decision") == "needs_operator_review"
-        and verdict.get("publish_tier") == "TIER_2"
-        and verdict.get("surface_type") == "frontier_hypothesis_memo"
-        and int(verdict.get("alpha_score") or 0) >= 80
-        and blockers <= {"source_dispersion"}
-        and source_count >= min_source_count
-        and direct_source_count >= min_direct_source_count
-    )
-
-
 def _selection_approved(
     verdict: Json,
     root: Path,
@@ -507,14 +481,11 @@ def _selection_approved(
     min_source_count: int,
     min_direct_source_count: int,
 ) -> bool:
-    return _approved(verdict, root) or _tier2_auto_approved(
-        verdict,
-        allow_tier2=allow_tier2,
-        source_count=source_count,
-        direct_source_count=direct_source_count,
-        min_source_count=min_source_count,
-        min_direct_source_count=min_direct_source_count,
+    _ = (
+        root, allow_tier2, source_count, direct_source_count,
+        min_source_count, min_direct_source_count,
     )
+    return verdict.get("decision") == "ready_to_publish"
 
 
 def _has_memo(verdict: Json, root: Path) -> bool:
@@ -1347,9 +1318,9 @@ def select_candidate(
             and attempt_count >= _repair_attempt_limit(retry_decisions.get(fp))
         )
         duplicate_without_retry = fp in seen and not retry_after_rejection
-        operator_repair = (
+        agent_repair = (
             not duplicate_without_retry
-            and _operator_review_repair_candidate(
+            and _agent_repair_candidate(
                 verdict,
                 source_count=source_count,
                 direct_source_count=direct_source_count,
@@ -1365,7 +1336,7 @@ def select_candidate(
             and has_memo
             and (
                 approved
-                or operator_repair
+                or agent_repair
                 or _source_floor_repair_candidate(
                     verdict,
                     source_count=source_count,
@@ -1377,7 +1348,7 @@ def select_candidate(
             and (
                 source_count < min_source_count
                 or direct_source_count < min_direct_source_count
-                or operator_repair
+                or agent_repair
             )
             and (
                 corpus_source_count >= min_source_count
@@ -1387,7 +1358,7 @@ def select_candidate(
         ):
             run_dir = _run_path(runs_root, verdict.get("run_dir"))
             repair_decision = retry_decisions.get(fp)
-            if operator_repair and not isinstance(repair_decision, dict):
+            if agent_repair and not isinstance(repair_decision, dict):
                 repair_decision = _agent_repair_decision(verdict)
             refresh_verdict = verdict | {"_repair_decision": repair_decision}
             memo_refreshed = memo_refresher(run_dir, refresh_verdict)
@@ -1415,7 +1386,7 @@ def select_candidate(
                     retryable=retryable,
                     decisions=retry_decisions,
                 )
-                operator_repair = False
+                agent_repair = False
         if (
             not cycle_blocked
             and not exhausted_topic
@@ -1546,7 +1517,15 @@ def select_candidate(
                     direct_source_count = _direct_source_count(verdict, runs_root)
                     corpus_source_count = _corpus_source_count(verdict, runs_root)
                     memo_sha256 = _memo_sha256(verdict, runs_root)
-                    approved = _approved(verdict, runs_root)
+                    approved = _selection_approved(
+                        verdict,
+                        runs_root,
+                        allow_tier2=allow_tier2,
+                        source_count=source_count,
+                        direct_source_count=direct_source_count,
+                        min_source_count=min_source_count,
+                        min_direct_source_count=min_direct_source_count,
+                    )
                     cycle_blocked = fp in blocked
                     attempt_count = _fingerprint_attempt_count(submitted_path, fp)
                     retry_after_rejection = _retry_after_rejection(
@@ -2110,8 +2089,12 @@ def _refresh_candidate_batch(
 
 def _queue_counts(queue: Json) -> Json:
     return {
-        key: len(queue.get(key) or [])
-        for key in ("ready_to_publish", "needs_operator_review", "curation_needed")
+        "ready_to_publish": len(queue.get("ready_to_publish") or []),
+        "agent_repair_needed": (
+            len(queue.get("agent_repair_needed") or [])
+            + len(queue.get("needs_operator_review") or [])
+        ),
+        "curation_needed": len(queue.get("curation_needed") or []),
     }
 
 

@@ -2,7 +2,7 @@
 
 The gate is structural: it reads the rendered alpha memo plus existing
 run receipts and decides whether a memo is ready to publish, needs
-operator review, or should go back to curation. No topic-specific
+agent repair, or should go back to curation. No topic-specific
 rules live here.
 """
 from __future__ import annotations
@@ -579,13 +579,13 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         decision = "curation_needed"
     else:
         tier, level = "TIER_2", "L4"
-        decision = "needs_operator_review"
+        decision = "agent_repair_needed"
     expansion_needed = (
         len(bound_ids) < int(cfg["ready_min_bound_receipts"])
         and len(all_bound_ids) > len(bound_ids)
     )
     context_dependence = (
-        decision == "needs_operator_review"
+        decision == "agent_repair_needed"
         and expansion_needed
         and tension
         and not forced

@@ -148,7 +148,7 @@ def test_no_bound_receipts_routes_to_curation(tmp_path: Path) -> None:
     assert "no_bound_receipts" in verdict["blockers"]
 
 
-def test_cross_domain_forced_routes_to_operator_review(tmp_path: Path) -> None:
+def test_cross_domain_forced_routes_to_agent_repair(tmp_path: Path) -> None:
     run = _run(
         tmp_path,
         dois=("10.a", "10.b", "10.b"),
@@ -162,7 +162,7 @@ def test_cross_domain_forced_routes_to_operator_review(tmp_path: Path) -> None:
 
     verdict = publish_verdict(run)
 
-    assert verdict["decision"] == "needs_operator_review"
+    assert verdict["decision"] == "agent_repair_needed"
     assert verdict["publish_tier"] == "TIER_2"
     assert "cross_domain_forced" in verdict["blockers"]
 
@@ -208,7 +208,7 @@ def test_bridge_chain_source_overlap_is_not_claim_coherent(tmp_path: Path) -> No
 
     verdict = publish_verdict(run)
 
-    assert verdict["decision"] == "needs_operator_review"
+    assert verdict["decision"] == "agent_repair_needed"
     assert "source_dispersion" in verdict["blockers"]
     assert verdict["axes"]["claim_coherent_source_diversity"] is False
 
@@ -281,7 +281,7 @@ def test_publish_tier_judges_rendered_memo_receipts_before_lead_audit(
 
     verdict = publish_verdict(run)
 
-    assert verdict["decision"] == "needs_operator_review"
+    assert verdict["decision"] == "agent_repair_needed"
     assert verdict["axes"]["bound_receipts"] == 3
     assert verdict["axes"]["direct_source_papers"] == 3
     assert "source_floor_below_min" in verdict["blockers"]
@@ -337,13 +337,13 @@ def test_context_sources_do_not_satisfy_direct_source_floor(tmp_path: Path) -> N
 
     verdict = publish_verdict(run)
 
-    assert verdict["decision"] == "needs_operator_review"
+    assert verdict["decision"] == "agent_repair_needed"
     assert verdict["axes"]["source_papers"]
     assert verdict["axes"]["direct_source_papers"] == 1
     assert "direct_source_floor_below_min" in verdict["blockers"]
 
 
-def test_incoherent_source_dispersion_routes_to_operator_review(
+def test_incoherent_source_dispersion_routes_to_agent_repair(
     tmp_path: Path,
 ) -> None:
     run = _run(
@@ -365,7 +365,7 @@ def test_incoherent_source_dispersion_routes_to_operator_review(
 
     verdict = publish_verdict(run)
 
-    assert verdict["decision"] == "needs_operator_review"
+    assert verdict["decision"] == "agent_repair_needed"
     assert "source_dispersion" in verdict["blockers"]
     assert verdict["axes"]["claim_coherent_source_diversity"] is False
     assert "cross_domain_forced" not in verdict["blockers"]
@@ -463,7 +463,7 @@ def test_thin_memo_with_unused_bound_receipts_gets_context_surface(
 
     verdict = publish_verdict(run)
 
-    assert verdict["decision"] == "needs_operator_review"
+    assert verdict["decision"] == "agent_repair_needed"
     assert verdict["surface_type"] == "context_dependence_memo"
     assert verdict["axes"]["bound_receipts"] == 2
     assert verdict["axes"]["available_bound_receipts"] == 5

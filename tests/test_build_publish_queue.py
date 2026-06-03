@@ -88,6 +88,25 @@ def test_build_queue_keeps_latest_run_per_topic(
     assert [r["topic"] for r in out["curation_needed"]] == ["grid_storage"]
 
 
+def test_build_queue_routes_tier2_to_agent_repair_bucket(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    runs = tmp_path / "runs"
+    _run(
+        runs,
+        "thin-evidence-2026-02-01T00-00-00Z",
+        label="evidence_backed_signal",
+        lanes=("A_core", "A_core", "A_core"),
+    )
+    monkeypatch.setattr(queue, "_RUNS", runs)
+
+    out = queue.build_queue(include_archive=True)
+
+    assert [r["topic"] for r in out["agent_repair_needed"]] == ["thin"]
+    assert "needs_operator_review" not in out
+
+
 def test_build_queue_does_not_mutate_run_verdict_files(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,

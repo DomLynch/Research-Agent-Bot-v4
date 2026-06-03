@@ -3847,7 +3847,6 @@ def test_unlabeled_source_floor_review_candidate_repairs_before_approval(
         }
 
     monkeypatch.setattr(daily, "_reload_verdict_after_memo_refresh", reload_verdict)
-
     cand, considered = daily.select_candidate(
         {
             "ready_to_publish": [],
@@ -3868,6 +3867,56 @@ def test_unlabeled_source_floor_review_candidate_repairs_before_approval(
     assert considered[0]["memo_refreshed"] is True
     assert considered[0]["status"] == "eligible"
     assert considered[0]["direct_source_count"] == 5
+
+
+def test_agent_repair_bucket_refreshes_without_human_approval(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("agent_repair_sources") | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "blockers": ["source_dispersion"],
+        "receipt_expansion": {"cited_bound_fact_ids": ["1", "2", "3", "4"]},
+    }
+    _memo_with_source_receipts(root, verdict, 6)
+    refresh_decisions: list[dict[str, Any] | None] = []
+
+    def refresh(_run_dir: Path, refresh_verdict: dict[str, Any]) -> bool:
+        decision = refresh_verdict.get("_repair_decision")
+        refresh_decisions.append(decision if isinstance(decision, dict) else None)
+        return True
+
+    def reload_verdict(refresh_verdict: dict[str, Any], _run_dir: Path) -> dict[str, Any]:
+        return refresh_verdict | {
+            "decision": "ready_to_publish",
+            "publish_tier": "TIER_1",
+            "blockers": [],
+            "receipt_expansion": {"cited_bound_fact_ids": ["1", "2", "3", "4", "5"]},
+        }
+
+    monkeypatch.setattr(daily, "_reload_verdict_after_memo_refresh", reload_verdict)
+    monkeypatch.setattr(daily, "_current_selection_verdict", lambda v, _root: v)
+
+    cand, considered = daily.select_candidate(
+        {
+            "ready_to_publish": [],
+            "agent_repair_needed": [verdict],
+            "curation_needed": [],
+        },
+        runs_root=root,
+        submitted_path=root / "submitted.json",
+        allow_tier2=True,
+        min_source_count=5,
+        min_direct_source_count=5,
+        memo_refresher=refresh,
+    )
+
+    assert refresh_decisions[0] is not None
+    assert refresh_decisions[0]["agent_repair"] is True
+    assert cand is not None
+    assert considered[0]["status"] == "eligible"
 
 
 def test_stale_queue_verdict_reloads_current_disk_verdict(tmp_path: Path) -> None:
@@ -3959,7 +4008,7 @@ def test_self_counter_signal_memo_refreshes_before_selection(
     assert considered[0]["status"] == "eligible"
 
 
-def test_source_rich_tier2_frontier_candidate_can_submit_when_allowed(tmp_path: Path) -> None:
+def test_source_rich_tier2_frontier_candidate_requires_agent_repair(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("source_rich_review") | {
         "decision": "needs_operator_review",
@@ -3983,9 +4032,8 @@ def test_source_rich_tier2_frontier_candidate_can_submit_when_allowed(tmp_path: 
         min_direct_source_count=5,
     )
 
-    assert cand is not None
-    assert cand["topic"] == "source_rich_review"
-    assert considered[0]["status"] == "eligible"
+    assert cand is None
+    assert considered[0]["status"] == "agent_repair_needed"
 
 
 def test_rich_incoherent_review_candidate_repairs_before_approval(

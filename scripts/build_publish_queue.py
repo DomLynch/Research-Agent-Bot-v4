@@ -13,6 +13,7 @@ from agent.publish_tier import publish_verdict
 
 _ROOT = Path(__file__).resolve().parent.parent
 _RUNS = _ROOT / "runs"
+_AGENT_REPAIR_DECISIONS = {"agent_repair_needed", "needs_operator_review"}
 
 
 def _alpha_runs(include_archive: bool) -> list[Path]:
@@ -79,8 +80,8 @@ def build_queue(include_archive: bool = True) -> dict[str, list[dict[str, Any]]]
         "ready_to_publish": [
             r for r in rows if r.get("decision") == "ready_to_publish"
         ],
-        "needs_operator_review": [
-            r for r in rows if r.get("decision") == "needs_operator_review"
+        "agent_repair_needed": [
+            r for r in rows if r.get("decision") in _AGENT_REPAIR_DECISIONS
         ],
         "curation_needed": [
             r for r in rows if r.get("decision") == "curation_needed"
@@ -98,7 +99,7 @@ def main() -> int:
     print(
         "[publish-queue] "
         f"ready={len(queue['ready_to_publish'])} "
-        f"review={len(queue['needs_operator_review'])} "
+        f"repair={len(queue['agent_repair_needed'])} "
         f"curation={len(queue['curation_needed'])} -> {args.output}"
     )
     return 0
