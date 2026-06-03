@@ -3980,6 +3980,73 @@ def test_agent_repair_bucket_refreshes_without_human_approval(
     assert considered[0]["status"] == "eligible"
 
 
+def test_retryable_revision_keeps_agent_repair_contract(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("retry_agent_repair") | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "blockers": ["source_dispersion", "direct_source_floor_below_min"],
+        "receipt_expansion": {"cited_bound_fact_ids": ["1", "2", "3", "4"]},
+    }
+    _memo_with_source_receipts(root, verdict, 6)
+    fp = daily.memo_fingerprint(verdict)
+    retry_decision = {
+        "decision": "revise",
+        "required_revisions": ["Narrow the memo around the direct receipts."],
+        "resubmission": {"allowed": True},
+    }
+    refresh_decisions: list[dict[str, Any] | None] = []
+
+    def refresh(run_dir: Path, refresh_verdict: dict[str, Any]) -> bool:
+        decision = refresh_verdict.get("_repair_decision")
+        refresh_decisions.append(decision if isinstance(decision, dict) else None)
+        run_dir.joinpath("alpha_memo.md").write_text(
+            "# Alpha memo\n\n"
+            "**Headline:** Storage reserves flip after threshold pricing\n\n"
+            "## Evidence receipts\n\n"
+            + "\n".join(f"- `fact_id={i}` (`A_core`) - direct" for i in range(1, 6))
+            + "\n" + _FALSIFIER,
+            encoding="utf-8",
+        )
+        return True
+
+    def reload_verdict(refresh_verdict: dict[str, Any], _run_dir: Path) -> dict[str, Any]:
+        return refresh_verdict | {
+            "decision": "ready_to_publish",
+            "publish_tier": "TIER_1",
+            "blockers": [],
+            "receipt_expansion": {"cited_bound_fact_ids": ["1", "2", "3", "4", "5"]},
+        }
+
+    monkeypatch.setattr(daily, "_reload_verdict_after_memo_refresh", reload_verdict)
+    monkeypatch.setattr(daily, "_current_selection_verdict", lambda v, _root: v)
+
+    cand, considered = daily.select_candidate(
+        {
+            "ready_to_publish": [],
+            "agent_repair_needed": [verdict],
+            "curation_needed": [],
+        },
+        runs_root=root,
+        submitted_path=root / "submitted.json",
+        allow_tier2=True,
+        min_source_count=5,
+        min_direct_source_count=5,
+        memo_refresher=refresh,
+        retryable_fingerprints={fp},
+        retry_decision_overrides={fp: retry_decision},
+    )
+
+    assert cand is not None
+    assert refresh_decisions[0] is not None
+    assert refresh_decisions[0]["agent_repair"] is True
+    assert refresh_decisions[0]["required_revisions"] == retry_decision["required_revisions"]
+    assert considered[0]["status"] == "eligible"
+
+
 def test_stale_queue_verdict_reloads_current_disk_verdict(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     stale = _verdict("stale_ready") | {

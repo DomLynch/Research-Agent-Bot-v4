@@ -442,6 +442,18 @@ def _agent_repair_decision(verdict: Json) -> Json:
     }
 
 
+def _with_agent_repair_contract(verdict: Json, decision: Json | None) -> Json:
+    base = _agent_repair_decision(verdict)
+    if isinstance(decision, dict):
+        merged = base | decision
+        merged["agent_repair"] = True
+        resubmission = merged.get("resubmission")
+        if not isinstance(resubmission, dict):
+            merged["resubmission"] = {"allowed": True}
+        return merged
+    return base
+
+
 def _rows(
     queue: Json, *, allow_tier2: bool, enrich_weak_tension: bool = False,
 ) -> list[Json]:
@@ -1379,8 +1391,8 @@ def select_candidate(
         ):
             run_dir = _run_path(runs_root, verdict.get("run_dir"))
             repair_decision = retry_decisions.get(fp)
-            if agent_repair and not isinstance(repair_decision, dict):
-                repair_decision = _agent_repair_decision(verdict)
+            if agent_repair:
+                repair_decision = _with_agent_repair_contract(verdict, repair_decision)
             refresh_verdict = verdict | {"_repair_decision": repair_decision}
             memo_refreshed = memo_refresher(run_dir, refresh_verdict)
             if memo_refreshed:
