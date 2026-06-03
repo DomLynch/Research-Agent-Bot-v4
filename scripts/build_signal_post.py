@@ -371,6 +371,12 @@ def _render_signal_post(
     if isinstance(tensions, list) and tensions:
         surprise += ("\n\nReal tension: "
                      + str(tensions[0])[:300])
+    elif lead_audit and int(lead_audit.get("thesis_idx") or 0) < 0:
+        surprise += (
+            "\n\nReal tension: the reviewer returned no thesis, but the "
+            "lane gate found an independently sourced A_core receipt cluster. "
+            "Publish only the bounded claim those receipts share."
+        )
     # Sprint 66 source-binding lock: if the thesis's cited fact_ids
     # cannot be bound to A_core or B_context lane facts, do NOT fall
     # back to MiMo's `tensions` array (which is unbound prose and

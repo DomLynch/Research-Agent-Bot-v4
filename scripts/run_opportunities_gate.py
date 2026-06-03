@@ -17,7 +17,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +28,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from agent.fact_lanes import LaneVerdict, classify_lanes, lane_counts
 from agent.frontier_audit import ThesisAudit, audit_frontier_review
 from agent.frontier_input_pack import build_input_pack
+from agent.publish_tier import (
+    _cfg as _tier_cfg,
+)
+from agent.publish_tier import (
+    _claim_coherent_source_diversity,
+    _publication_int,
+    _source_key,
+)
+from agent.signal_memo_writer import _coherent_receipt_ids
+
+_DIRECT = frozenset({"A_core"})
+_TOKEN_RE = re.compile(r"[a-z0-9]{3,}")
 
 
 def _sha256(text: str) -> str:
@@ -96,6 +110,77 @@ def _update_manifest(
     manifest_path.write_text(json.dumps(m, indent=2), encoding="utf-8")
 
 
+def _deterministic_cluster_audit(
+    topic: str,
+    facts: list[dict[str, Any]],
+    lanes: list[LaneVerdict],
+) -> ThesisAudit | None:
+    """Recover a no-thesis review only when A_core receipts form a real cluster."""
+    facts_by_id = {str(f.get("fact_id") or ""): f for f in facts}
+    lane_by_id = {v.fact_id: v.lane for v in lanes}
+    min_sources = max(
+        _publication_int("min_direct_source_papers", 5),
+        _publication_int("min_source_papers", 5),
+    )
+    ids = _coherent_receipt_ids(
+        facts_by_id, lane_by_id, min_sources=min_sources,
+        allowed_lanes=_DIRECT, claim=set(), topic=topic,
+    )
+    if len({_source_key(facts_by_id[fid]) for fid in ids if fid in facts_by_id}) < min_sources:
+        return None
+    cfg = _tier_cfg()
+    if not _claim_coherent_source_diversity(
+        ids, facts_by_id, topic, cfg["generic_tokens"] | cfg["cluster_stopwords"],
+        float(cfg["domain_overlap_min"]), min_sources,
+    ):
+        return None
+    if not _has_shared_claim_term(
+        ids, facts_by_id, topic, cfg["generic_tokens"] | cfg["cluster_stopwords"],
+        min_sources,
+    ):
+        return None
+    title = f"Source-bound {_topic_title(topic)} signal across independent receipts"
+    return ThesisAudit(
+        thesis_idx=-1,
+        title=title,
+        status="survives",
+        blocking_flags=(),
+        original_opportunity=80,
+        capped_opportunity=80,
+        cited_fact_ids=tuple(ids),
+    )
+
+
+def _topic_title(topic: str) -> str:
+    return " ".join(part for part in topic.replace("-", "_").split("_") if part)
+
+
+def _token_set(*values: Any) -> set[str]:
+    return {
+        token for value in values
+        for token in _TOKEN_RE.findall(str(value or "").lower())
+    }
+
+
+def _has_shared_claim_term(
+    ids: list[str],
+    facts: dict[str, dict[str, Any]],
+    topic: str,
+    generic: frozenset[str],
+    min_sources: int,
+) -> bool:
+    counts: Counter[str] = Counter()
+    topic_context = _token_set(topic) | generic
+    for fid in ids:
+        fact = facts.get(fid) or {}
+        context = topic_context | _token_set(
+            fact.get("population"), fact.get("intervention"), fact.get("comparator"),
+        )
+        terms = _token_set(fact.get("canonical_phrase")) - context
+        counts.update(terms)
+    return any(count >= min_sources for count in counts.values())
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run", type=Path, required=True)
@@ -140,6 +225,10 @@ def main() -> int:
             audits = audit_frontier_review(
                 review, facts, lanes, a_core_min=args.a_core_min,
             )
+    if not audits:
+        fallback = _deterministic_cluster_audit(topic, facts, lanes)
+        if fallback:
+            audits = [fallback]
     lanes_payload = {"topic": topic, "snapshot_utc": snapshot_utc,
                      "counts": counts,
                      "verdicts": [v.as_dict() for v in lanes]}

@@ -63,6 +63,38 @@ def test_adjacent_block_orders_by_absolute_magnitude() -> None:
     assert "binds to evidence" not in block
 
 
+def test_deterministic_cluster_audit_renders_bounded_tension() -> None:
+    text = _render_signal_post(
+        "rapamycin",
+        "2026-06-03T00:00:00Z",
+        {
+            "lens": "Frontier review skipped; using deterministic gate audit.",
+            "tensions": [],
+            "theses": [],
+            "next_extractions": [],
+        },
+        {
+            "thesis_idx": -1,
+            "title": "Source-bound rapamycin signal across independent receipts",
+            "status": "survives",
+            "blocking_flags": [],
+            "capped_opportunity": 80,
+            "cited_fact_ids": ["f/1"],
+        },
+        {
+            "f/1": _fact(
+                "f/1", 10.0,
+                "rapamycin extended lifespan by 10% in mice",
+            ),
+        },
+        bound_count=1,
+        lane_verdicts={"f/1": "A_core"},
+    )
+
+    assert "Real tension: the reviewer returned no thesis" in text
+    assert "bounded claim those receipts share" in text
+
+
 def test_adjacent_block_labels_as_research_prompts() -> None:
     """The section header must make it explicit these are NOT cited
     evidence. Prevents operators (or downstream tools) treating
