@@ -483,6 +483,7 @@ def main() -> int:
             "velocity_score": 0.0,
             "fact_source_count": _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES,
             "paper_count": 1,
+            "child_depth": _MAX_CHILD_RERUN_DEPTH,
         }
         for topic in args.priority_topic if str(topic).strip()
     ]
