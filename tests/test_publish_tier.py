@@ -406,6 +406,38 @@ def test_dispersed_parent_recommends_a_core_child_cluster(tmp_path: Path) -> Non
     assert len(rec["clusters"][0]["member_fact_ids"]) >= 5
 
 
+def test_underfloor_a_core_child_cluster_is_not_recommended(tmp_path: Path) -> None:
+    run = _run(
+        tmp_path,
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+        dois=("10.a", "10.b", "10.c", "10.d", "10.e"),
+        titles=(
+            "Battery inverter maintenance changes dispatch durability",
+            "Ceramic kiln pigment adhesion after firing",
+            "Maritime insurance premiums after port dredging",
+            "Retail payroll compliance after tax notices",
+            "Aquifer sediment maps after flood plain surveys",
+        ),
+        journals=(
+            "Grid Review", "Craft Notes", "Port Reports", "Payroll Notes",
+            "Hydrology Notes",
+        ),
+    )
+    for i in range(6, 10):
+        _add_fact(
+            run, fact_id=str(i), lane="A_core", doi=f"10.child/{i}",
+            title=f"Reserve auction threshold reliability replication {i}",
+            phrase="Reserve auction threshold improved reliability under pricing.",
+            population="reserve auction operators",
+            intervention="threshold pricing reliability",
+        )
+
+    rec = publish_verdict(run)["subtopic_recommendations"]
+
+    assert rec["recommended"] is False
+    assert rec["reason"] == "not_broad_or_not_noisy_enough"
+
+
 def test_low_alpha_score_routes_to_curation(tmp_path: Path) -> None:
     verdict = publish_verdict(_run(tmp_path, score=0))
 
