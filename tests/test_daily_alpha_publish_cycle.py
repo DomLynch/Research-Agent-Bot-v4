@@ -2039,8 +2039,14 @@ def test_no_candidate_refreshes_queued_child_topics_next_batch(
     calls: list[tuple[str, ...]] = []
 
     def fake_batch(*_args: Any, **kwargs: Any) -> dict[str, Any]:
-        calls.append(tuple(kwargs.get("priority_topics") or ()))
-        return {"ok": True, "ran_topics": [], "top": 1, "warm_backlog": False}
+        priority_topics = tuple(kwargs.get("priority_topics") or ())
+        calls.append(priority_topics)
+        return {
+            "ok": True,
+            "ran_topics": list(priority_topics),
+            "top": 1,
+            "warm_backlog": False,
+        }
 
     monkeypatch.setattr(daily, "_refresh_candidate_batch", fake_batch)
 
@@ -2054,14 +2060,14 @@ def test_no_candidate_refreshes_queued_child_topics_next_batch(
         },
         refresh_candidates=True,
         allow_tier2=True,
-        max_refresh_batches=2,
+        max_refresh_batches=3,
         refresh_top=1,
         submit=True,
         submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
     )
 
     assert ledger["refresh_child_topics"] == ["parent_bounded_claim"]
-    assert calls == [(), ("parent_bounded_claim",)]
+    assert calls == [(), ("parent_bounded_claim",), ()]
 
 
 def test_latest_cycle_topics_ignores_cross_topic_sidecar(tmp_path: Path) -> None:

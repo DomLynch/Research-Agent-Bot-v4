@@ -2566,6 +2566,9 @@ def run_cycle(
         all_considered.extend(considered)
         ledger["considered"] = all_considered
         if candidate is None:
+            ran_topics = [str(t) for t in refresh.get("ran_topics") or [] if str(t)]
+            if ran_topics:
+                blocked_topics.update(ran_topics)
             priority_children = _child_topics_from_queue(
                 current_queue, blocked_topics, limit=refresh_top,
             )
@@ -2574,10 +2577,7 @@ def run_cycle(
                 priority_refresh_topics = priority_children
                 force_refresh = True
                 continue
-            ran_topics = [str(t) for t in refresh.get("ran_topics") or [] if str(t)]
-            if ran_topics:
-                blocked_topics.update(ran_topics)
-            elif refresh_candidates and refresh.get("skipped_in_cooldown"):
+            if refresh_candidates and refresh.get("skipped_in_cooldown"):
                 force_refresh = True
             elif refresh_candidates and refresh.get("warm_backlog"):
                 ledger["refresh_early_exit"] = {
