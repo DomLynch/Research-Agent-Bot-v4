@@ -492,6 +492,23 @@ def _selection_approved(
     return verdict.get("decision") == "ready_to_publish"
 
 
+def _agent_repair_passed_submit_gates(
+    verdict: Json,
+    *,
+    source_count: int,
+    direct_source_count: int,
+    min_source_count: int,
+    min_direct_source_count: int,
+) -> bool:
+    blockers = {str(x) for x in verdict.get("blockers") or []}
+    return (
+        verdict.get("decision") in _AGENT_REPAIR_DECISIONS
+        and source_count >= min_source_count
+        and direct_source_count >= min_direct_source_count
+        and not blockers - {"source_dispersion"}
+    )
+
+
 def _has_memo(verdict: Json, root: Path) -> bool:
     run_dir = _run_path(root, verdict.get("run_dir"))
     return (run_dir / "alpha_memo.md").exists()
@@ -1377,6 +1394,13 @@ def select_candidate(
                     verdict,
                     runs_root,
                     allow_tier2=allow_tier2,
+                    source_count=source_count,
+                    direct_source_count=direct_source_count,
+                    min_source_count=min_source_count,
+                    min_direct_source_count=min_direct_source_count,
+                )
+                approved = approved or _agent_repair_passed_submit_gates(
+                    verdict,
                     source_count=source_count,
                     direct_source_count=direct_source_count,
                     min_source_count=min_source_count,
