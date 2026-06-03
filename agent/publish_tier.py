@@ -346,6 +346,53 @@ def _cluster_label(
     return "_".join(token for token, _ in counts.most_common(3)) or "unlabeled"
 
 
+def _source_diverse_fact_clusters(
+    facts: list[dict[str, Any]],
+    topic: str,
+    generic: frozenset[str],
+    stopwords: frozenset[str],
+    *,
+    min_overlap: float,
+    source_min: int,
+) -> list[list[dict[str, Any]]]:
+    rows: list[tuple[dict[str, Any], str, set[str]]] = []
+    for fact in facts:
+        source = _source_key(fact)
+        tokens = _tokens(" ".join([
+            str(fact.get("sub_topic") or ""),
+            str(fact.get("population") or ""),
+            str(fact.get("intervention") or ""),
+            str(fact.get("canonical_phrase") or ""),
+        ]), topic, generic | stopwords)
+        if source and tokens:
+            rows.append((fact, source, tokens))
+    clusters: list[list[dict[str, Any]]] = []
+    seen: set[tuple[str, ...]] = set()
+    for seed, seed_source, seed_tokens in rows:
+        sources = {seed_source}
+        cluster = [seed]
+        for fact, source, tokens in rows:
+            if source in sources:
+                continue
+            if len(seed_tokens & tokens) / max(1, len(seed_tokens | tokens)) >= min_overlap:
+                cluster.append(fact)
+                sources.add(source)
+        if len(sources) < source_min:
+            continue
+        sig = tuple(sorted(str(it.get("_fact_id") or "") for it in cluster))
+        if sig not in seen:
+            seen.add(sig)
+            clusters.append(cluster)
+    return sorted(
+        clusters,
+        key=lambda items: (
+            -len({_source_key(it) for it in items}),
+            -len(items),
+            str(items[0].get("_fact_id") or ""),
+        ),
+    )
+
+
 def _subtopic_recommendations(
     facts: dict[str, dict[str, Any]],
     lanes: dict[str, str],
@@ -354,29 +401,29 @@ def _subtopic_recommendations(
     stopwords: frozenset[str],
     *,
     d_bad_share_min: float,
+    min_overlap: float,
     source_min: int,
     enabled: bool,
 ) -> dict[str, Any]:
     total = max(1, len(lanes))
     d_bad = sum(1 for lane in lanes.values() if lane == "D_bad_extraction")
     by_source: dict[str, list[dict[str, Any]]] = {}
-    by_label: dict[str, list[dict[str, Any]]] = {}
+    a_core: list[dict[str, Any]] = []
     for fid, fact in facts.items():
+        item = fact | {"_fact_id": fid}
         key = _source_key(fact)
         if key:
-            by_source.setdefault(key, []).append(fact | {"_fact_id": fid})
+            by_source.setdefault(key, []).append(item)
         if lanes.get(fid) == "A_core":
-            label = _cluster_label([fact], topic, generic, stopwords)
-            if label != "unlabeled":
-                by_label.setdefault(label, []).append(fact | {"_fact_id": fid})
+            a_core.append(item)
     noisy_recommend = (
         enabled and d_bad / total >= d_bad_share_min
         and len(by_source) >= source_min
     )
-    coherent_clusters = [
-        items for items in by_label.values()
-        if len({_source_key(it) for it in items} - {""}) >= source_min
-    ]
+    coherent_clusters = _source_diverse_fact_clusters(
+        a_core, topic, generic, stopwords,
+        min_overlap=min_overlap, source_min=source_min,
+    )
     recommend = noisy_recommend or (enabled and bool(coherent_clusters))
     clusters: list[dict[str, Any]] = []
     if noisy_recommend:
@@ -610,6 +657,7 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     subtopics = _subtopic_recommendations(
         facts, lanes, topic, cfg["generic_tokens"], cfg["cluster_stopwords"],
         d_bad_share_min=float(cfg["broad_d_bad_share"]),
+        min_overlap=float(cfg["domain_overlap_min"]),
         source_min=int(cfg["broad_min_sources"]),
         enabled=decision != "ready_to_publish",
     )
