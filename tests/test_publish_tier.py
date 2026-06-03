@@ -404,9 +404,16 @@ def test_dispersed_parent_recommends_a_core_child_cluster(tmp_path: Path) -> Non
     assert rec["recommended"] is True
     assert rec["reason"] == "source_coherent_child_cluster"
     assert len(rec["clusters"][0]["member_fact_ids"]) >= 5
+    child = next(
+        item for item in rec["clusters"] if "6" in item["member_fact_ids"]
+    )
+    assert set(child["label"].split("_")) & {"threshold", "pricing", "reliability"}
+    assert "review" not in child["label"]
+    assert "replication" not in child["label"]
+    assert "operators" not in child["label"]
 
 
-def test_underfloor_submit_cluster_still_recommends_child_rerun(
+def test_underfloor_submit_cluster_does_not_recommend_child_rerun(
     tmp_path: Path,
 ) -> None:
     run = _run(
@@ -438,18 +445,9 @@ def test_underfloor_submit_cluster_still_recommends_child_rerun(
     rec = verdict["subtopic_recommendations"]
 
     assert verdict["decision"] != "ready_to_publish"
-    assert rec["recommended"] is True
-    assert rec["reason"] == "source_coherent_child_cluster"
-    assert len(rec["clusters"][0]["member_fact_ids"]) == 4
-    child = next(
-        item for item in rec["clusters"] if item["member_fact_ids"][0] == "6"
-    )
-    assert set(child["label"].split("_")) & {
-        "threshold", "pricing", "reliability", "operators", "auction",
-    }
-    assert "review" not in child["label"]
-    assert "replication" not in child["label"]
-    assert "operators" not in child["label"]
+    assert rec["recommended"] is False
+    assert rec["reason"] == "not_broad_or_not_noisy_enough"
+    assert rec["clusters"] == []
 
 
 def test_intervention_only_child_cluster_is_not_recommended(tmp_path: Path) -> None:
