@@ -2473,6 +2473,18 @@ def run_cycle(
                 blocked_topics.update(ran_topics)
             elif refresh_candidates and refresh.get("skipped_in_cooldown"):
                 force_refresh = True
+            elif (
+                refresh_candidates
+                and not refresh.get("warm_backlog")
+                and batch < search_batch_limit
+            ):
+                ledger["refresh_backlog_escalation"] = {
+                    "after_batch": batch,
+                    "reason": "empty_refresh_no_candidate",
+                }
+                warm_backlog_next = True
+                force_refresh = True
+                continue
             elif refresh_candidates and queue_unchanged:
                 # This refresh batch produced an identical candidate queue and
                 # no publishable candidate. Escalate once into progressive

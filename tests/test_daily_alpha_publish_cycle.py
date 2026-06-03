@@ -1867,12 +1867,12 @@ def test_refresh_exits_early_when_queue_unchanged_across_batches(
         submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
     )
 
-    assert calls["n"] == 3  # baseline, fast unchanged, one warm-backlog try
-    assert warm_flags == [False, False, True]
+    assert calls["n"] == 2  # fast empty refresh, then one warm-backlog try
+    assert warm_flags == [False, True]
     assert ledger["status"] == "no_publishable_candidate"
     assert ledger["refresh_backlog_escalation"] == {
-        "after_batch": 2,
-        "reason": "queue_unchanged_no_candidate",
+        "after_batch": 1,
+        "reason": "empty_refresh_no_candidate",
     }
     assert (ledger.get("refresh_early_exit", {}).get("reason")
             == "queue_unchanged_no_candidate")
@@ -1908,7 +1908,7 @@ def test_warm_backlog_timeout_degrades_to_no_candidate(
     assert ledger["status"] == "no_publishable_candidate"
     assert ledger["published"] == 0
     assert ledger["refresh_early_exit"] == {
-        "batch": 3,
+        "batch": 2,
         "reason": "warm_backlog_failed",
         "note": "TimeoutExpired: warm backlog timed out",
     }
