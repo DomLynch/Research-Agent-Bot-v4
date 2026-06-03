@@ -433,6 +433,7 @@ def main() -> int:
     cycle_start = dt.datetime.now(dt.UTC)
     cycle_ts = cycle_start.strftime("%Y-%m-%dT%H-%M-%SZ")
     py = sys.executable
+    excluded = {str(t).strip() for t in args.exclude_topic if str(t).strip()}
 
     # Step 1: refresh discovery
     print("[cycle] step 1: topic discovery")
@@ -455,6 +456,8 @@ def main() -> int:
             discovery_args.extend([
                 "--fact-probe-topics", str(max(0, args.fact_probe_topics)),
             ])
+        for topic in sorted(excluded):
+            discovery_args.extend(["--exclude-topic", topic])
         ok, last = _run_step(
             discovery_args,
             "discovery",
@@ -470,7 +473,6 @@ def main() -> int:
 
     # Step 2: cooldown filter
     recent = _recent_signal_topics(_RUNS, args.cooldown_hours, cycle_start)
-    excluded = {str(t).strip() for t in args.exclude_topic if str(t).strip()}
     plan, skipped, skipped_excluded, below_floor = _plan_topics(
         ranked, recent=recent, excluded=excluded, top=args.top,
         min_fact_sources=(

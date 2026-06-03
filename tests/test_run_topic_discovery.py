@@ -175,6 +175,52 @@ def test_cache_first_falls_back_when_cache_is_underfilled(
     assert [row["topic"] for row in payload["top"]] == ["cached_rich", "fresh_rich"]
 
 
+def test_excluded_cached_topics_do_not_fill_cache_first_window(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    cached = (
+        TopicCandidate(
+            topic="old_winner", paper_count=0, fact_source_count=8,
+            top_paper_doi="", top_paper_title="",
+            velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
+        ),
+    )
+    fallback = (
+        TopicCandidate(
+            topic="fresh_rich", paper_count=3, fact_source_count=9,
+            top_paper_doi="10.1/fresh", top_paper_title="Fresh",
+            velocity_score=2.0, mean_fwci=1.0, mean_cited_by=4.0,
+        ),
+    )
+    calls: list[str] = []
+
+    def slow_discover(**_kwargs: Any) -> tuple[TopicCandidate, ...]:
+        calls.append("discover")
+        return fallback
+
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda: ("seed",))
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda: 5_000)
+    monkeypatch.setattr(
+        run_topic_discovery, "cached_source_rich_candidates",
+        lambda *, limit: cached[:limit],
+    )
+    monkeypatch.setattr(run_topic_discovery, "discover_topics", slow_discover)
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--cache-first", "--top", "1",
+        "--exclude-topic", "old_winner",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    assert calls == ["discover"]
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert [row["topic"] for row in payload["top"]] == ["fresh_rich"]
+
+
 def test_cache_only_skips_slow_discovery_when_cache_is_underfilled(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

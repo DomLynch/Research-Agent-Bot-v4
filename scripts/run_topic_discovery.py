@@ -90,6 +90,14 @@ def _merge_candidates(
     return tuple(merged.values())
 
 
+def _filter_excluded(
+    candidates: tuple[TopicCandidate, ...], excluded: set[str],
+) -> tuple[TopicCandidate, ...]:
+    if not excluded:
+        return candidates
+    return tuple(c for c in candidates if c.topic not in excluded)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--top", type=int, default=10,
@@ -114,6 +122,10 @@ def main() -> int:
         "--cache-only", action="store_true",
         help="Emit cached source-rich topics without slow DB expansion.",
     )
+    parser.add_argument(
+        "--exclude-topic", action="append", default=[],
+        help="Exclude a topic from the emitted queue; repeatable.",
+    )
     args = parser.parse_args()
     seeds = load_seed_topics()
     if not seeds:
@@ -128,10 +140,12 @@ def main() -> int:
         configured_limit=load_derived_topic_limit(),
     )
     cache_limit = max(args.top, fact_probe_topics or 0)
+    excluded = {str(t).strip() for t in args.exclude_topic if str(t).strip()}
     ranked = (
         cached_source_rich_candidates(limit=cache_limit)
         if (args.cache_first or args.cache_only) and cache_limit > 0 else ()
     )
+    ranked = _filter_excluded(ranked, excluded)
     if len(ranked) < args.top and not args.cache_only:
         with httpx.Client() as client:
             discovered = discover_topics(
@@ -140,7 +154,7 @@ def main() -> int:
                 fact_probe_topics=fact_probe_topics,
                 refresh_low_source_counts=args.warm_backlog,
             )
-        ranked = _merge_candidates(ranked, discovered)
+        ranked = _merge_candidates(ranked, _filter_excluded(discovered, excluded))
     top = ranked[: args.top]
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
     year = dt.datetime.now(dt.UTC).year
