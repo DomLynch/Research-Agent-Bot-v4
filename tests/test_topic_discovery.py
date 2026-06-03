@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import threading
 import time
 from pathlib import Path
@@ -2334,6 +2335,33 @@ def test_latest_underfloor_run_filters_false_source_rich_cache(
     out = td._cached_source_rich_topics(exclude=set(), limit=5)
 
     assert out == (("true_rich", 8),)
+
+
+def test_newer_source_rich_cache_overrides_stale_underfloor_run(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    now = time.time()
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "recovered_rich": {
+            "count": 9, "ts": now, "version": td._SUPPLY_CACHE_VERSION,
+        },
+    }), encoding="utf-8")
+    run = tmp_path / "recovered_rich-evidence-ts"
+    run.mkdir()
+    old = now - 60
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": f"f{i}", "lane": "C_noise"} for i in range(5)],
+    }), encoding="utf-8")
+    run.joinpath("fact_lanes.json").touch()
+    os.utime(run, (old, old))
+    os.utime(run / "fact_lanes.json", (old, old))
+
+    out = td._cached_source_rich_topics(exclude=set(), limit=5)
+
+    assert out == (("recovered_rich", 9),)
 
 
 def test_latest_no_signal_run_filters_false_source_rich_cache(

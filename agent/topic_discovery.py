@@ -679,11 +679,20 @@ def _latest_run_direct_source_count(topic: str) -> int | None:
     return None
 
 
-def _latest_run_disproves_source_rich(topic: str) -> bool:
+def _latest_run_disproves_source_rich(
+    topic: str, *, evidence_ts: float | None = None,
+) -> bool:
+    latest = _latest_run_dirs(topic, limit=1)
+    if evidence_ts is not None and latest:
+        try:
+            if latest[0].stat().st_mtime < evidence_ts:
+                return False
+        except OSError:
+            return False
     count = _latest_run_direct_source_count(topic)
     if count is not None and count < _direct_source_rich_floor():
         return True
-    for run in _latest_run_dirs(topic, limit=1):
+    for run in latest:
         try:
             verdict = json.loads(
                 (run / "publish_verdict.json").read_text(encoding="utf-8"))
@@ -802,7 +811,10 @@ def _cached_source_rich_topics(
         for topic, entry in cache.items():
             if topic in exclude:
                 continue
-            if _latest_run_disproves_source_rich(topic):
+            if _latest_run_disproves_source_rich(
+                topic, evidence_ts=float(entry.get("ts", 0.0))
+                if isinstance(entry, dict) else None,
+            ):
                 continue
             count = _cached_source_rich_hint_count(entry, now=now)
             if count is not None:
