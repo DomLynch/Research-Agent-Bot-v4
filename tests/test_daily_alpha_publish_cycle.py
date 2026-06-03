@@ -2024,6 +2024,28 @@ def test_child_topics_from_queue_uses_subtopic_recommendations() -> None:
     assert children == ["parent_topic_bounded_claim", "second_child"]
 
 
+def test_child_topics_from_queue_skips_receipt_backed_repair_clusters() -> None:
+    queue = {
+        "agent_repair_needed": [{
+            "topic": "parent topic",
+            "subtopic_recommendations": {
+                "recommended": True,
+                "clusters": [
+                    {
+                        "label": "weak slug child",
+                        "member_fact_ids": ["1", "2", "3", "4", "5"],
+                    },
+                    {"label": "fallback child", "member_fact_ids": ["1", "2"]},
+                ],
+            },
+        }],
+    }
+
+    children = daily._child_topics_from_queue(queue, set(), limit=3)
+
+    assert children == ["parent_topic_fallback_child"]
+
+
 def test_no_candidate_refreshes_queued_child_topics_next_batch(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

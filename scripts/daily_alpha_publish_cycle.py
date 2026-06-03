@@ -2170,6 +2170,8 @@ def _child_topics_from_queue(
             for cluster in rec.get("clusters") or []:
                 if not isinstance(cluster, dict):
                     continue
+                if _cluster_has_repair_receipts(cluster):
+                    continue
                 label = str(cluster.get("label") or "").strip("_")
                 if not label or label == "unlabeled":
                     continue
@@ -2180,6 +2182,15 @@ def _child_topics_from_queue(
                     if len(out) >= limit:
                         return out
     return out
+
+
+def _cluster_has_repair_receipts(cluster: Json) -> bool:
+    values = cluster.get("member_fact_ids") if isinstance(cluster, dict) else []
+    if not isinstance(values, list):
+        return False
+    return len({str(value or "").strip() for value in values if str(value or "").strip()}) >= (
+        _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES
+    )
 
 
 def _queue_counts(queue: Json) -> Json:
