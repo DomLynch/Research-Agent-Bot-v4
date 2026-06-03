@@ -20,7 +20,7 @@ import tomllib
 import urllib.error
 import urllib.parse
 import urllib.request
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from contextlib import suppress
 from pathlib import Path
 from typing import Any
@@ -2106,6 +2106,7 @@ def _refresh_candidate_batch(
     cooldown_hours: float = _DEFAULT_REFRESH_COOLDOWN_HOURS,
     runs_root: Path = _RUNS,
     warm_backlog: bool = False,
+    priority_topics: Iterable[str] = (),
 ) -> Json:
     exclusions = sorted(t for t in (excluded_topics or set()) if t)
     warm_probe_topics = min(
@@ -2126,6 +2127,9 @@ def _refresh_candidate_batch(
             "--fact-probe-topics",
             str(warm_probe_topics),
         ])
+    priorities = [str(topic).strip() for topic in priority_topics if str(topic).strip()]
+    for topic in priorities:
+        args.extend(["--priority-topic", topic])
     for topic in exclusions:
         args.extend(["--exclude-topic", topic])
     ok, note = _run_step(args, timeout=_REFRESH_TIMEOUT_SECONDS)
@@ -2135,8 +2139,37 @@ def _refresh_candidate_batch(
         "top": refresh_top,
         "cooldown_hours": cooldown_hours,
         "excluded_topics": exclusions,
+        "priority_topics": priorities,
         "warm_backlog": warm_backlog,
     } | _latest_cycle_topics(runs_root)
+
+
+def _child_topics_from_queue(
+    queue: Json, excluded_topics: set[str], *, limit: int,
+) -> list[str]:
+    out: list[str] = []
+    seen = set(excluded_topics)
+    for bucket_name in ("agent_repair_needed", "curation_needed"):
+        for verdict in queue.get(bucket_name) or []:
+            if not isinstance(verdict, dict):
+                continue
+            parent = str(verdict.get("topic") or "").strip()
+            rec = verdict.get("subtopic_recommendations")
+            if not parent or not isinstance(rec, dict) or not rec.get("recommended"):
+                continue
+            for cluster in rec.get("clusters") or []:
+                if not isinstance(cluster, dict):
+                    continue
+                label = str(cluster.get("label") or "").strip("_")
+                if not label or label == "unlabeled":
+                    continue
+                child = "_".join(re.findall(r"[a-z0-9]+", f"{parent}_{label}".lower()))
+                if child and child not in seen:
+                    out.append(child)
+                    seen.add(child)
+                    if len(out) >= limit:
+                        return out
+    return out
 
 
 def _queue_counts(queue: Json) -> Json:
@@ -2423,6 +2456,7 @@ def run_cycle(
             skip_refresh_note = "skipped_initial_queue_probe"
     skip_next_refresh = preflight_queue is not None
     warm_backlog_next = False
+    priority_refresh_topics: list[str] = []
     for batch in range(1, batch_limit + 1):
         if refresh_candidates and batch > search_batch_limit and not skip_next_refresh:
             break
@@ -2445,7 +2479,9 @@ def run_cycle(
             refresh = _refresh_candidate_batch(
                 refresh_top, blocked_topics, cooldown, runs_root,
                 warm_backlog=warm_backlog_next,
+                priority_topics=priority_refresh_topics,
             )
+            priority_refresh_topics = []
             if cooldown != refresh_cooldown_hours:
                 refresh["cooldown_reason"] = (
                     "retry_after_blocked_topic"
@@ -2520,6 +2556,14 @@ def run_cycle(
         all_considered.extend(considered)
         ledger["considered"] = all_considered
         if candidate is None:
+            priority_children = _child_topics_from_queue(
+                current_queue, blocked_topics, limit=refresh_top,
+            )
+            if refresh_candidates and priority_children and batch < search_batch_limit:
+                ledger["refresh_child_topics"] = priority_children
+                priority_refresh_topics = priority_children
+                force_refresh = True
+                continue
             ran_topics = [str(t) for t in refresh.get("ran_topics") or [] if str(t)]
             if ran_topics:
                 blocked_topics.update(ran_topics)

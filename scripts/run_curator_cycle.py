@@ -415,6 +415,10 @@ def main() -> int:
     parser.add_argument("--exclude-topic", action="append", default=[],
                         help="Skip a topic for this cycle; repeatable")
     parser.add_argument(
+        "--priority-topic", action="append", default=[],
+        help="Run this topic before discovery-ranked topics; repeatable.",
+    )
+    parser.add_argument(
         "--warm-backlog", action="store_true",
         help="Probe the full derived topic pool before planning; slower.",
     )
@@ -467,14 +471,23 @@ def main() -> int:
             print(f"[cycle] discovery failed: {last}", file=sys.stderr)
             return 1
     ranked = _read_discovery_top(_RUNS / "_topics_discovery")
-    if not ranked:
+    if not ranked and not args.priority_topic:
         print("[cycle] no discovery candidates; aborting.", file=sys.stderr)
         return 1
 
     # Step 2: cooldown filter
     recent = _recent_signal_topics(_RUNS, args.cooldown_hours, cycle_start)
+    priority_ranked = [
+        {
+            "topic": str(topic).strip(),
+            "velocity_score": 0.0,
+            "fact_source_count": _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES,
+            "paper_count": 1,
+        }
+        for topic in args.priority_topic if str(topic).strip()
+    ]
     plan, skipped, skipped_excluded, below_floor = _plan_topics(
-        ranked, recent=recent, excluded=excluded, top=args.top,
+        [*priority_ranked, *ranked], recent=recent, excluded=excluded, top=args.top,
         min_fact_sources=(
             _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES if args.stop_on_ready else 0
         ),

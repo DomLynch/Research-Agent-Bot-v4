@@ -1972,6 +1972,97 @@ def test_refresh_candidate_batch_can_warm_backlog(
     assert "--no-frontier" in calls[0]
 
 
+def test_refresh_candidate_batch_passes_priority_child_topics(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+
+    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        calls.append(args)
+        return True, "ok"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    out = daily._refresh_candidate_batch(
+        5, runs_root=tmp_path,
+        priority_topics=("parent_bounded_claim", "second_child"),
+    )
+
+    assert out["priority_topics"] == ["parent_bounded_claim", "second_child"]
+    assert calls[0].count("--priority-topic") == 2
+    assert "parent_bounded_claim" in calls[0]
+    assert "second_child" in calls[0]
+
+
+def test_child_topics_from_queue_uses_subtopic_recommendations() -> None:
+    queue = {
+        "agent_repair_needed": [{
+            "topic": "parent topic",
+            "subtopic_recommendations": {
+                "recommended": True,
+                "clusters": [
+                    {"label": "bounded claim"},
+                    {"label": "duplicate claim"},
+                    {"label": "unlabeled"},
+                ],
+            },
+        }],
+        "curation_needed": [{
+            "topic": "second",
+            "subtopic_recommendations": {
+                "recommended": True,
+                "clusters": [{"label": "child"}],
+            },
+        }],
+    }
+
+    children = daily._child_topics_from_queue(
+        queue, {"parent_topic_duplicate_claim"}, limit=2,
+    )
+
+    assert children == ["parent_topic_bounded_claim", "second_child"]
+
+
+def test_no_candidate_refreshes_queued_child_topics_next_batch(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("parent") | {
+        "decision": "agent_repair_needed",
+        "blockers": ["source_dispersion"],
+        "subtopic_recommendations": {
+            "recommended": True,
+            "clusters": [{"label": "bounded claim"}],
+        },
+    }
+    calls: list[tuple[str, ...]] = []
+
+    def fake_batch(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+        calls.append(tuple(kwargs.get("priority_topics") or ()))
+        return {"ok": True, "ran_topics": [], "top": 1, "warm_backlog": False}
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", fake_batch)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-03",
+        queue={
+            "ready_to_publish": [],
+            "agent_repair_needed": [verdict],
+            "curation_needed": [],
+        },
+        refresh_candidates=True,
+        allow_tier2=True,
+        max_refresh_batches=2,
+        refresh_top=1,
+        submit=True,
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+    )
+
+    assert ledger["refresh_child_topics"] == ["parent_bounded_claim"]
+    assert calls == [(), ("parent_bounded_claim",)]
+
+
 def test_refresh_candidate_batch_scales_live_probe_window_with_exclusions(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
