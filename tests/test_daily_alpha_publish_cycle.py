@@ -768,6 +768,34 @@ def test_scope_reject_repair_regenerates_in_grounded_mode(
     assert captured["grounded"] is True
 
 
+def test_low_grounding_score_reviewer_repair_forces_grounded_regen() -> None:
+    decision = {
+        "decision": "reject",
+        "resubmission": {"allowed": True},
+        "rubric_scores": {
+            "claim_evidence_alignment": 2,
+            "source_grounding": 3,
+            "synthesis_quality": 3,
+        },
+    }
+
+    assert daily._is_grounding_reject(decision) is True
+
+
+def test_low_grounding_score_without_resubmission_does_not_force_regen() -> None:
+    decision = {
+        "decision": "reject",
+        "resubmission": {"allowed": False},
+        "rubric_scores": {
+            "claim_evidence_alignment": 2,
+            "source_grounding": 2,
+            "synthesis_quality": 2,
+        },
+    }
+
+    assert daily._is_grounding_reject(decision) is False
+
+
 def test_resubmission_allowed_claim_alignment_reject_is_repairable() -> None:
     decision = {
         "decision": "reject",

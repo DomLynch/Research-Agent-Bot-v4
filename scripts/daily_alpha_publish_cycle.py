@@ -578,8 +578,23 @@ def _is_grounding_reject(decision: Json) -> bool:
     instead of softening prose, or the resubmit is byte-identical."""
     if decision.get("decision") not in {"reject", "revise"}:
         return False
+    if _resubmission_allowed(decision) and _low_claim_grounding_score(decision):
+        return True
     notes = _norm(_revision_notes(decision))
     return any(term in notes for term in _SCOPE_RESET_TERMS)
+
+
+def _low_claim_grounding_score(decision: Json) -> bool:
+    scores = decision.get("rubric_scores")
+    if not isinstance(scores, dict):
+        return False
+    for key in ("claim_evidence_alignment", "source_grounding", "synthesis_quality"):
+        try:
+            if int(scores.get(key, 0)) <= 2:
+                return True
+        except (TypeError, ValueError):
+            continue
+    return False
 
 
 def _is_explicit_scope_reset(decision: Json) -> bool:
