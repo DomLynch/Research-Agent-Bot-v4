@@ -2322,15 +2322,19 @@ def test_latest_underfloor_run_filters_false_source_rich_cache(
     from agent import topic_discovery as td
 
     monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    now = time.time()
     (tmp_path / "supply.json").write_text(json.dumps({
-        "false_rich": {"count": 9, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION},
-        "true_rich": {"count": 8, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION},
+        "false_rich": {"count": 9, "ts": now, "version": td._SUPPLY_CACHE_VERSION},
+        "true_rich": {"count": 8, "ts": now, "version": td._SUPPLY_CACHE_VERSION},
     }), encoding="utf-8")
     run = tmp_path / "false_rich-evidence-ts"
     run.mkdir()
     run.joinpath("fact_lanes.json").write_text(json.dumps({
         "verdicts": [{"fact_id": f"f{i}", "lane": "C_noise"} for i in range(5)],
     }), encoding="utf-8")
+    newer = now + 60
+    os.utime(run, (newer, newer))
+    os.utime(run / "fact_lanes.json", (newer, newer))
 
     out = td._cached_source_rich_topics(exclude=set(), limit=5)
 
