@@ -3160,9 +3160,14 @@ def test_unapproved_review_row_does_not_exhaust_topic_next_batch(
     assert ledger["submitted_topic"] == topic
     assert topic not in excluded
     assert [row["status"] for row in ledger["considered"]] == [
-        "needs_operator_approval",
+        "agent_repair_needed",
         "eligible",
     ]
+
+
+def test_human_approval_status_is_not_a_publish_cycle_terminal() -> None:
+    assert "needs_operator_approval" not in daily._EXHAUSTED_STATUSES
+    assert "agent_repair_failed" in daily._EXHAUSTED_STATUSES
 
 
 def test_unapproved_review_row_does_not_become_cycle_failed(
@@ -3204,8 +3209,8 @@ def test_unapproved_review_row_does_not_become_cycle_failed(
 
     assert ledger["status"] == "no_publishable_candidate"
     assert [row["status"] for row in ledger["considered"]] == [
-        "needs_operator_approval",
-        "needs_operator_approval",
+        "agent_repair_needed",
+        "agent_repair_needed",
     ]
 
 
@@ -3775,6 +3780,7 @@ def test_unlabeled_source_floor_review_candidate_repairs_before_approval(
     def refresh(run_dir: Path, refresh_verdict: dict[str, Any]) -> bool:
         refreshed["called"] = True
         assert refresh_verdict["decision"] == "needs_operator_review"
+        assert refresh_verdict["_repair_decision"]["agent_repair"] is True
         run_dir.joinpath("alpha_memo.md").write_text(
             "# Alpha memo\n\n"
             "**Headline:** Storage reserves flip after threshold pricing\n\n"
@@ -3956,6 +3962,7 @@ def test_rich_incoherent_review_candidate_repairs_before_approval(
     def refresh(run_dir: Path, refresh_verdict: dict[str, Any]) -> bool:
         refreshed["called"] = True
         assert refresh_verdict["topic"] == "rich_repair"
+        assert refresh_verdict["_repair_decision"]["agent_repair"] is True
         run_dir.joinpath("alpha_memo.md").write_text(
             "# Alpha memo\n\n"
             "**Headline:** Storage reserves flip after threshold pricing\n\n"
@@ -4091,6 +4098,7 @@ def test_source_dispersion_direct_floor_review_candidate_repairs_before_approval
 
     def refresh(run_dir: Path, refresh_verdict: dict[str, Any]) -> bool:
         refreshed["called"] = True
+        assert refresh_verdict["_repair_decision"]["agent_repair"] is True
         run_dir.joinpath("alpha_memo.md").write_text(
             "# Alpha memo\n\n"
             "**Headline:** Storage reserves flip after threshold pricing\n\n"

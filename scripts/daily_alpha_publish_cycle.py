@@ -145,7 +145,7 @@ _FINAL_DECISION_VERDICTS = {"accepted", "rejected", "revise", "stale_pending"}
 _EXHAUSTED_STATUSES = {
     "duplicate_submission_fingerprint",
     "missing_alpha_memo",
-    "needs_operator_approval",
+    "agent_repair_failed",
     "memo_missing_falsifier",
     "cycle_failed_submission",
     "held_retraction_check",
@@ -420,6 +420,21 @@ def _operator_review_repair_candidate(
         and has_available_supply
         and not blockers - repairable
     )
+
+
+def _agent_repair_decision(verdict: Json) -> Json:
+    return {
+        "decision": "revise",
+        "agent_repair": True,
+        "resubmission": {"allowed": True},
+        "failure_category": "agentic_publish_gate_repair",
+        "required_revisions": [
+            "Rebuild around one bounded claim with the strongest direct A_core receipts.",
+            "Keep context receipts secondary; do not submit until source and direct-source floors pass.",
+            "If the parent topic cannot clear the gates, narrow to a source-coherent child claim.",
+        ],
+        "blockers": verdict.get("blockers") or [],
+    }
 
 
 def _rows(
@@ -1350,7 +1365,10 @@ def select_candidate(
             and memo_refresher
         ):
             run_dir = _run_path(runs_root, verdict.get("run_dir"))
-            refresh_verdict = verdict | {"_repair_decision": retry_decisions.get(fp)}
+            repair_decision = retry_decisions.get(fp)
+            if operator_repair and not isinstance(repair_decision, dict):
+                repair_decision = _agent_repair_decision(verdict)
+            refresh_verdict = verdict | {"_repair_decision": repair_decision}
             memo_refreshed = memo_refresher(run_dir, refresh_verdict)
             if memo_refreshed:
                 verdict = _reload_verdict_after_memo_refresh(refresh_verdict, run_dir)
@@ -1462,7 +1480,7 @@ def select_candidate(
         elif not has_memo:
             status = "missing_alpha_memo"
         elif not approved:
-            status = "needs_operator_approval"
+            status = "agent_repair_failed" if memo_refreshed else "agent_repair_needed"
         elif not _has_falsifier(verdict, runs_root):
             status = "memo_missing_falsifier"
         else:
