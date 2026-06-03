@@ -51,7 +51,7 @@ _SUPPLY_CACHE_PATH = (Path(__file__).resolve().parent.parent
                       / "runs" / "_topic_supply_cache.json")
 _PUBLICATION_TOML = (Path(__file__).resolve().parent.parent
                      / "topic_packs" / "publication.toml")
-_SUPPLY_CACHE_VERSION = 10
+_SUPPLY_CACHE_VERSION = 11
 _PUBLISHABLE_SOURCE_FLOOR = 5
 _NONPUBLISHABLE_SUPPLY_BLOCKERS = frozenset({
     "blocked_label:no_signal",
