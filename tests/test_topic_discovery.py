@@ -1954,6 +1954,50 @@ def test_cached_source_rich_topics_warms_children_from_latest_run(
     assert len(cache["target_intervention"]["source_papers"]) == 5
 
 
+def test_cached_source_rich_topics_warms_children_from_underfloor_parent(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    (tmp_path / "supply.json").write_text(json.dumps({
+        "broad_parent": {
+            "count": 1,
+            "ts": time.time(),
+            "version": td._SUPPLY_CACHE_VERSION,
+            "source_papers": [_paper(doi="10.1/parent", title="Broad parent")],
+        },
+    }), encoding="utf-8")
+    run = tmp_path / "broad_parent-evidence-2026-06-02T00-00-00Z"
+    run.mkdir()
+    facts = [
+        {
+            "id": f"fact-{i}",
+            "paper_id": f"paper-{i}",
+            "source_paper": {
+                "doi": f"10.1/child-{i}",
+                "title": f"Target intervention outcome trial {i}",
+            },
+            "numeric_value": 10,
+            "units": "%",
+            "population": "adults",
+            "intervention": "target intervention",
+            "comparator": "usual care",
+            "canonical_phrase": "target intervention improved function by 10%",
+        }
+        for i in range(5)
+    ]
+    run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": f"fact-{i}", "lane": "A_core"} for i in range(5)],
+    }), encoding="utf-8")
+
+    out = td._cached_source_rich_topics(exclude=set(), limit=10)
+
+    assert ("target_intervention", 5) in out
+    assert ("broad_parent", 1) not in out
+
+
 def test_cached_source_rich_topics_does_not_warm_noise_children(
     monkeypatch: Any, tmp_path: Path,
 ) -> None:

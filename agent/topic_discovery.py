@@ -730,6 +730,23 @@ def _latest_run_disproves_source_rich(
     return False
 
 
+def _latest_run_blocks_child_warming(topic: str) -> bool:
+    for run in _latest_run_dirs(topic, limit=1):
+        try:
+            verdict = json.loads(
+                (run / "publish_verdict.json").read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(verdict, dict):
+            continue
+        blockers = {str(item) for item in verdict.get("blockers") or []}
+        return (
+            verdict.get("publish_tier") == "TIER_3"
+            and bool(blockers & _NONPUBLISHABLE_SUPPLY_BLOCKERS)
+        )
+    return False
+
+
 def _latest_run_child_source_papers(
     topic: str,
 ) -> dict[str, dict[str, dict[str, Any]]]:
@@ -778,8 +795,9 @@ def _warm_latest_run_children(
     changed = False
     for topic in topics:
         entry = cache.get(topic)
-        count = _cached_source_rich_hint_count(entry, now=now)
-        if count is None:
+        if not isinstance(entry, dict):
+            continue
+        if _latest_run_blocks_child_warming(topic):
             continue
         for child, papers in _latest_run_child_source_papers(topic).items():
             existing = cache.get(child)
@@ -846,6 +864,22 @@ def _cached_source_rich_topics(
     if _warm_latest_run_children(cache, (topic for _count, topic in ranked[:limit])):
         _save_supply_cache(cache)
         ranked = ranked_topics()
+    if len(ranked) < limit:
+        ranked_topic_names = {topic for _count, topic in ranked}
+        fallback_topics = (
+            topic for topic, _entry in sorted(
+                cache.items(),
+                key=lambda item: (
+                    -float(item[1].get("ts", 0.0))
+                    if isinstance(item[1], dict) else 0.0,
+                    item[0],
+                ),
+            )
+            if topic not in exclude and topic not in ranked_topic_names
+        )
+        if _warm_latest_run_children(cache, fallback_topics):
+            _save_supply_cache(cache)
+            ranked = ranked_topics()
     return tuple(
         (topic, count) for count, topic in ranked[:limit]
     )
