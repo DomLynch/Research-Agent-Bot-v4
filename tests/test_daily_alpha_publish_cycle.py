@@ -1972,6 +1972,28 @@ def test_refresh_candidate_batch_can_warm_backlog(
     assert "--no-frontier" in calls[0]
 
 
+def test_refresh_candidate_batch_scales_live_probe_window_with_exclusions(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+
+    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        calls.append(args)
+        return True, "ok"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    out = daily._refresh_candidate_batch(
+        5,
+        excluded_topics={"old_a", "old_b", "old_c"},
+        runs_root=tmp_path,
+        warm_backlog=True,
+    )
+
+    assert out["ok"] is True
+    assert calls[0][calls[0].index("--fact-probe-topics") + 1] == "8"
+
+
 def test_agent_repair_failed_fingerprint_is_not_repaired_twice_in_cycle(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

@@ -2106,6 +2106,10 @@ def _refresh_candidate_batch(
     warm_backlog: bool = False,
 ) -> Json:
     exclusions = sorted(t for t in (excluded_topics or set()) if t)
+    warm_probe_topics = min(
+        _DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT,
+        max(refresh_top, _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES, refresh_top + len(exclusions)),
+    )
     args = [
         sys.executable, "scripts/run_curator_cycle.py",
         "--stop-on-ready", "--top", str(refresh_top),
@@ -2118,7 +2122,7 @@ def _refresh_candidate_batch(
             "--derived-topic-limit",
             str(_DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT),
             "--fact-probe-topics",
-            str(max(refresh_top, _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES)),
+            str(warm_probe_topics),
         ])
     for topic in exclusions:
         args.extend(["--exclude-topic", topic])
