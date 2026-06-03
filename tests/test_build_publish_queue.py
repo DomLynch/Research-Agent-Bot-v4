@@ -156,3 +156,25 @@ def test_build_queue_recomputes_stale_verdict_sidecar(
     out = queue.build_queue(include_archive=True)
 
     assert [r["topic"] for r in out["ready_to_publish"]] == ["grid_storage"]
+
+
+def test_build_queue_normalises_legacy_operator_decision(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    runs = tmp_path / "runs"
+    run = runs / "legacy-evidence-2026-02-01T00-00-00Z"
+    run.mkdir(parents=True)
+    run.joinpath("alpha_memo.md").write_text("# Legacy memo\n", encoding="utf-8")
+    run.joinpath("publish_verdict.json").write_text(json.dumps({
+        "topic": "legacy",
+        "decision": "needs_operator_review",
+        "publish_tier": "TIER_2",
+        "alpha_score": 80,
+    }), encoding="utf-8")
+    monkeypatch.setattr(queue, "_RUNS", runs)
+
+    out = queue.build_queue(include_archive=True)
+
+    assert [r["topic"] for r in out["agent_repair_needed"]] == ["legacy"]
+    assert "needs_operator_review" not in out

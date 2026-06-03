@@ -13,7 +13,7 @@ from agent.publish_tier import publish_verdict
 
 _ROOT = Path(__file__).resolve().parent.parent
 _RUNS = _ROOT / "runs"
-_AGENT_REPAIR_DECISIONS = {
+_LEGACY_AGENT_REPAIR_DECISIONS = {
     "agent_repair_needed", "needs_operator_review", "needs_operator_approval",
 }
 
@@ -68,6 +68,11 @@ def _verdict_for_run(run: Path) -> dict[str, Any]:
     return _read_json(run / "publish_verdict.json")
 
 
+def _normalised_decision(row: dict[str, Any]) -> str:
+    decision = str(row.get("decision") or "")
+    return "agent_repair_needed" if decision in _LEGACY_AGENT_REPAIR_DECISIONS else decision
+
+
 def build_queue(include_archive: bool = True) -> dict[str, list[dict[str, Any]]]:
     rows = []
     for run in _latest_per_topic(_alpha_runs(include_archive)):
@@ -80,13 +85,13 @@ def build_queue(include_archive: bool = True) -> dict[str, list[dict[str, Any]]]
     ))
     return {
         "ready_to_publish": [
-            r for r in rows if r.get("decision") == "ready_to_publish"
+            r for r in rows if _normalised_decision(r) == "ready_to_publish"
         ],
         "agent_repair_needed": [
-            r for r in rows if r.get("decision") in _AGENT_REPAIR_DECISIONS
+            r for r in rows if _normalised_decision(r) == "agent_repair_needed"
         ],
         "curation_needed": [
-            r for r in rows if r.get("decision") == "curation_needed"
+            r for r in rows if _normalised_decision(r) == "curation_needed"
         ],
     }
 
