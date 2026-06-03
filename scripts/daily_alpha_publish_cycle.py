@@ -517,7 +517,7 @@ def _agent_repair_passed_submit_gates(
         verdict.get("decision") in _AGENT_REPAIR_DECISIONS
         and source_count >= min_source_count
         and direct_source_count >= min_direct_source_count
-        and not blockers - {"source_dispersion"}
+        and not blockers
     )
 
 

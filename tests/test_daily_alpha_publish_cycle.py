@@ -4164,7 +4164,7 @@ def test_source_rich_tier2_frontier_candidate_requires_agent_repair(tmp_path: Pa
     assert considered[0]["status"] == "agent_repair_needed"
 
 
-def test_repaired_source_rich_candidate_submits_without_operator(
+def test_repaired_source_rich_candidate_still_needs_coherence(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     root = tmp_path / "repo"
@@ -4222,11 +4222,11 @@ def test_repaired_source_rich_candidate_submits_without_operator(
         memo_refresher=refresh,
     )
 
-    assert cand is not None
+    assert cand is None
     assert considered[0]["memo_refreshed"] is True
     assert considered[0]["source_count"] == 5
     assert considered[0]["direct_source_count"] == 5
-    assert considered[0]["status"] == "eligible"
+    assert considered[0]["status"] == "agent_repair_failed"
 
 
 def test_rich_incoherent_review_candidate_repairs_before_approval(
