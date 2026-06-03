@@ -406,7 +406,9 @@ def test_dispersed_parent_recommends_a_core_child_cluster(tmp_path: Path) -> Non
     assert len(rec["clusters"][0]["member_fact_ids"]) >= 5
 
 
-def test_underfloor_a_core_child_cluster_is_not_recommended(tmp_path: Path) -> None:
+def test_underfloor_submit_cluster_still_recommends_child_rerun(
+    tmp_path: Path,
+) -> None:
     run = _run(
         tmp_path,
         lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
@@ -432,10 +434,13 @@ def test_underfloor_a_core_child_cluster_is_not_recommended(tmp_path: Path) -> N
             intervention="threshold pricing reliability",
         )
 
-    rec = publish_verdict(run)["subtopic_recommendations"]
+    verdict = publish_verdict(run)
+    rec = verdict["subtopic_recommendations"]
 
-    assert rec["recommended"] is False
-    assert rec["reason"] == "not_broad_or_not_noisy_enough"
+    assert verdict["decision"] != "ready_to_publish"
+    assert rec["recommended"] is True
+    assert rec["reason"] == "source_coherent_child_cluster"
+    assert len(rec["clusters"][0]["member_fact_ids"]) == 4
 
 
 def test_intervention_only_child_cluster_is_not_recommended(tmp_path: Path) -> None:

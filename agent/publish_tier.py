@@ -668,7 +668,7 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         facts, lanes, topic, cfg["generic_tokens"], cfg["cluster_stopwords"],
         d_bad_share_min=float(cfg["broad_d_bad_share"]),
         min_overlap=float(cfg["domain_overlap_min"]),
-        source_min=max(int(cfg["broad_min_sources"]), min_direct_source_papers),
+        source_min=int(cfg["broad_min_sources"]),
         enabled=decision != "ready_to_publish",
     )
     if decision == "ready_to_publish":
