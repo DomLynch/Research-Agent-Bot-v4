@@ -333,7 +333,6 @@ def _cluster_label(
     for fact in facts:
         paper = fact.get("source_paper") or {}
         text = " ".join([
-            str(fact.get("sub_topic") or ""),
             str(fact.get("population") or ""),
             str(fact.get("intervention") or ""),
             str(fact.get("comparator") or ""),
@@ -359,7 +358,6 @@ def _source_diverse_fact_clusters(
     for fact in facts:
         source = _source_key(fact)
         tokens = _tokens(" ".join([
-            str(fact.get("sub_topic") or ""),
             str(fact.get("population") or ""),
             str(fact.get("intervention") or ""),
             str(fact.get("canonical_phrase") or ""),
