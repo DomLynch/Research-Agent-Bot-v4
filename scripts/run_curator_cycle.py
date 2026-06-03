@@ -443,7 +443,7 @@ def main() -> int:
             excluded_count=len(args.exclude_topic),
         )
         discovery_args = [py, "scripts/run_topic_discovery.py", "--top", str(discovery_top)]
-        if args.stop_on_ready:
+        if args.stop_on_ready and not args.warm_backlog:
             discovery_args.append("--cache-first")
         if args.warm_backlog:
             discovery_args.append("--warm-backlog")

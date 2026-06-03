@@ -479,7 +479,7 @@ def test_stop_on_ready_warm_backlog_probes_beyond_cache(
     ])
 
     assert run_curator_cycle.main() == 1
-    assert "--cache-first" in calls[0]
+    assert "--cache-first" not in calls[0]
     assert "--warm-backlog" in calls[0]
     assert "--cache-only" not in calls[0]
     assert "--fact-probe-topics" in calls[0]
