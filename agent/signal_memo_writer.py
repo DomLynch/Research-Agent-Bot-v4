@@ -559,6 +559,25 @@ def _score_band(score: int) -> str:
     return "none"
 
 
+def _effective_label(
+    label: str,
+    verdict: dict[str, Any] | None,
+    lead_ids: list[str],
+    facts: dict[str, dict[str, Any]],
+    topic: str,
+    min_direct_sources: int,
+) -> str:
+    if (
+        label in {"no_signal", "curation_needed", "evidence_binding_failed"}
+        and _agent_repair_requested(verdict)
+        and len(lead_ids) >= min_direct_sources
+        and _source_count_for_ids(lead_ids, facts) >= min_direct_sources
+        and _receipt_cluster_coheres(lead_ids, facts, topic, min_direct_sources)
+    ):
+        return "evidence_backed_signal"
+    return label
+
+
 def _weakening_lines(review: dict[str, Any], label: str) -> list[str]:
     if label in {"evidence_binding_failed", "curation_needed", "no_signal"}:
         return [
@@ -1551,6 +1570,11 @@ def render_signal_memo(
         encoding="utf-8")
     lead_source_count = _source_count_for_ids(lead_ids, facts)
     source_count = _source_count_for_ids(receipt_ids, facts)
+    original_label = label
+    label = _effective_label(
+        label, publish_verdict, lead_ids, facts, topic, min_direct_sources,
+    )
+    repair_promoted = label != original_label
     thesis = _receipt_thesis(
         headline, audit, facts, receipt_ids, context_ids, publish_verdict,
     )
@@ -1579,6 +1603,14 @@ def render_signal_memo(
         headline = _grounded_headline(topic, lead_ids, facts, headline)
         angle = {"kind": "source", "headline": headline,
                  "thesis": thesis, "why": why_surprising}
+    if repair_promoted:
+        headline = _grounded_headline(topic, lead_ids, facts, headline)
+        angle = {
+            "kind": "source",
+            "headline": headline,
+            "thesis": thesis,
+            "why": _source_bounded_why(lead_ids, facts, force_tension=True),
+        }
     if narrowed_direct_bundle:
         angle = {
             **angle,

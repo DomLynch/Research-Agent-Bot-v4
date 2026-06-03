@@ -128,6 +128,53 @@ def test_no_signal_memo_does_not_promote_mimo_note_heading(tmp_path: Path) -> No
     assert "**Headline:** MiMo's note" not in memo
 
 
+def test_agent_repair_promotes_stale_no_signal_when_direct_cluster_passes(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    (run / "signal_post.md").write_text(
+        "# No signal — carbon_tax\n\n"
+        "## Carbon pricing needs a bounded direct-source repair\n\n"
+        "## Why this is surprising\n\n"
+        "No publishable thesis before repair.\n\n"
+        "## Confidence — `no_signal`\n",
+        encoding="utf-8",
+    )
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    facts[0]["canonical_phrase"] = "Carbon pricing reduced emissions in audited firms."
+    facts[0]["population"] = "audited firms"
+    facts[0]["source_paper"]["title"] = "Carbon pricing reduced emissions in audited firms"
+    for fid in ("303", "404", "505", "606"):
+        facts.append({
+            "fact_id": fid,
+            "canonical_phrase": "Carbon pricing reduced emissions in audited firms.",
+            "population": "audited firms",
+            "source_paper": {
+                "doi": f"10.x/direct-{fid}",
+                "title": f"Carbon pricing reduced emissions in audited firms {fid}",
+            },
+        })
+        lanes["verdicts"].append({"fact_id": fid, "lane": "A_core"})
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+
+    write_signal_memo(run, publish_verdict={
+        "decision": "agent_repair_needed",
+        "surface_type": "frontier_hypothesis_memo",
+        "blockers": ["source_dispersion", "direct_source_floor_below_min"],
+        "_repair_decision": {"agent_repair": True},
+    })
+    memo = (run / "alpha_memo.md").read_text(encoding="utf-8")
+    verdict = publish_verdict(run)
+
+    assert "**Confidence:** `evidence_backed_signal`" in memo
+    assert "**Direct source breadth:** `5` direct cited source(s)" in memo
+    assert verdict["decision"] == "ready_to_publish"
+    assert verdict["axes"]["direct_source_papers"] == 5
+
+
 def test_signal_memo_renders_publish_verdict_sections(tmp_path: Path) -> None:
     run = tmp_path / "carbon_tax-evidence-ts"
     _write_run(run)
