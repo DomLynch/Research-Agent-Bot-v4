@@ -903,6 +903,21 @@ def test_unsupported_reject_with_resubmission_allowed_is_retried() -> None:
     assert daily._repairable_rejection(decision) is True
 
 
+def test_unsupported_low_grounding_reject_is_not_retried() -> None:
+    decision = {
+        "claim_support_verdict": "unsupported",
+        "decision": "reject",
+        "resubmission": {"allowed": True},
+        "rubric_scores": {
+            "claim_evidence_alignment": 2,
+            "source_grounding": 2,
+            "synthesis_quality": 2,
+        },
+    }
+
+    assert daily._repairable_rejection(decision) is False
+
+
 def test_unsupported_scope_reset_reject_with_resubmission_allowed_is_retried() -> None:
     decision = {
         "claim_support_verdict": "unsupported",

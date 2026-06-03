@@ -1006,9 +1006,15 @@ def _recently_published_topics(ledger_dir: Path, *, days: int) -> set[str]:
 
 
 def _repairable_rejection(decision: Json) -> bool:
+    support = str(decision.get("claim_support_verdict") or "").lower()
+    if (
+        decision.get("decision") == "reject"
+        and support == "unsupported"
+        and _low_claim_grounding_score(decision)
+    ):
+        return False
     if _resubmission_allowed(decision):
         return True
-    support = str(decision.get("claim_support_verdict") or "").lower()
     if decision.get("decision") == "revise":
         return support != "partially_supported"
     if decision.get("decision") == "reject" and support == "partially_supported":
