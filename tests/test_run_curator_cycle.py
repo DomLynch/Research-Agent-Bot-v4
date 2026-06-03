@@ -475,12 +475,15 @@ def test_stop_on_ready_warm_backlog_probes_beyond_cache(
     monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
     monkeypatch.setattr(sys, "argv", [
         "run_curator_cycle.py", "--stop-on-ready", "--warm-backlog",
+        "--fact-probe-topics", "5",
     ])
 
     assert run_curator_cycle.main() == 1
     assert "--cache-first" in calls[0]
     assert "--warm-backlog" in calls[0]
     assert "--cache-only" not in calls[0]
+    assert "--fact-probe-topics" in calls[0]
+    assert calls[0][calls[0].index("--fact-probe-topics") + 1] == "5"
 
 
 def test_stop_on_ready_halts_plan(

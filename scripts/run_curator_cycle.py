@@ -422,6 +422,10 @@ def main() -> int:
         "--derived-topic-limit", type=int, default=None,
         help="Override topic-discovery derived candidate cap.",
     )
+    parser.add_argument(
+        "--fact-probe-topics", type=int, default=None,
+        help="Override extra derived topics probed for source breadth.",
+    )
     parser.add_argument("--dry-run", action="store_true",
                         help="Print plan; do not invoke the pipeline")
     args = parser.parse_args()
@@ -446,6 +450,10 @@ def main() -> int:
         if args.derived_topic_limit is not None:
             discovery_args.extend([
                 "--derived-topic-limit", str(max(0, args.derived_topic_limit)),
+            ])
+        if args.fact_probe_topics is not None:
+            discovery_args.extend([
+                "--fact-probe-topics", str(max(0, args.fact_probe_topics)),
             ])
         ok, last = _run_step(
             discovery_args,
