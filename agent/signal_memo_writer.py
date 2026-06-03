@@ -340,8 +340,6 @@ def _agent_repair_requested(verdict: dict[str, Any] | None) -> bool:
 def _direct_bundle_needs_narrowing(verdict: dict[str, Any] | None) -> bool:
     if not isinstance(verdict, dict):
         return False
-    if _agent_repair_requested(verdict):
-        return False
     axes = verdict.get("axes")
     if (
         isinstance(axes, dict)
@@ -1520,7 +1518,10 @@ def render_signal_memo(
         claim=claim, topic=topic,
         preferred_ids=preferred_direct_ids,
         trusted_ids=trusted_direct_ids,
-        require_cluster=not _agent_repair_requested(publish_verdict),
+        require_cluster=(
+            not _agent_repair_requested(publish_verdict)
+            or _direct_bundle_needs_narrowing(publish_verdict)
+        ),
     )
     if not lead_ids:
         lead_ids = expanded_ids[:1]

@@ -651,7 +651,9 @@ def test_mixed_direct_streams_collapse_to_single_bounded_receipt(
     assert "fact_id=202" not in memo
 
 
-def test_agent_repair_preserves_direct_source_floor(tmp_path: Path) -> None:
+def test_agent_repair_does_not_preserve_incoherent_direct_floor(
+    tmp_path: Path,
+) -> None:
     run = tmp_path / "photobiomodulation_red_light-evidence-ts"
     _write_mixed_direct_stream_run(run)
 
@@ -661,8 +663,9 @@ def test_agent_repair_preserves_direct_source_floor(tmp_path: Path) -> None:
         "_repair_decision": {"agent_repair": True},
     })
 
-    assert "**Direct source breadth:** `5` direct cited source(s)" in memo
-    assert "`fact_id=505` (`A_core`)" in memo
+    assert "**Direct source breadth:** `1` direct cited source(s)" in memo
+    assert "`fact_id=101` (`A_core`)" in memo
+    assert "`fact_id=505` (`A_core`)" not in memo
 
 
 def test_source_angle_publish_memo_replaces_stale_surprise_prose(
