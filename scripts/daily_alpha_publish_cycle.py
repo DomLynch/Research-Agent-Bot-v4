@@ -2473,6 +2473,12 @@ def run_cycle(
                 blocked_topics.update(ran_topics)
             elif refresh_candidates and refresh.get("skipped_in_cooldown"):
                 force_refresh = True
+            elif refresh_candidates and refresh.get("warm_backlog"):
+                ledger["refresh_early_exit"] = {
+                    "batch": batch,
+                    "reason": "warm_backlog_empty_no_candidate",
+                }
+                break
             elif (
                 refresh_candidates
                 and not refresh.get("warm_backlog")

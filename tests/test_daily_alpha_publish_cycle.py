@@ -1875,7 +1875,7 @@ def test_refresh_exits_early_when_queue_unchanged_across_batches(
         "reason": "empty_refresh_no_candidate",
     }
     assert (ledger.get("refresh_early_exit", {}).get("reason")
-            == "queue_unchanged_no_candidate")
+            == "warm_backlog_empty_no_candidate")
 
 
 def test_warm_backlog_timeout_degrades_to_no_candidate(
