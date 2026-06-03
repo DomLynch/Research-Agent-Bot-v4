@@ -2117,6 +2117,8 @@ def _refresh_candidate_batch(
             "--warm-backlog",
             "--derived-topic-limit",
             str(_DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT),
+            "--fact-probe-topics",
+            str(max(refresh_top, _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES)),
         ])
     for topic in exclusions:
         args.extend(["--exclude-topic", topic])

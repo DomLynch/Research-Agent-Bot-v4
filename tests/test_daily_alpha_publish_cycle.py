@@ -1966,6 +1966,8 @@ def test_refresh_candidate_batch_can_warm_backlog(
     assert "--warm-backlog" in calls[0]
     assert "--derived-topic-limit" in calls[0]
     assert str(daily._DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT) in calls[0]
+    assert "--fact-probe-topics" in calls[0]
+    assert calls[0][calls[0].index("--fact-probe-topics") + 1] == "5"
     assert "--no-editorial" in calls[0]
     assert "--no-frontier" in calls[0]
 
