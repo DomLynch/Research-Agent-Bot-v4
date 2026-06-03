@@ -351,6 +351,36 @@ def _direct_bundle_needs_narrowing(verdict: dict[str, Any] | None) -> bool:
     return {"source_dispersion", "weak_counter_consensus_tension"} <= blockers
 
 
+def _repair_cluster_receipt_ids(
+    verdict: dict[str, Any] | None,
+    facts: dict[str, dict[str, Any]],
+    lanes: dict[str, str],
+    *,
+    min_sources: int,
+    topic: str,
+) -> list[str]:
+    if not _agent_repair_requested(verdict):
+        return []
+    rec = (verdict or {}).get("subtopic_recommendations")
+    clusters = rec.get("clusters") if isinstance(rec, dict) else []
+    if not isinstance(clusters, list):
+        return []
+    for cluster in clusters:
+        values = cluster.get("member_fact_ids") if isinstance(cluster, dict) else []
+        if not isinstance(values, list):
+            continue
+        ids = [
+            fid for fid in (str(value or "").strip() for value in values)
+            if fid and fid in facts and lanes.get(fid) in _DIRECT
+        ]
+        if (
+            _source_count_for_ids(ids, facts) >= min_sources
+            and _receipt_cluster_coheres(ids, facts, topic, min_sources)
+        ):
+            return ids
+    return []
+
+
 def _expanded_receipt_ids(
     audit: dict[str, Any],
     facts: dict[str, dict[str, Any]],
@@ -1496,8 +1526,22 @@ def render_signal_memo(
     if coherent_direct:
         audit = audit | {"cited_fact_ids": coherent_direct}
         claim = _claim_signal(coherent_direct, facts, topic)
+    repair_cluster_ids = _repair_cluster_receipt_ids(
+        publish_verdict, facts, lanes,
+        min_sources=min_direct_sources, topic=topic,
+    )
+    if repair_cluster_ids:
+        audit = audit | {"cited_fact_ids": repair_cluster_ids}
+        claim = _claim_signal(repair_cluster_ids, facts, topic)
     preferred_bound_ids = _preferred_receipt_ids(publish_verdict, lanes, _BINDABLE)
     preferred_direct_ids = _preferred_receipt_ids(publish_verdict, lanes, _DIRECT)
+    if repair_cluster_ids:
+        preferred_bound_ids = repair_cluster_ids + [
+            fid for fid in preferred_bound_ids if fid not in repair_cluster_ids
+        ]
+        preferred_direct_ids = repair_cluster_ids + [
+            fid for fid in preferred_direct_ids if fid not in repair_cluster_ids
+        ]
     if _needs_coherent_repick(publish_verdict):
         coherent_direct = _coherent_receipt_ids(
             facts, lanes, min_sources=min_direct_sources, allowed_lanes=_DIRECT,

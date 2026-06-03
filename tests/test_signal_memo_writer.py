@@ -933,6 +933,50 @@ def test_dispersion_repair_reselects_coherent_receipt_cluster(tmp_path: Path) ->
     assert "source_dispersion" not in verdict["blockers"]
 
 
+def test_agent_repair_uses_gate_cluster_fact_ids(tmp_path: Path) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    facts[0]["canonical_phrase"] = "Unrelated ceramics glaze improved after firing."
+    facts[0]["source_paper"] = {"doi": "10.x/off-lead"}
+    for fid in ("303", "404", "505", "606", "707"):
+        facts.append({
+            "fact_id": fid,
+            "canonical_phrase": "Carbon pricing reduced port emissions after compliance checks.",
+            "population": "regulated port firms",
+            "intervention": "carbon pricing",
+            "source_paper": {
+                "doi": f"10.x/cluster-{fid}",
+                "title": f"Carbon pricing port emissions replication {fid}",
+                "journal": "Policy Evidence",
+            },
+        })
+        lanes["verdicts"].append({"fact_id": fid, "lane": "A_core"})
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "subtopic_rerun_memo",
+        "blockers": ["source_dispersion", "direct_source_floor_below_min"],
+        "_repair_decision": {"agent_repair": True},
+        "subtopic_recommendations": {
+            "recommended": True,
+            "clusters": [{
+                "label": "carbon_pricing_port",
+                "member_fact_ids": ["303", "404", "505", "606", "707"],
+            }],
+        },
+    })
+    (run / "alpha_memo.md").write_text(memo, encoding="utf-8")
+    verdict = publish_verdict(run)
+
+    assert "fact_id=101" not in memo
+    assert all(f"`fact_id={fid}` (`A_core`)" in memo for fid in ("303", "404", "505", "606", "707"))
+    assert "**Direct source breadth:** `5` direct cited source(s)" in memo
+    assert verdict["decision"] == "ready_to_publish"
+
+
 def test_counter_signal_names_collision_and_testable_split(tmp_path: Path) -> None:
     run = tmp_path / "carbon_tax-evidence-ts"
     _write_run(run)
