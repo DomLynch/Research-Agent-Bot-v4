@@ -373,7 +373,7 @@ def _fact_child_slugs(
     def _words(value: Any) -> list[str]:
         return [
             word for word in _title_tokens(str(value or ""))
-            if word not in topic_words
+            if word not in topic_words and word not in _CHILD_TOPIC_STOPWORDS
         ][:10]
 
     def _add_ngrams(words: list[str], *, prefix: tuple[str, ...] = ()) -> bool:
@@ -391,20 +391,6 @@ def _fact_child_slugs(
         return tuple(seen)
     if _add_ngrams(_words(fact.get("sub_topic"))[:8]):
         return tuple(seen)
-
-    paper = fact.get("source_paper")
-    if isinstance(paper, dict):
-        title_words = _words(paper.get("title"))
-        if title_words:
-            if (
-                intervention_words
-                and not set(intervention_words) & set(title_words)
-                and _add_ngrams(title_words, prefix=intervention_words)
-            ):
-                return tuple(seen)
-            if _add_ngrams(title_words):
-                return tuple(seen)
-
     phrase_words = [
         word for word in _TITLE_WORD.findall(
             str(fact.get("canonical_phrase") or "").lower())
@@ -420,7 +406,24 @@ def _fact_child_slugs(
             if _add_ngrams(phrase_words, prefix=intervention_words):
                 return tuple(seen)
         else:
-            _add_ngrams(phrase_words)
+            if _add_ngrams(phrase_words):
+                return tuple(seen)
+        if len(seen) >= limit:
+            return tuple(seen)
+
+    paper = fact.get("source_paper")
+    if isinstance(paper, dict):
+        title_words = _words(paper.get("title"))
+        if title_words:
+            if (
+                intervention_words
+                and not set(intervention_words) & set(title_words)
+                and _add_ngrams(title_words, prefix=intervention_words)
+            ):
+                return tuple(seen)
+            if _add_ngrams(title_words):
+                return tuple(seen)
+
     _add_ngrams(_words(fact.get("population"))[:8])
     return tuple(seen)
 

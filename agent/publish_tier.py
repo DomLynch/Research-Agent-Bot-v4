@@ -331,17 +331,16 @@ def _cluster_label(
 ) -> str:
     counts: Counter[str] = Counter()
     for fact in facts:
-        paper = fact.get("source_paper") or {}
-        text = " ".join([
+        primary_text = " ".join([
             str(fact.get("population") or ""),
             str(fact.get("intervention") or ""),
             str(fact.get("comparator") or ""),
-            str(fact.get("canonical_phrase") or ""),
-            str(paper.get("title") or "") if isinstance(paper, dict) else "",
-            str(paper.get("journal") or "") if isinstance(paper, dict) else "",
         ])
-        for token in _tokens(text, topic, generic | stopwords):
-            counts[token] += 1
+        tokens = _tokens(primary_text, topic, generic | stopwords)
+        if not tokens:
+            tokens = _tokens(str(fact.get("canonical_phrase") or ""), topic, generic | stopwords)
+        for token in sorted(tokens):
+            counts[token] += 2
     return "_".join(token for token, _ in counts.most_common(3)) or "unlabeled"
 
 

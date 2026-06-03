@@ -441,6 +441,14 @@ def test_underfloor_submit_cluster_still_recommends_child_rerun(
     assert rec["recommended"] is True
     assert rec["reason"] == "source_coherent_child_cluster"
     assert len(rec["clusters"][0]["member_fact_ids"]) == 4
+    child = next(
+        item for item in rec["clusters"] if item["member_fact_ids"][0] == "6"
+    )
+    assert set(child["label"].split("_")) & {
+        "threshold", "pricing", "reliability", "operators", "auction",
+    }
+    assert "review" not in child["label"]
+    assert "replication" not in child["label"]
 
 
 def test_intervention_only_child_cluster_is_not_recommended(tmp_path: Path) -> None:

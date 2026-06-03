@@ -26,6 +26,7 @@ from agent.topic_discovery import (
     TopicCandidate,
     _anchorage_counts,
     _derived_title_supported,
+    _fact_child_slugs,
     _fact_probe_queries,
     _paper_score,
     _paper_title_facets,
@@ -42,6 +43,20 @@ def _settings() -> Any:
     s.researka_database_url = "https://test"
     s.researka_database_token = "tok"
     return s
+
+
+def test_fact_child_slugs_prefer_claim_phrase_over_source_metadata() -> None:
+    fact = {
+        "canonical_phrase": "Targeted nutrition lowers insulin resistance after meals",
+        "source_paper": {
+            "title": "Large systematic meta review of pregnant adult trials",
+        },
+    }
+
+    out = _fact_child_slugs(fact, "gestational_diabetes", limit=3)
+
+    assert out[0] == "targeted_nutrition_insulin"
+    assert not any("review" in slug or "meta" in slug for slug in out)
 
 
 def _paper(**kw: Any) -> dict[str, Any]:
