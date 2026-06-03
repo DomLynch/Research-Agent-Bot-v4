@@ -175,6 +175,43 @@ def test_cache_first_falls_back_when_cache_is_underfilled(
     assert [row["topic"] for row in payload["top"]] == ["cached_rich", "fresh_rich"]
 
 
+def test_cache_only_skips_slow_discovery_when_cache_is_underfilled(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    cached = (
+        TopicCandidate(
+            topic="cached_rich", paper_count=0, fact_source_count=8,
+            top_paper_doi="", top_paper_title="",
+            velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
+        ),
+    )
+
+    def slow_discover(**_kwargs: Any) -> tuple[TopicCandidate, ...]:
+        raise AssertionError("cache-only must not fetch seed papers")
+
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda: ("seed",))
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda: 5_000)
+    monkeypatch.setattr(
+        run_topic_discovery, "cached_source_rich_candidates",
+        lambda *, limit: cached[:limit],
+    )
+    monkeypatch.setattr(run_topic_discovery, "discover_topics", slow_discover)
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--cache-first", "--cache-only", "--top", "2",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert payload["cache_only"] is True
+    assert payload["candidate_count"] == 1
+    assert [row["topic"] for row in payload["top"]] == ["cached_rich"]
+
+
 def test_cache_first_preserves_cached_source_papers(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

@@ -408,6 +408,8 @@ def main() -> int:
             discovery_args.append("--cache-first")
         if args.warm_backlog:
             discovery_args.append("--warm-backlog")
+            if args.stop_on_ready:
+                discovery_args.append("--cache-only")
         if args.derived_topic_limit is not None:
             discovery_args.extend([
                 "--derived-topic-limit", str(max(0, args.derived_topic_limit)),

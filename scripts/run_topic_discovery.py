@@ -110,6 +110,10 @@ def main() -> int:
         "--cache-first", action="store_true",
         help="Use fresh cached source-rich topics when they fill the requested window.",
     )
+    parser.add_argument(
+        "--cache-only", action="store_true",
+        help="Emit cached source-rich topics without slow DB expansion.",
+    )
     args = parser.parse_args()
     seeds = load_seed_topics()
     if not seeds:
@@ -126,9 +130,9 @@ def main() -> int:
     cache_limit = max(args.top, fact_probe_topics or 0)
     ranked = (
         cached_source_rich_candidates(limit=cache_limit)
-        if args.cache_first and cache_limit > 0 else ()
+        if (args.cache_first or args.cache_only) and cache_limit > 0 else ()
     )
-    if len(ranked) < args.top:
+    if len(ranked) < args.top and not args.cache_only:
         with httpx.Client() as client:
             discovered = discover_topics(
                 seeds=seeds, settings=settings, client=client,
@@ -150,6 +154,7 @@ def main() -> int:
         "fact_probe_topics": fact_probe_topics,
         "warm_backlog": bool(args.warm_backlog),
         "cache_first": bool(args.cache_first),
+        "cache_only": bool(args.cache_only),
         "source_rich_floor": 5,
         "source_rich_count": sum(1 for c in ranked if c.fact_source_count >= 5),
         "top": [c.as_dict() for c in top],
