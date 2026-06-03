@@ -2081,7 +2081,10 @@ def _run_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
 
 
 def _latest_cycle_topics(runs_root: Path) -> Json:
-    cycles = sorted((runs_root / "_curator_cycles").glob("*.json"))
+    cycles = sorted(
+        path for path in (runs_root / "_curator_cycles").glob("*.json")
+        if "_cross_topic_" not in path.name
+    )
     if not cycles:
         return {}
     payload = _json(cycles[-1], {})

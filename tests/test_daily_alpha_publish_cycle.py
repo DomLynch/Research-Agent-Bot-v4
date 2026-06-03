@@ -2063,6 +2063,20 @@ def test_no_candidate_refreshes_queued_child_topics_next_batch(
     assert calls == [(), ("parent_bounded_claim",)]
 
 
+def test_latest_cycle_topics_ignores_cross_topic_sidecar(tmp_path: Path) -> None:
+    cycles = tmp_path / "_curator_cycles"
+    cycles.mkdir()
+    cycles.joinpath("2026-06-03T10-00-00Z.json").write_text(
+        json.dumps({"ran": [{"topic": "child_a"}]}), encoding="utf-8")
+    cycles.joinpath("2026-06-03T10-00-00Z_cross_topic_alpha_memo.json").write_text(
+        json.dumps({"headline": "cross topic"}), encoding="utf-8")
+
+    out = daily._latest_cycle_topics(tmp_path)
+
+    assert out["cycle"] == "2026-06-03T10-00-00Z.json"
+    assert out["ran_topics"] == ["child_a"]
+
+
 def test_refresh_candidate_batch_scales_live_probe_window_with_exclusions(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
