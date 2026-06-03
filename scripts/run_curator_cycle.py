@@ -33,6 +33,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import httpx
+
 _ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_ROOT))
 
@@ -43,6 +45,9 @@ from daily_alpha_publish_cycle import (  # noqa: E402
     _run_subprocess,
     _source_count,
 )
+
+from agent.settings import load_settings  # noqa: E402
+from agent.topic_discovery import _fetch_topic_fact_source_count  # noqa: E402
 
 _RUNS = _ROOT / "runs"
 _CYCLES_DIR = _RUNS / "_curator_cycles"
@@ -68,6 +73,32 @@ def _discovery_top_for_plan(
     if not stop_on_ready:
         return max(requested, _STOP_ON_READY_DISCOVERY_FLOOR)
     return max(requested + max(0, excluded_count), _STOP_ON_READY_DISCOVERY_FLOOR)
+
+
+def _priority_ranked_topics(topics: list[str]) -> list[dict[str, Any]]:
+    if not topics:
+        return []
+    try:
+        settings = load_settings()
+        with httpx.Client() as client:
+            counts = {
+                topic: _fetch_topic_fact_source_count(
+                    topic, client=client, settings=settings,
+                )
+                for topic in topics
+            }
+    except (OSError, httpx.HTTPError, ValueError):
+        counts = {topic: 0 for topic in topics}
+    return [
+        {
+            "topic": topic,
+            "velocity_score": 0.0,
+            "fact_source_count": counts.get(topic, 0),
+            "paper_count": 1 if counts.get(topic, 0) > 0 else 0,
+            "child_depth": _MAX_CHILD_RERUN_DEPTH,
+        }
+        for topic in topics
+    ]
 
 
 @dataclass(frozen=True, slots=True)
@@ -477,16 +508,9 @@ def main() -> int:
 
     # Step 2: cooldown filter
     recent = _recent_signal_topics(_RUNS, args.cooldown_hours, cycle_start)
-    priority_ranked = [
-        {
-            "topic": str(topic).strip(),
-            "velocity_score": 0.0,
-            "fact_source_count": _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES,
-            "paper_count": 1,
-            "child_depth": _MAX_CHILD_RERUN_DEPTH,
-        }
-        for topic in args.priority_topic if str(topic).strip()
-    ]
+    priority_ranked = _priority_ranked_topics([
+        str(topic).strip() for topic in args.priority_topic if str(topic).strip()
+    ])
     plan, skipped, skipped_excluded, below_floor = _plan_topics(
         [*priority_ranked, *ranked], recent=recent, excluded=excluded, top=args.top,
         min_fact_sources=(

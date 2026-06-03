@@ -805,6 +805,16 @@ def test_priority_repair_topic_does_not_spawn_child_rerun(
     monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
     monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
     monkeypatch.setattr(run_curator_cycle, "_read_discovery_top", lambda _out: [])
+    monkeypatch.setattr(
+        run_curator_cycle, "_priority_ranked_topics",
+        lambda _topics: [{
+            "topic": "queued_child",
+            "velocity_score": 0.0,
+            "fact_source_count": 5,
+            "paper_count": 1,
+            "child_depth": 1,
+        }],
+    )
     monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",
                         lambda *_args, **_kwargs: set())
     monkeypatch.setattr(run_curator_cycle, "_run_step",
@@ -816,6 +826,88 @@ def test_priority_repair_topic_does_not_spawn_child_rerun(
 
     assert run_curator_cycle.main() == 0
     assert seen == ["queued_child"]
+
+
+def test_priority_ranked_topics_uses_fact_source_probe(monkeypatch: Any) -> None:
+    import run_curator_cycle
+
+    class DummyClient:
+        def __enter__(self) -> DummyClient:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+    counts = {"strong_child": 5, "weak_child": 0}
+    monkeypatch.setattr(run_curator_cycle, "load_settings", lambda: object())
+    monkeypatch.setattr(run_curator_cycle.httpx, "Client", DummyClient)
+    monkeypatch.setattr(
+        run_curator_cycle, "_fetch_topic_fact_source_count",
+        lambda topic, *, client, settings: counts[topic],
+    )
+
+    ranked = run_curator_cycle._priority_ranked_topics([
+        "strong_child", "weak_child",
+    ])
+
+    assert [
+        (row["topic"], row["fact_source_count"], row["paper_count"], row["child_depth"])
+        for row in ranked
+    ] == [
+        ("strong_child", 5, 1, 1),
+        ("weak_child", 0, 0, 1),
+    ]
+
+
+def test_underfloor_priority_repair_topic_is_not_built(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    runs = tmp_path / "runs"
+    cycles = runs / "_curator_cycles"
+    cycles.mkdir(parents=True)
+    seen: list[str] = []
+
+    def fake_pipeline(
+        topic: str, velocity: float, *, with_editorial: bool,
+        top_n: int, py: str, pico_enrich: bool = False,
+        frontier_review: bool = True, parent_topic: str = "",
+    ) -> TopicResult:
+        seen.append(topic)
+        return TopicResult(
+            topic=topic, velocity=velocity, status="ran", run_dir="",
+            signal_label="", notes="",
+        )
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
+    monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
+    monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
+    monkeypatch.setattr(run_curator_cycle, "_read_discovery_top", lambda _out: [])
+    monkeypatch.setattr(
+        run_curator_cycle, "_priority_ranked_topics",
+        lambda _topics: [{
+            "topic": "weak_child",
+            "velocity_score": 0.0,
+            "fact_source_count": 0,
+            "paper_count": 0,
+            "child_depth": 1,
+        }],
+    )
+    monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",
+                        lambda *_args, **_kwargs: set())
+    monkeypatch.setattr(run_curator_cycle, "_run_step",
+                        lambda *_args, **_kwargs: (True, "ok"))
+    monkeypatch.setattr(sys, "argv", [
+        "run_curator_cycle.py", "--top", "1", "--stop-on-ready",
+        "--priority-topic", "weak_child",
+    ])
+
+    assert run_curator_cycle.main() == 0
+    assert seen == []
+    payload = json.loads(next(cycles.glob("*.json")).read_text(encoding="utf-8"))
+    assert payload["skipped_below_source_floor"] == ["weak_child"]
 
 
 def test_universal_non_biomedical_topic(tmp_path: Path) -> None:
