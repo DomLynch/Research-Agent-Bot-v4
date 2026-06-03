@@ -332,13 +332,14 @@ def _cluster_label(
     counts: Counter[str] = Counter()
     for fact in facts:
         primary_text = " ".join([
-            str(fact.get("population") or ""),
             str(fact.get("intervention") or ""),
             str(fact.get("comparator") or ""),
         ])
         tokens = _tokens(primary_text, topic, generic | stopwords)
         if not tokens:
             tokens = _tokens(str(fact.get("canonical_phrase") or ""), topic, generic | stopwords)
+        if not tokens:
+            tokens = _tokens(str(fact.get("population") or ""), topic, generic | stopwords)
         for token in sorted(tokens):
             counts[token] += 2
     return "_".join(token for token, _ in counts.most_common(3)) or "unlabeled"

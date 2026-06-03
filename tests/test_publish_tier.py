@@ -449,6 +449,7 @@ def test_underfloor_submit_cluster_still_recommends_child_rerun(
     }
     assert "review" not in child["label"]
     assert "replication" not in child["label"]
+    assert "operators" not in child["label"]
 
 
 def test_intervention_only_child_cluster_is_not_recommended(tmp_path: Path) -> None:
