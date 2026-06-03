@@ -32,7 +32,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from daily_alpha_publish_cycle import (
+_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_ROOT))
+
+from daily_alpha_publish_cycle import (  # noqa: E402
     _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES,
     _DEFAULT_MIN_SUBMIT_SOURCES,
     _direct_source_count,
@@ -40,7 +43,6 @@ from daily_alpha_publish_cycle import (
     _source_count,
 )
 
-_ROOT = Path(__file__).resolve().parent.parent
 _RUNS = _ROOT / "runs"
 _CYCLES_DIR = _RUNS / "_curator_cycles"
 _DEFAULT_PIPELINE_TOP_N = max(5, _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES * 2)
@@ -381,6 +383,10 @@ def main() -> int:
         "--warm-backlog", action="store_true",
         help="Probe the full derived topic pool before planning; slower.",
     )
+    parser.add_argument(
+        "--derived-topic-limit", type=int, default=None,
+        help="Override topic-discovery derived candidate cap.",
+    )
     parser.add_argument("--dry-run", action="store_true",
                         help="Print plan; do not invoke the pipeline")
     args = parser.parse_args()
@@ -402,6 +408,10 @@ def main() -> int:
             discovery_args.append("--cache-first")
         if args.warm_backlog:
             discovery_args.append("--warm-backlog")
+        if args.derived_topic_limit is not None:
+            discovery_args.extend([
+                "--derived-topic-limit", str(max(0, args.derived_topic_limit)),
+            ])
         ok, last = _run_step(
             discovery_args,
             "discovery",

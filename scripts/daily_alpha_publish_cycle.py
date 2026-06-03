@@ -136,6 +136,9 @@ _DEFAULT_PENDING_DECISION_MAX_AGE_HOURS = _alpha_memo_float(
     "pending_decision_max_age_hours", 24.0,
 )
 _DEFAULT_MAX_REFRESH_BATCHES = 5
+_DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT = _alpha_memo_int(
+    "warm_backlog_derived_topic_limit", 250,
+)
 _REFRESH_TIMEOUT_SECONDS = 1200
 # User-facing "3x" repair limit: one initial submit plus three repaired
 # resubmits for the same evidence fingerprint.
@@ -155,7 +158,7 @@ _TOPIC_EXHAUSTED_STATUSES = {
     "cycle_failed_submission",
     "held_retraction_check",
 }
-_FINGERPRINT_EXHAUSTED_STATUSES = _TOPIC_EXHAUSTED_STATUSES
+_FINGERPRINT_EXHAUSTED_STATUSES = _TOPIC_EXHAUSTED_STATUSES | {"agent_repair_failed"}
 _REFRESHABLE_SOURCE_FLOOR_STATUSES = {
     "corpus_source_floor_below_min",
     "memo_source_floor_below_min",
@@ -2073,7 +2076,11 @@ def _refresh_candidate_batch(
         "--no-editorial", "--no-frontier",
     ]
     if warm_backlog:
-        args.append("--warm-backlog")
+        args.extend([
+            "--warm-backlog",
+            "--derived-topic-limit",
+            str(_DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT),
+        ])
     for topic in exclusions:
         args.extend(["--exclude-topic", topic])
     ok, note = _run_step(args, timeout=_REFRESH_TIMEOUT_SECONDS)

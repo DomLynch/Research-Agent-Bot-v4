@@ -1964,8 +1964,69 @@ def test_refresh_candidate_batch_can_warm_backlog(
     assert out["ok"] is True
     assert out["warm_backlog"] is True
     assert "--warm-backlog" in calls[0]
+    assert "--derived-topic-limit" in calls[0]
+    assert str(daily._DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT) in calls[0]
     assert "--no-editorial" in calls[0]
     assert "--no-frontier" in calls[0]
+
+
+def test_agent_repair_failed_fingerprint_is_not_repaired_twice_in_cycle(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("repair_still_underfloor") | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "blockers": ["source_dispersion", "direct_source_floor_below_min"],
+    }
+    _memo_with_source_receipts(root, verdict, 6)
+    run = root / str(verdict["run_dir"])
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n"
+        "## Evidence receipts\n\n"
+        + "\n".join(f"- `fact_id={i}` (`A_core`) - direct" for i in range(1, 4))
+        + "\n\n## Context receipts\n\n"
+        + "\n".join(f"- `fact_id={i}` (`A_core`) - context" for i in range(4, 7))
+        + "\n" + _FALSIFIER,
+        encoding="utf-8",
+    )
+    refresh_calls = {"n": 0}
+
+    def refresh(_run_dir: Path, _refresh_verdict: dict[str, Any]) -> bool:
+        refresh_calls["n"] += 1
+        return True
+
+    def fake_batch(*_a: Any, **kwargs: Any) -> dict[str, Any]:
+        return {
+            "ok": True,
+            "ran_topics": [],
+            "top": 20,
+            "warm_backlog": bool(kwargs.get("warm_backlog")),
+        }
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", fake_batch)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue={
+            "ready_to_publish": [],
+            "agent_repair_needed": [verdict],
+            "curation_needed": [],
+        },
+        refresh_candidates=True,
+        max_refresh_batches=2,
+        allow_tier2=True,
+        submit=True,
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+        min_submit_sources=5,
+        min_direct_submit_sources=5,
+        memo_refresher=refresh,
+    )
+
+    statuses = [row["status"] for row in ledger["considered"]]
+    assert refresh_calls["n"] == 1
+    assert statuses == ["agent_repair_failed", "cycle_failed_submission"]
 
 
 def test_submit_mode_holds_thin_source_memos(tmp_path: Path) -> None:
