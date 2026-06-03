@@ -457,7 +457,7 @@ def test_stop_on_ready_uses_cache_first_discovery(
     assert calls[0][calls[0].index("--top") + 1] == "20"
 
 
-def test_stop_on_ready_warm_backlog_uses_cache_only_discovery(
+def test_stop_on_ready_warm_backlog_probes_beyond_cache(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
     import run_curator_cycle
@@ -480,7 +480,7 @@ def test_stop_on_ready_warm_backlog_uses_cache_only_discovery(
     assert run_curator_cycle.main() == 1
     assert "--cache-first" in calls[0]
     assert "--warm-backlog" in calls[0]
-    assert "--cache-only" in calls[0]
+    assert "--cache-only" not in calls[0]
 
 
 def test_stop_on_ready_halts_plan(
