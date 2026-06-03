@@ -330,8 +330,17 @@ def _receipt_cluster_coheres(
     return False
 
 
+def _agent_repair_requested(verdict: dict[str, Any] | None) -> bool:
+    if not isinstance(verdict, dict):
+        return False
+    decision = verdict.get("_repair_decision")
+    return isinstance(decision, dict) and decision.get("agent_repair") is True
+
+
 def _direct_bundle_needs_narrowing(verdict: dict[str, Any] | None) -> bool:
     if not isinstance(verdict, dict):
+        return False
+    if _agent_repair_requested(verdict):
         return False
     axes = verdict.get("axes")
     if (
@@ -355,6 +364,7 @@ def _expanded_receipt_ids(
     topic: str = "",
     preferred_ids: list[str] | None = None,
     trusted_ids: set[str] | None = None,
+    require_cluster: bool = True,
 ) -> list[str]:
     selected: list[str] = []
     seen_ids: set[str] = set()
@@ -375,6 +385,8 @@ def _expanded_receipt_ids(
         ):
             return
         if (
+            require_cluster
+            and
             claim is not None
             and selected
             and max(
@@ -1508,6 +1520,7 @@ def render_signal_memo(
         claim=claim, topic=topic,
         preferred_ids=preferred_direct_ids,
         trusted_ids=trusted_direct_ids,
+        require_cluster=not _agent_repair_requested(publish_verdict),
     )
     if not lead_ids:
         lead_ids = expanded_ids[:1]

@@ -560,10 +560,7 @@ def test_receipt_cluster_ignores_source_title_overlap() -> None:
     assert picked == ["101"]
 
 
-def test_mixed_direct_streams_collapse_to_single_bounded_receipt(
-    tmp_path: Path,
-) -> None:
-    run = tmp_path / "photobiomodulation_red_light-evidence-ts"
+def _write_mixed_direct_stream_run(run: Path) -> None:
     _write_run(run)
     (run / "frontier_review.json").write_text(json.dumps({
         "topic": "photobiomodulation_red_light",
@@ -631,6 +628,13 @@ def test_mixed_direct_streams_collapse_to_single_bounded_receipt(
         }],
     }), encoding="utf-8")
 
+
+def test_mixed_direct_streams_collapse_to_single_bounded_receipt(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "photobiomodulation_red_light-evidence-ts"
+    _write_mixed_direct_stream_run(run)
+
     memo = render_signal_memo(run, publish_verdict={
         "surface_type": "frontier_hypothesis_memo",
         "blockers": ["source_dispersion", "weak_counter_consensus_tension"],
@@ -645,6 +649,20 @@ def test_mixed_direct_streams_collapse_to_single_bounded_receipt(
     assert "`fact_id=101` (`A_core`)" in evidence
     assert "`fact_id=202` (`A_core`)" not in evidence
     assert "fact_id=202" not in memo
+
+
+def test_agent_repair_preserves_direct_source_floor(tmp_path: Path) -> None:
+    run = tmp_path / "photobiomodulation_red_light-evidence-ts"
+    _write_mixed_direct_stream_run(run)
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "frontier_hypothesis_memo",
+        "blockers": ["source_dispersion", "weak_counter_consensus_tension"],
+        "_repair_decision": {"agent_repair": True},
+    })
+
+    assert "**Direct source breadth:** `5` direct cited source(s)" in memo
+    assert "`fact_id=505` (`A_core`)" in memo
 
 
 def test_source_angle_publish_memo_replaces_stale_surprise_prose(
