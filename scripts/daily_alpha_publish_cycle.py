@@ -405,6 +405,7 @@ def _agent_repair_candidate(
 ) -> bool:
     blockers = {str(x) for x in verdict.get("blockers") or []}
     repairable = {
+        "cross_domain_forced",
         "source_dispersion",
         "weak_counter_consensus_tension",
         "source_floor_below_min",

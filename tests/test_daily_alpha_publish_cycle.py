@@ -4353,3 +4353,73 @@ def test_cross_domain_direct_floor_candidate_repairs_before_approval(
     assert cand is not None
     assert considered[0]["memo_refreshed"] is True
     assert considered[0]["status"] == "eligible"
+
+
+def test_cross_domain_tension_source_floor_candidate_repairs_from_corpus_supply(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("cross_domain_tension_repair") | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "blockers": [
+            "cross_domain_forced",
+            "weak_counter_consensus_tension",
+            "source_floor_below_min",
+            "direct_source_floor_below_min",
+        ],
+    }
+    _memo_with_source_receipts(root, verdict, 6)
+    run = root / str(verdict["run_dir"])
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n"
+        "**Headline:** Storage reserves flip after threshold pricing\n\n"
+        "## Evidence receipts\n\n"
+        + "\n".join(f"- `fact_id={i}` (`A_core`) - direct" for i in range(1, 3))
+        + "\n\n## Context receipts\n\n"
+        + "\n".join(f"- `fact_id={i}` (`A_core`) - context" for i in range(3, 7))
+        + "\n" + _FALSIFIER,
+        encoding="utf-8",
+    )
+    refreshed = {"called": False}
+
+    def refresh(run_dir: Path, refresh_verdict: dict[str, Any]) -> bool:
+        refreshed["called"] = True
+        assert refresh_verdict["_repair_decision"]["agent_repair"] is True
+        run_dir.joinpath("alpha_memo.md").write_text(
+            "# Alpha memo\n\n"
+            "**Headline:** Storage reserves flip after threshold pricing\n\n"
+            "## Evidence receipts\n\n"
+            + "\n".join(f"- `fact_id={i}` (`A_core`) - direct" for i in range(1, 6))
+            + "\n" + _FALSIFIER,
+            encoding="utf-8",
+        )
+        return True
+
+    def reload_verdict(refresh_verdict: dict[str, Any], _run_dir: Path) -> dict[str, Any]:
+        return refresh_verdict | {
+            "decision": "ready_to_publish",
+            "publish_tier": "TIER_1",
+            "blockers": [],
+            "receipt_expansion": {"cited_bound_fact_ids": ["1", "2", "3", "4", "5"]},
+        }
+
+    monkeypatch.setattr(daily, "_reload_verdict_after_memo_refresh", reload_verdict)
+    cand, considered = daily.select_candidate(
+        {
+            "ready_to_publish": [],
+            "agent_repair_needed": [verdict],
+            "curation_needed": [],
+        },
+        runs_root=root,
+        submitted_path=root / "submitted.json",
+        allow_tier2=True,
+        min_source_count=5,
+        min_direct_source_count=5,
+        memo_refresher=refresh,
+    )
+
+    assert refreshed["called"] is True
+    assert cand is not None
+    assert considered[0]["memo_refreshed"] is True
+    assert considered[0]["status"] == "eligible"
