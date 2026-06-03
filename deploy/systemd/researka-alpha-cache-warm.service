@@ -1,0 +1,12 @@
+[Unit]
+Description=Research Agent v4 alpha source-rich cache warmer
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/Research-Agent-Bot-v4
+EnvironmentFile=/root/Research-Agent-Bot-v4/.env
+EnvironmentFile=/etc/researka-agent-v4.env
+ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/run_topic_discovery.py --top 80 --warm-backlog --derived-topic-limit 5000 --fact-probe-topics 250
+TimeoutStartSec=2700

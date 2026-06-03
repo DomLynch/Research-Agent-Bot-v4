@@ -2945,6 +2945,25 @@ def test_systemd_publish_timer_has_full_refresh_budget() -> None:
     assert "--max-refresh-batches 2" not in service
 
 
+def test_systemd_cache_warmer_fills_source_rich_backlog() -> None:
+    service = Path("deploy/systemd/researka-alpha-cache-warm.service").read_text(
+        encoding="utf-8",
+    )
+    timer = Path("deploy/systemd/researka-alpha-cache-warm.timer").read_text(
+        encoding="utf-8",
+    )
+
+    assert "scripts/run_topic_discovery.py" in service
+    assert "--warm-backlog" in service
+    assert "--derived-topic-limit 5000" in service
+    assert "--fact-probe-topics 250" in service
+    assert "--cache-only" not in service
+    assert "TimeoutStartSec=2700" in service
+    assert "OnCalendar=*-*-* 01/2:05:00" in timer
+    assert "Persistent=true" in timer
+    assert "Unit=researka-alpha-cache-warm.service" in timer
+
+
 def test_refresh_cooldown_is_cycle_configurable(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
