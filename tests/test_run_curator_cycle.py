@@ -707,6 +707,61 @@ def test_stop_on_ready_runs_structural_child_topic_before_giving_up(
     assert payload["stopped_on_ready"] is True
 
 
+def test_stop_on_ready_does_not_chain_child_topic_reruns(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    runs = tmp_path / "runs"
+    cycles = runs / "_curator_cycles"
+    cycles.mkdir(parents=True)
+    seen: list[str] = []
+
+    def fake_pipeline(
+        topic: str, velocity: float, *, with_editorial: bool,
+        top_n: int, py: str, pico_enrich: bool = False,
+        frontier_review: bool = True, parent_topic: str = "",
+    ) -> TopicResult:
+        seen.append(topic)
+        run_dir = runs / f"{topic}-evidence-ts"
+        run_dir.mkdir(parents=True)
+        run_dir.joinpath("publish_verdict.json").write_text(json.dumps({
+            "decision": "agent_repair_needed",
+            "topic": topic,
+            "run_dir": f"runs/{topic}-evidence-ts",
+            "subtopic_recommendations": {
+                "recommended": True,
+                "clusters": [{"label": "bounded_claim_cluster"}],
+            },
+        }), encoding="utf-8")
+        return TopicResult(
+            topic=topic, velocity=velocity, status="ran",
+            run_dir=f"runs/{topic}-evidence-ts",
+            signal_label="frontier_hypothesis", notes="",
+        )
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
+    monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
+    monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
+    monkeypatch.setattr(
+        run_curator_cycle, "_read_discovery_top",
+        lambda _out: [
+            {"topic": "parent", "velocity_score": 2.0, "fact_source_count": 5, "paper_count": 3},
+        ],
+    )
+    monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",
+                        lambda *_args, **_kwargs: set())
+    monkeypatch.setattr(run_curator_cycle, "_run_step",
+                        lambda *_args, **_kwargs: (True, "ok"))
+    monkeypatch.setattr(sys, "argv", [
+        "run_curator_cycle.py", "--top", "1", "--stop-on-ready",
+    ])
+
+    assert run_curator_cycle.main() == 0
+    assert seen == ["parent", "parent_bounded_claim_cluster"]
+
+
 def test_universal_non_biomedical_topic(tmp_path: Path) -> None:
     """Cooldown filter works on any topic identifier — no biomedical
     assumption."""

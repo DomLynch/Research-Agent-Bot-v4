@@ -57,6 +57,7 @@ _DISCOVERY_TIMEOUT_SECONDS = 1800
 _PREBUILD_MIN_SOURCE_FLOOR = max(1, _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES - 2)
 _STOP_ON_READY_DISCOVERY_FLOOR = 20
 _MAX_CHILD_RERUNS_PER_PARENT = 2
+_MAX_CHILD_RERUN_DEPTH = 1
 
 
 def _discovery_top_for_plan(
@@ -509,11 +510,15 @@ def main() -> int:
             print("[cycle] stop-on-ready: publishable candidate created")
             break
         if args.stop_on_ready:
+            depth = int(c.get("child_depth") or 0)
+            if depth >= _MAX_CHILD_RERUN_DEPTH:
+                continue
             for child in _child_topics_from_verdict(res.run_dir, seen_topics):
                 print(f"[cycle] child-topic rerun: {child}")
                 plan.append({
                     "topic": child,
                     "parent_topic": topic,
+                    "child_depth": depth + 1,
                     "velocity_score": max(0.0, vel - 0.01),
                 })
 
