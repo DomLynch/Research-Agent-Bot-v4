@@ -2,7 +2,7 @@
 Description=Warm Research Agent v4 alpha source-rich cache before publisher
 
 [Timer]
-OnCalendar=*-*-* 01/2:05:00
+OnCalendar=*-*-* 01/4:05:00
 Persistent=true
 Unit=researka-alpha-cache-warm.service
 

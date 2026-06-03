@@ -3097,10 +3097,14 @@ def test_systemd_publish_timer_has_full_refresh_budget() -> None:
     service = Path("deploy/systemd/researka-alpha-daily.service").read_text(
         encoding="utf-8",
     )
+    timer = Path("deploy/systemd/researka-alpha-daily.timer").read_text(
+        encoding="utf-8",
+    )
 
     assert "--allow-tier2" in service
     assert "--max-refresh-batches 5" in service
     assert "--max-refresh-batches 2" not in service
+    assert "OnCalendar=*-*-* 01/4:30:00" in timer
 
 
 def test_systemd_cache_warmer_fills_source_rich_backlog() -> None:
@@ -3117,7 +3121,7 @@ def test_systemd_cache_warmer_fills_source_rich_backlog() -> None:
     assert "--fact-probe-topics 250" in service
     assert "--cache-only" not in service
     assert "TimeoutStartSec=2700" in service
-    assert "OnCalendar=*-*-* 01/2:05:00" in timer
+    assert "OnCalendar=*-*-* 01/4:05:00" in timer
     assert "Persistent=true" in timer
     assert "Unit=researka-alpha-cache-warm.service" in timer
 
