@@ -164,7 +164,9 @@ _REFRESHABLE_SOURCE_FLOOR_STATUSES = {
     "memo_source_floor_below_min",
     "direct_source_floor_below_min",
 }
-_AGENT_REPAIR_DECISIONS = {"agent_repair_needed", "needs_operator_review"}
+_AGENT_REPAIR_DECISIONS = {
+    "agent_repair_needed", "needs_operator_review", "needs_operator_approval",
+}
 
 
 def _refresh_timeout_note(refresh: Json) -> bool:

@@ -609,6 +609,11 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         bound_ids, facts, lanes, cfg["counter_markers"],
     )
     tension = _has_tension(md, cfg["tension_markers"]) or bool(counter_evidence)
+    strong_direct_bundle = (
+        len(direct_papers) >= min_direct_source_papers
+        and len(papers) >= min_source_papers
+        and source_coherent
+    )
     expansion_candidates = _expansion_candidates(bound_ids, facts, lanes)
     blockers: list[str] = []
     if label in _BLOCKED_LABELS:
@@ -619,7 +624,7 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         blockers.append("cross_domain_forced")
     if not source_coherent and bound_ids and len(papers) >= min_source_papers:
         blockers.append("source_dispersion")
-    if not tension and bound_ids:
+    if not tension and bound_ids and not strong_direct_bundle:
         blockers.append("weak_counter_consensus_tension")
     if bound_ids and alpha_score < int(cfg["review_min_alpha_score"]):
         blockers.append("low_alpha_score")

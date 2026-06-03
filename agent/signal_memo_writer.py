@@ -1502,11 +1502,17 @@ def render_signal_memo(
         coherent_direct = _coherent_receipt_ids(
             facts, lanes, min_sources=min_direct_sources, allowed_lanes=_DIRECT,
             claim=claim, topic=topic,
+        ) or _coherent_receipt_ids(
+            facts, lanes, min_sources=min_direct_sources, allowed_lanes=_DIRECT,
+            claim=set(), topic=topic,
         )
         if coherent_direct:
             coherent_bound = _coherent_receipt_ids(
                 facts, lanes, min_sources=min_sources + 1,
                 allowed_lanes=_BINDABLE, claim=claim, topic=topic,
+            ) or _coherent_receipt_ids(
+                facts, lanes, min_sources=min_sources + 1,
+                allowed_lanes=_BINDABLE, claim=set(), topic=topic,
             )
             audit = audit | {"cited_fact_ids": coherent_bound or coherent_direct}
             claim = _claim_signal(coherent_direct, facts, topic)

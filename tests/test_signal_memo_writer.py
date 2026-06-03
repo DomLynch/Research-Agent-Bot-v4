@@ -175,6 +175,50 @@ def test_agent_repair_promotes_stale_no_signal_when_direct_cluster_passes(
     assert verdict["axes"]["direct_source_papers"] == 5
 
 
+def test_agent_repair_repick_falls_back_when_original_claim_is_stale(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    for fid in ("303", "404", "505", "606", "707"):
+        facts.append({
+            "fact_id": fid,
+            "canonical_phrase": "Carbon pricing reduced port emissions in audited firms.",
+            "population": "audited firms",
+            "source_paper": {
+                "doi": f"10.x/direct-{fid}",
+                "title": f"Carbon pricing reduced port emissions in audited firms {fid}",
+            },
+        })
+        lanes["verdicts"].append({"fact_id": fid, "lane": "A_core"})
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+    (run / "opportunities_gate.json").write_text(json.dumps({
+        "audits": [{
+            "title": "Stale output-penalty claim",
+            "status": "survives",
+            "capped_opportunity": 88,
+            "cited_fact_ids": ["101"],
+        }],
+    }), encoding="utf-8")
+
+    write_signal_memo(run, publish_verdict={
+        "decision": "agent_repair_needed",
+        "surface_type": "frontier_hypothesis_memo",
+        "blockers": ["source_dispersion", "weak_counter_consensus_tension"],
+        "_repair_decision": {"agent_repair": True},
+    })
+    memo = (run / "alpha_memo.md").read_text(encoding="utf-8")
+    verdict = publish_verdict(run)
+
+    assert "**Direct source breadth:** `6` direct cited source(s)" in memo
+    assert "`fact_id=303` (`A_core`)" in memo
+    assert verdict["axes"]["direct_source_papers"] == 6
+    assert verdict["decision"] == "ready_to_publish"
+
+
 def test_signal_memo_renders_publish_verdict_sections(tmp_path: Path) -> None:
     run = tmp_path / "carbon_tax-evidence-ts"
     _write_run(run)

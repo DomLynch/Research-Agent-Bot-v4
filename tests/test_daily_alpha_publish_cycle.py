@@ -3314,6 +3314,7 @@ def test_unapproved_review_row_does_not_exhaust_topic_next_batch(
 
 def test_human_approval_status_is_not_a_publish_cycle_terminal() -> None:
     assert "needs_operator_approval" not in daily._EXHAUSTED_STATUSES
+    assert "needs_operator_approval" in daily._AGENT_REPAIR_DECISIONS
     assert "agent_repair_failed" in daily._EXHAUSTED_STATUSES
 
 

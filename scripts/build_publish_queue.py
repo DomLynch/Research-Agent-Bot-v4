@@ -13,7 +13,9 @@ from agent.publish_tier import publish_verdict
 
 _ROOT = Path(__file__).resolve().parent.parent
 _RUNS = _ROOT / "runs"
-_AGENT_REPAIR_DECISIONS = {"agent_repair_needed", "needs_operator_review"}
+_AGENT_REPAIR_DECISIONS = {
+    "agent_repair_needed", "needs_operator_review", "needs_operator_approval",
+}
 
 
 def _alpha_runs(include_archive: bool) -> list[Path]:
