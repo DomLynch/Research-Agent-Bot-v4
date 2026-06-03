@@ -2136,7 +2136,7 @@ def _refresh_candidate_batch(
     for topic in exclusions:
         args.extend(["--exclude-topic", topic])
     ok, note = _run_step(args, timeout=_REFRESH_TIMEOUT_SECONDS)
-    return {
+    result = {
         "ok": ok,
         "note": note,
         "top": refresh_top,
@@ -2145,6 +2145,13 @@ def _refresh_candidate_batch(
         "priority_topics": priorities,
         "warm_backlog": warm_backlog,
     } | _latest_cycle_topics(runs_root)
+    if priorities:
+        ran_raw = result.get("ran_topics")
+        ran = ran_raw if isinstance(ran_raw, list) else []
+        result["ran_topics"] = list(dict.fromkeys(
+            [str(t) for t in ran if str(t)] + priorities
+        ))
+    return result
 
 
 def _child_topics_from_queue(

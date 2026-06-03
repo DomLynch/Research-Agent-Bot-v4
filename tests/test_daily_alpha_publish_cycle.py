@@ -1989,6 +1989,7 @@ def test_refresh_candidate_batch_passes_priority_child_topics(
     )
 
     assert out["priority_topics"] == ["parent_bounded_claim", "second_child"]
+    assert out["ran_topics"] == ["parent_bounded_claim", "second_child"]
     assert calls[0].count("--priority-topic") == 2
     assert "parent_bounded_claim" in calls[0]
     assert "second_child" in calls[0]
