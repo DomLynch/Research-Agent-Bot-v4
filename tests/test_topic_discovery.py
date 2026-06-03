@@ -2374,13 +2374,14 @@ def test_latest_no_signal_run_filters_false_source_rich_cache(
     from agent import topic_discovery as td
 
     monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    now = time.time()
     (tmp_path / "supply.json").write_text(json.dumps({
         "no_signal_rich": {
             "count": 9,
-            "ts": time.time(),
+            "ts": now,
             "version": td._SUPPLY_CACHE_VERSION,
         },
-        "true_rich": {"count": 8, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION},
+        "true_rich": {"count": 8, "ts": now, "version": td._SUPPLY_CACHE_VERSION},
     }), encoding="utf-8")
     _write_direct_a_core_run(tmp_path, "no_signal_rich", 5)
     (tmp_path / "no_signal_rich-evidence-ts" / "publish_verdict.json").write_text(
@@ -2390,6 +2391,11 @@ def test_latest_no_signal_run_filters_false_source_rich_cache(
         }),
         encoding="utf-8",
     )
+    newer = now + 60
+    run = tmp_path / "no_signal_rich-evidence-ts"
+    os.utime(run, (newer, newer))
+    for child in run.iterdir():
+        os.utime(child, (newer, newer))
 
     out = td._cached_source_rich_topics(exclude=set(), limit=5)
 
@@ -2402,9 +2408,10 @@ def test_latest_context_only_run_filters_false_source_rich_cache(
     from agent import topic_discovery as td
 
     monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    now = time.time()
     (tmp_path / "supply.json").write_text(json.dumps({
-        "context_rich": {"count": 9, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION},
-        "true_rich": {"count": 8, "ts": time.time(), "version": td._SUPPLY_CACHE_VERSION},
+        "context_rich": {"count": 9, "ts": now, "version": td._SUPPLY_CACHE_VERSION},
+        "true_rich": {"count": 8, "ts": now, "version": td._SUPPLY_CACHE_VERSION},
     }), encoding="utf-8")
     run = tmp_path / "context_rich-evidence-ts"
     run.mkdir()
@@ -2420,6 +2427,10 @@ def test_latest_context_only_run_filters_false_source_rich_cache(
     run.joinpath("fact_lanes.json").write_text(json.dumps({
         "verdicts": [{"fact_id": f"f{i}", "lane": "B_context"} for i in range(5)],
     }), encoding="utf-8")
+    newer = now + 60
+    os.utime(run, (newer, newer))
+    os.utime(run / "all_facts.json", (newer, newer))
+    os.utime(run / "fact_lanes.json", (newer, newer))
 
     out = td._cached_source_rich_topics(exclude=set(), limit=5)
 
