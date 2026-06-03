@@ -873,6 +873,8 @@ def _render_frontier_md(review: FrontierReview, topic: str) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--topic", required=True)
+    parser.add_argument("--parent-topic", default="",
+                        help="Fetch parent-topic facts while classifying against the narrower topic.")
     parser.add_argument("--top", type=int, default=5)
     parser.add_argument("--no-frontier", action="store_true",
                         help="Skip the MiMo frontier-review LLM call")
@@ -894,7 +896,9 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     search_trace: list[dict[str, Any]] = []
-    facts = _fetch_facts(args.topic, trace=search_trace)
+    facts = _fetch_facts(args.parent_topic or args.topic, trace=search_trace)
+    if args.parent_topic:
+        facts = _dedup_facts(facts + _fetch_facts(args.topic, trace=search_trace))
     if _all_primary_fetches_failed(search_trace):
         (out_dir / "search_trace.json").write_text(
             json.dumps({"topic": args.topic, "snapshot_utc": ts,

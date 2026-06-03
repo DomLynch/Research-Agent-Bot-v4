@@ -199,12 +199,15 @@ def _run_step(
 def _run_topic_pipeline(
     topic: str, velocity: float, *, with_editorial: bool, top_n: int,
     py: str, pico_enrich: bool = False, frontier_review: bool = True,
+    parent_topic: str = "",
 ) -> TopicResult:
     """Run build + gate + signal_post for one topic. Returns the
     aggregate result. Each step's failure is recorded; we continue
     through to give the operator a partial output trail."""
     build_args = [py, "scripts/build_topic_evidence_run.py",
                   "--topic", topic, "--top", str(top_n)]
+    if parent_topic:
+        build_args.extend(["--parent-topic", parent_topic])
     if with_editorial:
         build_args.append("--with-editorial")
     if not frontier_review:
@@ -495,6 +498,7 @@ def main() -> int:
             top_n=_DEFAULT_PIPELINE_TOP_N, py=py,
             frontier_review=not args.no_frontier,
             pico_enrich=args.with_pico_enrich,
+            parent_topic=str(c.get("parent_topic") or ""),
         )
         elapsed = time.time() - t0
         print(f"   -> {res.status} label={res.signal_label} "
@@ -509,6 +513,7 @@ def main() -> int:
                 print(f"[cycle] child-topic rerun: {child}")
                 plan.append({
                     "topic": child,
+                    "parent_topic": topic,
                     "velocity_score": max(0.0, vel - 0.01),
                 })
 

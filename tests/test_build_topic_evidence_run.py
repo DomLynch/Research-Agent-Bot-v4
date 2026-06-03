@@ -104,6 +104,43 @@ def test_primary_fetch_failure_does_not_write_empty_frontier(monkeypatch, tmp_pa
     assert not (run_dir / "frontier_review.json").exists()
 
 
+def test_child_topic_fetches_parent_facts_before_classifying(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
+    class _S:
+        writer_configured = False
+
+    calls: list[str] = []
+
+    def _fetch(topic: str, *, trace: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        calls.append(topic)
+        trace.append({"kind": "normal", "query": topic, "facts": 1, "status": "ok", "errors": []})
+        return [{
+            "fact_id": topic,
+            "canonical_phrase": f"{topic} improved bounded reliability",
+            "source_paper": {"doi": f"10/{topic}", "title": topic},
+        }]
+
+    monkeypatch.setattr(er, "_RUNS", tmp_path / "runs")
+    monkeypatch.setattr(er, "_fetch_facts", _fetch)
+    monkeypatch.setattr(er, "load_settings", lambda: _S())
+    monkeypatch.setattr(
+        sys, "argv",
+        [
+            "build_topic_evidence_run.py",
+            "--topic", "parent_bounded_child",
+            "--parent-topic", "parent",
+            "--top", "5",
+            "--no-frontier",
+        ],
+    )
+
+    assert er.main() == 0
+    run_dir = next((tmp_path / "runs").glob("parent_bounded_child-evidence-*"))
+    facts = json.loads((run_dir / "all_facts.json").read_text())
+
+    assert calls == ["parent", "parent_bounded_child"]
+    assert {f["fact_id"] for f in facts} == {"parent", "parent_bounded_child"}
+
+
 def test_diverse_queries_use_data_facets_not_static_runtime_terms() -> None:
     queries = er._diverse_queries(
         "berberine", facets=("glucose metabolism", "randomized trials"),

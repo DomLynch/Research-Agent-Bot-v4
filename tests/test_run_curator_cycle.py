@@ -496,7 +496,7 @@ def test_stop_on_ready_halts_plan(
     def fake_pipeline(
         topic: str, velocity: float, *, with_editorial: bool,
         top_n: int, py: str, pico_enrich: bool = False,
-        frontier_review: bool = True,
+        frontier_review: bool = True, parent_topic: str = "",
     ) -> TopicResult:
         seen.append(topic)
         run_dir = runs / f"{topic}-evidence-ts"
@@ -546,7 +546,7 @@ def test_stop_on_ready_ignores_under_source_candidate(
     def fake_pipeline(
         topic: str, velocity: float, *, with_editorial: bool,
         top_n: int, py: str, pico_enrich: bool = False,
-        frontier_review: bool = True,
+        frontier_review: bool = True, parent_topic: str = "",
     ) -> TopicResult:
         seen.append(topic)
         top_values.append(top_n)
@@ -597,7 +597,7 @@ def test_stop_on_ready_skips_count_only_cached_candidate(
     def fake_pipeline(
         topic: str, velocity: float, *, with_editorial: bool,
         top_n: int, py: str, pico_enrich: bool = False,
-        frontier_review: bool = True,
+        frontier_review: bool = True, parent_topic: str = "",
     ) -> TopicResult:
         seen.append(topic)
         run_dir = runs / f"{topic}-evidence-ts"
@@ -649,13 +649,15 @@ def test_stop_on_ready_runs_structural_child_topic_before_giving_up(
     cycles = runs / "_curator_cycles"
     cycles.mkdir(parents=True)
     seen: list[str] = []
+    parents: list[str] = []
 
     def fake_pipeline(
         topic: str, velocity: float, *, with_editorial: bool,
         top_n: int, py: str, pico_enrich: bool = False,
-        frontier_review: bool = True,
+        frontier_review: bool = True, parent_topic: str = "",
     ) -> TopicResult:
         seen.append(topic)
+        parents.append(parent_topic)
         run_dir = runs / f"{topic}-evidence-ts"
         if topic == "parent":
             run_dir.mkdir(parents=True)
@@ -700,6 +702,7 @@ def test_stop_on_ready_runs_structural_child_topic_before_giving_up(
 
     assert run_curator_cycle.main() == 0
     assert seen == ["parent", "parent_bounded_claim_cluster"]
+    assert parents == ["", "parent"]
     payload = json.loads(next(cycles.glob("*.json")).read_text(encoding="utf-8"))
     assert payload["stopped_on_ready"] is True
 
