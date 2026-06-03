@@ -1070,6 +1070,40 @@ def test_fact_source_count_respects_probe_budget(monkeypatch: Any) -> None:
     assert out == topic_discovery._PROBE_INCONCLUSIVE
 
 
+def test_fact_source_count_uses_largest_shared_claim_cluster() -> None:
+    from agent import topic_discovery
+
+    phrases = [
+        "rapamycin extended lifespan by 10% in mice",
+        "rapamycin reduced tumor volume by 10% in mice",
+        "rapamycin reduced seizures by 10% in mice",
+        "rapamycin improved wound closure by 10% in mice",
+        "rapamycin changed glucose by 10% in mice",
+    ]
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.path.endswith("/tier2/facts/search"):
+            return httpx.Response(200, json=[
+                {
+                    "id": f"f{i}", "paper_id": f"10.9/{i}",
+                    "paper": {"doi": f"10.9/{i}"},
+                    "numeric_value": 10, "units": "%",
+                    "population": "middle-aged mice",
+                    "intervention": "rapamycin",
+                    "canonical_phrase": phrase,
+                }
+                for i, phrase in enumerate(phrases)
+            ])
+        return httpx.Response(200, json=[])
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        count = topic_discovery._fetch_topic_fact_source_count(
+            "rapamycin", client=c, settings=_settings(),
+        )
+
+    assert count == 1
+
+
 def test_fact_source_probe_deepens_exact_query_then_bounds_facets() -> None:
     from agent import topic_discovery
 

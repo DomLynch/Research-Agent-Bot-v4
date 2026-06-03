@@ -425,6 +425,17 @@ def _fact_child_slugs(
     return tuple(seen)
 
 
+def _fact_claim_terms(fact: dict[str, Any], topic: str) -> set[str]:
+    context = set(_title_tokens(topic.replace("_", " ")))
+    context.update(_title_tokens(str(fact.get("population") or "")))
+    context.update(_title_tokens(str(fact.get("intervention") or "")))
+    context.update(_title_tokens(str(fact.get("comparator") or "")))
+    return {
+        term for term in _title_tokens(str(fact.get("canonical_phrase") or ""))
+        if term not in context and term not in _CHILD_TOPIC_STOPWORDS
+    }
+
+
 def _topic_fact_keys(topic: str, *, max_keys: int = 4) -> tuple[str, ...]:
     seen: dict[str, None] = {}
     for query in expand_topic_queries(topic, max_queries=max_keys * 3):
@@ -439,6 +450,7 @@ def _topic_fact_keys(topic: str, *, max_keys: int = 4) -> tuple[str, ...]:
 def _add_source_profile(
     rows: list[dict[str, Any]], topic: str, *,
     source_keys: set[str], child_sources: dict[str, set[str]],
+    claim_source_clusters: dict[str, set[str]],
     child_source_papers: dict[str, dict[str, dict[str, Any]]] | None = None,
     source_papers: dict[str, dict[str, Any]] | None = None,
 ) -> None:
@@ -455,7 +467,13 @@ def _add_source_profile(
         if not key:
             continue
         if lane == "A_core":
-            source_keys.add(key)
+            for term in _fact_claim_terms(fact, topic):
+                claim_source_clusters.setdefault(term, set()).add(key)
+            if claim_source_clusters:
+                best = max(claim_source_clusters.values(), key=len)
+                if len(best) > len(source_keys):
+                    source_keys.clear()
+                    source_keys.update(best)
             if source_papers is not None:
                 paper = fact.get("source_paper")
                 if isinstance(paper, dict):
@@ -486,6 +504,7 @@ def _fetch_topic_fact_source_profile(
         return 0, ()
     source_keys: set[str] = set()
     child_sources: dict[str, set[str]] = {}
+    claim_source_clusters: dict[str, set[str]] = {}
     any_success = False
     deadline = time.monotonic() + _FACT_PROBE_BUDGET_SECONDS
     for key in _topic_fact_keys(topic):
@@ -509,6 +528,7 @@ def _fetch_topic_fact_source_profile(
         _add_source_profile(
             rows, topic, source_keys=source_keys,
             child_sources=child_sources,
+            claim_source_clusters=claim_source_clusters,
             child_source_papers=child_source_papers,
             source_papers=source_papers)
         if not mine_children and len(source_keys) >= _PUBLISHABLE_SOURCE_FLOOR:
@@ -549,6 +569,7 @@ def _fetch_topic_fact_source_profile(
         _add_source_profile(
             rows, topic, source_keys=source_keys,
             child_sources=child_sources,
+            claim_source_clusters=claim_source_clusters,
             child_source_papers=child_source_papers,
             source_papers=source_papers)
         for facet in _fact_source_facets(rows, topic):
