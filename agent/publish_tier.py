@@ -360,17 +360,31 @@ def _subtopic_recommendations(
     total = max(1, len(lanes))
     d_bad = sum(1 for lane in lanes.values() if lane == "D_bad_extraction")
     by_source: dict[str, list[dict[str, Any]]] = {}
+    by_label: dict[str, list[dict[str, Any]]] = {}
     for fid, fact in facts.items():
         key = _source_key(fact)
         if key:
             by_source.setdefault(key, []).append(fact | {"_fact_id": fid})
-    recommend = (
+        if lanes.get(fid) == "A_core":
+            label = _cluster_label([fact], topic, generic, stopwords)
+            if label != "unlabeled":
+                by_label.setdefault(label, []).append(fact | {"_fact_id": fid})
+    noisy_recommend = (
         enabled and d_bad / total >= d_bad_share_min
         and len(by_source) >= source_min
     )
+    coherent_clusters = [
+        items for items in by_label.values()
+        if len({_source_key(it) for it in items} - {""}) >= source_min
+    ]
+    recommend = noisy_recommend or (enabled and bool(coherent_clusters))
     clusters: list[dict[str, Any]] = []
+    if noisy_recommend:
+        cluster_items = sorted(by_source.values(), key=len, reverse=True)
+    else:
+        cluster_items = sorted(coherent_clusters, key=len, reverse=True)
     if recommend:
-        for items in sorted(by_source.values(), key=len, reverse=True)[:5]:
+        for items in cluster_items[:5]:
             first = items[0]
             clusters.append({
                 "label": _cluster_label(items, topic, generic, stopwords),
@@ -381,7 +395,8 @@ def _subtopic_recommendations(
     return {
         "recommended": recommend,
         "reason": (
-            "high_d_bad_share_plus_semantic_dispersion" if recommend
+            "high_d_bad_share_plus_semantic_dispersion" if noisy_recommend
+            else "source_coherent_child_cluster" if recommend
             else "not_broad_or_not_noisy_enough"
         ),
         "d_bad_share": round(d_bad / total, 3),

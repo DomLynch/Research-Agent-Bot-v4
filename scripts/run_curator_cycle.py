@@ -25,6 +25,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import re
 import subprocess
 import sys
 import time
@@ -55,6 +56,7 @@ _DISCOVERY_TIMEOUT_SECONDS = 1800
 # on dozens of zero/low-source dead candidates.
 _PREBUILD_MIN_SOURCE_FLOOR = max(1, _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES - 2)
 _STOP_ON_READY_DISCOVERY_FLOOR = 20
+_MAX_CHILD_RERUNS_PER_PARENT = 2
 
 
 def _discovery_top_for_plan(
@@ -150,6 +152,35 @@ def _is_publish_ready(run_dir: str) -> bool:
         _source_count(verdict, _RUNS) >= _DEFAULT_MIN_SUBMIT_SOURCES
         and _direct_source_count(verdict, _RUNS) >= _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES
     )
+
+
+def _child_topics_from_verdict(run_dir: str, seen: set[str]) -> list[str]:
+    if not run_dir:
+        return []
+    try:
+        verdict = json.loads((_ROOT / run_dir / "publish_verdict.json").read_text(
+            encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    rec = verdict.get("subtopic_recommendations")
+    if not isinstance(rec, dict) or not rec.get("recommended"):
+        return []
+    parent = str(verdict.get("topic") or "").strip()
+    out: list[str] = []
+    for cluster in rec.get("clusters") or []:
+        if not isinstance(cluster, dict):
+            continue
+        label = str(cluster.get("label") or "").strip("_")
+        if not label or label == "unlabeled":
+            continue
+        child = "_".join(x for x in (parent, label) if x)
+        child = "_".join(re.findall(r"[a-z0-9]+", child.lower()))
+        if child and child not in seen:
+            out.append(child)
+            seen.add(child)
+        if len(out) >= _MAX_CHILD_RERUNS_PER_PARENT:
+            break
+    return out
 
 
 def _run_step(
@@ -443,6 +474,7 @@ def main() -> int:
           f"(cooldown {args.cooldown_hours}h), "
           f"{len(skipped_excluded)} excluded, "
           f"{len(below_floor)} below source floor (not built)")
+    seen_topics = {str(c.get("topic") or "") for c in plan}
     for c in plan:
         print(f"   - {c['topic']:25}  velocity={c.get('velocity_score',0):.2f}")
 
@@ -472,6 +504,13 @@ def main() -> int:
             stopped_on_ready = True
             print("[cycle] stop-on-ready: publishable candidate created")
             break
+        if args.stop_on_ready:
+            for child in _child_topics_from_verdict(res.run_dir, seen_topics):
+                print(f"[cycle] child-topic rerun: {child}")
+                plan.append({
+                    "topic": child,
+                    "velocity_score": max(0.0, vel - 0.01),
+                })
 
     # Step 4: emit summary
     _CYCLES_DIR.mkdir(parents=True, exist_ok=True)
