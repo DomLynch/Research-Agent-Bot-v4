@@ -436,7 +436,9 @@ def test_discover_topics_prefers_fact_source_breadth(
 
     assert out[0].topic == "rich_topic"
     assert out[0].fact_source_count == 5
-    assert out[1].fact_source_count == 1
+    by_topic = {candidate.topic: candidate for candidate in out}
+    assert by_topic["rich_topic_risk"].fact_source_count == 5
+    assert by_topic["fast_topic"].fact_source_count == 1
 
 
 def test_discover_topics_warm_backlog_can_probe_all_seed_topics(
@@ -2672,6 +2674,44 @@ def test_warm_backlog_refreshes_source_rich_cache_missing_papers(
     assert cache["rich"]["source_papers"] == [
         {"title": "Root source", "doi": "10.1/root"},
     ]
+
+
+def test_claim_clusters_surface_as_source_rich_children(monkeypatch: Any) -> None:
+    from agent import topic_discovery as td
+
+    class Verdict:
+        def __init__(self, fact_id: str) -> None:
+            self.fact_id = fact_id
+            self.lane = "A_core"
+            self.reason = "direct"
+
+    monkeypatch.setattr(
+        td, "classify_lanes",
+        lambda facts, _topic: [Verdict(str(f["fact_id"])) for f in facts],
+    )
+    rows = [
+        {
+            "id": f"f{i}",
+            "paper": {"doi": f"10.1/{i}", "title": f"Mortality source {i}"},
+            "canonical_phrase": "Root intervention reduced mortality",
+            "numeric_value": i,
+        }
+        for i in range(5)
+    ]
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=rows)
+
+    child_papers: dict[str, dict[str, dict[str, Any]]] = {}
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        count, children = td._fetch_topic_fact_source_profile(
+            "root", client=client, settings=_settings(),
+            mine_children=True, child_source_papers=child_papers,
+        )
+
+    assert count == 5
+    assert ("root_mortality", 5) in children
+    assert len(child_papers["root_mortality"]) == 5
 
 
 def test_discover_topics_hydrates_cached_source_rich_papers(

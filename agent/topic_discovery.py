@@ -439,6 +439,11 @@ def _fact_claim_terms(fact: dict[str, Any], topic: str) -> set[str]:
     }
 
 
+def _claim_child_slug(topic: str, term: str) -> str:
+    suffix = re.sub(r"[\W_]+", "_", term.lower()).strip("_")
+    return f"{topic}_{suffix}" if suffix else ""
+
+
 def _topic_fact_keys(topic: str, *, max_keys: int = 4) -> tuple[str, ...]:
     seen: dict[str, None] = {}
     for query in expand_topic_queries(topic, max_queries=max_keys * 3):
@@ -470,17 +475,21 @@ def _add_source_profile(
         if not key:
             continue
         if lane == "A_core":
+            paper = fact.get("source_paper")
             for term in _fact_claim_terms(fact, topic):
                 claim_source_clusters.setdefault(term, set()).add(key)
+                slug = _claim_child_slug(topic, term)
+                if slug:
+                    child_sources.setdefault(slug, set()).add(key)
+                    if child_source_papers is not None and isinstance(paper, dict):
+                        child_source_papers.setdefault(slug, {}).setdefault(key, paper)
             if claim_source_clusters:
                 best = max(claim_source_clusters.values(), key=len)
                 if len(best) > len(source_keys):
                     source_keys.clear()
                     source_keys.update(best)
-            if source_papers is not None:
-                paper = fact.get("source_paper")
-                if isinstance(paper, dict):
-                    source_papers.setdefault(key, paper)
+            if source_papers is not None and isinstance(paper, dict):
+                source_papers.setdefault(key, paper)
         elif reasons.get(fact_id) != "topic_in_population_context_only":
             continue
         # Population-only broad parents stay underfloor; their direct
