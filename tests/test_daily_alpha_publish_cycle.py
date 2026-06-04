@@ -120,6 +120,10 @@ def _memo_with_source_receipts(root: Path, verdict: dict[str, Any], count: int) 
     run.joinpath("all_facts.json").write_text(json.dumps([
         {
             "fact_id": fid,
+            "canonical_phrase": "Matched endpoint improved in the target population.",
+            "population": "target population",
+            "intervention": "matched intervention",
+            "endpoint": "matched endpoint",
             "source_paper": {
                 "doi": f"10.1000/memo-{fid}",
                 "title": f"Memo source {fid}",
@@ -2126,6 +2130,41 @@ def test_claim_cluster_candidate_requires_direct_source_floor(tmp_path: Path) ->
         },
     }
     _memo_with_source_receipts(root, verdict, 4)
+
+    rows = daily._claim_cluster_candidates(
+        [verdict], root, min_direct_source_count=5,
+    )
+
+    assert rows == []
+
+
+def test_claim_cluster_candidate_requires_claim_coherence(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("mixed_parent") | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "blockers": ["source_dispersion"],
+        "subtopic_recommendations": {
+            "recommended": True,
+            "clusters": [{
+                "label": "adherence lower high",
+                "member_fact_ids": ["1", "2", "3", "4", "5"],
+            }],
+        },
+    }
+    _memo_with_source_receipts(root, verdict, 5)
+    run = root / str(verdict["run_dir"])
+    facts = json.loads(run.joinpath("all_facts.json").read_text(encoding="utf-8"))
+    for fact, endpoint in zip(
+        facts,
+        ("cancer mortality", "sarcopenia", "cognitive impairment", "cardiovascular disease", "all-cause death"),
+        strict=True,
+    ):
+        fact["canonical_phrase"] = f"Adherence was associated with lower {endpoint}."
+        fact["population"] = f"{endpoint} population"
+        fact["intervention"] = f"{endpoint} exposure"
+        fact["endpoint"] = endpoint
+    run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
 
     rows = daily._claim_cluster_candidates(
         [verdict], root, min_direct_source_count=5,

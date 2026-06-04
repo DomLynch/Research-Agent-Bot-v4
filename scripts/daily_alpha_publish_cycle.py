@@ -32,6 +32,15 @@ _ROOT = Path(__file__).resolve().parent.parent
 _RUNS = _ROOT / "runs"
 _PUBLICATION_PATH = _ROOT / "topic_packs" / "publication.toml"
 _PUBLISH_TIER_PATH = _ROOT / "topic_packs" / "publish_tier.toml"
+_CLAIM_WORD = re.compile(r"[a-z][a-z0-9]*")
+_CLUSTER_GENERIC_TOKENS = frozenset({
+    "the", "and", "with", "from", "that", "this", "study", "studies",
+    "patients", "participants", "adults", "risk", "effect", "effects",
+    "lower", "higher", "high", "low", "adherence", "score", "scores",
+    "significant", "association", "associated", "compared", "versus", "was",
+    "were", "population", "exposure", "all",
+    "confidence", "interval", "ratio", "meta", "analysis", "review",
+})
 
 Json = dict[str, Any]
 Fetcher = Callable[[str], Json]
@@ -521,12 +530,24 @@ def _cluster_fact_ids(cluster: Json) -> list[str]:
     return out
 
 
-def _cluster_direct_source_count(verdict: Json, cluster_ids: list[str], root: Path) -> int:
+def _cluster_tokens(fact: Json, parent: str) -> set[str]:
+    text = " ".join(
+        str(fact.get(key) or "") for key in (
+            "canonical_phrase", "population", "intervention", "endpoint", "comparator",
+        )
+    )
+    parent_tokens = set(_CLAIM_WORD.findall(parent.lower()))
+    return set(_CLAIM_WORD.findall(text.lower())) - parent_tokens - _CLUSTER_GENERIC_TOKENS
+
+
+def _cluster_has_coherent_component(
+    verdict: Json, cluster_ids: list[str], root: Path, *, min_direct_source_count: int,
+) -> bool:
     run_dir = _run_path(root, verdict.get("run_dir"))
     facts = _json(run_dir / "all_facts.json", [])
     lanes_raw = _json(run_dir / "fact_lanes.json", {})
     if not isinstance(facts, list) or not isinstance(lanes_raw, dict):
-        return 0
+        return False
     lanes = {
         str(row.get("fact_id") or ""): str(row.get("lane") or "")
         for row in lanes_raw.get("verdicts", [])
@@ -536,12 +557,23 @@ def _cluster_direct_source_count(verdict: Json, cluster_ids: list[str], root: Pa
         str(fact.get("fact_id") or ""): fact
         for fact in facts if isinstance(fact, dict)
     }
-    sources = {
-        _source_key_from_fact(by_id[fid])
+    parent = str(verdict.get("topic") or "")
+    usable = [
+        (fid, by_id[fid], _source_key_from_fact(by_id[fid]))
         for fid in cluster_ids
-        if fid in by_id and lanes.get(fid) == "A_core"
-    }
-    return len({source for source in sources if source})
+        if fid in by_id and lanes.get(fid) == "A_core" and _source_key_from_fact(by_id[fid])
+    ]
+    for anchor_id, anchor, _source in usable:
+        anchor_tokens = _cluster_tokens(anchor, parent)
+        if not anchor_tokens:
+            continue
+        sources = {
+            source for fid, fact, source in usable
+            if fid == anchor_id or len(anchor_tokens & _cluster_tokens(fact, parent)) >= 2
+        }
+        if len(sources) >= min_direct_source_count:
+            return True
+    return False
 
 
 def _claim_cluster_repairable(verdict: Json, rec: Json) -> bool:
@@ -580,7 +612,10 @@ def _claim_cluster_candidates(
             ids = _cluster_fact_ids(cluster)
             if (
                 len(ids) < min_direct_source_count
-                or _cluster_direct_source_count(verdict, ids, runs_root) < min_direct_source_count
+                or not _cluster_has_coherent_component(
+                    verdict, ids, runs_root,
+                    min_direct_source_count=min_direct_source_count,
+                )
             ):
                 continue
             label = str(cluster.get("label") or "claim_cluster").strip("_")
