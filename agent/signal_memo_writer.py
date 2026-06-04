@@ -1496,15 +1496,28 @@ def _repair_decision_notes(publish_verdict: dict[str, Any] | None) -> str:
     return " ".join(parts).lower()
 
 
+def _repair_heterogeneity_requested(publish_verdict: dict[str, Any] | None) -> bool:
+    notes = _repair_decision_notes(publish_verdict)
+    return any(term in notes for term in (
+        "conflicting", "heterogeneity", "inconsistent", "not consistently supported",
+        "non-significant", "not a uniform effect",
+    ))
+
+
 def _why_surprising(
     fallback: str,
     context_ids: list[str],
     publish_verdict: dict[str, Any] | None = None,
 ) -> str:
     notes = _repair_decision_notes(publish_verdict)
-    if (
-        "why this is surprising" in notes
-        and ("remove or provide citations" in notes or "does not contain" in notes)
+    if _repair_heterogeneity_requested(publish_verdict):
+        return (
+            "The surprise is the bounded heterogeneity: the cited direct receipts "
+            "do not support one uniform effect estimate, so the useful alpha is "
+            "the specific receipt map and its unresolved spread."
+        )
+    if "why this is surprising" in notes and (
+        "remove or provide citations" in notes or "does not contain" in notes
     ):
         return (
             "The surprise claim is limited to the direct cited receipt bundle. "
@@ -1798,7 +1811,11 @@ def render_signal_memo(
         and _source_count_for_ids(lead_ids, facts) >= min_direct_sources
         and _receipt_cluster_coheres(lead_ids, facts, topic, min_direct_sources)
     ):
-        headline = _grounded_headline(topic, lead_ids, facts, headline)
+        headline = (
+            f"Bounded {_topic_title(topic)} signal: cited direct receipts are heterogeneous"
+            if _repair_heterogeneity_requested(publish_verdict) else
+            _grounded_headline(topic, lead_ids, facts, headline)
+        )
         angle = {
             "kind": "source",
             "headline": headline,
@@ -1833,6 +1850,13 @@ def render_signal_memo(
     headline = angle["headline"]
     thesis = angle["thesis"]
     why_surprising = angle["why"]
+    if _repair_heterogeneity_requested(publish_verdict):
+        headline = f"Bounded {_topic_title(topic)} signal: cited direct receipts are heterogeneous"
+        thesis = (
+            "The cited direct receipts support a heterogeneous working map, not "
+            "one uniform effect estimate across the bundle."
+        )
+        why_surprising = _why_surprising("", context_ids, publish_verdict)
     bounded_question = angle.get("question") or (
         "Does the cited receipt bundle still support this bounded claim when "
         "population, endpoint, comparator, and time window are aligned?"

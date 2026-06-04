@@ -868,6 +868,8 @@ def test_agent_repair_rotates_reviewer_named_bad_receipt(
     evidence = memo.split("## Evidence receipts", 1)[1].split("\n## ", 1)[0]
 
     assert "**Direct source breadth:** `5` direct cited source(s)" in memo
+    assert "**Headline:** Bounded Carbon tax signal: cited direct receipts are heterogeneous" in memo
+    assert "heterogeneous working map" in memo
     assert "Reviewer alignment: read the cited receipts as a heterogeneous" in memo
     assert "`fact_id=505` (`A_core`)" not in evidence
     assert "`fact_id=808` (`A_core`)" in evidence
