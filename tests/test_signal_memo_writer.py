@@ -759,7 +759,7 @@ def test_agent_repair_does_not_preserve_incoherent_direct_floor(
     assert "`fact_id=505` (`A_core`)" not in memo
 
 
-def test_agent_repair_preserves_source_dispersion_only_evidence_map(
+def test_agent_repair_does_not_preserve_incoherent_dispersion_only_bundle(
     tmp_path: Path,
 ) -> None:
     run = tmp_path / "photobiomodulation_red_light-evidence-ts"
@@ -772,9 +772,59 @@ def test_agent_repair_preserves_source_dispersion_only_evidence_map(
     })
     evidence = memo.split("## Evidence receipts", 1)[1].split("\n## ", 1)[0]
 
-    assert "**Direct source breadth:** `5` direct cited source(s)" in memo
+    assert "**Direct source breadth:** `1` direct cited source(s)" in memo
     assert "`fact_id=101` (`A_core`)" in evidence
-    assert "`fact_id=505` (`A_core`)" in evidence
+    assert "`fact_id=505` (`A_core`)" not in evidence
+
+
+def test_agent_repair_preserves_coherent_dispersion_only_bundle_as_source_angle(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    (run / "signal_post.md").write_text(
+        "# Signal — carbon_tax\n\n"
+        "## Carbon tax has a live collision with exporter outcomes\n\n"
+        "## Why this is surprising\n\n"
+        "Real tension: this claims a broad collision.\n\n"
+        "## Confidence — `evidence_backed_signal`\n",
+        encoding="utf-8",
+    )
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    for fid in ("303", "404", "505", "606", "707"):
+        facts.append({
+            "fact_id": fid,
+            "canonical_phrase": "Carbon pricing reduced port emissions after audit checks.",
+            "population": "regulated port firms",
+            "intervention": "carbon pricing",
+            "source_paper": {"doi": f"10.x/coherent-{fid}"},
+        })
+        lanes["verdicts"].append({"fact_id": fid, "lane": "A_core"})
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+    (run / "opportunities_gate.json").write_text(json.dumps({
+        "audits": [{
+            "title": "Broad collision frame",
+            "status": "survives",
+            "capped_opportunity": 88,
+            "cited_fact_ids": ["303", "404", "505", "606", "707"],
+        }],
+    }), encoding="utf-8")
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "frontier_hypothesis_memo",
+        "blockers": ["source_dispersion"],
+        "_repair_decision": {"agent_repair": True},
+    })
+    why = memo.split("## Why this is surprising", 1)[1].split("\n## ", 1)[0]
+
+    assert "**Selected angle:** `source`" in memo
+    assert "**Direct source breadth:** `5` direct cited source(s)" in memo
+    assert "live collision" not in memo
+    assert "Real tension:" not in why
+    assert "bounded working claim" in memo
+    assert "`fact_id=707` (`A_core`)" in memo
 
 
 def test_source_angle_publish_memo_replaces_stale_surprise_prose(

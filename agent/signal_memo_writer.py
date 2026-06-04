@@ -705,6 +705,7 @@ def _source_bounded_why(
     force_tension: bool = False,
 ) -> str:
     prefix = "Real tension: " if force_tension else ""
+    lead = "the surprise" if force_tension else "The surprise"
     contexts: list[str] = []
     for fid in lead_ids:
         fact = facts.get(fid) or {}
@@ -716,14 +717,26 @@ def _source_bounded_why(
     if contexts:
         joined = "; ".join(contexts)
         return (
-            f"{prefix}the surprise is bounded to the cited receipt bundle; separate "
+            f"{prefix}{lead} is bounded to the cited receipt bundle; separate "
             f"direct sources report measurable effects in {joined}. Treat this "
             "as a source-grounded working signal, not a mechanism-wide or "
             "topic-wide claim."
         )
     return (
-        f"{prefix}the surprise is bounded to the cited direct receipts. Treat this as a "
+        f"{prefix}{lead} is bounded to the cited direct receipts. Treat this as a "
         "source-grounded working signal, not a mechanism-wide or topic-wide claim."
+    )
+
+
+def _bounded_direct_thesis(
+    lead_ids: list[str], facts: dict[str, dict[str, Any]],
+) -> str:
+    phrases = [_fact_phrase(facts.get(fid) or {}) for fid in lead_ids[:2]]
+    joined = "; ".join(p for p in phrases if p)
+    return (
+        f"The cited direct receipts support a bounded working claim: {joined}."
+        if joined else
+        "The cited direct receipts support a bounded working claim."
     )
 
 
@@ -1642,6 +1655,20 @@ def render_signal_memo(
             expanded_ids = lead_ids + [
                 fid for fid in expanded_ids if fid not in set(lead_ids)
             ]
+    if source_dispersion_only_repair and lead_ids:
+        coherent_direct = _coherent_receipt_ids(
+            facts, lanes, min_sources=min_direct_sources, allowed_lanes=_DIRECT,
+            claim=claim, topic=topic,
+        ) or _coherent_receipt_ids(
+            facts, lanes, min_sources=min_direct_sources, allowed_lanes=_DIRECT,
+            claim=set(), topic=topic,
+        )
+        lead_ids = coherent_direct or (
+            lead_ids if _receipt_cluster_coheres(
+                lead_ids, facts, topic, min_direct_sources,
+            ) else lead_ids[:1]
+        )
+        expanded_ids = lead_ids + [fid for fid in expanded_ids if fid not in set(lead_ids)]
     if not lead_ids:
         lead_ids = expanded_ids[:1]
     lead_set = set(lead_ids)
@@ -1718,6 +1745,18 @@ def render_signal_memo(
             "kind": "source",
             "headline": _context_headline(topic, lead_ids, facts, angle["headline"]),
             "thesis": thesis,
+            "why": _source_bounded_why(lead_ids, facts),
+        }
+    if (
+        source_dispersion_only_repair
+        and _source_count_for_ids(lead_ids, facts) >= min_direct_sources
+        and _receipt_cluster_coheres(lead_ids, facts, topic, min_direct_sources)
+    ):
+        headline = _grounded_headline(topic, lead_ids, facts, headline)
+        angle = {
+            "kind": "source",
+            "headline": headline,
+            "thesis": _bounded_direct_thesis(lead_ids, facts),
             "why": _source_bounded_why(lead_ids, facts),
         }
     if publish_verdict and publish_verdict.get("surface_type") == "publish_alpha_memo":
