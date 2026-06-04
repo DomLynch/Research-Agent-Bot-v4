@@ -1407,16 +1407,17 @@ def select_candidate(
                 repair_decision = _with_agent_repair_contract(verdict, repair_decision)
             refresh_verdict = verdict | {"_repair_decision": repair_decision}
             retry_fp = fp
+            retry_memo_sha256 = memo_sha256
             memo_refreshed = memo_refresher(run_dir, refresh_verdict)
             if memo_refreshed:
                 verdict = _reload_verdict_after_memo_refresh(refresh_verdict, run_dir)
                 fp = memo_fingerprint(verdict)
-                if retry_after_rejection and fp == retry_fp:
+                memo_sha256 = _memo_sha256(verdict, runs_root)
+                if retry_after_rejection and fp == retry_fp and memo_sha256 == retry_memo_sha256:
                     retry_fingerprint_unchanged = True
                 source_count = _source_count(verdict, runs_root)
                 direct_source_count = _direct_source_count(verdict, runs_root)
                 corpus_source_count = _corpus_source_count(verdict, runs_root)
-                memo_sha256 = _memo_sha256(verdict, runs_root)
                 approved = _selection_approved(
                     verdict,
                     runs_root,
@@ -1564,15 +1565,16 @@ def select_candidate(
             if status == "eligible" and retry_after_rejection and memo_refresher and not memo_refreshed:
                 run_dir = _run_path(runs_root, verdict.get("run_dir"))
                 retry_fp = fp
+                retry_memo_sha256 = memo_sha256
                 refresh_verdict = verdict | {"_repair_decision": retry_decisions.get(fp)}
                 memo_refreshed = memo_refresher(run_dir, refresh_verdict)
                 if memo_refreshed:
                     verdict = _reload_verdict_after_memo_refresh(refresh_verdict, run_dir)
                     fp = memo_fingerprint(verdict)
+                    memo_sha256 = _memo_sha256(verdict, runs_root)
                     source_count = _source_count(verdict, runs_root)
                     direct_source_count = _direct_source_count(verdict, runs_root)
                     corpus_source_count = _corpus_source_count(verdict, runs_root)
-                    memo_sha256 = _memo_sha256(verdict, runs_root)
                     approved = _selection_approved(
                         verdict,
                         runs_root,
@@ -1591,7 +1593,7 @@ def select_candidate(
                         decisions=retry_decisions,
                     )
                     missing_audit_sidecars = _missing_audit_sidecars(verdict, runs_root)
-                    if fp == retry_fp:
+                    if fp == retry_fp and memo_sha256 == retry_memo_sha256:
                         status = "duplicate_submission_fingerprint"
             if missing_audit_sidecars:
                 status = "memo_missing_audit_sidecars"

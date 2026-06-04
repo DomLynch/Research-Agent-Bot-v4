@@ -4216,6 +4216,50 @@ def test_retryable_revision_keeps_agent_repair_contract(
     assert considered[0]["status"] == "eligible"
 
 
+def test_retryable_revision_allows_changed_memo_same_fingerprint(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("same_bundle_new_text")
+    _memo_with_source_receipts(root, verdict, 5)
+    fp = daily.memo_fingerprint(verdict)
+    old_sha = daily._memo_sha256(verdict, root)
+    daily._write_json(root / "submitted.json", [{
+        "fingerprint": fp,
+        "memo_sha256": old_sha,
+        "topic": "same_bundle_new_text",
+    }])
+    decision = {
+        "decision": "revise",
+        "required_revisions": ["Clarify the bounded claim without changing sources."],
+        "resubmission": {"allowed": True},
+    }
+
+    def refresh(run_dir: Path, _refresh_verdict: dict[str, Any]) -> bool:
+        path = run_dir / "alpha_memo.md"
+        path.write_text(
+            path.read_text(encoding="utf-8") + "\nReviewer-requested clarification.\n",
+            encoding="utf-8",
+        )
+        return True
+
+    cand, considered = daily.select_candidate(
+        _queue(verdict),
+        runs_root=root,
+        submitted_path=root / "submitted.json",
+        min_source_count=5,
+        min_direct_source_count=5,
+        memo_refresher=refresh,
+        retryable_fingerprints={fp},
+        retry_decision_overrides={fp: decision},
+    )
+
+    assert cand is not None
+    assert cand["memo_fingerprint"] == fp
+    assert considered[0]["memo_refreshed"] is True
+    assert considered[0]["status"] == "eligible"
+
+
 def test_stale_queue_verdict_reloads_current_disk_verdict(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     stale = _verdict("stale_ready") | {

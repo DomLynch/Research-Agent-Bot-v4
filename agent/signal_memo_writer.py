@@ -345,8 +345,15 @@ def _repair_excluded_receipt_ids(verdict: dict[str, Any] | None) -> set[str]:
     decision = (verdict or {}).get("_repair_decision")
     if not isinstance(decision, dict):
         return set()
-    text = json.dumps(decision, sort_keys=True)
-    return set(re.findall(r"\bfact_id\s*[=:]\s*([A-Za-z0-9_-]+)", text, flags=re.I))
+    out: set[str] = set()
+    for value in decision.values():
+        values = value if isinstance(value, list) else [value]
+        for item in values:
+            text = str(item or "")
+            if not re.search(r"\b(remove|replace|exclude|drop)\b", text, flags=re.I):
+                continue
+            out.update(re.findall(r"\bfact_id\s*[=:]\s*([A-Za-z0-9_-]+)", text, flags=re.I))
+    return out
 
 
 def _direct_bundle_needs_narrowing(verdict: dict[str, Any] | None) -> bool:
