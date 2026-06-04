@@ -1443,6 +1443,7 @@ def _limitations_lines(
     *,
     lead_source_count: int,
     context_ids: list[str],
+    publish_verdict: dict[str, Any] | None = None,
 ) -> list[str]:
     lines = [
         "- This is an alpha memo, not a settled review, guideline, or broad "
@@ -1457,6 +1458,21 @@ def _limitations_lines(
             f"- The core claim rests on {lead_source_count} direct source paper(s); "
             "context receipts broaden the source bundle but are not convergent proof.",
         )
+    notes = _repair_decision_notes(publish_verdict)
+    if notes:
+        if any(term in notes for term in (
+            "conflicting", "heterogeneity", "inconsistent", "not consistently supported",
+            "non-significant",
+        )):
+            lines.append(
+                "- Reviewer alignment: read the cited receipts as a heterogeneous "
+                "receipt map, not as one uniform effect estimate.",
+            )
+        else:
+            lines.append(
+                "- Reviewer alignment: the repaired claim is narrowed to the cited "
+                "receipt bundle below.",
+            )
     return [*lines, *weakening[:3]]
 
 
@@ -1886,6 +1902,7 @@ def render_signal_memo(
             weakening,
             lead_source_count=lead_source_count,
             context_ids=context_ids,
+            publish_verdict=publish_verdict,
         ),
         "",
         "## What would weaken this",
