@@ -31,6 +31,7 @@ from agent.publish_tier import publish_verdict
 _ROOT = Path(__file__).resolve().parent.parent
 _RUNS = _ROOT / "runs"
 _PUBLICATION_PATH = _ROOT / "topic_packs" / "publication.toml"
+_PUBLISH_TIER_PATH = _ROOT / "topic_packs" / "publish_tier.toml"
 
 Json = dict[str, Any]
 Fetcher = Callable[[str], Json]
@@ -120,6 +121,19 @@ def _alpha_memo_float(name: str, default: float) -> float:
         return default
     with suppress(TypeError, ValueError):
         return max(0.0, float(str(alpha.get(name))))
+    return default
+
+
+def _publish_tier_int(name: str, default: int) -> int:
+    try:
+        data = tomllib.loads(_PUBLISH_TIER_PATH.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return default
+    thresholds = data.get("thresholds") if isinstance(data, dict) else {}
+    if not isinstance(thresholds, dict):
+        return default
+    with suppress(TypeError, ValueError):
+        return max(0, int(str(thresholds.get(name))))
     return default
 
 
@@ -530,18 +544,35 @@ def _cluster_direct_source_count(verdict: Json, cluster_ids: list[str], root: Pa
     return len({source for source in sources if source})
 
 
+def _claim_cluster_repairable(verdict: Json, rec: Json) -> bool:
+    decision = str(verdict.get("decision") or "")
+    if decision in _AGENT_REPAIR_DECISIONS:
+        return True
+    blockers = {str(x) for x in verdict.get("blockers") or []}
+    return (
+        decision == "curation_needed"
+        and rec.get("reason") == "source_coherent_child_cluster"
+        and int(verdict.get("alpha_score") or 0)
+        >= _publish_tier_int("review_min_alpha_score", 30)
+        and not any(blocker.startswith("blocked_label:") for blocker in blockers)
+    )
+
+
 def _claim_cluster_candidates(
     rows: list[Json], runs_root: Path, *, min_direct_source_count: int,
 ) -> list[Json]:
     out: list[Json] = []
     seen: set[str] = set()
     for verdict in rows:
-        if verdict.get("decision") not in _AGENT_REPAIR_DECISIONS:
-            continue
         parent = str(verdict.get("topic") or "").strip()
         rec = verdict.get("subtopic_recommendations")
         clusters = rec.get("clusters") if isinstance(rec, dict) else []
-        if not parent or not isinstance(clusters, list):
+        if (
+            not parent
+            or not isinstance(rec, dict)
+            or not isinstance(clusters, list)
+            or not _claim_cluster_repairable(verdict, rec)
+        ):
             continue
         for cluster in clusters:
             if not isinstance(cluster, dict):
@@ -1415,9 +1446,12 @@ def select_candidate(
         queue, allow_tier2=allow_tier2,
         enrich_weak_tension=memo_refresher is not None,
     )
+    cluster_rows = rows + [
+        r for r in queue.get("curation_needed") or [] if isinstance(r, dict)
+    ]
     candidates = sorted(
         _claim_cluster_candidates(
-            rows, runs_root, min_direct_source_count=min_direct_source_count,
+            cluster_rows, runs_root, min_direct_source_count=min_direct_source_count,
         ) + rows,
         key=lambda r: (
             0 if r.get("decision") == "ready_to_publish"

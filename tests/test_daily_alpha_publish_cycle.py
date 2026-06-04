@@ -2134,6 +2134,61 @@ def test_claim_cluster_candidate_requires_direct_source_floor(tmp_path: Path) ->
     assert rows == []
 
 
+def test_high_alpha_curation_cluster_can_seed_claim_candidate(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("curated_parent") | {
+        "decision": "curation_needed",
+        "publish_tier": "TIER_3",
+        "alpha_score": 100,
+        "blockers": ["feed_scope_mismatch"],
+        "subtopic_recommendations": {
+            "recommended": True,
+            "reason": "source_coherent_child_cluster",
+            "clusters": [{
+                "label": "bounded claim",
+                "member_fact_ids": ["1", "2", "3", "4", "5"],
+            }],
+        },
+    }
+    _memo_with_source_receipts(root, verdict, 5)
+
+    rows = daily._claim_cluster_candidates(
+        [verdict], root, min_direct_source_count=5,
+    )
+
+    assert len(rows) == 1
+    assert rows[0]["topic"] == "curated_parent_bounded_claim"
+    assert rows[0]["decision"] == "agent_repair_needed"
+    assert rows[0]["receipt_expansion"]["cited_bound_fact_ids"] == [
+        "1", "2", "3", "4", "5",
+    ]
+
+
+def test_low_alpha_curation_cluster_stays_out_of_claim_candidates(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("weak_curated_parent") | {
+        "decision": "curation_needed",
+        "publish_tier": "TIER_3",
+        "alpha_score": 0,
+        "blockers": ["blocked_label:no_signal"],
+        "subtopic_recommendations": {
+            "recommended": True,
+            "reason": "source_coherent_child_cluster",
+            "clusters": [{
+                "label": "bounded claim",
+                "member_fact_ids": ["1", "2", "3", "4", "5"],
+            }],
+        },
+    }
+    _memo_with_source_receipts(root, verdict, 5)
+
+    rows = daily._claim_cluster_candidates(
+        [verdict], root, min_direct_source_count=5,
+    )
+
+    assert rows == []
+
+
 def test_no_candidate_refreshes_queued_child_topics_next_batch(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
