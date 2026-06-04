@@ -2046,6 +2046,94 @@ def test_child_topics_from_queue_skips_receipt_backed_repair_clusters() -> None:
     assert children == ["parent_topic_fallback_child"]
 
 
+def test_claim_cluster_candidate_bypasses_parent_topic_exhaustion(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("parent_topic") | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "blockers": ["source_dispersion", "direct_source_floor_below_min"],
+        "subtopic_recommendations": {
+            "recommended": True,
+            "clusters": [{
+                "label": "bounded claim",
+                "member_fact_ids": ["1", "2", "3", "4", "5"],
+            }],
+        },
+    }
+    _memo_with_source_receipts(root, verdict, 5)
+    refreshed: list[dict[str, Any]] = []
+
+    def refresh(run_dir: Path, refresh_verdict: dict[str, Any]) -> bool:
+        refreshed.append(refresh_verdict)
+        assert refresh_verdict["_claim_cluster_candidate"] is True
+        assert refresh_verdict["_parent_topic"] == "parent_topic"
+        run_dir.joinpath("alpha_memo.md").write_text(
+            "# Alpha memo\n\n"
+            "**Headline:** Storage reserves flip after threshold pricing\n\n"
+            "## Evidence receipts\n\n"
+            + "\n".join(f"- `fact_id={i}` (`A_core`) - direct" for i in range(1, 6))
+            + "\n" + _FALSIFIER,
+            encoding="utf-8",
+        )
+        _audit_sidecars(run_dir)
+        return True
+
+    def reload_verdict(refresh_verdict: dict[str, Any], _run_dir: Path) -> dict[str, Any]:
+        return refresh_verdict | {
+            "decision": "agent_repair_needed",
+            "publish_tier": "TIER_2",
+            "blockers": ["source_dispersion"],
+        }
+
+    monkeypatch.setattr(daily, "_reload_verdict_after_memo_refresh", reload_verdict)
+    cand, considered = daily.select_candidate(
+        {
+            "ready_to_publish": [],
+            "agent_repair_needed": [verdict],
+            "curation_needed": [],
+        },
+        runs_root=root,
+        submitted_path=root / "submitted.json",
+        allow_tier2=True,
+        min_source_count=5,
+        min_direct_source_count=5,
+        memo_refresher=refresh,
+        blocked_topics={"parent_topic"},
+    )
+
+    assert refreshed
+    assert cand is not None
+    assert cand["topic"] == "parent_topic_bounded_claim"
+    assert cand["memo_fingerprint"] != daily.memo_fingerprint(verdict)
+    assert considered[0]["topic"] == "parent_topic_bounded_claim"
+    assert considered[0]["status"] == "eligible"
+
+
+def test_claim_cluster_candidate_requires_direct_source_floor(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("thin_parent") | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "blockers": ["source_dispersion", "direct_source_floor_below_min"],
+        "subtopic_recommendations": {
+            "recommended": True,
+            "clusters": [{
+                "label": "thin claim",
+                "member_fact_ids": ["1", "2", "3", "4"],
+            }],
+        },
+    }
+    _memo_with_source_receipts(root, verdict, 4)
+
+    rows = daily._claim_cluster_candidates(
+        [verdict], root, min_direct_source_count=5,
+    )
+
+    assert rows == []
+
+
 def test_no_candidate_refreshes_queued_child_topics_next_batch(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

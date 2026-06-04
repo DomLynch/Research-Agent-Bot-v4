@@ -266,6 +266,12 @@ def _current_selection_verdict(verdict: Json, root: Path) -> Json:
     if not current:
         return verdict
     private = {k: v for k, v in verdict.items() if str(k).startswith("_")}
+    if verdict.get("_claim_cluster_candidate"):
+        private.update({
+            "topic": verdict.get("topic"),
+            "receipt_expansion": verdict.get("receipt_expansion"),
+            "subtopic_recommendations": verdict.get("subtopic_recommendations"),
+        })
     return current | private
 
 
@@ -279,6 +285,12 @@ def _reload_verdict_after_memo_refresh(verdict: Json, run_dir: Path) -> Json:
     repair_decision = verdict.get("_repair_decision")
     if repair_decision is not None:
         refreshed["_repair_decision"] = repair_decision
+    if verdict.get("_claim_cluster_candidate"):
+        refreshed.update({
+            k: v for k, v in verdict.items()
+            if str(k).startswith("_")
+            or k in {"topic", "receipt_expansion", "subtopic_recommendations"}
+        })
     return refreshed
 
 
@@ -343,14 +355,16 @@ def memo_fingerprint(verdict: Json) -> str:
     receipts = verdict.get("receipt_expansion") or {}
     axes_raw = verdict.get("axes")
     axes = axes_raw if isinstance(axes_raw, dict) else {}
-    cited = sorted(str(x) for x in receipts.get("cited_bound_fact_ids", []))[:3]
+    cluster_ids = verdict.get("_claim_cluster_fact_ids")
+    cited_source = cluster_ids if isinstance(cluster_ids, list) else receipts.get("cited_bound_fact_ids", [])
+    cited = sorted(str(x) for x in cited_source)[:3]
     papers = axes.get("source_papers", [])
     dois = sorted(
         _source_key_from_paper(p)
         for p in papers if isinstance(p, dict)
     )[:2]
     direction = "|".join([
-        _norm(verdict.get("topic")),
+        _norm(_selection_topic(verdict)),
         _norm(verdict.get("surface_type")),
         _norm(verdict.get("confidence_label")),
         _norm(verdict.get("publish_tier")),
@@ -361,6 +375,10 @@ def memo_fingerprint(verdict: Json) -> str:
         "direction": direction,
     }, sort_keys=True)
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _selection_topic(verdict: Json) -> str:
+    return str(verdict.get("_claim_cluster_topic") or verdict.get("topic") or "")
 
 
 def _needs_tension_enrichment(verdict: Json) -> bool:
@@ -470,6 +488,96 @@ def _rows(
             if isinstance(r, dict) and _needs_tension_enrichment(r)
         )
     return [r for r in out if isinstance(r, dict)]
+
+
+def _cluster_child_topic(parent: str, label: str) -> str:
+    child = "_".join(re.findall(r"[a-z0-9]+", f"{parent}_{label}".lower()))
+    return child or parent
+
+
+def _cluster_fact_ids(cluster: Json) -> list[str]:
+    values = cluster.get("member_fact_ids") if isinstance(cluster, dict) else []
+    if not isinstance(values, list):
+        return []
+    out: list[str] = []
+    for value in values:
+        fid = str(value or "").strip()
+        if fid and fid not in out:
+            out.append(fid)
+    return out
+
+
+def _cluster_direct_source_count(verdict: Json, cluster_ids: list[str], root: Path) -> int:
+    run_dir = _run_path(root, verdict.get("run_dir"))
+    facts = _json(run_dir / "all_facts.json", [])
+    lanes_raw = _json(run_dir / "fact_lanes.json", {})
+    if not isinstance(facts, list) or not isinstance(lanes_raw, dict):
+        return 0
+    lanes = {
+        str(row.get("fact_id") or ""): str(row.get("lane") or "")
+        for row in lanes_raw.get("verdicts", [])
+        if isinstance(row, dict)
+    }
+    by_id = {
+        str(fact.get("fact_id") or ""): fact
+        for fact in facts if isinstance(fact, dict)
+    }
+    sources = {
+        _source_key_from_fact(by_id[fid])
+        for fid in cluster_ids
+        if fid in by_id and lanes.get(fid) == "A_core"
+    }
+    return len({source for source in sources if source})
+
+
+def _claim_cluster_candidates(
+    rows: list[Json], runs_root: Path, *, min_direct_source_count: int,
+) -> list[Json]:
+    out: list[Json] = []
+    seen: set[str] = set()
+    for verdict in rows:
+        if verdict.get("decision") not in _AGENT_REPAIR_DECISIONS:
+            continue
+        parent = str(verdict.get("topic") or "").strip()
+        rec = verdict.get("subtopic_recommendations")
+        clusters = rec.get("clusters") if isinstance(rec, dict) else []
+        if not parent or not isinstance(clusters, list):
+            continue
+        for cluster in clusters:
+            if not isinstance(cluster, dict):
+                continue
+            ids = _cluster_fact_ids(cluster)
+            if (
+                len(ids) < min_direct_source_count
+                or _cluster_direct_source_count(verdict, ids, runs_root) < min_direct_source_count
+            ):
+                continue
+            label = str(cluster.get("label") or "claim_cluster").strip("_")
+            topic = _cluster_child_topic(parent, label)
+            expansion = verdict.get("receipt_expansion")
+            if not isinstance(expansion, dict):
+                expansion = {}
+            candidate = verdict | {
+                "_claim_cluster_candidate": True,
+                "_claim_cluster_fact_ids": ids,
+                "_claim_cluster_topic": topic,
+                "_parent_topic": parent,
+                "topic": topic,
+                "decision": "agent_repair_needed",
+                "blockers": ["source_dispersion"],
+                "receipt_expansion": expansion | {"cited_bound_fact_ids": ids},
+                "subtopic_recommendations": {
+                    "recommended": True,
+                    "reason": "claim_cluster_first_selection",
+                    "clusters": [cluster],
+                },
+            }
+            fp = memo_fingerprint(candidate)
+            if fp in seen:
+                continue
+            seen.add(fp)
+            out.append(candidate)
+    return out
 
 
 def _with_repairable_candidates(queue: Json, runs_root: Path) -> Json:
@@ -1303,20 +1411,28 @@ def select_candidate(
     topic_blocked = blocked_topics or set()
     shape_profiles = accepted_shape_profiles or []
     considered: list[Json] = []
+    rows = _rows(
+        queue, allow_tier2=allow_tier2,
+        enrich_weak_tension=memo_refresher is not None,
+    )
     candidates = sorted(
-        _rows(
-            queue, allow_tier2=allow_tier2,
-            enrich_weak_tension=memo_refresher is not None,
-        ),
+        _claim_cluster_candidates(
+            rows, runs_root, min_direct_source_count=min_direct_source_count,
+        ) + rows,
         key=lambda r: (
-            0 if r.get("decision") == "ready_to_publish" else 1,
+            0 if r.get("decision") == "ready_to_publish"
+            else 1 if r.get("_claim_cluster_candidate") else 2,
             -(int(r.get("alpha_score") or 0) + accepted_shape_bonus(r, shape_profiles)),
             str(r.get("topic") or ""),
         ),
     )
     for verdict in candidates:
         raw_fp = memo_fingerprint(verdict)
-        if raw_fp not in seen and raw_fp not in retry_decisions:
+        if (
+            raw_fp not in seen
+            and raw_fp not in retry_decisions
+            and not verdict.get("_claim_cluster_candidate")
+        ):
             verdict = _current_selection_verdict(verdict, runs_root)
         fp = memo_fingerprint(verdict)
         source_count = _source_count(verdict, runs_root)
@@ -1350,7 +1466,7 @@ def select_candidate(
             )
         )
         cycle_blocked = fp in blocked
-        exhausted_topic = str(verdict.get("topic") or "") in topic_blocked
+        exhausted_topic = _selection_topic(verdict) in topic_blocked
         attempt_count = _fingerprint_attempt_count(submitted_path, fp)
         retry_after_rejection = _retry_after_rejection(
             fp,
@@ -1613,7 +1729,7 @@ def select_candidate(
                 elif direct_source_count < min_direct_source_count:
                     status = "direct_source_floor_below_min"
         row = {
-            "topic": verdict.get("topic"),
+            "topic": _selection_topic(verdict),
             "decision": verdict.get("decision"),
             "publish_tier": verdict.get("publish_tier"),
             "surface_type": verdict.get("surface_type"),
