@@ -4160,6 +4160,7 @@ def test_retryable_revision_keeps_agent_repair_contract(
     }
     _memo_with_source_receipts(root, verdict, 6)
     fp = daily.memo_fingerprint(verdict)
+    daily._write_json(root / "submitted.json", [{"fingerprint": fp, "topic": "retry_agent_repair"}])
     retry_decision = {
         "decision": "revise",
         "required_revisions": ["Narrow the memo around the direct receipts."],
@@ -4208,6 +4209,7 @@ def test_retryable_revision_keeps_agent_repair_contract(
     )
 
     assert cand is not None
+    assert cand["memo_fingerprint"] != fp
     assert refresh_decisions[0] is not None
     assert refresh_decisions[0]["agent_repair"] is True
     assert refresh_decisions[0]["required_revisions"] == retry_decision["required_revisions"]
