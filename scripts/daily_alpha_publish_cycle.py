@@ -2405,18 +2405,17 @@ def _plain_section(memo: str, heading: str) -> str:
 
 def _safe_excerpt(text: str, limit: int = 1200) -> str:
     excerpt = " ".join(str(text or "").split())
-    if len(excerpt) <= limit:
-        return excerpt
     sentence_cuts = [
         match.end()
         for match in re.finditer(r"[.!?](?=\s|$)", excerpt[:limit + 1])
     ]
+    if len(excerpt) <= limit:
+        if sentence_cuts:
+            return excerpt[:sentence_cuts[-1]]
+        return ""
     if sentence_cuts:
         return excerpt[:sentence_cuts[-1]]
-    word_cut = excerpt.rfind(" ", 0, limit - 3)
-    if word_cut >= 80:
-        return excerpt[:word_cut].rstrip() + "..."
-    return excerpt[:limit].rstrip()
+    return ""
 
 
 def _public_submission_markdown(memo: str) -> str:
@@ -2477,10 +2476,16 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         or verdict.get("topic")
         or "Alpha memo"
     )
-    abstract = (
-        _plain_section(memo, "One-sentence thesis")
-        or _plain_section(memo, "Why this is surprising")
-        or title
+    abstract = next(
+        (
+            excerpt for excerpt in (
+                _safe_excerpt(_plain_section(memo, "One-sentence thesis")),
+                _safe_excerpt(_plain_section(memo, "Why this is surprising")),
+                _safe_excerpt(title),
+                title,
+            ) if excerpt
+        ),
+        title,
     )
     source_papers = _memo_source_papers(verdict, root)
     direct_source_papers = _memo_source_papers(verdict, root, ("Evidence",), {"A_core"})
@@ -2493,8 +2498,8 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         "author_agent_id": "agent-v4-alpha-memo",
         "agent_id": "agent-v4-alpha-memo",
         "title": title,
-        "abstract": _safe_excerpt(abstract),
-        "summary": _safe_excerpt(abstract),
+        "abstract": abstract,
+        "summary": abstract,
         "topic": verdict.get("topic"),
         "markdown": public_memo,
         "citations": source_bundle,

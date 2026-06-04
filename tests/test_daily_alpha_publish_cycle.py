@@ -2817,6 +2817,29 @@ def test_submission_payload_excerpt_does_not_cut_mid_sentence(tmp_path: Path) ->
     assert payload["summary"] == "Direct receipts support the bounded claim."
 
 
+def test_submission_payload_uses_complete_fallback_when_thesis_is_incomplete(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict()
+    run = root / str(verdict["run_dir"])
+    run.mkdir(parents=True)
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n"
+        "**Headline:** Bounded endpoint signal\n\n"
+        "## One-sentence thesis\n\n"
+        "The cited receipts show an apparent collision between direct sources and hyperbaric oxy\n\n"
+        "## Why this is surprising\n\n"
+        "The evidence map is bounded to directly cited receipts.\n",
+        encoding="utf-8",
+    )
+
+    payload = daily._submission_payload(verdict, root / "runs")
+
+    assert payload["abstract"] == "The evidence map is bounded to directly cited receipts."
+    assert payload["summary"] == "The evidence map is bounded to directly cited receipts."
+
+
 def test_submission_payload_uses_researka_source_bundle_schema(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict()
