@@ -1971,6 +1971,12 @@ def _apply_submission_decision(
                     or (ledger.get("candidate") or {}).get("topic")
                 )
                 ledger["public_url"] = page.get("url")
+            elif page.get("status") == "missing_public_url":
+                final = "pending"
+                ledger["status"] = "submitted_to_researka"
+                ledger["published"] = 0
+                ledger["accepted_pending_public_url"] = True
+                ledger.pop("publish_failure_reason", None)
             else:
                 final = "rejected"
                 ledger["status"] = "public_page_not_rendered"

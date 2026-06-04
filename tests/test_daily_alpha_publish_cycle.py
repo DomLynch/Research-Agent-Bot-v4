@@ -3229,6 +3229,28 @@ def test_sync_submission_decisions_rejects_accept_without_rendered_page(tmp_path
     assert patched["public_page_check"]["status"] == "not_rendered"
 
 
+def test_apply_submission_decision_keeps_accept_without_url_pending() -> None:
+    ledger: dict[str, Any] = {
+        "submitted": 1,
+        "published": 0,
+        "submitted_topic": "accepted_without_url",
+    }
+
+    final = daily._apply_submission_decision(
+        ledger,
+        submission_id="sub-accepted-without-url",
+        decision={"status": "complete", "decision": "accept"},
+        page_fetcher=lambda _url: {"ok": False, "status": 0},
+    )
+
+    assert final == "pending"
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["final_verdict"] == "pending"
+    assert ledger["accepted_pending_public_url"] is True
+    assert ledger["published"] == 0
+    assert ledger["public_page_check"]["status"] == "missing_public_url"
+
+
 def test_public_alpha_urls_prefers_publication_url_over_artifact_ids() -> None:
     decision = {
         "dw_artifact_id": "claim_16e9ea4c16c74570",
