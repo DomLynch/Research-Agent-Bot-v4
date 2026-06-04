@@ -2767,6 +2767,10 @@ def test_submission_payload_strips_internal_alpha_scores(tmp_path: Path) -> None
         "Narrow signal.\n\n"
         "## Context receipts\n\n"
         "- boundary receipt\n\n"
+        "## Next extraction\n\n"
+        "- internal extraction task\n\n"
+        "## Subtopic recommendations\n\n"
+        "- split this workflow-only child\n\n"
         "## Provenance / priority\n\n"
         "- **Run bundle SHA-256:** `internal`\n",
         encoding="utf-8",
@@ -2777,6 +2781,10 @@ def test_submission_payload_strips_internal_alpha_scores(tmp_path: Path) -> None
     assert not payload["markdown"].startswith("# Alpha memo")
     assert "**Alpha score:**" not in payload["markdown"]
     assert "**Alpha triage:**" not in payload["markdown"]
+    assert "## Next extraction" not in payload["markdown"]
+    assert "internal extraction task" not in payload["markdown"]
+    assert "## Subtopic recommendations" not in payload["markdown"]
+    assert "workflow-only child" not in payload["markdown"]
     assert "## Provenance / priority" not in payload["markdown"]
     assert "Run bundle SHA-256" not in payload["markdown"]
     assert payload["abstract"] == "Direct receipts support a bounded, testable signal."
@@ -2784,6 +2792,29 @@ def test_submission_payload_strips_internal_alpha_scores(tmp_path: Path) -> None
     assert "hypothesis-generating alpha memo, not confirmatory evidence" in payload["markdown"]
     assert "Boundary evidence only" in payload["markdown"]
     assert payload["evidence_bundle"]["context_sources_are_not_direct_support"] is True
+
+
+def test_submission_payload_excerpt_does_not_cut_mid_sentence(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict()
+    run = root / str(verdict["run_dir"])
+    run.mkdir(parents=True)
+    long_tail = " ".join(["unfinished"] * 260)
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n"
+        "**Headline:** Bounded endpoint signal\n\n"
+        "## One-sentence thesis\n\n"
+        "Direct receipts support the bounded claim. "
+        f"{long_tail}\n\n"
+        "## Why this is surprising\n\n"
+        "Narrow signal.\n",
+        encoding="utf-8",
+    )
+
+    payload = daily._submission_payload(verdict, root / "runs")
+
+    assert payload["abstract"] == "Direct receipts support the bounded claim."
+    assert payload["summary"] == "Direct receipts support the bounded claim."
 
 
 def test_submission_payload_uses_researka_source_bundle_schema(tmp_path: Path) -> None:

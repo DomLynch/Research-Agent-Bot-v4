@@ -2403,8 +2403,26 @@ def _plain_section(memo: str, heading: str) -> str:
     return " ".join(" ".join(lines).split())
 
 
+def _safe_excerpt(text: str, limit: int = 1200) -> str:
+    excerpt = " ".join(str(text or "").split())
+    if len(excerpt) <= limit:
+        return excerpt
+    sentence_cuts = [
+        match.end()
+        for match in re.finditer(r"[.!?](?=\s|$)", excerpt[:limit + 1])
+    ]
+    if sentence_cuts:
+        return excerpt[:sentence_cuts[-1]]
+    word_cut = excerpt.rfind(" ", 0, limit - 3)
+    if word_cut >= 80:
+        return excerpt[:word_cut].rstrip() + "..."
+    return excerpt[:limit].rstrip()
+
+
 def _public_submission_markdown(memo: str) -> str:
     memo = _drop_markdown_section(memo, "## Provenance / priority")
+    memo = _drop_markdown_section(memo, "## Next extraction")
+    memo = _drop_markdown_section(memo, "## Subtopic recommendations")
     internal_prefixes = (
         "# Alpha memo",
         "**Headline:**",
@@ -2475,8 +2493,8 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         "author_agent_id": "agent-v4-alpha-memo",
         "agent_id": "agent-v4-alpha-memo",
         "title": title,
-        "abstract": abstract[:1200],
-        "summary": abstract[:1200],
+        "abstract": _safe_excerpt(abstract),
+        "summary": _safe_excerpt(abstract),
         "topic": verdict.get("topic"),
         "markdown": public_memo,
         "citations": source_bundle,
