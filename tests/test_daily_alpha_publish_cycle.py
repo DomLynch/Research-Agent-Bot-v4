@@ -2069,6 +2069,59 @@ def test_child_topics_from_queue_runs_receipt_backed_curation_clusters() -> None
     assert children == ["parent_topic_bounded_claim"]
 
 
+def test_child_topics_from_queue_prioritizes_source_coherent_clusters() -> None:
+    queue = {
+        "curation_needed": [
+            {
+                "topic": "noisy",
+                "alpha_score": 100,
+                "subtopic_recommendations": {
+                    "recommended": True,
+                    "reason": "high_d_bad_share_plus_semantic_dispersion",
+                    "clusters": [{
+                        "label": "large noisy",
+                        "member_fact_ids": ["1", "2", "3", "4", "5", "6"],
+                    }],
+                },
+            },
+            {
+                "topic": "coherent",
+                "alpha_score": 10,
+                "subtopic_recommendations": {
+                    "recommended": True,
+                    "reason": "source_coherent_child_cluster",
+                    "clusters": [{
+                        "label": "bounded claim",
+                        "member_fact_ids": ["1", "2", "3", "4", "5"],
+                    }],
+                },
+            },
+        ],
+    }
+
+    children = daily._child_topics_from_queue(queue, set(), limit=2)
+
+    assert children == ["coherent_bounded_claim", "noisy_large_noisy"]
+
+
+def test_child_topics_from_queue_skips_underfloor_curation_clusters() -> None:
+    queue = {
+        "curation_needed": [{
+            "topic": "weak",
+            "subtopic_recommendations": {
+                "recommended": True,
+                "reason": "source_coherent_child_cluster",
+                "clusters": [{
+                    "label": "too thin",
+                    "member_fact_ids": ["1", "2", "3", "4"],
+                }],
+            },
+        }],
+    }
+
+    assert daily._child_topics_from_queue(queue, set(), limit=3) == []
+
+
 def test_claim_cluster_candidate_bypasses_parent_topic_exhaustion(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

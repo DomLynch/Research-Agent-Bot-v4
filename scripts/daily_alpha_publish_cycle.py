@@ -2368,9 +2368,10 @@ def _refresh_candidate_batch(
 def _child_topics_from_queue(
     queue: Json, excluded_topics: set[str], *, limit: int,
 ) -> list[str]:
-    out: list[str] = []
+    candidates: list[tuple[tuple[int, int, int, str], str]] = []
     seen = set(excluded_topics)
-    for bucket_name in ("agent_repair_needed", "curation_needed"):
+    floor = _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES
+    for bucket_order, bucket_name in enumerate(("agent_repair_needed", "curation_needed")):
         for verdict in queue.get(bucket_name) or []:
             if not isinstance(verdict, dict):
                 continue
@@ -2386,16 +2387,25 @@ def _child_topics_from_queue(
                     and _cluster_has_repair_receipts(cluster)
                 ):
                     continue
+                ids = _cluster_fact_ids(cluster)
+                member_count = len(ids)
+                if bucket_name == "curation_needed" and ids and member_count < floor:
+                    continue
                 label = str(cluster.get("label") or "").strip("_")
                 if not label or label == "unlabeled":
                     continue
                 child = "_".join(re.findall(r"[a-z0-9]+", f"{parent}_{label}".lower()))
                 if child and child not in seen:
-                    out.append(child)
+                    reason_rank = (
+                        0 if rec.get("reason") == "source_coherent_child_cluster" else 1
+                    )
+                    alpha = int(verdict.get("alpha_score") or 0)
+                    candidates.append((
+                        (reason_rank, -member_count, -alpha, f"{bucket_order}:{child}"),
+                        child,
+                    ))
                     seen.add(child)
-                    if len(out) >= limit:
-                        return out
-    return out
+    return [child for _score, child in sorted(candidates)[:limit]]
 
 
 def _cluster_has_repair_receipts(cluster: Json) -> bool:
