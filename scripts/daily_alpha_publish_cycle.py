@@ -580,14 +580,7 @@ def _claim_cluster_repairable(verdict: Json, rec: Json) -> bool:
     decision = str(verdict.get("decision") or "")
     if decision in _AGENT_REPAIR_DECISIONS:
         return True
-    blockers = {str(x) for x in verdict.get("blockers") or []}
-    return (
-        decision == "curation_needed"
-        and rec.get("reason") == "source_coherent_child_cluster"
-        and int(verdict.get("alpha_score") or 0)
-        >= _publish_tier_int("review_min_alpha_score", 30)
-        and not any(blocker.startswith("blocked_label:") for blocker in blockers)
-    )
+    return decision == "curation_needed" and rec.get("reason") == "source_coherent_child_cluster"
 
 
 def _claim_cluster_candidates(

@@ -2275,7 +2275,9 @@ def test_high_alpha_curation_cluster_can_seed_claim_candidate(tmp_path: Path) ->
     ]
 
 
-def test_low_alpha_curation_cluster_stays_out_of_claim_candidates(tmp_path: Path) -> None:
+def test_low_alpha_curation_cluster_can_seed_claim_candidate_when_source_coherent(
+    tmp_path: Path,
+) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("weak_curated_parent") | {
         "decision": "curation_needed",
@@ -2297,7 +2299,11 @@ def test_low_alpha_curation_cluster_stays_out_of_claim_candidates(tmp_path: Path
         [verdict], root, min_direct_source_count=5,
     )
 
-    assert rows == []
+    assert len(rows) == 1
+    assert rows[0]["topic"] == "weak_curated_parent_bounded_claim"
+    assert rows[0]["receipt_expansion"]["cited_bound_fact_ids"] == [
+        "1", "2", "3", "4", "5",
+    ]
 
 
 def test_no_candidate_refreshes_queued_child_topics_next_batch(
