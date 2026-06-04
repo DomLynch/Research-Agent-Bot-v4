@@ -3689,14 +3689,15 @@ def test_repairable_reject_retries_same_topic_before_refreshing(
         sleep=lambda _seconds: None,
     )
 
-    assert submitted == ["repair_first", "repair_first"]
-    assert len(calls) == 1
-    assert ledger["status"] == "published"
-    assert ledger["refresh_batches"][1]["note"] == "skipped_after_repairable_submission"
-    assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == [
-        "reviewer_rejected",
-        "published",
-    ]
+    assert submitted == ["repair_first"]
+    assert len(calls) == 2
+    assert ledger["status"] == "submit_retry_exhausted"
+    assert ledger["repair_retry_deferred"] == {
+        "topic": "repair_first",
+        "reason": "reviewer_rejected",
+        "requires": "new_memo_fingerprint",
+    }
+    assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == ["reviewer_rejected"]
 
 
 def test_repairable_revise_stops_at_fingerprint_attempt_cap(
@@ -3757,18 +3758,16 @@ def test_repairable_revise_stops_at_fingerprint_attempt_cap(
         sleep=lambda _seconds: None,
     )
 
-    assert submitted == ["never_satisfies_reviewer"] * 4
-    assert refreshes == 4
+    assert submitted == ["never_satisfies_reviewer"]
+    assert refreshes == 1
     assert ledger["status"] == "submit_retry_exhausted"
-    assert ledger["last_attempt_status"] == "reviewer_revise"
-    assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == [
-        "reviewer_revise",
-        "reviewer_revise",
-        "reviewer_revise",
-        "reviewer_revise",
-    ]
-    assert ledger["considered"][-1]["status"] == "duplicate_submission_fingerprint"
-    assert not ledger["considered"][-1].get("retry_after_rejection")
+    assert ledger["repair_retry_deferred"] == {
+        "topic": "never_satisfies_reviewer",
+        "reason": "reviewer_revise",
+        "requires": "new_memo_fingerprint",
+    }
+    assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == ["reviewer_revise"]
+    assert ledger["considered"][-1]["status"] == "cycle_exhausted_topic"
 
 
 def test_repairable_revise_on_final_search_batch_gets_repair_slot(
@@ -3837,14 +3836,15 @@ def test_repairable_revise_on_final_search_batch_gets_repair_slot(
         sleep=lambda _seconds: None,
     )
 
-    assert submitted == ["final_batch_repair", "final_batch_repair"]
-    assert refreshes == 2
-    assert ledger["status"] == "published"
-    assert ledger["refresh_batches"][1]["note"] == "skipped_after_repairable_submission"
-    assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == [
-        "reviewer_revise",
-        "published",
-    ]
+    assert submitted == ["final_batch_repair"]
+    assert refreshes == 1
+    assert ledger["status"] == "submit_retry_exhausted"
+    assert ledger["repair_retry_deferred"] == {
+        "topic": "final_batch_repair",
+        "reason": "reviewer_revise",
+        "requires": "new_memo_fingerprint",
+    }
+    assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == ["reviewer_revise"]
 
 
 def test_current_cycle_repairable_revise_does_not_depend_on_ledger_rescan(
@@ -3914,19 +3914,15 @@ def test_current_cycle_repairable_revise_does_not_depend_on_ledger_rescan(
         sleep=lambda _seconds: None,
     )
 
-    assert submitted == ["current_cycle_repair", "current_cycle_repair"]
-    assert refresh_decisions == [None, {
-        "status": "complete",
-        "decision": "revise",
-        "claim_support_verdict": "supported",
-        "required_revisions": ["Remove uncited specifics before resubmission."],
-        "resubmission": {"allowed": True},
-    }]
-    assert ledger["status"] == "published"
-    assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == [
-        "reviewer_revise",
-        "published",
-    ]
+    assert submitted == ["current_cycle_repair"]
+    assert refresh_decisions == [None]
+    assert ledger["status"] == "submit_retry_exhausted"
+    assert ledger["repair_retry_deferred"] == {
+        "topic": "current_cycle_repair",
+        "reason": "reviewer_revise",
+        "requires": "new_memo_fingerprint",
+    }
+    assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == ["reviewer_revise"]
 
 
 def test_accepted_shape_bias_breaks_candidate_tie(tmp_path: Path) -> None:

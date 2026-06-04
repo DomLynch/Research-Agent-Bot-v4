@@ -1325,6 +1325,7 @@ def select_candidate(
         shape_bonus = accepted_shape_bonus(verdict, shape_profiles)
         status = "eligible"
         memo_refreshed = False
+        retry_fingerprint_unchanged = False
         has_memo = _has_memo(verdict, runs_root)
         memo_sha256 = _memo_sha256(verdict, runs_root) if has_memo else ""
         approved = (
@@ -1405,10 +1406,13 @@ def select_candidate(
             if agent_repair:
                 repair_decision = _with_agent_repair_contract(verdict, repair_decision)
             refresh_verdict = verdict | {"_repair_decision": repair_decision}
+            retry_fp = fp
             memo_refreshed = memo_refresher(run_dir, refresh_verdict)
             if memo_refreshed:
                 verdict = _reload_verdict_after_memo_refresh(refresh_verdict, run_dir)
                 fp = memo_fingerprint(verdict)
+                if retry_after_rejection and fp == retry_fp:
+                    retry_fingerprint_unchanged = True
                 source_count = _source_count(verdict, runs_root)
                 direct_source_count = _direct_source_count(verdict, runs_root)
                 corpus_source_count = _corpus_source_count(verdict, runs_root)
@@ -1518,7 +1522,7 @@ def select_candidate(
             status = "cycle_exhausted_topic"
         elif cycle_blocked:
             status = "cycle_failed_submission"
-        elif fp in seen and not retry_after_rejection:
+        elif (fp in seen and not retry_after_rejection) or retry_fingerprint_unchanged:
             status = "duplicate_submission_fingerprint"
         elif not has_memo:
             status = "missing_alpha_memo"
@@ -1559,6 +1563,7 @@ def select_candidate(
                     missing_audit_sidecars = _missing_audit_sidecars(verdict, runs_root)
             if status == "eligible" and retry_after_rejection and memo_refresher and not memo_refreshed:
                 run_dir = _run_path(runs_root, verdict.get("run_dir"))
+                retry_fp = fp
                 refresh_verdict = verdict | {"_repair_decision": retry_decisions.get(fp)}
                 memo_refreshed = memo_refresher(run_dir, refresh_verdict)
                 if memo_refreshed:
@@ -1586,8 +1591,12 @@ def select_candidate(
                         decisions=retry_decisions,
                     )
                     missing_audit_sidecars = _missing_audit_sidecars(verdict, runs_root)
+                    if fp == retry_fp:
+                        status = "duplicate_submission_fingerprint"
             if missing_audit_sidecars:
                 status = "memo_missing_audit_sidecars"
+            if retry_fingerprint_unchanged:
+                status = "duplicate_submission_fingerprint"
             if status == "eligible":
                 if fp in seen and _same_memo_seen(submitted_path, fp, memo_sha256):
                     status = "duplicate_submission_fingerprint"
@@ -2738,13 +2747,11 @@ def run_cycle(
                         ):
                             fingerprint = str(candidate.get("memo_fingerprint") or "")
                             if fingerprint:
-                                session_retryable.add(fingerprint)
-                                session_retry_decisions[fingerprint] = decision
-                            skip_next_refresh = True
-                            ledger["repair_retry_scheduled"] = {
-                                "batch": batch + 1,
+                                blocked_fingerprints.add(fingerprint)
+                            ledger["repair_retry_deferred"] = {
                                 "topic": candidate.get("topic"),
                                 "reason": attempt["status"],
+                                "requires": "new_memo_fingerprint",
                             }
                             _write_json(ledger_path, ledger)
                             continue
