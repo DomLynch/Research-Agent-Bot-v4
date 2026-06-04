@@ -2765,8 +2765,12 @@ def test_submission_payload_strips_internal_alpha_scores(tmp_path: Path) -> None
         "Direct receipts support a bounded, testable signal.\n\n"
         "## Why this is surprising\n\n"
         "Narrow signal.\n\n"
+        "## Evidence Landscape\n\n"
+        "Bounded research question.\n\n"
         "## Context receipts\n\n"
         "- boundary receipt\n\n"
+        "## What this changes\n\n"
+        "Testable hypothesis.\n\n"
         "## Next extraction\n\n"
         "- internal extraction task\n\n"
         "## Subtopic recommendations\n\n"
@@ -2790,6 +2794,9 @@ def test_submission_payload_strips_internal_alpha_scores(tmp_path: Path) -> None
     assert payload["abstract"] == "Direct receipts support a bounded, testable signal."
     assert payload["summary"] == "Direct receipts support a bounded, testable signal."
     assert "hypothesis-generating alpha memo, not confirmatory evidence" in payload["markdown"]
+    assert "cited receipts are separate evidence streams" in payload["markdown"]
+    assert "not a pooled meta-analysis or settled conclusion" in payload["markdown"]
+    assert "this is a hypothesis-generating alpha map" in payload["markdown"]
     assert "Boundary evidence only" in payload["markdown"]
     assert payload["evidence_bundle"]["context_sources_are_not_direct_support"] is True
 

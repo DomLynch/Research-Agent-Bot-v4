@@ -2447,6 +2447,19 @@ def _public_submission_markdown(memo: str) -> str:
     )
     if "## Why this is surprising" in text and note not in text:
         text = text.replace("\n## Why this is surprising", f"\n\n{note}\n## Why this is surprising", 1)
+    landscape_note = (
+        "_Evidence-map boundary: cited receipts are separate evidence streams "
+        "unless an integrated analysis is explicitly stated; this memo maps a "
+        "testable contrast, not a pooled meta-analysis or settled conclusion._\n"
+    )
+    change_note = (
+        "_Interpretation boundary: this is a hypothesis-generating alpha map, "
+        "not confirmatory evidence or a settled conclusion._\n"
+    )
+    if "## Evidence Landscape\n\n" in text and landscape_note not in text:
+        text = text.replace("## Evidence Landscape\n\n", f"## Evidence Landscape\n\n{landscape_note}\n", 1)
+    if "## What this changes\n\n" in text and change_note not in text:
+        text = text.replace("## What this changes\n\n", f"## What this changes\n\n{change_note}\n", 1)
     return text.replace(
         "## Context receipts\n\n",
         "## Context receipts\n\n"
