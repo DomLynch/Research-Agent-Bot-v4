@@ -257,10 +257,12 @@ def _coherent_receipt_ids(
     allowed_lanes: frozenset[str],
     claim: set[str],
     topic: str,
+    excluded_ids: set[str] | None = None,
 ) -> list[str]:
+    excluded = excluded_ids or set()
     candidates = [
         fid for fid, fact in facts.items()
-        if lanes.get(fid) in allowed_lanes and _source_key(fact)
+        if fid not in excluded and lanes.get(fid) in allowed_lanes and _source_key(fact)
         and (not claim or _fact_coheres(fact, claim, topic))
     ]
     best: tuple[tuple[float, int, int], list[str]] = ((0.0, 0, 0), [])
@@ -337,6 +339,16 @@ def _agent_repair_requested(verdict: dict[str, Any] | None) -> bool:
     return isinstance(decision, dict) and decision.get("agent_repair") is True
 
 
+def _repair_excluded_receipt_ids(verdict: dict[str, Any] | None) -> set[str]:
+    if not _agent_repair_requested(verdict):
+        return set()
+    decision = (verdict or {}).get("_repair_decision")
+    if not isinstance(decision, dict):
+        return set()
+    text = json.dumps(decision, sort_keys=True)
+    return set(re.findall(r"\bfact_id\s*[=:]\s*([A-Za-z0-9_-]+)", text, flags=re.I))
+
+
 def _direct_bundle_needs_narrowing(verdict: dict[str, Any] | None) -> bool:
     if not isinstance(verdict, dict):
         return False
@@ -365,13 +377,14 @@ def _repair_cluster_receipt_ids(
     clusters = rec.get("clusters") if isinstance(rec, dict) else []
     if not isinstance(clusters, list):
         return []
+    excluded = _repair_excluded_receipt_ids(verdict)
     for cluster in clusters:
         values = cluster.get("member_fact_ids") if isinstance(cluster, dict) else []
         if not isinstance(values, list):
             continue
         ids = [
             fid for fid in (str(value or "").strip() for value in values)
-            if fid and fid in facts and lanes.get(fid) in _DIRECT
+            if fid and fid not in excluded and fid in facts and lanes.get(fid) in _DIRECT
         ]
         if (
             _source_count_for_ids(ids, facts) >= min_sources
@@ -389,6 +402,7 @@ def _direct_floor_repair_receipt_ids(
     topic: str,
     preferred_ids: list[str],
     trusted_ids: set[str],
+    excluded_ids: set[str],
 ) -> list[str]:
     ids = _expanded_receipt_ids(
         {"cited_fact_ids": []},
@@ -400,6 +414,7 @@ def _direct_floor_repair_receipt_ids(
         topic=topic,
         preferred_ids=preferred_ids,
         trusted_ids=trusted_ids,
+        excluded_ids=excluded_ids,
         require_cluster=False,
     )
     return ids if _source_count_for_ids(ids, facts) >= min_sources else []
@@ -416,15 +431,17 @@ def _expanded_receipt_ids(
     topic: str = "",
     preferred_ids: list[str] | None = None,
     trusted_ids: set[str] | None = None,
+    excluded_ids: set[str] | None = None,
     require_cluster: bool = True,
 ) -> list[str]:
     selected: list[str] = []
     seen_ids: set[str] = set()
     sources: set[str] = set()
     trusted = trusted_ids or set()
+    excluded = excluded_ids or set()
 
     def add(fid: str) -> None:
-        if fid in seen_ids or lanes.get(fid) not in allowed_lanes or fid not in facts:
+        if fid in excluded or fid in seen_ids or lanes.get(fid) not in allowed_lanes or fid not in facts:
             return
         trusted_topic_match = (
             fid in trusted
@@ -1550,15 +1567,16 @@ def render_signal_memo(
     lanes = _lane_map(run_dir)
     min_sources = _memo_alpha_int("min_source_papers", 5)
     min_direct_sources = _memo_alpha_int("min_direct_source_papers", 5)
+    excluded_receipt_ids = _repair_excluded_receipt_ids(publish_verdict)
     claim = _claim_signal(
         [str(x) for x in audit.get("cited_fact_ids", [])], facts, topic,
     )
     coherent_direct = _coherent_receipt_ids(
         facts, lanes, min_sources=min_direct_sources, allowed_lanes=_DIRECT,
-        claim=claim, topic=topic,
+        claim=claim, topic=topic, excluded_ids=excluded_receipt_ids,
     ) or _coherent_receipt_ids(
         facts, lanes, min_sources=min_direct_sources, allowed_lanes=_DIRECT,
-        claim=set(), topic=topic,
+        claim=set(), topic=topic, excluded_ids=excluded_receipt_ids,
     )
     if coherent_direct:
         audit = audit | {"cited_fact_ids": coherent_direct}
@@ -1582,18 +1600,20 @@ def render_signal_memo(
     if _needs_coherent_repick(publish_verdict):
         coherent_direct = _coherent_receipt_ids(
             facts, lanes, min_sources=min_direct_sources, allowed_lanes=_DIRECT,
-            claim=claim, topic=topic,
+            claim=claim, topic=topic, excluded_ids=excluded_receipt_ids,
         ) or _coherent_receipt_ids(
             facts, lanes, min_sources=min_direct_sources, allowed_lanes=_DIRECT,
-            claim=set(), topic=topic,
+            claim=set(), topic=topic, excluded_ids=excluded_receipt_ids,
         )
         if coherent_direct:
             coherent_bound = _coherent_receipt_ids(
                 facts, lanes, min_sources=min_sources + 1,
                 allowed_lanes=_BINDABLE, claim=claim, topic=topic,
+                excluded_ids=excluded_receipt_ids,
             ) or _coherent_receipt_ids(
                 facts, lanes, min_sources=min_sources + 1,
                 allowed_lanes=_BINDABLE, claim=set(), topic=topic,
+                excluded_ids=excluded_receipt_ids,
             )
             audit = audit | {"cited_fact_ids": coherent_bound or coherent_direct}
             claim = _claim_signal(coherent_direct, facts, topic)
@@ -1625,6 +1645,7 @@ def render_signal_memo(
     expanded_ids = _expanded_receipt_ids(
         audit, facts, lanes, min_sources=min_sources, claim=claim, topic=topic,
         preferred_ids=preferred_bound_ids, trusted_ids=trusted_bound_ids,
+        excluded_ids=excluded_receipt_ids,
     )
     lead_ids = _expanded_receipt_ids(
         audit, facts, lanes,
@@ -1633,6 +1654,7 @@ def render_signal_memo(
         claim=claim, topic=topic,
         preferred_ids=preferred_direct_ids,
         trusted_ids=trusted_direct_ids,
+        excluded_ids=excluded_receipt_ids,
         require_cluster=(
             not _agent_repair_requested(publish_verdict)
             or _direct_bundle_needs_narrowing(publish_verdict)
@@ -1649,6 +1671,7 @@ def render_signal_memo(
             topic=topic,
             preferred_ids=preferred_direct_ids,
             trusted_ids=trusted_direct_ids,
+            excluded_ids=excluded_receipt_ids,
         )
         if repaired_direct_ids:
             lead_ids = repaired_direct_ids
@@ -1658,10 +1681,10 @@ def render_signal_memo(
     if source_dispersion_only_repair and lead_ids:
         coherent_direct = _coherent_receipt_ids(
             facts, lanes, min_sources=min_direct_sources, allowed_lanes=_DIRECT,
-            claim=claim, topic=topic,
+            claim=claim, topic=topic, excluded_ids=excluded_receipt_ids,
         ) or _coherent_receipt_ids(
             facts, lanes, min_sources=min_direct_sources, allowed_lanes=_DIRECT,
-            claim=set(), topic=topic,
+            claim=set(), topic=topic, excluded_ids=excluded_receipt_ids,
         )
         lead_ids = coherent_direct or (
             lead_ids if _receipt_cluster_coheres(
