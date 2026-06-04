@@ -764,6 +764,31 @@ def _bounded_direct_thesis(
     )
 
 
+def _heterogeneous_map_thesis(
+    lead_ids: list[str], facts: dict[str, dict[str, Any]],
+) -> str:
+    contexts: list[str] = []
+    for fid in lead_ids:
+        fact = facts.get(fid) or {}
+        raw_paper = fact.get("source_paper")
+        paper = raw_paper if isinstance(raw_paper, dict) else {}
+        context = _clip(fact.get("population") or paper.get("title") or "", 120)
+        if context:
+            contexts.append(context)
+    unique_contexts = list(dict.fromkeys(contexts))[:4]
+    scope = (
+        " across " + "; ".join(unique_contexts)
+        if unique_contexts else
+        ""
+    )
+    return (
+        "The cited direct receipts form a heterogeneous evidence map"
+        f"{scope}, not one integrated effect estimate. Numeric effects in "
+        "the bundle are source-specific unless another cited receipt repeats "
+        "the same population, endpoint, comparator, and time window."
+    )
+
+
 def _has_counter_items(verdict: dict[str, Any] | None) -> bool:
     counter = (verdict or {}).get("counter_evidence")
     items = counter.get("items", []) if isinstance(counter, dict) else []
@@ -1500,7 +1525,9 @@ def _repair_heterogeneity_requested(publish_verdict: dict[str, Any] | None) -> b
     notes = _repair_decision_notes(publish_verdict)
     return any(term in notes for term in (
         "conflicting", "heterogeneity", "inconsistent", "not consistently supported",
-        "non-significant", "not a uniform effect",
+        "non-significant", "not a uniform effect", "unrelated evidence streams",
+        "single thesis", "unified finding", "unified effect", "single source",
+        "synthesized finding", "separate evidence stream",
     ))
 
 
@@ -1723,6 +1750,8 @@ def render_signal_memo(
             claim=set(), topic=topic, excluded_ids=excluded_receipt_ids,
         )
         lead_ids = coherent_direct or (
+            lead_ids if _repair_heterogeneity_requested(publish_verdict)
+            and _source_count_for_ids(lead_ids, facts) >= min_direct_sources else
             lead_ids if _receipt_cluster_coheres(
                 lead_ids, facts, topic, min_direct_sources,
             ) else lead_ids[:1]
@@ -1852,21 +1881,30 @@ def render_signal_memo(
     why_surprising = angle["why"]
     if _repair_heterogeneity_requested(publish_verdict):
         headline = f"Bounded {_topic_title(topic)} signal: cited direct receipts are heterogeneous"
-        thesis = (
-            "The cited direct receipts support a heterogeneous working map, not "
-            "one uniform effect estimate across the bundle."
-        )
+        thesis = _heterogeneous_map_thesis(lead_ids, facts)
         why_surprising = _why_surprising("", context_ids, publish_verdict)
-    bounded_question = angle.get("question") or (
+    bounded_question = (
+        "Which single receipt stream, if any, repeats after matching "
+        "population, endpoint, comparator, and time window?"
+        if _repair_heterogeneity_requested(publish_verdict) else
+        angle.get("question") or (
         "Does the cited receipt bundle still support this bounded claim when "
         "population, endpoint, comparator, and time window are aligned?"
+        )
     )
-    what_changes = angle.get("what_changes") or (
+    what_changes = (
+        "Treat this as a receipt map for choosing the next extraction, not as "
+        "evidence that the topic has one unified effect. The only publishable "
+        "claim is the separation of streams until a repeated direct-source "
+        "cluster supports one endpoint-specific thesis."
+        if _repair_heterogeneity_requested(publish_verdict) else
+        angle.get("what_changes") or (
         "Treat this as a focused working signal, not a broad topic claim. "
         "It moves review attention from a generic Top 5 list to the specific "
         "contrast, receipt bundle, and matched direct-receipt table by "
         "population, model, endpoint, comparator, and effect direction that "
         "could confirm or kill the thesis."
+        )
     )
     score = _alpha_score(audit, label)
     lines = [

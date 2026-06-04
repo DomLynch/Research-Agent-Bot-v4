@@ -877,8 +877,43 @@ def test_agent_repair_frames_reviewer_heterogeneity_without_forced_collision(
 
     assert "**Direct source breadth:** `5` direct cited source(s)" in memo
     assert "**Headline:** Bounded Carbon tax signal: cited direct receipts are heterogeneous" in memo
-    assert "heterogeneous working map" in memo
+    assert "heterogeneous evidence map" in memo
     assert "live collision" not in memo
+    assert "Real tension:" not in why
+
+
+def test_agent_repair_heterogeneous_map_blocks_unified_numeric_thesis(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "photobiomodulation_red_light-evidence-ts"
+    _write_mixed_direct_stream_run(run)
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "frontier_hypothesis_memo",
+        "blockers": ["source_dispersion"],
+        "_repair_decision": {
+            "agent_repair": True,
+            "required_revisions": [
+                "The memo bundles unrelated evidence streams under a single thesis.",
+                "Clarify that the 32% neurological deficit reduction is single-source.",
+                "The claim is not consistently supported across all cited sources.",
+            ],
+        },
+    })
+    thesis = memo.split("## One-sentence thesis\n\n", 1)[1].split("\n\n## ", 1)[0]
+    changes = memo.split("## What this changes\n\n", 1)[1].split("\n\n## ", 1)[0]
+    why = memo.split("## Why this is surprising\n\n", 1)[1].split("\n\n## ", 1)[0]
+
+    assert "**Direct source breadth:** `5` direct cited source(s)" in memo
+    assert "**Headline:** Bounded Photobiomodulation red light signal: cited direct receipts are heterogeneous" in memo
+    assert "heterogeneous evidence map" in thesis
+    assert "source-specific" in thesis
+    assert "10.x/" not in thesis
+    assert "32%" not in thesis
+    assert "bactericidal" not in thesis
+    assert "one unified effect" in changes
+    assert "generic Top 5 list" not in changes
+    assert "70% ATP" not in why
     assert "Real tension:" not in why
 
 
@@ -914,7 +949,7 @@ def test_agent_repair_rotates_reviewer_named_bad_receipt(
 
     assert "**Direct source breadth:** `5` direct cited source(s)" in memo
     assert "**Headline:** Bounded Carbon tax signal: cited direct receipts are heterogeneous" in memo
-    assert "heterogeneous working map" in memo
+    assert "heterogeneous evidence map" in memo
     assert "Reviewer alignment: read the cited receipts as a heterogeneous" in memo
     assert "`fact_id=505` (`A_core`)" not in evidence
     assert "`fact_id=808` (`A_core`)" in evidence
