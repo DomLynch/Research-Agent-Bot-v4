@@ -1653,6 +1653,13 @@ def select_candidate(
                     min_source_count=min_source_count,
                     min_direct_source_count=min_direct_source_count,
                 )
+                approved = approved or _agent_repair_passed_submit_gates(
+                    verdict,
+                    source_count=source_count,
+                    direct_source_count=direct_source_count,
+                    min_source_count=min_source_count,
+                    min_direct_source_count=min_direct_source_count,
+                )
                 cycle_blocked = fp in blocked
                 attempt_count = _fingerprint_attempt_count(submitted_path, fp)
                 retry_after_rejection = _retry_after_rejection(
@@ -2727,8 +2734,15 @@ def run_cycle(
     preflight_queue = None
     skip_refresh_note = "skipped_after_repairable_submission"
     if refresh_candidates and queue is None and queue_builder is _build_queue:
-        candidate_queue = queue_builder(runs_root, include_archive)
-        if candidate_queue.get("ready_to_publish"):
+        candidate_queue = _with_repairable_candidates(
+            queue_builder(runs_root, include_archive), runs_root,
+        )
+        cluster_rows = _rows(candidate_queue, allow_tier2=True) + [
+            r for r in candidate_queue.get("curation_needed") or [] if isinstance(r, dict)
+        ]
+        if candidate_queue.get("ready_to_publish") or _claim_cluster_candidates(
+            cluster_rows, runs_root, min_direct_source_count=min_direct_submit_sources,
+        ):
             preflight_queue = candidate_queue
             skip_refresh_note = "skipped_initial_queue_probe"
     skip_next_refresh = preflight_queue is not None

@@ -274,6 +274,74 @@ def test_refresh_cycle_probes_existing_ready_queue_before_discovery(
     assert ledger["refresh_batches"][0]["note"] == "skipped_initial_queue_probe"
 
 
+def test_refresh_cycle_probes_claim_cluster_queue_before_discovery(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("weak_curated_parent") | {
+        "decision": "curation_needed",
+        "publish_tier": "TIER_3",
+        "alpha_score": 0,
+        "blockers": ["blocked_label:no_signal"],
+        "subtopic_recommendations": {
+            "recommended": True,
+            "reason": "source_coherent_child_cluster",
+            "clusters": [{
+                "label": "bounded claim",
+                "member_fact_ids": ["1", "2", "3", "4", "5"],
+            }],
+        },
+    }
+    _memo_with_source_receipts(root, verdict, 5)
+    run = root / str(verdict["run_dir"])
+    run.joinpath("publish_verdict.json").write_text(
+        json.dumps(verdict), encoding="utf-8",
+    )
+
+    def fail_refresh(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise AssertionError("discovery refresh should not run before claim cluster")
+
+    def refresh(run_dir: Path, refresh_verdict: dict[str, Any]) -> bool:
+        assert refresh_verdict["_claim_cluster_candidate"] is True
+        run_dir.joinpath("alpha_memo.md").write_text(
+            "# Alpha memo\n\n## Evidence receipts\n\n"
+            + "\n".join(f"- `fact_id={i}` (`A_core`) - direct" for i in range(1, 6))
+            + "\n" + _FALSIFIER,
+            encoding="utf-8",
+        )
+        _audit_sidecars(run_dir)
+        return True
+
+    def reload_verdict(refresh_verdict: dict[str, Any], _run_dir: Path) -> dict[str, Any]:
+        return refresh_verdict | {
+            "decision": "agent_repair_needed",
+            "publish_tier": "TIER_2",
+            "blockers": ["source_dispersion"],
+        }
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", fail_refresh)
+    monkeypatch.setattr(daily, "_reload_verdict_after_memo_refresh", reload_verdict)
+    monkeypatch.setattr(
+        daily, "retraction_check",
+        lambda *_args, **_kwargs: {"status": "clean", "checked_dois": [], "retracted": []},
+    )
+
+    ledger = daily.run_cycle(
+        runs_root=root / "runs",
+        date="2026-05-22",
+        refresh_candidates=True,
+        allow_tier2=True,
+        submit=True,
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+        decision_poll_attempts=0,
+        memo_refresher=refresh,
+    )
+
+    assert ledger["submitted"] == 1
+    assert ledger["submitted_topic"] == "weak_curated_parent_bounded_claim"
+    assert ledger["refresh_batches"][0]["note"] == "skipped_initial_queue_probe"
+
+
 def test_refresh_cycle_recomputes_stale_verdict_before_discovery(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
