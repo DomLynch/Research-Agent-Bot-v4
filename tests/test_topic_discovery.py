@@ -2122,6 +2122,8 @@ def _write_direct_a_core_run(root: Path, topic: str, count: int) -> None:
     run.joinpath("fact_lanes.json").write_text(json.dumps({
         "verdicts": [{"fact_id": f"fact-{i}", "lane": "A_core"} for i in range(count)],
     }), encoding="utf-8")
+    now = time.time() + 1.0
+    os.utime(run, (now, now))
 
 
 def _set_alpha_direct_floor(monkeypatch: Any, tmp_path: Path, floor: int) -> None:
