@@ -381,6 +381,30 @@ def _repair_cluster_receipt_ids(
     return []
 
 
+def _direct_floor_repair_receipt_ids(
+    facts: dict[str, dict[str, Any]],
+    lanes: dict[str, str],
+    *,
+    min_sources: int,
+    topic: str,
+    preferred_ids: list[str],
+    trusted_ids: set[str],
+) -> list[str]:
+    ids = _expanded_receipt_ids(
+        {"cited_fact_ids": []},
+        facts,
+        lanes,
+        min_sources=min_sources,
+        allowed_lanes=_DIRECT,
+        claim=None,
+        topic=topic,
+        preferred_ids=preferred_ids,
+        trusted_ids=trusted_ids,
+        require_cluster=False,
+    )
+    return ids if _source_count_for_ids(ids, facts) >= min_sources else []
+
+
 def _expanded_receipt_ids(
     audit: dict[str, Any],
     facts: dict[str, dict[str, Any]],
@@ -1576,6 +1600,11 @@ def render_signal_memo(
         | _candidate_receipt_ids(publish_verdict, lanes, _DIRECT)
         if grounded else _candidate_receipt_ids(publish_verdict, lanes, _DIRECT)
     )
+    publish_blockers = {str(x) for x in (publish_verdict or {}).get("blockers") or []}
+    direct_floor_repair = (
+        _agent_repair_requested(publish_verdict)
+        and "direct_source_floor_below_min" in publish_blockers
+    )
     expanded_ids = _expanded_receipt_ids(
         audit, facts, lanes, min_sources=min_sources, claim=claim, topic=topic,
         preferred_ids=preferred_bound_ids, trusted_ids=trusted_bound_ids,
@@ -1592,6 +1621,23 @@ def render_signal_memo(
             or _direct_bundle_needs_narrowing(publish_verdict)
         ),
     )
+    if (
+        direct_floor_repair
+        and _source_count_for_ids(lead_ids, facts) < min_direct_sources
+    ):
+        repaired_direct_ids = _direct_floor_repair_receipt_ids(
+            facts,
+            lanes,
+            min_sources=min_direct_sources,
+            topic=topic,
+            preferred_ids=preferred_direct_ids,
+            trusted_ids=trusted_direct_ids,
+        )
+        if repaired_direct_ids:
+            lead_ids = repaired_direct_ids
+            expanded_ids = lead_ids + [
+                fid for fid in expanded_ids if fid not in set(lead_ids)
+            ]
     if not lead_ids:
         lead_ids = expanded_ids[:1]
     lead_set = set(lead_ids)
@@ -1601,6 +1647,7 @@ def render_signal_memo(
     if (
         lead_ids
         and _direct_bundle_needs_narrowing(publish_verdict)
+        and not direct_floor_repair
         and not _receipt_cluster_coheres(
         lead_ids, facts, topic, min_direct_sources,
         )
@@ -1708,8 +1755,6 @@ def render_signal_memo(
         "population, model, endpoint, comparator, and effect direction that "
         "could confirm or kill the thesis."
     )
-    publish_blockers = {str(x) for x in (publish_verdict or {}).get("blockers") or []}
-
     score = _alpha_score(audit, label)
     lines = [
         f"# Alpha memo — {topic}",

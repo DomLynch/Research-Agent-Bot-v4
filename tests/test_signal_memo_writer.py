@@ -977,6 +977,65 @@ def test_agent_repair_uses_gate_cluster_fact_ids(tmp_path: Path) -> None:
     assert verdict["decision"] == "ready_to_publish"
 
 
+def test_agent_repair_rebinds_available_direct_receipts_without_cluster(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    facts[0]["canonical_phrase"] = "Ceramic glaze adhesion improved after kiln firing."
+    facts[0]["population"] = "ceramic studios"
+    facts[0]["source_paper"] = {"doi": "10.x/stale-lead"}
+    phrases = {
+        "303": "Carbon tax receipts increased municipal adaptation spending.",
+        "404": "Carbon tax compliance reduced diesel imports.",
+        "505": "Carbon tax border adjustments shifted exporter behavior.",
+        "606": "Carbon tax rebates preserved household purchasing power.",
+        "707": "Carbon tax audits lowered reported industrial emissions.",
+    }
+    for fid, phrase in phrases.items():
+        facts.append({
+            "fact_id": fid,
+            "canonical_phrase": phrase,
+            "intervention": "carbon tax",
+            "source_paper": {"doi": f"10.x/direct-{fid}"},
+        })
+        lanes["verdicts"].append({"fact_id": fid, "lane": "A_core"})
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+    (run / "opportunities_gate.json").write_text(json.dumps({
+        "audits": [{
+            "title": "Stale ceramics lead",
+            "status": "survives",
+            "capped_opportunity": 88,
+            "cited_fact_ids": ["101"],
+        }],
+    }), encoding="utf-8")
+
+    memo = render_signal_memo(run, publish_verdict={
+        "decision": "agent_repair_needed",
+        "surface_type": "frontier_hypothesis_memo",
+        "blockers": ["source_dispersion", "direct_source_floor_below_min"],
+        "_repair_decision": {"agent_repair": True},
+        "receipt_expansion": {
+            "available_bound_fact_ids": ["303", "404", "505", "606", "707"],
+        },
+    })
+    (run / "alpha_memo.md").write_text(memo, encoding="utf-8")
+    verdict = publish_verdict(run)
+    evidence = re.search(
+        r"## Evidence receipts\n\n(.*?)(?=\n## |\Z)", memo, flags=re.S,
+    )
+
+    assert evidence
+    assert "fact_id=101" not in evidence.group(1)
+    assert all(f"`fact_id={fid}` (`A_core`)" in evidence.group(1) for fid in phrases)
+    assert "**Direct source breadth:** `5` direct cited source(s)" in memo
+    assert verdict["axes"]["direct_source_papers"] == 5
+    assert "direct_source_floor_below_min" not in verdict["blockers"]
+
+
 def test_counter_signal_names_collision_and_testable_split(tmp_path: Path) -> None:
     run = tmp_path / "carbon_tax-evidence-ts"
     _write_run(run)
