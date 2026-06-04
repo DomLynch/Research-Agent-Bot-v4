@@ -312,7 +312,10 @@ def _reload_verdict_after_memo_refresh(verdict: Json, run_dir: Path) -> Json:
         refreshed.update({
             k: v for k, v in verdict.items()
             if str(k).startswith("_")
-            or k in {"topic", "receipt_expansion", "subtopic_recommendations"}
+            or k in {
+                "topic", "decision", "publish_tier", "blockers",
+                "receipt_expansion", "subtopic_recommendations",
+            }
         })
     return refreshed
 

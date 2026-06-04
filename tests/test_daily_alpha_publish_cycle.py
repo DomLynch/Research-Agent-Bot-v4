@@ -312,15 +312,7 @@ def test_refresh_cycle_probes_claim_cluster_queue_before_discovery(
         _audit_sidecars(run_dir)
         return True
 
-    def reload_verdict(refresh_verdict: dict[str, Any], _run_dir: Path) -> dict[str, Any]:
-        return refresh_verdict | {
-            "decision": "agent_repair_needed",
-            "publish_tier": "TIER_2",
-            "blockers": ["source_dispersion"],
-        }
-
     monkeypatch.setattr(daily, "_refresh_candidate_batch", fail_refresh)
-    monkeypatch.setattr(daily, "_reload_verdict_after_memo_refresh", reload_verdict)
     monkeypatch.setattr(
         daily, "retraction_check",
         lambda *_args, **_kwargs: {"status": "clean", "checked_dois": [], "retracted": []},
