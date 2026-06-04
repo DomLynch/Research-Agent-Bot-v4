@@ -2381,7 +2381,10 @@ def _child_topics_from_queue(
             for cluster in rec.get("clusters") or []:
                 if not isinstance(cluster, dict):
                     continue
-                if _cluster_has_repair_receipts(cluster):
+                if (
+                    bucket_name == "agent_repair_needed"
+                    and _cluster_has_repair_receipts(cluster)
+                ):
                     continue
                 label = str(cluster.get("label") or "").strip("_")
                 if not label or label == "unlabeled":

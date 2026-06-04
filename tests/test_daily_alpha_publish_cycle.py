@@ -2050,6 +2050,25 @@ def test_child_topics_from_queue_skips_receipt_backed_repair_clusters() -> None:
     assert children == ["parent_topic_fallback_child"]
 
 
+def test_child_topics_from_queue_runs_receipt_backed_curation_clusters() -> None:
+    queue = {
+        "curation_needed": [{
+            "topic": "parent topic",
+            "subtopic_recommendations": {
+                "recommended": True,
+                "clusters": [{
+                    "label": "bounded claim",
+                    "member_fact_ids": ["1", "2", "3", "4", "5"],
+                }],
+            },
+        }],
+    }
+
+    children = daily._child_topics_from_queue(queue, set(), limit=3)
+
+    assert children == ["parent_topic_bounded_claim"]
+
+
 def test_claim_cluster_candidate_bypasses_parent_topic_exhaustion(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
