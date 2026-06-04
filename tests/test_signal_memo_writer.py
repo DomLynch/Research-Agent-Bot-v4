@@ -759,6 +759,24 @@ def test_agent_repair_does_not_preserve_incoherent_direct_floor(
     assert "`fact_id=505` (`A_core`)" not in memo
 
 
+def test_agent_repair_preserves_source_dispersion_only_evidence_map(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "photobiomodulation_red_light-evidence-ts"
+    _write_mixed_direct_stream_run(run)
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "frontier_hypothesis_memo",
+        "blockers": ["source_dispersion"],
+        "_repair_decision": {"agent_repair": True},
+    })
+    evidence = memo.split("## Evidence receipts", 1)[1].split("\n## ", 1)[0]
+
+    assert "**Direct source breadth:** `5` direct cited source(s)" in memo
+    assert "`fact_id=101` (`A_core`)" in evidence
+    assert "`fact_id=505` (`A_core`)" in evidence
+
+
 def test_source_angle_publish_memo_replaces_stale_surprise_prose(
     tmp_path: Path,
 ) -> None:

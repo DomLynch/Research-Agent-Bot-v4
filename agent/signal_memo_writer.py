@@ -1605,6 +1605,10 @@ def render_signal_memo(
         _agent_repair_requested(publish_verdict)
         and "direct_source_floor_below_min" in publish_blockers
     )
+    source_dispersion_only_repair = (
+        _agent_repair_requested(publish_verdict)
+        and publish_blockers <= {"source_dispersion"}
+    )
     expanded_ids = _expanded_receipt_ids(
         audit, facts, lanes, min_sources=min_sources, claim=claim, topic=topic,
         preferred_ids=preferred_bound_ids, trusted_ids=trusted_bound_ids,
@@ -1647,7 +1651,7 @@ def render_signal_memo(
     if (
         lead_ids
         and _direct_bundle_needs_narrowing(publish_verdict)
-        and not direct_floor_repair
+        and not (direct_floor_repair or source_dispersion_only_repair)
         and not _receipt_cluster_coheres(
         lead_ids, facts, topic, min_direct_sources,
         )

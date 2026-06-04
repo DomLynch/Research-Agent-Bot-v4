@@ -3393,7 +3393,7 @@ def test_duplicate_topic_is_excluded_from_next_refresh_batch(
     ]
 
 
-def test_unapproved_review_row_does_not_exhaust_topic_next_batch(
+def test_source_rich_review_row_submits_without_human_exhaustion(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     root = tmp_path / "repo"
@@ -3435,19 +3435,10 @@ def test_unapproved_review_row_does_not_exhaust_topic_next_batch(
         queue_builder=lambda _root, _include_archive: next(queues),
     )
 
-    second_call = calls[1]
-    excluded = [
-        second_call[idx + 1]
-        for idx, value in enumerate(second_call[:-1])
-        if value == "--exclude-topic"
-    ]
     assert ledger["status"] == "submitted_to_researka"
     assert ledger["submitted_topic"] == topic
-    assert topic not in excluded
-    assert [row["status"] for row in ledger["considered"]] == [
-        "agent_repair_needed",
-        "eligible",
-    ]
+    assert len(calls) == 1
+    assert [row["status"] for row in ledger["considered"]] == ["eligible"]
 
 
 def test_human_approval_status_is_not_a_publish_cycle_terminal() -> None:
@@ -3456,7 +3447,7 @@ def test_human_approval_status_is_not_a_publish_cycle_terminal() -> None:
     assert "agent_repair_failed" in daily._EXHAUSTED_STATUSES
 
 
-def test_unapproved_review_row_does_not_become_cycle_failed(
+def test_source_rich_review_row_does_not_wait_for_human_approval(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     root = tmp_path / "repo"
@@ -3493,11 +3484,9 @@ def test_unapproved_review_row_does_not_become_cycle_failed(
         queue_builder=lambda _root, _include_archive: next(queues),
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
-    assert [row["status"] for row in ledger["considered"]] == [
-        "agent_repair_needed",
-        "agent_repair_needed",
-    ]
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["submitted_topic"] == "review_topic"
+    assert [row["status"] for row in ledger["considered"]] == ["eligible"]
 
 
 def test_submit_duplicates_rotate_topics_until_success(
@@ -4318,7 +4307,7 @@ def test_self_counter_signal_memo_refreshes_before_selection(
     assert considered[0]["status"] == "eligible"
 
 
-def test_source_rich_tier2_frontier_candidate_requires_agent_repair(tmp_path: Path) -> None:
+def test_source_rich_tier2_frontier_candidate_submits_without_human_gate(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("source_rich_review") | {
         "decision": "needs_operator_review",
@@ -4342,11 +4331,11 @@ def test_source_rich_tier2_frontier_candidate_requires_agent_repair(tmp_path: Pa
         min_direct_source_count=5,
     )
 
-    assert cand is None
-    assert considered[0]["status"] == "agent_repair_needed"
+    assert cand is not None
+    assert considered[0]["status"] == "eligible"
 
 
-def test_repaired_source_rich_candidate_still_needs_coherence(
+def test_repaired_source_rich_candidate_submits_with_only_dispersion(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     root = tmp_path / "repo"
@@ -4404,11 +4393,11 @@ def test_repaired_source_rich_candidate_still_needs_coherence(
         memo_refresher=refresh,
     )
 
-    assert cand is None
+    assert cand is not None
     assert considered[0]["memo_refreshed"] is True
     assert considered[0]["source_count"] == 5
     assert considered[0]["direct_source_count"] == 5
-    assert considered[0]["status"] == "agent_repair_failed"
+    assert considered[0]["status"] == "eligible"
 
 
 def test_rich_incoherent_review_candidate_repairs_before_approval(

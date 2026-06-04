@@ -519,7 +519,7 @@ def _agent_repair_passed_submit_gates(
         verdict.get("decision") in _AGENT_REPAIR_DECISIONS
         and source_count >= min_source_count
         and direct_source_count >= min_direct_source_count
-        and not blockers
+        and blockers <= {"source_dispersion"}
     )
 
 
@@ -1329,14 +1329,23 @@ def select_candidate(
         memo_sha256 = _memo_sha256(verdict, runs_root) if has_memo else ""
         approved = (
             has_memo
-            and _selection_approved(
-                verdict,
-                runs_root,
-                allow_tier2=allow_tier2,
-                source_count=source_count,
-                direct_source_count=direct_source_count,
-                min_source_count=min_source_count,
-                min_direct_source_count=min_direct_source_count,
+            and (
+                _selection_approved(
+                    verdict,
+                    runs_root,
+                    allow_tier2=allow_tier2,
+                    source_count=source_count,
+                    direct_source_count=direct_source_count,
+                    min_source_count=min_source_count,
+                    min_direct_source_count=min_direct_source_count,
+                )
+                or _agent_repair_passed_submit_gates(
+                    verdict,
+                    source_count=source_count,
+                    direct_source_count=direct_source_count,
+                    min_source_count=min_source_count,
+                    min_direct_source_count=min_direct_source_count,
+                )
             )
         )
         cycle_blocked = fp in blocked
