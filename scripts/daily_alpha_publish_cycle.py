@@ -2460,7 +2460,10 @@ def _public_submission_markdown(memo: str) -> str:
     )
     change_note = (
         "_Interpretation boundary: this is a hypothesis-generating alpha map, "
-        "not confirmatory evidence or a settled conclusion._\n"
+        "not confirmatory evidence or a settled conclusion. The heterogeneity "
+        "matters because it routes the next test to the specific population, "
+        "endpoint, comparator, and time window that can replicate, rather than "
+        "letting a broad topic-level effect claim leak across mismatched receipts._\n"
     )
     if "## Evidence Landscape\n\n" in text and landscape_note not in text:
         text = text.replace("## Evidence Landscape\n\n", f"## Evidence Landscape\n\n{landscape_note}\n", 1)

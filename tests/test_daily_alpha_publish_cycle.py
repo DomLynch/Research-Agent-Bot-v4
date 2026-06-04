@@ -2797,6 +2797,8 @@ def test_submission_payload_strips_internal_alpha_scores(tmp_path: Path) -> None
     assert "cited receipts are separate evidence streams" in payload["markdown"]
     assert "not a pooled meta-analysis or settled conclusion" in payload["markdown"]
     assert "this is a hypothesis-generating alpha map" in payload["markdown"]
+    assert "routes the next test to the specific population" in payload["markdown"]
+    assert "letting a broad topic-level effect claim leak" in payload["markdown"]
     assert "Boundary evidence only" in payload["markdown"]
     assert payload["evidence_bundle"]["context_sources_are_not_direct_support"] is True
 
