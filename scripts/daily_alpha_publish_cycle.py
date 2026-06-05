@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from agent.alpha_selector import accepted_shape_bonus
+from agent.domain_profile import domain_choices, load_domain_profile
 from agent.publish_tier import publish_verdict
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -2636,6 +2637,7 @@ def run_cycle(
     *,
     runs_root: Path = _RUNS,
     date: str,
+    domain: str = "longevity",
     queue: Json | None = None,
     include_archive: bool = False,
     refresh_candidates: bool = False,
@@ -2660,6 +2662,7 @@ def run_cycle(
     queue_builder: QueueBuilder = _build_queue,
     sleep: Callable[[float], None] = time.sleep,
 ) -> Json:
+    profile = load_domain_profile(domain)
     ledger_path = runs_root / "_daily_ledger" / f"{date}.json"
     submitted_path = runs_root / "_daily_ledger" / "_submitted_fingerprints.json"
     decision_sync = sync_submission_decisions(
@@ -2667,7 +2670,9 @@ def run_cycle(
     )
     ledger: Json = {
         "date": date,
-        "dry_run": not submit,
+        "domain": profile.as_metadata(),
+        "dry_run": (not submit) or profile.dry_run_only,
+        "submit_requested": bool(submit),
         "decision_sync": decision_sync,
         "estimated_cost_usd": estimated_cost_usd,
         "max_cost_usd": max_cost_usd,
@@ -2689,6 +2694,15 @@ def run_cycle(
     }
     if estimated_cost_usd > max_cost_usd:
         ledger.update({"status": "cost_cap_exceeded", "reason": "estimated_cost_above_cap"})
+        _write_json(ledger_path, ledger)
+        return ledger
+    if submit and profile.dry_run_only:
+        ledger.update({
+            "status": "domain_dry_run_only",
+            "reason": f"domain {profile.slug} is not allowed to submit yet",
+            "submitted": 0,
+            "published": 0,
+        })
         _write_json(ledger_path, ledger)
         return ledger
     blocked_fingerprints: set[str] = set()
@@ -3053,6 +3067,7 @@ def run_cycle(
 
 def main() -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--domain", choices=domain_choices(), default="longevity")
     parser.add_argument("--date", default=_ledger_stamp())
     parser.add_argument("--include-archive", action="store_true")
     parser.add_argument("--refresh-candidates", action="store_true")
@@ -3080,6 +3095,7 @@ def main() -> int:
     args = parser.parse_args()
     ledger = run_cycle(
         date=args.date,
+        domain=args.domain,
         include_archive=args.include_archive,
         refresh_candidates=args.refresh_candidates,
         allow_tier2=args.allow_tier2,

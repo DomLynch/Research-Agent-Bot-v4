@@ -36,6 +36,7 @@ import httpx
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.alpha_selector import alpha_cues, alpha_score
+from agent.domain_profile import domain_choices, load_domain_profile
 from agent.fact_facets import (
     facet_counts,
     select_coherent_theme,
@@ -873,6 +874,7 @@ def _render_frontier_md(review: FrontierReview, topic: str) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--topic", required=True)
+    parser.add_argument("--domain", choices=domain_choices(), default="longevity")
     parser.add_argument("--parent-topic", default="",
                         help="Fetch parent-topic facts while classifying against the narrower topic.")
     parser.add_argument("--top", type=int, default=5)
@@ -891,6 +893,7 @@ def main() -> int:
                              "signal posts, labels risk; paper: strict "
                              "evidence-gated journal mode.")
     args = parser.parse_args()
+    profile = load_domain_profile(args.domain)
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
     out_dir = _RUNS / f"{args.topic}-evidence-{ts}"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -901,7 +904,8 @@ def main() -> int:
         facts = _dedup_facts(facts + _fetch_facts(args.topic, trace=search_trace))
     if _all_primary_fetches_failed(search_trace):
         (out_dir / "search_trace.json").write_text(
-            json.dumps({"topic": args.topic, "snapshot_utc": ts,
+            json.dumps({"topic": args.topic, "domain": profile.as_metadata(),
+                        "snapshot_utc": ts,
                         "queries": search_trace}, indent=2, ensure_ascii=False),
             encoding="utf-8")
         (out_dir / "retrieval_status.json").write_text(
@@ -938,7 +942,8 @@ def main() -> int:
     # OpenSeeker-style search trajectory: which query slices hit / were empty /
     # timed out, for receipts + auditability of the retrieval that fed this run.
     (out_dir / "search_trace.json").write_text(
-        json.dumps({"topic": args.topic, "snapshot_utc": ts,
+        json.dumps({"topic": args.topic, "domain": profile.as_metadata(),
+                    "snapshot_utc": ts,
                     "queries": search_trace}, indent=2, ensure_ascii=False),
         encoding="utf-8")
 
@@ -1012,6 +1017,7 @@ def main() -> int:
             }
 
     manifest = {
+        "domain": profile.as_metadata(),
         "topic": args.topic, "snapshot_utc": ts, "top_n": args.top,
         "facts_inspected": len(facts), "aggregated_claims": len(aggregated),
         "data_tier": tier,
