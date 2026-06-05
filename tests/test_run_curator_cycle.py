@@ -377,9 +377,35 @@ def test_topic_pipeline_skips_pico_by_default(
         frontier_review=False,
     )
 
+    assert calls[0][calls[0].index("--domain") + 1] == "longevity"
     assert "--with-editorial" in calls[0]
     assert "--no-frontier" in calls[0]
     assert "--no-pico-enrich" in calls[0]
+
+
+def test_topic_pipeline_passes_explicit_ai_research_domain(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    run_dir = tmp_path / "runs" / "topic-evidence-ts"
+    run_dir.mkdir(parents=True)
+    calls: list[list[str]] = []
+
+    def fake_step(args: list[str], _step: str) -> tuple[bool, str]:
+        calls.append(args)
+        return True, "ok"
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", tmp_path / "runs")
+    monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
+
+    run_curator_cycle._run_topic_pipeline(
+        "topic", 1.0, with_editorial=False, top_n=5, py="python",
+        frontier_review=False, domain="ai_research",
+    )
+
+    assert calls[0][calls[0].index("--domain") + 1] == "ai_research"
 
 
 def test_discovery_failure_aborts_before_stale_plan(
@@ -502,6 +528,7 @@ def test_stop_on_ready_halts_plan(
         topic: str, velocity: float, *, with_editorial: bool,
         top_n: int, py: str, pico_enrich: bool = False,
         frontier_review: bool = True, parent_topic: str = "",
+        domain: str = "longevity",
     ) -> TopicResult:
         seen.append(topic)
         run_dir = runs / f"{topic}-evidence-ts"
@@ -552,6 +579,7 @@ def test_stop_on_ready_ignores_under_source_candidate(
         topic: str, velocity: float, *, with_editorial: bool,
         top_n: int, py: str, pico_enrich: bool = False,
         frontier_review: bool = True, parent_topic: str = "",
+        domain: str = "longevity",
     ) -> TopicResult:
         seen.append(topic)
         top_values.append(top_n)
@@ -603,6 +631,7 @@ def test_stop_on_ready_skips_count_only_cached_candidate(
         topic: str, velocity: float, *, with_editorial: bool,
         top_n: int, py: str, pico_enrich: bool = False,
         frontier_review: bool = True, parent_topic: str = "",
+        domain: str = "longevity",
     ) -> TopicResult:
         seen.append(topic)
         run_dir = runs / f"{topic}-evidence-ts"
@@ -660,6 +689,7 @@ def test_stop_on_ready_runs_structural_child_topic_before_giving_up(
         topic: str, velocity: float, *, with_editorial: bool,
         top_n: int, py: str, pico_enrich: bool = False,
         frontier_review: bool = True, parent_topic: str = "",
+        domain: str = "longevity",
     ) -> TopicResult:
         seen.append(topic)
         parents.append(parent_topic)
@@ -726,6 +756,7 @@ def test_stop_on_ready_does_not_chain_child_topic_reruns(
         topic: str, velocity: float, *, with_editorial: bool,
         top_n: int, py: str, pico_enrich: bool = False,
         frontier_review: bool = True, parent_topic: str = "",
+        domain: str = "longevity",
     ) -> TopicResult:
         seen.append(topic)
         run_dir = runs / f"{topic}-evidence-ts"
@@ -781,6 +812,7 @@ def test_priority_repair_topic_does_not_spawn_child_rerun(
         topic: str, velocity: float, *, with_editorial: bool,
         top_n: int, py: str, pico_enrich: bool = False,
         frontier_review: bool = True, parent_topic: str = "",
+        domain: str = "longevity",
     ) -> TopicResult:
         seen.append(topic)
         run_dir = runs / f"{topic}-evidence-ts"
@@ -873,6 +905,7 @@ def test_underfloor_priority_repair_topic_is_not_built(
         topic: str, velocity: float, *, with_editorial: bool,
         top_n: int, py: str, pico_enrich: bool = False,
         frontier_review: bool = True, parent_topic: str = "",
+        domain: str = "longevity",
     ) -> TopicResult:
         seen.append(topic)
         return TopicResult(

@@ -3510,12 +3510,36 @@ def test_refresh_candidates_builds_one_topic_per_submit_batch(
     assert ledger["refresh_candidates"]["ok"] is True
     assert ledger["refresh_top"] == 5
     assert "--stop-on-ready" in calls[0][0]
+    assert calls[0][0][calls[0][0].index("--domain") + 1] == "longevity"
     assert "--with-pico-enrich" not in calls[0][0]
     assert "--no-editorial" in calls[0][0]
     assert "--no-frontier" in calls[0][0]
     assert calls[0][0][calls[0][0].index("--top") + 1] == "5"
     assert calls[0][0][calls[0][0].index("--cooldown-hours") + 1] == "2"
     assert calls[0][1] == 1200
+
+
+def test_refresh_candidates_passes_ai_research_domain(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+
+    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        calls.append(args)
+        return True, "ok"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    daily.run_cycle(
+        runs_root=tmp_path,
+        date="2026-05-22",
+        domain="ai_research",
+        refresh_candidates=True,
+        queue=_queue(),
+    )
+
+    assert calls
+    assert calls[0][calls[0].index("--domain") + 1] == "ai_research"
 
 
 def test_systemd_publish_timer_has_full_refresh_budget() -> None:
@@ -3530,6 +3554,22 @@ def test_systemd_publish_timer_has_full_refresh_budget() -> None:
     assert "--max-refresh-batches 5" in service
     assert "--max-refresh-batches 2" not in service
     assert "OnCalendar=*-*-* 01/4:30:00" in timer
+
+
+def test_systemd_ai_research_timer_is_independent_four_hour_submitter() -> None:
+    service = Path("deploy/systemd/researka-alpha-ai-research.service").read_text(
+        encoding="utf-8",
+    )
+    timer = Path("deploy/systemd/researka-alpha-ai-research.timer").read_text(
+        encoding="utf-8",
+    )
+
+    assert "scripts/daily_alpha_publish_cycle.py" in service
+    assert "--domain ai_research" in service
+    assert "--submit" in service
+    assert "--max-refresh-batches 5" in service
+    assert "OnCalendar=*-*-* 03/4:30:00" in timer
+    assert "Unit=researka-alpha-ai-research.service" in timer
 
 
 def test_systemd_cache_warmer_fills_source_rich_backlog() -> None:

@@ -2325,6 +2325,7 @@ def _refresh_candidate_batch(
     runs_root: Path = _RUNS,
     warm_backlog: bool = False,
     priority_topics: Iterable[str] = (),
+    domain: str = "longevity",
 ) -> Json:
     exclusions = sorted(t for t in (excluded_topics or set()) if t)
     warm_probe_topics = min(
@@ -2333,7 +2334,7 @@ def _refresh_candidate_batch(
     )
     args = [
         sys.executable, "scripts/run_curator_cycle.py",
-        "--stop-on-ready", "--top", str(refresh_top),
+        "--domain", domain, "--stop-on-ready", "--top", str(refresh_top),
         "--cooldown-hours", f"{cooldown_hours:g}",
         "--no-editorial", "--no-frontier",
     ]
@@ -2775,6 +2776,7 @@ def run_cycle(
                 refresh_top, blocked_topics, cooldown, runs_root,
                 warm_backlog=warm_backlog_next,
                 priority_topics=priority_refresh_topics,
+                domain=profile.slug,
             )
             priority_refresh_topics = []
             if cooldown != refresh_cooldown_hours:

@@ -13,11 +13,11 @@ from agent.domain_profile import load_domain_profile
 from agent.topic_discovery import TopicCandidate, load_seed_topics
 
 
-def test_ai_research_profile_is_dry_run_only_with_own_seed_pack() -> None:
+def test_ai_research_profile_is_live_with_own_seed_pack() -> None:
     profile = load_domain_profile("ai_research")
 
     assert profile.slug == "ai_research"
-    assert profile.dry_run_only is True
+    assert profile.dry_run_only is False
     assert profile.seed_topics_path.name == "ai_research_discovery_seeds.toml"
     seeds = load_seed_topics(profile.seed_topics_path)
     assert "ai_agents" in seeds
@@ -132,7 +132,67 @@ def test_ai_research_evidence_run_records_domain(
     assert trace["domain"]["slug"] == "ai_research"
 
 
-def test_ai_research_daily_submit_is_blocked_by_dry_run_fence(tmp_path: Path) -> None:
+def _ai_verdict() -> dict[str, Any]:
+    source_papers = [
+        {"doi": f"10.2000/ai-{i}", "title": f"AI benchmark paper {i}"}
+        for i in range(5)
+    ]
+    return {
+        "run_dir": "runs/ai_agents-evidence-ts",
+        "topic": "ai_agents",
+        "decision": "ready_to_publish",
+        "publish_tier": "TIER_1",
+        "maturity_level": "L5",
+        "headline": "AI agents improve benchmarked research workflow throughput",
+        "confidence_label": "evidence_backed_signal",
+        "alpha_score": 90,
+        "surface_type": "publish_alpha_memo",
+        "axes": {"available_source_contexts": 5, "source_papers": source_papers},
+        "receipt_expansion": {"cited_bound_fact_ids": ["1", "2", "3", "4", "5"]},
+    }
+
+
+def _write_ai_memo(root: Path, verdict: dict[str, Any]) -> None:
+    run = root / str(verdict["run_dir"])
+    run.mkdir(parents=True)
+    ids = ["1", "2", "3", "4", "5"]
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n"
+        "## Evidence receipts\n\n"
+        + "\n".join(f"- `fact_id={fid}` (`A_core`) - receipt" for fid in ids)
+        + "\n\n## What would weaken this\n\n"
+        "- Independent receipts fail to reproduce the claimed contrast.\n",
+        encoding="utf-8",
+    )
+    run.joinpath("all_facts.json").write_text(json.dumps([
+        {
+            "fact_id": fid,
+            "canonical_phrase": (
+                "AI agents improved benchmarked research workflow throughput."
+            ),
+            "source_paper": {
+                "doi": f"10.2000/ai-{fid}",
+                "title": f"AI benchmark paper {fid}",
+            },
+        }
+        for fid in ids
+    ]), encoding="utf-8")
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": fid, "lane": "A_core"} for fid in ids],
+    }), encoding="utf-8")
+    for name, payload in {
+        "claim_receipt_matrix.json": {"direct_sources": 5},
+        "typed_counter_evidence.json": {"items": []},
+        "novelty_delta.json": {"novelty_delta": {"label": "contradictory"}},
+        "memo_audit.json": {"verdict": "supported"},
+    }.items():
+        run.joinpath(name).write_text(json.dumps(payload), encoding="utf-8")
+
+
+def test_ai_research_daily_submit_is_live_when_explicitly_selected(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _ai_verdict()
+    _write_ai_memo(root, verdict)
     calls: list[dict[str, Any]] = []
 
     def submitter(payload: dict[str, Any]) -> dict[str, Any]:
@@ -140,15 +200,18 @@ def test_ai_research_daily_submit_is_blocked_by_dry_run_fence(tmp_path: Path) ->
         return {"ok": True, "status": 200, "response": {}}
 
     ledger = daily.run_cycle(
-        runs_root=tmp_path / "runs",
+        runs_root=root / "runs",
         date="2026-06-05T00-00-00Z",
         domain="ai_research",
+        queue={"ready_to_publish": [verdict], "needs_operator_review": [], "curation_needed": []},
         submit=True,
+        retraction_mode="metadata",
         submitter=submitter,
+        fetcher=lambda _doi: {},
     )
 
-    assert ledger["status"] == "domain_dry_run_only"
-    assert ledger["dry_run"] is True
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["dry_run"] is False
     assert ledger["submit_requested"] is True
-    assert ledger["submitted"] == 0
-    assert calls == []
+    assert ledger["submitted"] == 1
+    assert calls and calls[0]["topic"] == "ai_agents"
