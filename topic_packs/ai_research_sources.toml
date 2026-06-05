@@ -1,7 +1,7 @@
 # Source policy for the AI Research specialist module.
 #
-# This is descriptive metadata for the dry-run milestone. Future source
-# adapters should read from this pack instead of adding domain literals to code.
+# This is descriptive metadata for the live AI Research domain. Source adapters
+# should read from this pack instead of adding domain literals to code.
 
 [source_policy]
 primary_sources = [
