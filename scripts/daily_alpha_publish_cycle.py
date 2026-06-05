@@ -2462,6 +2462,8 @@ def _plain_section(memo: str, heading: str) -> str:
 
 def _safe_excerpt(text: str, limit: int = 1200) -> str:
     excerpt = " ".join(str(text or "").split())
+    if re.fullmatch(r"(?i)(abstract:|review summary:)?\s*alpha memo(?:\s*[—-]\s*[\w -]+)?\.?", excerpt):
+        return ""
     sentence_cuts = [
         match.end()
         for match in re.finditer(r"[.!?](?=\s|$)", excerpt[:limit + 1])
@@ -2504,22 +2506,6 @@ def _public_submission_markdown(memo: str) -> str:
     )
     if "## Why this is surprising" in text and note not in text:
         text = text.replace("\n## Why this is surprising", f"\n\n{note}\n## Why this is surprising", 1)
-    landscape_note = (
-        "_Evidence-map boundary: cited receipts are separate evidence streams "
-        "unless an integrated analysis is explicitly stated; this memo maps a "
-        "testable contrast, not a pooled meta-analysis or settled conclusion._\n"
-    )
-    change_note = (
-        "_Interpretation boundary: this is a hypothesis-generating alpha map, "
-        "not confirmatory evidence or a settled conclusion. The heterogeneity "
-        "matters because it routes the next test to the specific population, "
-        "endpoint, comparator, and time window that can replicate, rather than "
-        "letting a broad topic-level effect claim leak across mismatched receipts._\n"
-    )
-    if "## Evidence Landscape\n\n" in text and landscape_note not in text:
-        text = text.replace("## Evidence Landscape\n\n", f"## Evidence Landscape\n\n{landscape_note}\n", 1)
-    if "## What this changes\n\n" in text and change_note not in text:
-        text = text.replace("## What this changes\n\n", f"## What this changes\n\n{change_note}\n", 1)
     return text.replace(
         "## Context receipts\n\n",
         "## Context receipts\n\n"
@@ -2555,10 +2541,11 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
                 _safe_excerpt(_plain_section(memo, "One-sentence thesis")),
                 _safe_excerpt(_plain_section(memo, "Why this is surprising")),
                 _safe_excerpt(title),
+                "This alpha memo maps directly cited receipts and their limits.",
                 title,
             ) if excerpt
         ),
-        title,
+        "This alpha memo maps directly cited receipts and their limits.",
     )
     source_papers = _memo_source_papers(verdict, root)
     direct_source_papers = _memo_source_papers(verdict, root, ("Evidence",), {"A_core"})

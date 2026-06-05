@@ -513,6 +513,36 @@ def _expanded_receipt_ids(
     return selected
 
 
+def _claim_coherent_receipt_ids(
+    lead_ids: list[str],
+    receipt_ids: list[str],
+    facts: dict[str, dict[str, Any]],
+    topic: str,
+    claim: set[str],
+    min_direct_sources: int = 5,
+) -> tuple[list[str], set[str]]:
+    if not lead_ids:
+        return receipt_ids, claim
+    if _source_count_for_ids(lead_ids, facts) < min_direct_sources:
+        return receipt_ids, claim
+    lead_claim = _claim_signal(lead_ids, facts, topic) or claim
+    if not lead_claim:
+        return receipt_ids, claim
+    lead_set = set(lead_ids)
+    lead_tokens = [_receipt_tokens(facts.get(fid) or {}, topic) for fid in lead_ids]
+    return lead_ids + [
+        fid for fid in receipt_ids
+        if (
+            fid not in lead_set
+            and _fact_coheres(facts.get(fid) or {}, lead_claim, topic)
+            and any(
+                _receipt_pair_coheres(_receipt_tokens(facts.get(fid) or {}, topic), tokens)
+                for tokens in lead_tokens
+            )
+        )
+    ], lead_claim
+
+
 def _preferred_receipt_ids(
     verdict: dict[str, Any] | None,
     lanes: dict[str, str],
@@ -677,8 +707,11 @@ def _surface_line(verdict: dict[str, Any] | None) -> str:
     return surface.replace("_", " ")
 
 
-def _topic_title(topic: str) -> str:
-    label = " ".join(part for part in topic.replace("-", "_").split("_") if part)
+def _topic_title(topic: str, *, max_parts: int | None = None) -> str:
+    parts = [part for part in topic.replace("-", "_").split("_") if part]
+    if max_parts is not None:
+        parts = parts[:max_parts]
+    label = " ".join(parts)
     return label[:1].upper() + label[1:]
 
 
@@ -701,8 +734,7 @@ def _grounded_headline(
     )
     if not phrase:
         return fallback
-    label = " ".join(topic.replace("-", "_").split("_")[:2]) or topic
-    return f"Bounded {_topic_title(label)} signal: {phrase[:180].rstrip()}"
+    return f"{_topic_title(topic, max_parts=2)}: {phrase[:180].rstrip()}"
 
 
 def _context_headline(
@@ -718,8 +750,7 @@ def _context_headline(
     )
     if not context:
         return fallback
-    label = " ".join(topic.replace("-", "_").split("_")[:2]) or topic
-    return f"Bounded {_topic_title(label)} signal in {context}"
+    return f"{_topic_title(topic, max_parts=2)}: signal in {context}"
 
 
 def _source_bounded_why(
@@ -1780,6 +1811,10 @@ def render_signal_memo(
         _direct_bundle_needs_narrowing(publish_verdict)
         and _source_count_for_ids(lead_ids, facts) < min_direct_sources
     )
+    receipt_ids, claim = _claim_coherent_receipt_ids(
+        lead_ids, receipt_ids, facts, topic, claim, min_direct_sources,
+    )
+    context_ids = [fid for fid in receipt_ids if fid not in set(lead_ids)]
     (run_dir / "claim_receipt_matrix.json").write_text(
         json.dumps(build_claim_receipt_matrix(claim, lead_ids, receipt_ids, facts),
                    indent=2, sort_keys=True),
@@ -1841,7 +1876,7 @@ def render_signal_memo(
         and _receipt_cluster_coheres(lead_ids, facts, topic, min_direct_sources)
     ):
         headline = (
-            f"Bounded {_topic_title(topic)} signal: cited direct receipts are heterogeneous"
+            f"{_topic_title(topic)}: cited direct receipts are heterogeneous"
             if _repair_heterogeneity_requested(publish_verdict) else
             _grounded_headline(topic, lead_ids, facts, headline)
         )
@@ -1880,7 +1915,7 @@ def render_signal_memo(
     thesis = angle["thesis"]
     why_surprising = angle["why"]
     if _repair_heterogeneity_requested(publish_verdict):
-        headline = f"Bounded {_topic_title(topic)} signal: cited direct receipts are heterogeneous"
+        headline = f"{_topic_title(topic)}: cited direct receipts are heterogeneous"
         thesis = _heterogeneous_map_thesis(lead_ids, facts)
         why_surprising = _why_surprising("", context_ids, publish_verdict)
     bounded_question = (

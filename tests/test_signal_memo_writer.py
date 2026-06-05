@@ -16,6 +16,7 @@ from pytest import MonkeyPatch
 
 from agent.publish_tier import publish_verdict
 from agent.signal_memo_writer import (
+    _claim_coherent_receipt_ids,
     _expanded_receipt_ids,
     _format_large_numbers,
     _grounded_headline,
@@ -755,7 +756,7 @@ def test_mixed_direct_streams_collapse_to_single_bounded_receipt(
     evidence = memo.split("## Evidence receipts", 1)[1].split("\n## ", 1)[0]
 
     assert "**Direct source breadth:** `1` direct cited source(s)" in memo
-    assert "**Headline:** Bounded Photobiomodulation red signal in rodent models of stroke" in memo
+    assert "**Headline:** Photobiomodulation red: signal in rodent models of stroke" in memo
     assert "32%" not in thesis
     assert "bactericidal" not in thesis
     assert "`fact_id=101` (`A_core`)" in evidence
@@ -876,7 +877,7 @@ def test_agent_repair_frames_reviewer_heterogeneity_without_forced_collision(
     why = memo.split("## Why this is surprising", 1)[1].split("\n## ", 1)[0]
 
     assert "**Direct source breadth:** `5` direct cited source(s)" in memo
-    assert "**Headline:** Bounded Carbon tax signal: cited direct receipts are heterogeneous" in memo
+    assert "**Headline:** Carbon tax: cited direct receipts are heterogeneous" in memo
     assert "heterogeneous evidence map" in memo
     assert "live collision" not in memo
     assert "Real tension:" not in why
@@ -905,7 +906,7 @@ def test_agent_repair_heterogeneous_map_blocks_unified_numeric_thesis(
     why = memo.split("## Why this is surprising\n\n", 1)[1].split("\n\n## ", 1)[0]
 
     assert "**Direct source breadth:** `5` direct cited source(s)" in memo
-    assert "**Headline:** Bounded Photobiomodulation red light signal: cited direct receipts are heterogeneous" in memo
+    assert "**Headline:** Photobiomodulation red light: cited direct receipts are heterogeneous" in memo
     assert "heterogeneous evidence map" in thesis
     assert "source-specific" in thesis
     assert "10.x/" not in thesis
@@ -948,7 +949,7 @@ def test_agent_repair_rotates_reviewer_named_bad_receipt(
     evidence = memo.split("## Evidence receipts", 1)[1].split("\n## ", 1)[0]
 
     assert "**Direct source breadth:** `5` direct cited source(s)" in memo
-    assert "**Headline:** Bounded Carbon tax signal: cited direct receipts are heterogeneous" in memo
+    assert "**Headline:** Carbon tax: cited direct receipts are heterogeneous" in memo
     assert "heterogeneous evidence map" in memo
     assert "Reviewer alignment: read the cited receipts as a heterogeneous" in memo
     assert "`fact_id=505` (`A_core`)" not in evidence
@@ -1002,7 +1003,7 @@ def test_source_angle_publish_memo_replaces_stale_surprise_prose(
     why = memo.split("## Why this is surprising", 1)[1].split("\n## ", 1)[0]
     assert "aerosol-policy" not in memo
     assert "infrastructure claim" not in memo
-    assert "**Headline:** Bounded Carbon tax signal:" in memo
+    assert "**Headline:** Carbon tax:" in memo
     assert "source-grounded working signal" in why
     assert "Real tension:" in why
     assert "market 303" in why
@@ -1048,6 +1049,63 @@ def test_alpha_memo_trusts_gate_candidate_receipts_for_source_floor(
 
     assert "**Direct source breadth:** `5` direct cited source(s)" in memo
     assert "10.x/gate-candidate-707" in memo
+
+
+def test_alpha_memo_filters_off_claim_context_receipts(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    additions = {
+        "303": ("A_core", "Carbon pricing reduced port emissions after audit checks."),
+        "404": ("A_core", "Carbon pricing reduced port emissions after audit checks."),
+        "505": ("A_core", "Carbon pricing reduced port emissions after audit checks."),
+        "606": ("A_core", "Carbon pricing reduced port emissions after audit checks."),
+        "707": ("A_core", "Carbon pricing reduced port emissions after audit checks."),
+        "808": ("B_context", "Carbon pricing reduced emissions in nearby port firms."),
+        "909": ("B_context", "Hospital readmissions fell after discharge planning."),
+    }
+    for fid, (lane, phrase) in additions.items():
+        facts.append({
+            "fact_id": fid,
+            "canonical_phrase": phrase,
+            "source_paper": {"doi": f"10.x/context-filter-{fid}"},
+        })
+        lanes["verdicts"].append({"fact_id": fid, "lane": lane})
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+
+    receipt_ids, claim = _claim_coherent_receipt_ids(
+        ["303", "404", "505", "606", "707"],
+        ["303", "404", "505", "606", "707", "808", "909"],
+        {str(f["fact_id"]): f for f in facts},
+        "carbon_tax",
+        set(),
+    )
+
+    assert receipt_ids == ["303", "404", "505", "606", "707", "808"]
+    assert claim
+    (run / "opportunities_gate.json").write_text(json.dumps({
+        "audits": [{
+            "title": "Carbon pricing reduced port emissions",
+            "status": "survives",
+            "cited_fact_ids": ["303", "404", "505", "606", "707"],
+        }],
+    }), encoding="utf-8")
+
+    render_signal_memo(run, publish_verdict={
+        "receipt_expansion": {
+            "candidate_receipts": [
+                {"fact_id": "808", "lane": "B_context"},
+                {"fact_id": "909", "lane": "B_context"},
+            ],
+        },
+    })
+    matrix = json.loads((run / "claim_receipt_matrix.json").read_text(encoding="utf-8"))
+    assert matrix["coherent_receipt_ids"] == ["303", "404", "505", "606", "707"]
+    assert "909" not in matrix["coherent_receipt_ids"]
 
 
 def test_candidate_receipt_topic_match_uses_intervention_field(
@@ -1451,7 +1509,7 @@ def test_grounded_repair_rebuilds_headline_from_direct_receipts(
 
     assert "**Selected angle:** `source`" in memo
     assert (
-        "**Headline:** Bounded Carbon tax signal: "
+        "**Headline:** Carbon tax: "
         "Emissions fell 8% after the intervention"
     ) in memo
     assert "**Source thesis:** Carbon pricing may cut emissions" in memo
@@ -1465,7 +1523,7 @@ def test_grounded_headline_uses_short_topic_label_not_broad_slug() -> None:
         "fallback",
     )
 
-    assert headline == "Bounded Plant based signal: cardiovascular mortality increased 5%"
+    assert headline == "Plant based: cardiovascular mortality increased 5%"
     assert "biological age" not in headline.lower()
 
 
@@ -1489,7 +1547,7 @@ def test_source_angle_grounds_unsupported_tension_headline(
     })
 
     assert "**Selected angle:** `source`" in memo
-    assert "**Headline:** Bounded Carbon tax signal: Emissions fell 8%" in memo
+    assert "**Headline:** Carbon tax: Emissions fell 8%" in memo
     assert "Carbon tax paradox may obscure harm" not in memo
 
 

@@ -2971,11 +2971,8 @@ def test_submission_payload_strips_internal_alpha_scores(tmp_path: Path) -> None
     assert payload["abstract"] == "Direct receipts support a bounded, testable signal."
     assert payload["summary"] == "Direct receipts support a bounded, testable signal."
     assert "hypothesis-generating alpha memo, not confirmatory evidence" in payload["markdown"]
-    assert "cited receipts are separate evidence streams" in payload["markdown"]
-    assert "not a pooled meta-analysis or settled conclusion" in payload["markdown"]
-    assert "this is a hypothesis-generating alpha map" in payload["markdown"]
-    assert "routes the next test to the specific population" in payload["markdown"]
-    assert "letting a broad topic-level effect claim leak" in payload["markdown"]
+    assert "not a pooled meta-analysis or settled conclusion" not in payload["markdown"]
+    assert "this is a hypothesis-generating alpha map" not in payload["markdown"]
     assert "Boundary evidence only" in payload["markdown"]
     assert payload["evidence_bundle"]["context_sources_are_not_direct_support"] is True
 
@@ -3024,6 +3021,29 @@ def test_submission_payload_uses_complete_fallback_when_thesis_is_incomplete(
 
     assert payload["abstract"] == "The evidence map is bounded to directly cited receipts."
     assert payload["summary"] == "The evidence map is bounded to directly cited receipts."
+
+
+def test_submission_payload_rejects_alpha_memo_placeholder_summary(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict()
+    run = root / str(verdict["run_dir"])
+    run.mkdir(parents=True)
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo — metformin\n\n"
+        "**Headline:** Alpha memo — metformin\n\n"
+        "## One-sentence thesis\n\n"
+        "Alpha memo — metformin.\n\n"
+        "## Why this is surprising\n\n"
+        "Review Summary: Alpha memo — metformin.\n",
+        encoding="utf-8",
+    )
+
+    payload = daily._submission_payload(verdict, root / "runs")
+
+    assert payload["abstract"] == "This alpha memo maps directly cited receipts and their limits."
+    assert payload["summary"] == payload["abstract"]
 
 
 def test_submission_payload_uses_researka_source_bundle_schema(tmp_path: Path) -> None:
