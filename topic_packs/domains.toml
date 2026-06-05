@@ -1,0 +1,18 @@
+# Specialist alpha-agent domains.
+#
+# The production longevity publisher remains the default. New domains start
+# dry-run-only until their source adapters, gates, and public output are proven.
+
+[domains.longevity]
+display_name = "Longevity / anti-aging"
+seed_topics_path = "discovery_seeds.toml"
+source_policy_path = "publication.toml"
+claim_schema_path = "publication.toml"
+dry_run_only = false
+
+[domains.ai_research]
+display_name = "AI research / AI agents / research automation"
+seed_topics_path = "ai_research_discovery_seeds.toml"
+source_policy_path = "ai_research_sources.toml"
+claim_schema_path = "ai_research_claim_schema.toml"
+dry_run_only = true
