@@ -49,6 +49,12 @@ def domain_choices() -> tuple[str, ...]:
     return choices or (_DEFAULT_DOMAIN,)
 
 
+def domain_slug(value: object) -> str:
+    if isinstance(value, dict):
+        return str(value.get("slug") or "").strip()
+    return str(value or "").strip()
+
+
 def load_domain_profile(slug: str | None = None) -> DomainProfile:
     key = (slug or _DEFAULT_DOMAIN).strip() or _DEFAULT_DOMAIN
     raw = _domains_raw().get(key)
