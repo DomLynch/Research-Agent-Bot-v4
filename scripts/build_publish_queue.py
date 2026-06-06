@@ -61,7 +61,6 @@ def _run_domain(run: Path, verdict: dict[str, Any]) -> str:
         domain_slug(verdict.get("domain"))
         or domain_slug(_read_json(run / "MANIFEST.json").get("domain"))
         or domain_slug(_read_json(run / "search_trace.json").get("domain"))
-        or "longevity"
     )
 
 

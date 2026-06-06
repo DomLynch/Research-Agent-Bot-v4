@@ -784,8 +784,10 @@ def _claim_cluster_candidates(
     return out
 
 
-def _with_repairable_candidates(queue: Json, runs_root: Path) -> Json:
-    repairable = _repairable_candidate_verdicts(runs_root)
+def _with_repairable_candidates(
+    queue: Json, runs_root: Path, domain: str | None = None,
+) -> Json:
+    repairable = _repairable_candidate_verdicts(runs_root, domain)
     if not repairable:
         return queue
     existing = {
@@ -2857,7 +2859,7 @@ def _submission_agent_id(domain: str) -> str:
 
 def _submission_payload(verdict: Json, root: Path) -> Json:
     run_dir = _run_path(root, verdict.get("run_dir"))
-    profile = load_domain_profile(_run_domain(run_dir, verdict))
+    profile = load_domain_profile(_run_domain_required(run_dir, verdict))
     domain_metadata = profile.as_metadata()
     agent_id = _submission_agent_id(profile.slug)
     memo = ""
@@ -3050,15 +3052,17 @@ def run_cycle(
     session_retry_decisions: dict[str, Json] = {}
     published_blocked_topics = _recently_published_topics(
         submitted_path.parent, days=published_topic_cooldown_days,
+        domain=profile.slug,
     )
     submitted_blocked_topics = _recent_submission_topics(
         submitted_path, days=published_topic_cooldown_days,
+        domain=profile.slug,
     )
     blocked_topics = published_blocked_topics | submitted_blocked_topics
     ledger["recently_published_topics_blocked"] = sorted(published_blocked_topics)
     ledger["recently_submitted_topics_blocked"] = sorted(submitted_blocked_topics)
     force_refresh = False
-    accepted_shape_profiles = _accepted_shape_profiles(runs_root)
+    accepted_shape_profiles = _accepted_shape_profiles(runs_root, domain=profile.slug)
     all_considered: list[Json] = []
     search_batch_limit = max(1, max_refresh_batches if refresh_candidates else 1)
     batch_limit = search_batch_limit + (
@@ -3090,7 +3094,7 @@ def run_cycle(
     skip_refresh_note = "skipped_after_repairable_submission"
     if refresh_candidates and queue is None and queue_builder is _build_queue:
         candidate_queue = _with_repairable_candidates(
-            build_current_queue(), runs_root,
+            build_current_queue(), runs_root, profile.slug,
         )
         cluster_rows = _rows(candidate_queue, allow_tier2=True) + [
             r for r in candidate_queue.get("curation_needed") or [] if isinstance(r, dict)
@@ -3159,7 +3163,9 @@ def run_cycle(
             if preflight_queue is not None else build_current_queue()
         )
         preflight_queue = None
-        current_queue = _with_repairable_candidates(current_queue, runs_root)
+        current_queue = _with_repairable_candidates(
+            current_queue, runs_root, profile.slug,
+        )
         # Fingerprint the queue so we can detect a refresh batch that changed
         # nothing. memo_fingerprint shifts when a candidate's cited receipts
         # change, so a genuine build/refresh moves the signature.
@@ -3182,6 +3188,7 @@ def run_cycle(
             accepted_shape_profiles=accepted_shape_profiles,
             retryable_fingerprints=session_retryable,
             retry_decision_overrides=session_retry_decisions,
+            domain=profile.slug,
         )
         for row in considered:
             if refresh_candidates:
