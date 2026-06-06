@@ -1616,6 +1616,31 @@ def test_recently_published_topic_family_blocks_child_slug(tmp_path: Path) -> No
     assert ledger["considered"][0]["status"] == "cycle_exhausted_topic"
 
 
+def test_recent_submission_topic_family_blocks_child_slug(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    child = _verdict("agent_eval_vector_rerank", score=99)
+    fresh = _verdict("workflow_automation_trace", score=90)
+    _memo_with_source_receipts(root, child, 5)
+    _memo_with_source_receipts(root, fresh, 5)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+        "date": "2026-06-06T07-30-00Z",
+        "topic": "vector_search_agent_eval",
+        "run_dir": "runs/vector_search_agent_eval-evidence-ts",
+        "fingerprint": "old",
+    }])
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-06T09-30-00Z",
+        queue=_queue(child, fresh),
+        retraction_mode="metadata",
+    )
+
+    assert ledger["candidate"]["topic"] == "workflow_automation_trace"
+    assert "vector_search_agent_eval" in ledger["recently_submitted_topics_blocked"]
+    assert ledger["considered"][0]["status"] == "cycle_exhausted_topic"
+
+
 def test_repairable_retry_does_not_resubmit_unchanged_memo(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("unchanged_retry")

@@ -1259,6 +1259,32 @@ def _recently_published_topics(ledger_dir: Path, *, days: int) -> set[str]:
     return topics
 
 
+def _stamp_ts(value: Any) -> float | None:
+    raw = str(value or "").strip()
+    for fmt in ("%Y-%m-%dT%H-%M-%SZ", "%Y-%m-%dT%H:%M:%SZ"):
+        with suppress(ValueError):
+            return dt.datetime.strptime(raw, fmt).replace(tzinfo=dt.UTC).timestamp()
+    return None
+
+
+def _recent_submission_topics(path: Path, *, days: int) -> set[str]:
+    cutoff = time.time() - (max(0, days) * 86400)
+    data = _json(path, [])
+    if not isinstance(data, list):
+        return set()
+    topics: set[str] = set()
+    for row in data:
+        if not isinstance(row, dict):
+            continue
+        ts = _stamp_ts(row.get("date"))
+        if ts is None or ts < cutoff:
+            continue
+        topic = str(row.get("topic") or "").strip()
+        run_topic = _topic_from_run_ref(row.get("run_dir"))
+        topics.update(t for t in (topic, run_topic) if t)
+    return topics
+
+
 def _repairable_rejection(decision: Json) -> bool:
     support = str(decision.get("claim_support_verdict") or "").lower()
     if (
@@ -2796,10 +2822,15 @@ def run_cycle(
     blocked_fingerprints: set[str] = set()
     session_retryable: set[str] = set()
     session_retry_decisions: dict[str, Json] = {}
-    blocked_topics = _recently_published_topics(
+    published_blocked_topics = _recently_published_topics(
         submitted_path.parent, days=published_topic_cooldown_days,
     )
-    ledger["recently_published_topics_blocked"] = sorted(blocked_topics)
+    submitted_blocked_topics = _recent_submission_topics(
+        submitted_path, days=published_topic_cooldown_days,
+    )
+    blocked_topics = published_blocked_topics | submitted_blocked_topics
+    ledger["recently_published_topics_blocked"] = sorted(published_blocked_topics)
+    ledger["recently_submitted_topics_blocked"] = sorted(submitted_blocked_topics)
     force_refresh = False
     accepted_shape_profiles = _accepted_shape_profiles(runs_root)
     all_considered: list[Json] = []
