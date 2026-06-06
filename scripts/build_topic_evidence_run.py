@@ -257,10 +257,12 @@ def _post_tier2_facts(
     hdr: dict[str, str],
     topic: str,
     *,
+    domain: str = "longevity",
     numeric_only: bool,
     strict_audit_required: bool,
 ) -> FetchResult:
     body: dict[str, Any] = {
+        "domain": domain,
         "query": topic,
         "top_k": _FETCH_TOP_K,
         "min_confidence": "medium",
@@ -327,6 +329,7 @@ def _fetch_fact_jobs(
     hdr: dict[str, str],
     topic: str,
     *,
+    domain: str,
     trace: list[dict[str, Any]] | None,
     deadline: float,
 ) -> list[dict[str, Any]]:
@@ -335,7 +338,7 @@ def _fetch_fact_jobs(
     facts: list[dict[str, Any]] = []
     done: set[int] = set()
     with ThreadPoolExecutor(max_workers=min(_FETCH_WORKERS, len(jobs))) as pool:
-        fut_job = {pool.submit(_fetch_one, j, base, hdr, topic): j for j in jobs}
+        fut_job = {pool.submit(_fetch_one, j, base, hdr, topic, domain): j for j in jobs}
         try:
             for fut in as_completed(fut_job, timeout=max(0.1, deadline - time.monotonic())):
                 result = _coerce_fetch_result(fut.result())
@@ -361,6 +364,7 @@ def _fetch_fact_jobs(
 
 def _fetch_one(
     job: tuple[str, str], base: str, hdr: dict[str, str], topic: str,
+    domain: str = "longevity",
 ) -> FetchResult:
     """One fetch unit (own client = thread-safe). Errors stay typed."""
     kind, value = job
@@ -380,7 +384,7 @@ def _fetch_one(
                         out.append(f)
                 return FetchResult(out, "ok")
             result = _post_tier2_facts(
-                c, base, hdr, value, numeric_only=True,
+                c, base, hdr, value, domain=domain, numeric_only=True,
                 strict_audit_required=(kind == "strict"),
             )
             if result.status != "ok":
@@ -407,6 +411,7 @@ def _all_primary_fetches_failed(trace: list[dict[str, Any]]) -> bool:
 
 def _fetch_facts(
     topic: str, trace: list[dict[str, Any]] | None = None,
+    domain: str = "longevity",
 ) -> list[dict[str, Any]]:
     """Pull facts across diverse slices CONCURRENTLY, then dedup. The Researka
     search runs 15-25s/query (strict-audited can 504), so a serial cascade
@@ -439,7 +444,9 @@ def _fetch_facts(
         [("tier1", k) for k in _topic_fact_keys(topic)]
         + [("strict", q) for q in queries[:2]]
     )
-    facts = _fetch_fact_jobs(strict_jobs, base, hdr, topic, trace=trace, deadline=deadline)
+    facts = _fetch_fact_jobs(
+        strict_jobs, base, hdr, topic, domain=domain, trace=trace, deadline=deadline,
+    )
     seen_queries = set(queries)
     extra_queries = [
         query for query in _diverse_queries(
@@ -449,7 +456,7 @@ def _fetch_facts(
     ]
     facts.extend(_fetch_fact_jobs(
         [("normal", query) for query in [*queries, *extra_queries]],
-        base, hdr, topic, trace=trace, deadline=deadline,
+        base, hdr, topic, domain=domain, trace=trace, deadline=deadline,
     ))
     return _dedup_facts(facts)
 
@@ -899,9 +906,13 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     search_trace: list[dict[str, Any]] = []
-    facts = _fetch_facts(args.parent_topic or args.topic, trace=search_trace)
+    facts = _fetch_facts(
+        args.parent_topic or args.topic, trace=search_trace, domain=profile.slug,
+    )
     if args.parent_topic:
-        facts = _dedup_facts(facts + _fetch_facts(args.topic, trace=search_trace))
+        facts = _dedup_facts(facts + _fetch_facts(
+            args.topic, trace=search_trace, domain=profile.slug,
+        ))
     if _all_primary_fetches_failed(search_trace):
         (out_dir / "search_trace.json").write_text(
             json.dumps({"topic": args.topic, "domain": profile.as_metadata(),

@@ -174,6 +174,7 @@ def main() -> int:
         with httpx.Client() as client:
             discovered = discover_topics(
                 seeds=seeds, settings=settings, client=client,
+                domain=profile.slug,
                 derived_topic_limit=derived_limit,
                 fact_probe_topics=fact_probe_topics,
                 refresh_low_source_counts=args.warm_backlog,
