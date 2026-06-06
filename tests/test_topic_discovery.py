@@ -1043,9 +1043,11 @@ def test_discover_topics_counts_slug_prefix_fact_sources(
     papers = [_paper(doi="10.1/omega", fwci=2.0, cited_by_count=100)]
 
     def handler(req: httpx.Request) -> httpx.Response:
-        body = req.read().decode("utf-8") if req.content else "{}"
         if req.url.path.endswith("/tier2/facts/search"):
-            if "omega 3" not in body or "longevity" in body:
+            body = json.loads(req.content)
+            assert body["domain"] == "longevity"
+            query = str(body.get("query") or "")
+            if "omega 3" not in query or "longevity" in query:
                 return httpx.Response(200, json=[])
             return httpx.Response(200, json=[
                 {

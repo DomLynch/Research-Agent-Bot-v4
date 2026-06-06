@@ -15,7 +15,7 @@ def test_fetch_facts_records_search_trace(monkeypatch) -> None:  # type: ignore[
     monkeypatch.setattr(er, "_topic_fact_keys", lambda _t: ["k1"])
     monkeypatch.setattr(er, "_diverse_queries", lambda _t, **_kw: ["q1", "q2"])
 
-    def _fake_fetch_one(job, _base, _hdr, _topic):  # type: ignore[no-untyped-def]
+    def _fake_fetch_one(job, _base, _hdr, _topic, _domain):  # type: ignore[no-untyped-def]
         kind, _value = job
         rows = [{"fact_id": "1"}] if kind == "tier1" else []
         return er.FetchResult(rows, "ok")
@@ -55,7 +55,10 @@ def test_empty_fact_run_writes_empty_frontier_sidecars(monkeypatch, tmp_path) ->
     class _S:
         writer_configured = False
 
-    def _fetch_empty(_topic: str, *, trace: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def _fetch_empty(
+        _topic: str, *, trace: list[dict[str, Any]], domain: str = "longevity",
+    ) -> list[dict[str, Any]]:
+        assert domain == "longevity"
         trace.append({
             "kind": "tier1", "query": "empty_topic", "facts": 0,
             "status": "ok", "errors": [],
@@ -82,7 +85,10 @@ def test_empty_fact_run_writes_empty_frontier_sidecars(monkeypatch, tmp_path) ->
 
 
 def test_primary_fetch_failure_does_not_write_empty_frontier(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
-    def _fetch_timeout(_topic: str, *, trace: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def _fetch_timeout(
+        _topic: str, *, trace: list[dict[str, Any]], domain: str = "longevity",
+    ) -> list[dict[str, Any]]:
+        assert domain == "longevity"
         trace.append({
             "kind": "tier1", "query": "empty_topic", "facts": 0,
             "status": "timeout", "errors": ["ReadTimeout"],
@@ -110,7 +116,10 @@ def test_child_topic_fetches_parent_facts_before_classifying(monkeypatch, tmp_pa
 
     calls: list[str] = []
 
-    def _fetch(topic: str, *, trace: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def _fetch(
+        topic: str, *, trace: list[dict[str, Any]], domain: str = "longevity",
+    ) -> list[dict[str, Any]]:
+        assert domain == "longevity"
         calls.append(topic)
         trace.append({"kind": "normal", "query": topic, "facts": 1, "status": "ok", "errors": []})
         return [{
@@ -159,7 +168,7 @@ def test_fetch_facts_expands_with_source_title_facets(monkeypatch) -> None:  # t
 
     calls: list[str] = []
 
-    def _fake_fetch_one(job, _base, _hdr, _topic):  # type: ignore[no-untyped-def]
+    def _fake_fetch_one(job, _base, _hdr, _topic, _domain):  # type: ignore[no-untyped-def]
         _kind, query = job
         calls.append(query)
         if query == "berberine":

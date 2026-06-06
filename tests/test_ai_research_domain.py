@@ -46,11 +46,13 @@ def test_default_domain_remains_longevity() -> None:
 
 def test_ai_research_discovery_uses_ai_seed_pack(
     tmp_path: Path, monkeypatch: Any,
-) -> None:
+    ) -> None:
     seen: list[tuple[str, ...]] = []
+    seen_domains: list[str] = []
 
     def fake_discover(**kwargs: Any) -> tuple[TopicCandidate, ...]:
         seen.append(kwargs["seeds"])
+        seen_domains.append(kwargs["domain"])
         return (
             TopicCandidate(
                 topic="ai_agents", paper_count=1, fact_source_count=5,
@@ -70,6 +72,7 @@ def test_ai_research_discovery_uses_ai_seed_pack(
 
     assert run_topic_discovery.main() == 0
     assert seen and "ai_agents" in seen[0]
+    assert seen_domains == ["ai_research"]
     assert "rapamycin" not in seen[0]
     out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
@@ -116,9 +119,12 @@ def test_ai_research_evidence_run_records_domain(
     class _S:
         writer_configured = False
 
+    seen_domains: list[str] = []
+
     def _fetch_empty(
-        _topic: str, *, trace: list[dict[str, Any]],
+        _topic: str, *, trace: list[dict[str, Any]], domain: str = "longevity",
     ) -> list[dict[str, Any]]:
+        seen_domains.append(domain)
         trace.append({
             "kind": "tier1", "query": "ai_agents", "facts": 0,
             "status": "ok", "errors": [],
@@ -142,6 +148,7 @@ def test_ai_research_evidence_run_records_domain(
     trace = json.loads((run_dir / "search_trace.json").read_text())
     assert manifest["domain"]["slug"] == "ai_research"
     assert trace["domain"]["slug"] == "ai_research"
+    assert seen_domains == ["ai_research"]
 
 
 def _ai_verdict() -> dict[str, Any]:
