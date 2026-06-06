@@ -15,6 +15,7 @@ topics = [
     "multi_agent_systems",
     "llm_evaluation",
     "llm_judge_reliability",
+    "rag",
     "retrieval_augmented_generation",
     "code_generation_agents",
     "swe_bench",
