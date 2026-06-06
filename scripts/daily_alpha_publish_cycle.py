@@ -288,8 +288,14 @@ def _run_domain(run: Path, verdict: Json) -> str:
         domain_slug(verdict.get("domain"))
         or domain_slug(_json(run / "MANIFEST.json", {}).get("domain"))
         or domain_slug(_json(run / "search_trace.json", {}).get("domain"))
-        or "longevity"
     )
+
+
+def _run_domain_required(run: Path, verdict: Json) -> str:
+    domain = _run_domain(run, verdict)
+    if not domain:
+        raise ValueError(f"missing domain metadata for run: {run}")
+    return domain
 
 
 def _write_publish_verdict(run: Path) -> Json:
@@ -356,10 +362,16 @@ def _build_queue(
                 latest[topic] = run
     seed_tokens = _domain_seed_tokens(domain)
     domain_rows = []
+    missing_domain_count = 0
     for run in latest.values():
         row = _verdict_for_run(run)
-        if domain and _run_domain(run, row) != domain:
+        run_domain = _run_domain(run, row)
+        if not run_domain:
+            missing_domain_count += 1
             continue
+        if domain and run_domain != domain:
+            continue
+        row = row | {"domain": load_domain_profile(run_domain).as_metadata()}
         domain_rows.append(row)
     rows = domain_rows
     seed_scope_dropped_count = 0
@@ -389,6 +401,7 @@ def _build_queue(
             r for r in valid if r.get("decision") == "curation_needed"
         ],
         "_meta": {
+            "missing_domain_count": missing_domain_count,
             "seed_scope_dropped_count": seed_scope_dropped_count,
             "seed_scope_fallback_count": seed_scope_fallback_count,
             "seed_scope_fallback_used": bool(seed_scope_fallback_count),
@@ -435,11 +448,15 @@ def memo_fingerprint(verdict: Json) -> str:
         _norm(verdict.get("confidence_label")),
         _norm(verdict.get("publish_tier")),
     ])
-    raw = json.dumps({
+    raw_payload = {
         "cited": cited,
         "dois": dois,
         "direction": direction,
-    }, sort_keys=True)
+    }
+    domain = domain_slug(verdict.get("domain"))
+    if domain:
+        raw_payload["domain"] = domain
+    raw = json.dumps(raw_payload, sort_keys=True)
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
@@ -1041,12 +1058,42 @@ def _seen_submission_fingerprints(path: Path) -> set[str]:
     return set()
 
 
-def _same_memo_seen(path: Path, fingerprint: str, memo_sha256: str) -> bool:
+def _row_domain(row: Json) -> str:
+    return domain_slug(row.get("domain"))
+
+
+def _ledger_domain(ledger: Json) -> str:
+    candidate = ledger.get("candidate")
+    if not isinstance(candidate, dict):
+        candidate = {}
+    return domain_slug(ledger.get("domain")) or domain_slug(candidate.get("domain"))
+
+
+def _same_domain(record_domain: str, domain: str | None) -> bool:
+    return not domain or record_domain == domain
+
+
+def _seen_submission_fingerprints_for_domain(path: Path, domain: str | None) -> set[str]:
+    data = _json(path, [])
+    if isinstance(data, list):
+        return {
+            str(x.get("fingerprint"))
+            for x in data
+            if isinstance(x, dict) and _same_domain(_row_domain(x), domain)
+        }
+    return set()
+
+
+def _same_memo_seen(
+    path: Path, fingerprint: str, memo_sha256: str, domain: str | None = None,
+) -> bool:
     data = _json(path, [])
     if not isinstance(data, list):
         return False
     for row in data:
         if not isinstance(row, dict) or row.get("fingerprint") != fingerprint:
+            continue
+        if not _same_domain(_row_domain(row), domain):
             continue
         if memo_sha256:
             if row.get("memo_sha256") == memo_sha256:
@@ -1070,6 +1117,7 @@ def _record_submission_attempt(
         records = []
     record = {
         "date": date,
+        "domain": candidate.get("domain"),
         "topic": candidate.get("topic"),
         "run_dir": candidate.get("run_dir"),
         "fingerprint": candidate.get("memo_fingerprint"),
@@ -1085,6 +1133,7 @@ def _record_submission_attempt(
 def _submission_record_patch(ledger: Json) -> Json:
     patch: Json = {}
     for key in (
+        "domain",
         "final_verdict",
         "status",
         "published",
@@ -1176,7 +1225,9 @@ def _memo_self_counter_signal(verdict: Json, root: Path) -> bool:
     )
 
 
-def _fingerprint_attempt_count(path: Path, fingerprint: str) -> int:
+def _fingerprint_attempt_count(
+    path: Path, fingerprint: str, domain: str | None = None,
+) -> int:
     data = _json(path, [])
     if not isinstance(data, list):
         return 0
@@ -1185,25 +1236,34 @@ def _fingerprint_attempt_count(path: Path, fingerprint: str) -> int:
         for row in data
         if isinstance(row, dict)
         and row.get("fingerprint") == fingerprint
+        and _same_domain(_row_domain(row), domain)
     )
 
 
-def _repairable_rejected_fingerprints(ledger_dir: Path) -> set[str]:
+def _repairable_rejected_fingerprints(
+    ledger_dir: Path, domain: str | None = None,
+) -> set[str]:
     retryable: set[str] = set()
     for path in ledger_dir.glob("*.json"):
         ledger = _json(path, {})
         if not isinstance(ledger, dict):
+            continue
+        if not _same_domain(_ledger_domain(ledger), domain):
             continue
         for fp, _run_ref, _decision in _repairable_submission_records(ledger):
             retryable.add(fp)
     return retryable
 
 
-def _repairable_decisions_by_fingerprint(ledger_dir: Path) -> dict[str, Json]:
+def _repairable_decisions_by_fingerprint(
+    ledger_dir: Path, domain: str | None = None,
+) -> dict[str, Json]:
     retryable: dict[str, Json] = {}
     for path in sorted(ledger_dir.glob("*.json"), reverse=True):
         ledger = _json(path, {})
         if not isinstance(ledger, dict):
+            continue
+        if not _same_domain(_ledger_domain(ledger), domain):
             continue
         for fp, _run_ref, decision in _repairable_submission_records(ledger):
             if fp in retryable:
@@ -1212,12 +1272,16 @@ def _repairable_decisions_by_fingerprint(ledger_dir: Path) -> dict[str, Json]:
     return retryable
 
 
-def _repairable_candidate_verdicts(runs_root: Path) -> list[Json]:
+def _repairable_candidate_verdicts(
+    runs_root: Path, domain: str | None = None,
+) -> list[Json]:
     verdicts: list[Json] = []
     seen: set[str] = set()
     for path in sorted((runs_root / "_daily_ledger").glob("*.json"), reverse=True):
         ledger = _json(path, {})
         if not isinstance(ledger, dict):
+            continue
+        if not _same_domain(_ledger_domain(ledger), domain):
             continue
         for fp, run_ref, _decision in _repairable_submission_records(ledger):
             if fp in seen:
@@ -1226,6 +1290,11 @@ def _repairable_candidate_verdicts(runs_root: Path) -> list[Json]:
             verdict = _json(run_dir / "publish_verdict.json", {})
             if not isinstance(verdict, dict) or not verdict:
                 continue
+            run_domain = _run_domain(run_dir, verdict)
+            if domain and run_domain != domain:
+                continue
+            if run_domain:
+                verdict = verdict | {"domain": load_domain_profile(run_domain).as_metadata()}
             seen.add(fp)
             verdicts.append(verdict)
     return verdicts
@@ -1255,12 +1324,16 @@ def _repairable_submission_records(ledger: Json) -> list[tuple[str, Any, Json]]:
     return records
 
 
-def _accepted_shape_profiles(runs_root: Path, *, limit: int = 25) -> list[Json]:
+def _accepted_shape_profiles(
+    runs_root: Path, *, limit: int = 25, domain: str | None = None,
+) -> list[Json]:
     profiles: list[Json] = []
     ledger_dir = runs_root / "_daily_ledger"
     for path in sorted(ledger_dir.glob("*.json"), reverse=True):
         ledger = _json(path, {})
         if not isinstance(ledger, dict) or ledger.get("final_verdict") != "accepted":
+            continue
+        if not _same_domain(_ledger_domain(ledger), domain):
             continue
         candidate = ledger.get("candidate")
         if not isinstance(candidate, dict):
@@ -1282,7 +1355,9 @@ def _accepted_shape_profiles(runs_root: Path, *, limit: int = 25) -> list[Json]:
     return profiles
 
 
-def _recently_published_topics(ledger_dir: Path, *, days: int) -> set[str]:
+def _recently_published_topics(
+    ledger_dir: Path, *, days: int, domain: str | None = None,
+) -> set[str]:
     cutoff = time.time() - (max(0, days) * 86400)
     topics: set[str] = set()
     for path in ledger_dir.glob("*.json"):
@@ -1293,6 +1368,8 @@ def _recently_published_topics(ledger_dir: Path, *, days: int) -> set[str]:
                 continue
         ledger = _json(path, {})
         if not isinstance(ledger, dict):
+            continue
+        if not _same_domain(_ledger_domain(ledger), domain):
             continue
         if ledger.get("final_verdict") != "accepted" and ledger.get("published") != 1:
             continue
@@ -1314,7 +1391,9 @@ def _stamp_ts(value: Any) -> float | None:
     return None
 
 
-def _recent_submission_topics(path: Path, *, days: int) -> set[str]:
+def _recent_submission_topics(
+    path: Path, *, days: int, domain: str | None = None,
+) -> set[str]:
     cutoff = time.time() - (max(0, days) * 86400)
     data = _json(path, [])
     if not isinstance(data, list):
@@ -1322,6 +1401,8 @@ def _recent_submission_topics(path: Path, *, days: int) -> set[str]:
     topics: set[str] = set()
     for row in data:
         if not isinstance(row, dict):
+            continue
+        if not _same_domain(_row_domain(row), domain):
             continue
         ts = _stamp_ts(row.get("date"))
         if ts is None or ts < cutoff:
@@ -1665,10 +1746,13 @@ def select_candidate(
     accepted_shape_profiles: list[Json] | None = None,
     retryable_fingerprints: set[str] | None = None,
     retry_decision_overrides: dict[str, Json] | None = None,
+    domain: str | None = None,
 ) -> tuple[Json | None, list[Json]]:
-    seen = _seen_submission_fingerprints(submitted_path)
-    retryable = _repairable_rejected_fingerprints(submitted_path.parent)
-    retry_decisions = _repairable_decisions_by_fingerprint(submitted_path.parent)
+    seen = _seen_submission_fingerprints_for_domain(submitted_path, domain)
+    retryable = _repairable_rejected_fingerprints(submitted_path.parent, domain)
+    retry_decisions = _repairable_decisions_by_fingerprint(
+        submitted_path.parent, domain,
+    )
     retryable.update(retryable_fingerprints or set())
     retry_decisions.update(retry_decision_overrides or {})
     blocked = blocked_fingerprints or set()
@@ -1699,6 +1783,25 @@ def select_candidate(
     ])
     blocked_family_keys = _canonical_family_keys(topic_blocked)
     for verdict in candidates:
+        if domain:
+            run_dir = _run_path(runs_root, verdict.get("run_dir"))
+            verdict_domain = _run_domain(run_dir, verdict)
+            if not verdict_domain:
+                considered.append({
+                    "topic": verdict.get("topic"),
+                    "status": "missing_domain_metadata",
+                    "decision": verdict.get("decision"),
+                })
+                continue
+            if verdict_domain != domain:
+                considered.append({
+                    "topic": verdict.get("topic"),
+                    "status": "wrong_domain",
+                    "domain": verdict_domain,
+                    "decision": verdict.get("decision"),
+                })
+                continue
+            verdict = verdict | {"domain": load_domain_profile(verdict_domain).as_metadata()}
         raw_fp = memo_fingerprint(verdict)
         if (
             raw_fp not in seen
@@ -1745,7 +1848,7 @@ def select_candidate(
             _selection_topic(verdict) in topic_blocked
             or family_blocked
         )
-        attempt_count = _fingerprint_attempt_count(submitted_path, fp)
+        attempt_count = _fingerprint_attempt_count(submitted_path, fp, domain)
         retry_after_rejection = _retry_after_rejection(
             fp,
             attempt_count=attempt_count,
@@ -1829,7 +1932,7 @@ def select_candidate(
                     min_direct_source_count=min_direct_source_count,
                 )
                 cycle_blocked = fp in blocked
-                attempt_count = _fingerprint_attempt_count(submitted_path, fp)
+                attempt_count = _fingerprint_attempt_count(submitted_path, fp, domain)
                 retry_after_rejection = _retry_after_rejection(
                     fp,
                     attempt_count=attempt_count,
@@ -1877,7 +1980,7 @@ def select_candidate(
                     min_direct_source_count=min_direct_source_count,
                 )
                 cycle_blocked = fp in blocked
-                attempt_count = _fingerprint_attempt_count(submitted_path, fp)
+                attempt_count = _fingerprint_attempt_count(submitted_path, fp, domain)
                 retry_after_rejection = _retry_after_rejection(
                     fp,
                     attempt_count=attempt_count,
@@ -1912,7 +2015,7 @@ def select_candidate(
                     min_direct_source_count=min_direct_source_count,
                 )
                 cycle_blocked = fp in blocked
-                attempt_count = _fingerprint_attempt_count(submitted_path, fp)
+                attempt_count = _fingerprint_attempt_count(submitted_path, fp, domain)
                 retry_after_rejection = _retry_after_rejection(
                     fp,
                     attempt_count=attempt_count,
@@ -1955,7 +2058,7 @@ def select_candidate(
                         min_direct_source_count=min_direct_source_count,
                     )
                     cycle_blocked = fp in blocked
-                    attempt_count = _fingerprint_attempt_count(submitted_path, fp)
+                    attempt_count = _fingerprint_attempt_count(submitted_path, fp, domain)
                     retry_after_rejection = _retry_after_rejection(
                         fp,
                         attempt_count=attempt_count,
@@ -1986,7 +2089,7 @@ def select_candidate(
                         min_direct_source_count=min_direct_source_count,
                     )
                     cycle_blocked = fp in blocked
-                    attempt_count = _fingerprint_attempt_count(submitted_path, fp)
+                    attempt_count = _fingerprint_attempt_count(submitted_path, fp, domain)
                     retry_after_rejection = _retry_after_rejection(
                         fp,
                         attempt_count=attempt_count,
@@ -2001,7 +2104,9 @@ def select_candidate(
             if retry_fingerprint_unchanged:
                 status = "duplicate_submission_fingerprint"
             if status == "eligible":
-                if fp in seen and _same_memo_seen(submitted_path, fp, memo_sha256):
+                if fp in seen and _same_memo_seen(
+                    submitted_path, fp, memo_sha256, domain,
+                ):
                     status = "duplicate_submission_fingerprint"
                 elif source_count < min_source_count:
                     status = (
