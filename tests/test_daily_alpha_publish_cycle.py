@@ -137,6 +137,35 @@ def _memo_with_source_receipts(root: Path, verdict: dict[str, Any], count: int) 
     _audit_sidecars(run)
 
 
+def _memo_with_receipt_shapes(
+    root: Path, verdict: dict[str, Any], shapes: list[dict[str, str]],
+) -> None:
+    run = root / str(verdict["run_dir"])
+    run.mkdir(parents=True)
+    ids = [str(i + 1) for i in range(len(shapes))]
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n## Evidence receipts\n\n"
+        + "\n".join(f"- `fact_id={fid}` (`A_core`) - receipt" for fid in ids)
+        + "\n" + _FALSIFIER,
+        encoding="utf-8",
+    )
+    run.joinpath("all_facts.json").write_text(json.dumps([
+        {
+            "fact_id": fid,
+            **shape,
+            "source_paper": {
+                "doi": f"10.1000/shape-{fid}",
+                "title": f"Shape source {fid}",
+            },
+        }
+        for fid, shape in zip(ids, shapes, strict=True)
+    ]), encoding="utf-8")
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": fid, "lane": "A_core"} for fid in ids],
+    }), encoding="utf-8")
+    _audit_sidecars(run)
+
+
 def _publish_tier_run(root: Path, topic: str, *, stale: dict[str, Any]) -> None:
     run = root / "runs" / f"{topic}-evidence-ts"
     run.mkdir(parents=True)
@@ -1593,7 +1622,9 @@ def test_recently_published_topic_is_skipped_for_fresh_topic(tmp_path: Path) -> 
 def test_recently_published_topic_family_blocks_child_slug(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     published = _verdict("vector_search_agent_eval", score=100)
-    child = _verdict("agent_eval_vector_rerank", score=99)
+    child = _verdict("agent_eval_vector_rerank", score=99) | {
+        "topic_family": published["topic"],
+    }
     fresh = _verdict("workflow_automation_trace", score=90)
     _memo_with_source_receipts(root, child, 5)
     _memo_with_source_receipts(root, fresh, 5)
@@ -1614,11 +1645,16 @@ def test_recently_published_topic_family_blocks_child_slug(tmp_path: Path) -> No
     assert ledger["candidate"]["topic"] == "workflow_automation_trace"
     assert ledger["considered"][0]["topic"] == "agent_eval_vector_rerank"
     assert ledger["considered"][0]["status"] == "cycle_exhausted_topic"
+    assert ledger["considered"][0]["family_blocked"] is True
+    assert ledger["family_blocked_count"] == 1
+    assert ledger["seed_scope_dropped_count"] == 0
 
 
 def test_recent_submission_topic_family_blocks_child_slug(tmp_path: Path) -> None:
     root = tmp_path / "repo"
-    child = _verdict("agent_eval_vector_rerank", score=99)
+    child = _verdict("agent_eval_vector_rerank", score=99) | {
+        "topic_family": "vector_search_agent_eval",
+    }
     fresh = _verdict("workflow_automation_trace", score=90)
     _memo_with_source_receipts(root, child, 5)
     _memo_with_source_receipts(root, fresh, 5)
@@ -1639,6 +1675,102 @@ def test_recent_submission_topic_family_blocks_child_slug(tmp_path: Path) -> Non
     assert ledger["candidate"]["topic"] == "workflow_automation_trace"
     assert "vector_search_agent_eval" in ledger["recently_submitted_topics_blocked"]
     assert ledger["considered"][0]["status"] == "cycle_exhausted_topic"
+    assert ledger["considered"][0]["family_blocked"] is True
+    assert ledger["family_blocked_count"] == 1
+
+
+def test_glp_longevity_cooldown_does_not_token_block_unrelated_families(tmp_path: Path) -> None:
+    topics = ["omega_3_longevity", "telomere", "mediterranean_diet"]
+    for block_kind in ("published", "submitted"):
+        root = tmp_path / block_kind
+        if block_kind == "published":
+            daily._write_json(root / "_daily_ledger" / "2026-06-05.json", {
+                "status": "published",
+                "final_verdict": "accepted",
+                "published": 1,
+                "published_topic": "GLP_1_longevity",
+            })
+        else:
+            daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+                "date": "2026-06-06T07-30-00Z",
+                "topic": "GLP_1_longevity",
+                "run_dir": "runs/GLP_1_longevity-evidence-ts",
+                "fingerprint": "old-glp",
+            }])
+        for i, topic in enumerate(topics):
+            verdict = _verdict(topic, score=100 - i)
+            _memo_with_source_receipts(root, verdict, 5)
+            ledger = daily.run_cycle(
+                runs_root=root,
+                date=f"2026-06-06T09-3{i}-00Z",
+                queue=_queue(verdict),
+                retraction_mode="metadata",
+            )
+
+            assert ledger["candidate"]["topic"] == topic
+            assert ledger["considered"][0]["status"] == "eligible"
+            assert ledger["considered"][0]["family_blocked"] is False
+            assert ledger["family_blocked_count"] == 0
+
+
+def test_receipt_shape_mismatch_reranks_before_submit(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    bad = _verdict("mixed_direct_receipts", score=100)
+    good = _verdict("matched_direct_receipts", score=90)
+    _memo_with_receipt_shapes(root, bad, [
+        {
+            "canonical_phrase": "Tumor treating fields improved glioblastoma survival.",
+            "population": "glioblastoma adults",
+            "intervention": "tumor treating fields",
+            "endpoint": "overall survival",
+        },
+        {
+            "canonical_phrase": "Omega 3 supplementation reduced runner soreness.",
+            "population": "distance runners",
+            "intervention": "omega 3 supplementation",
+            "endpoint": "muscle soreness",
+        },
+        {
+            "canonical_phrase": "Cognitive training changed dementia recall.",
+            "population": "older adults with dementia",
+            "intervention": "cognitive training",
+            "endpoint": "memory recall",
+        },
+        {
+            "canonical_phrase": "Probiotic feeding changed neonatal enterocolitis rates.",
+            "population": "preterm infants",
+            "intervention": "probiotic feeding",
+            "endpoint": "necrotizing enterocolitis",
+        },
+        {
+            "canonical_phrase": "Metformin lowered glycemic markers in diabetes.",
+            "population": "type 2 diabetes patients",
+            "intervention": "metformin",
+            "endpoint": "hemoglobin a1c",
+        },
+    ])
+    _memo_with_source_receipts(root, good, 5)
+    submissions: list[dict[str, Any]] = []
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submissions.append(payload)
+        return {"ok": True, "status": 200, "response": {}}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-06T09-30-00Z",
+        queue=_queue(bad, good),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+    )
+
+    assert ledger["submitted_topic"] == "matched_direct_receipts"
+    assert ledger["considered"][0]["status"] == "receipt_shape_mismatch"
+    assert ledger["considered"][1]["status"] == "eligible"
+    assert len(submissions) == 1
+    assert submissions[0]["topic"] == "matched_direct_receipts"
 
 
 def test_repairable_retry_does_not_resubmit_unchanged_memo(tmp_path: Path) -> None:

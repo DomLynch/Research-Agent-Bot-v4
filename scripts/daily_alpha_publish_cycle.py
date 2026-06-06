@@ -44,6 +44,11 @@ _CLUSTER_GENERIC_TOKENS = frozenset({
     "control", "controls", "placebo", "once", "weekly", "daily", "without",
     "within", "over", "most", "not", "parent", "topic", "claim",
 })
+_COHERENCE_GENERIC_TOKENS = _CLUSTER_GENERIC_TOKENS | {
+    "endpoint", "endpoints", "outcome", "outcomes", "intervention",
+    "interventions", "comparator", "comparators", "group", "groups",
+    "primary", "secondary", "measure", "measures",
+}
 
 Json = dict[str, Any]
 Fetcher = Callable[[str], Json]
@@ -351,11 +356,13 @@ def _build_queue(
                 latest[topic] = run
     seed_tokens = _domain_seed_tokens(domain)
     rows = []
+    seed_scope_dropped_count = 0
     for run in latest.values():
         row = _verdict_for_run(run)
         if domain and _run_domain(run, row) != domain:
             continue
         if seed_tokens and not (_family_keys(_family_values(row), set()) & seed_tokens):
+            seed_scope_dropped_count += 1
             continue
         rows.append(row)
     valid = [r for r in rows if isinstance(r, dict)]
@@ -375,6 +382,7 @@ def _build_queue(
         "curation_needed": [
             r for r in valid if r.get("decision") == "curation_needed"
         ],
+        "_meta": {"seed_scope_dropped_count": seed_scope_dropped_count},
     }
 
 
@@ -477,15 +485,27 @@ def _common_family_tokens(values: Iterable[str]) -> set[str]:
 def _family_keys(values: Iterable[str], common_tokens: set[str]) -> set[str]:
     keys: set[str] = set()
     for value in values:
-        exact = "_".join(_CLAIM_WORD.findall(value.lower()))
+        exact = _canonical_family_key(value)
         if exact:
-            keys.add("topic:" + exact)
+            keys.add(exact)
         keys.update(
             "token:" + token
             for token in _family_tokens(value)
             if token not in common_tokens
         )
     return keys
+
+
+def _canonical_family_key(value: str) -> str:
+    exact = "_".join(_CLAIM_WORD.findall(str(value).lower()))
+    return "topic:" + exact if exact else ""
+
+
+def _canonical_family_keys(values: Iterable[str]) -> set[str]:
+    return {
+        key for value in values
+        if (key := _canonical_family_key(str(value)))
+    }
 
 
 def _domain_seed_tokens(domain: str | None) -> set[str]:
@@ -1432,7 +1452,7 @@ def _source_key_from_fact(fact: Json) -> str:
     return _source_key_from_paper(paper)
 
 
-def _memo_source_papers(
+def _memo_source_facts(
     verdict: Json,
     root: Path,
     section_names: tuple[str, ...] = ("Evidence", "Context"),
@@ -1462,7 +1482,7 @@ def _memo_source_papers(
         if not lanes:
             lanes = _memo_receipt_lanes(memo, section_names)
     seen: set[str] = set()
-    papers: list[Json] = []
+    source_facts: list[Json] = []
     for fid in ids:
         if lane_names is not None and lanes.get(fid) not in lane_names:
             continue
@@ -1471,6 +1491,18 @@ def _memo_source_papers(
         if not key or key in seen:
             continue
         seen.add(key)
+        source_facts.append(fact)
+    return source_facts
+
+
+def _memo_source_papers(
+    verdict: Json,
+    root: Path,
+    section_names: tuple[str, ...] = ("Evidence", "Context"),
+    lane_names: set[str] | None = None,
+) -> list[Json]:
+    papers: list[Json] = []
+    for fact in _memo_source_facts(verdict, root, section_names, lane_names):
         paper = fact.get("source_paper") or {}
         if isinstance(paper, dict):
             papers.append({
@@ -1486,6 +1518,45 @@ def _memo_source_papers(
 
 def _direct_source_count(verdict: Json, root: Path) -> int:
     return len(_memo_source_papers(verdict, root, ("Evidence",), {"A_core"}))
+
+
+def _shape_text(value: Any) -> str:
+    if isinstance(value, dict):
+        return " ".join(_shape_text(v) for v in value.values())
+    if isinstance(value, (list, tuple, set)):
+        return " ".join(_shape_text(v) for v in value)
+    return str(value or "")
+
+
+def _shape_tokens(fact: Json, fields: tuple[str, ...]) -> set[str]:
+    text = " ".join(_shape_text(fact.get(field)) for field in fields)
+    return {
+        token for token in _CLAIM_WORD.findall(text.lower())
+        if len(token) >= 4 and token not in _COHERENCE_GENERIC_TOKENS
+    }
+
+
+def _direct_receipts_share_shape(
+    verdict: Json, root: Path, min_direct_source_count: int,
+) -> bool:
+    if min_direct_source_count <= 0:
+        return True
+    facts = _memo_source_facts(verdict, root, ("Evidence",), {"A_core"})
+    if len(facts) < min_direct_source_count:
+        return True
+    shared_dims = 0
+    checked_dims = 0
+    for fields in (("population",), ("intervention",), ("comparator",), ("endpoint",)):
+        shapes = [_shape_tokens(fact, fields) for fact in facts]
+        if not all(shapes):
+            continue
+        checked_dims += 1
+        if set.intersection(*shapes):
+            shared_dims += 1
+    if checked_dims:
+        return shared_dims >= (2 if checked_dims >= 2 else 1)
+    shapes = [_shape_tokens(fact, ("canonical_phrase", "claim", "finding")) for fact in facts]
+    return not all(shapes) or bool(set.intersection(*shapes))
 
 
 def _memo_headline(memo: str) -> str:
@@ -1616,7 +1687,7 @@ def select_candidate(
         *topic_blocked,
         *(value for verdict in candidates for value in _family_values(verdict)),
     ])
-    blocked_family_keys = _family_keys(topic_blocked, family_common)
+    blocked_family_keys = _canonical_family_keys(topic_blocked)
     for verdict in candidates:
         raw_fp = memo_fingerprint(verdict)
         if (
@@ -1658,9 +1729,11 @@ def select_candidate(
         )
         cycle_blocked = fp in blocked
         family_keys = _family_keys(_family_values(verdict), family_common)
+        canonical_family_keys = _canonical_family_keys(_family_values(verdict))
+        family_blocked = bool(canonical_family_keys & blocked_family_keys)
         exhausted_topic = (
             _selection_topic(verdict) in topic_blocked
-            or bool(family_keys & blocked_family_keys)
+            or family_blocked
         )
         attempt_count = _fingerprint_attempt_count(submitted_path, fp)
         retry_after_rejection = _retry_after_rejection(
@@ -1930,6 +2003,10 @@ def select_candidate(
                         status = "eligible"
                 elif direct_source_count < min_direct_source_count:
                     status = "direct_source_floor_below_min"
+                elif not _direct_receipts_share_shape(
+                    verdict, runs_root, min_direct_source_count,
+                ):
+                    status = "receipt_shape_mismatch"
         row = {
             "topic": _selection_topic(verdict),
             "decision": verdict.get("decision"),
@@ -1946,6 +2023,8 @@ def select_candidate(
             "min_direct_source_count": min_direct_source_count,
             "accepted_shape_bonus": shape_bonus,
             "topic_family_keys": sorted(family_keys),
+            "canonical_family_keys": sorted(canonical_family_keys),
+            "family_blocked": family_blocked,
             "status": status,
         }
         if memo_refreshed:
@@ -2821,6 +2900,8 @@ def run_cycle(
         "published_topic": None,
         "submitted": 0,
         "submitted_topic": None,
+        "family_blocked_count": 0,
+        "seed_scope_dropped_count": 0,
         "status": "started",
     }
     if estimated_cost_usd > max_cost_usd:
@@ -2993,6 +3074,16 @@ def run_cycle(
                     blocked_topics.add(topic)
         all_considered.extend(considered)
         ledger["considered"] = all_considered
+        queue_meta = current_queue.get("_meta")
+        if isinstance(queue_meta, dict):
+            with suppress(TypeError, ValueError):
+                ledger["seed_scope_dropped_count"] = max(
+                    int(ledger.get("seed_scope_dropped_count") or 0),
+                    int(queue_meta.get("seed_scope_dropped_count") or 0),
+                )
+        ledger["family_blocked_count"] = sum(
+            1 for row in all_considered if row.get("family_blocked")
+        )
         if candidate is None:
             ran_topics = [str(t) for t in refresh.get("ran_topics") or [] if str(t)]
             if ran_topics:
