@@ -273,6 +273,23 @@ def test_daily_queue_skips_runs_without_domain_metadata(tmp_path: Path) -> None:
     assert out["_meta"]["missing_domain_count"] == 1
 
 
+def test_run_cycle_rejects_injected_candidate_without_domain(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("untagged")
+    verdict.pop("domain")
+    _memo(root, verdict)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-06",
+        queue=_queue(verdict),
+        retraction_mode="metadata",
+    )
+
+    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["considered"][0]["status"] == "missing_domain_metadata"
+
+
 def test_ledger_stamp_includes_utc_time_for_twice_daily_runs() -> None:
     stamp = daily._ledger_stamp(dt.datetime(2026, 5, 26, 17, 30, 1, tzinfo=dt.UTC))
 
@@ -1647,6 +1664,30 @@ def test_recently_published_topic_is_skipped_for_fresh_topic(tmp_path: Path) -> 
     assert ledger["considered"][0]["status"] == "cycle_exhausted_topic"
 
 
+def test_recently_published_topic_is_domain_scoped(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("shared_topic")
+    _memo_with_source_receipts(root, verdict, 5)
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "published",
+        "final_verdict": "accepted",
+        "published": 1,
+        "published_topic": "shared_topic",
+        "domain": {"slug": "ai_research"},
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        retraction_mode="metadata",
+    )
+
+    assert ledger["candidate"]["topic"] == "shared_topic"
+    assert ledger["recently_published_topics_blocked"] == []
+    assert ledger["considered"][0]["status"] == "eligible"
+
+
 def test_recently_published_topic_family_blocks_child_slug(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     published = _verdict("vector_search_agent_eval", score=100)
@@ -1705,6 +1746,30 @@ def test_recent_submission_topic_family_blocks_child_slug(tmp_path: Path) -> Non
     assert ledger["considered"][0]["status"] == "cycle_exhausted_topic"
     assert ledger["considered"][0]["family_blocked"] is True
     assert ledger["family_blocked_count"] == 1
+
+
+def test_recent_submission_topic_is_domain_scoped(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("shared_topic")
+    _memo_with_source_receipts(root, verdict, 5)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+        "date": "2026-06-06T07-30-00Z",
+        "domain": {"slug": "ai_research"},
+        "topic": "shared_topic",
+        "run_dir": "runs/shared_topic-evidence-ts",
+        "fingerprint": "old-ai",
+    }])
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-06T09-30-00Z",
+        queue=_queue(verdict),
+        retraction_mode="metadata",
+    )
+
+    assert ledger["candidate"]["topic"] == "shared_topic"
+    assert ledger["recently_submitted_topics_blocked"] == []
+    assert ledger["considered"][0]["status"] == "eligible"
 
 
 def test_seed_scope_metadata_populates_no_candidate_ledger(tmp_path: Path) -> None:
@@ -3417,6 +3482,7 @@ def test_successful_submit_records_submission_not_publication(tmp_path: Path) ->
         )
     )
     assert records[0]["topic"] == "grid_storage"
+    assert records[0]["domain"]["slug"] == "longevity"
     assert records[0]["fingerprint"] == daily.memo_fingerprint(verdict)
 
 

@@ -151,6 +151,7 @@ def _ai_verdict() -> dict[str, Any]:
     ]
     return {
         "run_dir": "runs/ai_agents-evidence-ts",
+        "domain": load_domain_profile("ai_research").as_metadata(),
         "topic": "ai_agents",
         "decision": "ready_to_publish",
         "publish_tier": "TIER_1",
@@ -167,6 +168,9 @@ def _ai_verdict() -> dict[str, Any]:
 def _write_ai_memo(root: Path, verdict: dict[str, Any]) -> None:
     run = root / str(verdict["run_dir"])
     run.mkdir(parents=True)
+    run.joinpath("MANIFEST.json").write_text(json.dumps({
+        "domain": verdict["domain"],
+    }), encoding="utf-8")
     ids = ["1", "2", "3", "4", "5"]
     run.joinpath("alpha_memo.md").write_text(
         "# Alpha memo\n\n"

@@ -205,3 +205,21 @@ def test_build_queue_filters_by_domain_metadata(
     out = queue.build_queue(include_archive=True, domain="ai_research")
 
     assert [r["topic"] for r in out["ready_to_publish"]] == ["ai_agents"]
+
+
+def test_build_queue_domain_filter_excludes_untagged_runs(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    runs = tmp_path / "runs"
+    _run(
+        runs,
+        "grid_storage-evidence-2026-02-01T00-00-00Z",
+        label="evidence_backed_signal",
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+    )
+    monkeypatch.setattr(queue, "_RUNS", runs)
+
+    out = queue.build_queue(include_archive=True, domain="longevity")
+
+    assert out["ready_to_publish"] == []
