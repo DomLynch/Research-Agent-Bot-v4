@@ -76,7 +76,7 @@ def _discovery_top_for_plan(
     return max(requested + max(0, excluded_count), _STOP_ON_READY_DISCOVERY_FLOOR)
 
 
-def _priority_ranked_topics(topics: list[str]) -> list[dict[str, Any]]:
+def _priority_ranked_topics(topics: list[str], *, domain: str = "longevity") -> list[dict[str, Any]]:
     if not topics:
         return []
     try:
@@ -84,7 +84,7 @@ def _priority_ranked_topics(topics: list[str]) -> list[dict[str, Any]]:
         with httpx.Client() as client:
             counts = {
                 topic: _fetch_topic_fact_source_count(
-                    topic, client=client, settings=settings,
+                    topic, client=client, settings=settings, domain=domain,
                 )
                 for topic in topics
             }
@@ -518,7 +518,7 @@ def main() -> int:
     recent = _recent_signal_topics(_RUNS, args.cooldown_hours, cycle_start)
     priority_ranked = _priority_ranked_topics([
         str(topic).strip() for topic in args.priority_topic if str(topic).strip()
-    ])
+    ], domain=args.domain)
     plan, skipped, skipped_excluded, below_floor = _plan_topics(
         [*priority_ranked, *ranked], recent=recent, excluded=excluded, top=args.top,
         min_fact_sources=(

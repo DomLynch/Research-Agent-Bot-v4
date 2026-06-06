@@ -839,7 +839,7 @@ def test_priority_repair_topic_does_not_spawn_child_rerun(
     monkeypatch.setattr(run_curator_cycle, "_read_discovery_top", lambda _out: [])
     monkeypatch.setattr(
         run_curator_cycle, "_priority_ranked_topics",
-        lambda _topics: [{
+        lambda _topics, **_kwargs: [{
             "topic": "queued_child",
             "velocity_score": 0.0,
             "fact_source_count": 5,
@@ -870,17 +870,20 @@ def test_priority_ranked_topics_uses_fact_source_probe(monkeypatch: Any) -> None
         def __exit__(self, *_args: object) -> None:
             return None
 
+    calls: list[tuple[str, str]] = []
     counts = {"strong_child": 5, "weak_child": 0}
     monkeypatch.setattr(run_curator_cycle, "load_settings", lambda: object())
     monkeypatch.setattr(run_curator_cycle.httpx, "Client", DummyClient)
-    monkeypatch.setattr(
-        run_curator_cycle, "_fetch_topic_fact_source_count",
-        lambda topic, *, client, settings: counts[topic],
-    )
+
+    def fake_count(topic: str, *, client: Any, settings: Any, domain: str) -> int:
+        calls.append((topic, domain))
+        return counts[topic]
+
+    monkeypatch.setattr(run_curator_cycle, "_fetch_topic_fact_source_count", fake_count)
 
     ranked = run_curator_cycle._priority_ranked_topics([
         "strong_child", "weak_child",
-    ])
+    ], domain="ai_research")
 
     assert [
         (row["topic"], row["fact_source_count"], row["paper_count"], row["child_depth"])
@@ -889,6 +892,7 @@ def test_priority_ranked_topics_uses_fact_source_probe(monkeypatch: Any) -> None
         ("strong_child", 5, 1, 1),
         ("weak_child", 0, 0, 1),
     ]
+    assert calls == [("strong_child", "ai_research"), ("weak_child", "ai_research")]
 
 
 def test_underfloor_priority_repair_topic_is_not_built(
@@ -920,7 +924,7 @@ def test_underfloor_priority_repair_topic_is_not_built(
     monkeypatch.setattr(run_curator_cycle, "_read_discovery_top", lambda _out: [])
     monkeypatch.setattr(
         run_curator_cycle, "_priority_ranked_topics",
-        lambda _topics: [{
+        lambda _topics, **_kwargs: [{
             "topic": "weak_child",
             "velocity_score": 0.0,
             "fact_source_count": 0,
