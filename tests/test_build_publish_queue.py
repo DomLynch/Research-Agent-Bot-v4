@@ -207,6 +207,36 @@ def test_build_queue_filters_by_domain_metadata(
     assert [r["topic"] for r in out["ready_to_publish"]] == ["ai_agents"]
 
 
+def test_build_queue_domain_filter_excludes_seed_mismatched_ai_runs(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    runs = tmp_path / "runs"
+    stale = _run(
+        runs,
+        "SGLT2_inhibitors-evidence-2026-02-01T00-00-00Z",
+        label="evidence_backed_signal",
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+    )
+    stale.joinpath("MANIFEST.json").write_text(json.dumps({
+        "domain": {"slug": "ai_research"},
+    }), encoding="utf-8")
+    ai_run = _run(
+        runs,
+        "ai_agents-evidence-2026-02-01T00-00-00Z",
+        label="evidence_backed_signal",
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+    )
+    ai_run.joinpath("MANIFEST.json").write_text(json.dumps({
+        "domain": {"slug": "ai_research"},
+    }), encoding="utf-8")
+    monkeypatch.setattr(queue, "_RUNS", runs)
+
+    out = queue.build_queue(include_archive=True, domain="ai_research")
+
+    assert [r["topic"] for r in out["ready_to_publish"]] == ["ai_agents"]
+
+
 def test_build_queue_domain_filter_excludes_untagged_runs(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,

@@ -3,13 +3,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
+import tomllib
 from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from agent.domain_profile import domain_choices, domain_slug
+from agent.domain_profile import domain_choices, domain_slug, load_domain_profile
 from agent.publish_tier import publish_verdict
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -17,6 +19,7 @@ _RUNS = _ROOT / "runs"
 _LEGACY_AGENT_REPAIR_DECISIONS = {
     "agent_repair_needed", "needs_operator_review", "needs_operator_approval",
 }
+_WORD_RE = re.compile(r"[a-z0-9]+")
 
 
 def _alpha_runs(include_archive: bool) -> list[Path]:
@@ -64,6 +67,45 @@ def _run_domain(run: Path, verdict: dict[str, Any]) -> str:
     )
 
 
+def _scope_keys(value: object) -> set[str]:
+    text = str(value or "").lower()
+    tokens = [token for token in _WORD_RE.findall(text) if len(token) >= 5]
+    exact = "_".join(_WORD_RE.findall(text))
+    keys = {"topic:" + exact} if exact else set()
+    keys.update("token:" + token for token in tokens)
+    return keys
+
+
+def _domain_seed_keys(domain: str | None) -> set[str]:
+    if not domain or domain == load_domain_profile(None).slug:
+        return set()
+    try:
+        data = tomllib.loads(load_domain_profile(domain).seed_topics_path.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError, ValueError):
+        return set()
+    seeds = data.get("seeds")
+    topics = seeds.get("topics") if isinstance(seeds, dict) else None
+    if not isinstance(topics, list):
+        return set()
+    out: set[str] = set()
+    for topic in topics:
+        out.update(_scope_keys(topic))
+    return out
+
+
+def _run_scope_keys(run: Path, verdict: dict[str, Any]) -> set[str]:
+    values = (
+        _topic(run),
+        verdict.get("topic"),
+        verdict.get("topic_family"),
+        verdict.get("parent_topic") or verdict.get("_parent_topic"),
+    )
+    out: set[str] = set()
+    for value in values:
+        out.update(_scope_keys(value))
+    return out
+
+
 def _can_recompute_verdict(run: Path) -> bool:
     return all(
         run.joinpath(name).exists()
@@ -86,9 +128,12 @@ def build_queue(
     include_archive: bool = True, domain: str | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
     rows = []
+    seed_keys = _domain_seed_keys(domain)
     for run in _latest_per_topic(_alpha_runs(include_archive)):
         row = _verdict_for_run(run)
         if domain and _run_domain(run, row) != domain:
+            continue
+        if seed_keys and not (_run_scope_keys(run, row) & seed_keys):
             continue
         rows.append(row)
     rank = {"TIER_1": 0, "TIER_2": 1, "TIER_3": 2}
