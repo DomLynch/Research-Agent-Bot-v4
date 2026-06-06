@@ -2,7 +2,7 @@
 #
 # Rules:
 #   - This pack is data, not runtime routing.
-#   - First milestone is dry-run discovery/evidence only; no Researka submit.
+#   - Live submissions use the shared alpha core with AI-specific seeds.
 
 [seeds]
 derived_topic_limit = 5000

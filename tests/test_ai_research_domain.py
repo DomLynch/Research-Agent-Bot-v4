@@ -215,3 +215,21 @@ def test_ai_research_daily_submit_is_live_when_explicitly_selected(tmp_path: Pat
     assert ledger["submit_requested"] is True
     assert ledger["submitted"] == 1
     assert calls and calls[0]["topic"] == "ai_agents"
+
+
+def test_ai_research_queue_excludes_seed_mismatched_domain_runs(tmp_path: Path) -> None:
+    runs = tmp_path / "runs"
+    for topic in ("sglt2_inhibitors_events", "llm_judge_reliability"):
+        run = runs / f"{topic}-evidence-ts"
+        run.mkdir(parents=True)
+        run.joinpath("alpha_memo.md").write_text("# Alpha memo\n", encoding="utf-8")
+        run.joinpath("MANIFEST.json").write_text(json.dumps({
+            "domain": {"slug": "ai_research"},
+        }), encoding="utf-8")
+        run.joinpath("publish_verdict.json").write_text(json.dumps(
+            _ai_verdict() | {"topic": topic, "run_dir": f"runs/{run.name}"},
+        ), encoding="utf-8")
+
+    out = daily._build_queue(runs, include_archive=False, domain="ai_research")
+
+    assert [r["topic"] for r in out["ready_to_publish"]] == ["llm_judge_reliability"]

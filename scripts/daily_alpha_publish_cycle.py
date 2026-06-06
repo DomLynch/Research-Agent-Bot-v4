@@ -349,10 +349,13 @@ def _build_queue(
             topic = _topic(run)
             if topic not in latest or run.name > latest[topic].name:
                 latest[topic] = run
+    seed_tokens = _domain_seed_tokens(domain)
     rows = []
     for run in latest.values():
         row = _verdict_for_run(run)
         if domain and _run_domain(run, row) != domain:
+            continue
+        if seed_tokens and not (_family_keys(_family_values(row), set()) & seed_tokens):
             continue
         rows.append(row)
     valid = [r for r in rows if isinstance(r, dict)]
@@ -483,6 +486,20 @@ def _family_keys(values: Iterable[str], common_tokens: set[str]) -> set[str]:
             if token not in common_tokens
         )
     return keys
+
+
+def _domain_seed_tokens(domain: str | None) -> set[str]:
+    if not domain or domain == load_domain_profile(None).slug:
+        return set()
+    with suppress(OSError, tomllib.TOMLDecodeError, ValueError):
+        data = tomllib.loads(load_domain_profile(domain).seed_topics_path.read_text(
+            encoding="utf-8",
+        ))
+        seeds = data.get("seeds")
+        topics = seeds.get("topics") if isinstance(seeds, dict) else None
+        if isinstance(topics, list):
+            return _family_keys((str(t) for t in topics), set())
+    return set()
 
 
 def _needs_tension_enrichment(verdict: Json) -> bool:
