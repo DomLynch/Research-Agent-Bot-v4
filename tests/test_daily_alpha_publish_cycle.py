@@ -1590,6 +1590,32 @@ def test_recently_published_topic_is_skipped_for_fresh_topic(tmp_path: Path) -> 
     assert ledger["considered"][0]["status"] == "cycle_exhausted_topic"
 
 
+def test_recently_published_topic_family_blocks_child_slug(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    published = _verdict("vector_search_agent_eval", score=100)
+    child = _verdict("agent_eval_vector_rerank", score=99)
+    fresh = _verdict("workflow_automation_trace", score=90)
+    _memo_with_source_receipts(root, child, 5)
+    _memo_with_source_receipts(root, fresh, 5)
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "published",
+        "final_verdict": "accepted",
+        "published": 1,
+        "published_topic": published["topic"],
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(child, fresh),
+        retraction_mode="metadata",
+    )
+
+    assert ledger["candidate"]["topic"] == "workflow_automation_trace"
+    assert ledger["considered"][0]["topic"] == "agent_eval_vector_rerank"
+    assert ledger["considered"][0]["status"] == "cycle_exhausted_topic"
+
+
 def test_repairable_retry_does_not_resubmit_unchanged_memo(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("unchanged_retry")

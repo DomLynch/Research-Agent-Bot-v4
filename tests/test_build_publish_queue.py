@@ -178,3 +178,30 @@ def test_build_queue_normalises_legacy_operator_decision(
 
     assert [r["topic"] for r in out["agent_repair_needed"]] == ["legacy"]
     assert "needs_operator_review" not in out
+
+
+def test_build_queue_filters_by_domain_metadata(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    runs = tmp_path / "runs"
+    _run(
+        runs,
+        "grid_storage-evidence-2026-02-01T00-00-00Z",
+        label="evidence_backed_signal",
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+    )
+    ai_run = _run(
+        runs,
+        "ai_agents-evidence-2026-02-01T00-00-00Z",
+        label="evidence_backed_signal",
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+    )
+    ai_run.joinpath("MANIFEST.json").write_text(json.dumps({
+        "domain": {"slug": "ai_research"},
+    }), encoding="utf-8")
+    monkeypatch.setattr(queue, "_RUNS", runs)
+
+    out = queue.build_queue(include_archive=True, domain="ai_research")
+
+    assert [r["topic"] for r in out["ready_to_publish"]] == ["ai_agents"]

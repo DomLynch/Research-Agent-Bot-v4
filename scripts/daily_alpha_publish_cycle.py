@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from agent.alpha_selector import accepted_shape_bonus
-from agent.domain_profile import domain_choices, load_domain_profile
+from agent.domain_profile import domain_choices, domain_slug, load_domain_profile
 from agent.publish_tier import publish_verdict
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -41,6 +41,8 @@ _CLUSTER_GENERIC_TOKENS = frozenset({
     "significant", "association", "associated", "compared", "versus", "was",
     "were", "population", "exposure", "all",
     "confidence", "interval", "ratio", "meta", "analysis", "review",
+    "control", "controls", "placebo", "once", "weekly", "daily", "without",
+    "within", "over", "most", "not", "parent", "topic", "claim",
 })
 
 Json = dict[str, Any]
@@ -276,6 +278,15 @@ def _verdict_for_run(run: Path) -> Json:
     return data if isinstance(data, dict) else {}
 
 
+def _run_domain(run: Path, verdict: Json) -> str:
+    return (
+        domain_slug(verdict.get("domain"))
+        or domain_slug(_json(run / "MANIFEST.json", {}).get("domain"))
+        or domain_slug(_json(run / "search_trace.json", {}).get("domain"))
+        or "longevity"
+    )
+
+
 def _write_publish_verdict(run: Path) -> Json:
     verdict = publish_verdict(run)
     _write_json(run / "publish_verdict.json", verdict)
@@ -321,7 +332,9 @@ def _reload_verdict_after_memo_refresh(verdict: Json, run_dir: Path) -> Json:
     return refreshed
 
 
-def _build_queue(runs_root: Path, include_archive: bool) -> Json:
+def _build_queue(
+    runs_root: Path, include_archive: bool, domain: str | None = None,
+) -> Json:
     """Build current verdicts without mutating run artifacts."""
     patterns = ["*-evidence-*/alpha_memo.md", "*-evidence-*/publish_verdict.json"]
     if include_archive:
@@ -336,7 +349,12 @@ def _build_queue(runs_root: Path, include_archive: bool) -> Json:
             topic = _topic(run)
             if topic not in latest or run.name > latest[topic].name:
                 latest[topic] = run
-    rows = [_verdict_for_run(run) for run in latest.values()]
+    rows = []
+    for run in latest.values():
+        row = _verdict_for_run(run)
+        if domain and _run_domain(run, row) != domain:
+            continue
+        rows.append(row)
     valid = [r for r in rows if isinstance(r, dict)]
     rank = {"TIER_1": 0, "TIER_2": 1, "TIER_3": 2}
     valid.sort(key=lambda r: (
@@ -406,6 +424,65 @@ def memo_fingerprint(verdict: Json) -> str:
 
 def _selection_topic(verdict: Json) -> str:
     return str(verdict.get("_claim_cluster_topic") or verdict.get("topic") or "")
+
+
+def _topic_from_run_ref(value: Any) -> str:
+    name = Path(str(value or "")).name
+    return name.split("-evidence-", 1)[0] if "-evidence-" in name else ""
+
+
+def _family_values(verdict: Json) -> list[str]:
+    if verdict.get("_claim_cluster_candidate"):
+        values = [
+            _selection_topic(verdict),
+            str(verdict.get("topic_family") or ""),
+        ]
+        return [v for v in dict.fromkeys(values) if v]
+    values = [
+        _selection_topic(verdict),
+        str(verdict.get("topic") or ""),
+        str(verdict.get("topic_family") or ""),
+        str(verdict.get("parent_topic") or verdict.get("_parent_topic") or ""),
+        _topic_from_run_ref(verdict.get("run_dir")),
+    ]
+    return [v for v in dict.fromkeys(values) if v]
+
+
+def _family_tokens(value: str) -> set[str]:
+    return {
+        token for token in _CLAIM_WORD.findall(value.lower())
+        if len(token) >= 5 and token not in _CLUSTER_GENERIC_TOKENS
+    }
+
+
+def _common_family_tokens(values: Iterable[str]) -> set[str]:
+    counts: dict[str, int] = {}
+    total = 0
+    for value in values:
+        tokens = _family_tokens(value)
+        if not tokens:
+            continue
+        total += 1
+        for token in tokens:
+            counts[token] = counts.get(token, 0) + 1
+    return {
+        token for token, count in counts.items()
+        if count > max(8, total // 6)
+    }
+
+
+def _family_keys(values: Iterable[str], common_tokens: set[str]) -> set[str]:
+    keys: set[str] = set()
+    for value in values:
+        exact = "_".join(_CLAIM_WORD.findall(value.lower()))
+        if exact:
+            keys.add("topic:" + exact)
+        keys.update(
+            "token:" + token
+            for token in _family_tokens(value)
+            if token not in common_tokens
+        )
+    return keys
 
 
 def _needs_tension_enrichment(verdict: Json) -> bool:
@@ -1492,6 +1569,11 @@ def select_candidate(
             str(r.get("topic") or ""),
         ),
     )
+    family_common = _common_family_tokens([
+        *topic_blocked,
+        *(value for verdict in candidates for value in _family_values(verdict)),
+    ])
+    blocked_family_keys = _family_keys(topic_blocked, family_common)
     for verdict in candidates:
         raw_fp = memo_fingerprint(verdict)
         if (
@@ -1532,7 +1614,11 @@ def select_candidate(
             )
         )
         cycle_blocked = fp in blocked
-        exhausted_topic = _selection_topic(verdict) in topic_blocked
+        family_keys = _family_keys(_family_values(verdict), family_common)
+        exhausted_topic = (
+            _selection_topic(verdict) in topic_blocked
+            or bool(family_keys & blocked_family_keys)
+        )
         attempt_count = _fingerprint_attempt_count(submitted_path, fp)
         retry_after_rejection = _retry_after_rejection(
             fp,
@@ -1816,6 +1902,7 @@ def select_candidate(
             "min_source_count": min_source_count,
             "min_direct_source_count": min_direct_source_count,
             "accepted_shape_bonus": shape_bonus,
+            "topic_family_keys": sorted(family_keys),
             "status": status,
         }
         if memo_refreshed:
@@ -2735,12 +2822,18 @@ def run_cycle(
             return ledger
         ledger["submit_token_env"] = token_env
         submitter = _http_submitter(url, token)
+
+    def build_current_queue() -> Json:
+        if queue_builder is _build_queue:
+            return _build_queue(runs_root, include_archive, domain=profile.slug)
+        return queue_builder(runs_root, include_archive)
+
     prev_queue_sig: frozenset[str] = frozenset()
     preflight_queue = None
     skip_refresh_note = "skipped_after_repairable_submission"
     if refresh_candidates and queue is None and queue_builder is _build_queue:
         candidate_queue = _with_repairable_candidates(
-            queue_builder(runs_root, include_archive), runs_root,
+            build_current_queue(), runs_root,
         )
         cluster_rows = _rows(candidate_queue, allow_tier2=True) + [
             r for r in candidate_queue.get("curation_needed") or [] if isinstance(r, dict)
@@ -2806,7 +2899,7 @@ def run_cycle(
                 return ledger
         current_queue = (
             queue if queue is not None else preflight_queue
-            if preflight_queue is not None else queue_builder(runs_root, include_archive)
+            if preflight_queue is not None else build_current_queue()
         )
         preflight_queue = None
         current_queue = _with_repairable_candidates(current_queue, runs_root)
