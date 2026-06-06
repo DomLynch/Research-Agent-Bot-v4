@@ -1139,8 +1139,29 @@ def test_fact_source_probe_deepens_exact_query_then_bounds_facets() -> None:
 
     assert bodies[0]["top_k"] == 500
     assert bodies[1]["top_k"] == 50
+    assert bodies[0]["domain"] == "longevity"
     assert bodies[0]["min_confidence"] == "medium"
     assert bodies[0]["numeric_only"] is True
+
+
+def test_fact_source_probe_passes_explicit_ai_domain() -> None:
+    from agent import topic_discovery
+
+    bodies: list[dict[str, Any]] = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.path.endswith("/facts"):
+            return httpx.Response(200, json=[])
+        bodies.append(json.loads(req.content))
+        return httpx.Response(200, json=[])
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        topic_discovery._fetch_topic_fact_source_count(
+            "ai_agents", client=c, settings=_settings(), domain="ai_research",
+        )
+
+    assert bodies
+    assert all(body["domain"] == "ai_research" for body in bodies)
 
 
 def test_fact_source_probe_uses_returned_source_titles_for_second_wave() -> None:
