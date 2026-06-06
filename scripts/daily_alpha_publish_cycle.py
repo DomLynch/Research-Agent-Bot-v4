@@ -355,16 +355,22 @@ def _build_queue(
             if topic not in latest or run.name > latest[topic].name:
                 latest[topic] = run
     seed_tokens = _domain_seed_tokens(domain)
-    rows = []
-    seed_scope_dropped_count = 0
+    domain_rows = []
     for run in latest.values():
         row = _verdict_for_run(run)
         if domain and _run_domain(run, row) != domain:
             continue
-        if seed_tokens and not (_family_keys(_family_values(row), set()) & seed_tokens):
-            seed_scope_dropped_count += 1
-            continue
-        rows.append(row)
+        domain_rows.append(row)
+    rows = domain_rows
+    seed_scope_dropped_count = 0
+    seed_scope_fallback_count = 0
+    if seed_tokens:
+        scoped_rows = [
+            row for row in domain_rows
+            if _family_keys(_family_values(row), set()) & seed_tokens
+        ]
+        seed_scope_dropped_count = len(domain_rows) - len(scoped_rows)
+        rows = scoped_rows
     valid = [r for r in rows if isinstance(r, dict)]
     rank = {"TIER_1": 0, "TIER_2": 1, "TIER_3": 2}
     valid.sort(key=lambda r: (
@@ -382,7 +388,11 @@ def _build_queue(
         "curation_needed": [
             r for r in valid if r.get("decision") == "curation_needed"
         ],
-        "_meta": {"seed_scope_dropped_count": seed_scope_dropped_count},
+        "_meta": {
+            "seed_scope_dropped_count": seed_scope_dropped_count,
+            "seed_scope_fallback_count": seed_scope_fallback_count,
+            "seed_scope_fallback_used": bool(seed_scope_fallback_count),
+        },
     }
 
 
@@ -2734,8 +2744,17 @@ def _audit_sidecars(run_dir: Path) -> Json:
     return out
 
 
+def _submission_agent_id(domain: str) -> str:
+    if domain == load_domain_profile(None).slug:
+        return "agent-v4-alpha-memo"
+    return "agent-v4-alpha-" + domain.replace("_", "-")
+
+
 def _submission_payload(verdict: Json, root: Path) -> Json:
     run_dir = _run_path(root, verdict.get("run_dir"))
+    profile = load_domain_profile(_run_domain(run_dir, verdict))
+    domain_metadata = profile.as_metadata()
+    agent_id = _submission_agent_id(profile.slug)
     memo = ""
     with suppress(OSError):
         memo = (run_dir / "alpha_memo.md").read_text(encoding="utf-8")
@@ -2766,8 +2785,9 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
     return {
         "artifact_type": "alpha_memo",
         "article_type": "alpha_memo",
-        "author_agent_id": "agent-v4-alpha-memo",
-        "agent_id": "agent-v4-alpha-memo",
+        "author_agent_id": agent_id,
+        "agent_id": agent_id,
+        "domain": domain_metadata,
         "title": title,
         "abstract": abstract,
         "summary": abstract,
@@ -2778,6 +2798,7 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         "novelty_score": verdict.get("alpha_score"),
         "confidence_score": verdict.get("maturity_level"),
         "evidence_bundle": {
+            "domain": domain_metadata,
             "publish_verdict": verdict,
             "run_dir": verdict.get("run_dir"),
             "audit_sidecars": _audit_sidecars(run_dir),
@@ -2902,6 +2923,8 @@ def run_cycle(
         "submitted_topic": None,
         "family_blocked_count": 0,
         "seed_scope_dropped_count": 0,
+        "seed_scope_fallback_count": 0,
+        "seed_scope_fallback_used": False,
         "status": "started",
     }
     if estimated_cost_usd > max_cost_usd:
@@ -3081,6 +3104,14 @@ def run_cycle(
                     int(ledger.get("seed_scope_dropped_count") or 0),
                     int(queue_meta.get("seed_scope_dropped_count") or 0),
                 )
+                ledger["seed_scope_fallback_count"] = max(
+                    int(ledger.get("seed_scope_fallback_count") or 0),
+                    int(queue_meta.get("seed_scope_fallback_count") or 0),
+                )
+            ledger["seed_scope_fallback_used"] = bool(
+                ledger.get("seed_scope_fallback_used")
+                or queue_meta.get("seed_scope_fallback_used")
+            )
         ledger["family_blocked_count"] = sum(
             1 for row in all_considered if row.get("family_blocked")
         )

@@ -1679,6 +1679,29 @@ def test_recent_submission_topic_family_blocks_child_slug(tmp_path: Path) -> Non
     assert ledger["family_blocked_count"] == 1
 
 
+def test_seed_scope_metadata_populates_no_candidate_ledger(tmp_path: Path) -> None:
+    ledger = daily.run_cycle(
+        runs_root=tmp_path / "repo",
+        date="2026-06-06T17-30-00Z",
+        queue={
+            "ready_to_publish": [],
+            "agent_repair_needed": [],
+            "curation_needed": [],
+            "_meta": {
+                "seed_scope_dropped_count": 1,
+                "seed_scope_fallback_count": 2,
+                "seed_scope_fallback_used": True,
+            },
+        },
+    )
+
+    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["family_blocked_count"] == 0
+    assert ledger["seed_scope_dropped_count"] == 1
+    assert ledger["seed_scope_fallback_count"] == 2
+    assert ledger["seed_scope_fallback_used"] is True
+
+
 def test_glp_longevity_cooldown_does_not_token_block_unrelated_families(tmp_path: Path) -> None:
     topics = ["omega_3_longevity", "telomere", "mediterranean_diet"]
     for block_kind in ("published", "submitted"):
@@ -3097,6 +3120,8 @@ def test_submission_payload_preserves_alpha_memo_contract(tmp_path: Path) -> Non
     assert payload["article_type"] == "alpha_memo"
     assert payload["author_agent_id"] == "agent-v4-alpha-memo"
     assert payload["agent_id"] == "agent-v4-alpha-memo"
+    assert payload["domain"]["slug"] == "longevity"
+    assert payload["evidence_bundle"]["domain"]["slug"] == "longevity"
     assert payload["topic"] == "grid_storage"
     assert "What would weaken this" in payload["markdown"]
     assert "sections" not in payload
@@ -3108,6 +3133,21 @@ def test_submission_payload_preserves_alpha_memo_contract(tmp_path: Path) -> Non
         "novelty_delta": {"novelty_delta": {"label": "contradictory"}},
         "typed_counter_evidence": {"items": []},
     }
+
+
+def test_submission_payload_uses_domain_specific_agent_identity(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("llm_judge_reliability") | {
+        "domain": {"slug": "ai_research"},
+    }
+    _memo(root, verdict)
+
+    payload = daily._submission_payload(verdict, root / "runs")
+
+    assert payload["author_agent_id"] == "agent-v4-alpha-ai-research"
+    assert payload["agent_id"] == "agent-v4-alpha-ai-research"
+    assert payload["domain"]["slug"] == "ai_research"
+    assert payload["evidence_bundle"]["domain"]["slug"] == "ai_research"
 
 
 def test_submission_payload_strips_internal_alpha_scores(tmp_path: Path) -> None:
@@ -3736,10 +3776,10 @@ def test_systemd_publish_timer_has_full_refresh_budget() -> None:
     assert "--allow-tier2" in service
     assert "--max-refresh-batches 5" in service
     assert "--max-refresh-batches 2" not in service
-    assert "OnCalendar=*-*-* 01/4:30:00" in timer
+    assert "OnCalendar=*-*-* 01/8:30:00" in timer
 
 
-def test_systemd_ai_research_timer_is_independent_four_hour_submitter() -> None:
+def test_systemd_ai_research_timer_offsets_global_four_hour_submitter() -> None:
     service = Path("deploy/systemd/researka-alpha-ai-research.service").read_text(
         encoding="utf-8",
     )
@@ -3751,7 +3791,7 @@ def test_systemd_ai_research_timer_is_independent_four_hour_submitter() -> None:
     assert "--domain ai_research" in service
     assert "--submit" in service
     assert "--max-refresh-batches 5" in service
-    assert "OnCalendar=*-*-* 03/4:30:00" in timer
+    assert "OnCalendar=*-*-* 05/8:30:00" in timer
     assert "Unit=researka-alpha-ai-research.service" in timer
 
 

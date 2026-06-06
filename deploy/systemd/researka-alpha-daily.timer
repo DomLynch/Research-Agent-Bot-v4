@@ -1,8 +1,8 @@
 [Unit]
-Description=Run Research Agent v4 alpha memo publisher every four hours
+Description=Run Research Agent v4 alpha memo publisher every eight hours
 
 [Timer]
-OnCalendar=*-*-* 01/4:30:00
+OnCalendar=*-*-* 01/8:30:00
 Persistent=true
 Unit=researka-alpha-daily.service
 

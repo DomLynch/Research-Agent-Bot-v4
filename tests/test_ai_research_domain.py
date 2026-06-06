@@ -13,6 +13,18 @@ from agent.domain_profile import load_domain_profile
 from agent.topic_discovery import TopicCandidate, load_seed_topics
 
 
+def _ai_queue_run(runs: Path, topic: str) -> None:
+    run = runs / f"{topic}-evidence-ts"
+    run.mkdir(parents=True)
+    run.joinpath("alpha_memo.md").write_text("# Alpha memo\n", encoding="utf-8")
+    run.joinpath("MANIFEST.json").write_text(json.dumps({
+        "domain": {"slug": "ai_research"},
+    }), encoding="utf-8")
+    run.joinpath("publish_verdict.json").write_text(json.dumps(
+        _ai_verdict() | {"topic": topic, "run_dir": f"runs/{run.name}"},
+    ), encoding="utf-8")
+
+
 def test_ai_research_profile_is_live_with_own_seed_pack() -> None:
     profile = load_domain_profile("ai_research")
 
@@ -219,17 +231,31 @@ def test_ai_research_daily_submit_is_live_when_explicitly_selected(tmp_path: Pat
 
 def test_ai_research_queue_excludes_seed_mismatched_domain_runs(tmp_path: Path) -> None:
     runs = tmp_path / "runs"
+    for topic in (
+        "sglt2_inhibitors_events",
+        "ai_agents",
+        "llm_judge_reliability",
+        "research_automation",
+    ):
+        _ai_queue_run(runs, topic)
+
+    out = daily._build_queue(runs, include_archive=False, domain="ai_research")
+
+    topics = [r["topic"] for r in out["ready_to_publish"]]
+    assert "sglt2_inhibitors_events" not in topics
+    assert set(topics) == {"ai_agents", "llm_judge_reliability", "research_automation"}
+    assert out["_meta"]["seed_scope_dropped_count"] == 1
+    assert out["_meta"]["seed_scope_fallback_used"] is False
+
+
+def test_ai_research_queue_keeps_seed_scope_when_thin(tmp_path: Path) -> None:
+    runs = tmp_path / "runs"
     for topic in ("sglt2_inhibitors_events", "llm_judge_reliability"):
-        run = runs / f"{topic}-evidence-ts"
-        run.mkdir(parents=True)
-        run.joinpath("alpha_memo.md").write_text("# Alpha memo\n", encoding="utf-8")
-        run.joinpath("MANIFEST.json").write_text(json.dumps({
-            "domain": {"slug": "ai_research"},
-        }), encoding="utf-8")
-        run.joinpath("publish_verdict.json").write_text(json.dumps(
-            _ai_verdict() | {"topic": topic, "run_dir": f"runs/{run.name}"},
-        ), encoding="utf-8")
+        _ai_queue_run(runs, topic)
 
     out = daily._build_queue(runs, include_archive=False, domain="ai_research")
 
     assert [r["topic"] for r in out["ready_to_publish"]] == ["llm_judge_reliability"]
+    assert out["_meta"]["seed_scope_dropped_count"] == 1
+    assert out["_meta"]["seed_scope_fallback_count"] == 0
+    assert out["_meta"]["seed_scope_fallback_used"] is False
