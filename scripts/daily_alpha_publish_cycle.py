@@ -298,6 +298,11 @@ def _run_domain_required(run: Path, verdict: Json) -> str:
     return domain
 
 
+def _with_domain_metadata(verdict: Json, run: Path, fallback: Json | None = None) -> Json:
+    domain = _run_domain(run, verdict) or domain_slug((fallback or {}).get("domain"))
+    return verdict | {"domain": load_domain_profile(domain).as_metadata()} if domain else verdict
+
+
 def _write_publish_verdict(run: Path) -> Json:
     verdict = publish_verdict(run)
     _write_json(run / "publish_verdict.json", verdict)
@@ -318,7 +323,7 @@ def _current_selection_verdict(verdict: Json, root: Path) -> Json:
             "receipt_expansion": verdict.get("receipt_expansion"),
             "subtopic_recommendations": verdict.get("subtopic_recommendations"),
         })
-    return current | private
+    return _with_domain_metadata(current | private, run_dir, verdict)
 
 
 def _reload_verdict_after_memo_refresh(verdict: Json, run_dir: Path) -> Json:
@@ -328,6 +333,7 @@ def _reload_verdict_after_memo_refresh(verdict: Json, run_dir: Path) -> Json:
         refreshed = _write_publish_verdict(run_dir)
     except (OSError, ValueError, TypeError, KeyError):
         return verdict
+    refreshed = _with_domain_metadata(refreshed, run_dir, verdict)
     repair_decision = verdict.get("_repair_decision")
     if repair_decision is not None:
         refreshed["_repair_decision"] = repair_decision
@@ -1061,14 +1067,18 @@ def _seen_submission_fingerprints(path: Path) -> set[str]:
 
 
 def _row_domain(row: Json) -> str:
-    return domain_slug(row.get("domain"))
+    return domain_slug(row.get("domain")) or load_domain_profile(None).slug
 
 
 def _ledger_domain(ledger: Json) -> str:
     candidate = ledger.get("candidate")
     if not isinstance(candidate, dict):
         candidate = {}
-    return domain_slug(ledger.get("domain")) or domain_slug(candidate.get("domain"))
+    return (
+        domain_slug(ledger.get("domain"))
+        or domain_slug(candidate.get("domain"))
+        or load_domain_profile(None).slug
+    )
 
 
 def _same_domain(record_domain: str, domain: str | None) -> bool:
@@ -2001,7 +2011,7 @@ def select_candidate(
             run_dir = _run_path(runs_root, verdict.get("run_dir"))
             memo_refreshed = memo_refresher(run_dir, verdict)
             if memo_refreshed:
-                verdict = _write_publish_verdict(run_dir)
+                verdict = _with_domain_metadata(_write_publish_verdict(run_dir), run_dir, verdict)
                 fp = memo_fingerprint(verdict)
                 source_count = _source_count(verdict, runs_root)
                 direct_source_count = _direct_source_count(verdict, runs_root)

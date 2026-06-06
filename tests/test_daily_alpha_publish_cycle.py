@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 from urllib.request import Request
 
-from pytest import MonkeyPatch
+from pytest import MonkeyPatch, raises
 
 import scripts.daily_alpha_publish_cycle as daily
 
@@ -63,6 +63,7 @@ def _verdict(topic: str = "grid_storage", *, score: int = 90) -> dict[str, Any]:
         "confidence_label": "evidence_backed_signal",
         "alpha_score": score,
         "surface_type": "publish_alpha_memo",
+        "domain": {"slug": "longevity"},
         "axes": {
             "available_source_contexts": 12,
             "source_papers": source_papers,
@@ -220,6 +221,9 @@ def _publish_tier_run(root: Path, topic: str, *, stale: dict[str, Any]) -> None:
         },
     }]), encoding="utf-8")
     run.joinpath("publish_verdict.json").write_text(json.dumps(stale), encoding="utf-8")
+    run.joinpath("MANIFEST.json").write_text(json.dumps({
+        "domain": {"slug": "longevity"},
+    }), encoding="utf-8")
     _audit_sidecars(run)
 
 
@@ -243,6 +247,30 @@ def test_memo_fingerprint_and_source_count_use_full_source_identity() -> None:
 
     assert daily.memo_fingerprint(left) != daily.memo_fingerprint(right)
     assert daily._source_count_from_verdict(left) == 3
+
+
+def test_memo_fingerprint_is_domain_scoped() -> None:
+    left = _verdict()
+    right = _verdict() | {"domain": {"slug": "ai_research"}}
+
+    assert daily.memo_fingerprint(left) != daily.memo_fingerprint(right)
+
+
+def test_daily_queue_skips_runs_without_domain_metadata(tmp_path: Path) -> None:
+    runs = tmp_path / "runs"
+    run = runs / "untagged-evidence-ts"
+    run.mkdir(parents=True)
+    verdict = _verdict("untagged")
+    verdict.pop("domain")
+    run.joinpath("alpha_memo.md").write_text("# Alpha memo\n", encoding="utf-8")
+    run.joinpath("publish_verdict.json").write_text(
+        json.dumps(verdict), encoding="utf-8",
+    )
+
+    out = daily._build_queue(runs, include_archive=False, domain="longevity")
+
+    assert out["ready_to_publish"] == []
+    assert out["_meta"]["missing_domain_count"] == 1
 
 
 def test_ledger_stamp_includes_utc_time_for_twice_daily_runs() -> None:
@@ -3135,6 +3163,16 @@ def test_submission_payload_preserves_alpha_memo_contract(tmp_path: Path) -> Non
     }
 
 
+def test_submission_payload_requires_domain_metadata(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict()
+    verdict.pop("domain")
+    _memo(root, verdict)
+
+    with raises(ValueError, match="missing domain metadata"):
+        daily._submission_payload(verdict, root / "runs")
+
+
 def test_submission_payload_uses_domain_specific_agent_identity(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("llm_judge_reliability") | {
@@ -4579,8 +4617,14 @@ def test_current_cycle_repairable_revise_does_not_depend_on_ledger_rescan(
         return True
 
     monkeypatch.setattr(daily, "_run_step", fake_step)
-    monkeypatch.setattr(daily, "_repairable_rejected_fingerprints", lambda _path: set())
-    monkeypatch.setattr(daily, "_repairable_decisions_by_fingerprint", lambda _path: {})
+    monkeypatch.setattr(
+        daily, "_repairable_rejected_fingerprints",
+        lambda _path, _domain=None: set(),
+    )
+    monkeypatch.setattr(
+        daily, "_repairable_decisions_by_fingerprint",
+        lambda _path, _domain=None: {},
+    )
 
     ledger = daily.run_cycle(
         runs_root=root,
