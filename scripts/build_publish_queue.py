@@ -129,9 +129,13 @@ def build_queue(
 ) -> dict[str, list[dict[str, Any]]]:
     rows = []
     seed_keys = _domain_seed_keys(domain)
+    default_domain = load_domain_profile(None).slug
     for run in _latest_per_topic(_alpha_runs(include_archive)):
         row = _verdict_for_run(run)
-        if domain and _run_domain(run, row) != domain:
+        run_domain = _run_domain(run, row) or (
+            default_domain if domain == default_domain else ""
+        )
+        if domain and run_domain != domain:
             continue
         if seed_keys and not (_run_scope_keys(run, row) & seed_keys):
             continue

@@ -256,7 +256,7 @@ def test_memo_fingerprint_is_domain_scoped() -> None:
     assert daily.memo_fingerprint(left) != daily.memo_fingerprint(right)
 
 
-def test_daily_queue_skips_runs_without_domain_metadata(tmp_path: Path) -> None:
+def test_daily_queue_defaults_untagged_legacy_runs_to_longevity(tmp_path: Path) -> None:
     runs = tmp_path / "runs"
     run = runs / "untagged-evidence-ts"
     run.mkdir(parents=True)
@@ -269,8 +269,30 @@ def test_daily_queue_skips_runs_without_domain_metadata(tmp_path: Path) -> None:
 
     out = daily._build_queue(runs, include_archive=False, domain="longevity")
 
+    assert [r["topic"] for r in out["ready_to_publish"]] == ["untagged"]
+    assert out["ready_to_publish"][0]["domain"]["slug"] == "longevity"
+    assert out["_meta"]["missing_domain_count"] == 0
+    assert out["_meta"]["legacy_domain_default_count"] == 1
+
+
+def test_daily_queue_still_skips_untagged_runs_for_non_default_domain(
+    tmp_path: Path,
+) -> None:
+    runs = tmp_path / "runs"
+    run = runs / "untagged-evidence-ts"
+    run.mkdir(parents=True)
+    verdict = _verdict("untagged")
+    verdict.pop("domain")
+    run.joinpath("alpha_memo.md").write_text("# Alpha memo\n", encoding="utf-8")
+    run.joinpath("publish_verdict.json").write_text(
+        json.dumps(verdict), encoding="utf-8",
+    )
+
+    out = daily._build_queue(runs, include_archive=False, domain="ai_research")
+
     assert out["ready_to_publish"] == []
     assert out["_meta"]["missing_domain_count"] == 1
+    assert out["_meta"]["legacy_domain_default_count"] == 0
 
 
 def test_run_cycle_rejects_injected_candidate_without_domain(tmp_path: Path) -> None:
@@ -4820,6 +4842,31 @@ def test_memo_with_falsifier_passes_the_gate(tmp_path: Path) -> None:
         min_source_count=5, min_direct_source_count=2,
     )
     assert considered[0]["status"] != "memo_missing_falsifier"
+
+
+def test_receipt_map_verdict_does_not_submit_on_raw_source_count(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("receipt_map") | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "surface_type": "receipt_map",
+        "blockers": ["claim_alignment_partial"],
+    }
+    _memo_with_source_receipts(root, verdict, 5)
+    _audit_sidecars(root / str(verdict["run_dir"]))
+
+    cand, considered = daily.select_candidate(
+        _queue(verdict),
+        runs_root=root,
+        submitted_path=root / "submitted.json",
+        min_source_count=5,
+        min_direct_source_count=5,
+    )
+
+    assert cand is None
+    assert considered[0]["status"] == "agent_repair_needed"
 
 
 def test_unlabeled_source_floor_review_candidate_repairs_before_approval(

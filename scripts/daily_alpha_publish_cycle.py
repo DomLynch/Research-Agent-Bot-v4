@@ -369,12 +369,18 @@ def _build_queue(
     seed_tokens = _domain_seed_tokens(domain)
     domain_rows = []
     missing_domain_count = 0
+    legacy_domain_default_count = 0
+    default_domain = load_domain_profile(None).slug
     for run in latest.values():
         row = _verdict_for_run(run)
         run_domain = _run_domain(run, row)
         if not run_domain:
-            missing_domain_count += 1
-            continue
+            if domain == default_domain:
+                run_domain = default_domain
+                legacy_domain_default_count += 1
+            else:
+                missing_domain_count += 1
+                continue
         if domain and run_domain != domain:
             continue
         row = row | {"domain": load_domain_profile(run_domain).as_metadata()}
@@ -408,6 +414,7 @@ def _build_queue(
         ],
         "_meta": {
             "missing_domain_count": missing_domain_count,
+            "legacy_domain_default_count": legacy_domain_default_count,
             "seed_scope_dropped_count": seed_scope_dropped_count,
             "seed_scope_fallback_count": seed_scope_fallback_count,
             "seed_scope_fallback_used": bool(seed_scope_fallback_count),
@@ -1404,9 +1411,9 @@ def _stamp_ts(value: Any) -> float | None:
 
 
 def _recent_submission_topics(
-    path: Path, *, days: int, domain: str | None = None,
+    path: Path, *, days: int, domain: str | None = None, now: float | None = None,
 ) -> set[str]:
-    cutoff = time.time() - (max(0, days) * 86400)
+    cutoff = (time.time() if now is None else now) - (max(0, days) * 86400)
     data = _json(path, [])
     if not isinstance(data, list):
         return set()
@@ -3066,7 +3073,7 @@ def run_cycle(
     )
     submitted_blocked_topics = _recent_submission_topics(
         submitted_path, days=published_topic_cooldown_days,
-        domain=profile.slug,
+        domain=profile.slug, now=_stamp_ts(date),
     )
     blocked_topics = published_blocked_topics | submitted_blocked_topics
     ledger["recently_published_topics_blocked"] = sorted(published_blocked_topics)
