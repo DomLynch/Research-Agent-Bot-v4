@@ -43,7 +43,9 @@ def _run(root: Path, name: str, *, label: str, lanes: tuple[str, ...]) -> Path:
     run.joinpath("all_facts.json").write_text(json.dumps([
         {
             "fact_id": fid,
-            "canonical_phrase": f"Receipt {fid}",
+            "canonical_phrase": (
+                f"Grid dispatch threshold improves reserve reliability receipt {fid}"
+            ),
             "source_paper": {
                 "doi": f"10.same/{fid}",
                 "title": "Grid dispatch threshold improves reserve reliability",

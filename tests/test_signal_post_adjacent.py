@@ -277,7 +277,7 @@ def test_main_preserves_claim_coherent_source_diversity(
             "status": "survives",
             "capped_opportunity": 90,
             "blocking_flags": [],
-            "cited_fact_ids": ["f1", "f4", "f5", "f6"],
+            "cited_fact_ids": ["f1", "f2", "f4", "f5", "f6"],
         }],
     }), encoding="utf-8")
 
@@ -286,9 +286,10 @@ def test_main_preserves_claim_coherent_source_diversity(
 
     gate = json.loads((run / "opportunities_gate.json").read_text())
     audit = gate["audits"][0]
-    assert audit["cited_fact_ids"] == ["f1", "f4", "f5", "f6"]
+    assert audit["cited_fact_ids"] == ["f1", "f2", "f4", "f5", "f6"]
     assert "self_repair" not in audit
     verdict = json.loads((run / "publish_verdict.json").read_text())
-    assert verdict["decision"] == "ready_to_publish"
-    assert "source_dispersion" not in verdict["blockers"]
-    assert verdict["axes"]["claim_coherent_source_diversity"] is True
+    assert verdict["decision"] == "agent_repair_needed"
+    assert verdict["surface_type"] == "receipt_map"
+    assert "direct_source_floor_below_min" in verdict["blockers"]
+    assert verdict["axes"]["claim_coherent_source_diversity"] is False

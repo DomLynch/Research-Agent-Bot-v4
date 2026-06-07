@@ -4822,6 +4822,31 @@ def test_memo_with_falsifier_passes_the_gate(tmp_path: Path) -> None:
     assert considered[0]["status"] != "memo_missing_falsifier"
 
 
+def test_receipt_map_verdict_does_not_submit_on_raw_source_count(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("receipt_map") | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "surface_type": "receipt_map",
+        "blockers": ["claim_alignment_partial"],
+    }
+    _memo_with_source_receipts(root, verdict, 5)
+    _audit_sidecars(root / str(verdict["run_dir"]))
+
+    cand, considered = daily.select_candidate(
+        _queue(verdict),
+        runs_root=root,
+        submitted_path=root / "submitted.json",
+        min_source_count=5,
+        min_direct_source_count=5,
+    )
+
+    assert cand is None
+    assert considered[0]["status"] == "agent_repair_needed"
+
+
 def test_unlabeled_source_floor_review_candidate_repairs_before_approval(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
