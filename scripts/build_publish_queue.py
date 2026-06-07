@@ -9,7 +9,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from agent.domain_profile import domain_choices, domain_slug
+from agent.domain_profile import domain_choices, domain_slug, load_domain_profile
 from agent.publish_tier import publish_verdict
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -86,9 +86,13 @@ def build_queue(
     include_archive: bool = True, domain: str | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
     rows = []
+    default_domain = load_domain_profile(None).slug
     for run in _latest_per_topic(_alpha_runs(include_archive)):
         row = _verdict_for_run(run)
-        if domain and _run_domain(run, row) != domain:
+        run_domain = _run_domain(run, row) or (
+            default_domain if domain == default_domain else ""
+        )
+        if domain and run_domain != domain:
             continue
         rows.append(row)
     rank = {"TIER_1": 0, "TIER_2": 1, "TIER_3": 2}
