@@ -196,6 +196,80 @@ def _claim_tokens(cited_ids: list[str], facts: dict[str, dict[str, Any]]) -> set
     )) if cited_ids else set()
 
 
+def _fact_axis_text(fact: dict[str, Any]) -> str:
+    return " ".join(
+        str(fact.get(key) or "")
+        for key in (
+            "canonical_phrase", "population", "intervention", "comparator",
+            "endpoint", "outcome", "sub_topic", "claim_type",
+        )
+    )
+
+
+def _claim_axis(
+    md: str,
+    topic: str,
+    generic: frozenset[str],
+    cited_ids: list[str],
+    facts: dict[str, dict[str, Any]],
+) -> tuple[str, set[str]]:
+    text = "\n".join((
+        _field(md, "Headline"),
+        _section(md, "One-sentence thesis"),
+        _section(md, "Why this is surprising"),
+        _section(md, "Evidence Landscape"),
+    ))
+    tokens = _tokens(text, topic, generic)
+    if tokens:
+        return text, tokens
+    return text, _claim_tokens(cited_ids, facts)
+
+
+def _claim_fit(
+    fid: str,
+    fact: dict[str, Any],
+    lane: str,
+    claim_text: str,
+    claim_tokens: set[str],
+    topic: str,
+    generic: frozenset[str],
+    markers: tuple[str, ...],
+) -> dict[str, Any]:
+    fact_tokens = _tokens(_fact_axis_text(fact), topic, generic)
+    score = _claim_fit_score(fact_tokens, claim_tokens)
+    phrase = str(fact.get("canonical_phrase") or "").lower()
+    fact_opposes = bool(markers) and any(marker in phrase for marker in markers)
+    claim_opposes = bool(markers) and any(marker in claim_text.lower() for marker in markers)
+    if lane in _BINDABLE and fact_opposes and not claim_opposes and score >= _COUNTER_MIN_CLAIM_FIT:
+        label = "opposing"
+    elif lane in _DIRECT and score >= _COUNTER_MIN_CLAIM_FIT:
+        label = "direct_match"
+    elif lane in _BINDABLE and (score > 0 or bool(_tokens(topic, "", frozenset()) & fact_tokens)):
+        label = "boundary"
+    else:
+        label = "context"
+    return {"fact_id": fid, "claim_fit": label, "score": round(score, 3)}
+
+
+def _claim_fit_map(
+    ids: list[str],
+    facts: dict[str, dict[str, Any]],
+    lanes: dict[str, str],
+    claim_text: str,
+    claim_tokens: set[str],
+    topic: str,
+    generic: frozenset[str],
+    markers: tuple[str, ...],
+) -> dict[str, dict[str, Any]]:
+    return {
+        fid: _claim_fit(
+            fid, facts.get(fid) or {}, lanes.get(fid, ""), claim_text,
+            claim_tokens, topic, generic, markers,
+        )
+        for fid in ids
+    }
+
+
 def _source_papers(
     cited_ids: list[str],
     facts: dict[str, dict[str, Any]],
@@ -262,26 +336,25 @@ def _counter_evidence(
     cited_ids: list[str],
     facts: dict[str, dict[str, Any]],
     lanes: dict[str, str],
+    claim_text: str,
+    claim: set[str],
+    topic: str,
+    generic: frozenset[str],
     markers: tuple[str, ...],
 ) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
-    claim = _claim_tokens(cited_ids, facts)
     for fid in _bound_ids_in_fact_order(facts, lanes):
         fact = facts.get(fid) or {}
-        # Counter markers must live in the asserted finding itself. Comparator
-        # text often says "without X" for ordinary controls; treating that as
-        # opposition creates false counter-evidence.
-        haystack = str(fact.get("canonical_phrase") or "").lower()
-        if markers and not any(marker in haystack for marker in markers):
-            continue
-        rank = _claim_fit_score(
-            set(re.findall(r"[a-z0-9]{3,}", str(fact.get("canonical_phrase") or "").lower())),
-            claim,
+        fit = _claim_fit(
+            fid, fact, lanes.get(fid, ""), claim_text, claim, topic,
+            generic, markers,
         )
-        if rank < _COUNTER_MIN_CLAIM_FIT:
+        if fit["claim_fit"] != "opposing":
             continue
         item = _fact_summary(fid, fact, lanes.get(fid, ""))
-        item["_rank"] = rank
+        item["claim_fit"] = fit["claim_fit"]
+        item["claim_fit_score"] = fit["score"]
+        item["_rank"] = float(fit["score"])
         out.append(item)
     out.sort(key=lambda item: (item["lane"] != "A_core", -float(item["_rank"]), item["fact_id"]))
     for item in out:
@@ -585,9 +658,23 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     lanes = _lane_map(run_dir)
     bound_ids = [fid for fid in cited_ids if lanes.get(fid) in _BINDABLE]
     direct_ids = [fid for fid in evidence_ids if lanes.get(fid) in _DIRECT]
-    a_core = sum(1 for fid in bound_ids if lanes.get(fid) == "A_core")
+    claim_text, claim_tokens = _claim_axis(
+        md, topic, cfg["generic_tokens"] | cfg["cluster_stopwords"],
+        direct_ids or bound_ids, facts,
+    )
+    fit_ids = list(dict.fromkeys(bound_ids + _bound_ids_in_fact_order(facts, lanes)))
+    claim_fit = _claim_fit_map(
+        fit_ids, facts, lanes, claim_text, claim_tokens, topic,
+        cfg["generic_tokens"] | cfg["cluster_stopwords"],
+        cfg["counter_markers"],
+    )
+    direct_match_ids = [
+        fid for fid in direct_ids
+        if claim_fit.get(fid, {}).get("claim_fit") == "direct_match"
+    ]
+    a_core = len(direct_match_ids)
     papers = _source_papers(bound_ids, facts)
-    direct_papers = _source_papers(direct_ids, facts)
+    direct_papers = _source_papers(direct_match_ids, facts)
     min_source_papers = _publication_int("min_source_papers", 5)
     min_direct_source_papers = _publication_int("min_direct_source_papers", 5)
     all_bound_ids = _bound_ids_in_fact_order(facts, lanes)
@@ -595,10 +682,10 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         _source_key(facts[fid]) for fid in all_bound_ids if fid in facts
     } - {""})
     source_concentrated = _source_concentrated(
-        bound_ids, facts, float(cfg["source_concentration_share"]),
+        direct_match_ids, facts, float(cfg["source_concentration_share"]),
     )
     source_coherent = source_concentrated or _claim_coherent_source_diversity(
-        bound_ids, facts, topic, cfg["generic_tokens"] | cfg["cluster_stopwords"],
+        direct_match_ids, facts, topic, cfg["generic_tokens"] | cfg["cluster_stopwords"],
         float(cfg["domain_overlap_min"]), min_source_papers,
     )
     forced = _domain_forced(
@@ -606,12 +693,13 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     )
     off_scope = _off_scope(papers, topic, cfg["off_scope_markers"])
     counter_evidence = _counter_evidence(
-        bound_ids, facts, lanes, cfg["counter_markers"],
+        bound_ids, facts, lanes, claim_text, claim_tokens, topic,
+        cfg["generic_tokens"] | cfg["cluster_stopwords"], cfg["counter_markers"],
     )
     tension = _has_tension(md, cfg["tension_markers"]) or bool(counter_evidence)
     strong_direct_bundle = (
         len(direct_papers) >= min_direct_source_papers
-        and len(papers) >= min_source_papers
+        and len(direct_papers) >= min_source_papers
         and source_coherent
     )
     expansion_candidates = _expansion_candidates(bound_ids, facts, lanes)
@@ -622,7 +710,7 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         blockers.append("no_bound_receipts")
     if forced:
         blockers.append("cross_domain_forced")
-    if not source_coherent and bound_ids and len(papers) >= min_source_papers:
+    if not source_coherent and direct_match_ids and len(direct_papers) >= min_source_papers:
         blockers.append("source_dispersion")
     if not tension and bound_ids and not strong_direct_bundle:
         blockers.append("weak_counter_consensus_tension")
@@ -630,10 +718,12 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         blockers.append("low_alpha_score")
     if off_scope:
         blockers.append("feed_scope_mismatch")
-    if len(papers) < min_source_papers:
+    if len(direct_papers) < min_source_papers:
         blockers.append("source_floor_below_min")
     if len(direct_papers) < min_direct_source_papers:
         blockers.append("direct_source_floor_below_min")
+    if bound_ids and len(direct_match_ids) < len(direct_ids):
+        blockers.append("claim_alignment_partial")
 
     ready = (
         not blockers
@@ -677,6 +767,10 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         surface_type = "context_dependence_memo"
     elif off_scope or forced:
         surface_type = "split_or_reject_memo"
+    elif "source_dispersion" in blockers:
+        surface_type = "heterogeneity_memo"
+    elif "claim_alignment_partial" in blockers:
+        surface_type = "receipt_map"
     elif subtopics["recommended"]:
         surface_type = "subtopic_rerun_memo"
     elif decision == "curation_needed":
@@ -699,6 +793,19 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         "surface_type": surface_type,
         "axes": {
             "bound_receipts": len(bound_ids),
+            "direct_match_receipts": len(direct_match_ids),
+            "boundary_receipts": sum(
+                1 for fid in bound_ids
+                if claim_fit.get(fid, {}).get("claim_fit") == "boundary"
+            ),
+            "context_receipts": sum(
+                1 for fid in bound_ids
+                if claim_fit.get(fid, {}).get("claim_fit") == "context"
+            ),
+            "opposing_receipts": sum(
+                1 for fid in bound_ids
+                if claim_fit.get(fid, {}).get("claim_fit") == "opposing"
+            ),
             "direct_source_papers": len(direct_papers),
             "available_bound_receipts": len(all_bound_ids),
             "available_source_contexts": available_source_count,
@@ -726,7 +833,14 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
             ),
             "cited_bound_fact_ids": bound_ids,
             "available_bound_fact_ids": all_bound_ids,
-            "candidate_receipts": expansion_candidates,
+            "candidate_receipts": [
+                item | {
+                    "claim_fit": claim_fit.get(
+                        str(item.get("fact_id") or ""), {}
+                    ).get("claim_fit", "context")
+                }
+                for item in expansion_candidates
+            ],
         },
         "counter_evidence": {
             "status": "found" if counter_evidence else "none_found",
