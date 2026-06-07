@@ -239,7 +239,11 @@ def _claim_fit(
     score = _claim_fit_score(fact_tokens, claim_tokens)
     phrase = str(fact.get("canonical_phrase") or "").lower()
     fact_opposes = bool(markers) and any(marker in phrase for marker in markers)
-    claim_opposes = bool(markers) and any(marker in claim_text.lower() for marker in markers)
+    core_claim = "\n".join(
+        line for line in claim_text.splitlines() if line.strip()
+    ).splitlines()[:2]
+    core_claim_text = "\n".join(core_claim).lower()
+    claim_opposes = bool(markers) and any(marker in core_claim_text for marker in markers)
     if lane in _BINDABLE and fact_opposes and not claim_opposes and score >= _COUNTER_MIN_CLAIM_FIT:
         label = "opposing"
     elif lane in _DIRECT and score >= _COUNTER_MIN_CLAIM_FIT:
@@ -693,7 +697,8 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     )
     off_scope = _off_scope(papers, topic, cfg["off_scope_markers"])
     counter_evidence = _counter_evidence(
-        bound_ids, facts, lanes, claim_text, claim_tokens, topic,
+        bound_ids, facts, lanes, claim_text,
+        claim_tokens | _claim_tokens(direct_match_ids, facts), topic,
         cfg["generic_tokens"] | cfg["cluster_stopwords"], cfg["counter_markers"],
     )
     tension = _has_tension(md, cfg["tension_markers"]) or bool(counter_evidence)
