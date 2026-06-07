@@ -20,6 +20,8 @@ topics = [
     "code_generation_agents",
     "swe_bench",
     "benchmark_contamination",
+    "model_eval",
+    "open_source_models",
     "hallucination_detection",
     "prompt_optimization",
     "automated_literature_review",

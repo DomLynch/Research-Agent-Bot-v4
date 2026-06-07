@@ -34,6 +34,8 @@ def test_ai_research_profile_is_live_with_own_seed_pack() -> None:
     seeds = load_seed_topics(profile.seed_topics_path)
     assert "ai_agents" in seeds
     assert "research_automation" in seeds
+    assert "model_eval" in seeds
+    assert "open_source_models" in seeds
 
 
 def test_default_domain_remains_longevity() -> None:
