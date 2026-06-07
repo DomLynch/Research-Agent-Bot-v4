@@ -239,10 +239,7 @@ def _claim_fit(
     score = _claim_fit_score(fact_tokens, claim_tokens)
     phrase = str(fact.get("canonical_phrase") or "").lower()
     fact_opposes = bool(markers) and any(marker in phrase for marker in markers)
-    core_claim = "\n".join(
-        line for line in claim_text.splitlines() if line.strip()
-    ).splitlines()[:2]
-    core_claim_text = "\n".join(core_claim).lower()
+    core_claim_text = claim_text.splitlines()[0].lower() if claim_text.splitlines() else ""
     claim_opposes = bool(markers) and any(marker in core_claim_text for marker in markers)
     if lane in _BINDABLE and fact_opposes and not claim_opposes and score >= _COUNTER_MIN_CLAIM_FIT:
         label = "opposing"
@@ -453,8 +450,9 @@ def _source_diverse_fact_clusters(
         for fact, source, tokens, claim_tokens in rows:
             if source in sources:
                 continue
+            claim_overlap = seed_claim_tokens & claim_tokens
             if (
-                seed_claim_tokens & claim_tokens
+                len(claim_overlap) >= 2
                 and len(seed_tokens & tokens) / max(1, len(seed_tokens | tokens)) >= min_overlap
             ):
                 cluster.append(fact)
@@ -688,9 +686,12 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     source_concentrated = _source_concentrated(
         direct_match_ids, facts, float(cfg["source_concentration_share"]),
     )
-    source_coherent = source_concentrated or _claim_coherent_source_diversity(
-        direct_match_ids, facts, topic, cfg["generic_tokens"] | cfg["cluster_stopwords"],
-        float(cfg["domain_overlap_min"]), min_source_papers,
+    source_coherent = len(direct_papers) >= min_source_papers and (
+        source_concentrated or _claim_coherent_source_diversity(
+            direct_match_ids, facts, topic,
+            cfg["generic_tokens"] | cfg["cluster_stopwords"],
+            float(cfg["domain_overlap_min"]), min_source_papers,
+        )
     )
     forced = _domain_forced(
         papers, topic, cfg["generic_tokens"], float(cfg["domain_overlap_min"]),
