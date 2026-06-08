@@ -76,9 +76,10 @@ def _facts_for(path: Path) -> list[dict[str, object]]:
     return [f for f in data if isinstance(f, dict)] if isinstance(data, list) else []
 
 
-def _matching_fact(
+def _matching_facts(
     facts: list[dict[str, object]], value: float, finding: str,
-) -> dict[str, object] | None:
+) -> list[dict[str, object]]:
+    out: list[dict[str, object]] = []
     for fact in facts:
         if str(fact.get("canonical_phrase") or "").strip() != finding:
             continue
@@ -86,8 +87,8 @@ def _matching_fact(
         if isinstance(raw, bool) or not isinstance(raw, (int, float)):
             continue
         if float(raw) == value:
-            return fact
-    return None
+            out.append(fact)
+    return out
 
 
 @pytest.mark.parametrize("path", _top_n_files(),
@@ -125,14 +126,16 @@ def test_top_n_md_cards_are_lane_bindable(path: Path) -> None:
     text = path.read_text(encoding="utf-8")
     leaks: list[str] = []
     for value, finding in _pairs_in_card_order(text):
-        fact = _matching_fact(facts, value, finding)
-        if fact is None:
+        matches = _matching_facts(facts, value, finding)
+        if not matches:
             continue
-        verdict = classify_lane(fact, topic)
-        if verdict.lane not in _BINDABLE_LANES:
+        verdicts = [classify_lane(fact, topic) for fact in matches]
+        if not any(verdict.lane in _BINDABLE_LANES for verdict in verdicts):
+            fact = matches[0]
+            lanes = ",".join(verdict.lane for verdict in verdicts)
             leaks.append(
-                f"fact_id={fact.get('fact_id')} lane={verdict.lane} "
-                f"role={verdict.numeric_role}: {finding[:90]!r}",
+                f"fact_id={fact.get('fact_id')} lanes={lanes} "
+                f"role={verdicts[0].numeric_role}: {finding[:90]!r}",
             )
     assert not leaks, (
         f"{path.relative_to(_RUNS.parent)} contains top-card fact(s) "
