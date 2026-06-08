@@ -136,8 +136,15 @@ def _normalize_tier2(item: dict[str, Any], topic: str) -> dict[str, Any]:
     """Coerce a tier2/facts/search row into the Tier-1-shaped dict the
     renderer / scorer expects. Keeps the same interestingness signals
     (numeric_value, validation, recency) but flags `tier=tier2`."""
-    paper = item.get("paper") or {}
-    return {
+    raw_paper = item.get("paper")
+    paper: dict[str, Any] = raw_paper if isinstance(raw_paper, dict) else {}
+    raw_fact = item.get("fact")
+    fact: dict[str, Any] = raw_fact if isinstance(raw_fact, dict) else {}
+
+    def _field(name: str) -> Any:
+        return item.get(name) if item.get(name) is not None else fact.get(name)
+
+    out = {
         "fact_id": item.get("id"), "topic": topic,
         "sub_topic": item.get("claim_type") or "",
         "source_paper": {
@@ -165,6 +172,23 @@ def _normalize_tier2(item: dict[str, Any], topic: str) -> dict[str, Any]:
         "superseded_by": None,
         "_tier": "tier2",
     }
+    for key in (
+        "metric",
+        "benchmark",
+        "task",
+        "model_system",
+        "baseline_comparator",
+        "source_identifiers",
+        "artifact_url",
+        "limitation",
+        "source_excerpt",
+    ):
+        value = _field(key)
+        if value not in (None, "", {}):
+            out[key] = value
+    if item.get("topic"):
+        out["source_topic"] = item.get("topic")
+    return out
 
 
 def _source_key(fact: dict[str, Any]) -> str:
