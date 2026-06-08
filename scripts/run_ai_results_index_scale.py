@@ -13,6 +13,7 @@ import subprocess
 import sys
 import time
 import tomllib
+from collections import Counter
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -80,6 +81,43 @@ def _topic_build_args(py: str, topic: str, top_facts: int) -> list[str]:
 def _latest_run_for_topic(topic: str, runs_root: Path = _RUNS) -> Path | None:
     runs = sorted(runs_root.glob(f"{topic}-evidence-*"))
     return runs[-1] if runs else None
+
+
+def _read_json(path: Path, default: Any) -> Any:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return default
+
+
+def _run_snapshot(run_dir: Path | None) -> dict[str, Any]:
+    if run_dir is None:
+        return {}
+    manifest = _read_json(run_dir / "MANIFEST.json", {})
+    gate = _read_json(run_dir / "opportunities_gate.json", {})
+    verdict = _read_json(run_dir / "publish_verdict.json", {})
+    facts_raw = _read_json(run_dir / "all_facts.json", [])
+    facts = [fact for fact in facts_raw if isinstance(fact, dict)]
+    tiers = Counter(str(fact.get("_tier") or "") for fact in facts)
+    result_key_facts = sum(1 for fact in facts if fact.get("result_key"))
+    data_tier = str(manifest.get("data_tier") or "")
+    decision = str(verdict.get("decision") or "")
+    status = "ready" if (
+        data_tier == "ai_results_index"
+        and decision == "ready_to_publish"
+        and result_key_facts >= 1
+    ) else "coverage_gap"
+    return {
+        "data_tier": data_tier,
+        "decision": decision,
+        "publish_tier": verdict.get("publish_tier"),
+        "surface_type": verdict.get("surface_type"),
+        "fact_count": len(facts),
+        "fact_tiers": tiers.most_common(4),
+        "result_key_facts": result_key_facts,
+        "audit_count": len(gate.get("audits") or []) if isinstance(gate, dict) else 0,
+        "coverage_status": status,
+    }
 
 
 def _run_step(args: list[str], *, timeout: int) -> Step:
@@ -154,11 +192,48 @@ def _run_topic(
                 _run_step(args, timeout=_remaining_timeout(started, max_seconds))
             )
     ok = bool(steps) and all(step.ok for step in steps)
+    snapshot = _run_snapshot(run_dir)
     return {
         "topic": topic,
         "status": "ok" if ok else "failed",
         "run_dir": str(run_dir.relative_to(_ROOT)) if run_dir else "",
         "steps": [asdict(step) for step in steps],
+        **snapshot,
+    }
+
+
+def _coverage_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    topic_rows = [row for row in rows if row.get("event") == "topic"]
+    ready = [
+        str(row.get("topic"))
+        for row in topic_rows
+        if row.get("coverage_status") == "ready"
+    ]
+    gaps = [
+        str(row.get("topic"))
+        for row in topic_rows
+        if row.get("coverage_status") == "coverage_gap"
+    ]
+    failed = [
+        str(row.get("topic"))
+        for row in topic_rows
+        if row.get("status") == "failed"
+    ]
+    planned = [
+        str(row.get("topic"))
+        for row in topic_rows
+        if row.get("status") == "planned"
+    ]
+    return {
+        "topics_run": len(topic_rows),
+        "ready_count": len(ready),
+        "coverage_gap_count": len(gaps),
+        "failed_count": len(failed),
+        "planned_count": len(planned),
+        "ready_topics": ready,
+        "coverage_gap_topics": gaps,
+        "failed_topics": failed,
+        "planned_topics": planned,
     }
 
 
@@ -199,6 +274,7 @@ def main() -> int:
     })
 
     failures = 0
+    topic_rows: list[dict[str, Any]] = []
     for topic in topics:
         if time.monotonic() - started >= args.max_seconds:
             _write_jsonl(log_path, {"event": "stop", "reason": "time_cap"})
@@ -211,7 +287,9 @@ def main() -> int:
             max_seconds=args.max_seconds,
             dry_run=args.dry_run,
         )
-        _write_jsonl(log_path, {"event": "topic", **row})
+        event = {"event": "topic", **row}
+        topic_rows.append(event)
+        _write_jsonl(log_path, event)
         if row.get("status") == "failed":
             failures += 1
 
@@ -224,6 +302,8 @@ def main() -> int:
         if not queue.ok:
             failures += 1
 
+    _write_jsonl(log_path, {"event": "coverage_summary",
+                            **_coverage_summary(topic_rows)})
     _write_jsonl(log_path, {
         "event": "finish",
         "failures": failures,
