@@ -47,8 +47,34 @@ _CLUSTER_GENERIC_TOKENS = frozenset({
 _COHERENCE_GENERIC_TOKENS = _CLUSTER_GENERIC_TOKENS | {
     "endpoint", "endpoints", "outcome", "outcomes", "intervention",
     "interventions", "comparator", "comparators", "group", "groups",
-    "primary", "secondary", "measure", "measures",
+    "primary", "secondary", "measure", "measures", "benchmark",
+    "benchmarks", "metric", "metrics", "dataset", "datasets", "model",
+    "models", "system", "systems", "protocol", "protocols", "shot",
 }
+_RECEIPT_SHAPE_DIMENSIONS = (
+    ("population",),
+    ("intervention",),
+    ("comparator", "baseline_comparator"),
+    ("endpoint", "outcome"),
+    ("benchmark",),
+    ("task", "dataset"),
+    ("metric",),
+    ("model_system",),
+    ("evaluation_protocol",),
+)
+_STRICT_RECEIPT_SHAPE_DIMENSIONS = frozenset({
+    ("comparator", "baseline_comparator"),
+    ("benchmark",),
+    ("task", "dataset"),
+    ("metric",),
+    ("model_system",),
+    ("evaluation_protocol",),
+})
+_CLUSTER_SHAPE_FIELDS = (
+    "canonical_phrase", "claim", "finding",
+    *tuple(field for fields in _RECEIPT_SHAPE_DIMENSIONS for field in fields),
+    "source_topic",
+)
 
 Json = dict[str, Any]
 Fetcher = Callable[[str], Json]
@@ -689,23 +715,39 @@ def _cluster_fact_ids(cluster: Json) -> list[str]:
 
 
 def _cluster_tokens(fact: Json, parent: str) -> set[str]:
-    text = " ".join(
-        str(fact.get(key) or "") for key in (
-            "canonical_phrase", "population", "intervention", "endpoint", "comparator",
-        )
-    )
+    text = " ".join(str(fact.get(key) or "") for key in _CLUSTER_SHAPE_FIELDS)
     parent_tokens = set(_CLAIM_WORD.findall(parent.lower()))
     return set(_CLAIM_WORD.findall(text.lower())) - parent_tokens - _CLUSTER_GENERIC_TOKENS
 
 
-def _cluster_has_coherent_component(
+def _facts_share_receipt_shape(left: Json, right: Json) -> bool:
+    shared_dims = 0
+    checked_dims = 0
+    for fields in _RECEIPT_SHAPE_DIMENSIONS:
+        left_shape = _shape_tokens(left, fields)
+        right_shape = _shape_tokens(right, fields)
+        if not left_shape or not right_shape:
+            continue
+        checked_dims += 1
+        if left_shape & right_shape:
+            shared_dims += 1
+        elif fields in _STRICT_RECEIPT_SHAPE_DIMENSIONS:
+            return False
+    if not checked_dims:
+        return True
+    return shared_dims >= (2 if checked_dims >= 2 else 1)
+
+
+def _coherent_cluster_fact_ids(
     verdict: Json, cluster_ids: list[str], root: Path, *, min_direct_source_count: int,
-) -> bool:
+) -> list[str]:
+    if min_direct_source_count <= 0:
+        return cluster_ids
     run_dir = _run_path(root, verdict.get("run_dir"))
     facts = _json(run_dir / "all_facts.json", [])
     lanes_raw = _json(run_dir / "fact_lanes.json", {})
     if not isinstance(facts, list) or not isinstance(lanes_raw, dict):
-        return False
+        return []
     lanes = {
         str(row.get("fact_id") or ""): str(row.get("lane") or "")
         for row in lanes_raw.get("verdicts", [])
@@ -725,13 +767,30 @@ def _cluster_has_coherent_component(
         anchor_tokens = _cluster_tokens(anchor, parent)
         if not anchor_tokens:
             continue
-        sources = {
-            source for fid, fact, source in usable
-            if fid == anchor_id or len(anchor_tokens & _cluster_tokens(fact, parent)) >= 2
-        }
-        if len(sources) >= min_direct_source_count:
-            return True
-    return False
+        ids: list[str] = []
+        sources: set[str] = set()
+        for fid, fact, source in usable:
+            same_anchor = fid == anchor_id
+            if not same_anchor and len(anchor_tokens & _cluster_tokens(fact, parent)) < 2:
+                continue
+            if not same_anchor and not _facts_share_receipt_shape(anchor, fact):
+                continue
+            if source in sources:
+                continue
+            ids.append(fid)
+            sources.add(source)
+            if len(sources) >= min_direct_source_count:
+                return ids
+    return []
+
+
+def _cluster_has_coherent_component(
+    verdict: Json, cluster_ids: list[str], root: Path, *, min_direct_source_count: int,
+) -> bool:
+    return bool(_coherent_cluster_fact_ids(
+        verdict, cluster_ids, root,
+        min_direct_source_count=min_direct_source_count,
+    ))
 
 
 def _claim_cluster_repairable(verdict: Json, rec: Json) -> bool:
@@ -761,14 +820,16 @@ def _claim_cluster_candidates(
             if not isinstance(cluster, dict):
                 continue
             ids = _cluster_fact_ids(cluster)
+            coherent_ids = _coherent_cluster_fact_ids(
+                verdict, ids, runs_root,
+                min_direct_source_count=min_direct_source_count,
+            )
             if (
                 len(ids) < min_direct_source_count
-                or not _cluster_has_coherent_component(
-                    verdict, ids, runs_root,
-                    min_direct_source_count=min_direct_source_count,
-                )
+                or not coherent_ids
             ):
                 continue
+            ids = coherent_ids
             label = str(cluster.get("label") or "claim_cluster").strip("_")
             topic = _cluster_child_topic(parent, label)
             expansion = verdict.get("receipt_expansion")
@@ -1640,9 +1701,10 @@ def _shape_text(value: Any) -> str:
 
 def _shape_tokens(fact: Json, fields: tuple[str, ...]) -> set[str]:
     text = " ".join(_shape_text(fact.get(field)) for field in fields)
+    min_len = 3 if fields in _STRICT_RECEIPT_SHAPE_DIMENSIONS else 4
     return {
         token for token in _CLAIM_WORD.findall(text.lower())
-        if len(token) >= 4 and token not in _COHERENCE_GENERIC_TOKENS
+        if len(token) >= min_len and token not in _COHERENCE_GENERIC_TOKENS
     }
 
 
@@ -1656,13 +1718,15 @@ def _direct_receipts_share_shape(
         return True
     shared_dims = 0
     checked_dims = 0
-    for fields in (("population",), ("intervention",), ("comparator",), ("endpoint",)):
+    for fields in _RECEIPT_SHAPE_DIMENSIONS:
         shapes = [_shape_tokens(fact, fields) for fact in facts]
         if not all(shapes):
             continue
         checked_dims += 1
         if set.intersection(*shapes):
             shared_dims += 1
+        elif fields in _STRICT_RECEIPT_SHAPE_DIMENSIONS:
+            return False
     if checked_dims:
         return shared_dims >= (2 if checked_dims >= 2 else 1)
     shapes = [_shape_tokens(fact, ("canonical_phrase", "claim", "finding")) for fact in facts]

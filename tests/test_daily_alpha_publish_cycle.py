@@ -2626,6 +2626,100 @@ def test_claim_cluster_candidate_requires_claim_coherence(tmp_path: Path) -> Non
     assert rows == []
 
 
+def test_claim_cluster_candidate_requires_ai_shape_coherence(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("swe_bench_parent") | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "blockers": ["source_dispersion"],
+        "subtopic_recommendations": {
+            "recommended": True,
+            "clusters": [{
+                "label": "swe bench accuracy",
+                "member_fact_ids": ["1", "2", "3", "4", "5"],
+            }],
+        },
+    }
+    _memo_with_source_receipts(root, verdict, 5)
+    run = root / str(verdict["run_dir"])
+    facts = json.loads(run.joinpath("all_facts.json").read_text(encoding="utf-8"))
+    for fact, model_system in zip(
+        facts,
+        ("GPT", "RAG", "LLM", "MoE", "BLOOM"),
+        strict=True,
+    ):
+        fact.update({
+            "canonical_phrase": "The agent improved SWE-bench benchmark performance.",
+            "benchmark": "SWE-bench",
+            "task": "software issue resolution",
+            "dataset": "SWE-bench Verified",
+            "metric": "resolved rate",
+            "model_system": model_system,
+            "baseline_comparator": "baseline agent",
+            "evaluation_protocol": "zero shot patch generation",
+        })
+    run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    rows = daily._claim_cluster_candidates(
+        [verdict], root, min_direct_source_count=5,
+    )
+
+    assert rows == []
+
+
+def test_claim_cluster_candidate_trims_to_clean_ai_receipt_shape(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("rag_parent") | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "blockers": ["source_dispersion"],
+        "subtopic_recommendations": {
+            "recommended": True,
+            "clusters": [{
+                "label": "rag exact match",
+                "member_fact_ids": ["1", "2", "3", "4", "5", "6", "7"],
+            }],
+        },
+    }
+    _memo_with_source_receipts(root, verdict, 7)
+    run = root / str(verdict["run_dir"])
+    facts = json.loads(run.joinpath("all_facts.json").read_text(encoding="utf-8"))
+    for fact in facts[:5]:
+        fact.update({
+            "canonical_phrase": "The RAG system improved HotpotQA exact match.",
+            "benchmark": "HotpotQA",
+            "task": "multi hop question answering",
+            "dataset": "HotpotQA distractor",
+            "metric": "exact match",
+            "model_system": "retrieval augmented generation system",
+            "baseline_comparator": "closed book language model",
+            "evaluation_protocol": "zero shot question answering",
+        })
+    for fact, metric in zip(facts[5:], ("latency", "faithfulness"), strict=True):
+        fact.update({
+            "canonical_phrase": "The RAG system improved HotpotQA exact match.",
+            "benchmark": "HotpotQA",
+            "task": "multi hop question answering",
+            "dataset": "HotpotQA distractor",
+            "metric": metric,
+            "model_system": "retrieval augmented generation system",
+            "baseline_comparator": "retrieval baseline",
+            "evaluation_protocol": "few shot question answering",
+        })
+    run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    rows = daily._claim_cluster_candidates(
+        [verdict], root, min_direct_source_count=5,
+    )
+
+    assert len(rows) == 1
+    assert rows[0]["receipt_expansion"]["cited_bound_fact_ids"] == [
+        "1", "2", "3", "4", "5",
+    ]
+
+
 def test_high_alpha_curation_cluster_can_seed_claim_candidate(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("curated_parent") | {
