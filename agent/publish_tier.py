@@ -23,6 +23,33 @@ _COUNTER_MIN_CLAIM_FIT = 0.2
 _BLOCKED_LABELS = frozenset({
     "curation_needed", "evidence_binding_failed", "no_signal", "discard",
 })
+_RECEIPT_SHAPE_DIMENSIONS = (
+    ("population",),
+    ("intervention",),
+    ("comparator", "baseline_comparator"),
+    ("endpoint", "outcome"),
+    ("benchmark",),
+    ("task", "dataset"),
+    ("metric",),
+    ("model_system",),
+    ("evaluation_protocol",),
+)
+_STRICT_RECEIPT_SHAPE_DIMENSIONS = frozenset({
+    ("comparator", "baseline_comparator"),
+    ("benchmark",),
+    ("task", "dataset"),
+    ("metric",),
+    ("model_system",),
+    ("evaluation_protocol",),
+})
+_SHAPE_GENERIC_TOKENS = frozenset({
+    "endpoint", "endpoints", "outcome", "outcomes", "intervention",
+    "interventions", "comparator", "comparators", "population",
+    "group", "groups", "primary", "secondary", "measure", "measures",
+    "benchmark", "benchmarks", "metric", "metrics", "dataset",
+    "datasets", "model", "models", "system", "systems", "protocol",
+    "protocols", "baseline", "baselines", "study", "studies", "shot",
+})
 
 
 def _read(path: Path) -> str:
@@ -203,9 +230,78 @@ def _fact_axis_text(fact: dict[str, Any]) -> str:
             "canonical_phrase", "population", "intervention", "comparator",
             "endpoint", "outcome", "sub_topic", "claim_type", "metric",
             "benchmark", "task", "model_system", "baseline_comparator",
-            "source_topic",
+            "dataset", "evaluation_protocol", "source_topic",
         )
     )
+
+
+def _shape_text(value: Any) -> str:
+    if isinstance(value, dict):
+        return " ".join(_shape_text(v) for v in value.values())
+    if isinstance(value, (list, tuple, set)):
+        return " ".join(_shape_text(v) for v in value)
+    return str(value or "")
+
+
+def _shape_tokens(
+    fact: dict[str, Any],
+    fields: tuple[str, ...],
+    generic: frozenset[str],
+) -> set[str]:
+    text = " ".join(_shape_text(fact.get(field)) for field in fields)
+    min_len = 3 if fields in _STRICT_RECEIPT_SHAPE_DIMENSIONS else 4
+    return {
+        token for token in re.findall(r"[a-z][a-z0-9]*", text.lower())
+        if len(token) >= min_len and token not in generic
+    }
+
+
+def _facts_share_shape(
+    left: dict[str, Any],
+    right: dict[str, Any],
+    generic: frozenset[str],
+) -> bool:
+    shape_generic = generic | _SHAPE_GENERIC_TOKENS
+    shared_dims = 0
+    checked_dims = 0
+    for fields in _RECEIPT_SHAPE_DIMENSIONS:
+        left_shape = _shape_tokens(left, fields, shape_generic)
+        right_shape = _shape_tokens(right, fields, shape_generic)
+        if not left_shape or not right_shape:
+            continue
+        checked_dims += 1
+        if left_shape & right_shape:
+            shared_dims += 1
+        elif fields in _STRICT_RECEIPT_SHAPE_DIMENSIONS:
+            return False
+    if not checked_dims:
+        return True
+    return shared_dims >= (2 if checked_dims >= 2 else 1)
+
+
+def _receipt_ids_share_shape(
+    ids: list[str],
+    facts: dict[str, dict[str, Any]],
+    generic: frozenset[str],
+) -> bool:
+    items = [facts[fid] for fid in ids if fid in facts]
+    if len(items) < 2:
+        return True
+    shared_dims = 0
+    checked_dims = 0
+    shape_generic = generic | _SHAPE_GENERIC_TOKENS
+    for fields in _RECEIPT_SHAPE_DIMENSIONS:
+        shapes = [_shape_tokens(fact, fields, shape_generic) for fact in items]
+        if not all(shapes):
+            continue
+        checked_dims += 1
+        if set.intersection(*shapes):
+            shared_dims += 1
+        elif fields in _STRICT_RECEIPT_SHAPE_DIMENSIONS:
+            return False
+    if checked_dims:
+        return shared_dims >= (2 if checked_dims >= 2 else 1)
+    return True
 
 
 def _claim_axis(
@@ -459,6 +555,7 @@ def _source_diverse_fact_clusters(
             if (
                 len(claim_overlap) >= 2
                 and len(seed_tokens & tokens) / max(1, len(seed_tokens | tokens)) >= min_overlap
+                and _facts_share_shape(seed, fact, generic | stopwords)
             ):
                 cluster.append(fact)
                 sources.add(source)
@@ -708,10 +805,14 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         cfg["generic_tokens"] | cfg["cluster_stopwords"], cfg["counter_markers"],
     )
     tension = _has_tension(md, cfg["tension_markers"]) or bool(counter_evidence)
+    direct_receipt_shape_coherent = _receipt_ids_share_shape(
+        direct_match_ids, facts, cfg["generic_tokens"] | cfg["cluster_stopwords"],
+    )
     strong_direct_bundle = (
         len(direct_papers) >= min_direct_source_papers
         and len(direct_papers) >= min_source_papers
         and source_coherent
+        and direct_receipt_shape_coherent
     )
     expansion_candidates = _expansion_candidates(bound_ids, facts, lanes)
     blockers: list[str] = []
@@ -735,6 +836,8 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         blockers.append("direct_source_floor_below_min")
     if bound_ids and len(direct_match_ids) < len(direct_ids):
         blockers.append("claim_alignment_partial")
+    if direct_match_ids and not direct_receipt_shape_coherent:
+        blockers.append("receipt_shape_mismatch")
 
     ready = (
         not blockers
@@ -823,6 +926,7 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
             "a_core_receipts": a_core,
             "source_concentrated": source_concentrated,
             "claim_coherent_source_diversity": source_coherent,
+            "direct_receipt_shape_coherent": direct_receipt_shape_coherent,
             "counter_consensus_tension": tension,
             "cross_domain_forced": forced,
             "feed_scope_mismatch": off_scope,
