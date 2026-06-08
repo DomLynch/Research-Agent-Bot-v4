@@ -1,0 +1,129 @@
+{
+  "topic": "swe_bench_achieving",
+  "domain": {
+    "slug": "ai_research",
+    "display_name": "AI research / AI agents / research automation",
+    "seed_topics_path": "ai_research_discovery_seeds.toml",
+    "source_policy_path": "ai_research_sources.toml",
+    "claim_schema_path": "ai_research_claim_schema.toml",
+    "dry_run_only": false
+  },
+  "snapshot_utc": "2026-06-08T19-38-07Z",
+  "queries": [
+    {
+      "kind": "ai_results_index",
+      "query": "swe_bench_achieving",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "tier1",
+      "query": "swe_bench_achieving",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "strict",
+      "query": "swe_bench_achieving",
+      "facts": 472,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "strict",
+      "query": "swe bench achieving",
+      "facts": 472,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "swe_bench_achieving",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "swe bench achieving",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "software engineering",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "retrieval augmented",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "multi agent",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "language models",
+      "facts": 0,
+      "status": "timeout",
+      "errors": [
+        "ReadTimeout"
+      ]
+    },
+    {
+      "kind": "normal",
+      "query": "large language models",
+      "facts": 0,
+      "status": "timeout",
+      "errors": [
+        "ReadTimeout"
+      ]
+    },
+    {
+      "kind": "normal",
+      "query": "large language",
+      "facts": 0,
+      "status": "timeout",
+      "errors": [
+        "ReadTimeout"
+      ]
+    },
+    {
+      "kind": "normal",
+      "query": "language model",
+      "facts": 0,
+      "status": "timeout",
+      "errors": [
+        "ReadTimeout"
+      ]
+    },
+    {
+      "kind": "normal",
+      "query": "large language model",
+      "facts": 0,
+      "status": "timeout",
+      "errors": [
+        "ReadTimeout"
+      ]
+    },
+    {
+      "kind": "ai_axis_cluster",
+      "query": "swe_bench_achieving",
+      "facts": 5,
+      "status": "ok",
+      "errors": []
+    }
+  ]
+}

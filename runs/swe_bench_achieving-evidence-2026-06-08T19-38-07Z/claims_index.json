@@ -1,0 +1,42 @@
+{
+  "topic": "swe_bench_achieving",
+  "snapshot_utc": "2026-06-08T19-38-07Z",
+  "claim_count": 5,
+  "claims": [
+    {
+      "claim_text": "thropic, 2025b) demonstrates superior function-level localization performance, achieving 93.7% Acc@5 on SWE-bench Verified (OpenAI, 2024) and exceeding the best baseline by over 10% in localization accuracy on SWE-bench Live Lite (Zhang et al.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "With a substantially large collection of agent trajectories (80,036 compared to thousands in our experiments) and model size (72B compared to 32B), Their best system achieves 40% accuracy on SWE-Bench Verified.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "On SWE-Bench Verified, our SWE-Protégé prototype lightly post-trains Qwen2.5-Coder-7B-Instruct to achieve 42.4% accuracy, (+25.4% over the prior state of the art, SWE-agent-LM-7B by SWE-smith).",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "these benchmarks can compress performance differences: for instance, Haiku 4.5 achieves 73.3% on SWE-bench Verified, very close to GPT-5’s 74.9%, misaligning with accuracy on broader and more diverse task distributions like Terminal-Bench.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "• We significantly advance open-source model performance on SWE-bench Verified, achieving 61.4% accuracy with Qwen2.5-Coder-32B, improving to 70.8% with test-time scaling and 76.2% under.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    }
+  ]
+}

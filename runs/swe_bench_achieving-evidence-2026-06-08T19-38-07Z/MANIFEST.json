@@ -1,0 +1,48 @@
+{
+  "domain": {
+    "slug": "ai_research",
+    "display_name": "AI research / AI agents / research automation",
+    "seed_topics_path": "ai_research_discovery_seeds.toml",
+    "source_policy_path": "ai_research_sources.toml",
+    "claim_schema_path": "ai_research_claim_schema.toml",
+    "dry_run_only": false
+  },
+  "topic": "swe_bench_achieving",
+  "snapshot_utc": "2026-06-08T19-38-07Z",
+  "top_n": 5,
+  "facts_inspected": 5,
+  "aggregated_claims": 5,
+  "data_tier": "tier2",
+  "source": "researka_db POST /api/v1/tier2/facts/search (Tier-2 fallback; topic filter on response)",
+  "frontier_model": "skipped",
+  "mode": "alpha",
+  "selected_theme": null,
+  "facet_counts": {},
+  "numeric_artifacts_filtered": 0,
+  "fact_fetch_plan": [
+    "AI result bundles via POST /api/v1/ai/results/search",
+    "strict audited numeric facts via POST /api/v1/tier2/facts/search",
+    "validated topic facts via GET /api/v1/topics/{topic}/facts",
+    "normal numeric fact graph via POST /api/v1/tier2/facts/search",
+    "normal all-fact graph when source diversity is still thin"
+  ],
+  "paper_context_source": "POST /api/v1/papers/topic + POST /api/v1/search",
+  "pico_enrichment": {
+    "model": "skipped_by_flag"
+  },
+  "ranking": "alpha: deterministic validation*magnitude*precision*recency + data-driven contrast/subgroup boosts + theme coherence",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "077aa636779a037e40e91420a149074f1d83ef58abaa01279ccc4d4ec9d89b1a"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "83bbad2be54397ae89f79cc08f22f643e584e7be516033a4f0400f064a68520c"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "c8b0d999eb70f328340156b4741c5f6536796803c9b305363680778ab85242b8"
+    }
+  }
+}
