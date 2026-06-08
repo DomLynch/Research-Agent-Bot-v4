@@ -139,7 +139,7 @@ def _memo_with_source_receipts(root: Path, verdict: dict[str, Any], count: int) 
 
 
 def _memo_with_receipt_shapes(
-    root: Path, verdict: dict[str, Any], shapes: list[dict[str, str]],
+    root: Path, verdict: dict[str, Any], shapes: list[dict[str, Any]],
 ) -> None:
     run = root / str(verdict["run_dir"])
     run.mkdir(parents=True)
@@ -1909,6 +1909,41 @@ def test_receipt_shape_mismatch_reranks_before_submit(tmp_path: Path) -> None:
     assert ledger["considered"][1]["status"] == "eligible"
     assert len(submissions) == 1
     assert submissions[0]["topic"] == "matched_direct_receipts"
+
+
+def test_result_shape_cluster_is_selector_eligible_with_reported_variation(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("preclustered_ai_results")
+    shared_shape = {
+        "benchmark": "LoCoMo",
+        "task": "long context memory",
+        "dataset": "LoCoMo",
+        "metric": "accuracy",
+        "model_system": "LoCoMo memory systems",
+        "baseline_comparator": "LoCoMo benchmark baselines",
+        "evaluation_protocol": "LoCoMo benchmark evaluation",
+    }
+    _memo_with_receipt_shapes(root, verdict, [
+        {
+            "canonical_phrase": "Model reports LoCoMo accuracy.",
+            "population": "ai agents LoCoMo",
+            "intervention": f"memory system {i}",
+            "comparator": f"baseline {i}",
+            "endpoint": "accuracy",
+            "metric": f"accuracy variant {i}",
+            "model_system": f"Model {i}",
+            "baseline_comparator": f"baseline {i}",
+            "evaluation_protocol": f"paper protocol {i}",
+            "result_shape": shared_shape,
+        }
+        for i in range(5)
+    ])
+
+    assert daily._direct_receipts_share_shape(
+        verdict, root, min_direct_source_count=5,
+    ) is True
 
 
 def test_repairable_retry_does_not_resubmit_unchanged_memo(tmp_path: Path) -> None:

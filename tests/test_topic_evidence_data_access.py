@@ -188,6 +188,17 @@ def test_ai_research_fetch_uses_result_bundles_before_tier2_search(
     assert facts[0]["intervention"] == "Model 0"
     assert facts[0]["comparator"] == "baseline 0"
     assert facts[0]["endpoint"] == "accuracy"
+    assert facts[0]["reported_model_system"] == "Model 0"
+    assert facts[0]["reported_baseline_comparator"] == "baseline 0"
+    assert facts[0]["result_shape"] == {
+        "benchmark": "GSM8K",
+        "task": "math reasoning",
+        "dataset": "GSM8K",
+        "metric": "accuracy",
+        "evaluation_protocol": "matched-budget evaluation",
+        "model_system": "GSM8K systems",
+        "baseline_comparator": "GSM8K benchmark baselines",
+    }
     assert trace == [{
         "kind": "ai_results_index",
         "query": "llm_evaluation",

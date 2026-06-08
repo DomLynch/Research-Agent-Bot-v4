@@ -1700,7 +1700,14 @@ def _shape_text(value: Any) -> str:
 
 
 def _shape_tokens(fact: Json, fields: tuple[str, ...]) -> set[str]:
-    text = " ".join(_shape_text(fact.get(field)) for field in fields)
+    shape_raw = fact.get("result_shape")
+    shape = shape_raw if isinstance(shape_raw, dict) else {}
+    source = (
+        shape
+        if any(shape.get(field) not in (None, "", {}, []) for field in fields)
+        else fact
+    )
+    text = " ".join(_shape_text(source.get(field)) for field in fields)
     min_len = 3 if fields in _STRICT_RECEIPT_SHAPE_DIMENSIONS else 4
     return {
         token for token in _CLAIM_WORD.findall(text.lower())

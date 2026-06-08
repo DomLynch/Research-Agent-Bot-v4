@@ -321,6 +321,39 @@ def test_ready_to_publish_requires_direct_receipt_shape_coherence(
     assert verdict["axes"]["direct_receipt_shape_coherent"] is False
 
 
+def test_ready_to_publish_accepts_preclustered_result_shape(
+    tmp_path: Path,
+) -> None:
+    run = _run(tmp_path)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    for i, fact in enumerate(facts):
+        fact.update({
+            "population": "ai agents LoCoMo",
+            "intervention": f"memory system {i}",
+            "comparator": f"baseline {i}",
+            "metric": f"accuracy variant {i}",
+            "model_system": f"Model {i}",
+            "baseline_comparator": f"baseline {i}",
+            "evaluation_protocol": f"paper protocol {i}",
+            "result_shape": {
+                "benchmark": "LoCoMo",
+                "task": "long context memory",
+                "dataset": "LoCoMo",
+                "metric": "accuracy",
+                "model_system": "LoCoMo memory systems",
+                "baseline_comparator": "LoCoMo benchmark baselines",
+                "evaluation_protocol": "LoCoMo benchmark evaluation",
+            },
+        })
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "ready_to_publish"
+    assert verdict["blockers"] == []
+    assert verdict["axes"]["direct_receipt_shape_coherent"] is True
+
+
 def test_structural_ready_can_publish_frontier_label(tmp_path: Path) -> None:
     run = _run(tmp_path, label="frontier_hypothesis")
 

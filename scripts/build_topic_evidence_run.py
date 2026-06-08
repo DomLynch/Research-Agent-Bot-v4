@@ -238,9 +238,32 @@ def _normalize_ai_result_receipt(
     metric = receipt.get("metric") or shape.get("metric")
     model = receipt.get("model_system")
     comparator = receipt.get("baseline_comparator")
-    protocol = receipt.get("evaluation_protocol") or shape.get("evaluation_protocol")
+    protocol = (
+        receipt.get("evaluation_protocol")
+        or shape.get("evaluation_protocol")
+        or (f"{task} benchmark evaluation" if task else None)
+    )
     topic_key = receipt.get("topic") or bundle.get("topic") or topic
     result_key = bundle.get("result_key")
+    common_shape = {
+        "benchmark": benchmark,
+        "task": task,
+        "dataset": dataset or benchmark,
+        "metric": metric,
+        "evaluation_protocol": protocol,
+        "model_system": (
+            shape.get("model_system")
+            or (f"{benchmark} systems" if benchmark else f"{topic_key} systems")
+        ),
+        "baseline_comparator": (
+            shape.get("baseline_comparator")
+            or (f"{benchmark} benchmark baselines" if benchmark else comparator)
+        ),
+    }
+    common_shape = {
+        key: value for key, value in common_shape.items()
+        if value not in (None, "", {}, [])
+    }
     fact_id = receipt.get("id")
     validation = receipt.get("validation")
     validation_status = (
@@ -290,9 +313,11 @@ def _normalize_ai_result_receipt(
         "superseded_by": None,
         "_tier": "ai_results_index",
         "result_key": result_key,
-        "result_shape": shape,
+        "result_shape": common_shape,
         "result_papers": bundle.get("papers"),
         "result_complete_papers": bundle.get("complete_papers"),
+        "reported_model_system": model,
+        "reported_baseline_comparator": comparator,
         "metric": metric,
         "benchmark": benchmark,
         "task": task,
