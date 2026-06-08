@@ -222,6 +222,47 @@ def _post_ai_result_bundles(
     return FetchResult(hits, "ok")
 
 
+def _fetch_ai_result_bundle_facts(
+    topic: str,
+    base: str,
+    hdr: dict[str, str],
+    *,
+    min_sources: int,
+    trace: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    queries = expand_topic_queries(topic, max_queries=8) or (topic,)
+    try:
+        with httpx.Client(timeout=_FACT_FETCH_TIMEOUT_SECONDS) as c:
+            for query in queries:
+                bundle_result = _post_ai_result_bundles(
+                    c, base, hdr, query, min_sources=min_sources,
+                )
+                bundle_facts = _facts_from_ai_result_bundles(
+                    bundle_result.hits, topic, min_sources=min_sources,
+                )
+                if trace is not None:
+                    trace.append({
+                        "kind": "ai_results_index",
+                        "query": query,
+                        "facts": len(bundle_facts),
+                        "status": bundle_result.status,
+                        "errors": list(bundle_result.errors),
+                    })
+                if bundle_facts:
+                    return bundle_facts
+    except (httpx.HTTPError, ValueError) as exc:
+        result = _fetch_error_result(exc)
+        if trace is not None:
+            trace.append({
+                "kind": "ai_results_index",
+                "query": topic,
+                "facts": 0,
+                "status": result.status,
+                "errors": list(result.errors),
+            })
+    return []
+
+
 def _normalize_ai_result_receipt(
     receipt: dict[str, Any],
     topic: str,
@@ -725,24 +766,9 @@ def _fetch_facts(
     deadline = time.monotonic() + _FACT_FETCH_BUDGET_SECONDS
     min_sources = _min_fact_source_papers()
     if domain == _AI_RESULTS_DOMAIN:
-        try:
-            with httpx.Client(timeout=_FACT_FETCH_TIMEOUT_SECONDS) as c:
-                bundle_result = _post_ai_result_bundles(
-                    c, base, hdr, topic, min_sources=min_sources,
-                )
-        except (httpx.HTTPError, ValueError) as exc:
-            bundle_result = _fetch_error_result(exc)
-        bundle_facts = _facts_from_ai_result_bundles(
-            bundle_result.hits, topic, min_sources=min_sources,
+        bundle_facts = _fetch_ai_result_bundle_facts(
+            topic, base, hdr, min_sources=min_sources, trace=trace,
         )
-        if trace is not None:
-            trace.append({
-                "kind": "ai_results_index",
-                "query": topic,
-                "facts": len(bundle_facts),
-                "status": bundle_result.status,
-                "errors": list(bundle_result.errors),
-            })
         if bundle_facts:
             return bundle_facts
     queries = _diverse_queries(topic)

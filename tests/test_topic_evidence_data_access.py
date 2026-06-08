@@ -208,6 +208,41 @@ def test_ai_research_fetch_uses_result_bundles_before_tier2_search(
     }]
 
 
+def test_ai_research_fetch_tries_result_bundle_alias_before_tier2_search(
+    monkeypatch: Any,
+) -> None:
+    calls: list[tuple[str, str]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        query = str(body.get("query") or "")
+        calls.append((request.url.path, query))
+        if request.url.path == "/api/v1/ai/results/search":
+            return httpx.Response(
+                200, json=[_ai_result_bundle()] if query == "rag" else [],
+            )
+        raise AssertionError("tier2 fallback should not run when alias bundle is ready")
+
+    _mock_client(monkeypatch, handler)
+    trace: list[dict[str, Any]] = []
+
+    facts = evidence_run._fetch_facts(
+        "retrieval_augmented_generation", trace=trace, domain="ai_research",
+    )
+
+    assert calls == [
+        ("/api/v1/ai/results/search", "retrieval_augmented_generation"),
+        ("/api/v1/ai/results/search", "retrieval augmented generation"),
+        ("/api/v1/ai/results/search", "rag"),
+    ]
+    assert len(facts) == 5
+    assert {row["query"]: row["facts"] for row in trace} == {
+        "retrieval_augmented_generation": 0,
+        "retrieval augmented generation": 0,
+        "rag": 5,
+    }
+
+
 def test_ai_research_fetch_falls_back_when_result_bundle_missing(
     monkeypatch: Any,
 ) -> None:

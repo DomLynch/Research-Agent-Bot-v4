@@ -354,6 +354,46 @@ def test_ready_to_publish_accepts_preclustered_result_shape(
     assert verdict["axes"]["direct_receipt_shape_coherent"] is True
 
 
+def test_ready_to_publish_accepts_result_key_cluster_when_text_fit_is_partial(
+    tmp_path: Path,
+) -> None:
+    run = _run(tmp_path)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    for i, fact in enumerate(facts):
+        fact.update({
+            "canonical_phrase": (
+                "Evaluated without fine tuning, the system reports a "
+                "benchmark accuracy result against a baseline."
+            ),
+            "population": "rag MedQA",
+            "intervention": f"medical qa system {i}",
+            "comparator": f"baseline {i}",
+            "endpoint": "accuracy",
+            "metric": "accuracy",
+            "model_system": f"Model {i}",
+            "baseline_comparator": f"baseline {i}",
+            "evaluation_protocol": f"paper protocol {i}",
+            "result_key": "rag::medqa::accuracy",
+            "result_shape": {
+                "benchmark": "MedQA",
+                "task": "MedQA",
+                "dataset": "MedQA",
+                "metric": "accuracy",
+                "model_system": "MedQA systems",
+                "baseline_comparator": "MedQA benchmark baselines",
+                "evaluation_protocol": "MedQA benchmark evaluation",
+            },
+        })
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "ready_to_publish"
+    assert verdict["blockers"] == []
+    assert verdict["axes"]["direct_match_receipts"] == 5
+    assert verdict["axes"]["direct_source_papers"] == 5
+
+
 def test_structural_ready_can_publish_frontier_label(tmp_path: Path) -> None:
     run = _run(tmp_path, label="frontier_hypothesis")
 

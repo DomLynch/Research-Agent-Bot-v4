@@ -406,6 +406,34 @@ def _source_key(fact: dict[str, Any]) -> str:
                or paper.get("paper_id") or paper.get("id") or paper.get("title") or "")
 
 
+def _result_key_direct_ids(
+    ids: list[str],
+    facts: dict[str, dict[str, Any]],
+    generic: frozenset[str],
+    min_sources: int,
+) -> list[str]:
+    clusters: dict[str, list[str]] = {}
+    for fid in ids:
+        fact = facts.get(fid) or {}
+        key = str(fact.get("result_key") or "").strip()
+        if key:
+            clusters.setdefault(key, []).append(fid)
+    for _key, cluster_ids in sorted(clusters.items(), key=lambda item: -len(item[1])):
+        out: list[str] = []
+        seen_sources: set[str] = set()
+        for fid in cluster_ids:
+            source = _source_key(facts.get(fid) or {})
+            if source and source not in seen_sources:
+                seen_sources.add(source)
+                out.append(fid)
+        if (
+            len(seen_sources) >= min_sources
+            and _receipt_ids_share_shape(out, facts, generic)
+        ):
+            return out
+    return []
+
+
 def _paper_summary(fact: dict[str, Any]) -> dict[str, Any]:
     paper = fact.get("source_paper") or {}
     return {
@@ -777,11 +805,17 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         fid for fid in direct_ids
         if claim_fit.get(fid, {}).get("claim_fit") == "direct_match"
     ]
+    min_source_papers = _publication_int("min_source_papers", 5)
+    min_direct_source_papers = _publication_int("min_direct_source_papers", 5)
+    result_direct_ids = _result_key_direct_ids(
+        direct_ids, facts, cfg["generic_tokens"] | cfg["cluster_stopwords"],
+        min_direct_source_papers,
+    )
+    if len(result_direct_ids) > len(direct_match_ids):
+        direct_match_ids = result_direct_ids
     a_core = len(direct_match_ids)
     papers = _source_papers(bound_ids, facts)
     direct_papers = _source_papers(direct_match_ids, facts)
-    min_source_papers = _publication_int("min_source_papers", 5)
-    min_direct_source_papers = _publication_int("min_direct_source_papers", 5)
     all_bound_ids = _bound_ids_in_fact_order(facts, lanes)
     available_source_count = len({
         _source_key(facts[fid]) for fid in all_bound_ids if fid in facts
