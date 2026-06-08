@@ -532,15 +532,9 @@ def _source_diverse_fact_clusters(
     rows: list[tuple[dict[str, Any], str, set[str], set[str]]] = []
     for fact in facts:
         source = _source_key(fact)
-        tokens = _tokens(" ".join([
-            str(fact.get("population") or ""),
-            str(fact.get("intervention") or ""),
-            str(fact.get("canonical_phrase") or ""),
-        ]), topic, generic | stopwords)
-        claim_tokens = _tokens(" ".join([
-            str(fact.get("population") or ""),
-            str(fact.get("canonical_phrase") or ""),
-        ]), topic, generic | stopwords)
+        axis_text = _fact_axis_text(fact)
+        tokens = _tokens(axis_text, topic, generic | stopwords)
+        claim_tokens = tokens
         if source and tokens:
             rows.append((fact, source, tokens, claim_tokens))
     clusters: list[list[dict[str, Any]]] = []
