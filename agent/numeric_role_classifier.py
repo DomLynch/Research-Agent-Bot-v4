@@ -91,6 +91,10 @@ _EFFECT_ESTIMATE_RE = re.compile(
     r"\b(?:weighted|standardized)\s+mean\s+difference\b|"
     r"\bmean\s+difference\b"
 )
+_MULTIPLICATIVE_AFTER_RE = re.compile(
+    r"^\s*(?:\$?\\times\$?|\u00d7|x\b|times?\b|fold\b)",
+    re.IGNORECASE,
+)
 
 # Roles that actually constitute a research finding
 _REAL_FINDING_ROLES = frozenset(["effect_size", "fold_change", "correlation"])
@@ -119,6 +123,15 @@ def _has_effect_estimate_marker(value: float, ctx: str) -> bool:
     return False
 
 
+def _has_multiplicative_marker(value: float, ctx: str) -> bool:
+    for val_str in _value_matches(value):
+        for m in re.finditer(re.escape(val_str), ctx):
+            after = ctx[m.end():m.end() + 16]
+            if _MULTIPLICATIVE_AFTER_RE.match(after):
+                return True
+    return False
+
+
 def classify_numeric_role(
     value: float | None, units: str, context: str,
 ) -> str:
@@ -130,6 +143,8 @@ def classify_numeric_role(
         return "p_value"
     if value is not None and _has_effect_estimate_marker(value, ctx):
         return "effect_size"
+    if value is not None and _has_multiplicative_marker(value, ctx):
+        return "fold_change"
     if u in _TIME_UNITS:
         return "duration"
     if u in _DOSE_UNITS:
