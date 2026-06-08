@@ -330,10 +330,12 @@ def _parse(raw: str) -> dict[str, Any]:
     truncation, returns {} on irrecoverable failure."""
     text = raw.strip()
     if text.startswith("```"):
-        text = text.split("```", 2)[1] if "```" in text[3:] else text
-        if text.startswith("json"):
-            text = text[4:]
-        text = text.strip().rstrip("`").strip()
+        text = text[3:].lstrip()
+        if text[:4].lower() == "json" and (len(text) == 4 or text[4].isspace()):
+            text = text[4:].lstrip()
+        if "```" in text:
+            text = text.split("```", 1)[0]
+        text = text.strip()
     repaired = _try_repair_json(text)
     try:
         loaded = json.loads(repaired)

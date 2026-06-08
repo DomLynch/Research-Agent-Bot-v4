@@ -99,6 +99,11 @@ def test_parse_strips_markdown_fence() -> None:
     assert d == {"lens": "x"}
 
 
+def test_parse_strips_unclosed_markdown_fence_before_repair() -> None:
+    d = _parse('```json\n{"lens": "x", "tensions": ["kept"], "next_extractions": ["cut')
+    assert d == {"lens": "x", "tensions": ["kept"]}
+
+
 def test_parse_returns_empty_on_unrecoverable_json() -> None:
     assert _parse("not json at all") == {}
     assert _parse("") == {}
