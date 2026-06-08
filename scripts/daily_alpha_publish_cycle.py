@@ -3570,11 +3570,13 @@ def main() -> int:
         submit=args.submit,
         retraction_mode=args.retraction_check,
     )
+    candidate = ledger.get("candidate")
+    candidate_topic = candidate.get("topic") if isinstance(candidate, dict) else candidate
     print(
         "[daily-alpha] "
         f"status={ledger['status']} submitted={ledger.get('submitted', 0)} "
         f"published={ledger['published']} "
-        f"topic={ledger.get('submitted_topic') or ledger.get('published_topic') or ledger.get('candidate', {}).get('topic') or '-'}"
+        f"topic={ledger.get('submitted_topic') or ledger.get('published_topic') or candidate_topic or '-'}"
     )
     return 2 if ledger["status"] == "candidate_refresh_failed" else 0
 

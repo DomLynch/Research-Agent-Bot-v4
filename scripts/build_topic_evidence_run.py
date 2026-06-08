@@ -178,8 +178,10 @@ def _normalize_tier2(item: dict[str, Any], topic: str) -> dict[str, Any]:
         "metric",
         "benchmark",
         "task",
+        "dataset",
         "model_system",
         "baseline_comparator",
+        "evaluation_protocol",
         "source_identifiers",
         "artifact_url",
         "limitation",
@@ -341,6 +343,102 @@ def _source_key(fact: dict[str, Any]) -> str:
 
 def _source_count(facts: list[dict[str, Any]]) -> int:
     return len({k for f in facts if (k := _source_key(f))})
+
+
+def _axis_norm(value: Any) -> str:
+    return re.sub(r"[\W_]+", " ", str(value or "").lower()).strip()
+
+
+def _axis_value(fact: dict[str, Any], *keys: str) -> str:
+    for key in keys:
+        value = _axis_norm(fact.get(key))
+        if value:
+            return value
+    return ""
+
+
+def _axis_title(value: str) -> str:
+    return " ".join(
+        part.upper() if len(part) <= 3 else part[:1].upper() + part[1:]
+        for part in value.split()
+    )
+
+
+def _ai_topic_axis_relevant(topic: str, axis: tuple[str, str, str]) -> bool:
+    topic_tokens = set(_query_tokens(" ".join(expand_topic_queries(topic, max_queries=8))))
+    axis_tokens = set(_query_tokens(" ".join(axis)))
+    return bool(topic_tokens & axis_tokens)
+
+
+def _ai_axis_coherent_facts(
+    facts: list[dict[str, Any]], topic: str, *, min_sources: int,
+) -> list[dict[str, Any]]:
+    grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
+    for fact in facts:
+        benchmark = _axis_value(fact, "benchmark", "dataset")
+        task = _axis_value(fact, "task", "dataset", "benchmark")
+        metric = _axis_value(fact, "metric", "endpoint", "claim_type")
+        if not benchmark or not task or not metric:
+            continue
+        key = (benchmark, task, metric)
+        if _ai_topic_axis_relevant(topic, key):
+            grouped.setdefault(key, []).append(fact)
+
+    candidates: list[tuple[int, int, tuple[str, str, str], list[dict[str, Any]]]] = []
+    for key, rows in grouped.items():
+        by_source: dict[str, dict[str, Any]] = {}
+        for fact in rows:
+            source = _source_key(fact)
+            if source and source not in by_source:
+                by_source[source] = fact
+        if len(by_source) >= min_sources:
+            candidates.append((len(by_source), len(rows), key, list(by_source.values())))
+    if not candidates:
+        return []
+
+    _sources, _rows, key, selected = sorted(candidates, reverse=True)[0]
+    benchmark, task, metric = key
+    dataset = _axis_value(selected[0], "dataset") or benchmark
+    protocol = (
+        _axis_value(selected[0], "evaluation_protocol")
+        or f"{task} benchmark evaluation"
+    )
+    model_family = f"AI systems evaluated on {_axis_title(benchmark)}"
+    comparator_family = f"reported baselines for {_axis_title(benchmark)}"
+
+    out: list[dict[str, Any]] = []
+    for fact in selected[:min_sources]:
+        item = dict(fact)
+        item.setdefault("reported_model_system", fact.get("model_system"))
+        item.setdefault("reported_baseline_comparator", fact.get("baseline_comparator"))
+        item.update({
+            "benchmark": _axis_title(benchmark),
+            "task": _axis_title(task),
+            "dataset": _axis_title(dataset),
+            "metric": _axis_title(metric),
+            "evaluation_protocol": _axis_title(protocol),
+            "model_system": model_family,
+            "baseline_comparator": comparator_family,
+            "population": " ".join([
+                topic,
+                str(fact.get("source_topic") or fact.get("topic") or ""),
+                _axis_title(benchmark),
+                _axis_title(task),
+                _axis_title(dataset),
+            ]).strip(),
+            "intervention": model_family,
+            "comparator": comparator_family,
+            "endpoint": _axis_title(metric),
+            "result_shape": {
+                "benchmark": _axis_title(benchmark),
+                "task": _axis_title(task),
+                "dataset": _axis_title(dataset),
+                "metric": _axis_title(metric),
+                "evaluation_protocol": _axis_title(protocol),
+            },
+        })
+        out.append(item)
+    return out
 
 
 def _a_core_source_count(facts: list[dict[str, Any]], topic: str) -> int:
@@ -640,7 +738,22 @@ def _fetch_facts(
         [("normal", query) for query in [*queries, *extra_queries]],
         base, hdr, topic, domain=domain, trace=trace, deadline=deadline,
     ))
-    return _dedup_facts(facts)
+    deduped = _dedup_facts(facts)
+    if domain == _AI_RESULTS_DOMAIN:
+        coherent = _ai_axis_coherent_facts(
+            deduped, topic, min_sources=min_sources,
+        )
+        if coherent:
+            if trace is not None:
+                trace.append({
+                    "kind": "ai_axis_cluster",
+                    "query": topic,
+                    "facts": len(coherent),
+                    "status": "ok",
+                    "errors": [],
+                })
+            return coherent
+    return deduped
 
 
 def _rankable_facts_for_top(
@@ -1151,6 +1264,14 @@ def main() -> int:
     }, indent=2, ensure_ascii=False)
     claims_path.write_text(claims_text, encoding="utf-8")
 
+    lanes_path = out_dir / "fact_lanes.json"
+    lanes_text = json.dumps({
+        "topic": args.topic,
+        "snapshot_utc": ts,
+        "verdicts": [v.as_dict() for v in lane_verdicts],
+    }, indent=2, ensure_ascii=False)
+    lanes_path.write_text(lanes_text, encoding="utf-8")
+
     tier = str((facts[0].get("_tier") if facts else "") or "none")
     mimo_editorial = (_call_mimo_editorial(args.topic, top)
                       if args.with_editorial else {})
@@ -1165,6 +1286,7 @@ def main() -> int:
         "top_md": {"name": md_path.name, "sha256": _sha256(md_text)},
         "all_facts": {"name": raw_path.name, "sha256": _sha256(raw_text)},
         "claims_index": {"name": claims_path.name, "sha256": _sha256(claims_text)},
+        "fact_lanes": {"name": lanes_path.name, "sha256": _sha256(lanes_text)},
     }
 
     review_model = "skipped"

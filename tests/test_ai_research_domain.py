@@ -148,8 +148,11 @@ def test_ai_research_evidence_run_records_domain(
     run_dir = next((tmp_path / "runs").glob("ai_agents-evidence-*"))
     manifest = json.loads((run_dir / "MANIFEST.json").read_text())
     trace = json.loads((run_dir / "search_trace.json").read_text())
+    lanes = json.loads((run_dir / "fact_lanes.json").read_text())
     assert manifest["domain"]["slug"] == "ai_research"
     assert trace["domain"]["slug"] == "ai_research"
+    assert manifest["files"]["fact_lanes"]["name"] == "fact_lanes.json"
+    assert lanes["verdicts"] == []
     assert seen_domains == ["ai_research"]
 
 
@@ -198,10 +201,12 @@ def test_ai_research_results_index_run_records_source_path(
     assert evidence_run.main() == 0
     run_dir = next((tmp_path / "runs").glob("llm_evaluation-evidence-*"))
     manifest = json.loads((run_dir / "MANIFEST.json").read_text())
+    lanes = json.loads((run_dir / "fact_lanes.json").read_text())
 
     assert manifest["data_tier"] == "ai_results_index"
     assert "/api/v1/ai/results/search" in manifest["source"]
     assert "/api/v1/ai/results/search" in manifest["fact_fetch_plan"][0]
+    assert lanes["verdicts"][0]["lane"] == "A_core"
 
 
 def _ai_verdict() -> dict[str, Any]:

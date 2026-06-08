@@ -252,8 +252,10 @@ def test_normalize_tier2_preserves_ai_structured_fields() -> None:
         "fact": {
             "metric": "resolve rate",
             "task": "software engineering issue resolution",
+            "dataset": "SWE-bench Verified",
             "model_system": "AgentX",
             "baseline_comparator": "baseline agent",
+            "evaluation_protocol": "zero shot patch generation",
             "source_identifiers": {"arxiv_id": "2601.1"},
             "artifact_url": "https://github.com/example/agentx",
             "limitation": "single benchmark",
@@ -266,12 +268,88 @@ def test_normalize_tier2_preserves_ai_structured_fields() -> None:
     assert fact["benchmark"] == "SWE-bench Verified"
     assert fact["metric"] == "resolve rate"
     assert fact["task"] == "software engineering issue resolution"
+    assert fact["dataset"] == "SWE-bench Verified"
     assert fact["model_system"] == "AgentX"
     assert fact["baseline_comparator"] == "baseline agent"
+    assert fact["evaluation_protocol"] == "zero shot patch generation"
     assert fact["source_identifiers"] == {"arxiv_id": "2601.1"}
     assert fact["artifact_url"] == "https://github.com/example/agentx"
     assert fact["limitation"] == "single benchmark"
     assert fact["source_topic"] == "swe_bench"
+
+
+def test_ai_research_tier2_fallback_extracts_coherent_axis_shelf(
+    tmp_path: Path,
+) -> None:
+    facts: list[dict[str, Any]] = []
+    for i in range(5):
+        facts.append(evidence_run._normalize_tier2(
+            _fact(f"swe-{i}", f"10.ai/swe-{i}") | {
+                "topic": "swe_bench",
+                "benchmark": "SWE-bench Verified",
+                "fact": {
+                    "metric": "resolve rate",
+                    "task": "SWE-bench Verified",
+                    "dataset": "SWE-bench Verified",
+                    "model_system": f"agent system {i}",
+                    "baseline_comparator": f"baseline {i}",
+                    "canonical_phrase": (
+                        f"Agent system {i} reports SWE-bench resolve rate."
+                    ),
+                },
+            },
+            "swe_bench_success",
+        ))
+    facts.append(evidence_run._normalize_tier2(
+        _fact("mmlu", "10.ai/mmlu") | {
+            "topic": "mmlu",
+            "benchmark": "MMLU",
+            "fact": {"metric": "accuracy", "task": "MMLU"},
+        },
+        "swe_bench_success",
+    ))
+
+    coherent = evidence_run._ai_axis_coherent_facts(
+        facts, "swe_bench_success", min_sources=5,
+    )
+
+    assert len(coherent) == 5
+    assert evidence_run._source_count(coherent) == 5
+    assert {fact["benchmark"] for fact in coherent} == {"SWE Bench Verified"}
+    assert {fact["metric"] for fact in coherent} == {"Resolve Rate"}
+    assert {fact["model_system"] for fact in coherent} == {
+        "AI systems evaluated on SWE Bench Verified",
+    }
+    assert all(fact.get("reported_model_system") for fact in coherent)
+    lanes = {
+        verdict.fact_id: verdict.lane
+        for verdict in evidence_run.classify_lanes(coherent, "swe_bench_success")
+    }
+    assert set(lanes.values()) == {"A_core"}
+    assert len(evidence_run._rankable_facts_for_top(
+        coherent, "swe_bench_success",
+    )) == 5
+
+    root = tmp_path / "repo"
+    run = root / "runs" / "swe_bench_success-evidence-ts"
+    run.mkdir(parents=True)
+    ids = [str(fact["fact_id"]) for fact in coherent]
+    run.joinpath("alpha_memo.md").write_text(
+        "## Evidence receipts\n\n"
+        + "\n".join(f"- `fact_id={fid}` (`A_core`) - receipt" for fid in ids)
+        + "\n",
+        encoding="utf-8",
+    )
+    run.joinpath("all_facts.json").write_text(
+        json.dumps(coherent), encoding="utf-8",
+    )
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": fid, "lane": "A_core"} for fid in ids],
+    }), encoding="utf-8")
+
+    assert daily._direct_receipts_share_shape(
+        {"run_dir": "runs/swe_bench_success-evidence-ts"}, root / "runs", 5,
+    ) is True
 
 
 def test_fetch_facts_widens_when_strict_sources_are_not_direct_bindable(
