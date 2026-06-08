@@ -239,13 +239,16 @@ def _claim_fit(
 ) -> dict[str, Any]:
     fact_tokens = _tokens(_fact_axis_text(fact), topic, generic)
     score = _claim_fit_score(fact_tokens, claim_tokens)
+    direct_overlap = len(fact_tokens & claim_tokens)
     phrase = str(fact.get("canonical_phrase") or "").lower()
     fact_opposes = bool(markers) and any(marker in phrase for marker in markers)
     core_claim_text = claim_text.splitlines()[0].lower() if claim_text.splitlines() else ""
     claim_opposes = bool(markers) and any(marker in core_claim_text for marker in markers)
     if lane in _BINDABLE and fact_opposes and not claim_opposes and score >= _COUNTER_MIN_CLAIM_FIT:
         label = "opposing"
-    elif lane in _DIRECT and score >= _COUNTER_MIN_CLAIM_FIT:
+    elif lane in _DIRECT and (
+        score >= _COUNTER_MIN_CLAIM_FIT or direct_overlap >= 4
+    ):
         label = "direct_match"
     elif lane in _BINDABLE and (score > 0 or bool(_tokens(topic, "", frozenset()) & fact_tokens)):
         label = "boundary"
