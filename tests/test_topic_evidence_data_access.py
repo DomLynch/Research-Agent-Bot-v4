@@ -106,6 +106,35 @@ def test_fetch_facts_strict_first_then_normal_until_source_floor(
     assert evidence_run._a_core_source_count(facts, "topicA") == 6
 
 
+def test_normalize_tier2_preserves_ai_structured_fields() -> None:
+    item = _fact("ai-1", "10.ai/1") | {
+        "topic": "swe_bench",
+        "benchmark": "SWE-bench Verified",
+        "fact": {
+            "metric": "resolve rate",
+            "task": "software engineering issue resolution",
+            "model_system": "AgentX",
+            "baseline_comparator": "baseline agent",
+            "source_identifiers": {"arxiv_id": "2601.1"},
+            "artifact_url": "https://github.com/example/agentx",
+            "limitation": "single benchmark",
+            "source_excerpt": "AgentX achieved 42% resolve rate.",
+        },
+    }
+
+    fact = evidence_run._normalize_tier2(item, "swe_bench")
+
+    assert fact["benchmark"] == "SWE-bench Verified"
+    assert fact["metric"] == "resolve rate"
+    assert fact["task"] == "software engineering issue resolution"
+    assert fact["model_system"] == "AgentX"
+    assert fact["baseline_comparator"] == "baseline agent"
+    assert fact["source_identifiers"] == {"arxiv_id": "2601.1"}
+    assert fact["artifact_url"] == "https://github.com/example/agentx"
+    assert fact["limitation"] == "single benchmark"
+    assert fact["source_topic"] == "swe_bench"
+
+
 def test_fetch_facts_widens_when_strict_sources_are_not_direct_bindable(
     monkeypatch: Any,
 ) -> None:

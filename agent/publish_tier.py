@@ -201,7 +201,9 @@ def _fact_axis_text(fact: dict[str, Any]) -> str:
         str(fact.get(key) or "")
         for key in (
             "canonical_phrase", "population", "intervention", "comparator",
-            "endpoint", "outcome", "sub_topic", "claim_type",
+            "endpoint", "outcome", "sub_topic", "claim_type", "metric",
+            "benchmark", "task", "model_system", "baseline_comparator",
+            "source_topic",
         )
     )
 

@@ -69,6 +69,12 @@ def _topic_haystack(fact: dict[str, Any]) -> str:
         str(fact.get("intervention") or ""),
         str(fact.get("comparator") or ""),
         str(fact.get("sub_topic") or ""),
+        str(fact.get("metric") or ""),
+        str(fact.get("benchmark") or ""),
+        str(fact.get("task") or ""),
+        str(fact.get("model_system") or ""),
+        str(fact.get("baseline_comparator") or ""),
+        str(fact.get("source_topic") or ""),
     ]).lower()
 
 

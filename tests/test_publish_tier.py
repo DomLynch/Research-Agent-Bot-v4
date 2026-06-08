@@ -191,6 +191,56 @@ def test_claim_coherent_source_diversity_is_publishable(tmp_path: Path) -> None:
     assert "cross_domain_forced" not in verdict["blockers"]
 
 
+def test_ai_benchmark_fields_count_toward_claim_fit(tmp_path: Path) -> None:
+    run = _run(
+        tmp_path,
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+        dois=("10.ai/a", "10.ai/b", "10.ai/c", "10.ai/d", "10.ai/e"),
+        titles=(
+            "AgentX SWE-bench Verified issue resolution study",
+            "AgentX SWE-bench Verified repair benchmark report",
+            "AgentX SWE-bench Verified software engineering evaluation",
+            "AgentX SWE-bench Verified resolve-rate replication",
+            "AgentX SWE-bench Verified coding benchmark audit",
+        ),
+        journals=("AI Eval", "AI Eval", "AI Eval", "AI Eval", "AI Eval"),
+    )
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo - swe_bench\n\n"
+        "**Headline:** AgentX resolve-rate gains on SWE-bench Verified\n"
+        "**Alpha score:** 90/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## One-sentence thesis\n\n"
+        "AgentX shows a direct resolve-rate signal on SWE-bench Verified.\n\n"
+        "## Why this is surprising\n\n"
+        "Real tension: the benchmark gain is direct but still bounded.\n\n"
+        "## Evidence receipts\n\n"
+        + "\n".join(
+            f"- `fact_id={idx}` (`A_core`) - receipt"
+            for idx in range(1, 6)
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    for fact in facts:
+        fact.update({
+            "canonical_phrase": "The system reported a benchmark result.",
+            "metric": "resolve rate",
+            "benchmark": "SWE-bench Verified",
+            "task": "software engineering issue resolution",
+            "model_system": "AgentX",
+            "baseline_comparator": "baseline agent",
+        })
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "ready_to_publish"
+    assert verdict["axes"]["direct_match_receipts"] == 5
+    assert verdict["axes"]["direct_source_papers"] == 5
+
+
 def test_bridge_chain_source_overlap_is_not_claim_coherent(tmp_path: Path) -> None:
     run = _run(
         tmp_path,
