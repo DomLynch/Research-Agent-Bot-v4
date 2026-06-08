@@ -4009,7 +4009,7 @@ def test_systemd_ai_research_timer_offsets_global_four_hour_submitter() -> None:
 
     assert "scripts/daily_alpha_publish_cycle.py" in service
     assert "--domain ai_research" in service
-    assert "--submit" in service
+    assert "--submit" not in service
     assert "--max-refresh-batches 5" in service
     assert "OnCalendar=*-*-* 05/8:30:00" in timer
     assert "Unit=researka-alpha-ai-research.service" in timer
