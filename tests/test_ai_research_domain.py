@@ -153,6 +153,57 @@ def test_ai_research_evidence_run_records_domain(
     assert seen_domains == ["ai_research"]
 
 
+def test_ai_research_results_index_run_records_source_path(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    class _S:
+        writer_configured = False
+
+    def _fetch_results_index(
+        _topic: str, *, trace: list[dict[str, Any]], domain: str = "longevity",
+    ) -> list[dict[str, Any]]:
+        assert domain == "ai_research"
+        trace.append({
+            "kind": "ai_results_index",
+            "query": "llm_evaluation",
+            "facts": 1,
+            "status": "ok",
+            "errors": [],
+        })
+        return [{
+            "fact_id": "100",
+            "_tier": "ai_results_index",
+            "canonical_phrase": "Model A achieves 70% accuracy on GSM8K.",
+            "numeric_value": 70,
+            "units": "%",
+            "population": "llm_evaluation GSM8K math reasoning",
+            "intervention": "Model A",
+            "comparator": "baseline",
+            "endpoint": "accuracy",
+            "source_paper": {"doi": "10.5555/ai", "title": "AI benchmark"},
+        }]
+
+    monkeypatch.setattr(evidence_run, "_RUNS", tmp_path / "runs")
+    monkeypatch.setattr(evidence_run, "_fetch_facts", _fetch_results_index)
+    monkeypatch.setattr(evidence_run, "load_settings", lambda: _S())
+    monkeypatch.setattr(sys, "argv", [
+        "build_topic_evidence_run.py",
+        "--domain", "ai_research",
+        "--topic", "llm_evaluation",
+        "--top", "1",
+        "--no-frontier",
+        "--no-pico-enrich",
+    ])
+
+    assert evidence_run.main() == 0
+    run_dir = next((tmp_path / "runs").glob("llm_evaluation-evidence-*"))
+    manifest = json.loads((run_dir / "MANIFEST.json").read_text())
+
+    assert manifest["data_tier"] == "ai_results_index"
+    assert "/api/v1/ai/results/search" in manifest["source"]
+    assert "/api/v1/ai/results/search" in manifest["fact_fetch_plan"][0]
+
+
 def _ai_verdict() -> dict[str, Any]:
     source_papers = [
         {"doi": f"10.2000/ai-{i}", "title": f"AI benchmark paper {i}"}

@@ -17,6 +17,7 @@ from agent.settings import load_settings
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 import build_topic_evidence_run as evidence_run
+import daily_alpha_publish_cycle as daily
 
 
 def _settings() -> Any:
@@ -57,6 +58,52 @@ def _tier1_fact(fid: str, doi: str) -> dict[str, Any]:
         "canonical_phrase": f"MK-7 signal {fid}",
         "population": "adults",
         "intervention": "MK-7",
+    }
+
+
+def _ai_result_bundle() -> dict[str, Any]:
+    receipts = []
+    for i in range(5):
+        receipts.append({
+            "id": 100 + i,
+            "paper_id": f"paper-{i}",
+            "paper": {
+                "doi": f"10.5555/ai-{i}",
+                "title": f"AI benchmark paper {i}",
+                "publication_year": 2026,
+                "journal_name": "ArXiv",
+            },
+            "claim_type": "effect_size",
+            "numeric_value": 70 + i,
+            "units": "%",
+            "canonical_phrase": (
+                f"Model {i} achieves {70 + i}% accuracy on GSM8K."
+            ),
+            "topic": "llm_evaluation",
+            "benchmark": "GSM8K",
+            "task": "math reasoning",
+            "dataset": "GSM8K",
+            "metric": "accuracy",
+            "model_system": f"Model {i}",
+            "baseline_comparator": f"baseline {i}",
+            "evaluation_protocol": "matched-budget evaluation",
+            "source_identifiers": {"doi": f"10.5555/ai-{i}"},
+            "validation": {"status": "exact"},
+        })
+    return {
+        "result_key": "llm_evaluation::gsm8k::accuracy",
+        "topic": "llm_evaluation",
+        "shape": {
+            "benchmark": "GSM8K",
+            "task": "math reasoning",
+            "dataset": "GSM8K",
+            "metric": "accuracy",
+            "evaluation_protocol": "matched-budget evaluation",
+        },
+        "papers": 5,
+        "complete_papers": 5,
+        "ready_for_queue": True,
+        "receipts": receipts,
     }
 
 
@@ -104,6 +151,98 @@ def test_fetch_facts_strict_first_then_normal_until_source_floor(
     assert any(b.get("strict_audit_required") is None for b in bodies)
     assert evidence_run._source_count(facts) == 6
     assert evidence_run._a_core_source_count(facts, "topicA") == 6
+
+
+def test_ai_research_fetch_uses_result_bundles_before_tier2_search(
+    monkeypatch: Any,
+) -> None:
+    calls: list[tuple[str, dict[str, Any]]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        calls.append((request.url.path, body))
+        if request.url.path == "/api/v1/ai/results/search":
+            return httpx.Response(200, json=[_ai_result_bundle()])
+        raise AssertionError("tier2 fallback should not run when bundle is ready")
+
+    _mock_client(monkeypatch, handler)
+    trace: list[dict[str, Any]] = []
+
+    facts = evidence_run._fetch_facts(
+        "llm_evaluation", trace=trace, domain="ai_research",
+    )
+
+    assert [path for path, _body in calls] == ["/api/v1/ai/results/search"]
+    assert calls[0][1] == {
+        "query": "llm_evaluation",
+        "limit": 20,
+        "min_sources": 5,
+        "receipts_per_bundle": 5,
+        "require_complete_axes": True,
+    }
+    assert len(facts) == 5
+    assert evidence_run._source_count(facts) == 5
+    assert facts[0]["_tier"] == "ai_results_index"
+    assert facts[0]["result_key"] == "llm_evaluation::gsm8k::accuracy"
+    assert facts[0]["population"] == "llm_evaluation GSM8K math reasoning GSM8K"
+    assert facts[0]["intervention"] == "Model 0"
+    assert facts[0]["comparator"] == "baseline 0"
+    assert facts[0]["endpoint"] == "accuracy"
+    assert trace == [{
+        "kind": "ai_results_index",
+        "query": "llm_evaluation",
+        "facts": 5,
+        "status": "ok",
+        "errors": [],
+    }]
+
+
+def test_ai_research_fetch_falls_back_when_result_bundle_missing(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+    monkeypatch.setattr(evidence_run, "_topic_fact_keys", lambda _t: [])
+    monkeypatch.setattr(evidence_run, "_diverse_queries", lambda _t, **_kw: ["topicA"])
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request.url.path)
+        if request.url.path == "/api/v1/ai/results/search":
+            return httpx.Response(200, json=[])
+        return httpx.Response(
+            200,
+            json=[_fact("normal", "10.1/normal")],
+        )
+
+    _mock_client(monkeypatch, handler)
+
+    facts = evidence_run._fetch_facts("topicA", domain="ai_research")
+
+    assert calls[0] == "/api/v1/ai/results/search"
+    assert "/api/v1/tier2/facts/search" in calls
+    assert [fact["fact_id"] for fact in facts] == ["normal"]
+
+
+def test_ai_result_bundle_receipts_pass_generic_shape_gate(tmp_path: Path) -> None:
+    facts = evidence_run._facts_from_ai_result_bundles(
+        [_ai_result_bundle()], "llm_evaluation", min_sources=5,
+    )
+    root = tmp_path / "repo"
+    run = root / "runs" / "llm_evaluation-evidence-ts"
+    run.mkdir(parents=True)
+    ids = [str(fact["fact_id"]) for fact in facts]
+    run.joinpath("alpha_memo.md").write_text(
+        "## Evidence receipts\n\n"
+        + "\n".join(f"- `fact_id={fid}` (`A_core`) - receipt" for fid in ids)
+        + "\n",
+        encoding="utf-8",
+    )
+    run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": fid, "lane": "A_core"} for fid in ids],
+    }), encoding="utf-8")
+    verdict = {"run_dir": "runs/llm_evaluation-evidence-ts"}
+
+    assert daily._direct_receipts_share_shape(verdict, root / "runs", 5) is True
 
 
 def test_normalize_tier2_preserves_ai_structured_fields() -> None:
