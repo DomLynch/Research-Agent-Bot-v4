@@ -66,6 +66,8 @@ _FETCH_TOP_K = 500  # Researka per-query cap (raised to 500, confirmed live)
 _FETCH_FAILURE_STATUSES = frozenset({
     "timeout", "auth_failed", "server_error", "bad_json", "missing_token",
 })
+_AI_RESULTS_DOMAIN = "ai_research"
+_AI_RESULTS_BUNDLE_LIMIT = 20
 _QUERY_WORD = re.compile(r"[a-z0-9]+")
 _QUERY_STOPWORDS = frozenset({
     "and", "are", "for", "from", "into", "not", "the", "this", "with",
@@ -189,6 +191,129 @@ def _normalize_tier2(item: dict[str, Any], topic: str) -> dict[str, Any]:
     if item.get("topic"):
         out["source_topic"] = item.get("topic")
     return out
+
+
+def _post_ai_result_bundles(
+    client: httpx.Client,
+    base: str,
+    hdr: dict[str, str],
+    query: str,
+    *,
+    min_sources: int,
+) -> FetchResult:
+    body = {
+        "query": query,
+        "limit": _AI_RESULTS_BUNDLE_LIMIT,
+        "min_sources": min_sources,
+        "receipts_per_bundle": min_sources,
+        "require_complete_axes": True,
+    }
+    try:
+        r = client.post(
+            f"{base}/api/v1/ai/results/search", headers=hdr, json=body,
+        )
+        r.raise_for_status()
+        data = r.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        return _fetch_error_result(exc)
+    hits = [x for x in data if isinstance(x, dict)] if isinstance(data, list) else []
+    return FetchResult(hits, "ok")
+
+
+def _normalize_ai_result_receipt(
+    receipt: dict[str, Any],
+    topic: str,
+    bundle: dict[str, Any],
+) -> dict[str, Any]:
+    paper_raw = receipt.get("paper")
+    paper: dict[str, Any] = paper_raw if isinstance(paper_raw, dict) else {}
+    shape_raw = bundle.get("shape")
+    shape: dict[str, Any] = shape_raw if isinstance(shape_raw, dict) else {}
+
+    benchmark = receipt.get("benchmark") or shape.get("benchmark") or shape.get("task")
+    task = receipt.get("task") or shape.get("task") or benchmark
+    dataset = receipt.get("dataset") or shape.get("dataset")
+    metric = receipt.get("metric") or shape.get("metric")
+    model = receipt.get("model_system")
+    comparator = receipt.get("baseline_comparator")
+    protocol = receipt.get("evaluation_protocol") or shape.get("evaluation_protocol")
+    topic_key = receipt.get("topic") or bundle.get("topic") or topic
+    result_key = bundle.get("result_key")
+    fact_id = receipt.get("id")
+    return {
+        "fact_id": str(fact_id) if fact_id is not None else "",
+        "topic": topic,
+        "source_topic": topic_key,
+        "sub_topic": str(metric or receipt.get("claim_type") or "result"),
+        "source_paper": {
+            "pmid": paper.get("pmid"),
+            "doi": paper.get("doi"),
+            "pmcid": paper.get("pmcid"),
+            "paper_id": paper.get("paper_id") or receipt.get("paper_id"),
+            "title": paper.get("title"),
+            "journal": paper.get("journal_name"),
+            "year": paper.get("publication_year"),
+            "cited_by_count": paper.get("cited_by_count"),
+        },
+        "claim_type": receipt.get("claim_type"),
+        "numeric_value": receipt.get("numeric_value"),
+        "units": receipt.get("units"),
+        "ci_lower": None,
+        "ci_upper": None,
+        # Project result axes into the existing universal receipt-shape
+        # contract. The core gate still reads only generic fields.
+        "population": " ".join(
+            str(v) for v in (topic_key, benchmark, task, dataset) if v
+        ),
+        "intervention": str(model or ""),
+        "comparator": str(comparator or ""),
+        "endpoint": str(metric or ""),
+        "canonical_phrase": receipt.get("canonical_phrase") or "",
+        "canonical_year": paper.get("publication_year"),
+        "validator": (
+            "researka-ai-results-exact"
+            if (receipt.get("validation") or {}).get("status") == "exact"
+            else "researka-ai-results"
+        ),
+        "superseded_by": None,
+        "_tier": "ai_results_index",
+        "result_key": result_key,
+        "result_shape": shape,
+        "result_papers": bundle.get("papers"),
+        "result_complete_papers": bundle.get("complete_papers"),
+        "metric": metric,
+        "benchmark": benchmark,
+        "task": task,
+        "dataset": dataset,
+        "model_system": model,
+        "baseline_comparator": comparator,
+        "evaluation_protocol": protocol,
+        "source_identifiers": receipt.get("source_identifiers"),
+        "artifact_url": receipt.get("artifact_url"),
+        "source_excerpt": receipt.get("source_excerpt"),
+    }
+
+
+def _facts_from_ai_result_bundles(
+    bundles: list[dict[str, Any]], topic: str, *, min_sources: int,
+) -> list[dict[str, Any]]:
+    for bundle in bundles:
+        if not bundle.get("ready_for_queue"):
+            continue
+        receipts_raw = bundle.get("receipts")
+        receipts = (
+            [r for r in receipts_raw if isinstance(r, dict)]
+            if isinstance(receipts_raw, list) else []
+        )
+        if len(receipts) < min_sources:
+            continue
+        facts = [
+            _normalize_ai_result_receipt(receipt, topic, bundle)
+            for receipt in receipts[:min_sources]
+        ]
+        if _source_count(facts) >= min_sources:
+            return facts
+    return []
 
 
 def _source_key(fact: dict[str, Any]) -> str:
