@@ -278,7 +278,7 @@ def test_normalize_tier2_preserves_ai_structured_fields() -> None:
     assert fact["source_topic"] == "swe_bench"
 
 
-def test_ai_research_tier2_fallback_extracts_coherent_axis_shelf(
+def test_ai_research_tier2_fallback_rejects_mixed_model_axis_shelf(
     tmp_path: Path,
 ) -> None:
     facts: list[dict[str, Any]] = []
@@ -313,13 +313,51 @@ def test_ai_research_tier2_fallback_extracts_coherent_axis_shelf(
         facts, "swe_bench_success", min_sources=5,
     )
 
+    assert coherent == []
+
+
+def test_ai_research_tier2_fallback_extracts_same_model_axis_shelf(
+    tmp_path: Path,
+) -> None:
+    facts: list[dict[str, Any]] = []
+    for i in range(5):
+        facts.append(evidence_run._normalize_tier2(
+            _fact(f"swe-{i}", f"10.ai/swe-{i}") | {
+                "topic": "swe_bench",
+                "benchmark": "SWE-bench Verified",
+                "fact": {
+                    "metric": "resolve rate",
+                    "task": "SWE-bench Verified",
+                    "dataset": "SWE-bench Verified",
+                    "model_system": "AgentX",
+                    "baseline_comparator": "baseline agent",
+                    "evaluation_protocol": "matched-budget evaluation",
+                    "canonical_phrase": (
+                        "AgentX reports SWE-bench resolve rate against baseline agent."
+                    ),
+                },
+            },
+            "swe_bench_success",
+        ))
+    facts.append(evidence_run._normalize_tier2(
+        _fact("mmlu", "10.ai/mmlu") | {
+            "topic": "mmlu",
+            "benchmark": "MMLU",
+            "fact": {"metric": "accuracy", "task": "MMLU"},
+        },
+        "swe_bench_success",
+    ))
+
+    coherent = evidence_run._ai_axis_coherent_facts(
+        facts, "swe_bench_success", min_sources=5,
+    )
+
     assert len(coherent) == 5
     assert evidence_run._source_count(coherent) == 5
     assert {fact["benchmark"] for fact in coherent} == {"SWE Bench Verified"}
     assert {fact["metric"] for fact in coherent} == {"Resolve Rate"}
-    assert {fact["model_system"] for fact in coherent} == {
-        "AI systems evaluated on SWE Bench Verified",
-    }
+    assert {fact["model_system"] for fact in coherent} == {"Agentx"}
+    assert {fact["baseline_comparator"] for fact in coherent} == {"Baseline Agent"}
     assert all(fact.get("reported_model_system") for fact in coherent)
     lanes = {
         verdict.fact_id: verdict.lane

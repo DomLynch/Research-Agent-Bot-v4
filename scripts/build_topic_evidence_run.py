@@ -373,18 +373,23 @@ def _ai_topic_axis_relevant(topic: str, axis: tuple[str, str, str]) -> bool:
 def _ai_axis_coherent_facts(
     facts: list[dict[str, Any]], topic: str, *, min_sources: int,
 ) -> list[dict[str, Any]]:
-    grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
+    grouped: dict[tuple[str, str, str, str, str, str], list[dict[str, Any]]] = {}
     for fact in facts:
         benchmark = _axis_value(fact, "benchmark", "dataset")
         task = _axis_value(fact, "task", "dataset", "benchmark")
         metric = _axis_value(fact, "metric", "endpoint", "claim_type")
-        if not benchmark or not task or not metric:
+        model = _axis_value(fact, "model_system")
+        comparator = _axis_value(fact, "baseline_comparator", "comparator")
+        protocol = _axis_value(fact, "evaluation_protocol") or f"{task} benchmark evaluation"
+        if not benchmark or not task or not metric or not model or not comparator:
             continue
-        key = (benchmark, task, metric)
-        if _ai_topic_axis_relevant(topic, key):
+        key = (benchmark, task, metric, model, comparator, protocol)
+        if _ai_topic_axis_relevant(topic, key[:3]):
             grouped.setdefault(key, []).append(fact)
 
-    candidates: list[tuple[int, int, tuple[str, str, str], list[dict[str, Any]]]] = []
+    candidates: list[
+        tuple[int, int, tuple[str, str, str, str, str, str], list[dict[str, Any]]]
+    ] = []
     for key, rows in grouped.items():
         by_source: dict[str, dict[str, Any]] = {}
         for fact in rows:
@@ -397,14 +402,8 @@ def _ai_axis_coherent_facts(
         return []
 
     _sources, _rows, key, selected = sorted(candidates, reverse=True)[0]
-    benchmark, task, metric = key
+    benchmark, task, metric, model, comparator, protocol = key
     dataset = _axis_value(selected[0], "dataset") or benchmark
-    protocol = (
-        _axis_value(selected[0], "evaluation_protocol")
-        or f"{task} benchmark evaluation"
-    )
-    model_family = f"AI systems evaluated on {_axis_title(benchmark)}"
-    comparator_family = f"reported baselines for {_axis_title(benchmark)}"
 
     out: list[dict[str, Any]] = []
     for fact in selected[:min_sources]:
@@ -417,8 +416,8 @@ def _ai_axis_coherent_facts(
             "dataset": _axis_title(dataset),
             "metric": _axis_title(metric),
             "evaluation_protocol": _axis_title(protocol),
-            "model_system": model_family,
-            "baseline_comparator": comparator_family,
+            "model_system": _axis_title(model),
+            "baseline_comparator": _axis_title(comparator),
             "population": " ".join([
                 topic,
                 str(fact.get("source_topic") or fact.get("topic") or ""),
@@ -426,8 +425,8 @@ def _ai_axis_coherent_facts(
                 _axis_title(task),
                 _axis_title(dataset),
             ]).strip(),
-            "intervention": model_family,
-            "comparator": comparator_family,
+            "intervention": _axis_title(model),
+            "comparator": _axis_title(comparator),
             "endpoint": _axis_title(metric),
             "result_shape": {
                 "benchmark": _axis_title(benchmark),
@@ -435,6 +434,8 @@ def _ai_axis_coherent_facts(
                 "dataset": _axis_title(dataset),
                 "metric": _axis_title(metric),
                 "evaluation_protocol": _axis_title(protocol),
+                "model_system": _axis_title(model),
+                "baseline_comparator": _axis_title(comparator),
             },
         })
         out.append(item)
