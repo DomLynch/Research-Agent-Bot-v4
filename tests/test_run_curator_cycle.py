@@ -408,6 +408,53 @@ def test_topic_pipeline_passes_explicit_ai_research_domain(
     assert calls[0][calls[0].index("--domain") + 1] == "ai_research"
 
 
+def test_cycle_rebuilds_publish_queue_for_selected_domain(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    runs = tmp_path / "runs"
+    cycles = runs / "_curator_cycles"
+    cycles.mkdir(parents=True)
+    calls: list[tuple[str, list[str]]] = []
+
+    def fake_step(
+        args: list[str], step_name: str, *, timeout: int = 600,
+    ) -> tuple[bool, str]:
+        calls.append((step_name, args))
+        return True, "ok"
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
+    monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
+    monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
+    monkeypatch.setattr(
+        run_curator_cycle,
+        "_run_topic_pipeline",
+        lambda *_args, **_kwargs: TopicResult(
+            topic="ai_agents", velocity=1.0, status="ran",
+            run_dir="runs/ai_agents-evidence-ts",
+            signal_label="frontier_hypothesis", notes="",
+        ),
+    )
+    monkeypatch.setattr(
+        run_curator_cycle, "_read_discovery_top",
+        lambda _out: [{
+            "topic": "ai_agents", "velocity_score": 1.0,
+            "fact_source_count": 5, "paper_count": 3,
+        }],
+    )
+    monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",
+                        lambda *_args, **_kwargs: set())
+    monkeypatch.setattr(sys, "argv", [
+        "run_curator_cycle.py", "--domain", "ai_research", "--top", "1",
+    ])
+
+    assert run_curator_cycle.main() == 0
+    queue_args = next(args for step, args in calls if step == "publish_queue")
+    assert queue_args[queue_args.index("--domain") + 1] == "ai_research"
+
+
 def test_discovery_failure_aborts_before_stale_plan(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

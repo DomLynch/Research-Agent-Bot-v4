@@ -785,7 +785,8 @@ def _source_bounded_why(
 def _bounded_direct_thesis(
     lead_ids: list[str], facts: dict[str, dict[str, Any]],
 ) -> str:
-    phrases = [_fact_phrase(facts.get(fid) or {}) for fid in lead_ids[:2]]
+    limit = 5 if _source_count_for_ids(lead_ids, facts) >= 5 else 2
+    phrases = [_clip(_fact_phrase(facts.get(fid) or {}), 90) for fid in lead_ids[:limit]]
     joined = "; ".join(p for p in phrases if p)
     return f"{joined}." if joined else "The cited direct receipts define the claim."
 
@@ -1382,7 +1383,13 @@ def _receipt_thesis(
             "The remaining receipts are separate evidence streams and should "
             "not be read as one integrated effect estimate."
         )
-    phrases = [_fact_phrase(facts.get(fid) or {}) for fid in direct_ids[:2]]
+    limit = (
+        5
+        if not _agent_repair_requested(verdict)
+        and _source_count_for_ids(direct_ids, facts) >= 5
+        else 2
+    )
+    phrases = [_clip(_fact_phrase(facts.get(fid) or {}), 90) for fid in direct_ids[:limit]]
     joined = "; ".join(p for p in phrases if p)
     if joined:
         if context_ids:

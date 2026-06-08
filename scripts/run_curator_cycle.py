@@ -615,7 +615,7 @@ def main() -> int:
         )
         md_text += f"\n## Cross-topic lead\n\n_failed: {cross_last[:240]}_\n"
     queue_ok, queue_last = _run_step(
-        [py, "scripts/build_publish_queue.py"],
+        [py, "scripts/build_publish_queue.py", "--domain", args.domain],
         "publish_queue",
     )
     if queue_ok:

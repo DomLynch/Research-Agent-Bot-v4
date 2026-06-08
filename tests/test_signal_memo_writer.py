@@ -1054,6 +1054,49 @@ def test_alpha_memo_trusts_gate_candidate_receipts_for_source_floor(
     assert "10.x/gate-candidate-707" in memo
 
 
+def test_alpha_memo_thesis_carries_full_direct_source_bundle(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    ids = ("303", "404", "505", "606", "707")
+    for fid in ids:
+        facts.append({
+            "fact_id": fid,
+            "canonical_phrase": (
+                f"Carbon pricing reduced port emissions after audit checks in market {fid}."
+            ),
+            "population": "regulated port firms",
+            "intervention": "carbon pricing",
+            "source_paper": {
+                "doi": f"10.x/full-bundle-{fid}",
+                "title": f"Carbon pricing port emissions audit {fid}",
+            },
+        })
+        lanes["verdicts"].append({"fact_id": fid, "lane": "A_core"})
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+    (run / "opportunities_gate.json").write_text(json.dumps({
+        "audits": [{
+            "title": "Carbon pricing reduced port emissions",
+            "status": "survives",
+            "capped_opportunity": 88,
+            "cited_fact_ids": list(ids),
+        }],
+    }), encoding="utf-8")
+
+    memo = render_signal_memo(run)
+    (run / "alpha_memo.md").write_text(memo, encoding="utf-8")
+    verdict = publish_verdict(run)
+
+    thesis = memo.split("## One-sentence thesis\n\n", 1)[1].split("\n\n## ", 1)[0]
+    assert "market 707" in thesis
+    assert verdict["axes"]["direct_source_papers"] == 5
+    assert verdict["decision"] == "ready_to_publish"
+
+
 def test_alpha_memo_filters_off_claim_context_receipts(
     tmp_path: Path,
 ) -> None:
