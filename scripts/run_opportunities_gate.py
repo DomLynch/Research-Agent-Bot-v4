@@ -110,6 +110,68 @@ def _update_manifest(
     manifest_path.write_text(json.dumps(m, indent=2), encoding="utf-8")
 
 
+def _source_diverse_ids(
+    ids: list[str], facts: dict[str, dict[str, Any]], min_sources: int,
+) -> list[str]:
+    out: list[str] = []
+    seen: set[str] = set()
+    for fid in ids:
+        fact = facts.get(fid)
+        if not fact:
+            continue
+        source = _source_key(fact)
+        if not source or source in seen:
+            continue
+        seen.add(source)
+        out.append(fid)
+        if len(out) >= min_sources:
+            break
+    return out
+
+
+def _result_key_cluster_audit(
+    topic: str,
+    facts: dict[str, dict[str, Any]],
+    lane_by_id: dict[str, str],
+    min_sources: int,
+) -> ThesisAudit | None:
+    clusters: dict[str, list[str]] = {}
+    for fid, fact in facts.items():
+        key = str(fact.get("result_key") or "").strip()
+        if key and lane_by_id.get(fid) in _DIRECT:
+            clusters.setdefault(key, []).append(fid)
+    for _key, ids in sorted(clusters.items(), key=lambda item: -len(item[1])):
+        diverse = _source_diverse_ids(ids, facts, min_sources)
+        if len(diverse) < min_sources:
+            continue
+        first = facts.get(diverse[0]) or {}
+        shape_raw = first.get("result_shape")
+        shape = shape_raw if isinstance(shape_raw, dict) else {}
+        benchmark = first.get("benchmark") or shape.get("benchmark")
+        metric = (
+            first.get("metric") or first.get("endpoint") or shape.get("metric")
+        )
+        if benchmark and metric:
+            title = (
+                f"Source-bound {_topic_title(topic)} {metric} result on {benchmark}"
+            )
+        else:
+            title = (
+                f"Source-bound {_topic_title(topic)} result cluster "
+                "across independent receipts"
+            )
+        return ThesisAudit(
+            thesis_idx=-1,
+            title=title,
+            status="survives",
+            blocking_flags=(),
+            original_opportunity=80,
+            capped_opportunity=80,
+            cited_fact_ids=tuple(diverse),
+        )
+    return None
+
+
 def _deterministic_cluster_audit(
     topic: str,
     facts: list[dict[str, Any]],
@@ -122,6 +184,11 @@ def _deterministic_cluster_audit(
         _publication_int("min_direct_source_papers", 5),
         _publication_int("min_source_papers", 5),
     )
+    result_audit = _result_key_cluster_audit(
+        topic, facts_by_id, lane_by_id, min_sources,
+    )
+    if result_audit:
+        return result_audit
     ids = _coherent_receipt_ids(
         facts_by_id, lane_by_id, min_sources=min_sources,
         allowed_lanes=_DIRECT, claim=set(), topic=topic,

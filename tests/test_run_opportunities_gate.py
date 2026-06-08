@@ -80,6 +80,7 @@ def test_result_key_cluster_audit_accepts_multiplicative_speedup_receipt() -> No
     assert [lane.lane for lane in lanes] == ["A_core"] * 5
     assert audit is not None
     assert audit.status == "survives"
+    assert audit.title == "Source-bound ai agents accuracy result on LoCoMo"
     assert len(audit.cited_fact_ids) == 5
 
 
