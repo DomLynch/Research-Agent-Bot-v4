@@ -60,6 +60,7 @@ _UNIT_FOLLOWS = re.compile(
     r"^\s*(?:%|°[CF]|degrees?\b|"
     r"[mµμnkp]?[gmlL]\b|"
     r"[mµμnp][MmLl]\b|"
+    r"\$?\\times\$?|\u00d7|"
     r"fold\b|x\b|times?\b|"
     r"iu\b|U\b)",
     re.IGNORECASE,
