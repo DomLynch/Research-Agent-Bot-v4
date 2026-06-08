@@ -240,6 +240,10 @@ def _normalize_ai_result_receipt(
     topic_key = receipt.get("topic") or bundle.get("topic") or topic
     result_key = bundle.get("result_key")
     fact_id = receipt.get("id")
+    validation = receipt.get("validation")
+    validation_status = (
+        validation.get("status") if isinstance(validation, dict) else None
+    )
     return {
         "fact_id": str(fact_id) if fact_id is not None else "",
         "topic": topic,
@@ -272,7 +276,7 @@ def _normalize_ai_result_receipt(
         "canonical_year": paper.get("publication_year"),
         "validator": (
             "researka-ai-results-exact"
-            if (receipt.get("validation") or {}).get("status") == "exact"
+            if validation_status == "exact"
             else "researka-ai-results"
         ),
         "superseded_by": None,
@@ -588,6 +592,28 @@ def _fetch_facts(
         return []
     hdr = {"X-Researka-Token": token}
     deadline = time.monotonic() + _FACT_FETCH_BUDGET_SECONDS
+    min_sources = _min_fact_source_papers()
+    if domain == _AI_RESULTS_DOMAIN:
+        try:
+            with httpx.Client(timeout=_FACT_FETCH_TIMEOUT_SECONDS) as c:
+                bundle_result = _post_ai_result_bundles(
+                    c, base, hdr, topic, min_sources=min_sources,
+                )
+        except (httpx.HTTPError, ValueError) as exc:
+            bundle_result = _fetch_error_result(exc)
+        bundle_facts = _facts_from_ai_result_bundles(
+            bundle_result.hits, topic, min_sources=min_sources,
+        )
+        if trace is not None:
+            trace.append({
+                "kind": "ai_results_index",
+                "query": topic,
+                "facts": len(bundle_facts),
+                "status": bundle_result.status,
+                "errors": list(bundle_result.errors),
+            })
+        if bundle_facts:
+            return bundle_facts
     queries = _diverse_queries(topic)
     strict_jobs: list[tuple[str, str]] = (
         [("tier1", k) for k in _topic_fact_keys(topic)]
@@ -1176,26 +1202,41 @@ def main() -> int:
                 "name": papers_path.name, "sha256": _sha256(papers_text),
             }
 
+    if tier == "tier1_canonical":
+        source = "researka_db GET /api/v1/topics/{topic}/facts"
+    elif tier == "ai_results_index":
+        source = (
+            "researka_db POST /api/v1/ai/results/search "
+            "(AI result bundle; one receipt per source paper)"
+        )
+    else:
+        source = (
+            "researka_db POST /api/v1/tier2/facts/search "
+            "(Tier-2 fallback; topic filter on response)"
+        )
+    fact_fetch_plan = []
+    if profile.slug == _AI_RESULTS_DOMAIN:
+        fact_fetch_plan.append(
+            "AI result bundles via POST /api/v1/ai/results/search",
+        )
+    fact_fetch_plan.extend([
+        "strict audited numeric facts via POST /api/v1/tier2/facts/search",
+        "validated topic facts via GET /api/v1/topics/{topic}/facts",
+        "normal numeric fact graph via POST /api/v1/tier2/facts/search",
+        "normal all-fact graph when source diversity is still thin",
+    ])
     manifest = {
         "domain": profile.as_metadata(),
         "topic": args.topic, "snapshot_utc": ts, "top_n": args.top,
         "facts_inspected": len(facts), "aggregated_claims": len(aggregated),
         "data_tier": tier,
-        "source": ("researka_db GET /api/v1/topics/{topic}/facts"
-                   if tier == "tier1_canonical"
-                   else "researka_db POST /api/v1/tier2/facts/search "
-                   "(Tier-2 fallback; topic filter on response)"),
+        "source": source,
         "frontier_model": review_model,
         "mode": args.mode,
         "selected_theme": selected_theme,
         "facet_counts": all_facet_counts,
         "numeric_artifacts_filtered": len(_artifact_facts),
-        "fact_fetch_plan": [
-            "strict audited numeric facts via POST /api/v1/tier2/facts/search",
-            "validated topic facts via GET /api/v1/topics/{topic}/facts",
-            "normal numeric fact graph via POST /api/v1/tier2/facts/search",
-            "normal all-fact graph when source diversity is still thin",
-        ],
+        "fact_fetch_plan": fact_fetch_plan,
         "paper_context_source": (
             "POST /api/v1/papers/topic + POST /api/v1/search"
         ),

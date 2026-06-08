@@ -1,0 +1,21 @@
+{
+  "topic": "llm_evaluation",
+  "domain": {
+    "slug": "ai_research",
+    "display_name": "AI research / AI agents / research automation",
+    "seed_topics_path": "ai_research_discovery_seeds.toml",
+    "source_policy_path": "ai_research_sources.toml",
+    "claim_schema_path": "ai_research_claim_schema.toml",
+    "dry_run_only": false
+  },
+  "snapshot_utc": "2026-06-08T18-53-20Z",
+  "queries": [
+    {
+      "kind": "ai_results_index",
+      "query": "llm_evaluation",
+      "facts": 5,
+      "status": "ok",
+      "errors": []
+    }
+  ]
+}

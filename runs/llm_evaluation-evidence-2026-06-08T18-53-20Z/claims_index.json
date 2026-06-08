@@ -1,0 +1,52 @@
+{
+  "topic": "llm_evaluation",
+  "snapshot_utc": "2026-06-08T18-53-20Z",
+  "claim_count": 5,
+  "claims": [
+    {
+      "claim_text": "Failure-Trace Allocator achieves 80.69% accuracy versus 77.64%, 77.08%, and 75.14% for L1, S1, and TALE.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.21203/rs.3.rs-9783817/v1"
+      ]
+    },
+    {
+      "claim_text": "On the GSM8K benchmark, Mistral-7B fine-tuned with PiSSA achieves an accuracy of 72.86%, surpassing LoRA's 67.7% by 5.16%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2404.02948"
+      ]
+    },
+    {
+      "claim_text": "MuMath-Code-70B model achieves new state-of-the-art performance among open methods—achieving 90.7% on GSM8K",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2405.07551"
+      ]
+    },
+    {
+      "claim_text": "Through comprehensive evaluation on GSM8K, StrategyQA, and bAbI benchmarks using four state-of-the-art models (Gemma-3 27B, LLaMA-3.1 8B, Mistral 7B, and Qwen-2.5 14B), we demonstrate that CoS achieves 71.5% accuracy on GSM8K (1.0% absolute improvement), 90.0% on StrategyQA (2.5% improvement), and 19.0% on bAbI (65.2% relative improvement) compared to the strongest baselines.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2602.02842"
+      ]
+    },
+    {
+      "claim_text": "the maximum drop reaching 49.89% on GSM8K",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2511.08055"
+      ]
+    }
+  ]
+}
