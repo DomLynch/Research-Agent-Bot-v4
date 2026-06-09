@@ -3446,7 +3446,7 @@ def run_cycle(
             "run_dir": candidate.get("run_dir"),
             "fingerprint": candidate.get("memo_fingerprint"),
         }
-        if retraction.get("status") != "clean":
+        if retraction.get("status") not in {"clean", "skipped"}:
             attempt["status"] = "held_retraction_check"
             for row in reversed(all_considered):
                 if row.get("fingerprint") == candidate.get("memo_fingerprint"):

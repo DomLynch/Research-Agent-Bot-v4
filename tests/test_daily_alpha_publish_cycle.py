@@ -3340,6 +3340,25 @@ def test_retraction_check_blocks_submission_and_writes_hold(tmp_path: Path) -> N
     assert hold.exists()
 
 
+def test_retraction_check_skip_does_not_block_submission(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict()
+    _memo_with_source_receipts(root, verdict, 5)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        submit=True,
+        retraction_mode="skip",
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+    )
+
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["submitted"] == 1
+    assert ledger["retraction_check"]["status"] == "skipped"
+
+
 def test_crossref_title_retraction_word_does_not_block_clean_paper() -> None:
     check = daily.retraction_check(
         _verdict(),
