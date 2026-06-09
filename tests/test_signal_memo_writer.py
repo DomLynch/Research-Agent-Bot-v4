@@ -842,6 +842,91 @@ def test_agent_repair_preserves_coherent_dispersion_only_bundle_as_source_angle(
     assert "`fact_id=707` (`A_core`)" in memo
 
 
+def test_agent_repair_uses_common_result_shape_for_direct_ai_bundle(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "rag-evidence-ts"
+    _write_run(run)
+    (run / "frontier_review.json").write_text(json.dumps({
+        "topic": "rag",
+        "snapshot_utc": "2026-05-16T18-00-00Z",
+    }), encoding="utf-8")
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    facts.clear()
+    lanes["verdicts"] = []
+    systems = {
+        "301": ("GraphRAG", "0.71"),
+        "302": ("RAG-Chain", "0.74"),
+        "303": ("i-MedRAG", "0.76"),
+        "304": ("o1-preview RAG", "0.78"),
+        "305": ("Clinical RAG", "0.73"),
+    }
+    for fid, (system, value) in systems.items():
+        facts.append({
+            "fact_id": fid,
+            "canonical_phrase": (
+                f"{system} reported MedQA accuracy {value} against closed-book "
+                "baseline in a medical question answering evaluation."
+            ),
+            "benchmark": "MedQA",
+            "task": "medical question answering",
+            "dataset": "MedQA",
+            "metric": "accuracy",
+            "model_system": system,
+            "baseline_comparator": "closed-book baseline",
+            "evaluation_protocol": "held-out MedQA test questions",
+            "numeric_value": value,
+            "units": " accuracy",
+            "result_shape": {
+                "benchmark": "MedQA",
+                "task": "medical question answering",
+                "dataset": "MedQA",
+                "metric": "accuracy",
+                "model_system": system,
+                "baseline_comparator": "closed-book baseline",
+                "evaluation_protocol": "held-out MedQA test questions",
+            },
+            "source_paper": {
+                "doi": f"10.ai/medqa-{fid}",
+                "title": f"{system} MedQA accuracy evaluation",
+                "journal": "AI Evaluation",
+            },
+        })
+        lanes["verdicts"].append({"fact_id": fid, "lane": "A_core"})
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+    (run / "opportunities_gate.json").write_text(json.dumps({
+        "audits": [{
+            "title": "Broad RAG accuracy frame",
+            "status": "survives",
+            "capped_opportunity": 88,
+            "cited_fact_ids": list(systems),
+        }],
+    }), encoding="utf-8")
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "subtopic_rerun_memo",
+        "blockers": ["source_dispersion"],
+        "_repair_decision": {"agent_repair": True},
+        "receipt_expansion": {
+            "cited_bound_fact_ids": list(systems),
+            "available_bound_fact_ids": list(systems),
+        },
+    })
+    thesis = memo.split("## One-sentence thesis\n\n", 1)[1].split("\n\n## ", 1)[0]
+
+    assert "**Headline:** Rag: MedQA accuracy is the shared direct-receipt signal" in memo
+    assert "Across 5 direct receipts sharing MedQA" in thesis
+    assert "closed-book baseline" in thesis
+    assert "**Bounded research question:** Do independent direct receipts on MedQA" in memo
+    assert "**Direct source breadth:** `5` direct cited source(s)" in memo
+    assert "## Evidence Landscape" in memo
+    assert "Does the cited receipt bundle still support" not in memo
+    assert "Broad RAG accuracy frame" not in memo
+    assert all(f"`fact_id={fid}` (`A_core`)" in memo for fid in systems)
+
+
 def test_agent_repair_frames_reviewer_heterogeneity_without_forced_collision(
     tmp_path: Path,
 ) -> None:

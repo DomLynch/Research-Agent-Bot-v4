@@ -791,6 +791,105 @@ def _bounded_direct_thesis(
     return f"{joined}." if joined else "The cited direct receipts define the claim."
 
 
+def _common_result_shape(
+    lead_ids: list[str], facts: dict[str, dict[str, Any]], *, min_sources: int,
+) -> dict[str, str]:
+    if _source_count_for_ids(lead_ids, facts) < min_sources:
+        return {}
+    rows = [facts.get(fid) or {} for fid in lead_ids]
+    out: dict[str, str] = {}
+    for field in (
+        "benchmark",
+        "task",
+        "dataset",
+        "metric",
+        "baseline_comparator",
+        "evaluation_protocol",
+    ):
+        values: list[str] = []
+        for fact in rows:
+            shape = fact.get("result_shape")
+            source = shape if isinstance(shape, dict) else fact
+            value = str(source.get(field) or "").strip()
+            if value:
+                values.append(value)
+        if values:
+            value, count = max(
+                ((v, values.count(v)) for v in set(values)),
+                key=lambda item: (item[1], len(item[0])),
+            )
+            if count >= min_sources:
+                out[field] = value
+    return out if out.get("metric") and (out.get("benchmark") or out.get("task")) else {}
+
+
+def _result_shape_angle(
+    topic: str,
+    lead_ids: list[str],
+    facts: dict[str, dict[str, Any]],
+    *,
+    min_sources: int,
+) -> dict[str, str] | None:
+    common_shape = _common_result_shape(lead_ids, facts, min_sources=min_sources)
+    if not common_shape:
+        return None
+    benchmark = common_shape.get("benchmark") or common_shape.get("task") or "matched benchmark"
+    metric = common_shape.get("metric") or "metric"
+    numbers = [
+        str((facts.get(fid) or {}).get("numeric_value"))
+        + str((facts.get(fid) or {}).get("units") or "")
+        for fid in lead_ids
+        if (facts.get(fid) or {}).get("numeric_value") is not None
+    ][:5]
+    systems: list[str] = []
+    for fid in lead_ids:
+        fact = facts.get(fid) or {}
+        shape_obj = fact.get("result_shape")
+        fact_shape = shape_obj if isinstance(shape_obj, dict) else {}
+        system = str(
+            fact.get("model_system") or fact_shape.get("model_system") or "",
+        ).strip()
+        if system:
+            systems.append(system)
+    systems = systems[:5]
+    unique_systems = list(dict.fromkeys(systems))
+    system_text = ", ".join(unique_systems[:3]) if unique_systems else "the cited systems"
+    comparator = common_shape.get("baseline_comparator")
+    comparator_text = f" against {comparator}" if comparator else " against stated baselines"
+    values = f" Reported values include {', '.join(numbers)}." if numbers else ""
+    headline = (
+        f"{_topic_title(topic, max_parts=2)}: {benchmark} {metric} is the shared "
+        "direct-receipt signal"
+    )
+    thesis = (
+        f"Across {min_sources} direct receipts sharing {benchmark} as the evaluation "
+        f"shape and {metric} as the metric, {system_text} report comparable "
+        f"performance{comparator_text}.{values}"
+    )
+    why = (
+        f"The signal is bounded to {benchmark} {metric}: the receipts are comparable "
+        "because they share the benchmark/task/metric shape, even though individual "
+        "systems may differ."
+    )
+    question = (
+        f"Do independent direct receipts on {benchmark} continue to support a "
+        f"{metric} signal for the cited systems when comparators are kept explicit?"
+    )
+    what_changes = (
+        "Treat this as a benchmark-shaped evidence bundle, not a broad claim about "
+        "the whole topic. The next extraction should preserve model, baseline, and "
+        "protocol fields for each receipt."
+    )
+    return {
+        "kind": "source",
+        "headline": headline,
+        "thesis": thesis,
+        "why": why,
+        "question": question,
+        "what_changes": what_changes,
+    }
+
+
 def _heterogeneous_map_thesis(
     lead_ids: list[str], facts: dict[str, dict[str, Any]],
 ) -> str:
@@ -1894,12 +1993,15 @@ def render_signal_memo(
         and _source_count_for_ids(lead_ids, facts) >= min_direct_sources
         and _receipt_cluster_coheres(lead_ids, facts, topic, min_direct_sources)
     ):
+        result_angle = _result_shape_angle(
+            topic, lead_ids, facts, min_sources=min_direct_sources,
+        )
         headline = (
             f"{_topic_title(topic)}: cited direct receipts are heterogeneous"
             if _repair_heterogeneity_requested(publish_verdict) else
             _grounded_headline(topic, lead_ids, facts, headline)
         )
-        angle = {
+        angle = result_angle or {
             "kind": "source",
             "headline": headline,
             "thesis": _bounded_direct_thesis(lead_ids, facts),
