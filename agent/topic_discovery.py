@@ -1302,6 +1302,7 @@ def discover_topics(
     derived_topic_limit: int = 0,
     fact_probe_topics: int | None = None,
     domain: str = "longevity",
+    use_cached_source_rich: bool = True,
     refresh_low_source_counts: bool = False,
 ) -> tuple[TopicCandidate, ...]:
     """Score every seed topic; return ranked tuple (highest velocity first).
@@ -1321,7 +1322,7 @@ def discover_topics(
         )
         cached_fact_counts: dict[str, int] = {}
         cached_probe_topics: list[str] = []
-        if derived_topic_limit:
+        if derived_topic_limit and use_cached_source_rich:
             cached_source_limit = max(extra_probe_limit, derived_topic_limit)
             cached_fact_topics = _cached_source_rich_topics(
                 exclude=set(papers_by_topic), limit=cached_source_limit)

@@ -51,10 +51,12 @@ def test_ai_research_discovery_uses_ai_seed_pack(
     ) -> None:
     seen: list[tuple[str, ...]] = []
     seen_domains: list[str] = []
+    seen_cache_flags: list[bool] = []
 
     def fake_discover(**kwargs: Any) -> tuple[TopicCandidate, ...]:
         seen.append(kwargs["seeds"])
         seen_domains.append(kwargs["domain"])
+        seen_cache_flags.append(kwargs["use_cached_source_rich"])
         return (
             TopicCandidate(
                 topic="ai_agents", paper_count=1, fact_source_count=5,
@@ -75,6 +77,7 @@ def test_ai_research_discovery_uses_ai_seed_pack(
     assert run_topic_discovery.main() == 0
     assert seen and "ai_agents" in seen[0]
     assert seen_domains == ["ai_research"]
+    assert seen_cache_flags == [False]
     assert "rapamycin" not in seen[0]
     out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
     payload = json.loads(out[-1].read_text(encoding="utf-8"))

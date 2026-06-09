@@ -217,6 +217,7 @@ def main() -> int:
                 domain=profile.slug,
                 derived_topic_limit=derived_limit,
                 fact_probe_topics=fact_probe_topics,
+                use_cached_source_rich=cache_supported,
                 refresh_low_source_counts=args.warm_backlog,
             )
         scoped_discovered = _filter_domain_scope(
