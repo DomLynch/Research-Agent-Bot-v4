@@ -8,7 +8,7 @@ from typing import Any
 import scripts.build_business_alpha_candidate as business_cli
 import scripts.build_publish_queue as queue
 import scripts.run_business_alpha_sweep as sweep
-from agent.business_research import build_candidate_bundle
+from agent.business_research import build_candidate_bundle, business_fact_diagnostics
 from agent.domain_profile import DomainProfile, load_domain_profile
 from agent.topic_discovery import load_seed_topics
 
@@ -380,7 +380,7 @@ def test_business_candidate_memo_synthesizes_mixed_effects(
     monkeypatch: Any,
 ) -> None:
     rows: list[dict[str, Any]] = []
-    for i, value in enumerate([0.0, -0.7, 0.0, -0.15, -0.2], start=1):
+    for i, value in enumerate([0.0, -0.15, 0.0, -0.1, -0.2], start=1):
         rows.append({
             "id": f"mw-mixed-{i}",
             "topic": "labor_economics",
@@ -411,6 +411,76 @@ def test_business_candidate_memo_synthesizes_mixed_effects(
     assert "## Research question" in memo
     assert "The bounded signal is disagreement" in memo
     assert "same measured business effect" not in memo
+
+
+def test_business_candidate_blocks_population_heterogeneity_false_disagreement() -> None:
+    rows: list[dict[str, Any]] = []
+    for i, (value, population) in enumerate([
+        (0.0, "low wage workers"),
+        (0.0, "low wage jobs"),
+        (-0.15, "teen workers"),
+        (-0.2, "teen workers"),
+        (-0.1, "young workers"),
+    ], start=1):
+        rows.append({
+            "id": f"mw-pop-{i}",
+            "topic": "labor_economics",
+            "claim_type": "effect_size",
+            "numeric_value": value,
+            "canonical_phrase": f"minimum wage employment elasticity estimate {value}",
+            "population": population,
+            "intervention": "minimum wage",
+            "metric": "employment elasticity",
+            "paper": {"doi": f"10.6666/mw-pop-{i}", "title": "Minimum wage employment"},
+        })
+
+    bundle = build_candidate_bundle(
+        rows,
+        topic="minimum_wage_employment",
+        domain="economics_research",
+    )
+
+    assert bundle is None
+    diagnostics = business_fact_diagnostics(
+        rows,
+        topic="minimum_wage_employment",
+        domain="economics_research",
+    )
+    assert diagnostics["top_clusters"][0]["comparability_blockers"] == [
+        "population_heterogeneity_explains_spread",
+    ]
+
+
+def test_business_candidate_blocks_outlier_driven_false_disagreement() -> None:
+    rows: list[dict[str, Any]] = []
+    for i, value in enumerate([0.0, -0.7, 0.0, -0.15, -0.2], start=1):
+        rows.append({
+            "id": f"mw-outlier-{i}",
+            "topic": "labor_economics",
+            "claim_type": "effect_size",
+            "numeric_value": value,
+            "canonical_phrase": f"minimum wage employment elasticity estimate {value}",
+            "population": "low wage workers",
+            "intervention": "minimum wage",
+            "metric": "employment elasticity",
+            "paper": {"doi": f"10.6666/mw-outlier-{i}", "title": "Minimum wage employment"},
+        })
+
+    bundle = build_candidate_bundle(
+        rows,
+        topic="minimum_wage_employment",
+        domain="economics_research",
+    )
+
+    assert bundle is None
+    diagnostics = business_fact_diagnostics(
+        rows,
+        topic="minimum_wage_employment",
+        domain="economics_research",
+    )
+    assert diagnostics["top_clusters"][0]["comparability_blockers"] == [
+        "outlier_requires_verification",
+    ]
 
 
 def test_business_candidate_cli_writes_no_bundle_diagnostics(

@@ -166,6 +166,54 @@ def test_post_chat_omits_max_tokens_when_none(install_transport: Any) -> None:
     assert "max_tokens" not in captured
 
 
+def test_call_writer_uses_minimax_anthropic_messages_api(
+    install_transport: Any,
+) -> None:
+    from agent.llm_client import call_writer
+    from agent.settings import Settings
+
+    captured: dict[str, Any] = {}
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        captured["url"] = str(req.url)
+        captured["headers"] = dict(req.headers)
+        captured["payload"] = json.loads(req.content)
+        return httpx.Response(200, json={
+            "model": "MiniMax-M3",
+            "content": [{"type": "text", "text": "m3-ok"}],
+            "usage": {"input_tokens": 3, "output_tokens": 5},
+        })
+
+    install_transport(handler)
+    settings = Settings(
+        mimo_api_key="k", mimo_base_url="http://mock/anthropic",
+        mimo_model="MiniMax-M3", mimo_timeout_sec=5.0,
+        openrouter_api_key="", openrouter_base_url="",
+        judge_model="m", writer_max_retries=0,
+        researka_database_url="", researka_database_token="",
+        ncbi_api_key="", semantic_scholar_api_key="",
+        core_api_key="", crossref_polite_email="", unpaywall_email="",
+        bot_enabled=False, daily_cost_cap_usd=0.0, runs_dir="runs",
+    )
+    resp = call_writer(settings, [
+        {"role": "system", "content": "sys"},
+        {"role": "user", "content": "hi"},
+    ], max_tokens=10)
+
+    assert resp.content == "m3-ok"
+    assert resp.model == "MiniMax-M3"
+    assert resp.prompt_tokens == 3
+    assert resp.completion_tokens == 5
+    assert captured["url"] == "http://mock/anthropic/v1/messages"
+    assert captured["headers"]["x-api-key"] == "k"
+    assert captured["payload"]["model"] == "MiniMax-M3"
+    assert captured["payload"]["system"] == "sys"
+    assert captured["payload"]["messages"] == [
+        {"role": "user", "content": [{"type": "text", "text": "hi"}]},
+    ]
+    assert captured["payload"]["thinking"] == {"type": "disabled"}
+
+
 def _writer_test_settings() -> Any:
     from agent.settings import Settings
     return Settings(
@@ -270,7 +318,7 @@ def test_call_writer_allows_empty_content_with_zero_completion(
 
 
 def _fallback_settings() -> Any:
-    """Settings wired for both the MiMo writer endpoint and the OpenRouter
+    """Settings wired for both the writer endpoint and the OpenRouter
     Gemma fallback endpoint. Both point at the in-process MockTransport;
     request URL distinguishes which handler answers."""
     from agent.settings import Settings
@@ -289,8 +337,8 @@ def _fallback_settings() -> Any:
 def test_call_writer_with_fallback_returns_mimo_when_healthy(
     install_transport: Any, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Healthy MiMo: fallback is a no-op pass-through; response.model is
-    the bare MiMo model id (no 'fallback' tag)."""
+    """Healthy writer: fallback is a no-op pass-through; response.model is
+    the bare writer model id (no 'fallback' tag)."""
     from agent.llm_client import call_writer_with_fallback
     monkeypatch.setattr("agent.llm_client.time.sleep", lambda _s: None)
 
@@ -310,8 +358,8 @@ def test_call_writer_with_fallback_returns_mimo_when_healthy(
 def test_call_writer_with_fallback_swaps_to_gemma_on_runaway(
     install_transport: Any, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """MiMo runs away on all 4 attempts → call_judge is invoked → response
-    is the Gemma reply, with `model` tagged `mimo-runaway-fallback:...`."""
+    """Writer runs away on all 4 attempts → call_judge is invoked → response
+    is the Gemma reply, tagged as writer fallback."""
     from agent.llm_client import call_writer_with_fallback
     monkeypatch.setattr("agent.llm_client.time.sleep", lambda _s: None)
     mimo_calls: list[int] = []
@@ -337,7 +385,7 @@ def test_call_writer_with_fallback_swaps_to_gemma_on_runaway(
         [{"role": "user", "content": "hi"}], max_tokens=10,
     )
     assert resp.content == "gemma-fallback-prose"
-    assert resp.model == "mimo-runaway-fallback:gemma-test"
+    assert resp.model == "writer-runaway-fallback:gemma-test"
     assert len(mimo_calls) == 4  # 1 + 3 retries
     assert len(gemma_calls) == 1
 

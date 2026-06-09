@@ -199,6 +199,9 @@ def _apply_schema_shape(fact: Json, *, domain: str) -> None:
     for rule in _shape_normalizers(domain):
         if not _rule_matches(rule, fact):
             continue
+        threshold = _num(rule.get("outlier_abs_threshold"))
+        if threshold is not None:
+            fact["_comparability_outlier_abs_threshold"] = threshold
         for field in (
             *CORE_SHAPE_FIELDS,
             "population",
@@ -378,6 +381,35 @@ def is_a_core_business_fact(fact: Json) -> bool:
     return fact.get("numeric_value") is not None or fact.get("effect_size") is not None
 
 
+def comparability_blockers(receipts: tuple[Json, ...]) -> list[str]:
+    if not _mixed_effect_signal(receipts):
+        return []
+    blockers: list[str] = []
+    for detail_field, blocker in (
+        ("population_detail", "population_heterogeneity_explains_spread"),
+        ("metric_detail", "metric_concept_mismatch"),
+    ):
+        values: set[str] = set()
+        for fact in receipts:
+            detail = _norm(fact.get(detail_field))
+            if detail:
+                values.add(detail)
+        if len(values) > 1:
+            blockers.append(blocker)
+    thresholds = [
+        value for fact in receipts
+        if (value := _num(fact.get("_comparability_outlier_abs_threshold"))) is not None
+    ]
+    threshold = min(thresholds) if thresholds else None
+    numeric_values = [
+        value for fact in receipts
+        if (value := _num(fact.get("numeric_value"))) is not None
+    ]
+    if threshold is not None and any(abs(value) > threshold for value in numeric_values):
+        blockers.append("outlier_requires_verification")
+    return blockers
+
+
 def cluster_business_facts(facts: list[Json], *, min_sources: int = MIN_DIRECT_SOURCES) -> list[BusinessCandidateBundle]:
     buckets: dict[str, list[Json]] = {}
     for fact in facts:
@@ -394,6 +426,9 @@ def cluster_business_facts(facts: list[Json], *, min_sources: int = MIN_DIRECT_S
                 seen_sources.add(src)
         if len(seen_sources) < min_sources:
             continue
+        receipts = tuple(picked[:min_sources])
+        if comparability_blockers(receipts):
+            continue
         first = picked[0]
         topic = str(first.get("topic") or "").strip()
         domain = str(first.get("_domain") or "").strip()
@@ -403,7 +438,7 @@ def cluster_business_facts(facts: list[Json], *, min_sources: int = MIN_DIRECT_S
             topic=topic,
             result_key=_result_key(topic, shape),
             shape=shape,
-            receipts=tuple(picked[:min_sources]),
+            receipts=receipts,
         ))
     return sorted(bundles, key=lambda b: (-b.source_count, b.result_key))
 
@@ -463,6 +498,7 @@ def business_fact_diagnostics(raw_facts: list[Json], *, topic: str, domain: str)
                 "shape": comparable_shape(rows[0]) if rows else {},
                 "sample_fact_id": _clean(rows[0].get("fact_id")) if rows else "",
                 "sample": _clean(rows[0].get("canonical_phrase")) if rows else "",
+                "comparability_blockers": comparability_blockers(tuple(rows[:MIN_DIRECT_SOURCES])),
             }
             for rows in top_clusters
         ],

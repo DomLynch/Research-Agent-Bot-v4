@@ -113,10 +113,21 @@ class Settings:
 
 def load_settings() -> Settings:
     _load_dotenv()
+    writer_key = _env("MINIMAX_API_KEY") or _env("ANTHROPIC_API_KEY") or _env("MIMO_API_KEY")
+    writer_base_url = (
+        _env("MINIMAX_BASE_URL")
+        or _env("ANTHROPIC_BASE_URL")
+        or _env("MIMO_BASE_URL", "https://api.minimax.io/anthropic")
+    )
+    writer_model = (
+        _env("MINIMAX_MODEL")
+        or _env("ANTHROPIC_MODEL")
+        or _env("MIMO_MODEL", "MiniMax-M3")
+    )
     return Settings(
-        mimo_api_key=_env("MIMO_API_KEY"),
-        mimo_base_url=_env("MIMO_BASE_URL", "https://token-plan-sgp.xiaomimimo.com/v1"),
-        mimo_model=_env("MIMO_MODEL", "mimo-v2.5-pro"),
+        mimo_api_key=writer_key,
+        mimo_base_url=writer_base_url,
+        mimo_model=writer_model,
         mimo_timeout_sec=_float("MIMO_TIMEOUT_SEC", 300.0),
         openrouter_api_key=_env("OPENROUTER_API_KEY"),
         openrouter_base_url=_env("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
