@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Research Agent v4 Longevity Research alpha memo publisher every eight hours
+
+[Timer]
+OnCalendar=*-*-* 01/8:30:00
+Persistent=true
+Unit=researka-alpha-longevity-research.service
+
+[Install]
+WantedBy=timers.target

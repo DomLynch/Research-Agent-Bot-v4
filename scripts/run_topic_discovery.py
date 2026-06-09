@@ -117,6 +117,12 @@ def _domain_derived_topic_limit(domain: str) -> int:
     )
 
 
+def _cache_supported_domain(domain: str) -> bool:
+    profile = load_domain_profile(domain)
+    default_profile = load_domain_profile(None)
+    return profile.seed_topics_path == default_profile.seed_topics_path
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--domain", choices=domain_choices(), default="longevity")
@@ -162,7 +168,7 @@ def main() -> int:
     )
     cache_limit = max(args.top, fact_probe_topics or 0)
     excluded = {str(t).strip() for t in args.exclude_topic if str(t).strip()}
-    cache_supported = profile.slug == "longevity"
+    cache_supported = _cache_supported_domain(profile.slug)
     ranked = (
         cached_source_rich_candidates(limit=cache_limit)
         if cache_supported

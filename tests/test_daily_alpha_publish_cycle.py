@@ -267,7 +267,9 @@ def test_daily_queue_skips_runs_without_domain_metadata(tmp_path: Path) -> None:
         json.dumps(verdict), encoding="utf-8",
     )
 
-    out = daily._build_queue(runs, include_archive=False, domain="longevity")
+    out = daily._build_queue(
+        runs, include_archive=False, domain="longevity_research",
+    )
 
     assert out["ready_to_publish"] == []
     assert out["_meta"]["missing_domain_count"] == 1
@@ -3897,6 +3899,22 @@ def test_systemd_ai_research_timer_offsets_global_four_hour_submitter() -> None:
     assert "--max-refresh-batches 5" in service
     assert "OnCalendar=*-*-* 05/8:30:00" in timer
     assert "Unit=researka-alpha-ai-research.service" in timer
+
+
+def test_systemd_longevity_research_timer_uses_explicit_domain() -> None:
+    service = Path(
+        "deploy/systemd/researka-alpha-longevity-research.service",
+    ).read_text(encoding="utf-8")
+    timer = Path(
+        "deploy/systemd/researka-alpha-longevity-research.timer",
+    ).read_text(encoding="utf-8")
+
+    assert "scripts/daily_alpha_publish_cycle.py" in service
+    assert "--domain longevity_research" in service
+    assert "--submit" in service
+    assert "--max-refresh-batches 5" in service
+    assert "OnCalendar=*-*-* 01/8:30:00" in timer
+    assert "Unit=researka-alpha-longevity-research.service" in timer
 
 
 def test_systemd_cache_warmer_fills_source_rich_backlog() -> None:

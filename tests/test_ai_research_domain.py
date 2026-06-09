@@ -44,9 +44,20 @@ def test_default_domain_remains_longevity() -> None:
     assert profile.seed_topics_path.name == "discovery_seeds.toml"
 
 
+def test_longevity_research_profile_is_explicit_lane() -> None:
+    profile = load_domain_profile("longevity_research")
+
+    assert profile.slug == "longevity_research"
+    assert profile.display_name == "Longevity / anti-aging research"
+    assert profile.dry_run_only is False
+    assert profile.seed_topics_path.name == "discovery_seeds.toml"
+    assert profile.source_policy_path.name == "publication.toml"
+    assert profile.claim_schema_path.name == "publication.toml"
+
+
 def test_ai_research_discovery_uses_ai_seed_pack(
     tmp_path: Path, monkeypatch: Any,
-) -> None:
+    ) -> None:
     seen: list[tuple[str, ...]] = []
 
     def fake_discover(**kwargs: Any) -> tuple[TopicCandidate, ...]:

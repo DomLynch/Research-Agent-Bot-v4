@@ -51,6 +51,11 @@ def test_operator_overrides_discovery_limits() -> None:
     ) == (1_000, 40)
 
 
+def test_longevity_research_lane_can_use_longevity_cache() -> None:
+    assert run_topic_discovery._cache_supported_domain("longevity_research") is True
+    assert run_topic_discovery._cache_supported_domain("ai_research") is False
+
+
 def test_main_writes_limit_metadata_for_operator_overrides(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
