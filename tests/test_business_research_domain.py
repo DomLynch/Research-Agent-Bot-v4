@@ -108,6 +108,30 @@ def test_business_bundle_materializes_shape_fallbacks() -> None:
     assert bundle.shape["study_design"] == "difference in differences"
 
 
+def test_business_bundle_materializes_extractor_alias_fields() -> None:
+    rows = _fixture_facts()
+    for row in rows:
+        row.pop("comparator")
+        row.pop("outcome")
+        row.pop("metric")
+        row.pop("study_design")
+        row["baseline_comparator"] = "matched control firms"
+        row["outcome_metric"] = "operating productivity"
+        row["design"] = "field experiment"
+
+    bundle = build_candidate_bundle(
+        rows,
+        topic="management_practices_productivity",
+        domain="management_research",
+    )
+
+    assert bundle is not None
+    assert bundle.shape["comparator"] == "matched control firms"
+    assert bundle.shape["outcome"] == "operating productivity"
+    assert bundle.shape["metric"] == "operating productivity"
+    assert bundle.shape["study_design"] == "field experiment"
+
+
 def test_business_bundle_infers_study_design_from_method_text() -> None:
     rows = _fixture_facts()
     for row in rows:
@@ -216,11 +240,11 @@ def test_finance_return_facts_cluster_by_empirical_asset_pricing_shape() -> None
             "paper": {"doi": f"10.7777/finance-{i}", "title": "Portfolio returns"},
         }
         for i, (value, phrase, population, intervention, comparator) in enumerate([
-            (11.0, "earns abnormal returns of roughly 11 percent per year", "portfolio", "past track record portfolio", ""),
-            (8.6, "earns an average annual return of 8.6% in high-skill industries", "firms", "hiring-rate long-short portfolio", "low-skill industries"),
-            (5.0, "firms in mobile industries earn returns over 5% higher", "firms", "labor mobility", "less mobile industries"),
-            (2.4, "earn significant out-of-sample annual alphas of 2.4%", "mutual funds", "machine-learning fund characteristics", ""),
-            (1.5, "one standard deviation in EPU is associated with a 1.5% increase in abnormal returns", "US market", "economic policy uncertainty exposure", ""),
+            (8.1, "hiring-rate long-short portfolios earn 8.1% annual returns", "firms", "hiring-rate long-short portfolio", "low hiring rate portfolio"),
+            (8.2, "hiring-rate long-short portfolios earn 8.2% annual returns", "firms", "hiring-rate long-short portfolio", "low hiring rate portfolio"),
+            (8.3, "hiring-rate long-short portfolios earn 8.3% annual returns", "firms", "hiring-rate long-short portfolio", "low hiring rate portfolio"),
+            (8.4, "hiring-rate long-short portfolios earn 8.4% annual returns", "firms", "hiring-rate long-short portfolio", "low hiring rate portfolio"),
+            (8.5, "hiring-rate long-short portfolios earn 8.5% annual returns", "firms", "hiring-rate long-short portfolio", "low hiring rate portfolio"),
         ], start=1)
     ]
 
@@ -232,10 +256,43 @@ def test_finance_return_facts_cluster_by_empirical_asset_pricing_shape() -> None
 
     assert bundle is not None
     assert bundle.source_count == 5
+    assert bundle.shape["signal_family"] == "hiring rate long short portfolio"
     assert bundle.shape["study_design"] == "empirical asset pricing"
     assert bundle.shape["metric"] == "percentage return or alpha"
     assert bundle.receipts[0]["intervention"] == "return predictive signal portfolio"
-    assert bundle.receipts[0]["intervention_detail"] == "past track record portfolio"
+    assert bundle.receipts[0]["intervention_detail"] == "hiring-rate long-short portfolio"
+
+
+def test_finance_return_facts_reject_mixed_signal_families() -> None:
+    rows = [
+        {
+            "id": f"fin-mixed-{i}",
+            "topic": "asset_pricing",
+            "claim_type": "portfolio_returns",
+            "numeric_value": value,
+            "units": "%",
+            "canonical_phrase": phrase,
+            "population": "firms",
+            "intervention": intervention,
+            "comparator": "benchmark portfolio",
+            "paper": {"doi": f"10.7777/finance-mixed-{i}", "title": "Portfolio returns"},
+        }
+        for i, (value, phrase, intervention) in enumerate([
+            (11.0, "earns abnormal returns of roughly 11 percent per year", "past track record portfolio"),
+            (8.6, "earns an average annual return of 8.6% in high-skill industries", "hiring-rate long-short portfolio"),
+            (5.0, "firms in mobile industries earn returns over 5% higher", "labor mobility"),
+            (2.4, "earn significant out-of-sample annual alphas of 2.4%", "machine-learning fund characteristics"),
+            (1.5, "one standard deviation in EPU is associated with a 1.5% increase in abnormal returns", "economic policy uncertainty exposure"),
+        ], start=1)
+    ]
+
+    bundle = build_candidate_bundle(
+        rows,
+        topic="factor_premia_returns",
+        domain="finance_research",
+    )
+
+    assert bundle is None
 
 
 def test_business_candidate_cli_builds_ready_dry_run_queue(
@@ -381,7 +438,7 @@ def test_business_sweep_submits_after_consistent_non_dry_run_passes(
     ]
 
 
-def test_business_systemd_timers_are_eight_hour_dry_run() -> None:
+def test_business_systemd_timers_are_eight_hour_guarded() -> None:
     expectations = {
         "business": ("business_research", "02/8:10:00"),
         "management": ("management_research", "03/8:10:00"),
@@ -410,5 +467,6 @@ def test_business_systemd_timers_are_eight_hour_dry_run() -> None:
             assert f"--domain {domain}" in service
             assert "--submit" not in service
             assert "SuccessExitStatus=3" in service
-        assert "EnvironmentFile=-/etc/researka-agent-v4.env" in service
+        assert "EnvironmentFile=/root/Research-Agent-Bot-v4/.env" in service
+        assert "EnvironmentFile=-/etc/researka-agent-v4.env" not in service
         assert f"OnCalendar=*-*-* {schedule}" in timer

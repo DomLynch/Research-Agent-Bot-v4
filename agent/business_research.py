@@ -39,10 +39,16 @@ PRESERVED_FIELDS = (
 )
 SHAPE_FIELDS = (
     "population", "organization_type", "industry", "asset_class", "geography",
-    "time_period", "intervention", "comparator", "outcome", "metric",
-    "study_design", "dataset", "estimation_method", "identification_strategy",
+    "time_period", "intervention", "signal_family", "comparator", "outcome",
+    "metric", "study_design", "dataset", "estimation_method", "identification_strategy",
 )
 CORE_SHAPE_FIELDS = ("intervention", "comparator", "outcome", "metric", "study_design")
+FIELD_ALIASES: dict[str, tuple[str, ...]] = {
+    "comparator": ("baseline_comparator", "benchmark"),
+    "outcome": ("outcome_metric", "estimand", "metric"),
+    "metric": ("outcome_metric", "estimand"),
+    "study_design": ("design",),
+}
 _WORD = re.compile(r"[a-z0-9]+")
 _GENERIC_METHOD_VALUES = frozenset({"other", "unknown", "not reported", "none", "n/a", "na"})
 _GENERIC_TOPIC_TOKENS = frozenset({
@@ -110,7 +116,19 @@ def _num(value: Any) -> float | None:
 
 def _field(item: Json, fact: Json, name: str) -> Any:
     value = item.get(name)
-    return fact.get(name) if value in (None, "") else value
+    if value not in (None, ""):
+        return value
+    value = fact.get(name)
+    if value not in (None, ""):
+        return value
+    for alias in FIELD_ALIASES.get(name, ()):
+        value = item.get(alias)
+        if value not in (None, ""):
+            return value
+        value = fact.get(alias)
+        if value not in (None, ""):
+            return value
+    return None
 
 
 def _specific_method(value: Any) -> str:
@@ -226,6 +244,7 @@ def comparable_shape(fact: Json) -> dict[str, str]:
         return {
             "population": "firms portfolios funds",
             "intervention": "return predictive signal portfolio",
+            "signal_family": _finance_signal_family(fact),
             "comparator": "benchmark or opposite signal portfolio",
             "outcome": "risk adjusted portfolio returns",
             "metric": "percentage return or alpha",
@@ -272,6 +291,14 @@ def _is_finance_return_fact(fact: Json) -> bool:
     return bool(_FINANCE_RETURN_RE.search(text))
 
 
+def _finance_signal_family(fact: Json) -> str:
+    for field in ("intervention_detail", "intervention", "asset_class", "dataset"):
+        value = _norm(fact.get(field))
+        if value and value not in _GENERIC_METHOD_VALUES:
+            return value
+    return ""
+
+
 def _apply_finance_return_shape(fact: Json) -> None:
     if not _is_finance_return_fact(fact):
         return
@@ -282,6 +309,7 @@ def _apply_finance_return_shape(fact: Json) -> None:
     fact.update({
         "population": "firms portfolios funds",
         "intervention": "return predictive signal portfolio",
+        "signal_family": _finance_signal_family(fact),
         "comparator": "benchmark or opposite signal portfolio",
         "outcome": "risk adjusted portfolio returns",
         "metric": "percentage return or alpha",
