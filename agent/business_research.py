@@ -22,6 +22,7 @@ from agent.domain_profile import DomainProfile, load_domain_profile
 from agent.publish_tier import write_publish_verdict
 from agent.settings import Settings
 from agent.signal_memo_writer import build_claim_receipt_matrix, build_memo_audit
+from agent.source_reliability import source_reliability_tier
 
 BUSINESS_DOMAINS = frozenset({
     "business_research",
@@ -244,21 +245,27 @@ def normalize_business_fact(item: Json, *, topic: str, domain: str) -> Json:
     ) or _infer_study_design(item, fact, paper)
     effect = _field(item, fact, "effect_size")
     numeric = _num(item.get("numeric_value") if item.get("numeric_value") is not None else effect)
+    source_paper = {
+        "pmid": paper.get("pmid"),
+        "doi": paper.get("doi") or item.get("paper_id"),
+        "pmcid": paper.get("pmcid"),
+        "paper_id": paper.get("paper_id") or item.get("paper_id"),
+        "title": paper.get("title"),
+        "journal": paper.get("journal_name") or paper.get("journal"),
+        "year": paper.get("publication_year") or paper.get("year"),
+        "url": paper.get("url") or paper.get("source_url"),
+        "publisher": paper.get("publisher"),
+    }
+    reliability = source_reliability_tier(source_paper)
     out: Json = {
         "fact_id": _clean(item.get("id") or item.get("fact_id") or fact.get("id")),
         "topic": topic.strip(),
         "_domain": domain.strip(),
         "source_topic": _clean(item.get("topic") or domain),
         "sub_topic": outcome or _clean(item.get("claim_type") or "result"),
-        "source_paper": {
-            "pmid": paper.get("pmid"),
-            "doi": paper.get("doi") or item.get("paper_id"),
-            "pmcid": paper.get("pmcid"),
-            "paper_id": paper.get("paper_id") or item.get("paper_id"),
-            "title": paper.get("title"),
-            "journal": paper.get("journal_name") or paper.get("journal"),
-            "year": paper.get("publication_year") or paper.get("year"),
-        },
+        "source_paper": source_paper,
+        "reliability": reliability,
+        "source_reliability": reliability,
         "claim_type": item.get("claim_type") or fact.get("claim_type"),
         "numeric_value": numeric,
         "units": _clean(item.get("units") or fact.get("units")),

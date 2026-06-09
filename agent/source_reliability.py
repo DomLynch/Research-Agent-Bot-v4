@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any, Literal
+from typing import Any, Literal, cast
 from urllib.parse import urlparse
 
 ReliabilityTier = Literal["high", "medium", "low"]
@@ -66,7 +66,7 @@ def source_reliability_tier(source: Mapping[str, Any] | None) -> ReliabilityTier
         return "medium"
     explicit = str(source.get("reliability") or source.get("source_reliability") or "").lower()
     if explicit in {"high", "medium", "low"}:
-        return explicit  # type: ignore[return-value]
+        return cast(ReliabilityTier, explicit)
 
     text = _text(source)
     domain = _domain(source)

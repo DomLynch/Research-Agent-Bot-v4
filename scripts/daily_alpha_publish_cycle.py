@@ -28,6 +28,7 @@ from typing import Any
 from agent.alpha_selector import accepted_shape_bonus
 from agent.domain_profile import domain_choices, domain_slug, load_domain_profile
 from agent.publish_tier import publish_verdict
+from agent.source_reliability import source_reliability_tier
 
 _ROOT = Path(__file__).resolve().parent.parent
 _RUNS = _ROOT / "runs"
@@ -743,6 +744,7 @@ def _cluster_has_coherent_component(
         (fid, by_id[fid], _source_key_from_fact(by_id[fid]))
         for fid in cluster_ids
         if fid in by_id and lanes.get(fid) == "A_core" and _source_key_from_fact(by_id[fid])
+        and _source_reliability_from_fact(by_id[fid]) != "low"
     ]
     for anchor_id, anchor, _source in usable:
         anchor_tokens = _cluster_tokens(anchor, parent)
@@ -1647,6 +1649,14 @@ def _source_key_from_fact(fact: Json) -> str:
     # NOT a source — never collapse identifier-less papers into one phantom
     # source (that under-counts unique sources and can sink a topic below floor).
     return _source_key_from_paper(paper)
+
+
+def _source_reliability_from_fact(fact: Json) -> str:
+    raw = str(fact.get("source_reliability") or fact.get("reliability") or "").lower()
+    if raw in {"high", "medium", "low"}:
+        return raw
+    paper = fact.get("source_paper") or {}
+    return source_reliability_tier(paper if isinstance(paper, dict) else {})
 
 
 def _memo_source_facts(
