@@ -873,7 +873,7 @@ def _result_shape_angle(
     )
     question = (
         f"Do independent direct receipts on {benchmark} continue to support a "
-        f"{metric} signal for the cited systems when comparators are kept explicit?"
+        f"signal on {metric} for the cited systems when comparators are kept explicit?"
     )
     what_changes = (
         "Treat this as a benchmark-shaped evidence bundle, not a broad claim about "
