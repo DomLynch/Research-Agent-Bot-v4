@@ -97,7 +97,8 @@ def _filter_excluded(
 ) -> tuple[TopicCandidate, ...]:
     if not excluded:
         return candidates
-    return tuple(c for c in candidates if c.topic not in excluded)
+    keys = {_topic_key(topic) for topic in excluded}
+    return tuple(c for c in candidates if _topic_key(c.topic) not in keys)
 
 
 def _topic_key(value: str) -> str:
