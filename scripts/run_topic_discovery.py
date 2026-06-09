@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -34,6 +35,12 @@ from agent.topic_discovery import (
 )
 
 _FAST_DERIVED_TOPIC_LIMIT = 250
+_CACHE_SCOPE_GENERIC_TOKENS = frozenset({
+    "the", "and", "with", "from", "that", "this", "study", "studies",
+    "patients", "participants", "adults", "risk", "effect", "effects",
+    "lower", "higher", "high", "low", "association", "associated",
+    "compared", "versus", "control", "controls", "placebo", "without",
+})
 
 
 def _resolve_limits(
@@ -97,6 +104,32 @@ def _filter_excluded(
     if not excluded:
         return candidates
     return tuple(c for c in candidates if c.topic not in excluded)
+
+
+def _topic_key(value: str) -> str:
+    return "_".join(re.findall(r"[a-z0-9]+", value.lower()))
+
+
+def _filter_seed_scope(
+    candidates: tuple[TopicCandidate, ...], seeds: tuple[str, ...],
+) -> tuple[TopicCandidate, ...]:
+    seed_keys = tuple(k for seed in seeds if (k := _topic_key(seed)))
+    if not seed_keys:
+        return candidates
+    seed_tokens = {
+        token for key in seed_keys for token in key.split("_")
+        if token and token not in _CACHE_SCOPE_GENERIC_TOKENS
+    }
+
+    def matches(topic: str) -> bool:
+        key = _topic_key(topic)
+        padded = f"_{key}_"
+        return any(
+            key == seed or key.startswith(f"{seed}_") or f"_{seed}_" in padded
+            for seed in seed_keys
+        ) or bool(set(key.split("_")) & seed_tokens)
+
+    return tuple(c for c in candidates if matches(c.topic))
 
 
 def _domain_seed_topics(domain: str) -> tuple[str, ...]:
@@ -167,14 +200,18 @@ def main() -> int:
         configured_limit=_domain_derived_topic_limit(profile.slug),
     )
     cache_limit = max(args.top, fact_probe_topics or 0)
+    cache_read_limit = max(cache_limit, args.top * 10)
     excluded = {str(t).strip() for t in args.exclude_topic if str(t).strip()}
     cache_supported = _cache_supported_domain(profile.slug)
     ranked = (
-        cached_source_rich_candidates(limit=cache_limit)
+        cached_source_rich_candidates(limit=cache_read_limit)
         if cache_supported
         and (args.cache_first or args.cache_only)
         and cache_limit > 0 else ()
     )
+    cache_seed_scope_dropped_count = len(ranked)
+    ranked = _filter_seed_scope(ranked, seeds)
+    cache_seed_scope_dropped_count -= len(ranked)
     ranked = _filter_excluded(ranked, excluded)
     if len(ranked) < args.top and not args.cache_only:
         with httpx.Client() as client:
@@ -201,6 +238,7 @@ def main() -> int:
         "cache_first": bool(args.cache_first and cache_supported),
         "cache_only": bool(args.cache_only and cache_supported),
         "cache_supported": cache_supported,
+        "cache_seed_scope_dropped_count": cache_seed_scope_dropped_count,
         "source_rich_floor": 5,
         "source_rich_count": sum(1 for c in ranked if c.fact_source_count >= 5),
         "top": [c.as_dict() for c in top],

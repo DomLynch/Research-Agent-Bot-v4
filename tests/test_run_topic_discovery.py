@@ -74,7 +74,7 @@ def test_main_writes_limit_metadata_for_operator_overrides(
     fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
     fake_script.parent.mkdir(parents=True)
     monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
-    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda: ("seed",))
+    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda: ("rich",))
     monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
     monkeypatch.setattr(run_topic_discovery, "discover_topics", fake_discover)
     monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda: 5_000)
@@ -115,7 +115,7 @@ def test_cache_first_skips_slow_discovery_when_window_is_filled(
     fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
     fake_script.parent.mkdir(parents=True)
     monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
-    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda: ("seed",))
+    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda: ("rich",))
     monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
     monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda: 5_000)
     monkeypatch.setattr(
@@ -161,7 +161,7 @@ def test_cache_first_falls_back_when_cache_is_underfilled(
     fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
     fake_script.parent.mkdir(parents=True)
     monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
-    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda: ("seed",))
+    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda: ("rich",))
     monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
     monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda: 5_000)
     monkeypatch.setattr(
@@ -206,7 +206,7 @@ def test_excluded_cached_topics_do_not_fill_cache_first_window(
     fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
     fake_script.parent.mkdir(parents=True)
     monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
-    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda: ("seed",))
+    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda: ("rich",))
     monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
     monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda: 5_000)
     monkeypatch.setattr(
@@ -243,7 +243,7 @@ def test_cache_only_skips_slow_discovery_when_cache_is_underfilled(
     fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
     fake_script.parent.mkdir(parents=True)
     monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
-    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda: ("seed",))
+    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda: ("rich",))
     monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
     monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda: 5_000)
     monkeypatch.setattr(
@@ -261,6 +261,49 @@ def test_cache_only_skips_slow_discovery_when_cache_is_underfilled(
     assert payload["cache_only"] is True
     assert payload["candidate_count"] == 1
     assert [row["topic"] for row in payload["top"]] == ["cached_rich"]
+
+
+def test_cache_first_drops_topics_outside_domain_seed_scope(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    cached = (
+        TopicCandidate(
+            topic="rag_accuracy", paper_count=0, fact_source_count=40,
+            top_paper_doi="", top_paper_title="",
+            velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
+        ),
+        TopicCandidate(
+            topic="exercise_recommendations", paper_count=0, fact_source_count=16,
+            top_paper_doi="", top_paper_title="",
+            velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
+        ),
+    )
+
+    def slow_discover(**_kwargs: Any) -> tuple[TopicCandidate, ...]:
+        return ()
+
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(
+        run_topic_discovery, "load_seed_topics", lambda: ("exercise",),
+    )
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda: 5_000)
+    monkeypatch.setattr(
+        run_topic_discovery, "cached_source_rich_candidates",
+        lambda *, limit: cached[:limit],
+    )
+    monkeypatch.setattr(run_topic_discovery, "discover_topics", slow_discover)
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--cache-first", "--top", "1",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert payload["cache_seed_scope_dropped_count"] == 1
+    assert [row["topic"] for row in payload["top"]] == ["exercise_recommendations"]
 
 
 def test_cache_first_preserves_cached_source_papers(
