@@ -133,4 +133,6 @@ def test_business_systemd_timers_are_eight_hour_dry_run() -> None:
         assert "scripts/build_business_alpha_candidate.py" in service
         assert f"--domain {domain}" in service
         assert "--submit" not in service
+        assert "SuccessExitStatus=3" in service
+        assert "EnvironmentFile=-/etc/researka-agent-v4.env" in service
         assert f"OnCalendar=*-*-* {schedule}" in timer

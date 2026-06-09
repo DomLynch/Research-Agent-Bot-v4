@@ -3811,6 +3811,32 @@ def test_apply_submission_decision_keeps_accept_without_url_pending() -> None:
     assert ledger["public_page_check"]["status"] == "missing_public_url"
 
 
+def test_apply_submission_decision_reports_accepted_dedupe_without_url() -> None:
+    ledger: dict[str, Any] = {
+        "submitted": 1,
+        "published": 0,
+        "submitted_topic": "accepted_deduped",
+    }
+
+    final = daily._apply_submission_decision(
+        ledger,
+        submission_id="sub-accepted-deduped",
+        decision={
+            "status": "complete",
+            "decision": "accept",
+            "publication": None,
+            "failure_category": "integrity_duplicate",
+        },
+        page_fetcher=lambda _url: {"ok": False, "status": 0},
+    )
+
+    assert final == "accepted"
+    assert ledger["status"] == "deduped_publication"
+    assert ledger["final_verdict"] == "accepted"
+    assert ledger["published"] == 0
+    assert ledger["published_topic"] == "accepted_deduped"
+
+
 def test_public_alpha_urls_prefers_publication_url_over_artifact_ids() -> None:
     decision = {
         "dw_artifact_id": "claim_16e9ea4c16c74570",

@@ -116,6 +116,11 @@ def normalize_business_fact(item: Json, *, topic: str, domain: str) -> Json:
     paper = _paper(item)
     metric = _clean(_field(item, fact, "metric") or item.get("claim_type"))
     outcome = _clean(_field(item, fact, "outcome") or metric)
+    study_design = _clean(
+        _field(item, fact, "study_design")
+        or _field(item, fact, "identification_strategy")
+        or _field(item, fact, "estimation_method")
+    )
     effect = _field(item, fact, "effect_size")
     numeric = _num(item.get("numeric_value") if item.get("numeric_value") is not None else effect)
     out: Json = {
@@ -141,6 +146,9 @@ def normalize_business_fact(item: Json, *, topic: str, domain: str) -> Json:
         "population": _clean(_field(item, fact, "population")),
         "intervention": _clean(_field(item, fact, "intervention")),
         "comparator": _clean(_field(item, fact, "comparator")),
+        "outcome": outcome,
+        "metric": metric,
+        "study_design": study_design,
         "endpoint": outcome,
         "canonical_phrase": _clean(
             item.get("canonical_phrase") or fact.get("canonical_phrase")
