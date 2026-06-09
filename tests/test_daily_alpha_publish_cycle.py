@@ -1755,10 +1755,14 @@ def test_recent_negative_topic_family_blocks_child_slug(tmp_path: Path) -> None:
 
 def test_same_seed_domain_inherits_recent_negative_topic_memory(tmp_path: Path) -> None:
     root = tmp_path / "repo"
+    lane_domain = {"slug": "longevity_research"}
     child = _verdict("sglt2_inhibitors_reduction_hba1c_non_placebo", score=99) | {
         "topic_family": "sglt2_inhibitors_reduction",
+        "domain": lane_domain,
     }
-    fresh = _verdict("klotho_receptor_signaling", score=90)
+    fresh = _verdict("klotho_receptor_signaling", score=90) | {
+        "domain": lane_domain,
+    }
     _memo_with_source_receipts(root, child, 5)
     _memo_with_source_receipts(root, fresh, 5)
     daily._write_json(root / "_daily_ledger" / "2026-06-08.json", {
