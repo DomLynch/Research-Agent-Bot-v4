@@ -43,6 +43,11 @@ SHAPE_FIELDS = (
 )
 CORE_SHAPE_FIELDS = ("intervention", "comparator", "outcome", "metric", "study_design")
 _WORD = re.compile(r"[a-z0-9]+")
+_GENERIC_METHOD_VALUES = frozenset({"other", "unknown", "not reported", "none", "n/a", "na"})
+_GENERIC_TOPIC_TOKENS = frozenset({
+    "business", "management", "economics", "finance", "marketing", "research",
+    "performance", "effect", "effects", "outcome", "outcomes", "model",
+})
 _STUDY_DESIGN_HINTS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"\b(randomi[sz]ed controlled trial|randomi[sz]ed trial|rct)\b", re.I), "randomized controlled trial"),
     (re.compile(r"\b(field experiment|randomi[sz]ed experiment)\b", re.I), "field experiment"),
@@ -104,6 +109,11 @@ def _field(item: Json, fact: Json, name: str) -> Any:
     return fact.get(name) if value in (None, "") else value
 
 
+def _specific_method(value: Any) -> str:
+    text = _clean(value)
+    return "" if text.casefold() in _GENERIC_METHOD_VALUES else text
+
+
 def _paper(item: Json) -> Json:
     raw = item.get("paper") or item.get("source_paper")
     return raw if isinstance(raw, dict) else {}
@@ -154,9 +164,9 @@ def normalize_business_fact(item: Json, *, topic: str, domain: str) -> Json:
     metric = _clean(_field(item, fact, "metric") or item.get("claim_type"))
     outcome = _clean(_field(item, fact, "outcome") or metric)
     study_design = _clean(
-        _field(item, fact, "study_design")
-        or _field(item, fact, "identification_strategy")
-        or _field(item, fact, "estimation_method")
+        _specific_method(_field(item, fact, "study_design"))
+        or _specific_method(_field(item, fact, "identification_strategy"))
+        or _specific_method(_field(item, fact, "estimation_method"))
     ) or _infer_study_design(item, fact, paper)
     effect = _field(item, fact, "effect_size")
     numeric = _num(item.get("numeric_value") if item.get("numeric_value") is not None else effect)
@@ -198,7 +208,7 @@ def normalize_business_fact(item: Json, *, topic: str, domain: str) -> Json:
         "_tier": _clean(item.get("_tier") or "business_research_fact"),
     }
     for name in PRESERVED_FIELDS:
-        value = _clean(_field(item, fact, name))
+        value = _clean(_specific_method(_field(item, fact, name)) if name == "study_design" else _field(item, fact, name))
         if value:
             out[name] = value
     if numeric is not None and not out.get("effect_size"):
@@ -215,9 +225,31 @@ def shape_key(fact: Json) -> str:
     return "|".join(f"{name}={shape.get(name, '')}" for name in SHAPE_FIELDS)
 
 
+def _topic_intent_tokens(topic: Any) -> set[str]:
+    return set(_WORD.findall(str(topic or "").lower())) - _GENERIC_TOPIC_TOKENS
+
+
+def _matches_topic_intent(fact: Json) -> bool:
+    tokens = _topic_intent_tokens(fact.get("topic"))
+    if not tokens:
+        return True
+    text = _norm(" ".join(
+        str(fact.get(name) or "")
+        for name in (
+            "source_topic", "sub_topic", "canonical_phrase", "population",
+            "intervention", "comparator", "outcome", "metric", "industry",
+            "asset_class", "dataset", "claim_type",
+        )
+    ))
+    words = set(text.split())
+    return bool(tokens & words)
+
+
 def is_a_core_business_fact(fact: Json) -> bool:
     shape = comparable_shape(fact)
     if not source_key(fact) or any(not shape.get(field) for field in CORE_SHAPE_FIELDS):
+        return False
+    if not _matches_topic_intent(fact):
         return False
     if not any(shape.get(field) for field in ("population", "organization_type", "industry", "geography")):
         return False

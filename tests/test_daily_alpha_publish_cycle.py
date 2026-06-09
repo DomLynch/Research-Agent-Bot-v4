@@ -1753,6 +1753,40 @@ def test_recent_negative_topic_family_blocks_child_slug(tmp_path: Path) -> None:
     assert ledger["considered"][0]["family_blocked"] is True
 
 
+def test_same_seed_domain_inherits_recent_negative_topic_memory(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    child = _verdict("sglt2_inhibitors_reduction_hba1c_non_placebo", score=99) | {
+        "topic_family": "sglt2_inhibitors_reduction",
+    }
+    fresh = _verdict("klotho_receptor_signaling", score=90)
+    _memo_with_source_receipts(root, child, 5)
+    _memo_with_source_receipts(root, fresh, 5)
+    daily._write_json(root / "_daily_ledger" / "2026-06-08.json", {
+        "status": "reviewer_rejected",
+        "final_verdict": "rejected",
+        "submitted_topic": "sglt2_inhibitors_reduction",
+        "domain": {"slug": "longevity"},
+        "researka_decision": {
+            "status": "complete",
+            "decision": "reject",
+            "claim_support_verdict": "unsupported",
+        },
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09",
+        domain="longevity_research",
+        queue=_queue(child, fresh),
+        retraction_mode="metadata",
+    )
+
+    assert ledger["candidate"]["topic"] == "klotho_receptor_signaling"
+    assert ledger["recent_negative_topics_blocked"] == ["sglt2_inhibitors_reduction"]
+    assert ledger["considered"][0]["status"] == "cycle_exhausted_topic"
+    assert ledger["considered"][0]["family_blocked"] is True
+
+
 def test_recent_submission_topic_family_blocks_child_slug(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     child = _verdict("agent_eval_vector_rerank", score=99) | {

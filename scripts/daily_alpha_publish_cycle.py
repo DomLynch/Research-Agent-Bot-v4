@@ -1090,7 +1090,14 @@ def _ledger_domain(ledger: Json) -> str:
 
 
 def _same_domain(record_domain: str, domain: str | None) -> bool:
-    return not domain or record_domain == domain
+    if not domain or record_domain == domain:
+        return True
+    with suppress(ValueError):
+        return (
+            load_domain_profile(record_domain).seed_topics_path
+            == load_domain_profile(domain).seed_topics_path
+        )
+    return False
 
 
 def _seen_submission_fingerprints_for_domain(path: Path, domain: str | None) -> set[str]:

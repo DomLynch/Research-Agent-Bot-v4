@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 import tomllib
@@ -20,6 +21,12 @@ from agent.business_research import (
 from agent.domain_profile import load_domain_profile
 from agent.settings import load_settings
 from scripts.build_business_alpha_candidate import write_no_bundle_diagnostics
+from scripts.daily_alpha_publish_cycle import (
+    _http_submitter,
+    _submission_payload,
+    _submit_token,
+    submit_with_backoff,
+)
 
 _RUNS = Path(__file__).resolve().parent.parent / "runs"
 _DOMAINS = (
@@ -47,19 +54,40 @@ def _write_sweep_summary(runs_root: Path, rows: list[dict[str, Any]]) -> Path:
     return out_path
 
 
+def _bundle_fingerprint(bundle: Any) -> str:
+    return "|".join((
+        str(bundle.domain),
+        str(bundle.topic),
+        str(bundle.result_key),
+        ",".join(str(fact.get("fact_id") or "") for fact in bundle.receipts),
+    ))
+
+
+def _read_verdict(run_dir: Path) -> dict[str, Any]:
+    data = json.loads((run_dir / "publish_verdict.json").read_text(encoding="utf-8"))
+    return data if isinstance(data, dict) else {}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cycles", type=int, default=1)
     parser.add_argument("--sleep-seconds", type=float, default=0.0)
     parser.add_argument("--topics-per-domain", type=int, default=2)
     parser.add_argument("--runs-root", type=Path, default=_RUNS)
+    parser.add_argument(
+        "--submit-after-consistent-passes",
+        type=int,
+        default=0,
+        help="Opt-in submit guard: require the same ready bundle this many times before submit.",
+    )
     args = parser.parse_args()
     settings = load_settings()
     rows: list[dict[str, Any]] = []
+    consistent: dict[str, int] = {}
     for cycle in range(max(1, args.cycles)):
         for domain in _DOMAINS:
             profile = load_domain_profile(domain)
-            if profile.slug not in BUSINESS_DOMAINS or not profile.dry_run_only:
+            if profile.slug not in BUSINESS_DOMAINS:
                 continue
             for topic in _seed_topics(profile.seed_topics_path, limit=args.topics_per_domain):
                 facts, trace = fetch_business_facts(topic, domain=domain, settings=settings)
@@ -83,11 +111,49 @@ def main() -> int:
                     rows.append(row)
                     print(f"[business-sweep] no_bundle {domain} {topic} facts={len(facts)}")
                     continue
+                fingerprint = _bundle_fingerprint(bundle)
+                consistent[fingerprint] = consistent.get(fingerprint, 0) + 1
                 run_dir = write_candidate_run(bundle, profile=profile, runs_root=args.runs_root)
                 row["run_dir"] = str(run_dir)
                 row["source_count"] = bundle.source_count
+                row["candidate_fingerprint"] = fingerprint
+                row["consistent_passes"] = consistent[fingerprint]
                 rows.append(row)
                 summary_path = _write_sweep_summary(args.runs_root, rows)
+                submit_after = max(0, args.submit_after_consistent_passes)
+                if submit_after:
+                    if consistent[fingerprint] < submit_after:
+                        row["status"] = "ready_waiting_consistency"
+                        _write_sweep_summary(args.runs_root, rows)
+                        print(
+                            "[business-sweep] ready_waiting_consistency "
+                            f"{domain} {topic} passes={consistent[fingerprint]}/{submit_after}"
+                        )
+                        continue
+                    if profile.dry_run_only:
+                        row["status"] = "submit_blocked_domain_dry_run_only"
+                        _write_sweep_summary(args.runs_root, rows)
+                        print(
+                            "[business-sweep] submit_blocked_domain_dry_run_only "
+                            f"{domain} {topic} passes={consistent[fingerprint]}/{submit_after}",
+                            file=sys.stderr,
+                        )
+                        return 2
+                    token, _token_env = _submit_token()
+                    if not token:
+                        row["status"] = "submit_blocked_missing_token"
+                        _write_sweep_summary(args.runs_root, rows)
+                        print("[business-sweep] submit_blocked_missing_token", file=sys.stderr)
+                        return 2
+                    url = os.environ.get("RESEARKA_SUBMIT_URL", "https://api.researka.org/submissions")
+                    verdict = _read_verdict(run_dir)
+                    submitter = _http_submitter(url, token)
+                    result = submit_with_backoff(_submission_payload(verdict, args.runs_root), submitter)
+                    row["status"] = "submitted" if result.get("status") == "accepted" else "submit_failed"
+                    row["submission"] = result
+                    _write_sweep_summary(args.runs_root, rows)
+                    print(f"[business-sweep] {row['status']} {domain} {topic} -> {run_dir}")
+                    return 0 if result.get("status") == "accepted" else 2
                 print(f"[business-sweep] ready {domain} {topic} -> {run_dir}")
                 print(f"[business-sweep] summary={summary_path}")
                 return 0

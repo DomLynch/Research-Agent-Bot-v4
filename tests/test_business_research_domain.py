@@ -7,8 +7,9 @@ from typing import Any
 
 import scripts.build_business_alpha_candidate as business_cli
 import scripts.build_publish_queue as queue
+import scripts.run_business_alpha_sweep as sweep
 from agent.business_research import build_candidate_bundle
-from agent.domain_profile import load_domain_profile
+from agent.domain_profile import DomainProfile, load_domain_profile
 from agent.topic_discovery import load_seed_topics
 
 
@@ -100,6 +101,74 @@ def test_business_bundle_materializes_shape_fallbacks() -> None:
     assert bundle.shape["study_design"] == "difference in differences"
 
 
+def test_business_bundle_infers_study_design_from_method_text() -> None:
+    rows = _fixture_facts()
+    for row in rows:
+        row.pop("study_design")
+        row.pop("identification_strategy")
+        row.pop("estimation_method")
+        row["canonical_phrase"] = (
+            "The randomized controlled trial increased firm productivity "
+            "relative to standard supervision."
+        )
+
+    bundle = build_candidate_bundle(
+        rows,
+        topic="management_practices_productivity",
+        domain="management_research",
+    )
+
+    assert bundle is not None
+    assert bundle.shape["study_design"] == "randomized controlled trial"
+
+
+def test_business_bundle_ignores_generic_study_design_other() -> None:
+    rows = _fixture_facts()
+    for row in rows:
+        row["claim_type"] = "returns_effect"
+        row["canonical_phrase"] = "Factor premia earned abnormal returns."
+        row["intervention"] = "factor premia"
+        row["comparator"] = "market portfolio"
+        row["outcome"] = "abnormal returns"
+        row["metric"] = "returns"
+        row["study_design"] = "other"
+        row["identification_strategy"] = "asset pricing"
+
+    bundle = build_candidate_bundle(
+        rows,
+        topic="factor_premia_returns",
+        domain="finance_research",
+    )
+
+    assert bundle is not None
+    assert bundle.shape["study_design"] == "asset pricing"
+
+
+def test_business_bundle_rejects_off_topic_medical_management_fact() -> None:
+    rows = _fixture_facts()
+    for i, row in enumerate(rows, start=1):
+        row.update({
+            "id": f"medical-{i}",
+            "topic": "mortality",
+            "claim_type": "weight_loss_effect",
+            "canonical_phrase": "Liraglutide achieved weight loss in specialist weight management services.",
+            "population": "patients in specialist weight management services",
+            "intervention": "liraglutide",
+            "comparator": "standard care",
+            "outcome": "weight loss",
+            "metric": "weight loss",
+            "study_design": "randomized controlled trial",
+        })
+
+    bundle = build_candidate_bundle(
+        rows,
+        topic="management_practices_productivity",
+        domain="management_research",
+    )
+
+    assert bundle is None
+
+
 def test_business_candidate_cli_builds_ready_dry_run_queue(
     tmp_path: Path,
     monkeypatch: Any,
@@ -159,6 +228,83 @@ def test_business_candidate_cli_writes_no_bundle_diagnostics(
     assert diagnostics["raw_fact_count"] == 1
     assert diagnostics["a_core_fact_count"] == 1
     assert diagnostics["top_clusters"][0]["source_count"] == 1
+
+
+def test_business_sweep_submit_guard_blocks_dry_run_domain(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(sweep, "_DOMAINS", ("management_research",))
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: ["management_practices_productivity"])
+    monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: (_fixture_facts(), {"status": "ok"}))
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--runs-root", str(tmp_path / "runs"),
+        "--submit-after-consistent-passes", "1",
+    ])
+
+    assert sweep.main() == 2
+    summary = json.loads(
+        (tmp_path / "runs" / "_business_diagnostics" / "latest_sweep.json").read_text(
+            encoding="utf-8",
+        )
+    )
+    assert summary["results"][0]["status"] == "submit_blocked_domain_dry_run_only"
+
+
+def test_business_sweep_submits_after_consistent_non_dry_run_passes(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("management_research")
+    live_profile = DomainProfile(
+        slug=profile.slug,
+        display_name=profile.display_name,
+        seed_topics_path=profile.seed_topics_path,
+        source_policy_path=profile.source_policy_path,
+        claim_schema_path=profile.claim_schema_path,
+        dry_run_only=False,
+    )
+    submissions: list[dict[str, Any]] = []
+
+    def fake_submitter(_url: str, _token: str) -> Any:
+        def submit(payload: dict[str, Any]) -> dict[str, Any]:
+            submissions.append(payload)
+            return {
+                "ok": True,
+                "status": 202,
+                "response": {"submission_id": "sub-business-1"},
+            }
+        return submit
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("management_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: live_profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: ["management_practices_productivity"])
+    monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: (_fixture_facts(), {"status": "ok"}))
+    monkeypatch.setattr(sweep, "_submit_token", lambda: ("test-token", "TEST_TOKEN"))
+    monkeypatch.setattr(sweep, "_http_submitter", fake_submitter)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "2",
+        "--topics-per-domain", "1",
+        "--runs-root", str(tmp_path / "runs"),
+        "--submit-after-consistent-passes", "2",
+    ])
+
+    assert sweep.main() == 0
+    assert len(submissions) == 1
+    assert submissions[0]["domain"]["slug"] == "management_research"
+    summary = json.loads(
+        (tmp_path / "runs" / "_business_diagnostics" / "latest_sweep.json").read_text(
+            encoding="utf-8",
+        )
+    )
+    assert [row["status"] for row in summary["results"]] == [
+        "ready_waiting_consistency",
+        "submitted",
+    ]
 
 
 def test_business_systemd_timers_are_eight_hour_dry_run() -> None:
