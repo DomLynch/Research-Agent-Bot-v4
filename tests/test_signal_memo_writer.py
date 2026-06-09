@@ -926,6 +926,22 @@ def test_agent_repair_uses_common_result_shape_for_direct_ai_bundle(
     assert "Broad RAG accuracy frame" not in memo
     assert all(f"`fact_id={fid}` (`A_core`)" in memo for fid in systems)
 
+    publish_memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "publish_alpha_memo",
+        "axes": {"direct_receipt_shape_coherent": True},
+        "receipt_expansion": {
+            "cited_bound_fact_ids": list(systems),
+            "available_bound_fact_ids": list(systems),
+        },
+    })
+    publish_thesis = publish_memo.split(
+        "## One-sentence thesis\n\n", 1,
+    )[1].split("\n\n## ", 1)[0]
+
+    assert "**Headline:** Rag: MedQA accuracy is the shared direct-receipt signal" in publish_memo
+    assert "Across 5 direct receipts sharing MedQA" in publish_thesis
+    assert "Does the cited receipt bundle still support" not in publish_memo
+
 
 def test_agent_repair_frames_reviewer_heterogeneity_without_forced_collision(
     tmp_path: Path,

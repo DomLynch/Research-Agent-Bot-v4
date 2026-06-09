@@ -882,6 +882,7 @@ def _result_shape_angle(
     )
     return {
         "kind": "source",
+        "result_shape": "true",
         "headline": headline,
         "thesis": thesis,
         "why": why,
@@ -2007,10 +2008,27 @@ def render_signal_memo(
             "thesis": _bounded_direct_thesis(lead_ids, facts),
             "why": _source_bounded_why(lead_ids, facts),
         }
+    if (
+        angle.get("result_shape") != "true"
+        and not _repair_heterogeneity_requested(publish_verdict)
+        and _source_count_for_ids(lead_ids, facts) >= min_direct_sources
+        and _receipt_cluster_coheres(lead_ids, facts, topic, min_direct_sources)
+    ):
+        result_angle = _result_shape_angle(
+            topic, lead_ids, facts, min_sources=min_direct_sources,
+        )
+        if result_angle and (
+            (publish_verdict or {}).get("surface_type") == "publish_alpha_memo"
+            or (publish_verdict or {}).get("axes", {}).get(
+                "direct_receipt_shape_coherent",
+            ) is True
+        ):
+            angle = result_angle
     if publish_verdict and publish_verdict.get("surface_type") == "publish_alpha_memo":
         headline = angle["headline"]
         if (
             angle["kind"] == "source"
+            and angle.get("result_shape") != "true"
             and "limited to the direct cited receipt bundle" not in angle["why"]
         ):
             blockers = {str(x) for x in publish_verdict.get("blockers") or []}
