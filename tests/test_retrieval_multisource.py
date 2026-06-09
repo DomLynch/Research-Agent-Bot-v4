@@ -81,6 +81,34 @@ async def test_crossref_swallows_http_500() -> None:
         assert await CrossrefSource(load_settings()).search("x", client=client) == []
 
 
+@pytest.mark.asyncio
+async def test_crossref_retries_rate_limit_then_parses(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[int] = []
+    body = {"message": {"items": [{
+        "DOI": "10.1/retry",
+        "title": ["Retryable article"],
+        "issued": {"date-parts": [[2024]]},
+    }]}}
+
+    async def no_sleep(_seconds: float) -> None:
+        return None
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        calls.append(1)
+        return httpx.Response(429) if len(calls) == 1 else httpx.Response(200, json=body)
+
+    monkeypatch.setenv("API_CLIENT_CROSSREF_BACKOFF_BASE_SECONDS", "0")
+    monkeypatch.setenv("API_CLIENT_CROSSREF_RATE_LIMIT_PER_SECOND", "0")
+    monkeypatch.setattr("agent.api_client.asyncio.sleep", no_sleep)
+    async with httpx.AsyncClient(transport=_mock(handler)) as client:
+        hits = await CrossrefSource(load_settings()).search("retry", client=client)
+
+    assert len(calls) == 2
+    assert hits[0].doi == "10.1/retry"
+
+
 # ---------- OpenAlex --------------------------------------------------------
 
 @pytest.mark.asyncio

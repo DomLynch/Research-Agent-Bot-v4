@@ -10,6 +10,7 @@ from typing import Any
 
 import httpx
 
+from agent.api_client import async_api_request
 from agent.retrieval.base import PaperHit, clean_text, int_or_none, normalize_doi
 from agent.settings import Settings
 
@@ -35,11 +36,14 @@ class OSFSource:
             "filter[q]": clean_text(query, limit=1024),
             "page[size]": str(min(retmax, 100)),
         }
+        r = await async_api_request(
+            client, "GET", _SEARCH, service=self.name, params=params, timeout=20.0,
+        )
+        if r is None:
+            return []
         try:
-            r = await client.get(_SEARCH, params=params, timeout=20.0)
-            r.raise_for_status()
             data: Any = r.json()
-        except (httpx.HTTPError, ValueError):
+        except ValueError:
             return []
         items = data.get("data", []) if isinstance(data, dict) else []
         hits: list[PaperHit] = []

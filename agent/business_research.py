@@ -232,6 +232,52 @@ def build_candidate_bundle(raw_facts: list[Json], *, topic: str, domain: str) ->
     return bundles[0] if bundles else None
 
 
+def business_fact_diagnostics(raw_facts: list[Json], *, topic: str, domain: str) -> Json:
+    facts = [
+        normalize_business_fact(item, topic=topic, domain=domain)
+        for item in raw_facts
+        if isinstance(item, dict)
+    ]
+    missing = {field: 0 for field in (*CORE_SHAPE_FIELDS, "source", "numeric")}
+    clusters: dict[str, list[Json]] = {}
+    core_count = 0
+    for fact in facts:
+        shape = comparable_shape(fact)
+        for field in CORE_SHAPE_FIELDS:
+            if not shape.get(field):
+                missing[field] += 1
+        if not source_key(fact):
+            missing["source"] += 1
+        if fact.get("numeric_value") is None and fact.get("effect_size") is None:
+            missing["numeric"] += 1
+        if is_a_core_business_fact(fact):
+            core_count += 1
+            clusters.setdefault(shape_key(fact), []).append(fact)
+    top_clusters = sorted(
+        clusters.values(),
+        key=lambda rows: len({source_key(row) for row in rows}),
+        reverse=True,
+    )[:5]
+    return {
+        "domain": domain,
+        "topic": topic,
+        "raw_fact_count": len(raw_facts),
+        "normalized_fact_count": len(facts),
+        "a_core_fact_count": core_count,
+        "missing_core_fields": missing,
+        "top_clusters": [
+            {
+                "source_count": len({source_key(row) for row in rows}),
+                "fact_count": len(rows),
+                "shape": comparable_shape(rows[0]) if rows else {},
+                "sample_fact_id": _clean(rows[0].get("fact_id")) if rows else "",
+                "sample": _clean(rows[0].get("canonical_phrase")) if rows else "",
+            }
+            for rows in top_clusters
+        ],
+    }
+
+
 def _headline(bundle: BusinessCandidateBundle) -> str:
     shape = bundle.shape
     intervention = shape.get("intervention", "intervention")

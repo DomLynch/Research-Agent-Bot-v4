@@ -81,6 +81,25 @@ def test_business_bundle_clusters_shape_and_preserves_fields() -> None:
     assert bundle.receipts[0]["sample_size"] == "1001"
 
 
+def test_business_bundle_materializes_shape_fallbacks() -> None:
+    rows = _fixture_facts()
+    for row in rows:
+        row.pop("outcome")
+        row.pop("study_design")
+        row["metric"] = "firm productivity"
+        row["identification_strategy"] = "difference in differences"
+
+    bundle = build_candidate_bundle(
+        rows,
+        topic="management_practices_productivity",
+        domain="management_research",
+    )
+
+    assert bundle is not None
+    assert bundle.shape["outcome"] == "firm productivity"
+    assert bundle.shape["study_design"] == "difference in differences"
+
+
 def test_business_candidate_cli_builds_ready_dry_run_queue(
     tmp_path: Path,
     monkeypatch: Any,

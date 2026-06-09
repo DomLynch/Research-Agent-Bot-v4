@@ -15,6 +15,7 @@ from xml.etree.ElementTree import Element
 
 import httpx
 
+from agent.api_client import async_api_request
 from agent.retrieval.base import PaperHit, clean_text, int_or_none, normalize_doi
 from agent.settings import Settings
 
@@ -71,11 +72,15 @@ class PubMedSource:
             params["api_key"] = self._api_key
         if self._email:
             params["email"] = self._email
+        r = await async_api_request(
+            client, "GET", _ESEARCH, service=self.name,
+            params=params, timeout=20.0,
+        )
+        if r is None:
+            return []
         try:
-            r = await client.get(_ESEARCH, params=params, timeout=20.0)
-            r.raise_for_status()
             data = r.json()
-        except (httpx.HTTPError, ValueError):
+        except ValueError:
             return []
         ids = data.get("esearchresult", {}).get("idlist") or []
         return [str(p) for p in ids if p]
@@ -96,10 +101,11 @@ class PubMedSource:
                 params["api_key"] = self._api_key
             if self._email:
                 params["email"] = self._email
-            try:
-                r = await client.get(_EFETCH, params=params, timeout=30.0)
-                r.raise_for_status()
-            except httpx.HTTPError:
+            r = await async_api_request(
+                client, "GET", _EFETCH, service=self.name,
+                params=params, timeout=30.0,
+            )
+            if r is None:
                 continue
             hits.extend(_parse_pubmed_xml(r.text))
         return hits
