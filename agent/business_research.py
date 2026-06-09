@@ -19,6 +19,7 @@ import httpx
 from agent.domain_profile import DomainProfile
 from agent.publish_tier import write_publish_verdict
 from agent.settings import Settings
+from agent.signal_memo_writer import build_claim_receipt_matrix, build_memo_audit
 
 BUSINESS_DOMAINS = frozenset({
     "business_research",
@@ -485,6 +486,41 @@ def _gate_payload(bundle: BusinessCandidateBundle, snapshot_utc: str) -> Json:
     }
 
 
+def _claim_tokens(bundle: BusinessCandidateBundle) -> set[str]:
+    text = " ".join([bundle.topic, *(bundle.shape.values())])
+    return set(_WORD.findall(text.lower())) - _GENERIC_TOPIC_TOKENS
+
+
+def _audit_sidecars_payloads(bundle: BusinessCandidateBundle, facts: list[Json]) -> dict[str, str]:
+    facts_by_id = {_clean(fact.get("fact_id")): fact for fact in facts}
+    ids = [_clean(fact.get("fact_id")) for fact in facts]
+    claim = _claim_tokens(bundle)
+    matrix = build_claim_receipt_matrix(claim, ids, ids, facts_by_id)
+    novelty = {"selected": _headline(bundle), "repeats": 0}
+    audit = build_memo_audit(
+        claim,
+        ids,
+        ids,
+        facts_by_id,
+        {"counter_evidence": {"items": []}},
+        falsifier=True,
+        novelty=novelty,
+    )
+    return {
+        "claim_receipt_matrix.json": json.dumps(matrix, indent=2, ensure_ascii=False),
+        "typed_counter_evidence.json": json.dumps({"items": []}, indent=2, ensure_ascii=False),
+        "novelty_delta.json": json.dumps(
+            {
+                "novelty_delta": audit["novelty_delta"],
+                "nearest_literature": audit["nearest_literature"],
+            },
+            indent=2,
+            ensure_ascii=False,
+        ),
+        "memo_audit.json": json.dumps(audit, indent=2, ensure_ascii=False),
+    }
+
+
 def write_candidate_run(
     bundle: BusinessCandidateBundle,
     *,
@@ -511,6 +547,7 @@ def write_candidate_run(
             indent=2,
         ),
     }
+    payloads.update(_audit_sidecars_payloads(bundle, facts))
     for name, text in payloads.items():
         run_dir.joinpath(name).write_text(text, encoding="utf-8")
     manifest = {

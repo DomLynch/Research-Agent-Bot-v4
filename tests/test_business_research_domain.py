@@ -265,11 +265,15 @@ def test_business_candidate_cli_builds_ready_dry_run_queue(
     manifest = json.loads((run_dir / "MANIFEST.json").read_text(encoding="utf-8"))
     facts = json.loads((run_dir / "all_facts.json").read_text(encoding="utf-8"))
     verdict = json.loads((run_dir / "publish_verdict.json").read_text(encoding="utf-8"))
+    matrix = json.loads((run_dir / "claim_receipt_matrix.json").read_text(encoding="utf-8"))
+    audit = json.loads((run_dir / "memo_audit.json").read_text(encoding="utf-8"))
     assert manifest["dry_run_only"] is True
     assert manifest["domain"]["slug"] == "management_research"
     assert facts[0]["result_shape"]["study_design"] == "quasi experimental panel"
     assert verdict["decision"] == "ready_to_publish"
     assert verdict["axes"]["direct_source_papers"] == 5
+    assert matrix["direct_sources"] == 5
+    assert audit["verdict"] == "supported"
 
 
 def test_business_candidate_cli_writes_no_bundle_diagnostics(
