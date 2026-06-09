@@ -1,0 +1,23 @@
+{
+  "a_core_fact_count": 0,
+  "domain": "business_research",
+  "missing_core_fields": {
+    "comparator": 0,
+    "intervention": 0,
+    "metric": 0,
+    "numeric": 0,
+    "outcome": 0,
+    "source": 0,
+    "study_design": 0
+  },
+  "normalized_fact_count": 0,
+  "raw_fact_count": 0,
+  "retrieval_trace": {
+    "error": "HTTPStatusError",
+    "facts": 0,
+    "http_status": 422,
+    "status": "failed"
+  },
+  "top_clusters": [],
+  "topic": "supply_chain_resilience_performance"
+}

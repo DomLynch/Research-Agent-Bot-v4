@@ -1,0 +1,88 @@
+{
+  "results": [
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/business_research-business_model_performance.json",
+      "domain": "business_research",
+      "facts": 0,
+      "ready": false,
+      "topic": "business_model_performance",
+      "trace": {
+        "error": "HTTPStatusError",
+        "facts": 0,
+        "http_status": 422,
+        "status": "failed"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/business_research-platform_strategy_network_effects.json",
+      "domain": "business_research",
+      "facts": 0,
+      "ready": false,
+      "topic": "platform_strategy_network_effects",
+      "trace": {
+        "error": "HTTPStatusError",
+        "facts": 0,
+        "http_status": 422,
+        "status": "failed"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/business_research-supply_chain_resilience_performance.json",
+      "domain": "business_research",
+      "facts": 0,
+      "ready": false,
+      "topic": "supply_chain_resilience_performance",
+      "trace": {
+        "error": "HTTPStatusError",
+        "facts": 0,
+        "http_status": 422,
+        "status": "failed"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/business_research-pricing_strategy_margin.json",
+      "domain": "business_research",
+      "facts": 0,
+      "ready": false,
+      "topic": "pricing_strategy_margin",
+      "trace": {
+        "error": "HTTPStatusError",
+        "facts": 0,
+        "http_status": 422,
+        "status": "failed"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/business_research-operations_process_improvement.json",
+      "domain": "business_research",
+      "facts": 0,
+      "ready": false,
+      "topic": "operations_process_improvement",
+      "trace": {
+        "error": "HTTPStatusError",
+        "facts": 0,
+        "http_status": 422,
+        "status": "failed"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/business_research-digital_transformation_firm_performance.json",
+      "domain": "business_research",
+      "facts": 0,
+      "ready": false,
+      "topic": "digital_transformation_firm_performance",
+      "trace": {
+        "error": "HTTPStatusError",
+        "facts": 0,
+        "http_status": 422,
+        "status": "failed"
+      }
+    }
+  ]
+}

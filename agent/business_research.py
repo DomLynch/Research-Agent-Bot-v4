@@ -759,6 +759,16 @@ def fetch_business_facts(
             timeout=30.0,
         )
         status_code = response.status_code
+        if status_code == 422:
+            fallback_body = dict(body)
+            fallback_body.pop("domain", None)
+            response = httpx.post(
+                f"{base}/api/v1/tier2/facts/search",
+                headers={"X-Researka-Token": token, "Content-Type": "application/json"},
+                json=fallback_body,
+                timeout=30.0,
+            )
+            status_code = response.status_code
         response.raise_for_status()
         data = response.json()
     except (httpx.HTTPError, ValueError) as exc:

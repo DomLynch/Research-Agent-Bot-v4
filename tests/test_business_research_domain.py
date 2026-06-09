@@ -5,11 +5,18 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import httpx
+
 import scripts.build_business_alpha_candidate as business_cli
 import scripts.build_publish_queue as queue
 import scripts.run_business_alpha_sweep as sweep
-from agent.business_research import build_candidate_bundle, business_fact_diagnostics
+from agent.business_research import (
+    build_candidate_bundle,
+    business_fact_diagnostics,
+    fetch_business_facts,
+)
 from agent.domain_profile import DomainProfile, load_domain_profile
+from agent.settings import Settings
 from agent.topic_discovery import load_seed_topics
 
 
@@ -72,6 +79,50 @@ def test_business_family_profiles_are_dry_run_and_seeded() -> None:
         assert profile.source_policy_path.exists()
         assert profile.claim_schema_path.exists()
         assert load_seed_topics(profile.seed_topics_path)
+
+
+def test_business_fetch_retries_without_unsupported_domain(
+    monkeypatch: Any,
+) -> None:
+    calls: list[dict[str, Any]] = []
+
+    def fake_post(
+        _url: str,
+        *,
+        headers: dict[str, str],
+        json: dict[str, Any],
+        timeout: float,
+    ) -> httpx.Response:
+        assert headers["X-Researka-Token"] == "tok"
+        assert timeout == 30.0
+        calls.append(dict(json))
+        request = httpx.Request("POST", _url)
+        if len(calls) == 1:
+            return httpx.Response(422, json={"detail": "unsupported domain"}, request=request)
+        return httpx.Response(200, json=_fixture_facts(), request=request)
+
+    settings = Settings(
+        mimo_api_key="", mimo_base_url="", mimo_model="", mimo_timeout_sec=1.0,
+        openrouter_api_key="", openrouter_base_url="", judge_model="",
+        writer_max_retries=0,
+        researka_database_url="https://database.example",
+        researka_database_token="tok",
+        ncbi_api_key="", semantic_scholar_api_key="", core_api_key="",
+        crossref_polite_email="", unpaywall_email="",
+        bot_enabled=False, daily_cost_cap_usd=0.0, runs_dir="runs",
+    )
+    monkeypatch.setattr("agent.business_research.httpx.post", fake_post)
+
+    facts, trace = fetch_business_facts(
+        "management_practices_productivity",
+        domain="management_research",
+        settings=settings,
+    )
+
+    assert trace["status"] == "ok"
+    assert len(facts) == 5
+    assert calls[0]["domain"] == "management_research"
+    assert "domain" not in calls[1]
 
 
 def test_business_bundle_clusters_shape_and_preserves_fields() -> None:
