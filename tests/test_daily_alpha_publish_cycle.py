@@ -10,7 +10,9 @@ import json
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
+from email.message import Message
 from pathlib import Path
 from typing import Any
 from urllib.request import Request
@@ -3348,6 +3350,40 @@ def test_crossref_title_retraction_word_does_not_block_clean_paper() -> None:
     )
 
     assert check["status"] == "clean"
+
+
+def test_crossref_404_lookup_miss_does_not_hold_submission() -> None:
+    def fetcher(doi: str) -> dict[str, Any]:
+        raise urllib.error.HTTPError(
+            url=f"https://api.crossref.org/works/{doi}",
+            code=404,
+            msg="Not Found",
+            hdrs=Message(),
+            fp=None,
+        )
+
+    check = daily.retraction_check(_verdict(), mode="crossref", fetcher=fetcher)
+
+    assert check["status"] == "clean"
+    assert check["errors"] == []
+    assert len(check["lookup_misses"]) == len(check["checked_dois"])
+
+
+def test_crossref_non_404_lookup_error_still_holds_submission() -> None:
+    def fetcher(doi: str) -> dict[str, Any]:
+        raise urllib.error.HTTPError(
+            url=f"https://api.crossref.org/works/{doi}",
+            code=503,
+            msg="Service Unavailable",
+            hdrs=Message(),
+            fp=None,
+        )
+
+    check = daily.retraction_check(_verdict(), mode="crossref", fetcher=fetcher)
+
+    assert check["status"] == "error"
+    assert check["lookup_misses"] == []
+    assert len(check["errors"]) == len(check["checked_dois"])
 
 
 def test_submit_token_accepts_research_alias(monkeypatch: MonkeyPatch) -> None:

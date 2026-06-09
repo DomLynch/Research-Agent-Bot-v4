@@ -2718,9 +2718,16 @@ def retraction_check(
         }
     retracted: list[Json] = []
     errors: list[Json] = []
+    lookup_misses: list[Json] = []
     for doi in dois:
         try:
             payload = fetcher(doi)
+        except urllib.error.HTTPError as exc:
+            if exc.code == 404:
+                lookup_misses.append({"doi": doi, "status": 404})
+                continue
+            errors.append({"doi": doi, "error": type(exc).__name__, "detail": str(exc)[:180]})
+            continue
         except Exception as exc:  # pragma: no cover - network defensive path
             errors.append({"doi": doi, "error": type(exc).__name__, "detail": str(exc)[:180]})
             continue
@@ -2733,6 +2740,7 @@ def retraction_check(
         "checked_dois": dois,
         "retracted": retracted,
         "errors": errors,
+        "lookup_misses": lookup_misses,
     }
 
 
