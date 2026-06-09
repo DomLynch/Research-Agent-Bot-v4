@@ -1,0 +1,105 @@
+{
+  "topic": "portfolio_returns",
+  "domain": {
+    "slug": "finance_research",
+    "display_name": "Finance research",
+    "seed_topics_path": "finance_research_discovery_seeds.toml",
+    "source_policy_path": "finance_research_sources.toml",
+    "claim_schema_path": "finance_research_claim_schema.toml",
+    "dry_run_only": false
+  },
+  "snapshot_utc": "2026-06-09T19-05-30Z",
+  "queries": [
+    {
+      "kind": "tier1",
+      "query": "portfolio_returns",
+      "facts": 3,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "strict",
+      "query": "portfolio returns",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "strict",
+      "query": "portfolio_returns",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "misvaluing innovation",
+      "facts": 2,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "portfolio returns",
+      "facts": 3,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "asset pricing",
+      "facts": 1,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "portfolio_returns",
+      "facts": 3,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "asset pricing implications",
+      "facts": 1,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "implications government",
+      "facts": 1,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "government economic",
+      "facts": 1,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "government economic policy",
+      "facts": 1,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "economic policy",
+      "facts": 1,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "economic policy uncertainty",
+      "facts": 1,
+      "status": "ok",
+      "errors": []
+    }
+  ]
+}

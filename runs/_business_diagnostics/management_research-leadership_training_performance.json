@@ -1,0 +1,23 @@
+{
+  "a_core_fact_count": 0,
+  "domain": "management_research",
+  "missing_core_fields": {
+    "comparator": 9,
+    "intervention": 7,
+    "metric": 0,
+    "numeric": 0,
+    "outcome": 0,
+    "source": 0,
+    "study_design": 5
+  },
+  "normalized_fact_count": 9,
+  "raw_fact_count": 9,
+  "retrieval_trace": {
+    "domain_filter_used": false,
+    "facts": 9,
+    "http_status": 200,
+    "status": "ok"
+  },
+  "top_clusters": [],
+  "topic": "leadership_training_performance"
+}

@@ -1,0 +1,34 @@
+{
+  "topic": "portfolio_returns",
+  "snapshot_utc": "2026-06-09T19-05-30Z",
+  "claim_count": 3,
+  "claims": [
+    {
+      "claim_text": "earn abnormal returns of roughly 11 percent per year",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/rfs/hhs183"
+      ]
+    },
+    {
+      "claim_text": "earns abnormal returns of roughly 11 percent per year",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/rfs/hhs183"
+      ]
+    },
+    {
+      "claim_text": "the portfolio with the greatest EPU beta underperforms the portfolio with the lowest EPU beta by 5.53% per annum",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1287/mnsc.2014.2044"
+      ]
+    }
+  ]
+}

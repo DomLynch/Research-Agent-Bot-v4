@@ -1,0 +1,23 @@
+{
+  "a_core_fact_count": 0,
+  "domain": "business_research",
+  "missing_core_fields": {
+    "comparator": 12,
+    "intervention": 1,
+    "metric": 0,
+    "numeric": 0,
+    "outcome": 0,
+    "source": 0,
+    "study_design": 16
+  },
+  "normalized_fact_count": 20,
+  "raw_fact_count": 20,
+  "retrieval_trace": {
+    "domain_filter_used": false,
+    "facts": 20,
+    "http_status": 200,
+    "status": "ok"
+  },
+  "top_clusters": [],
+  "topic": "platform_strategy_network_effects"
+}

@@ -1,0 +1,23 @@
+{
+  "a_core_fact_count": 0,
+  "domain": "economics_research",
+  "missing_core_fields": {
+    "comparator": 18,
+    "intervention": 17,
+    "metric": 0,
+    "numeric": 0,
+    "outcome": 0,
+    "source": 0,
+    "study_design": 3
+  },
+  "normalized_fact_count": 29,
+  "raw_fact_count": 29,
+  "retrieval_trace": {
+    "domain_filter_used": false,
+    "facts": 29,
+    "http_status": 200,
+    "status": "ok"
+  },
+  "top_clusters": [],
+  "topic": "industrial_policy_productivity"
+}

@@ -1,0 +1,424 @@
+{
+  "results": [
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/economics_research-minimum_wage_employment.json",
+      "domain": "economics_research",
+      "facts": 0,
+      "ready": false,
+      "topic": "minimum_wage_employment",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 0,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/economics_research-monetary_policy_inflation.json",
+      "domain": "economics_research",
+      "facts": 0,
+      "ready": false,
+      "topic": "monetary_policy_inflation",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 0,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/economics_research-tax_policy_labor_supply.json",
+      "domain": "economics_research",
+      "facts": 16,
+      "ready": false,
+      "topic": "tax_policy_labor_supply",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 16,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/economics_research-industrial_policy_productivity.json",
+      "domain": "economics_research",
+      "facts": 29,
+      "ready": false,
+      "topic": "industrial_policy_productivity",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 29,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/economics_research-trade_policy_firm_performance.json",
+      "domain": "economics_research",
+      "facts": 2,
+      "ready": false,
+      "topic": "trade_policy_firm_performance",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 2,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/economics_research-housing_supply_rents.json",
+      "domain": "economics_research",
+      "facts": 15,
+      "ready": false,
+      "topic": "housing_supply_rents",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 15,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/finance_research-factor_premia_returns.json",
+      "domain": "finance_research",
+      "facts": 0,
+      "ready": false,
+      "topic": "factor_premia_returns",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 0,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/finance_research-portfolio_diversification_risk.json",
+      "domain": "finance_research",
+      "facts": 0,
+      "ready": false,
+      "topic": "portfolio_diversification_risk",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 0,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/finance_research-monetary_policy_asset_prices.json",
+      "domain": "finance_research",
+      "facts": 0,
+      "ready": false,
+      "topic": "monetary_policy_asset_prices",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 0,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/finance_research-corporate_governance_returns.json",
+      "domain": "finance_research",
+      "facts": 0,
+      "ready": false,
+      "topic": "corporate_governance_returns",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 0,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/finance_research-earnings_announcements_returns.json",
+      "domain": "finance_research",
+      "facts": 0,
+      "ready": false,
+      "topic": "earnings_announcements_returns",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 0,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/finance_research-market_liquidity_volatility.json",
+      "domain": "finance_research",
+      "facts": 7,
+      "ready": false,
+      "topic": "market_liquidity_volatility",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 7,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/management_research-management_practices_productivity.json",
+      "domain": "management_research",
+      "facts": 0,
+      "ready": false,
+      "topic": "management_practices_productivity",
+      "trace": {
+        "error": "ReadTimeout",
+        "facts": 0,
+        "http_status": 422,
+        "status": "failed"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/management_research-remote_work_productivity.json",
+      "domain": "management_research",
+      "facts": 29,
+      "ready": false,
+      "topic": "remote_work_productivity",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 29,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/management_research-leadership_training_performance.json",
+      "domain": "management_research",
+      "facts": 9,
+      "ready": false,
+      "topic": "leadership_training_performance",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 9,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/management_research-incentive_pay_productivity.json",
+      "domain": "management_research",
+      "facts": 0,
+      "ready": false,
+      "topic": "incentive_pay_productivity",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 0,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/management_research-employee_engagement_turnover.json",
+      "domain": "management_research",
+      "facts": 12,
+      "ready": false,
+      "topic": "employee_engagement_turnover",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 12,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/management_research-organizational_design_performance.json",
+      "domain": "management_research",
+      "facts": 1,
+      "ready": false,
+      "topic": "organizational_design_performance",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 1,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/business_research-business_model_performance.json",
+      "domain": "business_research",
+      "facts": 7,
+      "ready": false,
+      "topic": "business_model_performance",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 7,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/business_research-platform_strategy_network_effects.json",
+      "domain": "business_research",
+      "facts": 20,
+      "ready": false,
+      "topic": "platform_strategy_network_effects",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 20,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/business_research-supply_chain_resilience_performance.json",
+      "domain": "business_research",
+      "facts": 11,
+      "ready": false,
+      "topic": "supply_chain_resilience_performance",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 11,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/business_research-pricing_strategy_margin.json",
+      "domain": "business_research",
+      "facts": 0,
+      "ready": false,
+      "topic": "pricing_strategy_margin",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 0,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/business_research-operations_process_improvement.json",
+      "domain": "business_research",
+      "facts": 0,
+      "ready": false,
+      "topic": "operations_process_improvement",
+      "trace": {
+        "error": "HTTPStatusError",
+        "facts": 0,
+        "http_status": 502,
+        "status": "failed"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/business_research-digital_transformation_firm_performance.json",
+      "domain": "business_research",
+      "facts": 0,
+      "ready": false,
+      "topic": "digital_transformation_firm_performance",
+      "trace": {
+        "error": "HTTPStatusError",
+        "facts": 0,
+        "http_status": 502,
+        "status": "failed"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/marketing_research-advertising_elasticity_sales.json",
+      "domain": "marketing_research",
+      "facts": 0,
+      "ready": false,
+      "topic": "advertising_elasticity_sales",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 0,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/marketing_research-price_promotions_demand.json",
+      "domain": "marketing_research",
+      "facts": 27,
+      "ready": false,
+      "topic": "price_promotions_demand",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 27,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/marketing_research-loyalty_program_retention.json",
+      "domain": "marketing_research",
+      "facts": 0,
+      "ready": false,
+      "topic": "loyalty_program_retention",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 0,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/marketing_research-brand_equity_price_premium.json",
+      "domain": "marketing_research",
+      "facts": 1,
+      "ready": false,
+      "topic": "brand_equity_price_premium",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 1,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/marketing_research-digital_ads_conversion.json",
+      "domain": "marketing_research",
+      "facts": 3,
+      "ready": false,
+      "topic": "digital_ads_conversion",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 3,
+        "http_status": 200,
+        "status": "ok"
+      }
+    },
+    {
+      "cycle": 1,
+      "diagnostics": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs/_business_diagnostics/marketing_research-customer_reviews_sales.json",
+      "domain": "marketing_research",
+      "facts": 0,
+      "ready": false,
+      "topic": "customer_reviews_sales",
+      "trace": {
+        "domain_filter_used": false,
+        "facts": 0,
+        "http_status": 200,
+        "status": "ok"
+      }
+    }
+  ]
+}

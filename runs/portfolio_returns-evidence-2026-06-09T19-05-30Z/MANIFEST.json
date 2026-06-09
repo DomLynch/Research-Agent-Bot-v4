@@ -1,0 +1,77 @@
+{
+  "domain": {
+    "slug": "finance_research",
+    "display_name": "Finance research",
+    "seed_topics_path": "finance_research_discovery_seeds.toml",
+    "source_policy_path": "finance_research_sources.toml",
+    "claim_schema_path": "finance_research_claim_schema.toml",
+    "dry_run_only": false
+  },
+  "topic": "portfolio_returns",
+  "snapshot_utc": "2026-06-09T19-05-30Z",
+  "top_n": 5,
+  "facts_inspected": 3,
+  "aggregated_claims": 3,
+  "data_tier": "tier1_canonical",
+  "source": "researka_db GET /api/v1/topics/{topic}/facts",
+  "frontier_model": "MiniMax-M3",
+  "mode": "alpha",
+  "selected_theme": "intervention_signal",
+  "facet_counts": {
+    "model_context": 2
+  },
+  "numeric_artifacts_filtered": 0,
+  "fact_fetch_plan": [
+    "strict audited numeric facts via POST /api/v1/tier2/facts/search",
+    "validated topic facts via GET /api/v1/topics/{topic}/facts",
+    "normal numeric fact graph via POST /api/v1/tier2/facts/search",
+    "normal all-fact graph when source diversity is still thin"
+  ],
+  "paper_context_source": "POST /api/v1/papers/topic + POST /api/v1/search",
+  "pico_enrichment": {
+    "facts_inspected": 3,
+    "facts_changed": 0,
+    "facts_population_filled": 0,
+    "facts_intervention_filled": 0,
+    "model": "skipped_no_candidates"
+  },
+  "ranking": "alpha: deterministic validation*magnitude*precision*recency + data-driven contrast/subgroup boosts + theme coherence",
+  "files": {
+    "top_md": {
+      "name": "top_5.md",
+      "sha256": "97b241d8c8c915c5968dc3f58f38c770fc973dff27971c64a37d47691825a3ac"
+    },
+    "all_facts": {
+      "name": "all_facts.json",
+      "sha256": "063c7daf8fad110282e615793c64a6807e57d8baab4759435c06b52fa4b128d1"
+    },
+    "claims_index": {
+      "name": "claims_index.json",
+      "sha256": "d70a59fa4e49398aeababdb2914066a5ebeb61b3996c7a67c6698e9462842e38"
+    },
+    "frontier_md": {
+      "name": "frontier_review.md",
+      "sha256": "b93ea50c9a1af4546b723d3044aaa04554f852c34f897acc7bb63708a271e32e"
+    },
+    "frontier_json": {
+      "name": "frontier_review.json",
+      "sha256": "8df5bca5ad12052c658aca65cb5f89a16a4b3cac6fb14b1963c718a0ba7d4b9c"
+    },
+    "papers_metadata": {
+      "name": "papers_metadata.json",
+      "sha256": "947b4665328acd9787c9dacc8236ca03c346c633e78db2ba23e9c115436678f1"
+    },
+    "signal_post_md": {
+      "name": "signal_post.md",
+      "sha256": "8e69d963aae6997b42978f3ca51e45e95bce9d0a8313b6d492c3645aedbd362e"
+    },
+    "alpha_memo_md": {
+      "name": "alpha_memo.md",
+      "sha256": "0b4684f36d35800cf8d3124275bb552c1a6a1776bf63a385451123bfa7c3a0be"
+    },
+    "publish_verdict_json": {
+      "name": "publish_verdict.json",
+      "sha256": "0676656b98b9885834c555d349c38d6055a70a6f0dd2d29a90b56ae553079221"
+    }
+  }
+}

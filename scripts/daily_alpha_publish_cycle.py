@@ -28,6 +28,7 @@ from typing import Any
 from agent.alpha_selector import accepted_shape_bonus
 from agent.domain_profile import domain_choices, domain_slug, load_domain_profile
 from agent.publish_tier import publish_verdict
+from agent.settings import load_settings
 
 _ROOT = Path(__file__).resolve().parent.parent
 _RUNS = _ROOT / "runs"
@@ -79,6 +80,7 @@ Submitter = Callable[[Json], Json]
 MemoRefresher = Callable[[Path, Json], bool]
 QueueBuilder = Callable[[Path, bool], Json]
 PageFetcher = Callable[[str], Json]
+SourcePaperFetcher = Callable[[str, int], list[Json]]
 _SUBMIT_TOKEN_ENVS = (
     "RESEARKA_API_KEY_V4",
     "RESEARKA_API_TOKEN_V4",
@@ -3060,6 +3062,273 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
     }
 
 
+def _paper_key(paper: Json) -> str:
+    return str(
+        paper.get("doi") or paper.get("pmid") or paper.get("pmcid")
+        or paper.get("id") or paper.get("title") or ""
+    ).strip()
+
+
+def _fetch_source_literature_papers(topic: str, limit: int) -> list[Json]:
+    settings = load_settings()
+    base = settings.researka_database_url.rstrip("/")
+    token = settings.researka_database_token.strip()
+    if not base or not token or not topic.strip():
+        return []
+    req = urllib.request.Request(
+        f"{base}/api/v1/papers/topic",
+        data=json.dumps({"topic": topic, "limit": max(limit, 8)}).encode("utf-8"),
+        method="POST",
+        headers={
+            "X-Researka-Token": token,
+            "Content-Type": "application/json",
+            "User-Agent": "researka-v4/1.0",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except (OSError, ValueError, urllib.error.HTTPError):
+        return []
+    rows = data if isinstance(data, list) else []
+    out: list[Json] = []
+    seen: set[str] = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        paper = {
+            "title": str(row.get("title") or "").strip(),
+            "doi": str(row.get("doi") or "").strip() or None,
+            "pmid": row.get("pmid") or None,
+            "pmcid": row.get("pmcid") or None,
+            "year": row.get("year") or row.get("publication_year"),
+            "journal": row.get("journal") or row.get("venue") or row.get("journal_name"),
+            "url": row.get("url") or row.get("source_url"),
+            "evidence_type": "source_literature",
+        }
+        key = _paper_key(paper)
+        if not paper["title"] or not key or key in seen:
+            continue
+        seen.add(key)
+        out.append(paper)
+        if len(out) >= limit:
+            break
+    return out
+
+
+def _latest_source_literature_topics(
+    runs_root: Path, *, profile_slug: str, blocked_topics: set[str], min_sources: int,
+) -> list[str]:
+    discovery_dir = runs_root / "_topics_discovery"
+    if not discovery_dir.exists():
+        return []
+    out: list[str] = []
+    seen: set[str] = set()
+    for path in sorted(discovery_dir.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+        data = _json(path, {})
+        if not isinstance(data, dict):
+            continue
+        if domain_slug(data.get("domain")) != profile_slug:
+            continue
+        for row in data.get("all") or data.get("top") or []:
+            if not isinstance(row, dict):
+                continue
+            topic = str(row.get("topic") or "").strip()
+            if not topic or topic in seen or topic in blocked_topics:
+                continue
+            if int(row.get("paper_count") or 0) < min_sources:
+                continue
+            seen.add(topic)
+            out.append(topic)
+        if out:
+            break
+    return out
+
+
+_BOUNDARY_STOPWORDS = {
+    "about", "across", "adults", "advances", "after", "aging", "analysis",
+    "and", "anti", "are", "associated", "based", "between", "biology", "case",
+    "cell", "cells", "clinical", "common", "consensus", "disease", "diseases",
+    "during", "effect", "effects", "for", "from", "guidelines", "health",
+    "human", "humans", "implications", "insights", "into", "life", "lifespan",
+    "mechanism", "mechanisms", "model", "models", "new", "old", "older",
+    "overview", "paper", "patients", "recommendations", "related", "review",
+    "role", "study", "the", "therapy", "through", "with",
+}
+
+
+def _source_literature_boundary_terms(topic: str, papers: list[Json], limit: int = 6) -> list[str]:
+    topic_terms = {
+        term.lower()
+        for term in re.findall(r"[A-Za-z][A-Za-z0-9+-]{2,}", topic.replace("_", " "))
+    }
+    counts: dict[str, int] = {}
+    for paper in papers:
+        title = str(paper.get("title") or "")
+        terms = {
+            term.lower()
+            for term in re.findall(r"[A-Za-z][A-Za-z0-9+-]{2,}", title)
+            if term.lower() not in _BOUNDARY_STOPWORDS
+            and term.lower() not in topic_terms
+        }
+        for term in terms:
+            counts[term] = counts.get(term, 0) + 1
+    ranked = sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+    return [term for term, count in ranked if count > 1][:limit]
+
+
+def _source_literature_markdown(topic: str, papers: list[Json]) -> str:
+    title_topic = topic.replace("_", " ").strip()
+    boundary_terms = _source_literature_boundary_terms(topic, papers)
+    boundary = ", ".join(boundary_terms) if boundary_terms else "the named mechanisms in the cited titles"
+    evidence = "\n".join(
+        "- "
+        + str(paper.get("title") or "Untitled source").strip()
+        + (
+            f". DOI `{paper.get('doi')}`"
+            if paper.get("doi") else "."
+        )
+        for paper in papers
+    )
+    return f"""## One-sentence thesis
+
+The current source literature for {title_topic} maps a narrow boundary around {boundary}, but it does not yet support a broad endpoint or intervention claim without direct extracted effect receipts.
+
+**Interpretation note:** This is a hypothesis-generating alpha memo. It is not medical, policy, investment, or clinical advice.
+
+## Why this is surprising
+
+The publication signal is not a generic age claim. It is that several independent source titles keep the lane near {boundary}, while the fact extractor has not yet produced a source-diverse direct-effect bundle that can support a stronger alpha claim.
+
+## Boundary map
+
+- Current boundary: {boundary}.
+- Supported use: source-literature triage and extraction planning for {title_topic}.
+- Unsupported use: claiming lifespan extension, clinical benefit, or intervention efficacy before direct endpoint, population, comparator, and intervention facts are extracted.
+
+## Evidence receipts
+
+{evidence}
+
+## What this changes
+
+Route this topic into source-lit boundary mapping first. The next extraction pass should prioritize the named boundary terms above, then bind direct endpoint, population, comparator, and intervention facts before making a stronger causal or efficacy claim.
+
+## What would weaken this
+
+- A source audit showing these papers are off-topic would remove the boundary signal.
+- A direct extracted fact bundle with fewer than {len(papers)} distinct source papers would keep the topic below publication strength.
+- A same-topic extracted endpoint bundle with consistent direct effects would supersede this boundary memo with a stronger evidence memo.
+
+## Bottom line
+
+The publishable alpha is conservative: enough source literature exists to define the research lane, but the stronger claim still depends on direct fact extraction.
+"""
+
+
+def _source_literature_payload(
+    *, profile_slug: str, topic: str, papers: list[Json], runs_root: Path, date: str,
+) -> tuple[Json, Json]:
+    profile = load_domain_profile(profile_slug)
+    domain_metadata = profile.as_metadata()
+    title_topic = topic.replace("_", " ").strip()
+    boundary_terms = _source_literature_boundary_terms(topic, papers, limit=3)
+    boundary = ", ".join(boundary_terms) if boundary_terms else "source-literature mechanisms"
+    title = f"{title_topic}: source literature maps {boundary}, not a broad endpoint claim"
+    abstract = (
+        f"{title_topic} has enough source breadth to map {boundary}, "
+        "but not yet enough extracted direct-effect evidence for a stronger claim."
+    )
+    markdown = _source_literature_markdown(topic, papers)
+    safe_date = re.sub(r"[^A-Za-z0-9_.-]+", "-", date).strip("-") or "run"
+    run_dir = runs_root / f"{topic}-source-literature-{safe_date}"
+    run_dir.mkdir(parents=True, exist_ok=True)
+    (run_dir / "alpha_memo.md").write_text(markdown, encoding="utf-8")
+    (run_dir / "source_literature_papers.json").write_text(
+        json.dumps(papers, indent=2, ensure_ascii=False), encoding="utf-8",
+    )
+    try:
+        run_ref = str(run_dir.resolve().relative_to(_ROOT))
+    except ValueError:
+        run_ref = str(run_dir)
+    fingerprint = hashlib.sha256(
+        json.dumps({
+            "domain": profile_slug, "topic": topic,
+            "paper_keys": [_paper_key(paper) for paper in papers],
+            "surface": "source_literature_boundary",
+        }, sort_keys=True).encode("utf-8")
+    ).hexdigest()
+    candidate = {
+        "domain": domain_metadata,
+        "topic": topic,
+        "topic_family": topic,
+        "run_dir": run_ref,
+        "memo_fingerprint": fingerprint,
+        "surface_type": "source_literature_boundary",
+    }
+    payload = {
+        "artifact_type": "alpha_memo",
+        "article_type": "alpha_memo",
+        "author_agent_id": _submission_agent_id(profile_slug),
+        "agent_id": _submission_agent_id(profile_slug),
+        "domain": domain_metadata,
+        "title": title,
+        "abstract": abstract,
+        "summary": abstract,
+        "topic": topic,
+        "markdown": markdown,
+        "citations": _source_bundle(papers),
+        "source_bundle": _source_bundle(papers),
+        "novelty_score": 60,
+        "confidence_score": "L3",
+        "evidence_bundle": {
+            "domain": domain_metadata,
+            "run_dir": run_ref,
+            "surface_type": "source_literature_boundary",
+            "source_papers": papers,
+            "direct_source_papers": papers,
+            "bound_receipt_count": len(papers),
+            "bound_source_count": len(papers),
+            "source_bundle_count": len(papers),
+            "direct_source_count": len(papers),
+            "context_source_count": 0,
+            "selection_note": (
+                "normal fact-backed alpha lane exhausted; source-literature "
+                "boundary fallback preserved source floor without fabricating facts"
+            ),
+        },
+        "content_hash": "sha256:" + hashlib.sha256(markdown.encode("utf-8")).hexdigest(),
+    }
+    (run_dir / "source_literature_payload.json").write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8",
+    )
+    return candidate, payload
+
+
+def _source_literature_fallback(
+    *, runs_root: Path, profile_slug: str, blocked_topics: set[str],
+    min_sources: int, date: str, fetch_papers: SourcePaperFetcher,
+) -> tuple[Json, Json] | None:
+    for topic in _latest_source_literature_topics(
+        runs_root, profile_slug=profile_slug,
+        blocked_topics=blocked_topics, min_sources=min_sources,
+    ):
+        papers = fetch_papers(topic, min_sources)
+        if len(papers) < min_sources:
+            continue
+        if not _source_literature_boundary_terms(topic, papers[:min_sources]):
+            continue
+        return _source_literature_payload(
+            profile_slug=profile_slug, topic=topic, papers=papers[:min_sources],
+            runs_root=runs_root, date=date,
+        )
+    return None
+
+
+def _source_literature_fallback_allowed(profile_slug: str) -> bool:
+    return profile_slug in {"longevity", "longevity_research"}
+
+
 def _http_submitter(url: str, token: str) -> Submitter:
     def submit(payload: Json) -> Json:
         body = json.dumps(payload).encode("utf-8")
@@ -3136,6 +3405,7 @@ def run_cycle(
     page_fetcher: PageFetcher = _fetch_public_page,
     memo_refresher: MemoRefresher = _refresh_alpha_memo,
     queue_builder: QueueBuilder = _build_queue,
+    source_paper_fetcher: SourcePaperFetcher = _fetch_source_literature_papers,
     sleep: Callable[[float], None] = time.sleep,
 ) -> Json:
     profile = load_domain_profile(domain)
@@ -3577,6 +3847,88 @@ def run_cycle(
             ledger.update({"status": result["status"], "published": 0})
             _write_json(ledger_path, ledger)
             return ledger
+    if (
+        submit
+        and not ledger["cycle_attempts"]
+        and submitter is not None
+        and _source_literature_fallback_allowed(profile.slug)
+    ):
+        fallback = _source_literature_fallback(
+            runs_root=runs_root,
+            profile_slug=profile.slug,
+            blocked_topics=blocked_topics,
+            min_sources=min_direct_submit_sources,
+            date=date,
+            fetch_papers=source_paper_fetcher,
+        )
+        if fallback is not None:
+            candidate, payload = fallback
+            attempt = {
+                "batch": "source_literature_fallback",
+                "topic": candidate.get("topic"),
+                "run_dir": candidate.get("run_dir"),
+                "fingerprint": candidate.get("memo_fingerprint"),
+                "retraction_check": {"status": "skipped_source_literature_boundary"},
+            }
+            ledger["candidate"] = {
+                "topic": candidate.get("topic"),
+                "run_dir": candidate.get("run_dir"),
+                "fingerprint": candidate.get("memo_fingerprint"),
+                "surface_type": candidate.get("surface_type"),
+            }
+            ledger["source_literature_fallback"] = {
+                "status": "selected",
+                "topic": candidate.get("topic"),
+                "run_dir": candidate.get("run_dir"),
+                "source_count": len(payload.get("source_bundle") or []),
+            }
+            result = submit_with_backoff(payload, submitter)
+            attempt["submission"] = result
+            ledger["submission"] = result
+            if result["status"] == "accepted":
+                submission_id = _submission_id(result)
+                _record_submission_attempt(
+                    submitted_path,
+                    date=date,
+                    candidate=candidate,
+                    runs_root=runs_root,
+                    submission_id=submission_id,
+                )
+                ledger.update({
+                    "final_verdict": "pending",
+                    "status": "submitted_to_researka",
+                    "submitted": 1,
+                    "submitted_topic": candidate.get("topic"),
+                    "submission_id": submission_id,
+                })
+                if submission_id:
+                    final = _poll_submission_decision(
+                        ledger,
+                        submission_id=submission_id,
+                        fetcher=decision_fetcher,
+                        page_fetcher=page_fetcher,
+                        attempts=decision_poll_attempts
+                        if default_submitter or decision_fetcher is not _decision_fetch
+                        else 0,
+                        sleep_seconds=decision_poll_seconds,
+                        sleep=sleep,
+                    )
+                    attempt["public_page_check"] = ledger.get("public_page_check")
+                    attempt["researka_decision"] = ledger.get("researka_decision")
+                    attempt["status"] = str(ledger.get("status") or final)
+                    ledger["cycle_attempts"].append(attempt)
+                    _write_json(ledger_path, ledger)
+                    return ledger
+                attempt["status"] = "submitted_to_researka"
+                ledger["cycle_attempts"].append(attempt)
+                _write_json(ledger_path, ledger)
+                return ledger
+            attempt["status"] = result["status"]
+            ledger["cycle_attempts"].append(attempt)
+            ledger.update({"status": result["status"], "published": 0})
+            _write_json(ledger_path, ledger)
+            return ledger
+
     if ledger["cycle_attempts"]:
         last_status = str(ledger["cycle_attempts"][-1].get("status") or "failed")
         ledger.update({

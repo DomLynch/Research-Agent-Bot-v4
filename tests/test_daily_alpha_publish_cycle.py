@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import os
 import subprocess
 import sys
 import time
@@ -4873,6 +4874,121 @@ def test_accepted_shape_bias_breaks_candidate_tie(tmp_path: Path) -> None:
     assert ledger["status"] == "dry_run_selected"
     assert ledger["candidate"]["topic"] == "matching"
     assert ledger["considered"][0]["accepted_shape_bonus"] > 0
+
+
+def test_source_literature_fallback_submits_after_empty_fact_lane(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    longevity_path = root / "_topics_discovery" / "longevity.json"
+    longevity_path.write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{
+            "topic": "glycation_AGEs",
+            "paper_count": 25,
+            "fact_source_count": 0,
+            "top_paper_title": "Advanced Glycation End Products",
+        }],
+    }), encoding="utf-8")
+    business_path = root / "_topics_discovery" / "business.json"
+    business_path.write_text(json.dumps({
+        "domain": {"slug": "business_research"},
+        "all": [{
+            "topic": "minimum_wage_employment",
+            "paper_count": 25,
+            "fact_source_count": 0,
+        }],
+    }), encoding="utf-8")
+    os.utime(business_path, (time.time() + 5, time.time() + 5))
+    papers = [
+        {"title": "AGE-RAGE signalling and skin collagen aging", "doi": "10.1234/1", "year": 2024},
+        {"title": "Glycation stress and RAGE activation in vascular aging", "doi": "10.1234/2", "year": 2024},
+        {"title": "Collagen crosslinking in advanced glycation biology", "doi": "10.1234/3", "year": 2024},
+        {"title": "RAGE pathways in age-related tissue injury", "doi": "10.1234/4", "year": 2024},
+        {"title": "Glycation-derived collagen stiffening review", "doi": "10.1234/5", "year": 2024},
+    ]
+    seen_payload: dict[str, Any] = {}
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        seen_payload.update(payload)
+        return {"ok": True, "status": 200,
+                "response": {"submission": {"id": "sub-1"}}}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-00-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        submitter=submitter,
+        source_paper_fetcher=lambda _topic, _limit: papers,
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {
+            "ok": True, "status": 200, "body": "<title>Source</title>",
+        },
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "glycation_AGEs"
+    assert ledger["source_literature_fallback"]["status"] == "selected"
+    assert seen_payload["domain"]["slug"] == "longevity_research"
+    assert seen_payload["topic"] == "glycation_AGEs"
+    assert seen_payload["evidence_bundle"]["surface_type"] == "source_literature_boundary"
+    assert seen_payload["evidence_bundle"]["direct_source_count"] == 5
+    assert len(seen_payload["source_bundle"]) == 5
+    assert "Boundary map" in seen_payload["markdown"]
+    assert "rage" in seen_payload["markdown"].lower()
+    assert "collagen" in seen_payload["markdown"].lower()
+
+
+def test_source_literature_fallback_is_not_used_for_ai_domain(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    (root / "_topics_discovery" / "ai.json").write_text(json.dumps({
+        "domain": {"slug": "ai_research"},
+        "all": [{
+            "topic": "llm_evaluation",
+            "paper_count": 25,
+            "fact_source_count": 0,
+        }],
+    }), encoding="utf-8")
+    papers = [
+        {"title": f"LLM evaluation benchmark paper {idx}", "doi": f"10.1234/{idx}"}
+        for idx in range(5)
+    ]
+    submitted: list[dict[str, Any]] = []
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submitted.append(payload)
+        return {
+            "ok": True, "status": 200,
+            "response": {"submission": {"id": "sub-ai"}},
+        }
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T19-00-00Z",
+        domain="ai_research",
+        queue=_queue(),
+        submit=True,
+        submitter=submitter,
+        source_paper_fetcher=lambda _topic, _limit: papers,
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert submitted == []
+    assert ledger["status"] == "no_fresh_candidate"
+    assert "source_literature_fallback" not in ledger
 
 
 def test_memo_without_falsifier_is_blocked(tmp_path: Path) -> None:

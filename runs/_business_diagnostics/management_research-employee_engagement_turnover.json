@@ -1,0 +1,23 @@
+{
+  "a_core_fact_count": 0,
+  "domain": "management_research",
+  "missing_core_fields": {
+    "comparator": 2,
+    "intervention": 2,
+    "metric": 0,
+    "numeric": 0,
+    "outcome": 0,
+    "source": 0,
+    "study_design": 0
+  },
+  "normalized_fact_count": 12,
+  "raw_fact_count": 12,
+  "retrieval_trace": {
+    "domain_filter_used": false,
+    "facts": 12,
+    "http_status": 200,
+    "status": "ok"
+  },
+  "top_clusters": [],
+  "topic": "employee_engagement_turnover"
+}

@@ -359,10 +359,13 @@ def _apply_finance_return_shape(fact: Json) -> None:
         value = _clean(fact.get(field))
         if value:
             fact[f"{field}_detail"] = value
+    signal_detail = _finance_signal_family(fact)
+    if signal_detail:
+        fact["signal_family_detail"] = signal_detail
     fact.update({
         "population": "firms portfolios funds",
         "intervention": "return predictive signal portfolio",
-        "signal_family": _finance_signal_family(fact),
+        "signal_family": "return predictive signal",
         "comparator": "benchmark or opposite signal portfolio",
         "outcome": "risk adjusted portfolio returns",
         "metric": "percentage return or alpha",
@@ -744,21 +747,32 @@ def fetch_business_facts(
     token = settings.researka_database_token.strip()
     if not base or not token:
         return [], {"status": "missing_token", "facts": 0}
-    body = {
-        "domain": domain,
+    body: Json = {
         "query": topic.replace("_", " "),
         "top_k": top_k,
         "min_confidence": "medium",
         "numeric_only": True,
     }
+    domain_body = {"domain": domain, **body}
     try:
+        headers = {"X-Researka-Token": token, "Content-Type": "application/json"}
         response = httpx.post(
             f"{base}/api/v1/tier2/facts/search",
-            headers={"X-Researka-Token": token, "Content-Type": "application/json"},
-            json=body,
+            headers=headers,
+            json=domain_body,
             timeout=30.0,
         )
         status_code = response.status_code
+        used_domain_filter = True
+        if status_code == 422:
+            response = httpx.post(
+                f"{base}/api/v1/tier2/facts/search",
+                headers=headers,
+                json=body,
+                timeout=30.0,
+            )
+            status_code = response.status_code
+            used_domain_filter = False
         response.raise_for_status()
         data = response.json()
     except (httpx.HTTPError, ValueError) as exc:
@@ -769,4 +783,9 @@ def fetch_business_facts(
             "facts": 0,
         }
     rows = [row for row in data if isinstance(row, dict)] if isinstance(data, list) else []
-    return rows, {"status": "ok", "facts": len(rows), "http_status": status_code}
+    return rows, {
+        "status": "ok",
+        "facts": len(rows),
+        "http_status": status_code,
+        "domain_filter_used": used_domain_filter,
+    }

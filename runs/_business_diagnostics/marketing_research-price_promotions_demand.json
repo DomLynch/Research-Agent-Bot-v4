@@ -1,0 +1,23 @@
+{
+  "a_core_fact_count": 0,
+  "domain": "marketing_research",
+  "missing_core_fields": {
+    "comparator": 23,
+    "intervention": 15,
+    "metric": 0,
+    "numeric": 0,
+    "outcome": 0,
+    "source": 0,
+    "study_design": 11
+  },
+  "normalized_fact_count": 27,
+  "raw_fact_count": 27,
+  "retrieval_trace": {
+    "domain_filter_used": false,
+    "facts": 27,
+    "http_status": 200,
+    "status": "ok"
+  },
+  "top_clusters": [],
+  "topic": "price_promotions_demand"
+}

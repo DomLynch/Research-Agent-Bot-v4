@@ -1,0 +1,39 @@
+{
+  "a_core_fact_count": 1,
+  "domain": "marketing_research",
+  "missing_core_fields": {
+    "comparator": 2,
+    "intervention": 1,
+    "metric": 0,
+    "numeric": 0,
+    "outcome": 0,
+    "source": 0,
+    "study_design": 1
+  },
+  "normalized_fact_count": 3,
+  "raw_fact_count": 3,
+  "retrieval_trace": {
+    "domain_filter_used": false,
+    "facts": 3,
+    "http_status": 200,
+    "status": "ok"
+  },
+  "top_clusters": [
+    {
+      "comparability_blockers": [],
+      "fact_count": 1,
+      "sample": "Two high quality ecological studies showed the incremental effectiveness of adding digital contact tracing to manual contact tracing.",
+      "sample_fact_id": "143350",
+      "shape": {
+        "comparator": "manual contact tracing alone",
+        "intervention": "digital contact tracing added to manual contact tracing",
+        "metric": "effect size",
+        "outcome": "effect size",
+        "population": "covid 19 populations",
+        "study_design": "sr"
+      },
+      "source_count": 1
+    }
+  ],
+  "topic": "digital_ads_conversion"
+}

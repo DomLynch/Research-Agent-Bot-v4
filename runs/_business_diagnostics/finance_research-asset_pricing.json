@@ -1,0 +1,21 @@
+{
+  "a_core_fact_count": 0,
+  "domain": "finance_research",
+  "missing_core_fields": {
+    "comparator": 2,
+    "intervention": 2,
+    "metric": 0,
+    "numeric": 0,
+    "outcome": 0,
+    "source": 0,
+    "study_design": 1
+  },
+  "normalized_fact_count": 6,
+  "raw_fact_count": 6,
+  "retrieval_trace": {
+    "facts": 0,
+    "status": "local_fixture"
+  },
+  "top_clusters": [],
+  "topic": "asset_pricing"
+}

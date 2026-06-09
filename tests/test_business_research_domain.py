@@ -5,10 +5,16 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import httpx
+
 import scripts.build_business_alpha_candidate as business_cli
 import scripts.build_publish_queue as queue
 import scripts.run_business_alpha_sweep as sweep
-from agent.business_research import build_candidate_bundle, business_fact_diagnostics
+from agent.business_research import (
+    build_candidate_bundle,
+    business_fact_diagnostics,
+    fetch_business_facts,
+)
 from agent.domain_profile import DomainProfile, load_domain_profile
 from agent.topic_discovery import load_seed_topics
 
@@ -215,6 +221,46 @@ def test_business_bundle_ignores_generic_study_design_other() -> None:
 
     assert bundle is not None
     assert bundle.shape["study_design"] == "asset pricing"
+
+
+def test_business_fetch_retries_without_domain_when_live_schema_rejects_it(
+    monkeypatch: Any,
+) -> None:
+    calls: list[dict[str, Any]] = []
+
+    class _Settings:
+        researka_database_url = "https://database.test"
+        researka_database_token = "tok"
+
+    def fake_post(
+        url: str,
+        *,
+        headers: dict[str, str],
+        json: dict[str, Any],
+        timeout: float,
+    ) -> httpx.Response:
+        request = httpx.Request("POST", url)
+        calls.append(json)
+        if len(calls) == 1:
+            return httpx.Response(
+                422, json={"detail": "domain extra_forbidden"}, request=request,
+            )
+        return httpx.Response(
+            200, json=[{"id": "f1", "paper": {"doi": "10.1/a"}}], request=request,
+        )
+
+    monkeypatch.setattr("agent.business_research.httpx.post", fake_post)
+
+    rows, trace = fetch_business_facts(
+        "portfolio_returns",
+        domain="finance_research",
+        settings=_Settings(),  # type: ignore[arg-type]
+    )
+
+    assert rows == [{"id": "f1", "paper": {"doi": "10.1/a"}}]
+    assert "domain" in calls[0]
+    assert "domain" not in calls[1]
+    assert trace["domain_filter_used"] is False
 
 
 def test_business_bundle_rejects_off_topic_medical_management_fact() -> None:

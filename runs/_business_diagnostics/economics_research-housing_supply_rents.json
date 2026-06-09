@@ -1,0 +1,23 @@
+{
+  "a_core_fact_count": 0,
+  "domain": "economics_research",
+  "missing_core_fields": {
+    "comparator": 8,
+    "intervention": 7,
+    "metric": 0,
+    "numeric": 0,
+    "outcome": 0,
+    "source": 0,
+    "study_design": 4
+  },
+  "normalized_fact_count": 15,
+  "raw_fact_count": 15,
+  "retrieval_trace": {
+    "domain_filter_used": false,
+    "facts": 15,
+    "http_status": 200,
+    "status": "ok"
+  },
+  "top_clusters": [],
+  "topic": "housing_supply_rents"
+}

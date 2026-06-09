@@ -366,7 +366,6 @@ def stitch(
 
     # Sprint 16: emit readiness_report.json next to paper.md so the
     # one-glance reviewer signal travels with every shipped artifact.
-    import json
     readiness = classify_readiness(
         summary=summary, strict=strict, extractions=extr, pool=pool,
     )
@@ -386,6 +385,23 @@ def stitch(
     paper_type = select_paper_type(readiness)
     (target / "paper_type_decision.json").write_text(
         json.dumps(paper_type.as_dict(), indent=2), encoding="utf-8",
+    )
+    (target / "report.json").write_text(
+        json.dumps(
+            _build_report_json(
+                topic=topic,
+                paper_path=target_path,
+                summary=summary,
+                strict=strict,
+                extractions=extr,
+                pool=pool,
+                readiness=readiness,
+                cite_audit=cite_audit,
+                paper_type=paper_type,
+            ),
+            indent=2,
+        ),
+        encoding="utf-8",
     )
 
     # Sprint 38: move the stage bundles (s1/s2/s3/s6/s7) INTO the paper

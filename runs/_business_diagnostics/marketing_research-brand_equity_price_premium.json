@@ -1,0 +1,23 @@
+{
+  "a_core_fact_count": 0,
+  "domain": "marketing_research",
+  "missing_core_fields": {
+    "comparator": 1,
+    "intervention": 0,
+    "metric": 0,
+    "numeric": 0,
+    "outcome": 0,
+    "source": 0,
+    "study_design": 1
+  },
+  "normalized_fact_count": 1,
+  "raw_fact_count": 1,
+  "retrieval_trace": {
+    "domain_filter_used": false,
+    "facts": 1,
+    "http_status": 200,
+    "status": "ok"
+  },
+  "top_clusters": [],
+  "topic": "brand_equity_price_premium"
+}

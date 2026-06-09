@@ -1,0 +1,254 @@
+[
+  {
+    "domain": "economics_research",
+    "topic": "minimum_wage_employment",
+    "query": "minimum wage employment",
+    "status": 200,
+    "facts": 0,
+    "a_core": 0,
+    "top_clusters": [],
+    "ready": false,
+    "facts_path": "runs/_business_diagnostics/live_search_pass/economics_research-minimum_wage_employment.json"
+  },
+  {
+    "domain": "economics_research",
+    "topic": "minimum_wage_elasticity",
+    "query": "minimum wage elasticity employment",
+    "status": 200,
+    "facts": 0,
+    "a_core": 0,
+    "top_clusters": [],
+    "ready": false,
+    "facts_path": "runs/_business_diagnostics/live_search_pass/economics_research-minimum_wage_elasticity.json"
+  },
+  {
+    "domain": "economics_research",
+    "topic": "teen_employment_minimum_wage",
+    "query": "teen employment minimum wage",
+    "status": 200,
+    "facts": 4,
+    "a_core": 0,
+    "top_clusters": [],
+    "ready": false,
+    "facts_path": "runs/_business_diagnostics/live_search_pass/economics_research-teen_employment_minimum_wage.json"
+  },
+  {
+    "domain": "economics_research",
+    "topic": "monetary_policy_inflation",
+    "query": "monetary policy inflation",
+    "status": 200,
+    "facts": 0,
+    "a_core": 0,
+    "top_clusters": [],
+    "ready": false,
+    "facts_path": "runs/_business_diagnostics/live_search_pass/economics_research-monetary_policy_inflation.json"
+  },
+  {
+    "domain": "economics_research",
+    "topic": "housing_supply_rents",
+    "query": "housing supply rents",
+    "status": 200,
+    "facts": 15,
+    "a_core": 0,
+    "top_clusters": [],
+    "ready": false,
+    "facts_path": "runs/_business_diagnostics/live_search_pass/economics_research-housing_supply_rents.json"
+  },
+  {
+    "domain": "finance_research",
+    "topic": "portfolio_returns",
+    "query": "portfolio returns",
+    "status": 200,
+    "facts": 3,
+    "a_core": 2,
+    "top_clusters": [
+      {
+        "source_count": 1,
+        "fact_count": 1,
+        "shape": {
+          "population": "firms portfolios funds",
+          "intervention": "return predictive signal portfolio",
+          "signal_family": "long short portfolio strategy based on past track records",
+          "comparator": "benchmark or opposite signal portfolio",
+          "outcome": "risk adjusted portfolio returns",
+          "metric": "percentage return or alpha",
+          "study_design": "empirical asset pricing"
+        },
+        "sample_fact_id": "portfolio returns/auto/2013/abnormal returns 333815",
+        "sample": "earn abnormal returns of roughly 11 percent per year",
+        "comparability_blockers": []
+      },
+      {
+        "source_count": 1,
+        "fact_count": 1,
+        "shape": {
+          "population": "firms portfolios funds",
+          "intervention": "return predictive signal portfolio",
+          "signal_family": "long short portfolio strategy that takes advantage of the information in past track records",
+          "comparator": "benchmark or opposite signal portfolio",
+          "outcome": "risk adjusted portfolio returns",
+          "metric": "percentage return or alpha",
+          "study_design": "empirical asset pricing"
+        },
+        "sample_fact_id": "portfolio returns/auto/2013/abnormal returns 333820",
+        "sample": "earns abnormal returns of roughly 11 percent per year",
+        "comparability_blockers": []
+      }
+    ],
+    "ready": false,
+    "facts_path": "runs/_business_diagnostics/live_search_pass/finance_research-portfolio_returns.json"
+  },
+  {
+    "domain": "finance_research",
+    "topic": "asset_pricing",
+    "query": "asset pricing returns",
+    "status": 200,
+    "facts": 6,
+    "a_core": 0,
+    "top_clusters": [],
+    "ready": false,
+    "facts_path": "runs/_business_diagnostics/live_search_pass/finance_research-asset_pricing.json"
+  },
+  {
+    "domain": "finance_research",
+    "topic": "policy_uncertainty_returns",
+    "query": "policy uncertainty stock returns",
+    "status": 200,
+    "facts": 4,
+    "a_core": 0,
+    "top_clusters": [],
+    "ready": false,
+    "facts_path": "runs/_business_diagnostics/live_search_pass/finance_research-policy_uncertainty_returns.json"
+  },
+  {
+    "domain": "finance_research",
+    "topic": "market_liquidity_volatility",
+    "query": "market liquidity volatility",
+    "status": 200,
+    "facts": 7,
+    "a_core": 0,
+    "top_clusters": [],
+    "ready": false,
+    "facts_path": "runs/_business_diagnostics/live_search_pass/finance_research-market_liquidity_volatility.json"
+  },
+  {
+    "domain": "finance_research",
+    "topic": "earnings_announcements_returns",
+    "query": "earnings announcement returns",
+    "status": 200,
+    "facts": 0,
+    "a_core": 0,
+    "top_clusters": [],
+    "ready": false,
+    "facts_path": "runs/_business_diagnostics/live_search_pass/finance_research-earnings_announcements_returns.json"
+  },
+  {
+    "domain": "management_research",
+    "topic": "remote_work_productivity",
+    "query": "remote work productivity",
+    "status": 200,
+    "facts": 29,
+    "a_core": 0,
+    "top_clusters": [],
+    "ready": false,
+    "facts_path": "runs/_business_diagnostics/live_search_pass/management_research-remote_work_productivity.json"
+  },
+  {
+    "domain": "management_research",
+    "topic": "management_practices_productivity",
+    "query": "management practices productivity",
+    "status": "error",
+    "error": "ReadTimeout: The read operation timed out",
+    "facts": 0,
+    "a_core": 0,
+    "ready": false
+  },
+  {
+    "domain": "management_research",
+    "topic": "incentive_pay_productivity",
+    "query": "incentive pay productivity",
+    "status": 200,
+    "facts": 0,
+    "a_core": 0,
+    "top_clusters": [],
+    "ready": false,
+    "facts_path": "runs/_business_diagnostics/live_search_pass/management_research-incentive_pay_productivity.json"
+  },
+  {
+    "domain": "management_research",
+    "topic": "employee_engagement_turnover",
+    "query": "employee engagement turnover",
+    "status": 200,
+    "facts": 12,
+    "a_core": 0,
+    "top_clusters": [],
+    "ready": false,
+    "facts_path": "runs/_business_diagnostics/live_search_pass/management_research-employee_engagement_turnover.json"
+  },
+  {
+    "domain": "business_research",
+    "topic": "supply_chain_resilience_performance",
+    "query": "supply chain resilience performance",
+    "status": 200,
+    "facts": 11,
+    "a_core": 0,
+    "top_clusters": [],
+    "ready": false,
+    "facts_path": "runs/_business_diagnostics/live_search_pass/business_research-supply_chain_resilience_performance.json"
+  },
+  {
+    "domain": "business_research",
+    "topic": "digital_transformation_firm_performance",
+    "query": "digital transformation firm performance",
+    "status": 200,
+    "facts": 1,
+    "a_core": 0,
+    "top_clusters": [],
+    "ready": false,
+    "facts_path": "runs/_business_diagnostics/live_search_pass/business_research-digital_transformation_firm_performance.json"
+  },
+  {
+    "domain": "business_research",
+    "topic": "pricing_strategy_margin",
+    "query": "pricing strategy margin",
+    "status": 200,
+    "facts": 0,
+    "a_core": 0,
+    "top_clusters": [],
+    "ready": false,
+    "facts_path": "runs/_business_diagnostics/live_search_pass/business_research-pricing_strategy_margin.json"
+  },
+  {
+    "domain": "marketing_research",
+    "topic": "price_promotions_demand",
+    "query": "price promotions demand",
+    "status": 200,
+    "facts": 27,
+    "a_core": 0,
+    "top_clusters": [],
+    "ready": false,
+    "facts_path": "runs/_business_diagnostics/live_search_pass/marketing_research-price_promotions_demand.json"
+  },
+  {
+    "domain": "marketing_research",
+    "topic": "customer_reviews_sales",
+    "query": "customer reviews sales",
+    "status": 200,
+    "facts": 0,
+    "a_core": 0,
+    "top_clusters": [],
+    "ready": false,
+    "facts_path": "runs/_business_diagnostics/live_search_pass/marketing_research-customer_reviews_sales.json"
+  },
+  {
+    "domain": "marketing_research",
+    "topic": "brand_equity_price_premium",
+    "query": "brand equity price premium",
+    "status": 200,
+    "facts": 1,
+    "a_core": 0,
+    "top_clusters": [],
+    "ready": false,
+    "facts_path": "runs/_business_diagnostics/live_search_pass/marketing_research-brand_equity_price_premium.json"
+  }
+]

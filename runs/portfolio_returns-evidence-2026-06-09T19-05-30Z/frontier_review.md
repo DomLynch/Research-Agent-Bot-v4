@@ -1,0 +1,58 @@
+# Frontier review — portfolio_returns
+
+**Snapshot:** 2026-06-09T19-05-30Z
+**Strategist model:** MiniMax-M3
+
+## The lens
+
+The evidence pool collapses two structurally distinct anomalies — an information-based long-short strategy in firm-level track records (Hill, Kelly, Lockwood) versus a systematic risk-loading story in macro-driven EPU beta (Baker, Bloom, Davis) — into a single 'mispricing vs. risk' tension that the field has not resolved using comparable units. The publishable move is to argue that these 11% and 5.53% premia are not commensurable because the former is alpha earned on a discretionary information signal while the latter is a priced macro factor, and the field's failure to distinguish them inflates the apparent size of the 'post-2010 anomaly revival' literature.
+
+## Already known — do not publish
+
+- Track-record-based long-short portfolios earn ~11% abnormal returns annually (Hill, Kelly, Lockwood 2013, RFS)
+- The high-EPU-beta Fama-French 25 size-momentum portfolio underperforms the low-EPU-beta portfolio by 5.53%/yr (Bali, Brown, Caglayan 2014 / Baker-Bloom-Davis 2015, Management Science)
+- Long-short portfolio strategies on past track records generate abnormal returns at the portfolio level
+
+## Tensions / contradictions
+
+- Fact 1/2 (11% abnormal returns on a discretionary information signal in firm-level track records, RFS 2013) vs. Fact 3 (5.53%/yr spread on a systematic macro risk loading in FF25 portfolios, Management Science 2015): the two anomalies are being treated as additive 'post-crisis alpha' evidence, but one is information-alpha and the other is a priced risk factor — the magnitudes are not directly comparable and may not be jointly exploitable.
+- Population mismatch: Fact 1/2 use a 'firms'/'portfolio' population constructed from a long-short information signal, while Fact 3 uses Fama–French 25 size–momentum portfolios sorted on EPU beta. The former is a self-financing long-short, the latter is a long-only factor spread — yet the 11% and 5.53% figures routinely appear in the same sentence in review articles without unit adjustment.
+
+## Evidence gaps
+
+- No direct comparison of whether the 11% track-record alpha and the 5.53% EPU-beta spread survive when both are re-estimated on a common asset-pricing test asset (e.g., the FF25) and a common time window (post-2010).
+- The sample papers are dominated by ArXiv preprints (quality 0.35, low citation) and ACM ICAIF proceedings — no evidence base exists to test whether the 11% vs. 5.53% magnitudes persist in the 2023-2025 AI-in-finance literature's new asset universes (crypto, alt-data, LLM-screened portfolios).
+- Subgroup gap: track-record alpha (Fact 1/2) is reported on an unconditional long-short, while EPU-beta (Fact 3) is a long-only FF25 spread — the asymmetry in short-leg exposure (and thus shorting costs, recall risk) is never reconciled in the corpus.
+
+## Paper theses
+
+### #1 — opportunity 34 · `scoping-review`
+
+**Thesis:** Two anomalies, one number: disentangling information-alpha (track records, 11%) from priced-risk beta (EPU, 5.53%) in the post-2010 portfolio-returns literature
+
+- novelty 62 / evidence_strength 38 / reviewer_risk 68
+- **Why publishable:** The non-obvious move is refusing to treat the 11% and 5.53% figures as commensurable evidence of an 'anomaly revival'; a scoping review that forces every claim into either an information-alpha or a priced-risk bucket, and flags where the field conflates them, is publishable in a top finance review (RFS, JFE, Management Science) because it changes how readers interpret the magnitude literature.
+
+---
+
+### #2 — opportunity 26 · `pilot-meta-analysis`
+
+**Thesis:** Unit-mismatch audit: do track-record abnormal returns (11%, long-short) and EPU-beta spreads (5.53%, long-only FF25) survive a common-asset test in 2010-2024 data?
+
+- novelty 71 / evidence_strength 29 / reviewer_risk 78
+- **Why publishable:** The interesting and publishable claim is methodological: neither anomaly has been re-tested on the other's empirical scaffold. A pilot meta-analysis that re-estimates both on a common FF25 test-asset set and a common 2010-2024 window would either rescue or kill the additive reading of the anomaly-revival literature. Evidence strength is low because only 3 facts exist, but the pilot could seed a full meta-analysis.
+
+
+## Reviewer objections to anticipate
+
+- Three facts is not a corpus; a 'scoping review' built on n=3 is a literature note, not a publishable review.
+- Conflating Hill-Kelly-Lockwood (RFS 2013) with Baker-Bloom-Davis (Management Science 2015) as if they were the same 'anomaly revival' is a straw man — these papers target different questions and never claimed commensurability.
+- The 11% and 5.53% figures are from different sample periods, different universes (firm-level vs. FF25), and different short-leg treatments; a 'common-asset test' the thesis proposes is essentially impossible without raw data the authors of Fact 1/2 have not released.
+- All cited sample papers are ArXiv/SSRN/ICAIF with quality 0.35 and low citations; the proposed paper inherits this evidentiary weakness rather than overcoming it.
+
+## Suggested next extractions
+
+- Extract the exact sample period, short-leg treatment, and universe of Hill-Kelly-Lockwood (RFS 2013) to test whether the 11% abnormal return is robust to post-2010 subperiods.
+- Extract EPU-beta estimation window and FF25 sorting methodology from the Baker-Bloom-Davis / Bali et al. 2015 Management Science paper to enable a common-asset re-test.
+- Harvest any 2023-2025 AI-in-finance proceedings (ACM ICAIF 2024, 2025) that have re-tested either anomaly on crypto, LLM-screened, or alt-data universes.
+- Search for a third anomaly in the same evidence class (information-alpha or macro-risk-beta) in the 2010-2015 window to allow a three-way pilot meta-analysis rather than a two-way comparison.

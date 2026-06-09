@@ -1,0 +1,23 @@
+{
+  "a_core_fact_count": 0,
+  "domain": "economics_research",
+  "missing_core_fields": {
+    "comparator": 0,
+    "intervention": 0,
+    "metric": 0,
+    "numeric": 0,
+    "outcome": 0,
+    "source": 0,
+    "study_design": 2
+  },
+  "normalized_fact_count": 2,
+  "raw_fact_count": 2,
+  "retrieval_trace": {
+    "domain_filter_used": false,
+    "facts": 2,
+    "http_status": 200,
+    "status": "ok"
+  },
+  "top_clusters": [],
+  "topic": "trade_policy_firm_performance"
+}

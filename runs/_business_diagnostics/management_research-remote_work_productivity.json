@@ -1,0 +1,23 @@
+{
+  "a_core_fact_count": 0,
+  "domain": "management_research",
+  "missing_core_fields": {
+    "comparator": 19,
+    "intervention": 12,
+    "metric": 0,
+    "numeric": 0,
+    "outcome": 0,
+    "source": 0,
+    "study_design": 13
+  },
+  "normalized_fact_count": 29,
+  "raw_fact_count": 29,
+  "retrieval_trace": {
+    "domain_filter_used": false,
+    "facts": 29,
+    "http_status": 200,
+    "status": "ok"
+  },
+  "top_clusters": [],
+  "topic": "remote_work_productivity"
+}

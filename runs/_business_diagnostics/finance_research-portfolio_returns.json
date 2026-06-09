@@ -1,0 +1,102 @@
+{
+  "a_core_fact_count": 8,
+  "domain": "finance_research",
+  "missing_core_fields": {
+    "comparator": 3,
+    "intervention": 0,
+    "metric": 0,
+    "numeric": 0,
+    "outcome": 0,
+    "source": 0,
+    "study_design": 6
+  },
+  "normalized_fact_count": 14,
+  "raw_fact_count": 14,
+  "retrieval_trace": {
+    "facts": 0,
+    "status": "local_fixture"
+  },
+  "top_clusters": [
+    {
+      "comparability_blockers": [],
+      "fact_count": 1,
+      "sample": "earn abnormal returns of roughly 11 percent per year",
+      "sample_fact_id": "333815",
+      "shape": {
+        "comparator": "benchmark or opposite signal portfolio",
+        "intervention": "return predictive signal portfolio",
+        "metric": "percentage return or alpha",
+        "outcome": "risk adjusted portfolio returns",
+        "population": "firms portfolios funds",
+        "signal_family": "long short portfolio strategy based on past track records",
+        "study_design": "empirical asset pricing"
+      },
+      "source_count": 1
+    },
+    {
+      "comparability_blockers": [],
+      "fact_count": 1,
+      "sample": "Portfolio returns are 26% lower out\u2010of\u2010sample",
+      "sample_fact_id": "333817",
+      "shape": {
+        "comparator": "benchmark or opposite signal portfolio",
+        "intervention": "return predictive signal portfolio",
+        "metric": "percentage return or alpha",
+        "outcome": "risk adjusted portfolio returns",
+        "population": "firms portfolios funds",
+        "signal_family": "out of sample",
+        "study_design": "empirical asset pricing"
+      },
+      "source_count": 1
+    },
+    {
+      "comparability_blockers": [],
+      "fact_count": 1,
+      "sample": "A long-short portfolio sorted on firm-level hiring rate earns an average annual return of 8.6% in high-skill industries",
+      "sample_fact_id": "333821",
+      "shape": {
+        "comparator": "benchmark or opposite signal portfolio",
+        "intervention": "return predictive signal portfolio",
+        "metric": "percentage return or alpha",
+        "outcome": "risk adjusted portfolio returns",
+        "population": "firms portfolios funds",
+        "signal_family": "long short portfolio sorted on firm level hiring rate",
+        "study_design": "empirical asset pricing"
+      },
+      "source_count": 1
+    },
+    {
+      "comparability_blockers": [],
+      "fact_count": 1,
+      "sample": "An increase of one standard deviation in EPU is associated with a 1.5% increase in forecasted three-month abnormal returns",
+      "sample_fact_id": "333830",
+      "shape": {
+        "comparator": "benchmark or opposite signal portfolio",
+        "intervention": "return predictive signal portfolio",
+        "metric": "percentage return or alpha",
+        "outcome": "risk adjusted portfolio returns",
+        "population": "firms portfolios funds",
+        "signal_family": "one standard deviation increase in economic policy uncertainty epu",
+        "study_design": "empirical asset pricing"
+      },
+      "source_count": 1
+    },
+    {
+      "comparability_blockers": [],
+      "fact_count": 1,
+      "sample": "the portfolio with the greatest EPU beta underperforms the portfolio with the lowest EPU beta by 5.53% per annum",
+      "sample_fact_id": "333831",
+      "shape": {
+        "comparator": "benchmark or opposite signal portfolio",
+        "intervention": "return predictive signal portfolio",
+        "metric": "percentage return or alpha",
+        "outcome": "risk adjusted portfolio returns",
+        "population": "firms portfolios funds",
+        "signal_family": "portfolio with the greatest epu beta",
+        "study_design": "empirical asset pricing"
+      },
+      "source_count": 1
+    }
+  ],
+  "topic": "portfolio_returns"
+}
