@@ -142,6 +142,23 @@ def test_read_discovery_top_returns_candidates(tmp_path: Path) -> None:
     assert out[0]["topic"] == "exercise"
 
 
+def test_read_discovery_top_uses_newest_matching_domain(tmp_path: Path) -> None:
+    older = tmp_path / "2026-06-09T06-39-50Z.json"
+    older.write_text(json.dumps({
+        "domain": {"slug": "longevity"},
+        "all": [{"topic": "SGLT2_inhibitors", "velocity_score": 1.0}],
+    }), encoding="utf-8")
+    newer = tmp_path / "2026-06-09T06-42-25Z.json"
+    newer.write_text(json.dumps({
+        "domain": {"slug": "ai_research"},
+        "all": [{"topic": "retrieval_augmented_generation", "velocity_score": 2.0}],
+    }), encoding="utf-8")
+
+    out = _read_discovery_top(tmp_path, domain="longevity")
+
+    assert [row["topic"] for row in out] == ["SGLT2_inhibitors"]
+
+
 def test_read_discovery_top_handles_missing_dir() -> None:
     assert _read_discovery_top(Path("/nonexistent")) == []
 
@@ -545,7 +562,7 @@ def test_stop_on_ready_halts_plan(
     monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
     monkeypatch.setattr(
         run_curator_cycle, "_read_discovery_top",
-        lambda _out: [
+        lambda _out, **_kwargs: [
             {"topic": "ready", "velocity_score": 2.0, "fact_source_count": 5, "paper_count": 3},
             {"topic": "later", "velocity_score": 1.0, "fact_source_count": 5, "paper_count": 3},
         ],
@@ -597,7 +614,7 @@ def test_stop_on_ready_ignores_under_source_candidate(
     monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
     monkeypatch.setattr(
         run_curator_cycle, "_read_discovery_top",
-        lambda _out: [
+        lambda _out, **_kwargs: [
             {"topic": "thin", "velocity_score": 2.0, "fact_source_count": 5, "paper_count": 3},
             {"topic": "ready", "velocity_score": 1.0, "fact_source_count": 5, "paper_count": 3},
         ],
@@ -648,7 +665,7 @@ def test_stop_on_ready_skips_count_only_cached_candidate(
     monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
     monkeypatch.setattr(
         run_curator_cycle, "_read_discovery_top",
-        lambda _out: [
+        lambda _out, **_kwargs: [
             {
                 "topic": "count_only_cached", "velocity_score": 9.0,
                 "fact_source_count": 12, "paper_count": 0,
@@ -723,7 +740,7 @@ def test_stop_on_ready_runs_structural_child_topic_before_giving_up(
     monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
     monkeypatch.setattr(
         run_curator_cycle, "_read_discovery_top",
-        lambda _out: [
+        lambda _out, **_kwargs: [
             {"topic": "parent", "velocity_score": 2.0, "fact_source_count": 5, "paper_count": 3},
         ],
     )
@@ -782,7 +799,7 @@ def test_stop_on_ready_does_not_chain_child_topic_reruns(
     monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
     monkeypatch.setattr(
         run_curator_cycle, "_read_discovery_top",
-        lambda _out: [
+        lambda _out, **_kwargs: [
             {"topic": "parent", "velocity_score": 2.0, "fact_source_count": 5, "paper_count": 3},
         ],
     )
@@ -836,7 +853,7 @@ def test_priority_repair_topic_does_not_spawn_child_rerun(
     monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
     monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
     monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
-    monkeypatch.setattr(run_curator_cycle, "_read_discovery_top", lambda _out: [])
+    monkeypatch.setattr(run_curator_cycle, "_read_discovery_top", lambda _out, **_kwargs: [])
     monkeypatch.setattr(
         run_curator_cycle, "_priority_ranked_topics",
         lambda _topics: [{
@@ -917,7 +934,7 @@ def test_underfloor_priority_repair_topic_is_not_built(
     monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
     monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
     monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
-    monkeypatch.setattr(run_curator_cycle, "_read_discovery_top", lambda _out: [])
+    monkeypatch.setattr(run_curator_cycle, "_read_discovery_top", lambda _out, **_kwargs: [])
     monkeypatch.setattr(
         run_curator_cycle, "_priority_ranked_topics",
         lambda _topics: [{
