@@ -1,0 +1,10 @@
+[seeds]
+derived_topic_limit = 5000
+topics = [
+    "advertising_elasticity_sales",
+    "price_promotions_demand",
+    "loyalty_program_retention",
+    "brand_equity_price_premium",
+    "digital_ads_conversion",
+    "customer_reviews_sales",
+]

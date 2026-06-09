@@ -1,0 +1,10 @@
+[seeds]
+derived_topic_limit = 5000
+topics = [
+    "business_model_performance",
+    "platform_strategy_network_effects",
+    "supply_chain_resilience_performance",
+    "pricing_strategy_margin",
+    "operations_process_improvement",
+    "digital_transformation_firm_performance",
+]

@@ -1,0 +1,12 @@
+[claim_schema]
+claim_modes = ["policy_effect", "market_response", "labor_supply_effect", "productivity_effect"]
+fields = [
+    "population", "geography", "time_period", "intervention", "comparator",
+    "outcome", "metric", "study_design", "dataset", "estimation_method",
+    "identification_strategy", "effect_size", "confidence_interval",
+    "standard_error", "p_value", "sample_size",
+]
+publish_contract = [
+    "economics claims must preserve policy/intervention, comparator, outcome, and estimand",
+    "direct receipts must share comparable identification strategy or study design",
+]

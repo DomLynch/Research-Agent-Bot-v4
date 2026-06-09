@@ -1,0 +1,12 @@
+[Unit]
+Description=Research Agent v4 Business Research dry-run alpha candidate
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/Research-Agent-Bot-v4
+EnvironmentFile=/root/Research-Agent-Bot-v4/.env
+EnvironmentFile=/etc/researka-agent-v4.env
+ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/build_business_alpha_candidate.py --domain business_research --topic business_model_performance
+TimeoutStartSec=2700

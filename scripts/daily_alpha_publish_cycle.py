@@ -198,6 +198,12 @@ _REFRESHABLE_SOURCE_FLOOR_STATUSES = {
 _AGENT_REPAIR_DECISIONS = {
     "agent_repair_needed", "needs_operator_review", "needs_operator_approval",
 }
+_NEGATIVE_MEMORY_STATUSES = {
+    "deduped_publication",
+    "public_page_not_rendered",
+    "reviewer_rejected",
+    "reviewer_revise",
+}
 
 
 def _refresh_timeout_note(refresh: Json) -> bool:
@@ -1138,6 +1144,7 @@ def _record_submission_attempt(
         "date": date,
         "domain": candidate.get("domain"),
         "topic": candidate.get("topic"),
+        "topic_family": candidate.get("topic_family"),
         "run_dir": candidate.get("run_dir"),
         "fingerprint": candidate.get("memo_fingerprint"),
         "memo_sha256": _memo_sha256(candidate, runs_root),
@@ -1397,8 +1404,44 @@ def _recently_published_topics(
             or ledger.get("submitted_topic")
             or (ledger.get("candidate") or {}).get("topic")
         )
-        if topic:
-            topics.add(str(topic))
+        topics.update(_ledger_topics(ledger, topic))
+    return topics
+
+
+def _ledger_topics(ledger: Json, topic: Any = "") -> set[str]:
+    candidate = ledger.get("candidate")
+    if not isinstance(candidate, dict):
+        candidate = {}
+    raw = (
+        topic,
+        ledger.get("published_topic"),
+        ledger.get("submitted_topic"),
+        ledger.get("topic_family"),
+        candidate.get("topic"),
+        candidate.get("topic_family"),
+        _topic_from_run_ref(candidate.get("run_dir")),
+    )
+    return {str(t).strip() for t in raw if str(t).strip()}
+
+
+def _recent_negative_topics(
+    ledger_dir: Path, *, days: int, domain: str | None = None,
+) -> set[str]:
+    cutoff = time.time() - (max(0, days) * 86400)
+    topics: set[str] = set()
+    for path in ledger_dir.glob("*.json"):
+        if path.name.startswith("_"):
+            continue
+        with suppress(OSError):
+            if path.stat().st_mtime < cutoff:
+                continue
+        ledger = _json(path, {})
+        if (
+            isinstance(ledger, dict)
+            and _same_domain(_ledger_domain(ledger), domain)
+            and str(ledger.get("status") or "") in _NEGATIVE_MEMORY_STATUSES
+        ):
+            topics.update(_ledger_topics(ledger))
     return topics
 
 
@@ -1427,8 +1470,9 @@ def _recent_submission_topics(
         if ts is None or ts < cutoff:
             continue
         topic = str(row.get("topic") or "").strip()
+        family = str(row.get("topic_family") or "").strip()
         run_topic = _topic_from_run_ref(row.get("run_dir"))
-        topics.update(t for t in (topic, run_topic) if t)
+        topics.update(t for t in (topic, family, run_topic) if t)
     return topics
 
 
@@ -2332,6 +2376,21 @@ def _public_page_check(decision: Json, *, page_fetcher: PageFetcher) -> Json:
     return {"ok": False, "status": "not_rendered", "urls": urls, "checks": checks}
 
 
+def _dedupe_decision(decision: Json) -> bool:
+    def walk(value: Any) -> Iterable[str]:
+        if isinstance(value, dict):
+            for item in value.values():
+                yield from walk(item)
+        elif isinstance(value, list):
+            for item in value:
+                yield from walk(item)
+        else:
+            yield str(value)
+
+    text = " ".join(walk(decision)).lower()
+    return "duplicate" in text or "dedup" in text
+
+
 def _apply_submission_decision(
     ledger: Json,
     *,
@@ -2353,6 +2412,15 @@ def _apply_submission_decision(
                     or (ledger.get("candidate") or {}).get("topic")
                 )
                 ledger["public_url"] = page.get("url")
+            elif page.get("status") == "missing_public_url" and _dedupe_decision(decision):
+                final = "accepted"
+                ledger["status"] = "deduped_publication"
+                ledger["published"] = 0
+                ledger["published_topic"] = (
+                    ledger.get("submitted_topic")
+                    or (ledger.get("candidate") or {}).get("topic")
+                )
+                ledger["publish_failure_reason"] = "deduped_publication"
             elif page.get("status") == "missing_public_url":
                 final = "pending"
                 ledger["status"] = "submitted_to_researka"
@@ -3071,12 +3139,19 @@ def run_cycle(
         submitted_path.parent, days=published_topic_cooldown_days,
         domain=profile.slug,
     )
+    negative_blocked_topics = _recent_negative_topics(
+        submitted_path.parent, days=published_topic_cooldown_days,
+        domain=profile.slug,
+    )
     submitted_blocked_topics = _recent_submission_topics(
         submitted_path, days=published_topic_cooldown_days,
         domain=profile.slug, now=_stamp_ts(date),
     )
-    blocked_topics = published_blocked_topics | submitted_blocked_topics
+    blocked_topics = (
+        published_blocked_topics | negative_blocked_topics | submitted_blocked_topics
+    )
     ledger["recently_published_topics_blocked"] = sorted(published_blocked_topics)
+    ledger["recent_negative_topics_blocked"] = sorted(negative_blocked_topics)
     ledger["recently_submitted_topics_blocked"] = sorted(submitted_blocked_topics)
     force_refresh = False
     accepted_shape_profiles = _accepted_shape_profiles(runs_root, domain=profile.slug)
@@ -3373,7 +3448,8 @@ def run_cycle(
                 if isinstance(decision, dict):
                     if final == "accepted":
                         attempt["public_page_check"] = ledger.get("public_page_check")
-                        ledger["cycle_attempts"].append(attempt | {"status": "published"})
+                        status = str(ledger.get("status") or "published")
+                        ledger["cycle_attempts"].append(attempt | {"status": status})
                         _write_json(ledger_path, ledger)
                         return ledger
                     if final in {"rejected", "revise"}:
@@ -3433,15 +3509,19 @@ def run_cycle(
                 row["status"] = "cycle_failed_submission"
                 row["submit_status"] = result["status"]
                 break
-        ledger["cycle_attempts"].append(attempt)
-        blocked_fingerprints.add(str(candidate.get("memo_fingerprint") or ""))
-        topic = str(candidate.get("topic") or "")
-        if topic:
-            blocked_topics.add(topic)
-        if not refresh_candidates or batch >= search_batch_limit:
-            ledger.update({"status": result["status"], "published": 0})
-            _write_json(ledger_path, ledger)
-            return ledger
+            ledger["cycle_attempts"].append(attempt)
+            blocked_fingerprints.add(str(candidate.get("memo_fingerprint") or ""))
+            topic = str(candidate.get("topic") or "")
+            if topic:
+                blocked_topics.add(topic)
+            if not refresh_candidates or batch >= search_batch_limit:
+                status = (
+                    "deduped_publication"
+                    if result["status"] == "rejected_duplicate" else result["status"]
+                )
+                ledger.update({"status": status, "published": 0})
+                _write_json(ledger_path, ledger)
+                return ledger
     if ledger["cycle_attempts"]:
         last_status = str(ledger["cycle_attempts"][-1].get("status") or "failed")
         ledger.update({
@@ -3452,7 +3532,7 @@ def run_cycle(
         })
     else:
         ledger.update({
-            "status": "no_publishable_candidate",
+            "status": "no_fresh_candidate",
             "reason": "no eligible non-duplicate memo",
         })
     _write_json(ledger_path, ledger)

@@ -1,0 +1,10 @@
+[seeds]
+derived_topic_limit = 5000
+topics = [
+    "minimum_wage_employment",
+    "monetary_policy_inflation",
+    "tax_policy_labor_supply",
+    "industrial_policy_productivity",
+    "trade_policy_firm_performance",
+    "housing_supply_rents",
+]

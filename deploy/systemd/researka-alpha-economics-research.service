@@ -1,0 +1,12 @@
+[Unit]
+Description=Research Agent v4 Economics Research dry-run alpha candidate
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/Research-Agent-Bot-v4
+EnvironmentFile=/root/Research-Agent-Bot-v4/.env
+EnvironmentFile=/etc/researka-agent-v4.env
+ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/build_business_alpha_candidate.py --domain economics_research --topic minimum_wage_employment
+TimeoutStartSec=2700
