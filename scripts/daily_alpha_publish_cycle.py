@@ -34,6 +34,7 @@ _RUNS = _ROOT / "runs"
 _PUBLICATION_PATH = _ROOT / "topic_packs" / "publication.toml"
 _PUBLISH_TIER_PATH = _ROOT / "topic_packs" / "publish_tier.toml"
 _CLAIM_WORD = re.compile(r"[a-z][a-z0-9]*")
+_DOI_TOKEN = re.compile(r"\b10\.\d{4,9}/[^\s,;]+", re.I)
 _CLUSTER_GENERIC_TOKENS = frozenset({
     "the", "and", "with", "from", "that", "this", "study", "studies",
     "patients", "participants", "adults", "risk", "effect", "effects",
@@ -1686,7 +1687,7 @@ def _memo_source_papers(
         paper = fact.get("source_paper") or {}
         if isinstance(paper, dict):
             papers.append({
-                "doi": str(paper.get("doi") or ""),
+                "doi": _clean_doi(paper.get("doi")),
                 "title": str(paper.get("title") or ""),
                 "journal": str(paper.get("journal") or ""),
                 "url": paper.get("url") or paper.get("source_url"),
@@ -1762,6 +1763,24 @@ def _year(value: Any) -> int | None:
     return year if 1000 <= year <= 3000 else None
 
 
+def _clean_doi(value: Any) -> str:
+    raw = _norm(value).removeprefix("doi:").strip()
+    if not raw:
+        return ""
+    match = _DOI_TOKEN.search(raw)
+    if not match:
+        return ""
+    return match.group(0).rstrip(".")
+
+
+def _sanitize_markdown_doi_annotations(text: str) -> str:
+    def repl(match: re.Match[str]) -> str:
+        doi = _clean_doi(match.group(1))
+        return f"doi={doi}" if doi else ""
+
+    return re.sub(r"\bdoi=([^\n]+)", repl, text)
+
+
 def _evidence_type(paper: Json) -> str:
     title = _norm(paper.get("title"))
     if "review" in title or "meta-analysis" in title or "meta analysis" in title:
@@ -1778,7 +1797,7 @@ def _source_bundle(papers: list[Json]) -> list[Json]:
         bundle.append({
             "title": title,
             "url": paper.get("url") or None,
-            "doi": str(paper.get("doi") or "").strip() or None,
+            "doi": _clean_doi(paper.get("doi")) or None,
             "year": _year(paper.get("year")),
             "evidence_type": _evidence_type(paper),
         })
@@ -2265,7 +2284,7 @@ def _cited_dois(verdict: Json, runs_root: Path | None = None) -> list[str]:
     for paper in papers:
         if not isinstance(paper, dict):
             continue
-        doi = _norm(paper.get("doi"))
+        doi = _clean_doi(paper.get("doi"))
         if doi and doi not in out:
             out.append(doi)
     return out
@@ -2966,12 +2985,13 @@ def _public_submission_markdown(memo: str) -> str:
     )
     if "## Why this is surprising" in text and note not in text:
         text = text.replace("\n## Why this is surprising", f"\n\n{note}\n## Why this is surprising", 1)
-    return text.replace(
+    text = text.replace(
         "## Context receipts\n\n",
         "## Context receipts\n\n"
         "_Boundary evidence only; these receipts broaden source context but do "
         "not independently prove the lead claim._\n\n",
     )
+    return _sanitize_markdown_doi_annotations(text)
 
 
 def _audit_sidecars(run_dir: Path) -> Json:

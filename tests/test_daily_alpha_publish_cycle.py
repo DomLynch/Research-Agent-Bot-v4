@@ -3582,7 +3582,7 @@ def test_submission_payload_uses_researka_source_bundle_schema(tmp_path: Path) -
         "# Alpha memo\n\n"
         "**Headline:** Endpoint-specific storage reserve signal\n\n"
         "## Evidence receipts\n\n"
-        "- `fact_id=1` (`A_core`) - receipt\n"
+        "- `fact_id=1` (`A_core`) - receipt doi=10.1000/primary 10.1000/primary\n"
         "- `fact_id=2` (`B_context`) - receipt\n",
         encoding="utf-8",
     )
@@ -3590,7 +3590,7 @@ def test_submission_payload_uses_researka_source_bundle_schema(tmp_path: Path) -
         {
             "fact_id": "1",
             "source_paper": {
-                "doi": "10.1000/primary",
+                "doi": "10.1000/primary 10.1000/primary",
                 "title": "Primary field trial",
                 "url": "https://example.test/primary",
                 "year": "2025",
@@ -3622,6 +3622,8 @@ def test_submission_payload_uses_researka_source_bundle_schema(tmp_path: Path) -
         },
     ]
     assert payload["citations"] == payload["source_bundle"]
+    assert "doi=10.1000/primary 10.1000/primary" not in payload["markdown"]
+    assert "doi=10.1000/primary" in payload["markdown"]
     assert payload["evidence_bundle"]["bound_receipt_count"] == 2
     assert payload["evidence_bundle"]["bound_source_count"] == 2
     assert payload["evidence_bundle"]["source_bundle_count"] == 1
