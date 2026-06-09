@@ -241,6 +241,109 @@ def test_ai_benchmark_fields_count_toward_claim_fit(tmp_path: Path) -> None:
     assert verdict["axes"]["direct_source_papers"] == 5
 
 
+def test_metric_type_mismatch_blocks_result_shape_publish(
+    tmp_path: Path,
+) -> None:
+    run = _run(
+        tmp_path,
+        score=90,
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+        dois=("10.ai/swift", "10.ai/weaver", "10.ai/memori", "10.ai/kumiho", "10.ai/v33"),
+        titles=(
+            "SwiftMem LoCoMo memory benchmark accuracy evaluation",
+            "MemWeaver LoCoMo memory benchmark accuracy evaluation",
+            "Memori LoCoMo memory benchmark accuracy evaluation",
+            "Kumiho LoCoMo memory benchmark accuracy evaluation",
+            "SuperLocalMemory LoCoMo memory benchmark accuracy evaluation",
+        ),
+        journals=("AI Eval", "AI Eval", "AI Eval", "AI Eval", "AI Eval"),
+    )
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo - ai_agents\n\n"
+        "**Headline:** AI agents: LoCoMo accuracy is the shared direct-receipt signal\n"
+        "**Alpha score:** 90/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## One-sentence thesis\n\n"
+        "Across 5 direct receipts sharing LoCoMo and accuracy, memory systems "
+        "report comparable performance.\n\n"
+        "## Why this is surprising\n\n"
+        "Real tension: the benchmark evidence looks comparable.\n\n"
+        "## Evidence receipts\n\n"
+        + "\n".join(
+            f"- `fact_id={idx}` (`A_core`) - receipt"
+            for idx in range(1, 6)
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    rows = [
+        (
+            "SwiftMem",
+            "Experiments on LoCoMo demonstrate that SwiftMem achieves 47x faster "
+            "search than baselines while maintaining competitive accuracy.",
+            47,
+            "x",
+        ),
+        (
+            "MemWeaver",
+            "Experiments on LoCoMo demonstrate that MemWeaver improves reasoning "
+            "accuracy while reducing input context length by over 95%.",
+            95,
+            "%",
+        ),
+        (
+            "Memori",
+            "Evaluated on LoCoMo, Memori achieves 81.95% accuracy.",
+            81.95,
+            "%",
+        ),
+        (
+            "Kumiho",
+            "On LoCoMo-Plus, Kumiho achieves 93.3% judge accuracy.",
+            93.3,
+            "%",
+        ),
+        (
+            "SuperLocalMemory",
+            "V3.3 achieves 70.4% accuracy on LoCoMo in Mode A.",
+            70.4,
+            "%",
+        ),
+    ]
+    for fact, (_system, phrase, value, units) in zip(facts, rows, strict=True):
+        fact.update({
+            "canonical_phrase": phrase,
+            "benchmark": "LoCoMo",
+            "task": "memory benchmark",
+            "dataset": "LoCoMo",
+            "metric": "accuracy",
+            "baseline_comparator": "LoCoMo benchmark baselines",
+            "evaluation_protocol": "reported LoCoMo benchmark evaluation",
+            "numeric_value": value,
+            "units": units,
+            "result_key": "locomo::accuracy",
+            "result_shape": {
+                "benchmark": "LoCoMo",
+                "task": "memory benchmark",
+                "dataset": "LoCoMo",
+                "metric": "accuracy",
+                "baseline_comparator": "LoCoMo benchmark baselines",
+                "evaluation_protocol": "reported LoCoMo benchmark evaluation",
+            },
+        })
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "agent_repair_needed"
+    assert verdict["axes"]["direct_match_receipts"] == 5
+    assert verdict["axes"]["direct_source_papers"] == 5
+    assert verdict["axes"]["direct_receipt_shape_coherent"] is True
+    assert verdict["axes"]["direct_metric_type_coherent"] is False
+    assert "metric_type_mismatch" in verdict["blockers"]
+
+
 def test_bridge_chain_source_overlap_is_not_claim_coherent(tmp_path: Path) -> None:
     run = _run(
         tmp_path,

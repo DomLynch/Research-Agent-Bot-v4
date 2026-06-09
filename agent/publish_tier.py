@@ -311,6 +311,75 @@ def _receipt_ids_share_shape(
     return True
 
 
+def _numeric_value_patterns(value: Any) -> tuple[str, ...]:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return ()
+    raw = str(value).strip()
+    patterns = [re.escape(raw)] if raw else []
+    if number.is_integer():
+        patterns.append(re.escape(str(int(number))))
+    else:
+        compact = f"{number:g}"
+        patterns.append(re.escape(compact))
+    return tuple(dict.fromkeys(patterns))
+
+
+def _numeric_anchor_window(fact: dict[str, Any], *, radius: int = 48) -> str:
+    phrase = str(fact.get("canonical_phrase") or "")
+    patterns = _numeric_value_patterns(fact.get("numeric_value"))
+    if not phrase or not patterns:
+        return ""
+    for pattern in patterns:
+        match = re.search(rf"(?<![0-9.]){pattern}(?![0-9.])", phrase)
+        if match:
+            lo = max(0, match.start() - radius)
+            hi = min(len(phrase), match.end() + radius)
+            return phrase[lo:hi]
+    return ""
+
+
+def _metric_type_coherent(
+    ids: list[str],
+    facts: dict[str, dict[str, Any]],
+    generic: frozenset[str],
+    *,
+    min_sources: int,
+) -> bool:
+    items = [facts[fid] for fid in ids if fid in facts]
+    if len(items) < 2:
+        return True
+    shape_generic = generic | _SHAPE_GENERIC_TOKENS
+    metric_shapes = [
+        _shape_tokens(fact, ("metric",), shape_generic) for fact in items
+    ]
+    metric_shapes = [tokens for tokens in metric_shapes if tokens]
+    if not metric_shapes:
+        return True
+    common_metric = set.intersection(*metric_shapes) if len(metric_shapes) == len(items) else set()
+    if not common_metric:
+        return True
+    aligned_sources: set[str] = set()
+    quantified_sources: set[str] = set()
+    for fid in ids:
+        fact = facts.get(fid) or {}
+        source = _source_key(fact)
+        if not source or fact.get("numeric_value") in (None, ""):
+            continue
+        quantified_sources.add(source)
+        window = _numeric_anchor_window(fact)
+        unit_text = str(fact.get("units") or "")
+        anchor_tokens = _tokens(
+            f"{window} {unit_text}", "", shape_generic,
+        )
+        if common_metric & anchor_tokens:
+            aligned_sources.add(source)
+    if len(quantified_sources) < min_sources:
+        return True
+    return len(aligned_sources) >= min_sources
+
+
 def _claim_axis(
     md: str,
     topic: str,
@@ -429,6 +498,9 @@ def _result_key_direct_ids(
         if (
             len(seen_sources) >= min_sources
             and _receipt_ids_share_shape(out, facts, generic)
+            and _metric_type_coherent(
+                out, facts, generic, min_sources=min_sources,
+            )
         ):
             return out
     return []
@@ -843,11 +915,16 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     direct_receipt_shape_coherent = _receipt_ids_share_shape(
         direct_match_ids, facts, cfg["generic_tokens"] | cfg["cluster_stopwords"],
     )
+    direct_metric_type_coherent = _metric_type_coherent(
+        direct_match_ids, facts, cfg["generic_tokens"] | cfg["cluster_stopwords"],
+        min_sources=min_direct_source_papers,
+    )
     strong_direct_bundle = (
         len(direct_papers) >= min_direct_source_papers
         and len(direct_papers) >= min_source_papers
         and source_coherent
         and direct_receipt_shape_coherent
+        and direct_metric_type_coherent
     )
     expansion_candidates = _expansion_candidates(bound_ids, facts, lanes)
     blockers: list[str] = []
@@ -873,6 +950,8 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         blockers.append("claim_alignment_partial")
     if direct_match_ids and not direct_receipt_shape_coherent:
         blockers.append("receipt_shape_mismatch")
+    if direct_match_ids and not direct_metric_type_coherent:
+        blockers.append("metric_type_mismatch")
 
     ready = (
         not blockers
@@ -962,6 +1041,7 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
             "source_concentrated": source_concentrated,
             "claim_coherent_source_diversity": source_coherent,
             "direct_receipt_shape_coherent": direct_receipt_shape_coherent,
+            "direct_metric_type_coherent": direct_metric_type_coherent,
             "counter_consensus_tension": tension,
             "cross_domain_forced": forced,
             "feed_scope_mismatch": off_scope,

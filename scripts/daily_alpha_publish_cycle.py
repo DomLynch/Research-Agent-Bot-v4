@@ -27,6 +27,7 @@ from typing import Any
 
 from agent.alpha_selector import accepted_shape_bonus
 from agent.domain_profile import domain_choices, domain_slug, load_domain_profile
+from agent.publish_tier import _metric_type_coherent as _publish_metric_type_coherent
 from agent.publish_tier import publish_verdict
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -786,7 +787,12 @@ def _coherent_cluster_fact_ids(
             ids.append(fid)
             sources.add(source)
             if len(sources) >= min_direct_source_count:
-                return ids
+                if _publish_metric_type_coherent(
+                    ids, by_id, _COHERENCE_GENERIC_TOKENS,
+                    min_sources=min_direct_source_count,
+                ):
+                    return ids
+                break
     return []
 
 

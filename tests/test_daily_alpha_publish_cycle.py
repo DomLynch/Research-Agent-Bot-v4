@@ -2718,6 +2718,53 @@ def test_claim_cluster_candidate_requires_ai_shape_coherence(tmp_path: Path) -> 
     assert rows == []
 
 
+def test_claim_cluster_candidate_requires_metric_type_coherence(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("ai_agents") | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "blockers": ["source_dispersion"],
+        "subtopic_recommendations": {
+            "recommended": True,
+            "clusters": [{
+                "label": "locomo accuracy",
+                "member_fact_ids": ["1", "2", "3", "4", "5"],
+            }],
+        },
+    }
+    _memo_with_source_receipts(root, verdict, 5)
+    run = root / str(verdict["run_dir"])
+    facts = json.loads(run.joinpath("all_facts.json").read_text(encoding="utf-8"))
+    metric_rows = [
+        ("SwiftMem achieves 47x faster search while maintaining competitive accuracy.", 47, "x"),
+        ("MemWeaver improves accuracy while reducing input context length by over 95%.", 95, "%"),
+        ("Memori achieves 81.95% accuracy on LoCoMo.", 81.95, "%"),
+        ("Kumiho achieves 93.3% judge accuracy on LoCoMo-Plus.", 93.3, "%"),
+        ("SuperLocalMemory achieves 70.4% accuracy on LoCoMo Mode A.", 70.4, "%"),
+    ]
+    for fact, (phrase, value, units) in zip(facts, metric_rows, strict=True):
+        fact.update({
+            "canonical_phrase": phrase,
+            "benchmark": "LoCoMo",
+            "task": "memory benchmark",
+            "dataset": "LoCoMo",
+            "metric": "accuracy",
+            "baseline_comparator": "LoCoMo benchmark baselines",
+            "evaluation_protocol": "reported LoCoMo benchmark evaluation",
+            "numeric_value": value,
+            "units": units,
+        })
+    run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    rows = daily._claim_cluster_candidates(
+        [verdict], root, min_direct_source_count=5,
+    )
+
+    assert rows == []
+
+
 def test_claim_cluster_candidate_trims_to_clean_ai_receipt_shape(
     tmp_path: Path,
 ) -> None:
