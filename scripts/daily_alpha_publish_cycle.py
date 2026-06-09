@@ -3147,13 +3147,15 @@ def _latest_source_literature_topics(
 
 _BOUNDARY_STOPWORDS = {
     "about", "across", "adults", "advances", "after", "aging", "analysis",
-    "and", "anti", "are", "associated", "based", "between", "biology", "case",
-    "cell", "cells", "clinical", "common", "consensus", "disease", "diseases",
+    "and", "anti", "are", "as", "associated", "based", "between", "biology",
+    "case", "cell", "cells", "clinical", "common", "consensus", "decoding",
+    "disease", "diseases",
     "during", "effect", "effects", "for", "from", "guidelines", "health",
-    "human", "humans", "implications", "insights", "into", "life", "lifespan",
-    "mechanism", "mechanisms", "model", "models", "new", "old", "older",
-    "overview", "paper", "patients", "recommendations", "related", "review",
-    "role", "study", "the", "therapy", "through", "with",
+    "human", "humans", "implications", "in", "insights", "into", "life",
+    "lifespan", "mechanism", "mechanisms", "model", "models", "modern", "new",
+    "of", "old", "older", "overview", "paper", "patients", "pioneering",
+    "recent", "recommendations", "related", "review", "role", "study", "the",
+    "through", "unraveling", "with",
 }
 
 
@@ -3177,10 +3179,46 @@ def _source_literature_boundary_terms(topic: str, papers: list[Json], limit: int
     return [term for term, count in ranked if count > 1][:limit]
 
 
+def _paper_mentions_boundary(paper: Json, boundary_terms: list[str]) -> bool:
+    title = str(paper.get("title") or "").lower()
+    return any(term.lower() in title for term in boundary_terms)
+
+
+def _source_literature_title_handles(
+    papers: list[Json], boundary_terms: list[str], limit: int = 8,
+) -> list[str]:
+    boundary = {term.lower() for term in boundary_terms}
+    out: list[str] = []
+    seen: set[str] = set()
+    for paper in papers:
+        title = str(paper.get("title") or "")
+        terms = [
+            term.lower()
+            for term in re.findall(r"[A-Za-z][A-Za-z0-9+-]{2,}", title)
+            if term.lower() not in boundary
+            and term.lower() not in _BOUNDARY_STOPWORDS
+        ]
+        if not terms:
+            continue
+        for phrase in (" ".join(terms[:3]), " ".join(terms[3:6])):
+            phrase = phrase.strip()
+            if not phrase or phrase in seen:
+                continue
+            seen.add(phrase)
+            out.append(phrase)
+            if len(out) >= limit:
+                return out
+    return out
+
+
 def _source_literature_markdown(topic: str, papers: list[Json]) -> str:
     title_topic = topic.replace("_", " ").strip()
     boundary_terms = _source_literature_boundary_terms(topic, papers)
     boundary = ", ".join(boundary_terms) if boundary_terms else "the named mechanisms in the cited titles"
+    boundary_papers = [paper for paper in papers if _paper_mentions_boundary(paper, boundary_terms)]
+    context_papers = [paper for paper in papers if paper not in boundary_papers]
+    handles = _source_literature_title_handles(boundary_papers, boundary_terms)
+    handle_text = ", ".join(handles) if handles else boundary
     evidence = "\n".join(
         "- "
         + str(paper.get("title") or "Untitled source").strip()
@@ -3188,41 +3226,56 @@ def _source_literature_markdown(topic: str, papers: list[Json]) -> str:
             f". DOI `{paper.get('doi')}`"
             if paper.get("doi") else "."
         )
-        for paper in papers
+        for paper in boundary_papers
+    )
+    context = "\n".join(
+        "- Context only, not claim-expanding: "
+        + str(paper.get("title") or "Untitled source").strip()
+        + (
+            f". DOI `{paper.get('doi')}`"
+            if paper.get("doi") else "."
+        )
+        for paper in context_papers
     )
     return f"""## One-sentence thesis
 
-The current source literature for {title_topic} maps a narrow boundary around {boundary}, but it does not yet support a broad endpoint or intervention claim without direct extracted effect receipts.
+In this source bundle, {title_topic} clusters around {boundary}: {len(boundary_papers)} of {len(papers)} cited titles explicitly name the boundary, while the remaining titles are context only and do not expand the claim into systemic aging or intervention efficacy.
 
 **Interpretation note:** This is a hypothesis-generating alpha memo. It is not medical, policy, investment, or clinical advice.
 
 ## Why this is surprising
 
-The publication signal is not a generic age claim. It is that several independent source titles keep the lane near {boundary}, while the fact extractor has not yet produced a source-diverse direct-effect bundle that can support a stronger alpha claim.
+The publication signal is not a generic age claim. It is the narrower concentration of the recent source set: the direct claim stays with {boundary}, and broader lifespan, clinical-benefit, or intervention claims remain outside this memo.
 
 ## Boundary map
 
-- Current boundary: {boundary}.
-- Supported use: source-literature triage and extraction planning for {title_topic}.
-- Unsupported use: claiming lifespan extension, clinical benefit, or intervention efficacy before direct endpoint, population, comparator, and intervention facts are extracted.
+- Current boundary: {boundary}, based on the cited title cluster.
+- Mechanistic handle from titles: {handle_text}.
+- Context titles are retained only to show what the boundary does not cover.
+- Unsupported use: claiming lifespan extension, clinical benefit, or intervention efficacy from this bundle.
 
-## Evidence receipts
+## Boundary-supporting receipts
 
 {evidence}
+{f'''
+## Context / contrast receipts
+
+{context}
+''' if context else ''}
 
 ## What this changes
 
-Route this topic into source-lit boundary mapping first. The next extraction pass should prioritize the named boundary terms above, then bind direct endpoint, population, comparator, and intervention facts before making a stronger causal or efficacy claim.
+Treat {title_topic} as a bounded source-literature signal around {boundary}. A stronger memo would need direct source receipts that connect this boundary to a specific endpoint, population, comparator, and intervention or exposure.
 
 ## What would weaken this
 
-- A source audit showing these papers are off-topic would remove the boundary signal.
-- A direct extracted fact bundle with fewer than {len(papers)} distinct source papers would keep the topic below publication strength.
-- A same-topic extracted endpoint bundle with consistent direct effects would supersede this boundary memo with a stronger evidence memo.
+- A refreshed source set where fewer than half of cited titles name {boundary}.
+- Dominant recent titles moving toward a different endpoint cluster rather than {boundary}.
+- Direct endpoint evidence showing the boundary is incidental rather than central to {title_topic}.
 
 ## Bottom line
 
-The publishable alpha is conservative: enough source literature exists to define the research lane, but the stronger claim still depends on direct fact extraction.
+The publishable alpha is conservative: {title_topic} is visible here as a {boundary} source-literature cluster, not as a broad longevity endpoint claim.
 """
 
 
@@ -3234,10 +3287,10 @@ def _source_literature_payload(
     title_topic = topic.replace("_", " ").strip()
     boundary_terms = _source_literature_boundary_terms(topic, papers, limit=3)
     boundary = ", ".join(boundary_terms) if boundary_terms else "source-literature mechanisms"
-    title = f"{title_topic}: source literature maps {boundary}, not a broad endpoint claim"
+    title = f"{title_topic}: source literature clusters around {boundary}, not broad aging endpoints"
     abstract = (
-        f"{title_topic} has enough source breadth to map {boundary}, "
-        "but not yet enough extracted direct-effect evidence for a stronger claim."
+        f"{title_topic} is publishable only as a bounded source-literature signal around "
+        f"{boundary}; the cited bundle does not support a broad endpoint or intervention claim."
     )
     markdown = _source_literature_markdown(topic, papers)
     safe_date = re.sub(r"[^A-Za-z0-9_.-]+", "-", date).strip("-") or "run"
@@ -3251,10 +3304,12 @@ def _source_literature_payload(
         run_ref = str(run_dir.resolve().relative_to(_ROOT))
     except ValueError:
         run_ref = str(run_dir)
+    markdown_hash = hashlib.sha256(markdown.encode("utf-8")).hexdigest()
     fingerprint = hashlib.sha256(
         json.dumps({
             "domain": profile_slug, "topic": topic,
             "paper_keys": [_paper_key(paper) for paper in papers],
+            "markdown_hash": markdown_hash,
             "surface": "source_literature_boundary",
         }, sort_keys=True).encode("utf-8")
     ).hexdigest()
@@ -3297,7 +3352,7 @@ def _source_literature_payload(
                 "boundary fallback preserved source floor without fabricating facts"
             ),
         },
-        "content_hash": "sha256:" + hashlib.sha256(markdown.encode("utf-8")).hexdigest(),
+        "content_hash": "sha256:" + markdown_hash,
     }
     (run_dir / "source_literature_payload.json").write_text(
         json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8",
@@ -3993,11 +4048,15 @@ def main() -> int:
         submit=args.submit,
         retraction_mode=args.retraction_check,
     )
+    candidate = ledger.get("candidate")
+    candidate_topic = (
+        candidate.get("topic") if isinstance(candidate, dict) else str(candidate or "")
+    )
     print(
         "[daily-alpha] "
         f"status={ledger['status']} submitted={ledger.get('submitted', 0)} "
         f"published={ledger['published']} "
-        f"topic={ledger.get('submitted_topic') or ledger.get('published_topic') or ledger.get('candidate', {}).get('topic') or '-'}"
+        f"topic={ledger.get('submitted_topic') or ledger.get('published_topic') or candidate_topic or '-'}"
     )
     return 2 if ledger["status"] == "candidate_refresh_failed" else 0
 

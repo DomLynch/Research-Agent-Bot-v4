@@ -533,6 +533,7 @@ def _mixed_synthesis_lines(bundle: BusinessCandidateBundle) -> list[str]:
         return [
             "The receipts point to the same measured business effect across independent sources, within a narrow comparable evidence shape.",
         ]
+    metric = bundle.shape.get("metric") or bundle.shape.get("outcome") or "effect"
     near_zero = [
         fact for fact in bundle.receipts
         if (value := _num(fact.get("numeric_value"))) is not None and abs(value) < 0.05
@@ -542,7 +543,8 @@ def _mixed_synthesis_lines(bundle: BusinessCandidateBundle) -> list[str]:
         if (value := _num(fact.get("numeric_value"))) is not None and abs(value) >= 0.1
     ]
     lines = [
-        "The bounded signal is disagreement, not a settled effect: the receipts share a comparable intervention/outcome frame but split between near-zero estimates and material employment-elasticity estimates.",
+        "The bounded signal is disagreement, not a settled effect: "
+        f"the receipts share a comparable intervention/outcome frame but split between near-zero estimates and material {metric} estimates.",
     ]
     if near_zero:
         lines.append(
