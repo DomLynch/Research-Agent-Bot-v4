@@ -204,6 +204,7 @@ def main() -> int:
     ranked = _filter_seed_scope(ranked, seeds)
     cache_seed_scope_dropped_count -= len(ranked)
     ranked = _filter_excluded(ranked, excluded)
+    discovery_seed_scope_dropped_count = 0
     if len(ranked) < args.top and not args.cache_only:
         with httpx.Client() as client:
             discovered = discover_topics(
@@ -212,6 +213,9 @@ def main() -> int:
                 fact_probe_topics=fact_probe_topics,
                 refresh_low_source_counts=args.warm_backlog,
             )
+        discovery_seed_scope_dropped_count = len(discovered)
+        discovered = _filter_seed_scope(discovered, seeds)
+        discovery_seed_scope_dropped_count -= len(discovered)
         ranked = _merge_candidates(ranked, _filter_excluded(discovered, excluded))
     top = ranked[: args.top]
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
@@ -230,6 +234,7 @@ def main() -> int:
         "cache_only": bool(args.cache_only and cache_supported),
         "cache_supported": cache_supported,
         "cache_seed_scope_dropped_count": cache_seed_scope_dropped_count,
+        "discovery_seed_scope_dropped_count": discovery_seed_scope_dropped_count,
         "source_rich_floor": 5,
         "source_rich_count": sum(1 for c in ranked if c.fact_source_count >= 5),
         "top": [c.as_dict() for c in top],

@@ -74,7 +74,7 @@ def test_main_writes_limit_metadata_for_operator_overrides(
     fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
     fake_script.parent.mkdir(parents=True)
     monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
-    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda: ("rich",))
+    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda: ("topic",))
     monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
     monkeypatch.setattr(run_topic_discovery, "discover_topics", fake_discover)
     monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda: 5_000)
