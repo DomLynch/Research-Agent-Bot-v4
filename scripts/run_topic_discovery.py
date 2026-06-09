@@ -35,12 +35,6 @@ from agent.topic_discovery import (
 )
 
 _FAST_DERIVED_TOPIC_LIMIT = 250
-_CACHE_SCOPE_GENERIC_TOKENS = frozenset({
-    "the", "and", "with", "from", "that", "this", "study", "studies",
-    "patients", "participants", "adults", "risk", "effect", "effects",
-    "lower", "higher", "high", "low", "association", "associated",
-    "compared", "versus", "control", "controls", "placebo", "without",
-})
 
 
 def _resolve_limits(
@@ -116,10 +110,6 @@ def _filter_seed_scope(
     seed_keys = tuple(k for seed in seeds if (k := _topic_key(seed)))
     if not seed_keys:
         return candidates
-    seed_tokens = {
-        token for key in seed_keys for token in key.split("_")
-        if token and token not in _CACHE_SCOPE_GENERIC_TOKENS
-    }
 
     def matches(topic: str) -> bool:
         key = _topic_key(topic)
@@ -127,7 +117,7 @@ def _filter_seed_scope(
         return any(
             key == seed or key.startswith(f"{seed}_") or f"_{seed}_" in padded
             for seed in seed_keys
-        ) or bool(set(key.split("_")) & seed_tokens)
+        )
 
     return tuple(c for c in candidates if matches(c.topic))
 
