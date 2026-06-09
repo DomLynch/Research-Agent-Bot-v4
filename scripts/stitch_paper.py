@@ -37,22 +37,24 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.back_matter import build_back_matter
-from agent.maturity_router import select_paper_type
+from agent.maturity_router import PaperType, select_paper_type
 from agent.methods_honesty import apply_honesty_rewrites
 from agent.placeholder_resolver import resolve_placeholders
-from agent.readiness import classify_readiness
-from agent.reference_resolver import audit_citations, resolve_citations
+from agent.readiness import ReadinessReport, classify_readiness
+from agent.reference_resolver import CiteAudit, audit_citations, resolve_citations
 from agent.settings import load_settings
 from agent.study_table import build_study_characteristics_table
 from agent.topic_pack import load_topic_pack
 
 _RUNS = Path(__file__).resolve().parent.parent / "runs"
+Json = dict[str, object]
 
 
 def _latest_bundle(topic: str, section_short: str) -> Path | None:
@@ -111,7 +113,6 @@ def _load_receipts(
     """
     if run_dir is None:
         return {}, {}, {}, {}
-    import json
     out: list[dict[str, object]] = []
     for fname in (
         "eligibility_summary.json",
@@ -124,6 +125,59 @@ def _load_receipts(
             json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
         )
     return out[0], out[1], out[2], out[3]
+
+
+def _dict_rows(value: object) -> list[Json]:
+    if not isinstance(value, list):
+        return []
+    return [row for row in value if isinstance(row, dict)]
+
+
+def _report_evidence_rows(
+    strict: dict[str, object],
+    extractions: dict[str, object],
+    pool: dict[str, object],
+) -> list[Json]:
+    rows: list[Json] = []
+    for lane, value in strict.items():
+        for row in _dict_rows(value):
+            rows.append({"source": "primary_effect_input_set_strict", "lane": lane, **row})
+    for row in _dict_rows(extractions.get("receipts") or extractions.get("extractions")):
+        rows.append({"source": "effect_extractions", **row})
+    for row in _dict_rows(pool.get("effects")):
+        rows.append({"source": "effect_pool", **row})
+    for key, value in pool.items():
+        if key.endswith("_summary") and isinstance(value, dict):
+            rows.append({"source": "effect_pool", "summary": key, **value})
+    return rows
+
+
+def _build_report_json(
+    *,
+    topic: str,
+    paper_path: Path,
+    summary: dict[str, object],
+    strict: dict[str, object],
+    extractions: dict[str, object],
+    pool: dict[str, object],
+    readiness: ReadinessReport,
+    cite_audit: CiteAudit,
+    paper_type: PaperType,
+) -> Json:
+    readiness_dict = readiness.as_dict()
+    cite_audit_dict = cite_audit.as_dict()
+    paper_type_dict = paper_type.as_dict()
+    return {
+        "topic": topic,
+        "markdown": {"path": paper_path.name},
+        "Summary": [
+            {"section": "Readiness", **readiness_dict},
+            {"section": "Citation audit", **cite_audit_dict},
+            {"section": "Paper type", **paper_type_dict},
+            {"section": "Eligibility", **summary},
+        ],
+        "Evidence": _report_evidence_rows(strict, extractions, pool),
+    }
 
 
 def _inject_study_table(
