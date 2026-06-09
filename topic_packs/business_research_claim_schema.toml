@@ -1,0 +1,12 @@
+[claim_schema]
+claim_modes = ["strategy_effect", "business_model_effect", "operations_effect", "firm_performance_delta"]
+fields = [
+    "population", "organization_type", "industry", "geography", "time_period",
+    "intervention", "comparator", "outcome", "metric", "study_design",
+    "dataset", "estimation_method", "identification_strategy", "effect_size",
+    "confidence_interval", "standard_error", "p_value", "sample_size",
+]
+publish_contract = [
+    "claims must bind a business intervention to a comparator and metric",
+    "direct receipts must share population/intervention/comparator/outcome/metric shape",
+]

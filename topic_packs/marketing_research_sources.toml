@@ -1,0 +1,11 @@
+[source_policy]
+primary_sources = ["openalex", "crossref", "semantic_scholar", "ssrn", "jstor"]
+preferred_journals = ["journal_of_marketing", "journal_of_marketing_research", "marketing_science", "journal_of_consumer_research"]
+exclude_if_only = ["agency_case_study", "vendor_benchmark", "press_release", "platform_self_report_without_methods"]
+
+[evidence_artifacts]
+required_fields = [
+    "population", "industry", "geography", "time_period", "intervention",
+    "comparator", "outcome", "metric", "study_design", "dataset",
+    "estimation_method", "identification_strategy", "effect_size", "sample_size",
+]

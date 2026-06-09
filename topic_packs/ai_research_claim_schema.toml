@@ -1,0 +1,29 @@
+# Claim schema for AI Research alpha memos.
+#
+# No clinical or longevity-specific language belongs here. Claims should bind a
+# method/workflow to an evaluation artifact and a falsifiable limitation.
+
+[claim_schema]
+claim_modes = [
+    "benchmark_delta",
+    "agent_workflow_pattern",
+    "tool_eval",
+    "reproducibility_gap",
+    "failure_mode",
+    "automation_capability",
+]
+fields = [
+    "problem",
+    "method_or_agent",
+    "task_or_benchmark",
+    "metric",
+    "baseline_or_comparator",
+    "result",
+    "limitation",
+    "replication_artifact",
+]
+publish_contract = [
+    "direct evidence must cite papers or benchmark artifacts",
+    "leaderboard-only claims are context evidence until independently reproduced",
+    "agent capability claims need a task, metric, and baseline",
+]

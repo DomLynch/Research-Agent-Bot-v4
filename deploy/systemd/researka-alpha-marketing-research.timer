@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Research Agent v4 Marketing Research dry-run alpha candidate every eight hours
+
+[Timer]
+OnCalendar=*-*-* 06/8:10:00
+Persistent=true
+Unit=researka-alpha-marketing-research.service
+
+[Install]
+WantedBy=timers.target

@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -23,6 +24,7 @@ import httpx
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from agent.domain_profile import domain_choices, load_domain_profile
 from agent.settings import load_settings
 from agent.topic_discovery import (
     TopicCandidate,
@@ -95,11 +97,59 @@ def _filter_excluded(
 ) -> tuple[TopicCandidate, ...]:
     if not excluded:
         return candidates
-    return tuple(c for c in candidates if c.topic not in excluded)
+    keys = {_topic_key(topic) for topic in excluded}
+    return tuple(c for c in candidates if _topic_key(c.topic) not in keys)
+
+
+def _topic_key(value: str) -> str:
+    return "_".join(re.findall(r"[a-z0-9]+", value.lower()))
+
+
+def _filter_seed_scope(
+    candidates: tuple[TopicCandidate, ...], seeds: tuple[str, ...],
+) -> tuple[TopicCandidate, ...]:
+    seed_keys = tuple(k for seed in seeds if (k := _topic_key(seed)))
+    if not seed_keys:
+        return candidates
+
+    def matches(topic: str) -> bool:
+        key = _topic_key(topic)
+        padded = f"_{key}_"
+        return any(
+            key == seed or key.startswith(f"{seed}_") or f"_{seed}_" in padded
+            for seed in seed_keys
+        )
+
+    return tuple(c for c in candidates if matches(c.topic))
+
+
+def _domain_seed_topics(domain: str) -> tuple[str, ...]:
+    profile = load_domain_profile(domain)
+    return (
+        load_seed_topics()
+        if profile.slug == "longevity" else
+        load_seed_topics(profile.seed_topics_path)
+    )
+
+
+def _domain_derived_topic_limit(domain: str) -> int:
+    profile = load_domain_profile(domain)
+    return (
+        load_derived_topic_limit()
+        if profile.slug == "longevity" else
+        load_derived_topic_limit(profile.seed_topics_path)
+    )
+
+
+def _cache_supported_domain(domain: str) -> bool:
+    profile = load_domain_profile(domain)
+    default_profile = load_domain_profile(None)
+    return profile.seed_topics_path == default_profile.seed_topics_path
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--domain", choices=domain_choices(), default="longevity")
     parser.add_argument("--top", type=int, default=10,
                         help="Emit top-N candidates (default 10)")
     parser.add_argument(
@@ -127,9 +177,10 @@ def main() -> int:
         help="Exclude a topic from the emitted queue; repeatable.",
     )
     args = parser.parse_args()
-    seeds = load_seed_topics()
+    profile = load_domain_profile(args.domain)
+    seeds = _domain_seed_topics(profile.slug)
     if not seeds:
-        print("[topic-discovery] no seeds in topic_packs/discovery_seeds.toml",
+        print(f"[topic-discovery] no seeds for domain={profile.slug}",
               file=sys.stderr)
         return 1
     settings = load_settings()
@@ -137,15 +188,23 @@ def main() -> int:
         warm_backlog=args.warm_backlog,
         derived_topic_limit=args.derived_topic_limit,
         fact_probe_topics=args.fact_probe_topics,
-        configured_limit=load_derived_topic_limit(),
+        configured_limit=_domain_derived_topic_limit(profile.slug),
     )
     cache_limit = max(args.top, fact_probe_topics or 0)
+    cache_read_limit = max(cache_limit, args.top * 10)
     excluded = {str(t).strip() for t in args.exclude_topic if str(t).strip()}
+    cache_supported = _cache_supported_domain(profile.slug)
     ranked = (
-        cached_source_rich_candidates(limit=cache_limit)
-        if (args.cache_first or args.cache_only) and cache_limit > 0 else ()
+        cached_source_rich_candidates(limit=cache_read_limit)
+        if cache_supported
+        and (args.cache_first or args.cache_only)
+        and cache_limit > 0 else ()
     )
+    cache_seed_scope_dropped_count = len(ranked)
+    ranked = _filter_seed_scope(ranked, seeds)
+    cache_seed_scope_dropped_count -= len(ranked)
     ranked = _filter_excluded(ranked, excluded)
+    discovery_seed_scope_dropped_count = 0
     if len(ranked) < args.top and not args.cache_only:
         with httpx.Client() as client:
             discovered = discover_topics(
@@ -154,6 +213,9 @@ def main() -> int:
                 fact_probe_topics=fact_probe_topics,
                 refresh_low_source_counts=args.warm_backlog,
             )
+        discovery_seed_scope_dropped_count = len(discovered)
+        discovered = _filter_seed_scope(discovered, seeds)
+        discovery_seed_scope_dropped_count -= len(discovered)
         ranked = _merge_candidates(ranked, _filter_excluded(discovered, excluded))
     top = ranked[: args.top]
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
@@ -162,13 +224,17 @@ def main() -> int:
                / "runs" / "_topics_discovery")
     out_dir.mkdir(parents=True, exist_ok=True)
     json_payload = {
+        "domain": profile.as_metadata(),
         "snapshot_utc": ts, "year": year,
         "seed_count": len(seeds), "candidate_count": len(ranked),
         "derived_topic_limit": derived_limit,
         "fact_probe_topics": fact_probe_topics,
         "warm_backlog": bool(args.warm_backlog),
-        "cache_first": bool(args.cache_first),
-        "cache_only": bool(args.cache_only),
+        "cache_first": bool(args.cache_first and cache_supported),
+        "cache_only": bool(args.cache_only and cache_supported),
+        "cache_supported": cache_supported,
+        "cache_seed_scope_dropped_count": cache_seed_scope_dropped_count,
+        "discovery_seed_scope_dropped_count": discovery_seed_scope_dropped_count,
         "source_rich_floor": 5,
         "source_rich_count": sum(1 for c in ranked if c.fact_source_count >= 5),
         "top": [c.as_dict() for c in top],
@@ -182,6 +248,7 @@ def main() -> int:
                     "year": str(year)}, top),
         encoding="utf-8")
     print(f"[topic-discovery] seeds={len(seeds)} ranked={len(ranked)} "
+          f"domain={profile.slug} "
           f"source_rich={json_payload['source_rich_count']} "
           f"-> runs/_topics_discovery/{ts}.json")
     for i, c in enumerate(top, start=1):

@@ -9,6 +9,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from agent.domain_profile import domain_choices, domain_slug
 from agent.publish_tier import publish_verdict
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -55,6 +56,14 @@ def _read_json(path: Path) -> dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
+def _run_domain(run: Path, verdict: dict[str, Any]) -> str:
+    return (
+        domain_slug(verdict.get("domain"))
+        or domain_slug(_read_json(run / "MANIFEST.json").get("domain"))
+        or domain_slug(_read_json(run / "search_trace.json").get("domain"))
+    )
+
+
 def _can_recompute_verdict(run: Path) -> bool:
     return all(
         run.joinpath(name).exists()
@@ -73,10 +82,15 @@ def _normalised_decision(row: dict[str, Any]) -> str:
     return "agent_repair_needed" if decision in _LEGACY_AGENT_REPAIR_DECISIONS else decision
 
 
-def build_queue(include_archive: bool = True) -> dict[str, list[dict[str, Any]]]:
+def build_queue(
+    include_archive: bool = True, domain: str | None = None,
+) -> dict[str, list[dict[str, Any]]]:
     rows = []
     for run in _latest_per_topic(_alpha_runs(include_archive)):
-        rows.append(_verdict_for_run(run))
+        row = _verdict_for_run(run)
+        if domain and _run_domain(run, row) != domain:
+            continue
+        rows.append(row)
     rank = {"TIER_1": 0, "TIER_2": 1, "TIER_3": 2}
     rows.sort(key=lambda r: (
         rank.get(str(r.get("publish_tier")), 9),
@@ -99,9 +113,10 @@ def build_queue(include_archive: bool = True) -> dict[str, list[dict[str, Any]]]
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--current-only", action="store_true")
+    parser.add_argument("--domain", choices=domain_choices(), default=None)
     parser.add_argument("--output", type=Path, default=_RUNS / "_publish_queue.json")
     args = parser.parse_args()
-    queue = build_queue(include_archive=not args.current_only)
+    queue = build_queue(include_archive=not args.current_only, domain=args.domain)
     args.output.write_text(json.dumps(queue, indent=2), encoding="utf-8")
     print(
         "[publish-queue] "

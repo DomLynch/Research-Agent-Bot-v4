@@ -1,0 +1,10 @@
+[seeds]
+derived_topic_limit = 5000
+topics = [
+    "management_practices_productivity",
+    "remote_work_productivity",
+    "leadership_training_performance",
+    "incentive_pay_productivity",
+    "employee_engagement_turnover",
+    "organizational_design_performance",
+]

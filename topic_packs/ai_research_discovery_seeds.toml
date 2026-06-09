@@ -1,0 +1,30 @@
+# AI Research specialist seed-topic list.
+#
+# Rules:
+#   - This pack is data, not runtime routing.
+#   - Live submissions use the shared alpha core with AI-specific seeds.
+
+[seeds]
+derived_topic_limit = 5000
+topics = [
+    "ai_agents",
+    "research_automation",
+    "agentic_workflows",
+    "autonomous_research_agents",
+    "tool_use_agents",
+    "multi_agent_systems",
+    "llm_evaluation",
+    "llm_judge_reliability",
+    "retrieval_augmented_generation",
+    "code_generation_agents",
+    "swe_bench",
+    "benchmark_contamination",
+    "hallucination_detection",
+    "prompt_optimization",
+    "automated_literature_review",
+    "scientific_discovery_ai",
+    "paperqa_research_agents",
+    "synthetic_data_for_llms",
+    "model_context_protocol",
+    "research_workflow_automation",
+]

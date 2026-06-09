@@ -36,6 +36,7 @@ import httpx
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.alpha_selector import alpha_cues, alpha_score
+from agent.domain_profile import domain_choices, load_domain_profile
 from agent.fact_facets import (
     facet_counts,
     select_coherent_theme,
@@ -53,6 +54,7 @@ from agent.numeric_sanitizer import filter_artifacts
 from agent.pico_enrichment import enrich_facts_pico
 from agent.researka_claims import _aggregate
 from agent.settings import load_settings
+from agent.source_reliability import source_reliability_tier
 from agent.topic_synonyms import expand_topic_queries, phrase_in_text
 
 _RUNS = Path(__file__).resolve().parent.parent / "runs"
@@ -62,6 +64,7 @@ _FACT_FETCH_TIMEOUT_SECONDS = 25.0  # per-query; search runs 15-22s under load
 _FACT_FETCH_BUDGET_SECONDS = 90.0  # overall wall-cap across concurrent queries
 _FETCH_WORKERS = 6  # concurrent queries: serial cascade exhausted the budget
 _FETCH_TOP_K = 500  # Researka per-query cap (raised to 500, confirmed live)
+_AI_RESULTS_BUNDLE_LIMIT = 20
 _FETCH_FAILURE_STATUSES = frozenset({
     "timeout", "auth_failed", "server_error", "bad_json", "missing_token",
 })
@@ -73,6 +76,16 @@ _TITLE_FACET_STOPWORDS = _QUERY_STOPWORDS | frozenset({
     "analysis", "controlled", "evidence", "meta", "randomised", "randomized",
     "review", "reviews", "study", "studies", "systematic", "trial", "trials",
 })
+_AI_AXIS_FIELDS = (
+    "benchmark", "task", "dataset", "metric", "model_system",
+    "baseline_comparator", "evaluation_protocol",
+)
+_AI_AXIS_ALIASES = {
+    "task": ("task_or_benchmark",),
+    "benchmark": ("task_or_benchmark",),
+    "baseline_comparator": ("baseline_or_comparator",),
+}
+_AI_CASE_WORD = re.compile(r"[a-z0-9]+")
 
 
 @dataclass(frozen=True, slots=True)
@@ -135,16 +148,38 @@ def _normalize_tier2(item: dict[str, Any], topic: str) -> dict[str, Any]:
     """Coerce a tier2/facts/search row into the Tier-1-shaped dict the
     renderer / scorer expects. Keeps the same interestingness signals
     (numeric_value, validation, recency) but flags `tier=tier2`."""
-    paper = item.get("paper") or {}
-    return {
+    paper_raw = item.get("paper")
+    paper: dict[str, Any] = paper_raw if isinstance(paper_raw, dict) else {}
+    fact_raw = item.get("fact")
+    fact: dict[str, Any] = fact_raw if isinstance(fact_raw, dict) else {}
+    source_paper = {
+        "pmid": paper.get("pmid"), "doi": paper.get("doi"),
+        "pmcid": paper.get("pmcid"), "title": paper.get("title"),
+        "journal": paper.get("journal_name"),
+        "year": paper.get("publication_year"),
+        "url": paper.get("url") or paper.get("source_url"),
+        "publisher": paper.get("publisher"),
+    }
+    reliability = source_reliability_tier(source_paper)
+
+    def _field(name: str) -> Any:
+        sources: tuple[dict[str, Any], dict[str, Any]] = (item, fact)
+        for source in sources:
+            value = source.get(name)
+            if value not in (None, "", {}):
+                return value
+            for alias in _AI_AXIS_ALIASES.get(name, ()):
+                value = source.get(alias)
+                if value not in (None, "", {}):
+                    return value
+        return None
+
+    out = {
         "fact_id": item.get("id"), "topic": topic,
         "sub_topic": item.get("claim_type") or "",
-        "source_paper": {
-            "pmid": paper.get("pmid"), "doi": paper.get("doi"),
-            "pmcid": paper.get("pmcid"), "title": paper.get("title"),
-            "journal": paper.get("journal_name"),
-            "year": paper.get("publication_year"),
-        },
+        "source_paper": source_paper,
+        "reliability": reliability,
+        "source_reliability": reliability,
         "claim_type": item.get("claim_type"),
         "numeric_value": item.get("numeric_value"),
         "units": item.get("units"), "ci_lower": None, "ci_upper": None,
@@ -164,6 +199,213 @@ def _normalize_tier2(item: dict[str, Any], topic: str) -> dict[str, Any]:
         "superseded_by": None,
         "_tier": "tier2",
     }
+    for key in (
+        *_AI_AXIS_FIELDS,
+        "source_identifiers",
+        "artifact_url",
+        "limitation",
+        "source_excerpt",
+    ):
+        value = _field(key)
+        if value not in (None, "", {}):
+            out[key] = value
+    if item.get("topic"):
+        out["source_topic"] = item.get("topic")
+    return out
+
+
+def _norm_axis(value: Any) -> str:
+    return " ".join(_AI_CASE_WORD.findall(str(value or "").lower()))
+
+
+def _title_axis(value: Any) -> str:
+    return " ".join(
+        word.capitalize() for word in _AI_CASE_WORD.findall(str(value or "").lower())
+    )
+
+
+def _ai_source_axis(fact: dict[str, Any], field: str) -> str:
+    raw = fact.get("result_shape")
+    shape = raw if isinstance(raw, dict) else {}
+    value = shape.get(field) or fact.get(field)
+    if field == "benchmark" and not value:
+        value = fact.get("task") or fact.get("dataset")
+    if field == "dataset" and not value:
+        value = fact.get("benchmark") or fact.get("task")
+    if field == "evaluation_protocol" and not value:
+        benchmark = fact.get("benchmark") or fact.get("dataset") or fact.get("task")
+        value = f"{benchmark} benchmark evaluation" if benchmark else ""
+    return _norm_axis(value)
+
+
+def _ai_result_shape(fact: dict[str, Any]) -> dict[str, str]:
+    shape = {field: _title_axis(_ai_source_axis(fact, field)) for field in _AI_AXIS_FIELDS}
+    return {key: value for key, value in shape.items() if value}
+
+
+def _ai_axis_key(fact: dict[str, Any]) -> str:
+    shape = _ai_result_shape(fact)
+    return "|".join(f"{field}={shape.get(field, '')}" for field in _AI_AXIS_FIELDS)
+
+
+def _ai_axis_complete(fact: dict[str, Any]) -> bool:
+    shape = _ai_result_shape(fact)
+    return all(shape.get(field) for field in _AI_AXIS_FIELDS)
+
+
+def _ai_axis_coherent_facts(
+    facts: list[dict[str, Any]],
+    topic: str,
+    *,
+    min_sources: int,
+) -> list[dict[str, Any]]:
+    buckets: dict[str, list[dict[str, Any]]] = {}
+    for fact in facts:
+        if not _ai_axis_complete(fact):
+            continue
+        buckets.setdefault(_ai_axis_key(fact), []).append(fact)
+    candidates: list[list[dict[str, Any]]] = []
+    for rows in buckets.values():
+        picked: list[dict[str, Any]] = []
+        seen_sources: set[str] = set()
+        for fact in rows:
+            source = _source_key(fact)
+            if not source or source in seen_sources:
+                continue
+            shaped = dict(fact)
+            shape = _ai_result_shape(shaped)
+            shaped["result_shape"] = shape
+            shaped["population"] = " ".join(
+                shape.get(field, "")
+                for field in ("benchmark", "task", "dataset")
+                if shape.get(field)
+            )
+            shaped["intervention"] = shape.get("model_system", "")
+            shaped["comparator"] = shape.get("baseline_comparator", "")
+            shaped["endpoint"] = shape.get("metric", "")
+            shaped["reported_model_system"] = fact.get("model_system")
+            shaped["reported_baseline_comparator"] = fact.get("baseline_comparator")
+            picked.append(shaped)
+            seen_sources.add(source)
+            if len(picked) >= min_sources:
+                break
+        if len(seen_sources) >= min_sources:
+            candidates.append(picked)
+    if not candidates:
+        return []
+    candidates.sort(key=lambda rows: (-_source_count(rows), _ai_axis_key(rows[0])))
+    return candidates[0]
+
+
+def _post_ai_result_bundles(
+    client: httpx.Client,
+    base: str,
+    hdr: dict[str, str],
+    query: str,
+    *,
+    min_sources: int,
+) -> FetchResult:
+    body = {
+        "query": query,
+        "limit": _AI_RESULTS_BUNDLE_LIMIT,
+        "min_sources": min_sources,
+        "receipts_per_bundle": min_sources,
+        "require_complete_axes": True,
+    }
+    try:
+        r = client.post(
+            f"{base}/api/v1/ai/results/search", headers=hdr, json=body,
+        )
+        r.raise_for_status()
+        data = r.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        return _fetch_error_result(exc)
+    hits = [x for x in data if isinstance(x, dict)] if isinstance(data, list) else []
+    return FetchResult(hits, "ok")
+
+
+def _normalize_ai_result_receipt(
+    receipt: dict[str, Any],
+    topic: str,
+    bundle: dict[str, Any],
+) -> dict[str, Any]:
+    paper_raw = receipt.get("paper")
+    paper: dict[str, Any] = paper_raw if isinstance(paper_raw, dict) else {}
+    shape_raw = bundle.get("shape")
+    shape: dict[str, Any] = shape_raw if isinstance(shape_raw, dict) else {}
+    benchmark = receipt.get("benchmark") or shape.get("benchmark") or shape.get("task")
+    task = receipt.get("task") or shape.get("task") or benchmark
+    dataset = receipt.get("dataset") or shape.get("dataset") or benchmark
+    metric = receipt.get("metric") or shape.get("metric")
+    model = receipt.get("model_system") or shape.get("model_system")
+    comparator = receipt.get("baseline_comparator") or shape.get("baseline_comparator")
+    protocol = (
+        receipt.get("evaluation_protocol")
+        or shape.get("evaluation_protocol")
+        or (f"{benchmark} benchmark evaluation" if benchmark else "")
+    )
+    fact = _normalize_tier2({
+        "id": receipt.get("id"),
+        "paper": paper,
+        "claim_type": receipt.get("claim_type"),
+        "numeric_value": receipt.get("numeric_value"),
+        "units": receipt.get("units"),
+        "extraction_confidence": "high",
+        "canonical_phrase": receipt.get("canonical_phrase"),
+        "topic": receipt.get("topic") or bundle.get("topic") or topic,
+        "benchmark": benchmark,
+        "task": task,
+        "dataset": dataset,
+        "metric": metric,
+        "model_system": model,
+        "baseline_comparator": comparator,
+        "evaluation_protocol": protocol,
+        "source_identifiers": receipt.get("source_identifiers"),
+        "artifact_url": receipt.get("artifact_url"),
+        "source_excerpt": receipt.get("source_excerpt"),
+    }, topic)
+    if receipt.get("paper_id") and isinstance(fact.get("source_paper"), dict):
+        fact["source_paper"]["paper_id"] = receipt.get("paper_id")
+    fact.update({
+        "_tier": "ai_results_index",
+        "result_key": bundle.get("result_key"),
+        "result_papers": bundle.get("papers"),
+        "result_complete_papers": bundle.get("complete_papers"),
+        "reported_model_system": model,
+        "reported_baseline_comparator": comparator,
+        "result_shape": {
+            "benchmark": _title_axis(benchmark),
+            "task": _title_axis(task),
+            "dataset": _title_axis(dataset),
+            "metric": _title_axis(metric),
+            "model_system": _title_axis(model),
+            "baseline_comparator": _title_axis(comparator),
+            "evaluation_protocol": _title_axis(protocol),
+        },
+    })
+    return fact
+
+
+def _facts_from_ai_result_bundles(
+    bundles: list[dict[str, Any]],
+    topic: str,
+    *,
+    min_sources: int,
+) -> list[dict[str, Any]]:
+    for bundle in bundles:
+        if not bundle.get("ready_for_queue"):
+            continue
+        raw = bundle.get("receipts")
+        receipts = [r for r in raw if isinstance(r, dict)] if isinstance(raw, list) else []
+        if len(receipts) < min_sources:
+            continue
+        facts = [
+            _normalize_ai_result_receipt(receipt, topic, bundle)
+            for receipt in receipts[:min_sources]
+        ]
+        if _source_count(facts) >= min_sources:
+            return facts
+    return []
 
 
 def _source_key(fact: dict[str, Any]) -> str:
@@ -405,7 +647,10 @@ def _all_primary_fetches_failed(trace: list[dict[str, Any]]) -> bool:
 
 
 def _fetch_facts(
-    topic: str, trace: list[dict[str, Any]] | None = None,
+    topic: str,
+    trace: list[dict[str, Any]] | None = None,
+    *,
+    domain: str = "longevity",
 ) -> list[dict[str, Any]]:
     """Pull facts across diverse slices CONCURRENTLY, then dedup. The Researka
     search runs 15-25s/query (strict-audited can 504), so a serial cascade
@@ -433,6 +678,26 @@ def _fetch_facts(
         return []
     hdr = {"X-Researka-Token": token}
     deadline = time.monotonic() + _FACT_FETCH_BUDGET_SECONDS
+    min_sources = _min_fact_source_papers()
+    if domain == "ai_research":
+        with httpx.Client(timeout=_FACT_FETCH_TIMEOUT_SECONDS) as c:
+            bundle_result = _post_ai_result_bundles(
+                c, base, hdr, topic, min_sources=min_sources,
+            )
+        if trace is not None:
+            trace.append({
+                "kind": "ai_results_index",
+                "query": topic,
+                "facts": len(bundle_result.hits),
+                "status": bundle_result.status,
+                "errors": list(bundle_result.errors),
+            })
+        if bundle_result.status == "ok":
+            bundle_facts = _facts_from_ai_result_bundles(
+                bundle_result.hits, topic, min_sources=min_sources,
+            )
+            if bundle_facts:
+                return bundle_facts
     queries = _diverse_queries(topic)
     strict_jobs: list[tuple[str, str]] = (
         [("tier1", k) for k in _topic_fact_keys(topic)]
@@ -450,7 +715,13 @@ def _fetch_facts(
         [("normal", query) for query in [*queries, *extra_queries]],
         base, hdr, topic, trace=trace, deadline=deadline,
     ))
-    return _dedup_facts(facts)
+    deduped = _dedup_facts(facts)
+    if domain == "ai_research":
+        coherent = _ai_axis_coherent_facts(
+            deduped, topic, min_sources=min_sources,
+        )
+        return coherent if coherent else deduped
+    return deduped
 
 
 def _rankable_facts_for_top(
@@ -873,6 +1144,7 @@ def _render_frontier_md(review: FrontierReview, topic: str) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--topic", required=True)
+    parser.add_argument("--domain", choices=domain_choices(), default="longevity")
     parser.add_argument("--parent-topic", default="",
                         help="Fetch parent-topic facts while classifying against the narrower topic.")
     parser.add_argument("--top", type=int, default=5)
@@ -891,17 +1163,28 @@ def main() -> int:
                              "signal posts, labels risk; paper: strict "
                              "evidence-gated journal mode.")
     args = parser.parse_args()
+    profile = load_domain_profile(args.domain)
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
     out_dir = _RUNS / f"{args.topic}-evidence-{ts}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     search_trace: list[dict[str, Any]] = []
-    facts = _fetch_facts(args.parent_topic or args.topic, trace=search_trace)
+    facts = _fetch_facts(
+        args.parent_topic or args.topic, trace=search_trace, domain=profile.slug,
+    )
     if args.parent_topic:
-        facts = _dedup_facts(facts + _fetch_facts(args.topic, trace=search_trace))
+        facts = _dedup_facts(
+            facts + _fetch_facts(args.topic, trace=search_trace, domain=profile.slug),
+        )
+        if profile.slug == "ai_research":
+            coherent = _ai_axis_coherent_facts(
+                facts, args.topic, min_sources=_min_fact_source_papers(),
+            )
+            facts = coherent if coherent else facts
     if _all_primary_fetches_failed(search_trace):
         (out_dir / "search_trace.json").write_text(
-            json.dumps({"topic": args.topic, "snapshot_utc": ts,
+            json.dumps({"topic": args.topic, "domain": profile.as_metadata(),
+                        "snapshot_utc": ts,
                         "queries": search_trace}, indent=2, ensure_ascii=False),
             encoding="utf-8")
         (out_dir / "retrieval_status.json").write_text(
@@ -938,7 +1221,8 @@ def main() -> int:
     # OpenSeeker-style search trajectory: which query slices hit / were empty /
     # timed out, for receipts + auditability of the retrieval that fed this run.
     (out_dir / "search_trace.json").write_text(
-        json.dumps({"topic": args.topic, "snapshot_utc": ts,
+        json.dumps({"topic": args.topic, "domain": profile.as_metadata(),
+                    "snapshot_utc": ts,
                     "queries": search_trace}, indent=2, ensure_ascii=False),
         encoding="utf-8")
 
@@ -1012,6 +1296,7 @@ def main() -> int:
             }
 
     manifest = {
+        "domain": profile.as_metadata(),
         "topic": args.topic, "snapshot_utc": ts, "top_n": args.top,
         "facts_inspected": len(facts), "aggregated_claims": len(aggregated),
         "data_tier": tier,

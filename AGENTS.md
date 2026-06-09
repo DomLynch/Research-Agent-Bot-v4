@@ -39,10 +39,12 @@ LLM PROPOSES. CODE DISPOSES.
 ```
 
 ## Model Stack — 2 models only
-- **Writer**: MiMo v2.5 Pro (Xiaomi, OpenAI-compatible). Base URL via
-  `MIMO_BASE_URL`. Model id via `MIMO_MODEL`.
+- **Writer**: MiniMax-M3 (MiniMax, Anthropic-compatible). Base URL via
+  `ANTHROPIC_BASE_URL` / `MINIMAX_BASE_URL`. Model id via
+  `ANTHROPIC_MODEL` / `MINIMAX_MODEL`. Legacy `MIMO_*` env vars remain
+  accepted as compatibility aliases.
 - **Judge + Editor pass**: Gemma 4 31B via OpenRouter (`google/gemma-4-31b-it`).
-- **Correction loop**: judge returns structured issues; MiMo rewrites; max
+- **Correction loop**: judge returns structured issues; writer rewrites; max
   `WRITER_MAX_RETRIES` (default 2) attempts; then publish.
 
 Judge family ≠ writer family. Non-negotiable.

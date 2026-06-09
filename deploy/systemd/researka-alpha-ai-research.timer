@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Research Agent v4 AI Research alpha memo publisher every eight hours
+
+[Timer]
+OnCalendar=*-*-* 05/8:30:00
+Persistent=true
+Unit=researka-alpha-ai-research.service
+
+[Install]
+WantedBy=timers.target

@@ -17,6 +17,7 @@ from agent.settings import load_settings
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 import build_topic_evidence_run as evidence_run
+import daily_alpha_publish_cycle as daily
 
 
 def _settings() -> Any:
@@ -46,6 +47,48 @@ def _fact(fid: str, doi: str, *, bindable: bool = True) -> dict[str, Any]:
         out["population"] = "adults"
         out["intervention"] = "topicA"
     return out
+
+
+def _ai_result_bundle() -> dict[str, Any]:
+    return {
+        "result_key": "llm_evaluation::gsm8k::accuracy",
+        "topic": "llm_evaluation",
+        "ready_for_queue": True,
+        "shape": {
+            "benchmark": "GSM8K",
+            "task": "math reasoning",
+            "dataset": "GSM8K",
+            "metric": "accuracy",
+            "evaluation_protocol": "matched-budget evaluation",
+            "model_system": "GSM8K systems",
+            "baseline_comparator": "GSM8K benchmark baselines",
+        },
+        "receipts": [
+            {
+                "id": f"ai-{i}",
+                "paper_id": f"P{i}",
+                "paper": {
+                    "doi": f"10.ai/{i}",
+                    "title": f"AI result paper {i}",
+                    "publication_year": 2026,
+                    "journal_name": "AI Benchmarks",
+                },
+                "claim_type": "benchmark_delta",
+                "numeric_value": 10 + i,
+                "units": "%",
+                "canonical_phrase": (
+                    f"Model {i} improved GSM8K accuracy against baseline {i}."
+                ),
+                "benchmark": "GSM8K",
+                "task": "math reasoning",
+                "dataset": "GSM8K",
+                "metric": "accuracy",
+                "model_system": f"Model {i}",
+                "baseline_comparator": f"baseline {i}",
+            }
+            for i in range(5)
+        ],
+    }
 
 
 def _tier1_fact(fid: str, doi: str) -> dict[str, Any]:
@@ -104,6 +147,117 @@ def test_fetch_facts_strict_first_then_normal_until_source_floor(
     assert any(b.get("strict_audit_required") is None for b in bodies)
     assert evidence_run._source_count(facts) == 6
     assert evidence_run._a_core_source_count(facts, "topicA") == 6
+
+
+def test_ai_research_fetch_uses_result_bundles_before_tier2_search(
+    monkeypatch: Any,
+) -> None:
+    calls: list[tuple[str, dict[str, Any]]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        calls.append((request.url.path, body))
+        if request.url.path == "/api/v1/ai/results/search":
+            return httpx.Response(200, json=[_ai_result_bundle()])
+        raise AssertionError("tier2 fallback should not run for ready AI bundle")
+
+    _mock_client(monkeypatch, handler)
+    trace: list[dict[str, Any]] = []
+
+    facts = evidence_run._fetch_facts(
+        "llm_evaluation", trace=trace, domain="ai_research",
+    )
+
+    assert [path for path, _body in calls] == ["/api/v1/ai/results/search"]
+    assert calls[0][1] == {
+        "query": "llm_evaluation",
+        "limit": 20,
+        "min_sources": 5,
+        "receipts_per_bundle": 5,
+        "require_complete_axes": True,
+    }
+    assert len(facts) == 5
+    assert evidence_run._source_count(facts) == 5
+    assert facts[0]["_tier"] == "ai_results_index"
+    assert facts[0]["result_key"] == "llm_evaluation::gsm8k::accuracy"
+    assert facts[0]["result_shape"]["benchmark"] == "Gsm8k"
+    assert facts[0]["result_shape"]["metric"] == "Accuracy"
+    assert facts[0]["reported_model_system"] == "Model 0"
+    assert trace == [{
+        "kind": "ai_results_index",
+        "query": "llm_evaluation",
+        "facts": 1,
+        "status": "ok",
+        "errors": [],
+    }]
+
+
+def test_ai_research_tier2_fallback_extracts_same_axis_shelf(
+    tmp_path: Path,
+) -> None:
+    facts = [
+        evidence_run._normalize_tier2(
+            _fact(f"swe-{i}", f"10.ai/swe-{i}") | {
+                "topic": "swe_bench",
+                "benchmark": "SWE-bench Verified",
+                "fact": {
+                    "metric": "resolve rate",
+                    "task": "SWE-bench Verified",
+                    "dataset": "SWE-bench Verified",
+                    "model_system": "AgentX",
+                    "baseline_comparator": "baseline agent",
+                    "evaluation_protocol": "matched-budget evaluation",
+                    "canonical_phrase": (
+                        "AgentX reports SWE-bench resolve rate against baseline."
+                    ),
+                },
+            },
+            "swe_bench_success",
+        )
+        for i in range(5)
+    ]
+    facts.append(evidence_run._normalize_tier2(
+        _fact("mmlu", "10.ai/mmlu") | {
+            "topic": "mmlu",
+            "benchmark": "MMLU",
+            "fact": {"metric": "accuracy", "task": "MMLU"},
+        },
+        "swe_bench_success",
+    ))
+
+    coherent = evidence_run._ai_axis_coherent_facts(
+        facts, "swe_bench_success", min_sources=5,
+    )
+
+    assert len(coherent) == 5
+    assert evidence_run._source_count(coherent) == 5
+    assert {fact["result_shape"]["benchmark"] for fact in coherent} == {
+        "Swe Bench Verified",
+    }
+    assert {fact["result_shape"]["metric"] for fact in coherent} == {
+        "Resolve Rate",
+    }
+
+    root = tmp_path / "repo"
+    run = root / "runs" / "swe_bench_success-evidence-ts"
+    run.mkdir(parents=True)
+    ids = [str(fact["fact_id"]) for fact in coherent]
+    run.joinpath("alpha_memo.md").write_text(
+        "## Evidence receipts\n\n"
+        + "\n".join(f"- `fact_id={fid}` (`A_core`) - receipt" for fid in ids)
+        + "\n",
+        encoding="utf-8",
+    )
+    run.joinpath("all_facts.json").write_text(
+        json.dumps(coherent), encoding="utf-8",
+    )
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": fid, "lane": "A_core"} for fid in ids],
+    }), encoding="utf-8")
+
+    assert daily._direct_receipts_share_shape(
+        {"run_dir": "runs/swe_bench_success-evidence-ts"}, root / "runs", 5,
+    ) is True
 
 
 def test_fetch_facts_widens_when_strict_sources_are_not_direct_bindable(

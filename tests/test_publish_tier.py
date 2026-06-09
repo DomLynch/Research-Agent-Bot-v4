@@ -209,8 +209,10 @@ def test_bridge_chain_source_overlap_is_not_claim_coherent(tmp_path: Path) -> No
     verdict = publish_verdict(run)
 
     assert verdict["decision"] == "agent_repair_needed"
-    assert "source_dispersion" in verdict["blockers"]
+    assert "claim_alignment_partial" in verdict["blockers"]
+    assert "direct_source_floor_below_min" in verdict["blockers"]
     assert verdict["axes"]["claim_coherent_source_diversity"] is False
+    assert verdict["axes"]["direct_match_receipts"] < verdict["axes"]["bound_receipts"]
 
 
 def test_claim_coherence_accepts_source_cluster_not_every_receipt(
@@ -239,6 +241,102 @@ def test_claim_coherence_accepts_source_cluster_not_every_receipt(
 
     assert "source_dispersion" not in verdict["blockers"]
     assert verdict["axes"]["claim_coherent_source_diversity"] is True
+
+
+def test_ready_to_publish_requires_direct_receipt_shape_coherence(
+    tmp_path: Path,
+) -> None:
+    run = _run(tmp_path)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    for fact, metric, model in zip(
+        facts,
+        ("accuracy", "precision", "recall", "latency", "faithfulness"),
+        ("GPT", "RAG", "LLM", "MoE", "BLOOM"),
+        strict=True,
+    ):
+        fact.update({
+            "population": "reserve-market benchmark",
+            "intervention": "storage threshold controller",
+            "comparator": "manual reserve baseline",
+            "metric": metric,
+            "model_system": model,
+            "evaluation_protocol": "zero shot dispatch evaluation",
+        })
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "agent_repair_needed"
+    assert "receipt_shape_mismatch" in verdict["blockers"]
+    assert verdict["axes"]["direct_receipt_shape_coherent"] is False
+
+
+def test_ready_to_publish_blocks_metric_type_conflation(
+    tmp_path: Path,
+) -> None:
+    run = _run(tmp_path)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    phrases = (
+        "System A reports 80% MMLU accuracy against baseline.",
+        "System B reports 82% MMLU accuracy against baseline.",
+        "System C reports 84% MMLU accuracy against baseline.",
+        "System D reports 47x faster MMLU retrieval against baseline.",
+        "System E reports 95% context length reduction on MMLU.",
+    )
+    for fact, phrase in zip(facts, phrases, strict=True):
+        fact.update({
+            "canonical_phrase": phrase,
+            "population": "MMLU benchmark",
+            "intervention": "MMLU system",
+            "comparator": "MMLU baseline",
+            "benchmark": "MMLU",
+            "task": "multiple choice QA",
+            "dataset": "MMLU",
+            "metric": "accuracy",
+            "model_system": "MMLU systems",
+            "evaluation_protocol": "MMLU benchmark evaluation",
+        })
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "agent_repair_needed"
+    assert "metric_type_mismatch" in verdict["blockers"]
+    assert verdict["axes"]["direct_metric_type_coherent"] is False
+
+
+def test_ready_to_publish_accepts_preclustered_result_shape(
+    tmp_path: Path,
+) -> None:
+    run = _run(tmp_path)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    for i, fact in enumerate(facts):
+        fact.update({
+            "population": "AI agents LoCoMo",
+            "intervention": f"memory system {i}",
+            "comparator": f"baseline {i}",
+            "metric": f"accuracy variant {i}",
+            "model_system": f"Model {i}",
+            "baseline_comparator": f"baseline {i}",
+            "evaluation_protocol": f"paper protocol {i}",
+            "result_shape": {
+                "benchmark": "LoCoMo",
+                "task": "long context memory",
+                "dataset": "LoCoMo",
+                "metric": "accuracy",
+                "model_system": "LoCoMo memory systems",
+                "baseline_comparator": "LoCoMo benchmark baselines",
+                "evaluation_protocol": "LoCoMo benchmark evaluation",
+            },
+        })
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "ready_to_publish"
+    assert verdict["blockers"] == []
+    assert verdict["axes"]["direct_receipt_shape_coherent"] is True
+    assert verdict["axes"]["direct_metric_type_coherent"] is True
 
 
 def test_structural_ready_can_publish_frontier_label(tmp_path: Path) -> None:
@@ -366,9 +464,53 @@ def test_incoherent_source_dispersion_routes_to_agent_repair(
     verdict = publish_verdict(run)
 
     assert verdict["decision"] == "agent_repair_needed"
-    assert "source_dispersion" in verdict["blockers"]
+    assert "claim_alignment_partial" in verdict["blockers"]
+    assert "direct_source_floor_below_min" in verdict["blockers"]
     assert verdict["axes"]["claim_coherent_source_diversity"] is False
     assert "cross_domain_forced" not in verdict["blockers"]
+
+
+def test_adjacent_a_core_receipts_do_not_satisfy_claim_source_floor(
+    tmp_path: Path,
+) -> None:
+    run = _run(
+        tmp_path,
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+        dois=("10.stroke/a", "10.stroke/b", "10.gi/a", "10.gi/b", "10.gi/c"),
+        titles=(
+            "SGLT2 inhibitors reduced stroke risk in older adults",
+            "SGLT2 inhibitor exposure reduced ischemic stroke risk",
+            "GLP1 treatment increased gastrointestinal adverse events",
+            "Semaglutide nausea drove discontinuation rates",
+            "Incretin therapy changed bodyweight endpoints",
+        ),
+    )
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo - metabolic_agents\n\n"
+        "**Headline:** SGLT2 inhibitors reduced stroke risk\n"
+        "**Alpha score:** 90/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## One-sentence thesis\n\n"
+        "SGLT2 inhibitor receipts report reduced stroke risk.\n\n"
+        "## Why this is surprising\n\n"
+        "Real tension: the signal is endpoint-specific.\n\n"
+        "## Evidence receipts\n\n"
+        "- `fact_id=1` (`A_core`) - receipt\n"
+        "- `fact_id=2` (`A_core`) - receipt\n"
+        "- `fact_id=3` (`A_core`) - receipt\n"
+        "- `fact_id=4` (`A_core`) - receipt\n"
+        "- `fact_id=5` (`A_core`) - receipt\n",
+        encoding="utf-8",
+    )
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "agent_repair_needed"
+    assert verdict["surface_type"] == "receipt_map"
+    assert verdict["axes"]["direct_match_receipts"] == 2
+    assert verdict["axes"]["direct_source_papers"] == 2
+    assert "claim_alignment_partial" in verdict["blockers"]
+    assert "direct_source_floor_below_min" in verdict["blockers"]
 
 
 def test_dispersed_parent_recommends_a_core_child_cluster(tmp_path: Path) -> None:
@@ -710,6 +852,7 @@ def test_counter_evidence_satisfies_tension_gate(tmp_path: Path) -> None:
     verdict = publish_verdict(run)
 
     assert verdict["counter_evidence"]["status"] == "found"
+    assert verdict["counter_evidence"]["items"][0]["claim_fit"] == "opposing"
     assert verdict["axes"]["counter_consensus_tension"] is True
     assert "weak_counter_consensus_tension" not in verdict["blockers"]
     assert verdict["decision"] == "ready_to_publish"
