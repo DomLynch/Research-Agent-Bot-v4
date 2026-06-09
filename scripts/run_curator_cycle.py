@@ -46,7 +46,7 @@ from daily_alpha_publish_cycle import (  # noqa: E402
     _source_count,
 )
 
-from agent.domain_profile import domain_choices  # noqa: E402
+from agent.domain_profile import domain_choices, domain_slug  # noqa: E402
 from agent.settings import load_settings  # noqa: E402
 from agent.topic_discovery import _fetch_topic_fact_source_count  # noqa: E402
 
@@ -146,23 +146,29 @@ def _recent_signal_topics(
     return recent
 
 
-def _read_discovery_top(out_dir: Path) -> list[dict[str, Any]]:
-    """Find the newest discovery JSON in runs/_topics_discovery/."""
+def _read_discovery_top(
+    out_dir: Path, *, domain: str | None = None,
+) -> list[dict[str, Any]]:
+    """Find the newest matching discovery JSON in runs/_topics_discovery/."""
     if not out_dir.exists():
         return []
-    candidates = sorted(out_dir.glob("*.json"))
+    candidates = sorted(out_dir.glob("*.json"), reverse=True)
     if not candidates:
         return []
-    try:
-        data = json.loads(candidates[-1].read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return []
-    if not isinstance(data, dict):
-        return []
-    raw = data.get("all") or data.get("top") or []
-    if not isinstance(raw, list):
-        return []
-    return [c for c in raw if isinstance(c, dict) and c.get("topic")]
+    for path in candidates:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        if domain and domain_slug(data.get("domain")) != domain:
+            continue
+        raw = data.get("all") or data.get("top") or []
+        if not isinstance(raw, list):
+            return []
+        return [c for c in raw if isinstance(c, dict) and c.get("topic")]
+    return []
 
 
 def _newest_run_for_topic(topic: str) -> Path | None:
@@ -509,7 +515,7 @@ def main() -> int:
         if not ok:
             print(f"[cycle] discovery failed: {last}", file=sys.stderr)
             return 1
-    ranked = _read_discovery_top(_RUNS / "_topics_discovery")
+    ranked = _read_discovery_top(_RUNS / "_topics_discovery", domain=args.domain)
     if not ranked and not args.priority_topic:
         print("[cycle] no discovery candidates; aborting.", file=sys.stderr)
         return 1
