@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from agent.business_research import (
     BUSINESS_DOMAINS,
     build_candidate_bundle,
+    business_fact_diagnostics,
     fetch_business_facts,
     write_candidate_run,
 )
@@ -26,6 +27,23 @@ def _read_facts(path: Path | None) -> list[dict[str, Any]]:
         return []
     data = json.loads(path.read_text(encoding="utf-8"))
     return [row for row in data if isinstance(row, dict)] if isinstance(data, list) else []
+
+
+def write_no_bundle_diagnostics(
+    *,
+    runs_root: Path,
+    domain: str,
+    topic: str,
+    facts: list[dict[str, Any]],
+    trace: dict[str, Any],
+) -> Path:
+    out_dir = runs_root / "_business_diagnostics"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    payload = business_fact_diagnostics(facts, topic=topic, domain=domain)
+    payload["retrieval_trace"] = trace
+    out_path = out_dir / f"{domain}-{topic}.json"
+    out_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    return out_path
 
 
 def main() -> int:
@@ -49,9 +67,17 @@ def main() -> int:
         facts, trace = fetch_business_facts(args.topic, domain=profile.slug, settings=load_settings())
     bundle = build_candidate_bundle(facts, topic=args.topic, domain=profile.slug)
     if bundle is None:
+        diagnostics_path = write_no_bundle_diagnostics(
+            runs_root=args.runs_root,
+            domain=profile.slug,
+            topic=args.topic,
+            facts=facts,
+            trace=trace,
+        )
         print(
             "[business-candidate] no source-diverse comparable A-core bundle "
-            f"domain={profile.slug} topic={args.topic} trace={trace}",
+            f"domain={profile.slug} topic={args.topic} trace={trace} "
+            f"diagnostics={diagnostics_path}",
             file=sys.stderr,
         )
         return 3

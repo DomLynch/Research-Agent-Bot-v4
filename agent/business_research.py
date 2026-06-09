@@ -43,6 +43,16 @@ SHAPE_FIELDS = (
 )
 CORE_SHAPE_FIELDS = ("intervention", "comparator", "outcome", "metric", "study_design")
 _WORD = re.compile(r"[a-z0-9]+")
+_STUDY_DESIGN_HINTS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (re.compile(r"\b(randomi[sz]ed controlled trial|randomi[sz]ed trial|rct)\b", re.I), "randomized controlled trial"),
+    (re.compile(r"\b(field experiment|randomi[sz]ed experiment)\b", re.I), "field experiment"),
+    (re.compile(r"\b(difference[- ]in[- ]differences|diff[- ]in[- ]diff)\b", re.I), "difference in differences"),
+    (re.compile(r"\b(regression discontinuity|rd design)\b", re.I), "regression discontinuity"),
+    (re.compile(r"\b(instrumental variable|instrumental variables|iv estimate)\b", re.I), "instrumental variables"),
+    (re.compile(r"\b(event study)\b", re.I), "event study"),
+    (re.compile(r"\b(panel regression|fixed effects|panel data)\b", re.I), "panel regression"),
+    (re.compile(r"\b(asset pricing|factor model|factor premia)\b", re.I), "asset pricing model"),
+)
 Json = dict[str, Any]
 
 
@@ -99,6 +109,33 @@ def _paper(item: Json) -> Json:
     return raw if isinstance(raw, dict) else {}
 
 
+def _infer_study_design(item: Json, fact: Json, paper: Json) -> str:
+    text = " ".join(
+        _clean(value)
+        for value in (
+            item.get("study_design"),
+            fact.get("study_design"),
+            item.get("identification_strategy"),
+            fact.get("identification_strategy"),
+            item.get("estimation_method"),
+            fact.get("estimation_method"),
+            item.get("sub_topic"),
+            fact.get("sub_topic"),
+            item.get("claim_type"),
+            fact.get("claim_type"),
+            item.get("canonical_phrase"),
+            fact.get("canonical_phrase"),
+            paper.get("title"),
+            paper.get("journal_name") or paper.get("journal"),
+        )
+        if value
+    )
+    for pattern, label in _STUDY_DESIGN_HINTS:
+        if pattern.search(text):
+            return label
+    return ""
+
+
 def source_key(fact: Json) -> str:
     paper = fact.get("source_paper")
     if not isinstance(paper, dict):
@@ -120,7 +157,7 @@ def normalize_business_fact(item: Json, *, topic: str, domain: str) -> Json:
         _field(item, fact, "study_design")
         or _field(item, fact, "identification_strategy")
         or _field(item, fact, "estimation_method")
-    )
+    ) or _infer_study_design(item, fact, paper)
     effect = _field(item, fact, "effect_size")
     numeric = _num(item.get("numeric_value") if item.get("numeric_value") is not None else effect)
     out: Json = {

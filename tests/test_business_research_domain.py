@@ -134,6 +134,33 @@ def test_business_candidate_cli_builds_ready_dry_run_queue(
     assert verdict["axes"]["direct_source_papers"] == 5
 
 
+def test_business_candidate_cli_writes_no_bundle_diagnostics(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    facts_path = tmp_path / "facts.json"
+    facts_path.write_text(json.dumps(_fixture_facts()[:1]), encoding="utf-8")
+    runs = tmp_path / "runs"
+    monkeypatch.setattr(sys, "argv", [
+        "build_business_alpha_candidate.py",
+        "--domain", "management_research",
+        "--topic", "management_practices_productivity",
+        "--facts-json", str(facts_path),
+        "--runs-root", str(runs),
+    ])
+
+    assert business_cli.main() == 3
+    diagnostics = json.loads(
+        (
+            runs / "_business_diagnostics"
+            / "management_research-management_practices_productivity.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert diagnostics["raw_fact_count"] == 1
+    assert diagnostics["a_core_fact_count"] == 1
+    assert diagnostics["top_clusters"][0]["source_count"] == 1
+
+
 def test_business_systemd_timers_are_eight_hour_dry_run() -> None:
     expectations = {
         "business": ("business_research", "02/8:10:00"),
