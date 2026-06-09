@@ -288,7 +288,7 @@ def test_run_cycle_rejects_injected_candidate_without_domain(tmp_path: Path) -> 
         retraction_mode="metadata",
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["considered"][0]["status"] == "missing_domain_metadata"
 
 
@@ -591,7 +591,7 @@ def test_duplicate_underexpanded_memo_refreshes_before_reporting(tmp_path: Path)
     )
 
     row = ledger["considered"][0]
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert row["status"] == "duplicate_submission_fingerprint"
     assert row["memo_refreshed"] is True
     assert row["source_count"] == 5
@@ -1721,6 +1721,38 @@ def test_recently_published_topic_family_blocks_child_slug(tmp_path: Path) -> No
     assert ledger["seed_scope_dropped_count"] == 0
 
 
+def test_recent_negative_topic_family_blocks_child_slug(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    child = _verdict("semaglutide_once_weekly", score=99) | {
+        "topic_family": "glp_1_longevity",
+    }
+    fresh = _verdict("klotho_receptor_signaling", score=90)
+    _memo_with_source_receipts(root, child, 5)
+    _memo_with_source_receipts(root, fresh, 5)
+    daily._write_json(root / "_daily_ledger" / "2026-06-08.json", {
+        "status": "reviewer_rejected",
+        "final_verdict": "rejected",
+        "submitted_topic": "glp_1_longevity",
+        "researka_decision": {
+            "status": "complete",
+            "decision": "reject",
+            "claim_support_verdict": "unsupported",
+        },
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09",
+        queue=_queue(child, fresh),
+        retraction_mode="metadata",
+    )
+
+    assert ledger["candidate"]["topic"] == "klotho_receptor_signaling"
+    assert ledger["recent_negative_topics_blocked"] == ["glp_1_longevity"]
+    assert ledger["considered"][0]["status"] == "cycle_exhausted_topic"
+    assert ledger["considered"][0]["family_blocked"] is True
+
+
 def test_recent_submission_topic_family_blocks_child_slug(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     child = _verdict("agent_eval_vector_rerank", score=99) | {
@@ -1790,7 +1822,7 @@ def test_seed_scope_metadata_populates_no_candidate_ledger(tmp_path: Path) -> No
         },
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["family_blocked_count"] == 0
     assert ledger["seed_scope_dropped_count"] == 1
     assert ledger["seed_scope_fallback_count"] == 2
@@ -1923,7 +1955,7 @@ def test_repairable_retry_does_not_resubmit_unchanged_memo(tmp_path: Path) -> No
         memo_refresher=lambda _run, _verdict: True,
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["considered"][0]["memo_refreshed"] is True
     assert ledger["considered"][0]["status"] == "duplicate_submission_fingerprint"
 
@@ -1987,7 +2019,7 @@ def test_nonrepairable_rejection_does_not_retry_duplicate(tmp_path: Path) -> Non
         submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["considered"][0]["status"] == "duplicate_submission_fingerprint"
 
 
@@ -2022,7 +2054,7 @@ def test_repairable_rejection_retry_is_capped(tmp_path: Path) -> None:
         submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["considered"][0]["status"] == "duplicate_submission_fingerprint"
 
 
@@ -2197,7 +2229,7 @@ def test_missing_alpha_memo_is_not_publishable(tmp_path: Path) -> None:
         retraction_mode="metadata",
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["considered"][0]["status"] == "missing_alpha_memo"
 
 
@@ -2234,7 +2266,7 @@ def test_refresh_exits_early_when_queue_unchanged_across_batches(
 
     assert calls["n"] == 2  # fast empty refresh, then one warm-backlog try
     assert warm_flags == [False, True]
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["refresh_backlog_escalation"] == {
         "after_batch": 1,
         "reason": "empty_refresh_no_candidate",
@@ -2270,7 +2302,7 @@ def test_warm_backlog_timeout_degrades_to_no_candidate(
         submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["published"] == 0
     assert ledger["refresh_early_exit"] == {
         "batch": 2,
@@ -2304,7 +2336,7 @@ def test_refresh_timeout_note_degrades_to_no_candidate(
         submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["refresh_early_exit"] == {
         "batch": 1,
         "reason": "refresh_timeout",
@@ -2829,7 +2861,7 @@ def test_submit_mode_holds_thin_source_memos(tmp_path: Path) -> None:
         submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["submitted"] == 0
     assert ledger["considered"][0]["source_count"] == 2
     assert ledger["considered"][0]["corpus_ab_paper_count"] == 0
@@ -2860,7 +2892,7 @@ def test_submit_floor_uses_cited_sources_not_available_contexts(tmp_path: Path) 
         submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["submitted"] == 0
     assert ledger["considered"][0]["source_count"] == 1
     assert ledger["considered"][0]["status"] == "corpus_source_floor_below_min"
@@ -2930,7 +2962,7 @@ def test_submit_floor_blocks_context_only_source_padding(tmp_path: Path) -> None
         submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["considered"][0]["source_count"] == 5
     assert ledger["considered"][0]["direct_source_count"] == 1
     assert ledger["considered"][0]["min_direct_source_count"] == 5
@@ -3023,7 +3055,7 @@ def test_submit_floor_has_no_two_source_alpha_exception(tmp_path: Path) -> None:
         },
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["submitted"] == 0
     assert ledger["considered"][0]["source_count"] == 2
     assert ledger["considered"][0]["status"] == "corpus_source_floor_below_min"
@@ -3871,7 +3903,7 @@ def test_refresh_candidates_passes_ai_research_domain(
     assert calls[0][calls[0].index("--domain") + 1] == "ai_research"
 
 
-def test_systemd_publish_timer_has_full_refresh_budget() -> None:
+def test_systemd_legacy_daily_longevity_publisher_is_disabled() -> None:
     service = Path("deploy/systemd/researka-alpha-daily.service").read_text(
         encoding="utf-8",
     )
@@ -3879,9 +3911,10 @@ def test_systemd_publish_timer_has_full_refresh_budget() -> None:
         encoding="utf-8",
     )
 
-    assert "--allow-tier2" in service
-    assert "--max-refresh-batches 5" in service
-    assert "--max-refresh-batches 2" not in service
+    assert "DISABLED legacy generic longevity" in service
+    assert "ExecStart=/bin/true" in service
+    assert "daily_alpha_publish_cycle.py" not in service
+    assert "DISABLED legacy generic longevity" in timer
     assert "OnCalendar=*-*-* 01/8:30:00" in timer
 
 

@@ -198,12 +198,7 @@ _REFRESHABLE_SOURCE_FLOOR_STATUSES = {
 _AGENT_REPAIR_DECISIONS = {
     "agent_repair_needed", "needs_operator_review", "needs_operator_approval",
 }
-_NEGATIVE_MEMORY_STATUSES = {
-    "deduped_publication",
-    "public_page_not_rendered",
-    "reviewer_rejected",
-    "reviewer_revise",
-}
+_NEGATIVE_MEMORY_STATUSES = {"deduped_publication", "reviewer_rejected"}
 
 
 def _refresh_timeout_note(refresh: Json) -> bool:
@@ -1404,24 +1399,29 @@ def _recently_published_topics(
             or ledger.get("submitted_topic")
             or (ledger.get("candidate") or {}).get("topic")
         )
-        topics.update(_ledger_topics(ledger, topic))
+        if topic:
+            topics.add(str(topic))
+        topics.update(_ledger_topics(ledger, include_run_topic=False))
     return topics
 
 
-def _ledger_topics(ledger: Json, topic: Any = "") -> set[str]:
+def _ledger_topics(ledger: Json, *, include_run_topic: bool = True) -> set[str]:
     candidate = ledger.get("candidate")
     if not isinstance(candidate, dict):
         candidate = {}
-    raw = (
-        topic,
+    raw: tuple[Any, ...] = (
         ledger.get("published_topic"),
         ledger.get("submitted_topic"),
         ledger.get("topic_family"),
         candidate.get("topic"),
         candidate.get("topic_family"),
-        _topic_from_run_ref(candidate.get("run_dir")),
     )
-    return {str(t).strip() for t in raw if str(t).strip()}
+    if include_run_topic:
+        raw += (_topic_from_run_ref(candidate.get("run_dir")),)
+    return {
+        value for t in raw
+        if (value := str(t or "").strip())
+    }
 
 
 def _recent_negative_topics(
@@ -1436,11 +1436,12 @@ def _recent_negative_topics(
             if path.stat().st_mtime < cutoff:
                 continue
         ledger = _json(path, {})
-        if (
-            isinstance(ledger, dict)
-            and _same_domain(_ledger_domain(ledger), domain)
-            and str(ledger.get("status") or "") in _NEGATIVE_MEMORY_STATUSES
-        ):
+        if not isinstance(ledger, dict) or not _same_domain(_ledger_domain(ledger), domain):
+            continue
+        status = str(ledger.get("status") or "")
+        if status == "reviewer_rejected" and _repairable_ledger(ledger):
+            continue
+        if status in _NEGATIVE_MEMORY_STATUSES:
             topics.update(_ledger_topics(ledger))
     return topics
 
@@ -3509,19 +3510,15 @@ def run_cycle(
                 row["status"] = "cycle_failed_submission"
                 row["submit_status"] = result["status"]
                 break
-            ledger["cycle_attempts"].append(attempt)
-            blocked_fingerprints.add(str(candidate.get("memo_fingerprint") or ""))
-            topic = str(candidate.get("topic") or "")
-            if topic:
-                blocked_topics.add(topic)
-            if not refresh_candidates or batch >= search_batch_limit:
-                status = (
-                    "deduped_publication"
-                    if result["status"] == "rejected_duplicate" else result["status"]
-                )
-                ledger.update({"status": status, "published": 0})
-                _write_json(ledger_path, ledger)
-                return ledger
+        ledger["cycle_attempts"].append(attempt)
+        blocked_fingerprints.add(str(candidate.get("memo_fingerprint") or ""))
+        topic = str(candidate.get("topic") or "")
+        if topic:
+            blocked_topics.add(topic)
+        if not refresh_candidates or batch >= search_batch_limit:
+            ledger.update({"status": result["status"], "published": 0})
+            _write_json(ledger_path, ledger)
+            return ledger
     if ledger["cycle_attempts"]:
         last_status = str(ledger["cycle_attempts"][-1].get("status") or "failed")
         ledger.update({
