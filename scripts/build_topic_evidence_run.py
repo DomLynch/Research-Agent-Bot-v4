@@ -54,6 +54,7 @@ from agent.numeric_sanitizer import filter_artifacts
 from agent.pico_enrichment import enrich_facts_pico
 from agent.researka_claims import _aggregate
 from agent.settings import load_settings
+from agent.source_reliability import source_reliability_tier
 from agent.topic_synonyms import expand_topic_queries, phrase_in_text
 
 _RUNS = Path(__file__).resolve().parent.parent / "runs"
@@ -151,6 +152,15 @@ def _normalize_tier2(item: dict[str, Any], topic: str) -> dict[str, Any]:
     paper: dict[str, Any] = paper_raw if isinstance(paper_raw, dict) else {}
     fact_raw = item.get("fact")
     fact: dict[str, Any] = fact_raw if isinstance(fact_raw, dict) else {}
+    source_paper = {
+        "pmid": paper.get("pmid"), "doi": paper.get("doi"),
+        "pmcid": paper.get("pmcid"), "title": paper.get("title"),
+        "journal": paper.get("journal_name"),
+        "year": paper.get("publication_year"),
+        "url": paper.get("url") or paper.get("source_url"),
+        "publisher": paper.get("publisher"),
+    }
+    reliability = source_reliability_tier(source_paper)
 
     def _field(name: str) -> Any:
         sources: tuple[dict[str, Any], dict[str, Any]] = (item, fact)
@@ -167,12 +177,9 @@ def _normalize_tier2(item: dict[str, Any], topic: str) -> dict[str, Any]:
     out = {
         "fact_id": item.get("id"), "topic": topic,
         "sub_topic": item.get("claim_type") or "",
-        "source_paper": {
-            "pmid": paper.get("pmid"), "doi": paper.get("doi"),
-            "pmcid": paper.get("pmcid"), "title": paper.get("title"),
-            "journal": paper.get("journal_name"),
-            "year": paper.get("publication_year"),
-        },
+        "source_paper": source_paper,
+        "reliability": reliability,
+        "source_reliability": reliability,
         "claim_type": item.get("claim_type"),
         "numeric_value": item.get("numeric_value"),
         "units": item.get("units"), "ci_lower": None, "ci_upper": None,
