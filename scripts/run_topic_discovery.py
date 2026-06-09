@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -32,8 +33,15 @@ from agent.topic_discovery import (
     load_derived_topic_limit,
     load_seed_topics,
 )
+from agent.topic_synonyms import expand_topic_queries
 
 _FAST_DERIVED_TOPIC_LIMIT = 250
+_TOKEN_RE = re.compile(r"[a-z0-9]+")
+_GENERIC_SCOPE_TOKENS = {
+    "ai", "research", "study", "studies", "trial", "trials", "review",
+    "meta", "analysis", "effect", "effects", "therapy", "treatment",
+    "intervention", "interventions", "outcome", "outcomes",
+}
 
 
 def _resolve_limits(
@@ -97,6 +105,38 @@ def _filter_excluded(
     if not excluded:
         return candidates
     return tuple(c for c in candidates if c.topic not in excluded)
+
+
+def _topic_key(value: str) -> str:
+    return "_".join(_TOKEN_RE.findall(value.casefold()))
+
+
+def _topic_tokens(value: str) -> set[str]:
+    return {
+        token for token in _TOKEN_RE.findall(value.casefold())
+        if len(token) > 1 and token not in _GENERIC_SCOPE_TOKENS
+    }
+
+
+def _domain_scope(seeds: tuple[str, ...]) -> tuple[set[str], set[str]]:
+    exact = {_topic_key(seed) for seed in seeds if _topic_key(seed)}
+    tokens: set[str] = set()
+    for seed in seeds:
+        for query in expand_topic_queries(seed, max_queries=64):
+            tokens.update(_topic_tokens(query))
+    return exact, tokens
+
+
+def _filter_domain_scope(
+    candidates: tuple[TopicCandidate, ...], seeds: tuple[str, ...],
+) -> tuple[TopicCandidate, ...]:
+    exact, tokens = _domain_scope(seeds)
+    if not exact or not tokens:
+        return candidates
+    return tuple(
+        c for c in candidates
+        if _topic_key(c.topic) in exact or bool(_topic_tokens(c.topic) & tokens)
+    )
 
 
 def _domain_seed_topics(domain: str) -> tuple[str, ...]:
@@ -169,7 +209,7 @@ def main() -> int:
         and (args.cache_first or args.cache_only)
         and cache_limit > 0 else ()
     )
-    ranked = _filter_excluded(ranked, excluded)
+    ranked = _filter_domain_scope(_filter_excluded(ranked, excluded), seeds)
     if len(ranked) < args.top and not args.cache_only:
         with httpx.Client() as client:
             discovered = discover_topics(
@@ -179,7 +219,10 @@ def main() -> int:
                 fact_probe_topics=fact_probe_topics,
                 refresh_low_source_counts=args.warm_backlog,
             )
-        ranked = _merge_candidates(ranked, _filter_excluded(discovered, excluded))
+        scoped_discovered = _filter_domain_scope(
+            _filter_excluded(discovered, excluded), seeds,
+        )
+        ranked = _merge_candidates(ranked, scoped_discovered)
     top = ranked[: args.top]
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
     year = dt.datetime.now(dt.UTC).year

@@ -93,12 +93,12 @@ def test_cache_first_skips_slow_discovery_when_window_is_filled(
 ) -> None:
     cached = (
         TopicCandidate(
-            topic="rich_a", paper_count=0, fact_source_count=8,
+            topic="seed_rich_a", paper_count=0, fact_source_count=8,
             top_paper_doi="", top_paper_title="",
             velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
         ),
         TopicCandidate(
-            topic="rich_b", paper_count=0, fact_source_count=7,
+            topic="seed_rich_b", paper_count=0, fact_source_count=7,
             top_paper_doi="", top_paper_title="",
             velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
         ),
@@ -127,7 +127,7 @@ def test_cache_first_skips_slow_discovery_when_window_is_filled(
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
     assert payload["cache_first"] is True
     assert payload["candidate_count"] == 2
-    assert [row["topic"] for row in payload["top"]] == ["rich_a", "rich_b"]
+    assert [row["topic"] for row in payload["top"]] == ["seed_rich_a", "seed_rich_b"]
 
 
 def test_cache_first_falls_back_when_cache_is_underfilled(
@@ -135,14 +135,14 @@ def test_cache_first_falls_back_when_cache_is_underfilled(
 ) -> None:
     cached = (
         TopicCandidate(
-            topic="cached_rich", paper_count=0, fact_source_count=8,
+            topic="seed_cached_rich", paper_count=0, fact_source_count=8,
             top_paper_doi="", top_paper_title="",
             velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
         ),
     )
     fallback = (
         TopicCandidate(
-            topic="fresh_rich", paper_count=3, fact_source_count=9,
+            topic="seed_fresh_rich", paper_count=3, fact_source_count=9,
             top_paper_doi="10.1/fresh", top_paper_title="Fresh",
             velocity_score=2.0, mean_fwci=1.0, mean_cited_by=4.0,
         ),
@@ -172,7 +172,9 @@ def test_cache_first_falls_back_when_cache_is_underfilled(
     assert calls == ["discover"]
     out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
-    assert [row["topic"] for row in payload["top"]] == ["cached_rich", "fresh_rich"]
+    assert [row["topic"] for row in payload["top"]] == [
+        "seed_cached_rich", "seed_fresh_rich",
+    ]
 
 
 def test_excluded_cached_topics_do_not_fill_cache_first_window(
@@ -180,14 +182,14 @@ def test_excluded_cached_topics_do_not_fill_cache_first_window(
 ) -> None:
     cached = (
         TopicCandidate(
-            topic="old_winner", paper_count=0, fact_source_count=8,
+            topic="seed_old_winner", paper_count=0, fact_source_count=8,
             top_paper_doi="", top_paper_title="",
             velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
         ),
     )
     fallback = (
         TopicCandidate(
-            topic="fresh_rich", paper_count=3, fact_source_count=9,
+            topic="seed_fresh_rich", paper_count=3, fact_source_count=9,
             top_paper_doi="10.1/fresh", top_paper_title="Fresh",
             velocity_score=2.0, mean_fwci=1.0, mean_cited_by=4.0,
         ),
@@ -211,14 +213,14 @@ def test_excluded_cached_topics_do_not_fill_cache_first_window(
     monkeypatch.setattr(run_topic_discovery, "discover_topics", slow_discover)
     monkeypatch.setattr(sys, "argv", [
         "run_topic_discovery.py", "--cache-first", "--top", "1",
-        "--exclude-topic", "old_winner",
+        "--exclude-topic", "seed_old_winner",
     ])
 
     assert run_topic_discovery.main() == 0
     assert calls == ["discover"]
     out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
-    assert [row["topic"] for row in payload["top"]] == ["fresh_rich"]
+    assert [row["topic"] for row in payload["top"]] == ["seed_fresh_rich"]
 
 
 def test_cache_only_skips_slow_discovery_when_cache_is_underfilled(
@@ -226,7 +228,7 @@ def test_cache_only_skips_slow_discovery_when_cache_is_underfilled(
 ) -> None:
     cached = (
         TopicCandidate(
-            topic="cached_rich", paper_count=0, fact_source_count=8,
+            topic="seed_cached_rich", paper_count=0, fact_source_count=8,
             top_paper_doi="", top_paper_title="",
             velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
         ),
@@ -255,7 +257,51 @@ def test_cache_only_skips_slow_discovery_when_cache_is_underfilled(
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
     assert payload["cache_only"] is True
     assert payload["candidate_count"] == 1
-    assert [row["topic"] for row in payload["top"]] == ["cached_rich"]
+    assert [row["topic"] for row in payload["top"]] == ["seed_cached_rich"]
+
+
+def test_cache_only_filters_cached_topics_to_domain_seed_scope(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    cached = (
+        TopicCandidate(
+            topic="retrieval_augmented_generation", paper_count=10,
+            fact_source_count=10, top_paper_doi="10.1/rag",
+            top_paper_title="Retrieval augmented generation",
+            velocity_score=3.0, mean_fwci=2.0, mean_cited_by=10.0,
+        ),
+        TopicCandidate(
+            topic="semaglutide_once_weekly", paper_count=4,
+            fact_source_count=7, top_paper_doi="10.1/glp",
+            top_paper_title="Once-weekly semaglutide",
+            velocity_score=2.0, mean_fwci=1.5, mean_cited_by=8.0,
+        ),
+    )
+
+    def slow_discover(**_kwargs: Any) -> tuple[TopicCandidate, ...]:
+        raise AssertionError("cache-only must not fetch seed papers")
+
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(
+        run_topic_discovery, "load_seed_topics", lambda: ("GLP_1_longevity",),
+    )
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda: 5_000)
+    monkeypatch.setattr(
+        run_topic_discovery, "cached_source_rich_candidates",
+        lambda *, limit: cached[:limit],
+    )
+    monkeypatch.setattr(run_topic_discovery, "discover_topics", slow_discover)
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--cache-first", "--cache-only", "--top", "2",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert [row["topic"] for row in payload["top"]] == ["semaglutide_once_weekly"]
 
 
 def test_cache_first_preserves_cached_source_papers(
