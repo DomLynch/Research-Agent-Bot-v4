@@ -76,6 +76,15 @@ _TITLE_FACET_STOPWORDS = _QUERY_STOPWORDS | frozenset({
     "analysis", "controlled", "evidence", "meta", "randomised", "randomized",
     "review", "reviews", "study", "studies", "systematic", "trial", "trials",
 })
+_AI_AXIS_FIELDS = (
+    "benchmark", "task", "dataset", "metric", "model_system",
+    "baseline_comparator", "evaluation_protocol",
+)
+_AI_AXIS_ALIASES = {
+    "task": ("task_or_benchmark",),
+    "benchmark": ("task_or_benchmark",),
+    "baseline_comparator": ("baseline_or_comparator",),
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,7 +153,15 @@ def _normalize_tier2(item: dict[str, Any], topic: str) -> dict[str, Any]:
     fact: dict[str, Any] = raw_fact if isinstance(raw_fact, dict) else {}
 
     def _field(name: str) -> Any:
-        return item.get(name) if item.get(name) is not None else fact.get(name)
+        for source in (item, fact):
+            value = source.get(name)
+            if value not in (None, "", {}):
+                return value
+            for alias in _AI_AXIS_ALIASES.get(name, ()):
+                value = source.get(alias)
+                if value not in (None, "", {}):
+                    return value
+        return None
 
     out = {
         "fact_id": item.get("id"), "topic": topic,
@@ -175,13 +192,7 @@ def _normalize_tier2(item: dict[str, Any], topic: str) -> dict[str, Any]:
         "_tier": "tier2",
     }
     for key in (
-        "metric",
-        "benchmark",
-        "task",
-        "dataset",
-        "model_system",
-        "baseline_comparator",
-        "evaluation_protocol",
+        *_AI_AXIS_FIELDS,
         "source_identifiers",
         "artifact_url",
         "limitation",

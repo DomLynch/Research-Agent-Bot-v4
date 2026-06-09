@@ -912,11 +912,12 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         cfg["generic_tokens"] | cfg["cluster_stopwords"], cfg["counter_markers"],
     )
     tension = _has_tension(md, cfg["tension_markers"]) or bool(counter_evidence)
+    direct_shape_ids = direct_ids or direct_match_ids
     direct_receipt_shape_coherent = _receipt_ids_share_shape(
-        direct_match_ids, facts, cfg["generic_tokens"] | cfg["cluster_stopwords"],
+        direct_shape_ids, facts, cfg["generic_tokens"] | cfg["cluster_stopwords"],
     )
     direct_metric_type_coherent = _metric_type_coherent(
-        direct_match_ids, facts, cfg["generic_tokens"] | cfg["cluster_stopwords"],
+        direct_shape_ids, facts, cfg["generic_tokens"] | cfg["cluster_stopwords"],
         min_sources=min_direct_source_papers,
     )
     strong_direct_bundle = (
@@ -948,9 +949,9 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         blockers.append("direct_source_floor_below_min")
     if bound_ids and len(direct_match_ids) < len(direct_ids):
         blockers.append("claim_alignment_partial")
-    if direct_match_ids and not direct_receipt_shape_coherent:
+    if direct_shape_ids and not direct_receipt_shape_coherent:
         blockers.append("receipt_shape_mismatch")
-    if direct_match_ids and not direct_metric_type_coherent:
+    if direct_shape_ids and not direct_metric_type_coherent:
         blockers.append("metric_type_mismatch")
 
     ready = (

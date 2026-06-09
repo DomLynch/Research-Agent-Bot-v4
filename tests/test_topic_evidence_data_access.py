@@ -324,6 +324,26 @@ def test_normalize_tier2_preserves_ai_structured_fields() -> None:
     assert fact["source_topic"] == "swe_bench"
 
 
+def test_normalize_tier2_preserves_ai_axis_aliases() -> None:
+    fact = evidence_run._normalize_tier2(
+        _fact("alias", "10.ai/alias") | {
+            "topic": "llm_eval",
+            "fact": {
+                "task_or_benchmark": "LoCoMo",
+                "metric": "accuracy",
+                "model_system": "memory agents",
+                "baseline_or_comparator": "published baselines",
+                "evaluation_protocol": "reported benchmark evaluation",
+            },
+        },
+        "llm_eval",
+    )
+
+    assert fact["benchmark"] == "LoCoMo"
+    assert fact["task"] == "LoCoMo"
+    assert fact["baseline_comparator"] == "published baselines"
+
+
 def test_ai_research_tier2_fallback_rejects_mixed_model_axis_shelf(
     tmp_path: Path,
 ) -> None:

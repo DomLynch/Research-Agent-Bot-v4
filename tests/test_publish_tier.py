@@ -344,6 +344,72 @@ def test_metric_type_mismatch_blocks_result_shape_publish(
     assert "metric_type_mismatch" in verdict["blockers"]
 
 
+def test_metric_type_mismatch_checks_all_direct_receipts(
+    tmp_path: Path,
+) -> None:
+    run = _run(
+        tmp_path,
+        score=90,
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+        dois=("10.ai/a", "10.ai/b", "10.ai/c", "10.ai/d", "10.ai/e"),
+        titles=("LoCoMo memory evaluation",) * 5,
+        journals=("AI Eval",) * 5,
+    )
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo - ai_agents\n\n"
+        "**Headline:** AI agents: LoCoMo accuracy is the shared direct-receipt signal\n"
+        "**Alpha score:** 90/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## One-sentence thesis\n\n"
+        "Across 5 direct receipts sharing LoCoMo accuracy, memory systems report comparable performance.\n\n"
+        "## Why this is surprising\n\n"
+        "Real tension: the benchmark evidence looks comparable.\n\n"
+        "## Evidence receipts\n\n"
+        + "\n".join(
+            f"- `fact_id={idx}` (`A_core`) - receipt"
+            for idx in range(1, 6)
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    rows = (
+        ("Model A reports 80% LoCoMo accuracy against baseline.", 80, "%"),
+        ("Model B reports 82% LoCoMo accuracy against baseline.", 82, "%"),
+        ("Model C reports 84% LoCoMo accuracy against baseline.", 84, "%"),
+        ("Model D reports 47x faster LoCoMo search against baseline.", 47, "x"),
+        ("Model E reports 95% LoCoMo context length reduction.", 95, "%"),
+    )
+    for fact, (phrase, value, units) in zip(facts, rows, strict=True):
+        fact.update({
+            "canonical_phrase": phrase,
+            "benchmark": "LoCoMo",
+            "task": "memory benchmark",
+            "dataset": "LoCoMo",
+            "metric": "accuracy",
+            "baseline_comparator": "LoCoMo benchmark baselines",
+            "evaluation_protocol": "reported LoCoMo benchmark evaluation",
+            "numeric_value": value,
+            "units": units,
+            "result_shape": {
+                "benchmark": "LoCoMo",
+                "task": "memory benchmark",
+                "dataset": "LoCoMo",
+                "metric": "accuracy",
+                "baseline_comparator": "LoCoMo benchmark baselines",
+                "evaluation_protocol": "reported LoCoMo benchmark evaluation",
+            },
+        })
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "agent_repair_needed"
+    assert verdict["axes"]["direct_source_papers"] == 5
+    assert verdict["axes"]["direct_metric_type_coherent"] is False
+    assert "metric_type_mismatch" in verdict["blockers"]
+
+
 def test_bridge_chain_source_overlap_is_not_claim_coherent(tmp_path: Path) -> None:
     run = _run(
         tmp_path,
