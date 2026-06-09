@@ -4877,7 +4877,7 @@ def test_accepted_shape_bias_breaks_candidate_tie(tmp_path: Path) -> None:
 
 
 def test_source_literature_fallback_submits_after_empty_fact_lane(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     root = tmp_path / "repo"
     (root / "_topics_discovery").mkdir(parents=True)
@@ -4909,6 +4909,11 @@ def test_source_literature_fallback_submits_after_empty_fact_lane(
         {"title": "Glycation-derived collagen stiffening review", "doi": "10.1234/5", "year": 2024},
     ]
     seen_payload: dict[str, Any] = {}
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "writer_configured": False,
+        "mimo_model": "",
+        "mimo_base_url": "",
+    })())
 
     def submitter(payload: dict[str, Any]) -> dict[str, Any]:
         seen_payload.update(payload)
@@ -4946,6 +4951,48 @@ def test_source_literature_fallback_submits_after_empty_fact_lane(
     assert "Boundary map" in seen_payload["markdown"]
     assert "rage" in seen_payload["markdown"].lower()
     assert "collagen" in seen_payload["markdown"].lower()
+
+
+def test_source_literature_payload_records_writer_synthesis(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    papers = [
+        {"title": "AGE-RAGE signalling and skin collagen aging", "doi": "10.1234/1", "year": 2024},
+        {"title": "Glycation stress and RAGE activation in vascular aging", "doi": "10.1234/2", "year": 2024},
+        {"title": "Collagen crosslinking in advanced glycation biology", "doi": "10.1234/3", "year": 2024},
+        {"title": "RAGE pathways in age-related tissue injury", "doi": "10.1234/4", "year": 2024},
+        {"title": "Glycation-derived collagen stiffening review", "doi": "10.1234/5", "year": 2024},
+    ]
+
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "writer_configured": True,
+        "mimo_model": "MiniMax-M3",
+        "mimo_base_url": "https://api.minimax.io/anthropic",
+    })())
+    monkeypatch.setattr(daily, "call_writer", lambda *_args, **_kwargs: type("R", (), {
+        "content": "The source bundle keeps glycation claims near RAGE and collagen biology.",
+        "model": "MiniMax-M3",
+        "prompt_tokens": 11,
+        "completion_tokens": 9,
+    })())
+
+    _candidate, payload = daily._source_literature_payload(
+        profile_slug="longevity_research", topic="glycation_AGEs",
+        papers=papers, runs_root=root, date="2026-06-09T20-00-00Z",
+    )
+
+    writer = payload["evidence_bundle"]["source_literature_writer"]
+    run_dir = root / "glycation_AGEs-source-literature-2026-06-09T20-00-00Z"
+    sidecar = json.loads((run_dir / "source_literature_writer.json").read_text(
+        encoding="utf-8",
+    ))
+    assert "## Source synthesis" in payload["markdown"]
+    assert "RAGE and collagen biology" in payload["markdown"]
+    assert writer["status"] == "used"
+    assert writer["model"] == "MiniMax-M3"
+    assert writer["prompt_tokens"] == 11
+    assert sidecar["content_hash"] == writer["content_hash"]
 
 
 def test_source_literature_fallback_is_not_used_for_ai_domain(

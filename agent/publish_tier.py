@@ -240,7 +240,7 @@ def _fact_axis_text(fact: dict[str, Any]) -> str:
             "benchmark", "task", "dataset", "model_system",
             "baseline_comparator", "evaluation_protocol", "source_topic",
         )
-    )
+    ) + " " + _shape_text(fact.get("result_shape"))
 
 
 def _shape_text(value: Any) -> str:

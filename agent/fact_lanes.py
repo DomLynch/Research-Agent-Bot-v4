@@ -80,8 +80,26 @@ def _topic_keywords(topic: str) -> list[str]:
             seen.setdefault(normed, None)
     head = _norm(topic).split()[:1]
     if head and len(head[0]) >= _MIN_SPECIFIC_HEAD_CHARS:
-        seen.setdefault(head[0], None)
+            seen.setdefault(head[0], None)
     return list(seen)
+
+
+def _structured_metric_score_role(fact: dict[str, Any], role: str) -> str:
+    if role != "unknown":
+        return role
+    if str(fact.get("units") or "").strip().casefold() not in {"score", "point", "points"}:
+        return role
+    raw_shape = fact.get("result_shape")
+    shape = raw_shape if isinstance(raw_shape, dict) else {}
+    if not str(fact.get("metric") or shape.get("metric") or "").strip():
+        return role
+    phrase = str(fact.get("canonical_phrase") or "").casefold()
+    if any(marker in phrase for marker in (
+        "achiev", "improv", "increas", "decreas", "reduc",
+        "outperform", "surpass", "higher", "lower", "report",
+    )):
+        return "effect_size"
+    return role
 
 
 def _topic_type(topic: str) -> TopicType:
@@ -105,6 +123,7 @@ def classify_lane(fact: dict[str, Any], topic: str) -> LaneVerdict:
     nv_f: float | None = float(nv) if isinstance(nv, (int, float)) else None
     units = str(fact.get("units") or "")
     role = classify_numeric_role(nv_f, units, phrase)
+    role = _structured_metric_score_role(fact, role)
 
     # D_bad only when PICO is essentially absent (BOTH population AND
     # intervention empty). A single missing slot is incomplete, not unusable:

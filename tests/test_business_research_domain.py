@@ -459,6 +459,58 @@ def test_business_candidate_memo_synthesizes_mixed_effects(
     assert "same measured business effect" not in memo
 
 
+def test_business_candidate_memo_treats_percent_spread_as_disagreement(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    rows: list[dict[str, Any]] = []
+    for i, value in enumerate([2.0, 44.4, 45.3, 65.0, 87.2], start=1):
+        rows.append({
+            "id": f"finance-replication-{i}",
+            "topic": "asset_pricing_replication",
+            "claim_type": "replication_failure_rate",
+            "numeric_value": value,
+            "units": "%",
+            "canonical_phrase": (
+                f"For factor premia returns, replication failure rate of {value}% "
+                "under asset pricing replication screens."
+            ),
+            "population": "published cross sectional equity return predictors and factor premia",
+            "intervention": "replication or multiple testing robustness screen",
+            "comparator": "original anomaly evidence at conventional thresholds",
+            "outcome": "predictor survival after replication screen",
+            "metric": "replication failure rate",
+            "study_design": "empirical asset pricing replication",
+            "dataset": "published stock return anomaly libraries",
+            "estimation_method": "asset pricing replication robustness screen",
+            "identification_strategy": "empirical asset pricing replication",
+            "paper": {
+                "doi": f"10.7777/finance-replication-{i}",
+                "title": "Asset pricing replication",
+            },
+        })
+    facts_path = tmp_path / "facts.json"
+    facts_path.write_text(json.dumps(rows), encoding="utf-8")
+    runs = tmp_path / "runs"
+    monkeypatch.setattr(sys, "argv", [
+        "build_business_alpha_candidate.py",
+        "--domain", "finance_research",
+        "--topic", "factor_premia_returns",
+        "--facts-json", str(facts_path),
+        "--runs-root", str(runs),
+        "--snapshot-utc", "2026-06-09T00-00-02Z",
+    ])
+
+    assert business_cli.main() == 0
+    memo = (
+        runs / "factor_premia_returns-evidence-2026-06-09T00-00-02Z" / "alpha_memo.md"
+    ).read_text(encoding="utf-8")
+    assert "The bounded signal is disagreement" in memo
+    assert "replication failure rate estimates" in memo
+    assert "method-sensitive heterogeneity" in memo
+    assert "same measured business effect" not in memo
+
+
 def test_business_candidate_blocks_population_heterogeneity_false_disagreement() -> None:
     rows: list[dict[str, Any]] = []
     for i, (value, population) in enumerate([

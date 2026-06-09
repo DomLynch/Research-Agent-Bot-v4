@@ -48,6 +48,10 @@ _LABEL_MAP = {
 # Sprint 66 source-binding lock prevents publishing a signal post
 # whose only "evidence" is mis-bound or off-topic facts.
 _BINDABLE_LANES = frozenset({"A_core", "B_context"})
+_STRUCTURED_SHAPE_FIELDS = (
+    "benchmark", "task", "dataset", "metric", "model_system",
+    "baseline_comparator", "evaluation_protocol",
+)
 
 
 def _sha256(text: str) -> str:
@@ -91,6 +95,77 @@ def _bound_fact_count(
         if lane_verdicts.get(fid) in _BINDABLE_LANES:
             n += 1
     return n
+
+
+def _source_key(fact: dict[str, Any]) -> str:
+    paper = fact.get("source_paper") or {}
+    if not isinstance(paper, dict):
+        return ""
+    return str(paper.get("doi") or paper.get("pmid") or paper.get("pmcid")
+               or paper.get("paper_id") or paper.get("id")
+               or paper.get("title") or "").strip()
+
+
+def _shape_value(fact: dict[str, Any], field: str) -> str:
+    raw = fact.get("result_shape")
+    shape = raw if isinstance(raw, dict) else {}
+    return str(shape.get(field) or fact.get(field) or "").strip()
+
+
+def _structured_shape_complete(fact: dict[str, Any]) -> bool:
+    return all(_shape_value(fact, field) for field in _STRUCTURED_SHAPE_FIELDS)
+
+
+def _structured_shape_key(fact: dict[str, Any]) -> tuple[str, ...]:
+    return tuple(_shape_value(fact, field).casefold() for field in _STRUCTURED_SHAPE_FIELDS)
+
+
+def _structured_bundle_lead(
+    topic: str,
+    facts_by_id: dict[str, dict[str, Any]],
+    lane_verdicts: dict[str, str],
+    *,
+    min_sources: int = 5,
+) -> dict[str, Any] | None:
+    buckets: dict[tuple[str, ...], list[str]] = {}
+    for fid, fact in facts_by_id.items():
+        if lane_verdicts.get(fid) != "A_core" or not _structured_shape_complete(fact):
+            continue
+        buckets.setdefault(_structured_shape_key(fact), []).append(fid)
+    best: list[str] = []
+    for ids in buckets.values():
+        picked: list[str] = []
+        sources: set[str] = set()
+        for fid in ids:
+            source = _source_key(facts_by_id.get(fid) or {})
+            if not source or source in sources:
+                continue
+            picked.append(fid)
+            sources.add(source)
+            if len(sources) >= min_sources:
+                break
+        if len(sources) >= min_sources and len(picked) > len(best):
+            best = picked
+    if not best:
+        return None
+    first = facts_by_id[best[0]]
+    benchmark = _shape_value(first, "benchmark") or topic
+    task = _shape_value(first, "task") or _shape_value(first, "dataset") or "task"
+    metric = _shape_value(first, "metric") or "metric"
+    return {
+        "thesis_idx": -1,
+        "title": f"{benchmark} {metric} receipts share a comparable {task} evaluation shape",
+        "status": "survives",
+        "blocking_flags": [],
+        "capped_opportunity": 82,
+        "cited_fact_ids": best,
+        "rationale": (
+            f"{len(best)} source-diverse receipts share the same structured "
+            "benchmark/task/dataset/metric/model/comparator/protocol shape. "
+            "Publish only that bounded receipt-bundle claim."
+        ),
+        "synthetic_audit": "structured_result_shape_bundle",
+    }
 
 
 def _adjacent_signals_block(
@@ -457,10 +532,16 @@ def main() -> int:
             audits = [a for a in raw if isinstance(a, dict)]
         except (OSError, json.JSONDecodeError):
             audits = []
-    lead = _pick_lead_thesis(audits)
     topic = str(review.get("topic") or run_dir.name.split("-evidence-")[0])
     snapshot = str(review.get("snapshot_utc") or run_dir.name)
     lane_verdicts = _read_lane_verdicts(run_dir)
+    synthetic_lead = None if audits else _structured_bundle_lead(
+        topic, facts_by_id, lane_verdicts,
+    )
+    lead = _pick_lead_thesis(audits) or synthetic_lead
+    if synthetic_lead:
+        gate["audits"] = [synthetic_lead]
+        gate_path.write_text(json.dumps(gate, indent=2), encoding="utf-8")
     bound_count = (_bound_fact_count(
         list(lead.get("cited_fact_ids") or []), facts_by_id, lane_verdicts,
     ) if lead else 0)

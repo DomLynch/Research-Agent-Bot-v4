@@ -514,13 +514,16 @@ def _headline(bundle: BusinessCandidateBundle) -> str:
     metric = shape.get("metric") or shape.get("outcome") or "outcome"
     population = shape.get("population") or shape.get("industry") or "target population"
     if _mixed_effect_signal(bundle.receipts):
-        return f"mixed evidence on {intervention} and {metric} in {population}"
+        return f"{metric} diverges across {intervention} in {population}"
     comparator = shape.get("comparator", "comparator")
     return f"{intervention} vs {comparator} shifts {metric} in {population}"
 
 
 def _mixed_effect_signal(receipts: tuple[Json, ...]) -> bool:
-    values = [value for fact in receipts if (value := _num(fact.get("numeric_value"))) is not None]
+    values = [
+        value for fact in receipts
+        if (value := _scaled_effect_value(fact)) is not None
+    ]
     if len(values) < 2:
         return False
     has_near_zero = any(abs(value) < 0.05 for value in values)
@@ -528,21 +531,34 @@ def _mixed_effect_signal(receipts: tuple[Json, ...]) -> bool:
     return has_near_zero and has_material
 
 
+def _scaled_effect_value(fact: Json) -> float | None:
+    value = _num(fact.get("numeric_value"))
+    if value is None:
+        return None
+    units = _clean(fact.get("units")).casefold()
+    if units in {"%", "percent", "percentage points"} and abs(value) > 1:
+        return value / 100.0
+    return value
+
+
 def _mixed_synthesis_lines(bundle: BusinessCandidateBundle) -> list[str]:
     if not _mixed_effect_signal(bundle.receipts):
         return [
             "The receipts point to the same measured business effect across independent sources, within a narrow comparable evidence shape.",
         ]
+    metric = bundle.shape.get("metric") or bundle.shape.get("outcome") or "effect"
     near_zero = [
         fact for fact in bundle.receipts
-        if (value := _num(fact.get("numeric_value"))) is not None and abs(value) < 0.05
+        if (value := _scaled_effect_value(fact)) is not None and abs(value) < 0.05
     ]
     material = [
         fact for fact in bundle.receipts
-        if (value := _num(fact.get("numeric_value"))) is not None and abs(value) >= 0.1
+        if (value := _scaled_effect_value(fact)) is not None and abs(value) >= 0.1
     ]
     lines = [
-        "The bounded signal is disagreement, not a settled effect: the receipts share a comparable intervention/outcome frame but split between near-zero estimates and material employment-elasticity estimates.",
+        "The bounded signal is disagreement, not a settled effect: "
+        f"the receipts share a comparable intervention/outcome frame but split between near-zero estimates and material {metric} estimates.",
+        "Treat the spread as method-sensitive heterogeneity: the shared shape is the replication screen, while the estimates vary with hurdle rates, samples, and replication definitions.",
     ]
     if near_zero:
         lines.append(

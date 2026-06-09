@@ -27,6 +27,7 @@ from typing import Any
 
 from agent.alpha_selector import accepted_shape_bonus
 from agent.domain_profile import domain_choices, domain_slug, load_domain_profile
+from agent.llm_client import call_writer
 from agent.publish_tier import publish_verdict
 from agent.settings import load_settings
 
@@ -3279,6 +3280,56 @@ The publishable alpha is conservative: {title_topic} is visible here as a {bound
 """
 
 
+def _source_literature_writer_synthesis(
+    topic: str, papers: list[Json], boundary: str,
+) -> tuple[str, Json]:
+    settings = load_settings()
+    meta: Json = {
+        "status": "not_configured",
+        "model": settings.mimo_model,
+        "base_url": settings.mimo_base_url,
+    }
+    if not settings.writer_configured:
+        return "", meta
+    titles = "\n".join(
+        f"- {str(paper.get('title') or '').strip()}" for paper in papers
+        if str(paper.get("title") or "").strip()
+    )
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "Write one conservative source-literature synthesis sentence. "
+                "Do not claim lifespan extension, clinical benefit, or intervention efficacy."
+            ),
+        },
+        {
+            "role": "user",
+            "content": (
+                f"Topic: {topic.replace('_', ' ')}\n"
+                f"Boundary: {boundary}\n"
+                f"Source titles:\n{titles}\n\n"
+                "Return one sentence, 18-35 words."
+            ),
+        },
+    ]
+    try:
+        response = call_writer(settings, messages, temperature=0, max_tokens=80)
+    except Exception as exc:  # pragma: no cover - live provider/network fallback.
+        return "", meta | {"status": "failed", "error": type(exc).__name__}
+    sentence = " ".join(response.content.strip().split())
+    if not sentence:
+        return "", meta | {"status": "empty_response"}
+    meta.update({
+        "status": "used",
+        "model": response.model,
+        "prompt_tokens": response.prompt_tokens,
+        "completion_tokens": response.completion_tokens,
+        "content_hash": hashlib.sha256(sentence.encode("utf-8")).hexdigest(),
+    })
+    return sentence, meta
+
+
 def _source_literature_payload(
     *, profile_slug: str, topic: str, papers: list[Json], runs_root: Path, date: str,
 ) -> tuple[Json, Json]:
@@ -3293,12 +3344,22 @@ def _source_literature_payload(
         f"{boundary}; the cited bundle does not support a broad endpoint or intervention claim."
     )
     markdown = _source_literature_markdown(topic, papers)
+    writer_sentence, writer_meta = _source_literature_writer_synthesis(topic, papers, boundary)
+    if writer_sentence:
+        markdown = markdown.replace(
+            "\n## What this changes\n",
+            f"\n## Source synthesis\n\n{writer_sentence}\n\n## What this changes\n",
+            1,
+        )
     safe_date = re.sub(r"[^A-Za-z0-9_.-]+", "-", date).strip("-") or "run"
     run_dir = runs_root / f"{topic}-source-literature-{safe_date}"
     run_dir.mkdir(parents=True, exist_ok=True)
     (run_dir / "alpha_memo.md").write_text(markdown, encoding="utf-8")
     (run_dir / "source_literature_papers.json").write_text(
         json.dumps(papers, indent=2, ensure_ascii=False), encoding="utf-8",
+    )
+    (run_dir / "source_literature_writer.json").write_text(
+        json.dumps(writer_meta, indent=2, ensure_ascii=False), encoding="utf-8",
     )
     try:
         run_ref = str(run_dir.resolve().relative_to(_ROOT))
@@ -3347,6 +3408,7 @@ def _source_literature_payload(
             "source_bundle_count": len(papers),
             "direct_source_count": len(papers),
             "context_source_count": 0,
+            "source_literature_writer": writer_meta,
             "selection_note": (
                 "normal fact-backed alpha lane exhausted; source-literature "
                 "boundary fallback preserved source floor without fabricating facts"
