@@ -1565,7 +1565,20 @@ def _repair_heterogeneity_requested(publish_verdict: dict[str, Any] | None) -> b
         "non-significant", "not a uniform effect", "unrelated evidence streams",
         "single thesis", "unified finding", "unified effect", "single source",
         "synthesized finding", "separate evidence stream",
+        "single coherent research question", "listing multiple unrelated",
+        "unrelated accuracy figures", "bullet-point list of facts",
+        "specific, justified contrast", "define a single, bounded research signal",
+        "thesis to be a claim, not a list",
     ))
+
+
+def _clean_generated_text(text: str) -> str:
+    return (
+        text.replace("muti-choice", "multi-choice")
+        .replace("Muti-choice", "Multi-choice")
+        .replace("Muti-Agent", "Multi-Agent")
+        .replace("muti-agent", "multi-agent")
+    )
 
 
 def _why_surprising(
@@ -2026,7 +2039,7 @@ def render_signal_memo(
     subtopic_lines = _subtopic_lines(publish_verdict)
     if subtopic_lines:
         lines.extend(["", "## Subtopic recommendations", "", *subtopic_lines])
-    body = "\n".join(lines) + "\n"
+    body = _clean_generated_text("\n".join(lines) + "\n")
     memo_audit = build_memo_audit(
         claim, lead_ids, receipt_ids, facts, publish_verdict,
         falsifier=falsifier_present(body),
@@ -2049,7 +2062,7 @@ def render_signal_memo(
         json.dumps(memo_audit, indent=2, sort_keys=True),
         encoding="utf-8")
     lines.extend(["", *_provenance_block(run_dir, topic, snapshot, headline, body)])
-    return "\n".join(lines) + "\n"
+    return _clean_generated_text("\n".join(lines) + "\n")
 
 
 def write_signal_memo(

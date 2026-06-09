@@ -921,6 +921,37 @@ def test_agent_repair_heterogeneous_map_blocks_unified_numeric_thesis(
     assert "Real tension:" not in why
 
 
+def test_ai_reviewer_list_feedback_triggers_heterogeneous_map(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "retrieval_augmented_generation-evidence-ts"
+    _write_mixed_direct_stream_run(run)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    facts[0]["canonical_phrase"] = (
+        "Medical muti-choice RAG accuracy improved in one benchmark stream."
+    )
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "publish_alpha_memo",
+        "_repair_decision": {
+            "decision": "reject",
+            "resubmission": {"allowed": True},
+            "required_revisions": [
+                "Define a single, coherent research question rather than listing multiple unrelated accuracy figures.",
+                "Provide actual integration of the evidence rather than a bullet-point list of facts from different papers.",
+            ],
+        },
+    })
+    thesis = memo.split("## One-sentence thesis\n\n", 1)[1].split("\n\n## ", 1)[0]
+
+    assert "**Headline:** Photobiomodulation red light: cited direct receipts are heterogeneous" in memo
+    assert "heterogeneous evidence map" in thesis
+    assert "source-specific" in thesis
+    assert "muti-choice" not in memo
+    assert "multi-choice" in memo
+
+
 def test_agent_repair_rotates_reviewer_named_bad_receipt(
     tmp_path: Path,
 ) -> None:
