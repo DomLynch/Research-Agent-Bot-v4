@@ -52,6 +52,13 @@ def _fixture_facts() -> list[dict[str, Any]]:
 
 
 def test_business_family_profiles_are_dry_run_and_seeded() -> None:
+    dry_run = {
+        "business_research": True,
+        "management_research": True,
+        "economics_research": True,
+        "finance_research": False,
+        "marketing_research": True,
+    }
     for domain in (
         "business_research",
         "management_research",
@@ -60,7 +67,7 @@ def test_business_family_profiles_are_dry_run_and_seeded() -> None:
         "marketing_research",
     ):
         profile = load_domain_profile(domain)
-        assert profile.dry_run_only is True
+        assert profile.dry_run_only is dry_run[domain]
         assert profile.seed_topics_path.exists()
         assert profile.source_policy_path.exists()
         assert profile.claim_schema_path.exists()
@@ -332,28 +339,21 @@ def test_business_sweep_submits_after_consistent_non_dry_run_passes(
     submissions: list[dict[str, Any]] = []
     fetch_calls = 0
 
-    def fake_submitter(_url: str, _token: str) -> Any:
-        def submit(payload: dict[str, Any]) -> dict[str, Any]:
-            submissions.append(payload)
-            return {
-                "ok": True,
-                "status": 202,
-                "response": {"submission_id": "sub-business-1"},
-            }
-        return submit
-
     def fake_fetch(*_args: Any, **_kwargs: Any) -> tuple[list[dict[str, Any]], dict[str, str]]:
         nonlocal fetch_calls
         fetch_calls += 1
         facts = _fixture_facts()
         return (list(reversed(facts)) if fetch_calls == 2 else facts), {"status": "ok"}
 
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        submissions.append(kwargs)
+        return {"status": "submitted_to_researka", "submitted": 1}
+
     monkeypatch.setattr(sweep, "_DOMAINS", ("management_research",))
     monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: live_profile)
     monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: ["management_practices_productivity"])
     monkeypatch.setattr(sweep, "fetch_business_facts", fake_fetch)
-    monkeypatch.setattr(sweep, "_submit_token", lambda: ("test-token", "TEST_TOKEN"))
-    monkeypatch.setattr(sweep, "_http_submitter", fake_submitter)
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
     monkeypatch.setattr(sys, "argv", [
         "run_business_alpha_sweep.py",
         "--cycles", "2",
@@ -364,7 +364,8 @@ def test_business_sweep_submits_after_consistent_non_dry_run_passes(
 
     assert sweep.main() == 0
     assert len(submissions) == 1
-    assert submissions[0]["domain"]["slug"] == "management_research"
+    assert submissions[0]["domain"] == "management_research"
+    assert submissions[0]["submit"] is True
     summary = json.loads(
         (tmp_path / "runs" / "_business_diagnostics" / "latest_sweep.json").read_text(
             encoding="utf-8",
@@ -372,7 +373,7 @@ def test_business_sweep_submits_after_consistent_non_dry_run_passes(
     )
     assert [row["status"] for row in summary["results"]] == [
         "ready_waiting_consistency",
-        "submitted",
+        "submitted_to_researka",
     ]
 
 
@@ -391,9 +392,19 @@ def test_business_systemd_timers_are_eight_hour_dry_run() -> None:
         timer = Path(f"deploy/systemd/researka-alpha-{name}-research.timer").read_text(
             encoding="utf-8",
         )
-        assert "scripts/build_business_alpha_candidate.py" in service
-        assert f"--domain {domain}" in service
-        assert "--submit" not in service
-        assert "SuccessExitStatus=3" in service
+        expected_script = (
+            "scripts/run_business_alpha_sweep.py"
+            if name == "finance"
+            else "scripts/build_business_alpha_candidate.py"
+        )
+        assert expected_script in service
+        if name == "finance":
+            assert "--domains finance_research" in service
+            assert "--submit-after-consistent-passes 2" in service
+            assert "SuccessExitStatus=2 3" in service
+        else:
+            assert f"--domain {domain}" in service
+            assert "--submit" not in service
+            assert "SuccessExitStatus=3" in service
         assert "EnvironmentFile=-/etc/researka-agent-v4.env" in service
         assert f"OnCalendar=*-*-* {schedule}" in timer

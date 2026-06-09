@@ -50,7 +50,7 @@ display_name = "Finance research"
 seed_topics_path = "finance_research_discovery_seeds.toml"
 source_policy_path = "finance_research_sources.toml"
 claim_schema_path = "finance_research_claim_schema.toml"
-dry_run_only = true
+dry_run_only = false
 
 [domains.marketing_research]
 display_name = "Marketing research"

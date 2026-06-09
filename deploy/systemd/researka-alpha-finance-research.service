@@ -1,5 +1,5 @@
 [Unit]
-Description=Research Agent v4 Finance Research dry-run alpha candidate
+Description=Research Agent v4 Finance Research guarded alpha submit sweep
 Wants=network-online.target
 After=network-online.target
 
@@ -8,6 +8,6 @@ Type=oneshot
 WorkingDirectory=/root/Research-Agent-Bot-v4
 EnvironmentFile=/root/Research-Agent-Bot-v4/.env
 EnvironmentFile=-/etc/researka-agent-v4.env
-ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/build_business_alpha_candidate.py --domain finance_research --topic factor_premia_returns
-SuccessExitStatus=3
+ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/run_business_alpha_sweep.py --domains finance_research --cycles 2 --topics-per-domain 1 --submit-after-consistent-passes 2
+SuccessExitStatus=2 3
 TimeoutStartSec=2700

@@ -41,6 +41,16 @@ def _seed_topics(seed_path: Path, *, limit: int) -> list[str]:
     return [str(topic) for topic in topics[:limit] if str(topic).strip()]
 
 
+def _selected_domains(value: str) -> tuple[str, ...]:
+    if not value.strip():
+        return _DOMAINS
+    wanted = tuple(item.strip() for item in value.split(",") if item.strip())
+    unknown = sorted(set(wanted) - set(_DOMAINS))
+    if unknown:
+        raise ValueError(f"unknown business sweep domain(s): {', '.join(unknown)}")
+    return wanted
+
+
 def _write_sweep_summary(runs_root: Path, rows: list[dict[str, Any]]) -> Path:
     out_dir = runs_root / "_business_diagnostics"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -63,6 +73,7 @@ def main() -> int:
     parser.add_argument("--cycles", type=int, default=1)
     parser.add_argument("--sleep-seconds", type=float, default=0.0)
     parser.add_argument("--topics-per-domain", type=int, default=2)
+    parser.add_argument("--domains", default="")
     parser.add_argument("--runs-root", type=Path, default=_RUNS)
     parser.add_argument(
         "--submit-after-consistent-passes",
@@ -75,8 +86,9 @@ def main() -> int:
     settings = load_settings()
     rows: list[dict[str, Any]] = []
     consistent: dict[str, int] = {}
+    domains = _selected_domains(args.domains)
     for cycle in range(max(1, args.cycles)):
-        for domain in _DOMAINS:
+        for domain in domains:
             profile = load_domain_profile(domain)
             if profile.slug not in BUSINESS_DOMAINS:
                 continue
