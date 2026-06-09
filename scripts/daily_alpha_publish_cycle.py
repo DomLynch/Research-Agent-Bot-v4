@@ -343,13 +343,18 @@ def _current_selection_verdict(verdict: Json, root: Path) -> Json:
     if not current:
         return verdict
     private = {k: v for k, v in verdict.items() if str(k).startswith("_")}
+    routing = {
+        k: verdict[k]
+        for k in ("topic", "topic_family", "parent_topic")
+        if verdict.get(k)
+    }
     if verdict.get("_claim_cluster_candidate"):
         private.update({
             "topic": verdict.get("topic"),
             "receipt_expansion": verdict.get("receipt_expansion"),
             "subtopic_recommendations": verdict.get("subtopic_recommendations"),
         })
-    return _with_domain_metadata(current | private, run_dir, verdict)
+    return _with_domain_metadata(current | routing | private, run_dir, verdict)
 
 
 def _reload_verdict_after_memo_refresh(verdict: Json, run_dir: Path) -> Json:
@@ -1214,6 +1219,8 @@ def _submission_record_patch(ledger: Json) -> Json:
     patch: Json = {}
     for key in (
         "domain",
+        "deduped",
+        "deduped_public_url",
         "final_verdict",
         "status",
         "published",
@@ -1495,6 +1502,8 @@ def _recent_submission_topics(
 
 def _repairable_rejection(decision: Json) -> bool:
     support = str(decision.get("claim_support_verdict") or "").lower()
+    if decision.get("failure_category") == "integrity_duplicate":
+        return False
     if (
         decision.get("decision") == "reject"
         and support == "unsupported"
@@ -2403,6 +2412,23 @@ def _public_page_check(decision: Json, *, page_fetcher: PageFetcher) -> Json:
     return {"ok": False, "status": "not_rendered", "urls": urls, "checks": checks}
 
 
+def _deduped_publication(decision: Json) -> bool:
+    stack: list[Any] = [decision]
+    while stack:
+        value = stack.pop()
+        if isinstance(value, dict):
+            for key, item in value.items():
+                key_l = str(key).lower()
+                if key_l in {"deduped", "deduplicated"} and item is True:
+                    return True
+                if "deduped" in key_l and item not in (None, "", False):
+                    return True
+                stack.append(item)
+        elif isinstance(value, list):
+            stack.extend(value)
+    return False
+
+
 def _apply_submission_decision(
     ledger: Json,
     *,
@@ -2417,8 +2443,12 @@ def _apply_submission_decision(
             ledger["public_page_check"] = page
             if page.get("ok"):
                 final = "accepted"
-                ledger["status"] = "published"
-                ledger["published"] = 1
+                deduped = _deduped_publication(decision)
+                ledger["status"] = "deduped_publication" if deduped else "published"
+                ledger["published"] = 0 if deduped else 1
+                if deduped:
+                    ledger["deduped"] = 1
+                    ledger["deduped_public_url"] = page.get("url")
                 ledger["published_topic"] = (
                     ledger.get("submitted_topic")
                     or (ledger.get("candidate") or {}).get("topic")
@@ -2497,7 +2527,7 @@ def sync_submission_decisions(
     current = now or dt.datetime.now(dt.UTC)
     summary: Json = {
         "checked": 0, "updated": 0, "published": 0, "pending": 0,
-        "stale": 0, "errors": [],
+        "deduped": 0, "stale": 0, "errors": [],
     }
     seen_submission_ids: set[str] = set()
     submission_record_updates: dict[str, Json] = {}
@@ -2539,7 +2569,8 @@ def sync_submission_decisions(
             page_fetcher=page_fetcher,
         )
         summary["pending"] += int(final == "pending")
-        summary["published"] += int(final == "accepted")
+        summary["published"] += int(final == "accepted" and ledger.get("published") == 1)
+        summary["deduped"] += int(final == "accepted" and ledger.get("deduped") == 1)
         if final == "pending" and _stale_pending_decision(
             ledger, stamp=path.stem, now=current,
             max_age_hours=max_pending_age_hours,
@@ -2604,7 +2635,12 @@ def sync_submission_decisions(
                 page_fetcher=page_fetcher,
             )
             summary["pending"] += int(final == "pending")
-            summary["published"] += int(final == "accepted")
+            summary["published"] += int(
+                final == "accepted" and synthetic_ledger.get("published") == 1
+            )
+            summary["deduped"] += int(
+                final == "accepted" and synthetic_ledger.get("deduped") == 1
+            )
             if final == "pending" and _stale_pending_decision(
                 synthetic_ledger, stamp=row.get("date"), now=current,
                 max_age_hours=max_pending_age_hours,

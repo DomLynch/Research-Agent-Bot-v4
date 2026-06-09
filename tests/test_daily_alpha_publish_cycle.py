@@ -986,6 +986,20 @@ def test_explicit_resubmission_allowed_reject_is_repairable() -> None:
     assert daily._repairable_rejection(decision) is True
 
 
+def test_integrity_duplicate_reject_is_not_repairable() -> None:
+    decision = {
+        "decision": "reject",
+        "failure_category": "integrity_duplicate",
+        "review_summary": (
+            "Exact-content duplicate of publication pub_123. "
+            "Resubmission requires substantially new content."
+        ),
+        "resubmission": {"allowed": True},
+    }
+
+    assert daily._repairable_rejection(decision) is False
+
+
 def test_tighten_evidence_receipts_revision_forces_grounded_regen() -> None:
     decision = {
         "decision": "revise",
@@ -3869,6 +3883,59 @@ def test_run_cycle_polls_pending_submission_until_publication_renders(tmp_path: 
     assert ledger["final_verdict"] == "accepted"
     assert ledger["decision_poll"] == {"attempts": 2, "final_verdict": "accepted"}
     assert ledger["public_url"] == "https://researka.org/alpha/pub_after_poll"
+
+
+def test_sync_submission_decisions_records_deduped_accept(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submitted_to_researka",
+        "submission_id": "sub_deduped",
+        "submitted_topic": "semaglutide_once_weekly",
+    })
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+        "date": "2026-05-21T00-00-00Z",
+        "topic": "semaglutide_once_weekly",
+        "submission_id": "sub_deduped",
+    }])
+
+    summary = daily.sync_submission_decisions(
+        root,
+        fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": None,
+            "publish_result": {
+                "deduped": True,
+                "deduped_publication_id": "da7f5bc8-9764-4dfa-963a-fc3eda0b8042",
+            },
+        },
+        page_fetcher=lambda _url: {
+            "ok": True,
+            "status": 200,
+            "body": "<html><title>Alpha memo</title></html>",
+        },
+    )
+
+    patched = json.loads(
+        (root / "_daily_ledger" / "2026-05-21.json").read_text(encoding="utf-8")
+    )
+    assert summary["updated"] == 1
+    assert summary["published"] == 0
+    assert summary["deduped"] == 1
+    assert patched["status"] == "deduped_publication"
+    assert patched["final_verdict"] == "accepted"
+    assert patched["published"] == 0
+    assert patched["deduped"] == 1
+    assert patched["deduped_public_url"] == (
+        "https://researka.org/alpha/da7f5bc8-9764-4dfa-963a-fc3eda0b8042"
+    )
+    submitted = json.loads(
+        (root / "_daily_ledger" / "_submitted_fingerprints.json").read_text(
+            encoding="utf-8",
+        )
+    )
+    assert submitted[0]["status"] == "deduped_publication"
+    assert submitted[0]["deduped"] == 1
 
 
 def test_sync_submission_decisions_rejects_accept_without_rendered_page(tmp_path: Path) -> None:
