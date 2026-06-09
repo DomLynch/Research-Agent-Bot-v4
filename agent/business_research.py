@@ -472,23 +472,70 @@ def business_fact_diagnostics(raw_facts: list[Json], *, topic: str, domain: str)
 def _headline(bundle: BusinessCandidateBundle) -> str:
     shape = bundle.shape
     intervention = shape.get("intervention", "intervention")
-    comparator = shape.get("comparator", "comparator")
     metric = shape.get("metric") or shape.get("outcome") or "outcome"
     population = shape.get("population") or shape.get("industry") or "target population"
+    if _mixed_effect_signal(bundle.receipts):
+        return f"mixed evidence on {intervention} and {metric} in {population}"
+    comparator = shape.get("comparator", "comparator")
     return f"{intervention} vs {comparator} shifts {metric} in {population}"
 
 
+def _mixed_effect_signal(receipts: tuple[Json, ...]) -> bool:
+    values = [value for fact in receipts if (value := _num(fact.get("numeric_value"))) is not None]
+    if len(values) < 2:
+        return False
+    has_near_zero = any(abs(value) < 0.05 for value in values)
+    has_material = any(abs(value) >= 0.1 for value in values)
+    return has_near_zero and has_material
+
+
+def _mixed_synthesis_lines(bundle: BusinessCandidateBundle) -> list[str]:
+    if not _mixed_effect_signal(bundle.receipts):
+        return [
+            "The receipts point to the same measured business effect across independent sources, within a narrow comparable evidence shape.",
+        ]
+    near_zero = [
+        fact for fact in bundle.receipts
+        if (value := _num(fact.get("numeric_value"))) is not None and abs(value) < 0.05
+    ]
+    material = [
+        fact for fact in bundle.receipts
+        if (value := _num(fact.get("numeric_value"))) is not None and abs(value) >= 0.1
+    ]
+    lines = [
+        "The bounded signal is disagreement, not a settled effect: the receipts share a comparable intervention/outcome frame but split between near-zero estimates and material employment-elasticity estimates.",
+    ]
+    if near_zero:
+        lines.append(
+            "Near-zero receipts: "
+            + "; ".join(_clean(fact.get("canonical_phrase")) for fact in near_zero[:3])
+            + "."
+        )
+    if material:
+        lines.append(
+            "Material-effect receipts: "
+            + "; ".join(_clean(fact.get("canonical_phrase")) for fact in material[:3])
+            + "."
+        )
+    return lines
+
+
 def _memo_text(bundle: BusinessCandidateBundle, snapshot_utc: str, *, dry_run_only: bool = True) -> str:
+    headline = _headline(bundle)
     lines = [
         f"# Alpha memo - {bundle.topic}",
         "",
-        f"**Headline:** {_headline(bundle)}",
+        f"**Headline:** {headline}",
         "**Alpha score:** 90/100",
         "**Confidence:** `evidence_backed_signal`",
         "",
+        "## Research question",
+        "",
+        f"What does the source-diverse evidence say about {headline}?",
+        "",
         "## Why this is surprising",
         "",
-        "Real tension: the receipts point to the same measured business effect across independent sources, but only within a narrow comparable evidence shape.",
+        *_mixed_synthesis_lines(bundle),
         "",
         "## Evidence shape",
         "",
@@ -508,7 +555,7 @@ def _memo_text(bundle: BusinessCandidateBundle, snapshot_utc: str, *, dry_run_on
         "",
         "## What would weaken this",
         "",
-        "- A source-diverse rerun with the same shape fails to reproduce the effect.",
+        "- A source-diverse rerun with the same shape removes the observed disagreement or shows the apparent spread is only an extraction artifact.",
         "",
         "## Provenance",
         "",

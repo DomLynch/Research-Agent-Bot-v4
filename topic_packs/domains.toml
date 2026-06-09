@@ -43,7 +43,7 @@ display_name = "Economics research"
 seed_topics_path = "economics_research_discovery_seeds.toml"
 source_policy_path = "economics_research_sources.toml"
 claim_schema_path = "economics_research_claim_schema.toml"
-dry_run_only = true
+dry_run_only = false
 
 [domains.finance_research]
 display_name = "Finance research"

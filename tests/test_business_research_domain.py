@@ -55,7 +55,7 @@ def test_business_family_profiles_are_dry_run_and_seeded() -> None:
     dry_run = {
         "business_research": True,
         "management_research": True,
-        "economics_research": True,
+        "economics_research": False,
         "finance_research": False,
         "marketing_research": True,
     }
@@ -495,20 +495,20 @@ def test_business_systemd_timers_are_eight_hour_guarded() -> None:
         timer = Path(f"deploy/systemd/researka-alpha-{name}-research.timer").read_text(
             encoding="utf-8",
         )
-        expected_script = (
-            "scripts/run_business_alpha_sweep.py"
-            if name == "finance"
-            else "scripts/build_business_alpha_candidate.py"
+        submit_lanes = {"economics", "finance"}
+        expected_script = "scripts/run_business_alpha_sweep.py" if name in submit_lanes else (
+            "scripts/build_business_alpha_candidate.py"
         )
         assert expected_script in service
-        if name == "finance":
-            assert "--domains finance_research" in service
+        if name in submit_lanes:
+            assert f"--domains {domain}" in service
             assert "--submit-after-consistent-passes 2" in service
             assert "SuccessExitStatus=2 3" in service
+            assert "EnvironmentFile=/etc/researka-agent-v4.env" in service
         else:
             assert f"--domain {domain}" in service
             assert "--submit" not in service
             assert "SuccessExitStatus=3" in service
+            assert "EnvironmentFile=/etc/researka-agent-v4.env" not in service
         assert "EnvironmentFile=/root/Research-Agent-Bot-v4/.env" in service
-        assert "EnvironmentFile=-/etc/researka-agent-v4.env" not in service
         assert f"OnCalendar=*-*-* {schedule}" in timer

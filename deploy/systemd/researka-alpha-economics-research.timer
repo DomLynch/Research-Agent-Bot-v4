@@ -1,5 +1,5 @@
 [Unit]
-Description=Run Research Agent v4 Economics Research dry-run alpha candidate every eight hours
+Description=Run Research Agent v4 Economics Research guarded alpha submit sweep every eight hours
 
 [Timer]
 OnCalendar=*-*-* 04/8:10:00

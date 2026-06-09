@@ -7,6 +7,7 @@ After=network-online.target
 Type=oneshot
 WorkingDirectory=/root/Research-Agent-Bot-v4
 EnvironmentFile=/root/Research-Agent-Bot-v4/.env
+EnvironmentFile=/etc/researka-agent-v4.env
 ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/run_business_alpha_sweep.py --domains finance_research --cycles 2 --topics-per-domain 1 --submit-after-consistent-passes 2
 SuccessExitStatus=2 3
 TimeoutStartSec=2700
