@@ -59,7 +59,7 @@ def _bundle_fingerprint(bundle: Any) -> str:
         str(bundle.domain),
         str(bundle.topic),
         str(bundle.result_key),
-        ",".join(str(fact.get("fact_id") or "") for fact in bundle.receipts),
+        ",".join(sorted(str(fact.get("fact_id") or "") for fact in bundle.receipts)),
     ))
 
 

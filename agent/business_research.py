@@ -216,6 +216,7 @@ def normalize_business_fact(item: Json, *, topic: str, domain: str) -> Json:
             out[name] = value
     if numeric is not None and not out.get("effect_size"):
         out["effect_size"] = numeric
+    _apply_finance_return_shape(out)
     return out
 
 
@@ -268,6 +269,23 @@ def _is_finance_return_fact(fact: Json) -> bool:
         "canonical_phrase", "outcome", "metric", "sub_topic", "claim_type",
     ))
     return bool(_FINANCE_RETURN_RE.search(text))
+
+
+def _apply_finance_return_shape(fact: Json) -> None:
+    if not _is_finance_return_fact(fact):
+        return
+    for field in ("population", "intervention", "comparator", "outcome", "metric", "study_design"):
+        value = _clean(fact.get(field))
+        if value:
+            fact[f"{field}_detail"] = value
+    fact.update({
+        "population": "firms portfolios funds",
+        "intervention": "return predictive signal portfolio",
+        "comparator": "benchmark or opposite signal portfolio",
+        "outcome": "risk adjusted portfolio returns",
+        "metric": "percentage return or alpha",
+        "study_design": "empirical asset pricing",
+    })
 
 
 def is_a_core_business_fact(fact: Json) -> bool:

@@ -194,6 +194,43 @@ def test_business_bundle_rejects_policy_only_medical_econ_fact() -> None:
     assert bundle is None
 
 
+def test_finance_return_facts_cluster_by_empirical_asset_pricing_shape() -> None:
+    rows = [
+        {
+            "id": f"fin-{i}",
+            "topic": "portfolio_returns" if i % 2 else "asset_pricing",
+            "claim_type": "portfolio_returns",
+            "numeric_value": value,
+            "units": "%",
+            "canonical_phrase": phrase,
+            "population": population,
+            "intervention": intervention,
+            "comparator": comparator,
+            "paper": {"doi": f"10.7777/finance-{i}", "title": "Portfolio returns"},
+        }
+        for i, (value, phrase, population, intervention, comparator) in enumerate([
+            (11.0, "earns abnormal returns of roughly 11 percent per year", "portfolio", "past track record portfolio", ""),
+            (8.6, "earns an average annual return of 8.6% in high-skill industries", "firms", "hiring-rate long-short portfolio", "low-skill industries"),
+            (5.0, "firms in mobile industries earn returns over 5% higher", "firms", "labor mobility", "less mobile industries"),
+            (2.4, "earn significant out-of-sample annual alphas of 2.4%", "mutual funds", "machine-learning fund characteristics", ""),
+            (1.5, "one standard deviation in EPU is associated with a 1.5% increase in abnormal returns", "US market", "economic policy uncertainty exposure", ""),
+        ], start=1)
+    ]
+
+    bundle = build_candidate_bundle(
+        rows,
+        topic="factor_premia_returns",
+        domain="finance_research",
+    )
+
+    assert bundle is not None
+    assert bundle.source_count == 5
+    assert bundle.shape["study_design"] == "empirical asset pricing"
+    assert bundle.shape["metric"] == "percentage return or alpha"
+    assert bundle.receipts[0]["intervention"] == "return predictive signal portfolio"
+    assert bundle.receipts[0]["intervention_detail"] == "past track record portfolio"
+
+
 def test_business_candidate_cli_builds_ready_dry_run_queue(
     tmp_path: Path,
     monkeypatch: Any,
