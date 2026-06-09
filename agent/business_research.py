@@ -399,7 +399,7 @@ def _headline(bundle: BusinessCandidateBundle) -> str:
     return f"{intervention} vs {comparator} shifts {metric} in {population}"
 
 
-def _memo_text(bundle: BusinessCandidateBundle, snapshot_utc: str) -> str:
+def _memo_text(bundle: BusinessCandidateBundle, snapshot_utc: str, *, dry_run_only: bool = True) -> str:
     lines = [
         f"# Alpha memo - {bundle.topic}",
         "",
@@ -435,7 +435,11 @@ def _memo_text(bundle: BusinessCandidateBundle, snapshot_utc: str) -> str:
         "",
         f"- **Domain:** `{bundle.domain}`",
         f"- **Snapshot:** `{snapshot_utc}`",
-        "- **Mode:** dry-run specialist candidate; no Researka submission.",
+        (
+            "- **Mode:** dry-run specialist candidate; no Researka submission."
+            if dry_run_only
+            else "- **Mode:** guarded specialist candidate; eligible for core Researka submission."
+        ),
         "",
     ])
     return "\n".join(lines)
@@ -496,10 +500,14 @@ def write_candidate_run(
         "all_facts.json": json.dumps(facts, indent=2, ensure_ascii=False),
         "fact_lanes.json": json.dumps(_lanes_payload(bundle, ts), indent=2, ensure_ascii=False),
         "opportunities_gate.json": json.dumps(_gate_payload(bundle, ts), indent=2, ensure_ascii=False),
-        "alpha_memo.md": _memo_text(bundle, ts),
+        "alpha_memo.md": _memo_text(bundle, ts, dry_run_only=profile.dry_run_only),
         "business_candidate_bundle.json": json.dumps(bundle.as_dict(), indent=2, ensure_ascii=False),
         "retrieval_status.json": json.dumps(
-            {"status": "ok", "mode": "dry_run_only", "source_count": bundle.source_count},
+            {
+                "status": "ok",
+                "mode": "dry_run_only" if profile.dry_run_only else "guarded_submit_eligible",
+                "source_count": bundle.source_count,
+            },
             indent=2,
         ),
     }
@@ -509,8 +517,8 @@ def write_candidate_run(
         "domain": profile.as_metadata(),
         "topic": bundle.topic,
         "snapshot_utc": ts,
-        "mode": "business_specialist_dry_run",
-        "dry_run_only": True,
+        "mode": "business_specialist_dry_run" if profile.dry_run_only else "business_specialist_submit_candidate",
+        "dry_run_only": profile.dry_run_only,
         "data_tier": "business_research_fact",
         "source": "Researka DB business-family fact search or fixture",
         "result_key": bundle.result_key,

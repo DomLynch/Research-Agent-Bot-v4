@@ -58,9 +58,6 @@ def main() -> int:
     if profile.slug not in BUSINESS_DOMAINS:
         print(f"[business-candidate] unsupported business domain: {profile.slug}", file=sys.stderr)
         return 2
-    if not profile.dry_run_only:
-        print(f"[business-candidate] domain is not dry_run_only: {profile.slug}", file=sys.stderr)
-        return 2
     trace: dict[str, Any] = {"status": "local_fixture", "facts": 0}
     facts = _read_facts(args.facts_json)
     if not facts:

@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
-import os
 import sys
 import time
 import tomllib
@@ -21,12 +21,7 @@ from agent.business_research import (
 from agent.domain_profile import load_domain_profile
 from agent.settings import load_settings
 from scripts.build_business_alpha_candidate import write_no_bundle_diagnostics
-from scripts.daily_alpha_publish_cycle import (
-    _http_submitter,
-    _submission_payload,
-    _submit_token,
-    submit_with_backoff,
-)
+from scripts.daily_alpha_publish_cycle import run_cycle
 
 _RUNS = Path(__file__).resolve().parent.parent / "runs"
 _DOMAINS = (
@@ -63,11 +58,6 @@ def _bundle_fingerprint(bundle: Any) -> str:
     ))
 
 
-def _read_verdict(run_dir: Path) -> dict[str, Any]:
-    data = json.loads((run_dir / "publish_verdict.json").read_text(encoding="utf-8"))
-    return data if isinstance(data, dict) else {}
-
-
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cycles", type=int, default=1)
@@ -80,6 +70,7 @@ def main() -> int:
         default=0,
         help="Opt-in submit guard: require the same ready bundle this many times before submit.",
     )
+    parser.add_argument("--submit-date", default="")
     args = parser.parse_args()
     settings = load_settings()
     rows: list[dict[str, Any]] = []
@@ -139,21 +130,18 @@ def main() -> int:
                             file=sys.stderr,
                         )
                         return 2
-                    token, _token_env = _submit_token()
-                    if not token:
-                        row["status"] = "submit_blocked_missing_token"
-                        _write_sweep_summary(args.runs_root, rows)
-                        print("[business-sweep] submit_blocked_missing_token", file=sys.stderr)
-                        return 2
-                    url = os.environ.get("RESEARKA_SUBMIT_URL", "https://api.researka.org/submissions")
-                    verdict = _read_verdict(run_dir)
-                    submitter = _http_submitter(url, token)
-                    result = submit_with_backoff(_submission_payload(verdict, args.runs_root), submitter)
-                    row["status"] = "submitted" if result.get("status") == "accepted" else "submit_failed"
-                    row["submission"] = result
+                    ledger = run_cycle(
+                        runs_root=args.runs_root,
+                        date=args.submit_date
+                        or dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ"),
+                        domain=domain,
+                        submit=True,
+                    )
+                    row["status"] = str(ledger.get("status") or "submit_failed")
+                    row["submission_ledger"] = ledger
                     _write_sweep_summary(args.runs_root, rows)
                     print(f"[business-sweep] {row['status']} {domain} {topic} -> {run_dir}")
-                    return 0 if result.get("status") == "accepted" else 2
+                    return 0 if row["status"] in {"submitted_to_researka", "published"} else 2
                 print(f"[business-sweep] ready {domain} {topic} -> {run_dir}")
                 print(f"[business-sweep] summary={summary_path}")
                 return 0

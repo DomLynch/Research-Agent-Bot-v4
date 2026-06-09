@@ -330,6 +330,7 @@ def test_business_sweep_submits_after_consistent_non_dry_run_passes(
         dry_run_only=False,
     )
     submissions: list[dict[str, Any]] = []
+    fetch_calls = 0
 
     def fake_submitter(_url: str, _token: str) -> Any:
         def submit(payload: dict[str, Any]) -> dict[str, Any]:
@@ -341,10 +342,16 @@ def test_business_sweep_submits_after_consistent_non_dry_run_passes(
             }
         return submit
 
+    def fake_fetch(*_args: Any, **_kwargs: Any) -> tuple[list[dict[str, Any]], dict[str, str]]:
+        nonlocal fetch_calls
+        fetch_calls += 1
+        facts = _fixture_facts()
+        return (list(reversed(facts)) if fetch_calls == 2 else facts), {"status": "ok"}
+
     monkeypatch.setattr(sweep, "_DOMAINS", ("management_research",))
     monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: live_profile)
     monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: ["management_practices_productivity"])
-    monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: (_fixture_facts(), {"status": "ok"}))
+    monkeypatch.setattr(sweep, "fetch_business_facts", fake_fetch)
     monkeypatch.setattr(sweep, "_submit_token", lambda: ("test-token", "TEST_TOKEN"))
     monkeypatch.setattr(sweep, "_http_submitter", fake_submitter)
     monkeypatch.setattr(sys, "argv", [
