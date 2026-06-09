@@ -10,3 +10,14 @@ publish_contract = [
     "economics claims must preserve policy/intervention, comparator, outcome, and estimand",
     "direct receipts must share comparable identification strategy or study design",
 ]
+
+[[shape_normalizers]]
+match_source_topic = "labor_economics"
+match_terms = ["minimum", "wage", "employment"]
+population = "low wage workers or jobs"
+intervention = "minimum wage increase"
+comparator = "lower or pre increase minimum wage baseline"
+outcome = "employment response"
+metric = "employment elasticity or employment change"
+study_design = "empirical labor economics"
+identification_strategy = "empirical labor economics"

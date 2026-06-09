@@ -7,16 +7,18 @@ opportunities_gate, alpha_memo, MANIFEST, and publish_verdict.
 from __future__ import annotations
 
 import datetime as dt
+import functools
 import hashlib
 import json
 import re
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import httpx
 
-from agent.domain_profile import DomainProfile
+from agent.domain_profile import DomainProfile, load_domain_profile
 from agent.publish_tier import write_publish_verdict
 from agent.settings import Settings
 from agent.signal_memo_writer import build_claim_receipt_matrix, build_memo_audit
@@ -168,6 +170,53 @@ def _infer_study_design(item: Json, fact: Json, paper: Json) -> str:
     return ""
 
 
+@functools.lru_cache(maxsize=16)
+def _shape_normalizers(domain: str) -> tuple[Json, ...]:
+    try:
+        profile = load_domain_profile(domain)
+        data = tomllib.loads(profile.claim_schema_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, tomllib.TOMLDecodeError):
+        return ()
+    rules = data.get("shape_normalizers")
+    if not isinstance(rules, list):
+        return ()
+    return tuple(rule for rule in rules if isinstance(rule, dict))
+
+
+def _rule_matches(rule: Json, fact: Json) -> bool:
+    source_topic = _norm(rule.get("match_source_topic"))
+    if source_topic and _norm(fact.get("source_topic")) != source_topic:
+        return False
+    text = _norm(" ".join(str(fact.get(name) or "") for name in (
+        "topic", "source_topic", "sub_topic", "canonical_phrase", "population",
+        "intervention", "comparator", "outcome", "metric", "study_design",
+    )))
+    terms = [_norm(term) for term in rule.get("match_terms") or [] if _norm(term)]
+    return all(term in text for term in terms)
+
+
+def _apply_schema_shape(fact: Json, *, domain: str) -> None:
+    for rule in _shape_normalizers(domain):
+        if not _rule_matches(rule, fact):
+            continue
+        for field in (
+            *CORE_SHAPE_FIELDS,
+            "population",
+            "organization_type",
+            "industry",
+            "geography",
+            "identification_strategy",
+        ):
+            value = _clean(rule.get(field))
+            if not value:
+                continue
+            detail = _clean(fact.get(field))
+            if detail and detail != value:
+                fact[f"{field}_detail"] = detail
+            fact[field] = value
+        return
+
+
 def source_key(fact: Json) -> str:
     paper = fact.get("source_paper")
     if not isinstance(paper, dict):
@@ -235,6 +284,7 @@ def normalize_business_fact(item: Json, *, topic: str, domain: str) -> Json:
             out[name] = value
     if numeric is not None and not out.get("effect_size"):
         out["effect_size"] = numeric
+    _apply_schema_shape(out, domain=domain)
     _apply_finance_return_shape(out)
     return out
 

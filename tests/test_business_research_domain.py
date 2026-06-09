@@ -132,6 +132,48 @@ def test_business_bundle_materializes_extractor_alias_fields() -> None:
     assert bundle.shape["study_design"] == "field experiment"
 
 
+def test_economics_schema_normalizer_clusters_minimum_wage_alias_rows() -> None:
+    rows: list[dict[str, Any]] = []
+    for i, phrase in enumerate([
+        "minimum wage employment elasticity was not statistically different from zero",
+        "minimum wage increases left low wage employment essentially unchanged",
+        "teen employment elasticity near -0.15 after minimum wage increases",
+        "minimum wage estimates imply small negative employment effects",
+        "minimum wage effects on employment ranged from -0.1 to -0.3",
+    ], start=1):
+        rows.append({
+            "id": f"mw-{i}",
+            "topic": "labor_economics",
+            "claim_type": "effect_size",
+            "numeric_value": -0.05 * i,
+            "canonical_phrase": phrase,
+            "population": "teen workers",
+            "intervention": "minimum wage",
+            "metric": "employment elasticity",
+            "design": "other",
+            "identification_strategy": "local method wording",
+            "paper": {
+                "doi": f"10.6666/minwage-{i}",
+                "title": "Minimum wage effects on employment",
+            },
+        })
+
+    bundle = build_candidate_bundle(
+        rows,
+        topic="minimum_wage_employment",
+        domain="economics_research",
+    )
+
+    assert bundle is not None
+    assert bundle.source_count == 5
+    assert bundle.shape["population"] == "low wage workers or jobs"
+    assert bundle.shape["intervention"] == "minimum wage increase"
+    assert bundle.shape["metric"] == "employment elasticity or employment change"
+    assert bundle.shape["study_design"] == "empirical labor economics"
+    assert bundle.shape["identification_strategy"] == "empirical labor economics"
+    assert bundle.receipts[0]["population_detail"] == "teen workers"
+
+
 def test_business_bundle_infers_study_design_from_method_text() -> None:
     rows = _fixture_facts()
     for row in rows:
