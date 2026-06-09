@@ -142,6 +142,23 @@ def test_read_discovery_top_returns_candidates(tmp_path: Path) -> None:
     assert out[0]["topic"] == "exercise"
 
 
+def test_read_discovery_top_uses_newest_matching_domain(tmp_path: Path) -> None:
+    older = tmp_path / "2026-06-09T06-39-50Z.json"
+    older.write_text(json.dumps({
+        "domain": {"slug": "longevity"},
+        "all": [{"topic": "SGLT2_inhibitors", "velocity_score": 1.0}],
+    }), encoding="utf-8")
+    newer = tmp_path / "2026-06-09T06-42-25Z.json"
+    newer.write_text(json.dumps({
+        "domain": {"slug": "ai_research"},
+        "all": [{"topic": "retrieval_augmented_generation", "velocity_score": 2.0}],
+    }), encoding="utf-8")
+
+    out = _read_discovery_top(tmp_path, domain="longevity")
+
+    assert [row["topic"] for row in out] == ["SGLT2_inhibitors"]
+
+
 def test_read_discovery_top_handles_missing_dir() -> None:
     assert _read_discovery_top(Path("/nonexistent")) == []
 
@@ -377,9 +394,82 @@ def test_topic_pipeline_skips_pico_by_default(
         frontier_review=False,
     )
 
+    assert calls[0][calls[0].index("--domain") + 1] == "longevity"
     assert "--with-editorial" in calls[0]
     assert "--no-frontier" in calls[0]
     assert "--no-pico-enrich" in calls[0]
+
+
+def test_topic_pipeline_passes_explicit_ai_research_domain(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    run_dir = tmp_path / "runs" / "topic-evidence-ts"
+    run_dir.mkdir(parents=True)
+    calls: list[list[str]] = []
+
+    def fake_step(args: list[str], _step: str) -> tuple[bool, str]:
+        calls.append(args)
+        return True, "ok"
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", tmp_path / "runs")
+    monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
+
+    run_curator_cycle._run_topic_pipeline(
+        "topic", 1.0, with_editorial=False, top_n=5, py="python",
+        frontier_review=False, domain="ai_research",
+    )
+
+    assert calls[0][calls[0].index("--domain") + 1] == "ai_research"
+
+
+def test_cycle_rebuilds_publish_queue_for_selected_domain(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    runs = tmp_path / "runs"
+    cycles = runs / "_curator_cycles"
+    cycles.mkdir(parents=True)
+    calls: list[tuple[str, list[str]]] = []
+
+    def fake_step(
+        args: list[str], step_name: str, *, timeout: int = 600,
+    ) -> tuple[bool, str]:
+        calls.append((step_name, args))
+        return True, "ok"
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
+    monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
+    monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
+    monkeypatch.setattr(
+        run_curator_cycle,
+        "_run_topic_pipeline",
+        lambda *_args, **_kwargs: TopicResult(
+            topic="ai_agents", velocity=1.0, status="ran",
+            run_dir="runs/ai_agents-evidence-ts",
+            signal_label="frontier_hypothesis", notes="",
+        ),
+    )
+    monkeypatch.setattr(
+        run_curator_cycle, "_read_discovery_top",
+        lambda _out, **_kwargs: [{
+            "topic": "ai_agents", "velocity_score": 1.0,
+            "fact_source_count": 5, "paper_count": 3,
+        }],
+    )
+    monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",
+                        lambda *_args, **_kwargs: set())
+    monkeypatch.setattr(sys, "argv", [
+        "run_curator_cycle.py", "--domain", "ai_research", "--top", "1",
+    ])
+
+    assert run_curator_cycle.main() == 0
+    queue_args = next(args for step, args in calls if step == "publish_queue")
+    assert queue_args[queue_args.index("--domain") + 1] == "ai_research"
 
 
 def test_discovery_failure_aborts_before_stale_plan(
@@ -502,6 +592,7 @@ def test_stop_on_ready_halts_plan(
         topic: str, velocity: float, *, with_editorial: bool,
         top_n: int, py: str, pico_enrich: bool = False,
         frontier_review: bool = True, parent_topic: str = "",
+        domain: str = "longevity",
     ) -> TopicResult:
         seen.append(topic)
         run_dir = runs / f"{topic}-evidence-ts"
@@ -518,7 +609,7 @@ def test_stop_on_ready_halts_plan(
     monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
     monkeypatch.setattr(
         run_curator_cycle, "_read_discovery_top",
-        lambda _out: [
+        lambda _out, **_kwargs: [
             {"topic": "ready", "velocity_score": 2.0, "fact_source_count": 5, "paper_count": 3},
             {"topic": "later", "velocity_score": 1.0, "fact_source_count": 5, "paper_count": 3},
         ],
@@ -552,6 +643,7 @@ def test_stop_on_ready_ignores_under_source_candidate(
         topic: str, velocity: float, *, with_editorial: bool,
         top_n: int, py: str, pico_enrich: bool = False,
         frontier_review: bool = True, parent_topic: str = "",
+        domain: str = "longevity",
     ) -> TopicResult:
         seen.append(topic)
         top_values.append(top_n)
@@ -569,7 +661,7 @@ def test_stop_on_ready_ignores_under_source_candidate(
     monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
     monkeypatch.setattr(
         run_curator_cycle, "_read_discovery_top",
-        lambda _out: [
+        lambda _out, **_kwargs: [
             {"topic": "thin", "velocity_score": 2.0, "fact_source_count": 5, "paper_count": 3},
             {"topic": "ready", "velocity_score": 1.0, "fact_source_count": 5, "paper_count": 3},
         ],
@@ -603,6 +695,7 @@ def test_stop_on_ready_skips_count_only_cached_candidate(
         topic: str, velocity: float, *, with_editorial: bool,
         top_n: int, py: str, pico_enrich: bool = False,
         frontier_review: bool = True, parent_topic: str = "",
+        domain: str = "longevity",
     ) -> TopicResult:
         seen.append(topic)
         run_dir = runs / f"{topic}-evidence-ts"
@@ -619,7 +712,7 @@ def test_stop_on_ready_skips_count_only_cached_candidate(
     monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
     monkeypatch.setattr(
         run_curator_cycle, "_read_discovery_top",
-        lambda _out: [
+        lambda _out, **_kwargs: [
             {
                 "topic": "count_only_cached", "velocity_score": 9.0,
                 "fact_source_count": 12, "paper_count": 0,
@@ -660,6 +753,7 @@ def test_stop_on_ready_runs_structural_child_topic_before_giving_up(
         topic: str, velocity: float, *, with_editorial: bool,
         top_n: int, py: str, pico_enrich: bool = False,
         frontier_review: bool = True, parent_topic: str = "",
+        domain: str = "longevity",
     ) -> TopicResult:
         seen.append(topic)
         parents.append(parent_topic)
@@ -693,7 +787,7 @@ def test_stop_on_ready_runs_structural_child_topic_before_giving_up(
     monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
     monkeypatch.setattr(
         run_curator_cycle, "_read_discovery_top",
-        lambda _out: [
+        lambda _out, **_kwargs: [
             {"topic": "parent", "velocity_score": 2.0, "fact_source_count": 5, "paper_count": 3},
         ],
     )
@@ -726,6 +820,7 @@ def test_stop_on_ready_does_not_chain_child_topic_reruns(
         topic: str, velocity: float, *, with_editorial: bool,
         top_n: int, py: str, pico_enrich: bool = False,
         frontier_review: bool = True, parent_topic: str = "",
+        domain: str = "longevity",
     ) -> TopicResult:
         seen.append(topic)
         run_dir = runs / f"{topic}-evidence-ts"
@@ -751,7 +846,7 @@ def test_stop_on_ready_does_not_chain_child_topic_reruns(
     monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
     monkeypatch.setattr(
         run_curator_cycle, "_read_discovery_top",
-        lambda _out: [
+        lambda _out, **_kwargs: [
             {"topic": "parent", "velocity_score": 2.0, "fact_source_count": 5, "paper_count": 3},
         ],
     )
@@ -781,6 +876,7 @@ def test_priority_repair_topic_does_not_spawn_child_rerun(
         topic: str, velocity: float, *, with_editorial: bool,
         top_n: int, py: str, pico_enrich: bool = False,
         frontier_review: bool = True, parent_topic: str = "",
+        domain: str = "longevity",
     ) -> TopicResult:
         seen.append(topic)
         run_dir = runs / f"{topic}-evidence-ts"
@@ -804,10 +900,10 @@ def test_priority_repair_topic_does_not_spawn_child_rerun(
     monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
     monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
     monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
-    monkeypatch.setattr(run_curator_cycle, "_read_discovery_top", lambda _out: [])
+    monkeypatch.setattr(run_curator_cycle, "_read_discovery_top", lambda _out, **_kwargs: [])
     monkeypatch.setattr(
         run_curator_cycle, "_priority_ranked_topics",
-        lambda _topics: [{
+        lambda _topics, **_kwargs: [{
             "topic": "queued_child",
             "velocity_score": 0.0,
             "fact_source_count": 5,
@@ -838,17 +934,20 @@ def test_priority_ranked_topics_uses_fact_source_probe(monkeypatch: Any) -> None
         def __exit__(self, *_args: object) -> None:
             return None
 
+    calls: list[tuple[str, str]] = []
     counts = {"strong_child": 5, "weak_child": 0}
     monkeypatch.setattr(run_curator_cycle, "load_settings", lambda: object())
     monkeypatch.setattr(run_curator_cycle.httpx, "Client", DummyClient)
-    monkeypatch.setattr(
-        run_curator_cycle, "_fetch_topic_fact_source_count",
-        lambda topic, *, client, settings: counts[topic],
-    )
+
+    def fake_count(topic: str, *, client: Any, settings: Any, domain: str) -> int:
+        calls.append((topic, domain))
+        return counts[topic]
+
+    monkeypatch.setattr(run_curator_cycle, "_fetch_topic_fact_source_count", fake_count)
 
     ranked = run_curator_cycle._priority_ranked_topics([
         "strong_child", "weak_child",
-    ])
+    ], domain="ai_research")
 
     assert [
         (row["topic"], row["fact_source_count"], row["paper_count"], row["child_depth"])
@@ -857,6 +956,7 @@ def test_priority_ranked_topics_uses_fact_source_probe(monkeypatch: Any) -> None
         ("strong_child", 5, 1, 1),
         ("weak_child", 0, 0, 1),
     ]
+    assert calls == [("strong_child", "ai_research"), ("weak_child", "ai_research")]
 
 
 def test_underfloor_priority_repair_topic_is_not_built(
@@ -873,6 +973,7 @@ def test_underfloor_priority_repair_topic_is_not_built(
         topic: str, velocity: float, *, with_editorial: bool,
         top_n: int, py: str, pico_enrich: bool = False,
         frontier_review: bool = True, parent_topic: str = "",
+        domain: str = "longevity",
     ) -> TopicResult:
         seen.append(topic)
         return TopicResult(
@@ -884,10 +985,10 @@ def test_underfloor_priority_repair_topic_is_not_built(
     monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
     monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
     monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
-    monkeypatch.setattr(run_curator_cycle, "_read_discovery_top", lambda _out: [])
+    monkeypatch.setattr(run_curator_cycle, "_read_discovery_top", lambda _out, **_kwargs: [])
     monkeypatch.setattr(
         run_curator_cycle, "_priority_ranked_topics",
-        lambda _topics: [{
+        lambda _topics, **_kwargs: [{
             "topic": "weak_child",
             "velocity_score": 0.0,
             "fact_source_count": 0,

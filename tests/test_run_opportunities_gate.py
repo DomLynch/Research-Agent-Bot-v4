@@ -39,6 +39,51 @@ def test_deterministic_cluster_audit_recovers_no_thesis_a_core_cluster() -> None
     assert len(audit.cited_fact_ids) == 5
 
 
+def test_result_key_cluster_audit_accepts_multiplicative_speedup_receipt() -> None:
+    facts: list[dict[str, Any]] = []
+    for i in range(4):
+        facts.append({
+            "fact_id": f"ai/{i}",
+            "result_key": "ai_agents::locomo::accuracy",
+            "canonical_phrase": f"Model {i} achieves {70 + i}% accuracy on LoCoMo.",
+            "population": "ai_agents LoCoMo LoCoMo",
+            "intervention": f"Model {i}",
+            "comparator": f"baseline {i}",
+            "endpoint": "accuracy",
+            "benchmark": "LoCoMo",
+            "metric": "accuracy",
+            "numeric_value": float(70 + i),
+            "units": "%",
+            "source_paper": {"doi": f"10.ai/{i}"},
+        })
+    facts.append({
+        "fact_id": "ai/speedup",
+        "result_key": "ai_agents::locomo::accuracy",
+        "canonical_phrase": (
+            "SwiftMem achieves 47$\\times$ faster search compared to "
+            "state-of-the-art baselines while maintaining competitive accuracy."
+        ),
+        "population": "ai_agents LoCoMo LongMemEval",
+        "intervention": "SwiftMem",
+        "comparator": "state-of-the-art baselines",
+        "endpoint": "accuracy",
+        "benchmark": "LoCoMo",
+        "metric": "accuracy",
+        "numeric_value": 47.0,
+        "units": "score",
+        "source_paper": {"doi": "10.ai/speedup"},
+    })
+    lanes = classify_lanes(facts, topic="ai_agents")
+
+    audit = _deterministic_cluster_audit("ai_agents", facts, lanes)
+
+    assert [lane.lane for lane in lanes] == ["A_core"] * 5
+    assert audit is not None
+    assert audit.status == "survives"
+    assert audit.title == "Source-bound ai agents accuracy result on LoCoMo"
+    assert len(audit.cited_fact_ids) == 5
+
+
 def test_deterministic_cluster_audit_refuses_mixed_a_core_claims() -> None:
     facts = [
         _fact("f/1", "rapamycin extended lifespan by 10% in mice", doi="10.1/1"),

@@ -82,6 +82,7 @@ def _parse_fact(item: Any) -> ResearkaFact | None:
 async def search_facts(
     query: str, *, client: httpx.AsyncClient, settings: Settings,
     top_k: int = 20, min_confidence: str = "medium", numeric_only: bool = True,
+    domain: str = "longevity",
 ) -> tuple[ResearkaFact, ...]:
     """Hit /api/v1/tier2/facts/search; return parsed facts.
 
@@ -97,6 +98,7 @@ async def search_facts(
         r = await client.post(
             f"{base}/api/v1/tier2/facts/search",
             json={
+                "domain": domain,
                 "query": query[:512],
                 "top_k": min(top_k, 50),
                 "min_confidence": min_confidence,

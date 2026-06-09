@@ -10,12 +10,14 @@ import json
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
+from email.message import Message
 from pathlib import Path
 from typing import Any
 from urllib.request import Request
 
-from pytest import MonkeyPatch
+from pytest import MonkeyPatch, raises
 
 import scripts.daily_alpha_publish_cycle as daily
 
@@ -63,6 +65,7 @@ def _verdict(topic: str = "grid_storage", *, score: int = 90) -> dict[str, Any]:
         "confidence_label": "evidence_backed_signal",
         "alpha_score": score,
         "surface_type": "publish_alpha_memo",
+        "domain": {"slug": "longevity"},
         "axes": {
             "available_source_contexts": 12,
             "source_papers": source_papers,
@@ -137,6 +140,35 @@ def _memo_with_source_receipts(root: Path, verdict: dict[str, Any], count: int) 
     _audit_sidecars(run)
 
 
+def _memo_with_receipt_shapes(
+    root: Path, verdict: dict[str, Any], shapes: list[dict[str, Any]],
+) -> None:
+    run = root / str(verdict["run_dir"])
+    run.mkdir(parents=True)
+    ids = [str(i + 1) for i in range(len(shapes))]
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n## Evidence receipts\n\n"
+        + "\n".join(f"- `fact_id={fid}` (`A_core`) - receipt" for fid in ids)
+        + "\n" + _FALSIFIER,
+        encoding="utf-8",
+    )
+    run.joinpath("all_facts.json").write_text(json.dumps([
+        {
+            "fact_id": fid,
+            **shape,
+            "source_paper": {
+                "doi": f"10.1000/shape-{fid}",
+                "title": f"Shape source {fid}",
+            },
+        }
+        for fid, shape in zip(ids, shapes, strict=True)
+    ]), encoding="utf-8")
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": fid, "lane": "A_core"} for fid in ids],
+    }), encoding="utf-8")
+    _audit_sidecars(run)
+
+
 def _publish_tier_run(root: Path, topic: str, *, stale: dict[str, Any]) -> None:
     run = root / "runs" / f"{topic}-evidence-ts"
     run.mkdir(parents=True)
@@ -191,6 +223,9 @@ def _publish_tier_run(root: Path, topic: str, *, stale: dict[str, Any]) -> None:
         },
     }]), encoding="utf-8")
     run.joinpath("publish_verdict.json").write_text(json.dumps(stale), encoding="utf-8")
+    run.joinpath("MANIFEST.json").write_text(json.dumps({
+        "domain": {"slug": "longevity"},
+    }), encoding="utf-8")
     _audit_sidecars(run)
 
 
@@ -214,6 +249,69 @@ def test_memo_fingerprint_and_source_count_use_full_source_identity() -> None:
 
     assert daily.memo_fingerprint(left) != daily.memo_fingerprint(right)
     assert daily._source_count_from_verdict(left) == 3
+
+
+def test_memo_fingerprint_is_domain_scoped() -> None:
+    left = _verdict()
+    right = _verdict() | {"domain": {"slug": "ai_research"}}
+
+    assert daily.memo_fingerprint(left) != daily.memo_fingerprint(right)
+
+
+def test_daily_queue_defaults_untagged_legacy_runs_to_longevity(tmp_path: Path) -> None:
+    runs = tmp_path / "runs"
+    run = runs / "untagged-evidence-ts"
+    run.mkdir(parents=True)
+    verdict = _verdict("untagged")
+    verdict.pop("domain")
+    run.joinpath("alpha_memo.md").write_text("# Alpha memo\n", encoding="utf-8")
+    run.joinpath("publish_verdict.json").write_text(
+        json.dumps(verdict), encoding="utf-8",
+    )
+
+    out = daily._build_queue(runs, include_archive=False, domain="longevity")
+
+    assert [r["topic"] for r in out["ready_to_publish"]] == ["untagged"]
+    assert out["ready_to_publish"][0]["domain"]["slug"] == "longevity"
+    assert out["_meta"]["missing_domain_count"] == 0
+    assert out["_meta"]["legacy_domain_default_count"] == 1
+
+
+def test_daily_queue_still_skips_untagged_runs_for_non_default_domain(
+    tmp_path: Path,
+) -> None:
+    runs = tmp_path / "runs"
+    run = runs / "untagged-evidence-ts"
+    run.mkdir(parents=True)
+    verdict = _verdict("untagged")
+    verdict.pop("domain")
+    run.joinpath("alpha_memo.md").write_text("# Alpha memo\n", encoding="utf-8")
+    run.joinpath("publish_verdict.json").write_text(
+        json.dumps(verdict), encoding="utf-8",
+    )
+
+    out = daily._build_queue(runs, include_archive=False, domain="ai_research")
+
+    assert out["ready_to_publish"] == []
+    assert out["_meta"]["missing_domain_count"] == 1
+    assert out["_meta"]["legacy_domain_default_count"] == 0
+
+
+def test_run_cycle_rejects_injected_candidate_without_domain(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("untagged")
+    verdict.pop("domain")
+    _memo(root, verdict)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-06",
+        queue=_queue(verdict),
+        retraction_mode="metadata",
+    )
+
+    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["considered"][0]["status"] == "missing_domain_metadata"
 
 
 def test_ledger_stamp_includes_utc_time_for_twice_daily_runs() -> None:
@@ -251,7 +349,7 @@ def test_refresh_cycle_probes_existing_ready_queue_before_discovery(
 ) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("ready")
-    _memo(root, verdict)
+    _memo_with_source_receipts(root, verdict, 5)
     run = root / str(verdict["run_dir"])
     run.joinpath("publish_verdict.json").write_text(
         json.dumps(verdict), encoding="utf-8",
@@ -278,11 +376,11 @@ def test_refresh_cycle_probes_claim_cluster_queue_before_discovery(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     root = tmp_path / "repo"
-    verdict = _verdict("weak_curated_parent") | {
+    verdict = _verdict("curated_parent") | {
         "decision": "curation_needed",
         "publish_tier": "TIER_3",
-        "alpha_score": 0,
-        "blockers": ["blocked_label:no_signal"],
+        "alpha_score": 100,
+        "blockers": ["feed_scope_mismatch"],
         "subtopic_recommendations": {
             "recommended": True,
             "reason": "source_coherent_child_cluster",
@@ -330,7 +428,7 @@ def test_refresh_cycle_probes_claim_cluster_queue_before_discovery(
     )
 
     assert ledger["submitted"] == 1
-    assert ledger["submitted_topic"] == "weak_curated_parent_bounded_claim"
+    assert ledger["submitted_topic"] == "curated_parent_bounded_claim"
     assert ledger["refresh_batches"][0]["note"] == "skipped_initial_queue_probe"
 
 
@@ -888,6 +986,20 @@ def test_explicit_resubmission_allowed_reject_is_repairable() -> None:
     }
 
     assert daily._repairable_rejection(decision) is True
+
+
+def test_integrity_duplicate_reject_is_not_repairable() -> None:
+    decision = {
+        "decision": "reject",
+        "failure_category": "integrity_duplicate",
+        "review_summary": (
+            "Exact-content duplicate of publication pub_123. "
+            "Resubmission requires substantially new content."
+        ),
+        "resubmission": {"allowed": True},
+    }
+
+    assert daily._repairable_rejection(decision) is False
 
 
 def test_tighten_evidence_receipts_revision_forces_grounded_regen() -> None:
@@ -1588,6 +1700,266 @@ def test_recently_published_topic_is_skipped_for_fresh_topic(tmp_path: Path) -> 
     assert ledger["recently_published_topics_blocked"] == ["published"]
     assert ledger["considered"][0]["topic"] == "published"
     assert ledger["considered"][0]["status"] == "cycle_exhausted_topic"
+
+
+def test_recently_published_topic_is_domain_scoped(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("shared_topic")
+    _memo_with_source_receipts(root, verdict, 5)
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "published",
+        "final_verdict": "accepted",
+        "published": 1,
+        "published_topic": "shared_topic",
+        "domain": {"slug": "ai_research"},
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        retraction_mode="metadata",
+    )
+
+    assert ledger["candidate"]["topic"] == "shared_topic"
+    assert ledger["recently_published_topics_blocked"] == []
+    assert ledger["considered"][0]["status"] == "eligible"
+
+
+def test_recently_published_topic_family_blocks_child_slug(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    published = _verdict("vector_search_agent_eval", score=100)
+    child = _verdict("agent_eval_vector_rerank", score=99) | {
+        "topic_family": published["topic"],
+    }
+    fresh = _verdict("workflow_automation_trace", score=90)
+    _memo_with_source_receipts(root, child, 5)
+    _memo_with_source_receipts(root, fresh, 5)
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "published",
+        "final_verdict": "accepted",
+        "published": 1,
+        "published_topic": published["topic"],
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(child, fresh),
+        retraction_mode="metadata",
+    )
+
+    assert ledger["candidate"]["topic"] == "workflow_automation_trace"
+    assert ledger["considered"][0]["topic"] == "agent_eval_vector_rerank"
+    assert ledger["considered"][0]["status"] == "cycle_exhausted_topic"
+    assert ledger["considered"][0]["family_blocked"] is True
+    assert ledger["family_blocked_count"] == 1
+    assert ledger["seed_scope_dropped_count"] == 0
+
+
+def test_recent_submission_topic_family_blocks_child_slug(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    child = _verdict("agent_eval_vector_rerank", score=99) | {
+        "topic_family": "vector_search_agent_eval",
+    }
+    fresh = _verdict("workflow_automation_trace", score=90)
+    _memo_with_source_receipts(root, child, 5)
+    _memo_with_source_receipts(root, fresh, 5)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+        "date": "2026-06-06T07-30-00Z",
+        "topic": "vector_search_agent_eval",
+        "run_dir": "runs/vector_search_agent_eval-evidence-ts",
+        "fingerprint": "old",
+    }])
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-06T09-30-00Z",
+        queue=_queue(child, fresh),
+        retraction_mode="metadata",
+    )
+
+    assert ledger["candidate"]["topic"] == "workflow_automation_trace"
+    assert "vector_search_agent_eval" in ledger["recently_submitted_topics_blocked"]
+    assert ledger["considered"][0]["status"] == "cycle_exhausted_topic"
+    assert ledger["considered"][0]["family_blocked"] is True
+    assert ledger["family_blocked_count"] == 1
+
+
+def test_recent_submission_topic_is_domain_scoped(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("shared_topic")
+    _memo_with_source_receipts(root, verdict, 5)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+        "date": "2026-06-06T07-30-00Z",
+        "domain": {"slug": "ai_research"},
+        "topic": "shared_topic",
+        "run_dir": "runs/shared_topic-evidence-ts",
+        "fingerprint": "old-ai",
+    }])
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-06T09-30-00Z",
+        queue=_queue(verdict),
+        retraction_mode="metadata",
+    )
+
+    assert ledger["candidate"]["topic"] == "shared_topic"
+    assert ledger["recently_submitted_topics_blocked"] == []
+    assert ledger["considered"][0]["status"] == "eligible"
+
+
+def test_seed_scope_metadata_populates_no_candidate_ledger(tmp_path: Path) -> None:
+    ledger = daily.run_cycle(
+        runs_root=tmp_path / "repo",
+        date="2026-06-06T17-30-00Z",
+        queue={
+            "ready_to_publish": [],
+            "agent_repair_needed": [],
+            "curation_needed": [],
+            "_meta": {
+                "seed_scope_dropped_count": 1,
+                "seed_scope_fallback_count": 2,
+                "seed_scope_fallback_used": True,
+            },
+        },
+    )
+
+    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["family_blocked_count"] == 0
+    assert ledger["seed_scope_dropped_count"] == 1
+    assert ledger["seed_scope_fallback_count"] == 2
+    assert ledger["seed_scope_fallback_used"] is True
+
+
+def test_glp_longevity_cooldown_does_not_token_block_unrelated_families(tmp_path: Path) -> None:
+    topics = ["omega_3_longevity", "telomere", "mediterranean_diet"]
+    for block_kind in ("published", "submitted"):
+        root = tmp_path / block_kind
+        if block_kind == "published":
+            daily._write_json(root / "_daily_ledger" / "2026-06-05.json", {
+                "status": "published",
+                "final_verdict": "accepted",
+                "published": 1,
+                "published_topic": "GLP_1_longevity",
+            })
+        else:
+            daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+                "date": "2026-06-06T07-30-00Z",
+                "topic": "GLP_1_longevity",
+                "run_dir": "runs/GLP_1_longevity-evidence-ts",
+                "fingerprint": "old-glp",
+            }])
+        for i, topic in enumerate(topics):
+            verdict = _verdict(topic, score=100 - i)
+            _memo_with_source_receipts(root, verdict, 5)
+            ledger = daily.run_cycle(
+                runs_root=root,
+                date=f"2026-06-06T09-3{i}-00Z",
+                queue=_queue(verdict),
+                retraction_mode="metadata",
+            )
+
+            assert ledger["candidate"]["topic"] == topic
+            assert ledger["considered"][0]["status"] == "eligible"
+            assert ledger["considered"][0]["family_blocked"] is False
+            assert ledger["family_blocked_count"] == 0
+
+
+def test_receipt_shape_mismatch_reranks_before_submit(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    bad = _verdict("mixed_direct_receipts", score=100)
+    good = _verdict("matched_direct_receipts", score=90)
+    _memo_with_receipt_shapes(root, bad, [
+        {
+            "canonical_phrase": "Tumor treating fields improved glioblastoma survival.",
+            "population": "glioblastoma adults",
+            "intervention": "tumor treating fields",
+            "endpoint": "overall survival",
+        },
+        {
+            "canonical_phrase": "Omega 3 supplementation reduced runner soreness.",
+            "population": "distance runners",
+            "intervention": "omega 3 supplementation",
+            "endpoint": "muscle soreness",
+        },
+        {
+            "canonical_phrase": "Cognitive training changed dementia recall.",
+            "population": "older adults with dementia",
+            "intervention": "cognitive training",
+            "endpoint": "memory recall",
+        },
+        {
+            "canonical_phrase": "Probiotic feeding changed neonatal enterocolitis rates.",
+            "population": "preterm infants",
+            "intervention": "probiotic feeding",
+            "endpoint": "necrotizing enterocolitis",
+        },
+        {
+            "canonical_phrase": "Metformin lowered glycemic markers in diabetes.",
+            "population": "type 2 diabetes patients",
+            "intervention": "metformin",
+            "endpoint": "hemoglobin a1c",
+        },
+    ])
+    _memo_with_source_receipts(root, good, 5)
+    submissions: list[dict[str, Any]] = []
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submissions.append(payload)
+        return {"ok": True, "status": 200, "response": {}}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-06T09-30-00Z",
+        queue=_queue(bad, good),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+    )
+
+    assert ledger["submitted_topic"] == "matched_direct_receipts"
+    assert ledger["considered"][0]["status"] == "receipt_shape_mismatch"
+    assert ledger["considered"][1]["status"] == "eligible"
+    assert len(submissions) == 1
+    assert submissions[0]["topic"] == "matched_direct_receipts"
+
+
+def test_result_shape_cluster_is_selector_eligible_with_reported_variation(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("preclustered_ai_results")
+    shared_shape = {
+        "benchmark": "LoCoMo",
+        "task": "long context memory",
+        "dataset": "LoCoMo",
+        "metric": "accuracy",
+        "model_system": "LoCoMo memory systems",
+        "baseline_comparator": "LoCoMo benchmark baselines",
+        "evaluation_protocol": "LoCoMo benchmark evaluation",
+    }
+    _memo_with_receipt_shapes(root, verdict, [
+        {
+            "canonical_phrase": "Model reports LoCoMo accuracy.",
+            "population": "ai agents LoCoMo",
+            "intervention": f"memory system {i}",
+            "comparator": f"baseline {i}",
+            "endpoint": "accuracy",
+            "metric": f"accuracy variant {i}",
+            "model_system": f"Model {i}",
+            "baseline_comparator": f"baseline {i}",
+            "evaluation_protocol": f"paper protocol {i}",
+            "result_shape": shared_shape,
+        }
+        for i in range(5)
+    ])
+
+    assert daily._direct_receipts_share_shape(
+        verdict, root, min_direct_source_count=5,
+    ) is True
 
 
 def test_repairable_retry_does_not_resubmit_unchanged_memo(tmp_path: Path) -> None:
@@ -2305,6 +2677,147 @@ def test_claim_cluster_candidate_requires_claim_coherence(tmp_path: Path) -> Non
     assert rows == []
 
 
+def test_claim_cluster_candidate_requires_ai_shape_coherence(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("swe_bench_parent") | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "blockers": ["source_dispersion"],
+        "subtopic_recommendations": {
+            "recommended": True,
+            "clusters": [{
+                "label": "swe bench accuracy",
+                "member_fact_ids": ["1", "2", "3", "4", "5"],
+            }],
+        },
+    }
+    _memo_with_source_receipts(root, verdict, 5)
+    run = root / str(verdict["run_dir"])
+    facts = json.loads(run.joinpath("all_facts.json").read_text(encoding="utf-8"))
+    for fact, model_system in zip(
+        facts,
+        ("GPT", "RAG", "LLM", "MoE", "BLOOM"),
+        strict=True,
+    ):
+        fact.update({
+            "canonical_phrase": "The agent improved SWE-bench benchmark performance.",
+            "benchmark": "SWE-bench",
+            "task": "software issue resolution",
+            "dataset": "SWE-bench Verified",
+            "metric": "resolved rate",
+            "model_system": model_system,
+            "baseline_comparator": "baseline agent",
+            "evaluation_protocol": "zero shot patch generation",
+        })
+    run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    rows = daily._claim_cluster_candidates(
+        [verdict], root, min_direct_source_count=5,
+    )
+
+    assert rows == []
+
+
+def test_claim_cluster_candidate_requires_metric_type_coherence(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("ai_agents") | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "blockers": ["source_dispersion"],
+        "subtopic_recommendations": {
+            "recommended": True,
+            "clusters": [{
+                "label": "locomo accuracy",
+                "member_fact_ids": ["1", "2", "3", "4", "5"],
+            }],
+        },
+    }
+    _memo_with_source_receipts(root, verdict, 5)
+    run = root / str(verdict["run_dir"])
+    facts = json.loads(run.joinpath("all_facts.json").read_text(encoding="utf-8"))
+    metric_rows = [
+        ("SwiftMem achieves 47x faster search while maintaining competitive accuracy.", 47, "x"),
+        ("MemWeaver improves accuracy while reducing input context length by over 95%.", 95, "%"),
+        ("Memori achieves 81.95% accuracy on LoCoMo.", 81.95, "%"),
+        ("Kumiho achieves 93.3% judge accuracy on LoCoMo-Plus.", 93.3, "%"),
+        ("SuperLocalMemory achieves 70.4% accuracy on LoCoMo Mode A.", 70.4, "%"),
+    ]
+    for fact, (phrase, value, units) in zip(facts, metric_rows, strict=True):
+        fact.update({
+            "canonical_phrase": phrase,
+            "benchmark": "LoCoMo",
+            "task": "memory benchmark",
+            "dataset": "LoCoMo",
+            "metric": "accuracy",
+            "baseline_comparator": "LoCoMo benchmark baselines",
+            "evaluation_protocol": "reported LoCoMo benchmark evaluation",
+            "numeric_value": value,
+            "units": units,
+        })
+    run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    rows = daily._claim_cluster_candidates(
+        [verdict], root, min_direct_source_count=5,
+    )
+
+    assert rows == []
+
+
+def test_claim_cluster_candidate_trims_to_clean_ai_receipt_shape(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("rag_parent") | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "blockers": ["source_dispersion"],
+        "subtopic_recommendations": {
+            "recommended": True,
+            "clusters": [{
+                "label": "rag exact match",
+                "member_fact_ids": ["1", "2", "3", "4", "5", "6", "7"],
+            }],
+        },
+    }
+    _memo_with_source_receipts(root, verdict, 7)
+    run = root / str(verdict["run_dir"])
+    facts = json.loads(run.joinpath("all_facts.json").read_text(encoding="utf-8"))
+    for fact in facts[:5]:
+        fact.update({
+            "canonical_phrase": "The RAG system improved HotpotQA exact match.",
+            "benchmark": "HotpotQA",
+            "task": "multi hop question answering",
+            "dataset": "HotpotQA distractor",
+            "metric": "exact match",
+            "model_system": "retrieval augmented generation system",
+            "baseline_comparator": "closed book language model",
+            "evaluation_protocol": "zero shot question answering",
+        })
+    for fact, metric in zip(facts[5:], ("latency", "faithfulness"), strict=True):
+        fact.update({
+            "canonical_phrase": "The RAG system improved HotpotQA exact match.",
+            "benchmark": "HotpotQA",
+            "task": "multi hop question answering",
+            "dataset": "HotpotQA distractor",
+            "metric": metric,
+            "model_system": "retrieval augmented generation system",
+            "baseline_comparator": "retrieval baseline",
+            "evaluation_protocol": "few shot question answering",
+        })
+    run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    rows = daily._claim_cluster_candidates(
+        [verdict], root, min_direct_source_count=5,
+    )
+
+    assert len(rows) == 1
+    assert rows[0]["receipt_expansion"]["cited_bound_fact_ids"] == [
+        "1", "2", "3", "4", "5",
+    ]
+
+
 def test_high_alpha_curation_cluster_can_seed_claim_candidate(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("curated_parent") | {
@@ -2335,7 +2848,7 @@ def test_high_alpha_curation_cluster_can_seed_claim_candidate(tmp_path: Path) ->
     ]
 
 
-def test_low_alpha_curation_cluster_can_seed_claim_candidate_when_source_coherent(
+def test_low_alpha_curation_cluster_does_not_seed_claim_candidate(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / "repo"
@@ -2359,11 +2872,7 @@ def test_low_alpha_curation_cluster_can_seed_claim_candidate_when_source_coheren
         [verdict], root, min_direct_source_count=5,
     )
 
-    assert len(rows) == 1
-    assert rows[0]["topic"] == "weak_curated_parent_bounded_claim"
-    assert rows[0]["receipt_expansion"]["cited_bound_fact_ids"] == [
-        "1", "2", "3", "4", "5",
-    ]
+    assert rows == []
 
 
 def test_no_candidate_refreshes_queued_child_topics_next_batch(
@@ -2874,6 +3383,25 @@ def test_retraction_check_blocks_submission_and_writes_hold(tmp_path: Path) -> N
     assert hold.exists()
 
 
+def test_retraction_check_skip_does_not_block_submission(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict()
+    _memo_with_source_receipts(root, verdict, 5)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        submit=True,
+        retraction_mode="skip",
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+    )
+
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["submitted"] == 1
+    assert ledger["retraction_check"]["status"] == "skipped"
+
+
 def test_crossref_title_retraction_word_does_not_block_clean_paper() -> None:
     check = daily.retraction_check(
         _verdict(),
@@ -2884,6 +3412,40 @@ def test_crossref_title_retraction_word_does_not_block_clean_paper() -> None:
     )
 
     assert check["status"] == "clean"
+
+
+def test_crossref_404_lookup_miss_does_not_hold_submission() -> None:
+    def fetcher(doi: str) -> dict[str, Any]:
+        raise urllib.error.HTTPError(
+            url=f"https://api.crossref.org/works/{doi}",
+            code=404,
+            msg="Not Found",
+            hdrs=Message(),
+            fp=None,
+        )
+
+    check = daily.retraction_check(_verdict(), mode="crossref", fetcher=fetcher)
+
+    assert check["status"] == "clean"
+    assert check["errors"] == []
+    assert len(check["lookup_misses"]) == len(check["checked_dois"])
+
+
+def test_crossref_non_404_lookup_error_still_holds_submission() -> None:
+    def fetcher(doi: str) -> dict[str, Any]:
+        raise urllib.error.HTTPError(
+            url=f"https://api.crossref.org/works/{doi}",
+            code=503,
+            msg="Service Unavailable",
+            hdrs=Message(),
+            fp=None,
+        )
+
+    check = daily.retraction_check(_verdict(), mode="crossref", fetcher=fetcher)
+
+    assert check["status"] == "error"
+    assert check["lookup_misses"] == []
+    assert len(check["errors"]) == len(check["checked_dois"])
 
 
 def test_submit_token_accepts_research_alias(monkeypatch: MonkeyPatch) -> None:
@@ -2914,6 +3476,8 @@ def test_submission_payload_preserves_alpha_memo_contract(tmp_path: Path) -> Non
     assert payload["article_type"] == "alpha_memo"
     assert payload["author_agent_id"] == "agent-v4-alpha-memo"
     assert payload["agent_id"] == "agent-v4-alpha-memo"
+    assert payload["domain"]["slug"] == "longevity"
+    assert payload["evidence_bundle"]["domain"]["slug"] == "longevity"
     assert payload["topic"] == "grid_storage"
     assert "What would weaken this" in payload["markdown"]
     assert "sections" not in payload
@@ -2925,6 +3489,31 @@ def test_submission_payload_preserves_alpha_memo_contract(tmp_path: Path) -> Non
         "novelty_delta": {"novelty_delta": {"label": "contradictory"}},
         "typed_counter_evidence": {"items": []},
     }
+
+
+def test_submission_payload_requires_domain_metadata(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict()
+    verdict.pop("domain")
+    _memo(root, verdict)
+
+    with raises(ValueError, match="missing domain metadata"):
+        daily._submission_payload(verdict, root / "runs")
+
+
+def test_submission_payload_uses_domain_specific_agent_identity(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("llm_judge_reliability") | {
+        "domain": {"slug": "ai_research"},
+    }
+    _memo(root, verdict)
+
+    payload = daily._submission_payload(verdict, root / "runs")
+
+    assert payload["author_agent_id"] == "agent-v4-alpha-ai-research"
+    assert payload["agent_id"] == "agent-v4-alpha-ai-research"
+    assert payload["domain"]["slug"] == "ai_research"
+    assert payload["evidence_bundle"]["domain"]["slug"] == "ai_research"
 
 
 def test_submission_payload_strips_internal_alpha_scores(tmp_path: Path) -> None:
@@ -3055,7 +3644,7 @@ def test_submission_payload_uses_researka_source_bundle_schema(tmp_path: Path) -
         "# Alpha memo\n\n"
         "**Headline:** Endpoint-specific storage reserve signal\n\n"
         "## Evidence receipts\n\n"
-        "- `fact_id=1` (`A_core`) - receipt\n"
+        "- `fact_id=1` (`A_core`) - receipt doi=10.1000/primary 10.1000/primary\n"
         "- `fact_id=2` (`B_context`) - receipt\n",
         encoding="utf-8",
     )
@@ -3063,7 +3652,7 @@ def test_submission_payload_uses_researka_source_bundle_schema(tmp_path: Path) -
         {
             "fact_id": "1",
             "source_paper": {
-                "doi": "10.1000/primary",
+                "doi": "10.1000/primary 10.1000/primary",
                 "title": "Primary field trial",
                 "url": "https://example.test/primary",
                 "year": "2025",
@@ -3095,6 +3684,8 @@ def test_submission_payload_uses_researka_source_bundle_schema(tmp_path: Path) -
         },
     ]
     assert payload["citations"] == payload["source_bundle"]
+    assert "doi=10.1000/primary 10.1000/primary" not in payload["markdown"]
+    assert "doi=10.1000/primary" in payload["markdown"]
     assert payload["evidence_bundle"]["bound_receipt_count"] == 2
     assert payload["evidence_bundle"]["bound_source_count"] == 2
     assert payload["evidence_bundle"]["source_bundle_count"] == 1
@@ -3156,6 +3747,7 @@ def test_successful_submit_records_submission_not_publication(tmp_path: Path) ->
         )
     )
     assert records[0]["topic"] == "grid_storage"
+    assert records[0]["domain"]["slug"] == "longevity"
     assert records[0]["fingerprint"] == daily.memo_fingerprint(verdict)
 
 
@@ -3393,6 +3985,59 @@ def test_run_cycle_polls_pending_submission_until_publication_renders(tmp_path: 
     assert ledger["public_url"] == "https://researka.org/alpha/pub_after_poll"
 
 
+def test_sync_submission_decisions_records_deduped_accept(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submitted_to_researka",
+        "submission_id": "sub_deduped",
+        "submitted_topic": "semaglutide_once_weekly",
+    })
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+        "date": "2026-05-21T00-00-00Z",
+        "topic": "semaglutide_once_weekly",
+        "submission_id": "sub_deduped",
+    }])
+
+    summary = daily.sync_submission_decisions(
+        root,
+        fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": None,
+            "publish_result": {
+                "deduped": True,
+                "deduped_publication_id": "da7f5bc8-9764-4dfa-963a-fc3eda0b8042",
+            },
+        },
+        page_fetcher=lambda _url: {
+            "ok": True,
+            "status": 200,
+            "body": "<html><title>Alpha memo</title></html>",
+        },
+    )
+
+    patched = json.loads(
+        (root / "_daily_ledger" / "2026-05-21.json").read_text(encoding="utf-8")
+    )
+    assert summary["updated"] == 1
+    assert summary["published"] == 0
+    assert summary["deduped"] == 1
+    assert patched["status"] == "deduped_publication"
+    assert patched["final_verdict"] == "accepted"
+    assert patched["published"] == 0
+    assert patched["deduped"] == 1
+    assert patched["deduped_public_url"] == (
+        "https://researka.org/alpha/da7f5bc8-9764-4dfa-963a-fc3eda0b8042"
+    )
+    submitted = json.loads(
+        (root / "_daily_ledger" / "_submitted_fingerprints.json").read_text(
+            encoding="utf-8",
+        )
+    )
+    assert submitted[0]["status"] == "deduped_publication"
+    assert submitted[0]["deduped"] == 1
+
+
 def test_sync_submission_decisions_rejects_accept_without_rendered_page(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
@@ -3510,12 +4155,36 @@ def test_refresh_candidates_builds_one_topic_per_submit_batch(
     assert ledger["refresh_candidates"]["ok"] is True
     assert ledger["refresh_top"] == 5
     assert "--stop-on-ready" in calls[0][0]
+    assert calls[0][0][calls[0][0].index("--domain") + 1] == "longevity"
     assert "--with-pico-enrich" not in calls[0][0]
     assert "--no-editorial" in calls[0][0]
     assert "--no-frontier" in calls[0][0]
     assert calls[0][0][calls[0][0].index("--top") + 1] == "5"
     assert calls[0][0][calls[0][0].index("--cooldown-hours") + 1] == "2"
     assert calls[0][1] == 1200
+
+
+def test_refresh_candidates_passes_ai_research_domain(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+
+    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        calls.append(args)
+        return True, "ok"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    daily.run_cycle(
+        runs_root=tmp_path,
+        date="2026-05-22",
+        domain="ai_research",
+        refresh_candidates=True,
+        queue=_queue(),
+    )
+
+    assert calls
+    assert calls[0][calls[0].index("--domain") + 1] == "ai_research"
 
 
 def test_systemd_publish_timer_has_full_refresh_budget() -> None:
@@ -3529,7 +4198,23 @@ def test_systemd_publish_timer_has_full_refresh_budget() -> None:
     assert "--allow-tier2" in service
     assert "--max-refresh-batches 5" in service
     assert "--max-refresh-batches 2" not in service
-    assert "OnCalendar=*-*-* 01/4:30:00" in timer
+    assert "OnCalendar=*-*-* 01/8:30:00" in timer
+
+
+def test_systemd_ai_research_timer_offsets_global_four_hour_submitter() -> None:
+    service = Path("deploy/systemd/researka-alpha-ai-research.service").read_text(
+        encoding="utf-8",
+    )
+    timer = Path("deploy/systemd/researka-alpha-ai-research.timer").read_text(
+        encoding="utf-8",
+    )
+
+    assert "scripts/daily_alpha_publish_cycle.py" in service
+    assert "--domain ai_research" in service
+    assert "--submit" not in service
+    assert "--max-refresh-batches 5" in service
+    assert "OnCalendar=*-*-* 05/8:30:00" in timer
+    assert "Unit=researka-alpha-ai-research.service" in timer
 
 
 def test_systemd_cache_warmer_fills_source_rich_backlog() -> None:
@@ -4316,8 +5001,14 @@ def test_current_cycle_repairable_revise_does_not_depend_on_ledger_rescan(
         return True
 
     monkeypatch.setattr(daily, "_run_step", fake_step)
-    monkeypatch.setattr(daily, "_repairable_rejected_fingerprints", lambda _path: set())
-    monkeypatch.setattr(daily, "_repairable_decisions_by_fingerprint", lambda _path: {})
+    monkeypatch.setattr(
+        daily, "_repairable_rejected_fingerprints",
+        lambda _path, _domain=None: set(),
+    )
+    monkeypatch.setattr(
+        daily, "_repairable_decisions_by_fingerprint",
+        lambda _path, _domain=None: {},
+    )
 
     ledger = daily.run_cycle(
         runs_root=root,
@@ -4447,6 +5138,31 @@ def test_memo_with_falsifier_passes_the_gate(tmp_path: Path) -> None:
         min_source_count=5, min_direct_source_count=2,
     )
     assert considered[0]["status"] != "memo_missing_falsifier"
+
+
+def test_receipt_map_verdict_does_not_submit_on_raw_source_count(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("receipt_map") | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "surface_type": "receipt_map",
+        "blockers": ["claim_alignment_partial"],
+    }
+    _memo_with_source_receipts(root, verdict, 5)
+    _audit_sidecars(root / str(verdict["run_dir"]))
+
+    cand, considered = daily.select_candidate(
+        _queue(verdict),
+        runs_root=root,
+        submitted_path=root / "submitted.json",
+        min_source_count=5,
+        min_direct_source_count=5,
+    )
+
+    assert cand is None
+    assert considered[0]["status"] == "agent_repair_needed"
 
 
 def test_unlabeled_source_floor_review_candidate_repairs_before_approval(

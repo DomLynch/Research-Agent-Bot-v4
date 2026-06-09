@@ -505,6 +505,7 @@ def _add_source_profile(
 def _fetch_topic_fact_source_profile(
     topic: str, *, client: httpx.Client, settings: Settings,
     limit: int = 50, facets: tuple[str, ...] = (),
+    domain: str = "longevity",
     mine_children: bool = False,
     child_source_papers: dict[str, dict[str, dict[str, Any]]] | None = None,
     source_papers: dict[str, dict[str, Any]] | None = None,
@@ -560,6 +561,7 @@ def _fetch_topic_fact_source_profile(
                 f"{base}/api/v1/tier2/facts/search",
                 headers={"X-Researka-Token": tok},
                 json={
+                    "domain": domain,
                     "query": query,
                     "top_k": (
                         max(limit, _EXACT_FACT_PROBE_LIMIT)
@@ -614,9 +616,11 @@ def _fetch_topic_fact_source_profile(
 def _fetch_topic_fact_source_count(
     topic: str, *, client: httpx.Client, settings: Settings,
     limit: int = 50, facets: tuple[str, ...] = (),
+    domain: str = "longevity",
 ) -> int:
     return _fetch_topic_fact_source_profile(
-        topic, client=client, settings=settings, limit=limit, facets=facets)[0]
+        topic, client=client, settings=settings, limit=limit, facets=facets,
+        domain=domain)[0]
 
 
 def _load_supply_cache() -> dict[str, dict[str, Any]]:
@@ -971,6 +975,7 @@ def _fetch_fact_source_counts(
     topics: list[str], *, client: httpx.Client, settings: Settings,
     refresh_low_source_counts: bool = False,
     facets_by_topic: dict[str, tuple[str, ...]] | None = None,
+    domain: str = "longevity",
     child_source_counts: dict[str, int] | None = None,
     child_source_papers: dict[str, dict[str, dict[str, Any]]] | None = None,
 ) -> dict[str, int]:
@@ -1023,6 +1028,7 @@ def _fetch_fact_source_counts(
             topic,
             client=client,
             settings=settings,
+            domain=domain,
             facets=(facets_by_topic or {}).get(topic, ()),
             mine_children=refresh_low_source_counts,
             child_source_papers=child_papers,
@@ -1295,6 +1301,8 @@ def discover_topics(
     current_year: int | None = None,
     derived_topic_limit: int = 0,
     fact_probe_topics: int | None = None,
+    domain: str = "longevity",
+    use_cached_source_rich: bool = True,
     refresh_low_source_counts: bool = False,
 ) -> tuple[TopicCandidate, ...]:
     """Score every seed topic; return ranked tuple (highest velocity first).
@@ -1314,7 +1322,7 @@ def discover_topics(
         )
         cached_fact_counts: dict[str, int] = {}
         cached_probe_topics: list[str] = []
-        if derived_topic_limit:
+        if derived_topic_limit and use_cached_source_rich:
             cached_source_limit = max(extra_probe_limit, derived_topic_limit)
             cached_fact_topics = _cached_source_rich_topics(
                 exclude=set(papers_by_topic), limit=cached_source_limit)
@@ -1381,6 +1389,7 @@ def discover_topics(
         fact_child_source_papers: dict[str, dict[str, dict[str, Any]]] = {}
         fact_sources_by_topic = _fetch_fact_source_counts(
             probe_topics, client=c, settings=settings,
+            domain=domain,
             refresh_low_source_counts=refresh_low_source_counts,
             facets_by_topic={
                 topic: _paper_title_facets(topic, papers, year_now)

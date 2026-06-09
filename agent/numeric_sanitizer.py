@@ -60,6 +60,7 @@ _UNIT_FOLLOWS = re.compile(
     r"^\s*(?:%|°[CF]|degrees?\b|"
     r"[mµμnkp]?[gmlL]\b|"
     r"[mµμnp][MmLl]\b|"
+    r"\$?\\times\$?|\u00d7|"
     r"fold\b|x\b|times?\b|"
     r"iu\b|U\b)",
     re.IGNORECASE,
@@ -107,6 +108,10 @@ def is_numeric_artifact(value: Any, phrase: str) -> bool:
         return True
     for match in matches:
         token, has_letter = _walk(phrase, match.start(), match.end())
+        before = phrase[max(0, match.start() - 5):match.start()]
+        after = phrase[match.end():match.end() + 12]
+        if _UNIT_FOLLOWS.match(after):
+            continue
         if token.isdigit() and token != val_str:
             continue  # value is a fragment of a longer pure number
         if has_letter:
@@ -114,8 +119,6 @@ def is_numeric_artifact(value: Any, phrase: str) -> bool:
         if _PURE_NUMERIC_RANGE.match(token.strip("()[]{}")):
             return True
         # Sprint 69 — space-separated identifier / inline time suffix
-        before = phrase[max(0, match.start() - 5):match.start()]
-        after = phrase[match.end():match.end() + 12]
         if _TIME_SUFFIX.match(after):
             return True
         # Identifier prefix only when no unit follows the value; a

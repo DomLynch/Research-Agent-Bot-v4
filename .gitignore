@@ -25,6 +25,10 @@ runs/_diagnostics/*.log
 # VPS (build_publish_queue), so tracking it creates constant 3-way dirt.
 runs/_publish_queue.json
 runs/_publish_queue.json.tmp
+# Controlled AI Results Index scale logs: generated operator trace, not source.
+runs/_ai_results_index_scale/
+# Local domain inventory snapshots; regenerated on demand from receipts.
+runs/_domain_inventory/
 
 # macOS Finder dedup-on-copy artifacts ("foo 2.json", "main_draft 2.md", etc.).
 # Never canonical; have polluted run-dir bundles before.

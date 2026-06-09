@@ -46,6 +46,7 @@ from daily_alpha_publish_cycle import (  # noqa: E402
     _source_count,
 )
 
+from agent.domain_profile import domain_choices, domain_slug  # noqa: E402
 from agent.settings import load_settings  # noqa: E402
 from agent.topic_discovery import _fetch_topic_fact_source_count  # noqa: E402
 
@@ -75,7 +76,7 @@ def _discovery_top_for_plan(
     return max(requested + max(0, excluded_count), _STOP_ON_READY_DISCOVERY_FLOOR)
 
 
-def _priority_ranked_topics(topics: list[str]) -> list[dict[str, Any]]:
+def _priority_ranked_topics(topics: list[str], *, domain: str = "longevity") -> list[dict[str, Any]]:
     if not topics:
         return []
     try:
@@ -83,7 +84,7 @@ def _priority_ranked_topics(topics: list[str]) -> list[dict[str, Any]]:
         with httpx.Client() as client:
             counts = {
                 topic: _fetch_topic_fact_source_count(
-                    topic, client=client, settings=settings,
+                    topic, client=client, settings=settings, domain=domain,
                 )
                 for topic in topics
             }
@@ -145,23 +146,29 @@ def _recent_signal_topics(
     return recent
 
 
-def _read_discovery_top(out_dir: Path) -> list[dict[str, Any]]:
-    """Find the newest discovery JSON in runs/_topics_discovery/."""
+def _read_discovery_top(
+    out_dir: Path, *, domain: str | None = None,
+) -> list[dict[str, Any]]:
+    """Find the newest matching discovery JSON in runs/_topics_discovery/."""
     if not out_dir.exists():
         return []
-    candidates = sorted(out_dir.glob("*.json"))
+    candidates = sorted(out_dir.glob("*.json"), reverse=True)
     if not candidates:
         return []
-    try:
-        data = json.loads(candidates[-1].read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return []
-    if not isinstance(data, dict):
-        return []
-    raw = data.get("all") or data.get("top") or []
-    if not isinstance(raw, list):
-        return []
-    return [c for c in raw if isinstance(c, dict) and c.get("topic")]
+    for path in candidates:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        if domain and domain_slug(data.get("domain")) != domain:
+            continue
+        raw = data.get("all") or data.get("top") or []
+        if not isinstance(raw, list):
+            return []
+        return [c for c in raw if isinstance(c, dict) and c.get("topic")]
+    return []
 
 
 def _newest_run_for_topic(topic: str) -> Path | None:
@@ -231,13 +238,15 @@ def _run_step(
 def _run_topic_pipeline(
     topic: str, velocity: float, *, with_editorial: bool, top_n: int,
     py: str, pico_enrich: bool = False, frontier_review: bool = True,
-    parent_topic: str = "",
+    parent_topic: str = "", domain: str = "longevity",
 ) -> TopicResult:
     """Run build + gate + signal_post for one topic. Returns the
     aggregate result. Each step's failure is recorded; we continue
     through to give the operator a partial output trail."""
-    build_args = [py, "scripts/build_topic_evidence_run.py",
-                  "--topic", topic, "--top", str(top_n)]
+    build_args = [
+        py, "scripts/build_topic_evidence_run.py",
+        "--domain", domain, "--topic", topic, "--top", str(top_n),
+    ]
     if parent_topic:
         build_args.extend(["--parent-topic", parent_topic])
     if with_editorial:
@@ -430,6 +439,7 @@ def _summarize_md(
 
 def main() -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--domain", choices=domain_choices(), default="longevity")
     parser.add_argument("--top", type=int, default=5,
                         help="Number of topics to run this cycle (default 5)")
     parser.add_argument("--cooldown-hours", type=float, default=24.0,
@@ -478,7 +488,11 @@ def main() -> int:
             stop_on_ready=args.stop_on_ready,
             excluded_count=len(args.exclude_topic),
         )
-        discovery_args = [py, "scripts/run_topic_discovery.py", "--top", str(discovery_top)]
+        discovery_args = [
+            py, "scripts/run_topic_discovery.py",
+            "--domain", args.domain,
+            "--top", str(discovery_top),
+        ]
         if args.stop_on_ready and not args.warm_backlog:
             discovery_args.append("--cache-first")
         if args.warm_backlog:
@@ -501,7 +515,7 @@ def main() -> int:
         if not ok:
             print(f"[cycle] discovery failed: {last}", file=sys.stderr)
             return 1
-    ranked = _read_discovery_top(_RUNS / "_topics_discovery")
+    ranked = _read_discovery_top(_RUNS / "_topics_discovery", domain=args.domain)
     if not ranked and not args.priority_topic:
         print("[cycle] no discovery candidates; aborting.", file=sys.stderr)
         return 1
@@ -510,7 +524,7 @@ def main() -> int:
     recent = _recent_signal_topics(_RUNS, args.cooldown_hours, cycle_start)
     priority_ranked = _priority_ranked_topics([
         str(topic).strip() for topic in args.priority_topic if str(topic).strip()
-    ])
+    ], domain=args.domain)
     plan, skipped, skipped_excluded, below_floor = _plan_topics(
         [*priority_ranked, *ranked], recent=recent, excluded=excluded, top=args.top,
         min_fact_sources=(
@@ -546,6 +560,7 @@ def main() -> int:
             frontier_review=not args.no_frontier,
             pico_enrich=args.with_pico_enrich,
             parent_topic=str(c.get("parent_topic") or ""),
+            domain=args.domain,
         )
         elapsed = time.time() - t0
         print(f"   -> {res.status} label={res.signal_label} "
@@ -606,7 +621,7 @@ def main() -> int:
         )
         md_text += f"\n## Cross-topic lead\n\n_failed: {cross_last[:240]}_\n"
     queue_ok, queue_last = _run_step(
-        [py, "scripts/build_publish_queue.py"],
+        [py, "scripts/build_publish_queue.py", "--domain", args.domain],
         "publish_queue",
     )
     if queue_ok:

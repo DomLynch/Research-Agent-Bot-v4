@@ -43,7 +43,9 @@ def _run(root: Path, name: str, *, label: str, lanes: tuple[str, ...]) -> Path:
     run.joinpath("all_facts.json").write_text(json.dumps([
         {
             "fact_id": fid,
-            "canonical_phrase": f"Receipt {fid}",
+            "canonical_phrase": (
+                f"Grid dispatch threshold improves reserve reliability receipt {fid}"
+            ),
             "source_paper": {
                 "doi": f"10.same/{fid}",
                 "title": "Grid dispatch threshold improves reserve reliability",
@@ -178,3 +180,96 @@ def test_build_queue_normalises_legacy_operator_decision(
 
     assert [r["topic"] for r in out["agent_repair_needed"]] == ["legacy"]
     assert "needs_operator_review" not in out
+
+
+def test_build_queue_filters_by_domain_metadata(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    runs = tmp_path / "runs"
+    _run(
+        runs,
+        "grid_storage-evidence-2026-02-01T00-00-00Z",
+        label="evidence_backed_signal",
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+    )
+    ai_run = _run(
+        runs,
+        "ai_agents-evidence-2026-02-01T00-00-00Z",
+        label="evidence_backed_signal",
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+    )
+    ai_run.joinpath("MANIFEST.json").write_text(json.dumps({
+        "domain": {"slug": "ai_research"},
+    }), encoding="utf-8")
+    monkeypatch.setattr(queue, "_RUNS", runs)
+
+    out = queue.build_queue(include_archive=True, domain="ai_research")
+
+    assert [r["topic"] for r in out["ready_to_publish"]] == ["ai_agents"]
+
+
+def test_build_queue_domain_filter_excludes_seed_mismatched_ai_runs(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    runs = tmp_path / "runs"
+    stale = _run(
+        runs,
+        "SGLT2_inhibitors-evidence-2026-02-01T00-00-00Z",
+        label="evidence_backed_signal",
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+    )
+    stale.joinpath("MANIFEST.json").write_text(json.dumps({
+        "domain": {"slug": "ai_research"},
+    }), encoding="utf-8")
+    ai_run = _run(
+        runs,
+        "ai_agents-evidence-2026-02-01T00-00-00Z",
+        label="evidence_backed_signal",
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+    )
+    ai_run.joinpath("MANIFEST.json").write_text(json.dumps({
+        "domain": {"slug": "ai_research"},
+    }), encoding="utf-8")
+    monkeypatch.setattr(queue, "_RUNS", runs)
+
+    out = queue.build_queue(include_archive=True, domain="ai_research")
+
+    assert [r["topic"] for r in out["ready_to_publish"]] == ["ai_agents"]
+
+
+def test_build_queue_domain_filter_defaults_untagged_runs_to_longevity(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    runs = tmp_path / "runs"
+    _run(
+        runs,
+        "grid_storage-evidence-2026-02-01T00-00-00Z",
+        label="evidence_backed_signal",
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+    )
+    monkeypatch.setattr(queue, "_RUNS", runs)
+
+    out = queue.build_queue(include_archive=True, domain="longevity")
+
+    assert [r["topic"] for r in out["ready_to_publish"]] == ["grid_storage"]
+
+
+def test_build_queue_domain_filter_excludes_untagged_runs_for_ai(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    runs = tmp_path / "runs"
+    _run(
+        runs,
+        "grid_storage-evidence-2026-02-01T00-00-00Z",
+        label="evidence_backed_signal",
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+    )
+    monkeypatch.setattr(queue, "_RUNS", runs)
+
+    out = queue.build_queue(include_archive=True, domain="ai_research")
+
+    assert out["ready_to_publish"] == []

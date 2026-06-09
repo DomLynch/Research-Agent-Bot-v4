@@ -17,6 +17,12 @@
 # Add new classes by appending to this file. No code change required.
 # Keep instances tight — over-broad lists false-promote noise to A_core.
 
+[retrieval_augmented_generation]
+instances = ["rag", "retrieval augmented generation"]
+
+[model_eval]
+instances = ["llm_evaluation", "model evaluation", "llm evaluation"]
+
 [senolytic]
 instances = [
     "fisetin", "ABT-263", "ABT263", "navitoclax", "ABT-737", "ABT737",

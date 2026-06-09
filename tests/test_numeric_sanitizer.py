@@ -87,6 +87,19 @@ def test_real_dose_not_artifact() -> None:
     assert is_numeric_artifact(400, phrase) is False
 
 
+def test_latex_times_speedup_not_artifact() -> None:
+    phrase = (
+        "SwiftMem achieves 47$\\times$ faster search compared to "
+        "state-of-the-art baselines."
+    )
+    assert is_numeric_artifact(47, phrase) is False
+
+
+def test_unicode_times_speedup_not_artifact() -> None:
+    phrase = "SwiftMem achieves 47\u00d7 faster search compared to baselines."
+    assert is_numeric_artifact(47, phrase) is False
+
+
 def test_real_year_not_artifact() -> None:
     """Year mentions like '2014' should pass — they're surrounded by
     spaces, not identifier characters."""

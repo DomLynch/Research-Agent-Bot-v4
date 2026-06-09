@@ -1,0 +1,182 @@
+{
+  "domain": {
+    "slug": "ai_research",
+    "display_name": "AI research / AI agents / research automation",
+    "seed_topics_path": "ai_research_discovery_seeds.toml",
+    "source_policy_path": "ai_research_sources.toml",
+    "claim_schema_path": "ai_research_claim_schema.toml",
+    "dry_run_only": false
+  },
+  "snapshot_utc": "2026-06-06T12-59-57Z",
+  "runs_root": "/Users/domininclynch/Desktop/Business/Research agent bot v4/runs",
+  "include_archive": true,
+  "seed_count": 20,
+  "discovery_snapshot": "",
+  "discovery_path": "",
+  "discovery_candidate_count": 0,
+  "evidence_run_count": 0,
+  "evidence_topic_count": 0,
+  "topic_count": 20,
+  "topics": [
+    {
+      "topic": "agentic_workflows",
+      "seeded": true,
+      "discovered": false,
+      "discovery": {},
+      "evidence_run_count": 0,
+      "latest_evidence_run": {}
+    },
+    {
+      "topic": "ai_agents",
+      "seeded": true,
+      "discovered": false,
+      "discovery": {},
+      "evidence_run_count": 0,
+      "latest_evidence_run": {}
+    },
+    {
+      "topic": "automated_literature_review",
+      "seeded": true,
+      "discovered": false,
+      "discovery": {},
+      "evidence_run_count": 0,
+      "latest_evidence_run": {}
+    },
+    {
+      "topic": "autonomous_research_agents",
+      "seeded": true,
+      "discovered": false,
+      "discovery": {},
+      "evidence_run_count": 0,
+      "latest_evidence_run": {}
+    },
+    {
+      "topic": "benchmark_contamination",
+      "seeded": true,
+      "discovered": false,
+      "discovery": {},
+      "evidence_run_count": 0,
+      "latest_evidence_run": {}
+    },
+    {
+      "topic": "code_generation_agents",
+      "seeded": true,
+      "discovered": false,
+      "discovery": {},
+      "evidence_run_count": 0,
+      "latest_evidence_run": {}
+    },
+    {
+      "topic": "hallucination_detection",
+      "seeded": true,
+      "discovered": false,
+      "discovery": {},
+      "evidence_run_count": 0,
+      "latest_evidence_run": {}
+    },
+    {
+      "topic": "llm_evaluation",
+      "seeded": true,
+      "discovered": false,
+      "discovery": {},
+      "evidence_run_count": 0,
+      "latest_evidence_run": {}
+    },
+    {
+      "topic": "llm_judge_reliability",
+      "seeded": true,
+      "discovered": false,
+      "discovery": {},
+      "evidence_run_count": 0,
+      "latest_evidence_run": {}
+    },
+    {
+      "topic": "model_context_protocol",
+      "seeded": true,
+      "discovered": false,
+      "discovery": {},
+      "evidence_run_count": 0,
+      "latest_evidence_run": {}
+    },
+    {
+      "topic": "multi_agent_systems",
+      "seeded": true,
+      "discovered": false,
+      "discovery": {},
+      "evidence_run_count": 0,
+      "latest_evidence_run": {}
+    },
+    {
+      "topic": "paperqa_research_agents",
+      "seeded": true,
+      "discovered": false,
+      "discovery": {},
+      "evidence_run_count": 0,
+      "latest_evidence_run": {}
+    },
+    {
+      "topic": "prompt_optimization",
+      "seeded": true,
+      "discovered": false,
+      "discovery": {},
+      "evidence_run_count": 0,
+      "latest_evidence_run": {}
+    },
+    {
+      "topic": "research_automation",
+      "seeded": true,
+      "discovered": false,
+      "discovery": {},
+      "evidence_run_count": 0,
+      "latest_evidence_run": {}
+    },
+    {
+      "topic": "research_workflow_automation",
+      "seeded": true,
+      "discovered": false,
+      "discovery": {},
+      "evidence_run_count": 0,
+      "latest_evidence_run": {}
+    },
+    {
+      "topic": "retrieval_augmented_generation",
+      "seeded": true,
+      "discovered": false,
+      "discovery": {},
+      "evidence_run_count": 0,
+      "latest_evidence_run": {}
+    },
+    {
+      "topic": "scientific_discovery_ai",
+      "seeded": true,
+      "discovered": false,
+      "discovery": {},
+      "evidence_run_count": 0,
+      "latest_evidence_run": {}
+    },
+    {
+      "topic": "swe_bench",
+      "seeded": true,
+      "discovered": false,
+      "discovery": {},
+      "evidence_run_count": 0,
+      "latest_evidence_run": {}
+    },
+    {
+      "topic": "synthetic_data_for_llms",
+      "seeded": true,
+      "discovered": false,
+      "discovery": {},
+      "evidence_run_count": 0,
+      "latest_evidence_run": {}
+    },
+    {
+      "topic": "tool_use_agents",
+      "seeded": true,
+      "discovered": false,
+      "discovery": {},
+      "evidence_run_count": 0,
+      "latest_evidence_run": {}
+    }
+  ]
+}

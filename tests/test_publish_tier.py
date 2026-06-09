@@ -191,6 +191,225 @@ def test_claim_coherent_source_diversity_is_publishable(tmp_path: Path) -> None:
     assert "cross_domain_forced" not in verdict["blockers"]
 
 
+def test_ai_benchmark_fields_count_toward_claim_fit(tmp_path: Path) -> None:
+    run = _run(
+        tmp_path,
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+        dois=("10.ai/a", "10.ai/b", "10.ai/c", "10.ai/d", "10.ai/e"),
+        titles=(
+            "AgentX SWE-bench Verified issue resolution study",
+            "AgentX SWE-bench Verified repair benchmark report",
+            "AgentX SWE-bench Verified software engineering evaluation",
+            "AgentX SWE-bench Verified resolve-rate replication",
+            "AgentX SWE-bench Verified coding benchmark audit",
+        ),
+        journals=("AI Eval", "AI Eval", "AI Eval", "AI Eval", "AI Eval"),
+    )
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo - swe_bench\n\n"
+        "**Headline:** AgentX resolve-rate gains on SWE-bench Verified\n"
+        "**Alpha score:** 90/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## One-sentence thesis\n\n"
+        "AgentX shows a direct resolve-rate signal on SWE-bench Verified.\n\n"
+        "## Why this is surprising\n\n"
+        "Real tension: the benchmark gain is direct but still bounded.\n\n"
+        "## Evidence receipts\n\n"
+        + "\n".join(
+            f"- `fact_id={idx}` (`A_core`) - receipt"
+            for idx in range(1, 6)
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    for fact in facts:
+        fact.update({
+            "canonical_phrase": "The system reported a benchmark result.",
+            "metric": "resolve rate",
+            "benchmark": "SWE-bench Verified",
+            "task": "software engineering issue resolution",
+            "model_system": "AgentX",
+            "baseline_comparator": "baseline agent",
+        })
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "ready_to_publish"
+    assert verdict["axes"]["direct_match_receipts"] == 5
+    assert verdict["axes"]["direct_source_papers"] == 5
+
+
+def test_metric_type_mismatch_blocks_result_shape_publish(
+    tmp_path: Path,
+) -> None:
+    run = _run(
+        tmp_path,
+        score=90,
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+        dois=("10.ai/swift", "10.ai/weaver", "10.ai/memori", "10.ai/kumiho", "10.ai/v33"),
+        titles=(
+            "SwiftMem LoCoMo memory benchmark accuracy evaluation",
+            "MemWeaver LoCoMo memory benchmark accuracy evaluation",
+            "Memori LoCoMo memory benchmark accuracy evaluation",
+            "Kumiho LoCoMo memory benchmark accuracy evaluation",
+            "SuperLocalMemory LoCoMo memory benchmark accuracy evaluation",
+        ),
+        journals=("AI Eval", "AI Eval", "AI Eval", "AI Eval", "AI Eval"),
+    )
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo - ai_agents\n\n"
+        "**Headline:** AI agents: LoCoMo accuracy is the shared direct-receipt signal\n"
+        "**Alpha score:** 90/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## One-sentence thesis\n\n"
+        "Across 5 direct receipts sharing LoCoMo and accuracy, memory systems "
+        "report comparable performance.\n\n"
+        "## Why this is surprising\n\n"
+        "Real tension: the benchmark evidence looks comparable.\n\n"
+        "## Evidence receipts\n\n"
+        + "\n".join(
+            f"- `fact_id={idx}` (`A_core`) - receipt"
+            for idx in range(1, 6)
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    rows = [
+        (
+            "SwiftMem",
+            "Experiments on LoCoMo demonstrate that SwiftMem achieves 47x faster "
+            "search than baselines while maintaining competitive accuracy.",
+            47,
+            "x",
+        ),
+        (
+            "MemWeaver",
+            "Experiments on LoCoMo demonstrate that MemWeaver improves reasoning "
+            "accuracy while reducing input context length by over 95%.",
+            95,
+            "%",
+        ),
+        (
+            "Memori",
+            "Evaluated on LoCoMo, Memori achieves 81.95% accuracy.",
+            81.95,
+            "%",
+        ),
+        (
+            "Kumiho",
+            "On LoCoMo-Plus, Kumiho achieves 93.3% judge accuracy.",
+            93.3,
+            "%",
+        ),
+        (
+            "SuperLocalMemory",
+            "V3.3 achieves 70.4% accuracy on LoCoMo in Mode A.",
+            70.4,
+            "%",
+        ),
+    ]
+    for fact, (_system, phrase, value, units) in zip(facts, rows, strict=True):
+        fact.update({
+            "canonical_phrase": phrase,
+            "benchmark": "LoCoMo",
+            "task": "memory benchmark",
+            "dataset": "LoCoMo",
+            "metric": "accuracy",
+            "baseline_comparator": "LoCoMo benchmark baselines",
+            "evaluation_protocol": "reported LoCoMo benchmark evaluation",
+            "numeric_value": value,
+            "units": units,
+            "result_key": "locomo::accuracy",
+            "result_shape": {
+                "benchmark": "LoCoMo",
+                "task": "memory benchmark",
+                "dataset": "LoCoMo",
+                "metric": "accuracy",
+                "baseline_comparator": "LoCoMo benchmark baselines",
+                "evaluation_protocol": "reported LoCoMo benchmark evaluation",
+            },
+        })
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "agent_repair_needed"
+    assert verdict["axes"]["direct_match_receipts"] == 5
+    assert verdict["axes"]["direct_source_papers"] == 5
+    assert verdict["axes"]["direct_receipt_shape_coherent"] is True
+    assert verdict["axes"]["direct_metric_type_coherent"] is False
+    assert "metric_type_mismatch" in verdict["blockers"]
+
+
+def test_metric_type_mismatch_checks_all_direct_receipts(
+    tmp_path: Path,
+) -> None:
+    run = _run(
+        tmp_path,
+        score=90,
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+        dois=("10.ai/a", "10.ai/b", "10.ai/c", "10.ai/d", "10.ai/e"),
+        titles=("LoCoMo memory evaluation",) * 5,
+        journals=("AI Eval",) * 5,
+    )
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo - ai_agents\n\n"
+        "**Headline:** AI agents: LoCoMo accuracy is the shared direct-receipt signal\n"
+        "**Alpha score:** 90/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## One-sentence thesis\n\n"
+        "Across 5 direct receipts sharing LoCoMo accuracy, memory systems report comparable performance.\n\n"
+        "## Why this is surprising\n\n"
+        "Real tension: the benchmark evidence looks comparable.\n\n"
+        "## Evidence receipts\n\n"
+        + "\n".join(
+            f"- `fact_id={idx}` (`A_core`) - receipt"
+            for idx in range(1, 6)
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    rows = (
+        ("Model A reports 80% LoCoMo accuracy against baseline.", 80, "%"),
+        ("Model B reports 82% LoCoMo accuracy against baseline.", 82, "%"),
+        ("Model C reports 84% LoCoMo accuracy against baseline.", 84, "%"),
+        ("Model D reports 47x faster LoCoMo search against baseline.", 47, "x"),
+        ("Model E reports 95% LoCoMo context length reduction.", 95, "%"),
+    )
+    for fact, (phrase, value, units) in zip(facts, rows, strict=True):
+        fact.update({
+            "canonical_phrase": phrase,
+            "benchmark": "LoCoMo",
+            "task": "memory benchmark",
+            "dataset": "LoCoMo",
+            "metric": "accuracy",
+            "baseline_comparator": "LoCoMo benchmark baselines",
+            "evaluation_protocol": "reported LoCoMo benchmark evaluation",
+            "numeric_value": value,
+            "units": units,
+            "result_shape": {
+                "benchmark": "LoCoMo",
+                "task": "memory benchmark",
+                "dataset": "LoCoMo",
+                "metric": "accuracy",
+                "baseline_comparator": "LoCoMo benchmark baselines",
+                "evaluation_protocol": "reported LoCoMo benchmark evaluation",
+            },
+        })
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "agent_repair_needed"
+    assert verdict["axes"]["direct_source_papers"] == 5
+    assert verdict["axes"]["direct_metric_type_coherent"] is False
+    assert "metric_type_mismatch" in verdict["blockers"]
+
+
 def test_bridge_chain_source_overlap_is_not_claim_coherent(tmp_path: Path) -> None:
     run = _run(
         tmp_path,
@@ -209,8 +428,10 @@ def test_bridge_chain_source_overlap_is_not_claim_coherent(tmp_path: Path) -> No
     verdict = publish_verdict(run)
 
     assert verdict["decision"] == "agent_repair_needed"
-    assert "source_dispersion" in verdict["blockers"]
+    assert "claim_alignment_partial" in verdict["blockers"]
+    assert "direct_source_floor_below_min" in verdict["blockers"]
     assert verdict["axes"]["claim_coherent_source_diversity"] is False
+    assert verdict["axes"]["direct_match_receipts"] < verdict["axes"]["bound_receipts"]
 
 
 def test_claim_coherence_accepts_source_cluster_not_every_receipt(
@@ -239,6 +460,107 @@ def test_claim_coherence_accepts_source_cluster_not_every_receipt(
 
     assert "source_dispersion" not in verdict["blockers"]
     assert verdict["axes"]["claim_coherent_source_diversity"] is True
+
+
+def test_ready_to_publish_requires_direct_receipt_shape_coherence(
+    tmp_path: Path,
+) -> None:
+    run = _run(tmp_path)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    for fact, metric, model in zip(
+        facts,
+        ("accuracy", "precision", "recall", "latency", "faithfulness"),
+        ("GPT", "RAG", "LLM", "MoE", "BLOOM"),
+        strict=True,
+    ):
+        fact.update({
+            "population": "reserve-market benchmark",
+            "intervention": "storage threshold controller",
+            "comparator": "manual reserve baseline",
+            "metric": metric,
+            "model_system": model,
+            "evaluation_protocol": "zero shot dispatch evaluation",
+        })
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "agent_repair_needed"
+    assert "receipt_shape_mismatch" in verdict["blockers"]
+    assert verdict["axes"]["direct_receipt_shape_coherent"] is False
+
+
+def test_ready_to_publish_accepts_preclustered_result_shape(
+    tmp_path: Path,
+) -> None:
+    run = _run(tmp_path)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    for i, fact in enumerate(facts):
+        fact.update({
+            "population": "ai agents LoCoMo",
+            "intervention": f"memory system {i}",
+            "comparator": f"baseline {i}",
+            "metric": f"accuracy variant {i}",
+            "model_system": f"Model {i}",
+            "baseline_comparator": f"baseline {i}",
+            "evaluation_protocol": f"paper protocol {i}",
+            "result_shape": {
+                "benchmark": "LoCoMo",
+                "task": "long context memory",
+                "dataset": "LoCoMo",
+                "metric": "accuracy",
+                "model_system": "LoCoMo memory systems",
+                "baseline_comparator": "LoCoMo benchmark baselines",
+                "evaluation_protocol": "LoCoMo benchmark evaluation",
+            },
+        })
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "ready_to_publish"
+    assert verdict["blockers"] == []
+    assert verdict["axes"]["direct_receipt_shape_coherent"] is True
+
+
+def test_ready_to_publish_accepts_result_key_cluster_when_text_fit_is_partial(
+    tmp_path: Path,
+) -> None:
+    run = _run(tmp_path)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    for i, fact in enumerate(facts):
+        fact.update({
+            "canonical_phrase": (
+                "Evaluated without fine tuning, the system reports a "
+                "benchmark accuracy result against a baseline."
+            ),
+            "population": "rag MedQA",
+            "intervention": f"medical qa system {i}",
+            "comparator": f"baseline {i}",
+            "endpoint": "accuracy",
+            "metric": "accuracy",
+            "model_system": f"Model {i}",
+            "baseline_comparator": f"baseline {i}",
+            "evaluation_protocol": f"paper protocol {i}",
+            "result_key": "rag::medqa::accuracy",
+            "result_shape": {
+                "benchmark": "MedQA",
+                "task": "MedQA",
+                "dataset": "MedQA",
+                "metric": "accuracy",
+                "model_system": "MedQA systems",
+                "baseline_comparator": "MedQA benchmark baselines",
+                "evaluation_protocol": "MedQA benchmark evaluation",
+            },
+        })
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "ready_to_publish"
+    assert verdict["blockers"] == []
+    assert verdict["axes"]["direct_match_receipts"] == 5
+    assert verdict["axes"]["direct_source_papers"] == 5
 
 
 def test_structural_ready_can_publish_frontier_label(tmp_path: Path) -> None:
@@ -366,9 +688,53 @@ def test_incoherent_source_dispersion_routes_to_agent_repair(
     verdict = publish_verdict(run)
 
     assert verdict["decision"] == "agent_repair_needed"
-    assert "source_dispersion" in verdict["blockers"]
+    assert "claim_alignment_partial" in verdict["blockers"]
+    assert "direct_source_floor_below_min" in verdict["blockers"]
     assert verdict["axes"]["claim_coherent_source_diversity"] is False
     assert "cross_domain_forced" not in verdict["blockers"]
+
+
+def test_adjacent_a_core_receipts_do_not_satisfy_claim_source_floor(
+    tmp_path: Path,
+) -> None:
+    run = _run(
+        tmp_path,
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+        dois=("10.stroke/a", "10.stroke/b", "10.gi/a", "10.gi/b", "10.gi/c"),
+        titles=(
+            "SGLT2 inhibitors reduced stroke risk in older adults",
+            "SGLT2 inhibitor exposure reduced ischemic stroke risk",
+            "GLP1 treatment increased gastrointestinal adverse events",
+            "Semaglutide nausea drove discontinuation rates",
+            "Incretin therapy changed bodyweight endpoints",
+        ),
+    )
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo - metabolic_agents\n\n"
+        "**Headline:** SGLT2 inhibitors reduced stroke risk\n"
+        "**Alpha score:** 90/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## One-sentence thesis\n\n"
+        "SGLT2 inhibitor receipts report reduced stroke risk.\n\n"
+        "## Why this is surprising\n\n"
+        "Real tension: the signal is endpoint-specific.\n\n"
+        "## Evidence receipts\n\n"
+        "- `fact_id=1` (`A_core`) - receipt\n"
+        "- `fact_id=2` (`A_core`) - receipt\n"
+        "- `fact_id=3` (`A_core`) - receipt\n"
+        "- `fact_id=4` (`A_core`) - receipt\n"
+        "- `fact_id=5` (`A_core`) - receipt\n",
+        encoding="utf-8",
+    )
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "agent_repair_needed"
+    assert verdict["surface_type"] == "receipt_map"
+    assert verdict["axes"]["direct_match_receipts"] == 2
+    assert verdict["axes"]["direct_source_papers"] == 2
+    assert "claim_alignment_partial" in verdict["blockers"]
+    assert "direct_source_floor_below_min" in verdict["blockers"]
 
 
 def test_dispersed_parent_recommends_a_core_child_cluster(tmp_path: Path) -> None:
@@ -710,6 +1076,7 @@ def test_counter_evidence_satisfies_tension_gate(tmp_path: Path) -> None:
     verdict = publish_verdict(run)
 
     assert verdict["counter_evidence"]["status"] == "found"
+    assert verdict["counter_evidence"]["items"][0]["claim_fit"] == "opposing"
     assert verdict["axes"]["counter_consensus_tension"] is True
     assert "weak_counter_consensus_tension" not in verdict["blockers"]
     assert verdict["decision"] == "ready_to_publish"

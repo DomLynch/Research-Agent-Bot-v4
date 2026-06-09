@@ -51,6 +51,19 @@ def test_fold_change_detected_from_context() -> None:
     ) == "fold_change"
 
 
+def test_latex_times_detected_as_fold_change_with_weak_units() -> None:
+    assert classify_numeric_role(
+        47.0, "score",
+        "SwiftMem achieves 47$\\times$ faster search compared to baselines.",
+    ) == "fold_change"
+
+
+def test_unicode_times_detected_as_fold_change() -> None:
+    assert classify_numeric_role(
+        47.0, "", "SwiftMem achieves 47\u00d7 faster search compared to baselines.",
+    ) == "fold_change"
+
+
 def test_p_value_detected_from_context() -> None:
     assert classify_numeric_role(
         0.01, "", "macroadenoma rate: 1.71 vs 2.35; p=0.01",

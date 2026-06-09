@@ -237,8 +237,11 @@ def test_agent_repair_repick_falls_back_when_original_claim_is_stale(
 
     assert "**Direct source breadth:** `6` direct cited source(s)" in memo
     assert "`fact_id=303` (`A_core`)" in memo
-    assert verdict["axes"]["direct_source_papers"] == 6
-    assert verdict["decision"] == "ready_to_publish"
+    assert verdict["axes"]["direct_source_papers"] == 5
+    assert verdict["axes"]["direct_match_receipts"] == 5
+    assert verdict["decision"] == "agent_repair_needed"
+    assert verdict["surface_type"] == "receipt_map"
+    assert "claim_alignment_partial" in verdict["blockers"]
 
 
 def test_signal_memo_renders_publish_verdict_sections(tmp_path: Path) -> None:
@@ -835,8 +838,109 @@ def test_agent_repair_preserves_coherent_dispersion_only_bundle_as_source_angle(
     assert "**Direct source breadth:** `5` direct cited source(s)" in memo
     assert "live collision" not in memo
     assert "Real tension:" not in why
-    assert "bounded working claim" in memo
+    assert "bounded working claim" not in memo
     assert "`fact_id=707` (`A_core`)" in memo
+
+
+def test_agent_repair_uses_common_result_shape_for_direct_ai_bundle(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "rag-evidence-ts"
+    _write_run(run)
+    (run / "frontier_review.json").write_text(json.dumps({
+        "topic": "rag",
+        "snapshot_utc": "2026-05-16T18-00-00Z",
+    }), encoding="utf-8")
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    facts.clear()
+    lanes["verdicts"] = []
+    systems = {
+        "301": ("GraphRAG", "0.71"),
+        "302": ("RAG-Chain", "0.74"),
+        "303": ("i-MedRAG", "0.76"),
+        "304": ("o1-preview RAG", "0.78"),
+        "305": ("Clinical RAG", "0.73"),
+    }
+    for fid, (system, value) in systems.items():
+        facts.append({
+            "fact_id": fid,
+            "canonical_phrase": (
+                f"{system} reported MedQA accuracy {value} against closed-book "
+                "baseline in a medical question answering evaluation."
+            ),
+            "benchmark": "MedQA",
+            "task": "medical question answering",
+            "dataset": "MedQA",
+            "metric": "accuracy",
+            "model_system": system,
+            "baseline_comparator": "closed-book baseline",
+            "evaluation_protocol": "held-out MedQA test questions",
+            "numeric_value": value,
+            "units": " accuracy",
+            "result_shape": {
+                "benchmark": "MedQA",
+                "task": "medical question answering",
+                "dataset": "MedQA",
+                "metric": "accuracy",
+                "model_system": system,
+                "baseline_comparator": "closed-book baseline",
+                "evaluation_protocol": "held-out MedQA test questions",
+            },
+            "source_paper": {
+                "doi": f"10.ai/medqa-{fid}",
+                "title": f"{system} MedQA accuracy evaluation",
+                "journal": "AI Evaluation",
+            },
+        })
+        lanes["verdicts"].append({"fact_id": fid, "lane": "A_core"})
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+    (run / "opportunities_gate.json").write_text(json.dumps({
+        "audits": [{
+            "title": "Broad RAG accuracy frame",
+            "status": "survives",
+            "capped_opportunity": 88,
+            "cited_fact_ids": list(systems),
+        }],
+    }), encoding="utf-8")
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "subtopic_rerun_memo",
+        "blockers": ["source_dispersion"],
+        "_repair_decision": {"agent_repair": True},
+        "receipt_expansion": {
+            "cited_bound_fact_ids": list(systems),
+            "available_bound_fact_ids": list(systems),
+        },
+    })
+    thesis = memo.split("## One-sentence thesis\n\n", 1)[1].split("\n\n## ", 1)[0]
+
+    assert "**Headline:** Rag: MedQA accuracy is the shared direct-receipt signal" in memo
+    assert "Across 5 direct receipts sharing MedQA" in thesis
+    assert "closed-book baseline" in thesis
+    assert "**Bounded research question:** Do independent direct receipts on MedQA" in memo
+    assert "**Direct source breadth:** `5` direct cited source(s)" in memo
+    assert "## Evidence Landscape" in memo
+    assert "Does the cited receipt bundle still support" not in memo
+    assert "Broad RAG accuracy frame" not in memo
+    assert all(f"`fact_id={fid}` (`A_core`)" in memo for fid in systems)
+
+    publish_memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "publish_alpha_memo",
+        "axes": {"direct_receipt_shape_coherent": True},
+        "receipt_expansion": {
+            "cited_bound_fact_ids": list(systems),
+            "available_bound_fact_ids": list(systems),
+        },
+    })
+    publish_thesis = publish_memo.split(
+        "## One-sentence thesis\n\n", 1,
+    )[1].split("\n\n## ", 1)[0]
+
+    assert "**Headline:** Rag: MedQA accuracy is the shared direct-receipt signal" in publish_memo
+    assert "Across 5 direct receipts sharing MedQA" in publish_thesis
+    assert "Does the cited receipt bundle still support" not in publish_memo
 
 
 def test_agent_repair_frames_reviewer_heterogeneity_without_forced_collision(
@@ -916,6 +1020,37 @@ def test_agent_repair_heterogeneous_map_blocks_unified_numeric_thesis(
     assert "generic Top 5 list" not in changes
     assert "70% ATP" not in why
     assert "Real tension:" not in why
+
+
+def test_ai_reviewer_list_feedback_triggers_heterogeneous_map(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "retrieval_augmented_generation-evidence-ts"
+    _write_mixed_direct_stream_run(run)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    facts[0]["canonical_phrase"] = (
+        "Medical muti-choice RAG accuracy improved in one benchmark stream."
+    )
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    memo = render_signal_memo(run, publish_verdict={
+        "surface_type": "publish_alpha_memo",
+        "_repair_decision": {
+            "decision": "reject",
+            "resubmission": {"allowed": True},
+            "required_revisions": [
+                "Define a single, coherent research question rather than listing multiple unrelated accuracy figures.",
+                "Provide actual integration of the evidence rather than a bullet-point list of facts from different papers.",
+            ],
+        },
+    })
+    thesis = memo.split("## One-sentence thesis\n\n", 1)[1].split("\n\n## ", 1)[0]
+
+    assert "**Headline:** Photobiomodulation red light: cited direct receipts are heterogeneous" in memo
+    assert "heterogeneous evidence map" in thesis
+    assert "source-specific" in thesis
+    assert "muti-choice" not in memo
+    assert "multi-choice" in memo
 
 
 def test_agent_repair_rotates_reviewer_named_bad_receipt(
@@ -1004,7 +1139,7 @@ def test_source_angle_publish_memo_replaces_stale_surprise_prose(
     assert "aerosol-policy" not in memo
     assert "infrastructure claim" not in memo
     assert "**Headline:** Carbon tax:" in memo
-    assert "source-grounded working signal" in why
+    assert "Keep the claim inside that matched bundle" in why
     assert "Real tension:" in why
     assert "market 303" in why
 
@@ -1049,6 +1184,49 @@ def test_alpha_memo_trusts_gate_candidate_receipts_for_source_floor(
 
     assert "**Direct source breadth:** `5` direct cited source(s)" in memo
     assert "10.x/gate-candidate-707" in memo
+
+
+def test_alpha_memo_thesis_carries_full_direct_source_bundle(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    ids = ("303", "404", "505", "606", "707")
+    for fid in ids:
+        facts.append({
+            "fact_id": fid,
+            "canonical_phrase": (
+                f"Carbon pricing reduced port emissions after audit checks in market {fid}."
+            ),
+            "population": "regulated port firms",
+            "intervention": "carbon pricing",
+            "source_paper": {
+                "doi": f"10.x/full-bundle-{fid}",
+                "title": f"Carbon pricing port emissions audit {fid}",
+            },
+        })
+        lanes["verdicts"].append({"fact_id": fid, "lane": "A_core"})
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+    (run / "opportunities_gate.json").write_text(json.dumps({
+        "audits": [{
+            "title": "Carbon pricing reduced port emissions",
+            "status": "survives",
+            "capped_opportunity": 88,
+            "cited_fact_ids": list(ids),
+        }],
+    }), encoding="utf-8")
+
+    memo = render_signal_memo(run)
+    (run / "alpha_memo.md").write_text(memo, encoding="utf-8")
+    verdict = publish_verdict(run)
+
+    thesis = memo.split("## One-sentence thesis\n\n", 1)[1].split("\n\n## ", 1)[0]
+    assert "market 707" in thesis
+    assert verdict["axes"]["direct_source_papers"] == 5
+    assert verdict["decision"] == "ready_to_publish"
 
 
 def test_alpha_memo_filters_off_claim_context_receipts(
@@ -1286,8 +1464,11 @@ def test_agent_repair_rebinds_available_direct_receipts_without_cluster(
     assert "fact_id=101" not in evidence.group(1)
     assert all(f"`fact_id={fid}` (`A_core`)" in evidence.group(1) for fid in phrases)
     assert "**Direct source breadth:** `5` direct cited source(s)" in memo
-    assert verdict["axes"]["direct_source_papers"] == 5
-    assert "direct_source_floor_below_min" not in verdict["blockers"]
+    assert verdict["axes"]["direct_source_papers"] == 2
+    assert verdict["axes"]["direct_match_receipts"] == 2
+    assert verdict["surface_type"] == "split_or_reject_memo"
+    assert "cross_domain_forced" in verdict["blockers"]
+    assert "direct_source_floor_below_min" in verdict["blockers"]
 
 
 def test_counter_signal_names_collision_and_testable_split(tmp_path: Path) -> None:
@@ -1493,6 +1674,23 @@ def test_alpha_memo_abandons_weak_angles_below_config_floor(tmp_path: Path) -> N
     assert "**Headline:** Carbon pricing may cut emissions" in memo
     assert "has a live counter-signal" not in memo
     assert "may hinge on a boundary condition" not in memo
+
+
+def test_public_copy_drops_internal_and_bounded_boilerplate(tmp_path: Path) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+
+    memo = render_signal_memo(
+        run,
+        publish_verdict={
+            "surface_type": "publish_alpha_memo",
+            "counter_evidence": {"status": "none_found", "items": []},
+        },
+    )
+
+    assert "bounded working claim" not in memo
+    assert "Top 5 list" not in memo
+    assert "No direct opposing receipt was selected by this run" in memo
 
 
 def test_grounded_repair_rebuilds_headline_from_direct_receipts(

@@ -80,6 +80,7 @@ async def test_search_facts_parses_live_response_shape() -> None:
     assert captured["method"] == "POST"
     assert captured["path"] == "/api/v1/tier2/facts/search"
     assert captured["token"] == "t"
+    assert captured["body"]["domain"] == "longevity"
     assert captured["body"]["query"] == "rapamycin lifespan mice"
     assert captured["body"]["numeric_only"] is True
     assert len(facts) == 1
@@ -88,6 +89,29 @@ async def test_search_facts_parses_live_response_shape() -> None:
     assert facts[0].doi == "10.7554/elife.16351"  # normalised lowercase
     assert facts[0].confidence == "canonical"
     assert facts[0].validated is True
+
+
+@pytest.mark.asyncio
+async def test_search_facts_can_pass_ai_research_domain() -> None:
+    captured: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        import json as _json
+        captured["body"] = _json.loads(request.content)
+        return httpx.Response(200, json=[])
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        await search_facts(
+            "ai agents",
+            client=client,
+            settings=_settings_with(
+                researka_database_url="https://database.researka.org",
+                researka_database_token="t",
+            ),
+            domain="ai_research",
+        )
+
+    assert captured["body"]["domain"] == "ai_research"
 
 
 @pytest.mark.asyncio

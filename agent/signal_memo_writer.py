@@ -772,27 +772,123 @@ def _source_bounded_why(
     if contexts:
         joined = "; ".join(contexts)
         return (
-            f"{prefix}{lead} is bounded to the cited receipt bundle; separate "
-            f"direct sources report measurable effects in {joined}. Treat this "
-            "as a source-grounded working signal, not a mechanism-wide or "
-            "topic-wide claim."
+            f"{prefix}{lead} sits inside the cited receipt bundle; separate "
+            f"direct sources report measurable effects in {joined}. Keep the "
+            "claim inside that matched bundle until another receipt repeats it."
         )
     return (
-        f"{prefix}{lead} is bounded to the cited direct receipts. Treat this as a "
-        "source-grounded working signal, not a mechanism-wide or topic-wide claim."
+        f"{prefix}{lead} sits inside the cited direct receipts. Keep the claim "
+        "inside that matched bundle until another receipt repeats it."
     )
 
 
 def _bounded_direct_thesis(
     lead_ids: list[str], facts: dict[str, dict[str, Any]],
 ) -> str:
-    phrases = [_fact_phrase(facts.get(fid) or {}) for fid in lead_ids[:2]]
+    limit = 5 if _source_count_for_ids(lead_ids, facts) >= 5 else 2
+    phrases = [_clip(_fact_phrase(facts.get(fid) or {}), 90) for fid in lead_ids[:limit]]
     joined = "; ".join(p for p in phrases if p)
-    return (
-        f"The cited direct receipts support a bounded working claim: {joined}."
-        if joined else
-        "The cited direct receipts support a bounded working claim."
+    return f"{joined}." if joined else "The cited direct receipts define the claim."
+
+
+def _common_result_shape(
+    lead_ids: list[str], facts: dict[str, dict[str, Any]], *, min_sources: int,
+) -> dict[str, str]:
+    if _source_count_for_ids(lead_ids, facts) < min_sources:
+        return {}
+    rows = [facts.get(fid) or {} for fid in lead_ids]
+    out: dict[str, str] = {}
+    for field in (
+        "benchmark",
+        "task",
+        "dataset",
+        "metric",
+        "baseline_comparator",
+        "evaluation_protocol",
+    ):
+        values: list[str] = []
+        for fact in rows:
+            shape = fact.get("result_shape")
+            source = shape if isinstance(shape, dict) else fact
+            value = str(source.get(field) or "").strip()
+            if value:
+                values.append(value)
+        if values:
+            value, count = max(
+                ((v, values.count(v)) for v in set(values)),
+                key=lambda item: (item[1], len(item[0])),
+            )
+            if count >= min_sources:
+                out[field] = value
+    return out if out.get("metric") and (out.get("benchmark") or out.get("task")) else {}
+
+
+def _result_shape_angle(
+    topic: str,
+    lead_ids: list[str],
+    facts: dict[str, dict[str, Any]],
+    *,
+    min_sources: int,
+) -> dict[str, str] | None:
+    common_shape = _common_result_shape(lead_ids, facts, min_sources=min_sources)
+    if not common_shape:
+        return None
+    benchmark = common_shape.get("benchmark") or common_shape.get("task") or "matched benchmark"
+    metric = common_shape.get("metric") or "metric"
+    numbers = [
+        str((facts.get(fid) or {}).get("numeric_value"))
+        + str((facts.get(fid) or {}).get("units") or "")
+        for fid in lead_ids
+        if (facts.get(fid) or {}).get("numeric_value") is not None
+    ][:5]
+    systems: list[str] = []
+    for fid in lead_ids:
+        fact = facts.get(fid) or {}
+        shape_obj = fact.get("result_shape")
+        fact_shape = shape_obj if isinstance(shape_obj, dict) else {}
+        system = str(
+            fact.get("model_system") or fact_shape.get("model_system") or "",
+        ).strip()
+        if system:
+            systems.append(system)
+    systems = systems[:5]
+    unique_systems = list(dict.fromkeys(systems))
+    system_text = ", ".join(unique_systems[:3]) if unique_systems else "the cited systems"
+    comparator = common_shape.get("baseline_comparator")
+    comparator_text = f" against {comparator}" if comparator else " against stated baselines"
+    values = f" Reported values include {', '.join(numbers)}." if numbers else ""
+    headline = (
+        f"{_topic_title(topic, max_parts=2)}: {benchmark} {metric} is the shared "
+        "direct-receipt signal"
     )
+    thesis = (
+        f"Across {min_sources} direct receipts sharing {benchmark} as the evaluation "
+        f"shape and {metric} as the metric, {system_text} report comparable "
+        f"performance{comparator_text}.{values}"
+    )
+    why = (
+        f"The signal is bounded to {benchmark} {metric}: the receipts are comparable "
+        "because they share the benchmark/task/metric shape, even though individual "
+        "systems may differ."
+    )
+    question = (
+        f"Do independent direct receipts on {benchmark} continue to support a "
+        f"signal on {metric} for the cited systems when comparators are kept explicit?"
+    )
+    what_changes = (
+        "Treat this as a benchmark-shaped evidence bundle, not a broad claim about "
+        "the whole topic. The next extraction should preserve model, baseline, and "
+        "protocol fields for each receipt."
+    )
+    return {
+        "kind": "source",
+        "result_shape": "true",
+        "headline": headline,
+        "thesis": thesis,
+        "why": why,
+        "question": question,
+        "what_changes": what_changes,
+    }
 
 
 def _heterogeneous_map_thesis(
@@ -1371,7 +1467,11 @@ def _receipt_thesis(
     )
     if verdict and verdict.get("surface_type") == "context_dependence_memo":
         return _context_subline(verdict, fallback or headline)
-    if fallback and not _same_phrase(fallback, headline):
+    if (
+        fallback
+        and not _same_phrase(fallback, headline)
+        and not _agent_repair_requested(verdict)
+    ):
         return fallback + stream_note
     direct_ids = [fid for fid in receipt_ids if fid not in set(context_ids)]
     if len(direct_ids) == 1 and (
@@ -1383,7 +1483,13 @@ def _receipt_thesis(
             "The remaining receipts are separate evidence streams and should "
             "not be read as one integrated effect estimate."
         )
-    phrases = [_fact_phrase(facts.get(fid) or {}) for fid in direct_ids[:2]]
+    limit = (
+        5
+        if not _agent_repair_requested(verdict)
+        and _source_count_for_ids(direct_ids, facts) >= 5
+        else 2
+    )
+    phrases = [_clip(_fact_phrase(facts.get(fid) or {}), 90) for fid in direct_ids[:limit]]
     joined = "; ".join(p for p in phrases if p)
     if joined:
         if context_ids:
@@ -1403,9 +1509,9 @@ def _counter_lines(verdict: dict[str, Any] | None) -> list[str]:
     items = counter.get("items", []) if isinstance(counter, dict) else []
     if not isinstance(items, list) or not items:
         return [
-            "- _Within the currently bound receipt bundle, no A_core/B_context "
-            "opposing fact was selected. Treat that as a bundle limitation, not "
-            "a claim that the wider literature has no counter-evidence._",
+            "- _No direct opposing receipt was selected by this run. Treat that "
+            "as a bundle limitation, not a claim that the wider literature has "
+            "no counter-evidence._",
         ]
     out = []
     for item in items[:3]:
@@ -1559,7 +1665,20 @@ def _repair_heterogeneity_requested(publish_verdict: dict[str, Any] | None) -> b
         "non-significant", "not a uniform effect", "unrelated evidence streams",
         "single thesis", "unified finding", "unified effect", "single source",
         "synthesized finding", "separate evidence stream",
+        "single coherent research question", "listing multiple unrelated",
+        "unrelated accuracy figures", "bullet-point list of facts",
+        "specific, justified contrast", "define a single, bounded research signal",
+        "thesis to be a claim, not a list",
     ))
+
+
+def _clean_generated_text(text: str) -> str:
+    return (
+        text.replace("muti-choice", "multi-choice")
+        .replace("Muti-choice", "Multi-choice")
+        .replace("Muti-Agent", "Multi-Agent")
+        .replace("muti-agent", "multi-agent")
+    )
 
 
 def _why_surprising(
@@ -1875,21 +1994,41 @@ def render_signal_memo(
         and _source_count_for_ids(lead_ids, facts) >= min_direct_sources
         and _receipt_cluster_coheres(lead_ids, facts, topic, min_direct_sources)
     ):
+        result_angle = _result_shape_angle(
+            topic, lead_ids, facts, min_sources=min_direct_sources,
+        )
         headline = (
             f"{_topic_title(topic)}: cited direct receipts are heterogeneous"
             if _repair_heterogeneity_requested(publish_verdict) else
             _grounded_headline(topic, lead_ids, facts, headline)
         )
-        angle = {
+        angle = result_angle or {
             "kind": "source",
             "headline": headline,
             "thesis": _bounded_direct_thesis(lead_ids, facts),
             "why": _source_bounded_why(lead_ids, facts),
         }
+    if (
+        angle.get("result_shape") != "true"
+        and not _repair_heterogeneity_requested(publish_verdict)
+        and _source_count_for_ids(lead_ids, facts) >= min_direct_sources
+        and _receipt_cluster_coheres(lead_ids, facts, topic, min_direct_sources)
+    ):
+        result_angle = _result_shape_angle(
+            topic, lead_ids, facts, min_sources=min_direct_sources,
+        )
+        if result_angle and (
+            (publish_verdict or {}).get("surface_type") == "publish_alpha_memo"
+            or (publish_verdict or {}).get("axes", {}).get(
+                "direct_receipt_shape_coherent",
+            ) is True
+        ):
+            angle = result_angle
     if publish_verdict and publish_verdict.get("surface_type") == "publish_alpha_memo":
         headline = angle["headline"]
         if (
             angle["kind"] == "source"
+            and angle.get("result_shape") != "true"
             and "limited to the direct cited receipt bundle" not in angle["why"]
         ):
             blockers = {str(x) for x in publish_verdict.get("blockers") or []}
@@ -1935,7 +2074,7 @@ def render_signal_memo(
         if _repair_heterogeneity_requested(publish_verdict) else
         angle.get("what_changes") or (
         "Treat this as a focused working signal, not a broad topic claim. "
-        "It moves review attention from a generic Top 5 list to the specific "
+        "It moves review attention from a broad receipt list to the specific "
         "contrast, receipt bundle, and matched direct-receipt table by "
         "population, model, endpoint, comparator, and effect direction that "
         "could confirm or kill the thesis."
@@ -2020,7 +2159,7 @@ def render_signal_memo(
     subtopic_lines = _subtopic_lines(publish_verdict)
     if subtopic_lines:
         lines.extend(["", "## Subtopic recommendations", "", *subtopic_lines])
-    body = "\n".join(lines) + "\n"
+    body = _clean_generated_text("\n".join(lines) + "\n")
     memo_audit = build_memo_audit(
         claim, lead_ids, receipt_ids, facts, publish_verdict,
         falsifier=falsifier_present(body),
@@ -2043,7 +2182,7 @@ def render_signal_memo(
         json.dumps(memo_audit, indent=2, sort_keys=True),
         encoding="utf-8")
     lines.extend(["", *_provenance_block(run_dir, topic, snapshot, headline, body)])
-    return "\n".join(lines) + "\n"
+    return _clean_generated_text("\n".join(lines) + "\n")
 
 
 def write_signal_memo(
