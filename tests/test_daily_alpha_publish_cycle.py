@@ -349,7 +349,7 @@ def test_refresh_cycle_probes_existing_ready_queue_before_discovery(
 ) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("ready")
-    _memo(root, verdict)
+    _memo_with_source_receipts(root, verdict, 5)
     run = root / str(verdict["run_dir"])
     run.joinpath("publish_verdict.json").write_text(
         json.dumps(verdict), encoding="utf-8",
@@ -376,11 +376,11 @@ def test_refresh_cycle_probes_claim_cluster_queue_before_discovery(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     root = tmp_path / "repo"
-    verdict = _verdict("weak_curated_parent") | {
+    verdict = _verdict("curated_parent") | {
         "decision": "curation_needed",
         "publish_tier": "TIER_3",
-        "alpha_score": 0,
-        "blockers": ["blocked_label:no_signal"],
+        "alpha_score": 100,
+        "blockers": ["feed_scope_mismatch"],
         "subtopic_recommendations": {
             "recommended": True,
             "reason": "source_coherent_child_cluster",
@@ -428,7 +428,7 @@ def test_refresh_cycle_probes_claim_cluster_queue_before_discovery(
     )
 
     assert ledger["submitted"] == 1
-    assert ledger["submitted_topic"] == "weak_curated_parent_bounded_claim"
+    assert ledger["submitted_topic"] == "curated_parent_bounded_claim"
     assert ledger["refresh_batches"][0]["note"] == "skipped_initial_queue_probe"
 
 
@@ -2848,7 +2848,7 @@ def test_high_alpha_curation_cluster_can_seed_claim_candidate(tmp_path: Path) ->
     ]
 
 
-def test_low_alpha_curation_cluster_can_seed_claim_candidate_when_source_coherent(
+def test_low_alpha_curation_cluster_does_not_seed_claim_candidate(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / "repo"
@@ -2872,11 +2872,7 @@ def test_low_alpha_curation_cluster_can_seed_claim_candidate_when_source_coheren
         [verdict], root, min_direct_source_count=5,
     )
 
-    assert len(rows) == 1
-    assert rows[0]["topic"] == "weak_curated_parent_bounded_claim"
-    assert rows[0]["receipt_expansion"]["cited_bound_fact_ids"] == [
-        "1", "2", "3", "4", "5",
-    ]
+    assert rows == []
 
 
 def test_no_candidate_refreshes_queued_child_topics_next_batch(

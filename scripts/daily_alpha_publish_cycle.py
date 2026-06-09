@@ -809,7 +809,20 @@ def _claim_cluster_repairable(verdict: Json, rec: Json) -> bool:
     decision = str(verdict.get("decision") or "")
     if decision in _AGENT_REPAIR_DECISIONS:
         return True
-    return decision == "curation_needed" and rec.get("reason") == "source_coherent_child_cluster"
+    blockers = {str(x) for x in verdict.get("blockers") or []}
+    hard_curation_blockers = {
+        "cross_domain_forced",
+        "low_alpha_score",
+        "metric_type_mismatch",
+        "receipt_shape_mismatch",
+    }
+    return (
+        decision == "curation_needed"
+        and rec.get("reason") == "source_coherent_child_cluster"
+        and not any(blocker.startswith("blocked_label:") for blocker in blockers)
+        and not blockers & hard_curation_blockers
+        and int(verdict.get("alpha_score") or 0) > 0
+    )
 
 
 def _claim_cluster_candidates(
@@ -3335,12 +3348,18 @@ def run_cycle(
         queue_unchanged = queue_sig == prev_queue_sig
         prev_queue_sig = queue_sig
         ledger["queue_counts"] = _queue_counts(current_queue)
+        selection_min_sources = (
+            min_submit_sources if (submit or refresh_candidates) else 0
+        )
+        selection_min_direct_sources = (
+            min_direct_submit_sources if (submit or refresh_candidates) else 0
+        )
         candidate, considered = select_candidate(
             current_queue, runs_root=runs_root, submitted_path=submitted_path,
             allow_tier2=allow_tier2,
-            min_source_count=min_submit_sources if submit else 0,
-            min_direct_source_count=min_direct_submit_sources if submit else 0,
-            memo_refresher=memo_refresher if submit else None,
+            min_source_count=selection_min_sources,
+            min_direct_source_count=selection_min_direct_sources,
+            memo_refresher=memo_refresher if (submit or refresh_candidates) else None,
             blocked_fingerprints=blocked_fingerprints,
             blocked_topics=blocked_topics,
             accepted_shape_profiles=accepted_shape_profiles,
