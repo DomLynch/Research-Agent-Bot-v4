@@ -21,3 +21,4 @@ outcome = "employment response"
 metric = "employment elasticity or employment change"
 study_design = "empirical labor economics"
 identification_strategy = "empirical labor economics"
+outlier_abs_threshold = 0.5

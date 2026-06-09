@@ -375,6 +375,44 @@ def test_business_candidate_cli_builds_ready_dry_run_queue(
     assert audit["verdict"] == "supported"
 
 
+def test_business_candidate_memo_synthesizes_mixed_effects(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    rows: list[dict[str, Any]] = []
+    for i, value in enumerate([0.0, -0.7, 0.0, -0.15, -0.2], start=1):
+        rows.append({
+            "id": f"mw-mixed-{i}",
+            "topic": "labor_economics",
+            "claim_type": "effect_size",
+            "numeric_value": value,
+            "canonical_phrase": f"minimum wage employment elasticity estimate {value}",
+            "population": "low wage workers",
+            "intervention": "minimum wage",
+            "metric": "employment elasticity",
+            "paper": {"doi": f"10.6666/mw-mixed-{i}", "title": "Minimum wage employment"},
+        })
+    facts_path = tmp_path / "facts.json"
+    facts_path.write_text(json.dumps(rows), encoding="utf-8")
+    runs = tmp_path / "runs"
+    monkeypatch.setattr(sys, "argv", [
+        "build_business_alpha_candidate.py",
+        "--domain", "economics_research",
+        "--topic", "minimum_wage_employment",
+        "--facts-json", str(facts_path),
+        "--runs-root", str(runs),
+        "--snapshot-utc", "2026-06-09T00-00-01Z",
+    ])
+
+    assert business_cli.main() == 0
+    memo = (
+        runs / "minimum_wage_employment-evidence-2026-06-09T00-00-01Z" / "alpha_memo.md"
+    ).read_text(encoding="utf-8")
+    assert "## Research question" in memo
+    assert "The bounded signal is disagreement" in memo
+    assert "same measured business effect" not in memo
+
+
 def test_business_candidate_cli_writes_no_bundle_diagnostics(
     tmp_path: Path,
     monkeypatch: Any,
