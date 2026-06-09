@@ -128,8 +128,9 @@ def test_ai_research_evidence_run_records_domain(
         writer_configured = False
 
     def _fetch_empty(
-        _topic: str, *, trace: list[dict[str, Any]],
+        _topic: str, *, trace: list[dict[str, Any]], domain: str = "longevity",
     ) -> list[dict[str, Any]]:
+        assert domain == "ai_research"
         trace.append({
             "kind": "tier1", "query": "ai_agents", "facts": 0,
             "status": "ok", "errors": [],

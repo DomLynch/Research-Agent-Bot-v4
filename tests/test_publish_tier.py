@@ -243,6 +243,102 @@ def test_claim_coherence_accepts_source_cluster_not_every_receipt(
     assert verdict["axes"]["claim_coherent_source_diversity"] is True
 
 
+def test_ready_to_publish_requires_direct_receipt_shape_coherence(
+    tmp_path: Path,
+) -> None:
+    run = _run(tmp_path)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    for fact, metric, model in zip(
+        facts,
+        ("accuracy", "precision", "recall", "latency", "faithfulness"),
+        ("GPT", "RAG", "LLM", "MoE", "BLOOM"),
+        strict=True,
+    ):
+        fact.update({
+            "population": "reserve-market benchmark",
+            "intervention": "storage threshold controller",
+            "comparator": "manual reserve baseline",
+            "metric": metric,
+            "model_system": model,
+            "evaluation_protocol": "zero shot dispatch evaluation",
+        })
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "agent_repair_needed"
+    assert "receipt_shape_mismatch" in verdict["blockers"]
+    assert verdict["axes"]["direct_receipt_shape_coherent"] is False
+
+
+def test_ready_to_publish_blocks_metric_type_conflation(
+    tmp_path: Path,
+) -> None:
+    run = _run(tmp_path)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    phrases = (
+        "System A reports 80% MMLU accuracy against baseline.",
+        "System B reports 82% MMLU accuracy against baseline.",
+        "System C reports 84% MMLU accuracy against baseline.",
+        "System D reports 47x faster MMLU retrieval against baseline.",
+        "System E reports 95% context length reduction on MMLU.",
+    )
+    for fact, phrase in zip(facts, phrases, strict=True):
+        fact.update({
+            "canonical_phrase": phrase,
+            "population": "MMLU benchmark",
+            "intervention": "MMLU system",
+            "comparator": "MMLU baseline",
+            "benchmark": "MMLU",
+            "task": "multiple choice QA",
+            "dataset": "MMLU",
+            "metric": "accuracy",
+            "model_system": "MMLU systems",
+            "evaluation_protocol": "MMLU benchmark evaluation",
+        })
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "agent_repair_needed"
+    assert "metric_type_mismatch" in verdict["blockers"]
+    assert verdict["axes"]["direct_metric_type_coherent"] is False
+
+
+def test_ready_to_publish_accepts_preclustered_result_shape(
+    tmp_path: Path,
+) -> None:
+    run = _run(tmp_path)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    for i, fact in enumerate(facts):
+        fact.update({
+            "population": "AI agents LoCoMo",
+            "intervention": f"memory system {i}",
+            "comparator": f"baseline {i}",
+            "metric": f"accuracy variant {i}",
+            "model_system": f"Model {i}",
+            "baseline_comparator": f"baseline {i}",
+            "evaluation_protocol": f"paper protocol {i}",
+            "result_shape": {
+                "benchmark": "LoCoMo",
+                "task": "long context memory",
+                "dataset": "LoCoMo",
+                "metric": "accuracy",
+                "model_system": "LoCoMo memory systems",
+                "baseline_comparator": "LoCoMo benchmark baselines",
+                "evaluation_protocol": "LoCoMo benchmark evaluation",
+            },
+        })
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "ready_to_publish"
+    assert verdict["blockers"] == []
+    assert verdict["axes"]["direct_receipt_shape_coherent"] is True
+    assert verdict["axes"]["direct_metric_type_coherent"] is True
+
+
 def test_structural_ready_can_publish_frontier_label(tmp_path: Path) -> None:
     run = _run(tmp_path, label="frontier_hypothesis")
 
