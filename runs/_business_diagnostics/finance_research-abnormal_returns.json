@@ -1,0 +1,55 @@
+{
+  "a_core_fact_count": 2,
+  "domain": "finance_research",
+  "missing_core_fields": {
+    "comparator": 18,
+    "intervention": 9,
+    "metric": 0,
+    "numeric": 0,
+    "outcome": 0,
+    "source": 0,
+    "study_design": 3
+  },
+  "normalized_fact_count": 26,
+  "raw_fact_count": 26,
+  "retrieval_trace": {
+    "facts": 26,
+    "http_status": 200,
+    "status": "ok"
+  },
+  "top_clusters": [
+    {
+      "comparability_blockers": [],
+      "fact_count": 1,
+      "sample": "earn abnormal returns of roughly 11 percent per year",
+      "sample_fact_id": "portfolio returns/auto/2013/abnormal returns 333815",
+      "shape": {
+        "comparator": "benchmark or opposite signal portfolio",
+        "intervention": "return predictive signal portfolio",
+        "metric": "percentage return or alpha",
+        "outcome": "risk adjusted portfolio returns",
+        "population": "firms portfolios funds",
+        "signal_family": "long short portfolio strategy based on past track records",
+        "study_design": "empirical asset pricing"
+      },
+      "source_count": 1
+    },
+    {
+      "comparability_blockers": [],
+      "fact_count": 1,
+      "sample": "earns abnormal returns of roughly 11 percent per year",
+      "sample_fact_id": "portfolio returns/auto/2013/abnormal returns 333820",
+      "shape": {
+        "comparator": "benchmark or opposite signal portfolio",
+        "intervention": "return predictive signal portfolio",
+        "metric": "percentage return or alpha",
+        "outcome": "risk adjusted portfolio returns",
+        "population": "firms portfolios funds",
+        "signal_family": "long short portfolio strategy that takes advantage of the information in past track records",
+        "study_design": "empirical asset pricing"
+      },
+      "source_count": 1
+    }
+  ],
+  "topic": "abnormal_returns"
+}

@@ -1,0 +1,12 @@
+[claim_schema]
+claim_modes = ["management_practice_effect", "work_design_effect", "incentive_effect", "leadership_effect"]
+fields = [
+    "population", "organization_type", "industry", "geography", "time_period",
+    "intervention", "comparator", "outcome", "metric", "study_design",
+    "dataset", "estimation_method", "identification_strategy", "effect_size",
+    "confidence_interval", "standard_error", "p_value", "sample_size",
+]
+publish_contract = [
+    "management claims must name practice, comparator, population, and metric",
+    "direct receipts must share comparable organizational and study-design shape",
+]

@@ -11,6 +11,7 @@ from typing import Any
 
 import httpx
 
+from agent.api_client import async_api_request
 from agent.retrieval.base import PaperHit, clean_text, int_or_none, normalize_doi
 from agent.settings import Settings
 
@@ -41,11 +42,14 @@ class OpenAlexSource:
         }
         if self._email:
             params["mailto"] = self._email
+        r = await async_api_request(
+            client, "GET", _WORKS, service=self.name, params=params, timeout=20.0,
+        )
+        if r is None:
+            return []
         try:
-            r = await client.get(_WORKS, params=params, timeout=20.0)
-            r.raise_for_status()
             data: Any = r.json()
-        except (httpx.HTTPError, ValueError):
+        except ValueError:
             return []
         items = data.get("results", []) if isinstance(data, dict) else []
         hits: list[PaperHit] = []

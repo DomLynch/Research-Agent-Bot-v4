@@ -1,0 +1,12 @@
+[claim_schema]
+claim_modes = ["return_premium", "risk_reduction", "asset_price_response", "corporate_finance_effect"]
+fields = [
+    "population", "asset_class", "geography", "time_period", "intervention",
+    "comparator", "outcome", "metric", "study_design", "dataset",
+    "estimation_method", "identification_strategy", "effect_size",
+    "confidence_interval", "standard_error", "p_value", "sample_size",
+]
+publish_contract = [
+    "finance claims must name asset class, return/risk metric, comparator, and sample period",
+    "direct receipts must not mix return, volatility, default, and governance metrics",
+]

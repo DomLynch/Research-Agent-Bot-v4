@@ -23,6 +23,41 @@ _COUNTER_MIN_CLAIM_FIT = 0.2
 _BLOCKED_LABELS = frozenset({
     "curation_needed", "evidence_binding_failed", "no_signal", "discard",
 })
+_RECEIPT_SHAPE_DIMENSIONS = (
+    ("population",),
+    ("intervention",),
+    ("comparator", "baseline_comparator"),
+    ("endpoint", "outcome"),
+    ("benchmark",),
+    ("task", "dataset"),
+    ("metric",),
+    ("model_system",),
+    ("evaluation_protocol",),
+)
+_STRICT_RECEIPT_SHAPE_DIMENSIONS = frozenset({
+    ("comparator", "baseline_comparator"),
+    ("benchmark",),
+    ("task", "dataset"),
+    ("metric",),
+    ("model_system",),
+    ("evaluation_protocol",),
+})
+_SHAPE_GENERIC_TOKENS = frozenset({
+    "endpoint", "endpoints", "outcome", "outcomes", "intervention",
+    "interventions", "comparator", "comparators", "population", "group",
+    "groups", "primary", "secondary", "measure", "measures", "benchmark",
+    "benchmarks", "metric", "metrics", "dataset", "datasets", "model",
+    "models", "system", "systems", "protocol", "protocols", "baseline",
+    "baselines", "study", "studies", "shot",
+})
+_METRIC_TYPE_MARKERS = (
+    ("accuracy", ("accuracy", "accurate", "correctness", "f1", "precision", "recall", "mmlu", "win rate")),
+    ("latency", ("latency", "faster", "speed", "runtime", "response time", "seconds")),
+    ("cost", ("cost", "costs", "api cost", "token")),
+    ("context_reduction", ("context length", "context reduction", "compression")),
+    ("coverage", ("coverage", "covered")),
+    ("training_time", ("training time", "train time", "fine tuning time")),
+)
 
 
 def _read(path: Path) -> str:
@@ -196,6 +231,206 @@ def _claim_tokens(cited_ids: list[str], facts: dict[str, dict[str, Any]]) -> set
     )) if cited_ids else set()
 
 
+def _fact_axis_text(fact: dict[str, Any]) -> str:
+    return " ".join(
+        str(fact.get(key) or "")
+        for key in (
+            "canonical_phrase", "population", "intervention", "comparator",
+            "endpoint", "outcome", "sub_topic", "claim_type", "metric",
+            "benchmark", "task", "dataset", "model_system",
+            "baseline_comparator", "evaluation_protocol", "source_topic",
+        )
+    )
+
+
+def _shape_text(value: Any) -> str:
+    if isinstance(value, dict):
+        return " ".join(_shape_text(v) for v in value.values())
+    if isinstance(value, (list, tuple, set)):
+        return " ".join(_shape_text(v) for v in value)
+    return str(value or "")
+
+
+def _shape_tokens(
+    fact: dict[str, Any],
+    fields: tuple[str, ...],
+    generic: frozenset[str],
+) -> set[str]:
+    shape_raw = fact.get("result_shape")
+    shape = shape_raw if isinstance(shape_raw, dict) else {}
+    source = (
+        shape
+        if any(shape.get(field) not in (None, "", {}, []) for field in fields)
+        else fact
+    )
+    text = " ".join(_shape_text(source.get(field)) for field in fields)
+    min_len = 3 if fields in _STRICT_RECEIPT_SHAPE_DIMENSIONS else 4
+    return {
+        token for token in re.findall(r"[a-z][a-z0-9]*", text.lower())
+        if len(token) >= min_len and token not in generic
+    }
+
+
+def _facts_share_shape(
+    left: dict[str, Any],
+    right: dict[str, Any],
+    generic: frozenset[str],
+) -> bool:
+    shape_generic = generic | _SHAPE_GENERIC_TOKENS
+    shared_dims = 0
+    checked_dims = 0
+    for fields in _RECEIPT_SHAPE_DIMENSIONS:
+        left_shape = _shape_tokens(left, fields, shape_generic)
+        right_shape = _shape_tokens(right, fields, shape_generic)
+        if not left_shape or not right_shape:
+            continue
+        checked_dims += 1
+        if left_shape & right_shape:
+            shared_dims += 1
+        elif fields in _STRICT_RECEIPT_SHAPE_DIMENSIONS:
+            return False
+    if not checked_dims:
+        return True
+    return shared_dims >= (2 if checked_dims >= 2 else 1)
+
+
+def _receipt_ids_share_shape(
+    ids: list[str],
+    facts: dict[str, dict[str, Any]],
+    generic: frozenset[str],
+) -> bool:
+    items = [facts[fid] for fid in ids if fid in facts]
+    if len(items) < 2:
+        return True
+    shared_dims = 0
+    checked_dims = 0
+    shape_generic = generic | _SHAPE_GENERIC_TOKENS
+    for fields in _RECEIPT_SHAPE_DIMENSIONS:
+        shapes = [_shape_tokens(fact, fields, shape_generic) for fact in items]
+        if not all(shapes):
+            continue
+        checked_dims += 1
+        if set.intersection(*shapes):
+            shared_dims += 1
+        elif fields in _STRICT_RECEIPT_SHAPE_DIMENSIONS:
+            return False
+    if checked_dims:
+        return shared_dims >= (2 if checked_dims >= 2 else 1)
+    return True
+
+
+def _metric_type(fact: dict[str, Any]) -> str:
+    shape_raw = fact.get("result_shape")
+    shape = shape_raw if isinstance(shape_raw, dict) else {}
+    phrase_text = " ".join(
+        str(value or "").lower()
+        for value in (
+            fact.get("canonical_phrase"),
+            fact.get("source_excerpt"),
+            fact.get("claim"),
+            fact.get("finding"),
+        )
+    )
+    for label, markers in _METRIC_TYPE_MARKERS:
+        if label == "accuracy":
+            continue
+        if any(marker in phrase_text for marker in markers):
+            return label
+    text = " ".join(
+        str(value or "").lower()
+        for value in (
+            shape.get("metric"),
+            fact.get("metric"),
+            fact.get("endpoint"),
+            fact.get("outcome"),
+            fact.get("sub_topic"),
+            fact.get("claim_type"),
+            fact.get("canonical_phrase"),
+        )
+    )
+    for label, markers in _METRIC_TYPE_MARKERS:
+        if any(marker in text for marker in markers):
+            return label
+    return ""
+
+
+def _receipt_ids_share_metric_type(
+    ids: list[str],
+    facts: dict[str, dict[str, Any]],
+) -> bool:
+    types = {
+        metric_type
+        for fid in ids
+        if (metric_type := _metric_type(facts.get(fid) or {}))
+    }
+    return len(types) <= 1
+
+
+def _claim_axis(
+    md: str,
+    topic: str,
+    generic: frozenset[str],
+    cited_ids: list[str],
+    facts: dict[str, dict[str, Any]],
+) -> tuple[str, set[str]]:
+    text = "\n".join((
+        _field(md, "Headline"),
+        _section(md, "One-sentence thesis"),
+        _section(md, "Why this is surprising"),
+        _section(md, "Evidence Landscape"),
+    ))
+    tokens = _tokens(text, topic, generic)
+    if tokens:
+        return text, tokens
+    return text, _claim_tokens(cited_ids, facts)
+
+
+def _claim_fit(
+    fid: str,
+    fact: dict[str, Any],
+    lane: str,
+    claim_text: str,
+    claim_tokens: set[str],
+    topic: str,
+    generic: frozenset[str],
+    markers: tuple[str, ...],
+) -> dict[str, Any]:
+    fact_tokens = _tokens(_fact_axis_text(fact), topic, generic)
+    score = _claim_fit_score(fact_tokens, claim_tokens)
+    phrase = str(fact.get("canonical_phrase") or "").lower()
+    fact_opposes = bool(markers) and any(marker in phrase for marker in markers)
+    core_claim_text = claim_text.splitlines()[0].lower() if claim_text.splitlines() else ""
+    claim_opposes = bool(markers) and any(marker in core_claim_text for marker in markers)
+    if lane in _BINDABLE and fact_opposes and not claim_opposes and score >= _COUNTER_MIN_CLAIM_FIT:
+        label = "opposing"
+    elif lane in _DIRECT and score >= _COUNTER_MIN_CLAIM_FIT:
+        label = "direct_match"
+    elif lane in _BINDABLE and (score > 0 or bool(_tokens(topic, "", frozenset()) & fact_tokens)):
+        label = "boundary"
+    else:
+        label = "context"
+    return {"fact_id": fid, "claim_fit": label, "score": round(score, 3)}
+
+
+def _claim_fit_map(
+    ids: list[str],
+    facts: dict[str, dict[str, Any]],
+    lanes: dict[str, str],
+    claim_text: str,
+    claim_tokens: set[str],
+    topic: str,
+    generic: frozenset[str],
+    markers: tuple[str, ...],
+) -> dict[str, dict[str, Any]]:
+    return {
+        fid: _claim_fit(
+            fid, facts.get(fid) or {}, lanes.get(fid, ""), claim_text,
+            claim_tokens, topic, generic, markers,
+        )
+        for fid in ids
+    }
+
+
 def _source_papers(
     cited_ids: list[str],
     facts: dict[str, dict[str, Any]],
@@ -262,26 +497,25 @@ def _counter_evidence(
     cited_ids: list[str],
     facts: dict[str, dict[str, Any]],
     lanes: dict[str, str],
+    claim_text: str,
+    claim: set[str],
+    topic: str,
+    generic: frozenset[str],
     markers: tuple[str, ...],
 ) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
-    claim = _claim_tokens(cited_ids, facts)
     for fid in _bound_ids_in_fact_order(facts, lanes):
         fact = facts.get(fid) or {}
-        # Counter markers must live in the asserted finding itself. Comparator
-        # text often says "without X" for ordinary controls; treating that as
-        # opposition creates false counter-evidence.
-        haystack = str(fact.get("canonical_phrase") or "").lower()
-        if markers and not any(marker in haystack for marker in markers):
-            continue
-        rank = _claim_fit_score(
-            set(re.findall(r"[a-z0-9]{3,}", str(fact.get("canonical_phrase") or "").lower())),
-            claim,
+        fit = _claim_fit(
+            fid, fact, lanes.get(fid, ""), claim_text, claim, topic,
+            generic, markers,
         )
-        if rank < _COUNTER_MIN_CLAIM_FIT:
+        if fit["claim_fit"] != "opposing":
             continue
         item = _fact_summary(fid, fact, lanes.get(fid, ""))
-        item["_rank"] = rank
+        item["claim_fit"] = fit["claim_fit"]
+        item["claim_fit_score"] = fit["score"]
+        item["_rank"] = float(fit["score"])
         out.append(item)
     out.sort(key=lambda item: (item["lane"] != "A_core", -float(item["_rank"]), item["fact_id"]))
     for item in out:
@@ -376,9 +610,11 @@ def _source_diverse_fact_clusters(
         for fact, source, tokens, claim_tokens in rows:
             if source in sources:
                 continue
+            claim_overlap = seed_claim_tokens & claim_tokens
             if (
-                seed_claim_tokens & claim_tokens
+                len(claim_overlap) >= 2
                 and len(seed_tokens & tokens) / max(1, len(seed_tokens | tokens)) >= min_overlap
+                and _facts_share_shape(seed, fact, generic | stopwords)
             ):
                 cluster.append(fact)
                 sources.add(source)
@@ -585,9 +821,23 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     lanes = _lane_map(run_dir)
     bound_ids = [fid for fid in cited_ids if lanes.get(fid) in _BINDABLE]
     direct_ids = [fid for fid in evidence_ids if lanes.get(fid) in _DIRECT]
-    a_core = sum(1 for fid in bound_ids if lanes.get(fid) == "A_core")
+    claim_text, claim_tokens = _claim_axis(
+        md, topic, cfg["generic_tokens"] | cfg["cluster_stopwords"],
+        direct_ids or bound_ids, facts,
+    )
+    fit_ids = list(dict.fromkeys(bound_ids + _bound_ids_in_fact_order(facts, lanes)))
+    claim_fit = _claim_fit_map(
+        fit_ids, facts, lanes, claim_text, claim_tokens, topic,
+        cfg["generic_tokens"] | cfg["cluster_stopwords"],
+        cfg["counter_markers"],
+    )
+    direct_match_ids = [
+        fid for fid in direct_ids
+        if claim_fit.get(fid, {}).get("claim_fit") == "direct_match"
+    ]
+    a_core = len(direct_match_ids)
     papers = _source_papers(bound_ids, facts)
-    direct_papers = _source_papers(direct_ids, facts)
+    direct_papers = _source_papers(direct_match_ids, facts)
     min_source_papers = _publication_int("min_source_papers", 5)
     min_direct_source_papers = _publication_int("min_direct_source_papers", 5)
     all_bound_ids = _bound_ids_in_fact_order(facts, lanes)
@@ -595,24 +845,38 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         _source_key(facts[fid]) for fid in all_bound_ids if fid in facts
     } - {""})
     source_concentrated = _source_concentrated(
-        bound_ids, facts, float(cfg["source_concentration_share"]),
+        direct_match_ids, facts, float(cfg["source_concentration_share"]),
     )
-    source_coherent = source_concentrated or _claim_coherent_source_diversity(
-        bound_ids, facts, topic, cfg["generic_tokens"] | cfg["cluster_stopwords"],
-        float(cfg["domain_overlap_min"]), min_source_papers,
+    source_coherent = len(direct_papers) >= min_source_papers and (
+        source_concentrated or _claim_coherent_source_diversity(
+            direct_match_ids, facts, topic,
+            cfg["generic_tokens"] | cfg["cluster_stopwords"],
+            float(cfg["domain_overlap_min"]), min_source_papers,
+        )
     )
     forced = _domain_forced(
         papers, topic, cfg["generic_tokens"], float(cfg["domain_overlap_min"]),
     )
     off_scope = _off_scope(papers, topic, cfg["off_scope_markers"])
     counter_evidence = _counter_evidence(
-        bound_ids, facts, lanes, cfg["counter_markers"],
+        bound_ids, facts, lanes, claim_text,
+        claim_tokens | _claim_tokens(direct_match_ids, facts), topic,
+        cfg["generic_tokens"] | cfg["cluster_stopwords"], cfg["counter_markers"],
     )
     tension = _has_tension(md, cfg["tension_markers"]) or bool(counter_evidence)
+    direct_shape_ids = direct_ids or direct_match_ids
+    direct_receipt_shape_coherent = _receipt_ids_share_shape(
+        direct_shape_ids, facts, cfg["generic_tokens"] | cfg["cluster_stopwords"],
+    )
+    direct_metric_type_coherent = _receipt_ids_share_metric_type(
+        direct_shape_ids, facts,
+    )
     strong_direct_bundle = (
         len(direct_papers) >= min_direct_source_papers
-        and len(papers) >= min_source_papers
+        and len(direct_papers) >= min_source_papers
         and source_coherent
+        and direct_receipt_shape_coherent
+        and direct_metric_type_coherent
     )
     expansion_candidates = _expansion_candidates(bound_ids, facts, lanes)
     blockers: list[str] = []
@@ -622,7 +886,7 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         blockers.append("no_bound_receipts")
     if forced:
         blockers.append("cross_domain_forced")
-    if not source_coherent and bound_ids and len(papers) >= min_source_papers:
+    if not source_coherent and direct_match_ids and len(direct_papers) >= min_source_papers:
         blockers.append("source_dispersion")
     if not tension and bound_ids and not strong_direct_bundle:
         blockers.append("weak_counter_consensus_tension")
@@ -630,10 +894,16 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         blockers.append("low_alpha_score")
     if off_scope:
         blockers.append("feed_scope_mismatch")
-    if len(papers) < min_source_papers:
+    if len(direct_papers) < min_source_papers:
         blockers.append("source_floor_below_min")
     if len(direct_papers) < min_direct_source_papers:
         blockers.append("direct_source_floor_below_min")
+    if bound_ids and len(direct_match_ids) < len(direct_ids):
+        blockers.append("claim_alignment_partial")
+    if direct_shape_ids and not direct_receipt_shape_coherent:
+        blockers.append("receipt_shape_mismatch")
+    if direct_shape_ids and not direct_metric_type_coherent:
+        blockers.append("metric_type_mismatch")
 
     ready = (
         not blockers
@@ -677,6 +947,10 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         surface_type = "context_dependence_memo"
     elif off_scope or forced:
         surface_type = "split_or_reject_memo"
+    elif "source_dispersion" in blockers:
+        surface_type = "heterogeneity_memo"
+    elif "claim_alignment_partial" in blockers:
+        surface_type = "receipt_map"
     elif subtopics["recommended"]:
         surface_type = "subtopic_rerun_memo"
     elif decision == "curation_needed":
@@ -699,12 +973,27 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         "surface_type": surface_type,
         "axes": {
             "bound_receipts": len(bound_ids),
+            "direct_match_receipts": len(direct_match_ids),
+            "boundary_receipts": sum(
+                1 for fid in bound_ids
+                if claim_fit.get(fid, {}).get("claim_fit") == "boundary"
+            ),
+            "context_receipts": sum(
+                1 for fid in bound_ids
+                if claim_fit.get(fid, {}).get("claim_fit") == "context"
+            ),
+            "opposing_receipts": sum(
+                1 for fid in bound_ids
+                if claim_fit.get(fid, {}).get("claim_fit") == "opposing"
+            ),
             "direct_source_papers": len(direct_papers),
             "available_bound_receipts": len(all_bound_ids),
             "available_source_contexts": available_source_count,
             "a_core_receipts": a_core,
             "source_concentrated": source_concentrated,
             "claim_coherent_source_diversity": source_coherent,
+            "direct_receipt_shape_coherent": direct_receipt_shape_coherent,
+            "direct_metric_type_coherent": direct_metric_type_coherent,
             "counter_consensus_tension": tension,
             "cross_domain_forced": forced,
             "feed_scope_mismatch": off_scope,
@@ -726,7 +1015,14 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
             ),
             "cited_bound_fact_ids": bound_ids,
             "available_bound_fact_ids": all_bound_ids,
-            "candidate_receipts": expansion_candidates,
+            "candidate_receipts": [
+                item | {
+                    "claim_fit": claim_fit.get(
+                        str(item.get("fact_id") or ""), {}
+                    ).get("claim_fit", "context")
+                }
+                for item in expansion_candidates
+            ],
         },
         "counter_evidence": {
             "status": "found" if counter_evidence else "none_found",

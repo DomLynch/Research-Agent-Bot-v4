@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 from urllib.request import Request
 
-from pytest import MonkeyPatch
+from pytest import MonkeyPatch, raises
 
 import scripts.daily_alpha_publish_cycle as daily
 
@@ -63,6 +63,7 @@ def _verdict(topic: str = "grid_storage", *, score: int = 90) -> dict[str, Any]:
         "confidence_label": "evidence_backed_signal",
         "alpha_score": score,
         "surface_type": "publish_alpha_memo",
+        "domain": {"slug": "longevity"},
         "axes": {
             "available_source_contexts": 12,
             "source_papers": source_papers,
@@ -137,6 +138,35 @@ def _memo_with_source_receipts(root: Path, verdict: dict[str, Any], count: int) 
     _audit_sidecars(run)
 
 
+def _memo_with_receipt_shapes(
+    root: Path, verdict: dict[str, Any], shapes: list[dict[str, str]],
+) -> None:
+    run = root / str(verdict["run_dir"])
+    run.mkdir(parents=True)
+    ids = [str(i + 1) for i in range(len(shapes))]
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n## Evidence receipts\n\n"
+        + "\n".join(f"- `fact_id={fid}` (`A_core`) - receipt" for fid in ids)
+        + "\n" + _FALSIFIER,
+        encoding="utf-8",
+    )
+    run.joinpath("all_facts.json").write_text(json.dumps([
+        {
+            "fact_id": fid,
+            **shape,
+            "source_paper": {
+                "doi": f"10.1000/shape-{fid}",
+                "title": f"Shape source {fid}",
+            },
+        }
+        for fid, shape in zip(ids, shapes, strict=True)
+    ]), encoding="utf-8")
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": fid, "lane": "A_core"} for fid in ids],
+    }), encoding="utf-8")
+    _audit_sidecars(run)
+
+
 def _publish_tier_run(root: Path, topic: str, *, stale: dict[str, Any]) -> None:
     run = root / "runs" / f"{topic}-evidence-ts"
     run.mkdir(parents=True)
@@ -191,6 +221,9 @@ def _publish_tier_run(root: Path, topic: str, *, stale: dict[str, Any]) -> None:
         },
     }]), encoding="utf-8")
     run.joinpath("publish_verdict.json").write_text(json.dumps(stale), encoding="utf-8")
+    run.joinpath("MANIFEST.json").write_text(json.dumps({
+        "domain": {"slug": "longevity"},
+    }), encoding="utf-8")
     _audit_sidecars(run)
 
 
@@ -214,6 +247,49 @@ def test_memo_fingerprint_and_source_count_use_full_source_identity() -> None:
 
     assert daily.memo_fingerprint(left) != daily.memo_fingerprint(right)
     assert daily._source_count_from_verdict(left) == 3
+
+
+def test_memo_fingerprint_is_domain_scoped() -> None:
+    left = _verdict()
+    right = _verdict() | {"domain": {"slug": "ai_research"}}
+
+    assert daily.memo_fingerprint(left) != daily.memo_fingerprint(right)
+
+
+def test_daily_queue_skips_runs_without_domain_metadata(tmp_path: Path) -> None:
+    runs = tmp_path / "runs"
+    run = runs / "untagged-evidence-ts"
+    run.mkdir(parents=True)
+    verdict = _verdict("untagged")
+    verdict.pop("domain")
+    run.joinpath("alpha_memo.md").write_text("# Alpha memo\n", encoding="utf-8")
+    run.joinpath("publish_verdict.json").write_text(
+        json.dumps(verdict), encoding="utf-8",
+    )
+
+    out = daily._build_queue(
+        runs, include_archive=False, domain="longevity_research",
+    )
+
+    assert out["ready_to_publish"] == []
+    assert out["_meta"]["missing_domain_count"] == 1
+
+
+def test_run_cycle_rejects_injected_candidate_without_domain(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("untagged")
+    verdict.pop("domain")
+    _memo(root, verdict)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-06",
+        queue=_queue(verdict),
+        retraction_mode="metadata",
+    )
+
+    assert ledger["status"] == "no_fresh_candidate"
+    assert ledger["considered"][0]["status"] == "missing_domain_metadata"
 
 
 def test_ledger_stamp_includes_utc_time_for_twice_daily_runs() -> None:
@@ -251,7 +327,7 @@ def test_refresh_cycle_probes_existing_ready_queue_before_discovery(
 ) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("ready")
-    _memo(root, verdict)
+    _memo_with_source_receipts(root, verdict, 5)
     run = root / str(verdict["run_dir"])
     run.joinpath("publish_verdict.json").write_text(
         json.dumps(verdict), encoding="utf-8",
@@ -278,11 +354,11 @@ def test_refresh_cycle_probes_claim_cluster_queue_before_discovery(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     root = tmp_path / "repo"
-    verdict = _verdict("weak_curated_parent") | {
+    verdict = _verdict("curated_parent") | {
         "decision": "curation_needed",
         "publish_tier": "TIER_3",
-        "alpha_score": 0,
-        "blockers": ["blocked_label:no_signal"],
+        "alpha_score": 100,
+        "blockers": ["feed_scope_mismatch"],
         "subtopic_recommendations": {
             "recommended": True,
             "reason": "source_coherent_child_cluster",
@@ -330,7 +406,7 @@ def test_refresh_cycle_probes_claim_cluster_queue_before_discovery(
     )
 
     assert ledger["submitted"] == 1
-    assert ledger["submitted_topic"] == "weak_curated_parent_bounded_claim"
+    assert ledger["submitted_topic"] == "curated_parent_bounded_claim"
     assert ledger["refresh_batches"][0]["note"] == "skipped_initial_queue_probe"
 
 
@@ -515,7 +591,7 @@ def test_duplicate_underexpanded_memo_refreshes_before_reporting(tmp_path: Path)
     )
 
     row = ledger["considered"][0]
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert row["status"] == "duplicate_submission_fingerprint"
     assert row["memo_refreshed"] is True
     assert row["source_count"] == 5
@@ -1590,6 +1666,301 @@ def test_recently_published_topic_is_skipped_for_fresh_topic(tmp_path: Path) -> 
     assert ledger["considered"][0]["status"] == "cycle_exhausted_topic"
 
 
+def test_recently_published_topic_is_domain_scoped(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("shared_topic")
+    _memo_with_source_receipts(root, verdict, 5)
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "published",
+        "final_verdict": "accepted",
+        "published": 1,
+        "published_topic": "shared_topic",
+        "domain": {"slug": "ai_research"},
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        retraction_mode="metadata",
+    )
+
+    assert ledger["candidate"]["topic"] == "shared_topic"
+    assert ledger["recently_published_topics_blocked"] == []
+    assert ledger["considered"][0]["status"] == "eligible"
+
+
+def test_recently_published_topic_family_blocks_child_slug(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    published = _verdict("vector_search_agent_eval", score=100)
+    child = _verdict("agent_eval_vector_rerank", score=99) | {
+        "topic_family": published["topic"],
+    }
+    fresh = _verdict("workflow_automation_trace", score=90)
+    _memo_with_source_receipts(root, child, 5)
+    _memo_with_source_receipts(root, fresh, 5)
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "published",
+        "final_verdict": "accepted",
+        "published": 1,
+        "published_topic": published["topic"],
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(child, fresh),
+        retraction_mode="metadata",
+    )
+
+    assert ledger["candidate"]["topic"] == "workflow_automation_trace"
+    assert ledger["considered"][0]["topic"] == "agent_eval_vector_rerank"
+    assert ledger["considered"][0]["status"] == "cycle_exhausted_topic"
+    assert ledger["considered"][0]["family_blocked"] is True
+    assert ledger["family_blocked_count"] == 1
+    assert ledger["seed_scope_dropped_count"] == 0
+
+
+def test_recent_negative_topic_family_blocks_child_slug(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    child = _verdict("semaglutide_once_weekly", score=99) | {
+        "topic_family": "glp_1_longevity",
+    }
+    fresh = _verdict("klotho_receptor_signaling", score=90)
+    _memo_with_source_receipts(root, child, 5)
+    _memo_with_source_receipts(root, fresh, 5)
+    daily._write_json(root / "_daily_ledger" / "2026-06-08.json", {
+        "status": "reviewer_rejected",
+        "final_verdict": "rejected",
+        "submitted_topic": "glp_1_longevity",
+        "researka_decision": {
+            "status": "complete",
+            "decision": "reject",
+            "claim_support_verdict": "unsupported",
+        },
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09",
+        queue=_queue(child, fresh),
+        retraction_mode="metadata",
+    )
+
+    assert ledger["candidate"]["topic"] == "klotho_receptor_signaling"
+    assert ledger["recent_negative_topics_blocked"] == ["glp_1_longevity"]
+    assert ledger["considered"][0]["status"] == "cycle_exhausted_topic"
+    assert ledger["considered"][0]["family_blocked"] is True
+
+
+def test_same_seed_domain_inherits_recent_negative_topic_memory(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    lane_domain = {"slug": "longevity_research"}
+    child = _verdict("sglt2_inhibitors_reduction_hba1c_non_placebo", score=99) | {
+        "topic_family": "sglt2_inhibitors_reduction",
+        "domain": lane_domain,
+    }
+    fresh = _verdict("klotho_receptor_signaling", score=90) | {
+        "domain": lane_domain,
+    }
+    _memo_with_source_receipts(root, child, 5)
+    _memo_with_source_receipts(root, fresh, 5)
+    daily._write_json(root / "_daily_ledger" / "2026-06-08.json", {
+        "status": "reviewer_rejected",
+        "final_verdict": "rejected",
+        "submitted_topic": "sglt2_inhibitors_reduction",
+        "domain": {"slug": "longevity"},
+        "researka_decision": {
+            "status": "complete",
+            "decision": "reject",
+            "claim_support_verdict": "unsupported",
+        },
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09",
+        domain="longevity_research",
+        queue=_queue(child, fresh),
+        retraction_mode="metadata",
+    )
+
+    assert ledger["candidate"]["topic"] == "klotho_receptor_signaling"
+    assert ledger["recent_negative_topics_blocked"] == ["sglt2_inhibitors_reduction"]
+    assert ledger["considered"][0]["status"] == "cycle_exhausted_topic"
+    assert ledger["considered"][0]["family_blocked"] is True
+
+
+def test_recent_submission_topic_family_blocks_child_slug(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    child = _verdict("agent_eval_vector_rerank", score=99) | {
+        "topic_family": "vector_search_agent_eval",
+    }
+    fresh = _verdict("workflow_automation_trace", score=90)
+    _memo_with_source_receipts(root, child, 5)
+    _memo_with_source_receipts(root, fresh, 5)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+        "date": "2026-06-06T07-30-00Z",
+        "topic": "vector_search_agent_eval",
+        "run_dir": "runs/vector_search_agent_eval-evidence-ts",
+        "fingerprint": "old",
+    }])
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-06T09-30-00Z",
+        queue=_queue(child, fresh),
+        retraction_mode="metadata",
+    )
+
+    assert ledger["candidate"]["topic"] == "workflow_automation_trace"
+    assert "vector_search_agent_eval" in ledger["recently_submitted_topics_blocked"]
+    assert ledger["considered"][0]["status"] == "cycle_exhausted_topic"
+    assert ledger["considered"][0]["family_blocked"] is True
+    assert ledger["family_blocked_count"] == 1
+
+
+def test_recent_submission_topic_is_domain_scoped(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("shared_topic")
+    _memo_with_source_receipts(root, verdict, 5)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+        "date": "2026-06-06T07-30-00Z",
+        "domain": {"slug": "ai_research"},
+        "topic": "shared_topic",
+        "run_dir": "runs/shared_topic-evidence-ts",
+        "fingerprint": "old-ai",
+    }])
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-06T09-30-00Z",
+        queue=_queue(verdict),
+        retraction_mode="metadata",
+    )
+
+    assert ledger["candidate"]["topic"] == "shared_topic"
+    assert ledger["recently_submitted_topics_blocked"] == []
+    assert ledger["considered"][0]["status"] == "eligible"
+
+
+def test_seed_scope_metadata_populates_no_candidate_ledger(tmp_path: Path) -> None:
+    ledger = daily.run_cycle(
+        runs_root=tmp_path / "repo",
+        date="2026-06-06T17-30-00Z",
+        queue={
+            "ready_to_publish": [],
+            "agent_repair_needed": [],
+            "curation_needed": [],
+            "_meta": {
+                "seed_scope_dropped_count": 1,
+                "seed_scope_fallback_count": 2,
+                "seed_scope_fallback_used": True,
+            },
+        },
+    )
+
+    assert ledger["status"] == "no_fresh_candidate"
+    assert ledger["family_blocked_count"] == 0
+    assert ledger["seed_scope_dropped_count"] == 1
+    assert ledger["seed_scope_fallback_count"] == 2
+    assert ledger["seed_scope_fallback_used"] is True
+
+
+def test_glp_longevity_cooldown_does_not_token_block_unrelated_families(tmp_path: Path) -> None:
+    topics = ["omega_3_longevity", "telomere", "mediterranean_diet"]
+    for block_kind in ("published", "submitted"):
+        root = tmp_path / block_kind
+        if block_kind == "published":
+            daily._write_json(root / "_daily_ledger" / "2026-06-05.json", {
+                "status": "published",
+                "final_verdict": "accepted",
+                "published": 1,
+                "published_topic": "GLP_1_longevity",
+            })
+        else:
+            daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+                "date": "2026-06-06T07-30-00Z",
+                "topic": "GLP_1_longevity",
+                "run_dir": "runs/GLP_1_longevity-evidence-ts",
+                "fingerprint": "old-glp",
+            }])
+        for i, topic in enumerate(topics):
+            verdict = _verdict(topic, score=100 - i)
+            _memo_with_source_receipts(root, verdict, 5)
+            ledger = daily.run_cycle(
+                runs_root=root,
+                date=f"2026-06-06T09-3{i}-00Z",
+                queue=_queue(verdict),
+                retraction_mode="metadata",
+            )
+
+            assert ledger["candidate"]["topic"] == topic
+            assert ledger["considered"][0]["status"] == "eligible"
+            assert ledger["considered"][0]["family_blocked"] is False
+            assert ledger["family_blocked_count"] == 0
+
+
+def test_receipt_shape_mismatch_reranks_before_submit(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    bad = _verdict("mixed_direct_receipts", score=100)
+    good = _verdict("matched_direct_receipts", score=90)
+    _memo_with_receipt_shapes(root, bad, [
+        {
+            "canonical_phrase": "Tumor treating fields improved glioblastoma survival.",
+            "population": "glioblastoma adults",
+            "intervention": "tumor treating fields",
+            "endpoint": "overall survival",
+        },
+        {
+            "canonical_phrase": "Omega 3 supplementation reduced runner soreness.",
+            "population": "distance runners",
+            "intervention": "omega 3 supplementation",
+            "endpoint": "muscle soreness",
+        },
+        {
+            "canonical_phrase": "Cognitive training changed dementia recall.",
+            "population": "older adults with dementia",
+            "intervention": "cognitive training",
+            "endpoint": "memory recall",
+        },
+        {
+            "canonical_phrase": "Probiotic feeding changed neonatal enterocolitis rates.",
+            "population": "preterm infants",
+            "intervention": "probiotic feeding",
+            "endpoint": "necrotizing enterocolitis",
+        },
+        {
+            "canonical_phrase": "Metformin lowered glycemic markers in diabetes.",
+            "population": "type 2 diabetes patients",
+            "intervention": "metformin",
+            "endpoint": "hemoglobin a1c",
+        },
+    ])
+    _memo_with_source_receipts(root, good, 5)
+    submissions: list[dict[str, Any]] = []
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submissions.append(payload)
+        return {"ok": True, "status": 200, "response": {}}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-06T09-30-00Z",
+        queue=_queue(bad, good),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+    )
+
+    assert ledger["submitted_topic"] == "matched_direct_receipts"
+    assert ledger["considered"][0]["status"] == "receipt_shape_mismatch"
+    assert ledger["considered"][1]["status"] == "eligible"
+    assert len(submissions) == 1
+    assert submissions[0]["topic"] == "matched_direct_receipts"
+
+
 def test_repairable_retry_does_not_resubmit_unchanged_memo(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("unchanged_retry")
@@ -1622,7 +1993,7 @@ def test_repairable_retry_does_not_resubmit_unchanged_memo(tmp_path: Path) -> No
         memo_refresher=lambda _run, _verdict: True,
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["considered"][0]["memo_refreshed"] is True
     assert ledger["considered"][0]["status"] == "duplicate_submission_fingerprint"
 
@@ -1686,7 +2057,7 @@ def test_nonrepairable_rejection_does_not_retry_duplicate(tmp_path: Path) -> Non
         submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["considered"][0]["status"] == "duplicate_submission_fingerprint"
 
 
@@ -1721,7 +2092,7 @@ def test_repairable_rejection_retry_is_capped(tmp_path: Path) -> None:
         submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["considered"][0]["status"] == "duplicate_submission_fingerprint"
 
 
@@ -1896,7 +2267,7 @@ def test_missing_alpha_memo_is_not_publishable(tmp_path: Path) -> None:
         retraction_mode="metadata",
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["considered"][0]["status"] == "missing_alpha_memo"
 
 
@@ -1933,7 +2304,7 @@ def test_refresh_exits_early_when_queue_unchanged_across_batches(
 
     assert calls["n"] == 2  # fast empty refresh, then one warm-backlog try
     assert warm_flags == [False, True]
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["refresh_backlog_escalation"] == {
         "after_batch": 1,
         "reason": "empty_refresh_no_candidate",
@@ -1969,7 +2340,7 @@ def test_warm_backlog_timeout_degrades_to_no_candidate(
         submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["published"] == 0
     assert ledger["refresh_early_exit"] == {
         "batch": 2,
@@ -2003,7 +2374,7 @@ def test_refresh_timeout_note_degrades_to_no_candidate(
         submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["refresh_early_exit"] == {
         "batch": 1,
         "reason": "refresh_timeout",
@@ -2335,7 +2706,7 @@ def test_high_alpha_curation_cluster_can_seed_claim_candidate(tmp_path: Path) ->
     ]
 
 
-def test_low_alpha_curation_cluster_can_seed_claim_candidate_when_source_coherent(
+def test_low_alpha_curation_cluster_does_not_seed_claim_candidate(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / "repo"
@@ -2359,11 +2730,7 @@ def test_low_alpha_curation_cluster_can_seed_claim_candidate_when_source_coheren
         [verdict], root, min_direct_source_count=5,
     )
 
-    assert len(rows) == 1
-    assert rows[0]["topic"] == "weak_curated_parent_bounded_claim"
-    assert rows[0]["receipt_expansion"]["cited_bound_fact_ids"] == [
-        "1", "2", "3", "4", "5",
-    ]
+    assert rows == []
 
 
 def test_no_candidate_refreshes_queued_child_topics_next_batch(
@@ -2528,7 +2895,7 @@ def test_submit_mode_holds_thin_source_memos(tmp_path: Path) -> None:
         submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["submitted"] == 0
     assert ledger["considered"][0]["source_count"] == 2
     assert ledger["considered"][0]["corpus_ab_paper_count"] == 0
@@ -2559,7 +2926,7 @@ def test_submit_floor_uses_cited_sources_not_available_contexts(tmp_path: Path) 
         submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["submitted"] == 0
     assert ledger["considered"][0]["source_count"] == 1
     assert ledger["considered"][0]["status"] == "corpus_source_floor_below_min"
@@ -2629,7 +2996,7 @@ def test_submit_floor_blocks_context_only_source_padding(tmp_path: Path) -> None
         submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["considered"][0]["source_count"] == 5
     assert ledger["considered"][0]["direct_source_count"] == 1
     assert ledger["considered"][0]["min_direct_source_count"] == 5
@@ -2722,7 +3089,7 @@ def test_submit_floor_has_no_two_source_alpha_exception(tmp_path: Path) -> None:
         },
     )
 
-    assert ledger["status"] == "no_publishable_candidate"
+    assert ledger["status"] == "no_fresh_candidate"
     assert ledger["submitted"] == 0
     assert ledger["considered"][0]["source_count"] == 2
     assert ledger["considered"][0]["status"] == "corpus_source_floor_below_min"
@@ -2914,6 +3281,8 @@ def test_submission_payload_preserves_alpha_memo_contract(tmp_path: Path) -> Non
     assert payload["article_type"] == "alpha_memo"
     assert payload["author_agent_id"] == "agent-v4-alpha-memo"
     assert payload["agent_id"] == "agent-v4-alpha-memo"
+    assert payload["domain"]["slug"] == "longevity"
+    assert payload["evidence_bundle"]["domain"]["slug"] == "longevity"
     assert payload["topic"] == "grid_storage"
     assert "What would weaken this" in payload["markdown"]
     assert "sections" not in payload
@@ -2925,6 +3294,31 @@ def test_submission_payload_preserves_alpha_memo_contract(tmp_path: Path) -> Non
         "novelty_delta": {"novelty_delta": {"label": "contradictory"}},
         "typed_counter_evidence": {"items": []},
     }
+
+
+def test_submission_payload_requires_domain_metadata(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict()
+    verdict.pop("domain")
+    _memo(root, verdict)
+
+    with raises(ValueError, match="missing domain metadata"):
+        daily._submission_payload(verdict, root / "runs")
+
+
+def test_submission_payload_uses_domain_specific_agent_identity(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("llm_judge_reliability") | {
+        "domain": {"slug": "ai_research"},
+    }
+    _memo(root, verdict)
+
+    payload = daily._submission_payload(verdict, root / "runs")
+
+    assert payload["author_agent_id"] == "agent-v4-alpha-ai-research"
+    assert payload["agent_id"] == "agent-v4-alpha-ai-research"
+    assert payload["domain"]["slug"] == "ai_research"
+    assert payload["evidence_bundle"]["domain"]["slug"] == "ai_research"
 
 
 def test_submission_payload_strips_internal_alpha_scores(tmp_path: Path) -> None:
@@ -3156,6 +3550,7 @@ def test_successful_submit_records_submission_not_publication(tmp_path: Path) ->
         )
     )
     assert records[0]["topic"] == "grid_storage"
+    assert records[0]["domain"]["slug"] == "longevity"
     assert records[0]["fingerprint"] == daily.memo_fingerprint(verdict)
 
 
@@ -3450,6 +3845,32 @@ def test_apply_submission_decision_keeps_accept_without_url_pending() -> None:
     assert ledger["public_page_check"]["status"] == "missing_public_url"
 
 
+def test_apply_submission_decision_reports_accepted_dedupe_without_url() -> None:
+    ledger: dict[str, Any] = {
+        "submitted": 1,
+        "published": 0,
+        "submitted_topic": "accepted_deduped",
+    }
+
+    final = daily._apply_submission_decision(
+        ledger,
+        submission_id="sub-accepted-deduped",
+        decision={
+            "status": "complete",
+            "decision": "accept",
+            "publication": None,
+            "failure_category": "integrity_duplicate",
+        },
+        page_fetcher=lambda _url: {"ok": False, "status": 0},
+    )
+
+    assert final == "accepted"
+    assert ledger["status"] == "deduped_publication"
+    assert ledger["final_verdict"] == "accepted"
+    assert ledger["published"] == 0
+    assert ledger["published_topic"] == "accepted_deduped"
+
+
 def test_public_alpha_urls_prefers_publication_url_over_artifact_ids() -> None:
     decision = {
         "dw_artifact_id": "claim_16e9ea4c16c74570",
@@ -3510,6 +3931,7 @@ def test_refresh_candidates_builds_one_topic_per_submit_batch(
     assert ledger["refresh_candidates"]["ok"] is True
     assert ledger["refresh_top"] == 5
     assert "--stop-on-ready" in calls[0][0]
+    assert calls[0][0][calls[0][0].index("--domain") + 1] == "longevity"
     assert "--with-pico-enrich" not in calls[0][0]
     assert "--no-editorial" in calls[0][0]
     assert "--no-frontier" in calls[0][0]
@@ -3518,7 +3940,30 @@ def test_refresh_candidates_builds_one_topic_per_submit_batch(
     assert calls[0][1] == 1200
 
 
-def test_systemd_publish_timer_has_full_refresh_budget() -> None:
+def test_refresh_candidates_passes_ai_research_domain(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+
+    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        calls.append(args)
+        return True, "ok"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    daily.run_cycle(
+        runs_root=tmp_path,
+        date="2026-05-22",
+        domain="ai_research",
+        refresh_candidates=True,
+        queue=_queue(),
+    )
+
+    assert calls
+    assert calls[0][calls[0].index("--domain") + 1] == "ai_research"
+
+
+def test_systemd_legacy_daily_longevity_publisher_is_disabled() -> None:
     service = Path("deploy/systemd/researka-alpha-daily.service").read_text(
         encoding="utf-8",
     )
@@ -3526,10 +3971,43 @@ def test_systemd_publish_timer_has_full_refresh_budget() -> None:
         encoding="utf-8",
     )
 
-    assert "--allow-tier2" in service
+    assert "DISABLED legacy generic longevity" in service
+    assert "ExecStart=/bin/true" in service
+    assert "daily_alpha_publish_cycle.py" not in service
+    assert "DISABLED legacy generic longevity" in timer
+    assert "OnCalendar=*-*-* 01/8:30:00" in timer
+
+
+def test_systemd_ai_research_timer_offsets_global_four_hour_submitter() -> None:
+    service = Path("deploy/systemd/researka-alpha-ai-research.service").read_text(
+        encoding="utf-8",
+    )
+    timer = Path("deploy/systemd/researka-alpha-ai-research.timer").read_text(
+        encoding="utf-8",
+    )
+
+    assert "scripts/daily_alpha_publish_cycle.py" in service
+    assert "--domain ai_research" in service
+    assert "--submit" in service
     assert "--max-refresh-batches 5" in service
-    assert "--max-refresh-batches 2" not in service
-    assert "OnCalendar=*-*-* 01/4:30:00" in timer
+    assert "OnCalendar=*-*-* 05/8:30:00" in timer
+    assert "Unit=researka-alpha-ai-research.service" in timer
+
+
+def test_systemd_longevity_research_timer_uses_explicit_domain() -> None:
+    service = Path(
+        "deploy/systemd/researka-alpha-longevity-research.service",
+    ).read_text(encoding="utf-8")
+    timer = Path(
+        "deploy/systemd/researka-alpha-longevity-research.timer",
+    ).read_text(encoding="utf-8")
+
+    assert "scripts/daily_alpha_publish_cycle.py" in service
+    assert "--domain longevity_research" in service
+    assert "--submit" in service
+    assert "--max-refresh-batches 5" in service
+    assert "OnCalendar=*-*-* 01/8:30:00" in timer
+    assert "Unit=researka-alpha-longevity-research.service" in timer
 
 
 def test_systemd_cache_warmer_fills_source_rich_backlog() -> None:
@@ -4316,8 +4794,14 @@ def test_current_cycle_repairable_revise_does_not_depend_on_ledger_rescan(
         return True
 
     monkeypatch.setattr(daily, "_run_step", fake_step)
-    monkeypatch.setattr(daily, "_repairable_rejected_fingerprints", lambda _path: set())
-    monkeypatch.setattr(daily, "_repairable_decisions_by_fingerprint", lambda _path: {})
+    monkeypatch.setattr(
+        daily, "_repairable_rejected_fingerprints",
+        lambda _path, _domain=None: set(),
+    )
+    monkeypatch.setattr(
+        daily, "_repairable_decisions_by_fingerprint",
+        lambda _path, _domain=None: {},
+    )
 
     ledger = daily.run_cycle(
         runs_root=root,
@@ -4447,6 +4931,31 @@ def test_memo_with_falsifier_passes_the_gate(tmp_path: Path) -> None:
         min_source_count=5, min_direct_source_count=2,
     )
     assert considered[0]["status"] != "memo_missing_falsifier"
+
+
+def test_receipt_map_verdict_does_not_submit_on_raw_source_count(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("receipt_map") | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "surface_type": "receipt_map",
+        "blockers": ["claim_alignment_partial"],
+    }
+    _memo_with_source_receipts(root, verdict, 5)
+    _audit_sidecars(root / str(verdict["run_dir"]))
+
+    cand, considered = daily.select_candidate(
+        _queue(verdict),
+        runs_root=root,
+        submitted_path=root / "submitted.json",
+        min_source_count=5,
+        min_direct_source_count=5,
+    )
+
+    assert cand is None
+    assert considered[0]["status"] == "agent_repair_needed"
 
 
 def test_unlabeled_source_floor_review_candidate_repairs_before_approval(

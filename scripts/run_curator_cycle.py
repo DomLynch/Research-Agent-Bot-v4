@@ -46,6 +46,7 @@ from daily_alpha_publish_cycle import (  # noqa: E402
     _source_count,
 )
 
+from agent.domain_profile import domain_choices  # noqa: E402
 from agent.settings import load_settings  # noqa: E402
 from agent.topic_discovery import _fetch_topic_fact_source_count  # noqa: E402
 
@@ -231,13 +232,15 @@ def _run_step(
 def _run_topic_pipeline(
     topic: str, velocity: float, *, with_editorial: bool, top_n: int,
     py: str, pico_enrich: bool = False, frontier_review: bool = True,
-    parent_topic: str = "",
+    parent_topic: str = "", domain: str = "longevity",
 ) -> TopicResult:
     """Run build + gate + signal_post for one topic. Returns the
     aggregate result. Each step's failure is recorded; we continue
     through to give the operator a partial output trail."""
-    build_args = [py, "scripts/build_topic_evidence_run.py",
-                  "--topic", topic, "--top", str(top_n)]
+    build_args = [
+        py, "scripts/build_topic_evidence_run.py",
+        "--domain", domain, "--topic", topic, "--top", str(top_n),
+    ]
     if parent_topic:
         build_args.extend(["--parent-topic", parent_topic])
     if with_editorial:
@@ -430,6 +433,7 @@ def _summarize_md(
 
 def main() -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--domain", choices=domain_choices(), default="longevity")
     parser.add_argument("--top", type=int, default=5,
                         help="Number of topics to run this cycle (default 5)")
     parser.add_argument("--cooldown-hours", type=float, default=24.0,
@@ -478,7 +482,11 @@ def main() -> int:
             stop_on_ready=args.stop_on_ready,
             excluded_count=len(args.exclude_topic),
         )
-        discovery_args = [py, "scripts/run_topic_discovery.py", "--top", str(discovery_top)]
+        discovery_args = [
+            py, "scripts/run_topic_discovery.py",
+            "--domain", args.domain,
+            "--top", str(discovery_top),
+        ]
         if args.stop_on_ready and not args.warm_backlog:
             discovery_args.append("--cache-first")
         if args.warm_backlog:
@@ -546,6 +554,7 @@ def main() -> int:
             frontier_review=not args.no_frontier,
             pico_enrich=args.with_pico_enrich,
             parent_topic=str(c.get("parent_topic") or ""),
+            domain=args.domain,
         )
         elapsed = time.time() - t0
         print(f"   -> {res.status} label={res.signal_label} "

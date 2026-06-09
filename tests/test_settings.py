@@ -13,6 +13,8 @@ def _clear_all(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("RAB_SKIP_DOTENV", "1")
     for key in (
         "MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "MIMO_TIMEOUT_SEC",
+        "MINIMAX_API_KEY", "MINIMAX_BASE_URL", "MINIMAX_MODEL",
+        "ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL", "ANTHROPIC_MODEL",
         "OPENROUTER_API_KEY", "OPENROUTER_BASE_URL", "JUDGE_MODEL",
         "WRITER_MAX_RETRIES",
         "RESEARKA_DATABASE_URL", "RESEARKA_DATABASE_TOKEN",
@@ -31,8 +33,8 @@ def test_load_settings_returns_dataclass(monkeypatch: pytest.MonkeyPatch) -> Non
 def test_defaults_when_env_missing(monkeypatch: pytest.MonkeyPatch) -> None:
     _clear_all(monkeypatch)
     s = load_settings()
-    assert s.mimo_base_url == "https://token-plan-sgp.xiaomimimo.com/v1"
-    assert s.mimo_model == "mimo-v2.5-pro"
+    assert s.mimo_base_url == "https://api.minimax.io/anthropic"
+    assert s.mimo_model == "MiniMax-M3"
     assert s.judge_model == "google/gemma-4-31b-it"
     assert s.openrouter_base_url == "https://openrouter.ai/api/v1"
     assert s.researka_database_url == "https://database.researka.org"
@@ -45,9 +47,22 @@ def test_defaults_when_env_missing(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_writer_configured_property(monkeypatch: pytest.MonkeyPatch) -> None:
     _clear_all(monkeypatch)
-    monkeypatch.setenv("MIMO_API_KEY", "tp-test")
+    monkeypatch.setenv("MINIMAX_API_KEY", "tp-test")
     s = load_settings()
     assert s.writer_configured is True
+
+
+def test_writer_env_keeps_legacy_mimo_aliases(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _clear_all(monkeypatch)
+    monkeypatch.setenv("MIMO_API_KEY", "tp-test")
+    monkeypatch.setenv("MIMO_BASE_URL", "https://legacy.example/v1")
+    monkeypatch.setenv("MIMO_MODEL", "legacy-model")
+    s = load_settings()
+    assert s.writer_configured is True
+    assert s.mimo_base_url == "https://legacy.example/v1"
+    assert s.mimo_model == "legacy-model"
 
 
 def test_writer_not_configured_without_key(monkeypatch: pytest.MonkeyPatch) -> None:

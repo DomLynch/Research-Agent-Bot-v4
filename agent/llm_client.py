@@ -1,9 +1,10 @@
 """HTTP clients for the two-model stack.
 
-Writer: MiMo v2.5 Pro (Xiaomi OpenAI-compatible endpoint)
+Writer: MiniMax-M3 (MiniMax Anthropic-compatible endpoint)
 Judge / editor: Gemma 4 31B via OpenRouter
 
-Both speak OpenAI chat-completions JSON.
+The writer uses MiniMax's Anthropic-compatible messages API by default;
+the judge/editor path remains OpenAI chat-completions JSON via OpenRouter.
 
 Hardening (Sprint 8.1c + 8.1d):
   - Split timeouts: connect fails fast (15s) so dead endpoints surface
@@ -70,35 +71,94 @@ def _post_chat(
     }
     if max_tokens is not None:
         payload["max_tokens"] = max_tokens
+    return _post_json(
+        url=f"{base_url.rstrip('/')}/chat/completions",
+        payload=payload,
+        headers=headers,
+        read_timeout_sec=read_timeout_sec,
+        max_retries=max_retries,
+        backoff_seconds=backoff_seconds,
+    )
+
+
+def _anthropic_messages(
+    messages: list[dict[str, str]],
+) -> tuple[str, list[dict[str, Any]]]:
+    system_parts: list[str] = []
+    out: list[dict[str, Any]] = []
+    for message in messages:
+        role = str(message.get("role") or "user")
+        content = str(message.get("content") or "")
+        if role == "system":
+            system_parts.append(content)
+            continue
+        out.append({
+            "role": "assistant" if role == "assistant" else "user",
+            "content": [{"type": "text", "text": content}],
+        })
+    return "\n\n".join(part for part in system_parts if part), out
+
+
+def _post_anthropic_messages(
+    *,
+    base_url: str,
+    api_key: str,
+    model: str,
+    messages: list[dict[str, str]],
+    read_timeout_sec: float,
+    temperature: float,
+    max_tokens: int | None = None,
+) -> dict[str, Any]:
+    system, api_messages = _anthropic_messages(messages)
+    payload: dict[str, Any] = {
+        "model": model,
+        "messages": api_messages,
+        "temperature": temperature,
+        "thinking": {"type": "disabled"},
+    }
+    if system:
+        payload["system"] = system
+    if max_tokens is not None:
+        payload["max_tokens"] = max_tokens
+    headers = {
+        "x-api-key": api_key,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+    }
+    return _post_json(
+        url=f"{base_url.rstrip('/')}/v1/messages",
+        payload=payload,
+        headers=headers,
+        read_timeout_sec=read_timeout_sec,
+    )
+
+
+def _post_json(
+    *,
+    url: str,
+    payload: dict[str, Any],
+    headers: dict[str, str],
+    read_timeout_sec: float,
+    max_retries: int = 3,
+    backoff_seconds: tuple[float, ...] = _DEFAULT_BACKOFF_SECONDS,
+) -> dict[str, Any]:
     timeout = httpx.Timeout(
         connect=15.0, read=read_timeout_sec, write=60.0, pool=10.0,
     )
-
-    def _sleep(attempt_idx: int) -> None:
-        delay = (
-            backoff_seconds[attempt_idx]
-            if attempt_idx < len(backoff_seconds)
-            else backoff_seconds[-1]
-        )
-        time.sleep(delay)
-
     last_exc: Exception | None = None
     for attempt in range(max_retries + 1):
         try:
             with httpx.Client(timeout=timeout) as client:
-                r = client.post(
-                    f"{base_url.rstrip('/')}/chat/completions",
-                    json=payload, headers=headers,
-                )
+                r = client.post(url, json=payload, headers=headers)
                 if r.status_code in _TRANSIENT_HTTP_STATUSES:
                     last_exc = httpx.HTTPStatusError(
-                        f"{r.status_code} {r.reason_phrase} from "
-                        f"{base_url.rstrip('/')}/chat/completions",
+                        f"{r.status_code} {r.reason_phrase} from {url}",
                         request=r.request, response=r,
                     )
                     if attempt >= max_retries:
                         break
-                    _sleep(attempt)
+                    delay = backoff_seconds[min(attempt, len(backoff_seconds) - 1)]
+                    time.sleep(delay)
                     continue
                 r.raise_for_status()
                 return cast(dict[str, Any], r.json())
@@ -106,7 +166,8 @@ def _post_chat(
             last_exc = e
             if attempt >= max_retries:
                 break
-            _sleep(attempt)
+            delay = backoff_seconds[min(attempt, len(backoff_seconds) - 1)]
+            time.sleep(delay)
     assert last_exc is not None
     raise last_exc
 
@@ -123,6 +184,26 @@ def _extract(data: dict[str, Any], model: str) -> LLMResponse:
     )
 
 
+def _extract_anthropic(data: dict[str, Any], model: str) -> LLMResponse:
+    blocks = data.get("content") or []
+    text = "".join(
+        str(block.get("text") or "")
+        for block in blocks
+        if isinstance(block, dict) and block.get("type") == "text"
+    )
+    usage = data.get("usage") or {}
+    return LLMResponse(
+        content=text,
+        model=str(data.get("model") or model),
+        prompt_tokens=int(usage.get("input_tokens", 0)),
+        completion_tokens=int(usage.get("output_tokens", 0)),
+    )
+
+
+def _writer_uses_anthropic_api(settings: Settings) -> bool:
+    return "/anthropic" in settings.mimo_base_url.rstrip("/").lower()
+
+
 def call_writer(
     settings: Settings,
     messages: list[dict[str, str]],
@@ -130,48 +211,48 @@ def call_writer(
     temperature: float = 0.3,
     max_tokens: int | None = 4000,
 ) -> LLMResponse:
-    """Single MiMo chat call. Raises if writer not configured.
+    """Single writer call. Raises if writer not configured.
 
-    max_tokens defaults to 4000. EMPIRICAL CALIBRATION: MiMo v2.5 Pro
-    has a server-side pathology where setting max_tokens >= ~6000
-    triggers "runaway" generation — completion_tokens reaches the cap
-    and content comes back empty. Probed live on 2026-05-12:
-
-        4000 -> OK, 1561 completion, 6144-char content (45s)
-        6000 -> FAIL, 6000 completion, empty content (109s)
-        8192 -> FAIL, 8192 completion, empty content
-        16384 -> FAIL, 16384 completion, empty content
-
-    Natural single-section output is ~1500-2000 tokens, so 4000 gives
-    2-3x headroom while staying under the pathology trigger. Callers
-    can pass None for unbounded (MiMo's own stop logic), or a higher
-    value if they have characterised a specific prompt.
+    max_tokens defaults to 4000. Natural single-section output is
+    ~1500-2000 tokens, so 4000 gives 2-3x headroom. MiniMax-M3 is the
+    default writer via the Anthropic-compatible messages API; legacy
+    OpenAI-compatible writer endpoints still work when the base URL is
+    not an Anthropic-compatible URL.
 
     The hardened client retries up to 3 times on transient network
-    failures or HTTP 429 / 5xx. RuntimeError is raised if MiMo returns
-    empty content with non-zero completion_tokens — the pathological
+    failures or HTTP 429 / 5xx. RuntimeError is raised if the writer
+    returns empty content with non-zero completion_tokens — the pathological
     case caught above — so callers do not silently write zero-byte
     drafts.
     """
     if not settings.writer_configured:
-        raise RuntimeError("Writer not configured: set MIMO_API_KEY and MIMO_BASE_URL")
-    # MiMo v2.5 Pro has an intermittent server-side bug: sometimes it
-    # generates up to max_tokens and returns empty content. Same prompt,
-    # same params, different attempts -> sometimes content, sometimes
-    # empty. Retry that case as a transient failure; raise only when
-    # all attempts in a row are runaway.
+        raise RuntimeError(
+            "Writer not configured: set MINIMAX_API_KEY or ANTHROPIC_API_KEY"
+        )
     last_response: LLMResponse | None = None
     for attempt in range(4):  # 1 initial + 3 retries
-        data = _post_chat(
-            base_url=settings.mimo_base_url,
-            api_key=settings.mimo_api_key,
-            model=settings.mimo_model,
-            messages=messages,
-            read_timeout_sec=settings.mimo_timeout_sec,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
-        last_response = _extract(data, settings.mimo_model)
+        if _writer_uses_anthropic_api(settings):
+            data = _post_anthropic_messages(
+                base_url=settings.mimo_base_url,
+                api_key=settings.mimo_api_key,
+                model=settings.mimo_model,
+                messages=messages,
+                read_timeout_sec=settings.mimo_timeout_sec,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+            last_response = _extract_anthropic(data, settings.mimo_model)
+        else:
+            data = _post_chat(
+                base_url=settings.mimo_base_url,
+                api_key=settings.mimo_api_key,
+                model=settings.mimo_model,
+                messages=messages,
+                read_timeout_sec=settings.mimo_timeout_sec,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+            last_response = _extract(data, settings.mimo_model)
         if last_response.content.strip():
             return last_response
         if last_response.completion_tokens == 0:
@@ -182,7 +263,7 @@ def call_writer(
     raise RuntimeError(
         f"writer returned empty content on all 4 attempts; "
         f"last completion_tokens={last_response.completion_tokens}. "
-        f"This is the MiMo runaway pathology — try a smaller "
+        f"This is the writer runaway pathology — try a smaller "
         f"max_tokens or shorten the prompt."
     )
 
@@ -194,21 +275,21 @@ def call_writer_with_fallback(
     temperature: float = 0.3,
     max_tokens: int | None = 4000,
 ) -> LLMResponse:
-    """Sprint 14: MiMo-then-Gemma writer fallback for the runaway pathology.
+    """Writer-then-Gemma fallback for runaway empty-output pathology.
 
-    MiMo first (canonical writer). On runaway-exhaustion only, falls back
-    to Gemma 4 31B. Response.model is tagged `mimo-runaway-fallback:<id>`
+    Writer first. On runaway-exhaustion only, falls back to Gemma 4 31B.
+    Response.model is tagged `writer-runaway-fallback:<id>`
     so the audit trail records the swap. Non-runaway errors propagate.
     """
     try:
         return call_writer(settings, messages, temperature=temperature, max_tokens=max_tokens)
     except RuntimeError as e:
-        if "MiMo runaway" not in str(e):
+        if "writer returned empty content" not in str(e):
             raise
     resp = call_judge(settings, messages, temperature=temperature)
     return LLMResponse(
         content=resp.content,
-        model=f"mimo-runaway-fallback:{resp.model}",
+        model=f"writer-runaway-fallback:{resp.model}",
         prompt_tokens=resp.prompt_tokens,
         completion_tokens=resp.completion_tokens,
     )
@@ -223,7 +304,7 @@ def call_judge(
     """Single Gemma 4 31B chat call via OpenRouter. Used for judge + editor.
 
     Model is fixed to settings.judge_model. The 2-model stack
-    (MiMo writer + Gemma judge) is non-negotiable per AGENTS.md;
+    (MiniMax writer + Gemma judge) is non-negotiable per AGENTS.md;
     do not add a model override here without explicit prior approval.
     """
     if not settings.judge_configured:

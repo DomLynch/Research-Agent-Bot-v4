@@ -772,14 +772,13 @@ def _source_bounded_why(
     if contexts:
         joined = "; ".join(contexts)
         return (
-            f"{prefix}{lead} is bounded to the cited receipt bundle; separate "
-            f"direct sources report measurable effects in {joined}. Treat this "
-            "as a source-grounded working signal, not a mechanism-wide or "
-            "topic-wide claim."
+            f"{prefix}{lead} sits inside the cited receipt bundle; separate "
+            f"direct sources report measurable effects in {joined}. Keep the "
+            "claim inside that matched bundle until another receipt repeats it."
         )
     return (
-        f"{prefix}{lead} is bounded to the cited direct receipts. Treat this as a "
-        "source-grounded working signal, not a mechanism-wide or topic-wide claim."
+        f"{prefix}{lead} sits inside the cited direct receipts. Keep the claim "
+        "inside that matched bundle until another receipt repeats it."
     )
 
 
@@ -788,11 +787,7 @@ def _bounded_direct_thesis(
 ) -> str:
     phrases = [_fact_phrase(facts.get(fid) or {}) for fid in lead_ids[:2]]
     joined = "; ".join(p for p in phrases if p)
-    return (
-        f"The cited direct receipts support a bounded working claim: {joined}."
-        if joined else
-        "The cited direct receipts support a bounded working claim."
-    )
+    return f"{joined}." if joined else "The cited direct receipts define the claim."
 
 
 def _heterogeneous_map_thesis(
@@ -1371,7 +1366,11 @@ def _receipt_thesis(
     )
     if verdict and verdict.get("surface_type") == "context_dependence_memo":
         return _context_subline(verdict, fallback or headline)
-    if fallback and not _same_phrase(fallback, headline):
+    if (
+        fallback
+        and not _same_phrase(fallback, headline)
+        and not _agent_repair_requested(verdict)
+    ):
         return fallback + stream_note
     direct_ids = [fid for fid in receipt_ids if fid not in set(context_ids)]
     if len(direct_ids) == 1 and (
@@ -1403,9 +1402,9 @@ def _counter_lines(verdict: dict[str, Any] | None) -> list[str]:
     items = counter.get("items", []) if isinstance(counter, dict) else []
     if not isinstance(items, list) or not items:
         return [
-            "- _Within the currently bound receipt bundle, no A_core/B_context "
-            "opposing fact was selected. Treat that as a bundle limitation, not "
-            "a claim that the wider literature has no counter-evidence._",
+            "- _No direct opposing receipt was selected by this run. Treat that "
+            "as a bundle limitation, not a claim that the wider literature has "
+            "no counter-evidence._",
         ]
     out = []
     for item in items[:3]:
@@ -1935,7 +1934,7 @@ def render_signal_memo(
         if _repair_heterogeneity_requested(publish_verdict) else
         angle.get("what_changes") or (
         "Treat this as a focused working signal, not a broad topic claim. "
-        "It moves review attention from a generic Top 5 list to the specific "
+        "It moves review attention from a broad receipt list to the specific "
         "contrast, receipt bundle, and matched direct-receipt table by "
         "population, model, endpoint, comparator, and effect direction that "
         "could confirm or kill the thesis."

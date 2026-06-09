@@ -237,8 +237,11 @@ def test_agent_repair_repick_falls_back_when_original_claim_is_stale(
 
     assert "**Direct source breadth:** `6` direct cited source(s)" in memo
     assert "`fact_id=303` (`A_core`)" in memo
-    assert verdict["axes"]["direct_source_papers"] == 6
-    assert verdict["decision"] == "ready_to_publish"
+    assert verdict["axes"]["direct_source_papers"] == 5
+    assert verdict["axes"]["direct_match_receipts"] == 5
+    assert verdict["decision"] == "agent_repair_needed"
+    assert verdict["surface_type"] == "receipt_map"
+    assert "claim_alignment_partial" in verdict["blockers"]
 
 
 def test_signal_memo_renders_publish_verdict_sections(tmp_path: Path) -> None:
@@ -835,7 +838,7 @@ def test_agent_repair_preserves_coherent_dispersion_only_bundle_as_source_angle(
     assert "**Direct source breadth:** `5` direct cited source(s)" in memo
     assert "live collision" not in memo
     assert "Real tension:" not in why
-    assert "bounded working claim" in memo
+    assert "bounded working claim" not in memo
     assert "`fact_id=707` (`A_core`)" in memo
 
 
@@ -1004,7 +1007,7 @@ def test_source_angle_publish_memo_replaces_stale_surprise_prose(
     assert "aerosol-policy" not in memo
     assert "infrastructure claim" not in memo
     assert "**Headline:** Carbon tax:" in memo
-    assert "source-grounded working signal" in why
+    assert "Keep the claim inside that matched bundle" in why
     assert "Real tension:" in why
     assert "market 303" in why
 
@@ -1286,8 +1289,11 @@ def test_agent_repair_rebinds_available_direct_receipts_without_cluster(
     assert "fact_id=101" not in evidence.group(1)
     assert all(f"`fact_id={fid}` (`A_core`)" in evidence.group(1) for fid in phrases)
     assert "**Direct source breadth:** `5` direct cited source(s)" in memo
-    assert verdict["axes"]["direct_source_papers"] == 5
-    assert "direct_source_floor_below_min" not in verdict["blockers"]
+    assert verdict["axes"]["direct_source_papers"] == 2
+    assert verdict["axes"]["direct_match_receipts"] == 2
+    assert verdict["surface_type"] == "split_or_reject_memo"
+    assert "cross_domain_forced" in verdict["blockers"]
+    assert "direct_source_floor_below_min" in verdict["blockers"]
 
 
 def test_counter_signal_names_collision_and_testable_split(tmp_path: Path) -> None:
@@ -1493,6 +1499,23 @@ def test_alpha_memo_abandons_weak_angles_below_config_floor(tmp_path: Path) -> N
     assert "**Headline:** Carbon pricing may cut emissions" in memo
     assert "has a live counter-signal" not in memo
     assert "may hinge on a boundary condition" not in memo
+
+
+def test_public_copy_drops_internal_and_bounded_boilerplate(tmp_path: Path) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+
+    memo = render_signal_memo(
+        run,
+        publish_verdict={
+            "surface_type": "publish_alpha_memo",
+            "counter_evidence": {"status": "none_found", "items": []},
+        },
+    )
+
+    assert "bounded working claim" not in memo
+    assert "Top 5 list" not in memo
+    assert "No direct opposing receipt was selected by this run" in memo
 
 
 def test_grounded_repair_rebuilds_headline_from_direct_receipts(

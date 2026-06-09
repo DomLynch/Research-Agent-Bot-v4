@@ -35,6 +35,7 @@ from typing import Any
 
 import httpx
 
+from agent.api_client import async_api_request
 from agent.retrieval.base import PaperHit, clean_text, int_or_none, normalize_doi
 from agent.settings import Settings
 
@@ -99,16 +100,15 @@ class ResearkaSource:
             "X-Researka-Token": self._token,
             "Content-Type": "application/json",
         }
+        r = await async_api_request(
+            client, "POST", f"{self._base}/api/v1/papers/topic",
+            service=self.name, json=body, headers=headers, timeout=20.0,
+        )
+        if r is None:
+            return []
         try:
-            r = await client.post(
-                f"{self._base}/api/v1/papers/topic",
-                json=body, headers=headers, timeout=20.0,
-            )
-            if r.status_code == 404:
-                return []
-            r.raise_for_status()
             data: Any = r.json()
-        except (httpx.HTTPError, ValueError):
+        except ValueError:
             return []
         if not isinstance(data, list):
             return []
@@ -138,14 +138,15 @@ class ResearkaSource:
             "X-Researka-Token": self._token,
             "Content-Type": "application/json",
         }
+        r = await async_api_request(
+            client, "POST", f"{self._base}/api/v1/search",
+            service=self.name, json=body, headers=headers, timeout=20.0,
+        )
+        if r is None:
+            return []
         try:
-            r = await client.post(
-                f"{self._base}/api/v1/search",
-                json=body, headers=headers, timeout=20.0,
-            )
-            r.raise_for_status()
             data: Any = r.json()
-        except (httpx.HTTPError, ValueError):
+        except ValueError:
             return []
         if not isinstance(data, dict):
             return []

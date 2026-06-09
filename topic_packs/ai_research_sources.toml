@@ -1,0 +1,37 @@
+# Source policy for the AI Research specialist module.
+#
+# This is descriptive metadata for the live AI Research domain. Source adapters
+# should read from this pack instead of adding domain literals to code.
+
+[source_policy]
+primary_sources = [
+    "arxiv",
+    "openreview",
+    "acl_anthology",
+    "semantic_scholar",
+    "openalex",
+    "crossref",
+]
+artifact_sources = [
+    "github",
+    "papers_with_code",
+    "hugging_face",
+    "leaderboards",
+]
+exclude_if_only = [
+    "blog_post",
+    "vendor_claim",
+    "press_release",
+    "unreproduced_leaderboard_claim",
+]
+
+[evidence_artifacts]
+required_fields = [
+    "paper",
+    "task_or_benchmark",
+    "metric",
+    "baseline_or_comparator",
+    "result",
+    "limitation",
+    "artifact_link",
+]
