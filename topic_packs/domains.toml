@@ -10,6 +10,13 @@ source_policy_path = "publication.toml"
 claim_schema_path = "publication.toml"
 dry_run_only = false
 
+[domains.longevity_research]
+display_name = "Longevity / anti-aging research"
+seed_topics_path = "discovery_seeds.toml"
+source_policy_path = "publication.toml"
+claim_schema_path = "publication.toml"
+dry_run_only = false
+
 [domains.ai_research]
 display_name = "AI research / AI agents / research automation"
 seed_topics_path = "ai_research_discovery_seeds.toml"
