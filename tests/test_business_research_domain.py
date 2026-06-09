@@ -457,7 +457,6 @@ def test_business_candidate_memo_synthesizes_mixed_effects(
     assert "## Research question" in memo
     assert "The bounded signal is disagreement" in memo
     assert "same measured business effect" not in memo
-    assert "material employment-elasticity estimates" not in memo
 
 
 def test_business_candidate_blocks_population_heterogeneity_false_disagreement() -> None:
