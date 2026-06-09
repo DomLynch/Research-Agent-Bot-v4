@@ -169,6 +169,31 @@ def test_business_bundle_rejects_off_topic_medical_management_fact() -> None:
     assert bundle is None
 
 
+def test_business_bundle_rejects_policy_only_medical_econ_fact() -> None:
+    rows = _fixture_facts()
+    for i, row in enumerate(rows, start=1):
+        row.update({
+            "id": f"bcg-{i}",
+            "topic": "mortality",
+            "claim_type": "mortality_effect",
+            "canonical_phrase": "Early BCG reduced neonatal mortality.",
+            "population": "low weight neonates",
+            "intervention": "early BCG",
+            "comparator": "control local policy",
+            "outcome": "mortality",
+            "metric": "mortality rate",
+            "study_design": "randomized controlled trial",
+        })
+
+    bundle = build_candidate_bundle(
+        rows,
+        topic="monetary_policy_inflation",
+        domain="economics_research",
+    )
+
+    assert bundle is None
+
+
 def test_business_candidate_cli_builds_ready_dry_run_queue(
     tmp_path: Path,
     monkeypatch: Any,

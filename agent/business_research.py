@@ -47,7 +47,10 @@ _GENERIC_METHOD_VALUES = frozenset({"other", "unknown", "not reported", "none", 
 _GENERIC_TOPIC_TOKENS = frozenset({
     "business", "management", "economics", "finance", "marketing", "research",
     "performance", "effect", "effects", "outcome", "outcomes", "model",
+    "policy",
 })
+_FINANCE_RETURN_TOPICS = frozenset({"asset pricing", "portfolio returns", "market efficiency"})
+_FINANCE_RETURN_RE = re.compile(r"\b(alpha|alphas|return|returns|premium|premia)\b", re.I)
 _STUDY_DESIGN_HINTS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"\b(randomi[sz]ed controlled trial|randomi[sz]ed trial|rct)\b", re.I), "randomized controlled trial"),
     (re.compile(r"\b(field experiment|randomi[sz]ed experiment)\b", re.I), "field experiment"),
@@ -217,6 +220,15 @@ def normalize_business_fact(item: Json, *, topic: str, domain: str) -> Json:
 
 
 def comparable_shape(fact: Json) -> dict[str, str]:
+    if _is_finance_return_fact(fact):
+        return {
+            "population": "firms portfolios funds",
+            "intervention": "return predictive signal portfolio",
+            "comparator": "benchmark or opposite signal portfolio",
+            "outcome": "risk adjusted portfolio returns",
+            "metric": "percentage return or alpha",
+            "study_design": "empirical asset pricing",
+        }
     return {name: _norm(fact.get(name)) for name in SHAPE_FIELDS if _norm(fact.get(name))}
 
 
@@ -243,6 +255,19 @@ def _matches_topic_intent(fact: Json) -> bool:
     ))
     words = set(text.split())
     return bool(tokens & words)
+
+
+def _is_finance_return_fact(fact: Json) -> bool:
+    if str(fact.get("_domain") or "") != "finance_research":
+        return False
+    if _norm(fact.get("source_topic")) not in _FINANCE_RETURN_TOPICS:
+        return False
+    if _clean(fact.get("units")).casefold() not in {"%", "percent", "percentage points"}:
+        return False
+    text = " ".join(str(fact.get(name) or "") for name in (
+        "canonical_phrase", "outcome", "metric", "sub_topic", "claim_type",
+    ))
+    return bool(_FINANCE_RETURN_RE.search(text))
 
 
 def is_a_core_business_fact(fact: Json) -> bool:
