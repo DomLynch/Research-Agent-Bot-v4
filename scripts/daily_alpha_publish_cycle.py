@@ -190,11 +190,13 @@ _EXHAUSTED_STATUSES = {
     "memo_missing_falsifier",
     "cycle_failed_submission",
     "held_retraction_check",
+    "receipt_shape_mismatch",
 }
 _TOPIC_EXHAUSTED_STATUSES = {
     "duplicate_submission_fingerprint",
     "cycle_failed_submission",
     "held_retraction_check",
+    "receipt_shape_mismatch",
 }
 _FINGERPRINT_EXHAUSTED_STATUSES = _TOPIC_EXHAUSTED_STATUSES | {"agent_repair_failed"}
 _REFRESHABLE_SOURCE_FLOOR_STATUSES = {
@@ -2776,10 +2778,14 @@ def _latest_cycle_topics(runs_root: Path) -> Json:
         if isinstance(row, dict) and row.get("topic")
     ]
     skipped = [str(t) for t in payload.get("skipped_in_cooldown") or [] if str(t)]
+    skipped_source_floor = [
+        str(t) for t in payload.get("skipped_below_source_floor") or [] if str(t)
+    ]
     return {
         "cycle": cycles[-1].name,
         "ran_topics": ran,
         "skipped_in_cooldown": skipped,
+        "skipped_below_source_floor": skipped_source_floor,
     }
 
 
@@ -2793,10 +2799,7 @@ def _refresh_candidate_batch(
     domain: str = "longevity",
 ) -> Json:
     exclusions = sorted(t for t in (excluded_topics or set()) if t)
-    warm_probe_topics = min(
-        _DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT,
-        max(refresh_top, _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES, refresh_top + len(exclusions)),
-    )
+    warm_probe_topics = _DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT
     args = [
         sys.executable, "scripts/run_curator_cycle.py",
         "--domain", domain, "--stop-on-ready", "--top", str(refresh_top),
@@ -3370,6 +3373,11 @@ def run_cycle(
             ran_topics = [str(t) for t in refresh.get("ran_topics") or [] if str(t)]
             if ran_topics:
                 blocked_topics.update(ran_topics)
+            source_floor_topics = [
+                str(t) for t in refresh.get("skipped_below_source_floor") or [] if str(t)
+            ]
+            if source_floor_topics:
+                blocked_topics.update(source_floor_topics)
             priority_children = _child_topics_from_queue(
                 current_queue, blocked_topics, limit=refresh_top,
             )

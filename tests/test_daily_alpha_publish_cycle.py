@@ -2332,7 +2332,10 @@ def test_refresh_candidate_batch_can_warm_backlog(
     assert "--derived-topic-limit" in calls[0]
     assert str(daily._DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT) in calls[0]
     assert "--fact-probe-topics" in calls[0]
-    assert calls[0][calls[0].index("--fact-probe-topics") + 1] == "5"
+    assert (
+        calls[0][calls[0].index("--fact-probe-topics") + 1]
+        == str(daily._DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT)
+    )
     assert "--no-editorial" in calls[0]
     assert "--no-frontier" in calls[0]
 
@@ -2746,7 +2749,10 @@ def test_refresh_candidate_batch_scales_live_probe_window_with_exclusions(
     )
 
     assert out["ok"] is True
-    assert calls[0][calls[0].index("--fact-probe-topics") + 1] == "8"
+    assert (
+        calls[0][calls[0].index("--fact-probe-topics") + 1]
+        == str(daily._DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT)
+    )
 
 
 def test_agent_repair_failed_fingerprint_is_not_repaired_twice_in_cycle(
@@ -4044,6 +4050,47 @@ def test_nonpublishable_refresh_topics_are_excluded_next_batch(
     assert ledger["refresh_batches"][1]["cooldown_reason"] == "retry_after_blocked_topic"
 
 
+def test_source_floor_skipped_topics_are_excluded_next_batch(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    fresh = _verdict("fresh")
+    _memo_with_source_receipts(root, fresh, 5)
+    queues = iter([_queue(), _queue(fresh)])
+    calls: list[list[str]] = []
+
+    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        calls.append(args)
+        cycle_dir = root / "_curator_cycles"
+        cycle_dir.mkdir(parents=True, exist_ok=True)
+        payload = (
+            {"ran": [], "skipped_below_source_floor": ["acarbose"]}
+            if len(calls) == 1 else
+            {"ran": [{"topic": "fresh"}], "skipped_below_source_floor": []}
+        )
+        daily._write_json(cycle_dir / f"cycle-{len(calls)}.json", payload)
+        return True, "ok"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        refresh_candidates=True,
+        max_refresh_batches=2,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+        queue_builder=lambda _root, _include_archive: next(queues),
+    )
+
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["submitted_topic"] == "fresh"
+    assert calls[1][-2:] == ["--exclude-topic", "acarbose"]
+    assert ledger["refresh_batches"][1]["cooldown_reason"] == "retry_after_blocked_topic"
+
+
 def test_refresh_batches_continue_until_eligible_candidate(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
@@ -4199,6 +4246,77 @@ def test_duplicate_topic_is_excluded_from_next_refresh_batch(
     assert [row["status"] for row in ledger["considered"]] == [
         "duplicate_submission_fingerprint",
         "cycle_exhausted_topic",
+        "eligible",
+    ]
+
+
+def test_receipt_shape_mismatch_topic_is_excluded_from_next_refresh_batch(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    mismatch = _verdict("mismatch")
+    fresh = _verdict("fresh") | {
+        "receipt_expansion": {"cited_bound_fact_ids": ["9", "8", "7"]},
+    }
+    _memo_with_receipt_shapes(root, mismatch, [
+        {
+            "canonical_phrase": "Exercise changed usual-care fatigue.",
+            "population": "cancer survivors",
+            "intervention": "exercise training",
+            "endpoint": "fatigue",
+        },
+        {
+            "canonical_phrase": "Qigong changed balance scores.",
+            "population": "older adults",
+            "intervention": "qigong",
+            "endpoint": "balance",
+        },
+        {
+            "canonical_phrase": "Resistance training changed strength.",
+            "population": "frail adults",
+            "intervention": "resistance training",
+            "endpoint": "grip strength",
+        },
+        {
+            "canonical_phrase": "Prehabilitation changed complications.",
+            "population": "surgery patients",
+            "intervention": "prehabilitation",
+            "endpoint": "postoperative complications",
+        },
+        {
+            "canonical_phrase": "Aerobic exercise changed walking distance.",
+            "population": "heart failure patients",
+            "intervention": "aerobic exercise",
+            "endpoint": "six-minute walk distance",
+        },
+    ])
+    _memo_with_source_receipts(root, fresh, 5)
+    calls: list[list[str]] = []
+    queues = iter([_queue(mismatch), _queue(mismatch, fresh)])
+
+    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        calls.append(args)
+        return True, "ok"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        refresh_candidates=True,
+        max_refresh_batches=2,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+        queue_builder=lambda _root, _include_archive: next(queues),
+    )
+
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["submitted_topic"] == "fresh"
+    assert calls[1][calls[1].index("--exclude-topic") + 1] == "mismatch"
+    assert [row["status"] for row in ledger["considered"]] == [
+        "receipt_shape_mismatch",
         "eligible",
     ]
 
