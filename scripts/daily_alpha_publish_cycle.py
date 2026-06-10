@@ -3322,6 +3322,30 @@ def _paper_mentions_boundary(paper: Json, boundary_terms: list[str]) -> bool:
     return any(term.lower() in title for term in boundary_terms)
 
 
+def _source_literature_title_stem(title: str) -> str:
+    text = re.sub(r"\b(?:19|20)\d{2}(?:\s*[-\u2013]\s*(?:19|20)?\d{2})?\b", " ", title.lower())
+    text = re.sub(r"[^a-z0-9]+", " ", text)
+    return " ".join(text.split())
+
+
+def _source_literature_boundary_quality(
+    topic: str, papers: list[Json], min_sources: int,
+) -> tuple[bool, str]:
+    boundary_terms = _source_literature_boundary_terms(topic, papers)
+    if not boundary_terms:
+        return False, "no_repeated_boundary_terms"
+    boundary_papers = [paper for paper in papers if _paper_mentions_boundary(paper, boundary_terms)]
+    if len(boundary_papers) < max(3, (min_sources + 1) // 2):
+        return False, "weak_boundary_support"
+    stems = {
+        _source_literature_title_stem(str(paper.get("title") or ""))
+        for paper in boundary_papers
+    }
+    if len(stems) < min(3, len(boundary_papers)):
+        return False, "repeated_title_series"
+    return True, "ok"
+
+
 def _source_literature_title_handles(
     papers: list[Json], boundary_terms: list[str], limit: int = 8,
 ) -> list[str]:
@@ -3570,7 +3594,8 @@ def _source_literature_fallback(
         papers = fetch_papers(topic, min_sources)
         if len(papers) < min_sources:
             continue
-        if not _source_literature_boundary_terms(topic, papers[:min_sources]):
+        ok, _reason = _source_literature_boundary_quality(topic, papers[:min_sources], min_sources)
+        if not ok:
             continue
         return _source_literature_payload(
             profile_slug=profile_slug, topic=topic, papers=papers[:min_sources],
