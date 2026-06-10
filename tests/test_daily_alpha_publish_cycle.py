@@ -18,6 +18,7 @@ from urllib.request import Request
 from pytest import MonkeyPatch, raises
 
 import scripts.daily_alpha_publish_cycle as daily
+from agent.domain_profile import domain_choices
 
 
 def test_run_subprocess_timeout_kills_descendant_process(tmp_path: Path) -> None:
@@ -3242,6 +3243,30 @@ def test_submission_payload_preserves_alpha_memo_contract(tmp_path: Path) -> Non
         "novelty_delta": {"novelty_delta": {"label": "contradictory"}},
         "typed_counter_evidence": {"items": []},
     }
+
+
+def test_submission_payload_sends_category_contract_for_every_domain(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    for slug in domain_choices():
+        topic = f"{slug}_topic"
+        verdict = _verdict(topic) | {"domain": {"slug": slug}}
+        _memo(root, verdict)
+
+        payload = daily._submission_payload(verdict, root / "runs")
+        category = slug.removesuffix("_research")
+
+        assert payload["domain_slug"] == slug
+        assert payload["category"] == category
+        assert payload["article_type"] == "alpha_memo"
+        assert payload["topic"] == topic
+        assert payload["metadata"] == {
+            "article_type": "alpha_memo",
+            "category": category,
+            "domain_slug": slug,
+            "topic": topic,
+        }
 
 
 def test_submission_payload_requires_domain_metadata(tmp_path: Path) -> None:
