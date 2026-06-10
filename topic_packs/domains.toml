@@ -23,3 +23,43 @@ seed_topics_path = "ai_research_discovery_seeds.toml"
 source_policy_path = "ai_research_sources.toml"
 claim_schema_path = "ai_research_claim_schema.toml"
 dry_run_only = false
+
+[domains.business_research]
+display_name = "Business research / strategy / operations"
+seed_topics_path = "business_research_discovery_seeds.toml"
+source_policy_path = "business_research_sources.toml"
+claim_schema_path = "business_research_claim_schema.toml"
+dry_run_only = true
+database_domain = "econ_business"
+
+[domains.management_research]
+display_name = "Management / organizational behaviour research"
+seed_topics_path = "management_research_discovery_seeds.toml"
+source_policy_path = "management_research_sources.toml"
+claim_schema_path = "management_research_claim_schema.toml"
+dry_run_only = true
+database_domain = "econ_business"
+
+[domains.economics_research]
+display_name = "Economics research"
+seed_topics_path = "economics_research_discovery_seeds.toml"
+source_policy_path = "economics_research_sources.toml"
+claim_schema_path = "economics_research_claim_schema.toml"
+dry_run_only = false
+database_domain = "econ_business"
+
+[domains.finance_research]
+display_name = "Finance research"
+seed_topics_path = "finance_research_discovery_seeds.toml"
+source_policy_path = "finance_research_sources.toml"
+claim_schema_path = "finance_research_claim_schema.toml"
+dry_run_only = false
+database_domain = "econ_business"
+
+[domains.marketing_research]
+display_name = "Marketing research"
+seed_topics_path = "marketing_research_discovery_seeds.toml"
+source_policy_path = "marketing_research_sources.toml"
+claim_schema_path = "marketing_research_claim_schema.toml"
+dry_run_only = true
+database_domain = "econ_business"

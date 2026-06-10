@@ -3037,6 +3037,7 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         "author_agent_id": agent_id,
         "agent_id": agent_id,
         "domain": domain_metadata,
+        "domain_slug": profile.slug,
         "title": title,
         "abstract": abstract,
         "summary": abstract,

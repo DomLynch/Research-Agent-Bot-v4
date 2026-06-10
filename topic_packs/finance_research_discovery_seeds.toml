@@ -1,0 +1,12 @@
+[seeds]
+derived_topic_limit = 5000
+topics = [
+    "portfolio_returns",
+    "factor_premia_returns",
+    "asset_pricing_replication",
+    "portfolio_diversification_risk",
+    "monetary_policy_asset_prices",
+    "corporate_governance_returns",
+    "earnings_announcements_returns",
+    "market_liquidity_volatility",
+]

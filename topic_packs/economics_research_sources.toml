@@ -1,0 +1,11 @@
+[source_policy]
+primary_sources = ["nber", "repec", "aer", "qje", "econometrica", "openalex", "crossref", "ssrn"]
+preferred_journals = ["american_economic_review", "quarterly_journal_of_economics", "journal_of_political_economy", "econometrica"]
+exclude_if_only = ["policy_brief_without_methods", "opinion_piece", "market_commentary", "forecast_without_identification"]
+
+[evidence_artifacts]
+required_fields = [
+    "population", "geography", "time_period", "intervention", "comparator",
+    "outcome", "metric", "study_design", "dataset", "estimation_method",
+    "identification_strategy", "effect_size", "sample_size",
+]

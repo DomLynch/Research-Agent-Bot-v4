@@ -1,0 +1,12 @@
+[claim_schema]
+claim_modes = ["advertising_effect", "pricing_effect", "retention_effect", "conversion_effect", "brand_effect"]
+fields = [
+    "population", "industry", "geography", "time_period", "intervention",
+    "comparator", "outcome", "metric", "study_design", "dataset",
+    "estimation_method", "identification_strategy", "effect_size",
+    "confidence_interval", "standard_error", "p_value", "sample_size",
+]
+publish_contract = [
+    "marketing claims must preserve channel/treatment, comparator, outcome, and metric",
+    "direct receipts must share comparable market, channel, and design shape",
+]
