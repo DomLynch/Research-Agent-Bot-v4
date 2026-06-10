@@ -1062,10 +1062,10 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         surface_type = "split_or_reject_memo"
     elif "source_dispersion" in blockers:
         surface_type = "heterogeneity_memo"
+    elif "claim_alignment_partial" in blockers or "direct_source_floor_below_min" in blockers:
+        surface_type = "receipt_map"
     elif "retrieval_artifact_claim" in blockers:
         surface_type = "retrieval_note"
-    elif "claim_alignment_partial" in blockers:
-        surface_type = "receipt_map"
     elif subtopics["recommended"]:
         surface_type = "subtopic_rerun_memo"
     elif decision == "curation_needed":

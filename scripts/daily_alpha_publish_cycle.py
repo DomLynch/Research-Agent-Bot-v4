@@ -27,7 +27,9 @@ from typing import Any
 
 from agent.alpha_selector import accepted_shape_bonus
 from agent.domain_profile import domain_choices, domain_slug, load_domain_profile
+from agent.llm_client import call_writer
 from agent.publish_tier import publish_verdict
+from agent.settings import load_settings
 
 _ROOT = Path(__file__).resolve().parent.parent
 _RUNS = _ROOT / "runs"
@@ -57,6 +59,7 @@ Submitter = Callable[[Json], Json]
 MemoRefresher = Callable[[Path, Json], bool]
 QueueBuilder = Callable[[Path, bool], Json]
 PageFetcher = Callable[[str], Json]
+SourcePaperFetcher = Callable[[str, int], list[Json]]
 _SUBMIT_TOKEN_ENVS = (
     "RESEARKA_API_KEY_V4",
     "RESEARKA_API_TOKEN_V4",
@@ -862,7 +865,15 @@ def _claim_cluster_repairable(verdict: Json, rec: Json) -> bool:
     decision = str(verdict.get("decision") or "")
     if decision in _AGENT_REPAIR_DECISIONS:
         return True
-    return decision == "curation_needed" and rec.get("reason") == "source_coherent_child_cluster"
+    if decision != "curation_needed" or rec.get("reason") != "source_coherent_child_cluster":
+        return False
+    if int(verdict.get("alpha_score") or 0) <= 0:
+        return False
+    blockers = verdict.get("blockers")
+    return not (
+        isinstance(blockers, list)
+        and any(str(blocker).startswith("blocked_label:") for blocker in blockers)
+    )
 
 
 def _claim_cluster_candidates(
@@ -1213,7 +1224,9 @@ def _ledger_domain(ledger: Json) -> str:
 
 
 def _same_domain(record_domain: str, domain: str | None) -> bool:
-    return not domain or record_domain == domain
+    if not domain:
+        return True
+    return record_domain.removesuffix("_research") == domain.removesuffix("_research")
 
 
 def _seen_submission_fingerprints_for_domain(path: Path, domain: str | None) -> set[str]:
@@ -1523,6 +1536,46 @@ def _recently_published_topics(
         )
         if topic:
             topics.add(str(topic))
+    return topics
+
+
+def _recent_negative_topics(
+    ledger_dir: Path, *, days: int, domain: str | None = None,
+) -> set[str]:
+    cutoff = time.time() - (max(0, days) * 86400)
+    topics: set[str] = set()
+    for path in ledger_dir.glob("*.json"):
+        if path.name.startswith("_"):
+            continue
+        with suppress(OSError):
+            if path.stat().st_mtime < cutoff:
+                continue
+        ledger = _json(path, {})
+        if not isinstance(ledger, dict) or not _same_domain(_ledger_domain(ledger), domain):
+            continue
+        decision = ledger.get("researka_decision")
+        if not isinstance(decision, dict):
+            decision = {}
+        rejected = (
+            ledger.get("final_verdict") == "rejected"
+            or ledger.get("status") == "reviewer_rejected"
+            or decision.get("decision") == "reject"
+        )
+        unsupported = str(decision.get("claim_support_verdict") or "").lower() == "unsupported"
+        if not (rejected and unsupported and not _repairable_rejection(decision)):
+            continue
+        candidate = ledger.get("candidate")
+        if not isinstance(candidate, dict):
+            candidate = {}
+        for value in (
+            ledger.get("submitted_topic"),
+            ledger.get("published_topic"),
+            ledger.get("topic_family"),
+            candidate.get("topic"),
+            candidate.get("topic_family"),
+        ):
+            if value:
+                topics.add(str(value))
     return topics
 
 
@@ -2436,6 +2489,154 @@ def _page_rendered(result: Json) -> bool:
     )
 
 
+def _source_literature_title_key(title: Any) -> str:
+    raw = str(title or "").casefold()
+    raw = re.sub(r"\b(?:19|20)\d{2}(?:\s*[-/]\s*(?:19|20)\d{2})?\b", " ", raw)
+    raw = re.sub(r"\d+", " ", raw)
+    raw = re.sub(r"[^a-z]+", " ", raw)
+    return " ".join(token for token in raw.split() if token)
+
+
+def _source_literature_boundary_quality(
+    topic: str, papers: list[Json], min_sources: int,
+) -> tuple[bool, str]:
+    usable = [
+        paper for paper in papers
+        if isinstance(paper, dict)
+        and str(paper.get("title") or "").strip()
+        and (paper.get("doi") or paper.get("url") or paper.get("pmid") or paper.get("id"))
+    ]
+    if len(usable) < min_sources:
+        return False, "source_floor_below_min"
+    keys = [_source_literature_title_key(paper.get("title")) for paper in usable[:min_sources]]
+    counts = {key: keys.count(key) for key in set(keys) if key}
+    if any(count >= max(3, min_sources - 1) for count in counts.values()):
+        return False, "repeated_title_series"
+    topic_key = _source_literature_title_key(topic)
+    if topic_key and len({key for key in keys if key and key != topic_key}) < min_sources:
+        return False, "repeated_title_series"
+    return True, "ok"
+
+
+def _source_literature_topic_candidate(
+    runs_root: Path, profile_slug: str, min_sources: int,
+) -> str | None:
+    discovery_dir = runs_root / "_topics_discovery"
+    paths = sorted(
+        discovery_dir.glob("*.json"),
+        key=lambda path: path.stat().st_mtime if path.exists() else 0,
+        reverse=True,
+    )
+    for path in paths:
+        data = _json(path, {})
+        if not isinstance(data, dict) or not _same_domain(_row_domain(data), profile_slug):
+            continue
+        rows = data.get("all")
+        if not isinstance(rows, list):
+            continue
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            topic = str(row.get("topic") or "").strip()
+            if not topic:
+                continue
+            paper_count = int(row.get("paper_count") or 0)
+            fact_source_count = int(row.get("fact_source_count") or 0)
+            if paper_count >= min_sources and fact_source_count < min_sources:
+                return topic
+    return None
+
+
+def _source_literature_payload(
+    *, profile_slug: str, topic: str, papers: list[Json], runs_root: Path, date: str,
+) -> tuple[Json, Json]:
+    profile = load_domain_profile(profile_slug)
+    selected = papers[:5]
+    run_dir = runs_root / f"{topic}-source-literature-{date}"
+    run_dir.mkdir(parents=True, exist_ok=True)
+    lines = ["# Source literature boundary memo", "", "## Boundary map", ""]
+    source_bundle: list[Json] = []
+    for idx, paper in enumerate(selected, start=1):
+        title = str(paper.get("title") or "Untitled source").strip()
+        doi = str(paper.get("doi") or "").strip()
+        year = paper.get("year") or paper.get("publication_year")
+        source_bundle.append({
+            "title": title,
+            "doi": doi,
+            "year": year,
+            "source_index": idx,
+        })
+        suffix = f" ({year})" if year else ""
+        lines.append(f"- {title}{suffix}" + (f" doi:{doi}" if doi else ""))
+    settings = load_settings()
+    synthesis = (
+        "The selected source-literature boundary keeps the claim scoped to "
+        f"{topic} and the directly listed source titles."
+    )
+    writer_meta: Json = {"status": "skipped"}
+    if settings.writer_configured:
+        response = call_writer(settings, [{
+            "role": "user",
+            "content": (
+                "Write a concise source-literature boundary synthesis for "
+                f"{topic}. Use only these paper titles: "
+                + "; ".join(str(paper.get("title") or "") for paper in selected)
+            ),
+        }], max_tokens=700)
+        synthesis = response.content.strip() or synthesis
+        writer_meta = {
+            "status": "used",
+            "model": response.model,
+            "prompt_tokens": response.prompt_tokens,
+            "completion_tokens": response.completion_tokens,
+            "content_hash": hashlib.sha256(synthesis.encode("utf-8")).hexdigest(),
+        }
+    if writer_meta.get("status") != "used":
+        writer_meta = writer_meta | {
+            "model": getattr(settings, "mimo_model", ""),
+            "content_hash": hashlib.sha256(synthesis.encode("utf-8")).hexdigest(),
+        }
+    lines.extend(["", "## Source synthesis", "", synthesis, ""])
+    markdown = "\n".join(lines)
+    _write_json(run_dir / "source_literature_writer.json", writer_meta)
+    candidate = {
+        "topic": topic,
+        "run_dir": str(run_dir.relative_to(runs_root)),
+        "memo_fingerprint": hashlib.sha256(markdown.encode("utf-8")).hexdigest(),
+        "domain": profile.as_metadata(),
+    }
+    payload = {
+        "artifact_type": "alpha_memo",
+        "article_type": "alpha_memo",
+        "author_agent_id": _submission_agent_id(profile.slug),
+        "agent_id": _submission_agent_id(profile.slug),
+        "domain": profile.as_metadata(),
+        "domain_slug": profile.slug,
+        "category": profile.slug.removesuffix("_research"),
+        "title": f"{topic} source-literature boundary",
+        "abstract": _safe_excerpt(synthesis),
+        "summary": _safe_excerpt(synthesis),
+        "topic": topic,
+        "metadata": {
+            "article_type": "alpha_memo",
+            "category": profile.slug.removesuffix("_research"),
+            "domain_slug": profile.slug,
+            "topic": topic,
+        },
+        "markdown": markdown,
+        "citations": source_bundle,
+        "source_bundle": source_bundle,
+        "evidence_bundle": {
+            "domain": profile.as_metadata(),
+            "surface_type": "source_literature_boundary",
+            "direct_source_count": len(source_bundle),
+            "source_literature_writer": writer_meta,
+        },
+        "content_hash": "sha256:" + hashlib.sha256(markdown.encode("utf-8")).hexdigest(),
+    }
+    return candidate, payload
+
+
 def _public_page_check(decision: Json, *, page_fetcher: PageFetcher) -> Json:
     urls = _public_alpha_urls(decision)
     if not urls:
@@ -2466,6 +2667,19 @@ def _apply_submission_decision(
     final = "pending"
     if decision.get("status") == "complete":
         if decision.get("decision") == "accept":
+            if decision.get("failure_category") == "integrity_duplicate":
+                final = "accepted"
+                ledger["status"] = "deduped_publication"
+                ledger["published"] = 0
+                ledger["published_topic"] = (
+                    ledger.get("submitted_topic")
+                    or (ledger.get("candidate") or {}).get("topic")
+                )
+                ledger.pop("publish_failure_reason", None)
+                ledger["submission_id"] = submission_id
+                ledger["researka_decision"] = decision
+                ledger["final_verdict"] = final
+                return final
             page = _public_page_check(decision, page_fetcher=page_fetcher)
             ledger["public_page_check"] = page
             if page.get("ok"):
@@ -3144,6 +3358,7 @@ def run_cycle(
     decision_poll_attempts: int = _DEFAULT_DECISION_POLL_ATTEMPTS,
     decision_poll_seconds: float = _DEFAULT_DECISION_POLL_SECONDS,
     submitter: Submitter | None = None,
+    source_paper_fetcher: SourcePaperFetcher | None = None,
     fetcher: Fetcher = _crossref_fetch,
     decision_fetcher: DecisionFetcher = _decision_fetch,
     page_fetcher: PageFetcher = _fetch_public_page,
@@ -3209,9 +3424,14 @@ def run_cycle(
         submitted_path, days=published_topic_cooldown_days,
         domain=profile.slug, now=_stamp_ts(date),
     )
-    blocked_topics = published_blocked_topics | submitted_blocked_topics
+    negative_blocked_topics = _recent_negative_topics(
+        submitted_path.parent, days=published_topic_cooldown_days,
+        domain=profile.slug,
+    )
+    blocked_topics = published_blocked_topics | submitted_blocked_topics | negative_blocked_topics
     ledger["recently_published_topics_blocked"] = sorted(published_blocked_topics)
     ledger["recently_submitted_topics_blocked"] = sorted(submitted_blocked_topics)
+    ledger["recent_negative_topics_blocked"] = sorted(negative_blocked_topics)
     force_refresh = False
     accepted_shape_profiles = _accepted_shape_profiles(runs_root, domain=profile.slug)
     all_considered: list[Json] = []
@@ -3593,6 +3813,78 @@ def run_cycle(
             ledger.update({"status": result["status"], "published": 0})
             _write_json(ledger_path, ledger)
             return ledger
+    if (
+        submit
+        and source_paper_fetcher is not None
+        and profile.slug != "ai_research"
+        and not ledger["cycle_attempts"]
+    ):
+        literature_topic = _source_literature_topic_candidate(
+            runs_root, profile.slug, min_submit_sources,
+        )
+        if literature_topic:
+            papers = source_paper_fetcher(literature_topic, min_submit_sources)
+            ok, reason = _source_literature_boundary_quality(
+                literature_topic, papers, min_submit_sources,
+            )
+            ledger["source_literature_fallback"] = {
+                "topic": literature_topic,
+                "status": "selected" if ok else "blocked",
+                "reason": reason,
+                "paper_count": len(papers),
+            }
+            if ok:
+                candidate, payload = _source_literature_payload(
+                    profile_slug=profile.slug,
+                    topic=literature_topic,
+                    papers=papers,
+                    runs_root=runs_root,
+                    date=date,
+                )
+                assert submitter is not None
+                result = submit_with_backoff(payload, submitter)
+                ledger["candidate"] = {
+                    "topic": literature_topic,
+                    "run_dir": candidate.get("run_dir"),
+                    "fingerprint": candidate.get("memo_fingerprint"),
+                }
+                ledger["submission"] = result
+                if result["status"] == "accepted":
+                    submission_id = _submission_id(result)
+                    ledger.update({
+                        "final_verdict": "pending",
+                        "status": "submitted_to_researka",
+                        "submitted": 1,
+                        "submitted_topic": literature_topic,
+                        "submission_id": submission_id,
+                    })
+                    if submission_id:
+                        final = _poll_submission_decision(
+                            ledger,
+                            submission_id=submission_id,
+                            fetcher=decision_fetcher,
+                            page_fetcher=page_fetcher,
+                            attempts=decision_poll_attempts,
+                            sleep_seconds=decision_poll_seconds,
+                            sleep=sleep,
+                        )
+                        if final == "accepted":
+                            ledger["cycle_attempts"].append({
+                                "topic": literature_topic,
+                                "run_dir": candidate.get("run_dir"),
+                                "fingerprint": candidate.get("memo_fingerprint"),
+                                "status": "published",
+                            })
+                            _write_json(ledger_path, ledger)
+                            return ledger
+                    ledger["cycle_attempts"].append({
+                        "topic": literature_topic,
+                        "run_dir": candidate.get("run_dir"),
+                        "fingerprint": candidate.get("memo_fingerprint"),
+                        "status": "submitted_to_researka",
+                    })
+                    _write_json(ledger_path, ledger)
+                    return ledger
     if ledger["cycle_attempts"]:
         last_status = str(ledger["cycle_attempts"][-1].get("status") or "failed")
         ledger.update({
@@ -3603,7 +3895,7 @@ def run_cycle(
         })
     else:
         ledger.update({
-            "status": "no_publishable_candidate",
+            "status": "no_fresh_candidate",
             "reason": "no eligible non-duplicate memo",
         })
     _write_json(ledger_path, ledger)

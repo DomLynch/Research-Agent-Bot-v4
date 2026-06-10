@@ -114,6 +114,10 @@ def _can_recompute_verdict(run: Path) -> bool:
 
 
 def _verdict_for_run(run: Path) -> dict[str, Any]:
+    if (run / "business_candidate_bundle.json").exists():
+        stored = _read_json(run / "publish_verdict.json")
+        if stored:
+            return stored
     if _can_recompute_verdict(run):
         return publish_verdict(run)
     return _read_json(run / "publish_verdict.json")

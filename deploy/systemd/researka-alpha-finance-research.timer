@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Research Agent v4 Finance Research guarded alpha submit sweep every eight hours
+
+[Timer]
+OnCalendar=*-*-* 05/8:10:00
+Persistent=true
+Unit=researka-alpha-finance-research.service
+
+[Install]
+WantedBy=timers.target

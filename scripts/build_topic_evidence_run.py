@@ -435,6 +435,9 @@ def _normalize_ai_result_receipt(
         "artifact_url": receipt.get("artifact_url"),
         "source_excerpt": receipt.get("source_excerpt"),
     })
+    role = _ai_metric_role(out)
+    if role:
+        out["metric_role"] = role
     return out
 
 
@@ -516,7 +519,6 @@ def _axis_title(value: str) -> str:
             word if (
                 word.isupper()
                 or any(ch.isdigit() for ch in word)
-                or any(ch.isupper() for ch in word[1:])
             )
             else word.capitalize()
         )
@@ -616,7 +618,7 @@ def _with_ai_fallback_axes(fact: dict[str, Any]) -> dict[str, Any]:
 def _ai_axis_coherent_facts(
     facts: list[dict[str, Any]], topic: str, *, min_sources: int,
 ) -> list[dict[str, Any]]:
-    grouped: dict[tuple[str, str, str, str, str], list[dict[str, Any]]] = {}
+    grouped: dict[tuple[str, str, str, str, str, str, str], list[dict[str, Any]]] = {}
     for fact in facts:
         benchmark = _axis_value(fact, "benchmark", "dataset")
         task = _axis_value(fact, "task", "dataset", "benchmark")
@@ -634,7 +636,7 @@ def _ai_axis_coherent_facts(
             grouped.setdefault(key, []).append(fact)
 
     candidates: list[
-        tuple[int, int, int, tuple[str, str, str, str, str, str, str], list[dict[str, Any]]]
+        tuple[int, int, int, int, tuple[str, str, str, str, str, str, str], list[dict[str, Any]]]
     ] = []
     for key, rows in grouped.items():
         by_source: dict[str, dict[str, Any]] = {}

@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Research Agent v4 Management Research alpha candidate every eight hours
+
+[Timer]
+OnCalendar=*-*-* 03/8:10:00
+Persistent=true
+Unit=researka-alpha-management-research.service
+
+[Install]
+WantedBy=timers.target
