@@ -29,6 +29,7 @@ import re
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -47,6 +48,7 @@ from daily_alpha_publish_cycle import (  # noqa: E402
 )
 
 from agent.domain_profile import domain_choices, domain_slug  # noqa: E402
+from agent.researka_facts import tier2_source_count  # noqa: E402
 from agent.settings import load_settings  # noqa: E402
 from agent.topic_discovery import _fetch_topic_fact_source_count  # noqa: E402
 
@@ -333,6 +335,7 @@ def _plan_topics(
     min_fact_sources: int = 0,
     hard_floor: int = 0,
     require_papers: bool = False,
+    tier2_supply: Callable[[str], int] | None = None,
 ) -> tuple[list[dict[str, Any]], list[str], list[str], list[str]]:
     plan: list[dict[str, Any]] = []
     underfloor: list[dict[str, Any]] = []
@@ -354,6 +357,14 @@ def _plan_topics(
             below_floor.append(topic)
             continue
         count = int(c.get("fact_source_count") or 0)
+        # Tier-2 rescue: the per-topic facts endpoint can read 0 while the
+        # Tier-2 corpus holds the same literature untagged; the build binds it
+        # via crosscheck. Promote sub-floor topics that carry >= floor distinct
+        # Tier-2 source papers so rich-but-untagged topics are not filtered out
+        # unbuilt. Universal — no per-topic logic, applies to every domain.
+        floor = max(hard_floor, min_fact_sources)
+        if tier2_supply is not None and floor and count < floor:
+            count = max(count, tier2_supply(topic))
         # Hard floor first: sub-floor topics do not displace stronger
         # candidates, but nonzero topics remain a last-resort stale-run rebuild.
         if hard_floor and count < hard_floor:
@@ -525,14 +536,27 @@ def main() -> int:
     priority_ranked = _priority_ranked_topics([
         str(topic).strip() for topic in args.priority_topic if str(topic).strip()
     ], domain=args.domain)
-    plan, skipped, skipped_excluded, below_floor = _plan_topics(
-        [*priority_ranked, *ranked], recent=recent, excluded=excluded, top=args.top,
-        min_fact_sources=(
-            _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES if args.stop_on_ready else 0
-        ),
-        hard_floor=_PREBUILD_MIN_SOURCE_FLOOR,
-        require_papers=args.stop_on_ready,
-    )
+    _cycle_settings = load_settings()
+    with httpx.Client() as _cycle_client:
+        def _tier2_supply(topic: str) -> int:
+            try:
+                return tier2_source_count(
+                    topic, client=_cycle_client, settings=_cycle_settings,
+                    domain=args.domain,
+                )
+            except (OSError, httpx.HTTPError, ValueError):
+                return 0
+
+        plan, skipped, skipped_excluded, below_floor = _plan_topics(
+            [*priority_ranked, *ranked], recent=recent, excluded=excluded,
+            top=args.top,
+            min_fact_sources=(
+                _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES if args.stop_on_ready else 0
+            ),
+            hard_floor=_PREBUILD_MIN_SOURCE_FLOOR,
+            require_papers=args.stop_on_ready,
+            tier2_supply=_tier2_supply,
+        )
 
     print(f"[cycle] plan: {len(plan)} topics to run, {len(skipped)} skipped "
           f"(cooldown {args.cooldown_hours}h), "

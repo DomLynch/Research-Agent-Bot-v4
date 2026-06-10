@@ -79,6 +79,50 @@ def _parse_fact(item: Any) -> ResearkaFact | None:
     )
 
 
+def tier2_source_count(
+    topic: str, *, client: httpx.Client, settings: Settings,
+    domain: str = "longevity", min_confidence: str = "medium",
+) -> int:
+    """Distinct Tier-2 corpus source papers for a topic (sync).
+
+    A topic whose facts are not yet topic-tagged reads 0 from the per-topic
+    facts endpoint, yet the evidence build binds the same literature from the
+    Tier-2 corpus via crosscheck. Counting Tier-2 source papers lets such
+    topics clear the build-selection floor instead of being filtered out
+    unbuilt. Universal: no per-topic logic; returns 0 on any failure.
+    """
+    base = settings.researka_database_url.rstrip("/")
+    token = settings.researka_database_token.strip()
+    if not base or not token:
+        return 0
+    try:
+        r = client.post(
+            f"{base}/api/v1/tier2/facts/search",
+            json={
+                "domain": domain, "query": topic[:512], "top_k": 50,
+                "min_confidence": min_confidence, "numeric_only": False,
+            },
+            headers={"X-Researka-Token": token, "Content-Type": "application/json"},
+            timeout=20.0,
+        )
+        r.raise_for_status()
+        data: Any = r.json()
+    except (httpx.HTTPError, ValueError):
+        return 0
+    if not isinstance(data, list):
+        return 0
+    papers: set[str] = set()
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        raw_paper = item.get("paper")
+        paper = raw_paper if isinstance(raw_paper, dict) else {}
+        key = str(paper.get("doi") or paper.get("pmid") or item.get("paper_id") or "")
+        if key:
+            papers.add(key)
+    return len(papers)
+
+
 async def search_facts(
     query: str, *, client: httpx.AsyncClient, settings: Settings,
     top_k: int = 20, min_confidence: str = "medium", numeric_only: bool = True,
