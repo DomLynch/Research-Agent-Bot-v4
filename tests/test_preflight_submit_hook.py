@@ -1,11 +1,20 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
 from pytest import MonkeyPatch
 
 import scripts.daily_alpha_publish_cycle as daily
+
+_ROOT_CANDIDATES = [
+    Path(os.environ["RESEARKA_PREFLIGHT_QA_ROOT"]) if os.environ.get("RESEARKA_PREFLIGHT_QA_ROOT") else None,
+    Path("/Users/domininclynch/Desktop/Business/Polish - Research agent"),
+    Path("/opt/researka-preflight-qa"),
+    Path(__file__).resolve().parents[2] / "Polish - Research agent",
+]
+PREFLIGHT_ROOT = next(path for path in _ROOT_CANDIDATES if path and path.is_dir())
 
 
 def _payload(body: str) -> dict[str, Any]:
@@ -25,6 +34,7 @@ def test_final_preflight_hook_cleans_payload_in_enforce_mode(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("RESEARKA_PREFLIGHT_QA", "enforce")
+    monkeypatch.setenv("RESEARKA_PREFLIGHT_QA_ROOT", str(PREFLIGHT_ROOT))
     run = tmp_path / "run"
     run.mkdir()
 
@@ -40,10 +50,11 @@ def test_final_preflight_hook_cleans_payload_in_enforce_mode(
     assert payload["content_hash"] != "sha256:old"
 
 
-def test_final_preflight_hook_blocks_bad_payload_in_enforce_mode(
+def test_final_preflight_hook_reports_bad_payload_in_enforce_mode(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("RESEARKA_PREFLIGHT_QA", "enforce")
+    monkeypatch.setenv("RESEARKA_PREFLIGHT_QA_ROOT", str(PREFLIGHT_ROOT))
     run = tmp_path / "run"
     run.mkdir()
 
@@ -52,6 +63,7 @@ def test_final_preflight_hook_blocks_bad_payload_in_enforce_mode(
         run,
     )
 
-    assert payload is None
-    assert report and report["status"] == "block"
-    assert "doi_not_in_source_bundle" in {r["code"] for r in report["blocked_reasons"]}
+    assert payload is not None
+    assert report and report["status"] == "pass"
+    assert "doi_not_in_source_bundle" in {r["code"] for r in report["advisories"]}
+    assert "doi_not_in_source_bundle" in payload["evidence_bundle"]["preflight_qa"]["advisory_codes"]

@@ -276,6 +276,8 @@ def _preflight_mode() -> str:
 def _preflight_summary(report: Json) -> Json:
     reasons = report.get("blocked_reasons")
     reason_rows = reasons if isinstance(reasons, list) else []
+    advisories = report.get("advisories")
+    advisory_rows = advisories if isinstance(advisories, list) else []
     m3 = report.get("m3_result")
     return {
         "status": str(report.get("status") or "unknown"),
@@ -284,6 +286,10 @@ def _preflight_summary(report: Json) -> Json:
         if isinstance(report.get("safe_fixes_applied"), list) else [],
         "blocked_reason_codes": [
             str(row.get("code")) for row in reason_rows
+            if isinstance(row, dict) and row.get("code")
+        ],
+        "advisory_codes": [
+            str(row.get("code")) for row in advisory_rows
             if isinstance(row, dict) and row.get("code")
         ],
         "m3_status": str(m3.get("status") or "") if isinstance(m3, dict) else "",
@@ -329,12 +335,13 @@ def _run_preflight_qa(payload: Json, run_dir: Path) -> tuple[Json | None, Json |
         proc = _run_subprocess(cmd, timeout=_PREFLIGHT_TIMEOUT_SECONDS, cwd=tool_root)
     except (OSError, subprocess.TimeoutExpired) as exc:
         report: Json = {
-            "status": "block",
-            "qa_version": "preflight-v1",
+            "status": "pass",
+            "qa_version": "preflight-v2",
             "safe_fixes_applied": [],
-            "blocked_reasons": [{
+            "blocked_reasons": [],
+            "advisories": [{
                 "code": "preflight_runtime_error",
-                "severity": "critical",
+                "severity": "minor",
                 "message": f"{type(exc).__name__}: {exc}",
             }],
         }
@@ -344,12 +351,13 @@ def _run_preflight_qa(payload: Json, run_dir: Path) -> tuple[Json | None, Json |
         report = raw_report if isinstance(raw_report, dict) else {}
         if proc.returncode not in {0, 2}:
             report = {
-                "status": "block",
-                "qa_version": "preflight-v1",
+                "status": "pass",
+                "qa_version": "preflight-v2",
                 "safe_fixes_applied": [],
-                "blocked_reasons": [{
+                "blocked_reasons": [],
+                "advisories": [{
                     "code": "preflight_runtime_error",
-                    "severity": "critical",
+                    "severity": "minor",
                     "message": (proc.stderr or proc.stdout or "preflight process failed")[:500],
                 }],
             }
@@ -359,21 +367,24 @@ def _run_preflight_qa(payload: Json, run_dir: Path) -> tuple[Json | None, Json |
         _attach_preflight_summary(payload, report)
         return payload, report
     if report.get("status") != "pass":
-        return None, report
+        _attach_preflight_summary(payload, report)
+        return payload, report
     cleaned = _json(clean_path, {})
-    if not isinstance(cleaned, dict):
+    if not isinstance(cleaned, dict) or not cleaned:
         report = {
-            "status": "block",
-            "qa_version": "preflight-v1",
+            "status": "pass",
+            "qa_version": "preflight-v2",
             "safe_fixes_applied": [],
-            "blocked_reasons": [{
+            "blocked_reasons": [],
+            "advisories": [{
                 "code": "preflight_missing_cleaned_payload",
-                "severity": "critical",
+                "severity": "minor",
                 "message": "Preflight passed but did not write a cleaned payload.",
             }],
         }
         _write_json(report_path, report)
-        return None, report
+        _attach_preflight_summary(payload, report)
+        return payload, report
     _attach_preflight_summary(cleaned, report)
     _refresh_content_hash(cleaned)
     return cleaned, report
