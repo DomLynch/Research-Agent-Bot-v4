@@ -63,3 +63,23 @@ def test_preflight_enforce_blocks_before_submit(tmp_path: Path, monkeypatch: Mon
     assert "doi_not_in_source_bundle" in {
         row["code"] for row in report["blocked_reasons"] if isinstance(row, dict)
     }
+
+
+def test_preflight_shadow_reports_but_keeps_original_payload(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    _enable_preflight(monkeypatch)
+    monkeypatch.setenv("RESEARKA_PREFLIGHT_QA", "shadow")
+    payload = _payload("## Result\n\nThis cites DOI 10.9999/missing.")
+    original_hash = payload["content_hash"]
+
+    checked, report = daily._run_preflight_qa(payload, tmp_path)
+
+    assert checked is payload
+    assert report is not None
+    assert report["status"] == "block"
+    assert checked["content_hash"] == original_hash
+    assert checked["evidence_bundle"]["preflight_qa"]["status"] == "block"
+    assert "doi_not_in_source_bundle" in checked["evidence_bundle"]["preflight_qa"][
+        "blocked_reason_codes"
+    ]
