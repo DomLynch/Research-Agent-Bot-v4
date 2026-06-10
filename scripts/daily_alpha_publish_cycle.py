@@ -63,6 +63,10 @@ _SUBMIT_TOKEN_ENVS = (
     "RESEARKA_AGENT_TOKEN_V4",
     "RESEARCH_API_KEY_V4",
 )
+_PREFLIGHT_MODE_ENV = "RESEARKA_PREFLIGHT_QA"
+_PREFLIGHT_ROOT_ENV = "RESEARKA_PREFLIGHT_QA_ROOT"
+_PREFLIGHT_USE_M3_ENV = "RESEARKA_PREFLIGHT_USE_M3"
+_PREFLIGHT_TIMEOUT_SECONDS = 90.0
 
 
 def _terminate_process_group(proc: subprocess.Popen[str], sig: signal.Signals | int) -> None:
@@ -72,7 +76,9 @@ def _terminate_process_group(proc: subprocess.Popen[str], sig: signal.Signals | 
         os.killpg(proc.pid, int(sig))
 
 
-def _run_subprocess(args: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+def _run_subprocess(
+    args: list[str], *, timeout: float, cwd: Path | None = None,
+) -> subprocess.CompletedProcess[str]:
     """Run child pipelines in one process group so stop/timeout kills descendants."""
     proc = subprocess.Popen(
         args,
@@ -80,6 +86,7 @@ def _run_subprocess(args: list[str], *, timeout: float) -> subprocess.CompletedP
         stderr=subprocess.PIPE,
         text=True,
         start_new_session=True,
+        cwd=cwd,
     )
     previous: dict[signal.Signals, Any] = {}
 
@@ -250,6 +257,121 @@ def _json(path: Path, default: Any) -> Any:
 def _write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def _env_truthy(name: str) -> bool:
+    return os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _preflight_mode() -> str:
+    mode = os.environ.get(_PREFLIGHT_MODE_ENV, "off").strip().lower()
+    return mode if mode in {"shadow", "enforce"} else "off"
+
+
+def _preflight_summary(report: Json) -> Json:
+    reasons = report.get("blocked_reasons")
+    reason_rows = reasons if isinstance(reasons, list) else []
+    m3 = report.get("m3_result")
+    return {
+        "status": str(report.get("status") or "unknown"),
+        "qa_version": str(report.get("qa_version") or ""),
+        "safe_fixes_applied": report.get("safe_fixes_applied")
+        if isinstance(report.get("safe_fixes_applied"), list) else [],
+        "blocked_reason_codes": [
+            str(row.get("code")) for row in reason_rows
+            if isinstance(row, dict) and row.get("code")
+        ],
+        "m3_status": str(m3.get("status") or "") if isinstance(m3, dict) else "",
+    }
+
+
+def _attach_preflight_summary(payload: Json, report: Json) -> None:
+    evidence = payload.get("evidence_bundle")
+    if not isinstance(evidence, dict):
+        evidence = {}
+        payload["evidence_bundle"] = evidence
+    evidence["preflight_qa"] = _preflight_summary(report)
+
+
+def _refresh_content_hash(payload: Json) -> None:
+    markdown = str(payload.get("markdown") or payload.get("body_markdown") or "")
+    if markdown:
+        payload["content_hash"] = "sha256:" + hashlib.sha256(markdown.encode("utf-8")).hexdigest()
+
+
+def _run_preflight_qa(payload: Json, run_dir: Path) -> tuple[Json | None, Json | None]:
+    mode = _preflight_mode()
+    if mode == "off":
+        return payload, None
+
+    tool_root = Path(
+        os.environ.get(_PREFLIGHT_ROOT_ENV, str(_ROOT.parent / "researka-preflight-qa")),
+    ).expanduser()
+    input_path = run_dir / "researka_preflight_input.json"
+    report_path = run_dir / "researka_preflight_report.json"
+    clean_path = run_dir / "researka_preflight_cleaned_payload.json"
+    _write_json(input_path, payload)
+
+    cmd = [
+        sys.executable, "-m", "preflight_qa", "check",
+        "--input", str(input_path),
+        "--out", str(report_path),
+        "--clean-out", str(clean_path),
+    ]
+    if _env_truthy(_PREFLIGHT_USE_M3_ENV):
+        cmd.append("--use-m3")
+    try:
+        proc = _run_subprocess(cmd, timeout=_PREFLIGHT_TIMEOUT_SECONDS, cwd=tool_root)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        report: Json = {
+            "status": "block",
+            "qa_version": "preflight-v1",
+            "safe_fixes_applied": [],
+            "blocked_reasons": [{
+                "code": "preflight_runtime_error",
+                "severity": "critical",
+                "message": f"{type(exc).__name__}: {exc}",
+            }],
+        }
+        _write_json(report_path, report)
+    else:
+        raw_report = _json(report_path, {})
+        report = raw_report if isinstance(raw_report, dict) else {}
+        if proc.returncode not in {0, 2}:
+            report = {
+                "status": "block",
+                "qa_version": "preflight-v1",
+                "safe_fixes_applied": [],
+                "blocked_reasons": [{
+                    "code": "preflight_runtime_error",
+                    "severity": "critical",
+                    "message": (proc.stderr or proc.stdout or "preflight process failed")[:500],
+                }],
+            }
+            _write_json(report_path, report)
+
+    if mode == "shadow":
+        _attach_preflight_summary(payload, report)
+        return payload, report
+    if report.get("status") != "pass":
+        return None, report
+    cleaned = _json(clean_path, {})
+    if not isinstance(cleaned, dict):
+        report = {
+            "status": "block",
+            "qa_version": "preflight-v1",
+            "safe_fixes_applied": [],
+            "blocked_reasons": [{
+                "code": "preflight_missing_cleaned_payload",
+                "severity": "critical",
+                "message": "Preflight passed but did not write a cleaned payload.",
+            }],
+        }
+        _write_json(report_path, report)
+        return None, report
+    _attach_preflight_summary(cleaned, report)
+    _refresh_content_hash(cleaned)
+    return cleaned, report
 
 
 def _ledger_stamp(now: dt.datetime | None = None) -> str:
@@ -3338,7 +3460,19 @@ def run_cycle(
             _write_json(ledger_path, ledger)
             return ledger
         assert submitter is not None
-        result = submit_with_backoff(_submission_payload(candidate, runs_root), submitter)
+        run_dir = _run_path(runs_root, candidate.get("run_dir"))
+        payload = _submission_payload(candidate, runs_root)
+        checked_payload, preflight_report = _run_preflight_qa(payload, run_dir)
+        if preflight_report is not None:
+            attempt["preflight_qa"] = _preflight_summary(preflight_report)
+            ledger["preflight_qa"] = attempt["preflight_qa"]
+        if checked_payload is None:
+            attempt["status"] = "preflight_qa_blocked"
+            ledger["cycle_attempts"].append(attempt)
+            ledger.update({"status": "preflight_qa_blocked", "submitted": 0, "published": 0})
+            _write_json(ledger_path, ledger)
+            return ledger
+        result = submit_with_backoff(checked_payload, submitter)
         attempt["submission"] = result
         ledger["submission"] = result
         if result["status"] == "accepted":
