@@ -971,6 +971,50 @@ def cached_source_rich_candidates(*, limit: int) -> tuple[TopicCandidate, ...]:
     return tuple(candidates)
 
 
+def _fetch_tier2_source_count(
+    topic: str, *, client: httpx.Client, settings: Settings, domain: str,
+) -> int:
+    """Distinct Tier-2 corpus source papers for a topic.
+
+    A topic whose facts are not yet topic-tagged returns 0 from the per-topic
+    facts endpoint, yet the evidence build binds that same literature from the
+    Tier-2 corpus via crosscheck. Counting Tier-2 source papers here lets such
+    topics clear the rank/source floor instead of being filtered out unbuilt.
+    Universal: no per-topic logic, applies to every domain.
+    """
+    base = settings.researka_database_url.rstrip("/")
+    tok = settings.researka_database_token.strip()
+    if not base or not tok:
+        return 0
+    try:
+        r = client.post(
+            f"{base}/api/v1/tier2/facts/search",
+            headers={"X-Researka-Token": tok, "Content-Type": "application/json"},
+            json={
+                "domain": domain, "query": topic[:512], "top_k": 50,
+                "min_confidence": "medium", "numeric_only": False,
+            },
+            timeout=_FACT_PROBE_TIMEOUT_SECONDS,
+        )
+        r.raise_for_status()
+        rows = r.json()
+    except (httpx.HTTPError, ValueError):
+        return 0
+    if not isinstance(rows, list):
+        return 0
+    papers: set[str] = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        paper = row.get("paper")
+        if not isinstance(paper, dict):
+            paper = {}
+        key = str(paper.get("doi") or paper.get("pmid") or row.get("paper_id") or "")
+        if key:
+            papers.add(key)
+    return len(papers)
+
+
 def _fetch_fact_source_counts(
     topics: list[str], *, client: httpx.Client, settings: Settings,
     refresh_low_source_counts: bool = False,
