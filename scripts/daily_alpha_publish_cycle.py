@@ -27,7 +27,6 @@ from typing import Any
 
 from agent.alpha_selector import accepted_shape_bonus
 from agent.domain_profile import domain_choices, domain_slug, load_domain_profile
-from agent.publish_tier import _metric_type_coherent as _publish_metric_type_coherent
 from agent.publish_tier import publish_verdict
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -35,7 +34,6 @@ _RUNS = _ROOT / "runs"
 _PUBLICATION_PATH = _ROOT / "topic_packs" / "publication.toml"
 _PUBLISH_TIER_PATH = _ROOT / "topic_packs" / "publish_tier.toml"
 _CLAIM_WORD = re.compile(r"[a-z][a-z0-9]*")
-_DOI_TOKEN = re.compile(r"\b10\.\d{4,9}/[^\s,;]+", re.I)
 _CLUSTER_GENERIC_TOKENS = frozenset({
     "the", "and", "with", "from", "that", "this", "study", "studies",
     "patients", "participants", "adults", "risk", "effect", "effects",
@@ -49,34 +47,8 @@ _CLUSTER_GENERIC_TOKENS = frozenset({
 _COHERENCE_GENERIC_TOKENS = _CLUSTER_GENERIC_TOKENS | {
     "endpoint", "endpoints", "outcome", "outcomes", "intervention",
     "interventions", "comparator", "comparators", "group", "groups",
-    "primary", "secondary", "measure", "measures", "benchmark",
-    "benchmarks", "metric", "metrics", "dataset", "datasets", "model",
-    "models", "system", "systems", "protocol", "protocols", "shot",
+    "primary", "secondary", "measure", "measures",
 }
-_RECEIPT_SHAPE_DIMENSIONS = (
-    ("population",),
-    ("intervention",),
-    ("comparator", "baseline_comparator"),
-    ("endpoint", "outcome"),
-    ("benchmark",),
-    ("task", "dataset"),
-    ("metric",),
-    ("model_system",),
-    ("evaluation_protocol",),
-)
-_STRICT_RECEIPT_SHAPE_DIMENSIONS = frozenset({
-    ("comparator", "baseline_comparator"),
-    ("benchmark",),
-    ("task", "dataset"),
-    ("metric",),
-    ("model_system",),
-    ("evaluation_protocol",),
-})
-_CLUSTER_SHAPE_FIELDS = (
-    "canonical_phrase", "claim", "finding",
-    *tuple(field for fields in _RECEIPT_SHAPE_DIMENSIONS for field in fields),
-    "source_topic",
-)
 
 Json = dict[str, Any]
 Fetcher = Callable[[str], Json]
@@ -91,6 +63,10 @@ _SUBMIT_TOKEN_ENVS = (
     "RESEARKA_AGENT_TOKEN_V4",
     "RESEARCH_API_KEY_V4",
 )
+_PREFLIGHT_MODE_ENV = "RESEARKA_PREFLIGHT_QA"
+_PREFLIGHT_ROOT_ENV = "RESEARKA_PREFLIGHT_QA_ROOT"
+_PREFLIGHT_USE_M3_ENV = "RESEARKA_PREFLIGHT_USE_M3"
+_PREFLIGHT_TIMEOUT_SECONDS = 90.0
 
 
 def _terminate_process_group(proc: subprocess.Popen[str], sig: signal.Signals | int) -> None:
@@ -100,7 +76,9 @@ def _terminate_process_group(proc: subprocess.Popen[str], sig: signal.Signals | 
         os.killpg(proc.pid, int(sig))
 
 
-def _run_subprocess(args: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+def _run_subprocess(
+    args: list[str], *, timeout: float, cwd: Path | None = None,
+) -> subprocess.CompletedProcess[str]:
     """Run child pipelines in one process group so stop/timeout kills descendants."""
     proc = subprocess.Popen(
         args,
@@ -108,6 +86,7 @@ def _run_subprocess(args: list[str], *, timeout: float) -> subprocess.CompletedP
         stderr=subprocess.PIPE,
         text=True,
         start_new_session=True,
+        cwd=cwd,
     )
     previous: dict[signal.Signals, Any] = {}
 
@@ -211,11 +190,13 @@ _EXHAUSTED_STATUSES = {
     "memo_missing_falsifier",
     "cycle_failed_submission",
     "held_retraction_check",
+    "receipt_shape_mismatch",
 }
 _TOPIC_EXHAUSTED_STATUSES = {
     "duplicate_submission_fingerprint",
     "cycle_failed_submission",
     "held_retraction_check",
+    "receipt_shape_mismatch",
 }
 _FINGERPRINT_EXHAUSTED_STATUSES = _TOPIC_EXHAUSTED_STATUSES | {"agent_repair_failed"}
 _REFRESHABLE_SOURCE_FLOOR_STATUSES = {
@@ -278,6 +259,121 @@ def _json(path: Path, default: Any) -> Any:
 def _write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def _env_truthy(name: str) -> bool:
+    return os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _preflight_mode() -> str:
+    mode = os.environ.get(_PREFLIGHT_MODE_ENV, "off").strip().lower()
+    return mode if mode in {"shadow", "enforce"} else "off"
+
+
+def _preflight_summary(report: Json) -> Json:
+    reasons = report.get("blocked_reasons")
+    reason_rows = reasons if isinstance(reasons, list) else []
+    m3 = report.get("m3_result")
+    return {
+        "status": str(report.get("status") or "unknown"),
+        "qa_version": str(report.get("qa_version") or ""),
+        "safe_fixes_applied": report.get("safe_fixes_applied")
+        if isinstance(report.get("safe_fixes_applied"), list) else [],
+        "blocked_reason_codes": [
+            str(row.get("code")) for row in reason_rows
+            if isinstance(row, dict) and row.get("code")
+        ],
+        "m3_status": str(m3.get("status") or "") if isinstance(m3, dict) else "",
+    }
+
+
+def _attach_preflight_summary(payload: Json, report: Json) -> None:
+    evidence = payload.get("evidence_bundle")
+    if not isinstance(evidence, dict):
+        evidence = {}
+        payload["evidence_bundle"] = evidence
+    evidence["preflight_qa"] = _preflight_summary(report)
+
+
+def _refresh_content_hash(payload: Json) -> None:
+    markdown = str(payload.get("markdown") or payload.get("body_markdown") or "")
+    if markdown:
+        payload["content_hash"] = "sha256:" + hashlib.sha256(markdown.encode("utf-8")).hexdigest()
+
+
+def _run_preflight_qa(payload: Json, run_dir: Path) -> tuple[Json | None, Json | None]:
+    mode = _preflight_mode()
+    if mode == "off":
+        return payload, None
+
+    tool_root = Path(
+        os.environ.get(_PREFLIGHT_ROOT_ENV, str(_ROOT.parent / "researka-preflight-qa")),
+    ).expanduser()
+    input_path = run_dir / "researka_preflight_input.json"
+    report_path = run_dir / "researka_preflight_report.json"
+    clean_path = run_dir / "researka_preflight_cleaned_payload.json"
+    _write_json(input_path, payload)
+
+    cmd = [
+        sys.executable, "-m", "preflight_qa", "check",
+        "--input", str(input_path),
+        "--out", str(report_path),
+        "--clean-out", str(clean_path),
+    ]
+    if _env_truthy(_PREFLIGHT_USE_M3_ENV):
+        cmd.append("--use-m3")
+    try:
+        proc = _run_subprocess(cmd, timeout=_PREFLIGHT_TIMEOUT_SECONDS, cwd=tool_root)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        report: Json = {
+            "status": "block",
+            "qa_version": "preflight-v1",
+            "safe_fixes_applied": [],
+            "blocked_reasons": [{
+                "code": "preflight_runtime_error",
+                "severity": "critical",
+                "message": f"{type(exc).__name__}: {exc}",
+            }],
+        }
+        _write_json(report_path, report)
+    else:
+        raw_report = _json(report_path, {})
+        report = raw_report if isinstance(raw_report, dict) else {}
+        if proc.returncode not in {0, 2}:
+            report = {
+                "status": "block",
+                "qa_version": "preflight-v1",
+                "safe_fixes_applied": [],
+                "blocked_reasons": [{
+                    "code": "preflight_runtime_error",
+                    "severity": "critical",
+                    "message": (proc.stderr or proc.stdout or "preflight process failed")[:500],
+                }],
+            }
+            _write_json(report_path, report)
+
+    if mode == "shadow":
+        _attach_preflight_summary(payload, report)
+        return payload, report
+    if report.get("status") != "pass":
+        return None, report
+    cleaned = _json(clean_path, {})
+    if not isinstance(cleaned, dict):
+        report = {
+            "status": "block",
+            "qa_version": "preflight-v1",
+            "safe_fixes_applied": [],
+            "blocked_reasons": [{
+                "code": "preflight_missing_cleaned_payload",
+                "severity": "critical",
+                "message": "Preflight passed but did not write a cleaned payload.",
+            }],
+        }
+        _write_json(report_path, report)
+        return None, report
+    _attach_preflight_summary(cleaned, report)
+    _refresh_content_hash(cleaned)
+    return cleaned, report
 
 
 def _ledger_stamp(now: dt.datetime | None = None) -> str:
@@ -345,18 +441,13 @@ def _current_selection_verdict(verdict: Json, root: Path) -> Json:
     if not current:
         return verdict
     private = {k: v for k, v in verdict.items() if str(k).startswith("_")}
-    routing = {
-        k: verdict[k]
-        for k in ("topic", "topic_family", "parent_topic")
-        if verdict.get(k)
-    }
     if verdict.get("_claim_cluster_candidate"):
         private.update({
             "topic": verdict.get("topic"),
             "receipt_expansion": verdict.get("receipt_expansion"),
             "subtopic_recommendations": verdict.get("subtopic_recommendations"),
         })
-    return _with_domain_metadata(current | routing | private, run_dir, verdict)
+    return _with_domain_metadata(current | private, run_dir, verdict)
 
 
 def _reload_verdict_after_memo_refresh(verdict: Json, run_dir: Path) -> Json:
@@ -722,39 +813,23 @@ def _cluster_fact_ids(cluster: Json) -> list[str]:
 
 
 def _cluster_tokens(fact: Json, parent: str) -> set[str]:
-    text = " ".join(str(fact.get(key) or "") for key in _CLUSTER_SHAPE_FIELDS)
+    text = " ".join(
+        str(fact.get(key) or "") for key in (
+            "canonical_phrase", "population", "intervention", "endpoint", "comparator",
+        )
+    )
     parent_tokens = set(_CLAIM_WORD.findall(parent.lower()))
     return set(_CLAIM_WORD.findall(text.lower())) - parent_tokens - _CLUSTER_GENERIC_TOKENS
 
 
-def _facts_share_receipt_shape(left: Json, right: Json) -> bool:
-    shared_dims = 0
-    checked_dims = 0
-    for fields in _RECEIPT_SHAPE_DIMENSIONS:
-        left_shape = _shape_tokens(left, fields)
-        right_shape = _shape_tokens(right, fields)
-        if not left_shape or not right_shape:
-            continue
-        checked_dims += 1
-        if left_shape & right_shape:
-            shared_dims += 1
-        elif fields in _STRICT_RECEIPT_SHAPE_DIMENSIONS:
-            return False
-    if not checked_dims:
-        return True
-    return shared_dims >= (2 if checked_dims >= 2 else 1)
-
-
-def _coherent_cluster_fact_ids(
+def _cluster_has_coherent_component(
     verdict: Json, cluster_ids: list[str], root: Path, *, min_direct_source_count: int,
-) -> list[str]:
-    if min_direct_source_count <= 0:
-        return cluster_ids
+) -> bool:
     run_dir = _run_path(root, verdict.get("run_dir"))
     facts = _json(run_dir / "all_facts.json", [])
     lanes_raw = _json(run_dir / "fact_lanes.json", {})
     if not isinstance(facts, list) or not isinstance(lanes_raw, dict):
-        return []
+        return False
     lanes = {
         str(row.get("fact_id") or ""): str(row.get("lane") or "")
         for row in lanes_raw.get("verdicts", [])
@@ -774,55 +849,20 @@ def _coherent_cluster_fact_ids(
         anchor_tokens = _cluster_tokens(anchor, parent)
         if not anchor_tokens:
             continue
-        ids: list[str] = []
-        sources: set[str] = set()
-        for fid, fact, source in usable:
-            same_anchor = fid == anchor_id
-            if not same_anchor and len(anchor_tokens & _cluster_tokens(fact, parent)) < 2:
-                continue
-            if not same_anchor and not _facts_share_receipt_shape(anchor, fact):
-                continue
-            if source in sources:
-                continue
-            ids.append(fid)
-            sources.add(source)
-            if len(sources) >= min_direct_source_count:
-                if _publish_metric_type_coherent(
-                    ids, by_id, _COHERENCE_GENERIC_TOKENS,
-                    min_sources=min_direct_source_count,
-                ):
-                    return ids
-                break
-    return []
-
-
-def _cluster_has_coherent_component(
-    verdict: Json, cluster_ids: list[str], root: Path, *, min_direct_source_count: int,
-) -> bool:
-    return bool(_coherent_cluster_fact_ids(
-        verdict, cluster_ids, root,
-        min_direct_source_count=min_direct_source_count,
-    ))
+        sources = {
+            source for fid, fact, source in usable
+            if fid == anchor_id or len(anchor_tokens & _cluster_tokens(fact, parent)) >= 2
+        }
+        if len(sources) >= min_direct_source_count:
+            return True
+    return False
 
 
 def _claim_cluster_repairable(verdict: Json, rec: Json) -> bool:
     decision = str(verdict.get("decision") or "")
     if decision in _AGENT_REPAIR_DECISIONS:
         return True
-    blockers = {str(x) for x in verdict.get("blockers") or []}
-    hard_curation_blockers = {
-        "cross_domain_forced",
-        "low_alpha_score",
-        "metric_type_mismatch",
-        "receipt_shape_mismatch",
-    }
-    return (
-        decision == "curation_needed"
-        and rec.get("reason") == "source_coherent_child_cluster"
-        and not any(blocker.startswith("blocked_label:") for blocker in blockers)
-        and not blockers & hard_curation_blockers
-        and int(verdict.get("alpha_score") or 0) > 0
-    )
+    return decision == "curation_needed" and rec.get("reason") == "source_coherent_child_cluster"
 
 
 def _claim_cluster_candidates(
@@ -845,16 +885,14 @@ def _claim_cluster_candidates(
             if not isinstance(cluster, dict):
                 continue
             ids = _cluster_fact_ids(cluster)
-            coherent_ids = _coherent_cluster_fact_ids(
-                verdict, ids, runs_root,
-                min_direct_source_count=min_direct_source_count,
-            )
             if (
                 len(ids) < min_direct_source_count
-                or not coherent_ids
+                or not _cluster_has_coherent_component(
+                    verdict, ids, runs_root,
+                    min_direct_source_count=min_direct_source_count,
+                )
             ):
                 continue
-            ids = coherent_ids
             label = str(cluster.get("label") or "claim_cluster").strip("_")
             topic = _cluster_child_topic(parent, label)
             expansion = verdict.get("receipt_expansion")
@@ -1239,8 +1277,6 @@ def _submission_record_patch(ledger: Json) -> Json:
     patch: Json = {}
     for key in (
         "domain",
-        "deduped",
-        "deduped_public_url",
         "final_verdict",
         "status",
         "published",
@@ -1522,8 +1558,6 @@ def _recent_submission_topics(
 
 def _repairable_rejection(decision: Json) -> bool:
     support = str(decision.get("claim_support_verdict") or "").lower()
-    if decision.get("failure_category") == "integrity_duplicate":
-        return False
     if (
         decision.get("decision") == "reject"
         and support == "unsupported"
@@ -1706,7 +1740,7 @@ def _memo_source_papers(
         paper = fact.get("source_paper") or {}
         if isinstance(paper, dict):
             papers.append({
-                "doi": _clean_doi(paper.get("doi")),
+                "doi": str(paper.get("doi") or ""),
                 "title": str(paper.get("title") or ""),
                 "journal": str(paper.get("journal") or ""),
                 "url": paper.get("url") or paper.get("source_url"),
@@ -1729,18 +1763,10 @@ def _shape_text(value: Any) -> str:
 
 
 def _shape_tokens(fact: Json, fields: tuple[str, ...]) -> set[str]:
-    shape_raw = fact.get("result_shape")
-    shape = shape_raw if isinstance(shape_raw, dict) else {}
-    source = (
-        shape
-        if any(shape.get(field) not in (None, "", {}, []) for field in fields)
-        else fact
-    )
-    text = " ".join(_shape_text(source.get(field)) for field in fields)
-    min_len = 3 if fields in _STRICT_RECEIPT_SHAPE_DIMENSIONS else 4
+    text = " ".join(_shape_text(fact.get(field)) for field in fields)
     return {
         token for token in _CLAIM_WORD.findall(text.lower())
-        if len(token) >= min_len and token not in _COHERENCE_GENERIC_TOKENS
+        if len(token) >= 4 and token not in _COHERENCE_GENERIC_TOKENS
     }
 
 
@@ -1754,15 +1780,13 @@ def _direct_receipts_share_shape(
         return True
     shared_dims = 0
     checked_dims = 0
-    for fields in _RECEIPT_SHAPE_DIMENSIONS:
+    for fields in (("population",), ("intervention",), ("comparator",), ("endpoint",)):
         shapes = [_shape_tokens(fact, fields) for fact in facts]
         if not all(shapes):
             continue
         checked_dims += 1
         if set.intersection(*shapes):
             shared_dims += 1
-        elif fields in _STRICT_RECEIPT_SHAPE_DIMENSIONS:
-            return False
     if checked_dims:
         return shared_dims >= (2 if checked_dims >= 2 else 1)
     shapes = [_shape_tokens(fact, ("canonical_phrase", "claim", "finding")) for fact in facts]
@@ -1782,24 +1806,6 @@ def _year(value: Any) -> int | None:
     return year if 1000 <= year <= 3000 else None
 
 
-def _clean_doi(value: Any) -> str:
-    raw = _norm(value).removeprefix("doi:").strip()
-    if not raw:
-        return ""
-    match = _DOI_TOKEN.search(raw)
-    if not match:
-        return ""
-    return match.group(0).rstrip(".")
-
-
-def _sanitize_markdown_doi_annotations(text: str) -> str:
-    def repl(match: re.Match[str]) -> str:
-        doi = _clean_doi(match.group(1))
-        return f"doi={doi}" if doi else ""
-
-    return re.sub(r"\bdoi=([^\n]+)", repl, text)
-
-
 def _evidence_type(paper: Json) -> str:
     title = _norm(paper.get("title"))
     if "review" in title or "meta-analysis" in title or "meta analysis" in title:
@@ -1816,7 +1822,7 @@ def _source_bundle(papers: list[Json]) -> list[Json]:
         bundle.append({
             "title": title,
             "url": paper.get("url") or None,
-            "doi": _clean_doi(paper.get("doi")) or None,
+            "doi": str(paper.get("doi") or "").strip() or None,
             "year": _year(paper.get("year")),
             "evidence_type": _evidence_type(paper),
         })
@@ -2303,7 +2309,7 @@ def _cited_dois(verdict: Json, runs_root: Path | None = None) -> list[str]:
     for paper in papers:
         if not isinstance(paper, dict):
             continue
-        doi = _clean_doi(paper.get("doi"))
+        doi = _norm(paper.get("doi"))
         if doi and doi not in out:
             out.append(doi)
     return out
@@ -2450,23 +2456,6 @@ def _public_page_check(decision: Json, *, page_fetcher: PageFetcher) -> Json:
     return {"ok": False, "status": "not_rendered", "urls": urls, "checks": checks}
 
 
-def _deduped_publication(decision: Json) -> bool:
-    stack: list[Any] = [decision]
-    while stack:
-        value = stack.pop()
-        if isinstance(value, dict):
-            for key, item in value.items():
-                key_l = str(key).lower()
-                if key_l in {"deduped", "deduplicated"} and item is True:
-                    return True
-                if "deduped" in key_l and item not in (None, "", False):
-                    return True
-                stack.append(item)
-        elif isinstance(value, list):
-            stack.extend(value)
-    return False
-
-
 def _apply_submission_decision(
     ledger: Json,
     *,
@@ -2481,12 +2470,8 @@ def _apply_submission_decision(
             ledger["public_page_check"] = page
             if page.get("ok"):
                 final = "accepted"
-                deduped = _deduped_publication(decision)
-                ledger["status"] = "deduped_publication" if deduped else "published"
-                ledger["published"] = 0 if deduped else 1
-                if deduped:
-                    ledger["deduped"] = 1
-                    ledger["deduped_public_url"] = page.get("url")
+                ledger["status"] = "published"
+                ledger["published"] = 1
                 ledger["published_topic"] = (
                     ledger.get("submitted_topic")
                     or (ledger.get("candidate") or {}).get("topic")
@@ -2565,7 +2550,7 @@ def sync_submission_decisions(
     current = now or dt.datetime.now(dt.UTC)
     summary: Json = {
         "checked": 0, "updated": 0, "published": 0, "pending": 0,
-        "deduped": 0, "stale": 0, "errors": [],
+        "stale": 0, "errors": [],
     }
     seen_submission_ids: set[str] = set()
     submission_record_updates: dict[str, Json] = {}
@@ -2607,8 +2592,7 @@ def sync_submission_decisions(
             page_fetcher=page_fetcher,
         )
         summary["pending"] += int(final == "pending")
-        summary["published"] += int(final == "accepted" and ledger.get("published") == 1)
-        summary["deduped"] += int(final == "accepted" and ledger.get("deduped") == 1)
+        summary["published"] += int(final == "accepted")
         if final == "pending" and _stale_pending_decision(
             ledger, stamp=path.stem, now=current,
             max_age_hours=max_pending_age_hours,
@@ -2673,12 +2657,7 @@ def sync_submission_decisions(
                 page_fetcher=page_fetcher,
             )
             summary["pending"] += int(final == "pending")
-            summary["published"] += int(
-                final == "accepted" and synthetic_ledger.get("published") == 1
-            )
-            summary["deduped"] += int(
-                final == "accepted" and synthetic_ledger.get("deduped") == 1
-            )
+            summary["published"] += int(final == "accepted")
             if final == "pending" and _stale_pending_decision(
                 synthetic_ledger, stamp=row.get("date"), now=current,
                 max_age_hours=max_pending_age_hours,
@@ -2756,16 +2735,9 @@ def retraction_check(
         }
     retracted: list[Json] = []
     errors: list[Json] = []
-    lookup_misses: list[Json] = []
     for doi in dois:
         try:
             payload = fetcher(doi)
-        except urllib.error.HTTPError as exc:
-            if exc.code == 404:
-                lookup_misses.append({"doi": doi, "status": 404})
-                continue
-            errors.append({"doi": doi, "error": type(exc).__name__, "detail": str(exc)[:180]})
-            continue
         except Exception as exc:  # pragma: no cover - network defensive path
             errors.append({"doi": doi, "error": type(exc).__name__, "detail": str(exc)[:180]})
             continue
@@ -2778,7 +2750,6 @@ def retraction_check(
         "checked_dois": dois,
         "retracted": retracted,
         "errors": errors,
-        "lookup_misses": lookup_misses,
     }
 
 
@@ -2807,10 +2778,14 @@ def _latest_cycle_topics(runs_root: Path) -> Json:
         if isinstance(row, dict) and row.get("topic")
     ]
     skipped = [str(t) for t in payload.get("skipped_in_cooldown") or [] if str(t)]
+    skipped_source_floor = [
+        str(t) for t in payload.get("skipped_below_source_floor") or [] if str(t)
+    ]
     return {
         "cycle": cycles[-1].name,
         "ran_topics": ran,
         "skipped_in_cooldown": skipped,
+        "skipped_below_source_floor": skipped_source_floor,
     }
 
 
@@ -2824,10 +2799,7 @@ def _refresh_candidate_batch(
     domain: str = "longevity",
 ) -> Json:
     exclusions = sorted(t for t in (excluded_topics or set()) if t)
-    warm_probe_topics = min(
-        _DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT,
-        max(refresh_top, _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES, refresh_top + len(exclusions)),
-    )
+    warm_probe_topics = _DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT
     args = [
         sys.executable, "scripts/run_curator_cycle.py",
         "--domain", domain, "--stop-on-ready", "--top", str(refresh_top),
@@ -3004,13 +2976,12 @@ def _public_submission_markdown(memo: str) -> str:
     )
     if "## Why this is surprising" in text and note not in text:
         text = text.replace("\n## Why this is surprising", f"\n\n{note}\n## Why this is surprising", 1)
-    text = text.replace(
+    return text.replace(
         "## Context receipts\n\n",
         "## Context receipts\n\n"
         "_Boundary evidence only; these receipts broaden source context but do "
         "not independently prove the lead claim._\n\n",
     )
-    return _sanitize_markdown_doi_annotations(text)
 
 
 def _audit_sidecars(run_dir: Path) -> Json:
@@ -3032,6 +3003,7 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
     run_dir = _run_path(root, verdict.get("run_dir"))
     profile = load_domain_profile(_run_domain_required(run_dir, verdict))
     domain_metadata = profile.as_metadata()
+    category = profile.slug.removesuffix("_research")
     agent_id = _submission_agent_id(profile.slug)
     memo = ""
     with suppress(OSError):
@@ -3066,10 +3038,18 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         "author_agent_id": agent_id,
         "agent_id": agent_id,
         "domain": domain_metadata,
+        "domain_slug": profile.slug,
+        "category": category,
         "title": title,
         "abstract": abstract,
         "summary": abstract,
         "topic": verdict.get("topic"),
+        "metadata": {
+            "article_type": "alpha_memo",
+            "category": category,
+            "domain_slug": profile.slug,
+            "topic": verdict.get("topic"),
+        },
         "markdown": public_memo,
         "citations": source_bundle,
         "source_bundle": source_bundle,
@@ -3348,18 +3328,12 @@ def run_cycle(
         queue_unchanged = queue_sig == prev_queue_sig
         prev_queue_sig = queue_sig
         ledger["queue_counts"] = _queue_counts(current_queue)
-        selection_min_sources = (
-            min_submit_sources if (submit or refresh_candidates) else 0
-        )
-        selection_min_direct_sources = (
-            min_direct_submit_sources if (submit or refresh_candidates) else 0
-        )
         candidate, considered = select_candidate(
             current_queue, runs_root=runs_root, submitted_path=submitted_path,
             allow_tier2=allow_tier2,
-            min_source_count=selection_min_sources,
-            min_direct_source_count=selection_min_direct_sources,
-            memo_refresher=memo_refresher if (submit or refresh_candidates) else None,
+            min_source_count=min_submit_sources if submit else 0,
+            min_direct_source_count=min_direct_submit_sources if submit else 0,
+            memo_refresher=memo_refresher if submit else None,
             blocked_fingerprints=blocked_fingerprints,
             blocked_topics=blocked_topics,
             accepted_shape_profiles=accepted_shape_profiles,
@@ -3408,6 +3382,11 @@ def run_cycle(
             ran_topics = [str(t) for t in refresh.get("ran_topics") or [] if str(t)]
             if ran_topics:
                 blocked_topics.update(ran_topics)
+            source_floor_topics = [
+                str(t) for t in refresh.get("skipped_below_source_floor") or [] if str(t)
+            ]
+            if source_floor_topics:
+                blocked_topics.update(source_floor_topics)
             priority_children = _child_topics_from_queue(
                 current_queue, blocked_topics, limit=refresh_top,
             )
@@ -3471,7 +3450,7 @@ def run_cycle(
             "run_dir": candidate.get("run_dir"),
             "fingerprint": candidate.get("memo_fingerprint"),
         }
-        if retraction.get("status") not in {"clean", "skipped"}:
+        if retraction.get("status") != "clean":
             attempt["status"] = "held_retraction_check"
             for row in reversed(all_considered):
                 if row.get("fingerprint") == candidate.get("memo_fingerprint"):
@@ -3498,7 +3477,19 @@ def run_cycle(
             _write_json(ledger_path, ledger)
             return ledger
         assert submitter is not None
-        result = submit_with_backoff(_submission_payload(candidate, runs_root), submitter)
+        run_dir = _run_path(runs_root, candidate.get("run_dir"))
+        payload = _submission_payload(candidate, runs_root)
+        checked_payload, preflight_report = _run_preflight_qa(payload, run_dir)
+        if preflight_report is not None:
+            attempt["preflight_qa"] = _preflight_summary(preflight_report)
+            ledger["preflight_qa"] = attempt["preflight_qa"]
+        if checked_payload is None:
+            attempt["status"] = "preflight_qa_blocked"
+            ledger["cycle_attempts"].append(attempt)
+            ledger.update({"status": "preflight_qa_blocked", "submitted": 0, "published": 0})
+            _write_json(ledger_path, ledger)
+            return ledger
+        result = submit_with_backoff(checked_payload, submitter)
         attempt["submission"] = result
         ledger["submission"] = result
         if result["status"] == "accepted":
@@ -3666,13 +3657,11 @@ def main() -> int:
         submit=args.submit,
         retraction_mode=args.retraction_check,
     )
-    candidate = ledger.get("candidate")
-    candidate_topic = candidate.get("topic") if isinstance(candidate, dict) else candidate
     print(
         "[daily-alpha] "
         f"status={ledger['status']} submitted={ledger.get('submitted', 0)} "
         f"published={ledger['published']} "
-        f"topic={ledger.get('submitted_topic') or ledger.get('published_topic') or candidate_topic or '-'}"
+        f"topic={ledger.get('submitted_topic') or ledger.get('published_topic') or ledger.get('candidate', {}).get('topic') or '-'}"
     )
     return 2 if ledger["status"] == "candidate_refresh_failed" else 0
 

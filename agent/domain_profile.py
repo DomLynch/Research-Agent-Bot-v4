@@ -23,6 +23,7 @@ class DomainProfile:
     source_policy_path: Path
     claim_schema_path: Path
     dry_run_only: bool
+    database_domain: str = ""
 
     def as_metadata(self) -> dict[str, str | bool]:
         return {
@@ -32,6 +33,7 @@ class DomainProfile:
             "source_policy_path": self.source_policy_path.name,
             "claim_schema_path": self.claim_schema_path.name,
             "dry_run_only": self.dry_run_only,
+            "database_domain": self.database_domain,
         }
 
 
@@ -74,4 +76,5 @@ def load_domain_profile(slug: str | None = None) -> DomainProfile:
         source_policy_path=_pack_path("source_policy_path"),
         claim_schema_path=_pack_path("claim_schema_path"),
         dry_run_only=bool(raw.get("dry_run_only", False)),
+        database_domain=str(raw.get("database_domain") or key).strip(),
     )

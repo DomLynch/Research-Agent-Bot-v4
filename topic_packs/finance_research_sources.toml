@@ -1,0 +1,11 @@
+[source_policy]
+primary_sources = ["ssrn", "nber", "repec", "openalex", "crossref", "semantic_scholar"]
+preferred_journals = ["journal_of_finance", "journal_of_financial_economics", "review_of_financial_studies"]
+exclude_if_only = ["broker_note", "trading_blog", "vendor_backtest", "unreproduced_strategy_claim"]
+
+[evidence_artifacts]
+required_fields = [
+    "population", "asset_class", "geography", "time_period", "intervention",
+    "comparator", "outcome", "metric", "study_design", "dataset",
+    "estimation_method", "identification_strategy", "effect_size", "sample_size",
+]

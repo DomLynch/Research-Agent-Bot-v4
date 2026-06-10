@@ -1,0 +1,12 @@
+[Unit]
+Description=Research Agent v4 Marketing Research dry-run alpha sweep
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/Research-Agent-Bot-v4
+EnvironmentFile=/root/Research-Agent-Bot-v4/.env
+ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/run_business_alpha_sweep.py --domains marketing_research --cycles 1 --topics-per-domain 6
+SuccessExitStatus=3
+TimeoutStartSec=2700
