@@ -2403,7 +2403,10 @@ def test_refresh_candidate_batch_can_warm_backlog(
     assert "--derived-topic-limit" in calls[0]
     assert str(daily._DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT) in calls[0]
     assert "--fact-probe-topics" in calls[0]
-    assert calls[0][calls[0].index("--fact-probe-topics") + 1] == "5"
+    assert (
+        calls[0][calls[0].index("--fact-probe-topics") + 1]
+        == str(daily._DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT)
+    )
     assert "--no-editorial" in calls[0]
     assert "--no-frontier" in calls[0]
 
@@ -2813,7 +2816,10 @@ def test_refresh_candidate_batch_scales_live_probe_window_with_exclusions(
     )
 
     assert out["ok"] is True
-    assert calls[0][calls[0].index("--fact-probe-topics") + 1] == "8"
+    assert (
+        calls[0][calls[0].index("--fact-probe-topics") + 1]
+        == str(daily._DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT)
+    )
 
 
 def test_agent_repair_failed_fingerprint_is_not_repaired_twice_in_cycle(
@@ -4953,6 +4959,33 @@ def test_source_literature_fallback_submits_after_empty_fact_lane(
     assert "collagen" in seen_payload["markdown"].lower()
 
 
+def test_source_literature_boundary_quality_rejects_title_series() -> None:
+    papers = [
+        {"title": f"RAGE collagen pathway review {year}", "doi": f"10.1234/{year}"}
+        for year in range(2020, 2025)
+    ]
+
+    ok, reason = daily._source_literature_boundary_quality("glycation_AGEs", papers, 5)
+
+    assert ok is False
+    assert reason == "repeated_title_series"
+
+
+def test_source_literature_boundary_quality_accepts_distinct_boundary_papers() -> None:
+    papers = [
+        {"title": "AGE-RAGE signalling and skin collagen aging", "doi": "10.1234/1"},
+        {"title": "Glycation stress and RAGE activation in vascular aging", "doi": "10.1234/2"},
+        {"title": "Collagen crosslinking in advanced glycation biology", "doi": "10.1234/3"},
+        {"title": "RAGE pathways in age-related tissue injury", "doi": "10.1234/4"},
+        {"title": "Glycation-derived collagen stiffening review", "doi": "10.1234/5"},
+    ]
+
+    ok, reason = daily._source_literature_boundary_quality("glycation_AGEs", papers, 5)
+
+    assert ok is True
+    assert reason == "ok"
+
+
 def test_source_literature_payload_records_writer_synthesis(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
@@ -4993,6 +5026,58 @@ def test_source_literature_payload_records_writer_synthesis(
     assert writer["model"] == "MiniMax-M3"
     assert writer["prompt_tokens"] == 11
     assert sidecar["content_hash"] == writer["content_hash"]
+
+
+def test_source_literature_fallback_blocks_repeated_report_series(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    (root / "_topics_discovery" / "longevity.json").write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "report_primary_brain", "paper_count": 25}],
+    }), encoding="utf-8")
+    papers = [
+        {
+            "title": (
+                "CBTRUS Statistical Report: Primary Brain and Other Central "
+                f"Nervous System Tumors Diagnosed in the United States in {year}-{year + 4}"
+            ),
+            "doi": f"10.1093/neuonc/{year}",
+        }
+        for year in (2013, 2014, 2015, 2016)
+    ] + [{
+        "title": "The Liver Tumor Segmentation Benchmark (LiTS)",
+        "doi": "10.1016/j.media.2022.102680",
+    }]
+    submitted: list[dict[str, Any]] = []
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "writer_configured": False,
+        "mimo_model": "",
+        "mimo_base_url": "",
+    })())
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submitted.append(payload)
+        return {"ok": True, "status": 200}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-10T05-30-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        submitter=submitter,
+        source_paper_fetcher=lambda _topic, _limit: papers,
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert submitted == []
+    assert ledger["status"] == "no_fresh_candidate"
+    assert daily._source_literature_boundary_quality(
+        "report_primary_brain", papers, 5,
+    ) == (False, "repeated_title_series")
 
 
 def test_source_literature_fallback_is_not_used_for_ai_domain(

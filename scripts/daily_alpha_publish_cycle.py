@@ -88,6 +88,10 @@ _SUBMIT_TOKEN_ENVS = (
     "RESEARKA_AGENT_TOKEN_V4",
     "RESEARCH_API_KEY_V4",
 )
+_PREFLIGHT_MODE_ENV = "RESEARKA_PREFLIGHT_QA"
+_PREFLIGHT_ROOT_ENV = "RESEARKA_PREFLIGHT_QA_ROOT"
+_PREFLIGHT_USE_M3_ENV = "RESEARKA_PREFLIGHT_USE_M3"
+_PREFLIGHT_TIMEOUT_SECONDS = 90.0
 
 
 def _terminate_process_group(proc: subprocess.Popen[str], sig: signal.Signals | int) -> None:
@@ -97,7 +101,9 @@ def _terminate_process_group(proc: subprocess.Popen[str], sig: signal.Signals | 
         os.killpg(proc.pid, int(sig))
 
 
-def _run_subprocess(args: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+def _run_subprocess(
+    args: list[str], *, timeout: float, cwd: Path | None = None,
+) -> subprocess.CompletedProcess[str]:
     """Run child pipelines in one process group so stop/timeout kills descendants."""
     proc = subprocess.Popen(
         args,
@@ -105,6 +111,7 @@ def _run_subprocess(args: list[str], *, timeout: float) -> subprocess.CompletedP
         stderr=subprocess.PIPE,
         text=True,
         start_new_session=True,
+        cwd=cwd,
     )
     previous: dict[signal.Signals, Any] = {}
 
@@ -2795,10 +2802,6 @@ def _refresh_candidate_batch(
     domain: str = "longevity",
 ) -> Json:
     exclusions = sorted(t for t in (excluded_topics or set()) if t)
-    warm_probe_topics = min(
-        _DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT,
-        max(refresh_top, _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES, refresh_top + len(exclusions)),
-    )
     args = [
         sys.executable, "scripts/run_curator_cycle.py",
         "--domain", domain, "--stop-on-ready", "--top", str(refresh_top),
@@ -2811,7 +2814,7 @@ def _refresh_candidate_batch(
             "--derived-topic-limit",
             str(_DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT),
             "--fact-probe-topics",
-            str(warm_probe_topics),
+            str(_DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT),
         ])
     priorities = [str(topic).strip() for topic in priority_topics if str(topic).strip()]
     for topic in priorities:
@@ -3185,6 +3188,30 @@ def _paper_mentions_boundary(paper: Json, boundary_terms: list[str]) -> bool:
     return any(term.lower() in title for term in boundary_terms)
 
 
+def _source_literature_title_stem(title: str) -> str:
+    text = re.sub(r"\b(?:19|20)\d{2}(?:\s*[-\u2013]\s*(?:19|20)?\d{2})?\b", " ", title.lower())
+    text = re.sub(r"[^a-z0-9]+", " ", text)
+    return " ".join(text.split())
+
+
+def _source_literature_boundary_quality(
+    topic: str, papers: list[Json], min_sources: int,
+) -> tuple[bool, str]:
+    boundary_terms = _source_literature_boundary_terms(topic, papers)
+    if not boundary_terms:
+        return False, "no_repeated_boundary_terms"
+    boundary_papers = [paper for paper in papers if _paper_mentions_boundary(paper, boundary_terms)]
+    if len(boundary_papers) < max(3, (min_sources + 1) // 2):
+        return False, "weak_boundary_support"
+    stems = {
+        _source_literature_title_stem(str(paper.get("title") or ""))
+        for paper in boundary_papers
+    }
+    if len(stems) < min(3, len(boundary_papers)):
+        return False, "repeated_title_series"
+    return True, "ok"
+
+
 def _source_literature_title_handles(
     papers: list[Json], boundary_terms: list[str], limit: int = 8,
 ) -> list[str]:
@@ -3433,7 +3460,8 @@ def _source_literature_fallback(
         papers = fetch_papers(topic, min_sources)
         if len(papers) < min_sources:
             continue
-        if not _source_literature_boundary_terms(topic, papers[:min_sources]):
+        ok, _reason = _source_literature_boundary_quality(topic, papers[:min_sources], min_sources)
+        if not ok:
             continue
         return _source_literature_payload(
             profile_slug=profile_slug, topic=topic, papers=papers[:min_sources],
