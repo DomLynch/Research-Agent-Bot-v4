@@ -2779,7 +2779,23 @@ def sync_submission_decisions(
                 patch = _submission_record_patch(ledger)
                 if patch:
                     submission_record_updates[sid] = patch
-        if not isinstance(ledger, dict) or ledger.get("status") != "submitted_to_researka":
+        if not isinstance(ledger, dict):
+            continue
+        if ledger.get("status") == "published":
+            summary["checked"] += 1
+            page = _public_page_check(
+                {"public_url": ledger.get("public_url")},
+                page_fetcher=page_fetcher,
+            )
+            ledger["public_page_check"] = page
+            if not page.get("ok"):
+                ledger["status"] = "public_page_not_rendered"
+                ledger["published"] = 0
+                ledger["publish_failure_reason"] = "public_page_not_rendered"
+                summary["updated"] += 1
+                _write_json(path, ledger)
+            continue
+        if ledger.get("status") != "submitted_to_researka":
             continue
         if ledger.get("final_verdict") in _FINAL_DECISION_VERDICTS:
             continue

@@ -3902,6 +3902,36 @@ def test_page_rendered_rejects_not_found_title_with_attrs() -> None:
     }) is False
 
 
+def test_sync_submission_decisions_demotes_published_not_found_page(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    daily._write_json(root / "_daily_ledger" / "2026-06-10.json", {
+        "status": "published",
+        "submission_id": "sub_missing_page",
+        "published": 1,
+        "public_url": "https://researka.org/alpha/missing",
+    })
+
+    summary = daily.sync_submission_decisions(
+        root,
+        fetcher=lambda _submission_id: {"status": "complete", "decision": "accept"},
+        page_fetcher=lambda _url: {
+            "ok": True,
+            "status": 200,
+            "body": '<title data-next-head="">Alpha Memo Not Found</title>',
+        },
+    )
+
+    patched = json.loads(
+        (root / "_daily_ledger" / "2026-06-10.json").read_text(encoding="utf-8")
+    )
+    assert summary["checked"] == 1
+    assert summary["updated"] == 1
+    assert patched["status"] == "public_page_not_rendered"
+    assert patched["published"] == 0
+    assert patched["publish_failure_reason"] == "public_page_not_rendered"
+    assert patched["public_page_check"]["status"] == "not_rendered"
+
+
 def test_cost_cap_writes_no_publish_ledger(tmp_path: Path) -> None:
     root = tmp_path / "repo"
 
