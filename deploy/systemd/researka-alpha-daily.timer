@@ -1,5 +1,5 @@
 [Unit]
-Description=Run Research Agent v4 alpha memo publisher every eight hours
+Description=DISABLED legacy generic longevity alpha memo publisher timer
 
 [Timer]
 OnCalendar=*-*-* 01/8:30:00
