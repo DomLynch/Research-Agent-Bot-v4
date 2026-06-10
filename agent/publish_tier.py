@@ -50,6 +50,43 @@ _SHAPE_GENERIC_TOKENS = frozenset({
     "datasets", "model", "models", "system", "systems", "protocol",
     "protocols", "baseline", "baselines", "study", "studies", "shot",
 })
+_COUNTED_SOURCE_ARTIFACT_RE = re.compile(
+    r"\b\d+\s+(?:of|/)\s+\d+\s+"
+    r"(?:cited\s+|direct\s+|source\s+)?"
+    r"(?:titles?|receipts?|sources?|reports?|papers?|studies?)\b"
+    r".{0,100}\b(?:support(?:s|ed|ing)?|nam(?:e|es|ed|ing)|"
+    r"mention(?:s|ed|ing)?|cluster(?:s|ed|ing)?|repeat(?:s|ed|ing)?|"
+    r"shar(?:e|es|ed|ing)|overlap(?:s|ped|ping)?|point(?:s|ed|ing)?)\b"
+)
+_BUNDLE_ARTIFACT_RE = re.compile(
+    r"\b(?:"
+    r"retrieved\s+(?:bundle|sources?|papers?|receipts?)|"
+    r"source\s+(?:bundle|titles?|receipts?|reports?|papers?)|"
+    r"cited\s+(?:bundle|titles?|receipts?|reports?|papers?)|"
+    r"evidence\s+(?:bundle|sources?|receipts?|papers?)|"
+    r"receipt\s+bundle"
+    r")\b"
+    r".{0,120}\b(?:cluster(?:s|ed|ing)?|mention(?:s|ed|ing)?|"
+    r"nam(?:e|es|ed|ing)|shar(?:e|es|ed|ing)|overlap(?:s|ped|ping)?|"
+    r"repeat(?:s|ed|ing)?|dominat(?:e|es|ed|ing))\b"
+)
+_REPORT_TITLE_ARTIFACT_RE = re.compile(
+    r"\b(?:report|source|paper|study)\s+titles?\b"
+    r".{0,120}\b(?:repeat(?:s|ed|ing)?|cluster(?:s|ed|ing)?|"
+    r"overlap(?:s|ped|ping)?|shar(?:e|es|ed|ing)|support(?:s|ed|ing)?)\b"
+)
+_BUNDLE_SUPPORT_ARTIFACT_RE = re.compile(
+    r"\b(?:this|that|these|the)\s+"
+    r"(?:retrieved\s+|source\s+|cited\s+|direct\s+|evidence\s+)?"
+    r"(?:receipt\s+bundle|bundle|titles?|sources?|receipts?|reports?|papers?)\b"
+    r".{0,80}\bsupport(?:s|ed|ing)?\b.{0,80}\b"
+    r"(?:cluster|term|label|topic|source[- ]family|retrieval)\b"
+)
+_RECEIPT_BUNDLE_BOUNDARY_RE = re.compile(
+    r"\b(?:sits inside|limited to|inside)\s+(?:the\s+)?"
+    r"(?:direct\s+|cited\s+|direct\s+cited\s+)?"
+    r"(?:receipt\s+bundle|direct\s+receipts?)\b"
+)
 
 
 def _read(path: Path) -> str:
@@ -823,6 +860,28 @@ def _has_tension(md: str, markers: tuple[str, ...]) -> bool:
     return "real tension:" in text or any(marker in text for marker in markers)
 
 
+def _retrieval_artifact_claim(md: str, *, strong_direct_bundle: bool = False) -> bool:
+    text = "\n".join((
+        _field(md, "Headline"),
+        _section(md, "One-sentence thesis"),
+        _section(md, "Why this is surprising"),
+        _section(md, "Evidence Landscape"),
+        _section(md, "What this changes"),
+    )).lower()
+    if not text:
+        return False
+    return bool(
+        _COUNTED_SOURCE_ARTIFACT_RE.search(text)
+        or _BUNDLE_ARTIFACT_RE.search(text)
+        or _REPORT_TITLE_ARTIFACT_RE.search(text)
+        or _BUNDLE_SUPPORT_ARTIFACT_RE.search(text)
+        or (
+            not strong_direct_bundle
+            and _RECEIPT_BUNDLE_BOUNDARY_RE.search(text)
+        )
+    )
+
+
 def _marker_in_text(marker: str, text: str) -> bool:
     pattern = r"(?<![a-z0-9])" + re.escape(marker).replace(r"\ ", r"\s+") + r"(?![a-z0-9])"
     return re.search(pattern, text) is not None
@@ -927,6 +986,9 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         and direct_receipt_shape_coherent
         and direct_metric_type_coherent
     )
+    retrieval_artifact = _retrieval_artifact_claim(
+        md, strong_direct_bundle=strong_direct_bundle,
+    )
     expansion_candidates = _expansion_candidates(bound_ids, facts, lanes)
     blockers: list[str] = []
     if label in _BLOCKED_LABELS:
@@ -953,6 +1015,8 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         blockers.append("receipt_shape_mismatch")
     if direct_shape_ids and not direct_metric_type_coherent:
         blockers.append("metric_type_mismatch")
+    if retrieval_artifact:
+        blockers.append("retrieval_artifact_claim")
 
     ready = (
         not blockers
@@ -998,6 +1062,8 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         surface_type = "split_or_reject_memo"
     elif "source_dispersion" in blockers:
         surface_type = "heterogeneity_memo"
+    elif "retrieval_artifact_claim" in blockers:
+        surface_type = "retrieval_note"
     elif "claim_alignment_partial" in blockers:
         surface_type = "receipt_map"
     elif subtopics["recommended"]:
@@ -1043,6 +1109,7 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
             "claim_coherent_source_diversity": source_coherent,
             "direct_receipt_shape_coherent": direct_receipt_shape_coherent,
             "direct_metric_type_coherent": direct_metric_type_coherent,
+            "retrieval_artifact_claim": retrieval_artifact,
             "counter_consensus_tension": tension,
             "cross_domain_forced": forced,
             "feed_scope_mismatch": off_scope,
