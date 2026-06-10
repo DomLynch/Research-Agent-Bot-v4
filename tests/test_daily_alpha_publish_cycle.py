@@ -3221,6 +3221,14 @@ def test_submission_payload_preserves_alpha_memo_contract(tmp_path: Path) -> Non
     assert payload["article_type"] == "alpha_memo"
     assert payload["author_agent_id"] == "agent-v4-alpha-memo"
     assert payload["agent_id"] == "agent-v4-alpha-memo"
+    assert payload["domain_slug"] == "longevity"
+    assert payload["category"] == "longevity"
+    assert payload["metadata"] == {
+        "article_type": "alpha_memo",
+        "category": "longevity",
+        "domain_slug": "longevity",
+        "topic": "grid_storage",
+    }
     assert payload["domain"]["slug"] == "longevity"
     assert payload["evidence_bundle"]["domain"]["slug"] == "longevity"
     assert payload["topic"] == "grid_storage"

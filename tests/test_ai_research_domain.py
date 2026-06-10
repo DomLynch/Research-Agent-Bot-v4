@@ -242,6 +242,14 @@ def test_ai_research_daily_submit_is_live_when_explicitly_selected(tmp_path: Pat
     assert ledger["submit_requested"] is True
     assert ledger["submitted"] == 1
     assert calls and calls[0]["topic"] == "ai_agents"
+    assert calls[0]["domain_slug"] == "ai_research"
+    assert calls[0]["category"] == "ai"
+    assert calls[0]["metadata"] == {
+        "article_type": "alpha_memo",
+        "category": "ai",
+        "domain_slug": "ai_research",
+        "topic": "ai_agents",
+    }
 
 
 def test_ai_research_queue_excludes_seed_mismatched_domain_runs(tmp_path: Path) -> None:

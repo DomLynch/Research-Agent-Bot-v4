@@ -3003,6 +3003,7 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
     run_dir = _run_path(root, verdict.get("run_dir"))
     profile = load_domain_profile(_run_domain_required(run_dir, verdict))
     domain_metadata = profile.as_metadata()
+    category = profile.slug.removesuffix("_research")
     agent_id = _submission_agent_id(profile.slug)
     memo = ""
     with suppress(OSError):
@@ -3038,10 +3039,17 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         "agent_id": agent_id,
         "domain": domain_metadata,
         "domain_slug": profile.slug,
+        "category": category,
         "title": title,
         "abstract": abstract,
         "summary": abstract,
         "topic": verdict.get("topic"),
+        "metadata": {
+            "article_type": "alpha_memo",
+            "category": category,
+            "domain_slug": profile.slug,
+            "topic": verdict.get("topic"),
+        },
         "markdown": public_memo,
         "citations": source_bundle,
         "source_bundle": source_bundle,
