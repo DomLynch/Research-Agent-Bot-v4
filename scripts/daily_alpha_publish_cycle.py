@@ -496,15 +496,21 @@ def _build_queue(
     seed_tokens = _domain_seed_tokens(domain)
     domain_rows = []
     missing_domain_count = 0
-    legacy_domain_default_count = 0
-    default_domain = load_domain_profile(None).slug
+    untagged_seed_claimed_count = 0
     for run in latest.values():
         row = _verdict_for_run(run)
         run_domain = _run_domain(run, row)
         if not run_domain:
-            if domain == default_domain:
-                run_domain = default_domain
-                legacy_domain_default_count += 1
+            # Universal claim rule (no hardcoded slug): an untagged run joins the
+            # domain being built when its topic sits in that domain's seed corpus.
+            # The default domain is the unscoped catch-all (empty seed_tokens) and
+            # claims untagged runs directly; scoped domains claim seed members only.
+            if domain and (
+                not seed_tokens
+                or _family_keys(_family_values(row), set()) & seed_tokens
+            ):
+                run_domain = domain
+                untagged_seed_claimed_count += 1
             else:
                 missing_domain_count += 1
                 continue
@@ -541,7 +547,7 @@ def _build_queue(
         ],
         "_meta": {
             "missing_domain_count": missing_domain_count,
-            "legacy_domain_default_count": legacy_domain_default_count,
+            "untagged_seed_claimed_count": untagged_seed_claimed_count,
             "seed_scope_dropped_count": seed_scope_dropped_count,
             "seed_scope_fallback_count": seed_scope_fallback_count,
             "seed_scope_fallback_used": bool(seed_scope_fallback_count),

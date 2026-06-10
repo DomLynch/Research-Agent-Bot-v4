@@ -276,6 +276,29 @@ def test_daily_queue_skips_runs_without_domain_metadata(tmp_path: Path) -> None:
     assert out["_meta"]["missing_domain_count"] == 1
 
 
+def test_daily_queue_claims_untagged_run_in_domain_seed_corpus(tmp_path: Path) -> None:
+    # An untagged (pre-domain-metadata) run whose topic IS in the target domain's
+    # seed corpus must be claimed for that domain, not dropped — this is the
+    # universal seed-membership rescue that revives the legacy untagged backlog.
+    runs = tmp_path / "runs"
+    run = runs / "metformin-evidence-ts"
+    run.mkdir(parents=True)
+    verdict = _verdict("metformin")
+    verdict.pop("domain")
+    run.joinpath("alpha_memo.md").write_text("# Alpha memo\n", encoding="utf-8")
+    run.joinpath("publish_verdict.json").write_text(
+        json.dumps(verdict), encoding="utf-8",
+    )
+
+    out = daily._build_queue(
+        runs, include_archive=False, domain="longevity_research",
+    )
+
+    assert out["_meta"]["missing_domain_count"] == 0
+    assert out["_meta"]["untagged_seed_claimed_count"] == 1
+    assert [r["topic"] for r in out["ready_to_publish"]] == ["metformin"]
+
+
 def test_run_cycle_rejects_injected_candidate_without_domain(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("untagged")
