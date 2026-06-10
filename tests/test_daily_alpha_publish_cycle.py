@@ -6,6 +6,7 @@ rules.
 from __future__ import annotations
 
 import datetime as dt
+import email.message
 import json
 import os
 import subprocess
@@ -3252,6 +3253,40 @@ def test_crossref_title_retraction_word_does_not_block_clean_paper() -> None:
     )
 
     assert check["status"] == "clean"
+
+
+def test_crossref_404_does_not_block_retraction_check() -> None:
+    def fetcher(_doi: str) -> dict[str, Any]:
+        raise urllib.error.HTTPError(
+            url="https://api.crossref.org/works/missing",
+            code=404,
+            msg="Not Found",
+            hdrs=email.message.Message(),
+            fp=None,
+        )
+
+    check = daily.retraction_check(_verdict(), mode="crossref", fetcher=fetcher)
+
+    assert check["status"] == "clean"
+    assert check["errors"][0]["http_status"] == 404
+    assert check["errors"][0]["blocking"] is False
+
+
+def test_crossref_500_still_blocks_retraction_check() -> None:
+    def fetcher(_doi: str) -> dict[str, Any]:
+        raise urllib.error.HTTPError(
+            url="https://api.crossref.org/works/unavailable",
+            code=500,
+            msg="Server Error",
+            hdrs=email.message.Message(),
+            fp=None,
+        )
+
+    check = daily.retraction_check(_verdict(), mode="crossref", fetcher=fetcher)
+
+    assert check["status"] == "error"
+    assert check["errors"][0]["http_status"] == 500
+    assert check["errors"][0]["blocking"] is True
 
 
 def test_submit_token_accepts_research_alias(monkeypatch: MonkeyPatch) -> None:
