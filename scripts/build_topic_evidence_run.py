@@ -85,6 +85,60 @@ _AI_AXIS_ALIASES = {
     "benchmark": ("task_or_benchmark",),
     "baseline_comparator": ("baseline_or_comparator",),
 }
+_AI_AXIS_DISPLAY_ALIASES = {
+    "arc": "ARC",
+    "f1": "F1",
+    "glue": "GLUE",
+    "gpqa": "GPQA",
+    "gsm8k": "GSM8K",
+    "humaneval": "HumanEval",
+    "locomo": "LoCoMo",
+    "math": "MATH",
+    "mmlu": "MMLU",
+    "mmlu pro": "MMLU Pro",
+    "mmlu-pro": "MMLU Pro",
+    "nlp": "NLP",
+    "rag": "RAG",
+    "ragas": "RAGAS",
+    "rouge l": "ROUGE-L",
+    "rouge-l": "ROUGE-L",
+    "swe bench": "SWE Bench",
+    "swe-bench": "SWE Bench",
+    "truthfulqa": "TruthfulQA",
+}
+_AI_BENCHMARK_QUERY_HINTS = (
+    "MMLU accuracy",
+    "GSM8K accuracy",
+    "HumanEval pass@1",
+    "SWE-bench pass@1",
+    "GPQA accuracy",
+    "TruthfulQA accuracy",
+    "LoCoMo F1",
+)
+_AI_METRIC_MARKERS = (
+    ("pass@1", ("pass@1", "pass at 1")),
+    ("pass@k", ("pass@8", "pass@10", "pass@100", "pass at")),
+    ("F1", ("macro-f1", "macro f1", "f1")),
+    ("accuracy", ("accuracy", "accurate", "correctness")),
+    ("success rate", ("success rate", "asr")),
+    ("win rate", ("win rate",)),
+    ("resolve rate", ("resolve rate", "resolution rate")),
+    ("ROUGE-L", ("rouge-l", "rouge l")),
+)
+_AI_RELATIVE_MARKERS = (
+    "improvement", "improves", "improved", "gain", "gains", "drop", "drops",
+    "dropped", "reduction", "reduces", "reduced", "surpassing", "surpasses",
+    "outperform", "outperforms", "higher than", "lower than", "versus",
+)
+_AI_RAW_SCORE_MARKERS = (
+    "achieved", "achieves", "achieving", "attained", "attains", "reaches",
+    "reaching", "scored", "reports", "reported", "reporting", "showed",
+    "shows", "score of", "accuracy of", "f1 =", "f1 score", "pass@1 of",
+)
+_AI_METRIC_ROLE_PRIORITY = {"raw_score": 2, "relative_change": 1}
+_AI_GENERIC_AXIS_TOKENS = frozenset({
+    "task", "tasks", "benchmark", "benchmarks", "evaluation", "evaluations",
+})
 
 
 @dataclass(frozen=True, slots=True)
@@ -179,7 +233,7 @@ def _normalize_tier2(item: dict[str, Any], topic: str) -> dict[str, Any]:
         "population": str(item.get("population") or ""),
         "intervention": str(item.get("intervention") or ""),
         "comparator": str(item.get("comparator") or ""),
-        "canonical_phrase": item.get("canonical_phrase") or (
+        "canonical_phrase": fact.get("canonical_phrase") or item.get("canonical_phrase") or (
             f"{item.get('claim_type','fact')}: "
             f"{item.get('numeric_value','')}{item.get('units','')} "
             f"({paper.get('title','')})".strip()
@@ -401,6 +455,13 @@ def _facts_from_ai_result_bundles(
             _normalize_ai_result_receipt(receipt, topic, bundle)
             for receipt in receipts[:min_sources]
         ]
+        roles = {
+            str(fact.get("metric_role") or "").strip()
+            for fact in facts
+            if fact.get("metric_role")
+        }
+        if len(roles) != 1:
+            continue
         if _source_count(facts) >= min_sources:
             return facts
     return []
@@ -434,10 +495,32 @@ def _axis_value(fact: dict[str, Any], *keys: str) -> str:
     return ""
 
 
+def _axis_display_value(fact: dict[str, Any], *keys: str) -> str:
+    raw_shape = fact.get("result_shape")
+    shape = raw_shape if isinstance(raw_shape, dict) else {}
+    for key in keys:
+        value = fact.get(key) or shape.get(key)
+        if value not in (None, "", {}, []):
+            return str(value)
+    return ""
+
+
 def _axis_title(value: str) -> str:
+    normalized = re.sub(r"[\W_]+", " ", str(value or "").casefold()).strip()
+    if normalized in _AI_AXIS_DISPLAY_ALIASES:
+        return _AI_AXIS_DISPLAY_ALIASES[normalized]
+    words = re.findall(r"[A-Za-z0-9]+", str(value or ""))
     return " ".join(
-        part.upper() if len(part) <= 3 else part[:1].upper() + part[1:]
-        for part in value.split()
+        _AI_AXIS_DISPLAY_ALIASES.get(word.casefold())
+        or (
+            word if (
+                word.isupper()
+                or any(ch.isdigit() for ch in word)
+                or any(ch.isupper() for ch in word[1:])
+            )
+            else word.capitalize()
+        )
+        for word in words
     )
 
 
@@ -447,10 +530,93 @@ def _ai_topic_axis_relevant(topic: str, axis: tuple[str, str, str]) -> bool:
     return bool(topic_tokens & axis_tokens)
 
 
+def _ai_axis_specificity(benchmark: str, topic: str) -> int:
+    benchmark_norm = _axis_norm(benchmark)
+    if not benchmark_norm:
+        return 0
+    benchmark_tokens = set(re.findall(r"[a-z0-9]+", benchmark_norm))
+    topic_tokens = set(re.findall(r"[a-z0-9]+", topic.lower().replace("_", " ")))
+    if benchmark_tokens & _AI_GENERIC_AXIS_TOKENS:
+        return 0
+    if benchmark_tokens and benchmark_tokens <= topic_tokens:
+        return 0
+    return 1
+
+
+def _ai_synthetic_axis_pair(benchmark: str, model: str, comparator: str) -> bool:
+    benchmark_norm = _axis_norm(benchmark)
+    if not benchmark_norm:
+        return False
+    return (
+        _axis_norm(model) == f"{benchmark_norm} systems"
+        or _axis_norm(comparator) == f"{benchmark_norm} benchmark baselines"
+    )
+
+
+def _infer_ai_metric(fact: dict[str, Any]) -> str:
+    text = " ".join(
+        str(fact.get(key) or "")
+        for key in ("metric", "sub_topic", "timepoint", "canonical_phrase", "source_excerpt")
+    ).lower()
+    for metric, markers in _AI_METRIC_MARKERS:
+        if any(marker in text for marker in markers):
+            return metric
+    return str(fact.get("metric") or fact.get("sub_topic") or "").strip()
+
+
+def _ai_marker_in_text(marker: str, text: str) -> bool:
+    if " " in marker or "@" in marker or "=" in marker:
+        return marker in text
+    return bool(re.search(rf"\b{re.escape(marker)}\b", text))
+
+
+def _ai_metric_role(fact: dict[str, Any]) -> str:
+    raw = fact.get("result_shape")
+    shape = raw if isinstance(raw, dict) else {}
+    existing = fact.get("metric_role") or shape.get("metric_role")
+    if existing:
+        return str(existing)
+    text = " ".join(
+        str(fact.get(key) or "")
+        for key in ("canonical_phrase", "source_excerpt", "claim", "finding")
+    ).lower()
+    if any(_ai_marker_in_text(marker, text) for marker in _AI_RAW_SCORE_MARKERS):
+        return "raw_score"
+    if any(_ai_marker_in_text(marker, text) for marker in _AI_RELATIVE_MARKERS):
+        return "relative_change"
+    return ""
+
+
+def _with_ai_fallback_axes(fact: dict[str, Any]) -> dict[str, Any]:
+    out = dict(fact)
+    benchmark = out.get("benchmark") or out.get("population") or out.get("timepoint")
+    metric = out.get("metric") or _infer_ai_metric(out)
+    model = out.get("model_system") or out.get("intervention")
+    comparator = out.get("baseline_comparator") or out.get("comparator")
+    if benchmark and not out.get("benchmark"):
+        out["benchmark"] = benchmark
+    if benchmark and not out.get("task"):
+        out["task"] = benchmark
+    if benchmark and not out.get("dataset"):
+        out["dataset"] = benchmark
+    if metric and not out.get("metric"):
+        out["metric"] = metric
+    if model and not out.get("model_system"):
+        out["model_system"] = model
+    if comparator and not out.get("baseline_comparator"):
+        out["baseline_comparator"] = comparator
+    if benchmark and not out.get("evaluation_protocol"):
+        out["evaluation_protocol"] = f"{benchmark} benchmark evaluation"
+    role = _ai_metric_role(out)
+    if role:
+        out["metric_role"] = role
+    return out
+
+
 def _ai_axis_coherent_facts(
     facts: list[dict[str, Any]], topic: str, *, min_sources: int,
 ) -> list[dict[str, Any]]:
-    grouped: dict[tuple[str, str, str, str, str, str], list[dict[str, Any]]] = {}
+    grouped: dict[tuple[str, str, str, str, str], list[dict[str, Any]]] = {}
     for fact in facts:
         benchmark = _axis_value(fact, "benchmark", "dataset")
         task = _axis_value(fact, "task", "dataset", "benchmark")
@@ -458,14 +624,17 @@ def _ai_axis_coherent_facts(
         model = _axis_value(fact, "model_system")
         comparator = _axis_value(fact, "baseline_comparator", "comparator")
         protocol = _axis_value(fact, "evaluation_protocol") or f"{task} benchmark evaluation"
-        if not benchmark or not task or not metric or not model or not comparator:
+        role = _ai_metric_role(fact)
+        if not benchmark or not task or not metric or not model or not comparator or not role:
             continue
-        key = (benchmark, task, metric, model, comparator, protocol)
-        if _ai_topic_axis_relevant(topic, key[:3]):
+        if _ai_synthetic_axis_pair(benchmark, model, comparator):
+            continue
+        key = (benchmark, task, metric, role, protocol, model, comparator)
+        if _ai_axis_specificity(benchmark, topic) or _ai_topic_axis_relevant(topic, key[:3]):
             grouped.setdefault(key, []).append(fact)
 
     candidates: list[
-        tuple[int, int, tuple[str, str, str, str, str, str], list[dict[str, Any]]]
+        tuple[int, int, int, tuple[str, str, str, str, str, str, str], list[dict[str, Any]]]
     ] = []
     for key, rows in grouped.items():
         by_source: dict[str, dict[str, Any]] = {}
@@ -474,13 +643,28 @@ def _ai_axis_coherent_facts(
             if source and source not in by_source:
                 by_source[source] = fact
         if len(by_source) >= min_sources:
-            candidates.append((len(by_source), len(rows), key, list(by_source.values())))
+            role = key[3]
+            candidates.append((
+                _AI_METRIC_ROLE_PRIORITY.get(role, 0),
+                _ai_axis_specificity(key[0], topic),
+                len(by_source),
+                len(rows),
+                key,
+                list(by_source.values()),
+            ))
     if not candidates:
         return []
 
-    _sources, _rows, key, selected = sorted(candidates, reverse=True)[0]
-    benchmark, task, metric, model, comparator, protocol = key
+    _priority, _specificity, _sources, _rows, key, selected = sorted(candidates, reverse=True)[0]
+    benchmark, task, metric, role, protocol, model, comparator = key
     dataset = _axis_value(selected[0], "dataset") or benchmark
+    display_benchmark = _axis_title(_axis_display_value(selected[0], "benchmark", "dataset") or benchmark)
+    display_task = _axis_title(_axis_display_value(selected[0], "task", "dataset", "benchmark") or task)
+    display_dataset = _axis_title(_axis_display_value(selected[0], "dataset", "benchmark") or dataset)
+    display_metric = _axis_title(_axis_display_value(selected[0], "metric", "endpoint", "claim_type") or metric)
+    display_protocol = _axis_title(_axis_display_value(selected[0], "evaluation_protocol") or protocol)
+    display_model = _axis_title(_axis_display_value(selected[0], "model_system") or model)
+    display_comparator = _axis_title(_axis_display_value(selected[0], "baseline_comparator", "comparator") or comparator)
 
     out: list[dict[str, Any]] = []
     for fact in selected[:min_sources]:
@@ -488,35 +672,108 @@ def _ai_axis_coherent_facts(
         item.setdefault("reported_model_system", fact.get("model_system"))
         item.setdefault("reported_baseline_comparator", fact.get("baseline_comparator"))
         item.update({
-            "benchmark": _axis_title(benchmark),
-            "task": _axis_title(task),
-            "dataset": _axis_title(dataset),
-            "metric": _axis_title(metric),
-            "evaluation_protocol": _axis_title(protocol),
-            "model_system": _axis_title(model),
-            "baseline_comparator": _axis_title(comparator),
+            "benchmark": display_benchmark,
+            "task": display_task,
+            "dataset": display_dataset,
+            "metric": display_metric,
+            "evaluation_protocol": display_protocol,
+            "model_system": display_model,
+            "baseline_comparator": display_comparator,
             "population": " ".join([
                 topic,
                 str(fact.get("source_topic") or fact.get("topic") or ""),
-                _axis_title(benchmark),
-                _axis_title(task),
-                _axis_title(dataset),
+                display_benchmark,
+                display_task,
+                display_dataset,
             ]).strip(),
-            "intervention": _axis_title(model),
-            "comparator": _axis_title(comparator),
-            "endpoint": _axis_title(metric),
+            "intervention": display_model,
+            "comparator": display_comparator,
+            "endpoint": display_metric,
             "result_shape": {
-                "benchmark": _axis_title(benchmark),
-                "task": _axis_title(task),
-                "dataset": _axis_title(dataset),
-                "metric": _axis_title(metric),
-                "evaluation_protocol": _axis_title(protocol),
-                "model_system": _axis_title(model),
-                "baseline_comparator": _axis_title(comparator),
+                "benchmark": display_benchmark,
+                "task": display_task,
+                "dataset": display_dataset,
+                "metric": display_metric,
+                "evaluation_protocol": display_protocol,
+                "model_system": display_model,
+                "baseline_comparator": display_comparator,
+                "metric_role": _axis_title(role),
             },
         })
         out.append(item)
     return out
+
+
+def _ai_axis_rejection_diagnostics(
+    facts: list[dict[str, Any]], topic: str,
+) -> dict[str, Any]:
+    diagnostics: dict[str, Any] = {
+        "reason": "no_ai_axis_cluster",
+        "incomplete_shape": 0,
+        "synthetic_model_or_comparator": 0,
+        "generic_axis": 0,
+        "examples": [],
+    }
+    examples: list[dict[str, str]] = []
+    for fact in facts:
+        benchmark = _axis_value(fact, "benchmark", "dataset")
+        task = _axis_value(fact, "task", "dataset", "benchmark")
+        metric = _axis_value(fact, "metric", "endpoint", "claim_type")
+        model = _axis_value(fact, "model_system")
+        comparator = _axis_value(fact, "baseline_comparator", "comparator")
+        role = _ai_metric_role(fact)
+        if not benchmark or not task or not metric or not model or not comparator or not role:
+            diagnostics["incomplete_shape"] += 1
+            continue
+        if _ai_synthetic_axis_pair(benchmark, model, comparator):
+            diagnostics["synthetic_model_or_comparator"] += 1
+            if len(examples) < 3:
+                examples.append({
+                    "fact_id": str(fact.get("fact_id") or ""),
+                    "benchmark": _axis_title(_axis_display_value(fact, "benchmark", "dataset") or benchmark),
+                    "metric": _axis_title(_axis_display_value(fact, "metric", "endpoint", "claim_type") or metric),
+                    "model_system": _axis_title(_axis_display_value(fact, "model_system") or model),
+                    "baseline_comparator": _axis_title(_axis_display_value(fact, "baseline_comparator", "comparator") or comparator),
+                })
+            continue
+        if not _ai_axis_specificity(benchmark, topic):
+            diagnostics["generic_axis"] += 1
+    diagnostics["examples"] = examples
+    if diagnostics["synthetic_model_or_comparator"]:
+        diagnostics["reason"] = "synthetic_model_or_comparator"
+    elif diagnostics["generic_axis"]:
+        diagnostics["reason"] = "generic_axis"
+    elif diagnostics["incomplete_shape"]:
+        diagnostics["reason"] = "incomplete_shape"
+    return diagnostics
+
+
+def _ai_axis_query_facets(
+    facts: list[dict[str, Any]], topic: str, *, limit: int = 8,
+) -> tuple[str, ...]:
+    scores: dict[str, int] = {}
+    for fact in facts:
+        shaped = _with_ai_fallback_axes(fact)
+        benchmark = _axis_value(shaped, "benchmark", "dataset")
+        metric = _axis_value(shaped, "metric", "endpoint", "claim_type")
+        if not benchmark or not metric:
+            continue
+        if not _ai_axis_specificity(benchmark, topic):
+            continue
+        query = f"{_axis_title(benchmark)} {_axis_title(metric)}".strip()
+        scores[query] = scores.get(query, 0) + 1
+    ordered = [
+        key for key, _value in sorted(scores.items(), key=lambda item: (-item[1], item[0]))
+    ]
+    seen_norm = {key.casefold() for key in ordered}
+    for query in _AI_BENCHMARK_QUERY_HINTS:
+        norm = query.casefold()
+        if norm not in seen_norm:
+            ordered.append(query)
+            seen_norm.add(norm)
+        if len(ordered) >= limit:
+            break
+    return tuple(ordered[:limit])
 
 
 def _a_core_source_count(facts: list[dict[str, Any]], topic: str) -> int:
@@ -803,9 +1060,66 @@ def _fetch_facts(
     ))
     deduped = _dedup_facts(facts)
     if domain == _AI_RESULTS_DOMAIN:
+        deduped = [_with_ai_fallback_axes(fact) for fact in deduped]
         coherent = _ai_axis_coherent_facts(
             deduped, topic, min_sources=min_sources,
         )
+        if coherent and _ai_axis_specificity(str(coherent[0].get("benchmark") or ""), topic):
+            if trace is not None:
+                trace.append({
+                    "kind": "ai_axis_cluster",
+                    "query": topic,
+                    "facts": len(coherent),
+                    "status": "ok",
+                    "errors": [],
+                })
+            return coherent
+        axis_queries = [
+            query for query in _ai_axis_query_facets(deduped, topic)
+            if query not in seen_queries
+        ]
+        if axis_queries:
+            axis_facts = _fetch_fact_jobs(
+                [("ai_axis", query) for query in axis_queries],
+                base, hdr, topic, domain=domain, trace=trace, deadline=deadline,
+            )
+            if axis_facts:
+                widened = _dedup_facts(deduped + [
+                    _with_ai_fallback_axes(fact) for fact in axis_facts
+                ])
+                coherent = _ai_axis_coherent_facts(
+                    widened, topic, min_sources=min_sources,
+                )
+                if coherent:
+                    if trace is not None:
+                        trace.append({
+                            "kind": "ai_axis_cluster",
+                            "query": ",".join(axis_queries),
+                            "facts": len(coherent),
+                            "status": "ok",
+                            "errors": [],
+                        })
+                    return coherent
+                if trace is not None:
+                    diagnostics = _ai_axis_rejection_diagnostics(widened, topic)
+                    trace.append({
+                        "kind": "ai_axis_rejected",
+                        "query": ",".join(axis_queries),
+                        "facts": 0,
+                        "status": "rejected",
+                        "errors": [str(diagnostics.get("reason") or "")],
+                        "diagnostics": diagnostics,
+                    })
+        elif trace is not None:
+            diagnostics = _ai_axis_rejection_diagnostics(deduped, topic)
+            trace.append({
+                "kind": "ai_axis_rejected",
+                "query": topic,
+                "facts": 0,
+                "status": "rejected",
+                "errors": [str(diagnostics.get("reason") or "")],
+                "diagnostics": diagnostics,
+            })
         if coherent:
             if trace is not None:
                 trace.append({
