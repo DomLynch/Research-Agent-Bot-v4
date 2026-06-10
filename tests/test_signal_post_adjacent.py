@@ -290,6 +290,7 @@ def test_main_preserves_claim_coherent_source_diversity(
     assert "self_repair" not in audit
     verdict = json.loads((run / "publish_verdict.json").read_text())
     assert verdict["decision"] == "agent_repair_needed"
-    assert verdict["surface_type"] == "receipt_map"
+    assert verdict["surface_type"] == "retrieval_note"
     assert "direct_source_floor_below_min" in verdict["blockers"]
+    assert "retrieval_artifact_claim" in verdict["blockers"]
     assert verdict["axes"]["claim_coherent_source_diversity"] is False

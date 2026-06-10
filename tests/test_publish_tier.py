@@ -135,6 +135,230 @@ def test_ready_to_publish_accepts_bound_concentrated_tension(tmp_path: Path) -> 
     assert verdict["blockers"] == []
 
 
+def test_title_count_bundle_claim_downgrades_to_retrieval_note(tmp_path: Path) -> None:
+    run = _run(
+        tmp_path,
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+        dois=("10.a", "10.b", "10.c", "10.d", "10.e"),
+        titles=(
+            "Reserve markets threshold changes grid storage reliability",
+            "Reserve auctions threshold changes grid storage reliability",
+            "Reserve dispatch threshold changes grid storage reliability",
+            "Reserve pricing threshold changes market reliability",
+            "Reserve settlement threshold changes operator reliability",
+        ),
+    )
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo - grid_storage\n\n"
+        "**Headline:** Grid storage clusters around reserve titles\n"
+        "**Alpha score:** 90/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## One-sentence thesis\n\n"
+        "3 of 5 cited titles explicitly name the reserve boundary.\n\n"
+        "## Why this is surprising\n\n"
+        "Real tension: the cited bundle clusters around reserve wording.\n\n"
+        "## Evidence receipts\n\n"
+        "- `fact_id=1` (`A_core`) - receipt\n"
+        "- `fact_id=2` (`A_core`) - receipt\n"
+        "- `fact_id=3` (`A_core`) - receipt\n"
+        "- `fact_id=4` (`A_core`) - receipt\n"
+        "- `fact_id=5` (`A_core`) - receipt\n",
+        encoding="utf-8",
+    )
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    for fact, phrase in zip(
+        facts,
+        (
+            "Storage threshold improved dispatch accuracy.",
+            "Storage threshold improved dispatch precision.",
+            "Storage threshold reduced dispatch latency.",
+            "Storage threshold reduced dispatch cost.",
+            "Storage threshold reduced context length.",
+        ),
+        strict=True,
+    ):
+        fact["canonical_phrase"] = phrase
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "agent_repair_needed"
+    assert verdict["surface_type"] == "retrieval_note"
+    assert "retrieval_artifact_claim" in verdict["blockers"]
+    assert verdict["axes"]["retrieval_artifact_claim"] is True
+
+
+def test_counted_title_artifact_inflections_are_blocked() -> None:
+    for verb in ("named", "naming", "mentioned", "repeated"):
+        memo = (
+            "# Alpha memo - grid_storage\n\n"
+            "**Headline:** Storage evidence separates reliability from cost\n\n"
+            "## One-sentence thesis\n\n"
+            f"3 of 5 cited titles {verb} the reserve boundary.\n\n"
+            "## Why this is surprising\n\n"
+            "Real tension: effect direction differs by endpoint.\n"
+        )
+
+        assert tier._retrieval_artifact_claim(memo) is True
+
+
+def test_receipt_count_support_claim_downgrades_to_retrieval_note(tmp_path: Path) -> None:
+    run = _run(tmp_path)
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo - grid_storage\n\n"
+        "**Headline:** Storage recommendations cluster around the reserve standard\n"
+        "**Alpha score:** 90/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## One-sentence thesis\n\n"
+        "2 of 5 receipts support the reserve-standard boundary.\n\n"
+        "## Why this is surprising\n\n"
+        "Real tension: recommendations clusters around the standard name.\n\n"
+        "## Evidence receipts\n\n"
+        "- `fact_id=1` (`A_core`) - receipt\n"
+        "- `fact_id=2` (`A_core`) - receipt\n"
+        "- `fact_id=3` (`A_core`) - receipt\n"
+        "- `fact_id=4` (`A_core`) - receipt\n"
+        "- `fact_id=5` (`A_core`) - receipt\n",
+        encoding="utf-8",
+    )
+
+    verdict = publish_verdict(run)
+
+    assert verdict["surface_type"] == "retrieval_note"
+    assert "retrieval_artifact_claim" in verdict["blockers"]
+
+
+def test_report_title_repetition_downgrades_to_retrieval_note(tmp_path: Path) -> None:
+    run = _run(tmp_path)
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo - grid_storage\n\n"
+        "**Headline:** Annual report titles repeat the same boundary terms\n"
+        "**Alpha score:** 90/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## One-sentence thesis\n\n"
+        "Report titles repeat across years, so the useful signal is the source-family recurrence.\n\n"
+        "## Why this is surprising\n\n"
+        "Real tension: repeated source naming can look like evidence convergence.\n\n"
+        "## Evidence receipts\n\n"
+        "- `fact_id=1` (`A_core`) - receipt\n"
+        "- `fact_id=2` (`A_core`) - receipt\n"
+        "- `fact_id=3` (`A_core`) - receipt\n"
+        "- `fact_id=4` (`A_core`) - receipt\n"
+        "- `fact_id=5` (`A_core`) - receipt\n",
+        encoding="utf-8",
+    )
+
+    verdict = publish_verdict(run)
+
+    assert verdict["surface_type"] == "retrieval_note"
+    assert "retrieval_artifact_claim" in verdict["blockers"]
+
+
+def test_renderer_receipt_bundle_boundary_downgrades_to_retrieval_note(tmp_path: Path) -> None:
+    run = _run(tmp_path)
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo - grid_storage\n\n"
+        "**Headline:** Storage threshold signal is source bounded\n"
+        "**Alpha score:** 90/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## One-sentence thesis\n\n"
+        "The cited receipts define a source-bounded signal.\n\n"
+        "## Why this is surprising\n\n"
+        "Real tension: The surprise sits inside the cited receipt bundle; separate direct sources report measurable effects.\n\n"
+        "## Evidence receipts\n\n"
+        "- `fact_id=1` (`A_core`) - receipt\n"
+        "- `fact_id=2` (`A_core`) - receipt\n"
+        "- `fact_id=3` (`A_core`) - receipt\n"
+        "- `fact_id=4` (`A_core`) - receipt\n"
+        "- `fact_id=5` (`A_core`) - receipt\n",
+        encoding="utf-8",
+    )
+
+    verdict = publish_verdict(run)
+
+    assert verdict["surface_type"] == "retrieval_note"
+    assert "retrieval_artifact_claim" in verdict["blockers"]
+
+
+def test_bounded_support_question_is_not_retrieval_artifact(tmp_path: Path) -> None:
+    run = _run(tmp_path)
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo - grid_storage\n\n"
+        "**Headline:** Storage threshold evidence separates reliability from cost claims\n"
+        "**Alpha score:** 90/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## One-sentence thesis\n\n"
+        "The cited receipts support a boundary claim: reserve reliability improves, while cost effects remain protocol-sensitive.\n\n"
+        "## Why this is surprising\n\n"
+        "Real tension: does the cited receipt bundle still support this bounded claim when population and endpoint are aligned?\n\n"
+        "## Evidence receipts\n\n"
+        "- `fact_id=1` (`A_core`) - receipt\n"
+        "- `fact_id=2` (`A_core`) - receipt\n"
+        "- `fact_id=3` (`A_core`) - receipt\n"
+        "- `fact_id=4` (`A_core`) - receipt\n"
+        "- `fact_id=5` (`A_core`) - receipt\n",
+        encoding="utf-8",
+    )
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "ready_to_publish"
+    assert "retrieval_artifact_claim" not in verdict["blockers"]
+
+
+def test_bundle_support_for_label_downgrades_to_retrieval_note(tmp_path: Path) -> None:
+    run = _run(tmp_path)
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo - grid_storage\n\n"
+        "**Headline:** Source bundle supports the reserve label\n"
+        "**Alpha score:** 90/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## One-sentence thesis\n\n"
+        "The cited receipt bundle supports the source-family boundary label.\n\n"
+        "## Why this is surprising\n\n"
+        "Real tension: this is a source-family recurrence, not an effect estimate.\n\n"
+        "## Evidence receipts\n\n"
+        "- `fact_id=1` (`A_core`) - receipt\n"
+        "- `fact_id=2` (`A_core`) - receipt\n"
+        "- `fact_id=3` (`A_core`) - receipt\n"
+        "- `fact_id=4` (`A_core`) - receipt\n"
+        "- `fact_id=5` (`A_core`) - receipt\n",
+        encoding="utf-8",
+    )
+
+    verdict = publish_verdict(run)
+
+    assert verdict["surface_type"] == "retrieval_note"
+    assert "retrieval_artifact_claim" in verdict["blockers"]
+
+
+def test_evidence_boundary_thesis_is_not_retrieval_artifact(tmp_path: Path) -> None:
+    run = _run(tmp_path)
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo - grid_storage\n\n"
+        "**Headline:** Storage threshold evidence separates reliability from cost claims\n"
+        "**Alpha score:** 90/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## One-sentence thesis\n\n"
+        "The receipts support a boundary claim: reserve reliability improves, while cost effects remain protocol-sensitive.\n\n"
+        "## Why this is surprising\n\n"
+        "Real tension: the same intervention has a reliability signal but not a pooled cost estimate.\n\n"
+        "## Evidence receipts\n\n"
+        "- `fact_id=1` (`A_core`) - receipt\n"
+        "- `fact_id=2` (`A_core`) - receipt\n"
+        "- `fact_id=3` (`A_core`) - receipt\n"
+        "- `fact_id=4` (`A_core`) - receipt\n"
+        "- `fact_id=5` (`A_core`) - receipt\n",
+        encoding="utf-8",
+    )
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "ready_to_publish"
+    assert "retrieval_artifact_claim" not in verdict["blockers"]
+    assert verdict["axes"]["retrieval_artifact_claim"] is False
+
+
 def test_no_bound_receipts_routes_to_curation(tmp_path: Path) -> None:
     run = _run(
         tmp_path,
