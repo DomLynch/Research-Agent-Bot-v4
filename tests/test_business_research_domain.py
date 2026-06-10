@@ -223,7 +223,7 @@ def test_business_bundle_ignores_generic_study_design_other() -> None:
     assert bundle.shape["study_design"] == "asset pricing"
 
 
-def test_business_fetch_retries_without_domain_when_live_schema_rejects_it(
+def test_business_fetch_fails_closed_when_live_schema_rejects_domain(
     monkeypatch: Any,
 ) -> None:
     calls: list[dict[str, Any]] = []
@@ -241,12 +241,8 @@ def test_business_fetch_retries_without_domain_when_live_schema_rejects_it(
     ) -> httpx.Response:
         request = httpx.Request("POST", url)
         calls.append(json)
-        if len(calls) == 1:
-            return httpx.Response(
-                422, json={"detail": "domain extra_forbidden"}, request=request,
-            )
         return httpx.Response(
-            200, json=[{"id": "f1", "paper": {"doi": "10.1/a"}}], request=request,
+            422, json={"detail": "domain extra_forbidden"}, request=request,
         )
 
     monkeypatch.setattr("agent.business_research.httpx.post", fake_post)
@@ -257,9 +253,12 @@ def test_business_fetch_retries_without_domain_when_live_schema_rejects_it(
         settings=_Settings(),  # type: ignore[arg-type]
     )
 
-    assert rows == [{"id": "f1", "paper": {"doi": "10.1/a"}}]
+    assert rows == []
     assert "domain" in calls[0]
-    assert "domain" not in calls[1]
+    assert len(calls) == 1
+    assert trace["status"] == "unsupported_domain_filter"
+    assert trace["http_status"] == 422
+    assert trace["facts"] == 0
     assert trace["domain_filter_used"] is False
 
 

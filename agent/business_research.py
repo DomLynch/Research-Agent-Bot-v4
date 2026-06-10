@@ -779,16 +779,13 @@ def fetch_business_facts(
             timeout=30.0,
         )
         status_code = response.status_code
-        used_domain_filter = True
         if status_code == 422:
-            response = httpx.post(
-                f"{base}/api/v1/tier2/facts/search",
-                headers=headers,
-                json=body,
-                timeout=30.0,
-            )
-            status_code = response.status_code
-            used_domain_filter = False
+            return [], {
+                "status": "unsupported_domain_filter",
+                "http_status": status_code,
+                "facts": 0,
+                "domain_filter_used": False,
+            }
         response.raise_for_status()
         data = response.json()
     except (httpx.HTTPError, ValueError) as exc:
@@ -803,5 +800,5 @@ def fetch_business_facts(
         "status": "ok",
         "facts": len(rows),
         "http_status": status_code,
-        "domain_filter_used": used_domain_filter,
+        "domain_filter_used": True,
     }
