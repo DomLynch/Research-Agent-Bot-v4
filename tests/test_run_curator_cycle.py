@@ -271,6 +271,37 @@ def test_plan_topics_does_not_rescue_underfloor_in_submit_cycle() -> None:
     assert below_floor == []
 
 
+def test_cached_tier2_supply_caches_hits_and_retries_transient_zeros() -> None:
+    """A successful (>0) probe is cached and served without re-probing; a
+    transient 0 is not cached, so the next call probes again."""
+    from scripts.run_curator_cycle import _cached_tier2_supply
+
+    cache: dict[str, Any] = {}
+    calls = {"n": 0}
+
+    def probe_ok() -> int:
+        calls["n"] += 1
+        return 8
+
+    assert _cached_tier2_supply("longevity:metformin", cache=cache, now=1000.0,
+                                probe=probe_ok) == 8
+    assert _cached_tier2_supply("longevity:metformin", cache=cache, now=1001.0,
+                                probe=probe_ok) == 8
+    assert calls["n"] == 1  # second call served from cache, no re-probe
+
+    zero_calls = {"n": 0}
+
+    def probe_zero() -> int:
+        zero_calls["n"] += 1
+        return 0
+
+    assert _cached_tier2_supply("longevity:senolytic", cache=cache, now=1000.0,
+                                probe=probe_zero) == 0
+    assert _cached_tier2_supply("longevity:senolytic", cache=cache, now=1001.0,
+                                probe=probe_zero) == 0
+    assert zero_calls["n"] == 2  # transient 0 not cached → probed both times
+
+
 def test_plan_topics_tier2_supply_rescues_untagged_rich_topic() -> None:
     """A topic the per-topic facts endpoint reports as 0 is still built when
     the Tier-2 corpus carries >= floor source papers (the build binds them via

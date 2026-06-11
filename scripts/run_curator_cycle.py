@@ -54,7 +54,45 @@ from agent.topic_discovery import _fetch_topic_fact_source_count  # noqa: E402
 
 _RUNS = _ROOT / "runs"
 _CYCLES_DIR = _RUNS / "_curator_cycles"
+# Tier-2 supply is slow to probe (~40-90s) and occasionally returns a transient
+# empty; cache successful counts so a topic is probed slowly once, then read
+# instantly and reliably. Runtime state — gitignored, regenerated per cycle.
+_TIER2_SUPPLY_CACHE = _RUNS / "_tier2_supply_cache.json"
+_TIER2_SUPPLY_TTL_SECONDS = 86_400.0
 _DEFAULT_PIPELINE_TOP_N = max(5, _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES * 2)
+
+
+def _read_tier2_cache() -> dict[str, Any]:
+    try:
+        data = json.loads(_TIER2_SUPPLY_CACHE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _write_tier2_cache(cache: dict[str, Any]) -> None:
+    try:
+        _TIER2_SUPPLY_CACHE.parent.mkdir(parents=True, exist_ok=True)
+        _TIER2_SUPPLY_CACHE.write_text(json.dumps(cache), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def _cached_tier2_supply(
+    key: str, *, cache: dict[str, Any], now: float, probe: Callable[[], int],
+) -> int:
+    """Tier-2 source count with a 24h cache. Cache only successful (>0) probes
+    so a transient empty from the slow endpoint retries next cycle, while a
+    warmed topic is read instantly. Mutates and persists ``cache`` on a miss."""
+    entry = cache.get(key)
+    if (isinstance(entry, dict)
+            and now - float(entry.get("ts", 0.0)) < _TIER2_SUPPLY_TTL_SECONDS):
+        return int(entry.get("count", 0))
+    count = probe()
+    if count > 0:
+        cache[key] = {"count": count, "ts": now}
+        _write_tier2_cache(cache)
+    return count
 _DISCOVERY_TIMEOUT_SECONDS = 1800
 # Cheap pre-build gate: a topic whose discovery probe finds fewer bindable
 # sources than this can never clear the publish source floor, so a full
@@ -537,12 +575,14 @@ def main() -> int:
         str(topic).strip() for topic in args.priority_topic if str(topic).strip()
     ], domain=args.domain)
     _cycle_settings = load_settings()
-    # The Tier-2 search is slow (~40-90s/query); cap probes per cycle so a run
-    # of supply-less candidates cannot exhaust the cycle budget. The planner
-    # stops once `top` topics are planned, so this only bounds the worst case.
+    # Cap live probes per cycle so a run of supply-less candidates cannot
+    # exhaust the cycle budget; cache hits are free. The planner stops once
+    # `top` topics are planned, so this only bounds the cold worst case.
     _tier2_budget = [max(2 * max(1, args.top), 8)]
+    _tier2_cache = _read_tier2_cache()
+    _tier2_now = time.time()
     with httpx.Client() as _cycle_client:
-        def _tier2_supply(topic: str) -> int:
+        def _probe_tier2(topic: str) -> int:
             if _tier2_budget[0] <= 0:
                 return 0
             _tier2_budget[0] -= 1
@@ -553,6 +593,12 @@ def main() -> int:
                 )
             except (OSError, httpx.HTTPError, ValueError):
                 return 0
+
+        def _tier2_supply(topic: str) -> int:
+            return _cached_tier2_supply(
+                f"{args.domain}:{topic}", cache=_tier2_cache, now=_tier2_now,
+                probe=lambda: _probe_tier2(topic),
+            )
 
         plan, skipped, skipped_excluded, below_floor = _plan_topics(
             [*priority_ranked, *ranked], recent=recent, excluded=excluded,

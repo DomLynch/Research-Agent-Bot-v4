@@ -19,6 +19,8 @@ htmlcov/
 # it would create constant dirt and 3-way merge conflicts.
 runs/_topic_supply_cache.json
 runs/_topic_supply_cache.json.tmp
+# Cron-regenerated Tier-2 supply cache: runtime state rewritten every cycle.
+runs/_tier2_supply_cache.json
 # Transient diagnostic run logs (the .json artifact beside them IS tracked).
 runs/_diagnostics/*.log
 # Cron-regenerated publish queue: runtime state rewritten every cycle on the
