@@ -25,10 +25,30 @@ from agent.llm_client import call_writer_with_fallback
 from agent.settings import Settings, load_settings
 
 _MAX_FACTS = 40  # cap prompt size; callers pre-rank by source diversity
+# A coherent claim cites a tight, recent bundle, not the whole cluster: the
+# narrower set reads as one bounded claim (reviewers reject sprawling bundles)
+# and newest-first ordering maximises the citation recency ratio the platform
+# enforces — without hardcoding any year cutoff. The floor still holds because
+# the cite count is never trimmed below the caller's min_sources.
+_MAX_CITED_SOURCES = 10
 
 
 def _phrase(fact: dict[str, Any]) -> str:
     return str(fact.get("canonical_phrase") or fact.get("source_excerpt") or "").strip()
+
+
+def _fact_year(fact: dict[str, Any]) -> int:
+    raw = fact.get("source_paper")
+    paper = raw if isinstance(raw, dict) else {}
+    for value in (fact.get("canonical_year"), paper.get("year"),
+                  paper.get("publication_year"), fact.get("year")):
+        try:
+            year = int(str(value))
+        except (TypeError, ValueError):
+            continue
+        if 1000 <= year <= 3000:
+            return year
+    return 0
 
 
 def _source_key(fact: dict[str, Any]) -> str:
