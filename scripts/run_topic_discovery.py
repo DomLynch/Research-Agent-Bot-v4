@@ -202,7 +202,15 @@ def main() -> int:
     )
     cache_limit = max(args.top, fact_probe_topics or 0)
     excluded = {str(t).strip() for t in args.exclude_topic if str(t).strip()}
-    cache_supported = profile.slug == "longevity"
+    # The source-rich supply cache holds the default (longevity) seed space.
+    # A domain that shares that seed file may read it; a domain with its own
+    # seeds must not, because the token-overlap domain filter would otherwise
+    # pull default-space topics into its discovery. Keying on the shared seed
+    # file (not the "longevity" slug) also covers longevity_research — the slug
+    # the live publisher actually runs — which was starved by the old gate.
+    cache_supported = (
+        profile.seed_topics_path == load_domain_profile(None).seed_topics_path
+    )
     ranked = (
         cached_source_rich_candidates(limit=cache_limit)
         if cache_supported
