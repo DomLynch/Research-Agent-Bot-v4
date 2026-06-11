@@ -2276,6 +2276,12 @@ def render_signal_memo(
             "by multiple independent, source-diverse findings rather than a "
             "single isolated result."
         )
+        # A concrete scoping question, not the single-claim placeholder the
+        # reviewer flagged: it names the map's own comparison structure.
+        bounded_question = (
+            f"Across {n_papers} independent sources on {_topic_title(topic)}, how "
+            "do the reported effects vary by population, comparator, and endpoint?"
+        )
         lead_source_count = n_papers
     # The single-claim title must be the coherent M3 claim — a bounded research
     # statement — not the mechanically-split topic slug, which the reviewer

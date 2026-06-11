@@ -2282,6 +2282,10 @@ def test_coherent_scope_m3_cluster_routes_to_evidence_map(tmp_path: Path) -> Non
 
     assert "evidence_map" in confidence
     assert "evidence map" in headline.lower()
+    # The Evidence Landscape question must be a concrete scoping question, not
+    # the single-claim placeholder the reviewer flagged.
+    assert "how do the reported effects vary" in memo
+    assert "still support this bounded claim" not in memo
 
 
 def test_headline_falls_back_without_cluster_claim(tmp_path: Path) -> None:
