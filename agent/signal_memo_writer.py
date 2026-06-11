@@ -1921,8 +1921,26 @@ def render_signal_memo(
         lead_ids, facts, topic, min_direct_sources,
         )
     ):
-        narrowed_direct_bundle = len(lead_ids) >= min_direct_sources
-        lead_ids = lead_ids[:1]
+        # The direct bundle is heterogeneous. Before collapsing to a single
+        # receipt — which discards a real source-diverse coherent sub-cluster
+        # (e.g. metformin's 5-paper mortality/survival claim sitting inside a
+        # mortality+glycemic+cancer bundle) — lead with the largest coherent
+        # source-diverse direct cluster. Coherence is unchanged: the cluster
+        # still passes _coherent_receipt_ids' token-fit + one-fact-per-source
+        # rule. Collapse to one receipt only when no coherent cluster clears
+        # the direct-source floor.
+        coherent_lead = _coherent_receipt_ids(
+            facts, lanes, min_sources=min_direct_sources, allowed_lanes=_DIRECT,
+            claim=claim, topic=topic, excluded_ids=excluded_receipt_ids,
+        ) or _coherent_receipt_ids(
+            facts, lanes, min_sources=min_direct_sources, allowed_lanes=_DIRECT,
+            claim=set(), topic=topic, excluded_ids=excluded_receipt_ids,
+        )
+        if _source_count_for_ids(coherent_lead, facts) >= min_direct_sources:
+            lead_ids = coherent_lead
+        else:
+            narrowed_direct_bundle = len(lead_ids) >= min_direct_sources
+            lead_ids = lead_ids[:1]
         lead_set = set(lead_ids)
         receipt_ids = lead_ids + [fid for fid in expanded_ids if fid not in lead_set]
         context_ids = [fid for fid in receipt_ids if fid not in lead_set]

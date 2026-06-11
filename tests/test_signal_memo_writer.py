@@ -16,7 +16,9 @@ from pytest import MonkeyPatch
 
 from agent.publish_tier import publish_verdict
 from agent.signal_memo_writer import (
+    _DIRECT,
     _claim_coherent_receipt_ids,
+    _coherent_receipt_ids,
     _expanded_receipt_ids,
     _format_large_numbers,
     _grounded_headline,
@@ -2125,3 +2127,39 @@ def test_alpha_memo_runtime_excludes_full_paper_and_ingestion_deps() -> None:
 
     assert not runtime_deps & alpha_runtime_exclusions
     assert not dev_deps & full_paper_or_parser_deps
+
+
+def test_coherent_receipt_ids_leads_with_densest_source_diverse_cluster() -> None:
+    """Regression for the metformin/exercise fragmentation: when A_core facts
+    span several claims, the lead selector must return the largest coherent,
+    source-diverse cluster (5 distinct papers on one outcome) rather than
+    collapsing to a single off-cluster receipt. Universal — coherence is by
+    token-fit, no domain keyword list."""
+    facts: dict[str, Any] = {}
+    lanes: dict[str, str] = {}
+    # 5 mortality/survival facts, one per distinct source paper -> coherent cluster
+    for i in range(5):
+        fid = f"mort{i}"
+        facts[fid] = {
+            "canonical_phrase": "metformin reduced all-cause mortality and improved survival",
+            "population": "adults with type 2 diabetes",
+            "intervention": "metformin",
+            "source_paper": {"doi": f"10.1/mortality-{i}"},
+        }
+        lanes[fid] = "A_core"
+    # 1 glycemic fact, unrelated outcome, single paper -> must NOT be the lead
+    facts["gly0"] = {
+        "canonical_phrase": "metformin lowered glycated haemoglobin hba1c glucose",
+        "population": "adults with prediabetes",
+        "intervention": "metformin",
+        "source_paper": {"doi": "10.1/glycemic-0"},
+    }
+    lanes["gly0"] = "A_core"
+
+    lead = _coherent_receipt_ids(
+        facts, lanes, min_sources=5, allowed_lanes=_DIRECT,
+        claim=set(), topic="metformin",
+    )
+
+    assert set(lead) == {f"mort{i}" for i in range(5)}
+    assert "gly0" not in lead
