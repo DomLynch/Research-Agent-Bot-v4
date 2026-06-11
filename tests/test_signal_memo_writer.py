@@ -2191,3 +2191,34 @@ def test_headline_falls_back_without_cluster_claim(tmp_path: Path) -> None:
     headline = next(line for line in memo.splitlines() if line.startswith("**Headline:**"))
 
     assert len(headline) > len("**Headline:** ")
+
+
+def test_evidence_alignment_table_aligns_and_dedupes() -> None:
+    """Evidence-map receipts render as a domain-stratified table (the scoping-
+    review structure Researka requires), one row per distinct source, aligned by
+    population / comparator / endpoint / effect."""
+    from agent.signal_memo_writer import _evidence_alignment_table
+
+    facts = {
+        "a": {
+            "source_paper": {"doi": "10.x/1"}, "population": "clinical cohort",
+            "comparator": "single-agent", "endpoint": "mortality",
+            "numeric_value": 0.83, "units": "RR",
+        },
+        "b": {
+            "source_paper": {"doi": "10.x/2"}, "population": "code synthesis",
+            "endpoint": "pass@1",
+            "canonical_phrase": "MAS improves pass@1 by 12 points",
+        },
+        "dup": {"source_paper": {"doi": "10.x/1"}, "population": "ignored"},
+    }
+    table = _evidence_alignment_table(facts, ["a", "b", "dup"])
+    body = "\n".join(table)
+
+    assert table[0] == "| # | Source | Population | Comparator | Endpoint | Effect |"
+    assert set(table[1]) <= set("|- ")                      # separator row
+    assert len(table) == 4                                  # header + sep + 2 rows
+    assert "10.x/1" in body and "10.x/2" in body
+    assert body.count("10.x/1") == 1                        # same source deduped
+    assert "single-agent" in body and "mortality" in body
+    assert "0.83 RR" in body                                # numeric effect

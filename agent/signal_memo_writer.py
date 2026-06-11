@@ -642,6 +642,49 @@ def _receipt_lines(
     return out or ["- _No A_core/B_context receipts bind to this memo._"]
 
 
+def _table_cell(value: Any, limit: int) -> str:
+    text = _clip(value, limit).replace("|", "/").replace("\n", " ").strip()
+    return text or "—"
+
+
+def _evidence_alignment_table(
+    facts: dict[str, dict[str, Any]], ids: list[str],
+) -> list[str]:
+    """Domain-stratified synthesis table — one row per cited source aligned by
+    population, comparator, endpoint, and effect size. This is the structure a
+    scoping review needs so findings are compared across studies, not silently
+    pooled into one estimate. Universal: no domain literals."""
+    rows: list[str] = []
+    seen: set[str] = set()
+    for fid in ids:
+        fact = facts.get(fid) or {}
+        paper = fact.get("source_paper") or {}
+        source = str(paper.get("doi") or paper.get("pmid") or paper.get("title") or "").strip()
+        if not source or source in seen:
+            continue
+        seen.add(source)
+        numeric = fact.get("numeric_value")
+        units = str(fact.get("units") or "").strip()
+        effect = (
+            f"{numeric} {units}".strip() if numeric is not None
+            else _clip(fact.get("canonical_phrase"), 48)
+        )
+        rows.append(
+            f"| {len(rows) + 1} | {_table_cell(source, 34)} "
+            f"| {_table_cell(fact.get('population'), 28)} "
+            f"| {_table_cell(fact.get('comparator') or fact.get('baseline_comparator'), 22)} "
+            f"| {_table_cell(fact.get('endpoint') or fact.get('outcome'), 24)} "
+            f"| {_table_cell(effect, 40)} |"
+        )
+    if not rows:
+        return ["_No alignable receipts bind to this evidence map._"]
+    return [
+        "| # | Source | Population | Comparator | Endpoint | Effect |",
+        "|---|--------|------------|------------|----------|--------|",
+        *rows,
+    ]
+
+
 def _alpha_score(audit: dict[str, Any], label: str) -> int:
     base = int(audit.get("capped_opportunity")
                or audit.get("opportunity_score") or 0)
@@ -2137,11 +2180,12 @@ def render_signal_memo(
             f"findings across {n_papers} sources"
         )
         thesis = (
-            f"Structured evidence map for {_topic_title(topic)}: the cited "
-            f"literature reports {len(acore_receipt_ids)} distinct A_core "
-            f"findings across {n_papers} independent sources. These are "
-            "presented as a synthesis spanning populations and endpoints, not a "
-            "single unified claim; each finding and its source is listed below."
+            f"Scoping review of {_topic_title(topic)}: {len(acore_receipt_ids)} "
+            f"findings across {n_papers} independent sources, aligned below by "
+            "population, comparator, endpoint, and effect size. Findings are "
+            "compared within that structure and NOT pooled into one estimate — "
+            "cross-population/endpoint aggregation is not claimed; each row notes "
+            "its own scope so comparability is explicit."
         )
         why_surprising = (
             "The signal here is breadth, not one contrast: the topic is carried "
@@ -2203,7 +2247,10 @@ def render_signal_memo(
         "",
         "## Evidence receipts",
         "",
-        *_receipt_lines(audit, facts, lanes, lead_ids),
+        *(
+            _evidence_alignment_table(facts, lead_ids) if evidence_map
+            else _receipt_lines(audit, facts, lanes, lead_ids)
+        ),
     ]
     if context_ids:
         lines.extend([
