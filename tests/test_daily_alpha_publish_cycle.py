@@ -1986,6 +1986,51 @@ def test_receipt_shape_mismatch_reranks_before_submit(tmp_path: Path) -> None:
     assert submissions[0]["topic"] == "matched_direct_receipts"
 
 
+def test_single_claim_outranks_evidence_map_for_submission(tmp_path: Path) -> None:
+    """A bounded single-claim memo clears editorial review; an evidence map does
+    not yet. The single claim must submit first even when a source-rich map has a
+    higher alpha score, so passing memos are not jumped by maps that reject."""
+    root = tmp_path / "repo"
+    emap = _verdict("breadth_map", score=99) | {"surface_type": "evidence_map"}
+    claim = _verdict("bounded_single_claim", score=70)
+    _memo_with_receipt_shapes(root, emap, [
+        {"canonical_phrase": "Containment reached 92% in networks.",
+         "population": "networks", "intervention": "defense agent",
+         "endpoint": "containment"},
+        {"canonical_phrase": "Signal phases dropped 43% at intersections.",
+         "population": "intersections", "intervention": "signal agent",
+         "endpoint": "phases"},
+        {"canonical_phrase": "Code scored 3.31x CodeBLEU.",
+         "population": "code", "intervention": "coding agent",
+         "endpoint": "codebleu"},
+        {"canonical_phrase": "Sensing improved 8.56% over survey.",
+         "population": "fields", "intervention": "sensor agent",
+         "endpoint": "sensing"},
+        {"canonical_phrase": "Queue time fell 15% with scheduling.",
+         "population": "retail", "intervention": "scheduler agent",
+         "endpoint": "queue"},
+    ])
+    _memo_with_source_receipts(root, claim, 5)
+    submissions: list[dict[str, Any]] = []
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submissions.append(payload)
+        return {"ok": True, "status": 200, "response": {}}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-06T09-30-00Z",
+        queue=_queue(emap, claim),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+    )
+
+    assert ledger["submitted_topic"] == "bounded_single_claim"
+    assert submissions and submissions[0]["topic"] == "bounded_single_claim"
+
+
 def test_evidence_map_bypasses_receipt_shape_submit_gate(tmp_path: Path) -> None:
     """An evidence map is honestly multi-shape; the single-claim shape gate must
     not block it from submitting (Researka accepts it via article_type)."""

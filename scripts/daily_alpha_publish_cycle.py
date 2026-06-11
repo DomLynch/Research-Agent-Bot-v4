@@ -2044,6 +2044,11 @@ def select_candidate(
         key=lambda r: (
             0 if r.get("decision") == "ready_to_publish"
             else 1 if r.get("_claim_cluster_candidate") else 2,
+            # Bounded single-claim memos clear editorial review; evidence maps
+            # do not yet (the reviewer panel wants a synthesized claim, not a
+            # findings table), so try every single claim before any map rather
+            # than letting a source-rich map's high alpha jump the queue.
+            1 if r.get("surface_type") == "evidence_map" else 0,
             -(int(r.get("alpha_score") or 0) + accepted_shape_bonus(r, shape_profiles)),
             str(r.get("topic") or ""),
         ),
