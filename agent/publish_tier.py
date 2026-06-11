@@ -23,6 +23,18 @@ _COUNTER_MIN_CLAIM_FIT = 0.2
 _BLOCKED_LABELS = frozenset({
     "curation_needed", "evidence_binding_failed", "no_signal", "discard",
 })
+# When the lead is an M3-validated coherent cluster (claim_cluster.json), the
+# writer has already confirmed the receipts agree on one outcome/direction. The
+# token-based gate cannot see that differently-worded papers make the same
+# claim, so it raises these single-claim-coherence blockers on a genuinely
+# coherent bundle — they are waived for a cluster that clears the source floor.
+# Integrity blockers (cross_domain_forced, feed_scope_mismatch, no_bound_receipts,
+# retrieval_artifact_claim, blocked_label) are NOT here and still block.
+_LLM_CLUSTER_WAIVED_BLOCKERS = frozenset({
+    "claim_alignment_partial", "source_dispersion", "receipt_shape_mismatch",
+    "metric_type_mismatch", "weak_counter_consensus_tension", "low_alpha_score",
+    "source_floor_below_min", "direct_source_floor_below_min",
+})
 # An evidence-map memo is an honest multi-finding synthesis, so the single-claim
 # coherence blockers below do not apply to it — but every integrity blocker
 # (cross_domain_forced, feed_scope_mismatch, no_bound_receipts,
@@ -1045,7 +1057,26 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         and a_core_source_papers >= min_direct_source_papers
         and not (set(blockers) - _EVIDENCE_MAP_WAIVED_BLOCKERS)
     )
-    if ready or evidence_map_ready:
+    # Trust an M3-validated coherent cluster: if the lead receipts are the
+    # writer-confirmed single-claim cluster and clear the source floor, only
+    # token-coherence blockers stand in the way (waived) — the writer's semantic
+    # judgment supersedes token overlap and Researka is the final judge.
+    llm_cluster = _json(run_dir / "claim_cluster.json", {})
+    llm_cluster_ids = {
+        str(x) for x in (llm_cluster.get("lead_fact_ids") or [])
+    } if isinstance(llm_cluster, dict) else set()
+    llm_cluster_sources = len(_source_papers(
+        [fid for fid in bound_ids if fid in llm_cluster_ids and lanes.get(fid) in _DIRECT],
+        facts,
+    ))
+    llm_cluster_ready = (
+        llm_cluster_sources >= min_direct_source_papers
+        and bool(bound_ids)
+        and label not in _BLOCKED_LABELS
+        and not off_scope
+        and not (set(blockers) - _LLM_CLUSTER_WAIVED_BLOCKERS)
+    )
+    if ready or evidence_map_ready or llm_cluster_ready:
         tier, level = "TIER_1", "L5"
         decision = "ready_to_publish"
     elif (not bound_ids or label in _BLOCKED_LABELS or off_scope
