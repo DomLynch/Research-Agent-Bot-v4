@@ -669,8 +669,11 @@ def _evidence_alignment_table(
             f"{numeric} {units}".strip() if numeric is not None
             else _clip(fact.get("canonical_phrase"), 48)
         )
+        # Carry the fact_id token so the downstream bundle (parsed from the
+        # Evidence section) is EXACTLY the table's cited sources — the reviewer
+        # requires every cited DOI to appear in source_bundle and vice versa.
         rows.append(
-            f"| {len(rows) + 1} | {_table_cell(source, 34)} "
+            f"| {len(rows) + 1} | `fact_id={fid}` {_table_cell(source, 30)} "
             f"| {_table_cell(fact.get('population'), 28)} "
             f"| {_table_cell(fact.get('comparator') or fact.get('baseline_comparator'), 22)} "
             f"| {_table_cell(fact.get('endpoint') or fact.get('outcome'), 24)} "
