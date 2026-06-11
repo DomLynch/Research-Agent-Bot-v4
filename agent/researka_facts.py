@@ -105,10 +105,10 @@ def tier2_source_count(
                 "min_confidence": min_confidence, "numeric_only": False,
             },
             headers={"X-Researka-Token": token, "Content-Type": "application/json"},
-            # The Tier-2 semantic search runs ~25s cold; a short timeout would
-            # silently yield 0 and defeat the rescue. Probes are gated to
-            # sub-floor topics and bounded by the cycle's candidate cap.
-            timeout=35.0,
+            # The Tier-2 semantic search runs ~40-90s from the VPS; a short
+            # timeout silently yields 0 and defeats the rescue. Callers bound
+            # how many sub-floor topics are probed per cycle (probe budget).
+            timeout=90.0,
         )
         r.raise_for_status()
         data: Any = r.json()

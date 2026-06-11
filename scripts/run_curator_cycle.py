@@ -537,8 +537,15 @@ def main() -> int:
         str(topic).strip() for topic in args.priority_topic if str(topic).strip()
     ], domain=args.domain)
     _cycle_settings = load_settings()
+    # The Tier-2 search is slow (~40-90s/query); cap probes per cycle so a run
+    # of supply-less candidates cannot exhaust the cycle budget. The planner
+    # stops once `top` topics are planned, so this only bounds the worst case.
+    _tier2_budget = [max(2 * max(1, args.top), 8)]
     with httpx.Client() as _cycle_client:
         def _tier2_supply(topic: str) -> int:
+            if _tier2_budget[0] <= 0:
+                return 0
+            _tier2_budget[0] -= 1
             try:
                 return tier2_source_count(
                     topic, client=_cycle_client, settings=_cycle_settings,
