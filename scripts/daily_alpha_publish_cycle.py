@@ -2985,6 +2985,17 @@ def retraction_check(
     for doi in dois:
         try:
             payload = fetcher(doi)
+        except urllib.error.HTTPError as exc:
+            # A Crossref 404 means the DOI is simply absent from Crossref
+            # (e.g. arXiv/OSF DOIs that resolve via doi.org only). Absence is
+            # not a retraction and not a transport failure, so it must not hold
+            # the submission. A genuinely retracted paper IS in Crossref (200 +
+            # retraction marker), so this cannot let a real retraction through.
+            # Other HTTP errors (5xx, rate limits) remain real errors.
+            if exc.code == 404:
+                continue
+            errors.append({"doi": doi, "error": type(exc).__name__, "detail": str(exc)[:180]})
+            continue
         except Exception as exc:  # pragma: no cover - network defensive path
             errors.append({"doi": doi, "error": type(exc).__name__, "detail": str(exc)[:180]})
             continue

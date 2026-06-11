@@ -11,6 +11,7 @@ import os
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -3281,6 +3282,36 @@ def test_crossref_title_retraction_word_does_not_block_clean_paper() -> None:
     )
 
     assert check["status"] == "clean"
+
+
+def _http_error(doi: str, code: int) -> urllib.error.HTTPError:
+    return urllib.error.HTTPError(
+        "https://api.crossref.org/works/" + doi, code, "err", {}, None)  # type: ignore[arg-type]
+
+
+def test_crossref_404_does_not_hold_submission() -> None:
+    """A Crossref 404 (DOI absent from Crossref, e.g. arXiv DOIs) is not a
+    retraction and not a transport failure, so it must not produce
+    status=error that holds the submission."""
+    def fetch_404(doi: str) -> dict[str, Any]:
+        raise _http_error(doi, 404)
+
+    check = daily.retraction_check(_verdict(), mode="crossref", fetcher=fetch_404)
+
+    assert check["status"] == "clean"
+    assert check["errors"] == []
+    assert check["retracted"] == []
+
+
+def test_crossref_5xx_still_errors() -> None:
+    """A genuine transport error (5xx) still surfaces as error so a real
+    inability to verify holds the submission."""
+    def fetch_503(doi: str) -> dict[str, Any]:
+        raise _http_error(doi, 503)
+
+    check = daily.retraction_check(_verdict(), mode="crossref", fetcher=fetch_503)
+
+    assert check["status"] == "error"
 
 
 def test_submit_token_accepts_research_alias(monkeypatch: MonkeyPatch) -> None:
