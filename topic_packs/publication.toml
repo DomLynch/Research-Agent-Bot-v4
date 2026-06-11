@@ -12,6 +12,10 @@ min_direct_source_papers = 5
 # Writer-validated homogeneous clusters publish at this lower floor: the
 # platform accepts a tight 2-3 source homogeneous bundle over a padded one.
 min_cluster_source_papers = 3
+# Hold evidence-map submissions until Researka's reviewer panel accepts the type
+# (it currently rejects them as "a list of findings, not a synthesis"). Maps
+# still render and stay ready; flip to true when the platform reviewer lands.
+submit_evidence_maps = false
 refresh_cooldown_hours = 2
 refresh_top = 5
 angle_candidates = 5

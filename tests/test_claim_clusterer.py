@@ -56,6 +56,45 @@ def test_cluster_cites_newest_first_and_caps_at_floor(
     assert min(years) == 2005                              # oldest dropped
 
 
+def test_claim_is_focused_rejects_laundry_lists() -> None:
+    assert clusterer._claim_is_focused(
+        "Multi-agent systems beat single-agent baselines on SMAC win rate")
+    assert not clusterer._claim_is_focused(
+        "Gains including 92% containment, 43% signal, 3.31x CodeBLEU, "
+        "8.56% detection, 15% downtime")
+    assert not clusterer._claim_is_focused("")
+
+
+def test_cluster_prefers_focused_claim_over_larger_laundry_list(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A tight 3-source bounded claim must win over a sprawling 10-source figure
+    list, even though M3 orders the larger cluster first — the larger one is the
+    heterogeneous pile the reviewer rejects."""
+    facts = _facts(13)
+    lanes = {fid: "A_core" for fid in facts}
+    big = list(facts)[:10]
+    tight = list(facts)[10:13]
+    content = json.dumps({"clusters": [
+        {"claim": "Gains including 9% A, 4% B, 3x C, 8% D, 1% E, 2% F",
+         "fact_ids": big},
+        {"claim": "Method M beats baseline B on benchmark K accuracy",
+         "fact_ids": tight},
+    ]})
+    monkeypatch.setattr(
+        clusterer, "call_writer_with_fallback",
+        lambda *a, **k: type("R", (), {"content": content})(),
+    )
+
+    out = clusterer.densest_claim_cluster(
+        facts, lanes, "topic", min_sources=3,
+        settings=type("S", (), {"writer_configured": True})(),
+    )
+
+    assert set(out["lead_fact_ids"]) == set(tight)
+    assert out["claim"].startswith("Method M")
+
+
 def test_cluster_keeps_full_set_below_cap(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

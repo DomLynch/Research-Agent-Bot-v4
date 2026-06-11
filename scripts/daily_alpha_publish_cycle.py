@@ -151,6 +151,17 @@ def _alpha_memo_float(name: str, default: float) -> float:
     return default
 
 
+def _alpha_memo_bool(name: str, default: bool) -> bool:
+    try:
+        data = tomllib.loads(_PUBLICATION_PATH.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return default
+    alpha = data.get("alpha_memo") if isinstance(data, dict) else {}
+    if not isinstance(alpha, dict) or name not in alpha:
+        return default
+    return bool(alpha.get(name))
+
+
 def _publish_tier_int(name: str, default: int) -> int:
     try:
         data = tomllib.loads(_PUBLISH_TIER_PATH.read_text(encoding="utf-8"))
@@ -2379,6 +2390,18 @@ def select_candidate(
                 status = "memo_missing_audit_sidecars"
             if retry_fingerprint_unchanged:
                 status = "duplicate_submission_fingerprint"
+            if (
+                status == "eligible"
+                and verdict.get("surface_type") == "evidence_map"
+                and not _alpha_memo_bool("submit_evidence_maps", False)
+            ):
+                # Researka's reviewer panel still rejects evidence maps (it wants a
+                # synthesized single claim, not a findings table). Hold them out of
+                # submission until the platform's reviewer accepts the type, so we
+                # don't burn guaranteed rejections; flip submit_evidence_maps=true
+                # in publication.toml when that lands. Maps still render and stay
+                # ready_to_publish — only the submit step is gated.
+                status = "evidence_map_submission_held"
             if status == "eligible":
                 bundle_sig = _bundle_signature(verdict, runs_root)
                 if bundle_sig and bundle_sig in published_bundle_sigs:

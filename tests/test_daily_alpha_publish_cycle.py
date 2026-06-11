@@ -2031,11 +2031,8 @@ def test_single_claim_outranks_evidence_map_for_submission(tmp_path: Path) -> No
     assert submissions and submissions[0]["topic"] == "bounded_single_claim"
 
 
-def test_evidence_map_bypasses_receipt_shape_submit_gate(tmp_path: Path) -> None:
-    """An evidence map is honestly multi-shape; the single-claim shape gate must
-    not block it from submitting (Researka accepts it via article_type)."""
-    root = tmp_path / "repo"
-    emap = _verdict("ai_agents_breadth", score=90) | {"surface_type": "evidence_map"}
+def _heterogeneous_map(root: Path, topic: str) -> dict[str, Any]:
+    emap = _verdict(topic, score=90) | {"surface_type": "evidence_map"}
     _memo_with_receipt_shapes(root, emap, [
         {"canonical_phrase": "Agent ransomware containment reached 92%.",
          "population": "enterprise networks", "intervention": "defense agent",
@@ -2053,6 +2050,47 @@ def test_evidence_map_bypasses_receipt_shape_submit_gate(tmp_path: Path) -> None
          "population": "factory lines", "intervention": "scheduler agent",
          "endpoint": "downtime"},
     ])
+    return emap
+
+
+def test_evidence_map_submission_held_by_default(tmp_path: Path) -> None:
+    """Researka's reviewer still rejects evidence maps, so by default a map is
+    held out of submission (not a guaranteed-reject spend), even when otherwise
+    eligible. It stays ready; only the submit step is gated."""
+    root = tmp_path / "repo"
+    emap = _heterogeneous_map(root, "ai_agents_breadth")
+    submissions: list[dict[str, Any]] = []
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submissions.append(payload)
+        return {"ok": True, "status": 200, "response": {}}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-06T09-30-00Z",
+        queue=_queue(emap),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+    )
+
+    assert ledger["considered"][0]["status"] == "evidence_map_submission_held"
+    assert ledger.get("submitted_topic") in (None, "")
+    assert submissions == []
+
+
+def test_evidence_map_bypasses_receipt_shape_when_enabled(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    """When map submission is enabled, an evidence map (honestly multi-shape) is
+    not blocked by the single-claim shape gate and submits with its article_type."""
+    monkeypatch.setattr(
+        daily, "_alpha_memo_bool",
+        lambda name, default: True if name == "submit_evidence_maps" else default,
+    )
+    root = tmp_path / "repo"
+    emap = _heterogeneous_map(root, "ai_agents_breadth")
     submissions: list[dict[str, Any]] = []
 
     def submitter(payload: dict[str, Any]) -> dict[str, Any]:

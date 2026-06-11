@@ -58,6 +58,20 @@ def _source_key(fact: dict[str, Any]) -> str:
     return ""
 
 
+def _claim_is_focused(claim: str) -> bool:
+    """Whether a cluster's claim reads as one bounded comparison, not a run-on
+    list of disparate figures. M3 sometimes lumps unrelated endpoints into a
+    single cluster whose "claim" is a laundry-list (";"-joined, "including ...",
+    many distinct numbers) — the reviewer's terminal reject. A focused claim is
+    concise, names one comparison, and carries at most a couple of figures."""
+    text = claim.strip()
+    if not text or len(text) > 200:
+        return False
+    if ";" in text or "including" in text.lower():
+        return False
+    return len(re.findall(r"\d+(?:\.\d+)?", text)) <= 3
+
+
 def _parse_clusters(content: str) -> list[dict[str, Any]]:
     for pattern in (r"\{.*\}", r"\[.*\]"):
         match = re.search(pattern, content, re.S)
@@ -137,7 +151,7 @@ def densest_claim_cluster(
         return {"lead_fact_ids": []}
     valid_ids = {fid for fid, _ in rows}
     best: dict[str, Any] = {"lead_fact_ids": []}
-    best_sources = 0
+    best_key: tuple[int, int] = (-1, 0)
     for cluster in _parse_clusters(resp.content):
         ids = [str(x) for x in (cluster.get("fact_ids") or []) if str(x) in valid_ids]
         picked: list[str] = []
@@ -147,8 +161,17 @@ def densest_claim_cluster(
             if source and source not in used:
                 used.add(source)
                 picked.append(fid)
-        if len(used) >= min_sources and len(used) > best_sources:
-            best_sources = len(used)
+        if len(used) < min_sources:
+            continue
+        claim = str(cluster.get("claim") or "")
+        # Prefer a FOCUSED single-claim cluster over a larger laundry-list one:
+        # M3 orders clusters largest-first, but the biggest cluster is often the
+        # heterogeneous pile the reviewer rejects. Rank by (focused, sources) so a
+        # tight 3-source bounded claim wins over a sprawling 10-source figure list;
+        # fall back to the largest only when none is focused.
+        key = (1 if _claim_is_focused(claim) else 0, len(used))
+        if key > best_key:
+            best_key = key
             # Cite a bounded, newest-first subset of the agreeing sources: a tight
             # recent bundle reads as one bounded claim and lifts the citation
             # recency ratio, while the floor is preserved (never trim below
@@ -156,6 +179,6 @@ def densest_claim_cluster(
             picked.sort(key=lambda fid: _fact_year(facts[fid]), reverse=True)
             best = {
                 "lead_fact_ids": picked[:max(_MAX_CITED_SOURCES, min_sources)],
-                "claim": str(cluster.get("claim") or ""),
+                "claim": claim,
             }
     return best
