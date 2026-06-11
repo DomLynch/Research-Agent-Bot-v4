@@ -1839,7 +1839,13 @@ def render_signal_memo(
         if isinstance(fid, str) and lanes.get(fid) == "A_core"
         and fid not in excluded_receipt_ids
     ] if isinstance(llm_cluster, dict) else []
-    if _source_count_for_ids(llm_cluster_ids, facts) >= min_direct_sources:
+    # Adopt the cluster at the same floor the publish gate accepts it
+    # (min_cluster_source_papers, default 3) — a lower floor than the plain
+    # direct-source one, because a homogeneous writer-validated bundle is the
+    # publishable unit. A higher floor here would desync memo receipts from
+    # the gate's llm_cluster_ready check and strand tight clusters.
+    min_cluster_sources = _memo_alpha_int("min_cluster_source_papers", 3)
+    if _source_count_for_ids(llm_cluster_ids, facts) >= min_cluster_sources:
         coherent_direct = llm_cluster_ids
     else:
         claim = _claim_signal(

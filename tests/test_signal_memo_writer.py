@@ -2181,6 +2181,45 @@ def test_headline_uses_m3_cluster_claim_not_topic_slug(tmp_path: Path) -> None:
     assert "open_source_models_achieves_llama" not in headline.lower()
 
 
+def test_writer_adopts_three_source_cluster_receipts(tmp_path: Path) -> None:
+    """The writer cites a homogeneous M3 cluster at the cluster floor (3
+    sources) so memo receipts match the gate's llm_cluster_ready check; a
+    higher writer-side floor would strand tight clusters the gate accepts."""
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    facts = [
+        {
+            "fact_id": fid,
+            "canonical_phrase": "Carbon price cut industrial emissions vs uncapped regions",
+            "source_paper": {"doi": f"10.x/cluster-{fid}"},
+        }
+        for fid in ("301", "302", "303")
+    ]
+    (run / "all_facts.json").write_text(json.dumps(
+        json.loads((run / "all_facts.json").read_text(encoding="utf-8")) + facts,
+    ), encoding="utf-8")
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    lanes["verdicts"] += [
+        {"fact_id": fid, "lane": "A_core"} for fid in ("301", "302", "303")
+    ]
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+    (run / "claim_cluster.json").write_text(json.dumps({
+        "claim": (
+            "Carbon pricing cuts industrial emissions vs uncapped regions "
+            "on plant-level CO2 output"
+        ),
+        "lead_fact_ids": ["301", "302", "303"],
+    }), encoding="utf-8")
+
+    memo = render_signal_memo(run)
+    receipts = [
+        line for line in memo.splitlines() if line.lstrip().startswith("- `fact_id=")
+    ]
+
+    cited = {fid for fid in ("301", "302", "303") if any(f"fact_id={fid}" in r for r in receipts)}
+    assert cited == {"301", "302", "303"}
+
+
 def test_headline_falls_back_without_cluster_claim(tmp_path: Path) -> None:
     """No claim_cluster.json -> prior headline logic still renders a non-empty
     title (the override is fully guarded)."""
@@ -2199,7 +2238,7 @@ def test_evidence_alignment_table_aligns_and_dedupes() -> None:
     population / comparator / endpoint / effect."""
     from agent.signal_memo_writer import _evidence_alignment_table
 
-    facts = {
+    facts: dict[str, dict[str, Any]] = {
         "a": {
             "source_paper": {"doi": "10.x/1"}, "population": "clinical cohort",
             "comparator": "single-agent", "endpoint": "mortality",
