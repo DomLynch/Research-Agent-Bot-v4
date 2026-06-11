@@ -234,7 +234,7 @@ def main() -> int:
     cache_limit = max(args.top, fact_probe_topics or 0)
     excluded = {str(t).strip() for t in args.exclude_topic if str(t).strip()}
     cache_supported = _cache_supported(profile.slug)
-    scoped_cache_limit = cache_limit * 20 if cache_supported else cache_limit
+    scoped_cache_limit = max(cache_limit * 20, 1000) if cache_supported else cache_limit
     ranked = (
         cached_source_rich_candidates(limit=scoped_cache_limit)
         if cache_supported
