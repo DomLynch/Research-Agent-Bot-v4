@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 import tomllib
 from contextlib import suppress
@@ -330,6 +331,36 @@ def _receipt_cluster_coheres(
         if cluster_size >= min_sources:
             return True
     return False
+
+
+def _receipt_scope_coheres(
+    ids: list[str], facts: dict[str, dict[str, Any]], topic: str,
+    *, min_share: float = 0.5,
+) -> bool:
+    """Whether the receipts form one coherent scope, not a grab-bag of unrelated
+    domains. An evidence map is a scoping review of ONE area (mixed endpoints
+    allowed); the reviewer rejects "a list of disparate findings across unrelated
+    domains". A majority of the distinct sources must pairwise-cohere on shared
+    scope tokens (topic word removed) with at least one anchor — looser than the
+    single-claim cluster check, which requires the whole set to agree. Universal:
+    coherence is by token overlap, no domain keyword list."""
+    by_source: dict[str, str] = {}
+    for fid in ids:
+        key = _source_key(facts.get(fid) or {})
+        if key and key not in by_source:
+            by_source[key] = fid
+    fids = list(by_source.values())
+    if len(fids) < 2:
+        return False
+    tokens = [_receipt_tokens(facts.get(fid) or {}, topic) for fid in fids]
+    threshold = max(2, math.ceil(min_share * len(fids)))
+    return any(
+        1 + sum(
+            1 for j, other in enumerate(tokens)
+            if i != j and _receipt_pair_coheres(anchor, other)
+        ) >= threshold
+        for i, anchor in enumerate(tokens)
+    )
 
 
 def _agent_repair_requested(verdict: dict[str, Any] | None) -> bool:
@@ -2197,9 +2228,15 @@ def render_signal_memo(
     # label path uses the cited A_core receipts as before.
     m3_map = m3_cluster_incoherent and cluster_sources >= min_direct_sources
     map_breadth_ids = list(llm_cluster_ids) if m3_map else acore_receipt_ids
+    # An evidence map must be a coherent scoping review of ONE area, not a
+    # grab-bag of disparate findings across unrelated domains (the reviewer's
+    # terminal rejection of such bundles). Publish a map only when a majority of
+    # its sources cohere on shared scope; otherwise there is no publishable unit
+    # and the topic stays in curation rather than burning a guaranteed rejection.
     evidence_map = (
         _source_count_for_ids(map_breadth_ids, facts) >= min_direct_sources
         and not _repair_heterogeneity_requested(publish_verdict)
+        and _receipt_scope_coheres(map_breadth_ids, facts, topic)
         and (
             m3_map
             or (

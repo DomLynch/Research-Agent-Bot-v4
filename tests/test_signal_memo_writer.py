@@ -2220,22 +2220,11 @@ def test_writer_adopts_three_source_cluster_receipts(tmp_path: Path) -> None:
     assert cited == {"301", "302", "303"}
 
 
-def test_heterogeneous_m3_cluster_routes_to_evidence_map(tmp_path: Path) -> None:
-    """A laundry-list M3 cluster (token judge finds it heterogeneous) ships as
-    article_type=evidence_map, not a rejected single thesis. Its headline must
-    be the honest breadth framing, never the run-on M3 'claim'."""
-    run = tmp_path / "ai_agents-evidence-ts"
+def _write_cluster_run(run: Path, phrases: dict[str, str], claim: str) -> None:
     _write_run(run)
-    phrases = {
-        "501": "Agent ransomware containment reached 92% vs MITRE baselines",
-        "502": "Traffic-signal phases reduced 43% with agent control",
-        "503": "Agent code generation scored 3.31x higher CodeBLEU",
-        "504": "Fault detection improved 8.56% over LLM methods",
-        "505": "Unplanned downtime fell 15% under agent scheduling",
-    }
     facts = [
         {"fact_id": fid, "canonical_phrase": text,
-         "source_paper": {"doi": f"10.x/het-{fid}"}}
+         "source_paper": {"doi": f"10.x/c-{fid}"}}
         for fid, text in phrases.items()
     ]
     (run / "all_facts.json").write_text(json.dumps(
@@ -2244,21 +2233,55 @@ def test_heterogeneous_m3_cluster_routes_to_evidence_map(tmp_path: Path) -> None
     lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
     lanes["verdicts"] += [{"fact_id": fid, "lane": "A_core"} for fid in phrases]
     (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
-    laundry = (
-        "Agent systems quantify gains including 92% containment, 43% signal "
-        "reduction, 3.31x CodeBLEU, 8.56% fault detection, and 15% less downtime"
-    )
     (run / "claim_cluster.json").write_text(json.dumps({
-        "claim": laundry, "lead_fact_ids": list(phrases),
+        "claim": claim, "lead_fact_ids": list(phrases),
     }), encoding="utf-8")
+
+
+def test_grab_bag_m3_cluster_does_not_publish_as_evidence_map(tmp_path: Path) -> None:
+    """A grab-bag of findings across UNRELATED domains is the reviewer's terminal
+    reject — it is not a coherent scoping review, so it must NOT publish as an
+    evidence map and must never carry the run-on M3 'claim' as its title."""
+    run = tmp_path / "ai_agents-evidence-ts"
+    _write_cluster_run(run, {
+        "501": "Agent ransomware containment reached 92% vs MITRE baselines",
+        "502": "Traffic-signal phases reduced 43% with agent control",
+        "503": "Agent code generation scored 3.31x higher CodeBLEU",
+        "504": "Soil moisture sensing improved 8.56% over manual survey",
+        "505": "Retail checkout queue time fell 15% under scheduling",
+    }, claim=(
+        "Agent systems quantify gains including 92% containment, 43% signal "
+        "reduction, 3.31x CodeBLEU, 8.56% sensing, and 15% less queueing"
+    ))
 
     memo = render_signal_memo(run)
     headline = next(line for line in memo.splitlines() if line.startswith("**Headline:**"))
     confidence = next(line for line in memo.splitlines() if line.startswith("**Confidence:**"))
 
-    assert "evidence map" in headline.lower()
+    assert "evidence_map" not in confidence
     assert "92%" not in headline and "CodeBLEU" not in headline
+
+
+def test_coherent_scope_m3_cluster_routes_to_evidence_map(tmp_path: Path) -> None:
+    """A source-rich cluster that shares ONE scope but spans several endpoints
+    (no single unified claim) is the honest evidence-map case: it publishes as
+    article_type=evidence_map with the breadth headline, not the M3 'claim'."""
+    run = tmp_path / "creatine-evidence-ts"
+    _write_cluster_run(run, {
+        "501": "Creatine increased muscle strength in resistance trained men",
+        "502": "Creatine improved muscle power output in resistance trained men",
+        "503": "Creatine raised muscle mass gains in resistance trained men",
+        "504": "Creatine reduced muscle fatigue in resistance trained men",
+        "505": "Creatine altered cognitive memory recall in older adults",
+        "506": "Creatine changed bone mineral density in postmenopausal women",
+    }, claim="Creatine affects muscle, cognition, and bone across populations")
+
+    memo = render_signal_memo(run)
+    headline = next(line for line in memo.splitlines() if line.startswith("**Headline:**"))
+    confidence = next(line for line in memo.splitlines() if line.startswith("**Confidence:**"))
+
     assert "evidence_map" in confidence
+    assert "evidence map" in headline.lower()
 
 
 def test_headline_falls_back_without_cluster_claim(tmp_path: Path) -> None:
