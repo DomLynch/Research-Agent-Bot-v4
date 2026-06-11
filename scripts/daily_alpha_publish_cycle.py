@@ -1811,6 +1811,7 @@ def _memo_source_papers(
         if isinstance(paper, dict):
             papers.append({
                 "doi": str(paper.get("doi") or ""),
+                "pmid": str(paper.get("pmid") or ""),
                 "title": str(paper.get("title") or ""),
                 "journal": str(paper.get("journal") or ""),
                 "url": paper.get("url") or paper.get("source_url"),
@@ -1887,12 +1888,22 @@ def _source_bundle(papers: list[Json]) -> list[Json]:
     bundle: list[Json] = []
     for paper in papers:
         title = str(paper.get("title") or "").strip()
-        if not title:
+        doi = str(paper.get("doi") or "").strip() or None
+        pmid = str(paper.get("pmid") or "").strip() or None
+        # Researka rejects bundles carrying unverifiable sources. A receipt is
+        # only citable with a resolvable identifier; drop any title-only source.
+        # The accepted bundle schema has no pmid field, so a PMID-only paper is
+        # made verifiable through its resolvable PubMed URL rather than presented
+        # as identifier-less.
+        if not title or not (doi or pmid):
             continue
+        url = paper.get("url") or None
+        if not url and pmid:
+            url = f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/"
         bundle.append({
             "title": title,
-            "url": paper.get("url") or None,
-            "doi": str(paper.get("doi") or "").strip() or None,
+            "url": url,
+            "doi": doi,
             "year": _year(paper.get("year")),
             "evidence_type": _evidence_type(paper),
         })
