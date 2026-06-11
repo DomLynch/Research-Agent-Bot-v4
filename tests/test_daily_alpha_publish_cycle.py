@@ -1986,6 +1986,49 @@ def test_receipt_shape_mismatch_reranks_before_submit(tmp_path: Path) -> None:
     assert submissions[0]["topic"] == "matched_direct_receipts"
 
 
+def test_evidence_map_bypasses_receipt_shape_submit_gate(tmp_path: Path) -> None:
+    """An evidence map is honestly multi-shape; the single-claim shape gate must
+    not block it from submitting (Researka accepts it via article_type)."""
+    root = tmp_path / "repo"
+    emap = _verdict("ai_agents_breadth", score=90) | {"surface_type": "evidence_map"}
+    _memo_with_receipt_shapes(root, emap, [
+        {"canonical_phrase": "Agent ransomware containment reached 92%.",
+         "population": "enterprise networks", "intervention": "defense agent",
+         "endpoint": "containment rate"},
+        {"canonical_phrase": "Traffic-signal phases dropped 43% with agents.",
+         "population": "urban intersections", "intervention": "signal agent",
+         "endpoint": "phase count"},
+        {"canonical_phrase": "Agent code generation scored 3.31x CodeBLEU.",
+         "population": "code synthesis", "intervention": "coding agent",
+         "endpoint": "codebleu"},
+        {"canonical_phrase": "Fault detection improved 8.56% over LLMs.",
+         "population": "industrial sensors", "intervention": "monitor agent",
+         "endpoint": "detection rate"},
+        {"canonical_phrase": "Downtime fell 15% under agent scheduling.",
+         "population": "factory lines", "intervention": "scheduler agent",
+         "endpoint": "downtime"},
+    ])
+    submissions: list[dict[str, Any]] = []
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submissions.append(payload)
+        return {"ok": True, "status": 200, "response": {}}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-06T09-30-00Z",
+        queue=_queue(emap),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+    )
+
+    assert ledger["considered"][0]["status"] == "eligible"
+    assert ledger["submitted_topic"] == "ai_agents_breadth"
+    assert submissions and submissions[0]["article_type"] == "evidence_map"
+
+
 def test_repairable_retry_does_not_resubmit_unchanged_memo(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("unchanged_retry")

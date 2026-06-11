@@ -2395,9 +2395,16 @@ def select_candidate(
                         status = "eligible"
                 elif direct_source_count < min_direct_source_count:
                     status = "direct_source_floor_below_min"
-                elif not _direct_receipts_share_shape(
-                    verdict, runs_root, min_direct_source_count,
+                elif (
+                    verdict.get("surface_type") != "evidence_map"
+                    and not _direct_receipts_share_shape(
+                        verdict, runs_root, min_direct_source_count,
+                    )
                 ):
+                    # An evidence map is an honest multi-shape scoping review;
+                    # the single-claim shape-coherence gate does not apply to it
+                    # (the publish gate waives the same blocker). Researka accepts
+                    # it via article_type=evidence_map.
                     status = "receipt_shape_mismatch"
         row = {
             "topic": _selection_topic(verdict),
