@@ -6,8 +6,8 @@ broad topic's many sub-claims.
 The deterministic token-overlap clusterer cannot group synonymous endpoints
 (survival / all-cause mortality / overall survival) and is fooled by shared
 statistical boilerplate (hazard ratio / confidence interval). This pass asks
-the locked writer model (MiMo, Gemma fallback) to read the candidate phrases
-and return claim groups. Every returned fact_id is validated to exist, be
+the locked writer model (MiniMax M3, Gemma fallback) to read the candidate
+phrases and return claim groups. Every returned fact_id is validated to exist, be
 A_core, and resolve to a distinct source paper before use; on any LLM/parse
 failure the result is empty so callers keep the deterministic fallback.
 
@@ -77,15 +77,21 @@ def _build_prompt(topic: str, rows: list[tuple[str, str]]) -> str:
     listing = "\n".join(f"[{fid}] {phrase}" for fid, phrase in rows)
     return (
         f'You are grouping research findings about "{topic.replace("_", " ")}" '
-        "into coherent claim clusters. A cluster is a set of findings that all "
-        "support ONE specific claim: the SAME outcome/endpoint and the SAME "
-        "direction of effect (for example, all show reduced all-cause "
-        "mortality), even when worded differently. Never group findings about "
-        "different outcomes, different interventions, or opposite directions.\n\n"
+        "into HOMOGENEOUS claim clusters. A cluster is a set of findings that "
+        "are directly comparable: the SAME population/setting, the SAME "
+        "comparator or baseline, the SAME outcome/endpoint, AND the SAME "
+        "direction of effect — not merely the same metric word. For example, "
+        "'higher accuracy on medical QA vs GPT-4' and 'higher accuracy on SQL "
+        "generation vs a rule baseline' belong to DIFFERENT clusters: same word "
+        "(accuracy), but different task and comparator. Never group findings "
+        "about different populations, comparators, outcomes, or opposite "
+        "directions. Prefer a tight homogeneous cluster of 2-3 aligned findings "
+        "over a large heterogeneous one. The claim must name the specific "
+        "population, comparator, and endpoint.\n\n"
         f"Findings (id and phrase):\n{listing}\n\n"
-        'Return JSON only: {"clusters":[{"claim":"<one sentence>",'
-        '"fact_ids":["id",...]}, ...]}. Order clusters largest first. Only use '
-        "ids from the list above."
+        'Return JSON only: {"clusters":[{"claim":"<one specific sentence naming '
+        'the population, comparator, and endpoint>","fact_ids":["id",...]}, '
+        "...]}. Order clusters largest first. Only use ids from the list above."
     )
 
 

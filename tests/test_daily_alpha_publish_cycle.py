@@ -3388,6 +3388,25 @@ def test_submission_payload_preserves_alpha_memo_contract(tmp_path: Path) -> Non
     }
 
 
+def test_submission_payload_declares_evidence_map_article_type(
+    tmp_path: Path,
+) -> None:
+    """Researka routes on article_type: an evidence-map memo must declare
+    itself or core review judges it against single-claim criteria."""
+    root = tmp_path / "repo"
+    verdict = _verdict() | {
+        "surface_type": "evidence_map",
+        "confidence_label": "evidence_map",
+    }
+    _memo(root, verdict)
+
+    payload = daily._submission_payload(verdict, root / "runs")
+
+    assert payload["article_type"] == "evidence_map"
+    assert payload["metadata"]["article_type"] == "evidence_map"
+    assert payload["artifact_type"] == "alpha_memo"
+
+
 def test_submission_payload_requires_domain_metadata(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict()

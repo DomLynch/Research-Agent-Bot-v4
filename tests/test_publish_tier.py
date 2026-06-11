@@ -611,6 +611,59 @@ def test_publish_tier_judges_rendered_memo_receipts_before_lead_audit(
     assert "source_dispersion" not in verdict["blockers"]
 
 
+def test_llm_cluster_publishes_three_homogeneous_sources(tmp_path: Path) -> None:
+    """A writer-validated homogeneous cluster publishes at the cluster floor
+    (3 sources), which the plain path blocks on source_floor_below_min —
+    the platform accepts a tight 2-3 source homogeneous bundle and rejects a
+    padded heterogeneous one."""
+    run = _run(
+        tmp_path,
+        lanes=("A_core", "A_core", "A_core"),
+        dois=("10.a", "10.b", "10.c"),
+        titles=(
+            "Grid storage threshold improves reserve reliability",
+            "Grid storage threshold improves reserve reliability",
+            "Grid storage threshold improves reserve reliability",
+        ),
+        journals=("Energy Systems", "Energy Systems", "Energy Systems"),
+    )
+    run.joinpath("claim_cluster.json").write_text(json.dumps({
+        "claim": (
+            "Grid storage thresholds improve reserve reliability vs "
+            "unthresholded dispatch in day-ahead markets"
+        ),
+        "lead_fact_ids": ["1", "2", "3"],
+    }), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "ready_to_publish"
+    assert verdict["publish_tier"] == "TIER_1"
+
+
+def test_llm_cluster_below_cluster_floor_does_not_publish(tmp_path: Path) -> None:
+    """Two cluster sources stay below the cluster floor: the waiver must not
+    collapse into publishing any cluster at all."""
+    run = _run(
+        tmp_path,
+        lanes=("A_core", "A_core"),
+        dois=("10.a", "10.b"),
+        titles=(
+            "Grid storage threshold improves reserve reliability",
+            "Grid storage threshold improves reserve reliability",
+        ),
+        journals=("Energy Systems", "Energy Systems"),
+    )
+    run.joinpath("claim_cluster.json").write_text(json.dumps({
+        "claim": "Grid storage thresholds improve reserve reliability",
+        "lead_fact_ids": ["1", "2"],
+    }), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] != "ready_to_publish"
+
+
 def test_memo_receipt_ids_dedupes_evidence_and_context() -> None:
     memo = (
         "## Evidence receipts\n\n"

@@ -960,6 +960,9 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     ]
     min_source_papers = _publication_int("min_source_papers", 5)
     min_direct_source_papers = _publication_int("min_direct_source_papers", 5)
+    # A writer-validated homogeneous cluster publishes at its own lower floor:
+    # 2-3 directly-comparable sources are a stronger claim than 5 dispersed ones.
+    min_cluster_source_papers = _publication_int("min_cluster_source_papers", 3)
     result_direct_ids = _result_key_direct_ids(
         direct_ids, facts, cfg["generic_tokens"] | cfg["cluster_stopwords"],
         min_direct_source_papers,
@@ -1057,10 +1060,13 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         and a_core_source_papers >= min_direct_source_papers
         and not (set(blockers) - _EVIDENCE_MAP_WAIVED_BLOCKERS)
     )
-    # Trust an M3-validated coherent cluster: if the lead receipts are the
-    # writer-confirmed single-claim cluster and clear the source floor, only
-    # token-coherence blockers stand in the way (waived) — the writer's semantic
-    # judgment supersedes token overlap and Researka is the final judge.
+    # Trust an M3-validated homogeneous cluster: if the lead receipts are the
+    # writer-confirmed single-claim cluster (same population, comparator,
+    # endpoint, direction) and clear the lower cluster floor, only token-coherence
+    # blockers stand in the way (waived) — the writer's semantic judgment
+    # supersedes token overlap and Researka is the final judge. A tight 2-3
+    # source homogeneous bundle is what the platform accepts; a padded 5-source
+    # heterogeneous one is what it rejects.
     llm_cluster = _json(run_dir / "claim_cluster.json", {})
     llm_cluster_ids = {
         str(x) for x in (llm_cluster.get("lead_fact_ids") or [])
@@ -1070,7 +1076,7 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         facts,
     ))
     llm_cluster_ready = (
-        llm_cluster_sources >= min_direct_source_papers
+        llm_cluster_sources >= min_cluster_source_papers
         and bool(bound_ids)
         and label not in _BLOCKED_LABELS
         and not off_scope

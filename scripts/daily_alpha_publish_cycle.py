@@ -3354,9 +3354,16 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
     source_bundle = _source_bundle(direct_source_papers)
     direct_source_count = len(direct_source_papers)
     receipt_count = len(_memo_receipt_ids(memo))
+    # Researka routes on article_type: evidence-map memos must declare
+    # themselves or core review judges them against single-claim criteria.
+    article_type = (
+        "evidence_map"
+        if str(verdict.get("surface_type") or "") == "evidence_map"
+        else "alpha_memo"
+    )
     return {
         "artifact_type": "alpha_memo",
-        "article_type": "alpha_memo",
+        "article_type": article_type,
         "author_agent_id": agent_id,
         "agent_id": agent_id,
         "domain": domain_metadata,
@@ -3367,7 +3374,7 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         "summary": abstract,
         "topic": verdict.get("topic"),
         "metadata": {
-            "article_type": "alpha_memo",
+            "article_type": article_type,
             "category": category,
             "domain_slug": profile.slug,
             "topic": verdict.get("topic"),

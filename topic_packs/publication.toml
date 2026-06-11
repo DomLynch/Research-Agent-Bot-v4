@@ -9,6 +9,9 @@ canonical_url_base = ""
 [alpha_memo]
 min_source_papers = 5
 min_direct_source_papers = 5
+# Writer-validated homogeneous clusters publish at this lower floor: the
+# platform accepts a tight 2-3 source homogeneous bundle over a padded one.
+min_cluster_source_papers = 3
 refresh_cooldown_hours = 2
 refresh_top = 5
 angle_candidates = 5
