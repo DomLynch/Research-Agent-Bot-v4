@@ -2098,7 +2098,46 @@ def render_signal_memo(
         "could confirm or kill the thesis."
         )
     )
-    score = _alpha_score(audit, label)
+    # --- Evidence-map fallback: the scalable publishable unit ----------------
+    # A source-rich topic whose A_core receipts span several distinct claims is
+    # not a single "signal", but it is a legitimate, citable synthesis. Rather
+    # than discard it as no_signal, publish an honest structured evidence map.
+    # Integrity is unchanged (the publish gate still requires on-scope,
+    # in-domain, real bound A_core receipts); only the single-claim-coherence
+    # requirement is replaced by honest multi-finding framing. Universal — no
+    # domain literals.
+    acore_receipt_ids = [fid for fid in receipt_ids if lanes.get(fid) == "A_core"]
+    evidence_map = (
+        label in {"no_signal", "curation_needed", "evidence_binding_failed"}
+        and _source_count_for_ids(acore_receipt_ids, facts) >= min_direct_sources
+        and not _receipt_cluster_coheres(
+            lead_ids, facts, topic, min_direct_sources,
+        )
+    )
+    if evidence_map:
+        n_papers = _source_count_for_ids(acore_receipt_ids, facts)
+        label = "evidence_map"
+        headline = (
+            f"{_topic_title(topic)}: evidence map — {len(acore_receipt_ids)} "
+            f"findings across {n_papers} sources"
+        )
+        thesis = (
+            f"Structured evidence map for {_topic_title(topic)}: the cited "
+            f"literature reports {len(acore_receipt_ids)} distinct A_core "
+            f"findings across {n_papers} independent sources. These are "
+            "presented as a synthesis spanning populations and endpoints, not a "
+            "single unified claim; each finding and its source is listed below."
+        )
+        why_surprising = (
+            "The signal here is breadth, not one contrast: the topic is carried "
+            "by multiple independent, source-diverse findings rather than a "
+            "single isolated result."
+        )
+        lead_source_count = n_papers
+    score = (
+        min(95, 40 + _source_count_for_ids(acore_receipt_ids, facts) * 8)
+        if evidence_map else _alpha_score(audit, label)
+    )
     lines = [
         f"# Alpha memo — {topic}",
         "",

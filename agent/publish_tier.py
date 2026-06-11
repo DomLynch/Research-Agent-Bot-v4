@@ -23,6 +23,16 @@ _COUNTER_MIN_CLAIM_FIT = 0.2
 _BLOCKED_LABELS = frozenset({
     "curation_needed", "evidence_binding_failed", "no_signal", "discard",
 })
+# An evidence-map memo is an honest multi-finding synthesis, so the single-claim
+# coherence blockers below do not apply to it — but every integrity blocker
+# (cross_domain_forced, feed_scope_mismatch, no_bound_receipts,
+# retrieval_artifact_claim, off-scope) still must be clear to publish one.
+_EVIDENCE_MAP_WAIVED_BLOCKERS = frozenset({
+    "source_dispersion", "weak_counter_consensus_tension", "low_alpha_score",
+    "claim_alignment_partial", "source_floor_below_min",
+    "direct_source_floor_below_min", "receipt_shape_mismatch",
+    "metric_type_mismatch",
+})
 _RECEIPT_SHAPE_DIMENSIONS = (
     ("population",),
     ("intervention",),
@@ -1025,7 +1035,17 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         and a_core >= int(cfg["ready_min_a_core_receipts"])
         and alpha_score >= int(cfg["ready_min_alpha_score"])
     )
-    if ready:
+    # Evidence-map path: a source-rich multi-finding synthesis publishes when it
+    # has >= the source floor of distinct A_core papers and clears every
+    # integrity blocker; only single-claim coherence blockers are waived.
+    a_core_source_papers = len(_source_papers(direct_ids, facts))
+    evidence_map_ready = (
+        label == "evidence_map"
+        and bool(bound_ids)
+        and a_core_source_papers >= min_direct_source_papers
+        and not (set(blockers) - _EVIDENCE_MAP_WAIVED_BLOCKERS)
+    )
+    if ready or evidence_map_ready:
         tier, level = "TIER_1", "L5"
         decision = "ready_to_publish"
     elif (not bound_ids or label in _BLOCKED_LABELS or off_scope
@@ -1055,7 +1075,10 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         enabled=decision != "ready_to_publish",
     )
     if decision == "ready_to_publish":
-        surface_type = "publish_alpha_memo"
+        surface_type = (
+            "evidence_map" if evidence_map_ready and not ready
+            else "publish_alpha_memo"
+        )
     elif context_dependence:
         surface_type = "context_dependence_memo"
     elif off_scope or forced:
