@@ -77,15 +77,20 @@ def _build_prompt(topic: str, rows: list[tuple[str, str]]) -> str:
     listing = "\n".join(f"[{fid}] {phrase}" for fid, phrase in rows)
     return (
         f'You are grouping research findings about "{topic.replace("_", " ")}" '
-        "into coherent claim clusters. A cluster is a set of findings that all "
-        "support ONE specific claim: the SAME outcome/endpoint and the SAME "
-        "direction of effect (for example, all show reduced all-cause "
-        "mortality), even when worded differently. Never group findings about "
-        "different outcomes, different interventions, or opposite directions.\n\n"
+        "into HOMOGENEOUS claim clusters. A cluster is a set of findings that are "
+        "directly comparable: the SAME population/setting, the SAME comparator or "
+        "baseline, the SAME outcome/endpoint, AND the SAME direction of effect — "
+        "not merely the same metric word. 'Higher accuracy on medical QA vs GPT-4' "
+        "and 'higher accuracy on SQL generation vs a rule baseline' are DIFFERENT "
+        "clusters: different task and different comparator, even though both say "
+        "'accuracy'. A reviewer must be able to pool the cluster's findings into "
+        "one apples-to-apples comparison. Prefer a tight homogeneous cluster of "
+        "2-3 aligned findings over a large heterogeneous one. The claim must name "
+        "the specific population, comparator, and endpoint.\n\n"
         f"Findings (id and phrase):\n{listing}\n\n"
-        'Return JSON only: {"clusters":[{"claim":"<one sentence>",'
-        '"fact_ids":["id",...]}, ...]}. Order clusters largest first. Only use '
-        "ids from the list above."
+        'Return JSON only: {"clusters":[{"claim":"<one specific sentence naming '
+        'population, comparator, endpoint>","fact_ids":["id",...]}, ...]}. Order '
+        "clusters largest first. Only use ids from the list above."
     )
 
 
