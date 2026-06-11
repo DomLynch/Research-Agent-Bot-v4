@@ -1294,6 +1294,7 @@ def _record_submission_attempt(
         "topic": candidate.get("topic"),
         "run_dir": candidate.get("run_dir"),
         "fingerprint": candidate.get("memo_fingerprint"),
+        "bundle_signature": _bundle_signature(candidate, runs_root),
         "memo_sha256": _memo_sha256(candidate, runs_root),
         "submission_id": submission_id,
     }
@@ -1825,6 +1826,49 @@ def _direct_source_count(verdict: Json, root: Path) -> int:
     return len(_memo_source_papers(verdict, root, ("Evidence",), {"A_core"}))
 
 
+def _bundle_signature(verdict: Json, root: Path) -> str:
+    """Content key = the set of cited source identifiers, topic-name-independent.
+
+    Two word-salad child topics of one parent (semaglutide_weight vs
+    semaglutide_loss) cite the same papers and render near-identical content, but
+    their topic names give them different memo_fingerprints, so both submit and
+    Researka rejects the second as an exact-content duplicate. Keying on the
+    cited DOIs/PMIDs catches that regardless of topic name. Empty for a bundle
+    too thin (<2 ids) to dedup reliably.
+    """
+    ids = sorted({
+        (str(p.get("doi") or "").strip().lower()
+         or f"pmid:{str(p.get('pmid') or '').strip()}")
+        for p in _memo_source_papers(verdict, root, ("Evidence",), {"A_core"})
+    } - {"", "pmid:"})
+    if len(ids) < 2:
+        return ""
+    return hashlib.sha256("|".join(ids).encode("utf-8")).hexdigest()
+
+
+def _published_bundle_signatures(
+    path: Path, domain: str | None, root: Path,
+) -> set[str]:
+    """Bundle signatures of already-PUBLISHED/accepted submissions in this domain.
+
+    Only published content can be duplicated; rejected memos are not live, so a
+    repaired resubmit reusing the same papers must NOT be blocked here.
+    """
+    data = _json(path, [])
+    sigs: set[str] = set()
+    if not isinstance(data, list):
+        return sigs
+    for row in data:
+        if not isinstance(row, dict) or not _same_domain(_row_domain(row), domain):
+            continue
+        if not (row.get("published") or row.get("final_verdict") == "accepted"):
+            continue
+        sig = str(row.get("bundle_signature") or "") or _bundle_signature(row, root)
+        if sig:
+            sigs.add(sig)
+    return sigs
+
+
 def _shape_text(value: Any) -> str:
     if isinstance(value, dict):
         return " ".join(_shape_text(v) for v in value.values())
@@ -1973,6 +2017,9 @@ def select_candidate(
     domain: str | None = None,
 ) -> tuple[Json | None, list[Json]]:
     seen = _seen_submission_fingerprints_for_domain(submitted_path, domain)
+    published_bundle_sigs = _published_bundle_signatures(
+        submitted_path, domain, runs_root,
+    )
     retryable = _repairable_rejected_fingerprints(submitted_path.parent, domain)
     retry_decisions = _repairable_decisions_by_fingerprint(
         submitted_path.parent, domain,
@@ -2328,7 +2375,13 @@ def select_candidate(
             if retry_fingerprint_unchanged:
                 status = "duplicate_submission_fingerprint"
             if status == "eligible":
-                if fp in seen and _same_memo_seen(
+                bundle_sig = _bundle_signature(verdict, runs_root)
+                if bundle_sig and bundle_sig in published_bundle_sigs:
+                    # Same cited papers as an already-published memo (a different
+                    # topic-name variant) — Researka would reject it as an
+                    # exact-content duplicate, so never spend the submission.
+                    status = "duplicate_published_bundle"
+                elif fp in seen and _same_memo_seen(
                     submitted_path, fp, memo_sha256, domain,
                 ):
                     status = "duplicate_submission_fingerprint"
