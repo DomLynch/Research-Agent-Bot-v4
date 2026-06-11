@@ -53,6 +53,7 @@ from agent.llm_client import call_writer_with_fallback
 from agent.numeric_sanitizer import filter_artifacts
 from agent.pico_enrichment import enrich_facts_pico
 from agent.researka_claims import _aggregate
+from agent.researka_facts import tier2_domain
 from agent.settings import load_settings
 from agent.topic_synonyms import expand_topic_queries, phrase_in_text
 
@@ -857,7 +858,7 @@ def _post_tier2_facts(
     strict_audit_required: bool,
 ) -> FetchResult:
     body: dict[str, Any] = {
-        "domain": domain,
+        "domain": tier2_domain(domain),
         "query": topic,
         "top_k": _FETCH_TOP_K,
         "min_confidence": "medium",

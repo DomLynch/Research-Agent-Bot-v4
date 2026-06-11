@@ -126,7 +126,7 @@ def tier2_source_count(
         r = client.post(
             f"{base}/api/v1/tier2/facts/search",
             json={
-                "domain": domain, "query": topic[:512], "top_k": 50,
+                "domain": tier2_domain(domain), "query": topic[:512], "top_k": 50,
                 "min_confidence": min_confidence, "numeric_only": False,
             },
             headers={"X-Researka-Token": token, "Content-Type": "application/json"},
@@ -169,7 +169,7 @@ async def search_facts(
         r = await client.post(
             f"{base}/api/v1/tier2/facts/search",
             json={
-                "domain": domain,
+                "domain": tier2_domain(domain),
                 "query": query[:512],
                 "top_k": min(top_k, 50),
                 "min_confidence": min_confidence,
