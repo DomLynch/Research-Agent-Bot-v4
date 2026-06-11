@@ -252,8 +252,19 @@ def main() -> int:
                 use_cached_source_rich=cache_supported,
                 refresh_low_source_counts=args.warm_backlog,
             )
-        scoped_discovered = _filter_domain_scope(
-            _filter_excluded(discovered, excluded), seeds,
+        # Scope discovered topics to this domain's own seeds + their children.
+        # The token-overlap filter alone leaks cross-domain topics: with 100
+        # seeds each expanded to dozens of queries, the token union is huge and
+        # an AI topic like multi_agent_systems matches longevity on generic
+        # tokens ("agent" from "senolytic agents", "systems" from "biological
+        # systems"). The strict seed-scope (seed or seed_child) is what keeps a
+        # longevity cycle from building and submitting AI topics tagged
+        # longevity. Universal: each domain scopes to its own seed list.
+        scoped_discovered = _filter_cached_seed_scope(
+            _filter_domain_scope(
+                _filter_excluded(discovered, excluded), seeds,
+            ),
+            seeds,
         )
         ranked = _merge_candidates(ranked, scoped_discovered)
     top = ranked[: args.top]
