@@ -2173,6 +2173,37 @@ def test_repairable_revision_allows_third_repair_retry_across_fingerprint(
     assert records[-1]["memo_sha256"] == daily._memo_sha256(verdict, root)
 
 
+def test_public_submission_markdown_strips_internal_diagnostics() -> None:
+    """The public memo must never leak internal pipeline diagnostics — the
+    extraction / disagreement / run-state artifacts Researka has rejected on.
+    They live in internal-only sections and prefix lines the builder drops by
+    construction; this fences that guard against a future render regression.
+    """
+    memo = (
+        "# Alpha memo — topic\n\n"
+        "**Headline:** A coherent claim\n"
+        "**Alpha score:** 80/100\n"
+        "**Confidence:** `evidence_backed_signal`\n"
+        "**Run:** `topic-evidence-ts`\n"
+        "**Direct source breadth:** `5` direct cited source(s)\n\n"
+        "## One-sentence thesis\n\nThe public claim.\n\n"
+        "## Evidence receipts\n\n- `fact_id=1` (`A_core`)\n\n"
+        "## Next extraction\n\nextraction has not yet produced a bounded signal; "
+        "487 disagreement rows; MSCR 49.89%.\n\n"
+        "## Subtopic recommendations\n\nsplit into child topics.\n"
+    )
+    out = daily._public_submission_markdown(memo)
+    for artifact in (
+        "extraction has not yet produced", "disagreement", "MSCR",
+        "Subtopic recommendations", "Next extraction",
+    ):
+        assert artifact not in out, artifact
+    for prefix in ("Alpha score:", "Confidence:", "Run:", "Direct source breadth:"):
+        assert prefix not in out, prefix
+    assert "The public claim." in out
+    assert "`fact_id=1`" in out
+
+
 def test_submit_retry_exhausted_repairable_revise_can_publish_next_cycle(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
