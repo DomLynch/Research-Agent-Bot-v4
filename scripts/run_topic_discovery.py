@@ -157,6 +157,21 @@ def _domain_derived_topic_limit(domain: str) -> int:
     )
 
 
+def _cache_supported(domain: str) -> bool:
+    """Whether ``domain`` may read the source-rich supply cache.
+
+    The cache holds the default (longevity) seed space, and the candidate set
+    is filtered by token-overlap, not strict seed membership — so a domain with
+    its own seeds would pull default-space topics into its discovery. Only
+    domains that share the default seed file (longevity, longevity_research)
+    may read it; others fall through to live discovery.
+    """
+    return (
+        load_domain_profile(domain).seed_topics_path
+        == load_domain_profile(None).seed_topics_path
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--domain", choices=domain_choices(), default="longevity")
@@ -202,7 +217,7 @@ def main() -> int:
     )
     cache_limit = max(args.top, fact_probe_topics or 0)
     excluded = {str(t).strip() for t in args.exclude_topic if str(t).strip()}
-    cache_supported = profile.slug == "longevity"
+    cache_supported = _cache_supported(profile.slug)
     ranked = (
         cached_source_rich_candidates(limit=cache_limit)
         if cache_supported

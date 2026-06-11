@@ -24,6 +24,18 @@ def test_default_discovery_keeps_publish_path_bounded() -> None:
     ) == (250, None)
 
 
+def test_cache_supported_covers_default_seed_space_only() -> None:
+    """The source-rich cache is read only by domains that share the default
+    seed file (longevity, longevity_research) — domains with their own seeds
+    stay off to avoid the token-overlap filter pulling in cross-domain topics.
+    Regression: longevity_research (the slug the live publisher runs) must be
+    supported; ai_research must not be."""
+    assert run_topic_discovery._cache_supported("longevity") is True
+    assert run_topic_discovery._cache_supported("longevity_research") is True
+    assert run_topic_discovery._cache_supported("ai_research") is False
+    assert run_topic_discovery._cache_supported("business_research") is False
+
+
 def test_warm_backlog_uses_full_pool_with_bounded_probe_window() -> None:
     assert _resolve_limits(
         warm_backlog=True,
