@@ -51,7 +51,11 @@ _SUPPLY_CACHE_PATH = (Path(__file__).resolve().parent.parent
                       / "runs" / "_topic_supply_cache.json")
 _PUBLICATION_TOML = (Path(__file__).resolve().parent.parent
                      / "topic_packs" / "publication.toml")
-_SUPPLY_CACHE_VERSION = 11
+# Bumped 11 -> 12 to invalidate supply counts probed while the Tier-2 domain bug
+# (database slug passed to a 422-only enum) made every non-cached topic read 0
+# sources. Stale v11 entries are ignored, forcing a live re-probe through the
+# fixed tier2_domain() mapping so source-rich seeds (metformin et al.) resurface.
+_SUPPLY_CACHE_VERSION = 12
 _PUBLISHABLE_SOURCE_FLOOR = 5
 _NONPUBLISHABLE_SUPPLY_BLOCKERS = frozenset({
     "blocked_label:no_signal",
