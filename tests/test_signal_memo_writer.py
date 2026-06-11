@@ -2220,6 +2220,47 @@ def test_writer_adopts_three_source_cluster_receipts(tmp_path: Path) -> None:
     assert cited == {"301", "302", "303"}
 
 
+def test_heterogeneous_m3_cluster_routes_to_evidence_map(tmp_path: Path) -> None:
+    """A laundry-list M3 cluster (token judge finds it heterogeneous) ships as
+    article_type=evidence_map, not a rejected single thesis. Its headline must
+    be the honest breadth framing, never the run-on M3 'claim'."""
+    run = tmp_path / "ai_agents-evidence-ts"
+    _write_run(run)
+    phrases = {
+        "501": "Agent ransomware containment reached 92% vs MITRE baselines",
+        "502": "Traffic-signal phases reduced 43% with agent control",
+        "503": "Agent code generation scored 3.31x higher CodeBLEU",
+        "504": "Fault detection improved 8.56% over LLM methods",
+        "505": "Unplanned downtime fell 15% under agent scheduling",
+    }
+    facts = [
+        {"fact_id": fid, "canonical_phrase": text,
+         "source_paper": {"doi": f"10.x/het-{fid}"}}
+        for fid, text in phrases.items()
+    ]
+    (run / "all_facts.json").write_text(json.dumps(
+        json.loads((run / "all_facts.json").read_text(encoding="utf-8")) + facts,
+    ), encoding="utf-8")
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    lanes["verdicts"] += [{"fact_id": fid, "lane": "A_core"} for fid in phrases]
+    (run / "fact_lanes.json").write_text(json.dumps(lanes), encoding="utf-8")
+    laundry = (
+        "Agent systems quantify gains including 92% containment, 43% signal "
+        "reduction, 3.31x CodeBLEU, 8.56% fault detection, and 15% less downtime"
+    )
+    (run / "claim_cluster.json").write_text(json.dumps({
+        "claim": laundry, "lead_fact_ids": list(phrases),
+    }), encoding="utf-8")
+
+    memo = render_signal_memo(run)
+    headline = next(line for line in memo.splitlines() if line.startswith("**Headline:**"))
+    confidence = next(line for line in memo.splitlines() if line.startswith("**Confidence:**"))
+
+    assert "evidence map" in headline.lower()
+    assert "92%" not in headline and "CodeBLEU" not in headline
+    assert "evidence_map" in confidence
+
+
 def test_headline_falls_back_without_cluster_claim(tmp_path: Path) -> None:
     """No claim_cluster.json -> prior headline logic still renders a non-empty
     title (the override is fully guarded)."""

@@ -2165,23 +2165,61 @@ def render_signal_memo(
         "could confirm or kill the thesis."
         )
     )
-    # --- Evidence-map fallback: the scalable publishable unit ----------------
+    # --- Evidence-map routing: the scalable publishable unit -----------------
     # A source-rich topic whose A_core receipts span several distinct claims is
-    # not a single "signal", but it is a legitimate, citable synthesis. Rather
-    # than discard it as no_signal, publish an honest structured evidence map.
-    # Integrity is unchanged (the publish gate still requires on-scope,
-    # in-domain, real bound A_core receipts); only the single-claim-coherence
-    # requirement is replaced by honest multi-finding framing. Universal — no
-    # domain literals.
+    # not a single "signal", but it is a legitimate, citable synthesis Researka
+    # now accepts as article_type=evidence_map. Route to it whenever the lead
+    # receipts do NOT cohere into one claim — including an M3 cluster the token
+    # judge finds heterogeneous (a laundry-list of unrelated endpoints/
+    # comparators). Such a bundle is rejected as a single thesis but accepted as
+    # a scoping review, so publish the honest map rather than a false unified
+    # claim. A genuinely coherent lead (token judge agrees) stays a single-claim
+    # memo. Integrity is unchanged: the gate still requires on-scope, in-domain,
+    # real bound A_core receipts. Universal — no domain literals. The deliberate
+    # heterogeneity-repair narrowing is left to its own single-receipt path.
     acore_receipt_ids = [fid for fid in receipt_ids if lanes.get(fid) == "A_core"]
-    evidence_map = (
-        label in {"no_signal", "curation_needed", "evidence_binding_failed"}
-        and _source_count_for_ids(acore_receipt_ids, facts) >= min_direct_sources
+    # A laundry-list M3 cluster — one whose own cited sources do NOT all cohere
+    # into a single claim (unrelated endpoints/comparators) — is rejected as a
+    # single thesis but accepted as article_type=evidence_map. Judge the cluster
+    # ids directly (not lead_ids, which a downstream repair may re-pick): require
+    # the cluster to cohere across all its sources to stay a single claim. A
+    # genuinely homogeneous cluster coheres and is untouched. Established no-M3
+    # paths keep their failure-label gate. Universal — no domain literals.
+    cluster_sources = _source_count_for_ids(llm_cluster_ids, facts)
+    m3_cluster_incoherent = (
+        cluster_sources >= min_cluster_sources
         and not _receipt_cluster_coheres(
-            lead_ids, facts, topic, min_direct_sources,
+            llm_cluster_ids, facts, topic, cluster_sources,
+        )
+    )
+    # When a source-rich M3 cluster is incoherent, its own source-diverse ids are
+    # the evidence-map breadth (one finding per source). Otherwise the failure-
+    # label path uses the cited A_core receipts as before.
+    m3_map = m3_cluster_incoherent and cluster_sources >= min_direct_sources
+    map_breadth_ids = list(llm_cluster_ids) if m3_map else acore_receipt_ids
+    evidence_map = (
+        _source_count_for_ids(map_breadth_ids, facts) >= min_direct_sources
+        and not _repair_heterogeneity_requested(publish_verdict)
+        and (
+            m3_map
+            or (
+                label in {"no_signal", "curation_needed", "evidence_binding_failed"}
+                and not _receipt_cluster_coheres(
+                    lead_ids, facts, topic, min_direct_sources,
+                )
+            )
         )
     )
     if evidence_map:
+        if m3_map:
+            lead_ids = map_breadth_ids
+            lead_set = set(lead_ids)
+            receipt_ids = lead_ids + [fid for fid in receipt_ids if fid not in lead_set]
+            context_ids = [fid for fid in receipt_ids if fid not in lead_set]
+            acore_receipt_ids = [
+                fid for fid in receipt_ids if lanes.get(fid) == "A_core"
+            ]
+            source_count = _source_count_for_ids(receipt_ids, facts)
         n_papers = _source_count_for_ids(acore_receipt_ids, facts)
         label = "evidence_map"
         headline = (
@@ -2202,20 +2240,18 @@ def render_signal_memo(
             "single isolated result."
         )
         lead_source_count = n_papers
-    # The title must be the coherent M3 claim — a bounded research statement —
-    # not the mechanically-split topic slug, which the reviewer rejects as "not a
-    # coherent bounded research question". Universal: only fires when a validated
-    # cluster claim exists; keeps the breadth framing for an evidence map.
+    # The single-claim title must be the coherent M3 claim — a bounded research
+    # statement — not the mechanically-split topic slug, which the reviewer
+    # rejects as "not a coherent bounded research question". Only applied to the
+    # single-claim surface: an evidence map keeps its honest breadth headline,
+    # because its lead did NOT cohere and the M3 "claim" is a laundry-list.
     cluster_claim = (
         str(llm_cluster.get("claim") or "").strip().rstrip(".")
         if isinstance(llm_cluster, dict) else ""
     )
-    if cluster_claim:
+    if cluster_claim and not evidence_map and not m3_cluster_incoherent:
         cluster_claim = cluster_claim[0].upper() + cluster_claim[1:]
-        headline = (
-            f"{cluster_claim}: evidence across {n_papers} sources"
-            if evidence_map else cluster_claim
-        )
+        headline = cluster_claim
     score = (
         min(95, 40 + _source_count_for_ids(acore_receipt_ids, facts) * 8)
         if evidence_map else _alpha_score(audit, label)
