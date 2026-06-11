@@ -2107,11 +2107,24 @@ def render_signal_memo(
     # requirement is replaced by honest multi-finding framing. Universal — no
     # domain literals.
     acore_receipt_ids = [fid for fid in receipt_ids if lanes.get(fid) == "A_core"]
+    # Render evidence-map framing either when the publish gate already decided
+    # this run is an evidence map (surface_type=evidence_map, the breadth-driven
+    # publish_tier path), or as the local fallback for a source-rich topic that
+    # cannot cohere into one single-claim cluster. Both require real A_core
+    # source breadth at the direct-source floor.
+    verdict_evidence_map = (
+        str((publish_verdict or {}).get("surface_type") or "") == "evidence_map"
+    )
     evidence_map = (
-        label in {"no_signal", "curation_needed", "evidence_binding_failed"}
-        and _source_count_for_ids(acore_receipt_ids, facts) >= min_direct_sources
-        and not _receipt_cluster_coheres(
-            lead_ids, facts, topic, min_direct_sources,
+        _source_count_for_ids(acore_receipt_ids, facts) >= min_direct_sources
+        and (
+            verdict_evidence_map
+            or (
+                label in {"no_signal", "curation_needed", "evidence_binding_failed"}
+                and not _receipt_cluster_coheres(
+                    lead_ids, facts, topic, min_direct_sources,
+                )
+            )
         )
     )
     if evidence_map:

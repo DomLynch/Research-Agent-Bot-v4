@@ -462,7 +462,7 @@ def test_claim_coherence_accepts_source_cluster_not_every_receipt(
     assert verdict["axes"]["claim_coherent_source_diversity"] is True
 
 
-def test_ready_to_publish_requires_direct_receipt_shape_coherence(
+def test_shape_incoherent_direct_receipts_publish_as_evidence_map(
     tmp_path: Path,
 ) -> None:
     run = _run(tmp_path)
@@ -485,9 +485,16 @@ def test_ready_to_publish_requires_direct_receipt_shape_coherence(
 
     verdict = publish_verdict(run)
 
-    assert verdict["decision"] == "agent_repair_needed"
+    # Direct receipts that disagree on result shape can no longer publish as a
+    # single unified claim — but 5 real claim-aligned source papers measuring the
+    # same intervention across different metrics are an honest multi-finding
+    # synthesis. They publish on the breadth path with the evidence_map surface,
+    # never as a single-claim publish_alpha_memo. The shape blocker is still
+    # recorded; it is only waived for the map surface.
     assert "receipt_shape_mismatch" in verdict["blockers"]
     assert verdict["axes"]["direct_receipt_shape_coherent"] is False
+    assert verdict["decision"] == "ready_to_publish"
+    assert verdict["surface_type"] == "evidence_map"
 
 
 def test_ready_to_publish_accepts_preclustered_result_shape(
