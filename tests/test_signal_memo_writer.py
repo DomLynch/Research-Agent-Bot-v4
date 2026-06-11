@@ -2163,3 +2163,31 @@ def test_coherent_receipt_ids_leads_with_densest_source_diverse_cluster() -> Non
 
     assert set(lead) == {f"mort{i}" for i in range(5)}
     assert "gly0" not in lead
+
+
+def test_headline_uses_m3_cluster_claim_not_topic_slug(tmp_path: Path) -> None:
+    """Title comes from the coherent M3 claim (claim_cluster.json), never the
+    mechanically-split topic slug the reviewer rejects."""
+    run = tmp_path / "open_source_models_achieves_llama-evidence-ts"
+    _write_run(run)
+    claim = "Open-source models can match GPT-4 on specific tasks"
+    (run / "claim_cluster.json").write_text(
+        json.dumps({"lead_fact_ids": ["101"], "claim": claim}), encoding="utf-8")
+
+    memo = render_signal_memo(run)
+    headline = next(line for line in memo.splitlines() if line.startswith("**Headline:**"))
+
+    assert claim in headline
+    assert "open_source_models_achieves_llama" not in headline.lower()
+
+
+def test_headline_falls_back_without_cluster_claim(tmp_path: Path) -> None:
+    """No claim_cluster.json -> prior headline logic still renders a non-empty
+    title (the override is fully guarded)."""
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+
+    memo = render_signal_memo(run)
+    headline = next(line for line in memo.splitlines() if line.startswith("**Headline:**"))
+
+    assert len(headline) > len("**Headline:** ")
