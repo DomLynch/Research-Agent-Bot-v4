@@ -2149,6 +2149,20 @@ def render_signal_memo(
             "single isolated result."
         )
         lead_source_count = n_papers
+    # The title must be the coherent M3 claim — a bounded research statement —
+    # not the mechanically-split topic slug, which the reviewer rejects as "not a
+    # coherent bounded research question". Universal: only fires when a validated
+    # cluster claim exists; keeps the breadth framing for an evidence map.
+    cluster_claim = (
+        str(llm_cluster.get("claim") or "").strip().rstrip(".")
+        if isinstance(llm_cluster, dict) else ""
+    )
+    if cluster_claim:
+        cluster_claim = cluster_claim[0].upper() + cluster_claim[1:]
+        headline = (
+            f"{cluster_claim}: evidence across {n_papers} sources"
+            if evidence_map else cluster_claim
+        )
     score = (
         min(95, 40 + _source_count_for_ids(acore_receipt_ids, facts) * 8)
         if evidence_map else _alpha_score(audit, label)
