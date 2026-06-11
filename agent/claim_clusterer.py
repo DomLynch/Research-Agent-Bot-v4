@@ -143,5 +143,13 @@ def densest_claim_cluster(
                 picked.append(fid)
         if len(used) >= min_sources and len(used) > best_sources:
             best_sources = len(used)
-            best = {"lead_fact_ids": picked, "claim": str(cluster.get("claim") or "")}
+            # Cite a bounded, newest-first subset of the agreeing sources: a tight
+            # recent bundle reads as one bounded claim and lifts the citation
+            # recency ratio, while the floor is preserved (never trim below
+            # min_sources).
+            picked.sort(key=lambda fid: _fact_year(facts[fid]), reverse=True)
+            best = {
+                "lead_fact_ids": picked[:max(_MAX_CITED_SOURCES, min_sources)],
+                "claim": str(cluster.get("claim") or ""),
+            }
     return best
