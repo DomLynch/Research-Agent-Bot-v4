@@ -23,6 +23,18 @@ _COUNTER_MIN_CLAIM_FIT = 0.2
 _BLOCKED_LABELS = frozenset({
     "curation_needed", "evidence_binding_failed", "no_signal", "discard",
 })
+# When the lead is an M3-validated coherent cluster (claim_cluster.json), the
+# writer has already confirmed the receipts agree on one outcome/direction. The
+# token-based gate cannot see that differently-worded papers make the same
+# claim, so it raises these single-claim-coherence blockers on a genuinely
+# coherent bundle — they are waived for a cluster that clears the source floor.
+# Integrity blockers (cross_domain_forced, feed_scope_mismatch, no_bound_receipts,
+# retrieval_artifact_claim, blocked_label) are NOT here and still block.
+_LLM_CLUSTER_WAIVED_BLOCKERS = frozenset({
+    "claim_alignment_partial", "source_dispersion", "receipt_shape_mismatch",
+    "metric_type_mismatch", "weak_counter_consensus_tension", "low_alpha_score",
+    "source_floor_below_min", "direct_source_floor_below_min",
+})
 _RECEIPT_SHAPE_DIMENSIONS = (
     ("population",),
     ("intervention",),
