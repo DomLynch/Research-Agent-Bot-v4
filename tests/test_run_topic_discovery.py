@@ -283,6 +283,12 @@ def test_cache_only_filters_cached_topics_to_domain_seed_scope(
             velocity_score=3.0, mean_fwci=2.0, mean_cited_by=10.0,
         ),
         TopicCandidate(
+            topic="multi_agent_systems", paper_count=10,
+            fact_source_count=10, top_paper_doi="10.1/mas",
+            top_paper_title="Multi-agent systems",
+            velocity_score=2.5, mean_fwci=2.0, mean_cited_by=10.0,
+        ),
+        TopicCandidate(
             topic="semaglutide_once_weekly", paper_count=4,
             fact_source_count=7, top_paper_doi="10.1/glp",
             top_paper_title="Once-weekly semaglutide",
@@ -297,7 +303,7 @@ def test_cache_only_filters_cached_topics_to_domain_seed_scope(
     fake_script.parent.mkdir(parents=True)
     monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
     monkeypatch.setattr(
-        run_topic_discovery, "load_seed_topics", lambda: ("GLP_1_longevity",),
+        run_topic_discovery, "load_seed_topics", lambda: ("semaglutide",),
     )
     monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
     monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda: 5_000)

@@ -139,6 +139,22 @@ def _filter_domain_scope(
     )
 
 
+def _filter_cached_seed_scope(
+    candidates: tuple[TopicCandidate, ...], seeds: tuple[str, ...],
+) -> tuple[TopicCandidate, ...]:
+    seed_keys = tuple(_topic_key(seed) for seed in seeds if _topic_key(seed))
+    if not seed_keys:
+        return candidates
+    return tuple(
+        c for c in candidates
+        if any(
+            (key := _topic_key(c.topic)) == seed
+            or key.startswith(f"{seed}_")
+            for seed in seed_keys
+        )
+    )
+
+
 def _domain_seed_topics(domain: str) -> tuple[str, ...]:
     profile = load_domain_profile(domain)
     return (
@@ -218,13 +234,14 @@ def main() -> int:
     cache_limit = max(args.top, fact_probe_topics or 0)
     excluded = {str(t).strip() for t in args.exclude_topic if str(t).strip()}
     cache_supported = _cache_supported(profile.slug)
+    scoped_cache_limit = cache_limit * 20 if cache_supported else cache_limit
     ranked = (
-        cached_source_rich_candidates(limit=cache_limit)
+        cached_source_rich_candidates(limit=scoped_cache_limit)
         if cache_supported
         and (args.cache_first or args.cache_only)
         and cache_limit > 0 else ()
     )
-    ranked = _filter_domain_scope(_filter_excluded(ranked, excluded), seeds)
+    ranked = _filter_cached_seed_scope(_filter_excluded(ranked, excluded), seeds)
     if len(ranked) < args.top and not args.cache_only:
         with httpx.Client() as client:
             discovered = discover_topics(
