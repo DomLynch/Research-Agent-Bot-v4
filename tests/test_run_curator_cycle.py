@@ -271,6 +271,25 @@ def test_plan_topics_does_not_rescue_underfloor_in_submit_cycle() -> None:
     assert below_floor == []
 
 
+def test_plan_topics_tier2_supply_rescues_untagged_rich_topic() -> None:
+    """A topic the per-topic facts endpoint reports as 0 is still built when
+    the Tier-2 corpus carries >= floor source papers (the build binds them via
+    crosscheck). A topic with no Tier-2 supply stays below floor."""
+    ranked = [
+        {"topic": "metformin", "velocity_score": 9.0, "fact_source_count": 0},
+        {"topic": "obscure", "velocity_score": 8.0, "fact_source_count": 0},
+    ]
+    tier2 = {"metformin": 52}
+
+    plan, _skipped, _skipped_excluded, below_floor = _plan_topics(
+        ranked, recent=set(), excluded=set(), top=2, min_fact_sources=5,
+        hard_floor=3, tier2_supply=lambda topic: tier2.get(topic, 0),
+    )
+
+    assert [row["topic"] for row in plan] == ["metformin"]
+    assert below_floor == ["obscure"]
+
+
 def test_plan_topics_never_builds_zero_source_candidate() -> None:
     """Submit-seeking cycles do not build known-underfloor topics."""
     ranked = [
