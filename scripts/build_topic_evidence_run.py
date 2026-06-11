@@ -36,6 +36,7 @@ import httpx
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.alpha_selector import alpha_cues, alpha_score
+from agent.claim_clusterer import densest_claim_cluster
 from agent.domain_profile import domain_choices, load_domain_profile
 from agent.fact_facets import (
     facet_counts,
@@ -1651,6 +1652,19 @@ def main() -> int:
         "verdicts": [v.as_dict() for v in lane_verdicts],
     }, indent=2, ensure_ascii=False)
     lanes_path.write_text(lanes_text, encoding="utf-8")
+
+    # Group the A_core facts into coherent single-claim clusters so the memo can
+    # lead with the densest agreeing cluster (one outcome, one direction) instead
+    # of a scattered pile of a broad topic's many sub-claims. Capture clusters at
+    # a lower floor than the publish floor so a tight 3-4 source claim is offered
+    # to the gate rather than discarded. Degrades to empty on any LLM failure.
+    facts_by_id = {str(f.get("fact_id") or ""): f for f in facts if isinstance(f, dict)}
+    claim_cluster = densest_claim_cluster(
+        facts_by_id, lane_by_id, args.topic,
+        min_sources=max(3, min_sources - 2),
+    )
+    (out_dir / "claim_cluster.json").write_text(
+        json.dumps(claim_cluster, indent=2, ensure_ascii=False), encoding="utf-8")
 
     tier = str((facts[0].get("_tier") if facts else "") or "none")
     mimo_editorial = (_call_mimo_editorial(args.topic, top)

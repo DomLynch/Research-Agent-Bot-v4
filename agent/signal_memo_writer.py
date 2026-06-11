@@ -1781,16 +1781,31 @@ def render_signal_memo(
     min_sources = _memo_alpha_int("min_source_papers", 5)
     min_direct_sources = _memo_alpha_int("min_direct_source_papers", 5)
     excluded_receipt_ids = _repair_excluded_receipt_ids(publish_verdict)
-    claim = _claim_signal(
-        [str(x) for x in audit.get("cited_fact_ids", [])], facts, topic,
-    )
-    coherent_direct = _coherent_receipt_ids(
-        facts, lanes, min_sources=min_direct_sources, allowed_lanes=_DIRECT,
-        claim=claim, topic=topic, excluded_ids=excluded_receipt_ids,
-    ) or _coherent_receipt_ids(
-        facts, lanes, min_sources=min_direct_sources, allowed_lanes=_DIRECT,
-        claim=set(), topic=topic, excluded_ids=excluded_receipt_ids,
-    )
+    # Prefer the LLM-clustered coherent claim as the lead: it groups synonymous
+    # endpoints (survival / all-cause mortality) that token overlap misses and
+    # drops the statistical-boilerplate matches it falsely makes, so the memo
+    # leads with one bounded claim instead of a scattered pile. Use it when it
+    # clears the direct-source floor; otherwise fall back to the deterministic
+    # coherent pick.
+    llm_cluster = _json(run_dir / "claim_cluster.json", {})
+    llm_cluster_ids = [
+        fid for fid in (llm_cluster.get("lead_fact_ids") or [])
+        if isinstance(fid, str) and lanes.get(fid) == "A_core"
+        and fid not in excluded_receipt_ids
+    ] if isinstance(llm_cluster, dict) else []
+    if _source_count_for_ids(llm_cluster_ids, facts) >= min_direct_sources:
+        coherent_direct = llm_cluster_ids
+    else:
+        claim = _claim_signal(
+            [str(x) for x in audit.get("cited_fact_ids", [])], facts, topic,
+        )
+        coherent_direct = _coherent_receipt_ids(
+            facts, lanes, min_sources=min_direct_sources, allowed_lanes=_DIRECT,
+            claim=claim, topic=topic, excluded_ids=excluded_receipt_ids,
+        ) or _coherent_receipt_ids(
+            facts, lanes, min_sources=min_direct_sources, allowed_lanes=_DIRECT,
+            claim=set(), topic=topic, excluded_ids=excluded_receipt_ids,
+        )
     if coherent_direct:
         audit = audit | {"cited_fact_ids": coherent_direct}
         claim = _claim_signal(coherent_direct, facts, topic)
