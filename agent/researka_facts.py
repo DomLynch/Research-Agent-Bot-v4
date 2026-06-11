@@ -34,6 +34,33 @@ import httpx
 from agent.retrieval.base import normalize_doi
 from agent.settings import Settings
 
+# The Tier-2 facts search only accepts these three domain literals and 422s on
+# anything else. Database/domain slugs (longevity_research, business_research,
+# …) must be translated before POSTing, or every query returns 0 facts and the
+# candidate pool starves. ai_research is already a valid literal; longevity_*
+# collapses to "longevity"; every business/econ/finance/management/marketing
+# slug maps to "econ_business".
+_TIER2_DOMAIN_ALIASES = {
+    "longevity": "longevity",
+    "longevity_research": "longevity",
+    "ai_research": "ai_research",
+    "business_research": "econ_business",
+    "economics_research": "econ_business",
+    "econ_business": "econ_business",
+    "finance_research": "econ_business",
+    "management_research": "econ_business",
+    "marketing_research": "econ_business",
+}
+
+
+def tier2_domain(domain: str | None) -> str:
+    """Map a database/domain slug to the Tier-2 facts API domain literal.
+
+    Unknown slugs fall back to "longevity" (the corpus default) rather than a
+    guaranteed 422; known research slugs translate to their Tier-2 family.
+    """
+    return _TIER2_DOMAIN_ALIASES.get((domain or "").strip(), "longevity")
+
 
 @dataclass(frozen=True, slots=True)
 class ResearkaFact:
@@ -101,7 +128,7 @@ def tier2_source_count(
             json={
                 # top_k only needs to exceed the source floor: we count distinct
                 # papers, not facts. Latency is the corpus scan, not result size.
-                "domain": domain, "query": topic[:512], "top_k": 15,
+                "domain": tier2_domain(domain), "query": topic[:512], "top_k": 15,
                 "min_confidence": min_confidence, "numeric_only": False,
             },
             headers={"X-Researka-Token": token, "Content-Type": "application/json"},
@@ -147,7 +174,7 @@ async def search_facts(
         r = await client.post(
             f"{base}/api/v1/tier2/facts/search",
             json={
-                "domain": domain,
+                "domain": tier2_domain(domain),
                 "query": query[:512],
                 "top_k": min(top_k, 50),
                 "min_confidence": min_confidence,
