@@ -33,13 +33,6 @@ _EVIDENCE_MAP_WAIVED_BLOCKERS = frozenset({
     "direct_source_floor_below_min", "receipt_shape_mismatch",
     "metric_type_mismatch",
 })
-# Label-independent breadth path: a topic NOT explicitly rendered as an evidence
-# map (label != "evidence_map") only earns the map surface when its 5+ direct
-# A_core source papers are real and claim-aligned and the ONLY thing the
-# single-claim gate objects to is that those receipts span result shapes
-# (`receipt_shape_mismatch`). Genuinely dispersed, under-floor, low-alpha, or
-# metric-incomparable bundles still route to repair — they are not waived here.
-_EVIDENCE_MAP_BREADTH_WAIVED_BLOCKERS = frozenset({"receipt_shape_mismatch"})
 _RECEIPT_SHAPE_DIMENSIONS = (
     ("population",),
     ("intervention",),
@@ -1044,25 +1037,13 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     )
     # Evidence-map path: a source-rich multi-finding synthesis publishes when it
     # has >= the source floor of distinct A_core papers and clears every
-    # integrity blocker; only single-claim coherence blockers are waived. This is
-    # label-independent on purpose — a topic carried by 5+ claim-aligned direct
-    # source papers that the single-claim gate keeps bouncing on shape/dispersion
-    # (e.g. `receipt_shape_mismatch`) is an honest evidence map, not a perpetual
-    # subtopic-split. Integrity blockers (cross_domain_forced, feed_scope_mismatch,
-    # no_bound_receipts, retrieval_artifact_claim, blocked_label) are NOT in the
-    # waived set, so off-scope / forced / fabricated topics still cannot publish.
+    # integrity blocker; only single-claim coherence blockers are waived.
     a_core_source_papers = len(_source_papers(direct_ids, facts))
     evidence_map_ready = (
-        label not in _BLOCKED_LABELS
+        label == "evidence_map"
         and bool(bound_ids)
         and a_core_source_papers >= min_direct_source_papers
-        and not (
-            set(blockers) - (
-                _EVIDENCE_MAP_WAIVED_BLOCKERS
-                if label == "evidence_map"
-                else _EVIDENCE_MAP_BREADTH_WAIVED_BLOCKERS
-            )
-        )
+        and not (set(blockers) - _EVIDENCE_MAP_WAIVED_BLOCKERS)
     )
     if ready or evidence_map_ready:
         tier, level = "TIER_1", "L5"
