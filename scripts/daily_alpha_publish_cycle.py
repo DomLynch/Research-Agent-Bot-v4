@@ -1840,20 +1840,6 @@ def _shape_tokens(fact: Json, fields: tuple[str, ...]) -> set[str]:
     }
 
 
-def _is_evidence_map(verdict: Json) -> bool:
-    """An evidence-map verdict is an honest source-rich multi-finding synthesis.
-
-    It clears the publish gate on A_core source breadth (the publish-tier
-    `evidence_map_ready` path) rather than single-claim coherence, so the submit
-    gate must honour the same contract: keep the source-breadth floors, drop the
-    single-shape requirement.
-    """
-    return (
-        str(verdict.get("surface_type") or "") == "evidence_map"
-        or str(verdict.get("confidence_label") or "") == "evidence_map"
-    )
-
-
 def _direct_receipts_share_shape(
     verdict: Json, root: Path, min_direct_source_count: int,
 ) -> bool:
@@ -2345,14 +2331,9 @@ def select_candidate(
                         status = "eligible"
                 elif direct_source_count < min_direct_source_count:
                     status = "direct_source_floor_below_min"
-                elif not _is_evidence_map(verdict) and not _direct_receipts_share_shape(
+                elif not _direct_receipts_share_shape(
                     verdict, runs_root, min_direct_source_count,
                 ):
-                    # Evidence maps span result shapes by design — they are an
-                    # honest multi-finding synthesis, not a single-claim memo.
-                    # The source-breadth floors above still apply (real, bound,
-                    # source-diverse A_core receipts), but the single-shape
-                    # coherence requirement does not.
                     status = "receipt_shape_mismatch"
         row = {
             "topic": _selection_topic(verdict),

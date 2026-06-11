@@ -2138,14 +2138,6 @@ def render_signal_memo(
         min(95, 40 + _source_count_for_ids(acore_receipt_ids, facts) * 8)
         if evidence_map else _alpha_score(audit, label)
     )
-    # For an evidence map the cited Evidence section IS the full source-diverse
-    # A_core finding set (so the rendered receipts match the headline's count and
-    # the source-breadth floors read the real breadth, not the narrowed lead).
-    evidence_section_ids = acore_receipt_ids if evidence_map else lead_ids
-    context_section_ids = (
-        [fid for fid in context_ids if fid not in set(evidence_section_ids)]
-        if evidence_map else context_ids
-    )
     lines = [
         f"# Alpha memo — {topic}",
         "",
@@ -2182,14 +2174,14 @@ def render_signal_memo(
         "",
         "## Evidence receipts",
         "",
-        *_receipt_lines(audit, facts, lanes, evidence_section_ids),
+        *_receipt_lines(audit, facts, lanes, lead_ids),
     ]
-    if context_section_ids:
+    if context_ids:
         lines.extend([
             "",
             "## Context receipts",
             "",
-            *_receipt_lines(audit, facts, lanes, context_section_ids),
+            *_receipt_lines(audit, facts, lanes, context_ids),
         ])
     lines.extend([
         "",
