@@ -194,21 +194,33 @@ def call_writer_with_fallback(
     temperature: float = 0.3,
     max_tokens: int | None = 4000,
 ) -> LLMResponse:
-    """Sprint 14: MiMo-then-Gemma writer fallback for the runaway pathology.
+    """MiMo-then-Gemma writer fallback for the runaway pathology AND for MiMo
+    auth/availability outages.
 
-    MiMo first (canonical writer). On runaway-exhaustion only, falls back
-    to Gemma 4 31B. Response.model is tagged `mimo-runaway-fallback:<id>`
-    so the audit trail records the swap. Non-runaway errors propagate.
+    MiMo first (canonical writer). Falls back to Gemma 4 31B on runaway
+    exhaustion or when MiMo is unreachable for a reason retrying cannot fix —
+    auth (401/403) or a 5xx/transport error after the client's own retries.
+    Both models are the locked, approved stack, so the fallback keeps the whole
+    pipeline (frontier review, clustering, memo writing) alive when MiMo's key
+    or endpoint is down instead of failing the run. Response.model is tagged
+    `mimo-<reason>-fallback:<id>` so the audit trail records the swap.
     """
     try:
         return call_writer(settings, messages, temperature=temperature, max_tokens=max_tokens)
     except RuntimeError as e:
         if "MiMo runaway" not in str(e):
             raise
+        reason = "runaway"
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code not in (401, 403, 500, 502, 503, 504):
+            raise
+        reason = "unavailable"
+    except (httpx.TransportError, httpx.TimeoutException):
+        reason = "unavailable"
     resp = call_judge(settings, messages, temperature=temperature)
     return LLMResponse(
         content=resp.content,
-        model=f"mimo-runaway-fallback:{resp.model}",
+        model=f"mimo-{reason}-fallback:{resp.model}",
         prompt_tokens=resp.prompt_tokens,
         completion_tokens=resp.completion_tokens,
     )
