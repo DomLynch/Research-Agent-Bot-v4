@@ -1,9 +1,10 @@
 """HTTP clients for the two-model stack.
 
-Writer: MiMo v2.5 Pro (Xiaomi OpenAI-compatible endpoint)
-Judge / editor: Gemma 4 31B via OpenRouter
+Writer: MiniMax M3 (Anthropic-compatible endpoint, .../anthropic/v1/messages)
+Judge / editor: Gemma 4 31B via OpenRouter (OpenAI chat-completions)
 
-Both speak OpenAI chat-completions JSON.
+`_post_chat` detects the Anthropic endpoint by its base path and speaks the
+Messages API there; everything else stays OpenAI chat-completions.
 
 Hardening (Sprint 8.1c + 8.1d):
   - Split timeouts: connect fails fast (15s) so dead endpoints surface
@@ -59,17 +60,43 @@ def _post_chat(
     max_retries: int = 3,
     backoff_seconds: tuple[float, ...] = _DEFAULT_BACKOFF_SECONDS,
 ) -> dict[str, Any]:
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
+    # MiniMax M3 is served on an Anthropic-compatible endpoint (.../anthropic):
+    # POST /v1/messages, x-api-key auth, system prompt hoisted out of messages,
+    # max_tokens required. Everything else (Gemma/OpenRouter) stays OpenAI-style
+    # chat/completions. Detect by the base path so one client serves both.
+    anthropic = "/anthropic" in base_url
+    if anthropic:
+        endpoint = f"{base_url.rstrip('/')}/v1/messages"
+        headers = {
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01",
+            "Content-Type": "application/json",
+        }
+        conversation = [m for m in messages if m.get("role") != "system"]
+        system_text = "\n\n".join(
+            str(m.get("content") or "") for m in messages if m.get("role") == "system"
+        )
+        payload = {
+            "model": model,
+            "messages": conversation,
+            "temperature": temperature,
+            "max_tokens": max_tokens if max_tokens is not None else 4096,
+        }
+        if system_text:
+            payload["system"] = system_text
+    else:
+        endpoint = f"{base_url.rstrip('/')}/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": model, "messages": messages, "temperature": temperature,
+        }
+        if max_tokens is not None:
+            payload["max_tokens"] = max_tokens
     if extra_headers:
         headers.update(extra_headers)
-    payload: dict[str, Any] = {
-        "model": model, "messages": messages, "temperature": temperature,
-    }
-    if max_tokens is not None:
-        payload["max_tokens"] = max_tokens
     timeout = httpx.Timeout(
         connect=15.0, read=read_timeout_sec, write=60.0, pool=10.0,
     )
@@ -86,14 +113,10 @@ def _post_chat(
     for attempt in range(max_retries + 1):
         try:
             with httpx.Client(timeout=timeout) as client:
-                r = client.post(
-                    f"{base_url.rstrip('/')}/chat/completions",
-                    json=payload, headers=headers,
-                )
+                r = client.post(endpoint, json=payload, headers=headers)
                 if r.status_code in _TRANSIENT_HTTP_STATUSES:
                     last_exc = httpx.HTTPStatusError(
-                        f"{r.status_code} {r.reason_phrase} from "
-                        f"{base_url.rstrip('/')}/chat/completions",
+                        f"{r.status_code} {r.reason_phrase} from {endpoint}",
                         request=r.request, response=r,
                     )
                     if attempt >= max_retries:
@@ -112,11 +135,23 @@ def _post_chat(
 
 
 def _extract(data: dict[str, Any], model: str) -> LLMResponse:
-    choice = data["choices"][0]
-    content = choice["message"]["content"]
     usage = data.get("usage") or {}
+    blocks = data.get("content")
+    if isinstance(blocks, list):  # Anthropic Messages format (MiniMax M3)
+        content = "".join(
+            str(block.get("text") or "")
+            for block in blocks
+            if isinstance(block, dict) and block.get("type") == "text"
+        )
+        return LLMResponse(
+            content=content,
+            model=model,
+            prompt_tokens=int(usage.get("input_tokens", 0)),
+            completion_tokens=int(usage.get("output_tokens", 0)),
+        )
+    choice = data["choices"][0]  # OpenAI chat-completions format (Gemma)
     return LLMResponse(
-        content=content,
+        content=choice["message"]["content"],
         model=model,
         prompt_tokens=int(usage.get("prompt_tokens", 0)),
         completion_tokens=int(usage.get("completion_tokens", 0)),

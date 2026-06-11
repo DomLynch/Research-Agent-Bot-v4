@@ -12,6 +12,8 @@ def _clear_all(monkeypatch: pytest.MonkeyPatch) -> None:
     # Bypass .env loading so tests see a clean env, not whatever lives on disk.
     monkeypatch.setenv("RAB_SKIP_DOTENV", "1")
     for key in (
+        "MINIMAX_API_KEY", "MINIMAX_BASE_URL", "MINIMAX_MODEL",
+        "MINIMAX_TIMEOUT_SEC",
         "MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "MIMO_TIMEOUT_SEC",
         "OPENROUTER_API_KEY", "OPENROUTER_BASE_URL", "JUDGE_MODEL",
         "WRITER_MAX_RETRIES",
@@ -31,8 +33,8 @@ def test_load_settings_returns_dataclass(monkeypatch: pytest.MonkeyPatch) -> Non
 def test_defaults_when_env_missing(monkeypatch: pytest.MonkeyPatch) -> None:
     _clear_all(monkeypatch)
     s = load_settings()
-    assert s.mimo_base_url == "https://token-plan-sgp.xiaomimimo.com/v1"
-    assert s.mimo_model == "mimo-v2.5-pro"
+    assert s.mimo_base_url == "https://api.minimax.io/anthropic"
+    assert s.mimo_model == "MiniMax-M3"
     assert s.judge_model == "google/gemma-4-31b-it"
     assert s.openrouter_base_url == "https://openrouter.ai/api/v1"
     assert s.researka_database_url == "https://database.researka.org"

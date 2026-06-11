@@ -114,10 +114,18 @@ class Settings:
 def load_settings() -> Settings:
     _load_dotenv()
     return Settings(
-        mimo_api_key=_env("MIMO_API_KEY"),
-        mimo_base_url=_env("MIMO_BASE_URL", "https://token-plan-sgp.xiaomimimo.com/v1"),
-        mimo_model=_env("MIMO_MODEL", "mimo-v2.5-pro"),
-        mimo_timeout_sec=_float("MIMO_TIMEOUT_SEC", 300.0),
+        # Writer is MiniMax M3 (Anthropic-compatible endpoint). MIMO_* are
+        # accepted as legacy aliases, but MINIMAX_* win when both are set so a
+        # stale MiMo key in an old .env can never shadow the live M3 config.
+        mimo_api_key=_env("MINIMAX_API_KEY") or _env("MIMO_API_KEY"),
+        mimo_base_url=(
+            _env("MINIMAX_BASE_URL") or _env("MIMO_BASE_URL")
+            or "https://api.minimax.io/anthropic"
+        ),
+        mimo_model=_env("MINIMAX_MODEL") or _env("MIMO_MODEL") or "MiniMax-M3",
+        mimo_timeout_sec=_float(
+            "MINIMAX_TIMEOUT_SEC", _float("MIMO_TIMEOUT_SEC", 300.0),
+        ),
         openrouter_api_key=_env("OPENROUTER_API_KEY"),
         openrouter_base_url=_env("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
         judge_model=_env("JUDGE_MODEL", "google/gemma-4-31b-it"),
