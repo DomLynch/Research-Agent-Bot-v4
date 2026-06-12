@@ -2405,15 +2405,19 @@ def select_candidate(
             if (
                 status == "eligible"
                 and verdict.get("surface_type") == "evidence_map"
-                and not _alpha_memo_bool("submit_evidence_maps", False)
             ):
-                # Researka's reviewer panel still rejects evidence maps (it wants a
-                # synthesized single claim, not a findings table). Hold them out of
-                # submission until the platform's reviewer accepts the type, so we
-                # don't burn guaranteed rejections; flip submit_evidence_maps=true
-                # in publication.toml when that lands. Maps still render and stay
-                # ready_to_publish — only the submit step is gated.
-                status = "evidence_map_submission_held"
+                # Evidence maps publish (Researka accepts them as landscape
+                # syntheses — verified 2026-06-12). Two guards before submit:
+                # (1) submit_evidence_maps must be on; (2) a pre-submit mirror of
+                # the intake floor — a map needs >= evidence_map_min_citations (10)
+                # cited sources, so a sub-floor map is held rather than burning an
+                # intake reject (v3 dev §4). Source/recency are otherwise easily met.
+                if not _alpha_memo_bool("submit_evidence_maps", False):
+                    status = "evidence_map_submission_held"
+                elif direct_source_count < _alpha_memo_int(
+                    "evidence_map_min_citations", 10,
+                ):
+                    status = "evidence_map_below_citation_floor"
             if status == "eligible":
                 # An M3-cluster-backed memo publishes at the cluster floor
                 # (min_cluster_source_papers, default 3) — publish_tier already

@@ -16,10 +16,12 @@ min_direct_source_papers = 5
 # 5-source mixes. "3 strong homogeneous sources beat 5 mixed ones": never pad to
 # reach a count. (5+ homogeneous still publishes via the regular citation floor.)
 min_cluster_source_papers = 3
-# Hold evidence-map submissions until Researka's reviewer panel accepts the type
-# (it currently rejects them as "a list of findings, not a synthesis"). Maps
-# still render and stay ready; flip to true when the platform reviewer lands.
-submit_evidence_maps = false
+# Evidence maps publish: Researka's panel accepts them as landscape syntheses
+# (verified 2026-06-12, multi_agent_systems_show accepted "elite-tier"). A map
+# needs >= evidence_map_min_citations cited sources to clear the intake floor;
+# sub-floor maps are held rather than burning an intake reject.
+submit_evidence_maps = true
+evidence_map_min_citations = 10
 refresh_cooldown_hours = 2
 refresh_top = 5
 angle_candidates = 5

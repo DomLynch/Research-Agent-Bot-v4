@@ -2075,34 +2075,23 @@ def test_llm_cluster_backed_memo_bypasses_shape_submit_gate(tmp_path: Path) -> N
     assert ledger["submitted_topic"] == "metformin_mortality"
 
 
-def _heterogeneous_map(root: Path, topic: str) -> dict[str, Any]:
+def _heterogeneous_map(root: Path, topic: str, count: int = 5) -> dict[str, Any]:
     emap = _verdict(topic, score=90) | {"surface_type": "evidence_map"}
-    _memo_with_receipt_shapes(root, emap, [
-        {"canonical_phrase": "Agent ransomware containment reached 92%.",
-         "population": "enterprise networks", "intervention": "defense agent",
-         "endpoint": "containment rate"},
-        {"canonical_phrase": "Traffic-signal phases dropped 43% with agents.",
-         "population": "urban intersections", "intervention": "signal agent",
-         "endpoint": "phase count"},
-        {"canonical_phrase": "Agent code generation scored 3.31x CodeBLEU.",
-         "population": "code synthesis", "intervention": "coding agent",
-         "endpoint": "codebleu"},
-        {"canonical_phrase": "Fault detection improved 8.56% over LLMs.",
-         "population": "industrial sensors", "intervention": "monitor agent",
-         "endpoint": "detection rate"},
-        {"canonical_phrase": "Downtime fell 15% under agent scheduling.",
-         "population": "factory lines", "intervention": "scheduler agent",
-         "endpoint": "downtime"},
-    ])
+    shapes = [
+        {"canonical_phrase": f"Agent task {i} improved metric {i} by {i}% vs baseline.",
+         "population": f"setting {i}", "intervention": f"agent {i}",
+         "endpoint": f"metric {i}"}
+        for i in range(count)
+    ]
+    _memo_with_receipt_shapes(root, emap, shapes)
     return emap
 
 
-def test_evidence_map_submission_held_by_default(tmp_path: Path) -> None:
-    """Researka's reviewer still rejects evidence maps, so by default a map is
-    held out of submission (not a guaranteed-reject spend), even when otherwise
-    eligible. It stays ready; only the submit step is gated."""
+def test_evidence_map_below_citation_floor_is_held(tmp_path: Path) -> None:
+    """A map under the 10-citation intake floor is held (evidence_map_below_
+    citation_floor) rather than submitted into a guaranteed intake reject."""
     root = tmp_path / "repo"
-    emap = _heterogeneous_map(root, "ai_agents_breadth")
+    emap = _heterogeneous_map(root, "ai_agents_breadth", count=5)
     submissions: list[dict[str, Any]] = []
 
     def submitter(payload: dict[str, Any]) -> dict[str, Any]:
@@ -2119,22 +2108,15 @@ def test_evidence_map_submission_held_by_default(tmp_path: Path) -> None:
         submitter=submitter,
     )
 
-    assert ledger["considered"][0]["status"] == "evidence_map_submission_held"
-    assert ledger.get("submitted_topic") in (None, "")
+    assert ledger["considered"][0]["status"] == "evidence_map_below_citation_floor"
     assert submissions == []
 
 
-def test_evidence_map_bypasses_receipt_shape_when_enabled(
-    tmp_path: Path, monkeypatch: MonkeyPatch,
-) -> None:
-    """When map submission is enabled, an evidence map (honestly multi-shape) is
-    not blocked by the single-claim shape gate and submits with its article_type."""
-    monkeypatch.setattr(
-        daily, "_alpha_memo_bool",
-        lambda name, default: True if name == "submit_evidence_maps" else default,
-    )
+def test_evidence_map_with_floor_citations_submits(tmp_path: Path) -> None:
+    """A source-rich map (>= the 10-citation intake floor) submits as an
+    evidence_map and is not blocked by the single-claim shape gate."""
     root = tmp_path / "repo"
-    emap = _heterogeneous_map(root, "ai_agents_breadth")
+    emap = _heterogeneous_map(root, "ai_agents_breadth", count=12)
     submissions: list[dict[str, Any]] = []
 
     def submitter(payload: dict[str, Any]) -> dict[str, Any]:
