@@ -1199,7 +1199,15 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
                 if expansion_needed else "lead_thesis_uses_available_receipts"
             ),
             "cited_bound_fact_ids": bound_ids,
-            "available_bound_fact_ids": all_bound_ids,
+            # Scope the expansion pool to the claim: a writer-validated cluster's
+            # population-aware membership is the coherent set (a house-cricket
+            # receipt is split out of an "in mice" claim), so off-claim bound facts
+            # never enter the pool that feeds receipt expansion. With no cluster
+            # scoping the claim, every bound fact stays in scope.
+            "available_bound_fact_ids": (
+                [fid for fid in all_bound_ids if str(fid) in llm_cluster_ids]
+                if llm_cluster_ids else all_bound_ids
+            ),
             "candidate_receipts": [
                 item | {
                     "claim_fit": claim_fit.get(

@@ -1035,6 +1035,34 @@ def test_receipt_expansion_candidates_are_ranked_by_claim_fit(tmp_path: Path) ->
     assert verdict["receipt_expansion"]["candidate_receipts"][0]["fact_id"] == "4"
 
 
+def test_available_expansion_pool_scoped_to_cluster(tmp_path: Path) -> None:
+    """The expansion pool lists facts that can extend THIS claim, so a bound
+    A_core fact the writer-validated cluster split out (e.g. a house-cricket
+    receipt under an "in mice" claim) must not appear in available_bound_fact_ids
+    — leaving it in feeds the expansion path back into a claim it contradicts."""
+    run = _run(
+        tmp_path,
+        lanes=("A_core", "A_core", "A_core"),
+        dois=("10.a", "10.b", "10.c"),
+        titles=("Grid storage threshold improves reserve reliability",) * 3,
+        journals=("Energy Systems",) * 3,
+    )
+    _add_fact(
+        run, fact_id="9", lane="A_core", doi="10.offclaim/9",
+        title="Reserve reliability in an unrelated isolated microgrid",
+        phrase="Reserve reliability improved in an unrelated isolated microgrid.",
+    )
+    run.joinpath("claim_cluster.json").write_text(json.dumps({
+        "claim": "Grid storage thresholds improve reserve reliability",
+        "lead_fact_ids": ["1", "2", "3"],
+    }), encoding="utf-8")
+
+    pool = publish_verdict(run)["receipt_expansion"]["available_bound_fact_ids"]
+
+    assert "9" not in pool                 # off-cluster bound fact excluded
+    assert set(pool) <= {"1", "2", "3"}    # pool scoped to the cluster
+
+
 def test_counter_evidence_is_explicit_when_a_bound_opposing_fact_exists(
     tmp_path: Path,
 ) -> None:
