@@ -3355,9 +3355,14 @@ def _public_submission_markdown(memo: str) -> str:
         "**Source thesis:**",
         "**Source breadth:**",
     )
+    # Drop internal pipeline tells the reviewer reads as "procedurally generated":
+    # the gate-audit fallback note (when frontier review is skipped) is an
+    # implementation detail, not part of the published synthesis.
+    internal_markers = ("Frontier review skipped", "deterministic gate audit")
     lines = [
         line for line in memo.splitlines()
         if not line.startswith(internal_prefixes)
+        and not any(marker in line for marker in internal_markers)
     ]
     text = "\n".join(lines).strip() + "\n"
     note = (
