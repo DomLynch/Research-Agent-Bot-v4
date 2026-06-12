@@ -113,3 +113,34 @@ def test_cluster_keeps_full_set_below_cap(
         settings=type("S", (), {"writer_configured": True})(),
     )
     assert len(out["lead_fact_ids"]) == 6  # all kept; under the cap
+
+
+def test_population_is_surfaced_to_the_model(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The clusterer must feed each fact's population to the model, not just the
+    canonical_phrase. A house-cricket survival finding reads as "treated
+    individuals survived longer, HR 0.42" — organism-blind — so without the
+    population the model lumps it into an "in mice" claim it contradicts (live
+    bug: pub af8247f3). Capture the prompt and assert the population reaches it."""
+    facts = {
+        "m": {"canonical_phrase": "treated individuals survived longer (HR 0.42)",
+              "population": "middle-aged mice", "source_paper": {"doi": "10/m"}},
+        "c": {"canonical_phrase": "treated individuals survived longer (HR 0.42)",
+              "population": "house crickets", "source_paper": {"doi": "10/c"}},
+    }
+    lanes = {fid: "A_core" for fid in facts}
+    seen: dict[str, str] = {}
+
+    def capture(_settings: object, messages: list[dict[str, str]], **_k: object) -> object:
+        seen["prompt"] = messages[0]["content"]
+        return type("R", (), {"content": json.dumps({"clusters": []})})()
+
+    monkeypatch.setattr(clusterer, "call_writer_with_fallback", capture)
+    clusterer.densest_claim_cluster(
+        facts, lanes, "topic", min_sources=1,
+        settings=type("S", (), {"writer_configured": True})(),
+    )
+
+    assert "[population: middle-aged mice]" in seen["prompt"]
+    assert "[population: house crickets]" in seen["prompt"]

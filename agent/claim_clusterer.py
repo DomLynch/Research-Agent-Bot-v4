@@ -143,7 +143,15 @@ def densest_claim_cluster(
         if not phrase or not source or source in seen_src:
             continue
         seen_src.add(source)
-        rows.append((fid, phrase[:240]))
+        # Surface the population to the model: the canonical_phrase alone is often
+        # organism/indication-blind (a house-cricket survival finding reads as
+        # "treated individuals survived longer, HR 0.42" — indistinguishable from a
+        # mouse one), so a different-organism or different-disease receipt gets
+        # lumped into a claim it contradicts. The split rule keys on this field.
+        population = str(fact.get("population") or "").strip()
+        text = (f"{phrase[:200]} [population: {population[:80]}]"
+                if population else phrase[:240])
+        rows.append((fid, text))
         if len(rows) >= _MAX_FACTS:
             break
     if len(rows) < min_sources:
