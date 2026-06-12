@@ -99,9 +99,12 @@ def _build_prompt(topic: str, rows: list[tuple[str, str]]) -> str:
         "generation vs a rule baseline' belong to DIFFERENT clusters: same word "
         "(accuracy), but different task and comparator. Never group findings "
         "about different populations, comparators, outcomes, or opposite "
-        "directions. Prefer a tight homogeneous cluster of 2-3 aligned findings "
-        "over a large heterogeneous one. The claim must name the specific "
-        "population, comparator, and endpoint.\n\n"
+        "directions. Make each homogeneous cluster as LARGE as the evidence "
+        "allows — include EVERY finding that shares the same population, "
+        "comparator, endpoint, and direction (aim for 5 or more when they "
+        "exist), but never pad it with a finding that differs on any of those "
+        "axes. The claim must name the specific population, comparator, and "
+        "endpoint.\n\n"
         f"Findings (id and phrase):\n{listing}\n\n"
         'Return JSON only: {"clusters":[{"claim":"<one specific sentence naming '
         'the population, comparator, and endpoint>","fact_ids":["id",...]}, '
