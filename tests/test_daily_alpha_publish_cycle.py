@@ -3675,9 +3675,9 @@ def test_evidence_map_cites_full_a_core_landscape_not_memo_cluster(
     run.joinpath("alpha_memo.md").write_text(
         "# Alpha memo\n\n"
         "**Headline:** Grid storage: evidence map — 3 findings across 3 sources\n\n"
-        "## One-sentence thesis\n\nScoping review: 3 findings across 3 "
-        "independent sources map a heterogeneous landscape rather than one "
-        "claim.\n\n"
+        "## One-sentence thesis\n\nScoping review: 3 distinct A_core findings "
+        "across 3 independent sources map a heterogeneous landscape rather than "
+        "one claim.\n\n"
         "## Evidence receipts\n\n"
         + "\n".join(f"- `fact_id={fid}` (`A_core`) - cluster receipt" for fid in cited)
         + "\n" + _FALSIFIER,
@@ -3718,6 +3718,7 @@ def test_evidence_map_cites_full_a_core_landscape_not_memo_cluster(
     assert "15 findings across 15 independent sources" in payload["abstract"]
     assert payload["summary"] == payload["abstract"]
     assert "3 findings across 3" not in payload["abstract"]
+    assert "distinct A_core" not in payload["abstract"]
     # The Findings Map is the domain-stratified table; every row is a landscape
     # source so it is verifiable 1:1 against the bundle.
     findings = payload["sections"]["Findings Map"]

@@ -1896,15 +1896,15 @@ def _map_citable_facts(verdict: Json, root: Path) -> list[Json]:
 
 
 def _reconcile_findings_count(text: str, n: int) -> str:
-    """Force every "<k> findings across <k> [independent ]sources" phrase to the
-    real cited count. The memo is rendered from the narrow single-claim cluster,
-    so its title AND abstract embed that small count (e.g. "5 findings across 5
-    independent sources"); when the map payload re-cites the full A_core landscape
-    the title was patched but the abstract was not, leaving title=17 / abstract=5
-    / table=17 — three counts on one artifact. Reconciling both to the landscape
-    count keeps the public memo internally consistent."""
+    """Force every findings/source count phrase to the real cited count.
+
+    The memo is rendered from the narrow single-claim cluster, so its title AND
+    abstract can embed that small count (for example, "5 distinct A_core findings
+    across 5 independent sources"). When the map payload re-cites the full A_core
+    landscape, both public fields must reconcile to the landscape count.
+    """
     return re.sub(
-        r"\d+ findings across \d+( independent)? sources",
+        r"\d+(?: distinct A_core)? findings across \d+( independent)? sources",
         lambda mt: f"{n} findings across {n}{mt.group(1) or ''} sources",
         str(text or ""),
     )
