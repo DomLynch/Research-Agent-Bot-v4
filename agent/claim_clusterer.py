@@ -31,6 +31,17 @@ _MAX_FACTS = 40  # cap prompt size; callers pre-rank by source diversity
 # enforces — without hardcoding any year cutoff. The floor still holds because
 # the cite count is never trimmed below the caller's min_sources.
 _MAX_CITED_SOURCES = 10
+# A cluster is "homogeneous" (a publishable single claim) when at least this
+# fraction of its receipts measure the same outcome family/direction/population
+# as the claim. Below it, M3 grouped a landscape, not one claim — the caller
+# routes the topic to the evidence-map lane instead of a single-claim memo.
+# Calibrated on live runs: rapamycin 0.86 (stays a single claim), metformin 0.38
+# (routes to a map).
+_HOMOGENEITY_MIN = 0.6
+# Only verify homogeneity when the run is source-rich enough that an evidence map
+# is a real alternative; a narrow topic is single-claim-or-nothing, so the extra
+# model call would change no routing.
+_MAP_ROUTE_MIN_SOURCES = 10
 
 
 def _phrase(fact: dict[str, Any]) -> str:
@@ -117,6 +128,59 @@ def _build_prompt(topic: str, rows: list[tuple[str, str]]) -> str:
     )
 
 
+def _conformance_fraction(
+    claim: str,
+    pairs: list[tuple[str, dict[str, Any]]],
+    settings: Settings,
+) -> float:
+    """Fraction of the cluster's receipts that measure the SAME outcome family,
+    direction, and population as the claim.
+
+    A separate skeptical pass, not the grouping call: M3 over-trusts its own
+    grouping (it lumped a house-cricket survival fact and metformin's cross-disease
+    facts under one claim), so re-reading each receipt against the bounded claim is
+    what catches a landscape masquerading as one claim. Returns 1.0 on any
+    LLM/parse failure so a transient error never demotes a publishable cluster.
+    """
+    if len(pairs) < 2:
+        return 1.0
+    listing = "\n".join(
+        f"[{fid}] {_phrase(f)[:160]} [population: {str(f.get('population') or '')[:60]}]"
+        for fid, f in pairs
+    )
+    prompt = (
+        f'A single bounded research claim is: "{claim}".\n\n'
+        "Each finding below either CONFORMS to that claim or does not. It conforms "
+        "only if it measures the SAME outcome family (treat survival / mortality / "
+        "lifespan as one family; disease INCIDENCE or new-onset is a DIFFERENT "
+        "family; a biomarker or mechanism readout is DIFFERENT), in the SAME "
+        "direction, in a population/organism the claim covers. A finding about a "
+        "different disease, indication, organism, outcome, or direction does NOT "
+        f"conform.\n\nFindings:\n{listing}\n\n"
+        'Return JSON only: {"conforming_ids":["id",...]} listing exactly the ids '
+        "that conform. Use only ids from the list above."
+    )
+    try:
+        resp = call_writer_with_fallback(
+            settings, [{"role": "user", "content": prompt}],
+            temperature=0.0, max_tokens=900,
+        )
+    except (RuntimeError, ValueError, OSError, httpx.HTTPError):
+        return 1.0
+    match = re.search(r"\{.*\}", resp.content, re.S)
+    if not match:
+        return 1.0
+    try:
+        data = json.loads(match.group(0))
+    except json.JSONDecodeError:
+        return 1.0
+    ids = {fid for fid, _ in pairs}
+    conforming = {
+        str(x) for x in (data.get("conforming_ids") or []) if str(x) in ids
+    }
+    return len(conforming) / len(pairs)
+
+
 def densest_claim_cluster(
     facts: dict[str, dict[str, Any]],
     lanes: dict[str, str],
@@ -197,4 +261,17 @@ def densest_claim_cluster(
                 "lead_fact_ids": picked[:max(_MAX_CITED_SOURCES, min_sources)],
                 "claim": claim,
             }
+    # Flag whether the selected cluster is a genuine single claim or a landscape.
+    # Only when the run is source-rich (a map is a real alternative) — a narrow
+    # topic is single-claim-or-nothing, so the extra model call would change no
+    # routing. publish_tier reads `homogeneous` to route heterogeneous source-rich
+    # topics to the evidence-map lane instead of a doomed single-claim memo.
+    if best.get("lead_fact_ids") and len(rows) >= _MAP_ROUTE_MIN_SOURCES:
+        conformance = _conformance_fraction(
+            str(best.get("claim") or ""),
+            [(fid, facts[fid]) for fid in best["lead_fact_ids"]],
+            settings,
+        )
+        best["conformance"] = round(conformance, 3)
+        best["homogeneous"] = conformance >= _HOMOGENEITY_MIN
     return best

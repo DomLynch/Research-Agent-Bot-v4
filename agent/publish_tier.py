@@ -1054,19 +1054,8 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     # has >= the source floor of distinct A_core papers and clears every
     # integrity blocker; only single-claim coherence blockers are waived.
     a_core_source_papers = len(_source_papers(direct_ids, facts))
-    evidence_map_ready = (
-        label == "evidence_map"
-        and bool(bound_ids)
-        and a_core_source_papers >= min_direct_source_papers
-        and not (set(blockers) - _EVIDENCE_MAP_WAIVED_BLOCKERS)
-    )
-    # Trust an M3-validated homogeneous cluster: if the lead receipts are the
-    # writer-confirmed single-claim cluster (same population, comparator,
-    # endpoint, direction) and clear the lower cluster floor, only token-coherence
-    # blockers stand in the way (waived) — the writer's semantic judgment
-    # supersedes token overlap and Researka is the final judge. A tight 2-3
-    # source homogeneous bundle is what the platform accepts; a padded 5-source
-    # heterogeneous one is what it rejects.
+    # Read the writer-validated cluster first: its homogeneity decides whether the
+    # topic is a single claim or a landscape.
     llm_cluster = _json(run_dir / "claim_cluster.json", {})
     llm_cluster_ids = {
         str(x) for x in (llm_cluster.get("lead_fact_ids") or [])
@@ -1075,8 +1064,40 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         [fid for fid in bound_ids if fid in llm_cluster_ids and lanes.get(fid) in _DIRECT],
         facts,
     ))
+    # Homogeneity is set by the clusterer's skeptical pass (absent on legacy runs
+    # and on narrow topics -> default True, so behaviour is unchanged without the
+    # signal). A heterogeneous cluster is a landscape masquerading as one claim.
+    cluster_homogeneous = (
+        bool(llm_cluster.get("homogeneous", True))
+        if isinstance(llm_cluster, dict) else True
+    )
+    # Heterogeneous-but-source-rich -> evidence map: when M3 could not find a
+    # coherent single claim (the cluster spans diseases/outcomes) but the topic has
+    # the source breadth for a landscape, publish it as a map (the panel accepts
+    # maps) instead of a single-claim memo (which it rejects for incoherence). The
+    # map's own >=10-citation floor still applies at submit.
+    cluster_map_route = (
+        llm_cluster_sources >= min_cluster_source_papers
+        and not cluster_homogeneous
+        and a_core_source_papers >= min_direct_source_papers
+    )
+    # Evidence-map path: a source-rich multi-finding synthesis publishes when it
+    # has >= the source floor of distinct A_core papers and clears every integrity
+    # blocker; only single-claim coherence blockers are waived. A heterogeneous
+    # cluster routes here even without the writer's evidence_map label.
+    evidence_map_ready = (
+        (label == "evidence_map" or cluster_map_route)
+        and bool(bound_ids)
+        and a_core_source_papers >= min_direct_source_papers
+        and not (set(blockers) - _EVIDENCE_MAP_WAIVED_BLOCKERS)
+    )
+    # Trust an M3-validated HOMOGENEOUS cluster as a single claim: same population,
+    # comparator, endpoint, and direction, clearing the lower cluster floor — only
+    # token-coherence blockers stand in the way (waived). A heterogeneous cluster
+    # is NOT a single claim and does not qualify here (it routes to the map above).
     llm_cluster_ready = (
         llm_cluster_sources >= min_cluster_source_papers
+        and cluster_homogeneous
         and bool(bound_ids)
         and label not in _BLOCKED_LABELS
         and not off_scope

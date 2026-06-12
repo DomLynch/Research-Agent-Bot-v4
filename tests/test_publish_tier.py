@@ -668,6 +668,61 @@ def test_llm_cluster_below_cluster_floor_does_not_publish(tmp_path: Path) -> Non
     assert verdict["decision"] != "ready_to_publish"
 
 
+def test_heterogeneous_cluster_routes_to_evidence_map(tmp_path: Path) -> None:
+    """When the clusterer flags the lead cluster as a landscape (homogeneous=False)
+    and the topic is source-rich, the verdict surfaces an evidence_map — not a
+    doomed single-claim memo — even without the writer's evidence_map label. This
+    is the auto-routing lever: heterogeneous topics (most AI single-claim attempts)
+    publish as maps instead of rejecting as incoherent alpha memos."""
+    run = _run(tmp_path, score=10)  # 5 A_core; low score forces the waived-cluster
+    # path (ready=False) that real heterogeneous topics hit via source dispersion
+    run.joinpath("claim_cluster.json").write_text(json.dumps({
+        "claim": "Storage thresholds improve reserve reliability across markets",
+        "lead_fact_ids": ["1", "2", "3", "4", "5"],
+        "homogeneous": False,
+        "conformance": 0.38,
+    }), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "ready_to_publish"
+    assert verdict["surface_type"] == "evidence_map"
+
+
+def test_homogeneous_cluster_stays_single_claim(tmp_path: Path) -> None:
+    """The same source-rich run, but a homogeneous cluster (homogeneous=True),
+    publishes as a single-claim alpha_memo — the crisp lane is preserved for
+    genuinely coherent claims like rapamycin."""
+    run = _run(tmp_path, score=10)
+    run.joinpath("claim_cluster.json").write_text(json.dumps({
+        "claim": "Storage thresholds improve reserve reliability across markets",
+        "lead_fact_ids": ["1", "2", "3", "4", "5"],
+        "homogeneous": True,
+        "conformance": 0.86,
+    }), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "ready_to_publish"
+    assert verdict["surface_type"] == "publish_alpha_memo"
+
+
+def test_legacy_cluster_without_homogeneity_flag_stays_single_claim(
+    tmp_path: Path,
+) -> None:
+    """A cluster from before the homogeneity pass (no `homogeneous` key) defaults
+    to single-claim, so the routing change is inert without the signal."""
+    run = _run(tmp_path, score=10)
+    run.joinpath("claim_cluster.json").write_text(json.dumps({
+        "claim": "Storage thresholds improve reserve reliability across markets",
+        "lead_fact_ids": ["1", "2", "3", "4", "5"],
+    }), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["surface_type"] == "publish_alpha_memo"
+
+
 def test_memo_receipt_ids_dedupes_evidence_and_context() -> None:
     memo = (
         "## Evidence receipts\n\n"
