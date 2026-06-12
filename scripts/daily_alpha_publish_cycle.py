@@ -2418,6 +2418,19 @@ def select_candidate(
                     "evidence_map_min_citations", 10,
                 ):
                     status = "evidence_map_below_citation_floor"
+            if (
+                status == "eligible"
+                and verdict.get("surface_type") == "publish_alpha_memo"
+                and not _alpha_memo_bool("submit_single_claim_alpha", True)
+            ):
+                # Single-claim memos reach editorial but currently reject on
+                # synthesis quality: the thesis is a raw concatenation of receipt
+                # fragments and the falsifier is boilerplate (every single-claim
+                # submission 2026-06-11/12 rejected this way). Hold them out of
+                # submission until the synthesis pass lands (the abstract/thesis
+                # work in the calibration task), so the timers don't burn editorial
+                # rejects. Flip submit_single_claim_alpha=true when it's fixed.
+                status = "single_claim_submission_held"
             if status == "eligible":
                 # An M3-cluster-backed memo publishes at the cluster floor
                 # (min_cluster_source_papers, default 3) — publish_tier already

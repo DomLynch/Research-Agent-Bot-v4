@@ -2031,6 +2031,34 @@ def test_single_claim_outranks_evidence_map_for_submission(tmp_path: Path) -> No
     assert submissions and submissions[0]["topic"] == "bounded_single_claim"
 
 
+def test_single_claim_held_when_lane_disabled(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    """The operator can hold the single-claim lane (submit_single_claim_alpha
+    off) — an otherwise-eligible single claim is held, not submitted."""
+    monkeypatch.setattr(
+        daily, "_alpha_memo_bool",
+        lambda name, default: False if name == "submit_single_claim_alpha" else default,
+    )
+    root = tmp_path / "repo"
+    claim = _verdict("bounded_single_claim", score=80)
+    _memo_with_source_receipts(root, claim, 5)
+    submissions: list[dict[str, Any]] = []
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submissions.append(payload)
+        return {"ok": True, "status": 200, "response": {}}
+
+    ledger = daily.run_cycle(
+        runs_root=root, date="2026-06-06T09-30-00Z", queue=_queue(claim),
+        submit=True, retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}}, submitter=submitter,
+    )
+
+    assert ledger["considered"][0]["status"] == "single_claim_submission_held"
+    assert submissions == []
+
+
 def test_llm_cluster_backed_memo_bypasses_shape_submit_gate(tmp_path: Path) -> None:
     """A single-claim memo backed by an M3 claim cluster was already shape-waived
     by publish_tier; the submit shape gate must agree, or a memo publish_tier

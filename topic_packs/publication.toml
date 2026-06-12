@@ -22,6 +22,14 @@ min_cluster_source_papers = 3
 # sub-floor maps are held rather than burning an intake reject.
 submit_evidence_maps = true
 evidence_map_min_citations = 10
+# Operator control for the single-claim lane. Single-claim memos currently
+# reach editorial but often reject on synthesis quality (thesis is a raw receipt
+# concatenation; falsifier is boilerplate — the synthesized-abstract work). They
+# still SUBMIT by default because an editorial reject is safe (it never arms the
+# 3-intake-reject backoff) and the lane is the main publishing path. Flip to
+# false to hold the lane (e.g. to stop reject records) until the synthesis pass
+# lands — maps keep publishing meanwhile.
+submit_single_claim_alpha = true
 refresh_cooldown_hours = 2
 refresh_top = 5
 angle_candidates = 5
