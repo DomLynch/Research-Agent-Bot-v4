@@ -2415,6 +2415,22 @@ def select_candidate(
                 # ready_to_publish — only the submit step is gated.
                 status = "evidence_map_submission_held"
             if status == "eligible":
+                # An M3-cluster-backed memo publishes at the cluster floor
+                # (min_cluster_source_papers, default 3) — publish_tier already
+                # waives the 5-source direct/source floors for it, so the submit
+                # gate must use the same lower floor or it re-blocks a memo
+                # publish_tier passed. Shape coherence is likewise waived (the
+                # cluster is the writer-validated homogeneous unit).
+                cluster_backed = _llm_cluster_backed(verdict, runs_root)
+                cluster_floor = _alpha_memo_int("min_cluster_source_papers", 3)
+                eff_min_source_count = (
+                    min(min_source_count, cluster_floor) if cluster_backed
+                    else min_source_count
+                )
+                eff_min_direct_count = (
+                    min(min_direct_source_count, cluster_floor) if cluster_backed
+                    else min_direct_source_count
+                )
                 bundle_sig = _bundle_signature(verdict, runs_root)
                 if bundle_sig and bundle_sig in published_bundle_sigs:
                     # Same cited papers as an already-published memo (a different
@@ -2425,19 +2441,19 @@ def select_candidate(
                     submitted_path, fp, memo_sha256, domain,
                 ):
                     status = "duplicate_submission_fingerprint"
-                elif source_count < min_source_count:
+                elif source_count < eff_min_source_count:
                     status = (
                         "corpus_source_floor_below_min"
-                        if corpus_source_count < min_source_count else
+                        if corpus_source_count < eff_min_source_count else
                         "memo_source_floor_below_min"
                     )
-                    if source_count >= min_source_count:
+                    if source_count >= eff_min_source_count:
                         status = "eligible"
-                elif direct_source_count < min_direct_source_count:
+                elif direct_source_count < eff_min_direct_count:
                     status = "direct_source_floor_below_min"
                 elif (
                     verdict.get("surface_type") != "evidence_map"
-                    and not _llm_cluster_backed(verdict, runs_root)
+                    and not cluster_backed
                     and not _direct_receipts_share_shape(
                         verdict, runs_root, min_direct_source_count,
                     )

@@ -1876,7 +1876,8 @@ def render_signal_memo(
     # publishable unit. A higher floor here would desync memo receipts from
     # the gate's llm_cluster_ready check and strand tight clusters.
     min_cluster_sources = _memo_alpha_int("min_cluster_source_papers", 3)
-    if _source_count_for_ids(llm_cluster_ids, facts) >= min_cluster_sources:
+    m3_cluster_adopted = _source_count_for_ids(llm_cluster_ids, facts) >= min_cluster_sources
+    if m3_cluster_adopted:
         coherent_direct = llm_cluster_ids
     else:
         claim = _claim_signal(
@@ -2208,6 +2209,35 @@ def render_signal_memo(
     # memo. Integrity is unchanged: the gate still requires on-scope, in-domain,
     # real bound A_core receipts. Universal — no domain literals. The deliberate
     # heterogeneity-repair narrowing is left to its own single-receipt path.
+    # Lock the single-claim direct lead to the M3-validated cluster's homogeneous
+    # receipts. The deterministic repicks/narrowing above can replace the lead
+    # with an off-claim A_core bundle (e.g. dementia/HCC receipts for a 30-day
+    # mortality claim) that the reviewer rejects as over-broad and over-attributed.
+    # Keep only context that coheres with the lead so an unrelated boundary
+    # receipt cannot creep in. Skipped for repair/grounding rewrites (their
+    # narrowing owns the lead) and for an incoherent cluster (the evidence-map
+    # routing below handles that). Universal — coherence is by token overlap.
+    if (
+        m3_cluster_adopted
+        and not grounded
+        and not _agent_repair_requested(publish_verdict)
+        and set(lead_ids) != set(llm_cluster_ids)
+        and _receipt_cluster_coheres(
+            llm_cluster_ids, facts, topic,
+            _source_count_for_ids(llm_cluster_ids, facts),
+        )
+    ):
+        lead_ids = list(llm_cluster_ids)
+        lead_set = set(lead_ids)
+        _lead_tokens = [_receipt_tokens(facts.get(fid) or {}, topic) for fid in lead_ids]
+        receipt_ids = lead_ids + [
+            fid for fid in receipt_ids
+            if fid not in lead_set and any(
+                _receipt_pair_coheres(_receipt_tokens(facts.get(fid) or {}, topic), lt)
+                for lt in _lead_tokens
+            )
+        ]
+        context_ids = [fid for fid in receipt_ids if fid not in lead_set]
     acore_receipt_ids = [fid for fid in receipt_ids if lanes.get(fid) == "A_core"]
     # A laundry-list M3 cluster — one whose own cited sources do NOT all cohere
     # into a single claim (unrelated endpoints/comparators) — is rejected as a
