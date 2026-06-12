@@ -91,22 +91,28 @@ def _build_prompt(topic: str, rows: list[tuple[str, str]]) -> str:
     listing = "\n".join(f"[{fid}] {phrase}" for fid, phrase in rows)
     return (
         f'You are grouping research findings about "{topic.replace("_", " ")}" '
-        "into HOMOGENEOUS claim clusters. A cluster is a set of findings that "
-        "are directly comparable: ONE SPECIFIC population/setting (a single named "
-        "patient group or setting — NEVER a composite across different diseases "
-        "or settings), the SAME comparator or baseline, the SAME outcome/"
-        "endpoint, AND the SAME direction of effect — not merely the same metric "
-        "word. For example, 'higher accuracy on medical QA vs GPT-4' and 'higher "
-        "accuracy on SQL generation vs a rule baseline' belong to DIFFERENT "
-        "clusters; and 'lower mortality in diabetics' and 'lower mortality in "
-        "sepsis patients' are DIFFERENT clusters — different populations. Prefer "
-        "the TIGHTEST cluster that supports one precise claim (2-3 findings is "
-        "ideal) over a larger one that blurs the population: the smallest "
-        "homogeneous bundle that supports one claim is best. Never pad. The claim "
-        "must name the ONE specific population, comparator, and endpoint.\n\n"
+        "into claim clusters. A cluster is the set of findings that support ONE "
+        "bounded claim: the SAME intervention, the SAME outcome (treat synonyms "
+        "and one outcome family as the same — survival / lifespan / mortality are "
+        "ONE outcome; accuracy / % correct are ONE outcome), and the SAME "
+        "direction of effect. GROUP findings that differ only by a SUBGROUP of "
+        "one model or population — age, sex, dose, strain, cohort, or benchmark "
+        "within one task family; the claim then summarises the range across "
+        "subgroups. For example, 'rapamycin extends median lifespan in middle-"
+        "aged mice' and 'rapamycin reduces mortality in NIA-ITP female mice' are "
+        "the SAME cluster (one intervention, survival outcome, same direction, "
+        "mouse subgroups). Only SPLIT into different clusters when a finding is "
+        "about a genuinely DIFFERENT disease/indication or domain, a DIFFERENT "
+        "outcome, or the OPPOSITE direction — e.g. 'metformin lowers mortality in "
+        "diabetics' vs 'metformin lowers mortality in sepsis patients' are "
+        "DIFFERENT clusters (different diseases), and 'reduces cancer incidence' "
+        "is a DIFFERENT cluster from 'extends lifespan'. Prefer the LARGEST "
+        "bounded cluster the evidence supports; never merge across the split "
+        "lines above. The claim names the intervention, the population class, and "
+        "the outcome.\n\n"
         f"Findings (id and phrase):\n{listing}\n\n"
-        'Return JSON only: {"clusters":[{"claim":"<one specific sentence naming '
-        'the population, comparator, and endpoint>","fact_ids":["id",...]}, '
+        'Return JSON only: {"clusters":[{"claim":"<one sentence naming the '
+        'intervention, population class, and outcome>","fact_ids":["id",...]}, '
         "...]}. Order clusters largest first. Only use ids from the list above."
     )
 
