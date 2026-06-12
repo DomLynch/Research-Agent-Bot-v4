@@ -1549,8 +1549,9 @@ def _select_angle(
             "headline": f"{_topic_title(topic)} may hinge on a boundary condition",
             "thesis": f"{lead}. Boundary receipts add a second constraint: {context}.",
             "why": (
-                "Real tension: the interesting signal is where the evidence stops generalizing: "
-                "the memo is not a broad topic summary, but a testable boundary condition."
+                "Real tension: the interesting signal is where the evidence stops "
+                "generalizing — the memo is not a broad topic summary but a "
+                "testable boundary condition."
             ),
         }))
     if lead and counter and not _counter_marked(lead):
