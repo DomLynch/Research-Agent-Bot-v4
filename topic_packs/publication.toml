@@ -9,11 +9,13 @@ canonical_url_base = ""
 [alpha_memo]
 min_source_papers = 5
 min_direct_source_papers = 5
-# Cite a homogeneous cluster of >= this many sources. Researka intake rejects
-# bundles under 5 citations ("minimum_citations" gate), and the editorial panel
-# rejects bundles that are not homogeneous — so the publishable unit is 5+
-# sources that all share one population/comparator/endpoint, not a padded mix.
-min_cluster_source_papers = 5
+# Cite a homogeneous cluster of >= this many distinct sources. A narrow alpha
+# memo's publishable unit is 2-4 sources that all share one population/
+# comparator/endpoint — Researka intake grants a 2-4 source exception to a
+# TIER_1/L5 memo with no active blockers, and its editorial panel rejects padded
+# 5-source mixes. "3 strong homogeneous sources beat 5 mixed ones": never pad to
+# reach a count. (5+ homogeneous still publishes via the regular citation floor.)
+min_cluster_source_papers = 3
 # Hold evidence-map submissions until Researka's reviewer panel accepts the type
 # (it currently rejects them as "a list of findings, not a synthesis"). Maps
 # still render and stay ready; flip to true when the platform reviewer lands.

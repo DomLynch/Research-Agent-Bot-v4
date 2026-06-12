@@ -611,34 +611,11 @@ def test_publish_tier_judges_rendered_memo_receipts_before_lead_audit(
     assert "source_dispersion" not in verdict["blockers"]
 
 
-def test_llm_cluster_publishes_five_homogeneous_sources(tmp_path: Path) -> None:
+def test_llm_cluster_publishes_three_homogeneous_sources(tmp_path: Path) -> None:
     """A writer-validated homogeneous cluster publishes at the cluster floor
-    (5 sources): Researka intake rejects bundles under 5 citations, and the
-    editorial panel rejects non-homogeneous ones, so the publishable unit is 5+
-    sources that all share one population/comparator/endpoint."""
-    run = _run(
-        tmp_path,
-        lanes=("A_core",) * 5,
-        dois=("10.a", "10.b", "10.c", "10.d", "10.e"),
-        journals=("Energy Systems",) * 5,
-    )
-    run.joinpath("claim_cluster.json").write_text(json.dumps({
-        "claim": (
-            "Grid storage thresholds improve reserve reliability vs "
-            "unthresholded dispatch in day-ahead markets"
-        ),
-        "lead_fact_ids": ["1", "2", "3", "4", "5"],
-    }), encoding="utf-8")
-
-    verdict = publish_verdict(run)
-
-    assert verdict["decision"] == "ready_to_publish"
-    assert verdict["publish_tier"] == "TIER_1"
-
-
-def test_llm_cluster_below_cluster_floor_does_not_publish(tmp_path: Path) -> None:
-    """A cluster below the 5-source floor (intake's minimum_citations) must not
-    publish: the waiver must not collapse into publishing any cluster at all."""
+    (3 sources) and surfaces NO active blockers — Researka intake's 2-4 source
+    alpha exception (TIER_1/L5, empty blockers) accepts this narrow shape, which
+    the plain path would block on source_floor_below_min."""
     run = _run(
         tmp_path,
         lanes=("A_core", "A_core", "A_core"),
@@ -651,8 +628,39 @@ def test_llm_cluster_below_cluster_floor_does_not_publish(tmp_path: Path) -> Non
         journals=("Energy Systems", "Energy Systems", "Energy Systems"),
     )
     run.joinpath("claim_cluster.json").write_text(json.dumps({
-        "claim": "Grid storage thresholds improve reserve reliability",
+        "claim": (
+            "Grid storage thresholds improve reserve reliability vs "
+            "unthresholded dispatch in day-ahead markets"
+        ),
         "lead_fact_ids": ["1", "2", "3"],
+    }), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "ready_to_publish"
+    assert verdict["publish_tier"] == "TIER_1"
+    # The 2-4 source intake exception requires an empty active-blockers field;
+    # the waived ones move to waived_blockers.
+    assert verdict["blockers"] == []
+    assert verdict["waived_blockers"]
+
+
+def test_llm_cluster_below_cluster_floor_does_not_publish(tmp_path: Path) -> None:
+    """A cluster below the 3-source floor must not publish: the waiver must not
+    collapse into publishing any cluster at all."""
+    run = _run(
+        tmp_path,
+        lanes=("A_core", "A_core"),
+        dois=("10.a", "10.b"),
+        titles=(
+            "Grid storage threshold improves reserve reliability",
+            "Grid storage threshold improves reserve reliability",
+        ),
+        journals=("Energy Systems", "Energy Systems"),
+    )
+    run.joinpath("claim_cluster.json").write_text(json.dumps({
+        "claim": "Grid storage thresholds improve reserve reliability",
+        "lead_fact_ids": ["1", "2"],
     }), encoding="utf-8")
 
     verdict = publish_verdict(run)

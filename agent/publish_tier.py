@@ -1132,6 +1132,15 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         surface_type = "curation_brief"
     else:
         surface_type = "frontier_hypothesis_memo"
+    # A ready_to_publish verdict has no ACTIVE blockers: the listed ones were
+    # WAIVED by the path that cleared it (llm_cluster_ready / evidence_map_ready).
+    # Both a truthful reading of "blockers" and Researka intake's 2-4 source alpha
+    # exception (which requires an empty blockers field on a TIER_1/L5 memo)
+    # demand that a publishable verdict surface only active blockers; keep the
+    # waived set separately for the diagnostic trail.
+    publishable = decision == "ready_to_publish"
+    active_blockers = [] if publishable else blockers
+    waived_blockers = blockers if publishable else []
     try:
         run_ref = str(run_dir.resolve().relative_to(_ROOT))
     except ValueError:
@@ -1205,7 +1214,8 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
             "items": counter_evidence,
         },
         "subtopic_recommendations": subtopics,
-        "blockers": blockers,
+        "blockers": active_blockers,
+        "waived_blockers": waived_blockers,
     }
 
 
