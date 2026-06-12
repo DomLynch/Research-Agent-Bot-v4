@@ -2166,6 +2166,61 @@ def test_evidence_map_with_floor_citations_submits(tmp_path: Path) -> None:
     assert submissions and submissions[0]["article_type"] == "evidence_map"
 
 
+def test_source_rich_map_not_held_when_memo_cites_few(tmp_path: Path) -> None:
+    """The citation-floor gate counts the full A_core landscape the map ships,
+    not the memo's narrowed cluster. A topic whose memo lists 6 receipts (clearing
+    the source floor) but has 12 distinct A_core source papers must SUBMIT — the
+    old gate held it at 6 < 10 even though the map cites all 12."""
+    root = tmp_path / "repo"
+    emap = _verdict("metformin_breadth", score=90) | {
+        "surface_type": "evidence_map",
+        "headline": "Metformin: evidence map — 6 findings across 6 sources",
+    }
+    run = root / str(emap["run_dir"])
+    run.mkdir(parents=True)
+    cited = [str(i + 1) for i in range(6)]
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n## Evidence receipts\n\n"
+        + "\n".join(f"- `fact_id={fid}` (`A_core`) - cluster receipt" for fid in cited)
+        + "\n" + _FALSIFIER,
+        encoding="utf-8",
+    )
+    landscape = [str(i + 1) for i in range(12)]
+    run.joinpath("all_facts.json").write_text(json.dumps([
+        {
+            "fact_id": fid,
+            "canonical_phrase": f"Effect {fid} in population {fid}.",
+            "population": f"population {fid}",
+            "comparator": "non-use",
+            "source_paper": {"doi": f"10.1000/land-{fid}", "title": f"Source {fid}"},
+        }
+        for fid in landscape
+    ]), encoding="utf-8")
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": fid, "lane": "A_core"} for fid in landscape],
+    }), encoding="utf-8")
+    _audit_sidecars(run)
+    submissions: list[dict[str, Any]] = []
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submissions.append(payload)
+        return {"ok": True, "status": 200, "response": {}}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-06T09-30-00Z",
+        queue=_queue(emap),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+    )
+
+    assert ledger["considered"][0]["status"] == "eligible"
+    assert submissions and submissions[0]["article_type"] == "evidence_map"
+    assert len(submissions[0]["source_bundle"]) == 12
+
+
 def test_repairable_retry_does_not_resubmit_unchanged_memo(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("unchanged_retry")

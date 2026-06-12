@@ -1715,6 +1715,10 @@ def _repairable_ledger(ledger: Json) -> bool:
 
 def _source_count(verdict: Json, root: Path | None = None) -> int:
     if root is not None:
+        if str(verdict.get("surface_type") or "") == "evidence_map":
+            landscape = len(_map_citable_facts(verdict, root))
+            if landscape:
+                return landscape
         papers = _memo_source_papers(verdict, root)
         if papers:
             return len(papers)
@@ -1877,6 +1881,20 @@ def _landscape_source_facts(verdict: Json, root: Path, *, cap: int = 40) -> list
     return picked[:cap]
 
 
+def _map_citable_facts(verdict: Json, root: Path) -> list[Json]:
+    """A_core landscape facts whose source is citable (title + resolvable id) —
+    exactly the rows an evidence map ships. Shared by the submit gate's
+    citation-floor check and the payload builder so the held/submitted decision
+    matches what is actually sent (the gate must see the full landscape, not the
+    memo's narrowed cluster, or it holds a source-rich map below floor)."""
+    return [
+        f for f in _landscape_source_facts(verdict, root)
+        if str((f.get("source_paper") or {}).get("title") or "").strip()
+        and (str((f.get("source_paper") or {}).get("doi") or "").strip()
+             or str((f.get("source_paper") or {}).get("pmid") or "").strip())
+    ]
+
+
 def _findings_map_table(facts: list[Json]) -> str:
     """A domain-stratified source table: one row per A_core source carrying its
     own population, comparator, finding, and a resolvable identifier, so every
@@ -1910,6 +1928,11 @@ def _findings_map_table(facts: list[Json]) -> str:
 
 
 def _direct_source_count(verdict: Json, root: Path) -> int:
+    # A map cites its full A_core landscape (the rows it ships), not the memo's
+    # narrowed single-claim cluster — so every source-floor and citation-floor
+    # gate sees what is actually submitted, not the 6 the memo happened to list.
+    if str(verdict.get("surface_type") or "") == "evidence_map":
+        return len(_map_citable_facts(verdict, root))
     return len(_memo_source_papers(verdict, root, ("Evidence",), {"A_core"}))
 
 
@@ -2493,6 +2516,10 @@ def select_candidate(
                 elif direct_source_count < _alpha_memo_int(
                     "evidence_map_min_citations", 10,
                 ):
+                    # direct_source_count counts the full A_core landscape the map
+                    # ships (see _direct_source_count), not the memo's narrowed
+                    # cluster — a source-rich topic (metformin: 31 citable A_core
+                    # sources) is not held at the 6 its single-claim memo cites.
                     status = "evidence_map_below_citation_floor"
             if (
                 status == "eligible"
@@ -3630,13 +3657,7 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         # row by row. Only citable sources (title + resolvable id) are kept, so
         # every table row maps 1:1 to a bundle entry — the attribution match the
         # panel rejects v3 maps for breaking.
-        landscape = _landscape_source_facts(verdict, root)
-        citable = [
-            f for f in landscape
-            if str((f.get("source_paper") or {}).get("title") or "").strip()
-            and (str((f.get("source_paper") or {}).get("doi") or "").strip()
-                 or str((f.get("source_paper") or {}).get("pmid") or "").strip())
-        ]
+        citable = _map_citable_facts(verdict, root)
         map_bundle = _source_bundle([
             _normalize_paper(f.get("source_paper") or {}) for f in citable
         ])
