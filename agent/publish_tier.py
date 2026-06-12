@@ -1054,6 +1054,13 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     # has >= the source floor of distinct A_core papers and clears every
     # integrity blocker; only single-claim coherence blockers are waived.
     a_core_source_papers = len(_source_papers(direct_ids, facts))
+    # The full A_core landscape — every bound A_core source in the run, not just
+    # the memo's narrow cluster. A heterogeneous topic's map cites that whole
+    # breadth (multi-agent: 88 sources), so the map-route source floor must measure
+    # it, not the handful the single-claim memo happened to cite.
+    landscape_a_core_sources = len(_source_papers(
+        [fid for fid in all_bound_ids if lanes.get(fid) in _DIRECT], facts,
+    ))
     # Read the writer-validated cluster first: its homogeneity decides whether the
     # topic is a single claim or a landscape.
     llm_cluster = _json(run_dir / "claim_cluster.json", {})
@@ -1079,17 +1086,21 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     cluster_map_route = (
         llm_cluster_sources >= min_cluster_source_papers
         and not cluster_homogeneous
-        and a_core_source_papers >= min_direct_source_papers
+        and landscape_a_core_sources >= min_direct_source_papers
     )
     # Evidence-map path: a source-rich multi-finding synthesis publishes when it
     # has >= the source floor of distinct A_core papers and clears every integrity
     # blocker; only single-claim coherence blockers are waived. A heterogeneous
     # cluster routes here even without the writer's evidence_map label.
     evidence_map_ready = (
-        (label == "evidence_map" or cluster_map_route)
-        and bool(bound_ids)
-        and a_core_source_papers >= min_direct_source_papers
+        bool(bound_ids)
         and not (set(blockers) - _EVIDENCE_MAP_WAIVED_BLOCKERS)
+        and (
+            (label == "evidence_map" and a_core_source_papers >= min_direct_source_papers)
+            # The cluster-routed map cites the full landscape, so it clears the
+            # floor on the landscape count even when the memo's cluster is narrow.
+            or (cluster_map_route and landscape_a_core_sources >= min_direct_source_papers)
+        )
     )
     # Trust an M3-validated HOMOGENEOUS cluster as a single claim: same population,
     # comparator, endpoint, and direction, clearing the lower cluster floor — only
