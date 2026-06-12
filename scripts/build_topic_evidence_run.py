@@ -61,8 +61,10 @@ from agent.topic_synonyms import expand_topic_queries, phrase_in_text
 _RUNS = Path(__file__).resolve().parent.parent / "runs"
 _PUBLICATION_CFG = Path(__file__).resolve().parent.parent / "topic_packs" / "publication.toml"
 _TOP_BINDABLE_LANES = frozenset({"A_core", "B_context"})
-_FACT_FETCH_TIMEOUT_SECONDS = 25.0  # per-query; search runs 15-22s under load
-_FACT_FETCH_BUDGET_SECONDS = 90.0  # overall wall-cap across concurrent queries
+_FACT_FETCH_TIMEOUT_SECONDS = 75.0  # per-query; Tier-2 latency rose to ~40s by
+# 2026-06, so a 25s cap starved every build to 0 facts (timeout) and stalled all
+# publishing — confirmed: metformin returns 0 facts at 25s, 121 facts at 90s.
+_FACT_FETCH_BUDGET_SECONDS = 240.0  # overall wall-cap across concurrent waves
 _FETCH_WORKERS = 6  # concurrent queries: serial cascade exhausted the budget
 _FETCH_TOP_K = 500  # Researka per-query cap (raised to 500, confirmed live)
 _FETCH_FAILURE_STATUSES = frozenset({
