@@ -3601,6 +3601,69 @@ def test_submission_payload_declares_evidence_map_article_type(
     assert "markdown" not in payload
 
 
+def test_evidence_map_cites_full_a_core_landscape_not_memo_cluster(
+    tmp_path: Path,
+) -> None:
+    """A map must cite its whole A_core breadth, not the single-claim cluster the
+    memo narrows to. A source-rich topic whose memo lists only 3 receipts but has
+    15 distinct A_core source papers under-cites (3 < 10) and trips Researka's
+    minimum-citations intake gate; the map path must recover all 15."""
+    root = tmp_path / "repo"
+    verdict = _verdict() | {
+        "surface_type": "evidence_map",
+        "confidence_label": "evidence_map",
+        "headline": "Grid storage: evidence map — 3 findings across 3 sources",
+    }
+    run = root / "runs" / str(verdict["run_dir"]).split("/", 1)[1]
+    run.mkdir(parents=True)
+    cited = ["1", "2", "3"]
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n"
+        "**Headline:** Grid storage: evidence map — 3 findings across 3 sources\n\n"
+        "## One-sentence thesis\n\nThe retrieved sources map a heterogeneous "
+        "landscape rather than one claim.\n\n"
+        "## Evidence receipts\n\n"
+        + "\n".join(f"- `fact_id={fid}` (`A_core`) - cluster receipt" for fid in cited)
+        + "\n" + _FALSIFIER,
+        encoding="utf-8",
+    )
+    landscape = [str(i + 1) for i in range(15)]
+    run.joinpath("all_facts.json").write_text(json.dumps([
+        {
+            "fact_id": fid,
+            "canonical_phrase": f"Effect {fid} reported in population {fid}.",
+            "population": f"population {fid}",
+            "comparator": "usual care",
+            "canonical_year": 2024,
+            "source_paper": {
+                "doi": f"10.1000/land-{fid}",
+                "title": f"Landscape source {fid}",
+                "year": 2024,
+            },
+        }
+        for fid in landscape
+    ]), encoding="utf-8")
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": fid, "lane": "A_core"} for fid in landscape],
+    }), encoding="utf-8")
+    _audit_sidecars(run)
+
+    payload = daily._submission_payload(verdict, root / "runs")
+
+    assert payload["article_type"] == "evidence_map"
+    # The narrow memo cites 3; the map recovers all 15 A_core sources and clears
+    # the >=10-citation intake floor.
+    assert len(payload["source_bundle"]) == 15
+    assert len(payload["citations"]) == 15
+    # Title count is reconciled to the landscape, not the memo's cluster of 3.
+    assert "15 findings across 15 sources" in payload["title"]
+    # The Findings Map is the domain-stratified table; every row is a landscape
+    # source so it is verifiable 1:1 against the bundle.
+    findings = payload["sections"]["Findings Map"]
+    assert findings.count("doi:10.1000/land-") == 15
+    assert "| Population | Comparator | Finding | Source |" in findings
+
+
 def test_submission_payload_alpha_memo_sends_no_sections(tmp_path: Path) -> None:
     """The single-claim lane (word budget 0) keeps its proven section-free
     payload; only maps attach sections."""

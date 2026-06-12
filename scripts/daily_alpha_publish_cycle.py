@@ -1811,6 +1811,18 @@ def _memo_source_facts(
     return source_facts
 
 
+def _normalize_paper(paper: Json) -> Json:
+    return {
+        "doi": str(paper.get("doi") or ""),
+        "pmid": str(paper.get("pmid") or ""),
+        "title": str(paper.get("title") or ""),
+        "journal": str(paper.get("journal") or ""),
+        "url": paper.get("url") or paper.get("source_url"),
+        "year": paper.get("year"),
+        "is_retracted": bool(paper.get("is_retracted")),
+    }
+
+
 def _memo_source_papers(
     verdict: Json,
     root: Path,
@@ -1821,16 +1833,80 @@ def _memo_source_papers(
     for fact in _memo_source_facts(verdict, root, section_names, lane_names):
         paper = fact.get("source_paper") or {}
         if isinstance(paper, dict):
-            papers.append({
-                "doi": str(paper.get("doi") or ""),
-                "pmid": str(paper.get("pmid") or ""),
-                "title": str(paper.get("title") or ""),
-                "journal": str(paper.get("journal") or ""),
-                "url": paper.get("url") or paper.get("source_url"),
-                "year": paper.get("year"),
-                "is_retracted": bool(paper.get("is_retracted")),
-            })
+            papers.append(_normalize_paper(paper))
     return papers
+
+
+def _landscape_source_facts(verdict: Json, root: Path, *, cap: int = 40) -> list[Json]:
+    """Every A_core fact in the run, deduped to one per distinct source paper —
+    the full evidence-map landscape, newest-first and capped for readability.
+
+    The memo narrows its receipts to the single-claim cluster the alpha lane
+    leads with (e.g. metformin renders 6 of its 31 A_core source papers). A map
+    is a landscape, not a single claim: it must cite its whole A_core breadth or
+    it under-cites and trips Researka's >=10-citation intake gate. Reading the
+    lanes directly recovers the sources the memo dropped."""
+    run_dir = _run_path(root, verdict.get("run_dir"))
+    facts = _json(run_dir / "all_facts.json", [])
+    lanes_raw = _json(run_dir / "fact_lanes.json", {})
+    if not isinstance(facts, list) or not isinstance(lanes_raw, dict):
+        return []
+    lane = {
+        str(row.get("fact_id") or ""): str(row.get("lane") or "")
+        for row in lanes_raw.get("verdicts", [])
+        if isinstance(row, dict)
+    }
+    seen: set[str] = set()
+    picked: list[Json] = []
+    for fact in facts:
+        if not isinstance(fact, dict):
+            continue
+        if lane.get(str(fact.get("fact_id") or "")) != "A_core":
+            continue
+        key = _source_key_from_fact(fact)
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        picked.append(fact)
+    picked.sort(
+        key=lambda f: _year(
+            f.get("canonical_year") or (f.get("source_paper") or {}).get("year")
+        ) or 0,
+        reverse=True,
+    )
+    return picked[:cap]
+
+
+def _findings_map_table(facts: list[Json]) -> str:
+    """A domain-stratified source table: one row per A_core source carrying its
+    own population, comparator, finding, and a resolvable identifier, so every
+    row is verifiable against the source bundle (the attribution the reviewer
+    checks before accepting a map). Universal — populated from generic fact
+    fields, no domain text."""
+    def cell(value: Any, limit: int) -> str:
+        text = " ".join(str(value or "").split()).replace("|", "/")
+        if len(text) > limit:
+            return text[:limit].rstrip() + "…"
+        return text or "—"
+
+    rows = [
+        "| Population | Comparator | Finding | Source |",
+        "|---|---|---|---|",
+    ]
+    for fact in facts:
+        paper = fact.get("source_paper") or {}
+        doi = str(paper.get("doi") or "").strip()
+        pmid = str(paper.get("pmid") or "").strip()
+        ident = f"doi:{doi}" if doi else (f"pmid:{pmid}" if pmid else "")
+        year = _year(fact.get("canonical_year") or paper.get("year"))
+        source = " ".join(p for p in (str(year) if year else "", ident) if p)
+        rows.append(
+            f"| {cell(fact.get('population'), 38)} "
+            f"| {cell(fact.get('comparator'), 28)} "
+            f"| {cell(fact.get('canonical_phrase'), 90)} "
+            f"| {source or cell(paper.get('title'), 40)} |"
+        )
+    return "\n".join(rows)
 
 
 def _direct_source_count(verdict: Json, root: Path) -> int:
@@ -3418,13 +3494,16 @@ def _raw_section(memo: str, heading: str) -> str:
     return re.sub(r"\s*`?fact_id=[A-Za-z0-9_-]+`?\s*", " ", match.group(1)).strip()
 
 
-def _evidence_map_sections(verdict: Json, memo: str, n_sources: int) -> dict[str, str]:
+def _evidence_map_sections(
+    verdict: Json, memo: str, n_sources: int, findings: str | None = None,
+) -> dict[str, str]:
     """The six sections Researka reviews an evidence map for (landscape fidelity,
     not convergence). Intake requires the 'Evidence Landscape' section to carry
     >= 30 words; the rest are recommended. The Findings Map is the domain-
     stratified source table. Universal — no domain-specific text."""
     topic = str(verdict.get("topic") or "topic").replace("_", " ")
-    findings = _raw_section(memo, "Evidence receipts") or _raw_section(memo, "Findings Map")
+    findings = findings or _raw_section(memo, "Evidence receipts") or _raw_section(
+        memo, "Findings Map")
     return {
         "Scope": (
             f"What is the range of reported effects across the {topic} literature, "
@@ -3543,7 +3622,38 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
     # gate). The alpha_memo lane needs no sections (its word budget is 0), so we
     # only attach them for maps to keep the proven single-claim path untouched.
     if article_type == "evidence_map":
-        payload["sections"] = _evidence_map_sections(verdict, memo, direct_source_count)
+        # A map is a landscape, so cite the full A_core breadth, not the memo's
+        # single-claim cluster. The narrowed memo (e.g. 6 of metformin's 31
+        # A_core sources) under-cites and trips the >=10-citation intake gate;
+        # rebuilding the bundle and Findings Map from every A_core source clears
+        # the floor and renders the domain-stratified table the reviewer verifies
+        # row by row. Only citable sources (title + resolvable id) are kept, so
+        # every table row maps 1:1 to a bundle entry — the attribution match the
+        # panel rejects v3 maps for breaking.
+        landscape = _landscape_source_facts(verdict, root)
+        citable = [
+            f for f in landscape
+            if str((f.get("source_paper") or {}).get("title") or "").strip()
+            and (str((f.get("source_paper") or {}).get("doi") or "").strip()
+                 or str((f.get("source_paper") or {}).get("pmid") or "").strip())
+        ]
+        map_bundle = _source_bundle([
+            _normalize_paper(f.get("source_paper") or {}) for f in citable
+        ])
+        findings: str | None = None
+        if len(map_bundle) > len(source_bundle):
+            source_bundle = map_bundle
+            payload["citations"] = source_bundle
+            payload["source_bundle"] = source_bundle
+            direct_source_count = len(source_bundle)
+            payload["title"] = re.sub(
+                r"\d+ findings across \d+ sources",
+                f"{direct_source_count} findings across {direct_source_count} sources",
+                str(payload["title"]),
+            )
+            findings = _findings_map_table(citable)
+        payload["sections"] = _evidence_map_sections(
+            verdict, memo, direct_source_count, findings=findings)
         # Critically, do NOT send a body for a map: intake maps markdown ->
         # body_markdown, and the publish stage validates any non-alpha body as a
         # FULL MANUSCRIPT (## Abstract/Methods/Results/.../References) — our memo
