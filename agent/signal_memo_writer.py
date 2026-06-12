@@ -696,16 +696,16 @@ def _table_cell(value: Any, limit: int) -> str:
     return text or "—"
 
 
-_REL_EFFECT_RE = re.compile(
-    r"\b(improv\w*|increas\w*|reduc\w*|decreas\w*|higher|lower|outperform\w*|"
-    r"better|worse|gain\w*|surpass\w*|exceed\w*|over|versus|vs\.?|compared|"
-    r"than|relative)\b", re.I)
 _UP_EFFECT_RE = re.compile(
     r"\b(improv\w*|increas\w*|higher|outperform\w*|better|gain\w*|surpass\w*|"
     r"exceed\w*|rais\w*|boost\w*)\b", re.I)
 _DOWN_EFFECT_RE = re.compile(
     r"\b(reduc\w*|decreas\w*|lower|fewer|less|drop\w*|cut|declin\w*|shrink\w*)\b",
     re.I)
+_COMPARISON_EFFECT_RE = re.compile(
+    r"\b(over|versus|vs\.?|compared|than|relative)\b", re.I)
+_ABS_LEVEL_RE = re.compile(
+    r"\b(achiev\w*|attain\w*|reach\w*|report\w*|show\w*)\b", re.I)
 
 
 def _endpoint_label(fact: dict[str, Any]) -> Any:
@@ -726,10 +726,14 @@ def _effect_label(fact: dict[str, Any]) -> str:
     units = str(fact.get("units") or "").strip()
     value = f"{numeric}{units}" if units == "%" else f"{numeric} {units}".strip()
     phrase = str(fact.get("canonical_phrase") or "")
-    kind = "rel." if _REL_EFFECT_RE.search(phrase) else "abs."
+    up, down = _UP_EFFECT_RE.search(phrase), _DOWN_EFFECT_RE.search(phrase)
+    relative = bool(
+        up or down
+        or (_COMPARISON_EFFECT_RE.search(phrase) and not _ABS_LEVEL_RE.search(phrase))
+    )
+    kind = "rel." if relative else "abs."
     arrow = ""
-    if kind == "rel.":
-        up, down = _UP_EFFECT_RE.search(phrase), _DOWN_EFFECT_RE.search(phrase)
+    if relative:
         arrow = " ↑" if up and not down else " ↓" if down and not up else ""
     return f"{value} ({kind}{arrow})"
 

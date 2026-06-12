@@ -2353,9 +2353,17 @@ def test_evidence_table_derives_endpoint_and_types_effect() -> None:
             "sub_topic": "f1", "numeric_value": 45.0, "units": "%",
             "canonical_phrase": "the system attains an F1 of 45%",
         },
+        "bench": {
+            "source_paper": {"doi": "10.x/bench"},
+            "sub_topic": "accuracy", "numeric_value": 96.0, "units": "%",
+            "canonical_phrase": (
+                "the model achieved 96% accuracy compared with the held-out test set"
+            ),
+        },
     }
-    body = "\n".join(_evidence_alignment_table(facts, ["rel", "abs"]))
+    body = "\n".join(_evidence_alignment_table(facts, ["rel", "abs", "bench"]))
 
     assert "accuracy" in body and "f1" in body              # endpoint from sub_topic
     assert "96.0% (rel. ↑)" in body                         # relative + direction
     assert "45.0% (abs.)" in body                           # absolute level
+    assert "96.0% (abs.)" in body                           # absolute benchmark score
