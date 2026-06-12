@@ -3711,14 +3711,17 @@ def test_evidence_map_cites_full_a_core_landscape_not_memo_cluster(
     # the >=10-citation intake floor.
     assert len(payload["source_bundle"]) == 15
     assert len(payload["citations"]) == 15
-    # Title count is reconciled to the landscape, not the memo's cluster of 3.
-    assert "15 findings across 15 sources" in payload["title"]
-    # The abstract count must reconcile too: title=15 / abstract=3 / table=15 was
-    # the live "17 vs 5" exercise-map regression. All count phrases agree now.
-    assert "15 findings across 15 independent sources" in payload["abstract"]
+    # Title + abstract are rendered STRUCTURALLY from the one landscape count, not
+    # patched from the memo's narrow prose by regex — so the "17 in title / 5 in
+    # abstract" class of drift is unrepresentable, for any phrasing. Both are built
+    # from the topic + count, so they begin with the canonical structure.
+    assert payload["title"] == "Grid storage: evidence map — 15 findings across 15 sources"
+    assert payload["abstract"].startswith(
+        "Scoping review of Grid storage: 15 findings across 15 independent sources")
     assert payload["summary"] == payload["abstract"]
+    # No residue of the memo's cluster count (3) under any phrasing.
     assert "3 findings across 3" not in payload["abstract"]
-    assert "distinct A_core" not in payload["abstract"]
+    assert " 3 " not in payload["title"]
     # The Findings Map is the domain-stratified table; every row is a landscape
     # source so it is verifiable 1:1 against the bundle.
     findings = payload["sections"]["Findings Map"]

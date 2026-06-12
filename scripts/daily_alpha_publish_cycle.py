@@ -1895,19 +1895,28 @@ def _map_citable_facts(verdict: Json, root: Path) -> list[Json]:
     ]
 
 
-def _reconcile_findings_count(text: str, n: int) -> str:
-    """Force every findings/source count phrase to the real cited count.
+def _evidence_map_header(topic: str, n: int) -> tuple[str, str]:
+    """Canonical title + abstract for an evidence map, both rendered from the one
+    cited-source count `n`.
 
-    The memo is rendered from the narrow single-claim cluster, so its title AND
-    abstract can embed that small count (for example, "5 distinct A_core findings
-    across 5 independent sources"). When the map payload re-cites the full A_core
-    landscape, both public fields must reconcile to the landscape count.
+    Structured rendering, not regex reconciliation: the map's title, abstract,
+    Findings Map table, source bundle, and section text all derive from the same
+    `n` (the count of sources actually cited), so they cannot disagree — the
+    "17 in the title / 5 in the abstract" class of bug is unrepresentable. The
+    memo's own narrow single-claim headline/thesis is bypassed for the map (it
+    counts the cluster, not the landscape). Universal — `topic` is the only input
+    beyond the count; no per-topic or per-phrasing literals.
     """
-    return re.sub(
-        r"\d+(?: distinct A_core)? findings across \d+( independent)? sources",
-        lambda mt: f"{n} findings across {n}{mt.group(1) or ''} sources",
-        str(text or ""),
+    label = " ".join(str(topic or "topic").replace("_", " ").split())
+    label = (label[:1].upper() + label[1:]) if label else "Topic"
+    title = f"{label}: evidence map — {n} findings across {n} sources"
+    abstract = (
+        f"Scoping review of {label}: {n} findings across {n} independent "
+        "sources, catalogued by population, comparator, endpoint, and effect "
+        "size. Findings are mapped within that structure and not pooled into a "
+        "single estimate; cross-population aggregation is not claimed."
     )
+    return title, abstract
 
 
 def _findings_map_table(facts: list[Json]) -> str:
@@ -3682,12 +3691,14 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
             payload["citations"] = source_bundle
             payload["source_bundle"] = source_bundle
             direct_source_count = len(source_bundle)
-            payload["title"] = _reconcile_findings_count(
-                str(payload["title"]), direct_source_count)
-            payload["abstract"] = _reconcile_findings_count(
-                str(payload["abstract"]), direct_source_count)
-            payload["summary"] = payload["abstract"]
             findings = _findings_map_table(citable)
+        # One canonical count (direct_source_count = the sources actually cited)
+        # renders the title and abstract structurally; the Findings Map table and
+        # source bundle are built from the same set. No field is reconciled from
+        # prose, so the counts cannot drift apart.
+        payload["title"], payload["abstract"] = _evidence_map_header(
+            str(verdict.get("topic") or ""), direct_source_count)
+        payload["summary"] = payload["abstract"]
         payload["sections"] = _evidence_map_sections(
             verdict, memo, direct_source_count, findings=findings)
         # Critically, do NOT send a body for a map: intake maps markdown ->
