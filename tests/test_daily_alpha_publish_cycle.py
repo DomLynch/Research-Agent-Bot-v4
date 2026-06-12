@@ -3575,6 +3575,27 @@ def test_submission_payload_declares_evidence_map_article_type(
     assert payload["article_type"] == "evidence_map"
     assert payload["metadata"]["article_type"] == "evidence_map"
     assert payload["artifact_type"] == "alpha_memo"
+    # Researka validates a map on structured sections; intake reads
+    # 'Evidence Landscape' for its >=30-word research-question gate.
+    sections = payload["sections"]
+    assert set(sections) >= {
+        "Scope", "Search Summary", "Evidence Landscape", "Findings Map",
+        "Tensions and Gaps", "Limitations",
+    }
+    assert len(sections["Evidence Landscape"].split()) >= 30
+
+
+def test_submission_payload_alpha_memo_sends_no_sections(tmp_path: Path) -> None:
+    """The single-claim lane (word budget 0) keeps its proven section-free
+    payload; only maps attach sections."""
+    root = tmp_path / "repo"
+    verdict = _verdict()
+    _memo(root, verdict)
+
+    payload = daily._submission_payload(verdict, root / "runs")
+
+    assert payload["article_type"] == "alpha_memo"
+    assert "sections" not in payload
 
 
 def test_submission_payload_requires_domain_metadata(tmp_path: Path) -> None:

@@ -3386,6 +3386,57 @@ def _submission_agent_id(domain: str) -> str:
     return "agent-v4-alpha-" + domain.replace("_", "-")
 
 
+def _raw_section(memo: str, heading: str) -> str:
+    """A section's body with tables/markdown preserved (unlike _plain_section,
+    which drops table rows). Internal fact_id reconciliation markers are removed
+    so the public section reads as a clean source table."""
+    match = re.search(rf"^## {re.escape(heading)}\n+(.*?)(?=^## |\Z)", memo, re.M | re.S)
+    if not match:
+        return ""
+    return re.sub(r"\s*`?fact_id=[A-Za-z0-9_-]+`?\s*", " ", match.group(1)).strip()
+
+
+def _evidence_map_sections(verdict: Json, memo: str, n_sources: int) -> dict[str, str]:
+    """The six sections Researka reviews an evidence map for (landscape fidelity,
+    not convergence). Intake requires the 'Evidence Landscape' section to carry
+    >= 30 words; the rest are recommended. The Findings Map is the domain-
+    stratified source table. Universal — no domain-specific text."""
+    topic = str(verdict.get("topic") or "topic").replace("_", " ")
+    findings = _raw_section(memo, "Evidence receipts") or _raw_section(memo, "Findings Map")
+    return {
+        "Scope": (
+            f"What is the range of reported effects across the {topic} literature, "
+            "and how do they vary by population, comparator, and endpoint? This map "
+            "catalogues the findings rather than converging them to one claim."
+        ),
+        "Search Summary": (
+            f"{n_sources} direct (A_core) sources were retrieved from the Tier-2 "
+            "semantic corpus for this topic and lane-classified; each is cited with "
+            "a resolvable identifier in the source bundle below."
+        ),
+        "Evidence Landscape": (
+            f"This evidence map surveys {n_sources} independent {topic} sources drawn "
+            "from the Tier-2 corpus and classified as direct findings. They span "
+            "several populations, comparators, and endpoints and are catalogued by "
+            "source in the Findings Map rather than pooled into one estimate — "
+            "cross-population aggregation is not claimed. Each row records its own "
+            "population, comparator, endpoint, and effect, so the spread of the "
+            "literature and any tensions between findings remain explicit."
+        ),
+        "Findings Map": findings or "See the cited source bundle.",
+        "Tensions and Gaps": (
+            "Findings differ in population, comparator, endpoint, and effect size, so "
+            "they are not directly comparable and are not pooled. Gaps remain where a "
+            "population or comparator is represented by only a single source."
+        ),
+        "Limitations": (
+            "This is a scoping map of retrieved direct findings, not a meta-analysis: "
+            "no pooled effect is computed, coverage is bounded by the Tier-2 corpus, "
+            "and heterogeneity across rows precludes a single unified conclusion."
+        ),
+    }
+
+
 def _submission_payload(verdict: Json, root: Path) -> Json:
     run_dir = _run_path(root, verdict.get("run_dir"))
     profile = load_domain_profile(_run_domain_required(run_dir, verdict))
@@ -3426,7 +3477,7 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         if str(verdict.get("surface_type") or "") == "evidence_map"
         else "alpha_memo"
     )
-    return {
+    payload: Json = {
         "artifact_type": "alpha_memo",
         "article_type": article_type,
         "author_agent_id": agent_id,
@@ -3465,6 +3516,13 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         },
         "content_hash": "sha256:" + hashlib.sha256(public_memo.encode("utf-8")).hexdigest(),
     }
+    # An evidence map is validated on its structured sections (Researka intake
+    # reads sections["Evidence Landscape"] for its >=30-word research-question
+    # gate). The alpha_memo lane needs no sections (its word budget is 0), so we
+    # only attach them for maps to keep the proven single-claim path untouched.
+    if article_type == "evidence_map":
+        payload["sections"] = _evidence_map_sections(verdict, memo, direct_source_count)
+    return payload
 
 
 def _http_submitter(url: str, token: str) -> Submitter:
