@@ -1896,6 +1896,18 @@ def _shape_tokens(fact: Json, fields: tuple[str, ...]) -> set[str]:
     }
 
 
+def _llm_cluster_backed(verdict: Json, root: Path) -> bool:
+    """Whether the memo leads with an M3-validated claim cluster. publish_tier
+    waives single-claim shape coherence for these (the writer confirmed the
+    receipts make one claim, and it already gated the cluster's source count for
+    ready_to_publish). The submit gate must agree, or a cluster-backed memo that
+    publish_tier passed gets re-blocked here on the very check publish waived."""
+    run_dir = _run_path(root, verdict.get("run_dir"))
+    cluster = _json(run_dir / "claim_cluster.json", {})
+    ids = cluster.get("lead_fact_ids") if isinstance(cluster, dict) else None
+    return bool(ids)
+
+
 def _direct_receipts_share_shape(
     verdict: Json, root: Path, min_direct_source_count: int,
 ) -> bool:
@@ -2425,14 +2437,16 @@ def select_candidate(
                     status = "direct_source_floor_below_min"
                 elif (
                     verdict.get("surface_type") != "evidence_map"
+                    and not _llm_cluster_backed(verdict, runs_root)
                     and not _direct_receipts_share_shape(
                         verdict, runs_root, min_direct_source_count,
                     )
                 ):
-                    # An evidence map is an honest multi-shape scoping review;
-                    # the single-claim shape-coherence gate does not apply to it
-                    # (the publish gate waives the same blocker). Researka accepts
-                    # it via article_type=evidence_map.
+                    # An evidence map is an honest multi-shape scoping review, and
+                    # an M3-cluster-backed single claim was already shape-waived by
+                    # publish_tier; the single-claim token-shape gate applies to
+                    # neither. Without these waivers a memo publish_tier passed is
+                    # re-blocked here and never submits.
                     status = "receipt_shape_mismatch"
         row = {
             "topic": _selection_topic(verdict),

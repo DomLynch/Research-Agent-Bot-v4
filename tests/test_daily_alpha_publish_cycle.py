@@ -2031,6 +2031,50 @@ def test_single_claim_outranks_evidence_map_for_submission(tmp_path: Path) -> No
     assert submissions and submissions[0]["topic"] == "bounded_single_claim"
 
 
+def test_llm_cluster_backed_memo_bypasses_shape_submit_gate(tmp_path: Path) -> None:
+    """A single-claim memo backed by an M3 claim cluster was already shape-waived
+    by publish_tier; the submit shape gate must agree, or a memo publish_tier
+    passed is re-blocked here and never submits (the metformin stall)."""
+    root = tmp_path / "repo"
+    v = _verdict("metformin_mortality", score=90)
+    _memo_with_receipt_shapes(root, v, [
+        {"canonical_phrase": "Metformin lowered 30-day mortality vs non-use.",
+         "population": "icu sepsis", "intervention": "metformin",
+         "endpoint": "30-day mortality"},
+        {"canonical_phrase": "Metformin cut mortality in heart failure cohort.",
+         "population": "heart failure", "intervention": "metformin",
+         "endpoint": "all-cause mortality"},
+        {"canonical_phrase": "Metformin reduced post-op mortality after surgery.",
+         "population": "surgical patients", "intervention": "metformin",
+         "endpoint": "post-op mortality"},
+        {"canonical_phrase": "Metformin associated with lower CKD mortality.",
+         "population": "chronic kidney disease", "intervention": "metformin",
+         "endpoint": "renal mortality"},
+        {"canonical_phrase": "Metformin linked to reduced cancer mortality.",
+         "population": "oncology", "intervention": "metformin",
+         "endpoint": "cancer mortality"},
+    ])
+    run = root / str(v["run_dir"])
+    run.joinpath("claim_cluster.json").write_text(json.dumps({
+        "claim": "Metformin lowers mortality vs non-use",
+        "lead_fact_ids": ["1", "2", "3"],
+    }), encoding="utf-8")
+    submissions: list[dict[str, Any]] = []
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submissions.append(payload)
+        return {"ok": True, "status": 200, "response": {}}
+
+    ledger = daily.run_cycle(
+        runs_root=root, date="2026-06-06T09-30-00Z", queue=_queue(v),
+        submit=True, retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}}, submitter=submitter,
+    )
+
+    assert ledger["considered"][0]["status"] != "receipt_shape_mismatch"
+    assert ledger["submitted_topic"] == "metformin_mortality"
+
+
 def _heterogeneous_map(root: Path, topic: str) -> dict[str, Any]:
     emap = _verdict(topic, score=90) | {"surface_type": "evidence_map"}
     _memo_with_receipt_shapes(root, emap, [
