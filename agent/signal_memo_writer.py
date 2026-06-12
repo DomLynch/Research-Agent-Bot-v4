@@ -363,6 +363,24 @@ def _receipt_scope_coheres(
     )
 
 
+def _claim_is_focused(claim: str) -> bool:
+    """Whether the M3 cluster's claim reads as one bounded comparison, not a
+    run-on laundry-list of disparate figures. This — not deterministic token
+    overlap — decides single-claim vs evidence-map: token overlap gives a FALSE
+    negative on synonymous endpoints (all-cause / overall / 30-day mortality),
+    the exact case the M3 clusterer exists to group, so judging the cluster by
+    token overlap mislabels a homogeneous claim as a map. M3 already grouped the
+    receipts; trust a focused claim and only fall back to a map for a lumped,
+    figure-list claim. Mirror of claim_clusterer._claim_is_focused (kept local to
+    avoid importing the clusterer's model client)."""
+    text = claim.strip()
+    if not text or len(text) > 200:
+        return False
+    if ";" in text or "including" in text.lower():
+        return False
+    return len(re.findall(r"\d+(?:\.\d+)?", text)) <= 3
+
+
 def _agent_repair_requested(verdict: dict[str, Any] | None) -> bool:
     if not isinstance(verdict, dict):
         return False
@@ -2215,17 +2233,16 @@ def render_signal_memo(
     # mortality claim) that the reviewer rejects as over-broad and over-attributed.
     # Keep only context that coheres with the lead so an unrelated boundary
     # receipt cannot creep in. Skipped for repair/grounding rewrites (their
-    # narrowing owns the lead) and for an incoherent cluster (the evidence-map
-    # routing below handles that). Universal — coherence is by token overlap.
+    # narrowing owns the lead) and for a lumped laundry-list cluster (the
+    # evidence-map routing below handles that). A focused M3 claim IS a single
+    # claim — trust it; token overlap would falsely reject synonymous endpoints.
+    m3_cluster_focused = _claim_is_focused(str(llm_cluster.get("claim") or ""))
     if (
         m3_cluster_adopted
+        and m3_cluster_focused
         and not grounded
         and not _agent_repair_requested(publish_verdict)
         and set(lead_ids) != set(llm_cluster_ids)
-        and _receipt_cluster_coheres(
-            llm_cluster_ids, facts, topic,
-            _source_count_for_ids(llm_cluster_ids, facts),
-        )
     ):
         lead_ids = list(llm_cluster_ids)
         lead_set = set(lead_ids)
@@ -2249,9 +2266,7 @@ def render_signal_memo(
     cluster_sources = _source_count_for_ids(llm_cluster_ids, facts)
     m3_cluster_incoherent = (
         cluster_sources >= min_cluster_sources
-        and not _receipt_cluster_coheres(
-            llm_cluster_ids, facts, topic, cluster_sources,
-        )
+        and not m3_cluster_focused
     )
     # When a source-rich M3 cluster is incoherent, its own source-diverse ids are
     # the evidence-map breadth (one finding per source). Otherwise the failure-

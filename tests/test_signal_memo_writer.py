@@ -2263,18 +2263,22 @@ def test_grab_bag_m3_cluster_does_not_publish_as_evidence_map(tmp_path: Path) ->
 
 
 def test_coherent_scope_m3_cluster_routes_to_evidence_map(tmp_path: Path) -> None:
-    """A source-rich cluster that shares ONE scope but spans several endpoints
-    (no single unified claim) is the honest evidence-map case: it publishes as
-    article_type=evidence_map with the breadth headline, not the M3 'claim'."""
+    """A source-rich cluster M3 could only summarise as a figure-list (no single
+    bounded claim) but whose findings share ONE scope is the honest evidence-map
+    case: it publishes as article_type=evidence_map with the breadth headline,
+    not the run-on M3 'claim'."""
     run = tmp_path / "creatine-evidence-ts"
     _write_cluster_run(run, {
         "501": "Creatine increased muscle strength in resistance trained men",
         "502": "Creatine improved muscle power output in resistance trained men",
         "503": "Creatine raised muscle mass gains in resistance trained men",
         "504": "Creatine reduced muscle fatigue in resistance trained men",
-        "505": "Creatine altered cognitive memory recall in older adults",
-        "506": "Creatine changed bone mineral density in postmenopausal women",
-    }, claim="Creatine affects muscle, cognition, and bone across populations")
+        "505": "Creatine raised muscle creatine stores in resistance trained men",
+        "506": "Creatine improved muscle recovery rate in resistance trained men",
+    }, claim=(
+        "Creatine muscle effects include 12% strength, 8% power, 5% mass, "
+        "3% fatigue, 20% stores, and 7% recovery gains"
+    ))
 
     memo = render_signal_memo(run)
     headline = next(line for line in memo.splitlines() if line.startswith("**Headline:**"))
