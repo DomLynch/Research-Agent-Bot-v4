@@ -2333,3 +2333,29 @@ def test_evidence_alignment_table_aligns_and_dedupes() -> None:
     assert body.count("10.x/1") == 1                        # same source deduped
     assert "single-agent" in body and "mortality" in body
     assert "0.83 RR" in body                                # numeric effect
+
+
+def test_evidence_table_derives_endpoint_and_types_effect() -> None:
+    """A synthesis table is fake rigor if Endpoint is blank and Effect mixes
+    absolute levels with relative deltas. Endpoint falls back to sub_topic when
+    the endpoint field is empty (Tier-2 rarely fills it), and every numeric
+    effect declares absolute-vs-relative and its direction."""
+    from agent.signal_memo_writer import _evidence_alignment_table
+
+    facts: dict[str, dict[str, Any]] = {
+        "rel": {
+            "source_paper": {"doi": "10.x/rel"},
+            "sub_topic": "accuracy", "numeric_value": 96.0, "units": "%",
+            "canonical_phrase": "accuracy improved by 96% over crowdsourcing",
+        },
+        "abs": {
+            "source_paper": {"doi": "10.x/abs"},
+            "sub_topic": "f1", "numeric_value": 45.0, "units": "%",
+            "canonical_phrase": "the system attains an F1 of 45%",
+        },
+    }
+    body = "\n".join(_evidence_alignment_table(facts, ["rel", "abs"]))
+
+    assert "accuracy" in body and "f1" in body              # endpoint from sub_topic
+    assert "96.0% (rel. ↑)" in body                         # relative + direction
+    assert "45.0% (abs.)" in body                           # absolute level

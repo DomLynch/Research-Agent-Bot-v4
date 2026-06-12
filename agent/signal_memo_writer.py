@@ -696,6 +696,44 @@ def _table_cell(value: Any, limit: int) -> str:
     return text or "—"
 
 
+_REL_EFFECT_RE = re.compile(
+    r"\b(improv\w*|increas\w*|reduc\w*|decreas\w*|higher|lower|outperform\w*|"
+    r"better|worse|gain\w*|surpass\w*|exceed\w*|over|versus|vs\.?|compared|"
+    r"than|relative)\b", re.I)
+_UP_EFFECT_RE = re.compile(
+    r"\b(improv\w*|increas\w*|higher|outperform\w*|better|gain\w*|surpass\w*|"
+    r"exceed\w*|rais\w*|boost\w*)\b", re.I)
+_DOWN_EFFECT_RE = re.compile(
+    r"\b(reduc\w*|decreas\w*|lower|fewer|less|drop\w*|cut|declin\w*|shrink\w*)\b",
+    re.I)
+
+
+def _endpoint_label(fact: dict[str, Any]) -> Any:
+    """The measured endpoint/metric. Tier-2 facts rarely fill `endpoint`/
+    `outcome`, but `sub_topic`/`metric_type` carry it (e.g. 'accuracy', 'f1') —
+    so the alignment column is real, not blank."""
+    return (fact.get("endpoint") or fact.get("outcome")
+            or fact.get("sub_topic") or fact.get("metric_type"))
+
+
+def _effect_label(fact: dict[str, Any]) -> str:
+    """A typed effect cell: a bare number is meaningless in a synthesis table, so
+    declare whether it is a relative change or an absolute level, and its
+    direction, inferred from the finding's own wording. Universal."""
+    numeric = fact.get("numeric_value")
+    if numeric is None:
+        return _clip(fact.get("canonical_phrase"), 48)
+    units = str(fact.get("units") or "").strip()
+    value = f"{numeric}{units}" if units == "%" else f"{numeric} {units}".strip()
+    phrase = str(fact.get("canonical_phrase") or "")
+    kind = "rel." if _REL_EFFECT_RE.search(phrase) else "abs."
+    arrow = ""
+    if kind == "rel.":
+        up, down = _UP_EFFECT_RE.search(phrase), _DOWN_EFFECT_RE.search(phrase)
+        arrow = " ↑" if up and not down else " ↓" if down and not up else ""
+    return f"{value} ({kind}{arrow})"
+
+
 def _evidence_alignment_table(
     facts: dict[str, dict[str, Any]], ids: list[str],
 ) -> list[str]:
@@ -712,12 +750,7 @@ def _evidence_alignment_table(
         if not source or source in seen:
             continue
         seen.add(source)
-        numeric = fact.get("numeric_value")
-        units = str(fact.get("units") or "").strip()
-        effect = (
-            f"{numeric} {units}".strip() if numeric is not None
-            else _clip(fact.get("canonical_phrase"), 48)
-        )
+        effect = _effect_label(fact)
         # Carry the fact_id token so the downstream bundle (parsed from the
         # Evidence section) is EXACTLY the table's cited sources — the reviewer
         # requires every cited DOI to appear in source_bundle and vice versa.
@@ -725,7 +758,7 @@ def _evidence_alignment_table(
             f"| {len(rows) + 1} | `fact_id={fid}` {_table_cell(source, 30)} "
             f"| {_table_cell(fact.get('population'), 28)} "
             f"| {_table_cell(fact.get('comparator') or fact.get('baseline_comparator'), 22)} "
-            f"| {_table_cell(fact.get('endpoint') or fact.get('outcome'), 24)} "
+            f"| {_table_cell(_endpoint_label(fact), 24)} "
             f"| {_table_cell(effect, 40)} |"
         )
     if not rows:
