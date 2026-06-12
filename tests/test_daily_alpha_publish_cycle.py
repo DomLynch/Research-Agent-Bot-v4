@@ -3565,6 +3565,12 @@ def test_submission_payload_declares_evidence_map_article_type(
         "Tensions and Gaps", "Limitations",
     }
     assert len(sections["Evidence Landscape"].split()) >= 30
+    # A map must NOT carry a body: the publish stage validates any non-alpha
+    # body as a full manuscript (## Abstract/Methods/...), so an accepted
+    # submission with a body fails its autonomous_publish job ('Abstract' 0
+    # chars) and never lists. With no body, the platform compiles the body
+    # from the sections — the designed evidence-map path.
+    assert "markdown" not in payload
 
 
 def test_submission_payload_alpha_memo_sends_no_sections(tmp_path: Path) -> None:

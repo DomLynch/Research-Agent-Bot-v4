@@ -3531,6 +3531,14 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
     # only attach them for maps to keep the proven single-claim path untouched.
     if article_type == "evidence_map":
         payload["sections"] = _evidence_map_sections(verdict, memo, direct_source_count)
+        # Critically, do NOT send a body for a map: intake maps markdown ->
+        # body_markdown, and the publish stage validates any non-alpha body as a
+        # FULL MANUSCRIPT (## Abstract/Methods/Results/.../References) — our memo
+        # body fails that gate ('Abstract' empty, 0 chars) and an ACCEPTED
+        # submission never becomes a publication (autonomous_publish job fails).
+        # With no body, the publish stage compiles the body FROM the sections —
+        # the designed evidence-map path.
+        payload.pop("markdown", None)
     return payload
 
 
