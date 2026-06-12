@@ -1895,6 +1895,21 @@ def _map_citable_facts(verdict: Json, root: Path) -> list[Json]:
     ]
 
 
+def _reconcile_findings_count(text: str, n: int) -> str:
+    """Force every "<k> findings across <k> [independent ]sources" phrase to the
+    real cited count. The memo is rendered from the narrow single-claim cluster,
+    so its title AND abstract embed that small count (e.g. "5 findings across 5
+    independent sources"); when the map payload re-cites the full A_core landscape
+    the title was patched but the abstract was not, leaving title=17 / abstract=5
+    / table=17 — three counts on one artifact. Reconciling both to the landscape
+    count keeps the public memo internally consistent."""
+    return re.sub(
+        r"\d+ findings across \d+( independent)? sources",
+        lambda mt: f"{n} findings across {n}{mt.group(1) or ''} sources",
+        str(text or ""),
+    )
+
+
 def _findings_map_table(facts: list[Json]) -> str:
     """A domain-stratified source table: one row per A_core source carrying its
     own population, comparator, finding, and a resolvable identifier, so every
@@ -3667,11 +3682,11 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
             payload["citations"] = source_bundle
             payload["source_bundle"] = source_bundle
             direct_source_count = len(source_bundle)
-            payload["title"] = re.sub(
-                r"\d+ findings across \d+ sources",
-                f"{direct_source_count} findings across {direct_source_count} sources",
-                str(payload["title"]),
-            )
+            payload["title"] = _reconcile_findings_count(
+                str(payload["title"]), direct_source_count)
+            payload["abstract"] = _reconcile_findings_count(
+                str(payload["abstract"]), direct_source_count)
+            payload["summary"] = payload["abstract"]
             findings = _findings_map_table(citable)
         payload["sections"] = _evidence_map_sections(
             verdict, memo, direct_source_count, findings=findings)

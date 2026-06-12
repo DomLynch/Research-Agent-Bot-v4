@@ -3675,8 +3675,9 @@ def test_evidence_map_cites_full_a_core_landscape_not_memo_cluster(
     run.joinpath("alpha_memo.md").write_text(
         "# Alpha memo\n\n"
         "**Headline:** Grid storage: evidence map — 3 findings across 3 sources\n\n"
-        "## One-sentence thesis\n\nThe retrieved sources map a heterogeneous "
-        "landscape rather than one claim.\n\n"
+        "## One-sentence thesis\n\nScoping review: 3 findings across 3 "
+        "independent sources map a heterogeneous landscape rather than one "
+        "claim.\n\n"
         "## Evidence receipts\n\n"
         + "\n".join(f"- `fact_id={fid}` (`A_core`) - cluster receipt" for fid in cited)
         + "\n" + _FALSIFIER,
@@ -3712,6 +3713,11 @@ def test_evidence_map_cites_full_a_core_landscape_not_memo_cluster(
     assert len(payload["citations"]) == 15
     # Title count is reconciled to the landscape, not the memo's cluster of 3.
     assert "15 findings across 15 sources" in payload["title"]
+    # The abstract count must reconcile too: title=15 / abstract=3 / table=15 was
+    # the live "17 vs 5" exercise-map regression. All count phrases agree now.
+    assert "15 findings across 15 independent sources" in payload["abstract"]
+    assert payload["summary"] == payload["abstract"]
+    assert "3 findings across 3" not in payload["abstract"]
     # The Findings Map is the domain-stratified table; every row is a landscape
     # source so it is verifiable 1:1 against the bundle.
     findings = payload["sections"]["Findings Map"]
