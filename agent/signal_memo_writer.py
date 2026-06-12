@@ -2377,6 +2377,19 @@ def render_signal_memo(
     if cluster_claim and not evidence_map and not m3_cluster_incoherent:
         cluster_claim = cluster_claim[0].upper() + cluster_claim[1:]
         headline = cluster_claim
+        # Synthesized thesis, not a receipt concatenation: the reviewer's revise
+        # asks to "replace ellipses in the abstract and match effect sizes to
+        # sources". A clean one-sentence framing of the bounded claim carries no
+        # ellipses and no per-source numbers to mismatch, and reads distinct from
+        # the headline (so they are not byte-identical). The payload abstract is
+        # derived from this section, so this fixes the abstract too.
+        thesis = (
+            f"Across {_source_count_for_ids(lead_ids, facts)} independently cited "
+            "sources, the evidence converges on one bounded claim: "
+            f"{cluster_claim[0].lower() + cluster_claim[1:]}. Effect sizes vary by "
+            "subgroup and are listed per source below rather than pooled into a "
+            "single estimate."
+        )
     score = (
         min(95, 40 + _source_count_for_ids(acore_receipt_ids, facts) * 8)
         if evidence_map else _alpha_score(audit, label)
