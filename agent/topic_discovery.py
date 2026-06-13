@@ -367,10 +367,30 @@ def _fact_source_facets(
     )[:limit])
 
 
+# A child topic is its seed plus 1-2 specificity tokens. Past this it becomes a
+# recursively-accreted word-salad ("exercise_difference_training_control_
+# resistance_care_usual_qigong"): such topics never cluster, time out the refresh,
+# and crowd the clean seed list out of the build queue. A topic at or past the cap
+# spawns no further children, and emitted child slugs are truncated to it — a
+# GLOBAL ceiling the per-run child-depth limit misses, because a prior run's child
+# re-enters the next cycle as a fresh depth-0 parent and keeps accreting.
+_MAX_TOPIC_TOKENS = 4
+
+
+def topic_token_count(topic: str) -> int:
+    return sum(1 for token in str(topic).split("_") if token)
+
+
+def cap_topic_slug(slug: str) -> str:
+    return "_".join([t for t in str(slug).split("_") if t][:_MAX_TOPIC_TOKENS])
+
+
 def _fact_child_slugs(
     fact: dict[str, Any], topic: str, *, limit: int = 6,
 ) -> tuple[str, ...]:
     """Derive child-topic slugs from direct fact structure, not static terms."""
+    if topic_token_count(topic) >= _MAX_TOPIC_TOKENS:
+        return ()
     topic_words = set(_title_tokens(topic.replace("_", " ")))
     seen: dict[str, None] = {}
 

@@ -50,7 +50,12 @@ from daily_alpha_publish_cycle import (  # noqa: E402
 from agent.domain_profile import domain_choices, domain_slug  # noqa: E402
 from agent.researka_facts import tier2_source_count  # noqa: E402
 from agent.settings import load_settings  # noqa: E402
-from agent.topic_discovery import _fetch_topic_fact_source_count  # noqa: E402
+from agent.topic_discovery import (  # noqa: E402
+    _MAX_TOPIC_TOKENS,
+    _fetch_topic_fact_source_count,
+    cap_topic_slug,
+    topic_token_count,
+)
 
 _RUNS = _ROOT / "runs"
 _CYCLES_DIR = _RUNS / "_curator_cycles"
@@ -245,6 +250,11 @@ def _child_topics_from_verdict(run_dir: str, seen: set[str]) -> list[str]:
     if not isinstance(rec, dict) or not rec.get("recommended"):
         return []
     parent = str(verdict.get("topic") or "").strip()
+    # A parent that is itself an accreted child spawns no further children: across
+    # cycles a prior run's child re-enters as a fresh depth-0 parent, so without a
+    # token-count ceiling the slug grows unbounded into word-salad.
+    if topic_token_count(parent) >= _MAX_TOPIC_TOKENS:
+        return []
     out: list[str] = []
     for cluster in rec.get("clusters") or []:
         if not isinstance(cluster, dict):
@@ -253,8 +263,8 @@ def _child_topics_from_verdict(run_dir: str, seen: set[str]) -> list[str]:
         if not label or label == "unlabeled":
             continue
         child = "_".join(x for x in (parent, label) if x)
-        child = "_".join(re.findall(r"[a-z0-9]+", child.lower()))
-        if child and child not in seen:
+        child = cap_topic_slug("_".join(re.findall(r"[a-z0-9]+", child.lower())))
+        if child and child != parent and child not in seen:
             out.append(child)
             seen.add(child)
         if len(out) >= _MAX_CHILD_RERUNS_PER_PARENT:

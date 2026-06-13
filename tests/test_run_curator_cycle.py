@@ -912,6 +912,35 @@ def test_stop_on_ready_does_not_chain_child_topic_reruns(
     assert seen == ["parent", "parent_bounded_claim_cluster"]
 
 
+def test_deep_parent_spawns_no_child_topics(tmp_path: Path, monkeypatch: Any) -> None:
+    """A parent that is already an accreted child (>= _MAX_TOPIC_TOKENS tokens)
+    spawns no further children, so the slug cannot grow into word-salad across
+    cycles. A shallow parent still splits, but the child is token-capped."""
+    import run_curator_cycle
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+
+    def _write(topic: str) -> str:
+        run_dir = f"runs/{topic}-evidence-ts"
+        (tmp_path / run_dir).mkdir(parents=True)
+        (tmp_path / run_dir / "publish_verdict.json").write_text(json.dumps({
+            "topic": topic,
+            "subtopic_recommendations": {
+                "recommended": True,
+                "clusters": [{"label": "training_control_resistance_care_usual"}],
+            },
+        }), encoding="utf-8")
+        return run_dir
+
+    deep = _write("exercise_difference_training_control")
+    assert run_curator_cycle._child_topics_from_verdict(deep, set()) == []
+
+    shallow = _write("exercise")
+    children = run_curator_cycle._child_topics_from_verdict(shallow, set())
+    assert children == ["exercise_training_control_resistance"]
+    assert all(run_curator_cycle.topic_token_count(c) <= 4 for c in children)
+
+
 def test_priority_repair_topic_does_not_spawn_child_rerun(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
