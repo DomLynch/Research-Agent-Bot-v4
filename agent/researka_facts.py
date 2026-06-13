@@ -123,48 +123,40 @@ def tier2_source_count(
 
     A transient API failure (timeout or 5xx — e.g. the search endpoint hitting
     the gateway timeout while extraction saturates the corpus DB) is NOT a
-    genuine "0 sources" answer: it is retried once and logged, so a slow Tier-2
-    API does not silently look like an empty corpus and deprioritise live topics.
+    genuine "0 sources" answer. It still degrades to 0 (the cache layer retries
+    a non-cached 0 next cycle), but it is logged distinctly so a slow Tier-2 API
+    surfaces in the cycle logs instead of silently masquerading as an empty
+    corpus. No in-call retry: a 60s gateway timeout would only re-spend the
+    probe budget for the same failure.
     """
     base = settings.researka_database_url.rstrip("/")
     token = settings.researka_database_token.strip()
     if not base or not token:
         return 0
-    url = f"{base}/api/v1/tier2/facts/search"
-    payload = {
-        # top_k only needs to exceed the source floor: we count distinct
-        # papers, not facts. Latency is the corpus scan, not result size.
-        "domain": tier2_domain(domain), "query": topic[:512], "top_k": 15,
-        "min_confidence": min_confidence, "numeric_only": False,
-    }
-    headers = {"X-Researka-Token": token, "Content-Type": "application/json"}
-    data: Any = None
-    # The Tier-2 semantic search runs ~40-90s; one retry covers a transient
-    # 5xx/timeout (load spike) so it is not misread as a definitive empty.
-    for attempt in range(2):
-        try:
-            r = client.post(url, json=payload, headers=headers, timeout=90.0)
-            r.raise_for_status()
-            data = r.json()
-            break
-        except (httpx.TimeoutException, httpx.HTTPStatusError) as e:
-            transient = isinstance(e, httpx.TimeoutException) or (
-                e.response.status_code >= 500
-            )
-            if transient and attempt == 0:
-                _log.warning(
-                    "tier2 source-count transient failure for %r (domain=%s): "
-                    "%s — retrying once", topic, domain, e,
-                )
-                continue
+    try:
+        r = client.post(
+            f"{base}/api/v1/tier2/facts/search",
+            json={
+                # top_k only needs to exceed the source floor: we count distinct
+                # papers, not facts. Latency is the corpus scan, not result size.
+                "domain": tier2_domain(domain), "query": topic[:512], "top_k": 15,
+                "min_confidence": min_confidence, "numeric_only": False,
+            },
+            headers={"X-Researka-Token": token, "Content-Type": "application/json"},
+            timeout=90.0,
+        )
+        r.raise_for_status()
+        data: Any = r.json()
+    except (httpx.TimeoutException, httpx.HTTPStatusError) as e:
+        if isinstance(e, httpx.TimeoutException) or e.response.status_code >= 500:
             _log.warning(
-                "tier2 source-count unavailable for %r (domain=%s): %s — "
-                "reporting 0 (API unknown, not a verified empty corpus)",
+                "tier2 source-count: transient API failure for %r (domain=%s): "
+                "%s — reporting 0 (API unavailable, NOT a verified empty corpus)",
                 topic, domain, e,
             )
-            return 0
-        except (httpx.HTTPError, ValueError):
-            return 0
+        return 0
+    except (httpx.HTTPError, ValueError):
+        return 0
     if not isinstance(data, list):
         return 0
     papers: set[str] = set()

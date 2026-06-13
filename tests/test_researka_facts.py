@@ -5,6 +5,7 @@ the Sprint 12.0 commit message.
 """
 from __future__ import annotations
 
+import logging
 from dataclasses import replace
 from typing import Any
 
@@ -263,24 +264,29 @@ def _count_settings() -> Any:
     )
 
 
-def test_tier2_source_count_retries_once_on_504_then_reports_zero() -> None:
+def test_tier2_source_count_reports_zero_on_504_without_retry(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """A 504 (gateway timeout under extraction load) is transient, NOT a
-    verified empty corpus: it must retry once and still report 0 — never
-    silently treat a slow API as 'no sources'."""
+    verified empty corpus: it degrades to 0 but is logged distinctly (so it is
+    not a silent mask). No in-call retry — a 60s gateway timeout would only
+    re-spend the probe budget for the same failure."""
     calls = {"n": 0}
 
     def handler(request: httpx.Request) -> httpx.Response:
         calls["n"] += 1
         return httpx.Response(504, text="gateway timeout")
 
-    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+    with caplog.at_level(logging.WARNING, logger="agent.researka_facts"), \
+            httpx.Client(transport=httpx.MockTransport(handler)) as client:
         n = tier2_source_count(
             "labor_economics", client=client, settings=_count_settings(),
             domain="business_research",
         )
 
     assert n == 0
-    assert calls["n"] == 2  # original + one retry on the transient 5xx
+    assert calls["n"] == 1  # no retry on a 60s gateway timeout
+    assert any("transient API failure" in m for m in caplog.messages)
 
 
 def test_tier2_source_count_does_not_retry_on_genuine_empty() -> None:
