@@ -2965,23 +2965,45 @@ def _source_literature_payload(
     return candidate, payload
 
 
-def _public_page_check(decision: Json, *, page_fetcher: PageFetcher) -> Json:
+# Public page rendering is eventually-consistent after acceptance; poll the
+# fresh-accept check this many times before concluding the page is unrendered.
+_PUBLISH_RENDER_POLL_ATTEMPTS = 6
+_PUBLISH_RENDER_POLL_DELAY_S = 5.0
+
+
+def _public_page_check(
+    decision: Json, *, page_fetcher: PageFetcher,
+    attempts: int = 1, delay_s: float = 0.0,
+) -> Json:
+    # Researka builds the public page asynchronously after accepting a
+    # submission: the first fetch can hit the "Not Found" SPA shell (HTTP 200
+    # with a not-found <title>) even though the page renders seconds later.
+    # A single eager check therefore falsely marks genuinely-accepted memos as
+    # `public_page_not_rendered` -> rejected -> stuck at published=0 forever
+    # (the "repair" path then resubmits and gets duplicate-blocked). Poll a
+    # bounded number of times before declaring the page unrendered. Defaults
+    # (attempts=1, delay_s=0) preserve the original single-shot behaviour for
+    # callers that re-check on their own schedule (e.g. the reconcile sweep).
     urls = _public_alpha_urls(decision)
     if not urls:
         return {"ok": False, "status": "missing_public_url", "urls": []}
     checks: list[Json] = []
-    for url in urls:
-        result = page_fetcher(url)
-        check = {
-            "url": url,
-            "http_status": result.get("status"),
-            "ok": _page_rendered(result),
-        }
-        if result.get("error"):
-            check["error"] = result.get("error")
-        checks.append(check)
-        if check["ok"]:
-            return {"ok": True, "status": "rendered", "url": url, "checks": checks}
+    for attempt in range(max(1, attempts)):
+        checks = []
+        for url in urls:
+            result = page_fetcher(url)
+            check = {
+                "url": url,
+                "http_status": result.get("status"),
+                "ok": _page_rendered(result),
+            }
+            if result.get("error"):
+                check["error"] = result.get("error")
+            checks.append(check)
+            if check["ok"]:
+                return {"ok": True, "status": "rendered", "url": url, "checks": checks}
+        if delay_s > 0 and attempt < max(1, attempts) - 1:
+            time.sleep(delay_s)
     return {"ok": False, "status": "not_rendered", "urls": urls, "checks": checks}
 
 
@@ -3008,7 +3030,11 @@ def _apply_submission_decision(
                 ledger["researka_decision"] = decision
                 ledger["final_verdict"] = final
                 return final
-            page = _public_page_check(decision, page_fetcher=page_fetcher)
+            page = _public_page_check(
+                decision, page_fetcher=page_fetcher,
+                attempts=_PUBLISH_RENDER_POLL_ATTEMPTS,
+                delay_s=_PUBLISH_RENDER_POLL_DELAY_S,
+            )
             ledger["public_page_check"] = page
             if page.get("ok"):
                 final = "accepted"
@@ -3121,6 +3147,26 @@ def sync_submission_decisions(
                 ledger["published"] = 0
                 ledger["publish_failure_reason"] = "public_page_not_rendered"
                 summary["updated"] += 1
+                _write_json(path, ledger)
+            continue
+        if ledger.get("status") == "public_page_not_rendered" and ledger.get("public_url"):
+            # Recover the inverse of the demotion above: a memo Researka
+            # accepted whose page was not yet built at submit time. Re-check it;
+            # once the page renders, promote to published instead of leaving it
+            # permanently stuck (the repair path would only resubmit it and get
+            # duplicate-blocked).
+            summary["checked"] += 1
+            page = _public_page_check(
+                {"public_url": ledger.get("public_url")},
+                page_fetcher=page_fetcher,
+            )
+            ledger["public_page_check"] = page
+            if page.get("ok"):
+                ledger["status"] = "published"
+                ledger["published"] = 1
+                ledger.pop("publish_failure_reason", None)
+                summary["updated"] += 1
+                summary["published"] += 1
                 _write_json(path, ledger)
             continue
         if ledger.get("status") != "submitted_to_researka":

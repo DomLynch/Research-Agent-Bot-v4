@@ -6480,3 +6480,74 @@ def test_cross_domain_tension_source_floor_candidate_repairs_from_corpus_supply(
     assert cand is not None
     assert considered[0]["memo_refreshed"] is True
     assert considered[0]["status"] == "eligible"
+
+
+def test_public_page_check_polls_until_rendered() -> None:
+    # Researka serves the "Not Found" SPA shell on the first fetch and the real
+    # page on the second; the bounded poll must catch the eventual render
+    # rather than falsely reporting not_rendered (the bug that left accepted
+    # memos stuck at published=0).
+    calls = {"n": 0}
+
+    def fetcher(_url: str) -> dict:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return {"ok": True, "status": 200,
+                    "body": '<title data-next-head="">Alpha Memo Not Found</title>'}
+        return {"ok": True, "status": 200, "body": "<title>Real Memo</title>"}
+
+    page = daily._public_page_check(
+        {"public_url": "https://researka.org/alpha/x"},
+        page_fetcher=fetcher, attempts=3, delay_s=0.0,
+    )
+    assert page["ok"] is True
+    assert page["status"] == "rendered"
+    assert calls["n"] == 2
+
+
+def test_public_page_check_default_is_single_shot() -> None:
+    # Default attempts=1 preserves the original single-fetch behaviour for the
+    # reconcile/demote callers (no surprise retries).
+    calls = {"n": 0}
+
+    def fetcher(_url: str) -> dict:
+        calls["n"] += 1
+        return {"ok": True, "status": 200,
+                "body": '<title data-next-head="">Alpha Memo Not Found</title>'}
+
+    page = daily._public_page_check(
+        {"public_url": "https://researka.org/alpha/x"}, page_fetcher=fetcher,
+    )
+    assert page["ok"] is False
+    assert page["status"] == "not_rendered"
+    assert calls["n"] == 1
+
+
+def test_sync_submission_decisions_promotes_recovered_public_page(tmp_path: Path) -> None:
+    # Inverse of the demote path: a memo Researka accepted whose page was not
+    # built at submit time and got marked public_page_not_rendered must be
+    # promoted to published once the page renders, instead of staying stuck.
+    root = tmp_path / "repo"
+    daily._write_json(root / "_daily_ledger" / "2026-06-11.json", {
+        "status": "public_page_not_rendered",
+        "published": 0,
+        "publish_failure_reason": "public_page_not_rendered",
+        "public_url": "https://researka.org/alpha/recovered",
+        "submission_id": "sub_recovered",
+    })
+
+    summary = daily.sync_submission_decisions(
+        root,
+        fetcher=lambda _sid: {"status": "complete", "decision": "accept"},
+        page_fetcher=lambda _url: {
+            "ok": True, "status": 200, "body": "<title>Live Memo</title>",
+        },
+    )
+
+    patched = json.loads(
+        (root / "_daily_ledger" / "2026-06-11.json").read_text(encoding="utf-8")
+    )
+    assert patched["status"] == "published"
+    assert patched["published"] == 1
+    assert "publish_failure_reason" not in patched
+    assert summary["published"] >= 1
