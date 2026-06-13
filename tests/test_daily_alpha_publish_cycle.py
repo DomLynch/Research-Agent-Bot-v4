@@ -3817,6 +3817,67 @@ def test_submission_payload_strips_internal_alpha_scores(tmp_path: Path) -> None
     assert payload["evidence_bundle"]["context_sources_are_not_direct_support"] is True
 
 
+def _cluster_run(tmp_path: Path, cluster: dict[str, Any]) -> Path:
+    run = tmp_path / "metformin-evidence-ts"
+    run.mkdir()
+    run.joinpath("claim_cluster.json").write_text(json.dumps(cluster), encoding="utf-8")
+    run.joinpath("all_facts.json").write_text(json.dumps([
+        {"fact_id": "1", "population": "diabetics", "canonical_phrase": "a"},
+        {"fact_id": "2", "population": "sepsis", "canonical_phrase": "b"},
+    ]), encoding="utf-8")
+    run.joinpath("fact_lanes.json").write_text(json.dumps({"verdicts": [
+        {"fact_id": "1", "lane": "A_core"}, {"fact_id": "2", "lane": "A_core"},
+    ]}), encoding="utf-8")
+    return run
+
+
+def test_refresh_claim_cluster_skips_already_flagged(tmp_path: Path) -> None:
+    """A fresh build already carries the homogeneity flag — never re-cluster it
+    (no repeat model cost, flag preserved exactly)."""
+    flagged = {"lead_fact_ids": ["1", "2"], "claim": "x",
+               "homogeneous": False, "conformance": 0.4}
+    run = _cluster_run(tmp_path, flagged)
+
+    daily._refresh_claim_cluster(run)
+
+    assert json.loads((run / "claim_cluster.json").read_text()) == flagged
+
+
+def test_refresh_claim_cluster_no_clobber_on_failure(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    """A flagless (stale/pre-fix) cluster is left intact when re-clustering yields
+    nothing (writer unavailable) — submission is never blocked or corrupted."""
+    stale = {"lead_fact_ids": ["1", "2"], "claim": "x"}  # no homogeneous flag
+    run = _cluster_run(tmp_path, stale)
+    monkeypatch.setattr(
+        "agent.claim_clusterer.densest_claim_cluster",
+        lambda *a, **k: {"lead_fact_ids": []},
+    )
+
+    daily._refresh_claim_cluster(run)
+
+    assert json.loads((run / "claim_cluster.json").read_text()) == stale
+
+
+def test_refresh_claim_cluster_recomputes_flag_on_stale_run(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    """The fix: a stale run with no flag IS re-clustered on the submit path, so a
+    fresh homogeneity verdict (here heterogeneous) reaches publish_tier instead of
+    the absent-flag default of homogeneous=True that surfaced doomed alpha memos."""
+    run = _cluster_run(tmp_path, {"lead_fact_ids": ["1", "2"], "claim": "x"})
+    fresh = {"lead_fact_ids": ["1", "2"], "claim": "metformin lowers mortality",
+             "homogeneous": False, "conformance": 0.4}
+    monkeypatch.setattr(
+        "agent.claim_clusterer.densest_claim_cluster", lambda *a, **k: fresh,
+    )
+
+    daily._refresh_claim_cluster(run)
+
+    assert json.loads((run / "claim_cluster.json").read_text()) == fresh
+
+
 def test_submission_payload_excerpt_does_not_cut_mid_sentence(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict()

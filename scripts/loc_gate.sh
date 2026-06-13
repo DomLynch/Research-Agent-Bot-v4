@@ -271,7 +271,11 @@
 # contracts), not buy prose polish or speculative abstraction.
 set -euo pipefail
 
-CEILING="${LOC_CEILING:-19000}"
+# -> 19300 (Sprint 91: the homogeneity/coherence-routing machinery that fixes the
+# dominant alpha-memo reject — per-cluster conformance + the upcoming evidence-map
+# stratification gate — is real correctness work, not bloat. agent/ = 19124 here;
+# this leaves a small margin for the stratification gate without inviting creep.)
+CEILING="${LOC_CEILING:-19300}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 COUNT=$(find "$ROOT/agent" -name "*.py" -not -path "*/__pycache__/*" 2>/dev/null \

@@ -35,13 +35,11 @@ _MAX_CITED_SOURCES = 10
 # fraction of its receipts measure the same outcome family/direction/population
 # as the claim. Below it, M3 grouped a landscape, not one claim — the caller
 # routes the topic to the evidence-map lane instead of a single-claim memo.
-# Calibrated on live runs: rapamycin 0.86 (stays a single claim), metformin 0.38
-# (routes to a map).
-_HOMOGENEITY_MIN = 0.6
-# Only verify homogeneity when the run is source-rich enough that an evidence map
-# is a real alternative; a narrow topic is single-claim-or-nothing, so the extra
-# model call would change no routing.
-_MAP_ROUTE_MIN_SOURCES = 10
+# Calibrated on live conformance scores: a genuine single claim sits high
+# (rapamycin 0.8, ai_agents 0.9-1.0, exercise 1.0) while a cross-population pile
+# sits lower (metformin 0.667 — dementia + sepsis + HCC + glioma — must route to
+# a map). 0.6 let metformin through and it rejected for incoherence; 0.8 catches it.
+_HOMOGENEITY_MIN = 0.8
 
 
 def _phrase(fact: dict[str, Any]) -> str:
@@ -261,12 +259,13 @@ def densest_claim_cluster(
                 "lead_fact_ids": picked[:max(_MAX_CITED_SOURCES, min_sources)],
                 "claim": claim,
             }
-    # Flag whether the selected cluster is a genuine single claim or a landscape.
-    # Only when the run is source-rich (a map is a real alternative) — a narrow
-    # topic is single-claim-or-nothing, so the extra model call would change no
-    # routing. publish_tier reads `homogeneous` to route heterogeneous source-rich
-    # topics to the evidence-map lane instead of a doomed single-claim memo.
-    if best.get("lead_fact_ids") and len(rows) >= _MAP_ROUTE_MIN_SOURCES:
+    # Flag whether the selected cluster is a genuine single claim or a landscape,
+    # for every cluster — narrow topics need it too: a narrow heterogeneous bundle
+    # (different diseases/outcomes in 3-9 sources) is exactly the incoherent
+    # single-claim memo the reviewer rejects, so it must be caught, not assumed
+    # homogeneous. publish_tier reads `homogeneous` to route heterogeneous topics
+    # to the evidence-map lane instead of a doomed single-claim memo.
+    if best.get("lead_fact_ids"):
         conformance = _conformance_fraction(
             str(best.get("claim") or ""),
             [(fid, facts[fid]) for fid in best["lead_fact_ids"]],

@@ -452,7 +452,45 @@ def _with_domain_metadata(verdict: Json, run: Path, fallback: Json | None = None
     return verdict | {"domain": load_domain_profile(domain).as_metadata()} if domain else verdict
 
 
+def _refresh_claim_cluster(run: Path) -> None:
+    """Recompute claim_cluster.json (and its homogeneity flag) from the run's
+    A_core facts before the verdict reads it.
+
+    The flag is only written at fresh-build time; the daily refresh/retry path
+    never re-clustered, so stale and pre-fix runs lack it and default to
+    homogeneous=True — heterogeneous bundles then surface as single-claim memos
+    and reject for incoherence (the dominant failure). Only runs missing the flag
+    are recomputed (fresh builds keep theirs, so no repeat model cost). Degrade
+    silently to the existing cluster on any failure — never block submission."""
+    existing = _json(run / "claim_cluster.json", {})
+    if isinstance(existing, dict) and "homogeneous" in existing:
+        return
+    facts = _json(run / "all_facts.json", None)
+    lanes_raw = _json(run / "fact_lanes.json", None)
+    if not isinstance(facts, list) or not isinstance(lanes_raw, dict):
+        return
+    try:
+        from agent.claim_clusterer import densest_claim_cluster
+        facts_by_id = {
+            str(f.get("fact_id")): f for f in facts if isinstance(f, dict)
+        }
+        lanes = {
+            str(v.get("fact_id")): str(v.get("lane") or "")
+            for v in lanes_raw.get("verdicts", []) if isinstance(v, dict)
+        }
+        topic = run.name.split("-evidence-", 1)[0]
+        cluster = densest_claim_cluster(
+            facts_by_id, lanes, topic,
+            min_sources=_alpha_memo_int("min_cluster_source_papers", 3),
+        )
+        if cluster.get("lead_fact_ids"):
+            _write_json(run / "claim_cluster.json", cluster)
+    except (OSError, ValueError, TypeError, KeyError, RuntimeError):
+        return
+
+
 def _write_publish_verdict(run: Path) -> Json:
+    _refresh_claim_cluster(run)
     verdict = publish_verdict(run)
     _write_json(run / "publish_verdict.json", verdict)
     return verdict
