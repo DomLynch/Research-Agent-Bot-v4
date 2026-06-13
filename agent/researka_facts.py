@@ -26,6 +26,7 @@ returned dicts if needed. Errors return [] silently.
 """
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Any
 
@@ -33,6 +34,8 @@ import httpx
 
 from agent.retrieval.base import normalize_doi
 from agent.settings import Settings
+
+_log = logging.getLogger(__name__)
 
 # The Tier-2 facts search only accepts these three domain literals and 422s on
 # anything else. Database/domain slugs (longevity_research, business_research,
@@ -116,31 +119,52 @@ def tier2_source_count(
     facts endpoint, yet the evidence build binds the same literature from the
     Tier-2 corpus via crosscheck. Counting Tier-2 source papers lets such
     topics clear the build-selection floor instead of being filtered out
-    unbuilt. Universal: no per-topic logic; returns 0 on any failure.
+    unbuilt. Universal: no per-topic logic; returns 0 on failure.
+
+    A transient API failure (timeout or 5xx — e.g. the search endpoint hitting
+    the gateway timeout while extraction saturates the corpus DB) is NOT a
+    genuine "0 sources" answer: it is retried once and logged, so a slow Tier-2
+    API does not silently look like an empty corpus and deprioritise live topics.
     """
     base = settings.researka_database_url.rstrip("/")
     token = settings.researka_database_token.strip()
     if not base or not token:
         return 0
-    try:
-        r = client.post(
-            f"{base}/api/v1/tier2/facts/search",
-            json={
-                # top_k only needs to exceed the source floor: we count distinct
-                # papers, not facts. Latency is the corpus scan, not result size.
-                "domain": tier2_domain(domain), "query": topic[:512], "top_k": 15,
-                "min_confidence": min_confidence, "numeric_only": False,
-            },
-            headers={"X-Researka-Token": token, "Content-Type": "application/json"},
-            # The Tier-2 semantic search runs ~40-90s from the VPS; a short
-            # timeout silently yields 0 and defeats the rescue. Callers bound
-            # how many sub-floor topics are probed per cycle (probe budget).
-            timeout=90.0,
-        )
-        r.raise_for_status()
-        data: Any = r.json()
-    except (httpx.HTTPError, ValueError):
-        return 0
+    url = f"{base}/api/v1/tier2/facts/search"
+    payload = {
+        # top_k only needs to exceed the source floor: we count distinct
+        # papers, not facts. Latency is the corpus scan, not result size.
+        "domain": tier2_domain(domain), "query": topic[:512], "top_k": 15,
+        "min_confidence": min_confidence, "numeric_only": False,
+    }
+    headers = {"X-Researka-Token": token, "Content-Type": "application/json"}
+    data: Any = None
+    # The Tier-2 semantic search runs ~40-90s; one retry covers a transient
+    # 5xx/timeout (load spike) so it is not misread as a definitive empty.
+    for attempt in range(2):
+        try:
+            r = client.post(url, json=payload, headers=headers, timeout=90.0)
+            r.raise_for_status()
+            data = r.json()
+            break
+        except (httpx.TimeoutException, httpx.HTTPStatusError) as e:
+            transient = isinstance(e, httpx.TimeoutException) or (
+                e.response.status_code >= 500
+            )
+            if transient and attempt == 0:
+                _log.warning(
+                    "tier2 source-count transient failure for %r (domain=%s): "
+                    "%s — retrying once", topic, domain, e,
+                )
+                continue
+            _log.warning(
+                "tier2 source-count unavailable for %r (domain=%s): %s — "
+                "reporting 0 (API unknown, not a verified empty corpus)",
+                topic, domain, e,
+            )
+            return 0
+        except (httpx.HTTPError, ValueError):
+            return 0
     if not isinstance(data, list):
         return 0
     papers: set[str] = set()

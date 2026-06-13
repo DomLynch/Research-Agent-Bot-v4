@@ -20,6 +20,7 @@ from agent.researka_facts import (
     ResearkaFact,
     filter_facts_by_doi,
     search_facts,
+    tier2_source_count,
 )
 from agent.settings import load_settings
 
@@ -253,3 +254,60 @@ async def test_crosscheck_result_dataclass_is_immutable() -> None:
     )
     with pytest.raises(AttributeError):
         r.verdict = "discrepant"  # type: ignore[misc]
+
+
+def _count_settings() -> Any:
+    return _settings_with(
+        researka_database_url="https://database.researka.org",
+        researka_database_token="t",
+    )
+
+
+def test_tier2_source_count_retries_once_on_504_then_reports_zero() -> None:
+    """A 504 (gateway timeout under extraction load) is transient, NOT a
+    verified empty corpus: it must retry once and still report 0 — never
+    silently treat a slow API as 'no sources'."""
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        return httpx.Response(504, text="gateway timeout")
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        n = tier2_source_count(
+            "labor_economics", client=client, settings=_count_settings(),
+            domain="business_research",
+        )
+
+    assert n == 0
+    assert calls["n"] == 2  # original + one retry on the transient 5xx
+
+
+def test_tier2_source_count_does_not_retry_on_genuine_empty() -> None:
+    """A 200 with an empty list is a real empty result — count 0, no retry."""
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        return httpx.Response(200, json=[])
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        n = tier2_source_count(
+            "x", client=client, settings=_count_settings(),
+        )
+
+    assert n == 0
+    assert calls["n"] == 1  # genuine empty is authoritative — no retry
+
+
+def test_tier2_source_count_counts_distinct_papers() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=[
+            {"paper": {"doi": "10.1/a"}}, {"paper": {"doi": "10.1/a"}},
+            {"paper": {"doi": "10.1/b"}},
+        ])
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        n = tier2_source_count("x", client=client, settings=_count_settings())
+
+    assert n == 2  # distinct papers, not facts
