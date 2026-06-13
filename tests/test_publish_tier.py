@@ -1275,3 +1275,18 @@ def test_noisy_broad_topic_gets_subtopic_recommendations(tmp_path: Path) -> None
     assert rec["recommended"] is True
     assert rec["reason"] == "high_d_bad_share_plus_semantic_dispersion"
     assert rec["clusters"]
+
+
+def test_tokens_drops_function_words_keeps_content() -> None:
+    """Closed-class function words (>=3 chars, so they survive the length
+    filter) must never be emitted as label/shape tokens — the source of the
+    live "..._was" junk child topics. Content words must still survive."""
+    toks = tier._tokens(
+        "the dose was reduced with rapamycin", "rapamycin", frozenset(),
+    )
+    assert toks == {"dose", "reduced"}
+    for function_word in ("was", "were", "the", "with", "from", "that"):
+        assert function_word in tier._FUNCTION_WORDS
+        assert function_word not in tier._tokens(
+            f"effect {function_word} measured", "topic", frozenset(),
+        )
