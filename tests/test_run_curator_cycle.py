@@ -223,6 +223,26 @@ def test_plan_topics_honors_excluded_before_cooldown() -> None:
     assert below_floor == []
 
 
+def test_plan_topics_dedups_near_identical_phrasings() -> None:
+    """Token-shuffled phrasings of one topic are the same submission — only the
+    first is planned; a genuinely distinct topic is kept."""
+    ranked = [
+        {"topic": "multi_agent_systems_higher_accuracy", "velocity_score": 9.0},
+        {"topic": "multi_agent_systems_accuracy_higher", "velocity_score": 8.0},
+        {"topic": "rapamycin_lifespan_mice", "velocity_score": 7.0},
+    ]
+
+    plan, skipped, _, _ = _plan_topics(
+        ranked, recent=set(), excluded=set(), top=5,
+    )
+
+    topics = [row["topic"] for row in plan]
+    assert "multi_agent_systems_higher_accuracy" in topics
+    assert "multi_agent_systems_accuracy_higher" not in topics
+    assert "rapamycin_lifespan_mice" in topics
+    assert "multi_agent_systems_accuracy_higher" in skipped
+
+
 def test_plan_topics_skips_below_direct_source_floor() -> None:
     ranked = [
         {"topic": "thin", "velocity_score": 9.0, "fact_source_count": 4},

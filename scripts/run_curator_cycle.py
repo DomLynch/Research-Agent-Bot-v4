@@ -109,6 +109,16 @@ _PREBUILD_MIN_SOURCE_FLOOR = max(1, _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES - 2)
 _STOP_ON_READY_DISCOVERY_FLOOR = 20
 _MAX_CHILD_RERUNS_PER_PARENT = 2
 _MAX_CHILD_RERUN_DEPTH = 1
+# Discovery emits near-duplicate phrasings of one topic (token-shuffled breadth
+# claims). Past this token-overlap a new candidate is the same topic re-worded —
+# planning it just burns a second submission slot on a guaranteed duplicate.
+_NEAR_DUP_JACCARD = 0.8
+
+
+def _topic_token_jaccard(a: set[str], b: set[str]) -> float:
+    if not a or not b:
+        return 0.0
+    return len(a & b) / len(a | b)
 
 
 def _discovery_top_for_plan(
@@ -386,6 +396,7 @@ def _plan_topics(
     tier2_supply: Callable[[str], int] | None = None,
 ) -> tuple[list[dict[str, Any]], list[str], list[str], list[str]]:
     plan: list[dict[str, Any]] = []
+    planned_token_sets: list[set[str]] = []
     underfloor: list[dict[str, Any]] = []
     skipped: list[str] = []
     skipped_excluded: list[str] = []
@@ -423,6 +434,12 @@ def _plan_topics(
         if min_fact_sources and count < min_fact_sources:
             underfloor.append(c)
             continue
+        toks = {t for t in topic.split("_") if t}
+        if any(_topic_token_jaccard(toks, seen) >= _NEAR_DUP_JACCARD
+               for seen in planned_token_sets):
+            skipped.append(topic)
+            continue
+        planned_token_sets.append(toks)
         plan.append(c)
         if len(plan) >= top:
             break
