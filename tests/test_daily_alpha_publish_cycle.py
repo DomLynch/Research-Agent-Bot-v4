@@ -6551,3 +6551,16 @@ def test_sync_submission_decisions_promotes_recovered_public_page(tmp_path: Path
     assert patched["published"] == 1
     assert "publish_failure_reason" not in patched
     assert summary["published"] >= 1
+
+
+def test_public_alpha_urls_accepts_papers_scheme() -> None:
+    # Researka migrated published alpha memos from /alpha/<id> to /papers/<id>;
+    # the extractor must recognise the current scheme or accepted memos can
+    # never be verified/promoted (they stay stuck at published=0).
+    assert daily._public_alpha_urls(
+        {"public_url": "https://researka.org/papers/0df073d3"}
+    ) == ["https://researka.org/papers/0df073d3"]
+    # Legacy form still works.
+    assert daily._public_alpha_urls(
+        {"public_url": "https://researka.org/alpha/d3c55248"}
+    ) == ["https://researka.org/alpha/d3c55248"]

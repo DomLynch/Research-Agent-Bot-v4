@@ -2780,7 +2780,12 @@ def _public_alpha_urls(payload: Any) -> list[str]:
                     "publication_url",
                     "url",
                 }:
-                    if "url" not in key_l or "/alpha/" in str(item):
+                    # Accept the Researka public-page form regardless of scheme:
+                    # the platform migrated alpha memos from /alpha/<id> to
+                    # /papers/<id>. The path token still distinguishes our
+                    # published page from cited-source URLs under "url" keys.
+                    item_s = str(item)
+                    if "url" not in key_l or "/alpha/" in item_s or "/papers/" in item_s:
                         add(item)
                 elif "id" in key_l and any(
                     token in key_l for token in ("alpha", "public", "publication")
