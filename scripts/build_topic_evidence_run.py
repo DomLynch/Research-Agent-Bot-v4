@@ -35,6 +35,7 @@ import httpx
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from agent import live_search
 from agent.alpha_selector import alpha_cues, alpha_score
 from agent.claim_clusterer import densest_claim_cluster
 from agent.domain_profile import domain_choices, load_domain_profile
@@ -69,6 +70,7 @@ _FETCH_WORKERS = 6  # concurrent queries: serial cascade exhausted the budget
 _FETCH_TOP_K = 500  # Researka per-query cap (raised to 500, confirmed live)
 _FETCH_FAILURE_STATUSES = frozenset({
     "timeout", "auth_failed", "server_error", "bad_json", "missing_token",
+    "unavailable",
 })
 _AI_RESULTS_DOMAIN = "ai_research"
 _AI_RESULTS_BUNDLE_LIMIT = 20
@@ -1001,6 +1003,48 @@ def _coerce_fetch_result(value: Any) -> FetchResult:
     return FetchResult([row for row in hits if isinstance(row, dict)], "ok")
 
 
+def _fetch_live_search_facts(
+    topic: str, trace: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    facts: list[dict[str, Any]] = []
+    for query in _diverse_queries(topic):
+        try:
+            records = live_search.search(
+                query, fields=["title", "abstract"], k=_FETCH_TOP_K,
+            )
+        except live_search.LiveSearchUnavailable as exc:
+            if trace is not None:
+                trace.append({
+                    "kind": "live_search",
+                    "query": query,
+                    "facts": 0,
+                    "status": "unavailable",
+                    "errors": [str(exc)],
+                })
+            return []
+        except (RuntimeError, ValueError, OSError) as exc:
+            if trace is not None:
+                trace.append({
+                    "kind": "live_search",
+                    "query": query,
+                    "facts": 0,
+                    "status": "server_error",
+                    "errors": [exc.__class__.__name__],
+                })
+            return []
+        query_facts = live_search.facts_from_records(records, topic)
+        facts.extend(query_facts)
+        if trace is not None:
+            trace.append({
+                "kind": "live_search",
+                "query": query,
+                "facts": len(query_facts),
+                "status": "ok",
+                "errors": [],
+            })
+    return _dedup_facts(facts)
+
+
 def _all_primary_fetches_failed(trace: list[dict[str, Any]]) -> bool:
     return bool(trace) and all(
         str(row.get("status") or "") in _FETCH_FAILURE_STATUSES
@@ -1021,6 +1065,8 @@ def _fetch_facts(
     When `trace` is given, each query records {kind, query, facts, status} —
     an OpenSeeker-style search trajectory (ok / empty / timeout) for receipts
     and auditability of which slices contributed vs failed."""
+    if live_search.enabled():
+        return _fetch_live_search_facts(topic, trace=trace)
     settings = load_settings()
     base = settings.researka_database_url.rstrip("/")
     token = settings.researka_database_token.strip()

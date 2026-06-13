@@ -5,6 +5,7 @@ description = "synthesis-lite: AAA-grade research-paper engine, ≤3,000 LOC cor
 requires-python = ">=3.11"
 dependencies = [
     "httpx>=0.27",
+    "tantivy>=0.26",
 ]
 
 [project.optional-dependencies]
