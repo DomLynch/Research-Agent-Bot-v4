@@ -370,6 +370,32 @@ def _receipt_ids_share_shape(
     return True
 
 
+def _evidence_map_stratified(
+    ids: list[str],
+    facts: dict[str, dict[str, Any]],
+    generic: frozenset[str],
+) -> bool:
+    """An evidence map is a landscape, not one claim restated N times: its findings
+    must vary on at least one axis (population, endpoint, or comparator). The
+    reviewer rejects a 'map' whose population column is constant for 35/40 rows as
+    a fake landscape. Universal — canonicalises generic fact fields, no domain
+    literals. Required (non-waived) for the map lane so a heterogeneous bundle
+    routed here actually publishes instead of rejecting again."""
+    items = [facts[fid] for fid in ids if fid in facts]
+    if len(items) < 2:
+        return False
+    shape_generic = generic | _SHAPE_GENERIC_TOKENS
+    for fields in (("population",), ("endpoint", "outcome"),
+                   ("comparator", "baseline_comparator")):
+        values = {
+            frozenset(_shape_tokens(fact, fields, shape_generic)) for fact in items
+        }
+        values.discard(frozenset())
+        if len(values) >= 2:
+            return True
+    return False
+
+
 def _numeric_value_patterns(value: Any) -> tuple[str, ...]:
     try:
         number = float(value)
@@ -1058,9 +1084,8 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     # the memo's narrow cluster. A heterogeneous topic's map cites that whole
     # breadth (multi-agent: 88 sources), so the map-route source floor must measure
     # it, not the handful the single-claim memo happened to cite.
-    landscape_a_core_sources = len(_source_papers(
-        [fid for fid in all_bound_ids if lanes.get(fid) in _DIRECT], facts,
-    ))
+    landscape_a_core_ids = [fid for fid in all_bound_ids if lanes.get(fid) in _DIRECT]
+    landscape_a_core_sources = len(_source_papers(landscape_a_core_ids, facts))
     # Read the writer-validated cluster first: its homogeneity decides whether the
     # topic is a single claim or a landscape.
     llm_cluster = _json(run_dir / "claim_cluster.json", {})
@@ -1095,6 +1120,13 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     evidence_map_ready = (
         bool(bound_ids)
         and not (set(blockers) - _EVIDENCE_MAP_WAIVED_BLOCKERS)
+        # Non-waived: a map must be a real landscape (>=2 distinct strata), or the
+        # panel rejects it as a constant-population fake landscape — the reject that
+        # a heterogeneous bundle routed here would otherwise hit again.
+        and _evidence_map_stratified(
+            landscape_a_core_ids, facts,
+            cfg["generic_tokens"] | cfg["cluster_stopwords"],
+        )
         and (
             (label == "evidence_map" and a_core_source_papers >= min_direct_source_papers)
             # The cluster-routed map cites the full landscape, so it clears the

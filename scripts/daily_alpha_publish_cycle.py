@@ -3606,8 +3606,8 @@ def _evidence_map_sections(
         ),
         "Evidence Landscape": (
             f"This evidence map surveys {n_sources} independent {topic} sources drawn "
-            "from the Tier-2 corpus and classified as direct findings. They span "
-            "several populations, comparators, and endpoints and are catalogued by "
+            "from the Tier-2 corpus and classified as direct findings. They vary "
+            "across population, comparator, and/or endpoint and are catalogued by "
             "source in the Findings Map rather than pooled into one estimate — "
             "cross-population aggregation is not claimed. Each row records its own "
             "population, comparator, endpoint, and effect, so the spread of the "

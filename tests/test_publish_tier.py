@@ -675,7 +675,15 @@ def test_heterogeneous_cluster_routes_to_evidence_map(tmp_path: Path) -> None:
     is the auto-routing lever: heterogeneous topics (most AI single-claim attempts)
     publish as maps instead of rejecting as incoherent alpha memos."""
     run = _run(tmp_path, score=10)  # 5 A_core; low score forces the waived-cluster
-    # path (ready=False) that real heterogeneous topics hit via source dispersion
+    # path (ready=False) that real heterogeneous topics hit via source dispersion.
+    # A real heterogeneous landscape varies by population — the non-waived
+    # stratification gate requires it (a constant-population map is a fake one).
+    facts = json.loads((run / "all_facts.json").read_text())
+    for fact, pop in zip(facts, (
+        "day-ahead markets", "real-time markets", "frequency reserve",
+        "capacity markets", "ancillary services"), strict=True):
+        fact["population"] = pop
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
     run.joinpath("claim_cluster.json").write_text(json.dumps({
         "claim": "Storage thresholds improve reserve reliability across markets",
         "lead_fact_ids": ["1", "2", "3", "4", "5"],
@@ -687,6 +695,26 @@ def test_heterogeneous_cluster_routes_to_evidence_map(tmp_path: Path) -> None:
 
     assert verdict["decision"] == "ready_to_publish"
     assert verdict["surface_type"] == "evidence_map"
+
+
+def test_unstratified_landscape_is_not_a_publishable_map(tmp_path: Path) -> None:
+    """A heterogeneous cluster whose findings all share ONE population (and no
+    other varying axis) is a fake landscape — the panel rejects it as a
+    constant-population map, so the non-waived stratification gate must keep it
+    out of the evidence_map lane rather than route it to a guaranteed reject."""
+    run = _run(tmp_path, score=10)
+    facts = json.loads((run / "all_facts.json").read_text())
+    for fact in facts:
+        fact["population"] = "grid operators"  # constant -> not a landscape
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    run.joinpath("claim_cluster.json").write_text(json.dumps({
+        "claim": "x", "lead_fact_ids": ["1", "2", "3", "4", "5"],
+        "homogeneous": False, "conformance": 0.38,
+    }), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["surface_type"] != "evidence_map"
 
 
 def test_homogeneous_cluster_stays_single_claim(tmp_path: Path) -> None:
