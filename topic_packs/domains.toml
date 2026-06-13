@@ -29,7 +29,7 @@ display_name = "Business research / strategy / operations"
 seed_topics_path = "business_research_discovery_seeds.toml"
 source_policy_path = "business_research_sources.toml"
 claim_schema_path = "business_research_claim_schema.toml"
-dry_run_only = true
+dry_run_only = false
 database_domain = "econ_business"
 
 [domains.management_research]
@@ -37,7 +37,7 @@ display_name = "Management / organizational behaviour research"
 seed_topics_path = "management_research_discovery_seeds.toml"
 source_policy_path = "management_research_sources.toml"
 claim_schema_path = "management_research_claim_schema.toml"
-dry_run_only = true
+dry_run_only = false
 database_domain = "econ_business"
 
 [domains.economics_research]
@@ -61,5 +61,5 @@ display_name = "Marketing research"
 seed_topics_path = "marketing_research_discovery_seeds.toml"
 source_policy_path = "marketing_research_sources.toml"
 claim_schema_path = "marketing_research_claim_schema.toml"
-dry_run_only = true
+dry_run_only = false
 database_domain = "econ_business"

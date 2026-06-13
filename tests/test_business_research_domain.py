@@ -57,13 +57,18 @@ def _fixture_facts() -> list[dict[str, Any]]:
     return rows
 
 
-def test_business_family_profiles_are_dry_run_and_seeded() -> None:
+def test_business_family_profiles_are_live_and_seeded() -> None:
+    # All five business-family domains are ungated (audit #6): the econ_business
+    # corpus now carries publishable facts, and the publish-tier gates
+    # (homogeneity routing, stratification, payload-complete) are the quality
+    # check — not the dry-run flag. economics/finance were already live; this
+    # brings business/management/marketing in line.
     dry_run = {
-        "business_research": True,
-        "management_research": True,
+        "business_research": False,
+        "management_research": False,
         "economics_research": False,
         "finance_research": False,
-        "marketing_research": True,
+        "marketing_research": False,
     }
     for domain in (
         "business_research",
@@ -428,7 +433,7 @@ def test_finance_return_facts_reject_mixed_signal_families() -> None:
     assert bundle is None
 
 
-def test_business_candidate_cli_builds_ready_dry_run_queue(
+def test_business_candidate_cli_builds_ready_queue(
     tmp_path: Path,
     monkeypatch: Any,
 ) -> None:
@@ -457,7 +462,7 @@ def test_business_candidate_cli_builds_ready_dry_run_queue(
     verdict = json.loads((run_dir / "publish_verdict.json").read_text(encoding="utf-8"))
     matrix = json.loads((run_dir / "claim_receipt_matrix.json").read_text(encoding="utf-8"))
     audit = json.loads((run_dir / "memo_audit.json").read_text(encoding="utf-8"))
-    assert manifest["dry_run_only"] is True
+    assert manifest["dry_run_only"] is False  # ungated (audit #6)
     assert manifest["domain"]["slug"] == "management_research"
     assert facts[0]["result_shape"]["study_design"] == "quasi experimental panel"
     assert verdict["decision"] == "ready_to_publish"
@@ -657,7 +662,20 @@ def test_business_sweep_submit_guard_blocks_dry_run_domain(
     tmp_path: Path,
     monkeypatch: Any,
 ) -> None:
+    # The real business domains are now ungated (audit #6), so the dry-run
+    # submit guard is exercised against a synthetic dry-run profile — the guard
+    # logic is config-independent (mirrors the live-profile injection below).
+    base = load_domain_profile("management_research")
+    dry_run_profile = DomainProfile(
+        slug=base.slug,
+        display_name=base.display_name,
+        seed_topics_path=base.seed_topics_path,
+        source_policy_path=base.source_policy_path,
+        claim_schema_path=base.claim_schema_path,
+        dry_run_only=True,
+    )
     monkeypatch.setattr(sweep, "_DOMAINS", ("management_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: dry_run_profile)
     monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: ["management_practices_productivity"])
     monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: (_fixture_facts(), {"status": "ok"}))
     monkeypatch.setattr(sys, "argv", [
