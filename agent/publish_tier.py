@@ -72,6 +72,23 @@ _SHAPE_GENERIC_TOKENS = frozenset({
     "datasets", "model", "models", "system", "systems", "protocol",
     "protocols", "baseline", "baselines", "study", "studies", "shot",
 })
+# Closed-class English function words (be-verbs, auxiliaries, prepositions,
+# conjunctions, determiners, pronouns). Each is >=3 chars, so it survives the
+# tokenizer length filter, yet none is ever a meaningful topic/shape/label
+# token. Left unfiltered they surface as cluster labels and become junk child
+# topics that bind zero receipts (the live "..._was" topics). Universal — no
+# domain literals; content words (loss, body, dose) are deliberately excluded.
+_FUNCTION_WORDS = frozenset({
+    "was", "were", "been", "being", "are", "has", "had", "have", "having",
+    "and", "the", "for", "with", "without", "within", "from", "into", "onto",
+    "that", "this", "these", "those", "than", "then", "thus", "such",
+    "when", "what", "which", "while", "where", "will", "would", "could",
+    "should", "their", "there", "here", "about", "across", "among", "amongst",
+    "between", "over", "under", "upon", "versus", "via", "per", "but", "not",
+    "any", "all", "its", "his", "her", "our", "your", "they", "them", "may",
+    "can", "also", "more", "most", "less", "least", "each", "both", "some",
+    "due", "however", "whether",
+})
 _COUNTED_SOURCE_ARTIFACT_RE = re.compile(
     r"\b\d+\s+(?:of|/)\s+\d+\s+"
     r"(?:cited\s+|direct\s+|source\s+)?"
@@ -262,7 +279,10 @@ def _lane_map(run_dir: Path) -> dict[str, str]:
 def _tokens(text: str, topic: str, generic: frozenset[str]) -> set[str]:
     topic_tokens = set(re.findall(r"[a-z0-9]{3,}", topic.lower()))
     out = set(re.findall(r"[a-z0-9]{3,}", text.lower()))
-    return {t for t in out if t not in generic and t not in topic_tokens}
+    return {
+        t for t in out
+        if t not in generic and t not in topic_tokens and t not in _FUNCTION_WORDS
+    }
 
 
 def _claim_fit_score(left: set[str], right: set[str]) -> float:

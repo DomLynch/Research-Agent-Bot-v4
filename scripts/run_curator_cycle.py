@@ -48,6 +48,7 @@ from daily_alpha_publish_cycle import (  # noqa: E402
 )
 
 from agent.domain_profile import domain_choices, domain_slug  # noqa: E402
+from agent.publish_tier import _FUNCTION_WORDS  # noqa: E402
 from agent.researka_facts import tier2_source_count  # noqa: E402
 from agent.settings import load_settings  # noqa: E402
 from agent.topic_discovery import (  # noqa: E402
@@ -271,6 +272,15 @@ def _child_topics_from_verdict(run_dir: str, seen: set[str]) -> list[str]:
             continue
         label = str(cluster.get("label") or "").strip("_")
         if not label or label == "unlabeled":
+            continue
+        # A child must add a content word over its parent. Labels that reduce
+        # to closed-class function words ("was", "with") yield junk topics that
+        # bind zero receipts, so skip them (also defends against stale verdicts
+        # written before the labeller dropped function words).
+        if not [
+            t for t in re.findall(r"[a-z0-9]{3,}", label.lower())
+            if t not in _FUNCTION_WORDS
+        ]:
             continue
         child = "_".join(x for x in (parent, label) if x)
         child = cap_topic_slug("_".join(re.findall(r"[a-z0-9]+", child.lower())))

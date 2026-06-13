@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 from run_curator_cycle import (
     TopicResult,
+    _child_topics_from_verdict,
     _discovery_top_for_plan,
     _plan_topics,
     _read_discovery_top,
@@ -1118,3 +1119,33 @@ def test_universal_non_biomedical_topic(tmp_path: Path) -> None:
                           now - dt.timedelta(hours=2))
     recent = _recent_signal_topics(tmp_path, cooldown_hours=24.0, now=now)
     assert recent == {"carbon_tax"}
+
+
+def test_child_topics_drop_function_word_labels(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    """A cluster label that reduces to a stopword ('was') must never become a
+    child topic — the live "..._was" regression that bound zero receipts."""
+    import run_curator_cycle
+
+    run_dir = tmp_path / "runs" / "therapeutic_plasma_exchange-evidence-ts"
+    run_dir.mkdir(parents=True)
+    run_dir.joinpath("publish_verdict.json").write_text(json.dumps({
+        "decision": "agent_repair_needed",
+        "topic": "therapeutic_plasma_exchange",
+        "subtopic_recommendations": {
+            "recommended": True,
+            "clusters": [
+                {"label": "was"},      # pure stopword -> dropped
+                {"label": "parabiosis"},  # real content -> kept (within token cap)
+            ],
+        },
+    }), encoding="utf-8")
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+
+    children = _child_topics_from_verdict(
+        "runs/therapeutic_plasma_exchange-evidence-ts", set(),
+    )
+
+    assert children == ["therapeutic_plasma_exchange_parabiosis"]
+    assert not any(c.endswith("_was") for c in children)
