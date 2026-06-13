@@ -1392,6 +1392,12 @@ def _render_md(topic: str, ts: str, top: list[tuple[int, dict[str, Any]]],
         source = (f"Researka DB Tier-1 canonical "
                   f"(`GET /api/v1/topics/{topic}/facts`) — "
                   "hand-curated, validated.")
+    elif tier == "live_search":
+        source = (
+            "Local Tantivy live-search index "
+            "(`LIVE_SEARCH=1`, title+abstract BM25) — full-corpus paper "
+            "candidates, fact extraction pending parity gate."
+        )
     else:
         source = (f"Researka DB Tier-2 search "
                   f"(`POST /api/v1/tier2/facts/search`, filter topic={topic}) "
@@ -1780,22 +1786,32 @@ def main() -> int:
             "researka_db POST /api/v1/ai/results/search "
             "(AI result bundle; one receipt per source paper)"
         )
+    elif tier == "live_search":
+        source = (
+            "local Tantivy index via LIVE_SEARCH=1 "
+            "(title+abstract BM25 paper candidates)"
+        )
     else:
         source = (
             "researka_db POST /api/v1/tier2/facts/search "
             "(Tier-2 fallback; topic filter on response)"
         )
     fact_fetch_plan = []
-    if profile.slug == _AI_RESULTS_DOMAIN:
+    if live_search.enabled():
         fact_fetch_plan.append(
-            "AI result bundles via POST /api/v1/ai/results/search",
+            "local Tantivy title+abstract BM25 via LIVE_SEARCH_INDEX_PATH",
         )
-    fact_fetch_plan.extend([
-        "strict audited numeric facts via POST /api/v1/tier2/facts/search",
-        "validated topic facts via GET /api/v1/topics/{topic}/facts",
-        "normal numeric fact graph via POST /api/v1/tier2/facts/search",
-        "normal all-fact graph when source diversity is still thin",
-    ])
+    else:
+        if profile.slug == _AI_RESULTS_DOMAIN:
+            fact_fetch_plan.append(
+                "AI result bundles via POST /api/v1/ai/results/search",
+            )
+        fact_fetch_plan.extend([
+            "strict audited numeric facts via POST /api/v1/tier2/facts/search",
+            "validated topic facts via GET /api/v1/topics/{topic}/facts",
+            "normal numeric fact graph via POST /api/v1/tier2/facts/search",
+            "normal all-fact graph when source diversity is still thin",
+        ])
     manifest = {
         "domain": profile.as_metadata(),
         "topic": args.topic, "snapshot_utc": ts, "top_n": args.top,

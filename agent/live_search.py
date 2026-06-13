@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import dataclass, replace
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -95,14 +96,20 @@ def create_index(path: Path) -> Any:
     return index
 
 
-def open_index(path: Path | None = None) -> Any:
-    target = path or default_index_path()
+@lru_cache(maxsize=4)
+def _open_index_cached(path: str) -> Any:
+    target = Path(path)
     if not target.exists():
         raise LiveSearchUnavailable(f"index path does not exist: {target}")
     tantivy = _tantivy()
     index = tantivy.Index.open(str(target))
     _register_analyzer(index)
     return index
+
+
+def open_index(path: Path | None = None) -> Any:
+    target = path or default_index_path()
+    return _open_index_cached(str(target))
 
 
 def _first(doc: dict[str, Any], key: str, default: Any = "") -> Any:
@@ -172,7 +179,7 @@ def search(
         wanted = list(_DEFAULT_FIELDS)
     query_obj = index.parse_query(clean_query[:512], wanted)
     searcher = index.searcher()
-    results = searcher.search(query_obj, max(k * 5, k))
+    results = searcher.search(query_obj, k)
     records: list[PaperRecord] = []
     for bm25, address in results.hits:
         doc = searcher.doc(address).to_dict()

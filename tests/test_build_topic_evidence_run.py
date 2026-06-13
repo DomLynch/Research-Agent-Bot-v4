@@ -3,6 +3,7 @@ import sys
 from typing import Any
 
 import scripts.build_topic_evidence_run as er
+from agent import live_search
 
 
 def test_fetch_facts_records_search_trace(monkeypatch) -> None:  # type: ignore[no-untyped-def]
@@ -49,6 +50,48 @@ def test_fetch_timeout_is_not_empty_evidence(monkeypatch) -> None:  # type: igno
     assert trace
     assert {row["status"] for row in trace} == {"timeout"}
     assert er._all_primary_fetches_failed(trace) is True
+
+
+def test_live_search_flag_uses_local_provider(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.setenv("LIVE_SEARCH", "1")
+    monkeypatch.setattr(er, "_diverse_queries", lambda _t: ["minimum wage employment"])
+
+    def _tier2_should_not_run(*_args: Any, **_kwargs: Any) -> er.FetchResult:
+        raise AssertionError("LIVE_SEARCH=1 must bypass Tier-2 HTTP fetch")
+
+    def _fake_search(
+        query: str, *, fields: list[str] | None = None, k: int = 400,
+    ) -> list[live_search.PaperRecord]:
+        assert query == "minimum wage employment"
+        assert fields == ["title", "abstract"]
+        assert k == er._FETCH_TOP_K
+        return [
+            live_search.PaperRecord(
+                paper_id="p1",
+                title="Minimum wage employment effects",
+                abstract="",
+                publication_year=2021,
+                cited_by_count=10,
+                paper_type="article",
+                doi="10.1/wage",
+            ),
+        ]
+
+    monkeypatch.setattr(er, "_fetch_one", _tier2_should_not_run)
+    monkeypatch.setattr(live_search, "search", _fake_search)
+    trace: list[dict[str, Any]] = []
+
+    facts = er._fetch_facts("minimum_wage", trace=trace)
+
+    assert facts[0]["_tier"] == "live_search"
+    assert facts[0]["source_paper"]["doi"] == "10.1/wage"
+    assert trace == [{
+        "kind": "live_search",
+        "query": "minimum wage employment",
+        "facts": 1,
+        "status": "ok",
+        "errors": [],
+    }]
 
 
 def test_empty_fact_run_writes_empty_frontier_sidecars(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
