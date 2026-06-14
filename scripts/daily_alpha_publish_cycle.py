@@ -493,33 +493,60 @@ def _write_publish_verdict(run: Path) -> Json:
     _refresh_claim_cluster(run)
     verdict = publish_verdict(run)
     _write_json(run / "publish_verdict.json", verdict)
-    _maybe_verify_citations(run, verdict)
+    _run_advisories(run, verdict)
     return verdict
 
 
-def _maybe_verify_citations(run: Path, verdict: Json) -> None:
-    """Opt-in advisory external citation-existence check — never blocks a run.
+def _advisory_on(flag: str) -> bool:
+    return os.environ.get(flag, "").strip().lower() in ("1", "true", "yes", "on")
 
-    Off by default; enable via env ``ALPHA_CITATION_VERIFY=true`` (e.g. in the
-    systemd EnvironmentFile). Verifies cited source papers against CrossRef /
-    OpenAlex, writes ``citation_verify.json``, and records a compact summary on
-    the verdict. Degrades silently so it can never break publishing.
+
+def _run_advisories(run: Path, verdict: Json) -> None:
+    """Opt-in, advisory post-verdict analyses — each env-gated, isolated, and
+    incapable of blocking or changing the publish ``decision``.
+
+    Off by default. Enable per-feature (e.g. in the systemd EnvironmentFile):
+      - ``ALPHA_CITATION_VERIFY``   external citation-existence check
+      - ``ALPHA_CONSENSUS_SPLIT``   evidence-map agree/disagree/open partition
+      - ``ALPHA_QUALITY_SCORECARD`` composed multi-dimension quality scorecard
+    Each writes its own sidecar + a compact verdict summary, and degrades
+    silently so it can never break publishing. Order matters only in that the
+    scorecard reads the citation sidecar when both are enabled.
     """
-    if os.environ.get(
-        "ALPHA_CITATION_VERIFY", "",
-    ).strip().lower() not in ("1", "true", "yes"):
-        return
-    try:
-        from agent.citation_verify import verify_run
-        report = verify_run(run)
-        verdict["citation_verify"] = {
-            "checked": report.get("checked"),
-            "counts": report.get("counts"),
-            "has_hallucinated": report.get("has_hallucinated"),
-        }
-        _write_json(run / "publish_verdict.json", verdict)
-    except (ImportError, OSError, ValueError, TypeError):
-        pass
+    mutated = False
+    if _advisory_on("ALPHA_CITATION_VERIFY"):
+        with suppress(Exception):  # advisory: best-effort, must never crash the cycle
+            from agent.citation_verify import verify_run
+            rep = verify_run(run)
+            verdict["citation_verify"] = {
+                "checked": rep.get("checked"), "counts": rep.get("counts"),
+                "has_hallucinated": rep.get("has_hallucinated"),
+            }
+            mutated = True
+    if _advisory_on("ALPHA_CONSENSUS_SPLIT"):
+        with suppress(Exception):  # advisory: best-effort, must never crash the cycle
+            from agent.consensus_split import partition
+            raw = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+            report = partition(raw if isinstance(raw, list) else [])
+            _write_json(run / "consensus_split.json", report.as_dict())
+            verdict["consensus_split"] = {
+                "consensus_direction": report.consensus_direction,
+                "has_disagreement": report.has_disagreement,
+                "summary": report.summary,
+            }
+            mutated = True
+    if _advisory_on("ALPHA_QUALITY_SCORECARD"):
+        with suppress(Exception):  # advisory: best-effort, must never crash the cycle
+            from agent.quality_scorecard import scorecard
+            sc = scorecard(run)
+            verdict["quality_scorecard"] = {
+                "overall": sc.get("overall"), "band": sc.get("band"),
+                "floor_breaches": sc.get("floor_breaches"),
+            }
+            mutated = True
+    if mutated:
+        with suppress(OSError):
+            _write_json(run / "publish_verdict.json", verdict)
 
 
 def _current_selection_verdict(verdict: Json, root: Path) -> Json:

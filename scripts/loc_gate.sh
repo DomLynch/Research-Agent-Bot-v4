@@ -279,7 +279,12 @@ set -euo pipefail
 # CrossRef/OpenAlex DOI+title-match -> VERIFIED/SUSPICIOUS/HALLUCINATED. This is a
 # provenance validator that prevents the fabricated/mis-attributed-citation
 # fake-evidence mode this gate explicitly funds, not prose. agent/ = 19447 here.)
-CEILING="${LOC_CEILING:-19550}"
+# -> 19850 (two deterministic, no-LLM validators: consensus_split.py partitions
+# evidence-map findings into agree/disagree/open (kills the "fake landscape that
+# hides a conflict" mode); quality_scorecard.py composes existing signals into one
+# multi-dimension score (kills quality-blind pass/fail). Both fund the fake-
+# evidence rule; neither duplicates an existing path. agent/ = 19782 here.)
+CEILING="${LOC_CEILING:-19850}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 COUNT=$(find "$ROOT/agent" -name "*.py" -not -path "*/__pycache__/*" 2>/dev/null \
