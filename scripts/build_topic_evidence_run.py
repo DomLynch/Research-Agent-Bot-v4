@@ -65,7 +65,11 @@ _FACT_FETCH_TIMEOUT_SECONDS = 75.0  # per-query; Tier-2 latency rose to ~40s by
 # 2026-06, so a 25s cap starved every build to 0 facts (timeout) and stalled all
 # publishing — confirmed: metformin returns 0 facts at 25s, 121 facts at 90s.
 _FACT_FETCH_BUDGET_SECONDS = 240.0  # overall wall-cap across concurrent waves
-_FETCH_WORKERS = 6  # concurrent queries: serial cascade exhausted the budget
+_FETCH_WORKERS = 4  # concurrent queries: capped to the facts endpoint's measured
+# capacity (matches topic_discovery._FACT_PROBE_WORKERS). At 6 the build over-
+# subscribed the shared Tier-2 API past ~4 concurrent, so every query climbed past
+# its timeout and 504'd -> 0 facts bound -> no_fresh_candidate. 4 keeps each query
+# under the gateway timeout so facts actually bind; serial was the other extreme.
 _FETCH_TOP_K = 500  # Researka per-query cap (raised to 500, confirmed live)
 _FETCH_FAILURE_STATUSES = frozenset({
     "timeout", "auth_failed", "server_error", "bad_json", "missing_token",
