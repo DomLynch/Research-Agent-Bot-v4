@@ -71,14 +71,40 @@ def test_doi_title_mismatch_is_suspicious_or_hallucinated() -> None:
     assert res.confidence < 0.8
 
 
-def test_doi_404_is_hallucinated() -> None:
-    client = _Client({"crossref": _Resp(404, None)})
+def test_doi_404_alone_is_not_hard_hallucinated_arxiv_case() -> None:
+    # arXiv/DataCite DOIs aren't in CrossRef -> 404. But OpenAlex finds the paper
+    # by title -> must VERIFY, not falsely HALLUCINATE.
+    client = _Client({
+        "crossref": _Resp(404, None),
+        "openalex": _Resp(200, {"results": [{"title": "Attention is all you need"}]}),
+    })
     res = verify_source(
-        {"doi": "10.9999/nonexistent", "title": "Made up paper"},
+        {"doi": "10.48550/arXiv.1706.03762", "title": "Attention is all you need"},
+        client=client,  # type: ignore[arg-type]
+    )
+    assert res.status is CiteStatus.VERIFIED
+    assert res.method == "openalex_title"
+
+
+def test_doi_404_corroborated_by_title_miss_is_hallucinated() -> None:
+    # absent from CrossRef AND not in OpenAlex -> two authorities agree -> hallucinated
+    client = _Client({
+        "crossref": _Resp(404, None),
+        "openalex": _Resp(200, {"results": []}),
+    })
+    res = verify_source(
+        {"doi": "10.9999/nonexistent", "title": "A fabricated paper title"},
         client=client,  # type: ignore[arg-type]
     )
     assert res.status is CiteStatus.HALLUCINATED
-    assert res.method == "crossref_doi"
+    assert res.method == "openalex_title"
+
+
+def test_doi_404_without_title_is_skipped_not_hallucinated() -> None:
+    # 404 alone, nothing to corroborate -> conservative SKIP, never a hard reject
+    client = _Client({"crossref": _Resp(404, None)})
+    res = verify_source({"doi": "10.9999/nonexistent"}, client=client)  # type: ignore[arg-type]
+    assert res.status is CiteStatus.SKIPPED
 
 
 def test_doi_transport_error_falls_through_to_title_then_verified() -> None:
@@ -94,13 +120,14 @@ def test_doi_transport_error_falls_through_to_title_then_verified() -> None:
     assert res.method == "openalex_title"
 
 
-def test_openalex_empty_results_is_hallucinated() -> None:
+def test_title_only_openalex_miss_is_suspicious_not_hallucinated() -> None:
+    # No DOI to corroborate -> an OpenAlex coverage gap must not be a hard reject.
     client = _Client({"openalex": _Resp(200, {"results": []})})
     res = verify_source(
         {"title": "A paper that does not exist anywhere"},
         client=client,  # type: ignore[arg-type]
     )
-    assert res.status is CiteStatus.HALLUCINATED
+    assert res.status is CiteStatus.SUSPICIOUS
     assert res.method == "openalex_title"
 
 
@@ -130,7 +157,7 @@ def test_verify_sources_dedups_counts_and_flags() -> None:
     sources = [
         {"doi": "10.1/abc", "title": "Creatine and strength"},   # VERIFIED via doi
         {"doi": "10.1/abc", "title": "Creatine and strength"},   # duplicate -> dropped
-        {"title": "A nonexistent fabricated paper title"},        # HALLUCINATED via openalex empty
+        {"title": "A nonexistent fabricated paper title"},        # SUSPICIOUS (no DOI to corroborate)
     ]
     report = verify_sources(sources, client=client, max_checks=10)  # type: ignore[arg-type]
     assert report["distinct_sources"] == 2
@@ -138,8 +165,10 @@ def test_verify_sources_dedups_counts_and_flags() -> None:
     counts = report["counts"]
     assert isinstance(counts, dict)
     assert counts[CiteStatus.VERIFIED.value] == 1
-    assert counts[CiteStatus.HALLUCINATED.value] == 1
-    assert report["has_hallucinated"] is True
+    assert counts[CiteStatus.SUSPICIOUS.value] == 1
+    assert counts[CiteStatus.HALLUCINATED.value] == 0
+    assert report["has_suspicious"] is True
+    assert report["has_hallucinated"] is False
 
 
 def test_verify_sources_respects_max_checks() -> None:

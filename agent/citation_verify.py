@@ -11,9 +11,11 @@ Adapted from AutoResearchClaw's ``literature/verify.py`` (MIT). We use ``httpx``
 Design contract — must never break a working publish run:
   - **Graceful**: any network / JSON / parse failure degrades to ``SKIPPED``;
     nothing here raises.
-  - **Conservative**: ``HALLUCINATED`` is only assigned on a *positive* "not
-    found" from an authority AND no title match anywhere; when uncertain we
-    return ``SKIPPED``, never a false reject.
+  - **Conservative / corroborated**: ``HALLUCINATED`` requires TWO authorities to
+    agree a citation is absent — a CrossRef DOI 404 *and* an OpenAlex title miss.
+    A CrossRef 404 alone is never a hard reject (arXiv/DataCite DOIs aren't in
+    CrossRef), and an OpenAlex-only miss (no DOI to corroborate) is downgraded to
+    ``SUSPICIOUS``. When uncertain we return ``SKIPPED``, never a false reject.
   - **Bounded**: short per-call timeout, a cap on distinct sources checked, and
     a total wall-clock budget.
   - **Advisory by default**: callers gate invocation on a settings flag; this
@@ -117,32 +119,38 @@ def _get_json(
 
 def _verify_by_doi(
     client: httpx.Client, doi: str, expected_title: str, *, timeout: float,
-) -> CiteResult | None:
+) -> tuple[CiteResult | None, bool]:
+    """Resolve a DOI against CrossRef -> ``(result, doi_absent)``.
+
+    ``result`` is set only on a CrossRef hit (200), classified by title match.
+    ``doi_absent`` is True only on a 404 — but a 404 ALONE is not proof of
+    fabrication: arXiv (10.48550/arXiv.*) and DataCite DOIs are not in CrossRef,
+    so the caller corroborates via the title search before concluding.
+    """
     raw = doi.strip()
     for prefix in ("https://doi.org/", "http://doi.org/", "doi:"):
         if raw.lower().startswith(prefix):
             raw = raw[len(prefix):]
     raw = raw.strip()
     if not raw:
-        return None
+        return None, False
     code, data = _get_json(
         client, _CROSSREF_WORK + urllib.parse.quote(raw, safe=""), timeout=timeout,
     )
     if code == 404:
-        # Definitive "this DOI does not exist" — a strong hallucination signal.
-        return CiteResult(raw, CiteStatus.HALLUCINATED, 0.0, "crossref_doi", "")
+        return None, True  # absent from CrossRef -> let the title search corroborate
     if code != 200 or not isinstance(data, dict):
-        return None  # transport/unknown -> let title search try, else SKIP
+        return None, False  # transport/unknown -> let title search try, else SKIP
     message = data.get("message")
     titles = message.get("title") if isinstance(message, dict) else None
     found = titles[0] if isinstance(titles, list) and titles else ""
     if not expected_title:
-        return CiteResult(raw, CiteStatus.VERIFIED, 1.0, "crossref_doi", str(found))
-    return _classify(_title_sim(expected_title, str(found)), "crossref_doi", raw, str(found))
+        return CiteResult(raw, CiteStatus.VERIFIED, 1.0, "crossref_doi", str(found)), False
+    return _classify(_title_sim(expected_title, str(found)), "crossref_doi", raw, str(found)), False
 
 
 def _verify_by_title(
-    client: httpx.Client, title: str, *, timeout: float,
+    client: httpx.Client, title: str, *, timeout: float, doi_absent: bool = False,
 ) -> CiteResult | None:
     if not title.strip():
         return None
@@ -152,8 +160,11 @@ def _verify_by_title(
         return None  # unreachable -> SKIP (never false-reject on API outage)
     results = data.get("results")
     if not isinstance(results, list) or not results:
-        # OpenAlex answered and found nothing for a real title -> not found.
-        return CiteResult(title[:80], CiteStatus.HALLUCINATED, 0.0, "openalex_title", "")
+        # Not found in OpenAlex. HALLUCINATED only when corroborated by a CrossRef
+        # 404 (two authorities agree it's absent); an OpenAlex-only miss is a
+        # coverage gap -> SUSPICIOUS, never a hard reject (obscure/arXiv preprints).
+        status = CiteStatus.HALLUCINATED if doi_absent else CiteStatus.SUSPICIOUS
+        return CiteResult(title[:80], status, 0.0, "openalex_title", "")
     found = results[0].get("title") if isinstance(results[0], dict) else ""
     return _classify(_title_sim(title, str(found or "")), "openalex_title", title[:80], str(found or ""))
 
@@ -164,15 +175,16 @@ def verify_source(
     """Verify one source_paper dict ({doi, title, ...}). Never raises."""
     doi = str(source.get("doi") or "").strip()
     title = str(source.get("title") or "").strip()
+    doi_absent = False
     try:
         if doi:
-            res = _verify_by_doi(client, doi, title, timeout=timeout)
+            res, doi_absent = _verify_by_doi(client, doi, title, timeout=timeout)
             if res is not None:
                 return res
         if title:
-            res = _verify_by_title(client, title, timeout=timeout)
-            if res is not None:
-                return res
+            by_title = _verify_by_title(client, title, timeout=timeout, doi_absent=doi_absent)
+            if by_title is not None:
+                return by_title
     except Exception as exc:  # belt-and-braces: never propagate
         logger.debug("citation_verify unexpected error: %s", exc)
     key = doi or title[:80] or "?"
