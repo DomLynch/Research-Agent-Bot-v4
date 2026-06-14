@@ -31,6 +31,15 @@ runs/_publish_queue.json.tmp
 runs/_ai_results_index_scale/
 # Local domain inventory snapshots; regenerated on demand from receipts.
 runs/_domain_inventory/
+# Business-sweep diagnostics + daily ledger: runtime state rewritten every cycle.
+runs/_business_diagnostics/
+runs/_daily_ledger/
+# Opt-in advisory sidecars (citation/consensus/scorecard): per-run runtime
+# analysis written by _run_advisories when the ALPHA_* flags are on — diagnostics,
+# not deliverables, regenerated each cycle (would otherwise dirty every run dir).
+runs/*-evidence-*/citation_verify.json
+runs/*-evidence-*/consensus_split.json
+runs/*-evidence-*/quality_scorecard.json
 
 # macOS Finder dedup-on-copy artifacts ("foo 2.json", "main_draft 2.md", etc.).
 # Never canonical; have polluted run-dir bundles before.
