@@ -275,7 +275,11 @@ set -euo pipefail
 # dominant alpha-memo reject — per-cluster conformance + the upcoming evidence-map
 # stratification gate — is real correctness work, not bloat. agent/ = 19124 here;
 # this leaves a small margin for the stratification gate without inviting creep.)
-CEILING="${LOC_CEILING:-19300}"
+# -> 19550 (citation_verify.py: external citation-EXISTENCE validation —
+# CrossRef/OpenAlex DOI+title-match -> VERIFIED/SUSPICIOUS/HALLUCINATED. This is a
+# provenance validator that prevents the fabricated/mis-attributed-citation
+# fake-evidence mode this gate explicitly funds, not prose. agent/ = 19447 here.)
+CEILING="${LOC_CEILING:-19550}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 COUNT=$(find "$ROOT/agent" -name "*.py" -not -path "*/__pycache__/*" 2>/dev/null \

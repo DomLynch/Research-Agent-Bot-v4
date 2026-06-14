@@ -493,7 +493,33 @@ def _write_publish_verdict(run: Path) -> Json:
     _refresh_claim_cluster(run)
     verdict = publish_verdict(run)
     _write_json(run / "publish_verdict.json", verdict)
+    _maybe_verify_citations(run, verdict)
     return verdict
+
+
+def _maybe_verify_citations(run: Path, verdict: Json) -> None:
+    """Opt-in advisory external citation-existence check — never blocks a run.
+
+    Off by default; enable via env ``ALPHA_CITATION_VERIFY=true`` (e.g. in the
+    systemd EnvironmentFile). Verifies cited source papers against CrossRef /
+    OpenAlex, writes ``citation_verify.json``, and records a compact summary on
+    the verdict. Degrades silently so it can never break publishing.
+    """
+    if os.environ.get(
+        "ALPHA_CITATION_VERIFY", "",
+    ).strip().lower() not in ("1", "true", "yes"):
+        return
+    try:
+        from agent.citation_verify import verify_run
+        report = verify_run(run)
+        verdict["citation_verify"] = {
+            "checked": report.get("checked"),
+            "counts": report.get("counts"),
+            "has_hallucinated": report.get("has_hallucinated"),
+        }
+        _write_json(run / "publish_verdict.json", verdict)
+    except (ImportError, OSError, ValueError, TypeError):
+        pass
 
 
 def _current_selection_verdict(verdict: Json, root: Path) -> Json:
