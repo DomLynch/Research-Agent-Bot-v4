@@ -13,6 +13,8 @@ def _clear_all(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("RAB_SKIP_DOTENV", "1")
     for key in (
         "MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "MIMO_TIMEOUT_SEC",
+        "MINIMAX_API_KEY", "MINIMAX_BASE_URL", "MINIMAX_MODEL",
+        "MINIMAX_TIMEOUT_SEC",
         "OPENROUTER_API_KEY", "OPENROUTER_BASE_URL", "JUDGE_MODEL",
         "WRITER_MAX_RETRIES",
         "RESEARKA_DATABASE_URL", "RESEARKA_DATABASE_TOKEN",
@@ -54,6 +56,24 @@ def test_writer_not_configured_without_key(monkeypatch: pytest.MonkeyPatch) -> N
     _clear_all(monkeypatch)
     s = load_settings()
     assert s.writer_configured is False
+
+
+def test_writer_configured_via_minimax_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Writer migrated MiMo -> MiniMax M3 (2026-06-11): MINIMAX_* alone suffices.
+    _clear_all(monkeypatch)
+    monkeypatch.setenv("MINIMAX_API_KEY", "mm-test")
+    assert load_settings().writer_configured is True
+
+
+def test_minimax_keys_win_over_mimo(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clear_all(monkeypatch)
+    monkeypatch.setenv("MIMO_MODEL", "legacy-mimo")
+    monkeypatch.setenv("MINIMAX_API_KEY", "mm")
+    monkeypatch.setenv("MINIMAX_BASE_URL", "https://mm")
+    monkeypatch.setenv("MINIMAX_MODEL", "minimax-m3")
+    s = load_settings()
+    assert s.mimo_model == "minimax-m3"
+    assert s.mimo_base_url == "https://mm"
 
 
 def test_judge_configured_property(monkeypatch: pytest.MonkeyPatch) -> None:

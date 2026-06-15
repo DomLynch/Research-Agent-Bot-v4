@@ -31,8 +31,6 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-import pytest
-
 _AGENT_DIR = Path(__file__).resolve().parent.parent / "agent"
 _SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 
@@ -68,18 +66,11 @@ def _strip_doc_and_comments(src: str) -> str:
     return "\n".join(lines)
 
 
-@pytest.mark.xfail(
-    reason=(
-        "P1 #1 from Sprint-12.8.5 external audit: agent/include_contract.py "
-        "and agent/placeholder_resolver.py hardcode lifespan-shaped lane keys "
-        "(A_core_direct_lifespan, B_disease_model_survival, C_secondary_*). "
-        "A topic with a non-lifespan endpoint still inherits these key names "
-        "in its receipt schema. Refactor to generic A_primary / B_sensitivity "
-        "/ C_secondary is a follow-up sprint — this test will flip from xfail "
-        "to passing once the rename + back-compat shim lands."
-    ),
-    strict=True,
-)
+# Resolved in the v5 strip: agent/include_contract.py and
+# agent/placeholder_resolver.py — the modules that hardcoded lifespan-shaped
+# lane keys (A_core_direct_lifespan, B_disease_model_survival, C_secondary_*)
+# — were deleted with the legacy paper pipeline, so the leak is gone and the
+# former xfail(strict) now passes as a normal assertion.
 def test_agent_logic_has_no_lifespan_lane_keys() -> None:
     """Lane keys in `agent/` source must NOT name a specific endpoint.
 

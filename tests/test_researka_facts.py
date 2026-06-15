@@ -1,7 +1,8 @@
-"""Sprint 12.0 — Researka facts client + crosscheck tests.
+"""Sprint 12.0 — Researka facts client tests.
 
 Mocked HTTP only; no live network. Live verification is documented in
-the Sprint 12.0 commit message.
+the Sprint 12.0 commit message. (Crosscheck tests removed with the
+legacy extraction_crosscheck module in the v5 strip.)
 """
 from __future__ import annotations
 
@@ -11,11 +12,6 @@ from typing import Any
 import httpx
 import pytest
 
-from agent.extraction_crosscheck import (
-    CrosscheckResult,
-    crosscheck_one,
-    crosscheck_receipts,
-)
 from agent.researka_facts import (
     ResearkaFact,
     filter_facts_by_doi,
@@ -155,101 +151,3 @@ def test_filter_facts_by_doi_empty_target_returns_empty() -> None:
     facts = (_fact(),)
     assert filter_facts_by_doi(facts, None) == ()
     assert filter_facts_by_doi(facts, "") == ()
-
-
-# ---------- crosscheck_one verdict matrix ----------------------------------
-
-def test_crosscheck_matched_within_tolerance() -> None:
-    facts = (_fact(numeric_value=10.0, units="%"),)
-    out = crosscheck_one("s1", "10.1/abc", percent_change=11.0, facts=facts)
-    assert out.verdict == "matched"
-    assert out.best_match_fact_id == "t/x/y"
-    assert out.delta_percent == 1.0
-
-
-def test_crosscheck_discrepant_outside_tolerance() -> None:
-    facts = (_fact(numeric_value=10.0, units="%"),)
-    out = crosscheck_one("s1", "10.1/abc", percent_change=60.0, facts=facts)
-    assert out.verdict == "discrepant"
-    assert out.delta_percent == 50.0
-
-
-def test_crosscheck_no_receipt_numerics_when_pct_none() -> None:
-    facts = (_fact(),)
-    out = crosscheck_one("s1", "10.1/abc", percent_change=None, facts=facts)
-    assert out.verdict == "no_receipt_numerics"
-    assert out.delta_percent is None
-
-
-def test_crosscheck_no_canonical_fact_when_doi_misses() -> None:
-    facts = (_fact(doi="10.99/other"),)
-    out = crosscheck_one("s1", "10.1/abc", percent_change=11.0, facts=facts)
-    assert out.verdict == "no_canonical_fact"
-    assert out.canonical_facts == ()
-
-
-def test_crosscheck_skips_non_percent_units() -> None:
-    """Only %-units facts can be compared to receipt.percent_change.
-    Facts with units like 'days' or 'mg/kg/day' don't fail the receipt;
-    they just don't supply a comparison."""
-    facts = (_fact(units="days", numeric_value=913.0),)
-    out = crosscheck_one("s1", "10.1/abc", percent_change=11.0, facts=facts)
-    assert out.verdict == "no_canonical_fact"  # no %-units fact to compare
-    assert out.canonical_facts == facts  # still surfaces the facts for audit
-
-
-def test_crosscheck_picks_best_delta_among_multiple_percent_facts() -> None:
-    facts = (
-        _fact(id="f1", numeric_value=60.0, units="%"),
-        _fact(id="f2", numeric_value=12.0, units="%"),
-        _fact(id="f3", numeric_value=8.0, units="%"),
-    )
-    # receipt 11% should pick f2 (delta=1) as best, within tolerance.
-    out = crosscheck_one("s1", "10.1/abc", percent_change=11.0, facts=facts)
-    assert out.best_match_fact_id == "f2"
-    assert out.delta_percent == 1.0
-    assert out.verdict == "matched"
-
-
-# ---------- crosscheck_receipts integration ------------------------------
-
-@pytest.mark.asyncio
-async def test_crosscheck_receipts_handles_empty_list() -> None:
-    # Empty-receipts short-circuit; the pack contents are irrelevant
-    # here, so use a minimal in-test fixture instead of touching disk.
-    from types import MappingProxyType
-
-    from agent.topic_pack import TopicPack
-    pack = TopicPack(
-        topic="t", display_name="T", primary_system="",
-        preferred_terms=(), discouraged_terms=(),
-        endpoint="", cite_role_default="", cite_roles_allowed=(),
-        anchors=MappingProxyType({}), length_caps=MappingProxyType({}),
-        min_words_per_citation=0,
-        outcome_nouns_extra=(), direction_verbs_extra=(),
-        subjects_extra=(),
-        primary_interventions=(), translational_only_interventions=(),
-        retrieval_sources=(),
-        eligibility_endpoint_terms=(), eligibility_control_terms=(),
-        eligibility_exclude_design_terms=(),
-        eligibility_combination_terms=(),
-        eligibility_min_text_chars=0,
-        sentinel_primary=(), sentinel_prior_meta=(),
-        non_mouse_species_terms=(),
-        secondary_design_quote_markers=(),
-    )
-    results = await crosscheck_receipts(
-        (), settings=_settings_with(), pack=pack,
-    )
-    assert results == ()
-
-
-@pytest.mark.asyncio
-async def test_crosscheck_result_dataclass_is_immutable() -> None:
-    r = CrosscheckResult(
-        study_id="s1", doi="10.1/a", verdict="matched",
-        receipt_percent_change=11.0, canonical_facts=(),
-        best_match_fact_id=None, delta_percent=None,
-    )
-    with pytest.raises(AttributeError):
-        r.verdict = "discrepant"  # type: ignore[misc]
