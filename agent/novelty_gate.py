@@ -22,6 +22,7 @@ Design contract (mirrors the rest of the gate):
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 INSUFFICIENT_NOVELTY = "insufficient_novelty"
@@ -162,7 +163,7 @@ def _blockers(score: int, citation_hallucinated: bool, cfg: NoveltyConfig) -> tu
     return tuple(out)
 
 
-def novelty_blockers(report: dict[str, object], cfg: NoveltyConfig) -> list[str]:
+def novelty_blockers(report: Mapping[str, object], cfg: NoveltyConfig) -> list[str]:
     """Re-derive blockers from a persisted novelty.json report, offline.
 
     The publish gate calls this. Trusts the report's score/citation flag (they
