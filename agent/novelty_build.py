@@ -19,7 +19,7 @@ import httpx
 
 from agent.citation_verify import verify_sources
 from agent.novelty_gate import NoveltyConfig, compute_novelty
-from agent.researka_facts import tier2_source_count
+from agent.researka_facts import tier2_domain
 from agent.settings import Settings
 
 _AXIS_FIELDS = (
@@ -79,6 +79,49 @@ def _manifest_domain(run_dir: Path, lead: dict[str, Any]) -> str:
     return str(lead.get("_domain") or "longevity")
 
 
+def _corpus_prior_art_count(
+    query: str, *, client: httpx.Client, settings: Settings, domain: str,
+) -> int | None:
+    """Distinct corpus source papers matching ``query`` — or None on any failure.
+
+    Deliberately NOT ``researka_facts.tier2_source_count`` (which returns 0 on
+    failure for the build-selection floor): the novelty gate must tell a genuine
+    "no prior art" (0 -> novel) apart from a transient outage (None -> neutral
+    scarcity), so a corpus error never reads as "maximally novel" and lets a
+    non-novel claim false-pass in enforce mode.
+    """
+    base = settings.researka_database_url.rstrip("/")
+    token = settings.researka_database_token.strip()
+    if not base or not token:
+        return None
+    try:
+        r = client.post(
+            f"{base}/api/v1/tier2/facts/search",
+            json={
+                "domain": tier2_domain(domain), "query": query[:512], "top_k": 50,
+                "min_confidence": "medium", "numeric_only": False,
+            },
+            headers={"X-Researka-Token": token, "Content-Type": "application/json"},
+            timeout=20.0,
+        )
+        r.raise_for_status()
+        data: Any = r.json()
+    except (httpx.HTTPError, ValueError):
+        return None
+    if not isinstance(data, list):
+        return None
+    papers: set[str] = set()
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        raw_paper = item.get("paper")
+        paper = raw_paper if isinstance(raw_paper, dict) else {}
+        key = str(paper.get("doi") or paper.get("pmid") or item.get("paper_id") or "")
+        if key:
+            papers.add(key)
+    return len(papers)
+
+
 def build_novelty_report(
     run_dir: Path,
     *,
@@ -95,7 +138,7 @@ def build_novelty_report(
             corpus_prior_art_count=None, lead_shape=frozenset(), other_shapes=(),
             newest_source_year=None, now_year=now_year, citation_hallucinated=False,
             cfg=cfg,
-        ).as_dict() | {"note": "no_a_core_facts"}
+        ).as_dict() | {"schema": "novelty-v1", "note": "no_a_core_facts"}
 
     lead, others = core[0], core[1:]
     lead_shape = _shape(lead)
@@ -117,7 +160,7 @@ def build_novelty_report(
         owns = client is None
         active = client or httpx.Client()
         try:
-            count = tier2_source_count(query, client=active, settings=settings, domain=domain)
+            count = _corpus_prior_art_count(query, client=active, settings=settings, domain=domain)
         finally:
             if owns:
                 active.close()
@@ -134,6 +177,7 @@ def build_novelty_report(
         cfg=cfg,
     )
     return report.as_dict() | {
+        "schema": "novelty-v1",
         "lead_fact_id": str(lead.get("fact_id") or ""),
         "a_core_count": len(core),
         "citation_report": cite,

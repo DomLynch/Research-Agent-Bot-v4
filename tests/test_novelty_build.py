@@ -10,6 +10,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
+import httpx
 import pytest
 
 import agent.novelty_build as nb
@@ -82,7 +83,7 @@ def test_crowded_stale_claim_is_insufficiently_novel(tmp_path: Path) -> None:
 
 def test_corpus_saturation_drives_scarcity_down(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     # Configured corpus returning a saturated count -> scarcity 0.
-    monkeypatch.setattr(nb, "tier2_source_count", lambda *_a, **_k: CFG.saturation_count)
+    monkeypatch.setattr(nb, "_corpus_prior_art_count", lambda *_a, **_k: CFG.saturation_count)
     run = _write_run(tmp_path, [_fact("a1", source_paper={"doi": "10.1/a1", "title": "t", "year": 2004})],
                      [{"fact_id": "a1", "lane": "A_core"}])
     rep = nb.build_novelty_report(
@@ -98,3 +99,52 @@ def test_empty_run_is_neutral_non_blocking(tmp_path: Path) -> None:
     rep = nb.build_novelty_report(run, settings=_settings(), now_year=2026, cfg=CFG)
     assert rep["blockers"] == []
     assert rep.get("note") == "no_a_core_facts"
+
+
+# ---------- _corpus_prior_art_count: outage (None) vs genuine zero (0) ----------
+
+def test_corpus_count_none_on_transport_error() -> None:
+    # The fix: a configured-but-unreachable corpus returns None (not 0), so the
+    # gate never reads a transient outage as "maximally novel".
+    def _boom(_req: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("corpus down")
+
+    with httpx.Client(transport=httpx.MockTransport(_boom)) as c:
+        n = nb._corpus_prior_art_count(
+            "q", client=c, settings=_settings(url="https://db", token="t"), domain="longevity",
+        )
+    assert n is None
+
+
+def test_corpus_count_zero_on_genuine_empty() -> None:
+    with httpx.Client(transport=httpx.MockTransport(lambda _r: httpx.Response(200, json=[]))) as c:
+        n = nb._corpus_prior_art_count(
+            "q", client=c, settings=_settings(url="https://db", token="t"), domain="longevity",
+        )
+    assert n == 0  # genuine "no prior art" -> distinct from None
+
+
+def test_corpus_count_counts_distinct_papers() -> None:
+    body = [{"paper": {"doi": "10.1/a"}}, {"paper": {"doi": "10.1/a"}}, {"paper": {"doi": "10.1/b"}}]
+    with httpx.Client(transport=httpx.MockTransport(lambda _r: httpx.Response(200, json=body))) as c:
+        n = nb._corpus_prior_art_count(
+            "q", client=c, settings=_settings(url="https://db", token="t"), domain="longevity",
+        )
+    assert n == 2
+
+
+def test_configured_corpus_outage_is_neutral_not_novel(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Configured corpus whose query fails -> count None -> neutral scarcity 0.5,
+    # NOT 1.0. Guards against a transient outage false-passing a non-novel claim.
+    monkeypatch.setattr(nb, "_corpus_prior_art_count", lambda *_a, **_k: None)
+    run = _write_run(
+        tmp_path, [_fact("a1", source_paper={"doi": "10.1/a1", "title": "t", "year": 2004})],
+        [{"fact_id": "a1", "lane": "A_core"}],
+    )
+    rep = nb.build_novelty_report(
+        run, settings=_settings(url="https://db", token="t"), now_year=2026, cfg=CFG,
+    )
+    assert rep["corpus_prior_art_count"] is None
+    assert rep["scarcity"] == 0.5
