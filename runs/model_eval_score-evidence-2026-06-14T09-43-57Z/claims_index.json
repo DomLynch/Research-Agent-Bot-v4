@@ -1,0 +1,3865 @@
+{
+  "topic": "model_eval_score",
+  "snapshot_utc": "2026-06-14T09-43-57Z",
+  "claim_count": 437,
+  "claims": [
+    {
+      "claim_text": "provides a 5.4% gain over the best LLaMA 3.2 model",
+      "confidence_0_100": 80,
+      "publication_opportunity": true,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.47839/ijc.24.4.4349",
+        "10.48550/arxiv.2503.13988"
+      ]
+    },
+    {
+      "claim_text": "resulted in a modest test score improvement of 1.6% overall compared to tuning on answer letters alone",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.47839/ijc.24.4.4349"
+      ]
+    },
+    {
+      "claim_text": "modest test score improvement of 1.6% overall",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2503.13988"
+      ]
+    },
+    {
+      "claim_text": "Experiments on the Light, Topdial, and MT-Eval benchmarks show that models fine-tuned on ConsistentChat achieve a 20-30% improvement in chat consistency and up to a 15% increase in task success rate, significantly outperforming models trained on existing single-turn and multi-turn instruction datasets.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2506.03558"
+      ]
+    },
+    {
+      "claim_text": "In the USMLE test, the performance of DeepSeek-R1 (accuracy 0.92) was slightly inferior to that of ChatGPT-o1 (accuracy 0.95; P = 0.04) but better than that of Llama 3.1-405B (accuracy 0.83; P < 10-3).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41591-025-03726-3"
+      ]
+    },
+    {
+      "claim_text": "Compared to the best baseline approach, with an average score of 5.00 as the maximum, our method achieves a maximum 0.10 increase on the Alpaca task (from 4.50 to 4.60), a 0.22 enhancement on the Just-eval benchmark (from 4.34 to 4.56), and a maximum improvement of 0.32 (from 3.53 to 3.85) on the MT-Bench dataset.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2502.11681"
+      ]
+    },
+    {
+      "claim_text": "MathCoder models achieve state-of-the-art scores among open-source LLMs on GSM8K (83.9%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2310.03731"
+      ]
+    },
+    {
+      "claim_text": "Fine-tuning Llama 3.1-8B on TRIDENT-Edge demonstrates substantial improvements, achieving an average 14.29% reduction in Harm Score, and a 20% decrease in Attack Success Rate compared to the best-performing baseline model fine-tuned on the WildBreak dataset.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2505.24672"
+      ]
+    },
+    {
+      "claim_text": "Notably, our CoSC-Code-34B model achieved a 53.5% score on the challenging MATH dataset, outperforming models like ChatGPT, GPT-4, and multi-modal LLMs such as GPT-4V and Gemini-1.0.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2410.10735"
+      ]
+    },
+    {
+      "claim_text": "Quantitative evaluations using ROUGE metrics on the MIMIC-CXR and OpenI datasets demonstrate that Radiology-Llama2 achieves state-of-the-art performance compared to other generative language models, with a Rouge-1 score of 0.4834 on MIMIC-CXR and 0.4185 on OpenI.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2309.06419"
+      ]
+    },
+    {
+      "claim_text": "outperforming other strong baselines with a 4% higher average exact match score.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2505.17281"
+      ]
+    },
+    {
+      "claim_text": "average pass@1 score of 80.6% on AIME24",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2508.20722"
+      ]
+    },
+    {
+      "claim_text": "Notably, APL maintains competitive utility, with an MT-Bench score of 6.59 (comparable to the baseline 6.78) and an LC-WinRate of 46.52% against the base model.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2505.24369"
+      ]
+    },
+    {
+      "claim_text": "Results show that open-source entry-level models perform 18% lower than a cutting-edge proprietary model with trillions of parameters.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.5753/kdmile.2024.243859"
+      ]
+    },
+    {
+      "claim_text": "The top-performing model (gemma:7b-instruct) achieved a 66.5% win rate.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/info16080652"
+      ]
+    },
+    {
+      "claim_text": "achieves 63% top-1 accuracy using a 3B Llama model",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1101/2025.05.20.25328046"
+      ]
+    },
+    {
+      "claim_text": "Remarkably, after 4 rounds of debate, a diverse set of medium-capacity models (Gemini-Pro, Mixtral 7B×8, and PaLM 2-M) outperforms GPT-4 on the GSM-8K benchmark, scoring 91% accuracy.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.33140/jrar"
+      ]
+    },
+    {
+      "claim_text": "file-based context retrieval improves accuracy for frontier-tier models (Claude, GPT, Gemini; +2.7%, p=0.029)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2602.05447"
+      ]
+    },
+    {
+      "claim_text": "Based on Qwen-2.5-Coder-14B, Bird-Fixer achieves 38.11% success rate on BIRD-CRITIC-PG and 29.65% on BIRD-CRITIC-Multi, surpassing leading proprietary models such as Claude-3.7-Sonnet and GPT-4.1, marking a significant step toward democratizing sophisticated SQL-debugging capabilities.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2506.18951"
+      ]
+    },
+    {
+      "claim_text": "Evaluated on the expert-annotated MIMIC-500 benchmark, DeBERTa-RAD achieves a state-of-the-art Macro F1 score of 0.9120, significantly outperforming established rule-based systems, fine-tuned transformer models, and direct LLM inference, while maintaining a practical inference speed suitable for high-throughput applications.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2505.01693"
+      ]
+    },
+    {
+      "claim_text": "Experiments on various downstream tasks in GLUE benchmark show that CHILD-TUNING consistently outperforms the vanilla fine-tuning by 1.5 8.6 average score among four different pretrained models, and surpasses the prior fine-tuning techniques by 0.6 1.3 points.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18653/v1/2021.emnlp-main.749"
+      ]
+    },
+    {
+      "claim_text": "On the challenging MATH benchmark, our SIGMA-tuned 7B model achieves 54.92% accuracy using only 30K samples, outperforming state-of-the-art models trained on 590K samples.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2506.06470"
+      ]
+    },
+    {
+      "claim_text": "Training a 1B-parameter Llama model for 70B and 119B tokens, our approach can match the baseline MMLU score with as little as 15% of the training tokens, while also improving across other benchmarks and mitigating the curse of multilinguality.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2502.10361"
+      ]
+    },
+    {
+      "claim_text": "On a held-out 523 incident set of the public NIKA benchmark covering eleven unseen scenarios, SADE improves root-cause F1 by 37 percentage points over a ReAct + GPT-5 baseline; a model-controlled comparison against the same Claude Sonnet backend without the SADE policy attributes 22 of those points to the diagnostic policy alone, showing that the gain is not a side-effect of the model upgrade.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": ", Jellyfish-8B) by 35.89% and 30.50% in terms of precision and F1 score on the MIMIC dataset, respectively; KG-RAG4SM with GPT-4o-mini outperforms the pre-trained language model (PLM)-based SOTA methods (e.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2501.08686"
+      ]
+    },
+    {
+      "claim_text": "Extensive experiments on Mistral-7B and Llama-3-8B demonstrate that FASC preserves 6-8% more accuracy on knowledge-intensive benchmarks (MMLU, LAMA) compared to variance-based methods at 50% rank reduction, effectively enabling a 7B model to match the factual recall of a 13B uncompressed model.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2601.07197"
+      ]
+    },
+    {
+      "claim_text": "ARTIST consistently outperforms state-of-the-art baselines, with up to 22% absolute improvement over base models",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2505.01441"
+      ]
+    },
+    {
+      "claim_text": "Evaluations on the MEDQA and MEDMCQA benchmarks demonstrate the effectiveness of AMG-RAG, achieving an F1 score of 74.1 percent on MEDQA and an accuracy of 66.34 percent on MEDMCQA, outperforming both comparable models and those 10 to 100 times larger.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18653/v1/2025.findings-emnlp.679"
+      ]
+    },
+    {
+      "claim_text": "the fine-tuned model achieves a 39.3% pass@1 accuracy on the novel benchmark",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/fllm67465.2025.11391170"
+      ]
+    },
+    {
+      "claim_text": "MCCoder outperforms baseline models using Advanced RAG, achieving an overall performance gain of 33.09%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/case58245.2025.11163835"
+      ]
+    },
+    {
+      "claim_text": "GPT-4 resulted in the highest F1 score (62%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/diagnostics14080817"
+      ]
+    },
+    {
+      "claim_text": "the FactScore increases by 13.6%, significantly enhancing the knowledge consistency",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-025-21222-z"
+      ]
+    },
+    {
+      "claim_text": "Bard produced the highest F1 score (71%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/diagnostics14080817"
+      ]
+    },
+    {
+      "claim_text": "Empirical evaluation on standard GUI grounding benchmarks-including ScreenSpot, ScreenSpot-v2, and the challenging ScreenSpot-Pro, highlights Qwen-GUI-3B's exceptional accuracy, achieving 84.9% on ScreenSpot and 86.4% on ScreenSpot-v2, surpassing prior models under 4B parameters.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Experimental results indicate that Pistis-RAG improves alignment with human preferences relative to the baseline RAG system, showing a 6.06% increase in MMLU (English) and a 7.08% increase in C-EVAL (Chinese) accuracy metrics.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "a content preservation F1 score of 96.47% on the “Fortress Besieged” dataset",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1145/3744250"
+      ]
+    },
+    {
+      "claim_text": "Across six math-reasoning benchmarks, InTRO consistently outperforms other baselines, raising solution accuracy by up to 20% relative to the base model.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2511.09865"
+      ]
+    },
+    {
+      "claim_text": "With experiments on XLCoST datasets, SteloCoder achieves an average of 73.76 CodeBLEU score in multi-programming language-to-Python translation, surpassing the top performance from the leaderboard by at least 3.5.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2310.15539"
+      ]
+    },
+    {
+      "claim_text": "For instance, on the MMLU-Pro-Health dataset, our EMRC achieves 74.45% accuracy, representing a 2.69% improvement over the best-performing closed-source model GPT- 4-0613, which demonstrates the effectiveness of our expertise-aware agent recruitment strategy and the agent complementarity in leveraging each LLM's specialized capabilities.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2508.13754"
+      ]
+    },
+    {
+      "claim_text": "sets a new state-of-the-art record on HLE with a score of 32.1%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2507.05241"
+      ]
+    },
+    {
+      "claim_text": "Through comprehensive empirical analysis using the Mistral-7B model on the GSM8K dataset, we demonstrate that while each method excels in its primary objective-Quiet-STaR achieving superior accuracy (32.03%) despite high computational cost (554.66s runtime, 12.73T FLOPs), and REBASE providing exceptional efficiency (8.47s runtime, 2.35T FLOPs) while maintaining baseline-comparable accuracy (10.94%)-their integration reveals fundamental challenges in reconciling reasoning depth with computational efficiency.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2412.16260"
+      ]
+    },
+    {
+      "claim_text": "Furthermore, extensive experiments across established benchmarks including BFCL-v3, MME-Reasoning, MME-Perception, and OCRBench reveal DaMo's superior generalization, outperforming other approaches by 2.57% in terms of average score.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2510.19336"
+      ]
+    },
+    {
+      "claim_text": "achieving an AUC improvement of up to 30%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2510.09259"
+      ]
+    },
+    {
+      "claim_text": "Experimental results on SWE-Bench show that SGAgent with Claude-3.5 achieves 51.3% repair accuracy, 81.2% file-level and 52.4% function-level localization accuracy with an average cost of $1.48 per instance, outperforming all baselines using the same base model.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2602.23647"
+      ]
+    },
+    {
+      "claim_text": "Recent results from the Corr2Cause dataset benchmark reveal that state-of-the-art LLMs -- such as GPT-4 (F1 score: 29.08) -- only marginally outperform random baselines (Random Uniform, F1 score: 20.38), indicating limited capacity of generalization.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2505.18034"
+      ]
+    },
+    {
+      "claim_text": "are GSM8K and HumanEval, showing moderate gains – where the top agent GPT 5.2 nearly triples the accuracy compared to the base model, going from 20.4% to nearly.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "with a transfer accuracy F1 score of 79.36% on the “Fortress Besieged” dataset",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1145/3744250"
+      ]
+    },
+    {
+      "claim_text": "SPA raises the FrozenLake score from 22.1% to 70.9%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2510.15047"
+      ]
+    },
+    {
+      "claim_text": "Evaluated on both a GPT-4-generated dataset and a real-world electricity provider FAQ dataset, it achieves 97.9% and 89.6% accuracy respectively, substantially outperforming baseline RAG models.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2508.05664"
+      ]
+    },
+    {
+      "claim_text": "Moreover, GPT-4o outperformed DeepSeek R1, achieving an F1 score 20% higher when both models were trained on the same dataset from the NLBSE 2023 competition, which was ten times larger than the NLBSE 2024 dataset.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.scico.2025.103333"
+      ]
+    },
+    {
+      "claim_text": "Tool augmentation improves performance but plateaus at 67.4% versus 80% human baseline",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2510.00332"
+      ]
+    },
+    {
+      "claim_text": "Experimental evaluation on the HotpotQA and TriviaQA datasets demonstrates that the proposed LQR-HyRAG approach achieves 99.4% accuracy and 98.9% F1-score on HotpotQA, and 99.2% accuracy and 98.7% F1-score on TriviaQA, compared with PEI and AdaptQA methods, providing both higher retrieval efficiency and more relevant educational content.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/ssitcon66133.2025.11342043"
+      ]
+    },
+    {
+      "claim_text": "achieve up to a 3.31x improvement in CodeBLEU scores",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2412.19770"
+      ]
+    },
+    {
+      "claim_text": "Experimental results demonstrate that Ideal-LLM significantly improves ASR performance, achieving a 32.6% relative reduction in average word error rates compared to the standard speech encoder integrated with LLMs and yields an average BLEU score of 36.78 for AST task.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2409.11214"
+      ]
+    },
+    {
+      "claim_text": "on Vicuna Bench, our method achieves up to 3.19x speedup (1.85x on average)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2508.08895"
+      ]
+    },
+    {
+      "claim_text": "Notably, our method improves Qwen2-7b-Instruct's score from 36.94 to 61.52, outperforming GPT4's 42.5 on the MATH benchmark.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2409.17972"
+      ]
+    },
+    {
+      "claim_text": "The Retrieval-Augmented Generation Assessment (RAGAS) framework showed that KemenkeuGPT achieved 44% correctness with 73% faithfulness, 40% precision and 60% recall, outperforming several other base models.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2407.21459"
+      ]
+    },
+    {
+      "claim_text": "achieves a 21.6% improvement in zero-shot performance",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.71465/ajdsa3667"
+      ]
+    },
+    {
+      "claim_text": "Experiments on standard benchmarks such as TruthfulQA and HotpotQA show a 27.8% reduction in hallucination rate and 16.4% improvement in factual accuracy over baseline retrieval-augmented generation (RAG) models.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/icoecit68303.2026.11496690"
+      ]
+    },
+    {
+      "claim_text": "On biomedical PubMedQA dataset, MetaGen Blended RAG achieves 82% retrieval accuracy and 77% RAG accuracy, surpassing all prior zero-shot RAG benchmarks and even rivaling fine-tuned models on that dataset, while also excelling on datasets like SQuAD and NQ.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/icsc67292.2026.00033"
+      ]
+    },
+    {
+      "claim_text": "On SWE-Bench Verified under parallel TTS evaluation, Agentic Rubrics achieve a score of 54.2% on Qwen3-Coder-30B-A3B and 40.6% on Qwen3-32B, with at least a +3.5 percentage-point gain over the strongest baseline in our comparison set.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2601.04171"
+      ]
+    },
+    {
+      "claim_text": "In experiments on the Massive Multitask Language Understanding (MMLU) benchmark, DFPE outperforms the best single model by 3% overall accuracy and 5% in discipline-level accuracy.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2501.17479"
+      ]
+    },
+    {
+      "claim_text": "For example, our MoA using only open-source LLMs is the leader of AlpacaEval 2.0 by a substantial gap, achieving a score of 65.1% compared to 57.5% by GPT-4 Omni.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2406.04692"
+      ]
+    },
+    {
+      "claim_text": "Experimental results show that with similar or less GPU memory consumption, LISA surpasses LoRA or even full parameter tuning in downstream fine-tuning tasks, where LISA consistently outperforms LoRA by over 10%-35% in terms of MT-Bench score while achieving on-par or better performance in MMLU, AGIEval and WinoGrande.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2403.17919"
+      ]
+    },
+    {
+      "claim_text": "On the AlpacaEval benchmark, applying CS-ReFT to Llama-2-7B achieves a 93.94% win rate, surpassing GPT-3.5 Turbo (86.30%) while requiring only 0.0098% of model parameters.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2503.10617"
+      ]
+    },
+    {
+      "claim_text": "outperforms a supervised model by 14.61% accuracy.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/lra.2026.3665443"
+      ]
+    },
+    {
+      "claim_text": "models trained on SWE-Synth outperform those trained on real-world datasets by 2.3% on SWE-Bench Lite.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2504.14757"
+      ]
+    },
+    {
+      "claim_text": "on real hallucinations from RLHF-aligned models, embedding methods yield 100% FPR at target coverage",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2512.15068"
+      ]
+    },
+    {
+      "claim_text": "achieves 96.2% F1-score in threat detection",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2512.06396"
+      ]
+    },
+    {
+      "claim_text": "Evaluation results on LiveCodeBench (20240701-20240901) demonstrate that our COT-Coder-7B-StepDPO, derived from Qwen2.5-Coder-7B-Base, with a pass@1 accuracy of 21.88, exceeds all models with similar or even larger sizes.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2505.10594"
+      ]
+    },
+    {
+      "claim_text": "achieves an F1-Score of 66.47% in proactively offering assistance",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2410.12361"
+      ]
+    },
+    {
+      "claim_text": "the overall diagnostic scores of the top-performing Gemini Pro models (65.48%) were 21.91 percentage points higher than the average scores of the human professionals (43.57%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2512.20298"
+      ]
+    },
+    {
+      "claim_text": "CodeMonkeys would outperform all submissions on the SWE-bench Verified leaderboard and trail o3’s reported score of 71.7% by only 1.9%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "2.3 Selecting Between Candidate Edits Under a best-case scenario with oracle selection (where our final score equals our coverage of 69.8%), CodeMonkeys would outperform all submissions on the SWE-bench Verified leaderboard and trail.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "plied to DeepSeek-R1-Distill-Qwen-7B, our puzzle data boosts the accuracy from 82.3% to 87.4% on GSM8K, compared to models trained exclusively.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18653/v1/2025.acl-long.333"
+      ]
+    },
+    {
+      "claim_text": "To validate this approach, experiments on multiple multi-turn conversation benchmarks - including MT-Eval and Long-MT-Bench+ - show that Rhea mitigates performance decay and improves overall accuracy by 1.04 points on a 10-point scale (a 16% relative gain over strong baselines).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2512.06869"
+      ]
+    },
+    {
+      "claim_text": "Experiments on SWE-bench Lite demonstrate that CodePilot achieves a 24.67% issue resolution rate using open-weight models, outperforming comparable baselines.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2602.00129"
+      ]
+    },
+    {
+      "claim_text": "ReCOP can effectively improve the accuracy of LLMs on the ReDis-QA dataset by an average of 8%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2408.08422"
+      ]
+    },
+    {
+      "claim_text": "Our analysis shows that for MCQs task, the proposed majority voting solution, leveraging three base models (Gemini Flash 2.5, Gemini Pro 2.5, and GPT o3), outperforms others, achieving up to 77% accuracy and securing first place overall in the Arahealthqa 2025 shared task-track 2 (sub-task 1) challenge.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2508.15797"
+      ]
+    },
+    {
+      "claim_text": "MuMath-Code-70B model achieves new state-of-the-art performance among open methods—achieving 90.7% on GSM8K",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2405.07551"
+      ]
+    },
+    {
+      "claim_text": "Our method exhibits high accuracy and efficiency, particularly on the HotpotQA dataset, where it outperforms the Adaptive-RAG method by improving accuracy by 9.4% and the F1 score by 16.14%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/app142311014"
+      ]
+    },
+    {
+      "claim_text": "Acc@GQA of 30.3% on NExT-GQA",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2506.18071"
+      ]
+    },
+    {
+      "claim_text": "Evaluated on the TruthfulQA and synthetic factual-hallucination datasets, LSD achieves an F1-score of 0.92, AUROC of 0.96, and clustering accuracy of 0.89, outperforming SelfCheckGPT and Semantic Entropy baselines while requiring only a single forward pass.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2510.04933"
+      ]
+    },
+    {
+      "claim_text": "Our model Paramanu-Ganita, despite being 34 times smaller than the 7B LLMs, outperforms generalist LLMs by approximately 30% points, and even math-specialised LLMs by 3-23% points in GSM8K test accuracy metric.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Extensive experiments show that Lizard achieves near-lossless recovery of its teacher model's performance, significantly outperforming previous methods by up to 9.4 - 24.5 points on the 5-shot MMLU benchmark and demonstrating superior associative recall.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2507.09025"
+      ]
+    },
+    {
+      "claim_text": "Acc@GQA of 47.4% on DeVE-QA",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2506.18071"
+      ]
+    },
+    {
+      "claim_text": "Our results demonstrate a 14.81% improvement in explanation quality over the baseline RAG-Ex across NarrativeQA, FairyTaleQA, and TriviaQA, evaluated by F1-score measuring alignment between generated explanations and original answers.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "As a result, LLM-CAS achieves significant performance gains across various LLMs, improving accuracy by 10.98 percentage points on StoryCloze, 2.71 points on TriviaQA, and 2.06 points on TruthfulQA's MC1 score, thereby outperforming static methods like ITI and CAA, as well as the dynamic SADI framework.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1609/aaai.v40i41.40776"
+      ]
+    },
+    {
+      "claim_text": "Specifically, with 50% input compression, this methodology achieves a 0.9% relative improvement in F1 score on the HotpotQA dataset compared to Selective-Context.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/acait67930.2025.11522017"
+      ]
+    },
+    {
+      "claim_text": "As a highlight, SketchTune outperforms LoRA, DoRA, and S2FT on commonsense and math benchmarks using 2.6-3.5$\\times$ smaller base models and exceeds LoftQ in accuracy by 14.48% on GSM8K with 7.3$\\times$ fewer trainable parameters.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "BugCerberus surpasses the state-of-the-art in Top-1 by 16.5%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/tse.2026.3668601"
+      ]
+    },
+    {
+      "claim_text": "Experimental results show that FGDIP achieved up to 54.47% F1 score on the HotpotQA dataset and 70.05% on the StrategyQA dataset, surpassing the best baseline by 5.03% and 7.25% respectively, highlighting its versatility and potential to enhance language agents in multi-hop reasoning tasks.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2510.05577"
+      ]
+    },
+    {
+      "claim_text": "Agent S outperforms the baseline by 9.37% on success rate (an 83.6% relative improvement).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2410.08164"
+      ]
+    },
+    {
+      "claim_text": "Our best model with Phi-3.5 consistently outperforms GPT-3.5-turbo's (8-shot) by producing 10% more logically correct",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2506.18383"
+      ]
+    },
+    {
+      "claim_text": "on LC-QuAD 1.0, few-shot STaRQ-Agent outperforms the strongest baseline by 5.1%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/access.2026.3681404"
+      ]
+    },
+    {
+      "claim_text": "enhances smaller LMs as long-horizon agents with up to 46% performance improvement",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2510.00615"
+      ]
+    },
+    {
+      "claim_text": "existing benchmarks significantly overestimate agent capabilities for some models by >50% over baseline performance for public benchmarks",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2510.08996"
+      ]
+    },
+    {
+      "claim_text": "Our method achieves competitive results on the HotpotQA dataset, requiring 75% less data while outperforming existing methods.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2502.12494"
+      ]
+    },
+    {
+      "claim_text": "Our method achieves competitive results on the WebShop dataset, requiring 50% less data while outperforming existing methods.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2502.12494"
+      ]
+    },
+    {
+      "claim_text": "Compared to the exact match (EM) metric, which achieves 17% separation on ARC-Challenge, EMDM achieves 46%, demonstrating its effectiveness in differentiating models based on reasoning and knowledge requirements.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2503.05551"
+      ]
+    },
+    {
+      "claim_text": "Across two multi-hop question answering benchmarks, CCPO achieves up to a 30% cost reduction compared to other cost-aware baselines and LLM-guided methods without compromising reliability.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2511.11828"
+      ]
+    },
+    {
+      "claim_text": "Results show substantial improvements across diverse model families: compared to baseline pass@1, smolagents with AGENT KB achieve up to 18.7pp gains at pass@3 (55.2% ->73.9%), while OpenHands improves 4.0pp on SWE-bench pass@1 (24.3% ->28.3%).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2507.06229"
+      ]
+    },
+    {
+      "claim_text": "Notably, GenRead achieves 71.6 and 54.4 exact match scores on TriviaQA and WebQ, significantly outperforming the state-of-the-art retrieve-then-read pipeline DPR-FiD by +4.0 and +3.9, without retrieving any documents from any external knowledge source.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "SWE-Fixer reaches state-of-the-art performance (24.7% on Lite and 32.8% on Verified) with PASS_TO_PASS (P2P) filtering.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2501.05040"
+      ]
+    },
+    {
+      "claim_text": "Notably GRPO with reasoning-rich SFT achieves 71.6% accuracy on the 24 Game, well above GPT-4o’s 54%, and boosts GSM8K scores by 4–10 points over baseline SFT.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/ubmk67458.2025.11207058"
+      ]
+    },
+    {
+      "claim_text": "ReTool-32B attains 72.5% accuracy in extended settings",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2504.11536"
+      ]
+    },
+    {
+      "claim_text": "Experiments on the DAIR-AI dataset demonstrate that our credibility-confidence ensemble achieves a macro F1 score of 93.5 percent, surpassing state-of-the-art benchmarks and significantly outperforming large-scale LLMs, including Falcon, Mistral, Qwen, and Phi, even after task-specific Low-Rank Adaptation (LoRA).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2512.17630"
+      ]
+    },
+    {
+      "claim_text": "achieves up to 64.7% improvement in extraction accuracy on SWDE",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18653/v1/2025.emnlp-industry.184"
+      ]
+    },
+    {
+      "claim_text": "STARA achieves substantial performance gains, boosting accuracy to 83%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1145/3788646.3789533"
+      ]
+    },
+    {
+      "claim_text": "RAG significantly improves code generation performance by up to 10.11% in pass@1 metrics",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/fllm67465.2025.11391177"
+      ]
+    },
+    {
+      "claim_text": "average gains of 6.4% in math&science reasoning",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2512.13278"
+      ]
+    },
+    {
+      "claim_text": "GPT-2++ outperforms the base GPT-2 in 90.6% of cases",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/fllm67465.2025.11390895"
+      ]
+    },
+    {
+      "claim_text": "MuMath-Code-70B model achieves new state-of-the-art performance among open methods—achieving 55.1% on MATH",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2405.07551"
+      ]
+    },
+    {
+      "claim_text": "GPT-4 outperformed Phi-3-mini across all evaluation levels, achieving 86% accuracy in GIS tasks, 81% in MATSim comprehension, and 91% in real-world transport decision support, while Phi-3-mini scored 43–72%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1080/10095020.2025.2493073"
+      ]
+    },
+    {
+      "claim_text": "Experimental results on various open-source LLMs confirm the efficacy of PoLLMgraph, outperforming state-of-the-art methods by a considerable margin, evidenced by over 20% improvement in AUC-ROC on common benchmarking datasets like TruthfulQA.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2404.04722"
+      ]
+    },
+    {
+      "claim_text": "Results show that both models consistently exceed the BCSP benchmark, with GPT-4o achieving an accuracy rate of 84.6% and GPT-3.5 reaching 73.8%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2411.08320"
+      ]
+    },
+    {
+      "claim_text": "Despite their 1% pass@1 performance difference on HumanEval, we find Claude Sonnet 3.5 outperforms GPT-4o by 12% pass@1 on RES-Q, indicating RES-Q's capacity to differentiate model capability as traditional benchmarks approach saturation.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2406.16801"
+      ]
+    },
+    {
+      "claim_text": "Extensive experiments on Natural Questions, TriviaQA, and HotpotQA demonstrate that our approach achieves substantial improvements over state-of-the-art baselines, with an average 4.8-point increase (8.6% relative improvement) in Exact Match scores, 10.1% improvement in faithfulness metrics, and 35.7% reduction in hallucination rates compared to RankRAG, all while maintaining computational efficiency comparable to traditional reranking methods.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1145/3797161.3797180"
+      ]
+    },
+    {
+      "claim_text": "CompAgent achieves a 10% improvement over the state-of-the-art on the UnsafeBench dataset.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2511.00171"
+      ]
+    },
+    {
+      "claim_text": "Integrating our localization into Agentless yields a 12.8% end-to-end repair success improvement.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2601.18044"
+      ]
+    },
+    {
+      "claim_text": "Furthermore, fine-tuning the TinyLlama 1.1B model for function calling using the TinyAgent framework shows that Natural GaLore achieving 83.09% accuracy on the TinyAgent dataset, significantly outperforms 16-bit LoRA at 80.06% and even surpasses GPT4-Turbo by 4%, all while using 30% less memory.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2410.16029"
+      ]
+    },
+    {
+      "claim_text": "Through comprehensive evaluation on GSM8K, StrategyQA, and bAbI benchmarks using four state-of-the-art models (Gemma-3 27B, LLaMA-3.1 8B, Mistral 7B, and Qwen-2.5 14B), we demonstrate that CoS achieves 71.5% accuracy on GSM8K (1.0% absolute improvement), 90.0% on StrategyQA (2.5% improvement), and 19.0% on bAbI (65.2% relative improvement) compared to the strongest baselines.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2602.02842"
+      ]
+    },
+    {
+      "claim_text": "GPT-4o achieves a full sequence match accuracy of 28%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2409.03797"
+      ]
+    },
+    {
+      "claim_text": "DeepSeek achieved an accuracy of 43.41%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.30871/jaic.v9i6.11369"
+      ]
+    },
+    {
+      "claim_text": "DeepSeek-R1 surpasses all baselines with error logs, enhancing accuracy by 72.6% over SmartFL in terms of TOP-1 metric.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/qrs-c65679.2025.00063"
+      ]
+    },
+    {
+      "claim_text": "Empirically, GR-PSPO outperforms clipping and sigmoid-based alternatives on mathematical reasoning benchmarks when refining models with prior domain knowledge, achieving an accuracy of 79.9% on GSM8K and 59.6% on MATH for Qwen2-Math-1.5B.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2509.21282"
+      ]
+    },
+    {
+      "claim_text": "STARA's actual accuracy is 92%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1145/3788646.3789533"
+      ]
+    },
+    {
+      "claim_text": "Experimental results on MVTec AD and KSDD2 datasets demonstrate that SAEC attains 85.11% and 82.72% accuracy, surpassing Qwen by 22.1% and 20.8%, and LLaVA by 33.3% and 31.6%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2509.17136"
+      ]
+    },
+    {
+      "claim_text": "Many of these models struggle to exceed 55% average accuracy, suggesting that PRMs trained for math reasoning or.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "The LLaMA 3.3-70B-based agentic system reached 89.2% accuracy compared to 69.5% for its base model",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1371/journal.pdig.0001106"
+      ]
+    },
+    {
+      "claim_text": "The open-weight model DeepSeek R1 achieved the highest accuracy at 86.9% (95% CI: 83.4-89.7%), outperforming proprietary models and the human average of 78%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1371/journal.pdig.0001029"
+      ]
+    },
+    {
+      "claim_text": "accuracy rate of 89.6% in soybean knowledge retrieval tasks (a 25.4% improvement over traditional RAG models)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1101/2025.06.30.662271"
+      ]
+    },
+    {
+      "claim_text": "average improvements of 6.55% in Macro-F1 score",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1609/aaai.v40i35.40200"
+      ]
+    },
+    {
+      "claim_text": "Metric scores such as CodeBLEU and BLEU increased by over 44% compared to the RAG baseline.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/mnet.2025.3583298"
+      ]
+    },
+    {
+      "claim_text": "with the incorporation of test-time scaling techniques, the performance further improves to 47.0% accuracy",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2506.19290"
+      ]
+    },
+    {
+      "claim_text": "the LLM-based model reduced waiting times by up to 35%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.56293/ijasr.2025.6801"
+      ]
+    },
+    {
+      "claim_text": "our retrieval-augmented Vicuna-7B model exhibited an accuracy improvement from 44.46% to 48.54%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Self-BioRAG outperforms RAG by 8% Rouge-1 score in generating more proficient answers on two long-form question-answering benchmarks on average.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1093/bioinformatics/btae238"
+      ]
+    },
+    {
+      "claim_text": "HybridRAG achieves an F1 score improvement of at least 4%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-025-02643-2"
+      ]
+    },
+    {
+      "claim_text": "GPT4 LLM-RAG model achieved 96.4% accuracy vs. 86.6% for humans, p=0.016.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41746-025-01519-z"
+      ]
+    },
+    {
+      "claim_text": "Dynamic prompting with TF-IDF retrieval improved average F1-scores by 7.3% in 5-shot settings.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.21203/rs.3.rs-7216581/v1"
+      ]
+    },
+    {
+      "claim_text": "A German fine-tuned Llama-2 model showed the highest accuracy (87.5%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1101/2024.03.06.24303763"
+      ]
+    },
+    {
+      "claim_text": "achieving 80.5% agreement with human annotators",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2602.08808"
+      ]
+    },
+    {
+      "claim_text": "A German fine-tuned Llama-2 model showed the highest sensitivity (83%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1101/2024.03.06.24303763"
+      ]
+    },
+    {
+      "claim_text": "improves task-solving efficiency by 12.4%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2478/ijanmc-2024-0033"
+      ]
+    },
+    {
+      "claim_text": "GraphRCA-Chorus outperforms state-of-the-art baselines by 7.6% in top-1 accuracy",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/emc68537.2026.11441735"
+      ]
+    },
+    {
+      "claim_text": "LLM Feedback Loop with Llama generator and Gemma reviewer achieves 73.8% win rate over single-model Gemma.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2408.08688"
+      ]
+    },
+    {
+      "claim_text": "LLM Feedback Loop with Llama generator and Gemma reviewer achieves 71.8% win rate over single-model Llama.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2408.08688"
+      ]
+    },
+    {
+      "claim_text": "reduces the defect rate by more than 30%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1609/aaai.v34i08.7022"
+      ]
+    },
+    {
+      "claim_text": "recovers approximately 80% of GPT-4.1's decision quality",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2508.09159"
+      ]
+    },
+    {
+      "claim_text": "A German fine-tuned Llama-2 model showed the highest specificity (91.8%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1101/2024.03.06.24303763"
+      ]
+    },
+    {
+      "claim_text": "significant improvement in accuracy from 43 to 99% (p < 0.001)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41746-024-01091-y"
+      ]
+    },
+    {
+      "claim_text": "LLMs with RAG significantly improved accuracy (54.5% being correct)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "our system achieved an 89% performance improvement in generating medically appropriate answers.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.7759/cureus.88167"
+      ]
+    },
+    {
+      "claim_text": "median improvement of 53 percentage points in single-agent tool-calling studies",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1101/2025.08.22.25334232"
+      ]
+    },
+    {
+      "claim_text": "RaR significantly improved mean diagnostic accuracy versus zero-shot prompting (75% vs. 67%; P = 1.1 × 10-7)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41746-025-02250-5"
+      ]
+    },
+    {
+      "claim_text": "ENTAgents improve accuracy by over 11.3% in handling short questions",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1101/2025.01.01.25319863"
+      ]
+    },
+    {
+      "claim_text": "average improvements of 7.01% in Accuracy",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1609/aaai.v40i35.40200"
+      ]
+    },
+    {
+      "claim_text": "boosts the task pass rate on the text-based τ-bench by over 6% compared to strong RL baselines.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2509.14480"
+      ]
+    },
+    {
+      "claim_text": "achieving an 8.4% improvement in overall quality metrics",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2512.00617"
+      ]
+    },
+    {
+      "claim_text": "the framework has an accuracy of 93%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/icict68280.2026.11510855"
+      ]
+    },
+    {
+      "claim_text": "reducing deployment costs by up to 20%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2505.18286"
+      ]
+    },
+    {
+      "claim_text": "increases overall system throughput by 56.5%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/asp-dac66049.2026.11420717"
+      ]
+    },
+    {
+      "claim_text": "demonstrated 14% improvement in accuracy compared to the baseline",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/reacs67479.2025.11413320"
+      ]
+    },
+    {
+      "claim_text": "our system improved product information completeness by 78% with no major drop in information accuracy",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1145/3746252.3761437"
+      ]
+    },
+    {
+      "claim_text": "fluency-based metrics prefer novel responses in 0% of cases on 99 creative prompts, our CS does so 19% of the time",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2510.08596"
+      ]
+    },
+    {
+      "claim_text": "achieving an improvement in valid chemical structure generation from 3% to 83%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/ispacs68724.2025.11382717"
+      ]
+    },
+    {
+      "claim_text": "average improvements of 6.75% in Accuracy and 6.29% in Macro-F1 score",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2508.06803"
+      ]
+    },
+    {
+      "claim_text": "66% in cost savings",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2601.14735"
+      ]
+    },
+    {
+      "claim_text": "Large language models (LLMs) have catalyzed significant progress in medical question answering; Med-PaLM was the first model to exceed a \"passing\" score in US Medical Licensing Examination (USMLE) style questions with a score of 67.2% on the MedQA dataset.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2305.09617"
+      ]
+    },
+    {
+      "claim_text": "In the LawBench benchmark test, Law-Qwen achieved a score of 0.492 in the legal QA task, surpassing the second-highest model, LexiLaw, by 22.4%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/ricai64321.2024.10911477"
+      ]
+    },
+    {
+      "claim_text": "We apply our method to state of the art models on the enwiki8 dataset and obtain a 1.19 perplexity score with just 5M parameters, vastly outperforming a model of the same size trained from scratch.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18653/v1/2020.emnlp-main.496"
+      ]
+    },
+    {
+      "claim_text": "Through extensive evaluation on Urdu-specific benchmarks, Qalb demonstrates substantial improvements, achieving a weighted average score of 90.34 and outperforming the previous state-of-the-art Alif-1.0-Instruct model (87.1) by 3.24 points, while also surpassing the base LLaMA-3.1 8B-Instruct model by 44.64 points.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2601.08141"
+      ]
+    },
+    {
+      "claim_text": "∼12.7% reduction in score variance",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-025-23904-0"
+      ]
+    },
+    {
+      "claim_text": "Averaged across four backbones and 12 CTI benchmarks, MinervaRL improves the mean score by 15.8 percentage points over the corresponding base models and by 4.3 points over GRPO.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2602.00513"
+      ]
+    },
+    {
+      "claim_text": "The experimental results show that the F1 score of TP-Fault in the dataset is 75.6% by the DF-RAG method, which is significantly better than that of the baseline model, and the F1 score of the TPP-FD dataset using DF-RAG is also significantly higher than that of the baseline model.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/ccet66260.2025.11199654"
+      ]
+    },
+    {
+      "claim_text": "Experiments on the Semeval-2016 dataset demonstrate superior performance, with the optimized Llama-3 model achieving 92.29% accuracy and 90.48% F1-score, outperforming both open-source and closed-source models.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.52845/cs/2025-5-2-46"
+      ]
+    },
+    {
+      "claim_text": "These models were first evaluated on the Bend-the-Truth dataset, where CNN achieved an F1 score of 72%, Naïve Bayes scored 78%, and the BERT Transformer achieved the highest F1 score of 79% on Bend the Truth dataset.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/info16070595"
+      ]
+    },
+    {
+      "claim_text": "Through experiments on the LaMP-QA benchmark across six models, IAP consistently outperforms all baselines, achieving an average macro-score gain of around 7.5\\% over the strongest competitor, demonstrating that modeling implicit user intent within the training objective is a promising direction for PQA.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "surpassing the previous best open-source model-based method by 12.33%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2505.16901"
+      ]
+    },
+    {
+      "claim_text": "To this end, we achieve the HOTA score of 0.4968, which marks a significant improvement over the previous year's winning score of 0.2704 on GVQA task.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2511.02182"
+      ]
+    },
+    {
+      "claim_text": "On the LangAuto benchmark, our model reaches up to 18.9% higher performance on the Driving Score compared to SoTA methods.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/iros60139.2025.11247237"
+      ]
+    },
+    {
+      "claim_text": "We show that models trained using GneissWeb dataset outperform those trained on FineWeb-V1.1.0 by 2.73 percentage points in terms of average score computed on a set of 11 commonly used benchmarks (both zero-shot and few-shot) for pre-training dataset evaluation.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2502.14907"
+      ]
+    },
+    {
+      "claim_text": "OralGPT-Omni achieves an overall score of 51.84 on the MMOral-Uni benchmark and 45.31 on the MMOral-OPG benchmark, dramatically outperforming the scores of GPT-5.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2511.22055"
+      ]
+    },
+    {
+      "claim_text": "We additionally release two HealthBench variations: HealthBench Consensus, which includes 34 particularly important dimensions of model behavior validated via physician consensus, and HealthBench Hard, where the current top score is 32%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2505.08775"
+      ]
+    },
+    {
+      "claim_text": "average pass@1 score of 69.8% on AIME25",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2508.20722"
+      ]
+    },
+    {
+      "claim_text": "On Search-R1 with Qwen3-4B, RLFactory achieves a 0.486 test score on the Natural Questions (NQ) dataset, surpassing larger models trained with similar techniques (e.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2509.06980"
+      ]
+    },
+    {
+      "claim_text": "Extensive experiments on the ActivityNet dataset demonstrate that the proposed model, Transformer-LLM based Dense Video Captioning (TL-DVC), achieves a 9.22% improvement over state-of-the-art models, increasing the Meteor score from 11.28 to 12.32.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.36548/jiip.2025.2.005"
+      ]
+    },
+    {
+      "claim_text": "Experimental evaluations on ACE 2005 and SemEval 2010 datasets demonstrate that Q-REFormer achieves F1 scores of 88.02% and 92.08% respectively, showing significant superiority over existing models.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/ecis65594.2025.11087023"
+      ]
+    },
+    {
+      "claim_text": "The experimental results show that RAG-Chain improves the accuracy of the baseline model by an average of 6.9% on the MedQA dataset without the need for pre-training or fine-tuning in biomedical fields, verifying its strong adaptability and effectiveness in different large language models.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/bibm62325.2024.10822837"
+      ]
+    },
+    {
+      "claim_text": "Our approach demonstrates broad effectiveness across different domains: 1) for large language models(LLMs), boosting the AIME 2025 score for Qwen2.5-Math-7B by 37.4%; 2) for continuous control reinforcement learning agents, improving performance by more than 30% over strong baselines such as SAC on the challenging HumanoidBench; 3) for image classification, enhancing ImageNet top-1 accuracy by 0.69% for ResNet-50.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2510.08549"
+      ]
+    },
+    {
+      "claim_text": "Our method obtains a 33.0 SPIDEr-FL score, outperforming the winner of DCASE 2023 Task 6A.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2406.13275"
+      ]
+    },
+    {
+      "claim_text": "Experiments on the test subset of the Corr2Cause dataset benchmark with Qwen3-32B model (reasoning model) show substantial gains over standard direct prompting methods, improving F1 scores from 32.71 to 48.26 (over 47.5% relative increase), along with notable improvements in precision and recall.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2505.18034"
+      ]
+    },
+    {
+      "claim_text": "When evaluated on the BIRD benchmark with Qwen2.5-72B-Instruct, SDE-SQL achieves an 8.02% relative improvement in execution accuracy over the vanilla Qwen2.5-72B-Instruct baseline, establishing a new state-of-the-art among methods based on open-source models without supervised fine-tuning (SFT) or model ensembling.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2506.07245"
+      ]
+    },
+    {
+      "claim_text": "a 23.5 percentage point improvement over the base LLaMA 3.1 8B model",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/fllm67465.2025.11391170"
+      ]
+    },
+    {
+      "claim_text": "Evaluations on two EC-GCD benchmarks, including a newly constructed Scam Report dataset, demonstrate that PaMA outperforms prior methods with up to 12.58% H-score gains, while maintaining strong generalization on base GCD datasets.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2505.23304"
+      ]
+    },
+    {
+      "claim_text": "On BCCS Q1-9 spanning all major breast cancer subtypes and treatment settings, including early-stage, metastatic, neoadjuvant, and adjuvant, OE achieved the highest mean score (3.91 ± 0.48; 2.57-4.43), significantly outperforming both GPT (3.19 ± 0.67; 2.36-3.93) and DS (2.93 ± 0.54; 1.50-3.86) in overall performance (p < 0.0001), with large effect sizes (Cohen’s d = 1.12 vs. GPT; d = 2.84 vs. DS).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1158/1557-3265.sabcs25-ps3-04-06"
+      ]
+    },
+    {
+      "claim_text": "It outperforms common instruction tuning by 17.07%-33.41% on Icelandic-English translation bleurt score (WMT-21 dataset, gemma-7b-it) and improves accuracy by 36.1% on formatted text generation (Llama2-7b-chat).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2408.10841"
+      ]
+    },
+    {
+      "claim_text": "APEC-Travel surpasses baselines by 9.1% on LLM-as-a-Judge scores",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2411.13904"
+      ]
+    },
+    {
+      "claim_text": "The results show that Falcon outperforms previous models achieving 70% of accuracy with human evaluation on Spider dataset and it achieves competitive 75% accuracy with human evaluation on WikiSQL dataset.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/icce59016.2024.10444148"
+      ]
+    },
+    {
+      "claim_text": "Our method obtains a 28.5 SPIDEr-FL score, outperforming the participates of DCASE 2023 Task 6A.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1145/3709026.3709118"
+      ]
+    },
+    {
+      "claim_text": "Multi-turn strategies such as self-debugging deliver the highest absolute performance on frontier models (80.5% pass@1 for GPT-4o on HumanEval+) while offering diminished returns on smaller open-source models.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.66372/jger.v2i1.1"
+      ]
+    },
+    {
+      "claim_text": "Experiments on the RAIDEN benchmark demonstrate RAIDEN-R1's superiority: our 14B-GRPO model achieves 88.04% and 88.65% accuracy on Script-Based Knowledge and Conversation Memory metrics, respectively, outperforming baseline models while maintaining robustness.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2505.10218"
+      ]
+    },
+    {
+      "claim_text": "With Video-MME, we extensively evaluate various state-of-the-art MLLMs, and reveal that Gemini 1.5 Pro is the best-performing commercial model, significantly outperforming the open-source models with an average accuracy of 75%, compared to 71.9% for GPT-4o.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/cvpr52734.2025.02245"
+      ]
+    },
+    {
+      "claim_text": "Evaluated on the CIDDS-001 dataset across five LLMs, X-Flow improves macro F1-score over zero-shot classification, with substantial improvements across all the models, with gains of 12.9 to 39.2 points in the more competitive models GPT-4.1 and Gemma 27B.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/icprs66293.2025.11302848"
+      ]
+    },
+    {
+      "claim_text": "Experiments on the Berkeley Function-Calling Leaderboard (BFCL) demonstrate that InfTool transforms a base 32B model from 19.8% to 70.9% accuracy (+258%), surpassing models 10x larger and rivaling Claude-Opus, and entirely from synthetic data without human annotation.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2512.23611"
+      ]
+    },
+    {
+      "claim_text": "Our model outperforms GPT4 and state-of-the-art (SOTA) open-source models, achieving remarkable 53.8% pass@1 rate on VerilogEval-human benchmark.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/iscas56072.2025.11044046"
+      ]
+    },
+    {
+      "claim_text": "On the LOONG benchmark (EMNLP 2024) for long-context multi-document QA, SPD-RAG achieves an Avg Score of 58.1 (GPT-5 evaluation), outperforming Normal RAG (33.0) and Agentic RAG (32.8) while using only 38% of the API cost of a full-context baseline (68.0).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "structured context augmentation significantly increased F1-score (57% to 84%).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1101/2025.05.09.25327312"
+      ]
+    },
+    {
+      "claim_text": "a 35% increase in adaptability",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1371/journal.pone.0320777"
+      ]
+    },
+    {
+      "claim_text": "Results The newly released models OpenAI o1 and GPT-4o achieved scores on the questions from 2024 of 59% (56 of 95; 95% CI: 48, 69) and 54% (51 of 95; 95% CI: 43, 64), respectively, whereas Gemini 1.5 Pro (Google) achieved a score of 36% (34 of 95; 95% CI: 26, 46), and Llama 3.2-90B-Vision (Meta) achieved a score of 33% (31 of 95; 95% CI: 23, 43).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1148/radiol.250617"
+      ]
+    },
+    {
+      "claim_text": "35% relative reduction.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.64898/2026.03.22.26349018"
+      ]
+    },
+    {
+      "claim_text": "MCCoder achieves a 131.77% improvement on complex tasks in the MCEVAL dataset.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/case58245.2025.11163835"
+      ]
+    },
+    {
+      "claim_text": "Experiments on medical question answering dataset (MedQA), medical muti-choice question answering (MedMCQA), and a self-constructed RareDisease-MedQuAD subset show that GRAG outperforms baseline models by approximately 10-12% in accuracy, reduces hallucination rate by around 20%, and achieves graph fidelity exceeding 80%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.54097/vee3xx26"
+      ]
+    },
+    {
+      "claim_text": "Applying this pipeline, we fine-tune an 8-billion-parameter model, EnvGPT, which achieves 92.06 ± 1.85 % accuracy on the independent EnviroExam benchmark-surpassing the parameter-matched LLaMA-3.1-8B baseline by ∼8 percentage points and rivaling the closed-source GPT-4o-mini and the 9-fold larger Qwen2.5-72B.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.ese.2025.100608"
+      ]
+    },
+    {
+      "claim_text": "Vision-R1-7B achieves a 73.5% accuracy on the widely used MathVista benchmark, which is only 0.4% lower than the leading reasoning model, OpenAI O1.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2503.06749"
+      ]
+    },
+    {
+      "claim_text": "Evaluated on all 10 tasks of the StreamGaze benchmark, GazeQwen reaches 63.9% accuracy, a +16.1 point gain over the same Qwen2.5-VL-7B backbone with gaze as visual prompts and +10.5 points over GPT-4o, the highest score among all open-source and proprietary models tested.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "achieving up to 6.13% accuracy improvement for specific models",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/caibda65784.2025.11182955"
+      ]
+    },
+    {
+      "claim_text": "Contributions include: (1) Developed an ETAS framework on the SKINCON dataset to optimize a Vision Transformer (ViT) tailored for dermatological feature representation and then fine-tuned binary classifiers for each of the 23 skin disease categories in the DermNet dataset to enhance classification performance; (2) Designed a StackNet architecture that integrates multiple fine-tuned binary ViT classifiers to enhance predictive robustness and mitigate class imbalance issues; (3) Implemented a RAG pipeline, termed Diagnostic Explanation and Retrieval Model for Dermatology, which harnesses the capabilities of the Google Gemini 2.5 Pro LLM architecture to generate personalized, contextually informed diagnostic descriptions and explanations for patients, leveraging a repository of verified dermatological materials; (4) Performed extensive experimental evaluations on 23 skin disease categories to demonstrate performance increase, achieving an overall F1-score of 56.30% that surpasses SkinGPT-4 (48.51%) by a considerable margin, representing a performance increase of 16.06%; (5) Conducted a domain-expert evaluation, with eight licensed medical doctors, of the clinical responses generated by our AI assistant for seven dermatological conditions.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2512.08998"
+      ]
+    },
+    {
+      "claim_text": "Evaluations on SWaT and SBFF datasets demonstrate the framework’s superiority, achieving a state–of–the–art accuracy of 0.986 while reducing latency by 53.2% compared to baseline models.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/electronics14193952"
+      ]
+    },
+    {
+      "claim_text": "Results: On the SpAMCQA benchmark, our specialized SpAD-LLM achieved a state-of-the-art accuracy of 92.36%, decisively outperforming the 86.05% accuracy of the leading generalist model, GPT-4.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.20517/ais.2025.93"
+      ]
+    },
+    {
+      "claim_text": "Experiments on the NitiBench benchmark demonstrate substantial improvements: GRPO achieves up to 90% citation-F1 gains relative to the base model and a 31% increase in joint quality metrics over instruction tuning.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18653/v1/2025.nllp-1.21"
+      ]
+    },
+    {
+      "claim_text": "Experiments on the CICIoT2023 dataset show that a QLoRA-tuned LLaMA-1B model achieves an F1-score of 0.7124, comparable to the Random Forest (RF) baseline (0.7159) for known attacks.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/comcomap68359.2025.11353200"
+      ]
+    },
+    {
+      "claim_text": "Extensive experiments on ToolSandbox and ToolQA-D demonstrate that GRACE consistently surpasses both proprietary prompting baselines and fine-tuned models, achieving 76.1 % exact-match accuracy on ToolSandbox and 70.7 % under the dynamic tool environment on ToolQA-D, thereby establishing new state-of-the-art results while maintaining parameter efficiency and plug-and-play deployment.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/icpads67057.2025.11323200"
+      ]
+    },
+    {
+      "claim_text": "With 4-bit quantization of weight, activation, and KV-cache, SpinQuant narrows the accuracy gap on zero-shot reasoning tasks with full precision to merely 2.9 points on the LLaMA-2 7B model, surpassing LLM-QAT by 19.1 points and SmoothQuant by 25.0 points.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2405.16406"
+      ]
+    },
+    {
+      "claim_text": "Extensive experiments on five math-focused and five general reasoning benchmarks demonstrate that CapPO achieves competitive performance, yielding gains of +6.0% accuracy on math-related tasks and +2.4% on general reasoning tasks over the base Qwen2.5-VL-7B model.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2509.21854"
+      ]
+    },
+    {
+      "claim_text": "Evaluations conducted on the CodeReviewer dataset demonstrated that MoE-Reviewer outperforms existing methods, achieving state-of-the-art performance with an F1-score of 73.2% and improving the BLEU score for review comment generation by 5.32 to 11.62.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/issre66568.2025.00033"
+      ]
+    },
+    {
+      "claim_text": "reduces fine-tuning steps by 37%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.71465/ajdsa3667"
+      ]
+    },
+    {
+      "claim_text": "Across four LLMs and three MMLU variants, CCPS reduces Expected Calibration Error by approximately 55% and Brier score by 21%, while increasing accuracy by 5 percentage points, Area Under the Precision-Recall Curve by 4 percentage points, and Area Under the Receiver Operating Characteristic Curve by 6 percentage points, all relative to the strongest prior method.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2505.21772"
+      ]
+    },
+    {
+      "claim_text": "The best BanglaGPT-based model outperformed the current benchmark results, with BLEU-4, METEOR, and CIDEr scores of 54.3, 39.2, and 95.9 on the BanglaLekha dataset and 67.4, 36.6, and 76.9 on the BNature dataset.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/iccit64611.2024.11022443"
+      ]
+    },
+    {
+      "claim_text": "For example, (1) newer models do not guarantee better performance - Claude 4 family outperforms Claude 4.5 family on ReAct tasks (Claude 4 Opus: 72.4% vs. Claude 4.5 Sonnet: 63.3% task success rate), demonstrating that production upgrades require validation; (2) no single model-agent combination dominates: best performances range from 57% to 100% depending on domain.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2506.08119"
+      ]
+    },
+    {
+      "claim_text": "Qimai AI agent framework increased AUC-ROC by 15.6% on unseen proteins.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1101/2025.09.30.679628"
+      ]
+    },
+    {
+      "claim_text": "Evaluation on the LogHub 2.0 benchmark using Claude 3.7 Sonnet demonstrates exact match rates exceeding 0.99 for template-based compression and average Levenshtein similarity scores above 0.91 for algorithmic compression, even at compression ratios of 60$\\%$-80$\\%$.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Notably, on the challenging MuSiQue dataset, DPS improves the F1-score by 30.06% and 15.4% over strong baselines like Qwen3-reranker and RankingGPT, respectively.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2508.09497"
+      ]
+    },
+    {
+      "claim_text": "Extensive evaluations on the HM3D, MP3D, and RoboTHOR benchmarks demonstrate that our cognitive process modeling significantly improves the success rate of ObjectNav at least by relative 14% over the state-of-the-arts.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/iccv51701.2025.00891"
+      ]
+    },
+    {
+      "claim_text": "Additionally, SLAM-TR demonstrates strong generalization, achieving an ASR-BLEU score of 8.2 on the FLEURS benchmark, outperforming both cascaded and open-source systems.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.21437/interspeech.2025-2341"
+      ]
+    },
+    {
+      "claim_text": "Extensive experiments on four DDA benchmarks show that, LLM-DDAGNN-AE achieved the optimal performance compared to 11 baselines with the overall relative improvement in AUPR of 23.22%, F1-Score of 17.20%, and precision of 25.35%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/s12539-024-00654-7"
+      ]
+    },
+    {
+      "claim_text": "Our 14B parameter model achieves 93.5% accuracy on the CaLM benchmark, compared to 55.4% by OpenAI o3.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2602.06337"
+      ]
+    },
+    {
+      "claim_text": "We identify this robustness-precision trade-off through controlled evaluation on the FinDER benchmark (1,500 queries across five groups): SFR achieves higher average scores (6.45 vs. 6.02) and fewer failures (10.3% vs. 22.5%), while chunk-based retrieval (CBR) yields more perfect answers (13.8% vs. 8.5%).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Results show that Distil-RoBERTa achieved the highest F1 score (0.883) for GAD-2, while XLNet outperformed others on PHQ tasks (F1 up to 0.891).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Comprehensive experiments across three diverse CTI datasets demonstrate that H-TechniqueRAG not only outperforms the state-of-the-art TechniqueRAG by 3.8\\% in F1 score, but also achieves a 62.4\\% reduction in inference latency and a 60\\% decrease in LLM API calls.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Qwen attained a maximum accuracy of only 20.35%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.30871/jaic.v9i6.11369"
+      ]
+    },
+    {
+      "claim_text": "Empirical evaluation on an industrial ALPG dataset shows that PKE significantly outperforms standard prompting and surpasses state-of-the-art methods in generating correct ALPG code, achieving 11.1\\% and 15.2\\% higher exact match scores compared to the second-best technique.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2509.13055"
+      ]
+    },
+    {
+      "claim_text": "Based on the TensorFlow dataset, the patch classifier using LLM outperforms HERMES by 11.6 in terms of F1-score.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.65286/icic.v21i1.94416"
+      ]
+    },
+    {
+      "claim_text": "On the Spider benchmark where there are no unit tests to verify the correctness of predictions, Self-Debugging with code explanation consistently improves the baseline by 2-3%, and improves the prediction accuracy on problems of the hardest level by 9%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2304.05128"
+      ]
+    },
+    {
+      "claim_text": "Experimental results on the HumanEvalFix benchmark show that CCT surpasses instruction tuning in pass@1 scores by up to 4 points across diverse code LLMs, and extensive analysis demonstrates the effectiveness of our method.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2403.19121"
+      ]
+    },
+    {
+      "claim_text": "The findings indicate that the Dhati model has superior performance compared to the parallel approach, as it achieves an accuracy rate of 82% in the Arabic subjectivity classification task using the ASTD benchmark.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/pais60821.2023.10322022"
+      ]
+    },
+    {
+      "claim_text": "outperforming its teacher by 5.3%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2602.16953"
+      ]
+    },
+    {
+      "claim_text": "Our analysis of the UNSW-NB15, CIC-IDS2018 and AWS CloudTrail logs demonstrates an accuracy rate 96.5%, F1 score of 95.4% and 3.4% false positive rate – outperforming ML, CNN-LSTM and LLM only baselines by almost 15%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/gcat66372.2025.11368582"
+      ]
+    },
+    {
+      "claim_text": "on QALD-9, few-shot STaRQ-Agent outperforms the strongest baseline by 4.3%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/access.2026.3681404"
+      ]
+    },
+    {
+      "claim_text": "Through experimentation on the CoNLL-2003 dataset using standard exact-match evaluation metrics, our approach demonstrates improvements over unified methods, achieving a 75.39% F1 score compared to baseline approaches (72.90%).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1145/3701716.3717818"
+      ]
+    },
+    {
+      "claim_text": "On the MLSUM dataset, GPT scored BLEU: 0.04 and ROUGE-1: 0.62 compared to DeepSeek’s 0.03 and 0.26.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.46460/ijiea.1737325"
+      ]
+    },
+    {
+      "claim_text": "Experiments on curated open-source Python projects and the DyPyBench benchmark demonstrate that InferCG outperforms state-of-the-art static tools, which achieves up to 13.9% improvement in average recall and a 5.0% gain in average F1 score over PyCG.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1145/3799990"
+      ]
+    },
+    {
+      "claim_text": "Experiments on three public benchmarks (the AI4I Predictive Maintenance Dataset) using three foundation models (LLaMA-3-8B, Mistral-7B, and Qwen2-7B) show that TabEng-QLoRA achieves a mean macro F1 of 0.908, a 10.6% gain over standard QLoRA, within 4.6–5.2 GB peak GPU memory.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/electronics15081728"
+      ]
+    },
+    {
+      "claim_text": "BugCerberus surpasses the state-of-the-art in Top-3 by 5.4%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/tse.2026.3668601"
+      ]
+    },
+    {
+      "claim_text": "Extensive experiments demonstrate that LlmBertLog achieves F1 scores of 0.994 on the BGL dataset and 0.998 on the HDFS dataset for log sequence anomaly detection, surpassing the current best benchmarks by 2.3% and 5.5%, respectively.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/cscwd64889.2025.11033638"
+      ]
+    },
+    {
+      "claim_text": "Our study shows that LLMs excel in extracting ADRs, for example, with GPT-4 achieving an F1 score of 0.82, surpassing the previous ML methods of 0.64 for the SMM4H dataset.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.5220/0013160700003911"
+      ]
+    },
+    {
+      "claim_text": "Five models ... demonstrated significantly lower performance on pediatric questions, with accuracy drops of up to more than 10 percentage points.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1101/2025.04.25.25326437"
+      ]
+    },
+    {
+      "claim_text": "All models show a stark disconnect between syntactic validity (>98% execution accuracy) and semantic correctness (<29% DMA), with a domain gap of 37-55 percentage points versus BIRD.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2512.21877"
+      ]
+    },
+    {
+      "claim_text": "The best-performing model--OpenAIs o1-preview4 enhanced with retrieval-augmented generation (RAG)5,6--achieved 72.00% accuracy on MRCOG Part 2 and 92.30% on MedQA, exceeding prior benchmarks by 21.6%1.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1101/2025.05.22.25328162"
+      ]
+    },
+    {
+      "claim_text": "When evaluated on the BigCloneBench dataset, MultiCloneBERT outperformed other methods in terms of precision, recall, and f1-score metrics with all values reaching above 99%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.15625/vap.2024.0251"
+      ]
+    },
+    {
+      "claim_text": "Our best model achieves a new SOTA on Arabic GEC, with 73.29 and 73.26 F1 on the 2014 and 2015 QALB datasets, respectively, compared to peer-reviewed published baselines.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18653/v1/2023.arabicnlp-1.9"
+      ]
+    },
+    {
+      "claim_text": "surpassing OpenAI's o1-preview by 27.9%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2504.11536"
+      ]
+    },
+    {
+      "claim_text": "Experimental results on diverse ODQA benchmarks demonstrate the superiority of SuRe, with improvements of up to 4.6% in exact match (EM) and 4.0% in F1 score over standard prompting approaches.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2404.13081"
+      ]
+    },
+    {
+      "claim_text": "Evaluated on the UniversalFakeDetect benchmark, which includes 19 generative models, REVEAL achieves an average accuracy of 93.90%, outperforming the best existing method, C2P-CLIP.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1145/3746265.3759667"
+      ]
+    },
+    {
+      "claim_text": "Experimental evaluation on the RODI benchmark demonstrates that LLM4VKG surpasses state-of-the-art methods, achieving an average F1-score improvement of +17% and a peak gain of +39%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.24963/ijcai.2025/525"
+      ]
+    },
+    {
+      "claim_text": "BugCerberus surpasses the state-of-the-art in Top-5 by 10.2%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/tse.2026.3668601"
+      ]
+    },
+    {
+      "claim_text": "on MetaQA, few-shot STaRQ-Agent outperforms the strongest baseline by 0.7%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/access.2026.3681404"
+      ]
+    },
+    {
+      "claim_text": "BugCerberus surpasses the state-of-the-art in Top-10 by 23.1%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/tse.2026.3668601"
+      ]
+    },
+    {
+      "claim_text": "10.1% improvement in faithfulness metrics",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1145/3797161.3797180"
+      ]
+    },
+    {
+      "claim_text": "BugCerberus improves the fix rate of Agentless by 17.4% compared to the best baseline.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/tse.2026.3668601"
+      ]
+    },
+    {
+      "claim_text": "On our refined version of WMT24 ESA dataset, our reference-free method achieves an F1 score of approximately 27 for character-level label prediction, outperforming the reference-based XCOMET-XXL at approximately 17.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18653/v1/2025.wmt-1.62"
+      ]
+    },
+    {
+      "claim_text": "Our experiments demonstrate that MSIVD achieves superior performance, outperforming the highest LLM-based vulnerability detector baseline (LineVul), with a F1 score of 0.92 on the BigVul dataset, and 0.48 on the PreciseBugs dataset.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2406.05892"
+      ]
+    },
+    {
+      "claim_text": "Evaluated on MedMCQA and MedQA-USMLE benchmarks using GPT-oss 21B and LLaMA 4Scout 17B base models without fine-tuning, the MCP-based multiagent framework achieves approximately 5% accuracy improvement (71-75%) over single-agent baselines (66-70%).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/ccwc67433.2026.11393764"
+      ]
+    },
+    {
+      "claim_text": "Evaluated on five representative open-source LLMs using the AdvBench benchmark, ETTA achieves a high average attack success rate of 88.61%, outperforming the best baseline by 11.34%, and generalizes to safety-enhanced models (e.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2507.08020"
+      ]
+    },
+    {
+      "claim_text": "35.7% reduction in hallucination rates",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1145/3797161.3797180"
+      ]
+    },
+    {
+      "claim_text": "substantial improvements for mid-tier models like GPT-4o (80.5% to 87.3%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1371/journal.pdig.0001106"
+      ]
+    },
+    {
+      "claim_text": "recall rate of 87.3% (20.5% higher than pure KG reasoning models)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1101/2025.06.30.662271"
+      ]
+    },
+    {
+      "claim_text": "demonstrated 8% improvement in macro F1 score compared to the baseline",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/reacs67479.2025.11413320"
+      ]
+    },
+    {
+      "claim_text": "Our model outperforms GPT-4 on a number of measurements, including the mean scores experts assigned to reasoning provided by both models and a 90% accuracy rate versus GPT-4's 60% accuracy rate on a set of advanced prompts $(n=10)$.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/icocet63343.2024.10730448"
+      ]
+    },
+    {
+      "claim_text": "Few-shot prompting provides minimal gains, improving only 2 of 9 models by>1%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2602.21226"
+      ]
+    },
+    {
+      "claim_text": "Static prompting increased average F1-scores by 11% for LLaMA 3-70B.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.21203/rs.3.rs-7216581/v1"
+      ]
+    },
+    {
+      "claim_text": "Dynamic prompting with SBERT retrieval improved average F1-scores by 5.6% in 10-shot settings.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.21203/rs.3.rs-7216581/v1"
+      ]
+    },
+    {
+      "claim_text": "After RAG, all models improved, and open-weight models like Mistral Large 2 (78.0%, 95% CI: 73.9-81.5) performed comparably to proprietary alternatives like GPT 4o.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1371/journal.pdig.0001029"
+      ]
+    },
+    {
+      "claim_text": "MALPRE outperforms state-of-the-art methods by 4.8% in FSS-score for semantic inference.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/issre66568.2025.00052"
+      ]
+    },
+    {
+      "claim_text": "Claude Sonnet 4.6 scored 36% in clinical codelist generation using RAG.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.64898/2026.04.23.26351098"
+      ]
+    },
+    {
+      "claim_text": "improves generalization ability by 15.7%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2478/ijanmc-2024-0033"
+      ]
+    },
+    {
+      "claim_text": "an improvement of 6.8% points over RAG",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-025-21222-z"
+      ]
+    },
+    {
+      "claim_text": "RAG showed minimal benefit on MedQA questions (LLaMA 3.3-70B: +1.4% vs +3.9% on board exams)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1371/journal.pdig.0001106"
+      ]
+    },
+    {
+      "claim_text": "increases of over 60 percentage points",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1101/2025.08.22.25334232"
+      ]
+    },
+    {
+      "claim_text": "improves the professionalism of generated texts by 35% (manual evaluation index)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1101/2025.06.30.662271"
+      ]
+    },
+    {
+      "claim_text": "Clinicians outperformed both AI models with 82.86% accuracy within top 10.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2196/preprints.70017"
+      ]
+    },
+    {
+      "claim_text": "surpasses prompting-based baselines by 12.8%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2505.17100"
+      ]
+    },
+    {
+      "claim_text": "surpasses fine-tuned judges by 17.2%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2505.17100"
+      ]
+    },
+    {
+      "claim_text": "Fine-tuning LLaMA-3.1-8B-Instruct on curated synthesis traces yields up to a 31% relative performance gain.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2503.23145"
+      ]
+    },
+    {
+      "claim_text": "a 24% improvement over single-turn baselines",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2507.01020"
+      ]
+    },
+    {
+      "claim_text": "The largest advantage was in evidence quality (VITA: 4.46 vs. ChatGPT: 3.14, a 42% relative gap).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.64898/2026.04.30.26351194"
+      ]
+    },
+    {
+      "claim_text": "The open-weight model DeepSeek R1 achieved the highest accuracy at 86.7% (95% CI: 83.7-89.9%), outperforming proprietary models and the human average of 78%.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1101/2025.09.11.25335607"
+      ]
+    },
+    {
+      "claim_text": "all models exhibit a sharp hallucination safety cliff near 90% compression",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2603.01426"
+      ]
+    },
+    {
+      "claim_text": "CodePilot achieves a 24.67% issue resolution rate using open-weight models",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2602.00129"
+      ]
+    },
+    {
+      "claim_text": "MiniCPM-V achieved an accuracy of 70.57%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1109/jstars.2025.3547144"
+      ]
+    },
+    {
+      "claim_text": "Clinicians achieved 57.14% accuracy for top diagnosis.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.2196/preprints.70017"
+      ]
+    },
+    {
+      "claim_text": "body part accuracy from 29.12% to 53%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "LLaMA 3.1 (70B) approximated 87%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1109/icbmesh66209.2025.11182217"
+      ]
+    },
+    {
+      "claim_text": "location accuracy rose from 3.41% to 12.8%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "the top-performing model, Gemini 2.5 Flash, can successfully migrate 52.3 percent of projects to JDK 17.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2510.04852"
+      ]
+    },
+    {
+      "claim_text": "GenoMAS reaches an F$_1$ of 60.48% for gene identification",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2507.21035"
+      ]
+    },
+    {
+      "claim_text": "Experiments on BIRD (70.65% execution accuracy)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2602.16720"
+      ]
+    },
+    {
+      "claim_text": "Spider 2.0-Snow (51.01% execution accuracy)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2602.16720"
+      ]
+    },
+    {
+      "claim_text": "type accuracy from 9.24% to 30%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "success rate of this simple attack on GPT-4o increases from 1% using direct requests to 88% using 20 past tense reformulation attempts",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2407.11969"
+      ]
+    },
+    {
+      "claim_text": "achieving a 21.11% solve rate overall",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2505.22583"
+      ]
+    },
+    {
+      "claim_text": "Failure-Trace Allocator achieves 80.69% accuracy versus 77.64%, 77.08%, and 75.14% for L1, S1, and TALE.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.21203/rs.3.rs-9783817/v1"
+      ]
+    },
+    {
+      "claim_text": "reasoning models achieved an F1 score of 67%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1007/s12553-025-01041-y"
+      ]
+    },
+    {
+      "claim_text": "Llama-3, an open-source model, performs comparably to GPT-4. It achieved 96% accuracy in the authors’ evaluation.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1109/iccit64611.2024.11021969"
+      ]
+    },
+    {
+      "claim_text": "Models selected the sham in 40.6% of evaluations",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.21203/rs.3.rs-8872967/v1"
+      ]
+    },
+    {
+      "claim_text": "The SME agreed with the CAES-assigned claim statuses for 69% of claims",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1136/bmjhci-2025-101621"
+      ]
+    },
+    {
+      "claim_text": "Benchmarking against manually curated labels for 4,953 compounds showed 75% overall agreement.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1021/acs.analchem.5c05301"
+      ]
+    },
+    {
+      "claim_text": "exact score agreement in 55% of quiz cases",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.3390/info17050505"
+      ]
+    },
+    {
+      "claim_text": "the most competitive agent can complete 30% of tasks autonomously.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2412.14161"
+      ]
+    },
+    {
+      "claim_text": "reasoning models demonstrated superior performance in ICD-10 classification, achieving an average accuracy of 71%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1007/s12553-025-01041-y"
+      ]
+    },
+    {
+      "claim_text": "deterministic middleware enforcement reduces the unauthorized-tool success rate to 0%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.64898/2026.04.09.26350519"
+      ]
+    },
+    {
+      "claim_text": "The LLM-based decoder achieved an average accuracy of 79% among participants whose neural signals were responsive (11 out of 20).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1101/2025.06.01.657282"
+      ]
+    },
+    {
+      "claim_text": "demonstrating an accuracy of 83.7% in disclosure analysis",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2312.17264"
+      ]
+    },
+    {
+      "claim_text": "demonstrating an accuracy of 76.9% in data extraction",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2312.17264"
+      ]
+    },
+    {
+      "claim_text": "92.4% of its proteins fell into subsets labeled high relevance",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.64898/2026.03.28.715041"
+      ]
+    },
+    {
+      "claim_text": "reduces the defect rate by more than 30 percent",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1609/aaai.12025"
+      ]
+    },
+    {
+      "claim_text": "model capability is the dominant factor, with a 21 percentage point accuracy gap between frontier and open source tiers",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2602.05447"
+      ]
+    },
+    {
+      "claim_text": "MiniCPM-V achieved 43.49% on the merged dataset",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1109/jstars.2025.3547144"
+      ]
+    },
+    {
+      "claim_text": "The Professional Version demonstrated significantly higher clinical significance (>85.2% case score rate).",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.4103/aja202559"
+      ]
+    },
+    {
+      "claim_text": "lower false-negative rates than previous methods (down to 40 percent from 55 percent) for compound-species pair identification",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1101/2024.11.05.622126"
+      ]
+    },
+    {
+      "claim_text": "offloads 83.4% of subtasks to a local SLM",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1145/3767295.3803622"
+      ]
+    },
+    {
+      "claim_text": "the baseline model (61.43%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1038/s41598-025-88925-1"
+      ]
+    },
+    {
+      "claim_text": "open-weight models like Mistral Large 2 (78.0%, 95% CI: 74.1-81.8) performed comparably to proprietary alternatives like GPT 4o.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1101/2025.09.11.25335607"
+      ]
+    },
+    {
+      "claim_text": "the human average of 78%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1101/2025.09.11.25335607"
+      ]
+    },
+    {
+      "claim_text": "Gains were largest in mid-sized and small models (e.g., Mistral Large: 72% → 81%)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "subgroup",
+      "supporting_study_ids": [
+        "10.1038/s41746-025-02250-5"
+      ]
+    },
+    {
+      "claim_text": "access violations to 3.10%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1109/acdsa67686.2026.11468212"
+      ]
+    },
+    {
+      "claim_text": "Exact score agreement in 55% of quiz cases.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2511.10819"
+      ]
+    },
+    {
+      "claim_text": "privacy leakage reduced to 2.90%",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1109/acdsa67686.2026.11468212"
+      ]
+    },
+    {
+      "claim_text": "disagreed for 14% of claims",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1136/bmjhci-2025-101621"
+      ]
+    },
+    {
+      "claim_text": "was neutral for 11% of claims",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1136/bmjhci-2025-101621"
+      ]
+    },
+    {
+      "claim_text": "LLMs with RAG had 26.7% errors",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "LLMs with RAG reduced error rates (18.8% with minor hallucinations)",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "category-level recall exceeding 75% across all classes.",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "threshold",
+      "supporting_study_ids": [
+        "10.1021/acs.analchem.5c05301"
+      ]
+    },
+    {
+      "claim_text": "confidence calibration routes 12% of queries to human analysts when model uncertainty exceeds domain-specific thresholds",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.2139/ssrn.6570798"
+      ]
+    },
+    {
+      "claim_text": "non-reasoning models exhibited higher stability of 91% average consistency",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1007/s12553-025-01041-y"
+      ]
+    },
+    {
+      "claim_text": "reasoning models of 84% consistency",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.1007/s12553-025-01041-y"
+      ]
+    },
+    {
+      "claim_text": "43.8% of its proteins fell into low or low-medium relevance subsets",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.64898/2026.03.28.715041"
+      ]
+    },
+    {
+      "claim_text": "69.5% of its proteins fell into low or low-medium relevance subsets",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.64898/2026.03.28.715041"
+      ]
+    },
+    {
+      "claim_text": "0% contraindication misses",
+      "confidence_0_100": 70,
+      "publication_opportunity": false,
+      "paper_type": "rate",
+      "supporting_study_ids": [
+        "10.64898/2026.04.09.26350519"
+      ]
+    },
+    {
+      "claim_text": "Across standard public benchmarks Datarus surpasses similar size models and even reaches the level of larger reasoning models such as QwQ-32B achieving up to 30% higher accuracy on AIME 2024/2025 and LiveCodeBench while emitting 18-49% fewer tokens per solution.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2508.13382"
+      ]
+    },
+    {
+      "claim_text": "Evaluations on SWE-bench Verified demonstrate our 32B model achieves a 46\\% issue resolution rate, surpassing significantly larger models such as DeepSeek R1 671B and OpenAI o1.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Evaluations on SWE-bench Verified demonstrate our32B model achieves a 46% issue resolution rate , surpassing significantly larger models such as DeepSeek R1 671B and OpenAI o1.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "v2, and the challenging ScreenSpot-Pro—highlights ZonUI- 3B’s exceptional accuracy, achieving 84.9% on ScreenSpot and 86.4% on ScreenSpot-v2, surpassing prior models un-.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Using three open-weight LLMs evaluated on compact, resource- constrained subsets of GSM8K, ARC-Challenge, HellaSwag, and TruthfulQA, our best graph-attention-based consensus model improves macro-average accuracy by 4.6 percentage points over the strongest single LLM and by 8.1 points over majority vote, while also yielding lower Brier scores and fewer TruthfulQA hal- lucinations.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2601.07245"
+      ]
+    },
+    {
+      "claim_text": "Galactica also performs well on reasoning, outperforming Chinchilla on mathematical MMLU by 41.3% to 35.7%, and PaLM 540B on MATH with a score of 20.4% versus 8.8%.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Comprehensive evaluation on xCodeEval, APPS, and CodeContests shows that MapCoder-Lite more than doubles xCodeEval accuracy (from 13.2% to 28.3%), eliminates all format failures, while reducing GPU memory and token-generation time by 4x compared to a 32B model.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18653/v1/2026.findings-eacl.346"
+      ]
+    },
+    {
+      "claim_text": "Our approach markedly outperforms existing methods on the SnapNTell dataset, achieving a 66.5\\% improvement in the BELURT score.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2403.04735"
+      ]
+    },
+    {
+      "claim_text": "In particular, SABER‑FastThink cuts reasoning length by 65.4% and yields a 3.6% accuracy gain compared with the base model on the MATH benchmark.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2508.10026"
+      ]
+    },
+    {
+      "claim_text": "Extensive experiments on challenging mathematics benchmarks demonstrate Scaf-GRPO's effectiveness, boosting the pass@1 score of the Qwen2.5-Math-7B model on the AIME24 benchmark by a relative 44.3% over a vanilla GRPO baseline.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2510.19807"
+      ]
+    },
+    {
+      "claim_text": "Baseline evaluations underscore the task's complexity, with the leading reasoning model O3-Mini achieving only 38.87% success rate on BIRD-CRITIC-PG and 33.33% on BIRD-CRITIC-Multi.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2506.18951"
+      ]
+    },
+    {
+      "claim_text": "Selecting over an ensemble of edits from existing top SWE-bench Verified submissions obtains a score of 66.2% and outperforms the best member of the ensemble on its own.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "The model achieved 72.6% accuracy on MedQA, outperforming the previous SOTA by 2.4%, and 81.7% accuracy on MMLU medical-subset, establishing itself as the first OS LLM to surpass 80% accuracy on this benchmark.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1038/s41598-024-64827-6"
+      ]
+    },
+    {
+      "claim_text": "On HotpotQA, it achieves an F1-score of 0.453 -- an absolute improvement of 8.3 points over the strongest iterative baseline -- establishing a new state-of-the-art for this class of methods on these benchmarks.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2510.22344"
+      ]
+    },
+    {
+      "claim_text": ", 45.3 vs 26.7% F1 score) over the state of the art on the recent VidChapters-7M benchmark.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/cvpr52734.2025.01765"
+      ]
+    },
+    {
+      "claim_text": "Rigorous evaluation on the challenging IslamicPCQA benchmark shows state-of-the-art performance: the system achieves a remarkable 97.0% in Negative Rejection - a 40-point improvement over baselines - and a high Answer Correctness score of 74.3%.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2510.25621"
+      ]
+    },
+    {
+      "claim_text": "We evaluated the performance of our framework using three benchmark datasets, and the results show that our framework outperforms state-of-the-art systems on the LC-QuAD and YAGO-QA benchmarks, yielding F1 scores of 11.8% and 20.7%, respectively.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2402.14320"
+      ]
+    },
+    {
+      "claim_text": "Our approach, combining large language models with formal verification, test-driven development, and incremental architectural guidance, achieves a 38.6% improvement over the current top performer's 48.33% accuracy on the SWE-bench benchmark.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2412.05098"
+      ]
+    },
+    {
+      "claim_text": "Experiments demonstrate the effectiveness of our method, achieving a 27.6% improvement in F1 score and 44.8% in CIDEr on the YouCook2 benchmark and a 14.7% increase in recall on the Charades-STA benchmark compared to the baseline.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/cvpr52734.2025.01285"
+      ]
+    },
+    {
+      "claim_text": "Experiments with state-of-the-art models reveal a striking capability gap: even GPT-5 with OpenHands achieves only a 21 percent resolution rate on Tool, compared to 65 percent on the single-issue SWE-Bench Verified.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "We benchmark CommitPack against other natural and synthetic code instructions (xP3x, Self-Instruct, OASST) on the 16B parameter StarCoder model, and achieve state-of-the-art performance among models not trained on OpenAI outputs, on the HumanEval Python benchmark (46.2% pass@1).",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Our results indicate that PandaLM-7B achieves 93.75% of GPT-3.5's evaluation ability and 88.28% of GPT-4's in terms of F1-score on our test dataset.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2306.05087"
+      ]
+    },
+    {
+      "claim_text": "In Scoring Evaluation , GPT-4V achieves a 70% human agreement rate, peaking at 79.9% in MS-COCO, while Gem- ini averaged 67.7%.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Furthermore, RAG can generate correct answers even when the correct answer is not in any retrieved document, achieving 11.8% accuracy in such cases for NQ, where an extractive model would score 0%.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "On the MMLU-Pro dataset, accuracy fluctuates between 4% and 13.5%, while on AGIEval, the fluctuation is between 2%.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18653/v1/2025.naacl-industry.39"
+      ]
+    },
+    {
+      "claim_text": "On HumanEval, a new evaluation set we release to measure functional correctness for synthesizing programs from docstrings, our model solves 28.8% of the problems, while GPT-3 solves 0% and GPT-J solves 11.4%.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Notably, Eurus-70B beats GPT-3.5 Turbo in reasoning through a comprehensive benchmarking across 12 tests covering five tasks, and achieves a 33.3% pass@1 accuracy on LeetCode and 32.6% on TheoremQA, two challenging benchmarks, substantially outperforming existing open-source models by margins more than 13.3%.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2404.02078"
+      ]
+    },
+    {
+      "claim_text": "This model demonstrates robust classification and calibration on English and Japanese dialogues, and generalizes to the BETOLD dataset, improving accuracy by 7% over its baseline.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/taslpro.2026.3653123"
+      ]
+    },
+    {
+      "claim_text": "A notable finding is that when the GPT-3 code-davinci-002 model is used with least-to-most prompting, it can solve the compositional generalization benchmark SCAN in any split (including length split) with an accuracy of at least 99% using just 14 exemplars, compared to only 16% accuracy with chain-of-thought prompting.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2205.10625"
+      ]
+    },
+    {
+      "claim_text": "We demonstrate STELLAs capabilities on the created Tool Creation Benchmark, where it attains a score of 4.01/5 with 100% task completion, significantly outperforming state-of-the-art models including GPT-5, Claude 4 Opus, and Biomni.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1101/2025.07.01.662467"
+      ]
+    },
+    {
+      "claim_text": "LiTransMC, fine-tuned using parameter efficient and loss masking strategy, achieved a weighted F1 score of 0.6845 and a Jensen-Shannon Divergence of 0.000245, surpassing both untuned local models and larger proprietary systems, including GPT-4o with advanced persona inference and embedding-based loading, while also outperforming classical mode choice methods such as discrete choice models and machine learning classifiers for the same dataset.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2507.21432"
+      ]
+    },
+    {
+      "claim_text": "Experiments show the fine-tuned model achieves a 39.3% pass@1 accuracy on the novel benchmark, a 23.5 percentage point improvement over the base LLaMA 3.1 8B model on our novel benchmark.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/fllm67465.2025.11391170"
+      ]
+    },
+    {
+      "claim_text": "Meanwhile, in the text summarization task, GPT-4 attained a Rouge-1 score of 54.92 and a Rouge-2 score of 30.86, surpassing the experimental deep learning model's performance.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2404.11449"
+      ]
+    },
+    {
+      "claim_text": "For enhancing downstream tasks, we show that CoLA with RL achieves a score of 42.4 on the math500 benchmark, surpassing the baseline score of 38.2, and reaches 68.2 when augmented with a Monte Carlo Tree Search variant.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2503.21383"
+      ]
+    },
+    {
+      "claim_text": "Evaluation against our benchmark demonstrates that our method achieves up to 84% average violation score decrease on our benchmark dataset, significantly outperforming existing methods, which achieve at most 50% average violation score decrease.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1145/3663547.3746360"
+      ]
+    },
+    {
+      "claim_text": "Our system obtains a 0.289 overall score in the leaderboard, an improvement of 183% compared to the baseline, and a ROUGE-1 score of 0.444, achieving a second place performance in the shared task.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18653/v1/2024.bionlp-1.61"
+      ]
+    },
+    {
+      "claim_text": "The model attained an F1-score of 90.8% subsequent to fine-tuning on a hybrid dataset amalgamated from organizational communication data and public sentiment corpora, much outperforming conventional models such as SVMs, LSTMs, and naive Bayes classifiers.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/ciacon65473.2025.11189465"
+      ]
+    },
+    {
+      "claim_text": "Our results demonstrate that fine-tuned LLMs, while 250x smaller in size, outperform GPT-4 family models by 0.55% in F1 score on Task1 and 42% on Meteor Task in Task2.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2501.13687"
+      ]
+    },
+    {
+      "claim_text": "With limited data, Chat-3D achieves a 82.2% relative score compared with GPT-4 on the constructed instruction dataset, and comparable performance to state-of-the-art LLM-based methods.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18653/v1/2025.findings-naacl.18"
+      ]
+    },
+    {
+      "claim_text": "Chat-3D achieves a 75.6% relative score compared with GPT-4 on the constructed instruction dataset.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2308.08769"
+      ]
+    },
+    {
+      "claim_text": "After fine-tuning on a real-world truck driving risk dataset, the LIFT LLM achieved accurate risk prediction, outperforming benchmark models by 26.7% in recall and 10.1% in F1-score.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2510.22333"
+      ]
+    },
+    {
+      "claim_text": "For example, it achieves +9.2 F1 score and +2.8 CIDEr on YouCook2, +5.8 HIT@1 on QVHighlights, and +27.5 R@1 (I oU=0.5) on Charades-STA, compared to state-of-the-art video large language models, holding the potential to serve as a versatile video assistant for long-form video comprehension tasks and satisfy realistic user requirements.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/cvpr52733.2024.01357"
+      ]
+    },
+    {
+      "claim_text": "Evaluations on multiple benchmark datasets demonstrate that MAHA substantially outperforms baseline methods, achieving a ROUGE-L score of 0.486, providing complete modality coverage.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2510.14592"
+      ]
+    },
+    {
+      "claim_text": "BeatBound was tested on 100 complex clinical cases and achieved an overall groundedness score of 96% and a hallucination rate of 5.2%, outperforming standard LLMs that had hallucination rates of 31.4%.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/aiei69164.2026.11497467"
+      ]
+    },
+    {
+      "claim_text": "On the publicly available Pressure Injury Image Dataset (PIID), FT-ARM, fine-tuned from LLaMA 3.2 90B, achieved 85% accuracy in classifying PU stages I-IV, surpassing prior CNN-based models by +4%.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2510.24980"
+      ]
+    },
+    {
+      "claim_text": "Experimental results on the Chinese emotional dialogue dataset demonstrate superior performance across multiple evaluation metrics, achieving a METEOR score of 0.5024 and BERTScore of 0.8100, substantially outperforming existing baseline models and securing first place in the 5th China Conference on Affective Computing evaluation.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1142/s0219843625400146"
+      ]
+    },
+    {
+      "claim_text": "On the Bias Benchmark for Question Answering (BBQ) across three open-source LLMs (Meta Llama-3, OpenAI GPT-OSS, and Google Gemma-3), CatRAG achieves state-of-the-art results, improving accuracy by up to 40% over the corresponding base models and by more than 10% over prior debiasing methods, while reducing bias scores to near zero (from 60% for the base models) across gender, nationality, race, and intersectional subgroups.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Experimental results show substantial gains over existing benchmark models, with improvements of 7% in both accuracy and F1-score across various medical QA tasks.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/ijcnn64981.2025.11228647"
+      ]
+    },
+    {
+      "claim_text": "To further validate the approach, the models were tested on a more diverse dataset, Ax-to-Grind, where both SVM and LSTM achieved an F1 score of 89%, while BERT outperformed them with an F1 score of 93%.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/info16070595"
+      ]
+    },
+    {
+      "claim_text": "Experimental results on the MuST-C speech translation benchmark demonstrate that LST-13B achieves BLEU scores of 30.39/41.55/35.33 on En-De/En-Fr/En-Es language pairs, surpassing previous models and establishing a new state-of-the-art.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2310.02050"
+      ]
+    },
+    {
+      "claim_text": "In particular, for LLaMA-3 8B models that are hard to quantize, SpinQuant reduces the gap to full precision by up to 45.1% relative to QuaRot.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2405.16406"
+      ]
+    },
+    {
+      "claim_text": "Extensive experiments on the multi-attribute cockpit dataset demonstrate that Cockpit-Llama's prediction performance surpasses other advanced methods, achieving BLEU-4, ROUGE-1, ROUGE-2, and ROUGE-L scores of 71.32, 80.01, 76.89, and 81.42, respectively, with relative improvements of 92.34%, 183.61%, 95.54%, and 201.27% compared to ChatGPT-4.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/s25010064"
+      ]
+    },
+    {
+      "claim_text": "On the German dataset, Llama established a new benchmark, outperforming traditional machine learning methods by 16% micro average F1-score.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1101/2025.03.28.25324847"
+      ]
+    },
+    {
+      "claim_text": "Experimental evaluation demonstrates that Prompt4NR significantly outperforms baseline models, achieving an AUC of 0.7990 on the cryptocurrency dataset and a 31.5 % improvement over MINER, while the Agentic RAG system achieves high context recall for real-time news synthesis.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/rivf68649.2025.11365039"
+      ]
+    },
+    {
+      "claim_text": "For the three-class classification task (Dementia/MCI/Control), our LSTM model obtained an F1-score of 0.5521, ranking 20th of 106 and marginally outperforming the best baseline.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3389/fninf.2025.1679664"
+      ]
+    },
+    {
+      "claim_text": "Evaluations on the Japanese Medical Licensing Exam benchmark (IgakuQA) show Preferred-MedLLM-Qwen-72B achieves state-of-the-art performance (0.868 accuracy), surpassing strong proprietary models like GPT-4o (0.866).",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2504.18080"
+      ]
+    },
+    {
+      "claim_text": "Evaluation on the Waymo open trajectory dataset demonstrates the superior performance of the proposed LLM-MLFFN, achieving a classification accuracy of over 94%, surpassing existing machine learning models.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Experimental results on a public transportation dataset demonstrate that TransRAG outperforms existing RAG-based models in retrieval accuracy and user satisfaction, achieving an average improvement of 38.2%.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/ccdc65474.2025.11090835"
+      ]
+    },
+    {
+      "claim_text": "To evaluate the performance of $\\text{C}^2\\text{P}$, we first demonstrate that reasoning accuracy improved by over $30.7\\%$ and $25.9\\%$ for GPT-4 Turbo and LLaMA 3.1, respectively, when using our framework, compared to the same models without $\\text{C}^2\\text{P}$ on a synthetic benchmark dataset.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2407.18069"
+      ]
+    },
+    {
+      "claim_text": "The results show that, compared with the naive RAG method, the proposed model achieves a relative improvement of 4.63% in the ROUGE-L metric and 11.32% in the BLEU-4 metric on the electricity dataset.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3390/pr14040670"
+      ]
+    },
+    {
+      "claim_text": "We evaluated CARTGPT on a 39.7-hour speech dataset spanning medical, technical, and conversational domains, observing a 5.6% improvement in word accuracy over standard CART and 17.3% over a state-of-the-art ASR model.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1145/3663547.3746326"
+      ]
+    },
+    {
+      "claim_text": "Experimental evaluations on 20 benchmark problems demonstrate that the system achieves accuracy over 80% in most cases across 10 repeated trials, outperforming Gemini-2.5 Pro and ChatGPT-4o models.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2510.05414"
+      ]
+    },
+    {
+      "claim_text": "Extensive experiments demonstrate that L3AE consistently outperforms state-of-the-art LLM-enhanced models on three benchmark datasets, achieving gains of 27.6% in Recall@20 and 39.3% in NDCG@20.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1145/3746252.3760952"
+      ]
+    },
+    {
+      "claim_text": "ResultsOf the 173 data fields evaluated for accuracy, 68% were rated by human reviewers as acceptable (consistent with what is deemed to be acceptable data extraction from a human reviewer).",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1101/2025.07.21.25331917"
+      ]
+    },
+    {
+      "claim_text": "with 2.78 folds in the length of the text",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1101/2025.01.01.25319863"
+      ]
+    },
+    {
+      "claim_text": "Our framework achieves substantial improvements in both answer accuracy and knowledge overlap scores, outperforming baselines by 5.06% on the single-source task, 6.35% on the multi-source task, and 5.03% on the multi-turn task.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2508.05197"
+      ]
+    },
+    {
+      "claim_text": "tion, outperforms Alpaca-7B by 26 points in API Call correctness and 0.41 in the response Rouge-L score, approaching the effectiveness of GPT-3.5.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18653/v1/2023.emnlp-main.187"
+      ]
+    },
+    {
+      "claim_text": "Experimental results based on a real-world dataset demonstrate that AgentReuse achieves a 93% effective plan reuse rate, an F1 score of 0.9718, and an accuracy of 0.9459 in evaluating request similarities, reducing latency by 93.12% compared with baselines without using the reuse mechanism.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2512.21309"
+      ]
+    },
+    {
+      "claim_text": "On the internal test dataset with 4,950 QA pairs, ToothXpert achieves a macro F1 score of 78.61%, outperforming LLaVA v.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1016/j.xcrm.2026.102652"
+      ]
+    },
+    {
+      "claim_text": "Our turn-level evaluation, averaged across five models, shows that our approach, Pre-Act, outperforms ReAct by 70% in Action Recall on the Almita dataset.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2505.09970"
+      ]
+    },
+    {
+      "claim_text": "Extensive empirical evaluation across ten benchmark datasets demonstrates that DeepEL substantially outperforms existing state-of-the-art methods, achieving an average improvement of 2.6\\% in overall F1 score and a remarkable 4% gain on out-of-domain datasets.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1007/978-981-95-3453-1_30"
+      ]
+    },
+    {
+      "claim_text": "The proposed KG-RAG model attained an accuracy of 88% for question answering tasks on a frequently used telecom-specific dataset, compared to 82% for the RAG-only and 48% for the LLM-only approaches.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/iccworkshops67674.2025.11162336"
+      ]
+    },
+    {
+      "claim_text": "On the translation task, SAE feature steering achieves an average target-language accuracy of 92% across models and languages, consistently outperforming language neuron-based steering, but slightly underperforming prompting in language accuracy and output quality.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18653/v1/2026.eacl-srw.43"
+      ]
+    },
+    {
+      "claim_text": "The trained Qwen2.5-3B-Instruct model surpasses a 20B GPT-OSS baseline with a 37.4 percent relative accuracy gain on a Natural Language Inference benchmark, and also outperforms a modular architecture baseline with a 19.1 percent relative improvement.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2602.20759"
+      ]
+    },
+    {
+      "claim_text": "Experimental results demonstrate that our method achieves F1-scores of 94.64% and 97.71% on two benchmark datasets, demonstrating absolute improvements of 10.74% and 13.85% over state-of-the-art baselines.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2507.22447"
+      ]
+    },
+    {
+      "claim_text": "Experiments conducted on two benchmark datasets, CTI-200 and PolitiFact show that LRCTI improves F1-Macro and F1-Micro scores by over 5%, reaching 90.9% and 93.6%, respectively, compared to state-of-the-art baselines.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2507.11310"
+      ]
+    },
+    {
+      "claim_text": "Experimental results show that MRQA achieves a ROUGE-L score of 71.68%, marking a notable improvement of 7.62% over the RAG baseline, which effectively demonstrates its efficacy in the QA task for science and technology policy and regulatory domains.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1145/3773365.3773373"
+      ]
+    },
+    {
+      "claim_text": "aspect, surpassing Alpaca-7B by 35 points in API call correctness and 0.44 in the response Rouge-L score.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18653/v1/2023.emnlp-main.187"
+      ]
+    },
+    {
+      "claim_text": "With the acceleration of technological innovation efficient retrieval and classification of patent literature have become essential for intellectual property management and enterprise RD Traditional keyword and rulebased retrieval methods often fail to address complex query intents or capture semantic associations across technical domains resulting in incomplete and lowrelevance results This study presents an automated patent retrieval framework integrating Large Language Models LLMs with RetrievalAugmented Generation RAG technology The system comprises three components: 1) a preprocessing module for patent data standardization, 2) a highefficiency vector retrieval engine leveraging LLMgenerated embeddings, and 3) a RAGenhanced query module that combines external document retrieval with contextaware response generation Evaluations were conducted on the Google Patents dataset 20062024 containing millions of global patent records with metadata such as filing date domain and status The proposed gpt35turbo0125RAG configuration achieved 805 semantic matching accuracy and 92.1% recall surpassing baseline LLM methods by 28 percentage points The framework also demonstrated strong generalization in crossdomain classification and semantic clustering tasks These results validate the effectiveness of LLMRAG integration for intelligent patent retrieval providing a foundation for nextgeneration AIdriven intellectual property analysis platforms",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2508.14064"
+      ]
+    },
+    {
+      "claim_text": "Extensive experiments on multiple benchmark datasets demonstrate that LADVA substantially boosts retrieval precision and recall up to 40% relative gains over existing zero-shot methods, all without requiring any additional model re-training or repeated LLM calls at inference.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.3724/2096-7004.di.2025.0098"
+      ]
+    },
+    {
+      "claim_text": "Experiments on the AML trading dataset demonstrate that Meta-XAML achieves 8.6% F1-score gain over the state-of-the-art competitors.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1145/3764727.3764744"
+      ]
+    },
+    {
+      "claim_text": "On this dataset, our approach achieves an F1 score of 93.1%, outperforming current state-of-the-art methods.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/tse.2025.3599581"
+      ]
+    },
+    {
+      "claim_text": "Our experiments on four benchmark datasets (BookMIA, MIMIR, PatentMIA, and the Pile) and several open-source LLMs of varying sizes demonstrate an average increase in AUC scores ranging from 5.3% to 17.6% over state-of-the-art methods.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.48550/arxiv.2501.08454"
+      ]
+    },
+    {
+      "claim_text": "Experiments on five benchmark datasets demonstrate that LLM-FK consistently achieves F1-scores above 93%, surpassing existing baselines by 15% on the large-scale MusicBrainz database, while reducing the candidate search space by two to three orders of magnitude without losing true FKs and maintaining robustness under challenging conditions like missing data.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": []
+    },
+    {
+      "claim_text": "Empirical evaluations across large-scale kernel-level log datasets and benchmark comparisons demonstrate that LLM-RD achieves an F1-Score of $96.23 \\%$ in ransomware detection and outperforms existing LLM-based detection frameworks.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.1109/msn69125.2025.00028"
+      ]
+    },
+    {
+      "claim_text": "Both the 7B Alpaca and 6B ChatGLM achieve about 20% accuracy in API call, indicating that basic language models possess.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.18653/v1/2023.emnlp-main.187"
+      ]
+    },
+    {
+      "claim_text": "These experiments demonstrated that by combining BERT with rule-based methods, we achieved an F1-score of 0.9938, surpassing GPT-4 and securing the first place for term typing on the Wordnet dataset.",
+      "confidence_0_100": 60,
+      "publication_opportunity": false,
+      "paper_type": "effect_size",
+      "supporting_study_ids": [
+        "10.52825/ocp.v4i.2484"
+      ]
+    }
+  ]
+}

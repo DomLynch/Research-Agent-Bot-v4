@@ -48,3 +48,8 @@ runs/*-evidence-*/quality_scorecard.json
 
 # Harness-local state
 .claude/
+# Curator-cycle logs + topic-discovery dumps: runtime state regenerated every
+# curator/discovery cycle on the VPS — not deliverables (underscore-prefixed,
+# same policy as _diagnostics / _daily_ledger above).
+runs/_curator_cycles/
+runs/_topics_discovery/

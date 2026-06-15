@@ -1,0 +1,43 @@
+{
+  "nearest_literature": [
+    {
+      "claim": "Results: Gemini demonstrated the highest diagnostic accuracy, reaching 78% correct responses in cycles 2 and 3, significantly outperforming ChatGPT (55\u201357%) and Perplexity (28\u201331%) (p < 0.00001)",
+      "reference": "llm_evaluation/auto/2026/accuracy_327173",
+      "score": 0.514,
+      "source": "all_facts"
+    },
+    {
+      "claim": "Claude 3.7 Sonnet achieved 73.67% accuracy, significantly outperforming both human examinees (62.77%, P < 0.001) and ChatGPT-4 (64.44%, P < 0.001)",
+      "reference": "333217",
+      "score": 0.471,
+      "source": "all_facts"
+    },
+    {
+      "claim": "Claude 3.7 Sonnet achieved 73.67% accuracy, significantly outperforming both human examinees (62.77%, P < 0.001) and ChatGPT-4 (64.44%, P < 0.001)",
+      "reference": "llm_evaluation/auto/2026/other_333217",
+      "score": 0.471,
+      "source": "all_facts"
+    },
+    {
+      "claim": "DeepSeek R1 achieved the highest overall score of 86.4% \u00b1 2.5%, despite the most inconsistent responses (\u03ba = 0.694), statistically higher than those of ChatGPT-4o mini (74.7% \u00b1 0.9%), Claude 3 Opus (75.2% \u00b1 1.0%), and Gemini 1.5 Flash...",
+      "reference": "llm_evaluation/auto/2025/score_204992",
+      "score": 0.442,
+      "source": "all_facts"
+    },
+    {
+      "claim": "ResultsGPT-4 achieved the highest diagnostic accuracy (63%) and first choice accuracy (40%), significantly outperforming the radiology residents whose accuracy ranged from 22% to 43%",
+      "reference": "llm_evaluation/auto/2024/accuracy_327261",
+      "score": 0.432,
+      "source": "all_facts"
+    }
+  ],
+  "novelty_delta": {
+    "counter_evidence_types": [
+      "null_result",
+      "subgroup_reversal"
+    ],
+    "label": "contradictory",
+    "nearest_score": 0.514,
+    "rationale": "Claim is defined by an opposing receipt."
+  }
+}

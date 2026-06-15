@@ -1,0 +1,190 @@
+{
+  "audit_gate": {
+    "failures": [],
+    "passed": true
+  },
+  "claim_tokens": [
+    "accuracy",
+    "achieved",
+    "bing",
+    "claude",
+    "correct",
+    "deepseek",
+    "diagnostic",
+    "followed",
+    "forms",
+    "gemini",
+    "gpt",
+    "highest",
+    "initial",
+    "judge",
+    "opus",
+    "our",
+    "outper",
+    "r1",
+    "scorer",
+    "significantly",
+    "sonnet",
+    "vs",
+    "which",
+    "while"
+  ],
+  "claim_units": [
+    {
+      "fact_id": "llm_evaluation/auto/2025/accuracy_327318",
+      "snippet": "Results: GPT achieved 98.83% accuracy (1,439/1,456) compared to Claude's 97.94% (1,426/1,456)",
+      "source": "10.63858/jass.15.2.71",
+      "source_span": {
+        "source": "Automated Clinical Questionnaire Processing in Spine Surgery Using LLM Vision API: Comparative Performance Evaluation of Claude and GPT Mode",
+        "source_type": "preclinical",
+        "study_design": "preclinical"
+      },
+      "support": "direct"
+    },
+    {
+      "fact_id": "llm_evaluation/auto/2025/accuracy_327058",
+      "snippet": "GPT-4 achieved an initial accuracy of 81.3% (222/273; 95% CI: 76.3%-85.5%), compared to Claude Opus, which achieved an accuracy of 79.5% (217/273; 95% CI: 74.3%-83.9%)",
+      "source": "10.1200/jco.2025.43.16_suppl.e13637",
+      "source_span": {
+        "source": "Benchmarking clinical reasoning and accuracy of large language models on breast oncology multiple-choice questions.",
+        "source_type": "unknown",
+        "study_design": "unknown"
+      },
+      "support": "direct"
+    },
+    {
+      "fact_id": "llm_evaluation/auto/2025/accuracy_333571",
+      "snippet": "Results: Claude 3.5 Sonnet achieved 97% accuracy (29/30 correct), while DeepSeek-R1 achieved 93.3% accuracy",
+      "source": "10.33140/an.08.02.05",
+      "source_span": {
+        "source": "Evaluation of Advanced Artificial Intelligence in Minimally Invasive Surgery Training: A Preliminary Study of the Large Language Models Deep",
+        "source_type": "unknown",
+        "study_design": "unknown"
+      },
+      "support": "direct"
+    },
+    {
+      "fact_id": "llm_evaluation/auto/2025/accuracy_326986",
+      "snippet": "GPT-4 achieved the highest diagnostic accuracy for VS at 97.14% (34/35), followed by Gemini at 88.57% (31/35), and Bing at 85.71% (30/35)",
+      "source": "10.3390/diagnostics15222841",
+      "source_span": {
+        "source": "Evaluating Large Language Models in Interpreting MRI Reports and Recommending Treatment for Vestibular Schwannoma.",
+        "source_type": "unknown",
+        "study_design": "unknown"
+      },
+      "support": "direct"
+    },
+    {
+      "fact_id": "llm_evaluation/auto/2023/accuracy_323347",
+      "snippet": "Our scorer, with an achieved accuracy of 79.5%, significantly outper- forms GPT-4 as a judge (61.3%)",
+      "source": "10.18653/v1/2024.naacl-long.256",
+      "source_span": {
+        "source": "Flames: Benchmarking Value Alignment of {LLM}s in {C}hinese",
+        "source_type": "unknown",
+        "study_design": "unknown"
+      },
+      "support": "direct"
+    },
+    {
+      "fact_id": "llm_evaluation/auto/2025/accuracy_327347",
+      "snippet": "With images, ChatGPT-4 achieved 63.7 % Top-1 accuracy versus Gemini's 71.2 % and experts' 87.5 %",
+      "source": "10.1109/icicis66182.2025.11313191",
+      "source_span": {
+        "source": "Evaluating Multimodal Large Language Models for Clinical Diagnosis of Oral Lesions: A Biomedical Informatics Perspective",
+        "source_type": "unknown",
+        "study_design": "unknown"
+      },
+      "support": "context"
+    }
+  ],
+  "contradiction_receipts": [],
+  "falsifier_present": true,
+  "nearest_literature": [
+    {
+      "claim": "Results: Gemini demonstrated the highest diagnostic accuracy, reaching 78% correct responses in cycles 2 and 3, significantly outperforming ChatGPT (55\u201357%) and Perplexity (28\u201331%) (p < 0.00001)",
+      "reference": "llm_evaluation/auto/2026/accuracy_327173",
+      "score": 0.514,
+      "source": "all_facts"
+    },
+    {
+      "claim": "Claude 3.7 Sonnet achieved 73.67% accuracy, significantly outperforming both human examinees (62.77%, P < 0.001) and ChatGPT-4 (64.44%, P < 0.001)",
+      "reference": "llm_evaluation/auto/2026/other_333217",
+      "score": 0.471,
+      "source": "all_facts"
+    },
+    {
+      "claim": "DeepSeek R1 achieved the highest overall score of 86.4% \u00b1 2.5%, despite the most inconsistent responses (\u03ba = 0.694), statistically higher than those of ChatGPT-4o mini (74.7% \u00b1 0.9%), Claude 3 Opus (75.2% \u00b1 1.0%), and Gemini 1.5 Flash...",
+      "reference": "llm_evaluation/auto/2025/score_204992",
+      "score": 0.442,
+      "source": "all_facts"
+    },
+    {
+      "claim": "ResultsGPT-4 achieved the highest diagnostic accuracy (63%) and first choice accuracy (40%), significantly outperforming the radiology residents whose accuracy ranged from 22% to 43%",
+      "reference": "llm_evaluation/auto/2024/accuracy_327261",
+      "score": 0.432,
+      "source": "all_facts"
+    },
+    {
+      "claim": "The results indicate that GPT-4.0 achieves the highest average accuracy (56%), followed by LLaMA-4-Scout-17B-16E (48%) and Gemini 2.0 Flash (39%)",
+      "reference": "llm_evaluation/auto/2026/accuracy_333576",
+      "score": 0.429,
+      "source": "all_facts"
+    }
+  ],
+  "novelty": {
+    "recent_repeats": 3,
+    "selected_angle": "source",
+    "signal": "locally_repeated"
+  },
+  "novelty_delta": {
+    "counter_evidence_types": [],
+    "label": "incremental",
+    "nearest_score": 0.514,
+    "rationale": "Nearby literature exists but does not fully cover the claim."
+  },
+  "risk_of_bias": "not_required",
+  "schema_version": 1,
+  "source_hygiene": {
+    "journal_named_ratio": 1.0,
+    "mean_quality_score": null,
+    "source_profiles": [
+      {
+        "source": "Automated Clinical Questionnaire Processing in Spine Surgery Using LLM Vision API: Comparative Performance Evaluation of Claude and GPT Mode",
+        "source_type": "preclinical",
+        "study_design": "preclinical"
+      },
+      {
+        "source": "Benchmarking clinical reasoning and accuracy of large language models on breast oncology multiple-choice questions.",
+        "source_type": "unknown",
+        "study_design": "unknown"
+      },
+      {
+        "source": "Evaluation of Advanced Artificial Intelligence in Minimally Invasive Surgery Training: A Preliminary Study of the Large Language Models Deep",
+        "source_type": "unknown",
+        "study_design": "unknown"
+      },
+      {
+        "source": "Evaluating Large Language Models in Interpreting MRI Reports and Recommending Treatment for Vestibular Schwannoma.",
+        "source_type": "unknown",
+        "study_design": "unknown"
+      },
+      {
+        "source": "Flames: Benchmarking Value Alignment of {LLM}s in {C}hinese",
+        "source_type": "unknown",
+        "study_design": "unknown"
+      }
+    ],
+    "source_types": {
+      "preclinical": 1,
+      "unknown": 5
+    },
+    "sources": 6,
+    "study_designs": {
+      "preclinical": 1,
+      "unknown": 5
+    },
+    "with_journal": 6
+  },
+  "support_level": "strong",
+  "verdict": "supported"
+}

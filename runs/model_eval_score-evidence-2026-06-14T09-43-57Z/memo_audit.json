@@ -1,0 +1,37 @@
+{
+  "audit_gate": {
+    "failures": [
+      "no_direct_source"
+    ],
+    "passed": false
+  },
+  "claim_tokens": [],
+  "claim_units": [],
+  "contradiction_receipts": [],
+  "falsifier_present": true,
+  "nearest_literature": [],
+  "novelty": {
+    "recent_repeats": 2,
+    "selected_angle": "source",
+    "signal": "locally_repeated"
+  },
+  "novelty_delta": {
+    "counter_evidence_types": [],
+    "label": "under-discussed",
+    "nearest_score": 0.0,
+    "rationale": "Weak direct support; treat as curation until better receipts arrive."
+  },
+  "risk_of_bias": "not_required",
+  "schema_version": 1,
+  "source_hygiene": {
+    "journal_named_ratio": 0.0,
+    "mean_quality_score": null,
+    "source_profiles": [],
+    "source_types": {},
+    "sources": 0,
+    "study_designs": {},
+    "with_journal": 0
+  },
+  "support_level": "weak",
+  "verdict": "inconclusive"
+}
