@@ -10,3 +10,23 @@ publish_contract = [
     "finance claims must name asset class, return/risk metric, comparator, and sample period",
     "direct receipts must not mix return, volatility, default, and governance metrics",
 ]
+
+# Return-shape normalizer (P6: lifted out of agent/business_research.py so the
+# finance-return collapse is data, not an `if domain == "finance_research"` code
+# path). A domain opts in by defining this table in its claim schema; no domain
+# literals remain in code. `shape` key order is load-bearing — the *_detail
+# preservation loop iterates it (skipping signal_family).
+[finance_return]
+match_source_topics = ["asset pricing", "portfolio returns", "market efficiency"]
+match_units = ["%", "percent", "percentage points"]
+match_regex = '\b(alpha|alphas|return|returns|premium|premia)\b'
+signal_family_from = ["intervention_detail", "intervention", "asset_class", "dataset"]
+
+[finance_return.shape]
+population = "firms portfolios funds"
+intervention = "return predictive signal portfolio"
+signal_family = "return predictive signal"
+comparator = "benchmark or opposite signal portfolio"
+outcome = "risk adjusted portfolio returns"
+metric = "percentage return or alpha"
+study_design = "empirical asset pricing"
