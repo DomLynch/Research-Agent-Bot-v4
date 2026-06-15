@@ -98,3 +98,20 @@ off_scope_markers = [
   "rice",
   "seed",
 ]
+
+[novelty]
+# P9 Novelty Engine — deterministic "is this NEW vs prior art, and do the cited
+# sources exist?" gate. Rollout (AAA blast-fence):
+#   off      = dormant; no novelty.json produced, publish decision unchanged.
+#   advisory = shadow: produce novelty.json + record blockers, do NOT block.
+#   enforce  = insufficient_novelty / citation_hallucinated become hard blockers.
+# Env var NOVELTY_GATE overrides this. Default off so merging changes nothing
+# in the live pipeline until explicitly enabled.
+mode = "off"
+saturation_count = 40        # corpus prior-art sources at/above which scarcity -> 0
+weight_scarcity = 0.5
+weight_distinctiveness = 0.3
+weight_recency = 0.2
+min_score = 45               # score below this -> insufficient_novelty
+recency_window_years = 3
+recency_decay_years = 12

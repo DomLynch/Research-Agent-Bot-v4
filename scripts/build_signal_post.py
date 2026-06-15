@@ -423,6 +423,33 @@ def _render_signal_post(
     )
 
 
+def _write_novelty_sidecar(run_dir: Path) -> None:
+    """P9: produce novelty.json before the publish verdict reads it.
+
+    No-op when the novelty gate is off (the default), so the live pipeline is
+    unchanged until enabled. Imports the producer lazily so the heavier
+    corpus/citation deps load only when the gate is on. Never raises — a
+    producer failure degrades to no sidecar (gate then has no effect).
+    """
+    from agent.publish_tier import novelty_cfg, novelty_mode
+    if novelty_mode() == "off":
+        return
+    try:
+        from datetime import UTC, datetime
+
+        from agent.novelty_build import build_novelty_report
+        from agent.settings import load_settings
+        report = build_novelty_report(
+            run_dir, settings=load_settings(),
+            now_year=datetime.now(UTC).year, cfg=novelty_cfg(),
+        )
+        (run_dir / "novelty.json").write_text(
+            json.dumps(report, indent=2), encoding="utf-8",
+        )
+    except Exception as exc:  # never break a publish build on the producer
+        print(f"[signal-post] novelty producer skipped: {exc}", file=sys.stderr)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run", type=Path, required=True)
@@ -486,6 +513,7 @@ def main() -> int:
         )
         (run_dir / "curation_brief.md").write_text(brief, encoding="utf-8")
         brief_text = brief
+    _write_novelty_sidecar(run_dir)  # P9: novelty.json before the verdict reads it
     memo_path, memo_text = write_signal_memo(run_dir, signal_text=text)
     verdict_path, verdict = write_publish_verdict(run_dir)
     memo_path, memo_text = write_signal_memo(

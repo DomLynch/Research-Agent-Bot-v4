@@ -8,11 +8,14 @@ rules live here.
 from __future__ import annotations
 
 import json
+import os
 import re
 import tomllib
 from collections import Counter
 from pathlib import Path
 from typing import Any
+
+from agent.novelty_gate import NoveltyConfig, novelty_blockers, novelty_config_from_dict
 
 _ROOT = Path(__file__).resolve().parent.parent
 _CFG_PATH = _ROOT / "topic_packs" / "publish_tier.toml"
@@ -182,6 +185,55 @@ def _cfg() -> dict[str, Any]:
             for x in (data.get("feed_scope") or {}).get("off_scope_markers", [])
         ),
     }
+
+
+def novelty_mode() -> str:
+    """P9 novelty-gate mode: off | advisory | enforce.
+
+    NOVELTY_GATE env var overrides publish_tier.toml [novelty].mode. Default
+    off so the gate is dormant until explicitly enabled.
+    """
+    env = os.environ.get("NOVELTY_GATE", "").strip().lower()
+    if env in {"off", "advisory", "enforce"}:
+        return env
+    try:
+        data = tomllib.loads(_CFG_PATH.read_text(encoding="utf-8"))
+        section = (data.get("novelty") if isinstance(data, dict) else {}) or {}
+        mode = str(section.get("mode", "off")).lower()
+    except (OSError, tomllib.TOMLDecodeError):
+        mode = "off"
+    return mode if mode in {"off", "advisory", "enforce"} else "off"
+
+
+def novelty_cfg() -> NoveltyConfig:
+    """NoveltyConfig from publish_tier.toml [novelty] (defaults on any failure)."""
+    try:
+        data = tomllib.loads(_CFG_PATH.read_text(encoding="utf-8"))
+        section = (data.get("novelty") if isinstance(data, dict) else {}) or {}
+    except (OSError, tomllib.TOMLDecodeError):
+        section = {}
+    return novelty_config_from_dict(section if isinstance(section, dict) else {})
+
+
+def novelty_overlay(run_dir: Path, blockers: list[str]) -> dict[str, Any]:
+    """Apply the P9 novelty sidecar to the gate. Returns the report (or {}).
+
+    off      -> {} (dormant).
+    advisory -> record blockers under "advisory_blockers"; do NOT block.
+    enforce  -> extend ``blockers`` with insufficient_novelty / citation_hallucinated.
+    Reads novelty.json offline; missing/garbled sidecar -> no effect.
+    """
+    mode = novelty_mode()
+    if mode == "off":
+        return {}
+    raw = _json(run_dir / "novelty.json", {})
+    if not isinstance(raw, dict):
+        return {}
+    nblk = novelty_blockers(raw, novelty_cfg())
+    if mode == "enforce":
+        blockers.extend(nblk)
+        return raw
+    return {**raw, "advisory_blockers": nblk}
 
 
 def _publication_int(key: str, default: int) -> int:
@@ -1047,6 +1099,10 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     if retrieval_artifact:
         blockers.append("retrieval_artifact_claim")
 
+    # P9 novelty gate (dormant unless NOVELTY_GATE/[novelty].mode enables it).
+    # enforce mode may extend `blockers` here; advisory only records.
+    novelty_report = novelty_overlay(run_dir, blockers)
+
     ready = (
         not blockers
         and label not in _BLOCKED_LABELS
@@ -1115,6 +1171,7 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         "confidence_label": label,
         "alpha_score": alpha_score,
         "surface_type": surface_type,
+        "novelty": novelty_report,
         "axes": {
             "bound_receipts": len(bound_ids),
             "direct_match_receipts": len(direct_match_ids),
