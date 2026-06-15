@@ -42,6 +42,33 @@ class NoveltyConfig:
     recency_decay_years: int = 12  # older than now-this == recency 0.0
 
 
+def novelty_config_from_dict(section: Mapping[str, object]) -> NoveltyConfig:
+    """Build a NoveltyConfig from a parsed publish_tier.toml [novelty] section.
+
+    Pure: the caller reads the TOML; this only coerces. Unknown/garbled values
+    fall back to the dataclass defaults.
+    """
+    d = NoveltyConfig()
+
+    def _i(key: str, default: int) -> int:
+        v = section.get(key)
+        return v if isinstance(v, int) and not isinstance(v, bool) else default
+
+    def _f(key: str, default: float) -> float:
+        v = section.get(key)
+        return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else default
+
+    return NoveltyConfig(
+        saturation_count=_i("saturation_count", d.saturation_count),
+        weight_scarcity=_f("weight_scarcity", d.weight_scarcity),
+        weight_distinctiveness=_f("weight_distinctiveness", d.weight_distinctiveness),
+        weight_recency=_f("weight_recency", d.weight_recency),
+        min_score=_i("min_score", d.min_score),
+        recency_window_years=_i("recency_window_years", d.recency_window_years),
+        recency_decay_years=_i("recency_decay_years", d.recency_decay_years),
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class NoveltyReport:
     score: int                       # 0..100 composite
