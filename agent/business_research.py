@@ -57,8 +57,6 @@ _GENERIC_TOPIC_TOKENS = frozenset({
     "performance", "effect", "effects", "outcome", "outcomes", "model",
     "policy",
 })
-_FINANCE_RETURN_TOPICS = frozenset({"asset pricing", "portfolio returns", "market efficiency"})
-_FINANCE_RETURN_RE = re.compile(r"\b(alpha|alphas|return|returns|premium|premia)\b", re.I)
 _STUDY_DESIGN_HINTS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"\b(randomi[sz]ed controlled trial|randomi[sz]ed trial|rct)\b", re.I), "randomized controlled trial"),
     (re.compile(r"\b(field experiment|randomi[sz]ed experiment)\b", re.I), "field experiment"),
@@ -292,16 +290,11 @@ def normalize_business_fact(item: Json, *, topic: str, domain: str) -> Json:
 
 
 def comparable_shape(fact: Json) -> dict[str, str]:
-    if _is_finance_return_fact(fact):
-        return {
-            "population": "firms portfolios funds",
-            "intervention": "return predictive signal portfolio",
-            "signal_family": _finance_signal_family(fact),
-            "comparator": "benchmark or opposite signal portfolio",
-            "outcome": "risk adjusted portfolio returns",
-            "metric": "percentage return or alpha",
-            "study_design": "empirical asset pricing",
-        }
+    cfg = _finance_return_config(str(fact.get("_domain") or ""))
+    if cfg is not None and _is_finance_return_fact(fact):
+        shape = dict(cfg["shape"])
+        shape["signal_family"] = _finance_signal_family(fact)
+        return shape
     return {name: _norm(fact.get(name)) for name in SHAPE_FIELDS if _norm(fact.get(name))}
 
 
@@ -352,21 +345,58 @@ def _database_domain(domain: str) -> str:
         return domain
 
 
+@functools.cache
+def _finance_return_config(domain: str) -> Json | None:
+    """Per-domain return-shape normalizer, read from <domain>_claim_schema.toml.
+
+    A domain opts into return-shape collapsing by defining a ``[finance_return]``
+    table (trigger source-topics/units/regex, the canonical shape, and the
+    signal-family source fields). Lifts the former hardcoded
+    ``if domain == "finance_research"`` path into data — universal, no domain
+    literals in code. ``shape`` key order is load-bearing (the *_detail loop
+    iterates it, skipping signal_family).
+    """
+    if not domain:
+        return None
+    try:
+        profile = load_domain_profile(domain)
+        data = tomllib.loads(profile.claim_schema_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, tomllib.TOMLDecodeError):
+        return None
+    cfg = data.get("finance_return")
+    shape = cfg.get("shape") if isinstance(cfg, dict) else None
+    if not isinstance(cfg, dict) or not isinstance(shape, dict):
+        return None
+    pattern = cfg.get("match_regex")
+    return {
+        "topics": frozenset(_norm(t) for t in cfg.get("match_source_topics") or ()),
+        "units": frozenset(str(u).casefold() for u in cfg.get("match_units") or ()),
+        "regex": re.compile(str(pattern), re.I) if pattern else None,
+        "signal_family_from": tuple(str(f) for f in cfg.get("signal_family_from") or ()),
+        "shape": {str(k): str(v) for k, v in shape.items()},
+    }
+
+
 def _is_finance_return_fact(fact: Json) -> bool:
-    if str(fact.get("_domain") or "") != "finance_research":
+    cfg = _finance_return_config(str(fact.get("_domain") or ""))
+    if cfg is None:
         return False
-    if _norm(fact.get("source_topic")) not in _FINANCE_RETURN_TOPICS:
+    if _norm(fact.get("source_topic")) not in cfg["topics"]:
         return False
-    if _clean(fact.get("units")).casefold() not in {"%", "percent", "percentage points"}:
+    if _clean(fact.get("units")).casefold() not in cfg["units"]:
         return False
+    pattern = cfg["regex"]
+    if pattern is None:
+        return True
     text = " ".join(str(fact.get(name) or "") for name in (
         "canonical_phrase", "outcome", "metric", "sub_topic", "claim_type",
     ))
-    return bool(_FINANCE_RETURN_RE.search(text))
+    return bool(pattern.search(text))
 
 
 def _finance_signal_family(fact: Json) -> str:
-    for field in ("intervention_detail", "intervention", "asset_class", "dataset"):
+    cfg = _finance_return_config(str(fact.get("_domain") or ""))
+    for field in cfg["signal_family_from"] if cfg else ():
         value = _norm(fact.get(field))
         if value and value not in _GENERIC_METHOD_VALUES:
             return value
@@ -374,24 +404,20 @@ def _finance_signal_family(fact: Json) -> str:
 
 
 def _apply_finance_return_shape(fact: Json) -> None:
-    if not _is_finance_return_fact(fact):
+    cfg = _finance_return_config(str(fact.get("_domain") or ""))
+    if cfg is None or not _is_finance_return_fact(fact):
         return
-    for field in ("population", "intervention", "comparator", "outcome", "metric", "study_design"):
+    shape = cfg["shape"]
+    for field in shape:
+        if field == "signal_family":
+            continue
         value = _clean(fact.get(field))
         if value:
             fact[f"{field}_detail"] = value
     signal_detail = _finance_signal_family(fact)
     if signal_detail:
         fact["signal_family_detail"] = signal_detail
-    fact.update({
-        "population": "firms portfolios funds",
-        "intervention": "return predictive signal portfolio",
-        "signal_family": "return predictive signal",
-        "comparator": "benchmark or opposite signal portfolio",
-        "outcome": "risk adjusted portfolio returns",
-        "metric": "percentage return or alpha",
-        "study_design": "empirical asset pricing",
-    })
+    fact.update(shape)
 
 
 def is_a_core_business_fact(fact: Json) -> bool:
