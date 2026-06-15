@@ -304,10 +304,55 @@ def _refresh_content_hash(payload: Json) -> None:
         payload["content_hash"] = "sha256:" + hashlib.sha256(markdown.encode("utf-8")).hexdigest()
 
 
+_DOI_RE = re.compile(r"10\.\d{4,9}/[-._;()/:a-z0-9]+", re.I)
+
+
+def _norm_doi(raw: str) -> str:
+    return raw.strip().lower().rstrip(".,;)")
+
+
+def _memo_cited_dois(markdown: str) -> set[str]:
+    return {_norm_doi(m) for m in _DOI_RE.findall(markdown) if _norm_doi(m)}
+
+
+def _bundle_dois(payload: Json) -> set[str]:
+    bundle = payload.get("source_bundle")
+    out: set[str] = set()
+    if isinstance(bundle, list):
+        for src in bundle:
+            doi = _norm_doi(str(src.get("doi") or "")) if isinstance(src, dict) else ""
+            if doi:
+                out.add(doi)
+    return out
+
+
 def _run_preflight_qa(payload: Json, run_dir: Path) -> tuple[Json | None, Json | None]:
     mode = _preflight_mode()
     if mode == "off":
         return payload, None
+
+    # Native integrity check (v4 owns it; the external tool does not): every DOI
+    # cited in the memo body must appear in the source bundle. A cited-but-absent
+    # DOI is a fabricated/mis-attributed citation -> block in enforce, record in
+    # shadow. Runs before the external pass so the clean path is unchanged.
+    markdown = str(payload.get("markdown") or payload.get("body_markdown") or "")
+    missing = sorted(_memo_cited_dois(markdown) - _bundle_dois(payload))
+    if missing:
+        block: Json = {
+            "status": "block",
+            "qa_version": "preflight-v1",
+            "safe_fixes_applied": [],
+            "blocked_reasons": [{
+                "code": "doi_not_in_source_bundle",
+                "severity": "critical",
+                "message": "cited DOI(s) absent from source_bundle: " + ", ".join(missing),
+            }],
+        }
+        _write_json(run_dir / "researka_preflight_report.json", block)
+        if mode == "shadow":
+            _attach_preflight_summary(payload, block)
+            return payload, block
+        return None, block
 
     tool_root = Path(
         os.environ.get(_PREFLIGHT_ROOT_ENV, str(_ROOT.parent / "researka-preflight-qa")),
