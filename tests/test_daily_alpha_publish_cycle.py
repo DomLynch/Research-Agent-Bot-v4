@@ -5219,7 +5219,13 @@ def test_repairable_revise_stops_at_fingerprint_attempt_cap(
         "requires": "new_memo_fingerprint",
     }
     assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == ["reviewer_revise"]
-    assert ledger["considered"][-1]["status"] == "cycle_exhausted_topic"
+    # The cap is enforced by submit_retry_exhausted + submitted-once above. The
+    # repairable-revise no longer reports as cycle_exhausted_topic (topic pre-block);
+    # it reports cycle_failed_submission — accurate, since the memo WAS submitted and
+    # failed after the capped revise. (Revise-retry-unblock: a repairable revise is
+    # exempted from the recently-submitted/family block so it can re-enter for the
+    # feedback re-write; the attempt cap still stops it.)
+    assert ledger["considered"][-1]["status"] == "cycle_failed_submission"
 
 
 def test_repairable_revise_on_final_search_batch_gets_repair_slot(
@@ -6501,7 +6507,7 @@ def test_public_page_check_polls_until_rendered() -> None:
     # memos stuck at published=0).
     calls = {"n": 0}
 
-    def fetcher(_url: str) -> dict:
+    def fetcher(_url: str) -> dict[str, Any]:
         calls["n"] += 1
         if calls["n"] == 1:
             return {"ok": True, "status": 200,
@@ -6522,7 +6528,7 @@ def test_public_page_check_default_is_single_shot() -> None:
     # reconcile/demote callers (no surprise retries).
     calls = {"n": 0}
 
-    def fetcher(_url: str) -> dict:
+    def fetcher(_url: str) -> dict[str, Any]:
         calls["n"] += 1
         return {"ok": True, "status": 200,
                 "body": '<title data-next-head="">Alpha Memo Not Found</title>'}

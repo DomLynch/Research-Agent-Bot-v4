@@ -2357,16 +2357,21 @@ def select_candidate(
         family_keys = _family_keys(_family_values(verdict), family_common)
         canonical_family_keys = _canonical_family_keys(_family_values(verdict))
         family_blocked = bool(canonical_family_keys & blocked_family_keys)
-        exhausted_topic = (
-            _selection_topic(verdict) in topic_blocked
-            or family_blocked
-        )
         attempt_count = _fingerprint_attempt_count(submitted_path, fp, domain)
         retry_after_rejection = _retry_after_rejection(
             fp,
             attempt_count=attempt_count,
             retryable=retryable,
             decisions=retry_decisions,
+        )
+        # A repairable revise/reject (Researka returned editorial notes and
+        # allowed resubmission) must re-enter for the feedback re-write even when
+        # its topic/family was recently submitted — otherwise the revise loop is
+        # duplicate-blocked as cycle_exhausted_topic and never resubmits. Bounded:
+        # retry_after_rejection requires fp in retryable AND attempt_count < limit.
+        exhausted_topic = (
+            not retry_after_rejection
+            and (_selection_topic(verdict) in topic_blocked or family_blocked)
         )
         retry_budget_exhausted = (
             fp in seen
