@@ -3310,7 +3310,12 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
     )
     source_papers = _memo_source_papers(verdict, root)
     direct_source_papers = _memo_source_papers(verdict, root, ("Evidence",), {"A_core"})
-    source_bundle = _source_bundle(direct_source_papers)
+    # The submitted source_bundle must cover EVERY source the memo cites, not just
+    # the A_core/Evidence direct set — else Researka rejects on citation_membership
+    # ("every cited DOI must appear in the source bundle") when the memo legitimately
+    # cites a Context-lane receipt. Build from the full cited set; direct_source_count
+    # (the source-floor gate input) still measures the A_core direct set only.
+    source_bundle = _source_bundle(source_papers)
     direct_source_count = len(direct_source_papers)
     receipt_count = len(_memo_receipt_ids(memo))
     return {
