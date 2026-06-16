@@ -3351,7 +3351,9 @@ def test_submit_floor_allows_broad_context_when_direct_sources_pass(tmp_path: Pa
     assert ledger["status"] == "submitted_to_researka"
     assert ledger["considered"][0]["source_count"] == 7
     assert ledger["considered"][0]["direct_source_count"] == 5
-    assert len(seen_payload["source_bundle"]) == 5
+    # Bundle carries all 7 cited receipts (5 A_core + 2 B_context) for
+    # citation_membership; the source floor still keys off direct_source_count=5.
+    assert len(seen_payload["source_bundle"]) == 7
     assert seen_payload["citations"] == seen_payload["source_bundle"]
     assert seen_payload["evidence_bundle"]["direct_source_count"] == 5
     assert seen_payload["evidence_bundle"]["context_source_count"] == 2
@@ -3986,6 +3988,9 @@ def test_submission_payload_uses_researka_source_bundle_schema(tmp_path: Path) -
     payload = daily._submission_payload(verdict, root / "runs")
 
     assert payload["title"] == "Endpoint-specific storage reserve signal"
+    # citation_membership: the submitted bundle must contain EVERY cited receipt
+    # (A_core direct + B_context) or Researka rejects. The memo cites fact_id=2
+    # (B_context), so its review source must appear in the bundle.
     assert payload["source_bundle"] == [
         {
             "title": "Primary field trial",
@@ -3994,11 +3999,18 @@ def test_submission_payload_uses_researka_source_bundle_schema(tmp_path: Path) -
             "year": 2025,
             "evidence_type": "primary",
         },
+        {
+            "title": "Systematic review of reserve markets",
+            "url": "https://example.test/review",
+            "doi": "10.1000/review",
+            "year": 2024,
+            "evidence_type": "review",
+        },
     ]
     assert payload["citations"] == payload["source_bundle"]
     assert payload["evidence_bundle"]["bound_receipt_count"] == 2
     assert payload["evidence_bundle"]["bound_source_count"] == 2
-    assert payload["evidence_bundle"]["source_bundle_count"] == 1
+    assert payload["evidence_bundle"]["source_bundle_count"] == 2
     assert payload["evidence_bundle"]["context_source_count"] == 1
 
 
