@@ -199,3 +199,40 @@ def test_fetch_facts_expands_with_source_title_facets(monkeypatch) -> None:  # t
     assert "meta analysis" not in calls
     assert "analysis review" not in calls
     assert any(row["query"] == "glucose metabolism" for row in trace)
+
+
+def _f(fid: str, units: str, doi: str) -> dict[str, Any]:
+    return {"fact_id": fid, "units": units, "source_paper": {"doi": doi}}
+
+
+def test_recohere_keeps_dominant_units_family(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.delenv("UNITS_RECOHERENCE", raising=False)
+    facts = [_f(str(i), "%", f"10.1/p{i}") for i in range(5)] + [
+        _f("h1", "HR", "10.2/a"), _f("h2", "OR", "10.2/b"),
+    ]
+    out = er._recohere_units_family(facts, min_sources=5)
+    assert {f["units"] for f in out} == {"%"}
+    assert len(out) == 5
+
+
+def test_recohere_collapses_percent_variants(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.delenv("UNITS_RECOHERENCE", raising=False)
+    facts = [
+        _f("1", "%", "10.1/a"), _f("2", "percent", "10.1/b"),
+        _f("3", "percentage points", "10.1/c"), _f("4", "%", "10.1/d"),
+        _f("5", "percent", "10.1/e"), _f("6", "days", "10.1/f"),
+    ]
+    out = er._recohere_units_family(facts, min_sources=5)
+    assert len(out) == 5 and all(er._units_family(f) == "percent" for f in out)
+
+
+def test_recohere_noop_when_no_family_clears_floor(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.delenv("UNITS_RECOHERENCE", raising=False)
+    facts = [_f("1", "%", "10.1/a"), _f("2", "HR", "10.2/b"), _f("3", "days", "10.3/c")]
+    assert er._recohere_units_family(facts, min_sources=5) == facts
+
+
+def test_recohere_env_killswitch(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.setenv("UNITS_RECOHERENCE", "0")
+    facts = [_f(str(i), "%", f"10.1/p{i}") for i in range(5)] + [_f("h", "HR", "10.2/a")]
+    assert er._recohere_units_family(facts, min_sources=5) == facts

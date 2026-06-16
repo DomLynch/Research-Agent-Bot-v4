@@ -22,6 +22,7 @@ import argparse
 import datetime as dt
 import hashlib
 import json
+import os
 import re
 import sys
 import time
@@ -1560,6 +1561,63 @@ def _render_frontier_md(review: FrontierReview, topic: str) -> str:
     )
 
 
+_RECOHERE_MIN_SOURCES = 5
+_PERCENT_UNITS = frozenset({
+    "%", "percent", "percentage", "percentage points", "percentage point", "pct",
+})
+
+
+def _units_family(fact: dict[str, Any]) -> str:
+    """Normalize a fact's units into a coherence-family key.
+
+    Percent variants collapse to "percent"; other units (ratios like OR/RR/HR,
+    days, mg/kg, ...) key on their own normalized string; "" for unitless facts.
+    """
+    units = str(fact.get("units") or "").strip().lower()
+    if not units:
+        return ""
+    if units == "%" or units in _PERCENT_UNITS or units.startswith("percent"):
+        return "percent"
+    return units
+
+
+def _recohere_units_family(
+    facts: list[dict[str, Any]], *, min_sources: int = _RECOHERE_MIN_SOURCES,
+) -> list[dict[str, Any]]:
+    """Keep only the dominant single units-family group when it clears the floor.
+
+    Biomedical effect_size cells mix %/OR/RR/HR/AUC, which the publish gate's
+    _metric_type_coherent rejects (metric_type_mismatch). Group facts by units
+    family, count DISTINCT source papers per family, and if the largest family
+    has >= min_sources distinct papers, drop the other families so the memo's
+    receipts share ONE metric shape. Otherwise leave facts unchanged — never
+    make a thin candidate thinner; let the source floor reject it naturally.
+    AI percent-unit cells are already one family, so this is a no-op there.
+    Env kill-switch: UNITS_RECOHERENCE=0.
+    """
+    if os.environ.get("UNITS_RECOHERENCE", "1").strip().lower() in {
+        "0", "false", "no", "off",
+    }:
+        return facts
+    by_family: dict[str, list[dict[str, Any]]] = {}
+    sources: dict[str, set[str]] = {}
+    for fact in facts:
+        family = _units_family(fact)
+        if not family:
+            continue
+        by_family.setdefault(family, []).append(fact)
+        paper = fact.get("source_paper") or {}
+        src = str(paper.get("doi") or paper.get("pmid") or "").strip().lower()
+        if src:
+            sources.setdefault(family, set()).add(src)
+    if not by_family:
+        return facts
+    best = max(by_family, key=lambda fam: (len(sources.get(fam, ())), len(by_family[fam])))
+    if len(sources.get(best, ())) < min_sources:
+        return facts
+    return list(by_family[best])
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--topic", required=True)
@@ -1606,6 +1664,10 @@ def main() -> int:
                        indent=2, sort_keys=True),
             encoding="utf-8")
         return 2
+    # SLICE 2: collapse to the dominant single units-family so the memo's direct
+    # receipts share one metric shape -> clears the gate's _metric_type_coherent
+    # (biomedical effect_size cells otherwise mix %/OR/RR/HR and get rejected).
+    facts = _recohere_units_family(facts)
     pico_result = None
     if not args.no_pico_enrich and facts:
         facts, pico_result = enrich_facts_pico(facts, settings=load_settings())
