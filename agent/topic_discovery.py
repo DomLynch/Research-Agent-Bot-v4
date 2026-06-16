@@ -35,6 +35,7 @@ from typing import Any
 import httpx
 
 from agent.fact_lanes import classify_lanes
+from agent.researka_facts import fetch_topic_groups
 from agent.settings import Settings
 from agent.topic_synonyms import expand_topic_queries
 
@@ -144,6 +145,8 @@ class TopicCandidate:
     velocity_score: float
     mean_fwci: float
     mean_cited_by: float
+    sub_topic: str = ""
+    claim_type: str = ""
 
     def as_dict(self) -> dict[str, Any]:
         return {"topic": self.topic, "paper_count": self.paper_count,
@@ -152,7 +155,9 @@ class TopicCandidate:
                 "top_paper_title": self.top_paper_title,
                 "velocity_score": round(self.velocity_score, 3),
                 "mean_fwci": round(self.mean_fwci, 3),
-                "mean_cited_by": round(self.mean_cited_by, 1)}
+                "mean_cited_by": round(self.mean_cited_by, 1),
+                "sub_topic": self.sub_topic,
+                "claim_type": self.claim_type}
 
 
 @lru_cache(maxsize=1)
@@ -1319,6 +1324,72 @@ def _fetch_papers_by_topic(
     return out
 
 
+# --- Corpus-native discovery (fact-intervention-cross topic groups) ---------
+# Use the corpus server-side coherent grouping instead of word-salad title
+# slugs ranked by citation popularity. Each group is a concrete intervention
+# x claim_type that already has enough extracted facts/papers to clear the
+# publish floor; keep the narrow, well-supported band and rank by RARITY
+# (fewest papers first) — narrow + novel, the inverse of the popularity sort.
+_TOPIC_GROUP_STRATEGY = "fact-intervention-cross"
+_TOPIC_GROUP_MIN_EXACT_FACTS = 8
+_TOPIC_GROUP_MIN_PAPERS = 8
+_TOPIC_GROUP_LIMIT = 60
+_TOPIC_GROUP_BAND_MAX_PAPERS = 30  # cap drops over-broad mega-rows
+
+
+def _use_topic_group_discovery() -> bool:
+    """Env kill-switch: TOPIC_GROUPS_DISCOVERY=0 reverts to legacy discovery."""
+    val = os.environ.get("TOPIC_GROUPS_DISCOVERY", "1").strip().lower()
+    return val not in {"0", "false", "no", "off"}
+
+
+def _topic_group_candidates(
+    *, client: httpx.Client, settings: Settings,
+) -> tuple[TopicCandidate, ...]:
+    """Corpus-native candidates from /tier2/facts/topic-groups.
+
+    Keeps the narrow, well-supported band (MIN_PAPERS..BAND_MAX papers and
+    >= MIN_EXACT_FACTS), maps each to a TopicCandidate, and ranks ASC by
+    papers then DESC by exact_facts — rarity-first, the inverse of popularity.
+    Coherence key is topic (the intervention) + claim_type; sub_topic is often
+    "other" so it is carried for the slug but not used to gate. Returns () on
+    empty/failure so discover_topics falls back to legacy discovery.
+    """
+    rows = fetch_topic_groups(
+        client=client, settings=settings,
+        strategy=_TOPIC_GROUP_STRATEGY,
+        min_exact_facts=_TOPIC_GROUP_MIN_EXACT_FACTS,
+        min_papers=_TOPIC_GROUP_MIN_PAPERS,
+        limit=_TOPIC_GROUP_LIMIT,
+    )
+    band: list[TopicCandidate] = []
+    seen: set[str] = set()
+    for row in rows:
+        topic = str(row.get("topic") or "").strip()
+        if not topic:
+            continue
+        papers = int(row.get("papers") or 0)
+        exact = int(row.get("exact_facts") or 0)
+        if not (_TOPIC_GROUP_MIN_PAPERS <= papers <= _TOPIC_GROUP_BAND_MAX_PAPERS):
+            continue
+        if exact < _TOPIC_GROUP_MIN_EXACT_FACTS:
+            continue
+        claim_type = str(row.get("claim_type") or "").strip()
+        key = f"{topic.casefold()}|{claim_type.casefold()}"
+        if key in seen:
+            continue
+        seen.add(key)
+        band.append(TopicCandidate(
+            topic=topic, paper_count=papers, fact_source_count=exact,
+            top_paper_doi="", top_paper_title="",
+            velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
+            sub_topic=str(row.get("sub_topic") or "").strip(),
+            claim_type=claim_type,
+        ))
+    band.sort(key=lambda c: (c.paper_count, -c.fact_source_count, c.topic))
+    return tuple(band)
+
+
 def discover_topics(
     seeds: tuple[str, ...] | None = None, *,
     settings: Settings, client: httpx.Client | None = None,
@@ -1337,6 +1408,16 @@ def discover_topics(
     year_now = current_year or dt.datetime.now(dt.UTC).year
     own_client = client is None
     c = client or httpx.Client()
+    # Corpus-native discovery first: coherent intervention x claim_type groups
+    # that already clear the source floor, ranked by rarity not popularity.
+    # Falls back to legacy discovery when disabled or when the corpus returns
+    # nothing (503/empty).
+    if _use_topic_group_discovery():
+        grouped = _topic_group_candidates(client=c, settings=settings)
+        if grouped:
+            if own_client:
+                c.close()
+            return grouped
     try:
         papers_by_topic = _fetch_papers_by_topic(
             list(topics), client=c, settings=settings)

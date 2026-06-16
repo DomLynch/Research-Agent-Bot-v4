@@ -27,6 +27,7 @@ returned dicts if needed. Errors return [] silently.
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -222,3 +223,51 @@ def filter_facts_by_doi(
         f for f in facts
         if f.doi and f.doi.casefold() == norm
     )
+
+
+def fetch_topic_groups(
+    *, client: httpx.Client, settings: Settings,
+    strategy: str = "fact-intervention-cross",
+    min_exact_facts: int = 8, min_papers: int = 8, limit: int = 60,
+    max_retries: int = 18, backoff_sec: float = 4.0,
+) -> list[dict[str, Any]]:
+    """POST /api/v1/tier2/facts/topic-groups; return the raw group rows.
+
+    Server-side coherent topic grouping: each row is
+    {topic, sub_topic, claim_type, facts, papers, exact_facts}. The
+    `fact-intervention-cross` strategy keys rows on a concrete intervention
+    (e.g. "metformin treatment", "GLP-1 receptor agonists") crossed with a
+    single claim_type — narrow + coherent + source-backed, the substrate the
+    discovery rewire needs.
+
+    Returns [] on missing config / JSON error / exhausted retries — never
+    raises. The shared corpus Postgres returns HTTP 503 ("remaining connection
+    slots are reserved ... SUPERUSER") under load; only 503 is retried with
+    backoff. 4xx (incl. 422) are non-retryable.
+    """
+    base = settings.researka_database_url.rstrip("/")
+    token = settings.researka_database_token.strip()
+    if not base or not token:
+        return []
+    body = {
+        "strategy": strategy, "limit": limit,
+        "min_exact_facts": min_exact_facts, "min_papers": min_papers,
+    }
+    headers = {"X-Researka-Token": token, "Content-Type": "application/json"}
+    for attempt in range(max(1, max_retries)):
+        try:
+            r = client.post(
+                f"{base}/api/v1/tier2/facts/topic-groups",
+                json=body, headers=headers, timeout=70.0,
+            )
+            if r.status_code == 503:
+                if attempt + 1 < max_retries:
+                    time.sleep(backoff_sec)
+                    continue
+                return []
+            r.raise_for_status()
+            data: Any = r.json()
+        except (httpx.HTTPError, ValueError):
+            return []
+        return [row for row in data if isinstance(row, dict)] if isinstance(data, list) else []
+    return []
