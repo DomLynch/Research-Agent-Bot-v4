@@ -820,9 +820,13 @@ def _effective_label(
 
 def _weakening_lines(review: dict[str, Any], label: str) -> list[str]:
     if label in {"evidence_binding_failed", "curation_needed", "no_signal"}:
+        # Genuine falsifiers, not a restatement that the thesis is weak (which
+        # reviewers reject in the "What would weaken this" section).
         return [
-            "- The thesis stays weak until the missing receipts bind to A_core/B_context facts.",
-            "- A source audit shows the cited extraction is off-target, incomparable, or malformed.",
+            "- An independent, matched-protocol replication fails to reproduce "
+            "the reported direction or magnitude.",
+            "- The contrast reverses or loses significance once the dominant "
+            "confounder, comparator, or subgroup is controlled.",
         ]
     return [
         "- Independent receipts fail to reproduce the claimed contrast.",

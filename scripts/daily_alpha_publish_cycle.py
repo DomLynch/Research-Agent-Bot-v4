@@ -2332,6 +2332,7 @@ def select_candidate(
         retry_fingerprint_unchanged = False
         has_memo = _has_memo(verdict, runs_root)
         memo_sha256 = _memo_sha256(verdict, runs_root) if has_memo else ""
+        selection_memo_sha256 = memo_sha256
         approved = (
             has_memo
             and (
@@ -2364,6 +2365,11 @@ def select_candidate(
             retryable=retryable,
             decisions=retry_decisions,
         )
+        # Whether this candidate is a RESUBMIT of an already-seen / retryable
+        # memo (vs a first submit). Only resubmits must be blocked when a rewrite
+        # leaves the memo byte-identical; a first submit whose refresh merely
+        # adds audit sidecars or runs agent repair legitimately keeps the memo.
+        selection_is_resubmit = fp in seen or retry_after_rejection
         # A repairable revise/reject (Researka returned editorial notes and
         # allowed resubmission) must re-enter for the feedback re-write even when
         # its topic/family was recently submitted — otherwise the revise loop is
@@ -2617,6 +2623,18 @@ def select_candidate(
                     missing_audit_sidecars = _missing_audit_sidecars(verdict, runs_root)
                     if fp == retry_fp and memo_sha256 == retry_memo_sha256:
                         status = "duplicate_submission_fingerprint"
+            # Unified no-op-rewrite guard across every refresh block above: a
+            # resubmit whose rewrite returns a byte-identical memo earns the same
+            # reviewer verdict, so it must not be resubmitted. The fingerprint can
+            # shift on reload (receipt_expansion re-derivation) without the memo
+            # changing, so gate on content (memo_sha256), not the fingerprint.
+            if (
+                memo_refreshed
+                and has_memo
+                and selection_is_resubmit
+                and memo_sha256 == selection_memo_sha256
+            ):
+                retry_fingerprint_unchanged = True
             if missing_audit_sidecars:
                 status = "memo_missing_audit_sidecars"
             if retry_fingerprint_unchanged:

@@ -1325,16 +1325,13 @@ def _fetch_papers_by_topic(
 
 
 # --- Corpus-native discovery (fact-intervention-cross topic groups) ---------
-# Use the corpus server-side coherent grouping instead of word-salad title
-# slugs ranked by citation popularity. Each group is a concrete intervention
-# x claim_type that already has enough extracted facts/papers to clear the
-# publish floor; keep the narrow, well-supported band and rank by RARITY
-# (fewest papers first) — narrow + novel, the inverse of the popularity sort.
+# Server-side coherent intervention x claim_type groups that already clear the
+# publish floor, ranked by RARITY (fewest papers first) — narrow + novel.
 _TOPIC_GROUP_STRATEGY = "fact-intervention-cross"
 _TOPIC_GROUP_MIN_EXACT_FACTS = 8
 _TOPIC_GROUP_MIN_PAPERS = 8
-_TOPIC_GROUP_LIMIT = 60
-_TOPIC_GROUP_BAND_MAX_PAPERS = 30  # cap drops over-broad mega-rows
+_TOPIC_GROUP_LIMIT = 120  # widened: fresh fallbacks when the narrow head is parked
+_TOPIC_GROUP_BAND_MAX_PAPERS = 60  # raised ceiling; still drops 90+ mega-rows
 
 
 def _use_topic_group_discovery() -> bool:

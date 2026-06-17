@@ -1658,6 +1658,86 @@ def test_reviewer_revise_refresh_changes_memo_sha_before_retry(tmp_path: Path) -
     assert daily._memo_sha256(verdict, root) != old_sha
 
 
+def test_revise_rewrite_unchanged_memo_is_not_resubmitted(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    # A repairable revise whose rewrite leaves the memo byte-identical must NOT
+    # be resubmitted: the reviewer would return the same verdict and the
+    # submission burns a reviewer cycle. The fingerprint can shift on reload
+    # (receipt_expansion re-derivation) even when the rendered memo does not, so
+    # the guard keys on memo_sha256 (content), not the fingerprint. This is the
+    # exact prod no-op-rewrite case that resubmitted the identical RAG memo.
+    root = tmp_path / "repo"
+    verdict = _verdict("unchanged_rewrite")
+    _memo_with_source_receipts(root, verdict, 5)
+    run = root / str(verdict["run_dir"])
+    run.joinpath("signal_post.md").write_text("# Signal\n", encoding="utf-8")
+    fp = daily.memo_fingerprint(verdict)
+    old_sha = daily._memo_sha256(verdict, root)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
+        {
+            "fingerprint": fp,
+            "topic": "unchanged_rewrite",
+            "submission_id": "old-sub",
+            "memo_sha256": old_sha,
+        },
+    ])
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submitted_to_researka",
+        "final_verdict": "revise",
+        "candidate": {"fingerprint": fp, "topic": "unchanged_rewrite"},
+        "researka_decision": {
+            "status": "complete",
+            "decision": "revise",
+            "resubmission": {"allowed": True},
+            "required_revisions": [
+                "Exclude the unrelated benchmark from the convergence claim.",
+            ],
+        },
+    })
+    submitted: list[str] = []
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submitted.append(str(payload["topic"]))
+        return {"ok": True, "status": 200, "response": {}}
+
+    def refresh(_run_dir: Path, _refresh_verdict: dict[str, Any]) -> bool:
+        return True  # rewrite leaves alpha_memo.md untouched -> memo_sha stable
+
+    def reload_with_shifted_fingerprint(
+        refresh_verdict: dict[str, Any], _run_dir: Path,
+    ) -> dict[str, Any]:
+        # Reload re-derives receipts -> the fingerprint shifts, but the on-disk
+        # memo is byte-identical (refresh above did not touch it).
+        return dict(refresh_verdict, receipt_expansion={
+            "cited_bound_fact_ids": ["9", "8", "7"],
+        })
+
+    monkeypatch.setattr(
+        daily, "_reload_verdict_after_memo_refresh",
+        reload_with_shifted_fingerprint,
+    )
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+        memo_refresher=refresh,
+    )
+
+    # Fingerprint shifted on reload, but memo content did not -> no resubmit.
+    assert submitted == []
+    assert ledger["status"] != "submitted_to_researka"
+    assert any(
+        row.get("status") == "duplicate_submission_fingerprint"
+        for row in ledger.get("considered") or []
+    )
+
+
 def test_recently_published_topic_is_skipped_for_fresh_topic(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     published = _verdict("published", score=100)
