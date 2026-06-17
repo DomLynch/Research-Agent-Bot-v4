@@ -279,6 +279,17 @@ def _env_truthy(name: str) -> bool:
     return os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _regenerate_on_resubmit() -> bool:
+    # Re-render the selected memo through the current writer just before
+    # submission, so writer fixes reach already-built run dirs (the cycle reads
+    # the on-disk alpha_memo.md, so a stale candidate would otherwise resubmit
+    # pre-fix text). render is deterministic (no LLM call), so this is a no-op
+    # for a freshly-built memo. Default on; kill switch REGENERATE_ON_RESUBMIT=off.
+    return os.environ.get(
+        "REGENERATE_ON_RESUBMIT", "on"
+    ).strip().lower() not in {"0", "false", "no", "off"}
+
+
 def _preflight_mode() -> str:
     mode = os.environ.get(_PREFLIGHT_MODE_ENV, "off").strip().lower()
     return mode if mode in {"shadow", "enforce"} else "off"
@@ -2751,7 +2762,12 @@ def select_candidate(
             row["missing_audit_sidecars"] = missing_audit_sidecars
         considered.append(row)
         if status == "eligible":
-            return verdict | {"memo_fingerprint": fp}, considered
+            # _staging_refreshed tells the submit path this memo was already
+            # re-rendered here (with any repair decision applied), so the
+            # pre-submit regeneration must NOT run again and revert the repair.
+            return verdict | {
+                "memo_fingerprint": fp, "_staging_refreshed": memo_refreshed,
+            }, considered
     return None, considered
 
 
@@ -4293,6 +4309,22 @@ def run_cycle(
             return ledger
         assert submitter is not None
         run_dir = _run_path(runs_root, candidate.get("run_dir"))
+        # Re-render through the current writer so writer fixes propagate to a
+        # candidate built by older code. SKIP when staging already re-rendered
+        # it: that pass applied any repair decision (e.g. scope narrowing), and
+        # a decision-less re-render here would re-derive the full receipt set and
+        # revert the repair. Reload after a successful render so the recorded
+        # fingerprint matches the submitted memo. Failures fall back to disk.
+        staging_refreshed = bool(candidate.pop("_staging_refreshed", False))
+        if (
+            memo_refresher is not None
+            and _regenerate_on_resubmit()
+            and not staging_refreshed
+        ):
+            with suppress(Exception):
+                if memo_refresher(run_dir, candidate):
+                    candidate = _reload_verdict_after_memo_refresh(candidate, run_dir)
+                    candidate = candidate | {"memo_fingerprint": memo_fingerprint(candidate)}
         payload = _submission_payload(candidate, runs_root)
         checked_payload, preflight_report = _run_preflight_qa(payload, run_dir)
         if preflight_report is not None:

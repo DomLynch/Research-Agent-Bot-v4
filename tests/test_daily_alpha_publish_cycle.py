@@ -5469,6 +5469,101 @@ def test_current_cycle_repairable_revise_does_not_depend_on_ledger_rescan(
     assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == ["reviewer_revise"]
 
 
+def test_regenerate_on_resubmit_rerenders_clean_candidate_before_submit(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    # A clean (non-staging-refreshed) candidate must be re-rendered through the
+    # current writer before submission, so a writer fix reaches the submitted
+    # memo even when the run dir was built by older code. Repair candidates are
+    # exercised separately (they skip this re-render to avoid reverting the
+    # staging repair) by the revise tests above.
+    root = tmp_path / "repo"
+    # headline="" => no headline-mismatch, so the staging pipeline does NOT
+    # re-render this clean candidate; the only re-render is the pre-submit pass.
+    verdict = _verdict("clean_publishable")
+    verdict["headline"] = ""
+    _memo_with_source_receipts(root, verdict, 5)
+    submitted: list[str] = []
+    refresh_run_dirs: list[Path] = []
+
+    def fake_step(_args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        return True, "ok"
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submitted.append(str(payload.get("topic")))
+        return {"ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}}}
+
+    def refresh(run_dir: Path, _verdict: dict[str, Any]) -> bool:
+        refresh_run_dirs.append(run_dir)
+        path = run_dir / "alpha_memo.md"
+        path.write_text(
+            path.read_text(encoding="utf-8") + "\nWRITER_FIX_APPLIED\n",
+            encoding="utf-8",
+        )
+        return True
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+    daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        refresh_candidates=True,
+        max_refresh_batches=1,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+        decision_fetcher=lambda _submission_id: {"status": "complete", "decision": "accept"},
+        page_fetcher=lambda _url: {
+            "ok": True,
+            "status": 200,
+            "body": "<html><title>Alpha memo</title></html>",
+        },
+        memo_refresher=refresh,
+        sleep=lambda _seconds: None,
+    )
+
+    assert submitted == ["clean_publishable"]
+    # The pre-submit pass re-rendered the staging-untouched candidate exactly once.
+    assert refresh_run_dirs == [root / str(verdict["run_dir"])]
+    assert "WRITER_FIX_APPLIED" in (root / str(verdict["run_dir"]) / "alpha_memo.md").read_text(
+        encoding="utf-8",
+    )
+
+
+def test_regenerate_on_resubmit_kill_switch_disables_rerender(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("clean_publishable")
+    verdict["headline"] = ""  # staging won't re-render; isolate the pre-submit pass
+    _memo_with_source_receipts(root, verdict, 5)
+    refresh_run_dirs: list[Path] = []
+    monkeypatch.setenv("REGENERATE_ON_RESUBMIT", "off")
+    monkeypatch.setattr(daily, "_run_step", lambda _a, timeout=1800: (True, "ok"))
+
+    def refresh(run_dir: Path, _verdict: dict[str, Any]) -> bool:
+        refresh_run_dirs.append(run_dir)
+        return True
+
+    daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        refresh_candidates=True,
+        max_refresh_batches=1,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _p: {"ok": True, "status": 200, "response": {"submission": {"id": "s"}}},
+        decision_fetcher=lambda _i: {"status": "complete", "decision": "accept"},
+        page_fetcher=lambda _u: {"ok": True, "status": 200, "body": "<html><title>t</title></html>"},
+        memo_refresher=refresh,
+        sleep=lambda _s: None,
+    )
+    assert refresh_run_dirs == []  # kill switch off => no pre-submit re-render
+
+
 def test_accepted_shape_bias_breaks_candidate_tie(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     matching = _verdict("matching", score=90) | {
