@@ -2881,3 +2881,48 @@ def test_supply_cache_failure_without_prior_is_zero(
         ["rapamycin"], client=MagicMock(), settings=_settings())
 
     assert out == {"rapamycin": 0}
+
+
+def _topic_group_rows() -> list[dict[str, Any]]:
+    # 'ageing' is denser (2.5) than 'metformin treatment' (2.0) but carries no
+    # intervention marker, so it must still rank below the marked intervention.
+    return [
+        {"topic": "exercise", "papers": 8, "exact_facts": 16,
+         "claim_type": "effect_size", "sub_topic": "other"},
+        {"topic": "ageing", "papers": 8, "exact_facts": 20,
+         "claim_type": "effect_size", "sub_topic": "other"},
+        {"topic": "SGLT2 inhibitors", "papers": 22, "exact_facts": 58,
+         "claim_type": "effect_size", "sub_topic": "other"},
+        {"topic": "metformin treatment", "papers": 8, "exact_facts": 16,
+         "claim_type": "effect_size", "sub_topic": "other"},
+    ]
+
+
+def test_topic_group_candidates_rank_interventions_before_broad(
+    monkeypatch: Any,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.delenv("TOPIC_SPECIFICITY_RANK", raising=False)
+    monkeypatch.setattr(td, "fetch_topic_groups", lambda **_kw: _topic_group_rows())
+    topics = [c.topic for c in td._topic_group_candidates(
+        client=MagicMock(), settings=_settings())]
+
+    # Marked interventions outrank broad terms even when a broad term is denser.
+    assert topics[0] == "SGLT2 inhibitors"
+    assert topics.index("metformin treatment") < topics.index("ageing")
+    assert topics.index("SGLT2 inhibitors") < topics.index("exercise")
+
+
+def test_topic_specificity_rank_kill_switch_reverts_to_rarity(
+    monkeypatch: Any,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setenv("TOPIC_SPECIFICITY_RANK", "0")
+    monkeypatch.setattr(td, "fetch_topic_groups", lambda **_kw: _topic_group_rows())
+    cands = td._topic_group_candidates(client=MagicMock(), settings=_settings())
+
+    # Rarity-only: fewest papers first; the 22-paper SGLT2 row is no longer #1.
+    assert cands[0].paper_count == min(c.paper_count for c in cands)
+    assert cands[0].topic != "SGLT2 inhibitors"

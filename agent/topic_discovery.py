@@ -1333,11 +1333,38 @@ _TOPIC_GROUP_MIN_PAPERS = 8
 _TOPIC_GROUP_LIMIT = 120  # widened: fresh fallbacks when the narrow head is parked
 _TOPIC_GROUP_BAND_MAX_PAPERS = 60  # raised ceiling; still drops 90+ mega-rows
 
+# A specific *administered* intervention (drug class, named agent, procedure,
+# supplement, diet) yields a coherent single-claim memo that clears editorial
+# review (e.g. the first DOI, "SGLT2 inhibitors"); a bare condition/demographic/
+# broad-exposure topic ("exercise", "ageing", "type 2 diabetes") yields an
+# evidence-map that gets rejected. These substrings flag the former so the band
+# is ranked intervention-first. RANK ONLY — nothing is dropped, so it degrades
+# safely; pair with evidence density (facts/paper) as the specificity tiebreak.
+_INTERVENTION_MARKERS = (
+    "inhibitor", "agonist", "antagonist", "blocker", "supplement", "therapy",
+    "treatment", "surgery", "vaccin", "diet", " use", "flozin", "gliptin",
+    "formin", "statin", "sartan", "pril", "mab", "glutide",
+)
+
 
 def _use_topic_group_discovery() -> bool:
     """Env kill-switch: TOPIC_GROUPS_DISCOVERY=0 reverts to legacy discovery."""
     val = os.environ.get("TOPIC_GROUPS_DISCOVERY", "1").strip().lower()
     return val not in {"0", "false", "no", "off"}
+
+
+def _specificity_rank_enabled() -> bool:
+    """Env kill-switch: TOPIC_SPECIFICITY_RANK=0 reverts to rarity-only ranking."""
+    return os.environ.get(
+        "TOPIC_SPECIFICITY_RANK", "1"
+    ).strip().lower() not in {"0", "false", "no", "off"}
+
+
+def _topic_specificity_key(topic: str, papers: int, exact_facts: int) -> tuple[int, float]:
+    """Higher sorts first: intervention-marked topics, then evidence density."""
+    marked = 1 if any(m in topic.casefold() for m in _INTERVENTION_MARKERS) else 0
+    density = exact_facts / papers if papers else 0.0
+    return (marked, density)
 
 
 def _topic_group_candidates(
@@ -1383,7 +1410,18 @@ def _topic_group_candidates(
             sub_topic=str(row.get("sub_topic") or "").strip(),
             claim_type=claim_type,
         ))
-    band.sort(key=lambda c: (c.paper_count, -c.fact_source_count, c.topic))
+    if _specificity_rank_enabled():
+        # Intervention-first, then evidence density, then rarity — surface the
+        # SGLT2-style single-claim gems ahead of broad-exposure evidence-maps.
+        band.sort(key=lambda c: (
+            tuple(-x for x in _topic_specificity_key(
+                c.topic, c.paper_count, c.fact_source_count,
+            )),
+            c.paper_count,
+            c.topic,
+        ))
+    else:
+        band.sort(key=lambda c: (c.paper_count, -c.fact_source_count, c.topic))
     return tuple(band)
 
 
