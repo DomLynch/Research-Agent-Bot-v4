@@ -30,6 +30,7 @@ from agent.domain_profile import domain_choices, domain_slug, load_domain_profil
 from agent.llm_client import call_writer
 from agent.publish_tier import publish_verdict
 from agent.settings import load_settings
+from agent.topic_discovery import cap_topic_slug
 
 _ROOT = Path(__file__).resolve().parent.parent
 _RUNS = _ROOT / "runs"
@@ -3579,7 +3580,14 @@ def _child_topics_from_queue(
                 label = str(cluster.get("label") or "").strip("_")
                 if not label or label == "unlabeled":
                     continue
-                child = "_".join(re.findall(r"[a-z0-9]+", f"{parent}_{label}".lower()))
+                # Cap to the 4-token limit (cap_topic_slug, the codebase-wide
+                # rule) so a multi-word cluster label cannot emit a 6-9 token
+                # word-salad child slug. Uncapped slugs are probed raw by the
+                # curator subprocess, find zero corpus facts, and exhaust the
+                # refresh timeout before the clean discovery candidate is reached.
+                child = cap_topic_slug(
+                    "_".join(re.findall(r"[a-z0-9]+", f"{parent}_{label}".lower()))
+                )
                 if child and child not in seen:
                     reason_rank = (
                         0 if rec.get("reason") == "source_coherent_child_cluster" else 1

@@ -608,8 +608,11 @@ def main() -> int:
 
     # Step 2: cooldown filter
     recent = _recent_signal_topics(_RUNS, args.cooldown_hours, cycle_start)
+    # Defense-in-depth: cap every inbound priority topic to the 4-token rule so
+    # a malformed slug from any caller cannot be probed raw and hang the cycle.
     priority_ranked = _priority_ranked_topics([
-        str(topic).strip() for topic in args.priority_topic if str(topic).strip()
+        cap_topic_slug(str(topic).strip())
+        for topic in args.priority_topic if str(topic).strip()
     ], domain=args.domain)
     _cycle_settings = load_settings()
     # Cap live probes per cycle so a run of supply-less candidates cannot

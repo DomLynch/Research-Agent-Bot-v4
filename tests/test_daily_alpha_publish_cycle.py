@@ -6757,3 +6757,31 @@ def test_public_alpha_urls_accepts_papers_scheme() -> None:
     assert daily._public_alpha_urls(
         {"public_url": "https://researka.org/alpha/d3c55248"}
     ) == ["https://researka.org/alpha/d3c55248"]
+
+
+def test_child_topics_from_queue_caps_slug_to_four_tokens() -> None:
+    # A multi-word cluster label must not emit a 6-9 token word-salad child slug
+    # (those are probed raw by the curator subprocess and exhaust the refresh
+    # timeout). cap_topic_slug keeps every child at <= 4 tokens.
+    queue = {
+        "agent_repair_needed": [],
+        "curation_needed": [{
+            "topic": "metformin_treatment",
+            "alpha_score": 50,
+            "subtopic_recommendations": {
+                "recommended": True,
+                "reason": "source_coherent_child_cluster",
+                "clusters": [
+                    {
+                        "label": "experienced_add_dorzagliatin_dose_baseline_group",
+                        "member_fact_ids": [],
+                    },
+                ],
+            },
+        }],
+    }
+    children = daily._child_topics_from_queue(queue, set(), limit=10)
+    assert children, "expected a child topic"
+    for child in children:
+        assert len([t for t in child.split("_") if t]) <= 4
+        assert daily.cap_topic_slug(child) == child
