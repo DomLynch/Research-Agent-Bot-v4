@@ -1290,3 +1290,18 @@ def test_tokens_drops_function_words_keeps_content() -> None:
         assert function_word not in tier._tokens(
             f"effect {function_word} measured", "topic", frozenset(),
         )
+
+
+def test_asserts_unnegated_gain_excludes_supporting_keeps_genuine() -> None:
+    from agent import publish_tier as pt
+
+    # Un-negated improvement = supporting source (must NOT be counter-evidence).
+    assert pt._asserts_unnegated_gain(
+        "RAG-Chain improves the accuracy by 6.9% on MedQA without fine-tuning")
+    assert pt._asserts_unnegated_gain(
+        "achieves ~5% accuracy improvement over single-agent baselines")
+    # Genuine null / negated findings must still qualify as counter-evidence.
+    assert not pt._asserts_unnegated_gain("the model did not improve over baseline")
+    assert not pt._asserts_unnegated_gain("failed to outperform the baseline")
+    assert not pt._asserts_unnegated_gain("no significant increase in accuracy")
+    assert not pt._asserts_unnegated_gain("accuracy was unchanged versus control")
