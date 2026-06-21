@@ -4,6 +4,7 @@ Safe by default: builds/reads the publish queue, selects at most one
 publishable memo, writes a daily ledger, and only calls Researka when
 `--submit` is explicit.
 """
+# ruff: noqa: E402
 from __future__ import annotations
 
 import argparse
@@ -26,6 +27,10 @@ from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
 from agent.alpha_selector import accepted_shape_bonus
 from agent.domain_profile import domain_choices, domain_slug, load_domain_profile
 from agent.llm_client import call_writer
@@ -33,16 +38,11 @@ from agent.publish_tier import publish_verdict
 from agent.settings import load_settings
 from agent.topic_discovery import cap_topic_slug
 from scripts.alpha_publish_status import (
-    cycle_exit_code as _cycle_exit_code,
-)
-from scripts.alpha_publish_status import (
-    no_candidate_reason as _no_candidate_reason,
-)
-from scripts.alpha_publish_status import (
-    publish_summary as _publish_summary,
+    cycle_exit_code,
+    no_candidate_reason,
+    publish_summary,
 )
 
-_ROOT = Path(__file__).resolve().parent.parent
 _RUNS = _ROOT / "runs"
 _PUBLICATION_PATH = _ROOT / "topic_packs" / "publication.toml"
 _PUBLISH_TIER_PATH = _ROOT / "topic_packs" / "publish_tier.toml"
@@ -71,6 +71,24 @@ MemoRefresher = Callable[[Path, Json], bool]
 QueueBuilder = Callable[[Path, bool], Json]
 PageFetcher = Callable[[str], Json]
 SourcePaperFetcher = Callable[[str, int], list[Json]]
+
+
+def _cycle_exit_code(
+    ledger: Json, *, submit: bool, allow_pending_success: bool = False,
+) -> int:
+    return cycle_exit_code(
+        ledger, submit=submit, allow_pending_success=allow_pending_success,
+    )
+
+
+def _no_candidate_reason(considered: list[Json]) -> str:
+    return no_candidate_reason(considered)
+
+
+def _publish_summary(ledger: Json) -> Json:
+    return publish_summary(ledger)
+
+
 _SUBMIT_TOKEN_ENVS = (
     "RESEARKA_API_KEY_V4",
     "RESEARKA_API_TOKEN_V4",

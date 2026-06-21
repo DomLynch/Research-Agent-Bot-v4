@@ -20,6 +20,20 @@ from urllib.request import Request
 from pytest import MonkeyPatch, raises
 
 import scripts.daily_alpha_publish_cycle as daily
+from agent.topic_discovery import cap_topic_slug
+
+
+def test_daily_alpha_publish_cycle_can_run_as_file() -> None:
+    root = Path(__file__).resolve().parents[1]
+    result = subprocess.run(
+        [sys.executable, "scripts/daily_alpha_publish_cycle.py", "--help"],
+        cwd=root,
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "--allow-tier2-repair" in result.stdout
 
 
 def test_run_subprocess_timeout_kills_descendant_process(tmp_path: Path) -> None:
@@ -6873,4 +6887,4 @@ def test_child_topics_from_queue_caps_slug_to_four_tokens() -> None:
     assert children, "expected a child topic"
     for child in children:
         assert len([t for t in child.split("_") if t]) <= 4
-        assert daily.cap_topic_slug(child) == child
+        assert cap_topic_slug(child) == child
