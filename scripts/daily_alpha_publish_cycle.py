@@ -3059,6 +3059,62 @@ def _source_literature_topic_candidate(
     return None
 
 
+def _family_blocked_topic(topic: str, blocked_topics: set[str]) -> bool:
+    if topic in blocked_topics:
+        return True
+    topic_tokens = _family_tokens(topic)
+    if not topic_tokens:
+        return False
+    for blocked in blocked_topics:
+        blocked_tokens = _family_tokens(blocked)
+        if not blocked_tokens:
+            continue
+        overlap = len(topic_tokens & blocked_tokens)
+        if overlap and overlap / min(len(topic_tokens), len(blocked_tokens)) >= 0.5:
+            return True
+    return False
+
+
+def _fresh_parent_topics_from_discovery(
+    runs_root: Path,
+    profile_slug: str,
+    blocked_topics: set[str],
+    *,
+    limit: int,
+    min_sources: int,
+) -> list[str]:
+    discovery_dir = runs_root / "_topics_discovery"
+    paths = sorted(
+        discovery_dir.glob("*.json"),
+        key=lambda path: path.stat().st_mtime if path.exists() else 0,
+        reverse=True,
+    )
+    rows: list[Json] = []
+    for path in paths:
+        data = _json(path, {})
+        if not isinstance(data, dict) or not _same_domain(_row_domain(data), profile_slug):
+            continue
+        raw_rows = data.get("all") or data.get("top")
+        if isinstance(raw_rows, list):
+            rows = [row for row in raw_rows if isinstance(row, dict)]
+            break
+    ranked: list[tuple[tuple[int, int, float, str], str]] = []
+    seen: set[str] = set()
+    for row in rows:
+        topic = cap_topic_slug(str(row.get("topic") or "").strip())
+        if not topic or topic in seen or _family_blocked_topic(topic, blocked_topics):
+            continue
+        with suppress(TypeError, ValueError):
+            fact_sources = int(row.get("fact_source_count") or 0)
+            papers = int(row.get("paper_count") or 0)
+            velocity = float(row.get("velocity_score") or 0.0)
+            if max(fact_sources, papers) < min_sources:
+                continue
+            ranked.append(((-fact_sources, -papers, -velocity, topic), topic))
+            seen.add(topic)
+    return [topic for _score, topic in sorted(ranked)[:limit]]
+
+
 def _source_literature_payload(
     *, profile_slug: str, topic: str, papers: list[Json], runs_root: Path, date: str,
 ) -> tuple[Json, Json]:
@@ -4312,6 +4368,18 @@ def run_cycle(
             ]
             if source_floor_topics:
                 blocked_topics.update(source_floor_topics)
+            fresh_parent_topics = _fresh_parent_topics_from_discovery(
+                runs_root,
+                profile.slug,
+                blocked_topics,
+                limit=refresh_top,
+                min_sources=max(min_submit_sources, min_direct_submit_sources),
+            )
+            if refresh_candidates and fresh_parent_topics and batch < search_batch_limit:
+                ledger["refresh_parent_topics"] = fresh_parent_topics
+                priority_refresh_topics = fresh_parent_topics
+                force_refresh = True
+                continue
             priority_children = _child_topics_from_queue(
                 current_queue, blocked_topics, limit=refresh_top,
             )
