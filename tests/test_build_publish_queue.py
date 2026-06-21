@@ -1,12 +1,29 @@
 """Publish queue assembly tests."""
 from __future__ import annotations
 
+import fcntl
 import json
 from pathlib import Path
+from typing import Any
 
 from pytest import MonkeyPatch
 
 import scripts.build_publish_queue as queue
+
+
+def test_write_queue_uses_output_lock(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    lock_calls: list[tuple[str, int]] = []
+
+    def fake_flock(handle: Any, op: int) -> None:
+        lock_calls.append((Path(handle.name).name, op))
+
+    monkeypatch.setattr(fcntl, "flock", fake_flock)
+
+    queue._write_json(tmp_path / "_publish_queue.json", {"ready_to_publish": []})
+
+    assert ("_publish_queue.json.lock", fcntl.LOCK_EX) in lock_calls
 
 
 def _run(root: Path, name: str, *, label: str, lanes: tuple[str, ...]) -> Path:

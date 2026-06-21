@@ -6,6 +6,7 @@ rules.
 from __future__ import annotations
 
 import datetime as dt
+import fcntl
 import json
 import os
 import subprocess
@@ -4170,6 +4171,33 @@ def test_successful_submit_records_submission_not_publication(tmp_path: Path) ->
     assert records[0]["fingerprint"] == daily.memo_fingerprint(verdict)
 
 
+def test_submission_attempt_record_uses_submitted_fingerprint_lock(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict()
+    _memo_with_source_receipts(root, verdict, 5)
+    lock_calls: list[tuple[str, int]] = []
+
+    def fake_flock(handle: Any, op: int) -> None:
+        lock_calls.append((Path(handle.name).name, op))
+
+    monkeypatch.setattr(fcntl, "flock", fake_flock)
+
+    daily._record_submission_attempt(
+        root / "_daily_ledger" / "_submitted_fingerprints.json",
+        date="2026-05-22",
+        candidate=verdict | {"memo_fingerprint": daily.memo_fingerprint(verdict)},
+        runs_root=root / "runs",
+        submission_id="sub_lock",
+    )
+
+    assert (
+        "_submitted_fingerprints.json.lock",
+        fcntl.LOCK_EX,
+    ) in lock_calls
+
+
 def test_sync_submission_decisions_records_async_rejection(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
@@ -4201,6 +4229,34 @@ def test_sync_submission_decisions_records_async_rejection(tmp_path: Path) -> No
     assert patched["submission_id"] == "sub_123"
     assert patched["final_verdict"] == "rejected"
     assert patched["researka_decision"]["gate_failures"][0]["name"] == "minimum_citations"
+
+
+def test_sync_submission_decisions_locks_submitted_fingerprint_updates(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+        "date": "2026-05-21T00-00-00Z",
+        "topic": "async_reject",
+        "submission_id": "sub_lock",
+    }])
+    lock_calls: list[tuple[str, int]] = []
+
+    def fake_flock(handle: Any, op: int) -> None:
+        lock_calls.append((Path(handle.name).name, op))
+
+    monkeypatch.setattr(fcntl, "flock", fake_flock)
+
+    summary = daily.sync_submission_decisions(
+        root,
+        fetcher=lambda _submission_id: {"status": "complete", "decision": "reject"},
+    )
+
+    assert summary["updated"] == 1
+    assert (
+        "_submitted_fingerprints.json.lock",
+        fcntl.LOCK_EX,
+    ) in lock_calls
 
 
 def test_sync_submission_decisions_expires_stale_pending(tmp_path: Path) -> None:

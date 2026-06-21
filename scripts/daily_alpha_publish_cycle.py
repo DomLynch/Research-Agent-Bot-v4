@@ -328,6 +328,26 @@ def _write_json(path: Path, payload: Any) -> None:
         tmp_path.replace(path)
 
 
+def _update_json_list(path: Path, mutate: Callable[[list[Any]], bool]) -> bool:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = path.with_name(path.name + ".lock")
+    tmp_path = path.with_name(path.name + ".tmp")
+    with lock_path.open("w", encoding="utf-8") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            data = []
+        rows = data if isinstance(data, list) else []
+        changed = mutate(rows)
+        if changed:
+            tmp_path.write_text(
+                json.dumps(rows, indent=2, sort_keys=True), encoding="utf-8",
+            )
+            tmp_path.replace(path)
+        return changed
+
+
 def _write_ledger(path: Path, ledger: Json) -> None:
     ledger["publish_summary"] = _publish_summary(ledger)
     _write_json(path, ledger)
@@ -1485,9 +1505,6 @@ def _record_submission_attempt(
     submission_id: str = "",
     submit_status: str = "",
 ) -> None:
-    records = _json(path, [])
-    if not isinstance(records, list):
-        records = []
     record = {
         "date": date,
         "domain": candidate.get("domain"),
@@ -1500,8 +1517,12 @@ def _record_submission_attempt(
     }
     if submit_status:
         record["submit_status"] = submit_status
-    records.append(record)
-    _write_json(path, records)
+
+    def append_record(records: list[Any]) -> bool:
+        records.append(record)
+        return True
+
+    _update_json_list(path, append_record)
 
 
 def _submission_record_patch(ledger: Json) -> Json:
@@ -3455,8 +3476,9 @@ def sync_submission_decisions(
         if patch:
             submission_record_updates[submission_id] = patch
         _write_json(path, ledger)
-    submitted = _json(ledger_dir / "_submitted_fingerprints.json", [])
-    if isinstance(submitted, list):
+    synthetic_ledgers: list[tuple[Path, Json]] = []
+
+    def update_submitted_records(submitted: list[Any]) -> bool:
         submitted_changed = False
         for row in submitted:
             if not isinstance(row, dict):
@@ -3520,13 +3542,19 @@ def sync_submission_decisions(
                 row, _submission_record_patch(synthetic_ledger),
             )
             stamp = _norm(row.get("date")).replace(" ", "-") or "undated"
-            _write_json(
+            synthetic_ledgers.append((
                 ledger_dir / f"{stamp}-decision-{submission_id[:8]}.json",
                 synthetic_ledger,
-            )
+            ))
             seen_submission_ids.add(submission_id)
-        if submitted_changed:
-            _write_json(ledger_dir / "_submitted_fingerprints.json", submitted)
+        return submitted_changed
+
+    _update_json_list(
+        ledger_dir / "_submitted_fingerprints.json",
+        update_submitted_records,
+    )
+    for synthetic_path, synthetic_ledger in synthetic_ledgers:
+        _write_json(synthetic_path, synthetic_ledger)
     return summary
 
 
