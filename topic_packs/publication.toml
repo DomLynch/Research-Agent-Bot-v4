@@ -16,3 +16,35 @@ min_angle_score = 45
 published_topic_cooldown_days = 1
 decision_poll_attempts = 30
 decision_poll_seconds = 10
+
+[alpha_memo.domains.longevity]
+min_source_papers = 5
+min_direct_source_papers = 5
+
+[alpha_memo.domains.longevity_research]
+min_source_papers = 5
+min_direct_source_papers = 5
+
+[alpha_memo.domains.ai_research]
+min_source_papers = 5
+min_direct_source_papers = 5
+
+[alpha_memo.domains.business_research]
+min_source_papers = 5
+min_direct_source_papers = 5
+
+[alpha_memo.domains.management_research]
+min_source_papers = 5
+min_direct_source_papers = 5
+
+[alpha_memo.domains.economics_research]
+min_source_papers = 5
+min_direct_source_papers = 5
+
+[alpha_memo.domains.finance_research]
+min_source_papers = 5
+min_direct_source_papers = 5
+
+[alpha_memo.domains.marketing_research]
+min_source_papers = 5
+min_direct_source_papers = 5

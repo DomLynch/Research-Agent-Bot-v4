@@ -2082,6 +2082,7 @@ def test_nonrepairable_rejection_does_not_retry_duplicate(tmp_path: Path) -> Non
     )
 
     assert ledger["status"] == "no_fresh_candidate"
+    assert ledger["reason"] == "all candidates were duplicate submission fingerprints"
     assert ledger["considered"][0]["status"] == "duplicate_submission_fingerprint"
 
 
@@ -3980,6 +3981,72 @@ def test_cost_cap_writes_no_publish_ledger(tmp_path: Path) -> None:
 
     assert ledger["status"] == "cost_cap_exceeded"
     assert (root / "_daily_ledger" / "2026-05-22.json").exists()
+    written = json.loads(
+        (root / "_daily_ledger" / "2026-05-22.json").read_text(encoding="utf-8"),
+    )
+    assert written["publish_summary"]["next_action"] == "fix_runtime_configuration"
+
+
+def test_submit_exit_code_fails_closed_for_no_publish_statuses() -> None:
+    assert daily._cycle_exit_code(
+        {"status": "published", "published": 1}, submit=True,
+    ) == 0
+    assert daily._cycle_exit_code(
+        {"status": "submitted_to_researka", "published": 0}, submit=True,
+    ) == 2
+    assert daily._cycle_exit_code(
+        {"status": "submitted_to_researka", "published": 0},
+        submit=True,
+        allow_pending_success=True,
+    ) == 0
+    assert daily._cycle_exit_code(
+        {"status": "no_fresh_candidate", "published": 0}, submit=True,
+    ) == 2
+
+
+def test_domain_source_floors_are_policy_owned() -> None:
+    assert daily._domain_alpha_memo_int(
+        "longevity_research", "min_source_papers", 99,
+    ) == 5
+    assert daily._domain_alpha_memo_int(
+        "ai_research", "min_direct_source_papers", 99,
+    ) == 5
+
+
+def test_publish_summary_counts_blockers_and_attempts(tmp_path: Path) -> None:
+    path = tmp_path / "ledger.json"
+    ledger = {
+        "status": "no_fresh_candidate",
+        "submitted": 0,
+        "published": 0,
+        "queue_counts": {"ready_to_publish": 1},
+        "cycle_attempts": [{"status": "reviewer_rejected"}],
+        "considered": [
+            {"status": "duplicate_submission_fingerprint"},
+            {"status": "agent_repair_needed", "blockers": ["receipt_shape_mismatch"]},
+        ],
+    }
+
+    daily._write_ledger(path, ledger)
+
+    written = json.loads(path.read_text(encoding="utf-8"))
+    assert written["publish_summary"] == {
+        "attempts": 1,
+        "considered": 2,
+        "last_attempt_status": "reviewer_rejected",
+        "next_action": "refresh_or_expand_candidate_supply",
+        "public_page_status": None,
+        "public_url": None,
+        "published": 0,
+        "queue_counts": {"ready_to_publish": 1},
+        "status": "no_fresh_candidate",
+        "submitted": 0,
+        "top_blockers": {
+            "agent_repair_needed": 1,
+            "duplicate_submission_fingerprint": 1,
+            "receipt_shape_mismatch": 1,
+        },
+    }
 
 
 def test_refresh_candidates_builds_one_topic_per_submit_batch(
@@ -4061,6 +4128,8 @@ def test_systemd_ai_research_timer_offsets_global_four_hour_submitter() -> None:
     assert "scripts/daily_alpha_publish_cycle.py" in service
     assert "--domain ai_research" in service
     assert "--submit" in service
+    assert "--allow-tier2-repair" in service
+    assert "--allow-tier2 " not in service
     assert "--max-refresh-batches 5" in service
     assert "OnCalendar=*-*-* 05/8:30:00" in timer
     assert "Unit=researka-alpha-ai-research.service" in timer
@@ -4077,6 +4146,8 @@ def test_systemd_longevity_research_timer_uses_explicit_domain() -> None:
     assert "scripts/daily_alpha_publish_cycle.py" in service
     assert "--domain longevity_research" in service
     assert "--submit" in service
+    assert "--allow-tier2-repair" in service
+    assert "--allow-tier2 " not in service
     assert "--max-refresh-batches 5" in service
     assert "OnCalendar=*-*-* 01/8:30:00" in timer
     assert "Unit=researka-alpha-longevity-research.service" in timer
@@ -4099,6 +4170,23 @@ def test_systemd_cache_warmer_fills_source_rich_backlog() -> None:
     assert "OnCalendar=*-*-* 01/4:05:00" in timer
     assert "Persistent=true" in timer
     assert "Unit=researka-alpha-cache-warm.service" in timer
+
+
+def test_systemd_publish_health_monitor_enforces_sla() -> None:
+    service = Path("deploy/systemd/researka-alpha-publish-health.service").read_text(
+        encoding="utf-8",
+    )
+    timer = Path("deploy/systemd/researka-alpha-publish-health.timer").read_text(
+        encoding="utf-8",
+    )
+
+    assert "scripts/check_alpha_publish_health.py" in service
+    assert "--expect-published" in service
+    assert "--check-url" in service
+    assert "--sync-pending-decisions" in service
+    assert "--show-next-candidate" in service
+    assert "OnCalendar=*-*-* 02/8:45:00" in timer
+    assert "Unit=researka-alpha-publish-health.service" in timer
 
 
 def test_refresh_cooldown_is_cycle_configurable(
@@ -4420,6 +4508,7 @@ def test_human_approval_status_is_not_a_publish_cycle_terminal() -> None:
     assert "needs_operator_approval" not in daily._EXHAUSTED_STATUSES
     assert "needs_operator_approval" in daily._AGENT_REPAIR_DECISIONS
     assert "agent_repair_failed" in daily._EXHAUSTED_STATUSES
+    assert "evidence_map_below_citation_floor" in daily._TOPIC_EXHAUSTED_STATUSES
 
 
 def test_source_rich_review_row_does_not_wait_for_human_approval(

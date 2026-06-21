@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 import re
 import sys
@@ -23,14 +24,14 @@ _WORD_RE = re.compile(r"[a-z0-9]+")
 
 
 def _alpha_runs(include_archive: bool) -> list[Path]:
-    patterns = ["*-evidence-*/alpha_memo.md"]
+    patterns = ["*-evidence-*"]
     if include_archive:
-        patterns.append("_archive/*/*-evidence-*/alpha_memo.md")
+        patterns.append("_archive/*/*-evidence-*")
     seen: set[Path] = set()
     out: list[Path] = []
     for pattern in patterns:
         for path in sorted(_RUNS.glob(pattern)):
-            run = path.parent
+            run = path if path.is_dir() else path.parent
             if run not in seen:
                 seen.add(run)
                 out.append(run)
@@ -57,6 +58,19 @@ def _read_json(path: Path) -> dict[str, Any]:
     except (OSError, json.JSONDecodeError):
         return {}
     return data if isinstance(data, dict) else {}
+
+
+def _write_json(path: Path, payload: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = path.with_name(path.name + ".lock")
+    tmp_path = path.with_name(path.name + ".tmp")
+    with lock_path.open("w", encoding="utf-8") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        tmp_path.write_text(
+            json.dumps(payload, indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
+        tmp_path.replace(path)
 
 
 def _run_domain(run: Path, verdict: dict[str, Any]) -> str:
@@ -113,6 +127,20 @@ def _can_recompute_verdict(run: Path) -> bool:
     )
 
 
+def _stage_blockers(run: Path) -> list[str]:
+    required = (
+        "alpha_memo.md",
+        "opportunities_gate.json",
+        "fact_lanes.json",
+        "all_facts.json",
+        "claim_receipt_matrix.json",
+        "typed_counter_evidence.json",
+        "novelty_delta.json",
+        "memo_audit.json",
+    )
+    return [f"missing_{name.rsplit('.', 1)[0]}" for name in required if not run.joinpath(name).exists()]
+
+
 def _verdict_for_run(run: Path) -> dict[str, Any]:
     if (run / "business_candidate_bundle.json").exists():
         stored = _read_json(run / "publish_verdict.json")
@@ -120,7 +148,18 @@ def _verdict_for_run(run: Path) -> dict[str, Any]:
             return stored
     if _can_recompute_verdict(run):
         return publish_verdict(run)
-    return _read_json(run / "publish_verdict.json")
+    stored = _read_json(run / "publish_verdict.json")
+    if stored:
+        return stored
+    blockers = _stage_blockers(run)
+    return {
+        "topic": _topic(run),
+        "run_dir": str(run.relative_to(_ROOT)) if run.is_relative_to(_ROOT) else str(run),
+        "decision": "not_ready",
+        "publish_tier": "UNBUILT",
+        "blockers": blockers,
+        "stage": blockers[0] if blockers else "not_ready",
+    }
 
 
 def _normalised_decision(row: dict[str, Any]) -> str:
@@ -143,6 +182,8 @@ def build_queue(
             continue
         if seed_keys and not (_run_scope_keys(run, row) & seed_keys):
             continue
+        if run_domain:
+            row = row | {"domain": load_domain_profile(run_domain).as_metadata()}
         rows.append(row)
     rank = {"TIER_1": 0, "TIER_2": 1, "TIER_3": 2}
     rows.sort(key=lambda r: (
@@ -160,6 +201,9 @@ def build_queue(
         "curation_needed": [
             r for r in rows if _normalised_decision(r) == "curation_needed"
         ],
+        "not_ready": [
+            r for r in rows if _normalised_decision(r) == "not_ready"
+        ],
     }
 
 
@@ -170,12 +214,13 @@ def main() -> int:
     parser.add_argument("--output", type=Path, default=_RUNS / "_publish_queue.json")
     args = parser.parse_args()
     queue = build_queue(include_archive=not args.current_only, domain=args.domain)
-    args.output.write_text(json.dumps(queue, indent=2), encoding="utf-8")
+    _write_json(args.output, queue)
     print(
         "[publish-queue] "
         f"ready={len(queue['ready_to_publish'])} "
         f"repair={len(queue['agent_repair_needed'])} "
-        f"curation={len(queue['curation_needed'])} -> {args.output}"
+        f"curation={len(queue['curation_needed'])} "
+        f"not_ready={len(queue['not_ready'])} -> {args.output}"
     )
     return 0
 

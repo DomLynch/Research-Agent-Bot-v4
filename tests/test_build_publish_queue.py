@@ -273,3 +273,23 @@ def test_build_queue_domain_filter_excludes_untagged_runs_for_ai(
     out = queue.build_queue(include_archive=True, domain="ai_research")
 
     assert out["ready_to_publish"] == []
+
+
+def test_build_queue_reports_pre_memo_stage_failures(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    runs = tmp_path / "runs"
+    run = runs / "ai_agents-evidence-2026-02-01T00-00-00Z"
+    run.mkdir(parents=True)
+    run.joinpath("MANIFEST.json").write_text(json.dumps({
+        "domain": {"slug": "ai_research"},
+    }), encoding="utf-8")
+    monkeypatch.setattr(queue, "_RUNS", runs)
+
+    out = queue.build_queue(include_archive=True, domain="ai_research")
+
+    assert out["ready_to_publish"] == []
+    assert [row["topic"] for row in out["not_ready"]] == ["ai_agents"]
+    assert out["not_ready"][0]["domain"]["slug"] == "ai_research"
+    assert "missing_alpha_memo" in out["not_ready"][0]["blockers"]

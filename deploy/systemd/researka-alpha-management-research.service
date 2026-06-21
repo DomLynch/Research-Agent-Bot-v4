@@ -8,5 +8,4 @@ Type=oneshot
 WorkingDirectory=/root/Research-Agent-Bot-v4
 EnvironmentFile=/root/Research-Agent-Bot-v4/.env
 ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/build_business_alpha_candidate.py --domain management_research --topic management_practices_productivity
-SuccessExitStatus=3
 TimeoutStartSec=2700

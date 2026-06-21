@@ -15,6 +15,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from agent.domain_profile import domain_slug
 from agent.novelty_gate import NoveltyConfig, novelty_blockers, novelty_config_from_dict
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -135,7 +136,31 @@ def _json(path: Path, default: Any) -> Any:
         return default
 
 
-def _cfg() -> dict[str, Any]:
+def _domain_slug(run_dir: Path) -> str:
+    for name in ("MANIFEST.json", "search_trace.json"):
+        data = _json(run_dir / name, {})
+        domain = data.get("domain") if isinstance(data, dict) else {}
+        slug = domain_slug(domain)
+        if slug:
+            return slug
+    return ""
+
+
+def _feed_scope_markers(data: dict[str, Any], domain: str) -> tuple[str, ...]:
+    feed = data.get("feed_scope") if isinstance(data, dict) else {}
+    if not isinstance(feed, dict):
+        return ()
+    if domain:
+        domains = feed.get("domains")
+        domain_feed = domains.get(domain) if isinstance(domains, dict) else {}
+        raw_values = domain_feed.get("off_scope_markers") if isinstance(domain_feed, dict) else []
+    else:
+        raw_values = feed.get("off_scope_markers", [])
+    values = raw_values if isinstance(raw_values, list) else []
+    return tuple(str(x).lower() for x in values)
+
+
+def _cfg(domain: str = "") -> dict[str, Any]:
     try:
         data = tomllib.loads(_CFG_PATH.read_text(encoding="utf-8"))
     except (OSError, tomllib.TOMLDecodeError):
@@ -180,10 +205,7 @@ def _cfg() -> dict[str, Any]:
             (thresholds or {}).get("broad_d_bad_share", 0.60)
         ),
         "broad_min_sources": int((thresholds or {}).get("broad_min_sources", 3)),
-        "off_scope_markers": tuple(
-            str(x).lower()
-            for x in (data.get("feed_scope") or {}).get("off_scope_markers", [])
-        ),
+        "off_scope_markers": _feed_scope_markers(data, domain),
     }
 
 
@@ -986,7 +1008,7 @@ def _off_scope(
 
 def publish_verdict(run_dir: Path) -> dict[str, Any]:
     md = _read(run_dir / "alpha_memo.md")
-    cfg = _cfg()
+    cfg = _cfg(_domain_slug(run_dir))
     topic = run_dir.name.split("-evidence-", 1)[0]
     label = _field(md, "Confidence").strip("`") or "unknown"
     score_raw = _field(md, "Alpha score").split("/", 1)[0]
