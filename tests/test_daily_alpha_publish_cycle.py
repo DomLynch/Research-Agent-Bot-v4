@@ -5088,6 +5088,38 @@ def test_exhausted_duplicate_queue_prioritizes_fresh_parent_topic(
     assert calls[-1]["priority_topics"] == ["metformin"]
 
 
+def test_child_topic_refresh_stays_inside_active_domain() -> None:
+    wrong_domain = _verdict("hormone_optimization") | {
+        "decision": "curation_needed",
+        "domain": {"slug": "longevity_research"},
+        "subtopic_recommendations": {
+            "recommended": True,
+            "reason": "source_coherent_child_cluster",
+            "clusters": [{
+                "label": "hrt hormonal",
+                "member_fact_ids": ["1", "2", "3", "4", "5"],
+            }],
+        },
+    }
+    right_domain = _verdict("model_eval") | {
+        "decision": "curation_needed",
+        "domain": {"slug": "ai_research"},
+        "subtopic_recommendations": {
+            "recommended": True,
+            "reason": "source_coherent_child_cluster",
+            "clusters": [{
+                "label": "benchmark methods",
+                "member_fact_ids": ["6", "7", "8", "9", "10"],
+            }],
+        },
+    }
+    queue = {"agent_repair_needed": [], "curation_needed": [wrong_domain, right_domain]}
+
+    assert daily._child_topics_from_queue(
+        queue, set(), limit=5, domain="ai_research",
+    ) == ["model_eval_benchmark_methods"]
+
+
 def test_source_rich_review_row_submits_without_human_exhaustion(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

@@ -3694,7 +3694,7 @@ def _refresh_candidate_batch(
 
 
 def _child_topics_from_queue(
-    queue: Json, excluded_topics: set[str], *, limit: int,
+    queue: Json, excluded_topics: set[str], *, limit: int, domain: str | None = None,
 ) -> list[str]:
     candidates: list[tuple[tuple[int, int, int, str], str]] = []
     seen = set(excluded_topics)
@@ -3702,6 +3702,8 @@ def _child_topics_from_queue(
     for bucket_order, bucket_name in enumerate(("agent_repair_needed", "curation_needed")):
         for verdict in queue.get(bucket_name) or []:
             if not isinstance(verdict, dict):
+                continue
+            if not _same_domain(_row_domain(verdict), domain):
                 continue
             parent = str(verdict.get("topic") or "").strip()
             rec = verdict.get("subtopic_recommendations")
@@ -4381,7 +4383,7 @@ def run_cycle(
                 force_refresh = True
                 continue
             priority_children = _child_topics_from_queue(
-                current_queue, blocked_topics, limit=refresh_top,
+                current_queue, blocked_topics, limit=refresh_top, domain=profile.slug,
             )
             if refresh_candidates and priority_children and batch < search_batch_limit:
                 ledger["refresh_child_topics"] = priority_children
