@@ -687,7 +687,7 @@ def main() -> int:
             stopped_on_ready = True
             print("[cycle] stop-on-ready: publishable candidate created")
             break
-        if args.stop_on_ready:
+        if args.stop_on_ready and not args.priority_topic:
             depth = int(c.get("child_depth") or 0)
             if depth >= _MAX_CHILD_RERUN_DEPTH:
                 continue
