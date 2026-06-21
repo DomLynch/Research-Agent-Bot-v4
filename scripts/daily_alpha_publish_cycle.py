@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import fcntl
 import hashlib
 import json
 import os
@@ -37,6 +36,7 @@ from agent.llm_client import call_writer
 from agent.publish_tier import publish_verdict
 from agent.settings import load_settings
 from agent.topic_discovery import cap_topic_slug
+from scripts import alpha_publish_io as publish_io
 from scripts import alpha_publish_status as publish_status
 
 _RUNS = _ROOT / "runs"
@@ -287,47 +287,19 @@ _REVISION_NARROWING_TERMS = (
     "repetition", "separate", "surprising section",
 )
 def _json(path: Path, default: Any) -> Any:
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return default
+    return publish_io.read_json(path, default)
 
 
 def _write_json(path: Path, payload: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    lock_path = path.with_name(path.name + ".lock")
-    tmp_path = path.with_name(path.name + ".tmp")
-    with lock_path.open("w", encoding="utf-8") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
-        tmp_path.write_text(
-            json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8",
-        )
-        tmp_path.replace(path)
+    publish_io.write_json(path, payload)
 
 
 def _update_json_list(path: Path, mutate: Callable[[list[Any]], bool]) -> bool:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    lock_path = path.with_name(path.name + ".lock")
-    tmp_path = path.with_name(path.name + ".tmp")
-    with lock_path.open("w", encoding="utf-8") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            data = []
-        rows = data if isinstance(data, list) else []
-        changed = mutate(rows)
-        if changed:
-            tmp_path.write_text(
-                json.dumps(rows, indent=2, sort_keys=True), encoding="utf-8",
-            )
-            tmp_path.replace(path)
-        return changed
+    return publish_io.update_json_list(path, mutate)
 
 
 def _write_ledger(path: Path, ledger: Json) -> None:
-    ledger["publish_summary"] = _publish_summary(ledger)
-    _write_json(path, ledger)
+    publish_io.write_ledger(path, ledger)
 
 
 def _env_truthy(name: str) -> bool:
