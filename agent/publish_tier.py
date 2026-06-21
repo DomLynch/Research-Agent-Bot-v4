@@ -1155,35 +1155,46 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         bool(llm_cluster.get("homogeneous", True))
         if isinstance(llm_cluster, dict) else True
     )
-    # Heterogeneous-but-source-rich -> evidence map: when M3 could not find a
-    # coherent single claim (the cluster spans diseases/outcomes) but the topic has
-    # the source breadth for a landscape, publish it as a map (the panel accepts
-    # maps) instead of a single-claim memo (which it rejects for incoherence). The
-    # map's own >=10-citation floor still applies at submit.
+    # Heterogeneous source-rich clusters route to maps; the map citation floor
+    # still applies.
     cluster_map_route = (
         llm_cluster_sources >= min_cluster_source_papers
         and not cluster_homogeneous
         and landscape_a_core_sources >= min_direct_source_papers
     )
-    # Evidence-map path: a source-rich multi-finding synthesis publishes when it
-    # has >= the source floor of distinct A_core papers and clears every integrity
-    # blocker; only single-claim coherence blockers are waived. A heterogeneous
-    # cluster routes here even without the writer's evidence_map label.
+    evidence_map_min_sources = max(
+        min_direct_source_papers,
+        _publication_int("evidence_map_min_citations", 10, domain),
+    )
+    landscape_stratified = _evidence_map_stratified(
+        landscape_a_core_ids, facts,
+        cfg["generic_tokens"] | cfg["cluster_stopwords"],
+    )
+    source_rich_landscape_route = (
+        label == "no_signal"
+        and landscape_a_core_sources >= evidence_map_min_sources
+        and landscape_stratified
+    )
+    evidence_map_waived_blockers = set(_EVIDENCE_MAP_WAIVED_BLOCKERS)
+    if source_rich_landscape_route:
+        evidence_map_waived_blockers.add("blocked_label:no_signal")
+    # Evidence-map path: source-rich multi-finding syntheses publish only after
+    # clearing integrity blockers; single-claim coherence blockers may be waived.
     evidence_map_ready = (
         bool(bound_ids)
-        and not (set(blockers) - _EVIDENCE_MAP_WAIVED_BLOCKERS)
+        and not (set(blockers) - evidence_map_waived_blockers)
         # Non-waived: a map must be a real landscape (>=2 distinct strata), or the
         # panel rejects it as a constant-population fake landscape — the reject that
         # a heterogeneous bundle routed here would otherwise hit again.
-        and _evidence_map_stratified(
-            landscape_a_core_ids, facts,
-            cfg["generic_tokens"] | cfg["cluster_stopwords"],
-        )
+        and landscape_stratified
         and (
             (label == "evidence_map" and a_core_source_papers >= min_direct_source_papers)
             # The cluster-routed map cites the full landscape, so it clears the
             # floor on the landscape count even when the memo's cluster is narrow.
             or (cluster_map_route and landscape_a_core_sources >= min_direct_source_papers)
+            # Broad parent topics can legitimately have no single alpha signal;
+            # publish only as a source-rich map, never by forcing one claim.
+            or source_rich_landscape_route
         )
     )
     # Trust an M3-validated HOMOGENEOUS cluster as a single claim: same population,

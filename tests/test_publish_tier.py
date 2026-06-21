@@ -771,6 +771,66 @@ def test_heterogeneous_cluster_routes_to_evidence_map(tmp_path: Path) -> None:
     assert verdict["surface_type"] == "evidence_map"
 
 
+def test_source_rich_no_signal_landscape_routes_to_evidence_map(tmp_path: Path) -> None:
+    """A broad parent can have no single publishable claim but still be a valid
+    source-rich evidence map. This does not lower quality: it requires the map
+    citation floor and a stratified A_core landscape."""
+    n = 12
+    run = _run(
+        tmp_path,
+        label="no_signal",
+        score=0,
+        lanes=tuple("A_core" for _ in range(n)),
+        dois=tuple(f"10.map/{i}" for i in range(n)),
+        titles=tuple(f"Storage threshold finding {i}" for i in range(n)),
+    )
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    populations = (
+        "older adults", "diabetic cohorts", "frailty cohorts",
+        "cardiometabolic patients",
+    )
+    endpoints = ("mortality", "glycemic control", "physical function")
+    for i, fact in enumerate(facts):
+        fact["population"] = populations[i % len(populations)]
+        fact["endpoint"] = endpoints[i % len(endpoints)]
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "ready_to_publish"
+    assert verdict["surface_type"] == "evidence_map"
+    assert verdict["blockers"] == []
+    assert "blocked_label:no_signal" in verdict["waived_blockers"]
+
+
+def test_no_signal_landscape_below_map_floor_stays_blocked(tmp_path: Path) -> None:
+    n = 8
+    run = _run(
+        tmp_path,
+        label="no_signal",
+        score=0,
+        lanes=tuple("A_core" for _ in range(n)),
+        dois=tuple(f"10.map/{i}" for i in range(n)),
+        titles=tuple(f"Storage threshold finding {i}" for i in range(n)),
+    )
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    populations = (
+        "older adults", "diabetic cohorts", "frailty cohorts",
+        "cardiometabolic patients",
+    )
+    endpoints = ("mortality", "glycemic control", "physical function")
+    for i, fact in enumerate(facts):
+        fact["population"] = populations[i % len(populations)]
+        fact["endpoint"] = endpoints[i % len(endpoints)]
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "curation_needed"
+    assert verdict["surface_type"] != "evidence_map"
+    assert "blocked_label:no_signal" in verdict["blockers"]
+
+
 def test_unstratified_landscape_is_not_a_publishable_map(tmp_path: Path) -> None:
     """A heterogeneous cluster whose findings all share ONE population (and no
     other varying axis) is a fake landscape — the panel rejects it as a
