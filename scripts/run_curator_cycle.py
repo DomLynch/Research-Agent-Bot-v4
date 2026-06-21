@@ -132,11 +132,14 @@ def _discovery_top_for_plan(
     return max(requested + max(0, excluded_count), _STOP_ON_READY_DISCOVERY_FLOOR)
 
 
-def _priority_ranked_topics(topics: list[str], *, domain: str = "longevity") -> list[dict[str, Any]]:
-    if not topics:
-        return []
-    discovery_counts: dict[str, tuple[int, int]] = {}
-    for row in _read_discovery_top(_RUNS / "_topics_discovery", domain=domain):
+def _same_domain(left: str, right: str) -> bool:
+    return left.removesuffix("_research") == right.removesuffix("_research")
+
+
+def _add_discovery_counts(
+    rows: list[dict[str, Any]], counts: dict[str, tuple[int, int]],
+) -> None:
+    for row in rows:
         topic = str(row.get("topic") or "").strip()
         if not topic:
             continue
@@ -147,8 +150,47 @@ def _priority_ranked_topics(topics: list[str], *, domain: str = "longevity") -> 
             )
         except (TypeError, ValueError):
             continue
-        discovery_counts[topic] = pair
-        discovery_counts[cap_topic_slug(topic)] = pair
+        counts.setdefault(topic, pair)
+        counts.setdefault(cap_topic_slug(topic), pair)
+
+
+def _priority_discovery_counts(
+    topics: list[str], *, domain: str,
+) -> dict[str, tuple[int, int]]:
+    wanted = set(topics) | {cap_topic_slug(topic) for topic in topics}
+    counts: dict[str, tuple[int, int]] = {}
+    _add_discovery_counts(
+        _read_discovery_top(_RUNS / "_topics_discovery", domain=domain), counts,
+    )
+    if wanted <= set(counts):
+        return counts
+    paths = sorted(
+        (_RUNS / "_topics_discovery").glob("*.json"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    for path in paths[:20]:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        record_domain = domain_slug(data.get("domain"))
+        if record_domain and not _same_domain(record_domain, domain):
+            continue
+        rows = data.get("all") or data.get("top") or []
+        if isinstance(rows, list):
+            _add_discovery_counts([row for row in rows if isinstance(row, dict)], counts)
+        if wanted <= set(counts):
+            break
+    return counts
+
+
+def _priority_ranked_topics(topics: list[str], *, domain: str = "longevity") -> list[dict[str, Any]]:
+    if not topics:
+        return []
+    discovery_counts = _priority_discovery_counts(topics, domain=domain)
     try:
         settings = load_settings()
         with httpx.Client() as client:

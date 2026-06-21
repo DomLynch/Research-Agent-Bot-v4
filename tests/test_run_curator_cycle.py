@@ -1164,6 +1164,62 @@ def test_priority_ranked_topics_preserves_discovery_source_counts(
     assert calls == ["uncached child"]
 
 
+def test_priority_ranked_topics_scans_recent_domain_discovery_snapshots(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    class DummyClient:
+        def __enter__(self) -> DummyClient:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+    runs = tmp_path / "runs"
+    discovery = runs / "_topics_discovery"
+    discovery.mkdir(parents=True)
+    old = discovery / "2026-06-21T19-29-17Z.json"
+    old.write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{
+            "topic": "source rich parent",
+            "fact_source_count": 17,
+            "paper_count": 9,
+        }],
+    }), encoding="utf-8")
+    new = discovery / "2026-06-21T19-31-38Z.json"
+    new.write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{
+            "topic": "thin latest",
+            "fact_source_count": 2,
+            "paper_count": 1,
+        }],
+    }), encoding="utf-8")
+
+    calls: list[str] = []
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
+    monkeypatch.setattr(run_curator_cycle, "load_settings", lambda: object())
+    monkeypatch.setattr(run_curator_cycle.httpx, "Client", DummyClient)
+
+    def fake_count(topic: str, *, client: Any, settings: Any, domain: str) -> int:
+        calls.append(topic)
+        return 0
+
+    monkeypatch.setattr(run_curator_cycle, "_fetch_topic_fact_source_count", fake_count)
+
+    ranked = run_curator_cycle._priority_ranked_topics([
+        "source rich parent",
+    ], domain="longevity_research")
+
+    assert [
+        (row["topic"], row["fact_source_count"], row["paper_count"])
+        for row in ranked
+    ] == [("source rich parent", 17, 9)]
+    assert calls == []
+
+
 def test_underfloor_priority_repair_topic_is_not_built(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
