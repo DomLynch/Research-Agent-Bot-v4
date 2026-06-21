@@ -4309,6 +4309,34 @@ def run_cycle(
             ledger["refresh_batches"].append(refresh)
             ledger["refresh_candidates"] = refresh
             if not refresh["ok"]:
+                if (
+                    _refresh_timeout_note(refresh)
+                    and refresh.get("priority_topics")
+                    and batch < search_batch_limit
+                ):
+                    timed_out_topics = [
+                        str(t) for t in (
+                            refresh.get("ran_topics") or refresh.get("priority_topics") or []
+                        ) if str(t)
+                    ]
+                    blocked_topics.update(timed_out_topics)
+                    next_parent_topics = _fresh_parent_topics_from_discovery(
+                        runs_root,
+                        profile.slug,
+                        blocked_topics,
+                        limit=1,
+                        min_sources=max(min_submit_sources, min_direct_submit_sources),
+                    )
+                    if next_parent_topics:
+                        ledger.setdefault("refresh_timeout_deferrals", []).append({
+                            "batch": batch,
+                            "timed_out_topics": timed_out_topics,
+                            "next_priority_topics": next_parent_topics,
+                            "note": str(refresh.get("note") or "")[:240],
+                        })
+                        priority_refresh_topics = next_parent_topics
+                        force_refresh = True
+                        continue
                 if refresh.get("warm_backlog") or _refresh_timeout_note(refresh):
                     ledger["refresh_early_exit"] = {
                         "batch": batch,

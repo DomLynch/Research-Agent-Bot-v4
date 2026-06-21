@@ -5146,6 +5146,83 @@ def test_exhausted_duplicate_queue_prioritizes_fresh_parent_topic(
     assert calls[-1]["priority_topics"] == ["metformin"]
 
 
+def test_timed_out_priority_parent_tries_next_fresh_parent_topic(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    duplicate = _verdict("SGLT2 inhibitors")
+    fresh = _verdict("acarbose")
+    _memo_with_source_receipts(root, duplicate, 5)
+    _memo_with_source_receipts(root, fresh, 5)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
+        {"fingerprint": daily.memo_fingerprint(duplicate), "topic": "SGLT2 inhibitors"},
+    ])
+    daily._write_json(root / "_topics_discovery" / "latest.json", {
+        "domain": {"slug": "longevity"},
+        "all": [
+            {
+                "topic": "resveratrol supplementation",
+                "fact_source_count": 22,
+                "paper_count": 10,
+                "velocity_score": 100,
+            },
+            {
+                "topic": "acarbose",
+                "fact_source_count": 17,
+                "paper_count": 16,
+                "velocity_score": 90,
+            },
+        ],
+    })
+    calls: list[dict[str, Any]] = []
+    queues = iter([_queue(duplicate), _queue(duplicate, fresh)])
+
+    def refresh(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+        calls.append(kwargs)
+        priorities = list(kwargs.get("priority_topics") or [])
+        if priorities == ["resveratrol supplementation"]:
+            return {
+                "ok": False,
+                "note": "TimeoutExpired: resveratrol timed out after 1200 seconds",
+                "ran_topics": priorities,
+                "priority_topics": priorities,
+                "top": 1,
+            }
+        return {
+            "ok": True,
+            "note": "ok",
+            "ran_topics": priorities,
+            "priority_topics": priorities,
+            "top": 1,
+        }
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", refresh)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        refresh_candidates=True,
+        max_refresh_batches=3,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+        queue_builder=lambda _root, _include_archive: next(queues),
+    )
+
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["submitted_topic"] == "acarbose"
+    assert ledger["refresh_timeout_deferrals"] == [{
+        "batch": 2,
+        "timed_out_topics": ["resveratrol supplementation"],
+        "next_priority_topics": ["acarbose"],
+        "note": "TimeoutExpired: resveratrol timed out after 1200 seconds",
+    }]
+    assert [call["priority_topics"] for call in calls if call.get("priority_topics")] == [
+        ["resveratrol supplementation"], ["acarbose"],
+    ]
+
+
 def test_child_topic_refresh_stays_inside_active_domain() -> None:
     wrong_domain = _verdict("hormone_optimization") | {
         "decision": "curation_needed",
