@@ -1,10 +1,3 @@
-"""Deterministic publish-tier gate for alpha memos.
-
-The gate is structural: it reads the rendered alpha memo plus existing
-run receipts and decides whether a memo is ready to publish, needs
-agent repair, or should go back to curation. No topic-specific
-rules live here.
-"""
 from __future__ import annotations
 
 import json
@@ -25,22 +18,11 @@ _COUNTER_MIN_CLAIM_FIT = 0.2
 _BLOCKED_LABELS = frozenset({
     "curation_needed", "evidence_binding_failed", "no_signal", "discard",
 })
-# When the lead is an M3-validated coherent cluster (claim_cluster.json), the
-# writer has already confirmed the receipts agree on one outcome/direction. The
-# token-based gate cannot see that differently-worded papers make the same
-# claim, so it raises these single-claim-coherence blockers on a genuinely
-# coherent bundle — they are waived for a cluster that clears the source floor.
-# Integrity blockers (cross_domain_forced, feed_scope_mismatch, no_bound_receipts,
-# retrieval_artifact_claim, blocked_label) are NOT here and still block.
 _LLM_CLUSTER_WAIVED_BLOCKERS = frozenset({
     "claim_alignment_partial", "source_dispersion", "receipt_shape_mismatch",
     "metric_type_mismatch", "weak_counter_consensus_tension", "low_alpha_score",
     "source_floor_below_min", "direct_source_floor_below_min",
 })
-# An evidence-map memo is an honest multi-finding synthesis, so the single-claim
-# coherence blockers below do not apply to it — but every integrity blocker
-# (cross_domain_forced, feed_scope_mismatch, no_bound_receipts,
-# retrieval_artifact_claim, off-scope) still must be clear to publish one.
 _EVIDENCE_MAP_WAIVED_BLOCKERS = frozenset({
     "source_dispersion", "weak_counter_consensus_tension", "low_alpha_score",
     "claim_alignment_partial", "source_floor_below_min",
@@ -74,12 +56,6 @@ _SHAPE_GENERIC_TOKENS = frozenset({
     "datasets", "model", "models", "system", "systems", "protocol",
     "protocols", "baseline", "baselines", "study", "studies", "shot",
 })
-# Closed-class English function words (be-verbs, auxiliaries, prepositions,
-# conjunctions, determiners, pronouns). Each is >=3 chars, so it survives the
-# tokenizer length filter, yet none is ever a meaningful topic/shape/label
-# token. Left unfiltered they surface as cluster labels and become junk child
-# topics that bind zero receipts (the live "..._was" topics). Universal — no
-# domain literals; content words (loss, body, dose) are deliberately excluded.
 _FUNCTION_WORDS = frozenset({
     "was", "were", "been", "being", "are", "has", "had", "have", "having",
     "and", "the", "for", "with", "without", "within", "from", "into", "onto",
@@ -418,12 +394,6 @@ def _evidence_map_stratified(
     facts: dict[str, dict[str, Any]],
     generic: frozenset[str],
 ) -> bool:
-    """An evidence map is a landscape, not one claim restated N times: its findings
-    must vary on at least one axis (population, endpoint, or comparator). The
-    reviewer rejects a 'map' whose population column is constant for 35/40 rows as
-    a fake landscape. Universal — canonicalises generic fact fields, no domain
-    literals. Required (non-waived) for the map lane so a heterogeneous bundle
-    routed here actually publishes instead of rejecting again."""
     items = [facts[fid] for fid in ids if fid in facts]
     if len(items) < 2:
         return False

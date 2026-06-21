@@ -1,22 +1,3 @@
-"""Deterministic gates that police LLM claims.
-
-Pure regex + topic-pack lookups — no LLM, no extra agents. Each gate
-returns a list of violations; empty means PASS. The runner decides whether
-to report and abort, or feed violations back to the writer for retry.
-
-Gates:
-  1. evidence_slot          — every empirical sentence has a structured slot
-  2. novelty_claim          — banned phrases that erase prior literature
-  3. title_claim            — title must not assert a moderator conclusion
-  4. citation_role          — every [CIT:key|role]; role in allowed list; anchor
-                              keys carry their canonical role
-  5. scope_consistency      — body must not use topic-pack discouraged terms
-  6. anchor_role_in_prose   — prose calling 'X by Surname' must match the
-                              anchor role for that surname
-
-Topic-pack-driven gates (4-6) are no-ops when no pack is supplied — keeps
-the basic gates topic-agnostic.
-"""
 from __future__ import annotations
 
 import re
@@ -35,15 +16,7 @@ class GateViolation:
         return asdict(self)
 
 
-# Generic slot pattern: [ALL_CAPS_TOKEN], optionally with :value or =value.
 _SLOT_RE = re.compile(r"\[[A-Z][A-Z0-9_]*(?:\s*[:=][^\]]*)?\]")
-
-
-# --- Evidence-slot triggers ------------------------------------------------
-# Universal core: terms domain-agnostic across biomedical, climate, materials,
-# economics, social science. Topic-pack `empirical_triggers` augments this
-# core with domain-specific outcome nouns / direction verbs / study subjects
-# (see topic_packs/<topic>.toml for the per-topic extension shape).
 
 _UNIVERSAL_OUTCOME_NOUNS = (
     "effect|gain|reduction|increase|signal|response|benefit|impact|trend|"

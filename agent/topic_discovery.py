@@ -1,21 +1,3 @@
-"""Sprint 63 — Autonomous topic-discovery loop.
-
-Closes the curator role: v4 stops needing hand-picked topics. For
-each seed topic in topic_packs/discovery_seeds.toml the discovery
-probes POST /api/v1/papers/topic, computes a per-paper velocity
-score, aggregates per topic, and ranks. The top candidates feed the
-operator queue that drives subsequent build_topic_evidence_run runs.
-
-Velocity formula (universal, no domain literals):
-    paper_score = fwci * log(1 + cited_by_count) * recency_weight
-                  * (quality_score / 100)
-    if a paper anchors M >= 3 topics' top-K, contribution /= sqrt(M)
-    topic_score = mean(top-K paper_score for that topic)
-
-recency_weight = max(0.2, 1 - (current_year - publication_year) / 10)
-
-Tolerant: HTTP / JSON errors return empty list. Never raises.
-"""
 from __future__ import annotations
 
 import datetime as dt
@@ -41,21 +23,10 @@ from agent.topic_synonyms import expand_topic_queries
 
 _SEEDS_TOML = (Path(__file__).resolve().parent.parent
                / "topic_packs" / "discovery_seeds.toml")
-# Per-topic A_core source-count cache. The probe is concurrent and
-# network-bound; a timed-out query is indistinguishable from genuine
-# scarcity (both yield 0), so under load a rich topic randomly drops
-# to 0 and gets mis-ranked as worthless. The cache persists the last
-# SUCCESSFUL count per topic so a transient failure never overwrites a
-# known-good value, and only stale/missing topics are re-probed (which
-# also slashes per-cycle DB load). Universal — no domain literals.
 _SUPPLY_CACHE_PATH = (Path(__file__).resolve().parent.parent
                       / "runs" / "_topic_supply_cache.json")
 _PUBLICATION_TOML = (Path(__file__).resolve().parent.parent
                      / "topic_packs" / "publication.toml")
-# Bumped 11 -> 12 to invalidate supply counts probed while the Tier-2 domain bug
-# (database slug passed to a 422-only enum) made every non-cached topic read 0
-# sources. Stale v11 entries are ignored, forcing a live re-probe through the
-# fixed tier2_domain() mapping so source-rich seeds (metformin et al.) resurface.
 _SUPPLY_CACHE_VERSION = 12
 _PUBLISHABLE_SOURCE_FLOOR = 5
 _NONPUBLISHABLE_SUPPLY_BLOCKERS = frozenset({
@@ -66,22 +37,12 @@ _NONPUBLISHABLE_SUPPLY_BLOCKERS = frozenset({
 })
 _PROBE_INCONCLUSIVE = -1  # all queries failed (timeout/error), not a real 0
 _DERIVED_TOPIC_LIMIT = 5_000
-# All configured seeds are probed; this caps extra velocity/derived topics on
-# the latency-sensitive publish path. Full-pool probing is an explicit backlog
-# warming mode, not something the 2-hour submit cycle should wait on.
 _FACT_PROBE_TOPICS = 20
 _FACT_PROBE_TIMEOUT_SECONDS = 8.0
 _FACT_PROBE_BUDGET_SECONDS = 24.0
 _EXACT_FACT_PROBE_LIMIT = 500
 _FACT_PROBE_SECOND_WAVE_BONUS = 4
 _PAPER_FETCH_WORKERS = 8
-# Concurrent probe workers, capped to what the shared Researka DB sustains.
-# Measured capacity: at <=4 concurrent the facts endpoint answers in <8s (the
-# per-query timeout) and every probe succeeds; at 6-8 concurrent its latency
-# climbs to 12s+ so queries exceed the timeout, return -1, and under sustained
-# load it 504s — which starved discovery (all topics looked like 0 sources)
-# and stopped the supply cache from ever warming. 4 keeps probes succeeding so
-# the cache fills and steady-state load collapses to near zero.
 _FACT_PROBE_WORKERS = 4
 _TITLE_WORD = re.compile(r"[a-z][a-z0-9]+")
 _TITLE_STOPWORDS = frozenset({
@@ -279,7 +240,6 @@ def _topic_root(topic: str) -> str:
 
 
 def _topic_atoms(topic: str, *, limit: int = 1) -> tuple[str, ...]:
-    """Distinctive slug atoms for unregistered compound topics."""
     out: dict[str, None] = {}
     for word in _title_tokens(topic.replace("_", " ")):
         if len(word) >= 6 or any(ch.isdigit() for ch in word):
@@ -293,12 +253,6 @@ def _paper_title_facets(
     topic: str, papers: list[dict[str, Any]], current_year: int, *,
     limit: int = 12,
 ) -> tuple[str, ...]:
-    """Data-derived query facets from the topic's own retrieved papers.
-
-    This replaces static domain slice terms. It is universal: a physics topic
-    contributes physics title phrases, a policy topic contributes policy title
-    phrases, and biomedical topics contribute biomedical title phrases.
-    """
     root_words = set(_topic_root(topic).split())
     scores: dict[str, float] = {}
     ranked = sorted(papers, key=lambda p: _paper_score(p, current_year), reverse=True)
@@ -1133,12 +1087,6 @@ def _derived_title_supported(
     topic: str, papers: list[dict[str, Any]], current_year: int, *,
     top_k: int = 5,
 ) -> bool:
-    """Keep derived title candidates only when returned papers still fit them.
-
-    Derived topics come from title n-grams, so their own paper-search result
-    should preserve most of those title tokens. This rejects generic-fragment
-    matches without any biomedical/domain literals.
-    """
     topic_tokens = set(_title_tokens(topic.replace("_", " ")))
     if not topic_tokens or not papers:
         return False
@@ -1158,11 +1106,6 @@ def _derived_title_supported(
 def _derived_cycle_topics(
     topics: list[str], *, limit: int, refresh_low_source_counts: bool,
 ) -> list[str]:
-    """Pick derived topics to fetch/probe this cycle.
-
-    Keep cached source-rich topics visible while reserving part of the bounded
-    window to advance through uncached/stale candidates.
-    """
     if limit <= 0:
         return []
     cache = _load_supply_cache()
@@ -1203,13 +1146,6 @@ def _anchorage_counts(
     papers_by_topic: dict[str, list[dict[str, Any]]],
     current_year: int, *, top_k: int = 5,
 ) -> dict[str, int]:
-    """Sprint 70 — count how many topics include each paper in their
-    top-K driver papers. Used to dampen cross-domain anchors: when one
-    broad review/guideline (e.g. 2019 ACC/AHA cardiovascular paper)
-    sits in the top-K of multiple unrelated topics, its contribution
-    to each topic's velocity is downweighted by 1/sqrt(M) where M is
-    the number of topics it anchors. Universal — structural signal
-    only, no domain literals."""
     counts: dict[str, int] = {}
     for papers in papers_by_topic.values():
         if not papers:
@@ -1231,13 +1167,6 @@ def _score_topic(
     fact_source_count: int = 0,
     anchorage: dict[str, int] | None = None,
 ) -> TopicCandidate:
-    """Aggregate per-paper scores; pick the strongest paper as anchor.
-
-    When `anchorage` is supplied, dampen each paper's contribution by
-    1/sqrt(M) when it anchors M ≥ 3 other topics' top-K. Keeps
-    single-topic specificity intact (M < 3 = no dampening) while
-    penalising cross-domain reviews / guidelines.
-    """
     if not papers:
         return TopicCandidate(
             topic=topic, paper_count=0, fact_source_count=fact_source_count,
@@ -1348,20 +1277,17 @@ _INTERVENTION_MARKERS = (
 
 
 def _use_topic_group_discovery() -> bool:
-    """Env kill-switch: TOPIC_GROUPS_DISCOVERY=0 reverts to legacy discovery."""
     val = os.environ.get("TOPIC_GROUPS_DISCOVERY", "1").strip().lower()
     return val not in {"0", "false", "no", "off"}
 
 
 def _specificity_rank_enabled() -> bool:
-    """Env kill-switch: TOPIC_SPECIFICITY_RANK=0 reverts to rarity-only ranking."""
     return os.environ.get(
         "TOPIC_SPECIFICITY_RANK", "1"
     ).strip().lower() not in {"0", "false", "no", "off"}
 
 
 def _topic_specificity_key(topic: str, papers: int, exact_facts: int) -> tuple[int, float]:
-    """Higher sorts first: intervention-marked topics, then evidence density."""
     marked = 1 if any(m in topic.casefold() for m in _INTERVENTION_MARKERS) else 0
     density = exact_facts / papers if papers else 0.0
     return (marked, density)
@@ -1370,15 +1296,6 @@ def _topic_specificity_key(topic: str, papers: int, exact_facts: int) -> tuple[i
 def _topic_group_candidates(
     *, client: httpx.Client, settings: Settings,
 ) -> tuple[TopicCandidate, ...]:
-    """Corpus-native candidates from /tier2/facts/topic-groups.
-
-    Keeps the narrow, well-supported band (MIN_PAPERS..BAND_MAX papers and
-    >= MIN_EXACT_FACTS), maps each to a TopicCandidate, and ranks ASC by
-    papers then DESC by exact_facts — rarity-first, the inverse of popularity.
-    Coherence key is topic (the intervention) + claim_type; sub_topic is often
-    "other" so it is carried for the slug but not used to gate. Returns () on
-    empty/failure so discover_topics falls back to legacy discovery.
-    """
     rows = fetch_topic_groups(
         client=client, settings=settings,
         strategy=_TOPIC_GROUP_STRATEGY,
@@ -1435,8 +1352,6 @@ def discover_topics(
     use_cached_source_rich: bool = True,
     refresh_low_source_counts: bool = False,
 ) -> tuple[TopicCandidate, ...]:
-    """Score every seed topic; return ranked tuple (highest velocity first).
-    Never raises — degrades silently on HTTP/JSON errors per topic."""
     topics = seeds if seeds is not None else load_seed_topics()
     if not topics:
         return ()

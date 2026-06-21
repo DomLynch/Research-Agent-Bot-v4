@@ -1,15 +1,3 @@
-"""Sprint 59 (Evidence Opportunities Gate) — numeric role classifier.
-
-Given a fact's numeric_value, units string, and canonical_phrase
-context, return one of:
-  effect_size | fold_change | correlation | p_value | dose |
-  concentration | duration | sample_size | regimen | unknown
-
-Universal: rules are unit-cluster + verb/preposition-driven; no
-biomedical domain literals. Used by fact_lanes to demote facts where
-the numeric is a regimen / timepoint / dose pretending to be an
-effect-size finding (e.g. '66 weeks' or '70% CR conditions').
-"""
 from __future__ import annotations
 
 import re
@@ -17,40 +5,27 @@ import tomllib
 from functools import lru_cache
 from pathlib import Path
 
-# Time units → duration (covers both treatment-length and timepoint)
 _TIME_UNITS = frozenset([
     "day", "days", "hour", "hours", "min", "minute", "minutes",
     "week", "weeks", "month", "months", "year", "years",
 ])
 
-# Dose-shape mass/quantity units
 _DOSE_UNITS = frozenset([
     "mg/kg", "mg/kg/day", "mg/kg/d", "ppm", "mg", "kg", "µg", "μg",
     "ug", "ng", "g", "mg/ml", "iu", "u",
 ])
 
-# In-vitro concentration units
 _CONC_UNITS = frozenset([
     "mm", "µm", "μm", "nm", "pm", "ng/ml", "µg/ml", "μg/ml",
     "mol/l", "mmol/l", "μmol/l", "nmol/l",
 ])
 
-# Sprint 72 — marker vocabulary lives in topic_packs/role_markers.toml.
-# Code is now pure logic; the universal-English research vocabulary
-# is data. The auditor's strictest reading of "no hardcoding" treats
-# any in-code word list as domain-leaning; moving them out closes
-# that contract. See _load_role_markers() below.
 _ROLE_MARKERS_TOML = (Path(__file__).resolve().parent.parent
                       / "topic_packs" / "role_markers.toml")
 
 
 @lru_cache(maxsize=1)
 def _load_role_markers() -> dict[str, frozenset[str]]:
-    """Load universal numeric-role markers from data. Cached per-
-    process. Degrades to empty sets on missing/malformed file
-    (classifier still works; just won't promote regimen / sample
-    size cases). No domain literals in code — see role_markers.toml
-    header for the contract."""
     try:
         data = tomllib.loads(
             _ROLE_MARKERS_TOML.read_text(encoding="utf-8"))
