@@ -3655,9 +3655,11 @@ def _refresh_candidate_batch(
 ) -> Json:
     exclusions = sorted(t for t in (excluded_topics or set()) if t)
     warm_probe_topics = _DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT
+    priorities = [str(topic).strip() for topic in priority_topics if str(topic).strip()]
+    effective_top = min(refresh_top, len(priorities)) if priorities else refresh_top
     args = [
         sys.executable, "scripts/run_curator_cycle.py",
-        "--domain", domain, "--stop-on-ready", "--top", str(refresh_top),
+        "--domain", domain, "--stop-on-ready", "--top", str(effective_top),
         "--cooldown-hours", f"{cooldown_hours:g}",
         "--no-editorial", "--no-frontier",
     ]
@@ -3669,7 +3671,6 @@ def _refresh_candidate_batch(
             "--fact-probe-topics",
             str(warm_probe_topics),
         ])
-    priorities = [str(topic).strip() for topic in priority_topics if str(topic).strip()]
     for topic in priorities:
         args.extend(["--priority-topic", topic])
     for topic in exclusions:
@@ -3678,7 +3679,7 @@ def _refresh_candidate_batch(
     result = {
         "ok": ok,
         "note": note,
-        "top": refresh_top,
+        "top": effective_top,
         "cooldown_hours": cooldown_hours,
         "excluded_topics": exclusions,
         "priority_topics": priorities,
