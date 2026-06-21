@@ -23,8 +23,47 @@ class CycleStatus(StrEnum):
     REVIEWER_REVISE = "reviewer_revise"
 
 
+class CandidateStatus(StrEnum):
+    DUPLICATE_SUBMISSION_FINGERPRINT = "duplicate_submission_fingerprint"
+    MISSING_ALPHA_MEMO = "missing_alpha_memo"
+    AGENT_REPAIR_FAILED = "agent_repair_failed"
+    MEMO_MISSING_FALSIFIER = "memo_missing_falsifier"
+    CYCLE_FAILED_SUBMISSION = "cycle_failed_submission"
+    HELD_RETRACTION_CHECK = "held_retraction_check"
+    RECEIPT_SHAPE_MISMATCH = "receipt_shape_mismatch"
+    EVIDENCE_MAP_BELOW_CITATION_FLOOR = "evidence_map_below_citation_floor"
+    CORPUS_SOURCE_FLOOR_BELOW_MIN = "corpus_source_floor_below_min"
+    MEMO_SOURCE_FLOOR_BELOW_MIN = "memo_source_floor_below_min"
+    DIRECT_SOURCE_FLOOR_BELOW_MIN = "direct_source_floor_below_min"
+
+
 SUBMIT_SUCCESS_STATUSES = frozenset({CycleStatus.PUBLISHED.value})
 PENDING_SUCCESS_STATUSES = frozenset({CycleStatus.SUBMITTED_TO_RESEARKA.value})
+EXHAUSTED_STATUSES = frozenset({
+    CandidateStatus.DUPLICATE_SUBMISSION_FINGERPRINT.value,
+    CandidateStatus.MISSING_ALPHA_MEMO.value,
+    CandidateStatus.AGENT_REPAIR_FAILED.value,
+    CandidateStatus.MEMO_MISSING_FALSIFIER.value,
+    CandidateStatus.CYCLE_FAILED_SUBMISSION.value,
+    CandidateStatus.HELD_RETRACTION_CHECK.value,
+    CandidateStatus.RECEIPT_SHAPE_MISMATCH.value,
+    CandidateStatus.EVIDENCE_MAP_BELOW_CITATION_FLOOR.value,
+})
+TOPIC_EXHAUSTED_STATUSES = frozenset({
+    CandidateStatus.DUPLICATE_SUBMISSION_FINGERPRINT.value,
+    CandidateStatus.CYCLE_FAILED_SUBMISSION.value,
+    CandidateStatus.HELD_RETRACTION_CHECK.value,
+    CandidateStatus.RECEIPT_SHAPE_MISMATCH.value,
+    CandidateStatus.EVIDENCE_MAP_BELOW_CITATION_FLOOR.value,
+})
+FINGERPRINT_EXHAUSTED_STATUSES = (
+    TOPIC_EXHAUSTED_STATUSES | {CandidateStatus.AGENT_REPAIR_FAILED.value}
+)
+REFRESHABLE_SOURCE_FLOOR_STATUSES = frozenset({
+    CandidateStatus.CORPUS_SOURCE_FLOOR_BELOW_MIN.value,
+    CandidateStatus.MEMO_SOURCE_FLOOR_BELOW_MIN.value,
+    CandidateStatus.DIRECT_SOURCE_FLOOR_BELOW_MIN.value,
+})
 
 
 def top_counts(values: Iterable[str], *, limit: int = 5) -> dict[str, int]:
