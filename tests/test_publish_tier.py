@@ -1023,6 +1023,44 @@ def test_feed_scope_mismatch_routes_to_curation(tmp_path: Path) -> None:
     assert "feed_scope_mismatch" in verdict["blockers"]
 
 
+def test_feed_scope_markers_are_domain_scoped(tmp_path: Path) -> None:
+    run = _run(
+        tmp_path,
+        titles=(
+            "Rice seed storage threshold improves harvest durability",
+            "Rice seed storage threshold improves harvest durability",
+            "Rice seed storage threshold improves harvest durability",
+        ),
+        journals=("Crop Systems", "Crop Systems", "Crop Systems"),
+    )
+    run.joinpath("MANIFEST.json").write_text(json.dumps({
+        "domain": {"slug": "ai_research"},
+    }), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert "feed_scope_mismatch" not in verdict["blockers"]
+
+
+def test_feed_scope_markers_accept_string_domain_metadata(tmp_path: Path) -> None:
+    run = _run(
+        tmp_path,
+        titles=(
+            "Rice seed storage threshold improves harvest durability",
+            "Rice seed storage threshold improves harvest durability",
+            "Rice seed storage threshold improves harvest durability",
+        ),
+        journals=("Crop Systems", "Crop Systems", "Crop Systems"),
+    )
+    run.joinpath("search_trace.json").write_text(json.dumps({
+        "domain": "ai_research",
+    }), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert "feed_scope_mismatch" not in verdict["blockers"]
+
+
 def test_feed_scope_marker_does_not_match_inside_word(tmp_path: Path) -> None:
     run = _run(
         tmp_path,

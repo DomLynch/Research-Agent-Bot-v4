@@ -8,7 +8,7 @@ Type=oneshot
 WorkingDirectory=/root/Research-Agent-Bot-v4
 EnvironmentFile=/root/Research-Agent-Bot-v4/.env
 EnvironmentFile=/etc/researka-agent-v4.env
-ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/daily_alpha_publish_cycle.py --domain longevity_research --refresh-candidates --allow-tier2 --max-refresh-batches 500 --submit
+ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/daily_alpha_publish_cycle.py --domain longevity_research --refresh-candidates --allow-tier2-repair --max-refresh-batches 500 --submit
 # Refresh cap removed (was --max-refresh-batches 5): the cycle now refreshes the
 # whole visible backlog. TimeoutStartSec is the time/cost blast-fence — the
 # oneshot stops cleanly at the limit instead of running unbounded.

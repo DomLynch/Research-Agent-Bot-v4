@@ -1,0 +1,10 @@
+[Unit]
+Description=Check Research Agent v4 alpha publish SLA after scheduled runs
+
+[Timer]
+OnCalendar=*-*-* 02/8:45:00
+Persistent=true
+Unit=researka-alpha-publish-health.service
+
+[Install]
+WantedBy=timers.target

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import fcntl
 import hashlib
 import json
 import os
@@ -139,6 +140,21 @@ def _alpha_memo_int(name: str, default: int) -> int:
     return default
 
 
+def _domain_alpha_memo_int(domain: str, name: str, default: int) -> int:
+    try:
+        data = tomllib.loads(_PUBLICATION_PATH.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return default
+    alpha = data.get("alpha_memo") if isinstance(data, dict) else {}
+    domains = alpha.get("domains") if isinstance(alpha, dict) else {}
+    domain_cfg = domains.get(domain) if isinstance(domains, dict) else {}
+    if not isinstance(domain_cfg, dict) or name not in domain_cfg:
+        return default
+    with suppress(TypeError, ValueError):
+        return max(0, int(str(domain_cfg.get(name))))
+    return default
+
+
 def _alpha_memo_float(name: str, default: float) -> float:
     try:
         data = tomllib.loads(_PUBLICATION_PATH.read_text(encoding="utf-8"))
@@ -206,12 +222,14 @@ _EXHAUSTED_STATUSES = {
     "cycle_failed_submission",
     "held_retraction_check",
     "receipt_shape_mismatch",
+    "evidence_map_below_citation_floor",
 }
 _TOPIC_EXHAUSTED_STATUSES = {
     "duplicate_submission_fingerprint",
     "cycle_failed_submission",
     "held_retraction_check",
     "receipt_shape_mismatch",
+    "evidence_map_below_citation_floor",
 }
 _FINGERPRINT_EXHAUSTED_STATUSES = _TOPIC_EXHAUSTED_STATUSES | {"agent_repair_failed"}
 _REFRESHABLE_SOURCE_FLOOR_STATUSES = {
@@ -273,7 +291,78 @@ def _json(path: Path, default: Any) -> Any:
 
 def _write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    lock_path = path.with_name(path.name + ".lock")
+    tmp_path = path.with_name(path.name + ".tmp")
+    with lock_path.open("w", encoding="utf-8") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        tmp_path.write_text(
+            json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8",
+        )
+        tmp_path.replace(path)
+
+
+def _top_counts(values: Iterable[str], *, limit: int = 5) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for value in values:
+        if value:
+            counts[value] = counts.get(value, 0) + 1
+    return dict(sorted(counts.items(), key=lambda item: (-item[1], item[0]))[:limit])
+
+
+def _next_action_for_status(status: str) -> str:
+    if status in {"published", "submitted_to_researka"}:
+        return "watch_decision_or_public_page"
+    if status in {"no_fresh_candidate", "submit_retry_exhausted"}:
+        return "refresh_or_expand_candidate_supply"
+    if status == "candidate_refresh_failed":
+        return "inspect_refresh_failure"
+    if status in {"domain_dry_run_only", "submit_not_configured", "cost_cap_exceeded"}:
+        return "fix_runtime_configuration"
+    if status in {"preflight_qa_blocked", "held_retraction_check"}:
+        return "repair_candidate_quality"
+    if status in {"reviewer_rejected", "reviewer_revise"}:
+        return "repair_researka_review_feedback"
+    return "inspect_ledger"
+
+
+def _no_candidate_reason(considered: list[Json]) -> str:
+    statuses = [str(row.get("status") or "") for row in considered if isinstance(row, dict)]
+    if statuses and all(status == "duplicate_submission_fingerprint" for status in statuses):
+        return "all candidates were duplicate submission fingerprints"
+    if statuses and all(status == "cycle_exhausted_topic" for status in statuses):
+        return "all candidates were topic/family exhausted"
+    if "evidence_map_below_citation_floor" in statuses:
+        return "best evidence-map candidate was below citation floor"
+    return "no eligible non-duplicate memo"
+
+
+def _publish_summary(ledger: Json) -> Json:
+    considered = [r for r in ledger.get("considered") or [] if isinstance(r, dict)]
+    attempts = [r for r in ledger.get("cycle_attempts") or [] if isinstance(r, dict)]
+    blockers: list[str] = []
+    for row in considered:
+        blockers.append(str(row.get("status") or ""))
+        for blocker in row.get("blockers") or []:
+            blockers.append(str(blocker))
+    page = ledger.get("public_page_check")
+    return {
+        "status": ledger.get("status"),
+        "submitted": int(ledger.get("submitted") or 0),
+        "published": int(ledger.get("published") or 0),
+        "considered": len(considered),
+        "attempts": len(attempts),
+        "queue_counts": ledger.get("queue_counts") or {},
+        "top_blockers": _top_counts(blockers),
+        "last_attempt_status": attempts[-1].get("status") if attempts else None,
+        "public_url": ledger.get("public_url"),
+        "public_page_status": page.get("status") if isinstance(page, dict) else None,
+        "next_action": _next_action_for_status(str(ledger.get("status") or "")),
+    }
+
+
+def _write_ledger(path: Path, ledger: Json) -> None:
+    ledger["publish_summary"] = _publish_summary(ledger)
+    _write_json(path, ledger)
 
 
 def _env_truthy(name: str) -> bool:
@@ -437,11 +526,38 @@ def _can_recompute_verdict(run: Path) -> bool:
     )
 
 
+def _stage_blockers(run: Path) -> list[str]:
+    required = (
+        "alpha_memo.md",
+        "opportunities_gate.json",
+        "fact_lanes.json",
+        "all_facts.json",
+        "claim_receipt_matrix.json",
+        "typed_counter_evidence.json",
+        "novelty_delta.json",
+        "memo_audit.json",
+    )
+    return [
+        f"missing_{name.rsplit('.', 1)[0]}"
+        for name in required if not run.joinpath(name).exists()
+    ]
+
+
 def _verdict_for_run(run: Path) -> Json:
     if _can_recompute_verdict(run):
         return publish_verdict(run)
     data = _json(run / "publish_verdict.json", {})
-    return data if isinstance(data, dict) else {}
+    if isinstance(data, dict) and data:
+        return data
+    blockers = _stage_blockers(run)
+    return {
+        "topic": _topic(run),
+        "run_dir": str(run.relative_to(_ROOT)) if run.is_relative_to(_ROOT) else str(run),
+        "decision": "not_ready",
+        "publish_tier": "UNBUILT",
+        "blockers": blockers,
+        "stage": blockers[0] if blockers else "not_ready",
+    }
 
 
 def _run_domain(run: Path, verdict: Json) -> str:
@@ -568,6 +684,8 @@ def _current_selection_verdict(verdict: Json, root: Path) -> Json:
     current = _verdict_for_run(run_dir)
     if not current:
         return verdict
+    if current.get("decision") == "not_ready" and verdict.get("decision") != "not_ready":
+        return verdict
     private = {k: v for k, v in verdict.items() if str(k).startswith("_")}
     if verdict.get("_claim_cluster_candidate"):
         private.update({
@@ -605,16 +723,13 @@ def _build_queue(
     runs_root: Path, include_archive: bool, domain: str | None = None,
 ) -> Json:
     """Build current verdicts without mutating run artifacts."""
-    patterns = ["*-evidence-*/alpha_memo.md", "*-evidence-*/publish_verdict.json"]
+    patterns = ["*-evidence-*"]
     if include_archive:
-        patterns += [
-            "_archive/*/*-evidence-*/alpha_memo.md",
-            "_archive/*/*-evidence-*/publish_verdict.json",
-        ]
+        patterns += ["_archive/*/*-evidence-*"]
     latest: dict[str, Path] = {}
     for pattern in patterns:
         for path in runs_root.glob(pattern):
-            run = path.parent
+            run = path if path.is_dir() else path.parent
             topic = _topic(run)
             if topic not in latest or run.name > latest[topic].name:
                 latest[topic] = run
@@ -669,6 +784,9 @@ def _build_queue(
         ],
         "curation_needed": [
             r for r in valid if r.get("decision") == "curation_needed"
+        ],
+        "not_ready": [
+            r for r in valid if r.get("decision") == "not_ready"
         ],
         "_meta": {
             "missing_domain_count": missing_domain_count,
@@ -4021,7 +4139,7 @@ def run_cycle(
     }
     if estimated_cost_usd > max_cost_usd:
         ledger.update({"status": "cost_cap_exceeded", "reason": "estimated_cost_above_cap"})
-        _write_json(ledger_path, ledger)
+        _write_ledger(ledger_path, ledger)
         return ledger
     if submit and profile.dry_run_only:
         ledger.update({
@@ -4030,7 +4148,7 @@ def run_cycle(
             "submitted": 0,
             "published": 0,
         })
-        _write_json(ledger_path, ledger)
+        _write_ledger(ledger_path, ledger)
         return ledger
     blocked_fingerprints: set[str] = set()
     session_retryable: set[str] = set()
@@ -4069,7 +4187,7 @@ def run_cycle(
                 "reason": "missing_submit_token",
                 "accepted_env_vars": list(_SUBMIT_TOKEN_ENVS),
             })
-            _write_json(ledger_path, ledger)
+            _write_ledger(ledger_path, ledger)
             return ledger
         ledger["submit_token_env"] = token_env
         submitter = _http_submitter(url, token)
@@ -4146,7 +4264,7 @@ def run_cycle(
                     break
                 ledger["considered"] = all_considered
                 ledger.update({"status": "candidate_refresh_failed"})
-                _write_json(ledger_path, ledger)
+                _write_ledger(ledger_path, ledger)
                 return ledger
         current_queue = (
             queue if queue is not None else preflight_queue
@@ -4307,13 +4425,13 @@ def run_cycle(
                     "status": "held_retraction_check",
                     "candidate": candidate.get("topic"),
                 })
-                _write_json(ledger_path, ledger)
+                _write_ledger(ledger_path, ledger)
                 return ledger
             continue
         if not submit:
             ledger["cycle_attempts"].append(attempt | {"status": "dry_run_selected"})
             ledger.update({"status": "dry_run_selected"})
-            _write_json(ledger_path, ledger)
+            _write_ledger(ledger_path, ledger)
             return ledger
         assert submitter is not None
         run_dir = _run_path(runs_root, candidate.get("run_dir"))
@@ -4342,7 +4460,7 @@ def run_cycle(
             attempt["status"] = "preflight_qa_blocked"
             ledger["cycle_attempts"].append(attempt)
             ledger.update({"status": "preflight_qa_blocked", "submitted": 0, "published": 0})
-            _write_json(ledger_path, ledger)
+            _write_ledger(ledger_path, ledger)
             return ledger
         result = submit_with_backoff(checked_payload, submitter)
         attempt["submission"] = result
@@ -4380,7 +4498,7 @@ def run_cycle(
                     if final == "accepted":
                         attempt["public_page_check"] = ledger.get("public_page_check")
                         ledger["cycle_attempts"].append(attempt | {"status": "published"})
-                        _write_json(ledger_path, ledger)
+                        _write_ledger(ledger_path, ledger)
                         return ledger
                     if final in {"rejected", "revise"}:
                         attempt["status"] = (
@@ -4409,7 +4527,7 @@ def run_cycle(
                                 "reason": attempt["status"],
                                 "requires": "new_memo_fingerprint",
                             }
-                            _write_json(ledger_path, ledger)
+                            _write_ledger(ledger_path, ledger)
                             continue
                         blocked_fingerprints.add(str(candidate.get("memo_fingerprint") or ""))
                         topic = str(candidate.get("topic") or "")
@@ -4417,11 +4535,11 @@ def run_cycle(
                             blocked_topics.add(topic)
                         if not refresh_candidates or batch >= search_batch_limit:
                             ledger.update({"status": attempt["status"], "published": 0})
-                            _write_json(ledger_path, ledger)
+                            _write_ledger(ledger_path, ledger)
                             return ledger
                         continue
             ledger["cycle_attempts"].append(attempt | {"status": "submitted_to_researka"})
-            _write_json(ledger_path, ledger)
+            _write_ledger(ledger_path, ledger)
             return ledger
         if result["status"] == "rejected_duplicate":
             _record_submission_attempt(
@@ -4446,7 +4564,7 @@ def run_cycle(
             blocked_topics.add(topic)
         if not refresh_candidates or batch >= search_batch_limit:
             ledger.update({"status": result["status"], "published": 0})
-            _write_json(ledger_path, ledger)
+            _write_ledger(ledger_path, ledger)
             return ledger
     if (
         submit
@@ -4510,7 +4628,7 @@ def run_cycle(
                                 "fingerprint": candidate.get("memo_fingerprint"),
                                 "status": "published",
                             })
-                            _write_json(ledger_path, ledger)
+                            _write_ledger(ledger_path, ledger)
                             return ledger
                     ledger["cycle_attempts"].append({
                         "topic": literature_topic,
@@ -4518,7 +4636,7 @@ def run_cycle(
                         "fingerprint": candidate.get("memo_fingerprint"),
                         "status": "submitted_to_researka",
                     })
-                    _write_json(ledger_path, ledger)
+                    _write_ledger(ledger_path, ledger)
                     return ledger
     if ledger["cycle_attempts"]:
         last_status = str(ledger["cycle_attempts"][-1].get("status") or "failed")
@@ -4531,10 +4649,27 @@ def run_cycle(
     else:
         ledger.update({
             "status": "no_fresh_candidate",
-            "reason": "no eligible non-duplicate memo",
+            "reason": _no_candidate_reason(all_considered),
         })
-    _write_json(ledger_path, ledger)
+    _write_ledger(ledger_path, ledger)
     return ledger
+
+
+_SUBMIT_SUCCESS_STATUSES = {"published"}
+_PENDING_SUCCESS_STATUSES = {"submitted_to_researka"}
+
+
+def _cycle_exit_code(
+    ledger: Json, *, submit: bool, allow_pending_success: bool = False,
+) -> int:
+    status = str(ledger.get("status") or "")
+    if not submit:
+        return 2 if status == "candidate_refresh_failed" else 0
+    if status in _SUBMIT_SUCCESS_STATUSES or int(ledger.get("published") or 0) == 1:
+        return 0
+    if allow_pending_success and status in _PENDING_SUCCESS_STATUSES:
+        return 0
+    return 2
 
 
 def main() -> int:
@@ -4543,7 +4678,13 @@ def main() -> int:
     parser.add_argument("--date", default=_ledger_stamp())
     parser.add_argument("--include-archive", action="store_true")
     parser.add_argument("--refresh-candidates", action="store_true")
-    parser.add_argument("--allow-tier2", action="store_true")
+    parser.add_argument(
+        "--allow-tier2-repair",
+        "--allow-tier2",
+        dest="allow_tier2",
+        action="store_true",
+        help="Allow Tier 2 rows to enter repair; does not lower final submit gates.",
+    )
     parser.add_argument("--estimated-cost-usd", type=float, default=0.0)
     parser.add_argument("--max-cost-usd", type=float, default=5.0)
     parser.add_argument("--refresh-top", type=int, default=_DEFAULT_REFRESH_TOP)
@@ -4554,11 +4695,16 @@ def main() -> int:
         type=int,
         default=_DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS,
     )
-    parser.add_argument("--min-submit-sources", type=int, default=_DEFAULT_MIN_SUBMIT_SOURCES)
-    parser.add_argument("--min-direct-submit-sources", type=int, default=_DEFAULT_MIN_DIRECT_SUBMIT_SOURCES)
+    parser.add_argument("--min-submit-sources", type=int, default=None)
+    parser.add_argument("--min-direct-submit-sources", type=int, default=None)
     parser.add_argument("--decision-poll-attempts", type=int, default=_DEFAULT_DECISION_POLL_ATTEMPTS)
     parser.add_argument("--decision-poll-seconds", type=float, default=_DEFAULT_DECISION_POLL_SECONDS)
     parser.add_argument("--submit", action="store_true")
+    parser.add_argument(
+        "--allow-pending-success",
+        action="store_true",
+        help="Treat submitted-but-not-yet-published as exit 0 for submit runs.",
+    )
     parser.add_argument(
         "--retraction-check",
         choices=("metadata", "crossref", "skip"),
@@ -4577,8 +4723,14 @@ def main() -> int:
         refresh_cooldown_hours=args.refresh_cooldown_hours,
         max_refresh_batches=args.max_refresh_batches,
         published_topic_cooldown_days=args.published_topic_cooldown_days,
-        min_submit_sources=args.min_submit_sources,
-        min_direct_submit_sources=args.min_direct_submit_sources,
+        min_submit_sources=args.min_submit_sources
+        if args.min_submit_sources is not None else
+        _domain_alpha_memo_int(args.domain, "min_source_papers", _DEFAULT_MIN_SUBMIT_SOURCES),
+        min_direct_submit_sources=args.min_direct_submit_sources
+        if args.min_direct_submit_sources is not None else
+        _domain_alpha_memo_int(
+            args.domain, "min_direct_source_papers", _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES,
+        ),
         decision_poll_attempts=args.decision_poll_attempts,
         decision_poll_seconds=args.decision_poll_seconds,
         submit=args.submit,
@@ -4590,7 +4742,12 @@ def main() -> int:
         f"published={ledger['published']} "
         f"topic={ledger.get('submitted_topic') or ledger.get('published_topic') or ledger.get('candidate', {}).get('topic') or '-'}"
     )
-    return 2 if ledger["status"] == "candidate_refresh_failed" else 0
+    summary = ledger.get("publish_summary")
+    if isinstance(summary, dict):
+        print("[daily-alpha] summary=" + json.dumps(summary, sort_keys=True))
+    return _cycle_exit_code(
+        ledger, submit=args.submit, allow_pending_success=args.allow_pending_success,
+    )
 
 
 if __name__ == "__main__":

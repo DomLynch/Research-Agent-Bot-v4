@@ -322,6 +322,42 @@ def test_cache_only_filters_cached_topics_to_domain_seed_scope(
     assert [row["topic"] for row in payload["top"]] == ["semaglutide_once_weekly"]
 
 
+def test_business_discovery_filters_longevity_topics(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    def fake_discover(**_kwargs: Any) -> tuple[TopicCandidate, ...]:
+        return (
+            TopicCandidate(
+                topic="hormone_optimization_hrt_hormonal", paper_count=9,
+                fact_source_count=9, top_paper_doi="10.1/hrt",
+                top_paper_title="Hormone optimization",
+                velocity_score=9.0, mean_fwci=2.0, mean_cited_by=20.0,
+            ),
+            TopicCandidate(
+                topic="business_model_performance_margin", paper_count=8,
+                fact_source_count=8, top_paper_doi="10.1/biz",
+                top_paper_title="Business model performance",
+                velocity_score=8.0, mean_fwci=2.0, mean_cited_by=18.0,
+            ),
+        )
+
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(run_topic_discovery, "discover_topics", fake_discover)
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--domain", "business_research", "--top", "2",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert [row["topic"] for row in payload["top"]] == [
+        "business_model_performance_margin",
+    ]
+
+
 def test_cache_first_preserves_cached_source_papers(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

@@ -85,9 +85,31 @@ broad_d_bad_share = 0.60
 broad_min_sources = 3
 
 [feed_scope]
-# Product-scope markers for the current ReseaRka longevity feed. These are
-# data-level routing hints: another industry feed should replace this section,
-# while agent/publish_tier.py stays unchanged.
+# Legacy/default product-scope markers for untagged historical runs.
+off_scope_markers = [
+  "agriculture",
+  "crop",
+  "cultivar",
+  "grain",
+  "oryza",
+  "plant",
+  "rice",
+  "seed",
+]
+
+[feed_scope.domains.longevity]
+off_scope_markers = [
+  "agriculture",
+  "crop",
+  "cultivar",
+  "grain",
+  "oryza",
+  "plant",
+  "rice",
+  "seed",
+]
+
+[feed_scope.domains.longevity_research]
 off_scope_markers = [
   "agriculture",
   "crop",

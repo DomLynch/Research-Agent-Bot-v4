@@ -775,17 +775,17 @@ def test_business_systemd_timers_are_eight_hour_guarded() -> None:
             assert "--submit-after-consistent-passes 2" in service
             if name == "finance":
                 assert "--topics-per-domain 6" in service
-            assert "SuccessExitStatus=3" in service
+            assert "SuccessExitStatus=3" not in service
             assert "EnvironmentFile=/etc/researka-agent-v4.env" in service
         elif name in sweep_lanes:
             assert f"--domains {domain}" in service
             assert "--submit-after-consistent-passes" not in service
-            assert "SuccessExitStatus=3" in service
+            assert "SuccessExitStatus=3" not in service
             assert "EnvironmentFile=/etc/researka-agent-v4.env" not in service
         else:
             assert f"--domain {domain}" in service
             assert "--submit" not in service
-            assert "SuccessExitStatus=3" in service
+            assert "SuccessExitStatus=3" not in service
             assert "EnvironmentFile=/etc/researka-agent-v4.env" not in service
         assert "EnvironmentFile=/root/Research-Agent-Bot-v4/.env" in service
         assert f"OnCalendar=*-*-* {schedule}" in timer

@@ -1,0 +1,10 @@
+[Unit]
+Description=Research Agent v4 alpha publish SLA monitor
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/Research-Agent-Bot-v4
+EnvironmentFile=/root/Research-Agent-Bot-v4/.env
+EnvironmentFile=/etc/researka-agent-v4.env
+ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/check_alpha_publish_health.py --expect-published --check-url --sync-pending-decisions --show-next-candidate --max-age-minutes 540
+TimeoutStartSec=300
