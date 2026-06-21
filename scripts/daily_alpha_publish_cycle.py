@@ -26,6 +26,15 @@ from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
+from agent.alpha_publish_status import (
+    cycle_exit_code as _cycle_exit_code,
+)
+from agent.alpha_publish_status import (
+    no_candidate_reason as _no_candidate_reason,
+)
+from agent.alpha_publish_status import (
+    publish_summary as _publish_summary,
+)
 from agent.alpha_selector import accepted_shape_bonus
 from agent.domain_profile import domain_choices, domain_slug, load_domain_profile
 from agent.llm_client import call_writer
@@ -287,65 +296,6 @@ def _write_json(path: Path, payload: Any) -> None:
             json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8",
         )
         tmp_path.replace(path)
-
-
-def _top_counts(values: Iterable[str], *, limit: int = 5) -> dict[str, int]:
-    counts: dict[str, int] = {}
-    for value in values:
-        if value:
-            counts[value] = counts.get(value, 0) + 1
-    return dict(sorted(counts.items(), key=lambda item: (-item[1], item[0]))[:limit])
-
-
-def _next_action_for_status(status: str) -> str:
-    if status in {"published", "submitted_to_researka"}:
-        return "watch_decision_or_public_page"
-    if status in {"no_fresh_candidate", "submit_retry_exhausted"}:
-        return "refresh_or_expand_candidate_supply"
-    if status == "candidate_refresh_failed":
-        return "inspect_refresh_failure"
-    if status in {"domain_dry_run_only", "submit_not_configured", "cost_cap_exceeded"}:
-        return "fix_runtime_configuration"
-    if status in {"preflight_qa_blocked", "held_retraction_check"}:
-        return "repair_candidate_quality"
-    if status in {"reviewer_rejected", "reviewer_revise"}:
-        return "repair_researka_review_feedback"
-    return "inspect_ledger"
-
-
-def _no_candidate_reason(considered: list[Json]) -> str:
-    statuses = [str(row.get("status") or "") for row in considered if isinstance(row, dict)]
-    if statuses and all(status == "duplicate_submission_fingerprint" for status in statuses):
-        return "all candidates were duplicate submission fingerprints"
-    if statuses and all(status == "cycle_exhausted_topic" for status in statuses):
-        return "all candidates were topic/family exhausted"
-    if "evidence_map_below_citation_floor" in statuses:
-        return "best evidence-map candidate was below citation floor"
-    return "no eligible non-duplicate memo"
-
-
-def _publish_summary(ledger: Json) -> Json:
-    considered = [r for r in ledger.get("considered") or [] if isinstance(r, dict)]
-    attempts = [r for r in ledger.get("cycle_attempts") or [] if isinstance(r, dict)]
-    blockers: list[str] = []
-    for row in considered:
-        blockers.append(str(row.get("status") or ""))
-        for blocker in row.get("blockers") or []:
-            blockers.append(str(blocker))
-    page = ledger.get("public_page_check")
-    return {
-        "status": ledger.get("status"),
-        "submitted": int(ledger.get("submitted") or 0),
-        "published": int(ledger.get("published") or 0),
-        "considered": len(considered),
-        "attempts": len(attempts),
-        "queue_counts": ledger.get("queue_counts") or {},
-        "top_blockers": _top_counts(blockers),
-        "last_attempt_status": attempts[-1].get("status") if attempts else None,
-        "public_url": ledger.get("public_url"),
-        "public_page_status": page.get("status") if isinstance(page, dict) else None,
-        "next_action": _next_action_for_status(str(ledger.get("status") or "")),
-    }
 
 
 def _write_ledger(path: Path, ledger: Json) -> None:
@@ -4090,23 +4040,6 @@ def run_cycle(
         })
     _write_ledger(ledger_path, ledger)
     return ledger
-
-
-_SUBMIT_SUCCESS_STATUSES = {"published"}
-_PENDING_SUCCESS_STATUSES = {"submitted_to_researka"}
-
-
-def _cycle_exit_code(
-    ledger: Json, *, submit: bool, allow_pending_success: bool = False,
-) -> int:
-    status = str(ledger.get("status") or "")
-    if not submit:
-        return 2 if status == "candidate_refresh_failed" else 0
-    if status in _SUBMIT_SUCCESS_STATUSES or int(ledger.get("published") or 0) == 1:
-        return 0
-    if allow_pending_success and status in _PENDING_SUCCESS_STATUSES:
-        return 0
-    return 2
 
 
 def main() -> int:
