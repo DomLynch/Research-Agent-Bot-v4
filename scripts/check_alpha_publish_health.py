@@ -145,6 +145,10 @@ def summarize_latest(
     url = str(ledger.get("public_url") or "")
     url_status = _public_url_status(url, timeout=timeout) if check_url else None
     published = int(ledger.get("published") or 0) == 1
+    publish_summary = ledger.get("publish_summary")
+    if not isinstance(publish_summary, dict):
+        publish_summary = {}
+    considered_counts = _considered_counts(ledger)
     summary = {
         "ok": published and (not check_url or bool(url_status and 200 <= url_status < 400)),
         "ledger": path.name,
@@ -158,7 +162,10 @@ def summarize_latest(
         "public_url_status": url_status,
         "decision_poll": ledger.get("decision_poll"),
         "attempts": _attempts(ledger),
-        "considered_counts": _considered_counts(ledger),
+        "considered_counts": considered_counts,
+        "queue_counts": ledger.get("queue_counts") or publish_summary.get("queue_counts") or {},
+        "top_blockers": publish_summary.get("top_blockers") or considered_counts,
+        "next_action": publish_summary.get("next_action"),
         "reason": ledger.get("reason"),
     }
     if decision_sync is not None:

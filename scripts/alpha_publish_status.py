@@ -82,6 +82,7 @@ def queue_counts(queue: Json) -> Json:
             + len(queue.get("needs_operator_review") or [])
         ),
         "curation_needed": len(queue.get("curation_needed") or []),
+        "not_ready": len(queue.get("not_ready") or []),
     }
 
 

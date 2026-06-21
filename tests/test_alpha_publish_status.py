@@ -60,8 +60,10 @@ def test_queue_counts_include_legacy_operator_review_bucket() -> None:
         "agent_repair_needed": [{}],
         "needs_operator_review": [{}, {}],
         "curation_needed": [{}],
+        "not_ready": [{}, {}],
     }) == {
         "ready_to_publish": 2,
         "agent_repair_needed": 3,
         "curation_needed": 1,
+        "not_ready": 2,
     }

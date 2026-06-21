@@ -29,6 +29,11 @@ def test_health_summary_reports_latest_published_ledger(tmp_path: Path) -> None:
         "published": 1,
         "published_topic": "grid_storage",
         "public_url": "https://researka.org/alpha/example",
+        "queue_counts": {"ready_to_publish": 1, "not_ready": 2},
+        "publish_summary": {
+            "top_blockers": {"direct_source_floor_below_min": 3},
+            "next_action": "watch_decision_or_public_page",
+        },
         "cycle_attempts": [{"batch": 1, "topic": "grid_storage", "status": "published"}],
         "considered": [{"status": "eligible"}, {"status": "cycle_exhausted_topic"}],
     })
@@ -45,6 +50,9 @@ def test_health_summary_reports_latest_published_ledger(tmp_path: Path) -> None:
     assert summary["topic"] == "grid_storage"
     assert summary["attempts"] == [{"batch": 1, "topic": "grid_storage", "status": "published"}]
     assert summary["considered_counts"] == {"cycle_exhausted_topic": 1, "eligible": 1}
+    assert summary["queue_counts"] == {"ready_to_publish": 1, "not_ready": 2}
+    assert summary["top_blockers"] == {"direct_source_floor_below_min": 3}
+    assert summary["next_action"] == "watch_decision_or_public_page"
 
 
 def test_health_summary_prefers_ledger_timestamp_over_sync_mtime(tmp_path: Path) -> None:
@@ -174,4 +182,26 @@ def test_health_summary_can_sync_pending_submission(tmp_path: Path) -> None:
     assert summary["published"] == 1
     assert summary["decision_sync"] == {
         "checked": 1, "updated": 1, "published": 1, "pending": 0,
+    }
+
+
+def test_health_summary_falls_back_to_considered_counts_for_old_ledgers(
+    tmp_path: Path,
+) -> None:
+    _write_ledger(tmp_path, "2026-06-01T01-04-07Z.json", {
+        "status": "no_fresh_candidate",
+        "submitted": 0,
+        "published": 0,
+        "considered": [
+            {"status": "agent_repair_needed"},
+            {"status": "agent_repair_needed"},
+            {"status": "memo_missing_audit_sidecars"},
+        ],
+    })
+
+    summary = health.summarize_latest(tmp_path)
+
+    assert summary["top_blockers"] == {
+        "agent_repair_needed": 2,
+        "memo_missing_audit_sidecars": 1,
     }

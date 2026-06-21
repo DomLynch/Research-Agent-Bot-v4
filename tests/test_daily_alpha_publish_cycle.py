@@ -313,6 +313,7 @@ def test_daily_queue_claims_untagged_run_in_domain_seed_corpus(tmp_path: Path) -
     assert out["_meta"]["missing_domain_count"] == 0
     assert out["_meta"]["untagged_seed_claimed_count"] == 1
     assert [r["topic"] for r in out["ready_to_publish"]] == ["metformin"]
+    assert out["ready_to_publish"][0]["domain_slug"] == "longevity_research"
 
 
 def test_run_cycle_rejects_injected_candidate_without_domain(tmp_path: Path) -> None:
@@ -4229,6 +4230,8 @@ def test_sync_submission_decisions_records_async_rejection(tmp_path: Path) -> No
     assert patched["submission_id"] == "sub_123"
     assert patched["final_verdict"] == "rejected"
     assert patched["researka_decision"]["gate_failures"][0]["name"] == "minimum_citations"
+    assert patched["publish_summary"]["status"] == "reviewer_rejected"
+    assert patched["publish_summary"]["next_action"] == "repair_researka_review_feedback"
 
 
 def test_sync_submission_decisions_locks_submitted_fingerprint_updates(
@@ -4493,6 +4496,8 @@ def test_sync_submission_decisions_rejects_accept_without_rendered_page(tmp_path
     assert patched["published"] == 0
     assert patched["publish_failure_reason"] == "public_page_not_rendered"
     assert patched["public_page_check"]["status"] == "not_rendered"
+    assert patched["publish_summary"]["status"] == "public_page_not_rendered"
+    assert patched["publish_summary"]["public_page_status"] == "not_rendered"
 
 
 def test_apply_submission_decision_keeps_accept_without_url_pending() -> None:
@@ -4633,6 +4638,18 @@ def test_submit_exit_code_fails_closed_for_no_publish_statuses() -> None:
     ) == 2
 
 
+def test_legacy_allow_tier2_flag_is_removed_from_cli() -> None:
+    result = subprocess.run(
+        [sys.executable, "scripts/daily_alpha_publish_cycle.py", "--help"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "--allow-tier2-repair" in result.stdout
+    assert "--allow-tier2 " not in result.stdout
+
+
 def test_domain_source_floors_are_policy_owned() -> None:
     assert daily._domain_alpha_memo_int(
         "longevity_research", "min_source_papers", 99,
@@ -4648,7 +4665,7 @@ def test_publish_summary_counts_blockers_and_attempts(tmp_path: Path) -> None:
         "status": "no_fresh_candidate",
         "submitted": 0,
         "published": 0,
-        "queue_counts": {"ready_to_publish": 1},
+        "queue_counts": {"ready_to_publish": 1, "not_ready": 2},
         "cycle_attempts": [{"status": "reviewer_rejected"}],
         "considered": [
             {"status": "duplicate_submission_fingerprint"},
@@ -4667,7 +4684,7 @@ def test_publish_summary_counts_blockers_and_attempts(tmp_path: Path) -> None:
         "public_page_status": None,
         "public_url": None,
         "published": 0,
-        "queue_counts": {"ready_to_publish": 1},
+        "queue_counts": {"ready_to_publish": 1, "not_ready": 2},
         "status": "no_fresh_candidate",
         "submitted": 0,
         "top_blockers": {
@@ -4777,7 +4794,8 @@ def test_systemd_longevity_research_timer_uses_explicit_domain() -> None:
     assert "--submit" in service
     assert "--allow-tier2-repair" in service
     assert "--allow-tier2 " not in service
-    assert "--max-refresh-batches 5" in service
+    assert "--max-refresh-batches 500" in service
+    assert "TimeoutStartSec=21600" in service
     assert "OnCalendar=*-*-* 01/8:30:00" in timer
     assert "Unit=researka-alpha-longevity-research.service" in timer
 

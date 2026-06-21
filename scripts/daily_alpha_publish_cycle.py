@@ -542,7 +542,10 @@ def _run_domain_required(run: Path, verdict: Json) -> str:
 
 def _with_domain_metadata(verdict: Json, run: Path, fallback: Json | None = None) -> Json:
     domain = _run_domain(run, verdict) or domain_slug((fallback or {}).get("domain"))
-    return verdict | {"domain": load_domain_profile(domain).as_metadata()} if domain else verdict
+    return (
+        verdict | {"domain": load_domain_profile(domain).as_metadata(), "domain_slug": domain}
+        if domain else verdict
+    )
 
 
 def _refresh_claim_cluster(run: Path) -> None:
@@ -721,7 +724,10 @@ def _build_queue(
                 continue
         if domain and run_domain != domain:
             continue
-        row = row | {"domain": load_domain_profile(run_domain).as_metadata()}
+        row = row | {
+            "domain": load_domain_profile(run_domain).as_metadata(),
+            "domain_slug": run_domain,
+        }
         domain_rows.append(row)
     rows = domain_rows
     seed_scope_dropped_count = 0
@@ -1423,7 +1429,11 @@ def _seen_submission_fingerprints(path: Path) -> set[str]:
 
 
 def _row_domain(row: Json) -> str:
-    return domain_slug(row.get("domain")) or load_domain_profile(None).slug
+    return (
+        domain_slug(row.get("domain_slug"))
+        or domain_slug(row.get("domain"))
+        or load_domain_profile(None).slug
+    )
 
 
 def _ledger_domain(ledger: Json) -> str:
@@ -3387,7 +3397,7 @@ def sync_submission_decisions(
                 ledger["published"] = 0
                 ledger["publish_failure_reason"] = "public_page_not_rendered"
                 summary["updated"] += 1
-                _write_json(path, ledger)
+                _write_ledger(path, ledger)
             continue
         if ledger.get("status") == "public_page_not_rendered" and ledger.get("public_url"):
             # Recover the inverse of the demotion above: a memo Researka
@@ -3407,7 +3417,7 @@ def sync_submission_decisions(
                 ledger.pop("publish_failure_reason", None)
                 summary["updated"] += 1
                 summary["published"] += 1
-                _write_json(path, ledger)
+                _write_ledger(path, ledger)
             continue
         if ledger.get("status") != "submitted_to_researka":
             continue
@@ -3452,7 +3462,7 @@ def sync_submission_decisions(
         patch = _submission_record_patch(ledger)
         if patch:
             submission_record_updates[submission_id] = patch
-        _write_json(path, ledger)
+        _write_ledger(path, ledger)
     synthetic_ledgers: list[tuple[Path, Json]] = []
 
     def update_submitted_records(submitted: list[Any]) -> bool:
@@ -3531,7 +3541,7 @@ def sync_submission_decisions(
         update_submitted_records,
     )
     for synthetic_path, synthetic_ledger in synthetic_ledgers:
-        _write_json(synthetic_path, synthetic_ledger)
+        _write_ledger(synthetic_path, synthetic_ledger)
     return summary
 
 
@@ -4726,7 +4736,6 @@ def main() -> int:
     parser.add_argument("--refresh-candidates", action="store_true")
     parser.add_argument(
         "--allow-tier2-repair",
-        "--allow-tier2",
         dest="allow_tier2",
         action="store_true",
         help="Allow Tier 2 rows to enter repair; does not lower final submit gates.",

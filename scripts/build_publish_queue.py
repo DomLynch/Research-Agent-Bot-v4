@@ -183,7 +183,10 @@ def build_queue(
         if seed_keys and not (_run_scope_keys(run, row) & seed_keys):
             continue
         if run_domain:
-            row = row | {"domain": load_domain_profile(run_domain).as_metadata()}
+            row = row | {
+                "domain": load_domain_profile(run_domain).as_metadata(),
+                "domain_slug": run_domain,
+            }
         rows.append(row)
     rank = {"TIER_1": 0, "TIER_2": 1, "TIER_3": 2}
     rows.sort(key=lambda r: (

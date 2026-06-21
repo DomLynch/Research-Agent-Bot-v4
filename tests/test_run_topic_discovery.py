@@ -322,7 +322,7 @@ def test_cache_only_filters_cached_topics_to_domain_seed_scope(
     assert [row["topic"] for row in payload["top"]] == ["semaglutide_once_weekly"]
 
 
-def test_business_discovery_filters_longevity_topics(
+def test_business_family_discovery_filters_longevity_topics(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
     def fake_discover(**_kwargs: Any) -> tuple[TopicCandidate, ...]:
@@ -339,6 +339,12 @@ def test_business_discovery_filters_longevity_topics(
                 top_paper_title="Business model performance",
                 velocity_score=8.0, mean_fwci=2.0, mean_cited_by=18.0,
             ),
+            TopicCandidate(
+                topic="digital_ads_conversion_lift", paper_count=7,
+                fact_source_count=7, top_paper_doi="10.1/ads",
+                top_paper_title="Digital ads conversion lift",
+                velocity_score=7.0, mean_fwci=2.0, mean_cited_by=17.0,
+            ),
         )
 
     fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
@@ -346,16 +352,21 @@ def test_business_discovery_filters_longevity_topics(
     monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
     monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
     monkeypatch.setattr(run_topic_discovery, "discover_topics", fake_discover)
-    monkeypatch.setattr(sys, "argv", [
-        "run_topic_discovery.py", "--domain", "business_research", "--top", "2",
-    ])
+    expected = {
+        "business_research": "business_model_performance_margin",
+        "marketing_research": "digital_ads_conversion_lift",
+    }
+    for domain, expected_topic in expected.items():
+        monkeypatch.setattr(sys, "argv", [
+            "run_topic_discovery.py", "--domain", domain, "--top", "2",
+        ])
 
-    assert run_topic_discovery.main() == 0
-    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
-    payload = json.loads(out[-1].read_text(encoding="utf-8"))
-    assert [row["topic"] for row in payload["top"]] == [
-        "business_model_performance_margin",
-    ]
+        assert run_topic_discovery.main() == 0
+        out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+        payload = json.loads(out[-1].read_text(encoding="utf-8"))
+        emitted = [row["topic"] for row in payload["top"]]
+        assert "hormone_optimization_hrt_hormonal" not in emitted
+        assert emitted == [expected_topic]
 
 
 def test_cache_first_preserves_cached_source_papers(

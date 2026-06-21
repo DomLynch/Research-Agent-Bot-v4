@@ -309,4 +309,5 @@ def test_build_queue_reports_pre_memo_stage_failures(
     assert out["ready_to_publish"] == []
     assert [row["topic"] for row in out["not_ready"]] == ["ai_agents"]
     assert out["not_ready"][0]["domain"]["slug"] == "ai_research"
+    assert out["not_ready"][0]["domain_slug"] == "ai_research"
     assert "missing_alpha_memo" in out["not_ready"][0]["blockers"]
