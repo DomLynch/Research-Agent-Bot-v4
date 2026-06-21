@@ -1,7 +1,12 @@
 """Publish status policy tests."""
 from __future__ import annotations
 
-from scripts.alpha_publish_status import CycleStatus, cycle_exit_code, publish_summary
+from scripts.alpha_publish_status import (
+    CycleStatus,
+    cycle_exit_code,
+    publish_summary,
+    queue_counts,
+)
 
 
 def test_submit_exit_codes_fail_closed_for_zero_output_statuses() -> None:
@@ -46,4 +51,17 @@ def test_publish_summary_contains_operator_blocker_fields() -> None:
         "agent_repair_needed": 1,
         "duplicate_submission_fingerprint": 1,
         "receipt_shape_mismatch": 1,
+    }
+
+
+def test_queue_counts_include_legacy_operator_review_bucket() -> None:
+    assert queue_counts({
+        "ready_to_publish": [{}, {}],
+        "agent_repair_needed": [{}],
+        "needs_operator_review": [{}, {}],
+        "curation_needed": [{}],
+    }) == {
+        "ready_to_publish": 2,
+        "agent_repair_needed": 3,
+        "curation_needed": 1,
     }

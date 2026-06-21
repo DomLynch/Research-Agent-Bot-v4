@@ -3762,17 +3762,6 @@ def _cluster_has_repair_receipts(cluster: Json) -> bool:
     )
 
 
-def _queue_counts(queue: Json) -> Json:
-    return {
-        "ready_to_publish": len(queue.get("ready_to_publish") or []),
-        "agent_repair_needed": (
-            len(queue.get("agent_repair_needed") or [])
-            + len(queue.get("needs_operator_review") or [])
-        ),
-        "curation_needed": len(queue.get("curation_needed") or []),
-    }
-
-
 def _drop_markdown_section(memo: str, heading: str) -> str:
     out: list[str] = []
     dropping = False
@@ -4346,7 +4335,7 @@ def run_cycle(
         )
         queue_unchanged = queue_sig == prev_queue_sig
         prev_queue_sig = queue_sig
-        ledger["queue_counts"] = _queue_counts(current_queue)
+        ledger["queue_counts"] = publish_status.queue_counts(current_queue)
         candidate, considered = select_candidate(
             current_queue, runs_root=runs_root, submitted_path=submitted_path,
             allow_tier2=allow_tier2,

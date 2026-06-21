@@ -74,6 +74,17 @@ def top_counts(values: Iterable[str], *, limit: int = 5) -> dict[str, int]:
     return dict(sorted(counts.items(), key=lambda item: (-item[1], item[0]))[:limit])
 
 
+def queue_counts(queue: Json) -> Json:
+    return {
+        "ready_to_publish": len(queue.get("ready_to_publish") or []),
+        "agent_repair_needed": (
+            len(queue.get("agent_repair_needed") or [])
+            + len(queue.get("needs_operator_review") or [])
+        ),
+        "curation_needed": len(queue.get("curation_needed") or []),
+    }
+
+
 def next_action_for_status(status: str) -> str:
     if status in {CycleStatus.PUBLISHED.value, CycleStatus.SUBMITTED_TO_RESEARKA.value}:
         return "watch_decision_or_public_page"
