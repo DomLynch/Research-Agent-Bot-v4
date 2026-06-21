@@ -8,6 +8,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from agent import publish_tier as tier
 from agent.publish_tier import publish_verdict, write_publish_verdict
 
@@ -609,6 +611,78 @@ def test_publish_tier_judges_rendered_memo_receipts_before_lead_audit(
     assert "source_floor_below_min" in verdict["blockers"]
     assert "direct_source_floor_below_min" in verdict["blockers"]
     assert "source_dispersion" not in verdict["blockers"]
+
+
+def test_source_floors_can_be_domain_owned_without_code_changes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    policy = tmp_path / "publication.toml"
+    policy.write_text(
+        "[alpha_memo]\n"
+        "min_source_papers = 5\n"
+        "min_direct_source_papers = 5\n"
+        "min_cluster_source_papers = 3\n\n"
+        "[alpha_memo.domains.ai_research]\n"
+        "min_source_papers = 4\n"
+        "min_direct_source_papers = 4\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(tier, "_PUBLICATION_PATH", policy)
+    root = tmp_path / "ai"
+    root.mkdir()
+    run = _run(
+        root,
+        lanes=("A_core", "A_core", "A_core", "A_core"),
+        dois=("10.a", "10.b", "10.c", "10.d"),
+        titles=(
+            "Reserve markets threshold changes grid storage reliability",
+            "Reserve auctions threshold changes grid storage reliability",
+            "Reserve dispatch threshold changes grid storage reliability",
+            "Reserve pricing threshold changes grid storage reliability",
+        ),
+    )
+    run.joinpath("MANIFEST.json").write_text(json.dumps({
+        "domain": {"slug": "ai_research"},
+    }), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "ready_to_publish"
+    assert "source_floor_below_min" not in verdict["blockers"]
+    assert "direct_source_floor_below_min" not in verdict["blockers"]
+
+
+def test_default_source_floor_still_blocks_four_source_runs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    policy = tmp_path / "publication.toml"
+    policy.write_text(
+        "[alpha_memo]\n"
+        "min_source_papers = 5\n"
+        "min_direct_source_papers = 5\n"
+        "min_cluster_source_papers = 3\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(tier, "_PUBLICATION_PATH", policy)
+    run = _run(
+        tmp_path,
+        lanes=("A_core", "A_core", "A_core", "A_core"),
+        dois=("10.a", "10.b", "10.c", "10.d"),
+        titles=(
+            "Reserve markets threshold changes grid storage reliability",
+            "Reserve auctions threshold changes grid storage reliability",
+            "Reserve dispatch threshold changes grid storage reliability",
+            "Reserve pricing threshold changes grid storage reliability",
+        ),
+    )
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "agent_repair_needed"
+    assert "source_floor_below_min" in verdict["blockers"]
+    assert "direct_source_floor_below_min" in verdict["blockers"]
 
 
 def test_llm_cluster_publishes_three_homogeneous_sources(tmp_path: Path) -> None:

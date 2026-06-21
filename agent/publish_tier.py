@@ -193,7 +193,7 @@ def _cfg(domain: str = "") -> dict[str, Any]:
     }
 
 
-def _publication_int(key: str, default: int) -> int:
+def _publication_int(key: str, default: int, domain: str = "") -> int:
     try:
         data = tomllib.loads(_PUBLICATION_PATH.read_text(encoding="utf-8"))
     except (OSError, tomllib.TOMLDecodeError):
@@ -201,8 +201,14 @@ def _publication_int(key: str, default: int) -> int:
     alpha = data.get("alpha_memo") if isinstance(data, dict) else {}
     if not isinstance(alpha, dict):
         return default
+    value = alpha.get(key, default)
+    domains = alpha.get("domains")
+    if domain and isinstance(domains, dict):
+        domain_alpha = domains.get(domain)
+        if isinstance(domain_alpha, dict):
+            value = domain_alpha.get(key, value)
     try:
-        return int(alpha.get(key, default))
+        return int(value)
     except (TypeError, ValueError):
         return default
 
@@ -994,7 +1000,8 @@ def _off_scope(
 
 def publish_verdict(run_dir: Path) -> dict[str, Any]:
     md = _read(run_dir / "alpha_memo.md")
-    cfg = _cfg(_domain_slug(run_dir))
+    domain = _domain_slug(run_dir)
+    cfg = _cfg(domain)
     topic = run_dir.name.split("-evidence-", 1)[0]
     label = _field(md, "Confidence").strip("`") or "unknown"
     score_raw = _field(md, "Alpha score").split("/", 1)[0]
@@ -1025,11 +1032,15 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         fid for fid in direct_ids
         if claim_fit.get(fid, {}).get("claim_fit") == "direct_match"
     ]
-    min_source_papers = _publication_int("min_source_papers", 5)
-    min_direct_source_papers = _publication_int("min_direct_source_papers", 5)
+    min_source_papers = _publication_int("min_source_papers", 5, domain)
+    min_direct_source_papers = _publication_int(
+        "min_direct_source_papers", 5, domain,
+    )
     # A writer-validated homogeneous cluster publishes at its own lower floor:
     # 2-3 directly-comparable sources are a stronger claim than 5 dispersed ones.
-    min_cluster_source_papers = _publication_int("min_cluster_source_papers", 3)
+    min_cluster_source_papers = _publication_int(
+        "min_cluster_source_papers", 3, domain,
+    )
     result_direct_ids = _result_key_direct_ids(
         direct_ids, facts, cfg["generic_tokens"] | cfg["cluster_stopwords"],
         min_direct_source_papers,
