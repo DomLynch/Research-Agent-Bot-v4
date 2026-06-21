@@ -1120,6 +1120,50 @@ def test_priority_ranked_topics_uses_fact_source_probe(monkeypatch: Any) -> None
     assert calls == [("strong_child", "ai_research"), ("weak_child", "ai_research")]
 
 
+def test_priority_ranked_topics_preserves_discovery_source_counts(
+    monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    class DummyClient:
+        def __enter__(self) -> DummyClient:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+    calls: list[str] = []
+    monkeypatch.setattr(run_curator_cycle, "load_settings", lambda: object())
+    monkeypatch.setattr(run_curator_cycle.httpx, "Client", DummyClient)
+    monkeypatch.setattr(
+        run_curator_cycle, "_read_discovery_top",
+        lambda _out, **_kwargs: [{
+            "topic": "source rich parent",
+            "fact_source_count": 17,
+            "paper_count": 9,
+        }],
+    )
+
+    def fake_count(topic: str, *, client: Any, settings: Any, domain: str) -> int:
+        calls.append(topic)
+        return 0
+
+    monkeypatch.setattr(run_curator_cycle, "_fetch_topic_fact_source_count", fake_count)
+
+    ranked = run_curator_cycle._priority_ranked_topics([
+        "source rich parent", "uncached child",
+    ], domain="longevity_research")
+
+    assert [
+        (row["topic"], row["fact_source_count"], row["paper_count"])
+        for row in ranked
+    ] == [
+        ("source rich parent", 17, 9),
+        ("uncached child", 0, 0),
+    ]
+    assert calls == ["uncached child"]
+
+
 def test_underfloor_priority_repair_topic_is_not_built(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

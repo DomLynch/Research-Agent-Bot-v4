@@ -135,23 +135,41 @@ def _discovery_top_for_plan(
 def _priority_ranked_topics(topics: list[str], *, domain: str = "longevity") -> list[dict[str, Any]]:
     if not topics:
         return []
+    discovery_counts: dict[str, tuple[int, int]] = {}
+    for row in _read_discovery_top(_RUNS / "_topics_discovery", domain=domain):
+        topic = str(row.get("topic") or "").strip()
+        if not topic:
+            continue
+        try:
+            pair = (
+                int(row.get("fact_source_count") or 0),
+                int(row.get("paper_count") or 0),
+            )
+        except (TypeError, ValueError):
+            continue
+        discovery_counts[topic] = pair
+        discovery_counts[cap_topic_slug(topic)] = pair
     try:
         settings = load_settings()
         with httpx.Client() as client:
-            counts = {
-                topic: _fetch_topic_fact_source_count(
+            source_counts = {
+                topic: discovery_counts.get(topic, (0, 0))[0] or _fetch_topic_fact_source_count(
                     topic, client=client, settings=settings, domain=domain,
                 )
                 for topic in topics
             }
     except (OSError, httpx.HTTPError, ValueError):
-        counts = {topic: 0 for topic in topics}
+        source_counts = {
+            topic: discovery_counts.get(topic, (0, 0))[0] for topic in topics
+        }
     return [
         {
             "topic": topic,
             "velocity_score": 0.0,
-            "fact_source_count": counts.get(topic, 0),
-            "paper_count": 1 if counts.get(topic, 0) > 0 else 0,
+            "fact_source_count": source_counts.get(topic, 0),
+            "paper_count": discovery_counts.get(topic, (0, 0))[1] or (
+                1 if source_counts.get(topic, 0) > 0 else 0
+            ),
             "child_depth": _MAX_CHILD_RERUN_DEPTH,
         }
         for topic in topics
