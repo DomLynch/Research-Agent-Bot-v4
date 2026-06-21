@@ -764,28 +764,13 @@ def test_business_systemd_timers_are_eight_hour_guarded() -> None:
         timer = Path(f"deploy/systemd/researka-alpha-{name}-research.timer").read_text(
             encoding="utf-8",
         )
-        submit_lanes = {"economics", "finance"}
-        sweep_lanes = {"economics", "finance", "marketing"}
-        expected_script = "scripts/run_business_alpha_sweep.py" if name in sweep_lanes else (
-            "scripts/build_business_alpha_candidate.py"
-        )
-        assert expected_script in service
-        if name in submit_lanes:
-            assert f"--domains {domain}" in service
-            assert "--submit-after-consistent-passes 2" in service
-            if name == "finance":
-                assert "--topics-per-domain 6" in service
-            assert "SuccessExitStatus=3" not in service
-            assert "EnvironmentFile=/etc/researka-agent-v4.env" in service
-        elif name in sweep_lanes:
-            assert f"--domains {domain}" in service
-            assert "--submit-after-consistent-passes" not in service
-            assert "SuccessExitStatus=3" not in service
-            assert "EnvironmentFile=/etc/researka-agent-v4.env" not in service
-        else:
-            assert f"--domain {domain}" in service
-            assert "--submit" not in service
-            assert "SuccessExitStatus=3" not in service
-            assert "EnvironmentFile=/etc/researka-agent-v4.env" not in service
+        assert "scripts/run_business_alpha_sweep.py" in service
+        assert "scripts/daily_alpha_publish_cycle.py" not in service
+        assert f"--domains {domain}" in service
+        assert "--submit-after-consistent-passes 2" in service
+        if name in {"business", "management", "finance", "marketing"}:
+            assert "--topics-per-domain 6" in service
+        assert "SuccessExitStatus=3" not in service
+        assert "EnvironmentFile=/etc/researka-agent-v4.env" in service
         assert "EnvironmentFile=/root/Research-Agent-Bot-v4/.env" in service
         assert f"OnCalendar=*-*-* {schedule}" in timer

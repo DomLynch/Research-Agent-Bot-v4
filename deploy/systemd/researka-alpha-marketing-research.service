@@ -1,5 +1,5 @@
 [Unit]
-Description=Research Agent v4 Marketing Research dry-run alpha sweep
+Description=Research Agent v4 Marketing Research guarded alpha submit sweep
 Wants=network-online.target
 After=network-online.target
 
@@ -7,5 +7,6 @@ After=network-online.target
 Type=oneshot
 WorkingDirectory=/root/Research-Agent-Bot-v4
 EnvironmentFile=/root/Research-Agent-Bot-v4/.env
-ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/run_business_alpha_sweep.py --domains marketing_research --cycles 1 --topics-per-domain 6
-TimeoutStartSec=2700
+EnvironmentFile=/etc/researka-agent-v4.env
+ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/run_business_alpha_sweep.py --domains marketing_research --cycles 2 --topics-per-domain 6 --submit-after-consistent-passes 2
+TimeoutStartSec=12600
