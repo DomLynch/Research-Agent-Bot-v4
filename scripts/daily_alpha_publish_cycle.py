@@ -4374,7 +4374,7 @@ def run_cycle(
                 runs_root,
                 profile.slug,
                 blocked_topics,
-                limit=refresh_top,
+                limit=1,
                 min_sources=max(min_submit_sources, min_direct_submit_sources),
             )
             if refresh_candidates and fresh_parent_topics and batch < search_batch_limit:
