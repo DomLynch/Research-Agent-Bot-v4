@@ -6957,6 +6957,41 @@ def test_public_alpha_urls_accepts_papers_scheme() -> None:
     ) == ["https://researka.org/alpha/d3c55248"]
 
 
+def test_fresh_parent_topics_scan_recent_domain_discovery_snapshots(
+    tmp_path: Path,
+) -> None:
+    discovery = tmp_path / "_topics_discovery"
+    discovery.mkdir()
+    older = discovery / "2026-06-21T19-29-17Z.json"
+    older.write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{
+            "topic": "source rich parent",
+            "fact_source_count": 17,
+            "paper_count": 9,
+            "velocity_score": 1.0,
+        }],
+    }), encoding="utf-8")
+    newer = discovery / "2026-06-21T19-31-38Z.json"
+    newer.write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{
+            "topic": "thin latest",
+            "fact_source_count": 2,
+            "paper_count": 1,
+            "velocity_score": 9.0,
+        }],
+    }), encoding="utf-8")
+
+    assert daily._fresh_parent_topics_from_discovery(
+        tmp_path,
+        "longevity_research",
+        set(),
+        limit=1,
+        min_sources=5,
+    ) == ["source rich parent"]
+
+
 def test_child_topics_from_queue_caps_slug_to_four_tokens() -> None:
     # A multi-word cluster label must not emit a 6-9 token word-salad child slug
     # (those are probed raw by the curator subprocess and exhaust the refresh

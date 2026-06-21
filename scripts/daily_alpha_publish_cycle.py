@@ -3089,29 +3089,31 @@ def _fresh_parent_topics_from_discovery(
         key=lambda path: path.stat().st_mtime if path.exists() else 0,
         reverse=True,
     )
-    rows: list[Json] = []
+    ranked: list[tuple[tuple[int, int, float, str], str]] = []
+    seen: set[str] = set()
     for path in paths:
         data = _json(path, {})
         if not isinstance(data, dict) or not _same_domain(_row_domain(data), profile_slug):
             continue
         raw_rows = data.get("all") or data.get("top")
-        if isinstance(raw_rows, list):
-            rows = [row for row in raw_rows if isinstance(row, dict)]
-            break
-    ranked: list[tuple[tuple[int, int, float, str], str]] = []
-    seen: set[str] = set()
-    for row in rows:
-        topic = cap_topic_slug(str(row.get("topic") or "").strip())
-        if not topic or topic in seen or _family_blocked_topic(topic, blocked_topics):
+        if not isinstance(raw_rows, list):
             continue
-        with suppress(TypeError, ValueError):
-            fact_sources = int(row.get("fact_source_count") or 0)
-            papers = int(row.get("paper_count") or 0)
-            velocity = float(row.get("velocity_score") or 0.0)
-            if max(fact_sources, papers) < min_sources:
+        for row in raw_rows:
+            if not isinstance(row, dict):
                 continue
-            ranked.append(((-fact_sources, -papers, -velocity, topic), topic))
-            seen.add(topic)
+            topic = cap_topic_slug(str(row.get("topic") or "").strip())
+            if not topic or topic in seen or _family_blocked_topic(topic, blocked_topics):
+                continue
+            with suppress(TypeError, ValueError):
+                fact_sources = int(row.get("fact_source_count") or 0)
+                papers = int(row.get("paper_count") or 0)
+                velocity = float(row.get("velocity_score") or 0.0)
+                if max(fact_sources, papers) < min_sources:
+                    continue
+                ranked.append(((-fact_sources, -papers, -velocity, topic), topic))
+                seen.add(topic)
+        if len(ranked) >= limit:
+            break
     return [topic for _score, topic in sorted(ranked)[:limit]]
 
 
