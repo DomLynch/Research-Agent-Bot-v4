@@ -1187,11 +1187,17 @@ def _agent_repair_passed_submit_gates(
     min_direct_source_count: int,
 ) -> bool:
     blockers = {str(x) for x in verdict.get("blockers") or []}
+    repaired = bool(verdict.get("_agent_repair_applied") or verdict.get("_staging_refreshed"))
     return (
         verdict.get("decision") in _AGENT_REPAIR_DECISIONS
         and source_count >= min_source_count
         and direct_source_count >= min_direct_source_count
         and blockers <= {"source_dispersion"}
+        and (
+            verdict.get("decision") != "agent_repair_needed"
+            or not blockers
+            or repaired
+        )
     )
 
 
@@ -2473,7 +2479,10 @@ def select_candidate(
             verdict = verdict | {"domain": load_domain_profile(verdict_domain).as_metadata()}
         raw_fp = memo_fingerprint(verdict)
         raw_retry_decision = retry_decisions.get(raw_fp)
-        if not verdict.get("_claim_cluster_candidate"):
+        if (
+            not verdict.get("_claim_cluster_candidate")
+            and (raw_fp not in seen or raw_fp in retry_decisions)
+        ):
             verdict = _current_selection_verdict(verdict, runs_root)
         fp = memo_fingerprint(verdict)
         if raw_retry_decision is not None and fp not in retry_decisions:
@@ -2591,6 +2600,8 @@ def select_candidate(
             memo_refreshed = memo_refresher(run_dir, refresh_verdict)
             if memo_refreshed:
                 verdict = _reload_verdict_after_memo_refresh(refresh_verdict, run_dir)
+                if agent_repair:
+                    verdict["_agent_repair_applied"] = True
                 fp = memo_fingerprint(verdict)
                 memo_sha256 = _memo_sha256(verdict, runs_root)
                 if retry_after_rejection and fp == retry_fp and memo_sha256 == retry_memo_sha256:
@@ -2726,6 +2737,8 @@ def select_candidate(
                 memo_refreshed = memo_refresher(run_dir, refresh_verdict)
                 if memo_refreshed:
                     verdict = _reload_verdict_after_memo_refresh(refresh_verdict, run_dir)
+                    if agent_repair:
+                        verdict["_agent_repair_applied"] = True
                     fp = memo_fingerprint(verdict)
                     source_count = _source_count(verdict, runs_root)
                     direct_source_count = _direct_source_count(verdict, runs_root)

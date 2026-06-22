@@ -7529,6 +7529,35 @@ def test_source_rich_tier2_frontier_candidate_submits_without_human_gate(tmp_pat
     assert considered[0]["status"] == "eligible"
 
 
+def test_unrepaired_agent_repair_needed_source_dispersion_does_not_submit(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("unrepaired_source_dispersion") | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "surface_type": "receipt_map",
+        "blockers": ["source_dispersion"],
+    }
+    _memo_with_source_receipts(root, verdict, 5)
+
+    cand, considered = daily.select_candidate(
+        {
+            "ready_to_publish": [],
+            "agent_repair_needed": [verdict],
+            "curation_needed": [],
+        },
+        runs_root=root,
+        submitted_path=root / "submitted.json",
+        allow_tier2=True,
+        min_source_count=5,
+        min_direct_source_count=5,
+    )
+
+    assert cand is None
+    assert considered[0]["status"] == "agent_repair_needed"
+
+
 def test_repaired_source_rich_candidate_submits_with_only_dispersion(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
