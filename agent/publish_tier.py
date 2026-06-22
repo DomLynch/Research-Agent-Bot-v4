@@ -817,6 +817,7 @@ def _source_diverse_fact_clusters(
 
 
 _CHILD_CLUSTER_AXIS_DIMENSIONS = (
+    ("canonical_phrase",),
     ("endpoint", "outcome"),
     ("benchmark",),
     ("task", "dataset"),
@@ -824,6 +825,12 @@ _CHILD_CLUSTER_AXIS_DIMENSIONS = (
     ("model_system",),
     ("evaluation_protocol",),
 )
+_CHILD_AXIS_GENERIC_TOKENS = frozenset({
+    "after", "before", "change", "changed", "changes", "decrease",
+    "decreased", "during", "effect", "effects", "increase", "increased",
+    "mean", "rate", "rates", "reduced", "reduction", "reported", "size",
+    "sizes",
+})
 
 
 def _axis_source_diverse_fact_clusters(
@@ -836,7 +843,10 @@ def _axis_source_diverse_fact_clusters(
 ) -> list[list[dict[str, Any]]]:
     topic_tokens = frozenset(re.findall(r"[a-z0-9]{3,}", topic.lower()))
     grouped: dict[tuple[tuple[str, ...], str], dict[str, dict[str, Any]]] = {}
-    shape_generic = generic | stopwords | topic_tokens | _SHAPE_GENERIC_TOKENS
+    shape_generic = (
+        generic | stopwords | topic_tokens | _SHAPE_GENERIC_TOKENS
+        | _FUNCTION_WORDS | _CHILD_AXIS_GENERIC_TOKENS
+    )
     for fact in facts:
         source = _source_key(fact)
         if not source:
