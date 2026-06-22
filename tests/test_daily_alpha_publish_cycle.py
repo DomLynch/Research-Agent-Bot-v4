@@ -2549,6 +2549,33 @@ def test_repairable_prior_candidate_reenters_empty_queue(tmp_path: Path) -> None
     assert ledger["considered"][0]["retry_after_rejection"] is True
 
 
+def test_repairable_evidence_map_still_obeys_queue_scope_gate(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _stored_map_run(root, "broad_retry", shared_population=None)
+    fp = daily.memo_fingerprint(verdict)
+    daily._write_json(root / "runs" / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submitted_to_researka",
+        "final_verdict": "revise",
+        "candidate": {
+            "fingerprint": fp,
+            "topic": "broad_retry",
+            "run_dir": verdict["run_dir"],
+        },
+        "researka_decision": {"status": "complete", "decision": "revise"},
+    })
+
+    queue = daily._with_repairable_candidates(
+        {"ready_to_publish": [], "curation_needed": [], "not_ready": []},
+        root / "runs",
+    )
+
+    assert queue["ready_to_publish"] == []
+    assert [r["topic"] for r in queue["curation_needed"]] == ["broad_retry"]
+    assert queue["curation_needed"][0]["queue_status"] == "evidence_map_scope_mismatch"
+
+
 def test_nonrepairable_rejection_does_not_retry_duplicate(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("nonretryable")

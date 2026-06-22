@@ -1273,7 +1273,10 @@ def _claim_cluster_candidates(
 def _with_repairable_candidates(
     queue: Json, runs_root: Path, domain: str | None = None,
 ) -> Json:
-    repairable = _repairable_candidate_verdicts(runs_root, domain)
+    repairable = [
+        _queue_ready_row(row, runs_root)
+        for row in _repairable_candidate_verdicts(runs_root, domain)
+    ]
     if not repairable:
         return queue
     existing = {
@@ -1285,7 +1288,11 @@ def _with_repairable_candidates(
     if not additions:
         return queue
     merged = dict(queue)
-    merged["ready_to_publish"] = additions + list(queue.get("ready_to_publish") or [])
+    for row in additions:
+        bucket = str(row.get("decision") or "not_ready")
+        if bucket not in merged or not isinstance(merged.get(bucket), list):
+            bucket = "not_ready"
+        merged[bucket] = [row, *list(merged.get(bucket) or [])]
     return merged
 
 
