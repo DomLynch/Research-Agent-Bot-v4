@@ -6502,6 +6502,88 @@ def test_source_literature_fallback_uses_default_fetcher_after_empty_submit_lane
     assert seen_payload["evidence_bundle"]["surface_type"] == "source_literature_boundary"
 
 
+def test_source_literature_candidates_use_latest_domain_snapshot(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    discovery = root / "_topics_discovery"
+    discovery.mkdir(parents=True)
+    older = discovery / "older.json"
+    older.write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "stale_high_count", "paper_count": 50, "fact_source_count": 50}],
+    }), encoding="utf-8")
+    newer = discovery / "newer.json"
+    newer.write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "current_parent", "paper_count": 6, "fact_source_count": 6}],
+    }), encoding="utf-8")
+    os.utime(newer, (time.time() + 5, time.time() + 5))
+
+    assert daily._source_literature_topic_candidates(
+        root, "longevity_research", 5,
+    ) == ["current_parent"]
+
+
+def test_source_literature_fallback_tries_next_quality_candidate(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    (root / "_topics_discovery" / "longevity.json").write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [
+            {"topic": "title_series", "paper_count": 10, "fact_source_count": 10},
+            {"topic": "usable_boundary", "paper_count": 9, "fact_source_count": 9},
+        ],
+    }), encoding="utf-8")
+    repeated = [
+        {"title": f"Annual report {year}", "doi": f"10.1234/{year}"}
+        for year in range(2020, 2025)
+    ]
+    usable = [
+        {"title": "Metabolic pathway review in aging", "doi": "10.1234/1"},
+        {"title": "Inflammation signalling across lifespan", "doi": "10.1234/2"},
+        {"title": "Mitochondrial stress response biology", "doi": "10.1234/3"},
+        {"title": "Cellular senescence intervention map", "doi": "10.1234/4"},
+        {"title": "Proteostasis mechanisms in age-related decline", "doi": "10.1234/5"},
+    ]
+    monkeypatch.setattr(
+        daily,
+        "_fetch_source_literature_papers",
+        lambda topic, _limit: repeated if topic == "title_series" else usable,
+    )
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "writer_configured": False,
+        "mimo_model": "",
+        "mimo_base_url": "",
+    })())
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-00-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        submitter=lambda _payload: {
+            "ok": True, "status": 200,
+            "response": {"submission": {"id": "sub-1"}},
+        },
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert ledger["status"] == "published"
+    assert [a["status"] for a in ledger["source_literature_fallback_attempts"]] == [
+        "blocked", "selected",
+    ]
+    assert ledger["submitted_topic"] == "usable_boundary"
+
+
 def test_source_literature_boundary_quality_rejects_title_series() -> None:
     papers = [
         {"title": f"RAGE collagen pathway review {year}", "doi": f"10.1234/{year}"}

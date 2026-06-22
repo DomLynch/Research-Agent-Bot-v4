@@ -3252,9 +3252,14 @@ def _fetch_source_literature_papers(topic: str, limit: int) -> list[Json]:
     return [paper for paper in data if isinstance(paper, dict)] if isinstance(data, list) else []
 
 
-def _source_literature_topic_candidate(
-    runs_root: Path, profile_slug: str, min_sources: int, blocked_topics: set[str] | None = None,
-) -> str | None:
+def _source_literature_topic_candidates(
+    runs_root: Path,
+    profile_slug: str,
+    min_sources: int,
+    blocked_topics: set[str] | None = None,
+    *,
+    limit: int = 5,
+) -> list[str]:
     discovery_dir = runs_root / "_topics_discovery"
     paths = sorted(
         discovery_dir.glob("*.json"),
@@ -3262,8 +3267,6 @@ def _source_literature_topic_candidate(
         reverse=True,
     )
     blocked = blocked_topics or set()
-    ranked: list[tuple[tuple[int, int, str], str]] = []
-    seen: set[str] = set()
     for path in paths:
         data = _json(path, {})
         if not isinstance(data, dict) or not _same_domain(_row_domain(data), profile_slug):
@@ -3271,6 +3274,8 @@ def _source_literature_topic_candidate(
         rows = data.get("all")
         if not isinstance(rows, list):
             continue
+        ranked: list[tuple[tuple[int, int, str], str]] = []
+        seen: set[str] = set()
         for row in rows:
             if not isinstance(row, dict):
                 continue
@@ -3282,7 +3287,18 @@ def _source_literature_topic_candidate(
             if paper_count >= min_sources:
                 ranked.append(((-paper_count, -fact_source_count, topic), topic))
                 seen.add(topic)
-    return sorted(ranked)[0][1] if ranked else None
+        if ranked:
+            return [topic for _score, topic in sorted(ranked)[:limit]]
+    return []
+
+
+def _source_literature_topic_candidate(
+    runs_root: Path, profile_slug: str, min_sources: int, blocked_topics: set[str] | None = None,
+) -> str | None:
+    topics = _source_literature_topic_candidates(
+        runs_root, profile_slug, min_sources, blocked_topics, limit=1,
+    )
+    return topics[0] if topics else None
 
 
 
@@ -4914,20 +4930,22 @@ def run_cycle(
         and not ledger["cycle_attempts"]
     ):
         paper_fetcher = source_paper_fetcher or _fetch_source_literature_papers
-        literature_topic = _source_literature_topic_candidate(
+        literature_topics = _source_literature_topic_candidates(
             runs_root, profile.slug, min_submit_sources, blocked_topics,
         )
-        if literature_topic:
+        for literature_topic in literature_topics:
             papers = paper_fetcher(literature_topic, min_submit_sources)
             ok, reason = _source_literature_boundary_quality(
                 literature_topic, papers, min_submit_sources,
             )
-            ledger["source_literature_fallback"] = {
+            fallback_attempt = {
                 "topic": literature_topic,
                 "status": "selected" if ok else "blocked",
                 "reason": reason,
                 "paper_count": len(papers),
             }
+            ledger.setdefault("source_literature_fallback_attempts", []).append(fallback_attempt)
+            ledger["source_literature_fallback"] = fallback_attempt
             if ok:
                 candidate, payload = _source_literature_payload(
                     profile_slug=profile.slug,
