@@ -542,6 +542,11 @@ def test_cycle_rebuilds_publish_queue_for_selected_domain(
     assert run_curator_cycle.main() == 0
     queue_args = next(args for step, args in calls if step == "publish_queue")
     assert queue_args[queue_args.index("--domain") + 1] == "ai_research"
+    assert "--output" not in queue_args
+    cycle_json = next(cycles.glob("*.json"))
+    payload = json.loads(cycle_json.read_text(encoding="utf-8"))
+    assert payload["publish_queue"] == "runs/_publish_queue.json"
+    assert payload["domain_publish_queue"] == "runs/_publish_queue.ai_research.json"
 
 
 def test_cycle_summary_json_uses_sidecar_lock(

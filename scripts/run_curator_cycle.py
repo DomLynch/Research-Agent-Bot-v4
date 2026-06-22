@@ -792,14 +792,20 @@ def main() -> int:
         payload["cross_topic_memo_error"] = cross_last[:240]
         _write_cycle_json(json_path, payload)
         md_text += f"\n## Cross-topic lead\n\n_failed: {cross_last[:240]}_\n"
+    domain_queue_display_path = f"runs/_publish_queue.{args.domain}.json"
     queue_ok, queue_last = _run_step(
         [py, "scripts/build_publish_queue.py", "--domain", args.domain],
         "publish_queue",
     )
     if queue_ok:
         payload["publish_queue"] = "runs/_publish_queue.json"
+        payload["domain_publish_queue"] = domain_queue_display_path
         _write_cycle_json(json_path, payload)
-        md_text += "\n## Publish queue\n\n`runs/_publish_queue.json`\n"
+        md_text += (
+            "\n## Publish queue\n\n"
+            "`runs/_publish_queue.json`\n\n"
+            f"Domain queue: `{domain_queue_display_path}`\n"
+        )
     else:
         payload["publish_queue_error"] = queue_last[:240]
         _write_cycle_json(json_path, payload)

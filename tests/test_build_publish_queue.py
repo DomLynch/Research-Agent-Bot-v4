@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import fcntl
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +25,41 @@ def test_write_queue_uses_output_lock(
     queue._write_json(tmp_path / "_publish_queue.json", {"ready_to_publish": []})
 
     assert ("_publish_queue.json.lock", fcntl.LOCK_EX) in lock_calls
+
+
+def test_domain_queue_cli_writes_legacy_and_domain_sidecar(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    runs = tmp_path / "runs"
+    ai_run = _run(
+        runs,
+        "ai_agents-evidence-2026-02-01T00-00-00Z",
+        label="evidence_backed_signal",
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+    )
+    ai_run.joinpath("MANIFEST.json").write_text(json.dumps({
+        "domain": {"slug": "ai_research"},
+    }), encoding="utf-8")
+    monkeypatch.setattr(queue, "_RUNS", runs)
+    monkeypatch.setattr(sys, "argv", [
+        "build_publish_queue.py", "--domain", "ai_research",
+    ])
+
+    assert queue.main() == 0
+
+    legacy = json.loads((runs / "_publish_queue.json").read_text(encoding="utf-8"))
+    sidecar = json.loads(
+        (runs / "_publish_queue.ai_research.json").read_text(encoding="utf-8"),
+    )
+    assert legacy == sidecar
+    rows = [
+        row
+        for bucket_rows in sidecar.values()
+        if isinstance(bucket_rows, list)
+        for row in bucket_rows
+    ]
+    assert rows
+    assert {row["domain_slug"] for row in rows} == {"ai_research"}
 
 
 def _run(root: Path, name: str, *, label: str, lanes: tuple[str, ...]) -> Path:

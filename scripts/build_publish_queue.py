@@ -65,6 +65,16 @@ def _write_json(path: Path, payload: Any) -> None:
     publish_io.write_json(path, payload)
 
 
+def _default_output_path() -> Path:
+    return _RUNS / "_publish_queue.json"
+
+
+def _domain_output_path(domain: str | None) -> Path | None:
+    if domain:
+        return _RUNS / f"_publish_queue.{domain}.json"
+    return None
+
+
 def _run_domain(run: Path, verdict: dict[str, Any]) -> str:
     return (
         domain_slug(verdict.get("domain"))
@@ -207,16 +217,21 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--current-only", action="store_true")
     parser.add_argument("--domain", choices=domain_choices(), default=None)
-    parser.add_argument("--output", type=Path, default=_RUNS / "_publish_queue.json")
+    parser.add_argument("--output", type=Path, default=None)
     args = parser.parse_args()
+    output = args.output or _default_output_path()
     queue = build_queue(include_archive=not args.current_only, domain=args.domain)
-    _write_json(args.output, queue)
+    _write_json(output, queue)
+    domain_output = _domain_output_path(args.domain)
+    if domain_output and domain_output != output:
+        _write_json(domain_output, queue)
     print(
         "[publish-queue] "
         f"ready={len(queue['ready_to_publish'])} "
         f"repair={len(queue['agent_repair_needed'])} "
         f"curation={len(queue['curation_needed'])} "
-        f"not_ready={len(queue['not_ready'])} -> {args.output}"
+        f"not_ready={len(queue['not_ready'])} -> {output}"
+        + (f" domain_output={domain_output}" if domain_output else "")
     )
     return 0
 
