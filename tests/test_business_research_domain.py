@@ -698,6 +698,7 @@ def test_business_sweep_submit_guard_blocks_dry_run_domain(
 def test_business_sweep_writes_domain_scoped_latest_summaries(
     tmp_path: Path,
     monkeypatch: Any,
+    capsys: Any,
 ) -> None:
     monkeypatch.setattr(sweep, "_DOMAINS", ("business_research", "marketing_research"))
     monkeypatch.setattr(
@@ -714,7 +715,11 @@ def test_business_sweep_writes_domain_scoped_latest_summaries(
         "--runs-root", str(tmp_path / "runs"),
     ])
 
-    assert sweep.main() == 3
+    assert sweep.main() == 2
+    captured = capsys.readouterr()
+    assert "[business-sweep] no_bundle business_research business_model_performance" in captured.out
+    assert "[business-sweep] no_bundle marketing_research business_model_performance" in captured.out
+    assert "[business-sweep] no_ready_candidate" in captured.err
 
     diagnostics = tmp_path / "runs" / "_business_diagnostics"
     business = json.loads(
@@ -728,6 +733,7 @@ def test_business_sweep_writes_domain_scoped_latest_summaries(
         "business_research",
         "marketing_research",
     }
+    assert {row["status"] for row in aggregate["results"]} == {"no_bundle"}
     assert business["domain"] == "business_research"
     assert {row["domain"] for row in business["results"]} == {"business_research"}
     assert marketing["domain"] == "marketing_research"
