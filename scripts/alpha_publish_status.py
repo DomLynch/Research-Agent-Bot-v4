@@ -25,6 +25,7 @@ class CycleStatus(StrEnum):
 
 class CandidateStatus(StrEnum):
     DUPLICATE_SUBMISSION_FINGERPRINT = "duplicate_submission_fingerprint"
+    STALE_PUBLISH_VERDICT = "stale_publish_verdict"
     MISSING_ALPHA_MEMO = "missing_alpha_memo"
     AGENT_REPAIR_FAILED = "agent_repair_failed"
     MEMO_MISSING_FALSIFIER = "memo_missing_falsifier"
@@ -41,6 +42,7 @@ SUBMIT_SUCCESS_STATUSES = frozenset({CycleStatus.PUBLISHED.value})
 PENDING_SUCCESS_STATUSES = frozenset({CycleStatus.SUBMITTED_TO_RESEARKA.value})
 EXHAUSTED_STATUSES = frozenset({
     CandidateStatus.DUPLICATE_SUBMISSION_FINGERPRINT.value,
+    CandidateStatus.STALE_PUBLISH_VERDICT.value,
     CandidateStatus.MISSING_ALPHA_MEMO.value,
     CandidateStatus.AGENT_REPAIR_FAILED.value,
     CandidateStatus.MEMO_MISSING_FALSIFIER.value,
@@ -57,7 +59,10 @@ TOPIC_EXHAUSTED_STATUSES = frozenset({
     CandidateStatus.EVIDENCE_MAP_BELOW_CITATION_FLOOR.value,
 })
 FINGERPRINT_EXHAUSTED_STATUSES = (
-    TOPIC_EXHAUSTED_STATUSES | {CandidateStatus.AGENT_REPAIR_FAILED.value}
+    TOPIC_EXHAUSTED_STATUSES | {
+        CandidateStatus.AGENT_REPAIR_FAILED.value,
+        CandidateStatus.STALE_PUBLISH_VERDICT.value,
+    }
 )
 REFRESHABLE_SOURCE_FLOOR_STATUSES = frozenset({
     CandidateStatus.CORPUS_SOURCE_FLOOR_BELOW_MIN.value,
@@ -118,6 +123,8 @@ def no_candidate_reason(considered: list[Json]) -> str:
         return "all candidates were duplicate submission fingerprints"
     if statuses and all(status == "cycle_exhausted_topic" for status in statuses):
         return "all candidates were topic/family exhausted"
+    if "stale_publish_verdict" in statuses:
+        return "selected candidate no longer matches the current publish verdict"
     if "evidence_map_below_citation_floor" in statuses:
         return "best evidence-map candidate was below citation floor"
     return "no eligible non-duplicate memo"

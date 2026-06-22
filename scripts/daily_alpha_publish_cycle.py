@@ -636,6 +636,102 @@ def _current_selection_verdict(verdict: Json, root: Path) -> Json:
     return _with_domain_metadata(current | private, run_dir, verdict)
 
 
+def _current_submit_verdict(verdict: Json, root: Path) -> Json:
+    if verdict.get("_claim_cluster_candidate"):
+        return verdict
+    run_dir = _run_path(root, verdict.get("run_dir"))
+    if not run_dir.exists():
+        return verdict
+    if (
+        not _can_recompute_verdict(run_dir)
+        and not (run_dir / "publish_verdict.json").exists()
+    ):
+        return verdict
+    current = _verdict_for_run(run_dir)
+    if not isinstance(current, dict) or not current:
+        return verdict
+    private = {k: v for k, v in verdict.items() if str(k).startswith("_")}
+    merged = current | private
+    for key in ("run_dir", "topic"):
+        if not merged.get(key) and verdict.get(key):
+            merged[key] = verdict[key]
+    return _with_domain_metadata(merged, run_dir, verdict)
+
+
+def _pre_submit_hold(
+    verdict: Json,
+    root: Path,
+    *,
+    allow_tier2: bool,
+    min_source_count: int,
+    min_direct_source_count: int,
+) -> Json:
+    source_count = _source_count(verdict, root)
+    direct_source_count = _direct_source_count(verdict, root)
+    corpus_source_count = _corpus_source_count(verdict, root)
+    hold = {
+        "source_count": source_count,
+        "direct_source_count": direct_source_count,
+        "corpus_ab_paper_count": corpus_source_count,
+        "min_source_count": min_source_count,
+        "min_direct_source_count": min_direct_source_count,
+        "current_decision": verdict.get("decision"),
+        "blockers": verdict.get("blockers") or [],
+    }
+    approved = _selection_approved(
+        verdict,
+        root,
+        allow_tier2=allow_tier2,
+        source_count=source_count,
+        direct_source_count=direct_source_count,
+        min_source_count=min_source_count,
+        min_direct_source_count=min_direct_source_count,
+    ) or _agent_repair_passed_submit_gates(
+        verdict,
+        source_count=source_count,
+        direct_source_count=direct_source_count,
+        min_source_count=min_source_count,
+        min_direct_source_count=min_direct_source_count,
+    )
+    if not _has_memo(verdict, root):
+        return hold | {"status": "missing_alpha_memo"}
+    if not approved:
+        return hold | {"status": "stale_publish_verdict"}
+    if not _has_falsifier(verdict, root):
+        return hold | {"status": "memo_missing_falsifier"}
+    missing_audit_sidecars = _missing_audit_sidecars(verdict, root)
+    if missing_audit_sidecars:
+        return hold | {
+            "status": "memo_missing_audit_sidecars",
+            "missing_audit_sidecars": missing_audit_sidecars,
+        }
+    cluster_backed = _llm_cluster_backed(verdict, root)
+    cluster_floor = _alpha_memo_int("min_cluster_source_papers", 3)
+    eff_min_source_count = (
+        min(min_source_count, cluster_floor) if cluster_backed else min_source_count
+    )
+    eff_min_direct_count = (
+        min(min_direct_source_count, cluster_floor)
+        if cluster_backed else min_direct_source_count
+    )
+    if source_count < eff_min_source_count:
+        status = (
+            "corpus_source_floor_below_min"
+            if corpus_source_count < eff_min_source_count else
+            "memo_source_floor_below_min"
+        )
+        return hold | {"status": status}
+    if direct_source_count < eff_min_direct_count:
+        return hold | {"status": "direct_source_floor_below_min"}
+    if (
+        verdict.get("surface_type") != "evidence_map"
+        and not cluster_backed
+        and not _direct_receipts_share_shape(verdict, root, min_direct_source_count)
+    ):
+        return hold | {"status": "receipt_shape_mismatch"}
+    return hold | {"status": ""}
+
+
 def _reload_verdict_after_memo_refresh(verdict: Json, run_dir: Path) -> Json:
     if not _can_recompute_verdict(run_dir):
         return verdict
@@ -4496,6 +4592,48 @@ def run_cycle(
                 if memo_refresher(run_dir, candidate):
                     candidate = _reload_verdict_after_memo_refresh(candidate, run_dir)
                     candidate = candidate | {"memo_fingerprint": memo_fingerprint(candidate)}
+        selected_fingerprint = str(candidate.get("memo_fingerprint") or "")
+        candidate = _current_submit_verdict(candidate, runs_root)
+        current_fingerprint = memo_fingerprint(candidate)
+        candidate = candidate | {"memo_fingerprint": current_fingerprint}
+        hold = _pre_submit_hold(
+            candidate,
+            runs_root,
+            allow_tier2=allow_tier2,
+            min_source_count=min_submit_sources,
+            min_direct_source_count=min_direct_submit_sources,
+        )
+        if hold["status"]:
+            attempt.update(hold)
+            attempt["status"] = hold["status"]
+            if current_fingerprint != selected_fingerprint:
+                attempt["selected_fingerprint"] = selected_fingerprint
+                attempt["current_fingerprint"] = current_fingerprint
+            for row in reversed(all_considered):
+                if row.get("fingerprint") in {selected_fingerprint, current_fingerprint}:
+                    row["pre_attempt_status"] = row.get("status")
+                    row["status"] = hold["status"]
+                    row["current_decision"] = hold["current_decision"]
+                    row["blockers"] = hold["blockers"]
+                    row["source_count"] = hold["source_count"]
+                    row["direct_source_count"] = hold["direct_source_count"]
+                    row["corpus_ab_paper_count"] = hold["corpus_ab_paper_count"]
+                    if hold.get("missing_audit_sidecars"):
+                        row["missing_audit_sidecars"] = hold["missing_audit_sidecars"]
+                    break
+            ledger["cycle_attempts"].append(attempt)
+            for fingerprint in {selected_fingerprint, current_fingerprint}:
+                if fingerprint:
+                    blocked_fingerprints.add(fingerprint)
+            if not refresh_candidates or batch >= search_batch_limit:
+                ledger.update({
+                    "status": "no_fresh_candidate",
+                    "published": 0,
+                    "reason": publish_status.no_candidate_reason(all_considered),
+                })
+                _write_ledger(ledger_path, ledger)
+                return ledger
+            continue
         payload = _submission_payload(candidate, runs_root)
         checked_payload, preflight_report = _run_preflight_qa(payload, run_dir)
         if preflight_report is not None:

@@ -3359,6 +3359,65 @@ def test_submit_floor_counts_sources_used_by_alpha_memo(tmp_path: Path) -> None:
     assert len(seen_payload["source_bundle"]) == 5
 
 
+def test_submit_revalidates_stale_queue_row_before_payload(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    ready = _verdict("stale_model_eval")
+    _memo_with_source_receipts(root, ready, 4)
+    run = root / str(ready["run_dir"])
+    current = ready | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "blockers": ["source_floor_below_min", "direct_source_floor_below_min"],
+        "axes": {
+            "source_papers": [
+                {"doi": f"10.1000/current-{i}", "title": f"Current source {i}"}
+                for i in range(4)
+            ],
+        },
+    }
+    run.joinpath("publish_verdict.json").write_text(
+        json.dumps(current), encoding="utf-8")
+    selected_fp = daily.memo_fingerprint(ready)
+
+    def stale_select(
+        *_args: Any, **_kwargs: Any,
+    ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+        return ready | {"memo_fingerprint": selected_fp}, [{
+            "topic": ready["topic"],
+            "decision": "ready_to_publish",
+            "status": "eligible",
+            "run_dir": ready["run_dir"],
+            "fingerprint": selected_fp,
+            "source_count": 5,
+            "direct_source_count": 5,
+        }]
+
+    def should_not_submit(_payload: dict[str, Any]) -> dict[str, Any]:
+        raise AssertionError("stale queue row should not be submitted")
+
+    monkeypatch.setattr(daily, "select_candidate", stale_select)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-22",
+        queue=_queue(ready),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {"title": ["clean paper"]}},
+        submitter=should_not_submit,
+    )
+
+    assert ledger["status"] == "no_fresh_candidate"
+    assert ledger["submitted"] == 0
+    assert ledger["cycle_attempts"][0]["status"] == "stale_publish_verdict"
+    assert ledger["cycle_attempts"][0]["current_decision"] == "agent_repair_needed"
+    assert ledger["cycle_attempts"][0]["source_count"] == 4
+    assert ledger["considered"][0]["pre_attempt_status"] == "eligible"
+    assert ledger["considered"][0]["status"] == "stale_publish_verdict"
+
+
 def test_submit_floor_blocks_context_only_source_padding(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("context_sources") | {
