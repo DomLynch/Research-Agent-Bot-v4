@@ -37,6 +37,7 @@ from agent.publish_tier import publish_verdict
 from agent.researka_facts import tier2_domain
 from agent.settings import load_settings
 from agent.topic_discovery import cap_topic_slug
+from scripts import alpha_publish_decisions as publish_decisions
 from scripts import alpha_publish_io as publish_io
 from scripts import alpha_publish_markdown as publish_markdown
 from scripts import alpha_publish_preflight as preflight
@@ -2991,42 +2992,11 @@ def _crossref_fetch(doi: str) -> Json:
 
 
 def _decision_fetch(submission_id: str) -> Json:
-    base = os.environ.get("RESEARKA_DECISION_URL_BASE", "https://api.researka.org/submissions")
-    url = base.rstrip("/") + "/" + urllib.parse.quote(submission_id, safe="") + "/decision"
-    req = urllib.request.Request(url, headers={"User-Agent": "researka-v4/1.0"})
-    with urllib.request.urlopen(req, timeout=30) as response:
-        data = json.loads(response.read().decode("utf-8"))
-    return data if isinstance(data, dict) else {}
+    return publish_decisions.decision_fetch(submission_id)
 
 
 def _submission_id(payload: Json) -> str:
-    direct = payload.get("submission_id")
-    if direct:
-        return str(direct)
-    submission = payload.get("submission")
-    if isinstance(submission, dict) and submission.get("id"):
-        return str(submission.get("id"))
-    for key in ("detail", "data"):
-        nested = payload.get(key)
-        if isinstance(nested, dict):
-            found = _submission_id(nested)
-            if found:
-                return found
-    for attempt in payload.get("attempts") or []:
-        if not isinstance(attempt, dict):
-            continue
-        response = attempt.get("response")
-        if isinstance(response, dict):
-            found = _submission_id(response)
-            if found:
-                return found
-        elif isinstance(response, str):
-            with suppress(json.JSONDecodeError):
-                found = _submission_id(json.loads(response))
-                if found:
-                    return found
-    nested = payload.get("submission")
-    return str(nested.get("id") if isinstance(nested, dict) else "")
+    return publish_decisions.submission_id(payload)
 
 
 def _public_alpha_base() -> str:
@@ -3503,58 +3473,12 @@ def _apply_submission_decision(
     decision: Json,
     page_fetcher: PageFetcher,
 ) -> str:
-    final = "pending"
-    if decision.get("status") == "complete":
-        if decision.get("decision") == "accept":
-            if decision.get("failure_category") == "integrity_duplicate":
-                final = "accepted"
-                ledger["status"] = publish_status.CycleStatus.DEDUPED_PUBLICATION.value
-                ledger["published"] = 0
-                ledger["published_topic"] = (
-                    ledger.get("submitted_topic")
-                    or (ledger.get("candidate") or {}).get("topic")
-                )
-                ledger.pop("publish_failure_reason", None)
-                ledger["submission_id"] = submission_id
-                ledger["researka_decision"] = decision
-                ledger["final_verdict"] = final
-                return final
-            page = _public_page_check(
-                decision, page_fetcher=page_fetcher,
-                attempts=_PUBLISH_RENDER_POLL_ATTEMPTS,
-                delay_s=_PUBLISH_RENDER_POLL_DELAY_S,
-            )
-            ledger["public_page_check"] = page
-            if page.get("ok"):
-                final = "accepted"
-                ledger["status"] = publish_status.CycleStatus.PUBLISHED.value
-                ledger["published"] = 1
-                ledger["published_topic"] = (
-                    ledger.get("submitted_topic")
-                    or (ledger.get("candidate") or {}).get("topic")
-                )
-                ledger["public_url"] = page.get("url")
-            elif page.get("status") == "missing_public_url":
-                final = "pending"
-                ledger["status"] = publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value
-                ledger["published"] = 0
-                ledger["accepted_pending_public_url"] = True
-                ledger.pop("publish_failure_reason", None)
-            else:
-                final = "rejected"
-                ledger["status"] = publish_status.CycleStatus.PUBLIC_PAGE_NOT_RENDERED.value
-                ledger["published"] = 0
-                ledger["publish_failure_reason"] = "public_page_not_rendered"
-        elif decision.get("decision") == "revise":
-            final = "revise"
-            ledger["status"] = publish_status.CycleStatus.REVIEWER_REVISE.value
-        else:
-            final = "rejected"
-            ledger["status"] = publish_status.CycleStatus.REVIEWER_REJECTED.value
-    ledger["submission_id"] = submission_id
-    ledger["researka_decision"] = decision
-    ledger["final_verdict"] = final
-    return final
+    return publish_decisions.apply_submission_decision(
+        ledger,
+        submission_id_value=submission_id,
+        decision=decision,
+        page_fetcher=page_fetcher,
+    )
 
 
 def _poll_submission_decision(
@@ -3567,32 +3491,15 @@ def _poll_submission_decision(
     sleep_seconds: float,
     sleep: Callable[[float], None] = time.sleep,
 ) -> str:
-    final = "pending"
-    if attempts <= 0:
-        ledger["decision_poll"] = {"attempts": 0, "final_verdict": final}
-        return final
-    for idx in range(attempts):
-        if idx and sleep_seconds > 0:
-            sleep(sleep_seconds)
-        try:
-            decision = fetcher(submission_id)
-        except Exception as exc:  # pragma: no cover - network defensive path
-            ledger["decision_check_error"] = {
-                "error": type(exc).__name__,
-                "detail": str(exc)[:180],
-                "attempt": idx + 1,
-            }
-            return final
-        final = _apply_submission_decision(
-            ledger,
-            submission_id=submission_id,
-            decision=decision,
-            page_fetcher=page_fetcher,
-        )
-        ledger["decision_poll"] = {"attempts": idx + 1, "final_verdict": final}
-        if final != "pending":
-            return final
-    return final
+    return publish_decisions.poll_submission_decision(
+        ledger,
+        submission_id_value=submission_id,
+        fetcher=fetcher,
+        page_fetcher=page_fetcher,
+        attempts=attempts,
+        sleep_seconds=sleep_seconds,
+        sleep=sleep,
+    )
 
 
 def sync_submission_decisions(
