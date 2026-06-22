@@ -695,6 +695,45 @@ def test_business_sweep_submit_guard_blocks_dry_run_domain(
     assert summary["results"][0]["status"] == "submit_blocked_domain_dry_run_only"
 
 
+def test_business_sweep_writes_domain_scoped_latest_summaries(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research", "marketing_research"))
+    monkeypatch.setattr(
+        sweep,
+        "_seed_topics",
+        lambda _path, *, limit: ["business_model_performance"],
+    )
+    monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: ([], {"status": "ok"}))
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research,marketing_research",
+        "--runs-root", str(tmp_path / "runs"),
+    ])
+
+    assert sweep.main() == 3
+
+    diagnostics = tmp_path / "runs" / "_business_diagnostics"
+    business = json.loads(
+        (diagnostics / "latest_sweep.business_research.json").read_text(encoding="utf-8"),
+    )
+    marketing = json.loads(
+        (diagnostics / "latest_sweep.marketing_research.json").read_text(encoding="utf-8"),
+    )
+    aggregate = json.loads((diagnostics / "latest_sweep.json").read_text(encoding="utf-8"))
+    assert {row["domain"] for row in aggregate["results"]} == {
+        "business_research",
+        "marketing_research",
+    }
+    assert business["domain"] == "business_research"
+    assert {row["domain"] for row in business["results"]} == {"business_research"}
+    assert marketing["domain"] == "marketing_research"
+    assert {row["domain"] for row in marketing["results"]} == {"marketing_research"}
+
+
 def test_business_sweep_submits_after_consistent_non_dry_run_passes(
     tmp_path: Path,
     monkeypatch: Any,
