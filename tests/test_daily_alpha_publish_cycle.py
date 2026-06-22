@@ -2362,6 +2362,42 @@ def test_source_rich_map_not_held_when_memo_cites_few(tmp_path: Path) -> None:
     assert len(submissions[0]["source_bundle"]) == 12
 
 
+def test_evidence_map_floor_counts_empirical_rows_only(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    emap = _heterogeneous_map(root, "method_mixed_map", count=12)
+    run = root / str(emap["run_dir"])
+    facts = json.loads(run.joinpath("all_facts.json").read_text(encoding="utf-8"))
+    for idx, fact in enumerate(facts[:4]):
+        paper = fact["source_paper"]
+        if idx == 0:
+            paper["title"] = "Systematic review of agent results"
+        elif idx == 1:
+            paper["title"] = "Consensus endpoint selection for agent trials"
+        elif idx == 2:
+            fact["canonical_phrase"] = "Power to detect a 20% reduction was adequate."
+        else:
+            paper["title"] = "Availability and pricing of agent tools"
+    run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    submissions: list[dict[str, Any]] = []
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submissions.append(payload)
+        return {"ok": True, "status": 200, "response": {}}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-06T09-30-00Z",
+        queue=_queue(emap),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+    )
+
+    assert ledger["considered"][0]["status"] == "evidence_map_below_citation_floor"
+    assert submissions == []
+
+
 def test_repairable_retry_does_not_resubmit_unchanged_memo(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("unchanged_retry")

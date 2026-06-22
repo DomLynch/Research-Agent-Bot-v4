@@ -2198,10 +2198,28 @@ def _map_citable_facts(verdict: Json, root: Path) -> list[Json]:
     memo's narrowed cluster, or it holds a source-rich map below floor)."""
     return [
         f for f in _landscape_source_facts(verdict, root)
-        if str((f.get("source_paper") or {}).get("title") or "").strip()
-        and (str((f.get("source_paper") or {}).get("doi") or "").strip()
-             or str((f.get("source_paper") or {}).get("pmid") or "").strip())
+        if _empirical_map_fact(f)
     ]
+
+
+_NON_EMPIRICAL_MAP_RE = re.compile(
+    r"\b(review|meta[- ]analysis|consensus|endpoint|power to detect|"
+    r"availability|pricing|affordability|prescription rate)\b",
+    flags=re.I,
+)
+
+
+def _empirical_map_fact(fact: Json) -> bool:
+    paper = fact.get("source_paper") or {}
+    title = str(paper.get("title") or "").strip()
+    if not title or not (
+        str(paper.get("doi") or "").strip() or str(paper.get("pmid") or "").strip()
+    ):
+        return False
+    text = " ".join(str(fact.get(k) or "") for k in (
+        "canonical_phrase", "intervention", "population", "endpoint", "sub_topic",
+    ))
+    return not _NON_EMPIRICAL_MAP_RE.search(f"{title} {text}")
 
 
 def _evidence_map_header(topic: str, n: int) -> tuple[str, str]:
