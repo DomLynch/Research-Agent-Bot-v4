@@ -3417,21 +3417,63 @@ def _source_literature_payload(
     selected = papers[:5]
     run_dir = runs_root / f"{topic}-source-literature-{date}"
     run_dir.mkdir(parents=True, exist_ok=True)
-    lines = ["# Source literature boundary memo", "", "## Boundary map", ""]
+    question = (
+        f"What does the selected source bundle show about the evidence boundary "
+        f"for {topic}?"
+    )
+    lines = [
+        "# Source literature boundary memo",
+        "",
+        "## Research question",
+        "",
+        question,
+        "",
+        "## Selection criteria",
+        "",
+        (
+            f"The latest {profile.display_name} discovery pass ranked {topic} as "
+            "source-rich. The fallback requires at least five verifiable source "
+            "papers, distinct title keys, and a non-repeated report series before "
+            "treating the bundle as a coherent scoping front rather than proof of "
+            "intervention efficacy."
+        ),
+        "",
+        "## Boundary map",
+        "",
+    ]
     for paper in selected:
         title = str(paper.get("title") or "Untitled source").strip()
         doi = str(paper.get("doi") or "").strip()
         year = paper.get("year") or paper.get("publication_year")
-        suffix = f" ({year})" if year else ""
+        source_type = _evidence_type(paper)
+        annotation = "; ".join(str(x) for x in (source_type, year) if x)
+        suffix = f" [{annotation}]" if annotation else ""
         lines.append(f"- {title}{suffix}" + (f" doi:{doi}" if doi else ""))
     source_bundle = _source_bundle(selected)
+    years = sorted(
+        year for year in (_year(source.get("year")) for source in source_bundle)
+        if year is not None
+    )
+    year_text = (
+        f"{years[0]}-{years[-1]}" if len(years) > 1
+        else str(years[0]) if years else "undated"
+    )
+    type_text = "/".join(sorted({
+        str(source.get("evidence_type") or "source") for source in source_bundle
+    }))
+    synthesis = (
+        f"Answer: this {len(source_bundle)}-source {type_text} bundle supports a "
+        f"conventional scoping note for {topic}, spanning {year_text}. The bounded "
+        "signal is source-frontier separation: these papers can define what must "
+        "be checked next, but they do not establish a causal, clinical, species-"
+        "translated, or mechanistically integrated intervention claim."
+    )
     boundary_summary = (
         f"Source-literature boundary for {topic}: the listed sources define "
         "separate evidence fronts. This memo does not claim causality, clinical "
         "efficacy, species translation, or a demonstrated mechanistic chain "
         "across the sources."
     )
-    synthesis = boundary_summary
     writer_meta: Json = {
         "status": "skipped",
         "reason": "deterministic_boundary_only",
@@ -3439,13 +3481,21 @@ def _source_literature_payload(
     }
     lines.extend([
         "",
+        "## Source synthesis",
+        "",
+        synthesis,
+        "",
         "## Boundary limits",
         "",
         boundary_summary,
         "",
-        "## Source synthesis",
+        "## Next gaps",
         "",
-        synthesis,
+        (
+            "Before promotion to a causal alpha memo, a future run needs receipt-"
+            "level agreement on population, exposure or intervention, comparator, "
+            "endpoint, and species context."
+        ),
         "",
     ])
     markdown = "\n".join(lines)
@@ -3465,8 +3515,8 @@ def _source_literature_payload(
         "domain_slug": profile.slug,
         "category": profile.slug.removesuffix("_research"),
         "title": f"{topic} source-literature boundary",
-        "abstract": _safe_excerpt(boundary_summary),
-        "summary": _safe_excerpt(boundary_summary),
+        "abstract": _safe_excerpt(synthesis),
+        "summary": _safe_excerpt(synthesis),
         "topic": topic,
         "metadata": {
             "article_type": "alpha_memo",

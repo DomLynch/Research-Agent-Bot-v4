@@ -6500,8 +6500,10 @@ def test_source_literature_fallback_uses_default_fetcher_after_empty_submit_lane
     assert ledger["status"] == "published"
     assert ledger["submitted_topic"] == "source_rich_parent"
     assert seen_payload["evidence_bundle"]["surface_type"] == "source_literature_boundary"
-    assert "does not claim causality" in seen_payload["abstract"]
-    assert "species translation" in seen_payload["markdown"]
+    assert "scoping note" in seen_payload["abstract"]
+    assert "species context" in seen_payload["markdown"]
+    assert "## Research question" in seen_payload["markdown"]
+    assert "## Selection criteria" in seen_payload["markdown"]
     assert seen_payload["source_bundle"][0] == {
         "title": "Metabolic pathway review in aging",
         "url": None,
@@ -6702,7 +6704,10 @@ def test_source_literature_payload_is_deterministic_boundary_only(
         encoding="utf-8",
     ))
     assert "## Source synthesis" in payload["markdown"]
-    assert "does not claim causality" in payload["markdown"]
+    assert "## Research question" in payload["markdown"]
+    assert "## Selection criteria" in payload["markdown"]
+    assert "do not establish a causal" in payload["markdown"]
+    assert "primary; 2024" in payload["markdown"]
     assert writer["status"] == "skipped"
     assert writer["reason"] == "deterministic_boundary_only"
     assert sidecar["content_hash"] == writer["content_hash"]
