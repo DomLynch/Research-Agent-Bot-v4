@@ -116,7 +116,10 @@ def test_expect_published_exits_nonzero_for_failed_latest_ledger(tmp_path: Path)
 
 
 def test_next_candidate_summary_reports_retry_risk(tmp_path: Path) -> None:
+    seen: dict[str, Any] = {}
+
     def select_candidate(*_args: object, **_kwargs: object) -> tuple[dict[str, str], list[dict[str, Any]]]:
+        seen.update(_kwargs)
         return (
             {"topic": "grid_storage", "decision": "ready_to_publish", "run_dir": "runs/grid"},
             [
@@ -136,12 +139,18 @@ def test_next_candidate_summary_reports_retry_risk(tmp_path: Path) -> None:
         _DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS=30,
         _build_queue=lambda *_args, **_kwargs: {"ready_to_publish": []},
         _recently_published_topics=lambda *_args, **_kwargs: {"old"},
+        _recent_submission_topics=lambda *_args, **_kwargs: {"submitted"},
+        _recent_negative_topics=lambda *_args, **_kwargs: {"rejected"},
         select_candidate=select_candidate,
     )
 
-    summary = health.summarize_next_candidate(tmp_path, cycle_module=fake_cycle)
+    summary = health.summarize_next_candidate(
+        tmp_path, cycle_module=fake_cycle, domain="ai_research",
+    )
 
     assert summary["topic"] == "grid_storage"
+    assert seen["domain"] == "ai_research"
+    assert seen["blocked_topics"] == {"old", "submitted", "rejected"}
     assert summary["retry_after_rejection"] is True
     assert summary["retry_attempt_count"] == 2
     assert summary["considered_counts"] == {"cycle_exhausted_topic": 1, "eligible": 1}

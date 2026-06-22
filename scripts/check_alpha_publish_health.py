@@ -62,10 +62,21 @@ def _attempts(ledger: Json) -> list[Json]:
     return rows
 
 
+def _ledger_domain_slug(ledger: Json) -> str | None:
+    domain = ledger.get("domain")
+    if isinstance(domain, dict):
+        slug = str(domain.get("slug") or "").strip()
+        if slug:
+            return slug
+    slug = str(ledger.get("domain_slug") or "").strip()
+    return slug or None
+
+
 def summarize_next_candidate(
     runs_root: Path,
     *,
     cycle_module: Any | None = None,
+    domain: str | None = None,
 ) -> Json:
     cycle: Any = cycle_module
     if cycle is None:
@@ -75,10 +86,19 @@ def summarize_next_candidate(
             cycle = importlib.import_module("daily_alpha_publish_cycle")
 
     submitted_path = runs_root / "_daily_ledger" / "_submitted_fingerprints.json"
-    queue = cycle._build_queue(runs_root, include_archive=False)
+    queue = cycle._build_queue(runs_root, include_archive=False, domain=domain)
     blocked = cycle._recently_published_topics(
         runs_root / "_daily_ledger",
         days=cycle._DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS,
+        domain=domain,
+    ) | cycle._recent_submission_topics(
+        submitted_path,
+        days=cycle._DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS,
+        domain=domain,
+    ) | cycle._recent_negative_topics(
+        runs_root / "_daily_ledger",
+        days=cycle._DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS,
+        domain=domain,
     )
     candidate, considered = cycle.select_candidate(
         queue,
@@ -88,6 +108,7 @@ def summarize_next_candidate(
         min_direct_source_count=cycle._DEFAULT_MIN_DIRECT_SUBMIT_SOURCES,
         blocked_topics=blocked,
         memo_refresher=None,
+        domain=domain,
     )
     eligible_row = next(
         (row for row in considered if isinstance(row, dict) and row.get("status") == "eligible"),
@@ -172,7 +193,9 @@ def summarize_latest(
         summary["decision_sync"] = decision_sync
     if show_next_candidate:
         try:
-            summary["next_candidate"] = summarize_next_candidate(runs_root)
+            summary["next_candidate"] = summarize_next_candidate(
+                runs_root, domain=_ledger_domain_slug(ledger),
+            )
         except Exception as exc:  # pragma: no cover - monitor should report, not crash.
             summary["next_candidate_error"] = f"{type(exc).__name__}: {exc}"
     return summary
