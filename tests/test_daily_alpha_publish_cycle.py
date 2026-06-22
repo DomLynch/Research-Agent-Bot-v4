@@ -2315,6 +2315,11 @@ def test_evidence_map_with_floor_citations_submits(tmp_path: Path) -> None:
 def test_source_rich_unbounded_evidence_map_is_held(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     emap = _heterogeneous_map(root, "ai_agents_breadth", count=12)
+    run = root / str(emap["run_dir"])
+    facts = json.loads(run.joinpath("all_facts.json").read_text(encoding="utf-8"))
+    for fact in facts:
+        fact["comparator"] = "usual care"
+    run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
     submissions: list[dict[str, Any]] = []
 
     def submitter(payload: dict[str, Any]) -> dict[str, Any]:

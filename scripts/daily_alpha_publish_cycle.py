@@ -58,7 +58,8 @@ _COHERENCE_GENERIC_TOKENS = _CLUSTER_GENERIC_TOKENS | {
     "endpoint", "endpoints", "outcome", "outcomes", "intervention",
     "interventions", "comparator", "comparators", "group", "groups",
     "primary", "secondary", "measure", "measures", "metric", "metrics",
-    "setting", "settings", "agent", "agents",
+    "setting", "settings", "agent", "agents", "usual", "standard", "routine",
+    "care",
 }
 
 Json = dict[str, Any]
