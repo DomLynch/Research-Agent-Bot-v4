@@ -352,6 +352,12 @@ def test_business_family_discovery_filters_longevity_topics(
                 top_paper_title="Digital ads conversion lift",
                 velocity_score=7.0, mean_fwci=2.0, mean_cited_by=17.0,
             ),
+            TopicCandidate(
+                topic="employee_engagement_turnover_risk", paper_count=6,
+                fact_source_count=6, top_paper_doi="10.1/mgmt",
+                top_paper_title="Employee engagement and turnover risk",
+                velocity_score=6.0, mean_fwci=2.0, mean_cited_by=16.0,
+            ),
         )
 
     fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
@@ -362,6 +368,7 @@ def test_business_family_discovery_filters_longevity_topics(
     expected = {
         "business_research": "business_model_performance_margin",
         "marketing_research": "digital_ads_conversion_lift",
+        "management_research": "employee_engagement_turnover_risk",
     }
     for domain, expected_topic in expected.items():
         monkeypatch.setattr(sys, "argv", [
