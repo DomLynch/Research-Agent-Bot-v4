@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import json
 import sys
 import time
 import tomllib
@@ -20,6 +19,7 @@ from agent.business_research import (
 )
 from agent.domain_profile import load_domain_profile
 from agent.settings import load_settings
+from scripts.alpha_publish_io import write_json
 from scripts.build_business_alpha_candidate import write_no_bundle_diagnostics
 from scripts.daily_alpha_publish_cycle import run_cycle
 
@@ -54,8 +54,25 @@ def _selected_domains(value: str) -> tuple[str, ...]:
 def _write_sweep_summary(runs_root: Path, rows: list[dict[str, Any]]) -> Path:
     out_dir = runs_root / "_business_diagnostics"
     out_dir.mkdir(parents=True, exist_ok=True)
+    payload = {"results": rows}
     out_path = out_dir / "latest_sweep.json"
-    out_path.write_text(json.dumps({"results": rows}, indent=2, sort_keys=True), encoding="utf-8")
+    write_json(out_path, payload)
+    domains = sorted({
+        str(row.get("domain") or "").strip()
+        for row in rows
+        if str(row.get("domain") or "").strip()
+    })
+    for domain in domains:
+        write_json(
+            out_dir / f"latest_sweep.{domain}.json",
+            {
+                "domain": domain,
+                "results": [
+                    row for row in rows
+                    if str(row.get("domain") or "").strip() == domain
+                ],
+            },
+        )
     return out_path
 
 
