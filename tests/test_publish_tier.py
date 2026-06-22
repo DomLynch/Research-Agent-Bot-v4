@@ -565,6 +565,89 @@ def test_ready_to_publish_accepts_result_key_cluster_when_text_fit_is_partial(
     assert verdict["axes"]["direct_source_papers"] == 5
 
 
+def test_metric_type_mismatch_is_not_waived_by_homogeneous_llm_cluster(
+    tmp_path: Path,
+) -> None:
+    run = _run(
+        tmp_path,
+        score=90,
+        dois=("10.ai/a", "10.ai/b", "10.ai/c", "10.ai/d", "10.ai/e"),
+        titles=(
+            "GSM8K model evaluation report",
+            "GSM8K arithmetic reasoning benchmark",
+            "GSM8K fine tuning benchmark",
+            "GSM8K tool use benchmark",
+            "GSM8K adaptation benchmark",
+        ),
+        journals=("AI Eval", "AI Eval", "AI Eval", "AI Eval", "AI Eval"),
+    )
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo - model_eval\n\n"
+        "**Headline:** Model eval: GSM8K accuracy is the shared direct-receipt signal\n"
+        "**Alpha score:** 90/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## One-sentence thesis\n\n"
+        "Across 5 direct receipts sharing GSM8K as the evaluation shape and accuracy "
+        "as the metric, multiple systems report comparable performance.\n\n"
+        "## Why this is surprising\n\n"
+        "Real tension: the benchmark evidence looks comparable.\n\n"
+        "## Evidence receipts\n\n"
+        + "\n".join(
+            f"- `fact_id={idx}` (`A_core`) - receipt"
+            for idx in range(1, 6)
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    rows = (
+        ("GSM8K from 10.4% to 40.7% with text-davinci-002", 40.7, "text-davinci-002"),
+        ("GSM8K from 10.4% to 40.7%", 40.7, "text-davinci-002"),
+        ("Mistral-7B fine-tuned with PiSSA achieves an accuracy of 72.86%", 72.86, "Mistral-7B"),
+        ("MuMath-Code-70B achieves 90.7% on GSM8K", 90.7, "MuMath-Code-70B"),
+        ("MetaMath-70B achieves an accuracy of 82.3% on GSM8K", 82.3, "MetaMath-70B"),
+    )
+    for fact, (phrase, value, model) in zip(facts, rows, strict=True):
+        fact.update({
+            "canonical_phrase": phrase,
+            "benchmark": "GSM8K",
+            "task": "arithmetic reasoning",
+            "dataset": "GSM8K",
+            "metric": "accuracy",
+            "model_system": model,
+            "baseline_comparator": "GSM8K benchmark baselines",
+            "evaluation_protocol": "GSM8K benchmark evaluation",
+            "numeric_value": value,
+            "units": "%",
+            "result_key": "llm_evaluation::gsm8k::accuracy",
+            "result_shape": {
+                "benchmark": "GSM8K",
+                "task": "arithmetic reasoning",
+                "dataset": "GSM8K",
+                "metric": "accuracy",
+                "model_system": "GSM8K systems",
+                "baseline_comparator": "GSM8K benchmark baselines",
+                "evaluation_protocol": "GSM8K benchmark evaluation",
+            },
+        })
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (run / "claim_cluster.json").write_text(
+        json.dumps({
+            "lead_fact_ids": ["1", "2", "3", "4"],
+            "claim": "Specialised large language models achieve high accuracy on GSM8K.",
+            "conformance": 1.0,
+            "homogeneous": True,
+        }),
+        encoding="utf-8",
+    )
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] == "agent_repair_needed"
+    assert verdict["axes"]["direct_metric_type_coherent"] is False
+    assert "metric_type_mismatch" in verdict["blockers"]
+
+
 def test_structural_ready_can_publish_frontier_label(tmp_path: Path) -> None:
     run = _run(tmp_path, label="frontier_hypothesis")
 

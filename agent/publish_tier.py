@@ -21,14 +21,13 @@ _BLOCKED_LABELS = frozenset({
 })
 _LLM_CLUSTER_WAIVED_BLOCKERS = frozenset({
     "claim_alignment_partial", "source_dispersion", "receipt_shape_mismatch",
-    "metric_type_mismatch", "weak_counter_consensus_tension", "low_alpha_score",
+    "weak_counter_consensus_tension", "low_alpha_score",
     "source_floor_below_min", "direct_source_floor_below_min",
 })
 _EVIDENCE_MAP_WAIVED_BLOCKERS = frozenset({
     "source_dispersion", "weak_counter_consensus_tension", "low_alpha_score",
     "claim_alignment_partial", "source_floor_below_min",
     "direct_source_floor_below_min", "receipt_shape_mismatch",
-    "metric_type_mismatch",
 })
 _RECEIPT_SHAPE_DIMENSIONS = (
     ("population",),
