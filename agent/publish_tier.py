@@ -144,6 +144,20 @@ def _feed_scope_markers(data: dict[str, Any], domain: str) -> tuple[str, ...]:
     return tuple(str(x).lower() for x in values)
 
 
+def _shape_policy_fields(data: dict[str, Any], domain: str) -> tuple[str, ...]:
+    policy = data.get("shape_policy") if isinstance(data, dict) else {}
+    if not isinstance(policy, dict) or not domain:
+        return ()
+    domains = policy.get("domains")
+    domain_policy = domains.get(domain) if isinstance(domains, dict) else {}
+    raw_values = (
+        domain_policy.get("strict_fact_shape_fields")
+        if isinstance(domain_policy, dict) else []
+    )
+    values = raw_values if isinstance(raw_values, list) else []
+    return tuple(str(x).strip() for x in values if str(x).strip())
+
+
 def _domain_threshold(
     thresholds: dict[str, Any], key: str, default: int | float, domain: str,
 ) -> Any:
@@ -187,6 +201,7 @@ def _cfg(domain: str = "") -> dict[str, Any]:
         "broad_d_bad_share": float(threshold("broad_d_bad_share", 0.60)),
         "broad_min_sources": int(threshold("broad_min_sources", 3)),
         "off_scope_markers": _feed_scope_markers(data, domain),
+        "strict_fact_shape_fields": _shape_policy_fields(data, domain),
     }
 
 
@@ -355,6 +370,42 @@ def _shape_tokens(
     }
 
 
+def _fact_field_tokens(
+    fact: dict[str, Any], field: str, generic: frozenset[str],
+) -> set[str]:
+    return {
+        token for token in re.findall(
+            r"[a-z][a-z0-9]*", _shape_text(fact.get(field)).lower(),
+        )
+        if len(token) >= 3 and token not in generic
+    }
+
+
+def _strict_fact_shape_coherent(
+    ids: list[str],
+    facts: dict[str, dict[str, Any]],
+    generic: frozenset[str],
+    fields: tuple[str, ...],
+    *,
+    min_sources: int,
+) -> bool:
+    if not fields:
+        return True
+    shape_generic = generic | _SHAPE_GENERIC_TOKENS
+    for field in fields:
+        by_source: dict[str, set[str]] = {}
+        for fid in ids:
+            fact = facts.get(fid) or {}
+            source = _source_key(fact)
+            tokens = _fact_field_tokens(fact, field, shape_generic)
+            if source and tokens:
+                by_source.setdefault(source, set()).update(tokens)
+        source_tokens = list(by_source.values())
+        if len(source_tokens) >= min_sources and not set.intersection(*source_tokens):
+            return False
+    return True
+
+
 def _facts_share_shape(
     left: dict[str, Any],
     right: dict[str, Any],
@@ -511,10 +562,6 @@ def _claim_axis(
     return text, _claim_tokens(cited_ids, facts)
 
 
-# An un-negated performance gain is same-direction as a "X improves Y" thesis —
-# a SUPPORTING source, not counter-evidence. Recycling it is the reject reviewers
-# flag; an incidental "improves ... without fine-tuning" must not flip to opposing,
-# while a negated gain ("did not improve") still qualifies as counter-evidence.
 _GAIN_TOKENS = (
     "improv", "outperform", "better", "higher", "superior", "boost",
     "enhanc", "exceed", "stronger", "gain", "advantage", "surpass",
@@ -607,7 +654,6 @@ def _source_papers(
 
 
 def _source_key(fact: dict[str, Any]) -> str:
-    # P5 hardening: identity order DOI > PMID > PMCID > paper_id > id > title.
     paper = fact.get("source_paper") or {}
     if not isinstance(paper, dict):
         return ""
@@ -1106,8 +1152,6 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     min_direct_source_papers = _publication_int(
         "min_direct_source_papers", 5, domain,
     )
-    # A writer-validated homogeneous cluster publishes at its own lower floor:
-    # 2-3 directly-comparable sources are a stronger claim than 5 dispersed ones.
     min_cluster_source_papers = _publication_int(
         "min_cluster_source_papers", 3, domain,
     )
@@ -1152,12 +1196,20 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         direct_shape_ids, facts, cfg["generic_tokens"] | cfg["cluster_stopwords"],
         min_sources=min_direct_source_papers,
     )
+    direct_fact_shape_coherent = _strict_fact_shape_coherent(
+        direct_shape_ids,
+        facts,
+        cfg["generic_tokens"] | cfg["cluster_stopwords"],
+        cfg["strict_fact_shape_fields"],
+        min_sources=min_direct_source_papers,
+    )
     strong_direct_bundle = (
         len(direct_papers) >= min_direct_source_papers
         and len(direct_papers) >= min_source_papers
         and source_coherent
         and direct_receipt_shape_coherent
         and direct_metric_type_coherent
+        and direct_fact_shape_coherent
     )
     retrieval_artifact = _retrieval_artifact_claim(
         md, strong_direct_bundle=strong_direct_bundle,
@@ -1188,6 +1240,8 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         blockers.append("receipt_shape_mismatch")
     if direct_shape_ids and not direct_metric_type_coherent:
         blockers.append("metric_type_mismatch")
+    if direct_shape_ids and not direct_fact_shape_coherent:
+        blockers.append("fact_shape_mismatch")
     if retrieval_artifact:
         blockers.append("retrieval_artifact_claim")
 
@@ -1244,10 +1298,6 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
             or source_rich_landscape_route
         )
     )
-    # Trust an M3-validated HOMOGENEOUS cluster as a single claim: same population,
-    # comparator, endpoint, and direction, clearing the lower cluster floor — only
-    # token-coherence blockers stand in the way (waived). A heterogeneous cluster
-    # is NOT a single claim and does not qualify here (it routes to the map above).
     llm_cluster_ready = (
         llm_cluster_sources >= min_cluster_source_papers
         and cluster_homogeneous
@@ -1346,6 +1396,7 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
             "claim_coherent_source_diversity": source_coherent,
             "direct_receipt_shape_coherent": direct_receipt_shape_coherent,
             "direct_metric_type_coherent": direct_metric_type_coherent,
+            "direct_fact_shape_coherent": direct_fact_shape_coherent,
             "retrieval_artifact_claim": retrieval_artifact,
             "counter_consensus_tension": tension,
             "cross_domain_forced": forced,

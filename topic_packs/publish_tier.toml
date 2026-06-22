@@ -120,3 +120,9 @@ off_scope_markers = [
   "rice",
   "seed",
 ]
+
+[shape_policy.domains.ai_research]
+strict_fact_shape_fields = [
+  "model_system",
+  "evaluation_protocol",
+]
