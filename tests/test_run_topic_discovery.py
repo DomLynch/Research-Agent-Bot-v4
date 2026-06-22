@@ -1,6 +1,7 @@
 """CLI limit policy tests for the alpha topic-discovery runner."""
 from __future__ import annotations
 
+import fcntl
 import json
 import sys
 from pathlib import Path
@@ -67,6 +68,7 @@ def test_main_writes_limit_metadata_for_operator_overrides(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
     calls: list[tuple[int, int | None]] = []
+    lock_calls: list[tuple[str, int]] = []
 
     def fake_discover(**kwargs: Any) -> tuple[TopicCandidate, ...]:
         calls.append((kwargs["derived_topic_limit"], kwargs["fact_probe_topics"]))
@@ -78,6 +80,10 @@ def test_main_writes_limit_metadata_for_operator_overrides(
             ),
         )
 
+    def fake_flock(handle: Any, op: int) -> None:
+        lock_calls.append((Path(handle.name).suffix, op))
+
+    monkeypatch.setattr(fcntl, "flock", fake_flock)
     fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
     fake_script.parent.mkdir(parents=True)
     monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
@@ -98,6 +104,7 @@ def test_main_writes_limit_metadata_for_operator_overrides(
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
     assert payload["derived_topic_limit"] == 1_000
     assert payload["fact_probe_topics"] == 40
+    assert (".lock", fcntl.LOCK_EX) in lock_calls
 
 
 def test_cache_first_skips_slow_discovery_when_window_is_filled(

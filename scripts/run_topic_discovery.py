@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import json
 import re
 import sys
 from pathlib import Path
@@ -34,6 +33,7 @@ from agent.topic_discovery import (
     load_seed_topics,
 )
 from agent.topic_synonyms import expand_topic_queries
+from scripts import alpha_publish_io as publish_io
 
 _FAST_DERIVED_TOPIC_LIMIT = 250
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
@@ -288,9 +288,7 @@ def main() -> int:
         "top": [c.as_dict() for c in top],
         "all": [c.as_dict() for c in ranked],
     }
-    (out_dir / f"{ts}.json").write_text(
-        json.dumps(json_payload, indent=2, ensure_ascii=False),
-        encoding="utf-8")
+    publish_io.write_json(out_dir / f"{ts}.json", json_payload)
     (out_dir / f"{ts}.md").write_text(
         _render_md({"snapshot_utc": ts, "seed_count": str(len(seeds)),
                     "year": str(year)}, top),
