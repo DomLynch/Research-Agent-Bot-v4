@@ -145,6 +145,17 @@ def _feed_scope_markers(data: dict[str, Any], domain: str) -> tuple[str, ...]:
     return tuple(str(x).lower() for x in values)
 
 
+def _domain_threshold(
+    thresholds: dict[str, Any], key: str, default: int | float, domain: str,
+) -> Any:
+    value = thresholds.get(key, default)
+    domains = thresholds.get("domains")
+    domain_values = domains.get(domain) if domain and isinstance(domains, dict) else {}
+    if isinstance(domain_values, dict) and key in domain_values:
+        value = domain_values[key]
+    return value
+
+
 def _cfg(domain: str = "") -> dict[str, Any]:
     try:
         data = tomllib.loads(_CFG_PATH.read_text(encoding="utf-8"))
@@ -152,6 +163,8 @@ def _cfg(domain: str = "") -> dict[str, Any]:
         data = {}
     publish = data.get("publish_tier") if isinstance(data, dict) else {}
     thresholds = data.get("thresholds") if isinstance(data, dict) else {}
+    def threshold(key: str, default: int | float) -> Any:
+        return _domain_threshold(thresholds or {}, key, default, domain)
     return {
         "tension_markers": tuple(
             str(x).lower() for x in (publish or {}).get("tension_markers", [])
@@ -165,31 +178,15 @@ def _cfg(domain: str = "") -> dict[str, Any]:
         "cluster_stopwords": frozenset(
             str(x).lower() for x in (publish or {}).get("cluster_stopwords", [])
         ),
-        "ready_min_bound_receipts": int(
-            (thresholds or {}).get("ready_min_bound_receipts", 3)
-        ),
-        "ready_min_a_core_receipts": int(
-            (thresholds or {}).get("ready_min_a_core_receipts", 2)
-        ),
-        "ready_min_alpha_score": int(
-            (thresholds or {}).get("ready_min_alpha_score", 70)
-        ),
-        "review_min_alpha_score": int(
-            (thresholds or {}).get("review_min_alpha_score", 30)
-        ),
-        "source_concentration_share": float(
-            (thresholds or {}).get("source_concentration_share", 0.60)
-        ),
-        "domain_overlap_min": float(
-            (thresholds or {}).get("domain_overlap_min", 0.06)
-        ),
-        "context_min_available_sources": int(
-            (thresholds or {}).get("context_min_available_sources", 3)
-        ),
-        "broad_d_bad_share": float(
-            (thresholds or {}).get("broad_d_bad_share", 0.60)
-        ),
-        "broad_min_sources": int((thresholds or {}).get("broad_min_sources", 3)),
+        "ready_min_bound_receipts": int(threshold("ready_min_bound_receipts", 3)),
+        "ready_min_a_core_receipts": int(threshold("ready_min_a_core_receipts", 2)),
+        "ready_min_alpha_score": int(threshold("ready_min_alpha_score", 70)),
+        "review_min_alpha_score": int(threshold("review_min_alpha_score", 30)),
+        "source_concentration_share": float(threshold("source_concentration_share", 0.60)),
+        "domain_overlap_min": float(threshold("domain_overlap_min", 0.06)),
+        "context_min_available_sources": int(threshold("context_min_available_sources", 3)),
+        "broad_d_bad_share": float(threshold("broad_d_bad_share", 0.60)),
+        "broad_min_sources": int(threshold("broad_min_sources", 3)),
         "off_scope_markers": _feed_scope_markers(data, domain),
     }
 

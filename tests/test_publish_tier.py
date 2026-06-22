@@ -653,6 +653,28 @@ def test_source_floors_can_be_domain_owned_without_code_changes(
     assert "direct_source_floor_below_min" not in verdict["blockers"]
 
 
+def test_publish_tier_thresholds_can_be_domain_owned_without_code_changes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    policy = tmp_path / "publish_tier.toml"
+    policy.write_text(
+        "[thresholds]\n"
+        "ready_min_bound_receipts = 5\n"
+        "source_concentration_share = 0.75\n\n"
+        "[thresholds.domains.ai_research]\n"
+        "ready_min_bound_receipts = 3\n"
+        "source_concentration_share = 0.50\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(tier, "_CFG_PATH", policy)
+
+    assert tier._cfg()["ready_min_bound_receipts"] == 5
+    assert tier._cfg()["source_concentration_share"] == 0.75
+    assert tier._cfg("ai_research")["ready_min_bound_receipts"] == 3
+    assert tier._cfg("ai_research")["source_concentration_share"] == 0.50
+
+
 def test_default_source_floor_still_blocks_four_source_runs(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
