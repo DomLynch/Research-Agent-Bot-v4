@@ -30,6 +30,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Callable
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -57,6 +58,7 @@ from agent.topic_discovery import (  # noqa: E402
     cap_topic_slug,
     topic_token_count,
 )
+from scripts import alpha_publish_io as publish_io  # noqa: E402
 
 _RUNS = _ROOT / "runs"
 _CYCLES_DIR = _RUNS / "_curator_cycles"
@@ -69,19 +71,13 @@ _DEFAULT_PIPELINE_TOP_N = max(5, _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES * 2)
 
 
 def _read_tier2_cache() -> dict[str, Any]:
-    try:
-        data = json.loads(_TIER2_SUPPLY_CACHE.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return {}
+    data = publish_io.read_json(_TIER2_SUPPLY_CACHE, {})
     return data if isinstance(data, dict) else {}
 
 
 def _write_tier2_cache(cache: dict[str, Any]) -> None:
-    try:
-        _TIER2_SUPPLY_CACHE.parent.mkdir(parents=True, exist_ok=True)
-        _TIER2_SUPPLY_CACHE.write_text(json.dumps(cache), encoding="utf-8")
-    except OSError:
-        pass
+    with suppress(OSError):
+        publish_io.write_json(_TIER2_SUPPLY_CACHE, cache)
 
 
 def _cached_tier2_supply(
@@ -99,6 +95,10 @@ def _cached_tier2_supply(
         cache[key] = {"count": count, "ts": now}
         _write_tier2_cache(cache)
     return count
+
+
+def _write_cycle_json(path: Path, payload: dict[str, Any]) -> None:
+    publish_io.write_json(path, payload)
 _DISCOVERY_TIMEOUT_SECONDS = 1800
 # Cheap pre-build gate: a topic whose discovery probe finds fewer bindable
 # sources than this can never clear the publish source floor, so a full
@@ -775,8 +775,7 @@ def main() -> int:
     }
     json_path = _CYCLES_DIR / f"{cycle_ts}.json"
     md_path = _CYCLES_DIR / f"{cycle_ts}.md"
-    json_path.write_text(
-        json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    _write_cycle_json(json_path, payload)
     md_text = _summarize_md(cycle_ts, results, skipped,
                             args.cooldown_hours, args.top)
     cross_ok, cross_last = (False, "skipped_stop_on_ready") if stopped_on_ready else _run_step(
@@ -787,17 +786,11 @@ def main() -> int:
     if cross_ok:
         memo_name = f"{cycle_ts}_cross_topic_alpha_memo.md"
         payload["cross_topic_memo"] = f"runs/_curator_cycles/{memo_name}"
-        json_path.write_text(
-            json.dumps(payload, indent=2, ensure_ascii=False),
-            encoding="utf-8",
-        )
+        _write_cycle_json(json_path, payload)
         md_text += f"\n## Cross-topic lead\n\n`runs/_curator_cycles/{memo_name}`\n"
     else:
         payload["cross_topic_memo_error"] = cross_last[:240]
-        json_path.write_text(
-            json.dumps(payload, indent=2, ensure_ascii=False),
-            encoding="utf-8",
-        )
+        _write_cycle_json(json_path, payload)
         md_text += f"\n## Cross-topic lead\n\n_failed: {cross_last[:240]}_\n"
     queue_ok, queue_last = _run_step(
         [py, "scripts/build_publish_queue.py", "--domain", args.domain],
@@ -805,17 +798,11 @@ def main() -> int:
     )
     if queue_ok:
         payload["publish_queue"] = "runs/_publish_queue.json"
-        json_path.write_text(
-            json.dumps(payload, indent=2, ensure_ascii=False),
-            encoding="utf-8",
-        )
+        _write_cycle_json(json_path, payload)
         md_text += "\n## Publish queue\n\n`runs/_publish_queue.json`\n"
     else:
         payload["publish_queue_error"] = queue_last[:240]
-        json_path.write_text(
-            json.dumps(payload, indent=2, ensure_ascii=False),
-            encoding="utf-8",
-        )
+        _write_cycle_json(json_path, payload)
         md_text += f"\n## Publish queue\n\n_failed: {queue_last[:240]}_\n"
     md_path.write_text(md_text, encoding="utf-8")
     print(f"[cycle] summary -> runs/_curator_cycles/{cycle_ts}.json")

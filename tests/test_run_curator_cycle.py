@@ -8,6 +8,7 @@ Locks the orchestration logic that's testable without subprocess:
 from __future__ import annotations
 
 import datetime as dt
+import fcntl
 import json
 import sys
 from pathlib import Path
@@ -541,6 +542,76 @@ def test_cycle_rebuilds_publish_queue_for_selected_domain(
     assert run_curator_cycle.main() == 0
     queue_args = next(args for step, args in calls if step == "publish_queue")
     assert queue_args[queue_args.index("--domain") + 1] == "ai_research"
+
+
+def test_cycle_summary_json_uses_sidecar_lock(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    runs = tmp_path / "runs"
+    cycles = runs / "_curator_cycles"
+    cycles.mkdir(parents=True)
+    lock_calls: list[tuple[str, int]] = []
+
+    def fake_flock(handle: Any, op: int) -> None:
+        lock_calls.append((Path(handle.name).name, op))
+
+    monkeypatch.setattr(fcntl, "flock", fake_flock)
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
+    monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
+    monkeypatch.setattr(
+        run_curator_cycle, "_run_step",
+        lambda _args, _step, timeout=600: (True, "ok"),
+    )
+    monkeypatch.setattr(
+        run_curator_cycle,
+        "_run_topic_pipeline",
+        lambda *_args, **_kwargs: TopicResult(
+            topic="ai_agents", velocity=1.0, status="ran",
+            run_dir="runs/ai_agents-evidence-ts",
+            signal_label="frontier_hypothesis", notes="",
+        ),
+    )
+    monkeypatch.setattr(
+        run_curator_cycle, "_read_discovery_top",
+        lambda _out, **_kwargs: [{
+            "topic": "ai_agents", "velocity_score": 1.0,
+            "fact_source_count": 5, "paper_count": 3,
+        }],
+    )
+    monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",
+                        lambda *_args, **_kwargs: set())
+    monkeypatch.setattr(sys, "argv", [
+        "run_curator_cycle.py", "--domain", "ai_research", "--top", "1",
+    ])
+
+    assert run_curator_cycle.main() == 0
+    assert any(
+        name.endswith(".json.lock") and op == fcntl.LOCK_EX
+        for name, op in lock_calls
+    )
+
+
+def test_tier2_supply_cache_uses_sidecar_lock(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    lock_calls: list[tuple[str, int]] = []
+
+    def fake_flock(handle: Any, op: int) -> None:
+        lock_calls.append((Path(handle.name).name, op))
+
+    monkeypatch.setattr(fcntl, "flock", fake_flock)
+    monkeypatch.setattr(
+        run_curator_cycle, "_TIER2_SUPPLY_CACHE", tmp_path / "tier2_cache.json",
+    )
+
+    run_curator_cycle._write_tier2_cache({"ai_research:model_eval": {"count": 5}})
+
+    assert lock_calls == [("tier2_cache.json.lock", fcntl.LOCK_EX)]
 
 
 def test_discovery_failure_aborts_before_stale_plan(
