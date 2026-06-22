@@ -3474,15 +3474,16 @@ def _run_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
     return result.returncode == 0, (lines[-1] if lines else "")
 
 
-def _latest_cycle_topics(runs_root: Path) -> Json:
-    cycles = sorted(
-        path for path in (runs_root / "_curator_cycles").glob("*.json")
-        if "_cross_topic_" not in path.name
+_CYCLE_SUMMARY_RE = re.compile(r"runs/_curator_cycles/([^\s]+\.json)")
+
+
+def _cycle_topics_from_payload(
+    cycle: Path, payload: Json, *, domain: str | None = None,
+) -> Json:
+    cycle_domain = domain_slug(payload.get("domain")) or domain_slug(
+        payload.get("domain_slug")
     )
-    if not cycles:
-        return {}
-    payload = _json(cycles[-1], {})
-    if not isinstance(payload, dict):
+    if domain and cycle_domain and not _same_domain(cycle_domain, domain):
         return {}
     ran = [
         str(row.get("topic") or "")
@@ -3494,11 +3495,39 @@ def _latest_cycle_topics(runs_root: Path) -> Json:
         str(t) for t in payload.get("skipped_below_source_floor") or [] if str(t)
     ]
     return {
-        "cycle": cycles[-1].name,
+        "cycle": cycle.name,
         "ran_topics": ran,
         "skipped_in_cooldown": skipped,
         "skipped_below_source_floor": skipped_source_floor,
     }
+
+
+def _latest_cycle_topics(runs_root: Path, *, domain: str | None = None) -> Json:
+    cycles = sorted(
+        path for path in (runs_root / "_curator_cycles").glob("*.json")
+        if "_cross_topic_" not in path.name
+    )
+    for cycle in reversed(cycles):
+        payload = _json(cycle, {})
+        if not isinstance(payload, dict):
+            continue
+        result = _cycle_topics_from_payload(cycle, payload, domain=domain)
+        if result:
+            return result
+    return {}
+
+
+def _cycle_topics_from_note(
+    runs_root: Path, note: str, *, domain: str | None = None,
+) -> Json:
+    match = _CYCLE_SUMMARY_RE.search(note)
+    if not match:
+        return {}
+    cycle = runs_root / "_curator_cycles" / Path(match.group(1)).name
+    payload = _json(cycle, {})
+    if not isinstance(payload, dict):
+        return {}
+    return _cycle_topics_from_payload(cycle, payload, domain=domain)
 
 
 def _refresh_candidate_batch(
@@ -3541,7 +3570,7 @@ def _refresh_candidate_batch(
         "excluded_topics": exclusions,
         "priority_topics": priorities,
         "warm_backlog": warm_backlog,
-    } | _latest_cycle_topics(runs_root)
+    } | _cycle_topics_from_note(runs_root, note, domain=domain)
     if priorities:
         ran_raw = result.get("ran_topics")
         ran = ran_raw if isinstance(ran_raw, list) else []

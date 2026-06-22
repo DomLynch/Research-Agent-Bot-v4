@@ -3013,6 +3013,76 @@ def test_refresh_candidate_batch_passes_priority_child_topics(
     assert "second_child" in calls[0]
 
 
+def test_refresh_candidate_batch_ignores_stale_cycle_summary(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    cycle_dir = root / "_curator_cycles"
+    cycle_dir.mkdir(parents=True)
+    daily._write_json(cycle_dir / "2026-06-22T09-02-26Z.json", {
+        "ran": [{"topic": "resveratrol supplementation"}],
+    })
+
+    monkeypatch.setattr(
+        daily, "_run_step",
+        lambda _args, timeout=1800: (
+            False, "[cycle] no discovery candidates; aborting.",
+        ),
+    )
+
+    out = daily._refresh_candidate_batch(5, runs_root=root, domain="ai_research")
+
+    assert out["ok"] is False
+    assert "cycle" not in out
+    assert "ran_topics" not in out
+
+
+def test_refresh_candidate_batch_reads_current_domain_cycle(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+
+    def fake_step(_args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        cycle_dir = root / "_curator_cycles"
+        cycle_dir.mkdir(parents=True)
+        daily._write_json(cycle_dir / "2026-06-22T09-37-46Z.json", {
+            "domain": {"slug": "ai_research"},
+            "ran": [{"topic": "model_eval"}],
+        })
+        return True, "[cycle] summary -> runs/_curator_cycles/2026-06-22T09-37-46Z.json"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    out = daily._refresh_candidate_batch(5, runs_root=root, domain="ai_research")
+
+    assert out["ok"] is True
+    assert out["cycle"] == "2026-06-22T09-37-46Z.json"
+    assert out["ran_topics"] == ["model_eval"]
+
+
+def test_refresh_candidate_batch_ignores_current_wrong_domain_cycle(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+
+    def fake_step(_args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        cycle_dir = root / "_curator_cycles"
+        cycle_dir.mkdir(parents=True)
+        daily._write_json(cycle_dir / "2026-06-22T09-37-46Z.json", {
+            "domain": {"slug": "longevity_research"},
+            "ran": [{"topic": "resveratrol supplementation"}],
+        })
+        return True, "[cycle] summary -> runs/_curator_cycles/2026-06-22T09-37-46Z.json"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    out = daily._refresh_candidate_batch(5, runs_root=root, domain="ai_research")
+
+    assert out["ok"] is True
+    assert "cycle" not in out
+    assert "ran_topics" not in out
+
+
 def test_child_topics_from_queue_uses_subtopic_recommendations() -> None:
     queue = {
         "agent_repair_needed": [{
@@ -5164,8 +5234,9 @@ def test_empty_refresh_escalates_to_zero_cooldown(
             if len(calls) == 1 else
             {"ran": [{"topic": "fresh"}], "skipped_in_cooldown": []}
         )
-        daily._write_json(cycle_dir / f"cycle-{len(calls)}.json", payload)
-        return True, "ok"
+        name = f"cycle-{len(calls)}.json"
+        daily._write_json(cycle_dir / name, payload)
+        return True, f"[cycle] summary -> runs/_curator_cycles/{name}"
 
     monkeypatch.setattr(daily, "_run_step", fake_step)
 
@@ -5206,8 +5277,9 @@ def test_nonpublishable_refresh_topics_are_excluded_next_batch(
             if len(calls) == 1 else
             {"ran": [{"topic": "fresh"}], "skipped_in_cooldown": []}
         )
-        daily._write_json(cycle_dir / f"cycle-{len(calls)}.json", payload)
-        return True, "ok"
+        name = f"cycle-{len(calls)}.json"
+        daily._write_json(cycle_dir / name, payload)
+        return True, f"[cycle] summary -> runs/_curator_cycles/{name}"
 
     monkeypatch.setattr(daily, "_run_step", fake_step)
 

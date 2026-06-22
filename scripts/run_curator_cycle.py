@@ -47,7 +47,7 @@ from daily_alpha_publish_cycle import (  # noqa: E402
     _source_count,
 )
 
-from agent.domain_profile import domain_choices, domain_slug  # noqa: E402
+from agent.domain_profile import domain_choices, domain_slug, load_domain_profile  # noqa: E402
 from agent.publish_tier import _FUNCTION_WORDS  # noqa: E402
 from agent.researka_facts import tier2_source_count  # noqa: E402
 from agent.settings import load_settings  # noqa: E402
@@ -620,6 +620,7 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true",
                         help="Print plan; do not invoke the pipeline")
     args = parser.parse_args()
+    profile = load_domain_profile(args.domain)
 
     cycle_start = dt.datetime.now(dt.UTC)
     cycle_ts = cycle_start.strftime("%Y-%m-%dT%H-%M-%SZ")
@@ -763,7 +764,8 @@ def main() -> int:
     # Step 4: emit summary
     _CYCLES_DIR.mkdir(parents=True, exist_ok=True)
     payload = {
-        "cycle_ts": cycle_ts, "top_requested": args.top,
+        "cycle_ts": cycle_ts, "domain": profile.as_metadata(),
+        "top_requested": args.top,
         "cooldown_hours": args.cooldown_hours,
         "ran": [r.as_dict() for r in results],
         "skipped_in_cooldown": skipped,
