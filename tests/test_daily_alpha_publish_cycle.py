@@ -1941,6 +1941,32 @@ def test_recent_submission_topic_family_blocks_child_slug(tmp_path: Path) -> Non
     assert ledger["family_blocked_count"] == 1
 
 
+def test_recent_submission_topic_blocks_sibling_variant_by_tokens(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    sibling = _verdict("metformin_use_add_dorzagliatin", score=99)
+    fresh = _verdict("resveratrol_supplementation", score=90)
+    _memo_with_source_receipts(root, sibling, 5)
+    _memo_with_source_receipts(root, fresh, 5)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+        "date": "2026-06-22T05-30-01Z",
+        "topic": "metformin_treatment_add_dorzagliatin",
+        "run_dir": "runs/metformin_treatment_add_dorzagliatin-evidence-ts",
+        "fingerprint": "old",
+    }])
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-22T09-30-00Z",
+        queue=_queue(sibling, fresh),
+        retraction_mode="metadata",
+    )
+
+    assert ledger["candidate"]["topic"] == "resveratrol_supplementation"
+    assert ledger["considered"][0]["topic"] == "metformin_use_add_dorzagliatin"
+    assert ledger["considered"][0]["status"] == "cycle_exhausted_topic"
+    assert ledger["considered"][0]["family_blocked"] is True
+
+
 def test_recent_submission_topic_is_domain_scoped(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("shared_topic")

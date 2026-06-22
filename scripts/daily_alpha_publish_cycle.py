@@ -2531,7 +2531,9 @@ def select_candidate(
         cycle_blocked = fp in blocked
         family_keys = _family_keys(_family_values(verdict), family_common)
         canonical_family_keys = _canonical_family_keys(_family_values(verdict))
-        family_blocked = bool(canonical_family_keys & blocked_family_keys)
+        family_blocked = bool(
+            canonical_family_keys & blocked_family_keys
+        ) or any(_family_blocked_topic(value, topic_blocked) for value in _family_values(verdict))
         attempt_count = _fingerprint_attempt_count(submitted_path, fp, domain)
         retry_after_rejection = _retry_after_rejection(
             fp,
@@ -3146,7 +3148,7 @@ def _family_blocked_topic(topic: str, blocked_topics: set[str]) -> bool:
         if not blocked_tokens:
             continue
         overlap = len(topic_tokens & blocked_tokens)
-        if overlap and overlap / min(len(topic_tokens), len(blocked_tokens)) >= 0.5:
+        if overlap >= 2 and overlap / min(len(topic_tokens), len(blocked_tokens)) >= 0.5:
             return True
     return False
 
