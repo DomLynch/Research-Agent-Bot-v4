@@ -5191,6 +5191,29 @@ def test_systemd_publish_health_monitor_enforces_sla() -> None:
     assert "Unit=researka-alpha-publish-health.service" in timer
 
 
+def test_alpha_systemd_services_do_not_mask_no_publish_exits() -> None:
+    services = sorted(Path("deploy/systemd").glob("researka-alpha-*.service"))
+    expected = {
+        "researka-alpha-ai-research.service",
+        "researka-alpha-business-research.service",
+        "researka-alpha-cache-warm.service",
+        "researka-alpha-daily.service",
+        "researka-alpha-economics-research.service",
+        "researka-alpha-finance-research.service",
+        "researka-alpha-longevity-research.service",
+        "researka-alpha-management-research.service",
+        "researka-alpha-marketing-research.service",
+        "researka-alpha-publish-health.service",
+    }
+
+    assert {path.name for path in services} == expected
+    for service_path in services:
+        service = service_path.read_text(encoding="utf-8")
+        assert "SuccessExitStatus=2" not in service, service_path.name
+        assert "SuccessExitStatus=3" not in service, service_path.name
+        assert "SuccessExitStatus=" not in service, service_path.name
+
+
 def test_refresh_cooldown_is_cycle_configurable(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
