@@ -142,6 +142,49 @@ def test_topic_in_phrase_only_is_b_context() -> None:
     assert v.lane == "B_context"
 
 
+def test_background_add_on_therapy_is_context_not_a_core() -> None:
+    """If the topic appears only as background therapy, the active intervention
+    belongs to another treatment and must not lead as direct evidence."""
+    v = classify_lane(_fact(
+        canonical_phrase="HbA1c fell by 1.02% in the dorzagliatin group",
+        population="patients with inadequate glycemic control",
+        intervention="dorzagliatin added to metformin",
+        comparator="placebo added to metformin",
+        numeric_value=-1.02,
+        units="%",
+    ), topic="metformin_use")
+
+    assert v.lane == "B_context"
+    assert v.reason == "topic_in_background_context"
+
+
+def test_population_background_therapy_is_context_not_a_core() -> None:
+    v = classify_lane(_fact(
+        canonical_phrase="HbA1c fell by 0.82% for canagliflozin vs glimepiride",
+        population="patients with type 2 diabetes receiving metformin",
+        intervention="canagliflozin",
+        comparator="glimepiride",
+        numeric_value=0.82,
+        units="%",
+    ), topic="metformin_use")
+
+    assert v.lane == "B_context"
+    assert v.reason == "topic_in_background_context"
+
+
+def test_direct_topic_use_still_a_core() -> None:
+    v = classify_lane(_fact(
+        canonical_phrase="mortality was 13.0% for metformin users",
+        population="sepsis patients with type 2 diabetes",
+        intervention="preadmission metformin use",
+        comparator="non-metformin use",
+        numeric_value=13.0,
+        units="%",
+    ), topic="metformin_use")
+
+    assert v.lane == "A_core"
+
+
 def test_topic_in_population_with_effect_is_a_core() -> None:
     """Condition/outcome topics can be direct when the topic is the studied
     population and the intervention has a real numeric effect."""

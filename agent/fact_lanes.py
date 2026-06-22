@@ -1,21 +1,4 @@
-"""Sprint 59 (Evidence Opportunities Gate) — A/B/C/D lane classifier.
-
-Demotes facts where the numeric role isn't a real finding (regimen,
-timepoint, dose) or the PICO is incomplete; promotes facts where
-intervention, population, and effect-shaped numeric all align with
-the topic. Universal: rules use fact structural fields + topic-word
-co-occurrence + numeric role; no biomedical domain literals.
-
-Lanes:
-  A_core           — topic in intervention OR population + clean PICO +
-                     real numeric effect
-  B_context        — topic matched + clean PICO, but either topic only in the
-                     phrase OR no clean numeric effect (qualitative finding /
-                     methodological number); usable as mechanism / context
-                     support, never the lead
-  C_noise          — topic word absent from every structural field
-  D_bad_extraction — missing population/intervention (incomplete PICO)
-"""
+"""A/B/C/D fact-lane classifier for alpha memo evidence binding."""
 from __future__ import annotations
 
 import re
@@ -31,6 +14,10 @@ from agent.topic_synonyms import expand_topic_queries, phrase_in_text
 LANES = ("A_core", "B_context", "C_noise", "D_bad_extraction")
 _NORM_PUNCT = re.compile(r"[\W_]+")
 _MIN_SPECIFIC_HEAD_CHARS = 8
+_BACKGROUND_CUES = (
+    "added to", "add on to", "add-on to", "background",
+    "receiving", "on",
+)
 TopicType = Literal[
     "intervention", "exposure", "disease_or_condition", "biomarker", "broad_risk_factor",
 ]
@@ -40,9 +27,6 @@ _POPULATION_CONTEXT_ONLY: frozenset[TopicType] = frozenset({
 
 
 def _norm(s: str) -> str:
-    """Universal text normalisation: collapse underscores + punctuation
-    to single spaces, lowercase. Makes 'carbon_tax' match 'carbon tax'
-    in both directions."""
     return _NORM_PUNCT.sub(" ", s.lower()).strip()
 
 
@@ -90,6 +74,24 @@ def _topic_keywords(topic: str) -> list[str]:
     return list(seen)
 
 
+def _background_topic_match(text: str, keywords: list[str]) -> bool:
+    """Topic appears as context/background therapy, not the active exposure."""
+    norm = _norm(text)
+    if not norm:
+        return False
+    for kw in keywords:
+        if not kw or not phrase_in_text(kw, norm):
+            continue
+        pattern = re.escape(kw).replace(r"\ ", r"\s+")
+        if re.search(rf"\b(?:non|without|no)\s+{pattern}\b", norm):
+            return True
+        for cue in _BACKGROUND_CUES:
+            cue_pattern = re.escape(cue).replace(r"\ ", r"\s+")
+            if re.search(rf"\b{cue_pattern}\s+{pattern}\b", norm):
+                return True
+    return False
+
+
 def _topic_type(topic: str) -> TopicType:
     tokens = set(_norm(topic).split())
     if {"risk", "factor"} <= tokens or {"risk", "factors"} <= tokens:
@@ -112,21 +114,12 @@ def classify_lane(fact: dict[str, Any], topic: str) -> LaneVerdict:
     units = str(fact.get("units") or "")
     role = classify_numeric_role(nv_f, units, phrase)
 
-    # D_bad only when PICO is essentially absent (BOTH population AND
-    # intervention empty). A single missing slot is incomplete, not unusable:
-    # it can still bind as B_context support below (it just can't lead as
-    # A_core, which requires topic-in-intervention). This stops well-sourced
-    # mechanistic/clinical facts being discarded for one empty column.
     if not _has_field(fact, "population") and not _has_field(fact, "intervention"):
         return LaneVerdict(
             fact_id=fact_id, lane="D_bad_extraction",
             numeric_role=role, reason="missing_population_and_intervention",
         )
 
-    # Sprint 62: class queries (senolytic) match instance words
-    # (dasatinib, quercetin). expand_topic_keywords always includes
-    # the topic itself first, so behavior is unchanged for unregistered
-    # topics.
     keywords = _topic_keywords(topic)
     haystack = _norm(_topic_haystack(fact))
     if not any(phrase_in_text(kw, haystack) for kw in keywords if kw):
@@ -136,15 +129,20 @@ def classify_lane(fact: dict[str, Any], topic: str) -> LaneVerdict:
             reason="topic_word_absent_from_pico_fields",
         )
 
-    # A_core is the quantitative LEAD. Topic-in-intervention is always direct.
-    # Topic-in-population stays direct for specific non-disease outcome topics
-    # but not for broad risk-factor / disease topics, where a population-only
-    # match is context until the receipt itself names the target intervention.
     real = is_real_finding(role)
     intervention_norm = _norm(str(fact.get("intervention") or ""))
     population_norm = _norm(str(fact.get("population") or ""))
     topic_in_intervention = any(phrase_in_text(kw, intervention_norm) for kw in keywords if kw)
     topic_in_population = any(phrase_in_text(kw, population_norm) for kw in keywords if kw)
+    background_intervention = _background_topic_match(intervention_norm, keywords)
+    background_population = (
+        not topic_in_intervention and _background_topic_match(population_norm, keywords)
+    )
+    if real and (background_intervention or background_population):
+        return LaneVerdict(
+            fact_id=fact_id, lane="B_context",
+            numeric_role=role, reason="topic_in_background_context",
+        )
     if real and (topic_in_intervention or (
         topic_in_population and _topic_type(topic) not in _POPULATION_CONTEXT_ONLY
     )):
