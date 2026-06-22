@@ -949,6 +949,39 @@ def test_source_rich_no_signal_landscape_routes_to_evidence_map(tmp_path: Path) 
     assert "blocked_label:no_signal" in verdict["waived_blockers"]
 
 
+def test_ready_evidence_map_keeps_child_cluster_hints(tmp_path: Path) -> None:
+    n = 12
+    run = _run(
+        tmp_path,
+        label="no_signal",
+        score=0,
+        lanes=tuple("A_core" for _ in range(n)),
+        dois=tuple(f"10.map/{i}" for i in range(n)),
+        titles=tuple(f"Storage threshold finding {i}" for i in range(n)),
+    )
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    populations = (
+        "older adults", "diabetic cohorts", "frailty cohorts",
+        "cardiometabolic patients",
+    )
+    for i, fact in enumerate(facts):
+        fact["population"] = populations[i % len(populations)]
+        fact["endpoint"] = "dispatch reliability" if i < 5 else f"reliability domain {i}"
+        fact["canonical_phrase"] = (
+            f"storage threshold finding {i} changed under protocol {i}"
+        )
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+    rec = verdict["subtopic_recommendations"]
+
+    assert verdict["decision"] == "ready_to_publish"
+    assert verdict["surface_type"] == "evidence_map"
+    assert rec["recommended"] is True
+    assert rec["reason"] == "source_coherent_child_cluster"
+    assert len(rec["clusters"][0]["member_fact_ids"]) >= 5
+
+
 def test_no_signal_landscape_below_map_floor_stays_blocked(tmp_path: Path) -> None:
     n = 8
     run = _run(

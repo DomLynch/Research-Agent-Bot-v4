@@ -1306,7 +1306,7 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         d_bad_share_min=float(cfg["broad_d_bad_share"]),
         min_overlap=float(cfg["domain_overlap_min"]),
         source_min=min_direct_source_papers,
-        enabled=decision != "ready_to_publish",
+        enabled=decision != "ready_to_publish" or evidence_map_ready,
     )
     if decision == "ready_to_publish":
         surface_type = (
