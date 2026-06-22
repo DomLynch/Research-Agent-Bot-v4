@@ -33,6 +33,7 @@ class CandidateStatus(StrEnum):
     HELD_RETRACTION_CHECK = "held_retraction_check"
     RECEIPT_SHAPE_MISMATCH = "receipt_shape_mismatch"
     EVIDENCE_MAP_BELOW_CITATION_FLOOR = "evidence_map_below_citation_floor"
+    EVIDENCE_MAP_SCOPE_MISMATCH = "evidence_map_scope_mismatch"
     CORPUS_SOURCE_FLOOR_BELOW_MIN = "corpus_source_floor_below_min"
     MEMO_SOURCE_FLOOR_BELOW_MIN = "memo_source_floor_below_min"
     DIRECT_SOURCE_FLOOR_BELOW_MIN = "direct_source_floor_below_min"
@@ -50,6 +51,7 @@ EXHAUSTED_STATUSES = frozenset({
     CandidateStatus.HELD_RETRACTION_CHECK.value,
     CandidateStatus.RECEIPT_SHAPE_MISMATCH.value,
     CandidateStatus.EVIDENCE_MAP_BELOW_CITATION_FLOOR.value,
+    CandidateStatus.EVIDENCE_MAP_SCOPE_MISMATCH.value,
 })
 TOPIC_EXHAUSTED_STATUSES = frozenset({
     CandidateStatus.DUPLICATE_SUBMISSION_FINGERPRINT.value,
@@ -57,6 +59,7 @@ TOPIC_EXHAUSTED_STATUSES = frozenset({
     CandidateStatus.HELD_RETRACTION_CHECK.value,
     CandidateStatus.RECEIPT_SHAPE_MISMATCH.value,
     CandidateStatus.EVIDENCE_MAP_BELOW_CITATION_FLOOR.value,
+    CandidateStatus.EVIDENCE_MAP_SCOPE_MISMATCH.value,
 })
 FINGERPRINT_EXHAUSTED_STATUSES = (
     TOPIC_EXHAUSTED_STATUSES | {
@@ -127,6 +130,8 @@ def no_candidate_reason(considered: list[Json]) -> str:
         return "selected candidate no longer matches the current publish verdict"
     if "evidence_map_below_citation_floor" in statuses:
         return "best evidence-map candidate was below citation floor"
+    if "evidence_map_scope_mismatch" in statuses:
+        return "best evidence-map candidate was too broad for one bounded map"
     return "no eligible non-duplicate memo"
 
 

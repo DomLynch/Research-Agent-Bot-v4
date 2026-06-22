@@ -2282,10 +2282,15 @@ def test_evidence_map_below_citation_floor_is_held(tmp_path: Path) -> None:
 
 
 def test_evidence_map_with_floor_citations_submits(tmp_path: Path) -> None:
-    """A source-rich map (>= the 10-citation intake floor) submits as an
-    evidence_map and is not blocked by the single-claim shape gate."""
+    """A source-rich, bounded map submits as an evidence_map and is not blocked
+    by the single-claim shape gate."""
     root = tmp_path / "repo"
     emap = _heterogeneous_map(root, "ai_agents_breadth", count=12)
+    run = root / str(emap["run_dir"])
+    facts = json.loads(run.joinpath("all_facts.json").read_text(encoding="utf-8"))
+    for fact in facts:
+        fact["endpoint"] = "bounded completion rate"
+    run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
     submissions: list[dict[str, Any]] = []
 
     def submitter(payload: dict[str, Any]) -> dict[str, Any]:
@@ -2305,6 +2310,29 @@ def test_evidence_map_with_floor_citations_submits(tmp_path: Path) -> None:
     assert ledger["considered"][0]["status"] == "eligible"
     assert ledger["submitted_topic"] == "ai_agents_breadth"
     assert submissions and submissions[0]["article_type"] == "evidence_map"
+
+
+def test_source_rich_unbounded_evidence_map_is_held(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    emap = _heterogeneous_map(root, "ai_agents_breadth", count=12)
+    submissions: list[dict[str, Any]] = []
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submissions.append(payload)
+        return {"ok": True, "status": 200, "response": {}}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-06T09-30-00Z",
+        queue=_queue(emap),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+    )
+
+    assert ledger["considered"][0]["status"] == "evidence_map_scope_mismatch"
+    assert submissions == []
 
 
 def test_source_rich_map_not_held_when_memo_cites_few(tmp_path: Path) -> None:
@@ -2332,6 +2360,7 @@ def test_source_rich_map_not_held_when_memo_cites_few(tmp_path: Path) -> None:
             "fact_id": fid,
             "canonical_phrase": f"Effect {fid} in population {fid}.",
             "population": f"population {fid}",
+            "endpoint": "bounded completion rate",
             "comparator": "non-use",
             "source_paper": {"doi": f"10.1000/land-{fid}", "title": f"Source {fid}"},
         }
@@ -3930,6 +3959,7 @@ def test_evidence_map_cites_full_a_core_landscape_not_memo_cluster(
             "fact_id": fid,
             "canonical_phrase": f"Effect {fid} reported in population {fid}.",
             "population": f"population {fid}",
+            "endpoint": "bounded completion rate",
             "comparator": "usual care",
             "canonical_year": 2024,
             "source_paper": {

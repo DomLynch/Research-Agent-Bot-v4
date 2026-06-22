@@ -57,7 +57,8 @@ _CLUSTER_GENERIC_TOKENS = frozenset({
 _COHERENCE_GENERIC_TOKENS = _CLUSTER_GENERIC_TOKENS | {
     "endpoint", "endpoints", "outcome", "outcomes", "intervention",
     "interventions", "comparator", "comparators", "group", "groups",
-    "primary", "secondary", "measure", "measures",
+    "primary", "secondary", "measure", "measures", "metric", "metrics",
+    "setting", "settings", "agent", "agents",
 }
 
 Json = dict[str, Any]
@@ -2222,6 +2223,37 @@ def _empirical_map_fact(fact: Json) -> bool:
     return not _NON_EMPIRICAL_MAP_RE.search(f"{title} {text}")
 
 
+def _topic_tokens(topic: Any) -> set[str]:
+    raw = str(topic or "").replace("_", " ").lower()
+    tokens = set(_CLAIM_WORD.findall(raw))
+    return tokens | {t[:-1] for t in tokens if t.endswith("s") and len(t) > 4}
+
+
+def _map_scope_coherent(verdict: Json, root: Path, min_sources: int) -> bool:
+    """A map must be a bounded landscape, not every citable row for a broad topic.
+
+    Citation floors prove breadth; this proves the breadth is around at least one
+    shared structural axis. Topic tokens are ignored, so "metformin use" cannot
+    pass merely because every row mentions metformin while populations/endpoints
+    are unrelated.
+    """
+    if min_sources <= 1:
+        return True
+    topic_tokens = _topic_tokens(_selection_topic(verdict))
+    fields = (("population",), ("intervention",), ("comparator",), ("endpoint",))
+    for group in fields:
+        counts: dict[str, set[str]] = {}
+        for fact in _map_citable_facts(verdict, root):
+            source = _source_key_from_fact(fact)
+            if not source:
+                continue
+            for token in _shape_tokens(fact, group) - topic_tokens:
+                counts.setdefault(token, set()).add(source)
+        if any(len(sources) >= min_sources for sources in counts.values()):
+            return True
+    return False
+
+
 def _evidence_map_header(topic: str, n: int) -> tuple[str, str]:
     """Canonical title + abstract for an evidence map, both rendered from the one
     cited-source count `n`.
@@ -2892,6 +2924,10 @@ def select_candidate(
                     # cluster — a source-rich topic (metformin: 31 citable A_core
                     # sources) is not held at the 6 its single-claim memo cites.
                     status = "evidence_map_below_citation_floor"
+                elif not _map_scope_coherent(
+                    verdict, runs_root, _alpha_memo_int("evidence_map_min_citations", 10),
+                ):
+                    status = "evidence_map_scope_mismatch"
             if (
                 status == "eligible"
                 and verdict.get("surface_type") == "publish_alpha_memo"
