@@ -62,6 +62,78 @@ def test_domain_queue_cli_writes_legacy_and_domain_sidecar(
     assert {row["domain_slug"] for row in rows} == {"ai_research"}
 
 
+def test_build_queue_includes_pre_memo_diagnostic_failures(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    runs = tmp_path / "runs"
+    diagnostics = runs / "_business_diagnostics"
+    diagnostics.mkdir(parents=True)
+    diagnostics.joinpath("business_research-pricing_strategy_margin.json").write_text(
+        json.dumps({
+            "domain": "business_research",
+            "topic": "pricing_strategy_margin",
+            "raw_fact_count": 1,
+            "normalized_fact_count": 1,
+            "a_core_fact_count": 1,
+        }),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(queue, "_RUNS", runs)
+
+    out = queue.build_queue(include_archive=False, domain="business_research")
+
+    assert out["ready_to_publish"] == []
+    assert len(out["not_ready"]) == 1
+    row = out["not_ready"][0]
+    assert row["topic"] == "pricing_strategy_margin"
+    assert row["domain_slug"] == "business_research"
+    assert row["domain"]["slug"] == "business_research"
+    assert row["decision"] == "not_ready"
+    assert row["publish_tier"] == "UNBUILT"
+    assert row["stage"] == "no_source_diverse_bundle"
+    assert row["queue_status"] == "no_source_diverse_bundle"
+    assert row["blockers"] == ["no_source_diverse_bundle"]
+    assert row["diagnostics_path"] == str(
+        diagnostics.joinpath("business_research-pricing_strategy_margin.json"),
+    )
+    assert row["raw_fact_count"] == 1
+    assert row["normalized_fact_count"] == 1
+    assert row["a_core_fact_count"] == 1
+
+
+def test_build_queue_prefers_run_row_over_matching_diagnostic(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    runs = tmp_path / "runs"
+    run = _run(
+        runs,
+        "ai_agents-evidence-2026-02-01T00-00-00Z",
+        label="evidence_backed_signal",
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+    )
+    run.joinpath("MANIFEST.json").write_text(json.dumps({
+        "domain": {"slug": "ai_research"},
+    }), encoding="utf-8")
+    diagnostics = runs / "_business_diagnostics"
+    diagnostics.mkdir(parents=True)
+    diagnostics.joinpath("ai_research-ai_agents.json").write_text(
+        json.dumps({
+            "domain": "ai_research",
+            "topic": "ai_agents",
+            "raw_fact_count": 0,
+        }),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(queue, "_RUNS", runs)
+
+    out = queue.build_queue(include_archive=False, domain="ai_research")
+
+    rows = sum(len(rows) for rows in out.values())
+    assert rows == 1
+    assert out["not_ready"] == []
+    assert out["ready_to_publish"][0]["topic"] == "ai_agents"
+
+
 def _run(root: Path, name: str, *, label: str, lanes: tuple[str, ...]) -> Path:
     run = root / name
     run.mkdir(parents=True)
