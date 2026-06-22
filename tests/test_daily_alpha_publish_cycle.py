@@ -5149,8 +5149,8 @@ def test_systemd_longevity_research_timer_uses_explicit_domain() -> None:
     assert "--submit" in service
     assert "--allow-tier2-repair" in service
     assert "--allow-tier2 " not in service
-    assert "--max-refresh-batches 500" in service
-    assert "TimeoutStartSec=21600" in service
+    assert "--max-refresh-batches 5" in service
+    assert "TimeoutStartSec=2700" in service
     assert "OnCalendar=*-*-* 01/8:30:00" in timer
     assert "Unit=researka-alpha-longevity-research.service" in timer
 
