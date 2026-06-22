@@ -4598,7 +4598,7 @@ def run_cycle(
         "seed_scope_dropped_count": 0,
         "seed_scope_fallback_count": 0,
         "seed_scope_fallback_used": False,
-        "status": "started",
+        "status": publish_status.CycleStatus.STARTED.value,
     }
     if estimated_cost_usd > max_cost_usd:
         ledger.update({
@@ -4938,8 +4938,10 @@ def run_cycle(
                 return ledger
             continue
         if not submit:
-            ledger["cycle_attempts"].append(attempt | {"status": "dry_run_selected"})
-            ledger.update({"status": "dry_run_selected"})
+            ledger["cycle_attempts"].append(
+                attempt | {"status": publish_status.CycleStatus.DRY_RUN_SELECTED.value},
+            )
+            ledger.update({"status": publish_status.CycleStatus.DRY_RUN_SELECTED.value})
             _write_ledger(ledger_path, ledger)
             return ledger
         assert submitter is not None

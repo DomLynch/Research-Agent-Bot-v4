@@ -30,6 +30,10 @@ def test_submit_exit_codes_only_allow_pending_when_explicit() -> None:
 
 def test_terminal_publication_edge_statuses_have_operator_actions() -> None:
     assert (
+        next_action_for_status(CycleStatus.DRY_RUN_SELECTED.value)
+        == "submit_or_enable_live_mode"
+    )
+    assert (
         next_action_for_status(CycleStatus.DEDUPED_PUBLICATION.value)
         == "refresh_or_expand_candidate_supply"
     )

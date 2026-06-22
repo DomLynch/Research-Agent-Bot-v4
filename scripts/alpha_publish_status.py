@@ -9,8 +9,10 @@ Json = dict[str, Any]
 
 
 class CycleStatus(StrEnum):
+    STARTED = "started"
     PUBLISHED = "published"
     SUBMITTED_TO_RESEARKA = "submitted_to_researka"
+    DRY_RUN_SELECTED = "dry_run_selected"
     NO_FRESH_CANDIDATE = "no_fresh_candidate"
     SUBMIT_RETRY_EXHAUSTED = "submit_retry_exhausted"
     CANDIDATE_REFRESH_FAILED = "candidate_refresh_failed"
@@ -100,6 +102,8 @@ def queue_counts(queue: Json) -> Json:
 def next_action_for_status(status: str) -> str:
     if status in {CycleStatus.PUBLISHED.value, CycleStatus.SUBMITTED_TO_RESEARKA.value}:
         return "watch_decision_or_public_page"
+    if status == CycleStatus.DRY_RUN_SELECTED.value:
+        return "submit_or_enable_live_mode"
     if status in {
         CycleStatus.NO_FRESH_CANDIDATE.value,
         CycleStatus.SUBMIT_RETRY_EXHAUSTED.value,
