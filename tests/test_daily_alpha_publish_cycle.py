@@ -1967,6 +1967,25 @@ def test_recent_submission_topic_blocks_sibling_variant_by_tokens(tmp_path: Path
     assert ledger["considered"][0]["family_blocked"] is True
 
 
+def test_failed_cycle_attempts_feed_next_refresh_exclusions() -> None:
+    ledger = {
+        "cycle_attempts": [{
+            "status": "reviewer_revise",
+            "topic": "metformin use",
+            "run_dir": "runs/metformin use-evidence-2026-06-22T05-33-24Z",
+            "fingerprint": "fp-1",
+        }],
+    }
+    blocked_fingerprints: set[str] = set()
+    blocked_topics: set[str] = {"SGLT2 inhibitors"}
+
+    daily._sync_failed_attempt_blocks(ledger, blocked_fingerprints, blocked_topics)
+
+    assert blocked_fingerprints == {"fp-1"}
+    assert "metformin use" in blocked_topics
+    assert daily._family_blocked_topic("metformin_use", blocked_topics) is True
+
+
 def test_recent_submission_topic_is_domain_scoped(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("shared_topic")

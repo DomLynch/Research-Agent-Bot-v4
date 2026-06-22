@@ -1903,6 +1903,33 @@ def _recent_submission_topics(
     return topics
 
 
+_NON_BLOCKING_ATTEMPT_STATUSES = {
+    "published",
+    "submitted_to_researka",
+    "dry_run_selected",
+}
+
+
+def _sync_failed_attempt_blocks(
+    ledger: Json, blocked_fingerprints: set[str], blocked_topics: set[str],
+) -> None:
+    for attempt in ledger.get("cycle_attempts") or []:
+        if not isinstance(attempt, dict):
+            continue
+        status = str(attempt.get("status") or "")
+        if not status or status in _NON_BLOCKING_ATTEMPT_STATUSES:
+            continue
+        fingerprint = str(attempt.get("fingerprint") or "")
+        if fingerprint:
+            blocked_fingerprints.add(fingerprint)
+        for topic in (
+            str(attempt.get("topic") or "").strip(),
+            _topic_from_run_ref(attempt.get("run_dir")),
+        ):
+            if topic:
+                blocked_topics.add(topic)
+
+
 def _repairable_rejection(decision: Json) -> bool:
     support = str(decision.get("claim_support_verdict") or "").lower()
     if (
@@ -3140,10 +3167,13 @@ def _source_literature_topic_candidate(
 def _family_blocked_topic(topic: str, blocked_topics: set[str]) -> bool:
     if topic in blocked_topics:
         return True
+    topic_key = _canonical_family_key(topic)
     topic_tokens = _family_tokens(topic)
     if not topic_tokens:
         return False
     for blocked in blocked_topics:
+        if topic_key and topic_key == _canonical_family_key(blocked):
+            return True
         blocked_tokens = _family_tokens(blocked)
         if not blocked_tokens:
             continue
@@ -4319,6 +4349,7 @@ def run_cycle(
     warm_backlog_next = False
     priority_refresh_topics: list[str] = []
     for batch in range(1, batch_limit + 1):
+        _sync_failed_attempt_blocks(ledger, blocked_fingerprints, blocked_topics)
         if refresh_candidates and batch > search_batch_limit and not skip_next_refresh:
             break
         refresh: Json = {}
