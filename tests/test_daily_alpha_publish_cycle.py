@@ -5716,6 +5716,66 @@ def test_repairable_revise_stops_at_fingerprint_attempt_cap(
     assert ledger["considered"][-1]["status"] == "cycle_failed_submission"
 
 
+def test_repairable_revise_does_not_resubmit_same_topic_in_cycle(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("same_cycle_revise")
+    _memo_with_source_receipts(root, verdict, 5)
+    submitted: list[str] = []
+    refreshes: list[list[str]] = []
+
+    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        refreshes.append(args)
+        return True, "ok"
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submitted.append(str(payload["topic"]))
+        return {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": f"sub-{len(submitted)}"}},
+        }
+
+    def revise(_submission_id: str) -> dict[str, Any]:
+        return {
+            "status": "complete",
+            "decision": "revise",
+            "required_revisions": ["Repair source alignment before resubmission."],
+            "resubmission": {"allowed": True},
+        }
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        refresh_candidates=True,
+        max_refresh_batches=3,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+        decision_fetcher=revise,
+        page_fetcher=lambda _url: {"ok": False, "status": 0},
+        memo_refresher=lambda _run, _verdict: True,
+        sleep=lambda _seconds: None,
+    )
+
+    assert submitted == ["same_cycle_revise"]
+    assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == [
+        "reviewer_revise",
+    ]
+    assert ledger["repair_retry_deferred"] == {
+        "topic": "same_cycle_revise",
+        "reason": "reviewer_revise",
+        "requires": "new_memo_fingerprint",
+    }
+    assert len(refreshes) >= 2
+    assert all("same_cycle_revise" in call for call in refreshes[1:])
+
+
 def test_repairable_revise_on_final_search_batch_gets_repair_slot(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

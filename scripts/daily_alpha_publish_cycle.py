@@ -4705,6 +4705,9 @@ def run_cycle(
                             fingerprint = str(candidate.get("memo_fingerprint") or "")
                             if fingerprint:
                                 blocked_fingerprints.add(fingerprint)
+                            topic = str(candidate.get("topic") or "")
+                            if topic:
+                                blocked_topics.add(topic)
                             ledger["repair_retry_deferred"] = {
                                 "topic": candidate.get("topic"),
                                 "reason": attempt["status"],
