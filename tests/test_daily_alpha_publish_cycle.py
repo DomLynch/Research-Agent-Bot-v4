@@ -4953,9 +4953,14 @@ def test_submit_exit_code_fails_closed_for_no_publish_statuses() -> None:
         submit=True,
         allow_pending_success=True,
     ) == 0
-    assert daily._cycle_exit_code(
-        {"status": "no_fresh_candidate", "published": 0}, submit=True,
-    ) == 2
+    for status in (
+        "no_fresh_candidate",
+        "preflight_qa_blocked",
+        "submit_retry_exhausted",
+        "domain_dry_run_only",
+        "candidate_refresh_failed",
+    ):
+        assert daily._cycle_exit_code({"status": status, "published": 0}, submit=True) == 2
 
 
 def test_main_emits_end_of_run_blocker_summary(
