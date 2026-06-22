@@ -63,3 +63,15 @@ def test_write_ledger_adds_publish_summary(tmp_path: Path) -> None:
     assert data["publish_summary"]["top_blockers"] == {
         "duplicate_submission_fingerprint": 1,
     }
+
+
+def test_write_ledger_uses_sidecar_lock(tmp_path: Path, monkeypatch: Any) -> None:
+    calls: list[tuple[str, int]] = []
+
+    def fake_flock(handle: Any, op: int) -> None:
+        calls.append((Path(handle.name).name, op))
+
+    monkeypatch.setattr(fcntl, "flock", fake_flock)
+    io.write_ledger(tmp_path / "daily.json", {"status": "published"})
+
+    assert calls == [("daily.json.lock", fcntl.LOCK_EX)]
