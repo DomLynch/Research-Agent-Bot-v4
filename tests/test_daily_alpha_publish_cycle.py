@@ -7333,6 +7333,41 @@ def test_retryable_revision_keeps_agent_repair_contract(
     assert considered[0]["status"] == "eligible"
 
 
+def test_retryable_selection_rechecks_current_verdict_before_resubmit(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    stale = _verdict("retry_stale_metric_gate")
+    _memo_with_source_receipts(root, stale, 5)
+    stale_fp = daily.memo_fingerprint(stale)
+    current = stale | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "blockers": ["metric_type_mismatch"],
+    }
+
+    monkeypatch.setattr(daily, "_current_selection_verdict", lambda _v, _root: current)
+
+    cand, considered = daily.select_candidate(
+        _queue(stale),
+        runs_root=root,
+        submitted_path=root / "submitted.json",
+        retryable_fingerprints={stale_fp},
+        retry_decision_overrides={
+            stale_fp: {
+                "decision": "reject",
+                "resubmission": {"allowed": True},
+            },
+        },
+    )
+
+    assert cand is None
+    assert considered[0]["decision"] == "agent_repair_needed"
+    assert considered[0]["status"] == "agent_repair_needed"
+    assert considered[0]["blockers"] == ["metric_type_mismatch"]
+
+
 def test_retryable_revision_allows_changed_memo_same_fingerprint(
     tmp_path: Path,
 ) -> None:

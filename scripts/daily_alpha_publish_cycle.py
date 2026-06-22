@@ -2472,13 +2472,14 @@ def select_candidate(
                 continue
             verdict = verdict | {"domain": load_domain_profile(verdict_domain).as_metadata()}
         raw_fp = memo_fingerprint(verdict)
-        if (
-            raw_fp not in seen
-            and raw_fp not in retry_decisions
-            and not verdict.get("_claim_cluster_candidate")
-        ):
+        raw_retry_decision = retry_decisions.get(raw_fp)
+        if not verdict.get("_claim_cluster_candidate"):
             verdict = _current_selection_verdict(verdict, runs_root)
         fp = memo_fingerprint(verdict)
+        if raw_retry_decision is not None and fp not in retry_decisions:
+            retry_decisions[fp] = raw_retry_decision
+        if raw_fp in retryable:
+            retryable.add(fp)
         source_count = _source_count(verdict, runs_root)
         direct_source_count = _direct_source_count(verdict, runs_root)
         corpus_source_count = _corpus_source_count(verdict, runs_root)
