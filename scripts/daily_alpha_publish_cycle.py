@@ -644,7 +644,7 @@ def _reload_verdict_after_memo_refresh(verdict: Json, run_dir: Path) -> Json:
             if str(k).startswith("_")
             or k in {
                 "topic", "decision", "publish_tier", "blockers",
-                "receipt_expansion", "subtopic_recommendations",
+                "surface_type", "receipt_expansion", "subtopic_recommendations",
             }
         })
     return refreshed
@@ -1119,6 +1119,7 @@ def _claim_cluster_candidates(
                 "_parent_topic": parent,
                 "topic": topic,
                 "decision": "agent_repair_needed",
+                "surface_type": "publish_alpha_memo",
                 "blockers": ["source_dispersion"],
                 "receipt_expansion": expansion | {"cited_bound_fact_ids": ids},
                 "subtopic_recommendations": {

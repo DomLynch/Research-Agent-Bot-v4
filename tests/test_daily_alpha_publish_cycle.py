@@ -3354,9 +3354,47 @@ def test_high_alpha_curation_cluster_can_seed_claim_candidate(tmp_path: Path) ->
     assert len(rows) == 1
     assert rows[0]["topic"] == "curated_parent_bounded_claim"
     assert rows[0]["decision"] == "agent_repair_needed"
+    assert rows[0]["surface_type"] == "publish_alpha_memo"
     assert rows[0]["receipt_expansion"]["cited_bound_fact_ids"] == [
         "1", "2", "3", "4", "5",
     ]
+
+
+def test_claim_cluster_reload_preserves_single_claim_surface(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    run = tmp_path / "run"
+    run.mkdir()
+    verdict = {
+        "_claim_cluster_candidate": True,
+        "_claim_cluster_topic": "parent_bounded_claim",
+        "topic": "parent_bounded_claim",
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_1",
+        "surface_type": "publish_alpha_memo",
+        "blockers": ["source_dispersion"],
+        "receipt_expansion": {"cited_bound_fact_ids": ["1", "2", "3", "4", "5"]},
+        "subtopic_recommendations": {"recommended": True, "clusters": []},
+    }
+
+    monkeypatch.setattr(daily, "_can_recompute_verdict", lambda _run: True)
+    monkeypatch.setattr(
+        daily,
+        "_write_publish_verdict",
+        lambda _run: {
+            "topic": "parent",
+            "decision": "ready_to_publish",
+            "publish_tier": "TIER_1",
+            "surface_type": "evidence_map",
+            "blockers": [],
+        },
+    )
+
+    refreshed = daily._reload_verdict_after_memo_refresh(verdict, run)
+
+    assert refreshed["topic"] == "parent_bounded_claim"
+    assert refreshed["surface_type"] == "publish_alpha_memo"
+    assert refreshed["blockers"] == ["source_dispersion"]
 
 
 def test_low_alpha_curation_cluster_does_not_seed_claim_candidate(
