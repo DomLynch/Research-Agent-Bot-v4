@@ -685,6 +685,25 @@ def test_default_source_floor_still_blocks_four_source_runs(
     assert "direct_source_floor_below_min" in verdict["blockers"]
 
 
+def test_current_classifier_overrides_stale_background_sidecar(tmp_path: Path) -> None:
+    run = _run(tmp_path)
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    for fact in facts:
+        fact.update({
+            "canonical_phrase": "Backup policy improved uptime by 8%",
+            "population": "operators receiving grid storage",
+            "intervention": "backup policy added to grid storage",
+            "numeric_value": 8.0,
+            "units": "%",
+        })
+    (run / "all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    verdict = publish_verdict(run)
+
+    assert verdict["decision"] != "ready_to_publish"
+    assert "direct_source_floor_below_min" in verdict["blockers"]
+
+
 def test_llm_cluster_publishes_three_homogeneous_sources(tmp_path: Path) -> None:
     """A writer-validated homogeneous cluster publishes at the cluster floor
     (3 sources) and surfaces NO active blockers — Researka intake's 2-4 source

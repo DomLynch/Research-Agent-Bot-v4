@@ -14,13 +14,8 @@ from agent.topic_synonyms import expand_topic_queries, phrase_in_text
 LANES = ("A_core", "B_context", "C_noise", "D_bad_extraction")
 _NORM_PUNCT = re.compile(r"[\W_]+")
 _MIN_SPECIFIC_HEAD_CHARS = 8
-_BACKGROUND_CUES = (
-    "added to", "add on to", "add-on to", "background",
-    "receiving", "on",
-)
-TopicType = Literal[
-    "intervention", "exposure", "disease_or_condition", "biomarker", "broad_risk_factor",
-]
+_BACKGROUND_CUES = ("added to", "add on to", "add-on to", "background", "receiving", "on")
+TopicType = Literal["intervention", "exposure", "disease_or_condition", "biomarker", "broad_risk_factor"]
 _POPULATION_CONTEXT_ONLY: frozenset[TopicType] = frozenset({
     "disease_or_condition", "broad_risk_factor",
 })
@@ -75,7 +70,6 @@ def _topic_keywords(topic: str) -> list[str]:
 
 
 def _background_topic_match(text: str, keywords: list[str]) -> bool:
-    """Topic appears as context/background therapy, not the active exposure."""
     norm = _norm(text)
     if not norm:
         return False

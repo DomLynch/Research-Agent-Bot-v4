@@ -32,6 +32,7 @@ if str(_ROOT) not in sys.path:
 
 from agent.alpha_selector import accepted_shape_bonus
 from agent.domain_profile import domain_choices, domain_slug, load_domain_profile
+from agent.fact_lanes import classify_lanes
 from agent.llm_client import call_writer
 from agent.publish_tier import publish_verdict
 from agent.settings import load_settings
@@ -520,6 +521,36 @@ def _with_domain_metadata(verdict: Json, run: Path, fallback: Json | None = None
     )
 
 
+def _sidecar_lane_map(run: Path) -> dict[str, str]:
+    lanes_raw = _json(run / "fact_lanes.json", {})
+    if not isinstance(lanes_raw, dict):
+        return {}
+    return {
+        str(row.get("fact_id") or ""): str(row.get("lane") or "")
+        for row in lanes_raw.get("verdicts", [])
+        if isinstance(row, dict)
+    }
+
+
+def _has_structured_facts(facts: list[Any]) -> bool:
+    fields = ("population", "intervention", "comparator", "endpoint", "metric")
+    return any(
+        isinstance(fact, dict) and any(str(fact.get(k) or "").strip() for k in fields)
+        for fact in facts
+    )
+
+
+def _current_lane_map(run: Path, facts: list[Any], topic: str) -> dict[str, str]:
+    sidecar = _sidecar_lane_map(run)
+    typed = [fact for fact in facts if isinstance(fact, dict)]
+    if not _has_structured_facts(typed):
+        return sidecar
+    current = classify_lanes(typed, topic)
+    if not sidecar or any(v.reason == "topic_in_background_context" for v in current):
+        return {v.fact_id: v.lane for v in current}
+    return sidecar
+
+
 def _refresh_claim_cluster(run: Path) -> None:
     """Recompute claim_cluster.json (and its homogeneity flag) from the run's
     A_core facts before the verdict reads it.
@@ -542,11 +573,8 @@ def _refresh_claim_cluster(run: Path) -> None:
         facts_by_id = {
             str(f.get("fact_id")): f for f in facts if isinstance(f, dict)
         }
-        lanes = {
-            str(v.get("fact_id")): str(v.get("lane") or "")
-            for v in lanes_raw.get("verdicts", []) if isinstance(v, dict)
-        }
         topic = run.name.split("-evidence-", 1)[0]
+        lanes = _current_lane_map(run, facts, topic)
         cluster = densest_claim_cluster(
             facts_by_id, lanes, topic,
             min_sources=_alpha_memo_int("min_cluster_source_papers", 3),
@@ -2084,13 +2112,7 @@ def _memo_source_facts(
     }
     lanes: dict[str, str] = {}
     if lane_names is not None:
-        lanes_raw = _json(run_dir / "fact_lanes.json", {})
-        if isinstance(lanes_raw, dict):
-            lanes = {
-                str(row.get("fact_id") or ""): str(row.get("lane") or "")
-                for row in lanes_raw.get("verdicts", [])
-                if isinstance(row, dict)
-            }
+        lanes = _current_lane_map(run_dir, facts, _selection_topic(verdict))
         if not lanes:
             lanes = _memo_receipt_lanes(memo, section_names)
     seen: set[str] = set()
@@ -2144,14 +2166,9 @@ def _landscape_source_facts(verdict: Json, root: Path, *, cap: int = 40) -> list
     lanes directly recovers the sources the memo dropped."""
     run_dir = _run_path(root, verdict.get("run_dir"))
     facts = _json(run_dir / "all_facts.json", [])
-    lanes_raw = _json(run_dir / "fact_lanes.json", {})
-    if not isinstance(facts, list) or not isinstance(lanes_raw, dict):
+    if not isinstance(facts, list):
         return []
-    lane = {
-        str(row.get("fact_id") or ""): str(row.get("lane") or "")
-        for row in lanes_raw.get("verdicts", [])
-        if isinstance(row, dict)
-    }
+    lane = _current_lane_map(run_dir, facts, _selection_topic(verdict))
     seen: set[str] = set()
     picked: list[Json] = []
     for fact in facts:
@@ -2421,14 +2438,9 @@ def _source_count_from_verdict(verdict: Json) -> int:
 def _corpus_source_count(verdict: Json, root: Path) -> int:
     run_dir = _run_path(root, verdict.get("run_dir"))
     facts = _json(run_dir / "all_facts.json", [])
-    lanes_raw = _json(run_dir / "fact_lanes.json", {})
-    if not isinstance(facts, list) or not isinstance(lanes_raw, dict):
+    if not isinstance(facts, list):
         return _source_count_from_verdict(verdict)
-    lanes = {
-        str(row.get("fact_id") or ""): str(row.get("lane") or "")
-        for row in lanes_raw.get("verdicts", [])
-        if isinstance(row, dict)
-    }
+    lanes = _current_lane_map(run_dir, facts, _selection_topic(verdict))
     sources = {
         _source_key_from_fact(fact)
         for fact in facts

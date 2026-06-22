@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from agent.domain_profile import domain_slug
+from agent.fact_lanes import classify_lanes
 
 _ROOT = Path(__file__).resolve().parent.parent
 _CFG_PATH = _ROOT / "topic_packs" / "publish_tier.toml"
@@ -272,13 +273,24 @@ def _facts_by_id(run_dir: Path) -> dict[str, dict[str, Any]]:
     }
 
 
-def _lane_map(run_dir: Path) -> dict[str, str]:
+def _has_structured_facts(facts: dict[str, dict[str, Any]]) -> bool:
+    fields = ("population", "intervention", "comparator", "endpoint", "metric")
+    return any(str(f.get(k) or "").strip() for f in facts.values() for k in fields)
+
+
+def _lane_map(run_dir: Path, topic: str, facts: dict[str, dict[str, Any]]) -> dict[str, str]:
     data = _json(run_dir / "fact_lanes.json", {})
     rows = data.get("verdicts", []) if isinstance(data, dict) else []
-    return {
+    sidecar = {
         str(v.get("fact_id") or ""): str(v.get("lane") or "")
         for v in rows if isinstance(v, dict)
     }
+    if not _has_structured_facts(facts):
+        return sidecar
+    current = classify_lanes(list(facts.values()), topic)
+    if not sidecar or any(v.reason == "topic_in_background_context" for v in current):
+        return {v.fact_id: v.lane for v in current}
+    return sidecar
 
 
 def _tokens(text: str, topic: str, generic: frozenset[str]) -> set[str]:
@@ -1015,7 +1027,7 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     ]
     evidence_ids = _memo_receipt_ids(md, ("Evidence",))
     facts = _facts_by_id(run_dir)
-    lanes = _lane_map(run_dir)
+    lanes = _lane_map(run_dir, topic, facts)
     bound_ids = [fid for fid in cited_ids if lanes.get(fid) in _BINDABLE]
     direct_ids = [fid for fid in evidence_ids if lanes.get(fid) in _DIRECT]
     claim_text, claim_tokens = _claim_axis(
