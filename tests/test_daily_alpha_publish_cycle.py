@@ -4888,6 +4888,41 @@ def test_submit_exit_code_fails_closed_for_no_publish_statuses() -> None:
     ) == 2
 
 
+def test_main_emits_end_of_run_blocker_summary(
+    monkeypatch: MonkeyPatch, capsys: Any,
+) -> None:
+    ledger = {
+        "status": "no_fresh_candidate",
+        "submitted": 0,
+        "published": 0,
+        "publish_summary": {
+            "status": "no_fresh_candidate",
+            "submitted": 0,
+            "published": 0,
+            "considered": 2,
+            "queue_counts": {"ready_to_publish": 0, "curation_needed": 3},
+            "top_blockers": {"duplicate_submission_fingerprint": 1},
+            "next_action": "refresh_or_expand_candidate_supply",
+            "public_url": None,
+            "public_page_status": None,
+        },
+    }
+
+    monkeypatch.setattr(sys, "argv", ["daily_alpha_publish_cycle.py", "--date", "2026-06-22"])
+    monkeypatch.setattr(daily, "run_cycle", lambda **_kwargs: ledger)
+
+    assert daily.main() == 0
+    out = capsys.readouterr().out
+
+    assert "[daily-alpha] status=no_fresh_candidate submitted=0 published=0" in out
+    assert "[daily-alpha] summary=" in out
+    assert '"considered": 2' in out
+    assert '"queue_counts": {"curation_needed": 3, "ready_to_publish": 0}' in out
+    assert '"top_blockers": {"duplicate_submission_fingerprint": 1}' in out
+    assert '"next_action": "refresh_or_expand_candidate_supply"' in out
+    assert '"public_page_status": null' in out
+
+
 def test_legacy_allow_tier2_flag_is_removed_from_cli() -> None:
     result = subprocess.run(
         [sys.executable, "scripts/daily_alpha_publish_cycle.py", "--help"],
