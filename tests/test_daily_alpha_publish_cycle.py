@@ -5390,6 +5390,64 @@ def test_exhausted_duplicate_queue_prioritizes_fresh_parent_topic(
     assert calls[-1]["priority_topics"] == ["metformin"]
 
 
+def test_scope_mismatch_map_prioritizes_fresh_parent_topic(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    broad = _heterogeneous_map(root, "SGLT2 inhibitors", count=12)
+    fresh = _verdict("metformin") | {
+        "receipt_expansion": {"cited_bound_fact_ids": ["9", "8", "7"]},
+    }
+    _memo_with_source_receipts(root, fresh, 5)
+    daily._write_json(root / "_topics_discovery" / "latest.json", {
+        "domain": {"slug": "longevity"},
+        "all": [
+            {
+                "topic": "sglt2_inhibitors_empagliflozin_placebo",
+                "fact_source_count": 24,
+                "paper_count": 24,
+                "velocity_score": 100,
+            },
+            {
+                "topic": "metformin",
+                "fact_source_count": 31,
+                "paper_count": 31,
+                "velocity_score": 90,
+            },
+        ],
+    })
+    calls: list[dict[str, Any]] = []
+    queues = iter([_queue(broad), _queue(broad, fresh)])
+
+    def refresh(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+        calls.append(kwargs)
+        return {
+            "ok": True,
+            "note": "ok",
+            "ran_topics": list(kwargs.get("priority_topics") or []),
+        }
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", refresh)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        refresh_candidates=True,
+        max_refresh_batches=2,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+        queue_builder=lambda _root, _include_archive: next(queues),
+    )
+
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["considered"][0]["status"] == "evidence_map_scope_mismatch"
+    assert ledger["submitted_topic"] == "metformin"
+    assert ledger["refresh_parent_topics"] == ["metformin"]
+    assert calls[-1]["priority_topics"] == ["metformin"]
+
+
 def test_timed_out_priority_parent_tries_next_fresh_parent_topic(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
