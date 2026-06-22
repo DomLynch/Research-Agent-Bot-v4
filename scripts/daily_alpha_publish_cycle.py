@@ -29,8 +29,7 @@ from agent.alpha_selector import accepted_shape_bonus
 from agent.domain_profile import domain_choices, domain_slug, load_domain_profile
 from agent.publish_tier import publish_verdict
 from scripts import alpha_publish_io as publish_io
-from scripts.alpha_publish_submit import http_submitter as _http_submitter
-from scripts.alpha_publish_submit import submit_with_backoff
+from scripts.alpha_publish_submit import http_submitter, submit_with_backoff
 
 _ROOT = Path(__file__).resolve().parent.parent
 _RUNS = _ROOT / "runs"
@@ -3096,6 +3095,10 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         },
         "content_hash": "sha256:" + hashlib.sha256(public_memo.encode("utf-8")).hexdigest(),
     }
+
+
+def _http_submitter(url: str, token: str) -> Submitter:
+    return http_submitter(url, token)
 
 
 def run_cycle(
