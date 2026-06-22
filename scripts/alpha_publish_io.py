@@ -7,8 +7,6 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from scripts.alpha_publish_status import publish_summary
-
 Json = dict[str, Any]
 
 
@@ -45,5 +43,4 @@ def update_json_list(path: Path, mutate: Callable[[list[Any]], bool]) -> bool:
 
 
 def write_ledger(path: Path, ledger: Json) -> None:
-    ledger["publish_summary"] = publish_summary(ledger)
     write_json(path, ledger)

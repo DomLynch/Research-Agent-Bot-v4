@@ -6,6 +6,7 @@ rules.
 from __future__ import annotations
 
 import datetime as dt
+import fcntl
 import json
 import subprocess
 import sys
@@ -19,6 +20,20 @@ from pytest import MonkeyPatch, raises
 
 import scripts.daily_alpha_publish_cycle as daily
 from agent.domain_profile import domain_choices
+
+
+def test_daily_write_json_uses_sidecar_lock(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    lock_calls: list[tuple[str, int]] = []
+
+    def fake_flock(handle: Any, op: int) -> None:
+        lock_calls.append((Path(handle.name).name, op))
+
+    monkeypatch.setattr(fcntl, "flock", fake_flock)
+    daily._write_json(tmp_path / "_daily_ledger" / "state.json", {"ok": True})
+
+    assert ("state.json.lock", fcntl.LOCK_EX) in lock_calls
 
 
 def test_run_subprocess_timeout_kills_descendant_process(tmp_path: Path) -> None:

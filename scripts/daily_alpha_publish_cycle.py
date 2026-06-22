@@ -28,6 +28,9 @@ from typing import Any
 from agent.alpha_selector import accepted_shape_bonus
 from agent.domain_profile import domain_choices, domain_slug, load_domain_profile
 from agent.publish_tier import publish_verdict
+from scripts import alpha_publish_io as publish_io
+from scripts.alpha_publish_submit import http_submitter as _http_submitter
+from scripts.alpha_publish_submit import submit_with_backoff
 
 _ROOT = Path(__file__).resolve().parent.parent
 _RUNS = _ROOT / "runs"
@@ -257,8 +260,11 @@ def _json(path: Path, default: Any) -> Any:
 
 
 def _write_json(path: Path, payload: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    publish_io.write_json(path, payload)
+
+
+def _update_json_list(path: Path, mutate: Callable[[list[Any]], bool]) -> bool:
+    return publish_io.update_json_list(path, mutate)
 
 
 def _env_truthy(name: str) -> bool:
@@ -285,6 +291,22 @@ def _preflight_summary(report: Json) -> Json:
         ],
         "m3_status": str(m3.get("status") or "") if isinstance(m3, dict) else "",
     }
+
+
+def _normalize_preflight_report(report: Json) -> Json:
+    if report.get("status") != "pass":
+        return report
+    reasons = report.get("blocked_reasons")
+    if isinstance(reasons, list) and reasons:
+        return report
+    advisories = report.get("advisories")
+    critical = [
+        row for row in advisories if isinstance(row, dict)
+        and str(row.get("severity") or "").casefold() == "critical"
+    ] if isinstance(advisories, list) else []
+    if not critical:
+        return report
+    return report | {"status": "block", "blocked_reasons": critical}
 
 
 def _attach_preflight_summary(payload: Json, report: Json) -> None:
@@ -352,6 +374,8 @@ def _run_preflight_qa(payload: Json, run_dir: Path) -> tuple[Json | None, Json |
             }
             _write_json(report_path, report)
 
+    report = _normalize_preflight_report(report)
+    _write_json(report_path, report)
     if mode == "shadow":
         _attach_preflight_summary(payload, report)
         return payload, report
@@ -1255,9 +1279,6 @@ def _record_submission_attempt(
     submission_id: str = "",
     submit_status: str = "",
 ) -> None:
-    records = _json(path, [])
-    if not isinstance(records, list):
-        records = []
     record = {
         "date": date,
         "domain": candidate.get("domain"),
@@ -1269,8 +1290,12 @@ def _record_submission_attempt(
     }
     if submit_status:
         record["submit_status"] = submit_status
-    records.append(record)
-    _write_json(path, records)
+
+    def append_record(records: list[Any]) -> bool:
+        records.append(record)
+        return True
+
+    _update_json_list(path, append_record)
 
 
 def _submission_record_patch(ledger: Json) -> Json:
@@ -3071,55 +3096,6 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         },
         "content_hash": "sha256:" + hashlib.sha256(public_memo.encode("utf-8")).hexdigest(),
     }
-
-
-def _http_submitter(url: str, token: str) -> Submitter:
-    def submit(payload: Json) -> Json:
-        body = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(
-            url,
-            data=body,
-            method="POST",
-            headers={
-                "Authorization": f"Bearer {token}",
-                "x-api-key": token,
-                "Content-Type": "application/json",
-            },
-        )
-        try:
-            with urllib.request.urlopen(req, timeout=60) as response:
-                text = response.read().decode("utf-8")
-                return {"ok": True, "status": response.status, "response": json.loads(text)}
-        except urllib.error.HTTPError as exc:
-            text = exc.read().decode("utf-8", errors="replace")
-            return {"ok": False, "status": exc.code, "response": text[:1000]}
-    return submit
-
-
-def submit_with_backoff(
-    payload: Json,
-    submitter: Submitter,
-    *,
-    retries: int = 2,
-    sleep: Callable[[float], None] = time.sleep,
-) -> Json:
-    attempts: list[Json] = []
-    for i in range(retries + 1):
-        result = submitter(payload)
-        attempts.append(result)
-        status = int(result.get("status") or 0)
-        if result.get("ok"):
-            return {"status": "accepted", "attempts": attempts}
-        text = json.dumps(result.get("response", "")).lower()
-        if "duplicate" in text:
-            return {"status": "rejected_duplicate", "attempts": attempts}
-        if "evidence" in text or "curation" in text:
-            return {"status": "rejected_needs_evidence", "attempts": attempts}
-        if status < 500:
-            return {"status": "rejected", "attempts": attempts}
-        if i < retries:
-            sleep(2**i)
-    return {"status": "failed_retry_exhausted", "attempts": attempts}
 
 
 def run_cycle(
