@@ -5202,9 +5202,60 @@ def test_duplicate_topic_is_excluded_from_next_refresh_batch(
     assert ledger["refresh_batches"][1]["cooldown_reason"] == "retry_after_blocked_topic"
     assert [row["status"] for row in ledger["considered"]] == [
         "duplicate_submission_fingerprint",
-        "cycle_exhausted_topic",
+        "duplicate_submission_fingerprint",
         "eligible",
     ]
+
+
+def test_ai_duplicate_exhaustion_reports_duplicate_starvation(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    duplicate = _verdict("llm_evaluation_methods_fine_lora") | {
+        "domain": {"slug": "ai_research"},
+    }
+    _memo_with_source_receipts(root, duplicate, 5)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
+        {
+            "fingerprint": daily.memo_fingerprint(duplicate),
+            "topic": "llm_evaluation_methods_fine_lora",
+            "domain": "ai_research",
+        },
+    ])
+    calls: list[dict[str, Any]] = []
+
+    def refresh(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+        calls.append(kwargs)
+        return {
+            "ok": True,
+            "ran_topics": [],
+            "top": 20,
+            "warm_backlog": bool(kwargs.get("warm_backlog")),
+        }
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", refresh)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        domain="ai_research",
+        queue=_queue(duplicate),
+        refresh_candidates=True,
+        max_refresh_batches=2,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+    )
+
+    assert ledger["status"] == "no_fresh_candidate"
+    assert ledger["reason"] == "all candidates were duplicate submission fingerprints"
+    assert daily._cycle_exit_code(ledger, submit=True) == 2
+    assert [call["domain"] for call in calls] == ["ai_research", "ai_research"]
+    assert [bool(call.get("warm_backlog")) for call in calls] == [False, True]
+    assert {
+        row["status"] for row in ledger["considered"]
+    } == {"duplicate_submission_fingerprint"}
 
 
 def test_exhausted_duplicate_queue_prioritizes_fresh_parent_topic(

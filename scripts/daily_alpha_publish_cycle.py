@@ -2750,12 +2750,12 @@ def select_candidate(
                     decisions=retry_decisions,
                 )
         missing_audit_sidecars: list[str] = []
-        if exhausted_topic:
+        if (fp in seen and not retry_after_rejection) or retry_fingerprint_unchanged:
+            status = "duplicate_submission_fingerprint"
+        elif exhausted_topic:
             status = "cycle_exhausted_topic"
         elif cycle_blocked:
             status = "cycle_failed_submission"
-        elif (fp in seen and not retry_after_rejection) or retry_fingerprint_unchanged:
-            status = "duplicate_submission_fingerprint"
         elif not has_memo:
             status = "missing_alpha_memo"
         elif not approved:
