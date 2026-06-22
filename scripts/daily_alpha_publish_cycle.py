@@ -38,6 +38,7 @@ from agent.researka_facts import tier2_domain
 from agent.settings import load_settings
 from agent.topic_discovery import cap_topic_slug
 from scripts import alpha_publish_io as publish_io
+from scripts import alpha_publish_preflight as preflight
 from scripts import alpha_publish_status as publish_status
 from scripts.alpha_publish_submit import http_submitter, submit_with_backoff
 
@@ -95,11 +96,7 @@ _SUBMIT_TOKEN_ENVS = (
     "RESEARKA_AGENT_TOKEN_V4",
     "RESEARCH_API_KEY_V4",
 )
-_PREFLIGHT_MODE_ENV = "RESEARKA_PREFLIGHT_QA"
-_PREFLIGHT_ROOT_ENV = "RESEARKA_PREFLIGHT_QA_ROOT"
-_PREFLIGHT_USE_M3_ENV = "RESEARKA_PREFLIGHT_USE_M3"
 _SOURCE_LITERATURE_FALLBACK_SUBMIT_ENV = "RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT"
-_PREFLIGHT_TIMEOUT_SECONDS = 90.0
 
 
 def _source_literature_fallback_submit_enabled() -> bool:
@@ -313,10 +310,6 @@ def _write_ledger(path: Path, ledger: Json) -> None:
     publish_io.write_ledger(path, ledger)
 
 
-def _env_truthy(name: str) -> bool:
-    return os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}
-
-
 def _regenerate_on_resubmit() -> bool:
     # Re-render the selected memo through the current writer just before
     # submission, so writer fixes reach already-built run dirs (the cycle reads
@@ -329,125 +322,30 @@ def _regenerate_on_resubmit() -> bool:
 
 
 def _preflight_mode() -> str:
-    mode = os.environ.get(_PREFLIGHT_MODE_ENV, "off").strip().lower()
-    return mode if mode in {"shadow", "enforce"} else "off"
+    return preflight.preflight_mode()
 
 
 def _preflight_summary(report: Json) -> Json:
-    reasons = report.get("blocked_reasons")
-    reason_rows = reasons if isinstance(reasons, list) else []
-    advisories = report.get("advisories")
-    advisory_rows = advisories if isinstance(advisories, list) else []
-    m3 = report.get("m3_result")
-    return {
-        "status": str(report.get("status") or "unknown"),
-        "qa_version": str(report.get("qa_version") or ""),
-        "safe_fixes_applied": report.get("safe_fixes_applied")
-        if isinstance(report.get("safe_fixes_applied"), list) else [],
-        "blocked_reason_codes": [
-            str(row.get("code")) for row in reason_rows
-            if isinstance(row, dict) and row.get("code")
-        ],
-        "advisory_codes": [
-            str(row.get("code")) for row in advisory_rows
-            if isinstance(row, dict) and row.get("code")
-        ],
-        "m3_status": str(m3.get("status") or "") if isinstance(m3, dict) else "",
-    }
+    return preflight.preflight_summary(report)
 
 
 def _attach_preflight_summary(payload: Json, report: Json) -> None:
-    evidence = payload.get("evidence_bundle")
-    if not isinstance(evidence, dict):
-        evidence = {}
-        payload["evidence_bundle"] = evidence
-    evidence["preflight_qa"] = _preflight_summary(report)
+    preflight.attach_preflight_summary(payload, report)
 
 
 def _refresh_content_hash(payload: Json) -> None:
-    markdown = str(payload.get("markdown") or payload.get("body_markdown") or "")
-    if markdown:
-        payload["content_hash"] = "sha256:" + hashlib.sha256(markdown.encode("utf-8")).hexdigest()
+    preflight.refresh_content_hash(payload)
 
 
 def _run_preflight_qa(payload: Json, run_dir: Path) -> tuple[Json | None, Json | None]:
-    mode = _preflight_mode()
-    if mode == "off":
-        return payload, None
-
-    tool_root = Path(
-        os.environ.get(_PREFLIGHT_ROOT_ENV, str(_ROOT.parent / "researka-preflight-qa")),
-    ).expanduser()
-    input_path = run_dir / "researka_preflight_input.json"
-    report_path = run_dir / "researka_preflight_report.json"
-    clean_path = run_dir / "researka_preflight_cleaned_payload.json"
-    _write_json(input_path, payload)
-
-    cmd = [
-        sys.executable, "-m", "preflight_qa", "check",
-        "--input", str(input_path),
-        "--out", str(report_path),
-        "--clean-out", str(clean_path),
-    ]
-    if _env_truthy(_PREFLIGHT_USE_M3_ENV):
-        cmd.append("--use-m3")
-    try:
-        proc = _run_subprocess(cmd, timeout=_PREFLIGHT_TIMEOUT_SECONDS, cwd=tool_root)
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        report: Json = {
-            "status": "pass",
-            "qa_version": "preflight-v2",
-            "safe_fixes_applied": [],
-            "blocked_reasons": [],
-            "advisories": [{
-                "code": "preflight_runtime_error",
-                "severity": "minor",
-                "message": f"{type(exc).__name__}: {exc}",
-            }],
-        }
-        _write_json(report_path, report)
-    else:
-        raw_report = _json(report_path, {})
-        report = raw_report if isinstance(raw_report, dict) else {}
-        if proc.returncode not in {0, 2}:
-            report = {
-                "status": "pass",
-                "qa_version": "preflight-v2",
-                "safe_fixes_applied": [],
-                "blocked_reasons": [],
-                "advisories": [{
-                    "code": "preflight_runtime_error",
-                    "severity": "minor",
-                    "message": (proc.stderr or proc.stdout or "preflight process failed")[:500],
-                }],
-            }
-            _write_json(report_path, report)
-
-    if mode == "shadow":
-        _attach_preflight_summary(payload, report)
-        return payload, report
-    if report.get("status") != "pass":
-        _attach_preflight_summary(payload, report)
-        return payload, report
-    cleaned = _json(clean_path, {})
-    if not isinstance(cleaned, dict) or not cleaned:
-        report = {
-            "status": "pass",
-            "qa_version": "preflight-v2",
-            "safe_fixes_applied": [],
-            "blocked_reasons": [],
-            "advisories": [{
-                "code": "preflight_missing_cleaned_payload",
-                "severity": "minor",
-                "message": "Preflight passed but did not write a cleaned payload.",
-            }],
-        }
-        _write_json(report_path, report)
-        _attach_preflight_summary(payload, report)
-        return payload, report
-    _attach_preflight_summary(cleaned, report)
-    _refresh_content_hash(cleaned)
-    return cleaned, report
+    return preflight.run_preflight_qa(
+        payload,
+        run_dir,
+        root=_ROOT,
+        read_json=_json,
+        write_json=_write_json,
+        run_subprocess=_run_subprocess,
+    )
 
 
 def _ledger_stamp(now: dt.datetime | None = None) -> str:
