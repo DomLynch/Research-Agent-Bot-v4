@@ -2279,11 +2279,13 @@ def _shape_tokens(fact: Json, fields: tuple[str, ...]) -> set[str]:
 
 
 def _llm_cluster_backed(verdict: Json, root: Path) -> bool:
-    """Whether the memo leads with an M3-validated claim cluster. publish_tier
-    waives single-claim shape coherence for these (the writer confirmed the
-    receipts make one claim, and it already gated the cluster's source count for
-    ready_to_publish). The submit gate must agree, or a cluster-backed memo that
+    """Whether the memo leads with a validated claim cluster. publish_tier
+    waives single-claim shape coherence for these (the writer or selector
+    confirmed the receipts make one claim, and it already gated the cluster's
+    source count). The submit gate must agree, or a cluster-backed memo that
     publish_tier passed gets re-blocked here on the very check publish waived."""
+    if verdict.get("_claim_cluster_candidate") and verdict.get("_claim_cluster_fact_ids"):
+        return True
     run_dir = _run_path(root, verdict.get("run_dir"))
     cluster = _json(run_dir / "claim_cluster.json", {})
     ids = cluster.get("lead_fact_ids") if isinstance(cluster, dict) else None

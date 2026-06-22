@@ -3397,6 +3397,45 @@ def test_claim_cluster_reload_preserves_single_claim_surface(
     assert refreshed["blockers"] == ["source_dispersion"]
 
 
+def test_repaired_claim_cluster_child_waives_shape_gate(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("parent_bounded_claim") | {
+        "_claim_cluster_candidate": True,
+        "_claim_cluster_fact_ids": ["1", "2", "3", "4", "5"],
+        "_claim_cluster_topic": "parent_bounded_claim",
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_1",
+        "surface_type": "publish_alpha_memo",
+        "blockers": ["source_dispersion"],
+        "_agent_repair_applied": True,
+        "receipt_expansion": {"cited_bound_fact_ids": ["1", "2", "3", "4", "5"]},
+    }
+    _memo_with_source_receipts(root, verdict, 5)
+    run = root / str(verdict["run_dir"])
+    facts = json.loads(run.joinpath("all_facts.json").read_text(encoding="utf-8"))
+    for fact, endpoint in zip(
+        facts,
+        ("income", "memory", "hospitalization", "adherence", "mobility"),
+        strict=True,
+    ):
+        fact["canonical_phrase"] = f"Outcome shifted for {endpoint}."
+        fact["population"] = f"{endpoint} population"
+        fact["endpoint"] = endpoint
+    run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    cand, considered = daily.select_candidate(
+        {"ready_to_publish": [], "agent_repair_needed": [verdict], "curation_needed": []},
+        runs_root=root,
+        submitted_path=root / "submitted.json",
+        allow_tier2=True,
+        min_source_count=5,
+        min_direct_source_count=5,
+    )
+
+    assert cand is not None
+    assert considered[0]["status"] == "eligible"
+
+
 def test_low_alpha_curation_cluster_does_not_seed_claim_candidate(
     tmp_path: Path,
 ) -> None:
