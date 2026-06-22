@@ -4,6 +4,7 @@ from __future__ import annotations
 from scripts.alpha_publish_status import (
     CycleStatus,
     cycle_exit_code,
+    next_action_for_status,
     publish_summary,
     queue_counts,
 )
@@ -25,6 +26,18 @@ def test_submit_exit_codes_only_allow_pending_when_explicit() -> None:
 
     assert cycle_exit_code(ledger, submit=True) == 2
     assert cycle_exit_code(ledger, submit=True, allow_pending_success=True) == 0
+
+
+def test_terminal_publication_edge_statuses_have_operator_actions() -> None:
+    assert (
+        next_action_for_status(CycleStatus.DEDUPED_PUBLICATION.value)
+        == "refresh_or_expand_candidate_supply"
+    )
+    for status in (
+        CycleStatus.PUBLIC_PAGE_NOT_RENDERED,
+        CycleStatus.DECISION_STALE_PENDING,
+    ):
+        assert next_action_for_status(status.value) == "sync_decision_or_public_page"
 
 
 def test_publish_summary_contains_operator_blocker_fields() -> None:

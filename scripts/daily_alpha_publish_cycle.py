@@ -1693,7 +1693,7 @@ def _stale_pending_decision(
 
 
 def _mark_stale_pending_decision(ledger: Json, *, max_age_hours: float) -> None:
-    ledger["status"] = "decision_stale_pending"
+    ledger["status"] = publish_status.CycleStatus.DECISION_STALE_PENDING.value
     ledger["final_verdict"] = "stale_pending"
     ledger["published"] = 0
     ledger["publish_failure_reason"] = "decision_pending_timeout"
@@ -3695,7 +3695,7 @@ def _apply_submission_decision(
         if decision.get("decision") == "accept":
             if decision.get("failure_category") == "integrity_duplicate":
                 final = "accepted"
-                ledger["status"] = "deduped_publication"
+                ledger["status"] = publish_status.CycleStatus.DEDUPED_PUBLICATION.value
                 ledger["published"] = 0
                 ledger["published_topic"] = (
                     ledger.get("submitted_topic")
@@ -3714,7 +3714,7 @@ def _apply_submission_decision(
             ledger["public_page_check"] = page
             if page.get("ok"):
                 final = "accepted"
-                ledger["status"] = "published"
+                ledger["status"] = publish_status.CycleStatus.PUBLISHED.value
                 ledger["published"] = 1
                 ledger["published_topic"] = (
                     ledger.get("submitted_topic")
@@ -3723,21 +3723,21 @@ def _apply_submission_decision(
                 ledger["public_url"] = page.get("url")
             elif page.get("status") == "missing_public_url":
                 final = "pending"
-                ledger["status"] = "submitted_to_researka"
+                ledger["status"] = publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value
                 ledger["published"] = 0
                 ledger["accepted_pending_public_url"] = True
                 ledger.pop("publish_failure_reason", None)
             else:
                 final = "rejected"
-                ledger["status"] = "public_page_not_rendered"
+                ledger["status"] = publish_status.CycleStatus.PUBLIC_PAGE_NOT_RENDERED.value
                 ledger["published"] = 0
                 ledger["publish_failure_reason"] = "public_page_not_rendered"
         elif decision.get("decision") == "revise":
             final = "revise"
-            ledger["status"] = "reviewer_revise"
+            ledger["status"] = publish_status.CycleStatus.REVIEWER_REVISE.value
         else:
             final = "rejected"
-            ledger["status"] = "reviewer_rejected"
+            ledger["status"] = publish_status.CycleStatus.REVIEWER_REJECTED.value
     ledger["submission_id"] = submission_id
     ledger["researka_decision"] = decision
     ledger["final_verdict"] = final
@@ -3811,7 +3811,7 @@ def sync_submission_decisions(
                     submission_record_updates[sid] = patch
         if not isinstance(ledger, dict):
             continue
-        if ledger.get("status") == "published":
+        if ledger.get("status") == publish_status.CycleStatus.PUBLISHED.value:
             summary["checked"] += 1
             page = _public_page_check(
                 {"public_url": ledger.get("public_url")},
@@ -3819,13 +3819,17 @@ def sync_submission_decisions(
             )
             ledger["public_page_check"] = page
             if not page.get("ok"):
-                ledger["status"] = "public_page_not_rendered"
+                ledger["status"] = publish_status.CycleStatus.PUBLIC_PAGE_NOT_RENDERED.value
                 ledger["published"] = 0
                 ledger["publish_failure_reason"] = "public_page_not_rendered"
                 summary["updated"] += 1
                 _write_ledger(path, ledger)
             continue
-        if ledger.get("status") == "public_page_not_rendered" and ledger.get("public_url"):
+        if (
+            ledger.get("status")
+            == publish_status.CycleStatus.PUBLIC_PAGE_NOT_RENDERED.value
+            and ledger.get("public_url")
+        ):
             # Recover the inverse of the demotion above: a memo Researka
             # accepted whose page was not yet built at submit time. Re-check it;
             # once the page renders, promote to published instead of leaving it
@@ -3838,14 +3842,14 @@ def sync_submission_decisions(
             )
             ledger["public_page_check"] = page
             if page.get("ok"):
-                ledger["status"] = "published"
+                ledger["status"] = publish_status.CycleStatus.PUBLISHED.value
                 ledger["published"] = 1
                 ledger.pop("publish_failure_reason", None)
                 summary["updated"] += 1
                 summary["published"] += 1
                 _write_ledger(path, ledger)
             continue
-        if ledger.get("status") != "submitted_to_researka":
+        if ledger.get("status") != publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value:
             continue
         if ledger.get("final_verdict") in _FINAL_DECISION_VERDICTS:
             continue
@@ -4597,12 +4601,15 @@ def run_cycle(
         "status": "started",
     }
     if estimated_cost_usd > max_cost_usd:
-        ledger.update({"status": "cost_cap_exceeded", "reason": "estimated_cost_above_cap"})
+        ledger.update({
+            "status": publish_status.CycleStatus.COST_CAP_EXCEEDED.value,
+            "reason": "estimated_cost_above_cap",
+        })
         _write_ledger(ledger_path, ledger)
         return ledger
     if submit and profile.dry_run_only:
         ledger.update({
-            "status": "domain_dry_run_only",
+            "status": publish_status.CycleStatus.DOMAIN_DRY_RUN_ONLY.value,
             "reason": f"domain {profile.slug} is not allowed to submit yet",
             "submitted": 0,
             "published": 0,
@@ -4642,7 +4649,7 @@ def run_cycle(
         token, token_env = _submit_token()
         if not token:
             ledger.update({
-                "status": "submit_not_configured",
+                "status": publish_status.CycleStatus.SUBMIT_NOT_CONFIGURED.value,
                 "reason": "missing_submit_token",
                 "accepted_env_vars": list(_SUBMIT_TOKEN_ENVS),
             })
@@ -4751,7 +4758,9 @@ def run_cycle(
                     }
                     break
                 ledger["considered"] = all_considered
-                ledger.update({"status": "candidate_refresh_failed"})
+                ledger.update({
+                    "status": publish_status.CycleStatus.CANDIDATE_REFRESH_FAILED.value,
+                })
                 _write_ledger(ledger_path, ledger)
                 return ledger
         current_queue = (
@@ -4922,7 +4931,7 @@ def run_cycle(
             )
             if not refresh_candidates or batch >= search_batch_limit:
                 ledger.update({
-                    "status": "held_retraction_check",
+                    "status": publish_status.CycleStatus.HELD_RETRACTION_CHECK.value,
                     "candidate": candidate.get("topic"),
                 })
                 _write_ledger(ledger_path, ledger)
@@ -4986,7 +4995,7 @@ def run_cycle(
                     blocked_fingerprints.add(fingerprint)
             if not refresh_candidates or batch >= search_batch_limit:
                 ledger.update({
-                    "status": "no_fresh_candidate",
+                    "status": publish_status.CycleStatus.NO_FRESH_CANDIDATE.value,
                     "published": 0,
                     "reason": publish_status.no_candidate_reason(all_considered),
                 })
@@ -5001,7 +5010,11 @@ def run_cycle(
         if checked_payload is None:
             attempt["status"] = "preflight_qa_blocked"
             ledger["cycle_attempts"].append(attempt)
-            ledger.update({"status": "preflight_qa_blocked", "submitted": 0, "published": 0})
+            ledger.update({
+                "status": publish_status.CycleStatus.PREFLIGHT_QA_BLOCKED.value,
+                "submitted": 0,
+                "published": 0,
+            })
             _write_ledger(ledger_path, ledger)
             return ledger
         result = submit_with_backoff(checked_payload, submitter)
@@ -5018,7 +5031,7 @@ def run_cycle(
             )
             ledger.update({
                 "final_verdict": "pending",
-                "status": "submitted_to_researka",
+                "status": publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value,
                 "submitted": 1,
                 "submitted_topic": candidate.get("topic"),
                 "submission_id": submission_id,
@@ -5039,7 +5052,9 @@ def run_cycle(
                 if isinstance(decision, dict):
                     if final == "accepted":
                         attempt["public_page_check"] = ledger.get("public_page_check")
-                        ledger["cycle_attempts"].append(attempt | {"status": "published"})
+                        ledger["cycle_attempts"].append(
+                            attempt | {"status": publish_status.CycleStatus.PUBLISHED.value},
+                        )
                         _write_ledger(ledger_path, ledger)
                         return ledger
                     if final in {"rejected", "revise"}:
@@ -5083,7 +5098,11 @@ def run_cycle(
                             _write_ledger(ledger_path, ledger)
                             return ledger
                         continue
-            ledger["cycle_attempts"].append(attempt | {"status": "submitted_to_researka"})
+            ledger["cycle_attempts"].append(
+                attempt | {
+                    "status": publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value,
+                },
+            )
             _write_ledger(ledger_path, ledger)
             return ledger
         if result["status"] == "rejected_duplicate":
@@ -5169,7 +5188,7 @@ def run_cycle(
                     submission_id = _submission_id(result)
                     ledger.update({
                         "final_verdict": "pending",
-                        "status": "submitted_to_researka",
+                        "status": publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value,
                         "submitted": 1,
                         "submitted_topic": literature_topic,
                         "submission_id": submission_id,
@@ -5189,7 +5208,7 @@ def run_cycle(
                                 "topic": literature_topic,
                                 "run_dir": candidate.get("run_dir"),
                                 "fingerprint": candidate.get("memo_fingerprint"),
-                                "status": "published",
+                                "status": publish_status.CycleStatus.PUBLISHED.value,
                             })
                             _write_ledger(ledger_path, ledger)
                             return ledger
@@ -5197,14 +5216,14 @@ def run_cycle(
                         "topic": literature_topic,
                         "run_dir": candidate.get("run_dir"),
                         "fingerprint": candidate.get("memo_fingerprint"),
-                        "status": "submitted_to_researka",
+                        "status": publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value,
                     })
                     _write_ledger(ledger_path, ledger)
                     return ledger
     if ledger["cycle_attempts"]:
         last_status = str(ledger["cycle_attempts"][-1].get("status") or "failed")
         ledger.update({
-            "status": "submit_retry_exhausted",
+            "status": publish_status.CycleStatus.SUBMIT_RETRY_EXHAUSTED.value,
             "reason": f"no candidate accepted after {batch_limit} batch(es)",
             "last_attempt_status": last_status,
             "published": 0,
@@ -5215,7 +5234,7 @@ def run_cycle(
             if isinstance(row, dict)
         ]
         ledger.update({
-            "status": "no_fresh_candidate",
+            "status": publish_status.CycleStatus.NO_FRESH_CANDIDATE.value,
             "reason": (
                 "requires_fact_level_source_synthesis"
                 if fallback_attempts and all(

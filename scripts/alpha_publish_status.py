@@ -21,6 +21,9 @@ class CycleStatus(StrEnum):
     HELD_RETRACTION_CHECK = "held_retraction_check"
     REVIEWER_REJECTED = "reviewer_rejected"
     REVIEWER_REVISE = "reviewer_revise"
+    DEDUPED_PUBLICATION = "deduped_publication"
+    PUBLIC_PAGE_NOT_RENDERED = "public_page_not_rendered"
+    DECISION_STALE_PENDING = "decision_stale_pending"
 
 
 class CandidateStatus(StrEnum):
@@ -117,6 +120,13 @@ def next_action_for_status(status: str) -> str:
         return "repair_candidate_quality"
     if status in {CycleStatus.REVIEWER_REJECTED.value, CycleStatus.REVIEWER_REVISE.value}:
         return "repair_researka_review_feedback"
+    if status == CycleStatus.DEDUPED_PUBLICATION.value:
+        return "refresh_or_expand_candidate_supply"
+    if status in {
+        CycleStatus.PUBLIC_PAGE_NOT_RENDERED.value,
+        CycleStatus.DECISION_STALE_PENDING.value,
+    }:
+        return "sync_decision_or_public_page"
     return "inspect_ledger"
 
 
