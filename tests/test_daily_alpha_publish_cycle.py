@@ -6500,6 +6500,14 @@ def test_source_literature_fallback_uses_default_fetcher_after_empty_submit_lane
     assert ledger["status"] == "published"
     assert ledger["submitted_topic"] == "source_rich_parent"
     assert seen_payload["evidence_bundle"]["surface_type"] == "source_literature_boundary"
+    assert seen_payload["source_bundle"][0] == {
+        "title": "Metabolic pathway review in aging",
+        "url": None,
+        "doi": "10.1234/1",
+        "year": 2024,
+        "evidence_type": "review",
+    }
+    assert seen_payload["citations"] == seen_payload["source_bundle"]
 
 
 def test_source_literature_candidates_use_latest_domain_snapshot(tmp_path: Path) -> None:

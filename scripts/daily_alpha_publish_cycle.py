@@ -3419,19 +3419,13 @@ def _source_literature_payload(
     run_dir = runs_root / f"{topic}-source-literature-{date}"
     run_dir.mkdir(parents=True, exist_ok=True)
     lines = ["# Source literature boundary memo", "", "## Boundary map", ""]
-    source_bundle: list[Json] = []
-    for idx, paper in enumerate(selected, start=1):
+    for paper in selected:
         title = str(paper.get("title") or "Untitled source").strip()
         doi = str(paper.get("doi") or "").strip()
         year = paper.get("year") or paper.get("publication_year")
-        source_bundle.append({
-            "title": title,
-            "doi": doi,
-            "year": year,
-            "source_index": idx,
-        })
         suffix = f" ({year})" if year else ""
         lines.append(f"- {title}{suffix}" + (f" doi:{doi}" if doi else ""))
+    source_bundle = _source_bundle(selected)
     settings = load_settings()
     synthesis = (
         "The selected source-literature boundary keeps the claim scoped to "
