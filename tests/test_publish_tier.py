@@ -675,6 +675,28 @@ def test_publish_tier_thresholds_can_be_domain_owned_without_code_changes(
     assert tier._cfg("ai_research")["source_concentration_share"] == 0.50
 
 
+def test_publish_tier_domain_thresholds_default_to_global_policy(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    policy = tmp_path / "publish_tier.toml"
+    policy.write_text(
+        "[thresholds]\n"
+        "ready_min_bound_receipts = 5\n"
+        "ready_min_alpha_score = 80\n"
+        "source_concentration_share = 0.75\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(tier, "_CFG_PATH", policy)
+
+    global_cfg = tier._cfg()
+    for domain in ("longevity_research", "ai_research", "finance_research"):
+        domain_cfg = tier._cfg(domain)
+        assert domain_cfg["ready_min_bound_receipts"] == global_cfg["ready_min_bound_receipts"]
+        assert domain_cfg["ready_min_alpha_score"] == global_cfg["ready_min_alpha_score"]
+        assert domain_cfg["source_concentration_share"] == global_cfg["source_concentration_share"]
+
+
 def test_default_source_floor_still_blocks_four_source_runs(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
