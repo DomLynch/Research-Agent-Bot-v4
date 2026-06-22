@@ -121,6 +121,7 @@ def main() -> int:
                     "ready": bundle is not None,
                 }
                 if bundle is None:
+                    row["status"] = "no_bundle"
                     row["diagnostics"] = str(write_no_bundle_diagnostics(
                         runs_root=args.runs_root,
                         domain=domain,
@@ -178,7 +179,7 @@ def main() -> int:
             time.sleep(args.sleep_seconds)
     summary_path = _write_sweep_summary(args.runs_root, rows)
     print(f"[business-sweep] no_ready_candidate summary={summary_path}", file=sys.stderr)
-    return 3
+    return 2
 
 
 if __name__ == "__main__":
