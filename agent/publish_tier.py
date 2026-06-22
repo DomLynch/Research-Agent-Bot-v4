@@ -1198,18 +1198,9 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         and a_core >= int(cfg["ready_min_a_core_receipts"])
         and alpha_score >= int(cfg["ready_min_alpha_score"])
     )
-    # Evidence-map path: a source-rich multi-finding synthesis publishes when it
-    # has >= the source floor of distinct A_core papers and clears every
-    # integrity blocker; only single-claim coherence blockers are waived.
     a_core_source_papers = len(_source_papers(direct_ids, facts))
-    # The full A_core landscape — every bound A_core source in the run, not just
-    # the memo's narrow cluster. A heterogeneous topic's map cites that whole
-    # breadth (multi-agent: 88 sources), so the map-route source floor must measure
-    # it, not the handful the single-claim memo happened to cite.
     landscape_a_core_ids = [fid for fid in all_bound_ids if lanes.get(fid) in _DIRECT]
     landscape_a_core_sources = len(_source_papers(landscape_a_core_ids, facts))
-    # Read the writer-validated cluster first: its homogeneity decides whether the
-    # topic is a single claim or a landscape.
     llm_cluster = _json(run_dir / "claim_cluster.json", {})
     llm_cluster_ids = {
         str(x) for x in (llm_cluster.get("lead_fact_ids") or [])
@@ -1218,15 +1209,10 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         [fid for fid in bound_ids if fid in llm_cluster_ids and lanes.get(fid) in _DIRECT],
         facts,
     ))
-    # Homogeneity is set by the clusterer's skeptical pass (absent on legacy runs
-    # and on narrow topics -> default True, so behaviour is unchanged without the
-    # signal). A heterogeneous cluster is a landscape masquerading as one claim.
     cluster_homogeneous = (
         bool(llm_cluster.get("homogeneous", True))
         if isinstance(llm_cluster, dict) else True
     )
-    # Heterogeneous source-rich clusters route to maps; the map citation floor
-    # still applies.
     cluster_map_route = (
         llm_cluster_sources >= min_cluster_source_papers
         and not cluster_homogeneous
@@ -1248,22 +1234,13 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
     evidence_map_waived_blockers = set(_EVIDENCE_MAP_WAIVED_BLOCKERS)
     if source_rich_landscape_route:
         evidence_map_waived_blockers.add("blocked_label:no_signal")
-    # Evidence-map path: source-rich multi-finding syntheses publish only after
-    # clearing integrity blockers; single-claim coherence blockers may be waived.
     evidence_map_ready = (
         bool(bound_ids)
         and not (set(blockers) - evidence_map_waived_blockers)
-        # Non-waived: a map must be a real landscape (>=2 distinct strata), or the
-        # panel rejects it as a constant-population fake landscape — the reject that
-        # a heterogeneous bundle routed here would otherwise hit again.
         and landscape_stratified
         and (
             (label == "evidence_map" and a_core_source_papers >= min_direct_source_papers)
-            # The cluster-routed map cites the full landscape, so it clears the
-            # floor on the landscape count even when the memo's cluster is narrow.
             or (cluster_map_route and landscape_a_core_sources >= min_direct_source_papers)
-            # Broad parent topics can legitimately have no single alpha signal;
-            # publish only as a source-rich map, never by forcing one claim.
             or source_rich_landscape_route
         )
     )
@@ -1329,12 +1306,6 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
         surface_type = "curation_brief"
     else:
         surface_type = "frontier_hypothesis_memo"
-    # A ready_to_publish verdict has no ACTIVE blockers: the listed ones were
-    # WAIVED by the path that cleared it (llm_cluster_ready / evidence_map_ready).
-    # Both a truthful reading of "blockers" and Researka intake's 2-4 source alpha
-    # exception (which requires an empty blockers field on a TIER_1/L5 memo)
-    # demand that a publishable verdict surface only active blockers; keep the
-    # waived set separately for the diagnostic trail.
     publishable = decision == "ready_to_publish"
     active_blockers = [] if publishable else blockers
     waived_blockers = blockers if publishable else []
@@ -1396,11 +1367,6 @@ def publish_verdict(run_dir: Path) -> dict[str, Any]:
                 if expansion_needed else "lead_thesis_uses_available_receipts"
             ),
             "cited_bound_fact_ids": bound_ids,
-            # Scope the expansion pool to the claim: a writer-validated cluster's
-            # population-aware membership is the coherent set (a house-cricket
-            # receipt is split out of an "in mice" claim), so off-claim bound facts
-            # never enter the pool that feeds receipt expansion. With no cluster
-            # scoping the claim, every bound fact stays in scope.
             "available_bound_fact_ids": (
                 [fid for fid in all_bound_ids if str(fid) in llm_cluster_ids]
                 if llm_cluster_ids else all_bound_ids

@@ -337,13 +337,7 @@ def _receipt_scope_coheres(
     ids: list[str], facts: dict[str, dict[str, Any]], topic: str,
     *, min_share: float = 0.5,
 ) -> bool:
-    """Whether the receipts form one coherent scope, not a grab-bag of unrelated
-    domains. An evidence map is a scoping review of ONE area (mixed endpoints
-    allowed); the reviewer rejects "a list of disparate findings across unrelated
-    domains". A majority of the distinct sources must pairwise-cohere on shared
-    scope tokens (topic word removed) with at least one anchor — looser than the
-    single-claim cluster check, which requires the whole set to agree. Universal:
-    coherence is by token overlap, no domain keyword list."""
+    """Whether receipts form one coherent scope rather than a grab-bag."""
     by_source: dict[str, str] = {}
     for fid in ids:
         key = _source_key(facts.get(fid) or {})
@@ -364,15 +358,7 @@ def _receipt_scope_coheres(
 
 
 def _claim_is_focused(claim: str) -> bool:
-    """Whether the M3 cluster's claim reads as one bounded comparison, not a
-    run-on laundry-list of disparate figures. This — not deterministic token
-    overlap — decides single-claim vs evidence-map: token overlap gives a FALSE
-    negative on synonymous endpoints (all-cause / overall / 30-day mortality),
-    the exact case the M3 clusterer exists to group, so judging the cluster by
-    token overlap mislabels a homogeneous claim as a map. M3 already grouped the
-    receipts; trust a focused claim and only fall back to a map for a lumped,
-    figure-list claim. Mirror of claim_clusterer._claim_is_focused (kept local to
-    avoid importing the clusterer's model client)."""
+    """Whether the cluster claim reads as one bounded comparison."""
     text = claim.strip()
     if not text or len(text) > 200:
         return False
@@ -1918,23 +1904,12 @@ def render_signal_memo(
     min_sources = _memo_alpha_int("min_source_papers", 5)
     min_direct_sources = _memo_alpha_int("min_direct_source_papers", 5)
     excluded_receipt_ids = _repair_excluded_receipt_ids(publish_verdict)
-    # Prefer the LLM-clustered coherent claim as the lead: it groups synonymous
-    # endpoints (survival / all-cause mortality) that token overlap misses and
-    # drops the statistical-boilerplate matches it falsely makes, so the memo
-    # leads with one bounded claim instead of a scattered pile. Use it when it
-    # clears the direct-source floor; otherwise fall back to the deterministic
-    # coherent pick.
     llm_cluster = _json(run_dir / "claim_cluster.json", {})
     llm_cluster_ids = [
         fid for fid in (llm_cluster.get("lead_fact_ids") or [])
         if isinstance(fid, str) and lanes.get(fid) == "A_core"
         and fid not in excluded_receipt_ids
     ] if isinstance(llm_cluster, dict) else []
-    # Adopt the cluster at the same floor the publish gate accepts it
-    # (min_cluster_source_papers, default 3) — a lower floor than the plain
-    # direct-source one, because a homogeneous writer-validated bundle is the
-    # publishable unit. A higher floor here would desync memo receipts from
-    # the gate's llm_cluster_ready check and strand tight clusters.
     min_cluster_sources = _memo_alpha_int("min_cluster_source_papers", 3)
     m3_cluster_adopted = _source_count_for_ids(llm_cluster_ids, facts) >= min_cluster_sources
     if m3_cluster_adopted:
