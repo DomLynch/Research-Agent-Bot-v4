@@ -6503,7 +6503,7 @@ def test_source_literature_fallback_uses_default_fetcher_after_empty_submit_lane
     assert ledger["submitted_topic"] == "source_rich_parent"
     assert seen_payload["evidence_bundle"]["surface_type"] == "source_literature_boundary"
     assert "scoping note" in seen_payload["abstract"]
-    assert "species context" in seen_payload["markdown"]
+    assert "## Context separation" in seen_payload["markdown"]
     assert "## Research question" in seen_payload["markdown"]
     assert "## Selection criteria" in seen_payload["markdown"]
     assert seen_payload["source_bundle"][0] == {
@@ -6814,10 +6814,15 @@ def test_source_literature_payload_is_deterministic_boundary_only(
     assert "## Research question" in payload["markdown"]
     assert "## Selection criteria" in payload["markdown"]
     assert "without establishing" in payload["markdown"]
+    assert "## Context separation" in payload["markdown"]
+    assert "## Next gaps" in payload["markdown"]
     assert "primary; 2024" in payload["markdown"]
     assert writer["status"] == "skipped"
     assert writer["reason"] == "deterministic_boundary_only"
     assert sidecar["content_hash"] == writer["content_hash"]
+    assert (run_dir / "source_literature_memo.md").read_text(
+        encoding="utf-8",
+    ) == payload["markdown"]
 
 
 def test_source_literature_fallback_blocks_repeated_report_series(

@@ -2488,7 +2488,7 @@ def _source_bundle(papers: list[Json]) -> list[Json]:
             "title": title,
             "url": url,
             "doi": doi,
-            "year": _year(paper.get("year")),
+            "year": _year(paper.get("year") or paper.get("publication_year")),
             "evidence_type": _evidence_type(paper),
         })
     return bundle
@@ -3255,6 +3255,27 @@ def _source_literature_fact_count(papers: list[Json]) -> int:
     return sum(1 for paper in papers if isinstance(paper.get("source_fact"), dict))
 
 
+def _source_literature_context_family(value: Any) -> str:
+    text = str(value or "").casefold()
+    if any(term in text for term in ("patient", "participant", "adult", "human", "cohort")):
+        return "human clinical/observational"
+    if any(term in text for term in ("mouse", "mice", "rat", "rats", "murine", "animal")):
+        return "animal model"
+    if any(term in text for term in ("cell", "cells", "huvec", "pc12", "pc3", "in vitro")):
+        return "cell or in-vitro model"
+    if any(term in text for term in ("crystal", "cocrystal", "solubility", "compound")):
+        return "chemistry/formulation"
+    return "other source context"
+
+
+def _join_contexts(values: list[str]) -> str:
+    if len(values) <= 1:
+        return values[0] if values else "the selected source contexts"
+    if len(values) == 2:
+        return f"{values[0]} and {values[1]}"
+    return ", ".join(values[:-1]) + f", and {values[-1]}"
+
+
 def _fetch_source_literature_papers(
     topic: str, limit: int, *, domain: str = "longevity_research",
 ) -> list[Json]:
@@ -3440,7 +3461,20 @@ def _source_literature_payload(
     selected = papers[:5]
     run_dir = runs_root / f"{topic}-source-literature-{date}"
     run_dir.mkdir(parents=True, exist_ok=True)
-    question = f"What do the selected receipt-backed sources show about {topic}?"
+    facts: list[Json] = []
+    for paper in selected:
+        raw_fact = paper.get("source_fact")
+        if isinstance(raw_fact, dict):
+            facts.append(raw_fact)
+    contexts = sorted({
+        _source_literature_context_family(fact.get("population"))
+        for fact in facts
+    })
+    context_text = _join_contexts(contexts[:3])
+    question = (
+        f"What evidence fronts does {topic} occupy across {context_text}, "
+        "and what remains untested?"
+    )
     lines = [
         "# Source literature boundary memo",
         "",
@@ -3495,11 +3529,6 @@ def _source_literature_payload(
     type_text = "/".join(sorted({
         str(source.get("evidence_type") or "source") for source in source_bundle
     }))
-    facts: list[Json] = []
-    for paper in selected:
-        raw_fact = paper.get("source_fact")
-        if isinstance(raw_fact, dict):
-            facts.append(raw_fact)
     populations = sorted({
         str(fact.get("population") or "").strip() for fact in facts
         if str(fact.get("population") or "").strip()
@@ -3517,14 +3546,26 @@ def _source_literature_payload(
         f"receipt-backed scoping note for {topic}, spanning {year_text}. The "
         f"source facts cover {len(populations) or 'multiple'} population context(s) "
         f"and {len(interventions) or 'multiple'} intervention/exposure context(s). "
-        "The bounded signal is heterogeneity mapping: the bundle identifies what "
-        "has been measured and where the evidence separates, without establishing "
-        "a causal, clinical, species-translated, or mechanistically integrated "
-        "intervention claim."
+        f"The bounded signal is context separation across {context_text}: the "
+        "bundle identifies what has been measured and where the evidence separates, "
+        "without establishing a causal, clinical, species-translated, or "
+        "mechanistically integrated intervention claim."
     )
     if findings:
         examples = [finding.rstrip(".") for finding in findings[:3]]
         synthesis += " Representative source-extracted findings include: " + "; ".join(examples) + "."
+    next_gaps = [
+        "A stronger memo needs one matched population/model, intervention or exposure, comparator, and endpoint.",
+        (
+            f"If {topic} is promoted beyond a scoping note, the next run should "
+            f"select sources sharing one context family rather than mixing {context_text}."
+        ),
+    ]
+    if "human clinical/observational" not in contexts:
+        next_gaps.insert(
+            0,
+            "No source in this fallback bundle tests human clinical endpoints.",
+        )
     boundary_summary = (
         f"Source-literature boundary for {topic}: the listed sources define "
         "separate evidence fronts. This memo does not claim causality, clinical "
@@ -3542,20 +3583,25 @@ def _source_literature_payload(
         "",
         synthesis,
         "",
+        "## Context separation",
+        "",
+        (
+            f"The selected receipts group because each carries a fact-level extraction "
+            f"for {topic}; they separate by context ({context_text}), so they are "
+            "not interchangeable evidence for one endpoint."
+        ),
+        "",
         "## Boundary limits",
         "",
         boundary_summary,
         "",
         "## Next gaps",
         "",
-        (
-            "Before promotion to a causal alpha memo, a future run needs receipt-"
-            "level agreement on population, exposure or intervention, comparator, "
-            "endpoint, and species context."
-        ),
+        *next_gaps,
         "",
     ])
     markdown = "\n".join(lines)
+    (run_dir / "source_literature_memo.md").write_text(markdown, encoding="utf-8")
     _write_json(run_dir / "source_literature_writer.json", writer_meta)
     candidate = {
         "topic": topic,
@@ -3571,7 +3617,7 @@ def _source_literature_payload(
         "domain": profile.as_metadata(),
         "domain_slug": profile.slug,
         "category": profile.slug.removesuffix("_research"),
-        "title": f"{topic} source-literature boundary",
+        "title": f"{topic}: receipt-backed evidence fronts",
         "abstract": _safe_excerpt(synthesis),
         "summary": _safe_excerpt(synthesis),
         "topic": topic,
