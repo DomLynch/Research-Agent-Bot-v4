@@ -97,7 +97,14 @@ _SUBMIT_TOKEN_ENVS = (
 _PREFLIGHT_MODE_ENV = "RESEARKA_PREFLIGHT_QA"
 _PREFLIGHT_ROOT_ENV = "RESEARKA_PREFLIGHT_QA_ROOT"
 _PREFLIGHT_USE_M3_ENV = "RESEARKA_PREFLIGHT_USE_M3"
+_SOURCE_LITERATURE_FALLBACK_SUBMIT_ENV = "RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT"
 _PREFLIGHT_TIMEOUT_SECONDS = 90.0
+
+
+def _source_literature_fallback_submit_enabled() -> bool:
+    return str(os.environ.get(_SOURCE_LITERATURE_FALLBACK_SUBMIT_ENV) or "").casefold() in {
+        "1", "true", "yes", "on",
+    }
 
 
 def _terminate_process_group(proc: subprocess.Popen[str], sig: signal.Signals | int) -> None:
@@ -5013,6 +5020,22 @@ def run_cycle(
         and profile.slug != "ai_research"
         and not ledger["cycle_attempts"]
     ):
+        if not _source_literature_fallback_submit_enabled():
+            ledger["source_literature_fallback"] = {
+                "status": "disabled",
+                "reason": "requires_fact_level_source_synthesis",
+            }
+            ledger.setdefault("source_literature_fallback_attempts", []).append(
+                ledger["source_literature_fallback"],
+            )
+            ledger["status"] = "no_fresh_candidate"
+            ledger["published"] = 0
+            ledger["reason"] = (
+                _no_candidate_reason(all_considered) if all_considered
+                else "requires_fact_level_source_synthesis"
+            )
+            _write_ledger(ledger_path, ledger)
+            return ledger
         paper_fetcher = source_paper_fetcher
         literature_topics = _source_literature_topic_candidates(
             runs_root, profile.slug, min_submit_sources, blocked_topics,

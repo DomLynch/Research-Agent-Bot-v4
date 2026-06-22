@@ -6376,6 +6376,7 @@ def test_accepted_shape_bias_breaks_candidate_tie(tmp_path: Path) -> None:
 def test_source_literature_fallback_submits_after_empty_fact_lane(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
     root = tmp_path / "repo"
     (root / "_topics_discovery").mkdir(parents=True)
     longevity_path = root / "_topics_discovery" / "longevity.json"
@@ -6453,6 +6454,7 @@ def test_source_literature_fallback_submits_after_empty_fact_lane(
 def test_source_literature_fallback_uses_default_fetcher_after_empty_submit_lane(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
     root = tmp_path / "repo"
     (root / "_topics_discovery").mkdir(parents=True)
     (root / "_topics_discovery" / "longevity.json").write_text(json.dumps({
@@ -6514,6 +6516,38 @@ def test_source_literature_fallback_uses_default_fetcher_after_empty_submit_lane
     assert seen_payload["citations"] == seen_payload["source_bundle"]
 
 
+def test_source_literature_fallback_is_disabled_without_explicit_submit_flag(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    (root / "_topics_discovery" / "longevity.json").write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "source_rich_parent", "paper_count": 10, "fact_source_count": 20}],
+    }), encoding="utf-8")
+    monkeypatch.delenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", raising=False)
+
+    def fail_submitter(_payload: dict[str, Any]) -> dict[str, Any]:
+        raise AssertionError("disabled source-literature fallback must not submit")
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-00-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        submitter=fail_submitter,
+    )
+
+    assert ledger["status"] == "no_fresh_candidate"
+    assert ledger["published"] == 0
+    assert ledger["reason"] == "requires_fact_level_source_synthesis"
+    assert ledger["source_literature_fallback"] == {
+        "status": "disabled",
+        "reason": "requires_fact_level_source_synthesis",
+    }
+
+
 def test_source_literature_candidates_use_latest_domain_snapshot(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     discovery = root / "_topics_discovery"
@@ -6538,6 +6572,7 @@ def test_source_literature_candidates_use_latest_domain_snapshot(tmp_path: Path)
 def test_source_literature_fallback_tries_next_quality_candidate(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
     root = tmp_path / "repo"
     (root / "_topics_discovery").mkdir(parents=True)
     (root / "_topics_discovery" / "longevity.json").write_text(json.dumps({
