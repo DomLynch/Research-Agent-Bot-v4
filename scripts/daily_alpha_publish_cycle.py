@@ -35,6 +35,7 @@ from agent.domain_profile import domain_choices, domain_slug, load_domain_profil
 from agent.fact_lanes import classify_lanes
 from agent.llm_client import call_writer
 from agent.publish_tier import publish_verdict
+from agent.researka_facts import tier2_domain
 from agent.settings import load_settings
 from agent.topic_discovery import cap_topic_slug
 from scripts import alpha_publish_io as publish_io
@@ -3229,7 +3230,13 @@ def _source_literature_boundary_quality(
     return True, "ok"
 
 
-def _fetch_source_literature_papers(topic: str, limit: int) -> list[Json]:
+def _paper_key(paper: Json, fallback: Any = "") -> str:
+    return str(paper.get("doi") or paper.get("pmid") or paper.get("id") or fallback or "")
+
+
+def _fetch_source_literature_papers(
+    topic: str, limit: int, *, domain: str = "longevity_research",
+) -> list[Json]:
     settings = load_settings()
     base = settings.researka_database_url.rstrip("/")
     token = settings.researka_database_token.strip()
@@ -3244,12 +3251,52 @@ def _fetch_source_literature_papers(topic: str, limit: int) -> list[Json]:
         },
         method="POST",
     )
+    papers: list[Json] = []
     try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except (OSError, ValueError, json.JSONDecodeError):
+        data = []
+    if isinstance(data, list):
+        papers = [paper for paper in data if isinstance(paper, dict)]
+    if papers:
+        return papers
+    req = urllib.request.Request(
+        f"{base}/api/v1/tier2/facts/search",
+        data=json.dumps({
+            "domain": tier2_domain(domain),
+            "query": topic[:512],
+            "top_k": max(30, limit * 6),
+            "min_confidence": "medium",
+            "numeric_only": True,
+        }).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "X-Researka-Token": token,
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
             data = json.loads(resp.read().decode("utf-8"))
     except (OSError, ValueError, json.JSONDecodeError):
         return []
-    return [paper for paper in data if isinstance(paper, dict)] if isinstance(data, list) else []
+    out: list[Json] = []
+    seen: set[str] = set()
+    for item in data if isinstance(data, list) else []:
+        if not isinstance(item, dict):
+            continue
+        raw_paper = item.get("paper")
+        paper: Json = raw_paper if isinstance(raw_paper, dict) else {}
+        key = _paper_key(paper, item.get("paper_id"))
+        title = paper.get("title") or paper.get("paper_title")
+        if not key or not title or key in seen:
+            continue
+        seen.add(key)
+        out.append(paper | {"id": key, "title": title})
+        if len(out) >= limit:
+            break
+    return out
 
 
 def _source_literature_topic_candidates(
@@ -4929,12 +4976,18 @@ def run_cycle(
         and profile.slug != "ai_research"
         and not ledger["cycle_attempts"]
     ):
-        paper_fetcher = source_paper_fetcher or _fetch_source_literature_papers
+        paper_fetcher = source_paper_fetcher
         literature_topics = _source_literature_topic_candidates(
             runs_root, profile.slug, min_submit_sources, blocked_topics,
         )
         for literature_topic in literature_topics:
-            papers = paper_fetcher(literature_topic, min_submit_sources)
+            papers = (
+                paper_fetcher(literature_topic, min_submit_sources)
+                if paper_fetcher is not None else
+                _fetch_source_literature_papers(
+                    literature_topic, min_submit_sources, domain=profile.slug,
+                )
+            )
             ok, reason = _source_literature_boundary_quality(
                 literature_topic, papers, min_submit_sources,
             )

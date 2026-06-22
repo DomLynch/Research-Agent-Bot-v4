@@ -6470,7 +6470,7 @@ def test_source_literature_fallback_uses_default_fetcher_after_empty_submit_lane
         {"title": "Proteostasis mechanisms in age-related decline", "doi": "10.1234/5", "year": 2024},
     ]
     seen_payload: dict[str, Any] = {}
-    monkeypatch.setattr(daily, "_fetch_source_literature_papers", lambda _topic, _limit: papers)
+    monkeypatch.setattr(daily, "_fetch_source_literature_papers", lambda *_args, **_kwargs: papers)
     monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
         "writer_configured": False,
         "mimo_model": "",
@@ -6549,7 +6549,7 @@ def test_source_literature_fallback_tries_next_quality_candidate(
     monkeypatch.setattr(
         daily,
         "_fetch_source_literature_papers",
-        lambda topic, _limit: repeated if topic == "title_series" else usable,
+        lambda topic, *_args, **_kwargs: repeated if topic == "title_series" else usable,
     )
     monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
         "writer_configured": False,
@@ -6582,6 +6582,59 @@ def test_source_literature_fallback_tries_next_quality_candidate(
         "blocked", "selected",
     ]
     assert ledger["submitted_topic"] == "usable_boundary"
+
+
+def test_source_literature_fetcher_falls_back_to_tier2_papers(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "researka_database_url": "https://db.test",
+        "researka_database_token": "tok",
+    })())
+    calls: list[str] = []
+
+    class Response:
+        status = 200
+
+        def __init__(self, payload: Any) -> None:
+            self.payload = payload
+
+        def __enter__(self) -> Response:
+            return self
+
+        def __exit__(self, *_args: Any) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return json.dumps(self.payload).encode("utf-8")
+
+    def fake_urlopen(req: Any, timeout: int) -> Response:
+        url = str(req.full_url)
+        calls.append(url)
+        if url.endswith("/api/v1/papers/topic"):
+            raise TimeoutError("slow papers endpoint")
+        return Response([
+            {
+                "paper_id": "p1",
+                "paper": {"doi": "10.1/a", "title": "Acarbose lifespan trial"},
+            },
+            {
+                "paper_id": "p2",
+                "paper": {"doi": "10.1/b", "title": "Acarbose microbiome study"},
+            },
+        ])
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+    papers = daily._fetch_source_literature_papers(
+        "acarbose", 5, domain="longevity_research",
+    )
+
+    assert [p["doi"] for p in papers] == ["10.1/a", "10.1/b"]
+    assert calls == [
+        "https://db.test/api/v1/papers/topic",
+        "https://db.test/api/v1/tier2/facts/search",
+    ]
 
 
 def test_source_literature_boundary_quality_rejects_title_series() -> None:
