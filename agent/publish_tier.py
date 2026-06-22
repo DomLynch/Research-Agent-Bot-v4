@@ -816,6 +816,54 @@ def _source_diverse_fact_clusters(
     )
 
 
+_CHILD_CLUSTER_AXIS_DIMENSIONS = (
+    ("endpoint", "outcome"),
+    ("benchmark",),
+    ("task", "dataset"),
+    ("metric",),
+    ("model_system",),
+    ("evaluation_protocol",),
+)
+
+
+def _axis_source_diverse_fact_clusters(
+    facts: list[dict[str, Any]],
+    topic: str,
+    generic: frozenset[str],
+    stopwords: frozenset[str],
+    *,
+    source_min: int,
+) -> list[list[dict[str, Any]]]:
+    topic_tokens = frozenset(re.findall(r"[a-z0-9]{3,}", topic.lower()))
+    grouped: dict[tuple[tuple[str, ...], str], dict[str, dict[str, Any]]] = {}
+    shape_generic = generic | stopwords | topic_tokens | _SHAPE_GENERIC_TOKENS
+    for fact in facts:
+        source = _source_key(fact)
+        if not source:
+            continue
+        for fields in _CHILD_CLUSTER_AXIS_DIMENSIONS:
+            for token in _shape_tokens(fact, fields, shape_generic):
+                grouped.setdefault((fields, token), {}).setdefault(source, fact)
+    clusters: list[list[dict[str, Any]]] = []
+    seen: set[tuple[str, ...]] = set()
+    for (_fields, _token), by_source in grouped.items():
+        if len(by_source) < source_min:
+            continue
+        cluster = list(by_source.values())
+        sig = tuple(sorted(str(it.get("_fact_id") or "") for it in cluster))
+        if sig not in seen:
+            seen.add(sig)
+            clusters.append(cluster)
+    return sorted(
+        clusters,
+        key=lambda items: (
+            -len({_source_key(it) for it in items}),
+            -len(items),
+            str(items[0].get("_fact_id") or ""),
+        ),
+    )
+
+
 def _subtopic_recommendations(
     facts: dict[str, dict[str, Any]],
     lanes: dict[str, str],
@@ -847,6 +895,10 @@ def _subtopic_recommendations(
         a_core, topic, generic, stopwords,
         min_overlap=min_overlap, source_min=source_min,
     )
+    if not coherent_clusters:
+        coherent_clusters = _axis_source_diverse_fact_clusters(
+            a_core, topic, generic, stopwords, source_min=source_min,
+        )
     recommend = noisy_recommend or (enabled and bool(coherent_clusters))
     clusters: list[dict[str, Any]] = []
     if noisy_recommend:

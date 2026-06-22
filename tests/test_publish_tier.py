@@ -1236,6 +1236,46 @@ def test_underfloor_submit_cluster_does_not_recommend_child_rerun(
     assert rec["clusters"] == []
 
 
+def test_endpoint_axis_child_cluster_recommended_without_pairwise_overlap() -> None:
+    facts = {
+        str(i): {
+            "_fact_id": str(i),
+            "canonical_phrase": f"nonoverlap{i} value{i}",
+            "population": f"context {i}",
+            "intervention": f"protocol {i}",
+            "endpoint": "survival",
+            "source_paper": {"doi": f"10.axis/{i}", "title": f"Axis paper {i}"},
+        }
+        for i in range(1, 6)
+    }
+    lanes = {fid: "A_core" for fid in facts}
+
+    pairwise = tier._source_diverse_fact_clusters(
+        list(facts.values()),
+        "axis_topic",
+        frozenset(),
+        frozenset(),
+        min_overlap=0.8,
+        source_min=5,
+    )
+    rec = tier._subtopic_recommendations(
+        facts,
+        lanes,
+        "axis_topic",
+        frozenset(),
+        frozenset(),
+        d_bad_share_min=0.6,
+        min_overlap=0.8,
+        source_min=5,
+        enabled=True,
+    )
+
+    assert pairwise == []
+    assert rec["recommended"] is True
+    assert rec["reason"] == "source_coherent_child_cluster"
+    assert rec["clusters"][0]["member_fact_ids"] == ["1", "2", "3", "4", "5"]
+
+
 def test_intervention_only_child_cluster_is_not_recommended(tmp_path: Path) -> None:
     run = _run(
         tmp_path,
