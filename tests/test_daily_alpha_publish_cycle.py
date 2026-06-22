@@ -3398,6 +3398,15 @@ def test_no_candidate_refreshes_queued_child_topics_next_batch(
             "clusters": [{"label": "bounded claim"}],
         },
     }
+    daily._write_json(root / "_topics_discovery" / "latest.json", {
+        "domain": {"slug": "longevity"},
+        "all": [{
+            "topic": "fresh_parent",
+            "fact_source_count": 30,
+            "paper_count": 30,
+            "velocity_score": 100,
+        }],
+    })
     calls: list[tuple[str, ...]] = []
 
     def fake_batch(*_args: Any, **kwargs: Any) -> dict[str, Any]:
@@ -3429,7 +3438,7 @@ def test_no_candidate_refreshes_queued_child_topics_next_batch(
     )
 
     assert ledger["refresh_child_topics"] == ["parent_bounded_claim"]
-    assert calls == [(), ("parent_bounded_claim",), ()]
+    assert calls == [(), ("parent_bounded_claim",), ("fresh_parent",)]
 
 
 def test_latest_cycle_topics_ignores_cross_topic_sidecar(tmp_path: Path) -> None:

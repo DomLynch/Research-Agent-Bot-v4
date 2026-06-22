@@ -4172,6 +4172,14 @@ def run_cycle(
             ]
             if source_floor_topics:
                 blocked_topics.update(source_floor_topics)
+            priority_children = _child_topics_from_queue(
+                current_queue, blocked_topics, limit=refresh_top, domain=profile.slug,
+            )
+            if refresh_candidates and priority_children and batch < search_batch_limit:
+                ledger["refresh_child_topics"] = priority_children
+                priority_refresh_topics = priority_children
+                force_refresh = True
+                continue
             fresh_parent_topics = _fresh_parent_topics_from_discovery(
                 runs_root,
                 profile.slug,
@@ -4182,14 +4190,6 @@ def run_cycle(
             if refresh_candidates and fresh_parent_topics and batch < search_batch_limit:
                 ledger["refresh_parent_topics"] = fresh_parent_topics
                 priority_refresh_topics = fresh_parent_topics
-                force_refresh = True
-                continue
-            priority_children = _child_topics_from_queue(
-                current_queue, blocked_topics, limit=refresh_top, domain=profile.slug,
-            )
-            if refresh_candidates and priority_children and batch < search_batch_limit:
-                ledger["refresh_child_topics"] = priority_children
-                priority_refresh_topics = priority_children
                 force_refresh = True
                 continue
             if refresh_candidates and refresh.get("skipped_in_cooldown"):
