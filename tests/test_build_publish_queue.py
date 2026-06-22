@@ -311,3 +311,84 @@ def test_build_queue_reports_pre_memo_stage_failures(
     assert out["not_ready"][0]["domain"]["slug"] == "ai_research"
     assert out["not_ready"][0]["domain_slug"] == "ai_research"
     assert "missing_alpha_memo" in out["not_ready"][0]["blockers"]
+
+
+def _stored_evidence_map_run(
+    root: Path,
+    name: str,
+    *,
+    shared_axis: str | None,
+) -> Path:
+    run = root / name
+    run.mkdir(parents=True)
+    fact_ids = [str(i) for i in range(1, 11)]
+    run.joinpath("business_candidate_bundle.json").write_text("{}", encoding="utf-8")
+    run.joinpath("publish_verdict.json").write_text(json.dumps({
+        "topic": name.split("-evidence-", 1)[0],
+        "decision": "ready_to_publish",
+        "publish_tier": "TIER_1",
+        "surface_type": "evidence_map",
+        "alpha_score": 90,
+        "run_dir": str(run),
+    }), encoding="utf-8")
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [
+            {"fact_id": fid, "lane": "A_core"} for fid in fact_ids
+        ],
+    }), encoding="utf-8")
+    facts = []
+    for fid in fact_ids:
+        population = shared_axis or f"group{fid}"
+        facts.append({
+            "fact_id": fid,
+            "canonical_phrase": f"bounded empirical finding {fid}",
+            "population": population,
+            "intervention": f"agent{fid}",
+            "comparator": f"control{fid}",
+            "endpoint": f"marker{fid}",
+            "source_paper": {
+                "doi": f"10.1234/{fid}",
+                "title": f"Empirical therapy trial {fid}",
+                "year": 2024,
+            },
+        })
+    run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    return run
+
+
+def test_build_queue_demotes_scope_mismatched_evidence_maps(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    runs = tmp_path / "runs"
+    _stored_evidence_map_run(
+        runs,
+        "broad_map-evidence-2026-02-01T00-00-00Z",
+        shared_axis=None,
+    )
+    monkeypatch.setattr(queue, "_RUNS", runs)
+
+    out = queue.build_queue(include_archive=True)
+
+    assert out["ready_to_publish"] == []
+    assert [r["topic"] for r in out["curation_needed"]] == ["broad_map"]
+    assert out["curation_needed"][0]["queue_status"] == "evidence_map_scope_mismatch"
+    assert "evidence_map_scope_mismatch" in out["curation_needed"][0]["blockers"]
+
+
+def test_build_queue_keeps_bounded_evidence_maps_ready(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    runs = tmp_path / "runs"
+    _stored_evidence_map_run(
+        runs,
+        "bounded_map-evidence-2026-02-01T00-00-00Z",
+        shared_axis="older adults",
+    )
+    monkeypatch.setattr(queue, "_RUNS", runs)
+
+    out = queue.build_queue(include_archive=True)
+
+    assert [r["topic"] for r in out["ready_to_publish"]] == ["bounded_map"]
+    assert out["curation_needed"] == []
