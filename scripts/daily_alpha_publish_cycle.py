@@ -3240,6 +3240,21 @@ def _paper_key(paper: Json, fallback: Any = "") -> str:
     return str(paper.get("doi") or paper.get("pmid") or paper.get("id") or fallback or "")
 
 
+def _source_literature_fact(item: Json) -> Json:
+    return {
+        key: item.get(key)
+        for key in (
+            "id", "canonical_phrase", "population", "intervention", "comparator",
+            "endpoint", "metric", "source_tier", "source_excerpt",
+        )
+        if item.get(key) not in (None, "")
+    }
+
+
+def _source_literature_fact_count(papers: list[Json]) -> int:
+    return sum(1 for paper in papers if isinstance(paper.get("source_fact"), dict))
+
+
 def _fetch_source_literature_papers(
     topic: str, limit: int, *, domain: str = "longevity_research",
 ) -> list[Json]:
@@ -3248,25 +3263,6 @@ def _fetch_source_literature_papers(
     token = settings.researka_database_token.strip()
     if not base or not token:
         return []
-    req = urllib.request.Request(
-        f"{base}/api/v1/papers/topic",
-        data=json.dumps({"topic": topic, "limit": limit}).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-            "X-Researka-Token": token,
-        },
-        method="POST",
-    )
-    papers: list[Json] = []
-    try:
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-    except (OSError, ValueError, json.JSONDecodeError):
-        data = []
-    if isinstance(data, list):
-        papers = [paper for paper in data if isinstance(paper, dict)]
-    if papers:
-        return papers
     req = urllib.request.Request(
         f"{base}/api/v1/tier2/facts/search",
         data=json.dumps({
@@ -3299,10 +3295,30 @@ def _fetch_source_literature_papers(
         if not key or not title or key in seen:
             continue
         seen.add(key)
-        out.append(paper | {"id": key, "title": title})
+        out.append(paper | {
+            "id": key,
+            "title": title,
+            "source_fact": _source_literature_fact(item),
+        })
         if len(out) >= limit:
             break
-    return out
+    if out:
+        return out
+    req = urllib.request.Request(
+        f"{base}/api/v1/papers/topic",
+        data=json.dumps({"topic": topic, "limit": limit}).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "X-Researka-Token": token,
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except (OSError, ValueError, json.JSONDecodeError):
+        return []
+    return [paper for paper in data if isinstance(paper, dict)] if isinstance(data, list) else []
 
 
 def _source_literature_topic_candidates(
@@ -3424,10 +3440,7 @@ def _source_literature_payload(
     selected = papers[:5]
     run_dir = runs_root / f"{topic}-source-literature-{date}"
     run_dir.mkdir(parents=True, exist_ok=True)
-    question = (
-        f"What does the selected source bundle show about the evidence boundary "
-        f"for {topic}?"
-    )
+    question = f"What do the selected receipt-backed sources show about {topic}?"
     lines = [
         "# Source literature boundary memo",
         "",
@@ -3440,9 +3453,9 @@ def _source_literature_payload(
         (
             f"The latest {profile.display_name} discovery pass ranked {topic} as "
             "source-rich. The fallback requires at least five verifiable source "
-            "papers, distinct title keys, and a non-repeated report series before "
-            "treating the bundle as a coherent scoping front rather than proof of "
-            "intervention efficacy."
+            "papers with fact-level receipts, distinct title keys, and a non-"
+            "repeated report series before treating the bundle as a coherent "
+            "scoping front rather than proof of intervention efficacy."
         ),
         "",
         "## Boundary map",
@@ -3453,9 +3466,23 @@ def _source_literature_payload(
         doi = str(paper.get("doi") or "").strip()
         year = paper.get("year") or paper.get("publication_year")
         source_type = _evidence_type(paper)
+        raw_fact = paper.get("source_fact")
+        fact: Json = raw_fact if isinstance(raw_fact, dict) else {}
         annotation = "; ".join(str(x) for x in (source_type, year) if x)
         suffix = f" [{annotation}]" if annotation else ""
         lines.append(f"- {title}{suffix}" + (f" doi:{doi}" if doi else ""))
+        phrase = str(fact.get("canonical_phrase") or "").strip()
+        if phrase:
+            lines.append(f"  - Finding: {phrase}")
+        for label, key in (
+            ("Population", "population"),
+            ("Intervention/exposure", "intervention"),
+            ("Comparator", "comparator"),
+            ("Endpoint/metric", "endpoint"),
+        ):
+            value = str(fact.get(key) or "").strip()
+            if value:
+                lines.append(f"  - {label}: {value}")
     source_bundle = _source_bundle(selected)
     years = sorted(
         year for year in (_year(source.get("year")) for source in source_bundle)
@@ -3468,13 +3495,36 @@ def _source_literature_payload(
     type_text = "/".join(sorted({
         str(source.get("evidence_type") or "source") for source in source_bundle
     }))
+    facts: list[Json] = []
+    for paper in selected:
+        raw_fact = paper.get("source_fact")
+        if isinstance(raw_fact, dict):
+            facts.append(raw_fact)
+    populations = sorted({
+        str(fact.get("population") or "").strip() for fact in facts
+        if str(fact.get("population") or "").strip()
+    })
+    interventions = sorted({
+        str(fact.get("intervention") or "").strip() for fact in facts
+        if str(fact.get("intervention") or "").strip()
+    })
+    findings = [
+        str(fact.get("canonical_phrase") or "").strip() for fact in facts
+        if str(fact.get("canonical_phrase") or "").strip()
+    ]
     synthesis = (
         f"Answer: this {len(source_bundle)}-source {type_text} bundle supports a "
-        f"conventional scoping note for {topic}, spanning {year_text}. The bounded "
-        "signal is source-frontier separation: these papers can define what must "
-        "be checked next, but they do not establish a causal, clinical, species-"
-        "translated, or mechanistically integrated intervention claim."
+        f"receipt-backed scoping note for {topic}, spanning {year_text}. The "
+        f"source facts cover {len(populations) or 'multiple'} population context(s) "
+        f"and {len(interventions) or 'multiple'} intervention/exposure context(s). "
+        "The bounded signal is heterogeneity mapping: the bundle identifies what "
+        "has been measured and where the evidence separates, without establishing "
+        "a causal, clinical, species-translated, or mechanistically integrated "
+        "intervention claim."
     )
+    if findings:
+        examples = [finding.rstrip(".") for finding in findings[:3]]
+        synthesis += " Representative source-extracted findings include: " + "; ".join(examples) + "."
     boundary_summary = (
         f"Source-literature boundary for {topic}: the listed sources define "
         "separate evidence fronts. This memo does not claim causality, clinical "
@@ -5020,22 +5070,6 @@ def run_cycle(
         and profile.slug != "ai_research"
         and not ledger["cycle_attempts"]
     ):
-        if not _source_literature_fallback_submit_enabled():
-            ledger["source_literature_fallback"] = {
-                "status": "disabled",
-                "reason": "requires_fact_level_source_synthesis",
-            }
-            ledger.setdefault("source_literature_fallback_attempts", []).append(
-                ledger["source_literature_fallback"],
-            )
-            ledger["status"] = "no_fresh_candidate"
-            ledger["published"] = 0
-            ledger["reason"] = (
-                _no_candidate_reason(all_considered) if all_considered
-                else "requires_fact_level_source_synthesis"
-            )
-            _write_ledger(ledger_path, ledger)
-            return ledger
         paper_fetcher = source_paper_fetcher
         literature_topics = _source_literature_topic_candidates(
             runs_root, profile.slug, min_submit_sources, blocked_topics,
@@ -5060,6 +5094,16 @@ def run_cycle(
             ledger.setdefault("source_literature_fallback_attempts", []).append(fallback_attempt)
             ledger["source_literature_fallback"] = fallback_attempt
             if ok:
+                fact_backed = _source_literature_fact_count(
+                    papers[:min_submit_sources],
+                ) >= min_submit_sources
+                if (
+                    not fact_backed
+                    and not _source_literature_fallback_submit_enabled()
+                ):
+                    fallback_attempt["status"] = "disabled"
+                    fallback_attempt["reason"] = "requires_fact_level_source_synthesis"
+                    continue
                 candidate, payload = _source_literature_payload(
                     profile_slug=profile.slug,
                     topic=literature_topic,
@@ -5120,9 +5164,21 @@ def run_cycle(
             "published": 0,
         })
     else:
+        fallback_attempts = [
+            row for row in ledger.get("source_literature_fallback_attempts") or []
+            if isinstance(row, dict)
+        ]
         ledger.update({
             "status": "no_fresh_candidate",
-            "reason": _no_candidate_reason(all_considered),
+            "reason": (
+                "requires_fact_level_source_synthesis"
+                if fallback_attempts and all(
+                    row.get("status") == "disabled"
+                    and row.get("reason") == "requires_fact_level_source_synthesis"
+                    for row in fallback_attempts
+                )
+                else _no_candidate_reason(all_considered)
+            ),
         })
     _write_ledger(ledger_path, ledger)
     return ledger

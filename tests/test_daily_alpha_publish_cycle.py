@@ -6536,16 +6536,86 @@ def test_source_literature_fallback_is_disabled_without_explicit_submit_flag(
         domain="longevity_research",
         queue=_queue(),
         submit=True,
+        source_paper_fetcher=lambda *_args, **_kwargs: [
+            {"title": title, "doi": f"10.1234/{idx}"}
+            for idx, title in enumerate((
+                "Metabolic pathway source in aging",
+                "Inflammation signalling lifespan source",
+                "Mitochondrial stress response source",
+                "Cellular senescence intervention source",
+                "Proteostasis decline source",
+            ))
+        ],
         submitter=fail_submitter,
     )
 
     assert ledger["status"] == "no_fresh_candidate"
     assert ledger["published"] == 0
     assert ledger["reason"] == "requires_fact_level_source_synthesis"
-    assert ledger["source_literature_fallback"] == {
-        "status": "disabled",
-        "reason": "requires_fact_level_source_synthesis",
-    }
+    assert ledger["source_literature_fallback"]["status"] == "disabled"
+    assert (
+        ledger["source_literature_fallback"]["reason"]
+        == "requires_fact_level_source_synthesis"
+    )
+
+
+def test_fact_backed_source_literature_fallback_submits_without_flag(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    (root / "_topics_discovery" / "longevity.json").write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "source_rich_parent", "paper_count": 10, "fact_source_count": 20}],
+    }), encoding="utf-8")
+    monkeypatch.delenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", raising=False)
+    papers = [
+        {
+            "title": title,
+            "doi": f"10.1234/{idx}",
+            "year": 2020 + idx,
+            "source_fact": {
+                "canonical_phrase": f"finding {idx} for bounded source synthesis",
+                "population": f"population {idx}",
+                "intervention": "source intervention",
+                "comparator": "control",
+            },
+        }
+        for idx, title in enumerate((
+            "Metabolic pathway source in aging",
+            "Inflammation signalling lifespan source",
+            "Mitochondrial stress response source",
+            "Cellular senescence intervention source",
+            "Proteostasis decline source",
+        ))
+    ]
+    seen_payload: dict[str, Any] = {}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-00-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        source_paper_fetcher=lambda *_args, **_kwargs: papers,
+        submitter=lambda payload: (
+            seen_payload.update(payload)
+            or {"ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}}}
+        ),
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert ledger["status"] == "published"
+    assert "Metabolic pathway source in aging" in seen_payload["markdown"]
+    assert "Finding: finding 0 for bounded source synthesis" in seen_payload["markdown"]
+    assert "receipt-backed scoping note" in seen_payload["abstract"]
 
 
 def test_source_literature_candidates_use_latest_domain_snapshot(tmp_path: Path) -> None:
@@ -6631,7 +6701,7 @@ def test_source_literature_fallback_tries_next_quality_candidate(
     assert ledger["submitted_topic"] == "usable_boundary"
 
 
-def test_source_literature_fetcher_falls_back_to_tier2_papers(
+def test_source_literature_fetcher_prefers_tier2_fact_backed_papers(
     monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
@@ -6658,16 +6728,20 @@ def test_source_literature_fetcher_falls_back_to_tier2_papers(
     def fake_urlopen(req: Any, timeout: int) -> Response:
         url = str(req.full_url)
         calls.append(url)
-        if url.endswith("/api/v1/papers/topic"):
-            raise TimeoutError("slow papers endpoint")
         return Response([
             {
                 "paper_id": "p1",
                 "paper": {"doi": "10.1/a", "title": "Acarbose lifespan trial"},
+                "canonical_phrase": "Acarbose increased lifespan in mice.",
+                "population": "mice",
+                "intervention": "acarbose",
             },
             {
                 "paper_id": "p2",
                 "paper": {"doi": "10.1/b", "title": "Acarbose microbiome study"},
+                "canonical_phrase": "Acarbose changed gut microbiome structure.",
+                "population": "mice",
+                "intervention": "acarbose",
             },
         ])
 
@@ -6678,10 +6752,8 @@ def test_source_literature_fetcher_falls_back_to_tier2_papers(
     )
 
     assert [p["doi"] for p in papers] == ["10.1/a", "10.1/b"]
-    assert calls == [
-        "https://db.test/api/v1/papers/topic",
-        "https://db.test/api/v1/tier2/facts/search",
-    ]
+    assert papers[0]["source_fact"]["canonical_phrase"] == "Acarbose increased lifespan in mice."
+    assert calls == ["https://db.test/api/v1/tier2/facts/search"]
 
 
 def test_source_literature_boundary_quality_rejects_title_series() -> None:
@@ -6741,7 +6813,7 @@ def test_source_literature_payload_is_deterministic_boundary_only(
     assert "## Source synthesis" in payload["markdown"]
     assert "## Research question" in payload["markdown"]
     assert "## Selection criteria" in payload["markdown"]
-    assert "do not establish a causal" in payload["markdown"]
+    assert "without establishing" in payload["markdown"]
     assert "primary; 2024" in payload["markdown"]
     assert writer["status"] == "skipped"
     assert writer["reason"] == "deterministic_boundary_only"
