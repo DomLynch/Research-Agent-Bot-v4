@@ -159,28 +159,6 @@ def _normalised_decision(row: dict[str, Any]) -> str:
     return "agent_repair_needed" if decision in _LEGACY_AGENT_REPAIR_DECISIONS else decision
 
 
-def _queue_ready_row(row: dict[str, Any]) -> dict[str, Any]:
-    if (
-        _normalised_decision(row) != "ready_to_publish"
-        or row.get("surface_type") != "evidence_map"
-    ):
-        return row
-    min_citations = cycle._alpha_memo_int("evidence_map_min_citations", 10)
-    if cycle._direct_source_count(row, _RUNS) < min_citations:
-        status = "evidence_map_below_citation_floor"
-    elif not cycle._map_scope_coherent(row, _RUNS, min_citations):
-        status = "evidence_map_scope_mismatch"
-    else:
-        return row
-    blockers = row.get("blockers")
-    blocker_list = blockers if isinstance(blockers, list) else []
-    return row | {
-        "decision": "curation_needed",
-        "queue_status": status,
-        "blockers": sorted({*(str(b) for b in blocker_list), status}),
-    }
-
-
 def build_queue(
     include_archive: bool = True, domain: str | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
@@ -201,7 +179,7 @@ def build_queue(
                 "domain": load_domain_profile(run_domain).as_metadata(),
                 "domain_slug": run_domain,
             }
-        row = _queue_ready_row(row)
+        row = cycle._queue_ready_row(row, _RUNS)
         rows.append(row)
     rank = {"TIER_1": 0, "TIER_2": 1, "TIER_3": 2}
     rows.sort(key=lambda r: (

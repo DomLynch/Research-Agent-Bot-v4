@@ -785,6 +785,25 @@ def _reload_verdict_after_memo_refresh(verdict: Json, run_dir: Path) -> Json:
     return refreshed
 
 
+def _queue_ready_row(row: Json, runs_root: Path) -> Json:
+    if row.get("decision") != "ready_to_publish" or row.get("surface_type") != "evidence_map":
+        return row
+    min_citations = _alpha_memo_int("evidence_map_min_citations", 10)
+    if _direct_source_count(row, runs_root) < min_citations:
+        status = "evidence_map_below_citation_floor"
+    elif not _map_scope_coherent(row, runs_root, min_citations):
+        status = "evidence_map_scope_mismatch"
+    else:
+        return row
+    blockers = row.get("blockers")
+    blocker_list = blockers if isinstance(blockers, list) else []
+    return row | {
+        "decision": "curation_needed",
+        "queue_status": status,
+        "blockers": sorted({*(str(b) for b in blocker_list), status}),
+    }
+
+
 def _build_queue(
     runs_root: Path, include_archive: bool, domain: str | None = None,
 ) -> Json:
@@ -826,6 +845,7 @@ def _build_queue(
             "domain": load_domain_profile(run_domain).as_metadata(),
             "domain_slug": run_domain,
         }
+        row = _queue_ready_row(row, runs_root)
         domain_rows.append(row)
     rows = domain_rows
     seed_scope_dropped_count = 0

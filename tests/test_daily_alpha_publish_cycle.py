@@ -155,6 +155,54 @@ def _memo_with_source_receipts(root: Path, verdict: dict[str, Any], count: int) 
     _audit_sidecars(run)
 
 
+def _stored_map_run(
+    root: Path,
+    topic: str,
+    *,
+    shared_population: str | None,
+) -> dict[str, Any]:
+    run = root / "runs" / f"{topic}-evidence-ts"
+    run.mkdir(parents=True)
+    fact_ids = [str(i) for i in range(1, 11)]
+    verdict = _verdict(topic) | {
+        "run_dir": str(run),
+        "surface_type": "evidence_map",
+        "confidence_label": "evidence_map",
+    }
+    run.joinpath("publish_verdict.json").write_text(json.dumps(verdict), encoding="utf-8")
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": fid, "lane": "A_core"} for fid in fact_ids],
+    }), encoding="utf-8")
+    run.joinpath("all_facts.json").write_text(json.dumps([
+        {
+            "fact_id": fid,
+            "canonical_phrase": f"bounded empirical finding {fid}",
+            "population": shared_population or f"group{fid}",
+            "intervention": f"agent{fid}",
+            "comparator": f"control{fid}",
+            "endpoint": f"marker{fid}",
+            "source_paper": {
+                "doi": f"10.1000/map-{fid}",
+                "title": f"Empirical therapy source {fid}",
+            },
+        }
+        for fid in fact_ids
+    ]), encoding="utf-8")
+    return verdict
+
+
+def test_daily_build_queue_demotes_submit_held_evidence_maps(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    _stored_map_run(root, "broad_map", shared_population=None)
+    _stored_map_run(root, "bounded_map", shared_population="older adults")
+
+    queue = daily._build_queue(root / "runs", include_archive=False)
+
+    assert [r["topic"] for r in queue["ready_to_publish"]] == ["bounded_map"]
+    assert [r["topic"] for r in queue["curation_needed"]] == ["broad_map"]
+    assert queue["curation_needed"][0]["queue_status"] == "evidence_map_scope_mismatch"
+
+
 def _memo_with_receipt_shapes(
     root: Path, verdict: dict[str, Any], shapes: list[dict[str, str]],
 ) -> None:
