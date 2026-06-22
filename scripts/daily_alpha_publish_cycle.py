@@ -39,6 +39,7 @@ from agent.settings import load_settings
 from agent.topic_discovery import cap_topic_slug
 from scripts import alpha_publish_io as publish_io
 from scripts import alpha_publish_preflight as preflight
+from scripts import alpha_publish_public as publish_public
 from scripts import alpha_publish_status as publish_status
 from scripts.alpha_publish_submit import http_submitter, submit_with_backoff
 
@@ -3028,82 +3029,23 @@ def _submission_id(payload: Json) -> str:
 
 
 def _public_alpha_base() -> str:
-    return os.environ.get("RESEARKA_ALPHA_BASE_URL", "https://researka.org/alpha").rstrip("/")
+    return publish_public.public_alpha_base()
 
 
 def _public_alpha_url(value: Any) -> str:
-    raw = str(value or "").strip()
-    if not raw:
-        return ""
-    if raw.startswith(("http://", "https://")):
-        return raw
-    return _public_alpha_base() + "/" + urllib.parse.quote(raw, safe="")
+    return publish_public.public_alpha_url(value)
 
 
 def _public_alpha_urls(payload: Any) -> list[str]:
-    urls: list[str] = []
-
-    def add(value: Any) -> None:
-        url = _public_alpha_url(value)
-        if url and url not in urls:
-            urls.append(url)
-
-    if isinstance(payload, dict):
-        publication = payload.get("publication")
-        if isinstance(publication, dict):
-            add(publication.get("url"))
-
-    def walk(value: Any) -> None:
-        if isinstance(value, dict):
-            for key, item in value.items():
-                key_l = str(key).lower()
-                if key_l in {
-                    "alpha_url",
-                    "canonical_url",
-                    "public_url",
-                    "publication_url",
-                    "url",
-                }:
-                    # Accept the Researka public-page form regardless of scheme:
-                    # the platform migrated alpha memos from /alpha/<id> to
-                    # /papers/<id>. The path token still distinguishes our
-                    # published page from cited-source URLs under "url" keys.
-                    item_s = str(item)
-                    if "url" not in key_l or "/alpha/" in item_s or "/papers/" in item_s:
-                        add(item)
-                elif "id" in key_l and any(
-                    token in key_l for token in ("alpha", "public", "publication")
-                ):
-                    add(item)
-                walk(item)
-        elif isinstance(value, list):
-            for item in value:
-                walk(item)
-
-    walk(payload)
-    return urls
+    return publish_public.public_alpha_urls(payload)
 
 
 def _fetch_public_page(url: str) -> Json:
-    req = urllib.request.Request(url, headers={"User-Agent": "researka-v4/1.0"})
-    try:
-        with urllib.request.urlopen(req, timeout=20) as response:
-            body = response.read(4096).decode("utf-8", errors="replace")
-            return {"ok": True, "status": response.status, "body": body}
-    except urllib.error.HTTPError as exc:
-        return {"ok": False, "status": exc.code, "body": exc.read(512).decode("utf-8", errors="replace")}
-    except Exception as exc:  # pragma: no cover - network defensive path
-        return {"ok": False, "status": 0, "error": type(exc).__name__, "detail": str(exc)[:180]}
+    return publish_public.fetch_public_page(url)
 
 
 def _page_rendered(result: Json) -> bool:
-    body = str(result.get("body") or "").lower()
-    missing_title = re.search(r"<title\b[^>]*>[^<]*(404|not found)[^<]*</title>", body)
-    return (
-        bool(result.get("ok"))
-        and int(result.get("status") or 0) == 200
-        and not missing_title
-    )
+    return publish_public.page_rendered(result)
 
 
 def _source_literature_title_key(title: Any) -> str:
@@ -3540,46 +3482,17 @@ def _source_literature_payload(
     return candidate, payload
 
 
-# Public page rendering is eventually-consistent after acceptance; poll the
-# fresh-accept check this many times before concluding the page is unrendered.
-_PUBLISH_RENDER_POLL_ATTEMPTS = 6
-_PUBLISH_RENDER_POLL_DELAY_S = 5.0
+_PUBLISH_RENDER_POLL_ATTEMPTS = publish_public.PUBLISH_RENDER_POLL_ATTEMPTS
+_PUBLISH_RENDER_POLL_DELAY_S = publish_public.PUBLISH_RENDER_POLL_DELAY_S
 
 
 def _public_page_check(
     decision: Json, *, page_fetcher: PageFetcher,
     attempts: int = 1, delay_s: float = 0.0,
 ) -> Json:
-    # Researka builds the public page asynchronously after accepting a
-    # submission: the first fetch can hit the "Not Found" SPA shell (HTTP 200
-    # with a not-found <title>) even though the page renders seconds later.
-    # A single eager check therefore falsely marks genuinely-accepted memos as
-    # `public_page_not_rendered` -> rejected -> stuck at published=0 forever
-    # (the "repair" path then resubmits and gets duplicate-blocked). Poll a
-    # bounded number of times before declaring the page unrendered. Defaults
-    # (attempts=1, delay_s=0) preserve the original single-shot behaviour for
-    # callers that re-check on their own schedule (e.g. the reconcile sweep).
-    urls = _public_alpha_urls(decision)
-    if not urls:
-        return {"ok": False, "status": "missing_public_url", "urls": []}
-    checks: list[Json] = []
-    for attempt in range(max(1, attempts)):
-        checks = []
-        for url in urls:
-            result = page_fetcher(url)
-            check = {
-                "url": url,
-                "http_status": result.get("status"),
-                "ok": _page_rendered(result),
-            }
-            if result.get("error"):
-                check["error"] = result.get("error")
-            checks.append(check)
-            if check["ok"]:
-                return {"ok": True, "status": "rendered", "url": url, "checks": checks}
-        if delay_s > 0 and attempt < max(1, attempts) - 1:
-            time.sleep(delay_s)
-    return {"ok": False, "status": "not_rendered", "urls": urls, "checks": checks}
+    return publish_public.public_page_check(
+        decision, page_fetcher=page_fetcher, attempts=attempts, delay_s=delay_s,
+    )
 
 
 def _apply_submission_decision(
