@@ -2886,6 +2886,7 @@ def select_candidate(
                     status = "receipt_shape_mismatch"
         row = {
             "topic": _selection_topic(verdict),
+            "domain_slug": domain or _row_domain(verdict),
             "decision": verdict.get("decision"),
             "publish_tier": verdict.get("publish_tier"),
             "surface_type": verdict.get("surface_type"),

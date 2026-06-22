@@ -5509,6 +5509,9 @@ def test_ai_duplicate_exhaustion_reports_duplicate_starvation(
     assert {
         row["status"] for row in ledger["considered"]
     } == {"duplicate_submission_fingerprint"}
+    assert {
+        row["domain_slug"] for row in ledger["considered"]
+    } == {"ai_research"}
 
 
 def test_exhausted_duplicate_queue_prioritizes_fresh_parent_topic(
