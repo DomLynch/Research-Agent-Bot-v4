@@ -6450,6 +6450,58 @@ def test_source_literature_fallback_submits_after_empty_fact_lane(
     assert "collagen" in seen_payload["markdown"].lower()
 
 
+def test_source_literature_fallback_uses_default_fetcher_after_empty_submit_lane(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    (root / "_topics_discovery" / "longevity.json").write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [
+            {"topic": "thin_parent", "paper_count": 5, "fact_source_count": 30},
+            {"topic": "source_rich_parent", "paper_count": 10, "fact_source_count": 20},
+        ],
+    }), encoding="utf-8")
+    papers = [
+        {"title": "Metabolic pathway review in aging", "doi": "10.1234/1", "year": 2024},
+        {"title": "Inflammation signalling across lifespan", "doi": "10.1234/2", "year": 2024},
+        {"title": "Mitochondrial stress response biology", "doi": "10.1234/3", "year": 2024},
+        {"title": "Cellular senescence intervention map", "doi": "10.1234/4", "year": 2024},
+        {"title": "Proteostasis mechanisms in age-related decline", "doi": "10.1234/5", "year": 2024},
+    ]
+    seen_payload: dict[str, Any] = {}
+    monkeypatch.setattr(daily, "_fetch_source_literature_papers", lambda _topic, _limit: papers)
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "writer_configured": False,
+        "mimo_model": "",
+        "mimo_base_url": "",
+    })())
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-00-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        submitter=lambda payload: (
+            seen_payload.update(payload)
+            or {"ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}}}
+        ),
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "source_rich_parent"
+    assert seen_payload["evidence_bundle"]["surface_type"] == "source_literature_boundary"
+
+
 def test_source_literature_boundary_quality_rejects_title_series() -> None:
     papers = [
         {"title": f"RAGE collagen pathway review {year}", "doi": f"10.1234/{year}"}

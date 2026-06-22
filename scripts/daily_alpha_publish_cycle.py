@@ -3229,8 +3229,31 @@ def _source_literature_boundary_quality(
     return True, "ok"
 
 
+def _fetch_source_literature_papers(topic: str, limit: int) -> list[Json]:
+    settings = load_settings()
+    base = settings.researka_database_url.rstrip("/")
+    token = settings.researka_database_token.strip()
+    if not base or not token:
+        return []
+    req = urllib.request.Request(
+        f"{base}/api/v1/papers/topic",
+        data=json.dumps({"topic": topic, "limit": limit}).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "X-Researka-Token": token,
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except (OSError, ValueError, json.JSONDecodeError):
+        return []
+    return [paper for paper in data if isinstance(paper, dict)] if isinstance(data, list) else []
+
+
 def _source_literature_topic_candidate(
-    runs_root: Path, profile_slug: str, min_sources: int,
+    runs_root: Path, profile_slug: str, min_sources: int, blocked_topics: set[str] | None = None,
 ) -> str | None:
     discovery_dir = runs_root / "_topics_discovery"
     paths = sorted(
@@ -3238,6 +3261,9 @@ def _source_literature_topic_candidate(
         key=lambda path: path.stat().st_mtime if path.exists() else 0,
         reverse=True,
     )
+    blocked = blocked_topics or set()
+    ranked: list[tuple[tuple[int, int, str], str]] = []
+    seen: set[str] = set()
     for path in paths:
         data = _json(path, {})
         if not isinstance(data, dict) or not _same_domain(_row_domain(data), profile_slug):
@@ -3249,13 +3275,16 @@ def _source_literature_topic_candidate(
             if not isinstance(row, dict):
                 continue
             topic = str(row.get("topic") or "").strip()
-            if not topic:
+            if not topic or topic in seen or _family_blocked_topic(topic, blocked):
                 continue
             paper_count = int(row.get("paper_count") or 0)
             fact_source_count = int(row.get("fact_source_count") or 0)
-            if paper_count >= min_sources and fact_source_count < min_sources:
-                return topic
-    return None
+            if paper_count >= min_sources:
+                ranked.append(((-paper_count, -fact_source_count, topic), topic))
+                seen.add(topic)
+    return sorted(ranked)[0][1] if ranked else None
+
+
 
 
 def _family_blocked_topic(topic: str, blocked_topics: set[str]) -> bool:
@@ -4881,15 +4910,15 @@ def run_cycle(
             return ledger
     if (
         submit
-        and source_paper_fetcher is not None
         and profile.slug != "ai_research"
         and not ledger["cycle_attempts"]
     ):
+        paper_fetcher = source_paper_fetcher or _fetch_source_literature_papers
         literature_topic = _source_literature_topic_candidate(
-            runs_root, profile.slug, min_submit_sources,
+            runs_root, profile.slug, min_submit_sources, blocked_topics,
         )
         if literature_topic:
-            papers = source_paper_fetcher(literature_topic, min_submit_sources)
+            papers = paper_fetcher(literature_topic, min_submit_sources)
             ok, reason = _source_literature_boundary_quality(
                 literature_topic, papers, min_submit_sources,
             )
