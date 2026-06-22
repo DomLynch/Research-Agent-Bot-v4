@@ -15,7 +15,7 @@ import time
 import urllib.error
 import urllib.request
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
 from urllib.request import Request
 
 from pytest import MonkeyPatch, raises
@@ -6500,6 +6500,8 @@ def test_source_literature_fallback_uses_default_fetcher_after_empty_submit_lane
     assert ledger["status"] == "published"
     assert ledger["submitted_topic"] == "source_rich_parent"
     assert seen_payload["evidence_bundle"]["surface_type"] == "source_literature_boundary"
+    assert "does not claim causality" in seen_payload["abstract"]
+    assert "species translation" in seen_payload["markdown"]
     assert seen_payload["source_bundle"][0] == {
         "title": "Metabolic pathway review in aging",
         "url": None,
@@ -6672,7 +6674,7 @@ def test_source_literature_boundary_quality_accepts_distinct_boundary_papers() -
     assert reason == "ok"
 
 
-def test_source_literature_payload_records_writer_synthesis(
+def test_source_literature_payload_is_deterministic_boundary_only(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     root = tmp_path / "repo"
@@ -6684,17 +6686,10 @@ def test_source_literature_payload_records_writer_synthesis(
         {"title": "Glycation-derived collagen stiffening review", "doi": "10.1234/5", "year": 2024},
     ]
 
-    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
-        "writer_configured": True,
-        "mimo_model": "MiniMax-M3",
-        "mimo_base_url": "https://api.minimax.io/anthropic",
-    })())
-    monkeypatch.setattr(daily, "call_writer", lambda *_args, **_kwargs: type("R", (), {
-        "content": "The source bundle keeps glycation claims near RAGE and collagen biology.",
-        "model": "MiniMax-M3",
-        "prompt_tokens": 11,
-        "completion_tokens": 9,
-    })())
+    def fail_writer(*_args: object, **_kwargs: object) -> NoReturn:
+        raise AssertionError("source-literature boundary payload must not call writer")
+
+    monkeypatch.setattr(daily, "call_writer", fail_writer, raising=False)
 
     _candidate, payload = daily._source_literature_payload(
         profile_slug="longevity_research", topic="glycation_AGEs",
@@ -6707,10 +6702,9 @@ def test_source_literature_payload_records_writer_synthesis(
         encoding="utf-8",
     ))
     assert "## Source synthesis" in payload["markdown"]
-    assert "RAGE and collagen biology" in payload["markdown"]
-    assert writer["status"] == "used"
-    assert writer["model"] == "MiniMax-M3"
-    assert writer["prompt_tokens"] == 11
+    assert "does not claim causality" in payload["markdown"]
+    assert writer["status"] == "skipped"
+    assert writer["reason"] == "deterministic_boundary_only"
     assert sidecar["content_hash"] == writer["content_hash"]
 
 

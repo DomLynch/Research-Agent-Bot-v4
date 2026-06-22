@@ -33,7 +33,6 @@ if str(_ROOT) not in sys.path:
 from agent.alpha_selector import accepted_shape_bonus
 from agent.domain_profile import domain_choices, domain_slug, load_domain_profile
 from agent.fact_lanes import classify_lanes
-from agent.llm_client import call_writer
 from agent.publish_tier import publish_verdict
 from agent.researka_facts import tier2_domain
 from agent.settings import load_settings
@@ -3426,35 +3425,29 @@ def _source_literature_payload(
         suffix = f" ({year})" if year else ""
         lines.append(f"- {title}{suffix}" + (f" doi:{doi}" if doi else ""))
     source_bundle = _source_bundle(selected)
-    settings = load_settings()
-    synthesis = (
-        "The selected source-literature boundary keeps the claim scoped to "
-        f"{topic} and the directly listed source titles."
+    boundary_summary = (
+        f"Source-literature boundary for {topic}: the listed sources define "
+        "separate evidence fronts. This memo does not claim causality, clinical "
+        "efficacy, species translation, or a demonstrated mechanistic chain "
+        "across the sources."
     )
-    writer_meta: Json = {"status": "skipped"}
-    if settings.writer_configured:
-        response = call_writer(settings, [{
-            "role": "user",
-            "content": (
-                "Write a concise source-literature boundary synthesis for "
-                f"{topic}. Use only these paper titles: "
-                + "; ".join(str(paper.get("title") or "") for paper in selected)
-            ),
-        }], max_tokens=700)
-        synthesis = response.content.strip() or synthesis
-        writer_meta = {
-            "status": "used",
-            "model": response.model,
-            "prompt_tokens": response.prompt_tokens,
-            "completion_tokens": response.completion_tokens,
-            "content_hash": hashlib.sha256(synthesis.encode("utf-8")).hexdigest(),
-        }
-    if writer_meta.get("status") != "used":
-        writer_meta = writer_meta | {
-            "model": getattr(settings, "mimo_model", ""),
-            "content_hash": hashlib.sha256(synthesis.encode("utf-8")).hexdigest(),
-        }
-    lines.extend(["", "## Source synthesis", "", synthesis, ""])
+    synthesis = boundary_summary
+    writer_meta: Json = {
+        "status": "skipped",
+        "reason": "deterministic_boundary_only",
+        "content_hash": hashlib.sha256(synthesis.encode("utf-8")).hexdigest(),
+    }
+    lines.extend([
+        "",
+        "## Boundary limits",
+        "",
+        boundary_summary,
+        "",
+        "## Source synthesis",
+        "",
+        synthesis,
+        "",
+    ])
     markdown = "\n".join(lines)
     _write_json(run_dir / "source_literature_writer.json", writer_meta)
     candidate = {
@@ -3472,8 +3465,8 @@ def _source_literature_payload(
         "domain_slug": profile.slug,
         "category": profile.slug.removesuffix("_research"),
         "title": f"{topic} source-literature boundary",
-        "abstract": _safe_excerpt(synthesis),
-        "summary": _safe_excerpt(synthesis),
+        "abstract": _safe_excerpt(boundary_summary),
+        "summary": _safe_excerpt(boundary_summary),
         "topic": topic,
         "metadata": {
             "article_type": "alpha_memo",
