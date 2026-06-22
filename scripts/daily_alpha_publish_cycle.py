@@ -36,6 +36,7 @@ from agent.fact_lanes import classify_lanes
 from agent.publish_tier import publish_verdict
 from agent.settings import load_settings
 from agent.topic_discovery import cap_topic_slug
+from scripts import alpha_publish_config as publish_config
 from scripts import alpha_publish_decisions as publish_decisions
 from scripts import alpha_publish_io as publish_io
 from scripts import alpha_publish_literature as publish_literature
@@ -162,68 +163,23 @@ def _run_subprocess(
 
 
 def _alpha_memo_int(name: str, default: int) -> int:
-    try:
-        data = tomllib.loads(_PUBLICATION_PATH.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError):
-        return default
-    alpha = data.get("alpha_memo") if isinstance(data, dict) else {}
-    if not isinstance(alpha, dict):
-        return default
-    with suppress(TypeError, ValueError):
-        return max(0, int(str(alpha.get(name))))
-    return default
+    return publish_config.alpha_memo_int(_PUBLICATION_PATH, name, default)
 
 
 def _domain_alpha_memo_int(domain: str, name: str, default: int) -> int:
-    try:
-        data = tomllib.loads(_PUBLICATION_PATH.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError):
-        return default
-    alpha = data.get("alpha_memo") if isinstance(data, dict) else {}
-    domains = alpha.get("domains") if isinstance(alpha, dict) else {}
-    domain_cfg = domains.get(domain) if isinstance(domains, dict) else {}
-    if not isinstance(domain_cfg, dict) or name not in domain_cfg:
-        return default
-    with suppress(TypeError, ValueError):
-        return max(0, int(str(domain_cfg.get(name))))
-    return default
+    return publish_config.domain_alpha_memo_int(_PUBLICATION_PATH, domain, name, default)
 
 
 def _alpha_memo_float(name: str, default: float) -> float:
-    try:
-        data = tomllib.loads(_PUBLICATION_PATH.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError):
-        return default
-    alpha = data.get("alpha_memo") if isinstance(data, dict) else {}
-    if not isinstance(alpha, dict):
-        return default
-    with suppress(TypeError, ValueError):
-        return max(0.0, float(str(alpha.get(name))))
-    return default
+    return publish_config.alpha_memo_float(_PUBLICATION_PATH, name, default)
 
 
 def _alpha_memo_bool(name: str, default: bool) -> bool:
-    try:
-        data = tomllib.loads(_PUBLICATION_PATH.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError):
-        return default
-    alpha = data.get("alpha_memo") if isinstance(data, dict) else {}
-    if not isinstance(alpha, dict) or name not in alpha:
-        return default
-    return bool(alpha.get(name))
+    return publish_config.alpha_memo_bool(_PUBLICATION_PATH, name, default)
 
 
 def _publish_tier_int(name: str, default: int) -> int:
-    try:
-        data = tomllib.loads(_PUBLISH_TIER_PATH.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError):
-        return default
-    thresholds = data.get("thresholds") if isinstance(data, dict) else {}
-    if not isinstance(thresholds, dict):
-        return default
-    with suppress(TypeError, ValueError):
-        return max(0, int(str(thresholds.get(name))))
-    return default
+    return publish_config.publish_tier_int(_PUBLISH_TIER_PATH, name, default)
 
 
 _DEFAULT_MIN_SUBMIT_SOURCES = _alpha_memo_int("min_source_papers", 5)
