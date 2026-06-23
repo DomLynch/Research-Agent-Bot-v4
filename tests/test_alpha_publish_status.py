@@ -80,6 +80,18 @@ def test_no_candidate_reason_reports_mixed_duplicate_exhaustion() -> None:
     ]) == "all candidates were duplicate, already published, or topic/family exhausted"
 
 
+def test_no_candidate_reason_reports_mixed_exhausted_and_repair_needed() -> None:
+    assert no_candidate_reason([
+        {"status": "agent_repair_needed"},
+        {"status": "cycle_exhausted_topic"},
+        {"status": "duplicate_submission_fingerprint"},
+        {"status": "duplicate_published_bundle"},
+    ]) == (
+        "fresh candidates were duplicate/exhausted; "
+        "remaining candidates need agent repair"
+    )
+
+
 def test_queue_counts_include_legacy_operator_review_bucket() -> None:
     assert queue_counts({
         "ready_to_publish": [{}, {}],

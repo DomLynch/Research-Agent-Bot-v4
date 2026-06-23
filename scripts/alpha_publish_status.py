@@ -143,6 +143,14 @@ def no_candidate_reason(considered: list[Json]) -> str:
         "duplicate_published_bundle",
         "cycle_exhausted_topic",
     }
+    repair_needed = {"agent_repair_needed", "needs_operator_review"}
+    if (
+        statuses
+        and set(statuses) <= duplicate_exhaustion | repair_needed
+        and set(statuses) & duplicate_exhaustion
+        and set(statuses) & repair_needed
+    ):
+        return "fresh candidates were duplicate/exhausted; remaining candidates need agent repair"
     if statuses and set(statuses) <= duplicate_exhaustion:
         return "all candidates were duplicate, already published, or topic/family exhausted"
     if statuses and all(status == "cycle_exhausted_topic" for status in statuses):
