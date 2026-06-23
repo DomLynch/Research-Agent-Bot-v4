@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import json
+import os
 import sys
 from pathlib import Path
 
@@ -24,14 +24,17 @@ import httpx
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.domain_profile import domain_choices, load_domain_profile
-from agent.settings import load_settings
+from agent.settings import Settings, load_settings
 from agent.topic_discovery import (
     TopicCandidate,
+    _fetch_topic_papers,
+    _score_topic,
     cached_source_rich_candidates,
     discover_topics,
     load_derived_topic_limit,
     load_seed_topics,
 )
+from scripts import alpha_publish_io as publish_io
 
 _FAST_DERIVED_TOPIC_LIMIT = 250
 
@@ -88,7 +91,47 @@ def _merge_candidates(
     merged: dict[str, TopicCandidate] = {}
     for candidate in (*first, *second):
         merged.setdefault(candidate.topic, candidate)
-    return tuple(merged.values())
+    return tuple(sorted(merged.values(), key=_rank_key))
+
+
+def _paper_backed(candidate: TopicCandidate) -> bool:
+    return bool(candidate.paper_count and candidate.top_paper_title)
+
+
+def _rank_key(candidate: TopicCandidate) -> tuple[int, int, float, int, str]:
+    return (
+        -int(_paper_backed(candidate)),
+        -min(candidate.paper_count, candidate.fact_source_count),
+        -candidate.velocity_score,
+        -candidate.paper_count,
+        candidate.topic,
+    )
+
+
+def _hydrate_candidates(
+    candidates: tuple[TopicCandidate, ...], *, client: httpx.Client,
+    settings: Settings, current_year: int,
+) -> tuple[TopicCandidate, ...]:
+    out: list[TopicCandidate] = []
+    for candidate in candidates:
+        scored = _score_topic(
+            candidate.topic,
+            _fetch_topic_papers(candidate.topic, client=client, settings=settings),
+            current_year,
+            fact_source_count=candidate.fact_source_count,
+        )
+        if scored.top_paper_title:
+            out.append(TopicCandidate(
+                topic=candidate.topic,
+                paper_count=max(candidate.paper_count, scored.paper_count),
+                fact_source_count=candidate.fact_source_count,
+                top_paper_doi=scored.top_paper_doi,
+                top_paper_title=scored.top_paper_title,
+                velocity_score=scored.velocity_score,
+                mean_fwci=scored.mean_fwci,
+                mean_cited_by=scored.mean_cited_by,
+            ))
+    return tuple(sorted(out, key=_rank_key))
 
 
 def _filter_excluded(
@@ -176,7 +219,8 @@ def main() -> int:
         and cache_limit > 0 else ()
     )
     ranked = _filter_excluded(ranked, excluded)
-    if len(ranked) < args.top and not args.cache_only:
+    paper_backed_cached = sum(1 for c in ranked if _paper_backed(c))
+    if paper_backed_cached < args.top and not args.cache_only:
         with httpx.Client() as client:
             discovered = discover_topics(
                 seeds=seeds, settings=settings, client=client,
@@ -184,7 +228,34 @@ def main() -> int:
                 fact_probe_topics=fact_probe_topics,
                 refresh_low_source_counts=args.warm_backlog,
             )
-        ranked = _merge_candidates(ranked, _filter_excluded(discovered, excluded))
+            discovered = _hydrate_candidates(
+                _filter_excluded(discovered, excluded),
+                client=client, settings=settings, current_year=dt.datetime.now(dt.UTC).year,
+            )
+            if len(discovered) < args.top:
+                old = os.environ.get("TOPIC_GROUPS_DISCOVERY")
+                os.environ["TOPIC_GROUPS_DISCOVERY"] = "0"
+                try:
+                    fallback = discover_topics(
+                        seeds=seeds, settings=settings, client=client,
+                        derived_topic_limit=derived_limit,
+                        fact_probe_topics=fact_probe_topics,
+                        refresh_low_source_counts=args.warm_backlog,
+                    )
+                finally:
+                    if old is None:
+                        os.environ.pop("TOPIC_GROUPS_DISCOVERY", None)
+                    else:
+                        os.environ["TOPIC_GROUPS_DISCOVERY"] = old
+                discovered = _merge_candidates(
+                    discovered,
+                    _hydrate_candidates(
+                        _filter_excluded(fallback, excluded),
+                        client=client, settings=settings,
+                        current_year=dt.datetime.now(dt.UTC).year,
+                    ),
+                )
+        ranked = _merge_candidates(ranked, discovered)
     top = ranked[: args.top]
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
     year = dt.datetime.now(dt.UTC).year
@@ -206,9 +277,7 @@ def main() -> int:
         "top": [c.as_dict() for c in top],
         "all": [c.as_dict() for c in ranked],
     }
-    (out_dir / f"{ts}.json").write_text(
-        json.dumps(json_payload, indent=2, ensure_ascii=False),
-        encoding="utf-8")
+    publish_io.write_json(out_dir / f"{ts}.json", json_payload)
     (out_dir / f"{ts}.md").write_text(
         _render_md({"snapshot_utc": ts, "seed_count": str(len(seeds)),
                     "year": str(year)}, top),
