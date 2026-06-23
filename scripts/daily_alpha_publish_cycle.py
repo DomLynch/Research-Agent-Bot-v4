@@ -1800,6 +1800,29 @@ def _repairable_source_literature_topics(
     return topics
 
 
+def _exhausted_source_literature_topics(
+    runs_root: Path, domain: str | None,
+) -> set[str]:
+    counts: dict[str, int] = {}
+    for path in (runs_root / "_daily_ledger").glob("*.json"):
+        ledger = _json(path, {})
+        if not isinstance(ledger, dict) or not _same_domain(_ledger_domain(ledger), domain):
+            continue
+        candidate = ledger.get("candidate")
+        if not isinstance(candidate, dict):
+            continue
+        run_ref = candidate.get("run_dir")
+        if not _source_literature_topic_from_run(run_ref):
+            continue
+        topic = str(candidate.get("topic") or "") or _source_literature_topic_from_run(run_ref)
+        if topic and int(ledger.get("submitted") or 0):
+            counts[topic] = counts.get(topic, 0) + 1
+    return {
+        topic for topic, count in counts.items()
+        if count >= _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
+    }
+
+
 def _accepted_shape_profiles(
     runs_root: Path, *, limit: int = 25, domain: str | None = None,
 ) -> list[Json]:
@@ -3166,7 +3189,9 @@ def _source_literature_topic_candidates(
         key=lambda path: path.stat().st_mtime if path.exists() else 0,
         reverse=True,
     )
-    blocked = blocked_topics or set()
+    blocked = set(blocked_topics or set()) | _exhausted_source_literature_topics(
+        runs_root, profile_slug,
+    )
     for path in paths:
         data = _json(path, {})
         if not isinstance(data, dict) or not _same_domain(_row_domain(data), profile_slug):
@@ -3180,7 +3205,7 @@ def _source_literature_topic_candidates(
             if not isinstance(row, dict):
                 continue
             topic = str(row.get("topic") or "").strip()
-            if not topic or topic in seen or _family_blocked_topic(topic, blocked):
+            if not topic or topic in seen or _source_literature_family_blocked_topic(topic, blocked):
                 continue
             paper_count = int(row.get("paper_count") or 0)
             fact_source_count = int(row.get("fact_source_count") or 0)
@@ -3201,6 +3226,23 @@ def _source_literature_topic_candidate(
     return topics[0] if topics else None
 
 
+
+
+def _source_literature_family_blocked_topic(
+    topic: str, blocked_topics: set[str],
+) -> bool:
+    if _family_blocked_topic(topic, blocked_topics):
+        return True
+    topic_tokens = _family_tokens(topic)
+    if not topic_tokens:
+        return False
+    for blocked in blocked_topics:
+        blocked_tokens = _family_tokens(blocked)
+        if blocked_tokens and topic_tokens & blocked_tokens and min(
+            len(topic_tokens), len(blocked_tokens),
+        ) == 1:
+            return True
+    return False
 
 
 def _family_blocked_topic(topic: str, blocked_topics: set[str]) -> bool:

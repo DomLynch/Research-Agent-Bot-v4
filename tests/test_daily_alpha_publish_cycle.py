@@ -7158,6 +7158,35 @@ def test_source_literature_candidates_use_latest_domain_snapshot(tmp_path: Path)
     ) == ["current_parent"]
 
 
+def test_source_literature_candidates_skip_exhausted_topic_family(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    discovery = root / "_topics_discovery"
+    discovery.mkdir(parents=True)
+    daily._write_json(discovery / "latest.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [
+            {"topic": "metformin use", "paper_count": 12, "fact_source_count": 12},
+            {"topic": "metformin treatment", "paper_count": 11, "fact_source_count": 11},
+            {"topic": "acarbose", "paper_count": 8, "fact_source_count": 8},
+        ],
+    })
+    for idx in range(daily._MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT):
+        daily._write_json(root / "_daily_ledger" / f"2026-06-0{idx + 1}T00-00-00Z.json", {
+            "domain": {"slug": "longevity_research"},
+            "submitted": 1,
+            "candidate": {
+                "topic": "metformin use",
+                "run_dir": f"runs/metformin use-source-literature-2026-06-0{idx + 1}",
+            },
+        })
+
+    assert daily._source_literature_topic_candidates(
+        root, "longevity_research", 5, limit=3,
+    ) == ["acarbose"]
+
+
 def test_source_literature_fallback_tries_next_quality_candidate(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
