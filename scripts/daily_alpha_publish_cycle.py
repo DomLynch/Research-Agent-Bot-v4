@@ -4216,6 +4216,7 @@ def run_cycle(
         "seed_scope_fallback_used": False,
         "status": publish_status.CycleStatus.STARTED.value,
     }
+    _write_ledger(ledger_path, ledger)
     if estimated_cost_usd > max_cost_usd:
         ledger.update({
             "status": publish_status.CycleStatus.COST_CAP_EXCEEDED.value,

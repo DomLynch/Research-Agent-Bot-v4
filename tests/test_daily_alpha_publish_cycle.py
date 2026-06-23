@@ -411,6 +411,30 @@ def test_dry_run_selects_best_candidate_and_writes_ledger(tmp_path: Path) -> Non
     assert written["queue_counts"]["ready_to_publish"] == 2
 
 
+def test_run_cycle_persists_started_ledger_before_queue_build(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+
+    def fail_queue_builder(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise RuntimeError("queue build stalled")
+
+    with raises(RuntimeError, match="queue build stalled"):
+        daily.run_cycle(
+            runs_root=root / "runs",
+            date="2026-05-22T01-30-01Z",
+            queue_builder=fail_queue_builder,
+            retraction_mode="metadata",
+        )
+
+    written = json.loads(
+        (root / "runs" / "_daily_ledger" / "2026-05-22T01-30-01Z.json").read_text(
+            encoding="utf-8",
+        )
+    )
+    assert written["status"] == "started"
+    assert written["publish_summary"]["status"] == "started"
+    assert written["publish_summary"]["next_action"] == "inspect_ledger"
+
+
 def test_refresh_cycle_probes_existing_ready_queue_before_discovery(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
