@@ -4433,6 +4433,7 @@ def run_cycle(
             if row.get("status") in _REFRESHABLE_SOURCE_FLOOR_STATUSES:
                 topic = str(row.get("topic") or "")
                 if topic:
+                    blocked_topics.add(topic)
                     ledger.setdefault("source_floor_refresh_topics", [])
                     if topic not in ledger["source_floor_refresh_topics"]:
                         ledger["source_floor_refresh_topics"].append(topic)

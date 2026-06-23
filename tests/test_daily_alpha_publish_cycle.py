@@ -5660,7 +5660,7 @@ def test_source_floor_topics_stay_refreshable_next_batch(
 
     assert ledger["status"] == "submitted_to_researka"
     assert ledger["source_floor_refresh_topics"] == ["thin"]
-    assert "--exclude-topic" not in calls[1]
+    assert calls[1][calls[1].index("--exclude-topic") + 1] == "thin"
 
 
 def test_sync_rejection_tries_next_refresh_batch(
