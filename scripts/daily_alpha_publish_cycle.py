@@ -644,7 +644,6 @@ def _pre_submit_hold(
         }
     if (
         verdict.get("surface_type") != "evidence_map"
-        and not _shape_submit_gate_waived(verdict, cluster_backed)
         and not _direct_receipts_share_shape(verdict, root, min_direct_source_count)
     ):
         return hold | {
@@ -2483,22 +2482,13 @@ def _shape_tokens(fact: Json, fields: tuple[str, ...]) -> set[str]:
 
 
 def _llm_cluster_backed(verdict: Json, root: Path) -> bool:
-    """Whether the memo leads with a validated claim cluster. publish_tier
-    waives single-claim shape coherence for these (the writer or selector
-    confirmed the receipts make one claim, and it already gated the cluster's
-    source count). The submit gate must agree, or a cluster-backed memo that
-    publish_tier passed gets re-blocked here on the very check publish waived."""
+    """Whether the memo leads with a validated claim cluster for source floors."""
     if verdict.get("_claim_cluster_candidate") and verdict.get("_claim_cluster_fact_ids"):
         return True
     run_dir = _run_path(root, verdict.get("run_dir"))
     cluster = _json(run_dir / "claim_cluster.json", {})
     ids = cluster.get("lead_fact_ids") if isinstance(cluster, dict) else None
     return bool(ids)
-
-
-def _shape_submit_gate_waived(verdict: Json, cluster_backed: bool) -> bool:
-    blockers = {str(x) for x in verdict.get("blockers") or []}
-    return cluster_backed and "source_dispersion" not in blockers
 
 
 def _direct_receipts_share_shape(
@@ -3079,9 +3069,8 @@ def select_candidate(
                 # An M3-cluster-backed memo publishes at the cluster floor
                 # (min_cluster_source_papers, default 3) — publish_tier already
                 # waives the 5-source direct/source floors for it, so the submit
-                # gate must use the same lower floor or it re-blocks a memo
-                # publish_tier passed. Shape coherence is likewise waived (the
-                # cluster is the writer-validated homogeneous unit).
+                # gate must use the same lower floor. Shape coherence remains a
+                # final submit guard against heterogeneous receipt rows.
                 cluster_backed = _llm_cluster_backed(verdict, runs_root)
                 cluster_floor = _alpha_memo_int("min_cluster_source_papers", 3)
                 eff_min_source_count = (
@@ -3121,7 +3110,6 @@ def select_candidate(
                         )
                     elif (
                         verdict.get("surface_type") != "evidence_map"
-                        and not _shape_submit_gate_waived(verdict, cluster_backed)
                         and not _direct_receipts_share_shape(
                             verdict, runs_root, min_direct_source_count,
                         )

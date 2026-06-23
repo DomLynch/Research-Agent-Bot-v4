@@ -2297,10 +2297,9 @@ def test_single_claim_held_when_lane_disabled(
     assert submissions == []
 
 
-def test_llm_cluster_backed_memo_bypasses_shape_submit_gate(tmp_path: Path) -> None:
-    """A single-claim memo backed by an M3 claim cluster was already shape-waived
-    by publish_tier; the submit shape gate must agree, or a memo publish_tier
-    passed is re-blocked here and never submits (the metformin stall)."""
+def test_llm_cluster_backed_memo_with_shared_shape_submits(tmp_path: Path) -> None:
+    """Cluster backing lowers the source floor; the receipts still need a shared
+    claim shape before submit."""
     root = tmp_path / "repo"
     v = _verdict("metformin_mortality", score=90)
     _memo_with_receipt_shapes(root, v, [
