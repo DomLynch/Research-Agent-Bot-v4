@@ -4464,11 +4464,11 @@ def run_cycle(
             "fingerprint": candidate.get("memo_fingerprint"),
         }
         if retraction.get("status") != "clean":
-            attempt["status"] = "held_retraction_check"
+            attempt["status"] = publish_status.CycleStatus.HELD_RETRACTION_CHECK.value
             for row in reversed(all_considered):
                 if row.get("fingerprint") == candidate.get("memo_fingerprint"):
                     row["pre_attempt_status"] = row.get("status")
-                    row["status"] = "held_retraction_check"
+                    row["status"] = publish_status.CandidateStatus.HELD_RETRACTION_CHECK.value
                     break
             ledger["cycle_attempts"].append(attempt)
             blocked_fingerprints.add(str(candidate.get("memo_fingerprint") or ""))
@@ -4557,7 +4557,7 @@ def run_cycle(
             attempt["preflight_qa"] = _preflight_summary(preflight_report)
             ledger["preflight_qa"] = attempt["preflight_qa"]
         if checked_payload is None:
-            attempt["status"] = "preflight_qa_blocked"
+            attempt["status"] = publish_status.CycleStatus.PREFLIGHT_QA_BLOCKED.value
             ledger["cycle_attempts"].append(attempt)
             ledger.update({
                 "status": publish_status.CycleStatus.PREFLIGHT_QA_BLOCKED.value,
