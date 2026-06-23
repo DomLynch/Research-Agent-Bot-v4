@@ -1946,7 +1946,7 @@ def test_fact_source_profile_does_not_emit_grammar_word_children() -> None:
             "intervention": "AI agents",
             "comparator": "baseline systems",
             "canonical_phrase": (
-                "AI agents show that preference extraction improves over baselines"
+                "AI agents show that experiments demonstrate achieving results over baselines"
             ),
         }
         for i in range(5)
@@ -1963,6 +1963,9 @@ def test_fact_source_profile_does_not_emit_grammar_word_children() -> None:
     assert "ai_agents_that" not in child_topics
     assert "ai_agents_over" not in child_topics
     assert "ai_agents_show" not in child_topics
+    assert "ai_agents_demonstrate" not in child_topics
+    assert "ai_agents_achieving" not in child_topics
+    assert "ai_agents_results" not in child_topics
 
 
 def test_fact_source_profile_emits_title_derived_child_topics() -> None:
