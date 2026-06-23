@@ -6834,6 +6834,16 @@ def test_source_literature_fallback_submits_after_empty_fact_lane(
     assert "Boundary map" in seen_payload["markdown"]
     assert "rage" in seen_payload["markdown"].lower()
     assert "collagen" in seen_payload["markdown"].lower()
+    run_dir = root / "glycation_AGEs-source-literature-2026-06-09T18-00-00Z"
+    assert (run_dir / "source_literature_payload.json").exists()
+    records = json.loads(
+        (root / "_daily_ledger" / "_submitted_fingerprints.json").read_text(
+            encoding="utf-8",
+        ),
+    )
+    assert records[0]["topic"] == "glycation_AGEs"
+    assert records[0]["memo_sha256"]
+    assert records[0]["bundle_signature"]
 
 
 def test_source_literature_fallback_uses_default_fetcher_after_empty_submit_lane(
@@ -6901,6 +6911,88 @@ def test_source_literature_fallback_uses_default_fetcher_after_empty_submit_lane
     assert seen_payload["citations"] == seen_payload["source_bundle"]
     assert not seen_payload["abstract"].startswith("Answer:")
     assert "mixed rather than convergent" in seen_payload["abstract"]
+
+
+def test_repairable_source_literature_revise_retries_before_new_topic(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    ledger_dir = root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    old_run = root / "metformin use-source-literature-2026-06-09T18-00-00Z"
+    old_run.mkdir()
+    old_run.joinpath("source_literature_memo.md").write_text(
+        "# Source literature boundary memo\n", encoding="utf-8",
+    )
+    old_ledger = {
+        "domain": {"slug": "longevity_research"},
+        "submitted": 1,
+        "candidate": {
+            "topic": "metformin use",
+            "run_dir": old_run.name,
+            "fingerprint": "old-fingerprint",
+        },
+        "researka_decision": {
+            "decision": "revise",
+            "required_revisions": ["required revision"],
+        },
+    }
+    daily._write_json(ledger_dir / "2026-06-09T18-00-00Z.json", old_ledger)
+    (root / "_topics_discovery").mkdir()
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "new_parent", "paper_count": 10, "fact_source_count": 10}],
+    })
+    papers = [
+        {
+            "title": title,
+            "doi": f"10.1234/met{idx}",
+            "year": 2020 + idx,
+            "source_fact": {
+                "canonical_phrase": f"finding {idx}",
+                "population": "adults",
+                "intervention": "metformin",
+                "comparator": "control",
+            },
+        }
+        for idx, title in enumerate((
+            "Metformin exposure and sepsis mortality",
+            "Metformin use and neurodegenerative disease incidence",
+            "Metformin therapy and hepatocellular carcinoma risk",
+            "Diabetes mortality patterns in national cohorts",
+            "Metformin prevention in type 2 diabetes risk",
+        ))
+    ]
+    seen_payload: dict[str, Any] = {}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-10T18-00-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        source_paper_fetcher=lambda topic, _limit: (
+            papers if topic == "metformin use" else []
+        ),
+        submitter=lambda payload: (
+            seen_payload.update(payload)
+            or {"ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}}}
+        ),
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "metformin use"
+    assert ledger["source_literature_fallback"]["repair_submission"] is True
+    assert seen_payload["topic"] == "metformin use"
+    assert (root / "metformin use-source-literature-2026-06-10T18-00-00Z").exists()
 
 
 def test_source_literature_fallback_is_disabled_without_explicit_submit_flag(

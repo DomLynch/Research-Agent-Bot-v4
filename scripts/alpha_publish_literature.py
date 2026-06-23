@@ -349,4 +349,5 @@ def payload(
         },
         "content_hash": "sha256:" + hashlib.sha256(markdown.encode("utf-8")).hexdigest(),
     }
+    write_json(run_dir / "source_literature_payload.json", out)
     return candidate, out

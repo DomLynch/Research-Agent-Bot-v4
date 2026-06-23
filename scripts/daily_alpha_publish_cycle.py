@@ -1617,7 +1617,9 @@ def _merge_submission_record(row: Json, patch: Json) -> bool:
 
 def _memo_sha256(verdict: Json, root: Path) -> str:
     run_dir = _run_path(root, verdict.get("run_dir"))
-    memo = _read_text(run_dir / "alpha_memo.md")
+    memo = _read_text(run_dir / "alpha_memo.md") or _read_text(
+        run_dir / "source_literature_memo.md",
+    )
     return hashlib.sha256(memo.encode("utf-8")).hexdigest() if memo else ""
 
 
@@ -1742,6 +1744,60 @@ def _repairable_submission_records(ledger: Json) -> list[tuple[str, Any, Json]]:
         if fp:
             records.append((fp, attempt.get("run_dir"), decision))
     return records
+
+
+def _source_literature_topic_from_run(run_ref: Any) -> str:
+    name = Path(str(run_ref or "")).name
+    return name.split("-source-literature-", 1)[0] if "-source-literature-" in name else ""
+
+
+def _source_literature_submission_count(
+    runs_root: Path, domain: str | None, topic: str,
+) -> int:
+    count = 0
+    for path in (runs_root / "_daily_ledger").glob("*.json"):
+        ledger = _json(path, {})
+        if not isinstance(ledger, dict) or not _same_domain(_ledger_domain(ledger), domain):
+            continue
+        candidate = ledger.get("candidate")
+        if not isinstance(candidate, dict):
+            continue
+        run_ref = candidate.get("run_dir")
+        if not _source_literature_topic_from_run(run_ref):
+            continue
+        row_topic = str(candidate.get("topic") or "") or _source_literature_topic_from_run(run_ref)
+        if row_topic == topic and int(ledger.get("submitted") or 0):
+            count += 1
+    return count
+
+
+def _repairable_source_literature_topics(
+    runs_root: Path, domain: str | None, *, limit: int = 3,
+) -> list[str]:
+    topics: list[str] = []
+    seen: set[str] = set()
+    for path in sorted((runs_root / "_daily_ledger").glob("*.json"), reverse=True):
+        ledger = _json(path, {})
+        if not isinstance(ledger, dict) or not _same_domain(_ledger_domain(ledger), domain):
+            continue
+        candidate = ledger.get("candidate")
+        candidate_topic = str(candidate.get("topic") or "") if isinstance(candidate, dict) else ""
+        for _fp, run_ref, _decision in _repairable_submission_records(ledger):
+            topic = candidate_topic or _source_literature_topic_from_run(run_ref)
+            if not topic or topic in seen:
+                continue
+            run_dir = _run_path(runs_root, run_ref)
+            if not (run_dir / "source_literature_memo.md").exists():
+                continue
+            if _source_literature_submission_count(
+                runs_root, domain, topic,
+            ) >= _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT:
+                continue
+            seen.add(topic)
+            topics.append(topic)
+            if len(topics) >= limit:
+                return topics
+    return topics
 
 
 def _accepted_shape_profiles(
@@ -2275,6 +2331,16 @@ def _bundle_signature(verdict: Json, root: Path) -> str:
          or f"pmid:{str(p.get('pmid') or '').strip()}")
         for p in _memo_source_papers(verdict, root, ("Evidence",), {"A_core"})
     } - {"", "pmid:"})
+    if len(ids) < 2:
+        run_dir = _run_path(root, verdict.get("run_dir"))
+        payload = _json(run_dir / "source_literature_payload.json", {})
+        bundle = payload.get("source_bundle") if isinstance(payload, dict) else []
+        if isinstance(bundle, list):
+            ids = sorted({
+                (str(p.get("doi") or "").strip().lower()
+                 or str(p.get("url") or "").strip().lower())
+                for p in bundle if isinstance(p, dict)
+            } - {""})
     if len(ids) < 2:
         return ""
     return hashlib.sha256("|".join(ids).encode("utf-8")).hexdigest()
@@ -4577,9 +4643,15 @@ def run_cycle(
         and not ledger["cycle_attempts"]
     ):
         paper_fetcher = source_paper_fetcher
-        literature_topics = _source_literature_topic_candidates(
-            runs_root, profile.slug, min_submit_sources, blocked_topics,
+        repair_topics = _repairable_source_literature_topics(
+            runs_root, profile.slug,
         )
+        repair_topic_set = set(repair_topics)
+        literature_topics = repair_topics + [
+            topic for topic in _source_literature_topic_candidates(
+                runs_root, profile.slug, min_submit_sources, blocked_topics,
+            ) if topic not in repair_topic_set
+        ]
         for literature_topic in literature_topics:
             papers = (
                 paper_fetcher(literature_topic, min_submit_sources)
@@ -4597,6 +4669,8 @@ def run_cycle(
                 "reason": reason,
                 "paper_count": len(papers),
             }
+            if literature_topic in repair_topic_set:
+                fallback_attempt["repair_submission"] = True
             ledger.setdefault("source_literature_fallback_attempts", []).append(fallback_attempt)
             ledger["source_literature_fallback"] = fallback_attempt
             if ok:
@@ -4627,6 +4701,13 @@ def run_cycle(
                 ledger["submission"] = result
                 if result["status"] == "accepted":
                     submission_id = _submission_id(result)
+                    _record_submission_attempt(
+                        submitted_path,
+                        date=date,
+                        candidate=candidate,
+                        runs_root=runs_root,
+                        submission_id=submission_id,
+                    )
                     ledger.update({
                         "final_verdict": "pending",
                         "status": publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value,
