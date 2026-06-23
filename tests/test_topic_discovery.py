@@ -221,6 +221,34 @@ def test_fullraw_fallback_requires_openalex_receipt(monkeypatch: Any) -> None:
     assert papers == []
 
 
+def test_fetch_topic_papers_falls_back_to_fullraw_when_db_errors(
+    monkeypatch: Any,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "https://fullraw/search")
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.host == "test":
+            return httpx.Response(503)
+        return httpx.Response(200, json={
+            "meta": {
+                "shard_receipt": {
+                    "shards_searched": 10,
+                    "sources_searched": {"openalex": 4},
+                },
+            },
+            "results": [{"title": "Fallback after database timeout"}],
+        })
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        papers = td._fetch_topic_papers(
+            "metformin_longevity", client=c, settings=_settings(),
+        )
+
+    assert papers[0]["title"] == "Fallback after database timeout"
+
+
 def test_discover_topics_uses_fullraw_supply_but_keeps_fact_floor(
     monkeypatch: Any, tmp_path: Path,
 ) -> None:

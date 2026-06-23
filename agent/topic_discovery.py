@@ -1193,21 +1193,19 @@ def _fetch_topic_papers(
 ) -> list[dict[str, Any]]:
     base = settings.researka_database_url.rstrip("/")
     tok = settings.researka_database_token.strip()
-    if not base or not tok:
-        return []
-    try:
-        r = client.post(
-            f"{base}/api/v1/papers/topic",
-            headers={"X-Researka-Token": tok},
-            json={"topic": topic, "limit": limit}, timeout=20.0,
-        )
-        r.raise_for_status()
-        data = r.json()
-    except (httpx.HTTPError, ValueError):
-        return []
-    if not isinstance(data, list):
-        return []
-    papers = [p for p in data if isinstance(p, dict)]
+    data: Any = []
+    if base and tok:
+        try:
+            r = client.post(
+                f"{base}/api/v1/papers/topic",
+                headers={"X-Researka-Token": tok},
+                json={"topic": topic, "limit": limit}, timeout=20.0,
+            )
+            r.raise_for_status()
+            data = r.json()
+        except (httpx.HTTPError, ValueError):
+            data = []
+    papers = [p for p in data if isinstance(p, dict)] if isinstance(data, list) else []
     return papers or _fetch_fullraw_topic_papers(topic, client=client, limit=limit)
 
 
