@@ -137,7 +137,7 @@ def _merge_candidates(
 
 
 def _rank_key(candidate: TopicCandidate) -> tuple[int, int, float, int, str]:
-    paper_backed = int(bool(candidate.paper_count and candidate.top_paper_title))
+    paper_backed = int(_paper_backed(candidate))
     return (
         -paper_backed,
         -min(candidate.paper_count, candidate.fact_source_count),
@@ -147,16 +147,25 @@ def _rank_key(candidate: TopicCandidate) -> tuple[int, int, float, int, str]:
     )
 
 
+def _paper_backed(candidate: TopicCandidate) -> bool:
+    return bool(candidate.paper_count and candidate.top_paper_title)
+
+
 def _hydrate_candidates(
     candidates: tuple[TopicCandidate, ...], *, settings: Settings,
     current_year: int, query_context: str = "",
 ) -> tuple[TopicCandidate, ...]:
-    out = list(candidates)
-    limit = min(_hydrate_limit(), len(out))
+    out: list[TopicCandidate] = []
+    limit = min(_hydrate_limit(), len(candidates))
     if limit <= 0:
-        return tuple(sorted(out, key=_rank_key))
+        return tuple(sorted((c for c in candidates if _paper_backed(c)), key=_rank_key))
     with httpx.Client() as client:
-        for idx, candidate in enumerate(out[:limit]):
+        for idx, candidate in enumerate(candidates):
+            if _paper_backed(candidate):
+                out.append(candidate)
+                continue
+            if idx >= limit:
+                continue
             papers = []
             for query in _hydration_queries(candidate, context=query_context):
                 try:
@@ -172,18 +181,19 @@ def _hydrate_candidates(
                 candidate.topic, papers, current_year,
                 fact_source_count=candidate.fact_source_count,
             )
-            out[idx] = TopicCandidate(
-                topic=candidate.topic,
-                paper_count=max(candidate.paper_count, scored.paper_count),
-                fact_source_count=candidate.fact_source_count,
-                top_paper_doi=scored.top_paper_doi,
-                top_paper_title=scored.top_paper_title,
-                velocity_score=scored.velocity_score,
-                mean_fwci=scored.mean_fwci,
-                mean_cited_by=scored.mean_cited_by,
-                sub_topic=candidate.sub_topic,
-                claim_type=candidate.claim_type,
-            )
+            if scored.top_paper_title:
+                out.append(TopicCandidate(
+                    topic=candidate.topic,
+                    paper_count=max(candidate.paper_count, scored.paper_count),
+                    fact_source_count=candidate.fact_source_count,
+                    top_paper_doi=scored.top_paper_doi,
+                    top_paper_title=scored.top_paper_title,
+                    velocity_score=scored.velocity_score,
+                    mean_fwci=scored.mean_fwci,
+                    mean_cited_by=scored.mean_cited_by,
+                    sub_topic=candidate.sub_topic,
+                    claim_type=candidate.claim_type,
+                ))
     return tuple(sorted(out, key=_rank_key))
 
 
@@ -379,6 +389,38 @@ def main() -> int:
             scoped_discovered, settings=settings, current_year=year,
             query_context=profile.display_name,
         )
+        if not scoped_discovered and os.environ.get("TOPIC_GROUPS_DISCOVERY") != "0":
+            old = os.environ.get("TOPIC_GROUPS_DISCOVERY")
+            os.environ["TOPIC_GROUPS_DISCOVERY"] = "0"
+            try:
+                with httpx.Client() as client:
+                    fallback = discover_topics(
+                        seeds=seeds, settings=settings, client=client,
+                        domain=profile.slug,
+                        derived_topic_limit=derived_limit,
+                        fact_probe_topics=fact_probe_topics,
+                        use_cached_source_rich=cache_supported,
+                        refresh_low_source_counts=args.warm_backlog,
+                    )
+            finally:
+                if old is None:
+                    os.environ.pop("TOPIC_GROUPS_DISCOVERY", None)
+                else:
+                    os.environ["TOPIC_GROUPS_DISCOVERY"] = old
+            scoped_discovered = _merge_candidates(
+                scoped_discovered,
+                _hydrate_candidates(
+                    _filter_cached_seed_scope(
+                        _filter_domain_scope(
+                            _filter_excluded(fallback, excluded), seeds,
+                        ),
+                        seeds,
+                    ),
+                    settings=settings,
+                    current_year=year,
+                    query_context=profile.display_name,
+                ),
+            )
         ranked = _merge_candidates(ranked, scoped_discovered)
     top = ranked[: args.top]
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")

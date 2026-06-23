@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import fcntl
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -87,7 +88,7 @@ def test_main_writes_limit_metadata_for_operator_overrides(
     fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
     fake_script.parent.mkdir(parents=True)
     monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
-    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda: ("seed",))
+    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda: ("topic",))
     monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
     monkeypatch.setattr(run_topic_discovery, "discover_topics", fake_discover)
     monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda: 5_000)
@@ -336,6 +337,55 @@ def test_discovery_hydration_tries_domain_context_after_bare_label(
     row = payload["top"][0]
     assert row["top_paper_title"] == "Context hydrated paper"
     assert row["top_paper_doi"] == "10.1/context"
+
+
+def test_paperless_topic_group_discovery_falls_back_to_paper_backed_topic(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+
+    def fake_discover(**_kwargs: Any) -> tuple[TopicCandidate, ...]:
+        calls.append(os.environ.get("TOPIC_GROUPS_DISCOVERY", "1"))
+        if calls[-1] == "0":
+            return (
+                TopicCandidate(
+                    topic="multi_agent_systems", paper_count=3, fact_source_count=6,
+                    top_paper_doi="10.1/mas", top_paper_title="MAS fresh paper",
+                    velocity_score=3.0, mean_fwci=2.0, mean_cited_by=10.0,
+                ),
+            )
+        return (
+            TopicCandidate(
+                topic="RAG", paper_count=29, fact_source_count=29,
+                top_paper_doi="", top_paper_title="",
+                velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
+            ),
+        )
+
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(
+        run_topic_discovery, "load_seed_topics",
+        lambda _path=None: ("RAG", "multi_agent_systems"),
+    )
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(
+        run_topic_discovery, "load_derived_topic_limit",
+        lambda _path=None: 5_000,
+    )
+    monkeypatch.setattr(run_topic_discovery, "discover_topics", fake_discover)
+    monkeypatch.setattr(run_topic_discovery, "_fetch_topic_papers", lambda *_a, **_k: [])
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--domain", "ai_research", "--top", "1",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    assert calls == ["1", "0"]
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert [row["topic"] for row in payload["top"]] == ["multi_agent_systems"]
+    assert payload["top"][0]["top_paper_title"] == "MAS fresh paper"
 
 
 def test_excluded_cached_topics_do_not_fill_cache_first_window(
