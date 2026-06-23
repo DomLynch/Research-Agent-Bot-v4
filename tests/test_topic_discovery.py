@@ -1966,6 +1966,8 @@ def test_fact_source_profile_does_not_emit_grammar_word_children() -> None:
     assert "ai_agents_demonstrate" not in child_topics
     assert "ai_agents_achieving" not in child_topics
     assert "ai_agents_results" not in child_topics
+    assert "ai_agents_experiments" not in child_topics
+    assert "ai_agents_performance" not in child_topics
 
 
 def test_fact_source_profile_emits_title_derived_child_topics() -> None:
