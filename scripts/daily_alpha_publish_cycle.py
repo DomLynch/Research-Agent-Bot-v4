@@ -59,6 +59,7 @@ _CLUSTER_GENERIC_TOKENS = frozenset({
     "confidence", "interval", "ratio", "meta", "analysis", "review",
     "control", "controls", "placebo", "once", "weekly", "daily", "without",
     "within", "over", "most", "not", "parent", "topic", "claim",
+    "use", "used", "using",
 })
 _COHERENCE_GENERIC_TOKENS = _CLUSTER_GENERIC_TOKENS | {
     "endpoint", "endpoints", "outcome", "outcomes", "intervention",
@@ -208,6 +209,9 @@ _EXHAUSTED_STATUSES = publish_status.EXHAUSTED_STATUSES
 _TOPIC_EXHAUSTED_STATUSES = publish_status.TOPIC_EXHAUSTED_STATUSES
 _FINGERPRINT_EXHAUSTED_STATUSES = publish_status.FINGERPRINT_EXHAUSTED_STATUSES
 _REFRESHABLE_SOURCE_FLOOR_STATUSES = publish_status.REFRESHABLE_SOURCE_FLOOR_STATUSES
+_BATCH_TOPIC_BLOCK_STATUSES = _TOPIC_EXHAUSTED_STATUSES | frozenset({
+    "agent_repair_needed",
+})
 _AGENT_REPAIR_DECISIONS = {
     "agent_repair_needed", "needs_operator_review", "needs_operator_approval",
 }
@@ -830,10 +834,25 @@ def _family_values(verdict: Json) -> list[str]:
 
 
 def _family_tokens(value: str) -> set[str]:
+    raw_tokens = re.findall(r"[A-Za-z][A-Za-z0-9]*", str(value))
     return {
-        token for token in _CLAIM_WORD.findall(value.lower())
-        if len(token) >= 5 and token not in _CLUSTER_GENERIC_TOKENS
+        token.lower() for token in raw_tokens
+        if (
+            len(token) >= 5
+            or (3 <= len(token) <= 4 and token.isupper())
+        )
+        and token.lower() not in _CLUSTER_GENERIC_TOKENS
     }
+
+
+def _short_family_root(value: str) -> str:
+    raw_tokens: list[str] = re.findall(r"[A-Za-z][A-Za-z0-9]*", str(value))
+    if not raw_tokens:
+        return ""
+    token = str(raw_tokens[0]).lower()
+    if 3 <= len(token) <= 4 and token not in _CLUSTER_GENERIC_TOKENS:
+        return token
+    return ""
 
 
 def _common_family_tokens(values: Iterable[str]) -> set[str]:
@@ -3113,6 +3132,14 @@ def _family_blocked_topic(topic: str, blocked_topics: set[str]) -> bool:
         blocked_tokens = _family_tokens(blocked)
         if not blocked_tokens:
             continue
+        short_root = _short_family_root(blocked)
+        if short_root and short_root in {
+                token.lower()
+                for token in re.findall(r"[A-Za-z][A-Za-z0-9]*", str(topic))
+                if 3 <= len(token) <= 4
+                and token.lower() not in _CLUSTER_GENERIC_TOKENS
+        }:
+            return True
         overlap = len(topic_tokens & blocked_tokens)
         if overlap >= 2 and overlap / min(len(topic_tokens), len(blocked_tokens)) >= 0.5:
             return True
@@ -4168,12 +4195,13 @@ def run_cycle(
                     if topic not in ledger["source_floor_refresh_topics"]:
                         ledger["source_floor_refresh_topics"].append(topic)
                 continue
-            if row.get("status") in _EXHAUSTED_STATUSES:
+            status = str(row.get("status") or "")
+            if status in _EXHAUSTED_STATUSES or status in _BATCH_TOPIC_BLOCK_STATUSES:
                 fingerprint = str(row.get("fingerprint") or "")
                 topic = str(row.get("topic") or "")
-                if fingerprint and row.get("status") in _FINGERPRINT_EXHAUSTED_STATUSES:
+                if fingerprint and status in _FINGERPRINT_EXHAUSTED_STATUSES:
                     blocked_fingerprints.add(fingerprint)
-                if topic and row.get("status") in _TOPIC_EXHAUSTED_STATUSES:
+                if topic and status in _BATCH_TOPIC_BLOCK_STATUSES:
                     blocked_topics.add(topic)
         all_considered.extend(considered)
         ledger["considered"] = all_considered

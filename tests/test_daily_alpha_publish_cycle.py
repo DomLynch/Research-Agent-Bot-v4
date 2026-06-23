@@ -5747,6 +5747,89 @@ def test_scope_mismatch_map_prioritizes_fresh_parent_topic(
     assert calls[-1]["priority_topics"] == ["metformin"]
 
 
+def test_agent_repair_needed_queue_prioritizes_fresh_parent_topic(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    assert daily._family_blocked_topic("rag_engineering_existing_fine", {"RAG"})
+    assert daily._family_blocked_topic(
+        "llm_evaluation_benchmark_methods", {"llm_evaluation"},
+    )
+    assert not daily._family_blocked_topic("model_routing", {"llm_evaluation"})
+
+    root = tmp_path / "repo"
+    repair = _verdict("RAG") | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "domain": {"slug": "ai_research"},
+        "run_dir": "runs/RAG-repair-ts",
+        "blockers": ["fact_shape_mismatch"],
+    }
+    fresh = _verdict("model_routing") | {
+        "domain": {"slug": "ai_research"},
+        "run_dir": "runs/model_routing-fresh-ts",
+        "receipt_expansion": {"cited_bound_fact_ids": ["9", "8", "7"]},
+    }
+    _memo_with_source_receipts(root, repair, 5)
+    _memo_with_source_receipts(root, fresh, 5)
+    daily._write_json(root / "_topics_discovery" / "latest.json", {
+        "domain": {"slug": "ai_research"},
+        "all": [
+            {
+                "topic": "rag_engineering_existing_fine",
+                "fact_source_count": 40,
+                "paper_count": 40,
+                "velocity_score": 100,
+            },
+            {
+                "topic": "model_routing",
+                "fact_source_count": 30,
+                "paper_count": 30,
+                "velocity_score": 90,
+            },
+        ],
+    })
+    calls: list[dict[str, Any]] = []
+    queues = iter([
+        {
+            "ready_to_publish": [],
+            "agent_repair_needed": [repair],
+            "needs_operator_review": [],
+            "curation_needed": [],
+        },
+        _queue(fresh),
+    ])
+
+    def refresh(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+        calls.append(kwargs)
+        return {
+            "ok": True,
+            "note": "ok",
+            "ran_topics": list(kwargs.get("priority_topics") or []),
+        }
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", refresh)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        refresh_candidates=True,
+        allow_tier2=True,
+        max_refresh_batches=2,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+        queue_builder=lambda _root, _include_archive: next(queues),
+        domain="ai_research",
+    )
+
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["considered"][0]["status"] == "agent_repair_needed"
+    assert ledger["submitted_topic"] == "model_routing"
+    assert ledger["refresh_parent_topics"] == ["model_routing"]
+    assert calls[-1]["priority_topics"] == ["model_routing"]
+
+
 def test_timed_out_priority_parent_tries_next_fresh_parent_topic(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
