@@ -5353,6 +5353,7 @@ def test_systemd_cache_warmer_fills_source_rich_backlog() -> None:
     )
 
     assert "scripts/run_topic_discovery.py" in service
+    assert "--domain longevity_research" in service
     assert "--warm-backlog" in service
     assert "--derived-topic-limit 5000" in service
     assert "--fact-probe-topics 250" in service
