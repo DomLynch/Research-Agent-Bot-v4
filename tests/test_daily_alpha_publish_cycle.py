@@ -6981,6 +6981,17 @@ def test_repairable_source_literature_revise_retries_before_new_topic(
             "comparator": "nondiabetic individuals",
         },
     })
+    papers.insert(4, {
+        "title": "Metformin incomplete effect estimate",
+        "doi": "10.1234/truncated",
+        "year": 2024,
+        "source_fact": {
+            "canonical_phrase": "metformin effect was RR 1.11 (95% CI 0.41 to 3.01",
+            "population": "adults",
+            "intervention": "metformin",
+            "comparator": "control",
+        },
+    })
     seen_payload: dict[str, Any] = {}
 
     ledger = daily.run_cycle(
@@ -7012,6 +7023,10 @@ def test_repairable_source_literature_revise_retries_before_new_topic(
     assert seen_payload["topic"] == "metformin use"
     assert all(
         source["title"] != "Diabetes mortality patterns in national cohorts"
+        for source in seen_payload["source_bundle"]
+    )
+    assert all(
+        source["title"] != "Metformin incomplete effect estimate"
         for source in seen_payload["source_bundle"]
     )
     assert "directionally favorable" in seen_payload["markdown"]

@@ -47,6 +47,8 @@ def topic_relevant(topic: str, paper: Json) -> bool:
     fact = paper.get("source_fact")
     if not isinstance(fact, dict):
         return True
+    if not _fact_complete(fact):
+        return False
     fact_text = ""
     fact_text = " ".join(
         str(fact.get(key) or "")
@@ -121,6 +123,28 @@ def _effect_direction(finding: str) -> str:
     )):
         return "directionally favorable"
     return "other/mixed"
+
+
+def _fact_complete(fact: Json) -> bool:
+    phrase = str(fact.get("canonical_phrase") or "").strip()
+    if not phrase:
+        return True
+    if any(phrase.count(left) > phrase.count(right) for left, right in (("(", ")"), ("[", "]"))):
+        return False
+    return not re.search(r"(95%\s*ci|p\s*[=<])\s*[:;,]?\s*$", phrase, flags=re.I)
+
+
+def _direction_rows(papers: list[Json]) -> list[str]:
+    rows: list[str] = []
+    for paper in papers:
+        fact = paper.get("source_fact")
+        finding = ""
+        if isinstance(fact, dict):
+            finding = str(fact.get("canonical_phrase") or "").strip()
+        title = str(paper.get("title") or "Untitled source").strip()
+        direction = _effect_direction(finding)
+        rows.append(f"- {direction}: {title}" + (f" — {finding}" if finding else ""))
+    return rows
 
 
 def _direction_summary(facts: list[Json]) -> str:
@@ -367,6 +391,11 @@ def payload(
     if findings:
         examples = [_short_finding(finding) for finding in findings[:3]]
         synthesis += " Concrete source-level examples: " + "; ".join(examples) + "."
+    moderator_note = (
+        "Candidate moderators are population or indication, endpoint, comparator, "
+        "and study design/evidence type; these dimensions explain why the receipts "
+        "should be read as divergent evidence fronts, not one pooled effect."
+    )
     next_gaps = [
         _pico_gap(facts),
         (
@@ -393,6 +422,12 @@ def payload(
         "",
         synthesis,
         "",
+        "## Directional grouping",
+        "",
+        *(_direction_rows(selected) or ["- Direction not extractable from the selected receipts."]),
+        "",
+        moderator_note,
+        "",
         "## Context separation",
         "",
         (
@@ -404,6 +439,11 @@ def payload(
         "## Boundary limits",
         "",
         boundary_summary,
+        (
+            " The signal is purely descriptive of effect-direction heterogeneity; "
+            "it cannot support even a weak causal or comparative-efficacy inference, "
+            "and pooling across these PICOs would be inappropriate."
+        ),
         "",
         "## Next gaps",
         "",
