@@ -313,11 +313,17 @@ def test_seed_paper_candidate_skips_slow_discovery_when_enough(
         run_topic_discovery, "discover_topics",
         lambda **_kwargs: (_ for _ in ()).throw(AssertionError("slow discovery")),
     )
-    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", lambda *_a, **_k: [{
-        "doi": "10.1/seed", "title": "Seed paper-backed candidate",
-        "fwci": 4.0, "cited_by_count": 40, "publication_year": 2026,
-        "quality_score": 90.0,
-    }])
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", "20")
+
+    def fake_fullraw(*_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        assert os.environ["TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"] == "6"
+        return [{
+            "doi": "10.1/seed", "title": "Seed paper-backed candidate",
+            "fwci": 4.0, "cited_by_count": 40, "publication_year": 2026,
+            "quality_score": 90.0,
+        }]
+
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fake_fullraw)
     monkeypatch.setattr(sys, "argv", [
         "run_topic_discovery.py", "--domain", "ai_research", "--top", "1",
     ])
@@ -327,6 +333,7 @@ def test_seed_paper_candidate_skips_slow_discovery_when_enough(
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
     assert [row["topic"] for row in payload["top"]] == ["multi_agent_systems"]
     assert payload["top"][0]["top_paper_doi"] == "10.1/seed"
+    assert os.environ["TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"] == "20"
 
 
 def test_discovery_hydration_tries_domain_context_after_bare_label(

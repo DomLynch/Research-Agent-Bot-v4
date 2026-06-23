@@ -217,7 +217,16 @@ def _seed_paper_candidates(
 ) -> tuple[TopicCandidate, ...]:
     out: list[TopicCandidate] = []
     old_timeout = os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS")
-    os.environ.setdefault("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", "6")
+    seed_timeout = os.environ.get("TOPIC_DISCOVERY_SEED_PAPER_TIMEOUT_SECONDS", "6")
+    try:
+        old_timeout_value = float(old_timeout) if old_timeout else 0.0
+        seed_timeout_value = float(seed_timeout)
+    except (TypeError, ValueError):
+        old_timeout_value = 0.0
+        seed_timeout_value = 6.0
+        seed_timeout = "6"
+    if old_timeout is None or old_timeout_value > seed_timeout_value:
+        os.environ["TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"] = seed_timeout
     try:
         with httpx.Client() as client:
             for seed in seeds[:_seed_paper_probe_limit(top)]:
