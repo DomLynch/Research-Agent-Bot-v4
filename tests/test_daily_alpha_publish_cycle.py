@@ -2341,6 +2341,56 @@ def test_llm_cluster_backed_memo_bypasses_shape_submit_gate(tmp_path: Path) -> N
     assert ledger["submitted_topic"] == "metformin_mortality"
 
 
+def test_source_dispersion_cluster_backed_memo_still_requires_shape_gate(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("heterogeneous_llm_eval") | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "blockers": ["source_dispersion"],
+        "_staging_refreshed": True,
+    }
+    _memo_with_receipt_shapes(root, verdict, [
+        {"canonical_phrase": "GPT improved questionnaire accuracy.",
+         "population": "llm evaluation accuracy tasks", "intervention": "GPT",
+         "endpoint": "questionnaire accuracy"},
+        {"canonical_phrase": "Claude improved surgery training answers.",
+         "population": "llm evaluation accuracy tasks", "intervention": "Claude",
+         "endpoint": "training answers"},
+        {"canonical_phrase": "Gemini improved oral lesion diagnosis.",
+         "population": "llm evaluation accuracy tasks", "intervention": "Gemini",
+         "endpoint": "diagnosis"},
+        {"canonical_phrase": "DeepSeek improved coding benchmark scores.",
+         "population": "llm evaluation accuracy tasks", "intervention": "DeepSeek",
+         "endpoint": "code score"},
+        {"canonical_phrase": "Bing improved MRI report interpretation.",
+         "population": "llm evaluation accuracy tasks", "intervention": "Bing",
+         "endpoint": "MRI interpretation"},
+    ])
+    run = root / str(verdict["run_dir"])
+    run.joinpath("claim_cluster.json").write_text(json.dumps({
+        "claim": "LLMs improve accuracy across evaluation tasks",
+        "lead_fact_ids": ["1", "2", "3"],
+    }), encoding="utf-8")
+
+    cand, considered = daily.select_candidate(
+        {
+            "ready_to_publish": [],
+            "agent_repair_needed": [verdict],
+            "curation_needed": [],
+        },
+        runs_root=root,
+        submitted_path=root / "submitted.json",
+        allow_tier2=True,
+        min_source_count=5,
+        min_direct_source_count=5,
+    )
+
+    assert cand is None
+    assert considered[0]["status"] == "receipt_shape_mismatch"
+
+
 def _heterogeneous_map(root: Path, topic: str, count: int = 5) -> dict[str, Any]:
     emap = _verdict(topic, score=90) | {"surface_type": "evidence_map"}
     shapes = [

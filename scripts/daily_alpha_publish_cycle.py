@@ -644,7 +644,7 @@ def _pre_submit_hold(
         }
     if (
         verdict.get("surface_type") != "evidence_map"
-        and not cluster_backed
+        and not _shape_submit_gate_waived(verdict, cluster_backed)
         and not _direct_receipts_share_shape(verdict, root, min_direct_source_count)
     ):
         return hold | {
@@ -2496,6 +2496,11 @@ def _llm_cluster_backed(verdict: Json, root: Path) -> bool:
     return bool(ids)
 
 
+def _shape_submit_gate_waived(verdict: Json, cluster_backed: bool) -> bool:
+    blockers = {str(x) for x in verdict.get("blockers") or []}
+    return cluster_backed and "source_dispersion" not in blockers
+
+
 def _direct_receipts_share_shape(
     verdict: Json, root: Path, min_direct_source_count: int,
 ) -> bool:
@@ -3116,7 +3121,7 @@ def select_candidate(
                         )
                     elif (
                         verdict.get("surface_type") != "evidence_map"
-                        and not cluster_backed
+                        and not _shape_submit_gate_waived(verdict, cluster_backed)
                         and not _direct_receipts_share_shape(
                             verdict, runs_root, min_direct_source_count,
                         )
