@@ -1340,10 +1340,11 @@ def _topic_group_candidates(
         ))
     if _specificity_rank_enabled():
         band.sort(key=lambda c: (
+            -min(c.paper_count, c.fact_source_count),
             tuple(-x for x in _topic_specificity_key(
                 c.topic, c.paper_count, c.fact_source_count,
             )),
-            c.paper_count,
+            -c.paper_count,
             c.topic,
         ))
     else:

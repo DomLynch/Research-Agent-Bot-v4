@@ -249,6 +249,37 @@ def test_fetch_topic_papers_falls_back_to_fullraw_when_db_errors(
     assert papers[0]["title"] == "Fallback after database timeout"
 
 
+def test_topic_group_discovery_prefers_source_diverse_groups(
+    monkeypatch: Any,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setattr(td, "fetch_topic_groups", lambda **_kw: [
+        {
+            "topic": "fact_heavy_narrow",
+            "papers": 8,
+            "exact_facts": 32,
+            "claim_type": "effect_size",
+        },
+        {
+            "topic": "source_diverse",
+            "papers": 18,
+            "exact_facts": 20,
+            "claim_type": "effect_size",
+        },
+    ])
+    monkeypatch.setattr(td, "_fetch_topic_papers", lambda *_args, **_kw: [])
+
+    with httpx.Client() as c:
+        out = discover_topics(
+            seeds=("seed",), settings=_settings(), client=c, current_year=2026,
+        )
+
+    assert [row.topic for row in out[:2]] == [
+        "source_diverse", "fact_heavy_narrow",
+    ]
+
+
 def test_discover_topics_uses_fullraw_supply_but_keeps_fact_floor(
     monkeypatch: Any, tmp_path: Path,
 ) -> None:

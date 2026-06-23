@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import os
 import re
 import sys
 from pathlib import Path
@@ -24,9 +25,11 @@ import httpx
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.domain_profile import domain_choices, load_domain_profile
-from agent.settings import load_settings
+from agent.settings import Settings, load_settings
 from agent.topic_discovery import (
     TopicCandidate,
+    _fetch_topic_papers,
+    _score_topic,
     cached_source_rich_candidates,
     discover_topics,
     load_derived_topic_limit,
@@ -42,6 +45,13 @@ _GENERIC_SCOPE_TOKENS = {
     "meta", "analysis", "effect", "effects", "therapy", "treatment",
     "use", "uses", "intervention", "interventions", "outcome", "outcomes",
 }
+
+
+def _hydrate_limit() -> int:
+    try:
+        return max(0, int(os.environ.get("TOPIC_DISCOVERY_HYDRATE_TOP", 20)))
+    except (TypeError, ValueError):
+        return 20
 
 
 def _resolve_limits(
@@ -97,6 +107,50 @@ def _merge_candidates(
     for candidate in (*first, *second):
         merged.setdefault(candidate.topic, candidate)
     return tuple(merged.values())
+
+
+def _rank_key(candidate: TopicCandidate) -> tuple[int, float, int, str]:
+    return (
+        -min(candidate.paper_count, candidate.fact_source_count),
+        -candidate.velocity_score,
+        -candidate.paper_count,
+        candidate.topic,
+    )
+
+
+def _hydrate_candidates(
+    candidates: tuple[TopicCandidate, ...], *, settings: Settings, current_year: int,
+) -> tuple[TopicCandidate, ...]:
+    out = list(candidates)
+    limit = min(_hydrate_limit(), len(out))
+    if limit <= 0:
+        return tuple(sorted(out, key=_rank_key))
+    with httpx.Client() as client:
+        for idx, candidate in enumerate(out[:limit]):
+            try:
+                papers = _fetch_topic_papers(
+                    candidate.topic, client=client, settings=settings)
+            except (OSError, TypeError, ValueError):
+                continue
+            if not papers:
+                continue
+            scored = _score_topic(
+                candidate.topic, papers, current_year,
+                fact_source_count=candidate.fact_source_count,
+            )
+            out[idx] = TopicCandidate(
+                topic=candidate.topic,
+                paper_count=max(candidate.paper_count, scored.paper_count),
+                fact_source_count=candidate.fact_source_count,
+                top_paper_doi=scored.top_paper_doi,
+                top_paper_title=scored.top_paper_title,
+                velocity_score=scored.velocity_score,
+                mean_fwci=scored.mean_fwci,
+                mean_cited_by=scored.mean_cited_by,
+                sub_topic=candidate.sub_topic,
+                claim_type=candidate.claim_type,
+            )
+    return tuple(sorted(out, key=_rank_key))
 
 
 def _filter_excluded(
@@ -244,6 +298,7 @@ def main() -> int:
               file=sys.stderr)
         return 1
     settings = load_settings()
+    year = dt.datetime.now(dt.UTC).year
     derived_limit, fact_probe_topics = _resolve_limits(
         warm_backlog=args.warm_backlog,
         derived_topic_limit=args.derived_topic_limit,
@@ -285,10 +340,12 @@ def main() -> int:
             ),
             seeds,
         )
+        scoped_discovered = _hydrate_candidates(
+            scoped_discovered, settings=settings, current_year=year,
+        )
         ranked = _merge_candidates(ranked, scoped_discovered)
     top = ranked[: args.top]
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
-    year = dt.datetime.now(dt.UTC).year
     out_dir = (Path(__file__).resolve().parent.parent
                / "runs" / "_topics_discovery")
     out_dir.mkdir(parents=True, exist_ok=True)

@@ -196,6 +196,40 @@ def test_cache_first_falls_back_when_cache_is_underfilled(
     ]
 
 
+def test_discovery_hydrates_paper_fields_before_writing_queue(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    fallback = (
+        TopicCandidate(
+            topic="seed_source_diverse", paper_count=8, fact_source_count=10,
+            top_paper_doi="", top_paper_title="",
+            velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
+        ),
+    )
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda: ("seed",))
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda: 5_000)
+    monkeypatch.setattr(run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: ())
+    monkeypatch.setattr(run_topic_discovery, "discover_topics", lambda **_kw: fallback)
+    monkeypatch.setattr(run_topic_discovery, "_fetch_topic_papers", lambda *_a, **_k: [{
+        "doi": "10.1/fullraw", "title": "Full raw source-diverse paper",
+        "fwci": 3.0, "cited_by_count": 20, "publication_year": 2026,
+        "quality_score": 90.0,
+    }])
+    monkeypatch.setattr(sys, "argv", ["run_topic_discovery.py", "--top", "1"])
+
+    assert run_topic_discovery.main() == 0
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    row = payload["top"][0]
+    assert row["top_paper_title"] == "Full raw source-diverse paper"
+    assert row["top_paper_doi"] == "10.1/fullraw"
+    assert row["velocity_score"] > 0
+
+
 def test_excluded_cached_topics_do_not_fill_cache_first_window(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
