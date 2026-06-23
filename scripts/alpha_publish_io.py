@@ -31,6 +31,16 @@ def write_json(path: Path, payload: Any) -> None:
         tmp_path.replace(path)
 
 
+def write_text(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = path.with_name(path.name + ".lock")
+    tmp_path = path.with_name(path.name + ".tmp")
+    with lock_path.open("w", encoding="utf-8") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        tmp_path.write_text(text, encoding="utf-8")
+        tmp_path.replace(path)
+
+
 def update_json_list(path: Path, mutate: Callable[[list[Any]], bool]) -> bool:
     path.parent.mkdir(parents=True, exist_ok=True)
     lock_path = path.with_name(path.name + ".lock")

@@ -528,10 +528,11 @@ def main() -> int:
         "all": [c.as_dict() for c in ranked],
     }
     publish_io.write_json(out_dir / f"{ts}.json", json_payload)
-    (out_dir / f"{ts}.md").write_text(
+    publish_io.write_text(
+        out_dir / f"{ts}.md",
         _render_md({"snapshot_utc": ts, "seed_count": str(len(seeds)),
                     "year": str(year)}, top),
-        encoding="utf-8")
+    )
     print(f"[topic-discovery] seeds={len(seeds)} ranked={len(ranked)} "
           f"domain={profile.slug} "
           f"source_rich={json_payload['source_rich_count']} "
