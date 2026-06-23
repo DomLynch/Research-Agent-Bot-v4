@@ -441,12 +441,7 @@ def main() -> int:
         )
         ranked = _merge_candidates(ranked, seed_paper_ranked)
         paper_backed_cached = sum(1 for c in ranked if c.paper_count and c.top_paper_title)
-    if (
-        paper_backed_cached < args.top
-        and not args.cache_only
-        and not seed_paper_ranked
-        and (cache_supported or not _fullraw_configured())
-    ):
+    if paper_backed_cached < args.top and not args.cache_only:
         with httpx.Client() as client:
             discovered = discover_topics(
                 seeds=seeds, settings=settings, client=client,
