@@ -11,6 +11,7 @@ Locks the velocity-scoring + ranking contract:
 """
 from __future__ import annotations
 
+import fcntl
 import json
 import math
 import os
@@ -672,6 +673,27 @@ def test_discover_topics_prefers_fact_source_breadth(
     by_topic = {candidate.topic: candidate for candidate in out}
     assert by_topic["rich_topic_risk"].fact_source_count == 5
     assert by_topic["fast_topic"].fact_source_count == 1
+
+
+def test_supply_cache_write_uses_sidecar_lock(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    calls: list[tuple[str, int]] = []
+
+    def fake_flock(handle: Any, op: int) -> None:
+        calls.append((Path(handle.name).name, op))
+
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+    monkeypatch.setattr(fcntl, "flock", fake_flock)
+
+    td._save_supply_cache({"rapamycin": {"count": 5}})
+
+    assert calls == [("supply.json.lock", fcntl.LOCK_EX)]
+    assert json.loads((tmp_path / "supply.json").read_text()) == {
+        "rapamycin": {"count": 5},
+    }
 
 
 def test_discover_topics_warm_backlog_can_probe_all_seed_topics(

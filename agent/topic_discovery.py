@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import fcntl
 import json
 import math
 import os
@@ -92,8 +93,7 @@ def _float_env(name: str, default: float) -> float:
 
 
 _SUPPLY_CACHE_TTL_SECONDS = 86_400.0  # re-probe rich topics at most once/day
-_LOW_SUPPLY_CACHE_TTL_SECONDS = _float_env(
-    "RESEARCH_AGENT_LOW_TOPIC_SUPPLY_CACHE_TTL_SECONDS", 7200.0)
+_LOW_SUPPLY_CACHE_TTL_SECONDS = _float_env("RESEARCH_AGENT_LOW_TOPIC_SUPPLY_CACHE_TTL_SECONDS", 7200.0)
 
 
 @dataclass(frozen=True, slots=True)
@@ -467,8 +467,6 @@ def _add_source_profile(
                 source_papers.setdefault(key, paper)
         elif reasons.get(fact_id) != "topic_in_population_context_only":
             continue
-        # Population-only broad parents stay underfloor; their direct
-        # intervention/endpoint cluster can still seed a child topic.
         for slug in _fact_child_slugs(fact, topic):
             child_sources.setdefault(slug, set()).add(key)
             if child_source_papers is not None:
@@ -606,8 +604,10 @@ def _save_supply_cache(cache: dict[str, dict[str, Any]]) -> None:
     try:
         _SUPPLY_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
         tmp = _SUPPLY_CACHE_PATH.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(cache, indent=2), encoding="utf-8")
-        tmp.replace(_SUPPLY_CACHE_PATH)  # atomic
+        with _SUPPLY_CACHE_PATH.with_name(_SUPPLY_CACHE_PATH.name + ".lock").open("w", encoding="utf-8") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            tmp.write_text(json.dumps(cache, indent=2), encoding="utf-8")
+            tmp.replace(_SUPPLY_CACHE_PATH)  # atomic
     except OSError:
         pass
 
