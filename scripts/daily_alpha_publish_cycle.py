@@ -4801,11 +4801,15 @@ def run_cycle(
             ok, reason = _source_literature_boundary_quality(
                 literature_topic, papers, min_submit_sources,
             )
+            relevant_paper_count = len(
+                publish_literature.relevant_papers(literature_topic, papers),
+            )
             fallback_attempt = {
                 "topic": literature_topic,
                 "status": "selected" if ok else "blocked",
                 "reason": reason,
                 "paper_count": len(papers),
+                "relevant_paper_count": relevant_paper_count,
             }
             if literature_topic in repair_topic_set:
                 fallback_attempt["repair_submission"] = True

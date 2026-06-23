@@ -7372,6 +7372,98 @@ def test_source_literature_fallback_tries_next_quality_candidate(
     assert ledger["submitted_topic"] == "usable_boundary"
 
 
+def test_source_literature_fallback_skips_misaligned_candidate(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    (root / "_topics_discovery" / "longevity.json").write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [
+            {"topic": "ACE_inhibitors_aging", "paper_count": 10, "fact_source_count": 10},
+            {"topic": "metformin", "paper_count": 9, "fact_source_count": 9},
+        ],
+    }), encoding="utf-8")
+    misaligned = [
+        {
+            "title": title,
+            "doi": f"10.1234/mis-{i}",
+            "source_fact": {
+                "canonical_phrase": "reported a directional association",
+                "intervention": "SGLT2 inhibitors",
+                "endpoint": "cardiovascular outcome",
+            },
+        }
+        for i, title in enumerate((
+            "SGLT2 inhibitors and cardiovascular outcomes",
+            "Proteasome inhibitors and cardiac toxicity",
+            "SGLT2 inhibitors in fatty liver disease",
+            "SGLT2 inhibitors in acute heart failure",
+            "Empagliflozin cardiovascular outcome trial",
+        ), start=1)
+    ]
+    aligned = [
+        {
+            "title": title,
+            "doi": f"10.1234/met-{i}",
+            "source_fact": {
+                "canonical_phrase": "reported a metformin-associated signal",
+                "intervention": "metformin",
+                "endpoint": "aging-related endpoint",
+            },
+        }
+        for i, title in enumerate((
+            "Metformin mitochondrial aging biology",
+            "Metformin insulin signaling and lifespan",
+            "Metformin inflammation and age-related disease",
+            "Metformin AMPK response in aging tissue",
+            "Metformin geroscience trial boundary",
+        ), start=1)
+    ]
+    monkeypatch.setattr(
+        daily,
+        "_fetch_source_literature_papers",
+        lambda topic, *_args, **_kwargs: misaligned
+        if topic == "ACE_inhibitors_aging" else aligned,
+    )
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "writer_configured": False,
+        "mimo_model": "",
+        "mimo_base_url": "",
+    })())
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-00-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        submitter=lambda _payload: {
+            "ok": True, "status": 200,
+            "response": {"submission": {"id": "sub-1"}},
+        },
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    attempts = ledger["source_literature_fallback_attempts"]
+    assert [(a["topic"], a["status"]) for a in attempts] == [
+        ("ACE_inhibitors_aging", "blocked"),
+        ("metformin", "selected"),
+    ]
+    assert attempts[0]["paper_count"] == 5
+    assert attempts[0]["relevant_paper_count"] == 0
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "metformin"
+
+
 def test_source_literature_fetcher_prefers_tier2_fact_backed_papers(
     monkeypatch: MonkeyPatch,
 ) -> None:
