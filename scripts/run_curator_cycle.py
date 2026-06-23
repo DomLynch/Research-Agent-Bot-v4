@@ -701,8 +701,13 @@ def main() -> int:
                 probe=lambda: _probe_tier2(topic),
             )
 
+        plan_pool = (
+            priority_ranked
+            if args.stop_on_ready and priority_ranked
+            else [*priority_ranked, *ranked]
+        )
         plan, skipped, skipped_excluded, below_floor = _plan_topics(
-            [*priority_ranked, *ranked], recent=recent, excluded=excluded,
+            plan_pool, recent=recent, excluded=excluded,
             top=args.top,
             min_fact_sources=(
                 _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES if args.stop_on_ready else 0
