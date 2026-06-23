@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -74,10 +75,10 @@ def test_main_writes_limit_metadata_for_operator_overrides(
     fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
     fake_script.parent.mkdir(parents=True)
     monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
-    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda: ("seed",))
+    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda _path=None: ("seed",))
     monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
     monkeypatch.setattr(run_topic_discovery, "discover_topics", fake_discover)
-    monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda: 5_000)
+    monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda _path=None: 5_000)
     monkeypatch.setattr(sys, "argv", [
         "run_topic_discovery.py",
         "--top", "1",
@@ -98,14 +99,14 @@ def test_cache_first_skips_slow_discovery_when_window_is_filled(
 ) -> None:
     cached = (
         TopicCandidate(
-            topic="rich_a", paper_count=0, fact_source_count=8,
-            top_paper_doi="", top_paper_title="",
-            velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
+            topic="rich_a", paper_count=5, fact_source_count=8,
+            top_paper_doi="10.1/a", top_paper_title="Paper A",
+            velocity_score=2.0, mean_fwci=1.0, mean_cited_by=10.0,
         ),
         TopicCandidate(
-            topic="rich_b", paper_count=0, fact_source_count=7,
-            top_paper_doi="", top_paper_title="",
-            velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
+            topic="rich_b", paper_count=5, fact_source_count=7,
+            top_paper_doi="10.1/b", top_paper_title="Paper B",
+            velocity_score=1.0, mean_fwci=1.0, mean_cited_by=8.0,
         ),
     )
 
@@ -115,9 +116,9 @@ def test_cache_first_skips_slow_discovery_when_window_is_filled(
     fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
     fake_script.parent.mkdir(parents=True)
     monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
-    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda: ("seed",))
+    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda _path=None: ("seed",))
     monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
-    monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda: 5_000)
+    monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda _path=None: 5_000)
     monkeypatch.setattr(
         run_topic_discovery, "cached_source_rich_candidates",
         lambda *, limit: cached[:limit],
@@ -161,7 +162,7 @@ def test_cache_first_falls_back_when_cache_is_underfilled(
     fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
     fake_script.parent.mkdir(parents=True)
     monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
-    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda: ("seed",))
+    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda _path=None: ("seed",))
     monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
     monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda: 5_000)
     monkeypatch.setattr(
@@ -174,10 +175,97 @@ def test_cache_first_falls_back_when_cache_is_underfilled(
     ])
 
     assert run_topic_discovery.main() == 0
+    assert calls == ["discover", "discover"]
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert [row["topic"] for row in payload["top"]] == ["fresh_rich", "cached_rich"]
+
+
+def test_cache_first_does_not_let_paperless_cache_suppress_fresh_discovery(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    cached = (
+        TopicCandidate(
+            topic="cached_rich", paper_count=0, fact_source_count=12,
+            top_paper_doi="", top_paper_title="",
+            velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
+        ),
+    )
+    fresh = (
+        TopicCandidate(
+            topic="fresh_fullraw", paper_count=3, fact_source_count=6,
+            top_paper_doi="10.1/fullraw", top_paper_title="Fullraw fresh paper",
+            velocity_score=4.0, mean_fwci=2.0, mean_cited_by=20.0,
+        ),
+    )
+    calls: list[str] = []
+
+    def slow_discover(**_kwargs: Any) -> tuple[TopicCandidate, ...]:
+        calls.append("discover")
+        return fresh
+
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda _path=None: ("seed",))
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda: 5_000)
+    monkeypatch.setattr(
+        run_topic_discovery, "cached_source_rich_candidates",
+        lambda *, limit: cached[:limit],
+    )
+    monkeypatch.setattr(run_topic_discovery, "discover_topics", slow_discover)
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--cache-first", "--top", "1",
+    ])
+
+    assert run_topic_discovery.main() == 0
     assert calls == ["discover"]
     out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
-    assert [row["topic"] for row in payload["top"]] == ["cached_rich", "fresh_rich"]
+    assert [row["topic"] for row in payload["top"]] == ["fresh_fullraw"]
+
+
+def test_paperless_topic_group_discovery_falls_back_to_paper_backed_topics(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+
+    def fake_discover(**_kwargs: Any) -> tuple[TopicCandidate, ...]:
+        calls.append(os.environ.get("TOPIC_GROUPS_DISCOVERY", "1"))
+        if calls[-1] == "0":
+            return (
+                TopicCandidate(
+                    topic="multi_agent_systems", paper_count=3, fact_source_count=6,
+                    top_paper_doi="10.1/mas", top_paper_title="MAS fresh paper",
+                    velocity_score=3.0, mean_fwci=2.0, mean_cited_by=10.0,
+                ),
+            )
+        return (
+            TopicCandidate(
+                topic="RAG", paper_count=29, fact_source_count=29,
+                top_paper_doi="", top_paper_title="",
+                velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
+            ),
+        )
+
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda _path=None: ("seed",))
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda _path=None: 5_000)
+    monkeypatch.setattr(run_topic_discovery, "discover_topics", fake_discover)
+    monkeypatch.setattr(run_topic_discovery, "_fetch_topic_papers", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--domain", "ai_research", "--top", "1",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    assert calls == ["1", "0"]
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert [row["topic"] for row in payload["top"]] == ["multi_agent_systems"]
 
 
 def test_excluded_cached_topics_do_not_fill_cache_first_window(

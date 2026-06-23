@@ -114,6 +114,9 @@ def _hydrate_candidates(
 ) -> tuple[TopicCandidate, ...]:
     out: list[TopicCandidate] = []
     for candidate in candidates:
+        if _paper_backed(candidate):
+            out.append(candidate)
+            continue
         scored = _score_topic(
             candidate.topic,
             _fetch_topic_papers(candidate.topic, client=client, settings=settings),
