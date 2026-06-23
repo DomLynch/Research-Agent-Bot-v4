@@ -204,7 +204,15 @@ _REFRESH_TIMEOUT_SECONDS = 1200
 # resubmits for the same evidence fingerprint.
 _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT = 4
 _MAX_REJECT_ATTEMPTS_PER_FINGERPRINT = 2
-_FINAL_DECISION_VERDICTS = {"accepted", "rejected", "revise", "stale_pending"}
+_DECISION_ACCEPTED = publish_status.DecisionVerdict.ACCEPTED.value
+_DECISION_PENDING = publish_status.DecisionVerdict.PENDING.value
+_DECISION_REJECT = publish_status.DecisionVerdict.REJECT.value
+_DECISION_REJECTED = publish_status.DecisionVerdict.REJECTED.value
+_DECISION_REVISE = publish_status.DecisionVerdict.REVISE.value
+_DECISION_STALE_PENDING = publish_status.DecisionVerdict.STALE_PENDING.value
+_FINAL_DECISION_VERDICTS = {
+    _DECISION_ACCEPTED, _DECISION_REJECTED, _DECISION_REVISE, _DECISION_STALE_PENDING,
+}
 _EXHAUSTED_STATUSES = publish_status.EXHAUSTED_STATUSES
 _TOPIC_EXHAUSTED_STATUSES = publish_status.TOPIC_EXHAUSTED_STATUSES
 _FINGERPRINT_EXHAUSTED_STATUSES = publish_status.FINGERPRINT_EXHAUSTED_STATUSES
@@ -228,10 +236,10 @@ _REPAIRABLE_REJECTION_REASONS = {
     "cited doi",
     "minimum_citations",
     "not verifiably grounded",
-    "public_page_not_rendered",
+    publish_status.CycleStatus.PUBLIC_PAGE_NOT_RENDERED.value,
     "recency_ratio",
     "required revision",
-    "reviewer_revise",
+    publish_status.CycleStatus.REVIEWER_REVISE.value,
     "scope reset",
     "source_bundle_schema",
     "title/abstract",
@@ -1001,7 +1009,7 @@ def _agent_repair_candidate(
 
 def _agent_repair_decision(verdict: Json) -> Json:
     return {
-        "decision": "revise",
+        "decision": _DECISION_REVISE,
         "agent_repair": True,
         "resubmission": {"allowed": True},
         "failure_category": "agentic_publish_gate_repair",
@@ -1302,7 +1310,7 @@ def _is_grounding_reject(decision: Json) -> bool:
     """True when the reviewer demanded a scope reset — the title/claims must be
     rebuilt around the cited bundle. Such a repair regenerates in grounded mode
     instead of softening prose, or the resubmit is byte-identical."""
-    if decision.get("decision") not in {"reject", "revise"}:
+    if decision.get("decision") not in {_DECISION_REJECT, _DECISION_REVISE}:
         return False
     if _resubmission_allowed(decision) and _low_claim_grounding_score(decision):
         return True
@@ -1410,7 +1418,7 @@ def _soften_surprise_language(text: str) -> str:
 
 
 def _apply_reviewer_revision_notes(run_dir: Path, decision: Json) -> bool:
-    if decision.get("decision") not in {"reject", "revise"}:
+    if decision.get("decision") not in {_DECISION_REJECT, _DECISION_REVISE}:
         return False
     notes = _revision_notes(decision)
     if not notes:
@@ -1600,7 +1608,7 @@ def _stale_pending_decision(
 
 def _mark_stale_pending_decision(ledger: Json, *, max_age_hours: float) -> None:
     ledger["status"] = publish_status.CycleStatus.DECISION_STALE_PENDING.value
-    ledger["final_verdict"] = "stale_pending"
+    ledger["final_verdict"] = _DECISION_STALE_PENDING
     ledger["published"] = 0
     ledger["publish_failure_reason"] = "decision_pending_timeout"
     ledger["decision_pending_timeout_hours"] = max_age_hours
@@ -1830,7 +1838,7 @@ def _accepted_shape_profiles(
     ledger_dir = runs_root / "_daily_ledger"
     for path in sorted(ledger_dir.glob("*.json"), reverse=True):
         ledger = _json(path, {})
-        if not isinstance(ledger, dict) or ledger.get("final_verdict") != "accepted":
+        if not isinstance(ledger, dict) or ledger.get("final_verdict") != _DECISION_ACCEPTED:
             continue
         if not _same_domain(_ledger_domain(ledger), domain):
             continue
@@ -1870,7 +1878,7 @@ def _recently_published_topics(
             continue
         if not _same_domain(_ledger_domain(ledger), domain):
             continue
-        if ledger.get("final_verdict") != "accepted" and ledger.get("published") != 1:
+        if ledger.get("final_verdict") != _DECISION_ACCEPTED and ledger.get("published") != 1:
             continue
         topic = (
             ledger.get("published_topic")
@@ -1900,9 +1908,9 @@ def _recent_negative_topics(
         if not isinstance(decision, dict):
             decision = {}
         rejected = (
-            ledger.get("final_verdict") == "rejected"
-            or ledger.get("status") == "reviewer_rejected"
-            or decision.get("decision") == "reject"
+            ledger.get("final_verdict") == _DECISION_REJECTED
+            or ledger.get("status") == publish_status.CycleStatus.REVIEWER_REJECTED.value
+            or decision.get("decision") == _DECISION_REJECT
         )
         unsupported = str(decision.get("claim_support_verdict") or "").lower() == "unsupported"
         if not (rejected and unsupported and not _repairable_rejection(decision)):
@@ -1953,9 +1961,9 @@ def _recent_submission_topics(
 
 
 _NON_BLOCKING_ATTEMPT_STATUSES = {
-    "published",
-    "submitted_to_researka",
-    "dry_run_selected",
+    publish_status.CycleStatus.PUBLISHED.value,
+    publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value,
+    publish_status.CycleStatus.DRY_RUN_SELECTED.value,
 }
 
 
@@ -1982,18 +1990,18 @@ def _sync_failed_attempt_blocks(
 def _repairable_rejection(decision: Json) -> bool:
     support = str(decision.get("claim_support_verdict") or "").lower()
     if (
-        decision.get("decision") == "reject"
+        decision.get("decision") == _DECISION_REJECT
         and support == "unsupported"
         and _low_claim_grounding_score(decision)
     ):
         return False
     if _resubmission_allowed(decision):
         return True
-    if decision.get("decision") == "revise":
+    if decision.get("decision") == _DECISION_REVISE:
         return support != "partially_supported"
-    if decision.get("decision") == "reject" and support == "partially_supported":
+    if decision.get("decision") == _DECISION_REJECT and support == "partially_supported":
         return False
-    if decision.get("decision") == "reject" and support == "unsupported":
+    if decision.get("decision") == _DECISION_REJECT and support == "unsupported":
         return False
     reasons = {
         str(decision.get("failure_category") or ""),
@@ -2009,7 +2017,7 @@ def _repairable_rejection(decision: Json) -> bool:
 
 
 def _submission_attempt_budget(decision: Any) -> int:
-    if isinstance(decision, dict) and decision.get("decision") == "reject":
+    if isinstance(decision, dict) and decision.get("decision") == _DECISION_REJECT:
         return _MAX_REJECT_ATTEMPTS_PER_FINGERPRINT
     return _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
 
@@ -2018,7 +2026,7 @@ def _repair_attempt_limit(decision: Any) -> int:
     budget = _submission_attempt_budget(decision)
     if (
         isinstance(decision, dict)
-        and decision.get("decision") == "reject"
+        and decision.get("decision") == _DECISION_REJECT
         and _resubmission_allowed(decision)
     ):
         return budget + 1
@@ -2384,7 +2392,7 @@ def _published_bundle_signatures(
     for row in data:
         if not isinstance(row, dict) or not _same_domain(_row_domain(row), domain):
             continue
-        if not (row.get("published") or row.get("final_verdict") == "accepted"):
+        if not (row.get("published") or row.get("final_verdict") == _DECISION_ACCEPTED):
             continue
         sig = str(row.get("bundle_signature") or "") or _bundle_signature(row, root)
         if sig:
@@ -3396,7 +3404,7 @@ def sync_submission_decisions(
     ledger_dir = runs_root / "_daily_ledger"
     current = now or dt.datetime.now(dt.UTC)
     summary: Json = {
-        "checked": 0, "updated": 0, "published": 0, "pending": 0,
+        "checked": 0, "updated": 0, "published": 0, _DECISION_PENDING: 0,
         "stale": 0, "errors": [],
     }
     seen_submission_ids: set[str] = set()
@@ -3478,19 +3486,19 @@ def sync_submission_decisions(
             decision=decision,
             page_fetcher=page_fetcher,
         )
-        summary["pending"] += int(final == "pending")
-        summary["published"] += int(final == "accepted")
-        if final == "pending" and _stale_pending_decision(
+        summary[_DECISION_PENDING] += int(final == _DECISION_PENDING)
+        summary["published"] += int(final == _DECISION_ACCEPTED)
+        if final == _DECISION_PENDING and _stale_pending_decision(
             ledger, stamp=path.stem, now=current,
             max_age_hours=max_pending_age_hours,
         ):
             _mark_stale_pending_decision(
                 ledger, max_age_hours=max_pending_age_hours,
             )
-            final = "stale_pending"
-            summary["pending"] -= 1
+            final = _DECISION_STALE_PENDING
+            summary[_DECISION_PENDING] -= 1
             summary["stale"] += 1
-        if final != "pending":
+        if final != _DECISION_PENDING:
             summary["updated"] += 1
         patch = _submission_record_patch(ledger)
         if patch:
@@ -3527,7 +3535,7 @@ def sync_submission_decisions(
                 continue
             synthetic_ledger: Json = {
                 "date": row.get("date"),
-                "status": "submitted_to_researka",
+                "status": publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value,
                 "submitted": 1,
                 "published": 0,
                 "submitted_topic": row.get("topic"),
@@ -3544,19 +3552,19 @@ def sync_submission_decisions(
                 decision=decision,
                 page_fetcher=page_fetcher,
             )
-            summary["pending"] += int(final == "pending")
-            summary["published"] += int(final == "accepted")
-            if final == "pending" and _stale_pending_decision(
+            summary[_DECISION_PENDING] += int(final == _DECISION_PENDING)
+            summary["published"] += int(final == _DECISION_ACCEPTED)
+            if final == _DECISION_PENDING and _stale_pending_decision(
                 synthetic_ledger, stamp=row.get("date"), now=current,
                 max_age_hours=max_pending_age_hours,
             ):
                 _mark_stale_pending_decision(
                     synthetic_ledger, max_age_hours=max_pending_age_hours,
                 )
-                final = "stale_pending"
-                summary["pending"] -= 1
+                final = _DECISION_STALE_PENDING
+                summary[_DECISION_PENDING] -= 1
                 summary["stale"] += 1
-            if final != "pending":
+            if final != _DECISION_PENDING:
                 summary["updated"] += 1
             submitted_changed |= _merge_submission_record(
                 row, _submission_record_patch(synthetic_ledger),
@@ -4569,7 +4577,7 @@ def run_cycle(
         result = submit_with_backoff(checked_payload, submitter)
         attempt["submission"] = result
         ledger["submission"] = result
-        if result["status"] == "accepted":
+        if result["status"] == _DECISION_ACCEPTED:
             submission_id = _submission_id(result)
             _record_submission_attempt(
                 submitted_path,
@@ -4579,7 +4587,7 @@ def run_cycle(
                 submission_id=submission_id,
             )
             ledger.update({
-                "final_verdict": "pending",
+                "final_verdict": _DECISION_PENDING,
                 "status": publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value,
                 "submitted": 1,
                 "submitted_topic": candidate.get("topic"),
@@ -4599,17 +4607,21 @@ def run_cycle(
                 )
                 decision = ledger.get("researka_decision", {})
                 if isinstance(decision, dict):
-                    if final == "accepted":
+                    if final == _DECISION_ACCEPTED:
                         attempt["public_page_check"] = ledger.get("public_page_check")
                         ledger["cycle_attempts"].append(
                             attempt | {"status": publish_status.CycleStatus.PUBLISHED.value},
                         )
                         _write_ledger(ledger_path, ledger)
                         return ledger
-                    if final in {"rejected", "revise"}:
+                    if final in {_DECISION_REJECTED, _DECISION_REVISE}:
                         attempt["status"] = (
                             str(ledger.get("publish_failure_reason") or "")
-                            or ("reviewer_revise" if final == "revise" else "reviewer_rejected")
+                            or (
+                                publish_status.CycleStatus.REVIEWER_REVISE.value
+                                if final == _DECISION_REVISE else
+                                publish_status.CycleStatus.REVIEWER_REJECTED.value
+                            )
                         )
                         attempt["researka_decision"] = decision
                         attempt["public_page_check"] = ledger.get("public_page_check")
@@ -4741,7 +4753,7 @@ def run_cycle(
                     "fingerprint": candidate.get("memo_fingerprint"),
                 }
                 ledger["submission"] = result
-                if result["status"] == "accepted":
+                if result["status"] == _DECISION_ACCEPTED:
                     submission_id = _submission_id(result)
                     _record_submission_attempt(
                         submitted_path,
@@ -4751,7 +4763,7 @@ def run_cycle(
                         submission_id=submission_id,
                     )
                     ledger.update({
-                        "final_verdict": "pending",
+                        "final_verdict": _DECISION_PENDING,
                         "status": publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value,
                         "submitted": 1,
                         "submitted_topic": literature_topic,
@@ -4767,7 +4779,7 @@ def run_cycle(
                             sleep_seconds=decision_poll_seconds,
                             sleep=sleep,
                         )
-                        if final == "accepted":
+                        if final == _DECISION_ACCEPTED:
                             ledger["cycle_attempts"].append({
                                 "topic": literature_topic,
                                 "run_dir": candidate.get("run_dir"),

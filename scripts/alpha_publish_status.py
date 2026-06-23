@@ -28,6 +28,15 @@ class CycleStatus(StrEnum):
     DECISION_STALE_PENDING = "decision_stale_pending"
 
 
+class DecisionVerdict(StrEnum):
+    ACCEPTED = "accepted"
+    PENDING = "pending"
+    REJECT = "reject"
+    REJECTED = "rejected"
+    REVISE = "revise"
+    STALE_PENDING = "stale_pending"
+
+
 class CandidateStatus(StrEnum):
     DUPLICATE_SUBMISSION_FINGERPRINT = "duplicate_submission_fingerprint"
     STALE_PUBLISH_VERDICT = "stale_publish_verdict"

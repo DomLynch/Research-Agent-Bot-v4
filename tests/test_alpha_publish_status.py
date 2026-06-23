@@ -3,12 +3,24 @@ from __future__ import annotations
 
 from scripts.alpha_publish_status import (
     CycleStatus,
+    DecisionVerdict,
     cycle_exit_code,
     next_action_for_status,
     no_candidate_reason,
     publish_summary,
     queue_counts,
 )
+
+
+def test_decision_verdict_values_match_researka_api_tokens() -> None:
+    assert {verdict.value for verdict in DecisionVerdict} == {
+        "accepted",
+        "pending",
+        "reject",
+        "rejected",
+        "revise",
+        "stale_pending",
+    }
 
 
 def test_submit_exit_codes_fail_closed_for_zero_output_statuses() -> None:
