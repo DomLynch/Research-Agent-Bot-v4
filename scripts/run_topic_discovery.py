@@ -422,10 +422,11 @@ def main() -> int:
     excluded = {str(t).strip() for t in args.exclude_topic if str(t).strip()}
     cache_supported = _cache_supported(profile.slug)
     scoped_cache_limit = max(cache_limit * 20, 1000) if cache_supported else cache_limit
+    read_source_rich_cache = args.cache_first or args.cache_only or args.warm_backlog
     ranked = (
         cached_source_rich_candidates(limit=scoped_cache_limit)
         if cache_supported
-        and (args.cache_first or args.cache_only)
+        and read_source_rich_cache
         and cache_limit > 0 else ()
     )
     ranked = _filter_cached_seed_scope(_filter_excluded(ranked, excluded), seeds)
@@ -519,7 +520,7 @@ def main() -> int:
         "derived_topic_limit": derived_limit,
         "fact_probe_topics": fact_probe_topics,
         "warm_backlog": bool(args.warm_backlog),
-        "cache_first": bool(args.cache_first and cache_supported),
+        "cache_first": bool(read_source_rich_cache and cache_supported),
         "cache_only": bool(args.cache_only and cache_supported),
         "cache_supported": cache_supported,
         "source_rich_floor": 5,
