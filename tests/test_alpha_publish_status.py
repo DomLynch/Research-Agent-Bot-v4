@@ -5,6 +5,7 @@ from scripts.alpha_publish_status import (
     CycleStatus,
     cycle_exit_code,
     next_action_for_status,
+    no_candidate_reason,
     publish_summary,
     queue_counts,
 )
@@ -69,6 +70,14 @@ def test_publish_summary_contains_operator_blocker_fields() -> None:
         "duplicate_submission_fingerprint": 1,
         "receipt_shape_mismatch": 1,
     }
+
+
+def test_no_candidate_reason_reports_mixed_duplicate_exhaustion() -> None:
+    assert no_candidate_reason([
+        {"status": "duplicate_submission_fingerprint"},
+        {"status": "duplicate_published_bundle"},
+        {"status": "cycle_exhausted_topic"},
+    ]) == "all candidates were duplicate, already published, or topic/family exhausted"
 
 
 def test_queue_counts_include_legacy_operator_review_bucket() -> None:

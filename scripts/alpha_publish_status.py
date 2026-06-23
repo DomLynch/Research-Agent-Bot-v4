@@ -138,6 +138,13 @@ def no_candidate_reason(considered: list[Json]) -> str:
     statuses = [str(row.get("status") or "") for row in considered if isinstance(row, dict)]
     if statuses and all(status == "duplicate_submission_fingerprint" for status in statuses):
         return "all candidates were duplicate submission fingerprints"
+    duplicate_exhaustion = {
+        "duplicate_submission_fingerprint",
+        "duplicate_published_bundle",
+        "cycle_exhausted_topic",
+    }
+    if statuses and set(statuses) <= duplicate_exhaustion:
+        return "all candidates were duplicate, already published, or topic/family exhausted"
     if statuses and all(status == "cycle_exhausted_topic" for status in statuses):
         return "all candidates were topic/family exhausted"
     if "stale_publish_verdict" in statuses:
