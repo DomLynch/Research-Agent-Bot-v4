@@ -4284,9 +4284,15 @@ def run_cycle(
     preflight_queue = None
     skip_refresh_note = "skipped_after_repairable_submission"
     if refresh_candidates and queue is None and queue_builder is _build_queue:
+        ledger["stage"] = "initial_queue_probe"
+        ledger["next_action"] = "building_current_publish_queue"
+        _write_ledger(ledger_path, ledger)
         candidate_queue = _with_repairable_candidates(
             build_current_queue(), runs_root, profile.slug,
         )
+        ledger["stage"] = "initial_queue_probe_complete"
+        ledger["preflight_queue_counts"] = publish_status.queue_counts(candidate_queue)
+        _write_ledger(ledger_path, ledger)
         cluster_rows = _rows(candidate_queue, allow_tier2=True) + [
             r for r in candidate_queue.get("curation_needed") or [] if isinstance(r, dict)
         ]

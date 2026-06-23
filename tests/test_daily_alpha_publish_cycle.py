@@ -435,6 +435,35 @@ def test_run_cycle_persists_started_ledger_before_queue_build(tmp_path: Path) ->
     assert written["publish_summary"]["next_action"] == "inspect_ledger"
 
 
+def test_refresh_cycle_marks_initial_queue_probe_before_queue_build(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+
+    def fail_build_queue(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise RuntimeError("queue probe stalled")
+
+    monkeypatch.setattr(daily, "_build_queue", fail_build_queue)
+
+    with raises(RuntimeError, match="queue probe stalled"):
+        daily.run_cycle(
+            runs_root=root / "runs",
+            date="2026-05-22T01-30-01Z",
+            refresh_candidates=True,
+            queue_builder=daily._build_queue,
+            retraction_mode="metadata",
+        )
+
+    written = json.loads(
+        (root / "runs" / "_daily_ledger" / "2026-05-22T01-30-01Z.json").read_text(
+            encoding="utf-8",
+        )
+    )
+    assert written["status"] == "started"
+    assert written["stage"] == "initial_queue_probe"
+    assert written["next_action"] == "building_current_publish_queue"
+
+
 def test_refresh_cycle_probes_existing_ready_queue_before_discovery(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
