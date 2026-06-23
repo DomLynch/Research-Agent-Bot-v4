@@ -54,6 +54,33 @@ def _hydrate_limit() -> int:
         return 20
 
 
+def _hydrate_query_limit() -> int:
+    try:
+        return max(1, int(os.environ.get("TOPIC_DISCOVERY_HYDRATE_QUERIES", 3)))
+    except (TypeError, ValueError):
+        return 3
+
+
+def _context_query_terms(value: str) -> str:
+    seen: dict[str, None] = {}
+    for token in _TOKEN_RE.findall(value.casefold()):
+        if len(token) > 1 and token not in _GENERIC_SCOPE_TOKENS:
+            seen.setdefault(token, None)
+    return " ".join(seen)
+
+
+def _hydration_queries(candidate: TopicCandidate, *, context: str) -> tuple[str, ...]:
+    seen: dict[str, None] = {}
+    for query in expand_topic_queries(candidate.topic, max_queries=2):
+        if query.strip():
+            seen.setdefault(query.strip(), None)
+    context_terms = _context_query_terms(context)
+    if context_terms:
+        for query in tuple(seen)[:2]:
+            seen.setdefault(f"{query} {context_terms}", None)
+    return tuple(seen)[:_hydrate_query_limit()]
+
+
 def _resolve_limits(
     *, warm_backlog: bool, derived_topic_limit: int | None,
     fact_probe_topics: int | None, configured_limit: int,
@@ -119,7 +146,8 @@ def _rank_key(candidate: TopicCandidate) -> tuple[int, float, int, str]:
 
 
 def _hydrate_candidates(
-    candidates: tuple[TopicCandidate, ...], *, settings: Settings, current_year: int,
+    candidates: tuple[TopicCandidate, ...], *, settings: Settings,
+    current_year: int, query_context: str = "",
 ) -> tuple[TopicCandidate, ...]:
     out = list(candidates)
     limit = min(_hydrate_limit(), len(out))
@@ -127,11 +155,15 @@ def _hydrate_candidates(
         return tuple(sorted(out, key=_rank_key))
     with httpx.Client() as client:
         for idx, candidate in enumerate(out[:limit]):
-            try:
-                papers = _fetch_topic_papers(
-                    candidate.topic, client=client, settings=settings)
-            except (OSError, TypeError, ValueError):
-                continue
+            papers = []
+            for query in _hydration_queries(candidate, context=query_context):
+                try:
+                    papers = _fetch_topic_papers(
+                        query, client=client, settings=settings)
+                except (OSError, TypeError, ValueError):
+                    continue
+                if papers:
+                    break
             if not papers:
                 continue
             scored = _score_topic(
@@ -342,6 +374,7 @@ def main() -> int:
         )
         scoped_discovered = _hydrate_candidates(
             scoped_discovered, settings=settings, current_year=year,
+            query_context=profile.display_name,
         )
         ranked = _merge_candidates(ranked, scoped_discovered)
     top = ranked[: args.top]
