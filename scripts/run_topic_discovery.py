@@ -151,6 +151,11 @@ def _paper_backed(candidate: TopicCandidate) -> bool:
     return bool(candidate.paper_count and candidate.top_paper_title)
 
 
+def _hydration_probeable(candidate: TopicCandidate) -> bool:
+    tokens = _topic_tokens(candidate.topic)
+    return len(tokens) > 1 or any(len(token) > 4 for token in tokens)
+
+
 def _hydrate_candidates(
     candidates: tuple[TopicCandidate, ...], *, settings: Settings,
     current_year: int, query_context: str = "",
@@ -163,6 +168,8 @@ def _hydrate_candidates(
         for idx, candidate in enumerate(candidates):
             if _paper_backed(candidate):
                 out.append(candidate)
+                continue
+            if not _hydration_probeable(candidate):
                 continue
             if idx >= limit:
                 continue

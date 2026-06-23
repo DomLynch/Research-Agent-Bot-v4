@@ -379,7 +379,12 @@ def test_paperless_topic_group_discovery_falls_back_to_paper_backed_topic(
         lambda _path=None: 5_000,
     )
     monkeypatch.setattr(run_topic_discovery, "discover_topics", fake_discover)
-    monkeypatch.setattr(run_topic_discovery, "_fetch_topic_papers", lambda *_a, **_k: [])
+    monkeypatch.setattr(
+        run_topic_discovery, "_fetch_topic_papers",
+        lambda *_a, **_k: (_ for _ in ()).throw(
+            AssertionError("short paperless labels should not hydrate")
+        ),
+    )
     monkeypatch.setattr(sys, "argv", [
         "run_topic_discovery.py", "--domain", "ai_research", "--top", "1",
     ])
