@@ -3411,8 +3411,6 @@ def _fresh_parent_topics_from_discovery(
                 ))
                 seen.add(topic)
                 seen_families.update(aliases)
-        if len(ranked) >= limit:
-            break
     return [topic for _score, topic in sorted(ranked)[:limit]]
 
 

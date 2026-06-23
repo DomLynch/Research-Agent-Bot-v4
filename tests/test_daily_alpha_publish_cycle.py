@@ -8902,6 +8902,41 @@ def test_fresh_parent_topics_scan_recent_domain_discovery_snapshots(
     ) == ["source rich parent"]
 
 
+def test_fresh_parent_topics_rank_across_discovery_snapshots_before_limiting(
+    tmp_path: Path,
+) -> None:
+    discovery = tmp_path / "_topics_discovery"
+    discovery.mkdir()
+    older = discovery / "2026-06-21T19-29-17Z.json"
+    older.write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{
+            "topic": "source diverse parent",
+            "fact_source_count": 24,
+            "paper_count": 18,
+            "velocity_score": 50.0,
+        }],
+    }), encoding="utf-8")
+    newer = discovery / "2026-06-21T19-31-38Z.json"
+    newer.write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{
+            "topic": "adequate newer parent",
+            "fact_source_count": 7,
+            "paper_count": 7,
+            "velocity_score": 100.0,
+        }],
+    }), encoding="utf-8")
+
+    assert daily._fresh_parent_topics_from_discovery(
+        tmp_path,
+        "longevity_research",
+        set(),
+        limit=1,
+        min_sources=5,
+    ) == ["source diverse parent"]
+
+
 def test_fresh_parent_topics_prefer_source_diversity_over_raw_fact_volume(
     tmp_path: Path,
 ) -> None:
