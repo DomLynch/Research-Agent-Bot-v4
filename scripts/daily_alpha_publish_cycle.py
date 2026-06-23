@@ -2370,8 +2370,20 @@ def _year(value: Any) -> int | None:
 
 
 def _evidence_type(paper: Json) -> str:
-    title = _norm(paper.get("title"))
-    if "review" in title or "meta-analysis" in title or "meta analysis" in title:
+    text = _norm(" ".join(
+        str(paper.get(key) or "")
+        for key in (
+            "title", "journal", "doi", "publication_type", "type", "source_type",
+        )
+    ))
+    if (
+        "review" in text
+        or "meta-analysis" in text
+        or "meta analysis" in text
+        or "cochrane" in text
+        or "14651858.cd" in text
+        or "14651858 cd" in text
+    ):
         return "review"
     return "primary"
 
@@ -2390,7 +2402,9 @@ def _source_bundle(papers: list[Json]) -> list[Json]:
         if not title or not (doi or pmid):
             continue
         url = paper.get("url") or None
-        if not url and pmid:
+        if not url and doi:
+            url = f"https://doi.org/{doi}"
+        elif not url and pmid:
             url = f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/"
         bundle.append({
             "title": title,

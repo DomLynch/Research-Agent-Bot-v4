@@ -62,6 +62,11 @@ def fact_count(papers: list[Json]) -> int:
     return sum(1 for paper in papers if isinstance(paper.get("source_fact"), dict))
 
 
+def _short_finding(value: str, limit: int = 170) -> str:
+    text = " ".join(str(value or "").split()).rstrip(".")
+    return text if len(text) <= limit else text[:limit].rsplit(" ", 1)[0].rstrip(",;") + "..."
+
+
 def context_family(value: Any) -> str:
     text = str(value or "").casefold()
     if any(term in text for term in ("patient", "participant", "adult", "human", "cohort")):
@@ -249,18 +254,18 @@ def payload(
         if str(fact.get("canonical_phrase") or "").strip()
     ]
     synthesis = (
-        f"Answer: this {len(bundle)}-source {type_text} bundle supports a "
-        f"receipt-backed scoping note for {topic}, spanning {year_text}. The "
-        f"source facts cover {len(populations) or 'multiple'} population context(s) "
-        f"and {len(interventions) or 'multiple'} intervention/exposure context(s). "
-        f"The bounded signal is context separation across {context_text}: the "
-        "bundle identifies what has been measured and where the evidence separates, "
-        "without establishing a causal, clinical, species-translated, or "
-        "mechanistically integrated intervention claim."
+        f"This {len(bundle)}-source {type_text} bundle supports a receipt-backed "
+        f"scoping note for {topic}, spanning {year_text}. The source facts cover "
+        f"{len(populations) or 'multiple'} population context(s) and "
+        f"{len(interventions) or 'multiple'} intervention/exposure context(s). "
+        f"The bounded signal is mixed rather than convergent across {context_text}: "
+        "the bundle identifies measured endpoints and where source-level findings "
+        "separate, without establishing a causal, clinical, species-translated, "
+        "or mechanistically integrated intervention claim."
     )
     if findings:
-        examples = [finding.rstrip(".") for finding in findings[:3]]
-        synthesis += " Representative source-extracted findings include: " + "; ".join(examples) + "."
+        examples = [_short_finding(finding) for finding in findings[:3]]
+        synthesis += " Concrete source-level examples: " + "; ".join(examples) + "."
     next_gaps = [
         "A stronger memo needs one matched population/model, intervention or exposure, comparator, and endpoint.",
         (
@@ -291,8 +296,8 @@ def payload(
         "",
         (
             f"The selected receipts group because each carries a fact-level extraction "
-            f"for {topic}; they separate by context ({context_text}), so they are "
-            "not interchangeable evidence for one endpoint."
+            f"for {topic}; they separate by context ({context_text}) and endpoint, "
+            "so they are not interchangeable evidence for one pooled claim."
         ),
         "",
         "## Boundary limits",

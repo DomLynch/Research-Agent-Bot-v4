@@ -6893,12 +6893,14 @@ def test_source_literature_fallback_uses_default_fetcher_after_empty_submit_lane
     assert "## Selection criteria" in seen_payload["markdown"]
     assert seen_payload["source_bundle"][0] == {
         "title": "Metabolic pathway review in aging",
-        "url": None,
+        "url": "https://doi.org/10.1234/1",
         "doi": "10.1234/1",
         "year": 2024,
         "evidence_type": "review",
     }
     assert seen_payload["citations"] == seen_payload["source_bundle"]
+    assert not seen_payload["abstract"].startswith("Answer:")
+    assert "mixed rather than convergent" in seen_payload["abstract"]
 
 
 def test_source_literature_fallback_is_disabled_without_explicit_submit_flag(
@@ -7166,6 +7168,24 @@ def test_source_literature_boundary_quality_accepts_distinct_boundary_papers() -
 
     assert ok is True
     assert reason == "ok"
+
+
+def test_source_literature_bundle_resolves_doi_and_cochrane_review() -> None:
+    title = (
+        "Metformin for prevention or delay of type 2 diabetes mellitus and "
+        "its associated complications in persons at increased risk"
+    )
+    assert daily._source_bundle([{
+        "title": title,
+        "doi": "10.1002/14651858.CD008558.pub2",
+        "year": 2019,
+    }]) == [{
+        "title": title,
+        "url": "https://doi.org/10.1002/14651858.CD008558.pub2",
+        "doi": "10.1002/14651858.CD008558.pub2",
+        "year": 2019,
+        "evidence_type": "review",
+    }]
 
 
 def test_source_literature_payload_is_deterministic_boundary_only(
