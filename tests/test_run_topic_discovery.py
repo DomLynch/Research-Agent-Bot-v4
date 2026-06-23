@@ -336,6 +336,51 @@ def test_seed_paper_candidate_skips_slow_discovery_when_enough(
     assert os.environ["TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"] == "20"
 
 
+def test_seed_paper_probe_expands_seed_queries_before_slow_discovery(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(
+        run_topic_discovery, "load_seed_topics",
+        lambda _path=None: ("llm_evaluation",),
+    )
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(
+        run_topic_discovery, "load_derived_topic_limit",
+        lambda _path=None: 5_000,
+    )
+    monkeypatch.setattr(run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: ())
+    monkeypatch.setattr(
+        run_topic_discovery, "discover_topics",
+        lambda **_kwargs: (_ for _ in ()).throw(AssertionError("slow discovery")),
+    )
+    calls: list[str] = []
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        if query == "llm evaluation":
+            return [{
+                "doi": "10.1/llm-eval", "title": "LLM evaluation benchmark paper",
+                "fwci": 4.0, "cited_by_count": 40, "publication_year": 2026,
+                "quality_score": 90.0,
+            }]
+        return []
+
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fake_fullraw)
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--domain", "ai_research", "--top", "1",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    assert calls == ["llm_evaluation", "llm evaluation"]
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert [row["topic"] for row in payload["top"]] == ["llm_evaluation"]
+    assert payload["top"][0]["top_paper_doi"] == "10.1/llm-eval"
+
+
 def test_empty_seed_paper_probe_skips_slow_discovery_for_fullraw_domains(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

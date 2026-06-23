@@ -241,7 +241,16 @@ def _seed_paper_candidates(
                 )
                 if not _hydration_probeable(candidate):
                     continue
-                papers = _fetch_fullraw_topic_papers(seed, client=client, limit=5)
+                papers_by_key: dict[str, dict[str, object]] = {}
+                for query in expand_topic_queries(seed, max_queries=4):
+                    for paper in _fetch_fullraw_topic_papers(query, client=client, limit=5):
+                        key = str(paper.get("doi") or paper.get("paper_id")
+                                  or paper.get("title") or "").strip().casefold()
+                        if key:
+                            papers_by_key.setdefault(key, paper)
+                    if len(papers_by_key) >= 5:
+                        break
+                papers = list(papers_by_key.values())[:5]
                 scored = _score_topic(
                     seed, papers, current_year, fact_source_count=len(papers),
                 )
