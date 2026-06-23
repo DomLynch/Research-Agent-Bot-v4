@@ -203,6 +203,26 @@ def test_daily_build_queue_demotes_submit_held_evidence_maps(tmp_path: Path) -> 
     assert queue["curation_needed"][0]["queue_status"] == "evidence_map_scope_mismatch"
 
 
+def test_daily_build_queue_uses_stored_verdict_without_recomputing(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("fast_probe")
+    _memo_with_source_receipts(root, verdict, 5)
+    run = root / str(verdict["run_dir"])
+    run.joinpath("opportunities_gate.json").write_text("{}", encoding="utf-8")
+    run.joinpath("publish_verdict.json").write_text(json.dumps(verdict), encoding="utf-8")
+
+    def fail_recompute(_run: Path) -> dict[str, Any]:
+        raise AssertionError("queue probe should not recompute stored verdicts")
+
+    monkeypatch.setattr(daily, "publish_verdict", fail_recompute)
+
+    queue = daily._build_queue(root / "runs", include_archive=False)
+
+    assert [row["topic"] for row in queue["ready_to_publish"]] == ["fast_probe"]
+
+
 def _memo_with_receipt_shapes(
     root: Path, verdict: dict[str, Any], shapes: list[dict[str, str]],
 ) -> None:

@@ -381,6 +381,15 @@ def _verdict_for_run(run: Path) -> Json:
     }
 
 
+def _cached_verdict_for_run(run: Path) -> Json:
+    data = _json(run / "publish_verdict.json", {})
+    if isinstance(data, dict) and data:
+        if data.get("decision") in _AGENT_REPAIR_DECISIONS:
+            return _verdict_for_run(run)
+        return data
+    return _verdict_for_run(run)
+
+
 def _run_domain(run: Path, verdict: Json) -> str:
     return (
         domain_slug(verdict.get("domain"))
@@ -713,7 +722,7 @@ def _build_queue(
     missing_domain_count = 0
     untagged_seed_claimed_count = 0
     for run in latest.values():
-        row = _verdict_for_run(run)
+        row = _cached_verdict_for_run(run)
         run_domain = _run_domain(run, row)
         if not run_domain:
             # Universal claim rule (no hardcoded slug): an untagged run joins the
