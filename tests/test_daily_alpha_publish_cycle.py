@@ -2115,6 +2115,18 @@ def test_glp_longevity_cooldown_does_not_token_block_unrelated_families(tmp_path
             assert ledger["family_blocked_count"] == 0
 
 
+def test_acronym_family_blocks_expanded_topic_variant() -> None:
+    assert daily._family_blocked_topic(
+        "retrieval_augmented_generation", {"RAG"},
+    ) is True
+    assert daily._family_blocked_topic(
+        "rag", {"retrieval_augmented_generation"},
+    ) is True
+    assert daily._family_blocked_topic(
+        "multi_agent_systems", {"RAG"},
+    ) is False
+
+
 def test_receipt_shape_mismatch_reranks_before_submit(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     bad = _verdict("mixed_direct_receipts", score=100)
@@ -8528,6 +8540,52 @@ def test_fresh_parent_topics_prefer_source_diversity_over_raw_fact_volume(
         limit=1,
         min_sources=5,
     ) == ["source_diverse_parent"]
+
+
+def test_fresh_parent_topics_dedupe_acronym_family_variants(
+    tmp_path: Path,
+) -> None:
+    discovery = tmp_path / "_topics_discovery"
+    discovery.mkdir()
+    (discovery / "latest.json").write_text(json.dumps({
+        "domain": {"slug": "ai_research"},
+        "all": [
+            {
+                "topic": "RAG",
+                "fact_source_count": 20,
+                "paper_count": 20,
+                "velocity_score": 100.0,
+            },
+            {
+                "topic": "retrieval_augmented_generation",
+                "fact_source_count": 19,
+                "paper_count": 19,
+                "velocity_score": 99.0,
+            },
+            {
+                "topic": "multi_agent_systems",
+                "fact_source_count": 12,
+                "paper_count": 12,
+                "velocity_score": 80.0,
+            },
+        ],
+    }), encoding="utf-8")
+
+    assert daily._fresh_parent_topics_from_discovery(
+        tmp_path,
+        "ai_research",
+        set(),
+        limit=3,
+        min_sources=5,
+    ) == ["RAG", "multi_agent_systems"]
+
+    assert daily._fresh_parent_topics_from_discovery(
+        tmp_path,
+        "ai_research",
+        {"RAG"},
+        limit=3,
+        min_sources=5,
+    ) == ["multi_agent_systems"]
 
 
 def test_child_topics_from_queue_caps_slug_to_four_tokens() -> None:

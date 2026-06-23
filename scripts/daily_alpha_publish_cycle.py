@@ -909,6 +909,20 @@ def _canonical_family_keys(values: Iterable[str]) -> set[str]:
     }
 
 
+def _family_alias_keys(value: str) -> set[str]:
+    tokens = _CLAIM_WORD.findall(str(value).lower())
+    if not tokens:
+        return set()
+    aliases = {"topic:" + "_".join(tokens)}
+    compact = "".join(tokens)
+    if 2 <= len(compact) <= 8 and compact not in _CLUSTER_GENERIC_TOKENS:
+        aliases.add("acronym:" + compact)
+    initials = "".join(token[0] for token in tokens if token not in _CLUSTER_GENERIC_TOKENS)
+    if len(tokens) >= 2 and 2 <= len(initials) <= 8:
+        aliases.add("acronym:" + initials)
+    return aliases
+
+
 def _domain_seed_tokens(domain: str | None) -> set[str]:
     if not domain or domain == load_domain_profile(None).slug:
         return set()
@@ -3257,11 +3271,15 @@ def _family_blocked_topic(topic: str, blocked_topics: set[str]) -> bool:
     if topic in blocked_topics:
         return True
     topic_key = _canonical_family_key(topic)
+    topic_aliases = _family_alias_keys(topic)
     topic_tokens = _family_tokens(topic)
-    if not topic_tokens:
+    if not topic_tokens and not topic_aliases:
         return False
     for blocked in blocked_topics:
-        if topic_key and topic_key == _canonical_family_key(blocked):
+        blocked_aliases = _family_alias_keys(blocked)
+        if (
+            topic_key and topic_key == _canonical_family_key(blocked)
+        ) or (topic_aliases and blocked_aliases and topic_aliases & blocked_aliases):
             return True
         blocked_tokens = _family_tokens(blocked)
         if not blocked_tokens:
@@ -3296,6 +3314,7 @@ def _fresh_parent_topics_from_discovery(
     )
     ranked: list[tuple[tuple[int, int, float, int, str], str]] = []
     seen: set[str] = set()
+    seen_families: set[str] = set()
     for path in paths:
         data = _json(path, {})
         if not isinstance(data, dict) or not _same_domain(_row_domain(data), profile_slug):
@@ -3307,7 +3326,13 @@ def _fresh_parent_topics_from_discovery(
             if not isinstance(row, dict):
                 continue
             topic = cap_topic_slug(str(row.get("topic") or "").strip())
-            if not topic or topic in seen or _family_blocked_topic(topic, blocked_topics):
+            aliases = _family_alias_keys(topic)
+            if (
+                not topic
+                or topic in seen
+                or bool(aliases & seen_families)
+                or _family_blocked_topic(topic, blocked_topics)
+            ):
                 continue
             with suppress(TypeError, ValueError):
                 fact_sources = int(row.get("fact_source_count") or 0)
@@ -3321,6 +3346,7 @@ def _fresh_parent_topics_from_discovery(
                     topic,
                 ))
                 seen.add(topic)
+                seen_families.update(aliases)
         if len(ranked) >= limit:
             break
     return [topic for _score, topic in sorted(ranked)[:limit]]
