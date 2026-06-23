@@ -3115,7 +3115,7 @@ def _fresh_parent_topics_from_discovery(
         key=lambda path: path.stat().st_mtime if path.exists() else 0,
         reverse=True,
     )
-    ranked: list[tuple[tuple[int, int, float, str], str]] = []
+    ranked: list[tuple[tuple[int, int, float, int, str], str]] = []
     seen: set[str] = set()
     for path in paths:
         data = _json(path, {})
@@ -3136,7 +3136,11 @@ def _fresh_parent_topics_from_discovery(
                 velocity = float(row.get("velocity_score") or 0.0)
                 if max(fact_sources, papers) < min_sources:
                     continue
-                ranked.append(((-fact_sources, -papers, -velocity, topic), topic))
+                source_breadth = min(fact_sources, papers)
+                ranked.append((
+                    (-source_breadth, -papers, -velocity, -fact_sources, topic),
+                    topic,
+                ))
                 seen.add(topic)
         if len(ranked) >= limit:
             break

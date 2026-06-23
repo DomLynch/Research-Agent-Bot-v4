@@ -5764,7 +5764,7 @@ def test_timed_out_priority_parent_tries_next_fresh_parent_topic(
             {
                 "topic": "resveratrol supplementation",
                 "fact_source_count": 22,
-                "paper_count": 10,
+                "paper_count": 20,
                 "velocity_score": 100,
             },
             {
@@ -8154,6 +8154,38 @@ def test_fresh_parent_topics_scan_recent_domain_discovery_snapshots(
         limit=1,
         min_sources=5,
     ) == ["source rich parent"]
+
+
+def test_fresh_parent_topics_prefer_source_diversity_over_raw_fact_volume(
+    tmp_path: Path,
+) -> None:
+    discovery = tmp_path / "_topics_discovery"
+    discovery.mkdir()
+    (discovery / "latest.json").write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [
+            {
+                "topic": "fact_heavy_narrow_parent",
+                "fact_source_count": 30,
+                "paper_count": 6,
+                "velocity_score": 100.0,
+            },
+            {
+                "topic": "source_diverse_parent",
+                "fact_source_count": 18,
+                "paper_count": 14,
+                "velocity_score": 80.0,
+            },
+        ],
+    }), encoding="utf-8")
+
+    assert daily._fresh_parent_topics_from_discovery(
+        tmp_path,
+        "longevity_research",
+        set(),
+        limit=1,
+        min_sources=5,
+    ) == ["source_diverse_parent"]
 
 
 def test_child_topics_from_queue_caps_slug_to_four_tokens() -> None:
