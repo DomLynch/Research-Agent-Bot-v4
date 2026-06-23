@@ -326,13 +326,6 @@ def _fact_source_facets(
     )[:limit])
 
 
-# A child topic is its seed plus 1-2 specificity tokens. Past this it becomes a
-# recursively-accreted word-salad ("exercise_difference_training_control_
-# resistance_care_usual_qigong"): such topics never cluster, time out the refresh,
-# and crowd the clean seed list out of the build queue. A topic at or past the cap
-# spawns no further children, and emitted child slugs are truncated to it — a
-# GLOBAL ceiling the per-run child-depth limit misses, because a prior run's child
-# re-enters the next cycle as a fresh depth-0 parent and keeps accreting.
 _MAX_TOPIC_TOKENS = 4
 
 
@@ -347,7 +340,6 @@ def cap_topic_slug(slug: str) -> str:
 def _fact_child_slugs(
     fact: dict[str, Any], topic: str, *, limit: int = 6,
 ) -> tuple[str, ...]:
-    """Derive child-topic slugs from direct fact structure, not static terms."""
     if topic_token_count(topic) >= _MAX_TOPIC_TOKENS:
         return ()
     topic_words = set(_title_tokens(topic.replace("_", " ")))
@@ -493,7 +485,6 @@ def _fetch_topic_fact_source_profile(
     child_source_papers: dict[str, dict[str, dict[str, Any]]] | None = None,
     source_papers: dict[str, dict[str, Any]] | None = None,
 ) -> tuple[int, tuple[tuple[str, int], ...]]:
-    """Count unique direct bindable fact-backed sources for ranking."""
     base = settings.researka_database_url.rstrip("/")
     tok = settings.researka_database_token.strip()
     if not base or not tok:
@@ -581,9 +572,6 @@ def _fetch_topic_fact_source_profile(
             and any(len(keys) >= _PUBLISHABLE_SOURCE_FLOOR for keys in child_sources.values())
         ):
             break
-    # Distinguish "genuinely 0 A_core" (queries ran, found none) from
-    # "probe failed" (every query timed out/errored). The latter must
-    # NOT masquerade as a real 0 — that is what mis-ranked rich topics.
     if not any_success:
         return _PROBE_INCONCLUSIVE, ()
     children = tuple(
@@ -1026,9 +1014,6 @@ def _fetch_fact_source_counts(
         }
         for fut in as_completed(futures):
             probed[futures[fut]] = fut.result()
-    # Successful probe (>=0): refresh cache + use it. Inconclusive (-1):
-    # keep the last cached count if any, else fall back to 0; never cache
-    # a failure as a real count.
     for topic, (count, children, child_papers, root_papers) in probed.items():
         if count >= 0:
             entry: dict[str, Any] = {
@@ -1206,7 +1191,6 @@ def _fetch_topic_papers(
     topic: str, *, client: httpx.Client, settings: Settings,
     limit: int = 25,
 ) -> list[dict[str, Any]]:
-    """POST /api/v1/papers/topic; [] on any error."""
     base = settings.researka_database_url.rstrip("/")
     tok = settings.researka_database_token.strip()
     if not base or not tok:
@@ -1223,7 +1207,46 @@ def _fetch_topic_papers(
         return []
     if not isinstance(data, list):
         return []
-    return [p for p in data if isinstance(p, dict)]
+    papers = [p for p in data if isinstance(p, dict)]
+    return papers or _fetch_fullraw_topic_papers(topic, client=client, limit=limit)
+
+
+def _fetch_fullraw_topic_papers(topic: str, *, client: httpx.Client, limit: int = 25) -> list[dict[str, Any]]:
+    url = os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip()
+    if not url or os.environ.get("TOPIC_DISCOVERY_FULLRAW_FALLBACK", "1").lower() in {"0", "false", "no", "off"}:
+        return []
+    timeout = _float_env("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", 20.0)
+    token = os.environ.get("V5_MEMO_FULL_RAW_CORPUS_TOKEN", "").strip()
+    try:
+        response = client.post(
+            url,
+            headers={"Authorization": f"Bearer {token}"} if token else {},
+            json={"query": topic.replace("_", " ")[:1024], "limit": max(1, min(limit, 25)), "top_k": max(1, min(limit, 25)), "corpus": "full_raw_450m_plus", "rank_mode": "hybrid", "timeout_seconds": timeout, "cache_only": True, "queue_if_missing": True},
+            timeout=timeout + 2.0,
+        )
+        response.raise_for_status()
+        data = response.json()
+    except (httpx.HTTPError, ValueError):
+        return []
+    if not isinstance(data, dict) or not isinstance(meta := data.get("meta"), dict):
+        return []
+    if not isinstance(receipt := meta.get("shard_receipt"), dict):
+        return []
+    sources = receipt.get("sources_searched")
+    try:
+        shards = int(receipt.get("shards_searched") or 0)
+    except (TypeError, ValueError):
+        return []
+    items = data.get("results") or data.get("hits") or []
+    if not isinstance(sources, dict) or shards <= 0 or not sources.get("openalex") or not isinstance(items, list):
+        return []
+    out = []
+    for item in items:
+        if not isinstance(item, dict) or not (title := str(item.get("title") or item.get("display_name") or "").strip()):
+            continue
+        doi = str(item.get("doi") or "").strip()
+        out.append({"doi": doi, "pmid": item.get("pmid"), "pmcid": item.get("pmcid"), "paper_id": item.get("paper_id") or item.get("id"), "title": title, "journal": item.get("journal") or item.get("venue") or item.get("source_name"), "publication_year": item.get("publication_year") or item.get("year"), "fwci": item.get("fwci") or 1.0, "cited_by_count": item.get("cited_by_count") or item.get("citation_count") or 0, "quality_score": item.get("quality_score") or 70.0, "url": f"https://doi.org/{doi}" if doi else item.get("url"), "fullraw_shard_receipt": dict(receipt)})
+    return out
 
 
 def _fetch_papers_by_topic(
@@ -1253,22 +1276,12 @@ def _fetch_papers_by_topic(
     return out
 
 
-# --- Corpus-native discovery (fact-intervention-cross topic groups) ---------
-# Server-side coherent intervention x claim_type groups that already clear the
-# publish floor, ranked by RARITY (fewest papers first) — narrow + novel.
 _TOPIC_GROUP_STRATEGY = "fact-intervention-cross"
 _TOPIC_GROUP_MIN_EXACT_FACTS = 8
 _TOPIC_GROUP_MIN_PAPERS = 8
 _TOPIC_GROUP_LIMIT = 120  # widened: fresh fallbacks when the narrow head is parked
 _TOPIC_GROUP_BAND_MAX_PAPERS = 60  # raised ceiling; still drops 90+ mega-rows
 
-# A specific *administered* intervention (drug class, named agent, procedure,
-# supplement, diet) yields a coherent single-claim memo that clears editorial
-# review (e.g. the first DOI, "SGLT2 inhibitors"); a bare condition/demographic/
-# broad-exposure topic ("exercise", "ageing", "type 2 diabetes") yields an
-# evidence-map that gets rejected. These substrings flag the former so the band
-# is ranked intervention-first. RANK ONLY — nothing is dropped, so it degrades
-# safely; pair with evidence density (facts/paper) as the specificity tiebreak.
 _INTERVENTION_MARKERS = (
     "inhibitor", "agonist", "antagonist", "blocker", "supplement", "therapy",
     "treatment", "surgery", "vaccin", "diet", " use", "flozin", "gliptin",
@@ -1328,8 +1341,6 @@ def _topic_group_candidates(
             claim_type=claim_type,
         ))
     if _specificity_rank_enabled():
-        # Intervention-first, then evidence density, then rarity — surface the
-        # SGLT2-style single-claim gems ahead of broad-exposure evidence-maps.
         band.sort(key=lambda c: (
             tuple(-x for x in _topic_specificity_key(
                 c.topic, c.paper_count, c.fact_source_count,

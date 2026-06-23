@@ -152,6 +152,135 @@ def test_discover_topics_handles_http_error_gracefully() -> None:
     assert out[0].velocity_score == 0.0
 
 
+def test_fetch_topic_papers_falls_back_to_fullraw_when_db_empty(
+    monkeypatch: Any,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "https://fullraw/search")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_TOKEN", "tok-fullraw")
+    payloads: list[dict[str, Any]] = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.host == "test":
+            return httpx.Response(200, json=[])
+        assert req.headers["authorization"] == "Bearer tok-fullraw"
+        payload = json.loads(req.content.decode("utf-8"))
+        payloads.append(payload)
+        return httpx.Response(200, json={
+            "meta": {
+                "shard_receipt": {
+                    "shards_searched": 50,
+                    "sources_searched": {"openalex": 16, "pubmed": 17},
+                },
+            },
+            "results": [{
+                "doi": "10.1/fullraw",
+                "title": "Metformin longevity source diversity",
+                "year": 2025,
+                "venue": "Fullraw Journal",
+                "cited_by_count": 42,
+                "source": "openalex",
+            }],
+        })
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        papers = td._fetch_topic_papers(
+            "metformin_longevity", client=c, settings=_settings(),
+        )
+
+    assert papers[0]["title"] == "Metformin longevity source diversity"
+    assert papers[0]["publication_year"] == 2025
+    assert papers[0]["fullraw_shard_receipt"]["shards_searched"] == 50
+    assert payloads[0]["cache_only"] is True
+
+
+def test_fullraw_fallback_requires_openalex_receipt(monkeypatch: Any) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "https://fullraw/search")
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.host == "test":
+            return httpx.Response(200, json=[])
+        return httpx.Response(200, json={
+            "meta": {
+                "shard_receipt": {
+                    "shards_searched": 50,
+                    "sources_searched": {"pubmed": 17},
+                },
+            },
+            "results": [{"title": "Should not be trusted"}],
+        })
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        papers = td._fetch_topic_papers(
+            "metformin_longevity", client=c, settings=_settings(),
+        )
+
+    assert papers == []
+
+
+def test_discover_topics_uses_fullraw_supply_but_keeps_fact_floor(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setenv("TOPIC_GROUPS_DISCOVERY", "0")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "https://fullraw/search")
+    monkeypatch.setattr(td, "_SUPPLY_CACHE_PATH", tmp_path / "supply.json")
+
+    def facts(n: int) -> list[dict[str, Any]]:
+        return [
+            {
+                "id": f"f{i}",
+                "paper_id": f"10.2/{i}",
+                "paper": {"doi": f"10.2/{i}"},
+                "numeric_value": 10,
+                "units": "%",
+                "population": "adults",
+                "intervention": "metformin",
+                "comparator": "usual care",
+                "canonical_phrase": "metformin improved longevity markers by 10%",
+            }
+            for i in range(n)
+        ]
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.host == "fullraw":
+            return httpx.Response(200, json={
+                "meta": {
+                    "shard_receipt": {
+                        "shards_searched": 50,
+                        "sources_searched": {"openalex": 16},
+                    },
+                },
+                "results": [{
+                    "doi": "10.1/fullraw",
+                    "title": "Metformin longevity randomized evidence",
+                    "year": 2025,
+                    "source": "openalex",
+                    "cited_by_count": 12,
+                }],
+            })
+        if req.url.path.endswith("/tier2/facts/search"):
+            return httpx.Response(200, json=facts(5))
+        return httpx.Response(200, json=[])
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        out = td.discover_topics(
+            seeds=("metformin_longevity",),
+            settings=_settings(),
+            client=c,
+            current_year=2026,
+            fact_probe_topics=1,
+        )
+
+    assert out[0].topic == "metformin_longevity"
+    assert out[0].paper_count == 1
+    assert out[0].fact_source_count == 5
+
+
 def test_discover_topics_empty_seeds_returns_empty() -> None:
     out = discover_topics(
         seeds=(), settings=_settings(), client=None,
