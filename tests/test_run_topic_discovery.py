@@ -242,6 +242,66 @@ def test_excluded_cached_topics_do_not_fill_cache_first_window(
     assert [row["topic"] for row in payload["top"]] == ["seed_fresh_rich"]
 
 
+def test_excluded_topic_family_does_not_fill_cache_first_window(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    cached = (
+        TopicCandidate(
+            topic="metformin_use", paper_count=8, fact_source_count=11,
+            top_paper_doi="", top_paper_title="",
+            velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
+        ),
+        TopicCandidate(
+            topic="resveratrol_supplementation", paper_count=8, fact_source_count=9,
+            top_paper_doi="", top_paper_title="",
+            velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
+        ),
+    )
+
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda: ("metformin", "resveratrol"))
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda: 5_000)
+    monkeypatch.setattr(
+        run_topic_discovery, "cached_source_rich_candidates",
+        lambda *, limit: cached[:limit],
+    )
+    monkeypatch.setattr(
+        run_topic_discovery, "discover_topics",
+        lambda **_kwargs: (_ for _ in ()).throw(AssertionError("cache-only")),
+    )
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--cache-first", "--cache-only", "--top", "2",
+        "--exclude-topic", "metformin_treatment",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert [row["topic"] for row in payload["top"]] == ["resveratrol_supplementation"]
+
+
+def test_topic_family_exclusion_keeps_unrelated_longevity_topics() -> None:
+    candidates = (
+        TopicCandidate(
+            topic="omega_3_longevity", paper_count=8, fact_source_count=8,
+            top_paper_doi="", top_paper_title="",
+            velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
+        ),
+        TopicCandidate(
+            topic="semaglutide_once_weekly", paper_count=8, fact_source_count=8,
+            top_paper_doi="", top_paper_title="",
+            velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
+        ),
+    )
+
+    out = run_topic_discovery._filter_excluded(candidates, {"GLP_1_longevity"})
+
+    assert [row.topic for row in out] == ["omega_3_longevity", "semaglutide_once_weekly"]
+
+
 def test_cache_only_skips_slow_discovery_when_cache_is_underfilled(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

@@ -40,7 +40,7 @@ _TOKEN_RE = re.compile(r"[a-z0-9]+")
 _GENERIC_SCOPE_TOKENS = {
     "ai", "research", "study", "studies", "trial", "trials", "review",
     "meta", "analysis", "effect", "effects", "therapy", "treatment",
-    "intervention", "interventions", "outcome", "outcomes",
+    "use", "uses", "intervention", "interventions", "outcome", "outcomes",
 }
 
 
@@ -104,7 +104,7 @@ def _filter_excluded(
 ) -> tuple[TopicCandidate, ...]:
     if not excluded:
         return candidates
-    return tuple(c for c in candidates if c.topic not in excluded)
+    return tuple(c for c in candidates if not _topic_family_excluded(c.topic, excluded))
 
 
 def _topic_key(value: str) -> str:
@@ -116,6 +116,25 @@ def _topic_tokens(value: str) -> set[str]:
         token for token in _TOKEN_RE.findall(value.casefold())
         if len(token) > 1 and token not in _GENERIC_SCOPE_TOKENS
     }
+
+
+def _topic_family_excluded(topic: str, excluded: set[str]) -> bool:
+    if topic in excluded:
+        return True
+    topic_key = _topic_key(topic)
+    topic_tokens = _topic_tokens(topic)
+    for blocked in excluded:
+        if topic_key and topic_key == _topic_key(blocked):
+            return True
+        blocked_tokens = _topic_tokens(blocked)
+        if not topic_tokens or not blocked_tokens:
+            continue
+        overlap = len(topic_tokens & blocked_tokens)
+        if overlap >= 2 and overlap / min(len(topic_tokens), len(blocked_tokens)) >= 0.5:
+            return True
+        if overlap == 1 and min(len(topic_tokens), len(blocked_tokens)) == 1:
+            return True
+    return False
 
 
 def _domain_scope(seeds: tuple[str, ...]) -> tuple[set[str], set[str]]:
