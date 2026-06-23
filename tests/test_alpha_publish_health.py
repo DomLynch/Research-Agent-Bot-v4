@@ -79,6 +79,40 @@ def test_health_summary_prefers_ledger_timestamp_over_sync_mtime(tmp_path: Path)
     assert summary["topic"] == "caloric_restriction"
 
 
+def test_health_summary_includes_suffixed_cycle_ledgers(tmp_path: Path) -> None:
+    _write_ledger(tmp_path, "2026-06-01T21-59-41Z.json", {
+        "status": "published",
+        "submitted": 1,
+        "published": 1,
+        "published_topic": "caloric_restriction",
+        "public_url": "https://researka.org/alpha/latest",
+    })
+    _write_ledger(tmp_path, "2026-06-01t22-04-11z-decision-f61706f7.json", {
+        "status": "reviewer_revise",
+        "submitted": 1,
+        "published": 0,
+        "submitted_topic": "ignored_decision_probe",
+    })
+    _write_ledger(tmp_path, "probe-20260601T220500Z.json", {
+        "status": "dry_run_selected",
+        "submitted": 0,
+        "published": 0,
+    })
+    _write_ledger(tmp_path, "2026-06-01T22-06-49Z-repair-source-lit-v3.json", {
+        "status": "reviewer_revise",
+        "submitted": 1,
+        "published": 0,
+        "submitted_topic": "metformin use",
+    })
+
+    summary = health.summarize_latest(tmp_path)
+
+    assert summary["ledger"] == "2026-06-01T22-06-49Z-repair-source-lit-v3.json"
+    assert summary["ok"] is False
+    assert summary["status"] == "reviewer_revise"
+    assert summary["topic"] == "metformin use"
+
+
 def test_health_summary_ignores_probe_and_decision_ledgers(tmp_path: Path) -> None:
     _write_ledger(tmp_path, "probe-20260601T080818Z.json", {
         "status": "dry_run_selected",
