@@ -212,6 +212,10 @@ _REFRESHABLE_SOURCE_FLOOR_STATUSES = publish_status.REFRESHABLE_SOURCE_FLOOR_STA
 _BATCH_TOPIC_BLOCK_STATUSES = _TOPIC_EXHAUSTED_STATUSES | frozenset({
     "agent_repair_needed",
 })
+_PARENT_REFRESH_BEFORE_CHILD_STATUSES = _TOPIC_EXHAUSTED_STATUSES | frozenset({
+    "cycle_exhausted_topic",
+    "duplicate_published_bundle",
+})
 _AGENT_REPAIR_DECISIONS = {
     "agent_repair_needed", "needs_operator_review", "needs_operator_approval",
 }
@@ -3706,6 +3710,17 @@ def _child_topics_from_queue(
     return [child for _score, child in sorted(candidates)[:limit]]
 
 
+def _prefer_fresh_parent_refresh(considered: list[Json]) -> bool:
+    statuses = {
+        str(row.get("status") or "")
+        for row in considered
+        if isinstance(row, dict) and str(row.get("status") or "")
+    }
+    if not statuses or statuses & _REFRESHABLE_SOURCE_FLOOR_STATUSES:
+        return False
+    return statuses <= _PARENT_REFRESH_BEFORE_CHILD_STATUSES
+
+
 def _cluster_has_repair_receipts(cluster: Json) -> bool:
     values = cluster.get("member_fact_ids") if isinstance(cluster, dict) else []
     if not isinstance(values, list):
@@ -4232,6 +4247,24 @@ def run_cycle(
             ]
             if source_floor_topics:
                 blocked_topics.update(source_floor_topics)
+            fresh_parent_topics: list[str] = []
+            if (
+                refresh_candidates
+                and batch < search_batch_limit
+                and _prefer_fresh_parent_refresh(considered)
+            ):
+                fresh_parent_topics = _fresh_parent_topics_from_discovery(
+                    runs_root,
+                    profile.slug,
+                    blocked_topics,
+                    limit=1,
+                    min_sources=max(min_submit_sources, min_direct_submit_sources),
+                )
+                if fresh_parent_topics:
+                    ledger["refresh_parent_topics"] = fresh_parent_topics
+                    priority_refresh_topics = fresh_parent_topics
+                    force_refresh = True
+                    continue
             priority_children = _child_topics_from_queue(
                 current_queue, blocked_topics, limit=refresh_top, domain=profile.slug,
             )
@@ -4240,13 +4273,14 @@ def run_cycle(
                 priority_refresh_topics = priority_children
                 force_refresh = True
                 continue
-            fresh_parent_topics = _fresh_parent_topics_from_discovery(
-                runs_root,
-                profile.slug,
-                blocked_topics,
-                limit=1,
-                min_sources=max(min_submit_sources, min_direct_submit_sources),
-            )
+            if refresh_candidates and batch < search_batch_limit and not fresh_parent_topics:
+                fresh_parent_topics = _fresh_parent_topics_from_discovery(
+                    runs_root,
+                    profile.slug,
+                    blocked_topics,
+                    limit=1,
+                    min_sources=max(min_submit_sources, min_direct_submit_sources),
+                )
             if refresh_candidates and fresh_parent_topics and batch < search_batch_limit:
                 ledger["refresh_parent_topics"] = fresh_parent_topics
                 priority_refresh_topics = fresh_parent_topics
