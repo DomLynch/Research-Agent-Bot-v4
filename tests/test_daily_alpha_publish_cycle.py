@@ -6910,7 +6910,10 @@ def test_source_literature_fallback_uses_default_fetcher_after_empty_submit_lane
     }
     assert seen_payload["citations"] == seen_payload["source_bundle"]
     assert not seen_payload["abstract"].startswith("Answer:")
-    assert "mixed rather than convergent" in seen_payload["abstract"]
+    assert "context-dependent, not convergent" in seen_payload["abstract"]
+    assert "Grouped by direction" in seen_payload["markdown"]
+    assert "latest Longevity" not in seen_payload["markdown"]
+    assert "matched PICO" in seen_payload["markdown"]
 
 
 def test_repairable_source_literature_revise_retries_before_new_topic(
@@ -6951,12 +6954,17 @@ def test_repairable_source_literature_revise_retries_before_new_topic(
         "Metformin safety and cardiovascular outcomes",
         "Metformin prevention in type 2 diabetes risk",
     )):
+        phrase = (
+            "metformin was associated with lower mortality"
+            if idx in {0, 2, 3} else
+            "no significant effect was found with metformin exposure"
+        )
         papers.append({
             "title": title,
             "doi": f"10.1234/met{idx}",
             "year": 2020 + idx,
             "source_fact": {
-                "canonical_phrase": f"finding {idx}",
+                "canonical_phrase": phrase,
                 "population": "adults",
                 "intervention": "metformin",
                 "comparator": "control",
@@ -7006,6 +7014,9 @@ def test_repairable_source_literature_revise_retries_before_new_topic(
         source["title"] != "Diabetes mortality patterns in national cohorts"
         for source in seen_payload["source_bundle"]
     )
+    assert "directionally favorable" in seen_payload["markdown"]
+    assert "null/non-convergent" in seen_payload["markdown"]
+    assert "matched PICO" in seen_payload["markdown"]
     assert (root / "metformin use-source-literature-2026-06-10T18-00-00Z").exists()
 
 

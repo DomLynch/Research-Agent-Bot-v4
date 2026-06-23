@@ -108,6 +108,58 @@ def _short_finding(value: str, limit: int = 170) -> str:
     return text if len(text) <= limit else text[:limit].rsplit(" ", 1)[0].rstrip(",;") + "..."
 
 
+def _effect_direction(finding: str) -> str:
+    text = finding.casefold()
+    if any(term in text for term in (
+        "no significant", "no effect", "null", "p = 0.83", "p=0.83",
+        "not associated", "no association",
+    )):
+        return "null/non-convergent"
+    if any(term in text for term in (
+        "lower", "reduced", "reduction", "protective", "better", "improved",
+        "benefit", "decreased", "odds ratio of 0.", "hr = 0.", "hr for",
+    )):
+        return "directionally favorable"
+    return "other/mixed"
+
+
+def _direction_summary(facts: list[Json]) -> str:
+    groups: dict[str, list[str]] = {
+        "directionally favorable": [],
+        "null/non-convergent": [],
+        "other/mixed": [],
+    }
+    for fact in facts:
+        finding = str(fact.get("canonical_phrase") or "").strip()
+        if not finding:
+            continue
+        groups[_effect_direction(finding)].append(_short_finding(finding, 120))
+    parts = [
+        f"{label}: " + "; ".join(values[:2])
+        for label, values in groups.items() if values
+    ]
+    return " | ".join(parts) if parts else "direction of effect is not extractable from the retrieved facts"
+
+
+def _pico_gap(facts: list[Json]) -> str:
+    for fact in facts:
+        population = str(fact.get("population") or "").strip()
+        intervention = str(fact.get("intervention") or "").strip()
+        comparator = str(fact.get("comparator") or "").strip()
+        endpoint = str(fact.get("endpoint") or fact.get("metric") or "").strip()
+        if population and intervention and comparator:
+            outcome = endpoint or "one named clinical endpoint"
+            return (
+                "A stronger memo needs one matched PICO, for example: "
+                f"population={population}; intervention/exposure={intervention}; "
+                f"comparator={comparator}; outcome={outcome}."
+            )
+    return (
+        "A stronger memo needs one matched PICO: one population, one "
+        "intervention/exposure, one comparator, and one named outcome."
+    )
+
+
 def context_family(value: Any) -> str:
     text = str(value or "").casefold()
     if any(term in text for term in ("patient", "participant", "adult", "human", "cohort")):
@@ -229,8 +281,9 @@ def payload(
     contexts = sorted({context_family(fact.get("population")) for fact in facts})
     context_text = join_contexts(contexts[:3])
     question = (
-        f"What evidence fronts does {topic} occupy across {context_text}, "
-        "and what remains untested?"
+        f"Across retrieved fact-level receipts for {topic}, which endpoints show "
+        "directionally favorable versus null/non-convergent signals, and what "
+        "matched PICO remains untested?"
     )
     lines = [
         "# Source literature boundary memo",
@@ -242,8 +295,9 @@ def payload(
         "## Selection criteria",
         "",
         (
-            f"The latest {profile.display_name} discovery pass ranked {topic} as "
-            "source-rich. The fallback requires at least five verifiable source "
+            f"The source-literature fallback selected {topic} because the domain "
+            "snapshot exposed enough fact-backed, topic-overlapping papers. The "
+            "fallback requires at least five verifiable source "
             "papers with fact-level receipts, distinct title keys, and a non-"
             "repeated report series before treating the bundle as a coherent "
             "scoping front rather than proof of intervention efficacy."
@@ -298,21 +352,23 @@ def payload(
         str(fact.get("canonical_phrase") or "").strip() for fact in facts
         if str(fact.get("canonical_phrase") or "").strip()
     ]
+    direction_text = _direction_summary(facts)
     synthesis = (
-        f"This {len(bundle)}-source {type_text} bundle supports a receipt-backed "
-        f"scoping note for {topic}, spanning {year_text}. The source facts cover "
+        f"This receipt-backed scoping note has one bounded signal: {topic} shows "
+        f"context-dependent, not convergent, associations across this "
+        f"{len(bundle)}-source {type_text} bundle ({year_text}). Grouped by "
+        f"direction, {direction_text}. The source facts cover "
         f"{len(populations) or 'multiple'} population context(s) and "
-        f"{len(interventions) or 'multiple'} intervention/exposure context(s). "
-        f"The bounded signal is mixed rather than convergent across {context_text}: "
-        "the bundle identifies measured endpoints and where source-level findings "
-        "separate, without establishing a causal, clinical, species-translated, "
-        "or mechanistically integrated intervention claim."
+        f"{len(interventions) or 'multiple'} intervention/exposure context(s), "
+        "so this is a scoping signal about where endpoints diverge, without "
+        "establishing a causal, clinical, species-translated, or mechanistically "
+        "integrated claim."
     )
     if findings:
         examples = [_short_finding(finding) for finding in findings[:3]]
         synthesis += " Concrete source-level examples: " + "; ".join(examples) + "."
     next_gaps = [
-        "A stronger memo needs one matched population/model, intervention or exposure, comparator, and endpoint.",
+        _pico_gap(facts),
         (
             f"If {topic} is promoted beyond a scoping note, the next run should "
             f"select sources sharing one context family rather than mixing {context_text}."
