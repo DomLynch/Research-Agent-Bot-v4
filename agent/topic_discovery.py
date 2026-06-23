@@ -952,9 +952,6 @@ def _fetch_fact_source_counts(
 ) -> dict[str, int]:
     if not topics:
         return {}
-    # Read cached counts first; only re-probe stale/missing topics. This
-    # both slashes per-cycle DB load and means a transient probe failure
-    # cannot overwrite a known-good count (see _SUPPLY_CACHE_PATH note).
     cache = _load_supply_cache()
     now = time.time()
     out: dict[str, int] = {}
@@ -972,10 +969,6 @@ def _fetch_fact_source_counts(
         to_probe.append(topic)
     if not to_probe:
         return out
-    # Concurrency for the per-topic A_core source probe, capped to the
-    # DB-sustainable level (see _FACT_PROBE_WORKERS). With the cache above
-    # only stale/missing topics reach here, so steady-state pressure is low;
-    # the cap protects the cold first-fill from overloading the endpoint.
     workers = min(_FACT_PROBE_WORKERS, len(to_probe))
     probed: dict[
         str,
@@ -1206,7 +1199,14 @@ def _fetch_topic_papers(
         except (httpx.HTTPError, ValueError):
             data = []
     papers = [p for p in data if isinstance(p, dict)] if isinstance(data, list) else []
-    return papers or _fetch_fullraw_topic_papers(topic, client=client, limit=limit)
+    if len(papers) >= limit:
+        return papers
+    out = {(_paper_key(p) or f"db:{i}"): p for i, p in enumerate(papers)}
+    out.update({
+        k: p for p in _fetch_fullraw_topic_papers(topic, client=client, limit=limit)
+        if (k := _paper_key(p)) and k not in out
+    })
+    return list(out.values())[:limit]
 
 
 def _fetch_fullraw_topic_papers(topic: str, *, client: httpx.Client, limit: int = 25) -> list[dict[str, Any]]:

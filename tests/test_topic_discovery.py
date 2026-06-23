@@ -195,6 +195,51 @@ def test_fetch_topic_papers_falls_back_to_fullraw_when_db_empty(
     assert payloads[0]["cache_only"] is True
 
 
+def test_fetch_topic_papers_supplements_thin_db_with_fullraw(
+    monkeypatch: Any,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "https://fullraw/search")
+    db_paper = {
+        "doi": "10.1/shared",
+        "title": "Stale database metformin paper",
+        "publication_year": 2020,
+    }
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.host == "test":
+            return httpx.Response(200, json=[db_paper])
+        return httpx.Response(200, json={
+            "meta": {"shard_receipt": {
+                "shards_searched": 1305,
+                "sources_searched": {"openalex": 1200},
+            }},
+            "results": [
+                {
+                    "doi": "10.1/shared",
+                    "title": "Duplicate fullraw metformin paper",
+                    "year": 2026,
+                },
+                {
+                    "doi": "10.1/fresh",
+                    "title": "Fresh fullraw metformin longevity trial",
+                    "year": 2026,
+                    "source": "openalex",
+                },
+            ],
+        })
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        papers = td._fetch_topic_papers(
+            "metformin_longevity", client=c, settings=_settings(),
+        )
+
+    assert [p["doi"] for p in papers] == ["10.1/shared", "10.1/fresh"]
+    assert papers[0]["title"] == "Stale database metformin paper"
+    assert papers[1]["fullraw_shard_receipt"]["shards_searched"] == 1305
+
+
 def test_fullraw_fallback_requires_openalex_receipt(monkeypatch: Any) -> None:
     from agent import topic_discovery as td
 
