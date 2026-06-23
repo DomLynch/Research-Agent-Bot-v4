@@ -214,3 +214,26 @@ def test_health_summary_falls_back_to_considered_counts_for_old_ledgers(
         "agent_repair_needed": 2,
         "memo_missing_audit_sidecars": 1,
     }
+
+
+def test_health_summary_derives_duplicate_exhaustion_reason_for_old_ledgers(
+    tmp_path: Path,
+) -> None:
+    _write_ledger(tmp_path, "2026-06-01T01-04-07Z.json", {
+        "status": "no_fresh_candidate",
+        "submitted": 0,
+        "published": 0,
+        "reason": "no eligible non-duplicate memo",
+        "considered": [
+            {"status": "duplicate_submission_fingerprint"},
+            {"status": "duplicate_published_bundle"},
+            {"status": "cycle_exhausted_topic"},
+        ],
+    })
+
+    summary = health.summarize_latest(tmp_path)
+
+    assert (
+        summary["reason"]
+        == "all candidates were duplicate, already published, or topic/family exhausted"
+    )

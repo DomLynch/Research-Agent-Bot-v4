@@ -62,6 +62,14 @@ def _attempts(ledger: Json) -> list[Json]:
     return rows
 
 
+def _no_candidate_reason(considered: list[Json]) -> str:
+    try:
+        status_module = importlib.import_module("scripts.alpha_publish_status")
+    except ModuleNotFoundError:
+        status_module = importlib.import_module("alpha_publish_status")
+    return str(status_module.no_candidate_reason(considered))
+
+
 def _ledger_domain_slug(ledger: Json) -> str | None:
     domain = ledger.get("domain")
     if isinstance(domain, dict):
@@ -170,6 +178,12 @@ def summarize_latest(
     if not isinstance(publish_summary, dict):
         publish_summary = {}
     considered_counts = _considered_counts(ledger)
+    reason = ledger.get("reason")
+    if reason in {None, "", "no eligible non-duplicate memo"}:
+        derived_reason = _no_candidate_reason([
+            row for row in ledger.get("considered") or [] if isinstance(row, dict)
+        ])
+        reason = derived_reason or reason
     summary = {
         "ok": published and (not check_url or bool(url_status and 200 <= url_status < 400)),
         "ledger": path.name,
@@ -187,7 +201,7 @@ def summarize_latest(
         "queue_counts": ledger.get("queue_counts") or publish_summary.get("queue_counts") or {},
         "top_blockers": publish_summary.get("top_blockers") or considered_counts,
         "next_action": publish_summary.get("next_action"),
-        "reason": ledger.get("reason"),
+        "reason": reason,
     }
     if decision_sync is not None:
         summary["decision_sync"] = decision_sync
