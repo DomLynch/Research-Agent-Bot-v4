@@ -336,6 +336,39 @@ def test_seed_paper_candidate_skips_slow_discovery_when_enough(
     assert os.environ["TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"] == "20"
 
 
+def test_empty_seed_paper_probe_skips_slow_discovery_for_fullraw_domains(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "http://127.0.0.1/search")
+    monkeypatch.setattr(
+        run_topic_discovery, "load_seed_topics",
+        lambda _path=None: ("multi_agent_systems",),
+    )
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(
+        run_topic_discovery, "load_derived_topic_limit",
+        lambda _path=None: 5_000,
+    )
+    monkeypatch.setattr(run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: ())
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", lambda *_a, **_k: [])
+    monkeypatch.setattr(
+        run_topic_discovery, "discover_topics",
+        lambda **_kwargs: (_ for _ in ()).throw(AssertionError("slow discovery")),
+    )
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--domain", "ai_research", "--top", "1",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert payload["candidate_count"] == 0
+    assert payload["top"] == []
+
+
 def test_discovery_hydration_tries_domain_context_after_bare_label(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

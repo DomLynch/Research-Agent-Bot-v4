@@ -69,6 +69,10 @@ def _seed_paper_probe_limit(top: int) -> int:
         return max(top, 6)
 
 
+def _fullraw_configured() -> bool:
+    return bool(os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip())
+
+
 def _context_query_terms(value: str) -> str:
     seen: dict[str, None] = {}
     for token in _TOKEN_RE.findall(value.casefold()):
@@ -428,7 +432,12 @@ def main() -> int:
         )
         ranked = _merge_candidates(ranked, seed_paper_ranked)
         paper_backed_cached = sum(1 for c in ranked if c.paper_count and c.top_paper_title)
-    if paper_backed_cached < args.top and not args.cache_only and not seed_paper_ranked:
+    if (
+        paper_backed_cached < args.top
+        and not args.cache_only
+        and not seed_paper_ranked
+        and (cache_supported or not _fullraw_configured())
+    ):
         with httpx.Client() as client:
             discovered = discover_topics(
                 seeds=seeds, settings=settings, client=client,
