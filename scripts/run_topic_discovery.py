@@ -28,6 +28,7 @@ from agent.domain_profile import domain_choices, load_domain_profile
 from agent.settings import Settings, load_settings
 from agent.topic_discovery import (
     TopicCandidate,
+    _fetch_fullraw_topic_papers,
     _fetch_topic_papers,
     _score_topic,
     cached_source_rich_candidates,
@@ -59,6 +60,13 @@ def _hydrate_query_limit() -> int:
         return max(1, int(os.environ.get("TOPIC_DISCOVERY_HYDRATE_QUERIES", 3)))
     except (TypeError, ValueError):
         return 3
+
+
+def _seed_paper_probe_limit(top: int) -> int:
+    try:
+        return max(0, int(os.environ.get("TOPIC_DISCOVERY_SEED_PAPER_TOPICS", 6)))
+    except (TypeError, ValueError):
+        return max(top, 6)
 
 
 def _context_query_terms(value: str) -> str:
@@ -201,6 +209,38 @@ def _hydrate_candidates(
                     sub_topic=candidate.sub_topic,
                     claim_type=candidate.claim_type,
                 ))
+    return tuple(sorted(out, key=_rank_key))
+
+
+def _seed_paper_candidates(
+    seeds: tuple[str, ...], *, settings: Settings, current_year: int, top: int,
+) -> tuple[TopicCandidate, ...]:
+    out: list[TopicCandidate] = []
+    old_timeout = os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS")
+    os.environ.setdefault("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", "6")
+    try:
+        with httpx.Client() as client:
+            for seed in seeds[:_seed_paper_probe_limit(top)]:
+                candidate = TopicCandidate(
+                    topic=seed, paper_count=0, fact_source_count=0,
+                    top_paper_doi="", top_paper_title="",
+                    velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
+                )
+                if not _hydration_probeable(candidate):
+                    continue
+                papers = _fetch_fullraw_topic_papers(seed, client=client, limit=5)
+                scored = _score_topic(
+                    seed, papers, current_year, fact_source_count=len(papers),
+                )
+                if scored.top_paper_title:
+                    out.append(scored)
+                if len(out) >= top:
+                    break
+    finally:
+        if old_timeout is None:
+            os.environ.pop("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", None)
+        else:
+            os.environ["TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"] = old_timeout
     return tuple(sorted(out, key=_rank_key))
 
 
@@ -368,7 +408,18 @@ def main() -> int:
     )
     ranked = _filter_cached_seed_scope(_filter_excluded(ranked, excluded), seeds)
     paper_backed_cached = sum(1 for c in ranked if c.paper_count and c.top_paper_title)
+    seed_paper_ranked: tuple[TopicCandidate, ...] = ()
     if paper_backed_cached < args.top and not args.cache_only:
+        seed_paper_ranked = _filter_excluded(
+            _seed_paper_candidates(
+                seeds, settings=settings, current_year=year,
+                top=max(1, args.top - paper_backed_cached),
+            ),
+            excluded,
+        )
+        ranked = _merge_candidates(ranked, seed_paper_ranked)
+        paper_backed_cached = sum(1 for c in ranked if c.paper_count and c.top_paper_title)
+    if paper_backed_cached < args.top and not args.cache_only and not seed_paper_ranked:
         with httpx.Client() as client:
             discovered = discover_topics(
                 seeds=seeds, settings=settings, client=client,
