@@ -633,13 +633,23 @@ def _pre_submit_hold(
         )
         return hold | {"status": status}
     if direct_source_count < eff_min_direct_count:
-        return hold | {"status": "direct_source_floor_below_min"}
+        return hold | {
+            "status": publish_status.CandidateStatus.DIRECT_SOURCE_FLOOR_BELOW_MIN.value,
+        }
+    duplicate_studies = _duplicate_study_evidence(verdict, root)
+    if duplicate_studies:
+        return hold | {
+            "status": publish_status.CandidateStatus.DUPLICATE_SOURCE_EVIDENCE.value,
+            **duplicate_studies,
+        }
     if (
         verdict.get("surface_type") != "evidence_map"
         and not cluster_backed
         and not _direct_receipts_share_shape(verdict, root, min_direct_source_count)
     ):
-        return hold | {"status": "receipt_shape_mismatch"}
+        return hold | {
+            "status": publish_status.CandidateStatus.RECEIPT_SHAPE_MISMATCH.value,
+        }
     return hold | {"status": ""}
 
 
@@ -2198,6 +2208,48 @@ def _memo_source_papers(
     return papers
 
 
+def _study_title_key_from_fact(fact: Json) -> str:
+    paper = fact.get("source_paper") or {}
+    if not isinstance(paper, dict):
+        return ""
+    tokens = _CLAIM_WORD.findall(str(paper.get("title") or "").lower())
+    return " ".join(tokens) if len(tokens) >= 5 else ""
+
+
+def _duplicate_study_evidence(verdict: Json, root: Path) -> Json:
+    facts = (
+        _map_citable_facts(verdict, root)
+        if str(verdict.get("surface_type") or "") == "evidence_map"
+        else _memo_source_facts(verdict, root, ("Evidence",), {"A_core"})
+    )
+    seen: dict[str, tuple[str, str]] = {}
+    duplicates: list[Json] = []
+    for fact in facts:
+        source_key = _source_key_from_fact(fact)
+        title_key = _study_title_key_from_fact(fact)
+        if not source_key or not title_key:
+            continue
+        paper = fact.get("source_paper") or {}
+        title = str(paper.get("title") or "").strip()
+        previous = seen.get(title_key)
+        if previous and previous[0] != source_key:
+            duplicates.append({
+                "title": title or previous[1],
+                "source_key": source_key,
+                "duplicate_of": previous[0],
+            })
+        else:
+            seen[title_key] = (source_key, title)
+    if not duplicates:
+        return {}
+    return {
+        "duplicate_source_evidence": {
+            "count": len(duplicates),
+            "examples": duplicates[:3],
+        },
+    }
+
+
 def _landscape_source_facts(verdict: Json, root: Path, *, cap: int = 40) -> list[Json]:
     """Every A_core fact in the run, deduped to one per distinct source paper —
     the full evidence-map landscape, newest-first and capped for readability.
@@ -2663,6 +2715,7 @@ def select_candidate(
         corpus_source_count = _corpus_source_count(verdict, runs_root)
         shape_bonus = accepted_shape_bonus(verdict, shape_profiles)
         status = "eligible"
+        duplicate_studies: Json = {}
         memo_refreshed = False
         retry_fingerprint_unchanged = False
         has_memo = _has_memo(verdict, runs_root)
@@ -3054,19 +3107,26 @@ def select_candidate(
                         status = "eligible"
                 elif direct_source_count < eff_min_direct_count:
                     status = "direct_source_floor_below_min"
-                elif (
-                    verdict.get("surface_type") != "evidence_map"
-                    and not cluster_backed
-                    and not _direct_receipts_share_shape(
-                        verdict, runs_root, min_direct_source_count,
-                    )
-                ):
-                    # An evidence map is an honest multi-shape scoping review, and
-                    # an M3-cluster-backed single claim was already shape-waived by
-                    # publish_tier; the single-claim token-shape gate applies to
-                    # neither. Without these waivers a memo publish_tier passed is
-                    # re-blocked here and never submits.
-                    status = "receipt_shape_mismatch"
+                else:
+                    duplicate_studies = _duplicate_study_evidence(verdict, runs_root)
+                    if duplicate_studies:
+                        status = (
+                            publish_status.CandidateStatus
+                            .DUPLICATE_SOURCE_EVIDENCE.value
+                        )
+                    elif (
+                        verdict.get("surface_type") != "evidence_map"
+                        and not cluster_backed
+                        and not _direct_receipts_share_shape(
+                            verdict, runs_root, min_direct_source_count,
+                        )
+                    ):
+                        # An evidence map is an honest multi-shape scoping review, and
+                        # an M3-cluster-backed single claim was already shape-waived by
+                        # publish_tier; the single-claim token-shape gate applies to
+                        # neither. Without these waivers a memo publish_tier passed is
+                        # re-blocked here and never submits.
+                        status = "receipt_shape_mismatch"
         row = {
             "topic": _selection_topic(verdict),
             "domain_slug": domain or _row_domain(verdict),
@@ -3095,6 +3155,8 @@ def select_candidate(
             row["retry_attempt_count"] = attempt_count
         if missing_audit_sidecars:
             row["missing_audit_sidecars"] = missing_audit_sidecars
+        if duplicate_studies:
+            row["duplicate_source_evidence"] = duplicate_studies["duplicate_source_evidence"]
         considered.append(row)
         if status == "eligible":
             # _staging_refreshed tells the submit path this memo was already
@@ -4571,6 +4633,8 @@ def run_cycle(
                     row["corpus_ab_paper_count"] = hold["corpus_ab_paper_count"]
                     if hold.get("missing_audit_sidecars"):
                         row["missing_audit_sidecars"] = hold["missing_audit_sidecars"]
+                    if hold.get("duplicate_source_evidence"):
+                        row["duplicate_source_evidence"] = hold["duplicate_source_evidence"]
                     break
             ledger["cycle_attempts"].append(attempt)
             for fingerprint in {selected_fingerprint, current_fingerprint}:

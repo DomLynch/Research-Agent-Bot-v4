@@ -104,6 +104,12 @@ def test_no_candidate_reason_reports_mixed_exhausted_and_repair_needed() -> None
     )
 
 
+def test_no_candidate_reason_reports_duplicate_source_evidence() -> None:
+    assert no_candidate_reason([
+        {"status": "duplicate_source_evidence"},
+    ]) == "best candidate counted duplicate study evidence as independent sources"
+
+
 def test_queue_counts_include_legacy_operator_review_bucket() -> None:
     assert queue_counts({
         "ready_to_publish": [{}, {}],

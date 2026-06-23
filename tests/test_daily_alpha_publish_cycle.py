@@ -2187,6 +2187,43 @@ def test_receipt_shape_mismatch_reranks_before_submit(tmp_path: Path) -> None:
     assert submissions[0]["topic"] == "matched_direct_receipts"
 
 
+def test_duplicate_study_evidence_reranks_before_submit(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    bad = _verdict("duplicate_study_evidence", score=100)
+    good = _verdict("distinct_study_evidence", score=90)
+    _memo_with_source_receipts(root, bad, 5)
+    _memo_with_source_receipts(root, good, 5)
+    facts_path = root / str(bad["run_dir"]) / "all_facts.json"
+    facts = json.loads(facts_path.read_text(encoding="utf-8"))
+    duplicate_title = "Contextual trust evaluation for robust coordination in large systems"
+    facts[0]["source_paper"] = {"doi": "10.1109/example.1", "title": duplicate_title}
+    facts[1]["source_paper"] = {"doi": "10.20944/preprints.example", "title": duplicate_title}
+    for idx, fact in enumerate(facts[2:], start=2):
+        fact["source_paper"]["title"] = f"Independent coordination source {idx}"
+    facts_path.write_text(json.dumps(facts), encoding="utf-8")
+    submissions: list[dict[str, Any]] = []
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submissions.append(payload)
+        return {"ok": True, "status": 200, "response": {}}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-23T17-30-00Z",
+        queue=_queue(bad, good),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+    )
+
+    assert ledger["submitted_topic"] == "distinct_study_evidence"
+    assert ledger["considered"][0]["status"] == "duplicate_source_evidence"
+    assert ledger["considered"][0]["duplicate_source_evidence"]["count"] == 1
+    assert ledger["considered"][1]["status"] == "eligible"
+    assert len(submissions) == 1
+
+
 def test_single_claim_outranks_evidence_map_for_submission(tmp_path: Path) -> None:
     """A bounded single-claim memo clears editorial review; an evidence map does
     not yet. The single claim must submit first even when a source-rich map has a

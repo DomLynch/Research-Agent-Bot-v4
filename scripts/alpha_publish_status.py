@@ -46,6 +46,7 @@ class CandidateStatus(StrEnum):
     CYCLE_FAILED_SUBMISSION = "cycle_failed_submission"
     HELD_RETRACTION_CHECK = "held_retraction_check"
     RECEIPT_SHAPE_MISMATCH = "receipt_shape_mismatch"
+    DUPLICATE_SOURCE_EVIDENCE = "duplicate_source_evidence"
     EVIDENCE_MAP_BELOW_CITATION_FLOOR = "evidence_map_below_citation_floor"
     EVIDENCE_MAP_SCOPE_MISMATCH = "evidence_map_scope_mismatch"
     CORPUS_SOURCE_FLOOR_BELOW_MIN = "corpus_source_floor_below_min"
@@ -64,6 +65,7 @@ EXHAUSTED_STATUSES = frozenset({
     CandidateStatus.CYCLE_FAILED_SUBMISSION.value,
     CandidateStatus.HELD_RETRACTION_CHECK.value,
     CandidateStatus.RECEIPT_SHAPE_MISMATCH.value,
+    CandidateStatus.DUPLICATE_SOURCE_EVIDENCE.value,
     CandidateStatus.EVIDENCE_MAP_BELOW_CITATION_FLOOR.value,
     CandidateStatus.EVIDENCE_MAP_SCOPE_MISMATCH.value,
 })
@@ -72,6 +74,7 @@ TOPIC_EXHAUSTED_STATUSES = frozenset({
     CandidateStatus.CYCLE_FAILED_SUBMISSION.value,
     CandidateStatus.HELD_RETRACTION_CHECK.value,
     CandidateStatus.RECEIPT_SHAPE_MISMATCH.value,
+    CandidateStatus.DUPLICATE_SOURCE_EVIDENCE.value,
     CandidateStatus.EVIDENCE_MAP_BELOW_CITATION_FLOOR.value,
     CandidateStatus.EVIDENCE_MAP_SCOPE_MISMATCH.value,
 })
@@ -170,6 +173,8 @@ def no_candidate_reason(considered: list[Json]) -> str:
         return "best evidence-map candidate was below citation floor"
     if "evidence_map_scope_mismatch" in statuses:
         return "best evidence-map candidate was too broad for one bounded map"
+    if "duplicate_source_evidence" in statuses:
+        return "best candidate counted duplicate study evidence as independent sources"
     return "no eligible non-duplicate memo"
 
 
