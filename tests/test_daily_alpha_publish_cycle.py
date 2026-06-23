@@ -462,6 +462,7 @@ def test_refresh_cycle_marks_initial_queue_probe_before_queue_build(
     assert written["status"] == "started"
     assert written["stage"] == "initial_queue_probe"
     assert written["next_action"] == "building_current_publish_queue"
+    assert written["publish_summary"]["next_action"] == "building_current_publish_queue"
 
 
 def test_refresh_cycle_probes_existing_ready_queue_before_discovery(

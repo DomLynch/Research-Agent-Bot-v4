@@ -198,7 +198,11 @@ def publish_summary(ledger: Json) -> Json:
         "last_attempt_status": attempts[-1].get("status") if attempts else None,
         "public_url": ledger.get("public_url"),
         "public_page_status": page.get("status") if isinstance(page, dict) else None,
-        "next_action": next_action_for_status(str(ledger.get("status") or "")),
+        "next_action": (
+            str(ledger.get("next_action"))
+            if ledger.get("next_action") else
+            next_action_for_status(str(ledger.get("status") or ""))
+        ),
     }
 
 
