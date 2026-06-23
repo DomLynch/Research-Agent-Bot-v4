@@ -14,6 +14,11 @@ from agent.researka_facts import tier2_domain
 from agent.settings import load_settings
 
 Json = dict[str, Any]
+_GENERIC_TOPIC_TOKENS = frozenset({
+    "association", "associations", "clinical", "effect", "effects", "evidence",
+    "exposure", "intervention", "outcome", "outcomes", "review", "study",
+    "trial", "treatment", "use", "using",
+})
 
 
 def title_key(title: Any) -> str:
@@ -24,10 +29,46 @@ def title_key(title: Any) -> str:
     return " ".join(token for token in raw.split() if token)
 
 
+def _topic_tokens(topic: str) -> set[str]:
+    tokens: set[str] = set()
+    for token in title_key(topic).split():
+        if len(token) < 3 or token in _GENERIC_TOPIC_TOKENS:
+            continue
+        tokens.add(token)
+        if len(token) > 4 and token.endswith("s"):
+            tokens.add(token[:-1])
+    return tokens
+
+
+def topic_relevant(topic: str, paper: Json) -> bool:
+    tokens = _topic_tokens(topic)
+    if not tokens:
+        return True
+    fact = paper.get("source_fact")
+    if not isinstance(fact, dict):
+        return True
+    fact_text = ""
+    fact_text = " ".join(
+        str(fact.get(key) or "")
+        for key in ("canonical_phrase", "intervention", "endpoint")
+    )
+    text = title_key(" ".join((
+        str(paper.get("title") or ""),
+        str(paper.get("paper_title") or ""),
+        fact_text,
+    )))
+    return bool(tokens & set(text.split()))
+
+
+def relevant_papers(topic: str, papers: list[Json]) -> list[Json]:
+    return [paper for paper in papers if isinstance(paper, dict) and topic_relevant(topic, paper)]
+
+
 def boundary_quality(topic: str, papers: list[Json], min_sources: int) -> tuple[bool, str]:
     usable = [
         paper for paper in papers
         if isinstance(paper, dict)
+        and topic_relevant(topic, paper)
         and str(paper.get("title") or "").strip()
         and (paper.get("doi") or paper.get("url") or paper.get("pmid") or paper.get("id"))
     ]
@@ -131,12 +172,15 @@ def fetch_papers(
         title = paper.get("title") or paper.get("paper_title")
         if not key or not title or key in seen:
             continue
-        seen.add(key)
-        out.append(paper | {
+        candidate = paper | {
             "id": key,
             "title": title,
             "source_fact": source_fact(item),
-        })
+        }
+        if not topic_relevant(topic, candidate):
+            continue
+        seen.add(key)
+        out.append(candidate)
         if len(out) >= limit:
             break
     if out:
@@ -155,7 +199,8 @@ def fetch_papers(
             data = json.loads(resp.read().decode("utf-8"))
     except (OSError, ValueError, json.JSONDecodeError):
         return []
-    return [paper for paper in data if isinstance(paper, dict)] if isinstance(data, list) else []
+    papers = [paper for paper in data if isinstance(paper, dict)] if isinstance(data, list) else []
+    return relevant_papers(topic, papers)[:limit]
 
 
 def payload(
@@ -173,7 +218,7 @@ def payload(
     submission_agent_id: Callable[[str], str],
 ) -> tuple[Json, Json]:
     profile = load_domain_profile(profile_slug)
-    selected = papers[:5]
+    selected = relevant_papers(topic, papers)[:5]
     run_dir = runs_root / f"{topic}-source-literature-{date}"
     run_dir.mkdir(parents=True, exist_ok=True)
     facts: list[Json] = []

@@ -6943,8 +6943,15 @@ def test_repairable_source_literature_revise_retries_before_new_topic(
         "domain": {"slug": "longevity_research"},
         "all": [{"topic": "new_parent", "paper_count": 10, "fact_source_count": 10}],
     })
-    papers = [
-        {
+    papers: list[dict[str, Any]] = []
+    for idx, title in enumerate((
+        "Metformin exposure and sepsis mortality",
+        "Metformin use and neurodegenerative disease incidence",
+        "Metformin therapy and hepatocellular carcinoma risk",
+        "Metformin safety and cardiovascular outcomes",
+        "Metformin prevention in type 2 diabetes risk",
+    )):
+        papers.append({
             "title": title,
             "doi": f"10.1234/met{idx}",
             "year": 2020 + idx,
@@ -6954,15 +6961,18 @@ def test_repairable_source_literature_revise_retries_before_new_topic(
                 "intervention": "metformin",
                 "comparator": "control",
             },
-        }
-        for idx, title in enumerate((
-            "Metformin exposure and sepsis mortality",
-            "Metformin use and neurodegenerative disease incidence",
-            "Metformin therapy and hepatocellular carcinoma risk",
-            "Diabetes mortality patterns in national cohorts",
-            "Metformin prevention in type 2 diabetes risk",
-        ))
-    ]
+        })
+    papers.insert(3, {
+        "title": "Diabetes mortality patterns in national cohorts",
+        "doi": "10.1234/background",
+        "year": 2023,
+        "source_fact": {
+            "canonical_phrase": "diabetes mortality hazard ratio",
+            "population": "adults",
+            "intervention": "diabetes mellitus status",
+            "comparator": "nondiabetic individuals",
+        },
+    })
     seen_payload: dict[str, Any] = {}
 
     ledger = daily.run_cycle(
@@ -6992,6 +7002,10 @@ def test_repairable_source_literature_revise_retries_before_new_topic(
     assert ledger["submitted_topic"] == "metformin use"
     assert ledger["source_literature_fallback"]["repair_submission"] is True
     assert seen_payload["topic"] == "metformin use"
+    assert all(
+        source["title"] != "Diabetes mortality patterns in national cohorts"
+        for source in seen_payload["source_bundle"]
+    )
     assert (root / "metformin use-source-literature-2026-06-10T18-00-00Z").exists()
 
 
