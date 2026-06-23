@@ -73,7 +73,7 @@ _CHILD_TOPIC_STOPWORDS = _TITLE_STOPWORDS | frozenset({
     "change", "changed", "changes", "improve", "improved", "improves",
     "increase", "increased", "increases", "reduce", "reduced", "reduces",
     "decrease", "decreased", "decreases", "lower", "lowered", "lowers",
-    "higher", "versus", "compared", "percentage", "percent",
+    "higher", "versus", "compared", "percentage", "percent", "that", "over", "show", "shows", "showed", "showing",
 })
 
 

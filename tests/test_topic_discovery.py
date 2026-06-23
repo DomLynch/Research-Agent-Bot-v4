@@ -1929,6 +1929,42 @@ def test_fact_source_profile_emits_claim_phrase_child_topics() -> None:
     assert ("berberine_glucose_metabolism", 5) in children
 
 
+def test_fact_source_profile_does_not_emit_grammar_word_children() -> None:
+    from agent import topic_discovery
+
+    rows = [
+        {
+            "id": f"fact-{i}",
+            "paper_id": f"paper-{i}",
+            "paper": {
+                "doi": f"10.1/ai-{i}",
+                "title": "Preference extraction with retrieval LLM agents",
+            },
+            "numeric_value": 10,
+            "units": "%",
+            "population": "benchmarks",
+            "intervention": "AI agents",
+            "comparator": "baseline systems",
+            "canonical_phrase": (
+                "AI agents show that preference extraction improves over baselines"
+            ),
+        }
+        for i in range(5)
+    ]
+
+    def handler(_req: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=rows)
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        _count, children = topic_discovery._fetch_topic_fact_source_profile(
+            "ai_agents", client=c, settings=_settings(), domain="ai_research")
+
+    child_topics = {topic for topic, _count in children}
+    assert "ai_agents_that" not in child_topics
+    assert "ai_agents_over" not in child_topics
+    assert "ai_agents_show" not in child_topics
+
+
 def test_fact_source_profile_emits_title_derived_child_topics() -> None:
     from agent import topic_discovery
 

@@ -381,9 +381,22 @@ def test_seed_paper_probe_expands_seed_queries_before_slow_discovery(
     assert payload["top"][0]["top_paper_doi"] == "10.1/llm-eval"
 
 
-def test_empty_seed_paper_probe_skips_slow_discovery_for_fullraw_domains(
+def test_empty_seed_paper_probe_falls_back_to_domain_discovery(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
+    fallback = (
+        TopicCandidate(
+            topic="multi_agent_systems", paper_count=3, fact_source_count=6,
+            top_paper_doi="10.1/domain", top_paper_title="Domain backed paper",
+            velocity_score=2.0, mean_fwci=1.0, mean_cited_by=10.0,
+        ),
+    )
+    calls: list[str] = []
+
+    def slow_discover(**_kwargs: Any) -> tuple[TopicCandidate, ...]:
+        calls.append("discover")
+        return fallback
+
     fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
     fake_script.parent.mkdir(parents=True)
     monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
@@ -399,19 +412,70 @@ def test_empty_seed_paper_probe_skips_slow_discovery_for_fullraw_domains(
     )
     monkeypatch.setattr(run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: ())
     monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", lambda *_a, **_k: [])
-    monkeypatch.setattr(
-        run_topic_discovery, "discover_topics",
-        lambda **_kwargs: (_ for _ in ()).throw(AssertionError("slow discovery")),
-    )
+    monkeypatch.setattr(run_topic_discovery, "discover_topics", slow_discover)
     monkeypatch.setattr(sys, "argv", [
         "run_topic_discovery.py", "--domain", "ai_research", "--top", "1",
     ])
 
     assert run_topic_discovery.main() == 0
+    assert calls == ["discover"]
     out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
-    assert payload["candidate_count"] == 0
-    assert payload["top"] == []
+    assert [row["topic"] for row in payload["top"]] == ["multi_agent_systems"]
+
+
+def test_partial_seed_paper_probe_still_fills_window_from_domain_discovery(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    fallback = (
+        TopicCandidate(
+            topic="tool_use_agents", paper_count=4, fact_source_count=7,
+            top_paper_doi="10.1/tool", top_paper_title="Tool use agent paper",
+            velocity_score=3.0, mean_fwci=2.0, mean_cited_by=12.0,
+        ),
+    )
+    calls: list[str] = []
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        if query == "multi_agent_systems":
+            return [{
+                "doi": "10.1/seed", "title": "Seed paper-backed candidate",
+                "fwci": 4.0, "cited_by_count": 40, "publication_year": 2026,
+                "quality_score": 90.0,
+            }]
+        return []
+
+    def slow_discover(**_kwargs: Any) -> tuple[TopicCandidate, ...]:
+        calls.append("discover")
+        return fallback
+
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(
+        run_topic_discovery, "load_seed_topics",
+        lambda _path=None: ("multi_agent_systems", "tool_use_agents"),
+    )
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(
+        run_topic_discovery, "load_derived_topic_limit",
+        lambda _path=None: 5_000,
+    )
+    monkeypatch.setattr(run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: ())
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fake_fullraw)
+    monkeypatch.setattr(run_topic_discovery, "discover_topics", slow_discover)
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--domain", "ai_research", "--top", "2",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    assert calls == ["discover"]
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert [row["topic"] for row in payload["top"]] == [
+        "tool_use_agents",
+        "multi_agent_systems",
+    ]
 
 
 def test_discovery_hydration_tries_domain_context_after_bare_label(
