@@ -133,11 +133,13 @@ def _merge_candidates(
     merged: dict[str, TopicCandidate] = {}
     for candidate in (*first, *second):
         merged.setdefault(candidate.topic, candidate)
-    return tuple(merged.values())
+    return tuple(sorted(merged.values(), key=_rank_key))
 
 
-def _rank_key(candidate: TopicCandidate) -> tuple[int, float, int, str]:
+def _rank_key(candidate: TopicCandidate) -> tuple[int, int, float, int, str]:
+    paper_backed = int(bool(candidate.paper_count and candidate.top_paper_title))
     return (
+        -paper_backed,
         -min(candidate.paper_count, candidate.fact_source_count),
         -candidate.velocity_score,
         -candidate.paper_count,
@@ -348,7 +350,8 @@ def main() -> int:
         and cache_limit > 0 else ()
     )
     ranked = _filter_cached_seed_scope(_filter_excluded(ranked, excluded), seeds)
-    if len(ranked) < args.top and not args.cache_only:
+    paper_backed_cached = sum(1 for c in ranked if c.paper_count and c.top_paper_title)
+    if paper_backed_cached < args.top and not args.cache_only:
         with httpx.Client() as client:
             discovered = discover_topics(
                 seeds=seeds, settings=settings, client=client,

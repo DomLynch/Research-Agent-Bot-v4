@@ -112,14 +112,14 @@ def test_cache_first_skips_slow_discovery_when_window_is_filled(
 ) -> None:
     cached = (
         TopicCandidate(
-            topic="seed_rich_a", paper_count=0, fact_source_count=8,
-            top_paper_doi="", top_paper_title="",
-            velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
+            topic="seed_rich_a", paper_count=5, fact_source_count=8,
+            top_paper_doi="10.1/a", top_paper_title="Paper A",
+            velocity_score=2.0, mean_fwci=1.0, mean_cited_by=10.0,
         ),
         TopicCandidate(
-            topic="seed_rich_b", paper_count=0, fact_source_count=7,
-            top_paper_doi="", top_paper_title="",
-            velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
+            topic="seed_rich_b", paper_count=5, fact_source_count=7,
+            top_paper_doi="10.1/b", top_paper_title="Paper B",
+            velocity_score=1.0, mean_fwci=1.0, mean_cited_by=8.0,
         ),
     )
 
@@ -192,8 +192,53 @@ def test_cache_first_falls_back_when_cache_is_underfilled(
     out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
     assert [row["topic"] for row in payload["top"]] == [
-        "seed_cached_rich", "seed_fresh_rich",
+        "seed_fresh_rich", "seed_cached_rich",
     ]
+
+
+def test_cache_first_does_not_let_paperless_cache_suppress_fresh_discovery(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    cached = (
+        TopicCandidate(
+            topic="seed_cached_rich", paper_count=0, fact_source_count=12,
+            top_paper_doi="", top_paper_title="",
+            velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
+        ),
+    )
+    fresh = (
+        TopicCandidate(
+            topic="seed_fullraw_fresh", paper_count=3, fact_source_count=6,
+            top_paper_doi="10.1/fullraw", top_paper_title="Fullraw fresh paper",
+            velocity_score=4.0, mean_fwci=2.0, mean_cited_by=20.0,
+        ),
+    )
+    calls: list[str] = []
+
+    def slow_discover(**_kwargs: Any) -> tuple[TopicCandidate, ...]:
+        calls.append("discover")
+        return fresh
+
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda: ("seed",))
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda: 5_000)
+    monkeypatch.setattr(
+        run_topic_discovery, "cached_source_rich_candidates",
+        lambda *, limit: cached[:limit],
+    )
+    monkeypatch.setattr(run_topic_discovery, "discover_topics", slow_discover)
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--cache-first", "--top", "1",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    assert calls == ["discover"]
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert [row["topic"] for row in payload["top"]] == ["seed_fullraw_fresh"]
 
 
 def test_hydration_queries_add_bounded_domain_context(monkeypatch: Any) -> None:
