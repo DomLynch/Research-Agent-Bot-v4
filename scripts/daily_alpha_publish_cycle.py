@@ -3936,9 +3936,10 @@ def _prefer_fresh_parent_refresh(considered: list[Json]) -> bool:
         for row in considered
         if isinstance(row, dict) and str(row.get("status") or "")
     }
-    if not statuses or statuses & _REFRESHABLE_SOURCE_FLOOR_STATUSES:
+    blockers = statuses - _AGENT_REPAIR_DECISIONS
+    if not blockers or blockers & _REFRESHABLE_SOURCE_FLOOR_STATUSES:
         return False
-    return statuses <= _PARENT_REFRESH_BEFORE_CHILD_STATUSES
+    return blockers <= _PARENT_REFRESH_BEFORE_CHILD_STATUSES
 
 
 def _cluster_has_repair_receipts(cluster: Json) -> bool:
