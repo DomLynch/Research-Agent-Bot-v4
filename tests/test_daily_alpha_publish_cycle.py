@@ -5837,6 +5837,7 @@ def test_child_topic_refresh_stays_inside_active_domain() -> None:
             }],
         },
     }
+    mistagged_domain = wrong_domain | {"domain": {"slug": "ai_research"}}
     right_domain = _verdict("model_eval") | {
         "decision": "curation_needed",
         "domain": {"slug": "ai_research"},
@@ -5849,7 +5850,10 @@ def test_child_topic_refresh_stays_inside_active_domain() -> None:
             }],
         },
     }
-    queue = {"agent_repair_needed": [], "curation_needed": [wrong_domain, right_domain]}
+    queue = {
+        "agent_repair_needed": [],
+        "curation_needed": [wrong_domain, mistagged_domain, right_domain],
+    }
 
     assert daily._child_topics_from_queue(
         queue, set(), limit=5, domain="ai_research",

@@ -892,6 +892,24 @@ def _domain_seed_tokens(domain: str | None) -> set[str]:
     return set()
 
 
+def _domain_seed_prefixes(domain: str | None) -> tuple[str, ...]:
+    if not domain or domain == load_domain_profile(None).slug:
+        return ()
+    with suppress(OSError, tomllib.TOMLDecodeError, ValueError):
+        data = tomllib.loads(load_domain_profile(domain).seed_topics_path.read_text(
+            encoding="utf-8",
+        ))
+        seeds = data.get("seeds")
+        topics = seeds.get("topics") if isinstance(seeds, dict) else None
+        if isinstance(topics, list):
+            return tuple(
+                key.removeprefix("topic:")
+                for topic in topics
+                if (key := _canonical_family_key(str(topic)))
+            )
+    return ()
+
+
 def _needs_tension_enrichment(verdict: Json) -> bool:
     blockers = {str(x) for x in verdict.get("blockers") or []}
     return (
@@ -3607,6 +3625,7 @@ def _child_topics_from_queue(
 ) -> list[str]:
     candidates: list[tuple[tuple[int, int, int, str], str]] = []
     seen = set(excluded_topics)
+    seed_prefixes = _domain_seed_prefixes(domain)
     floor = _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES
     for bucket_order, bucket_name in enumerate(("agent_repair_needed", "curation_needed")):
         for verdict in queue.get(bucket_name) or []:
@@ -3641,6 +3660,12 @@ def _child_topics_from_queue(
                 child = cap_topic_slug(
                     "_".join(re.findall(r"[a-z0-9]+", f"{parent}_{label}".lower()))
                 )
+                child_key = _canonical_family_key(child).removeprefix("topic:")
+                if seed_prefixes and not any(
+                    child_key == seed or child_key.startswith(f"{seed}_")
+                    for seed in seed_prefixes
+                ):
+                    continue
                 if child and child not in seen:
                     reason_rank = (
                         0 if rec.get("reason") == "source_coherent_child_cluster" else 1
