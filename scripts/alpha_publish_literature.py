@@ -18,6 +18,9 @@ _GENERIC_TOPIC_TOKENS = frozenset({
     "association", "associations", "clinical", "effect", "effects", "evidence",
     "exposure", "intervention", "outcome", "outcomes", "review", "study",
     "trial", "treatment", "use", "using",
+    "ageing", "aging", "agent", "agents", "agonist", "agonists", "antagonist",
+    "antagonists", "blocker", "blockers", "drug", "drugs", "inhibitor",
+    "inhibitors", "longevity", "therapies", "therapy",
 })
 
 
@@ -43,7 +46,7 @@ def _topic_tokens(topic: str) -> set[str]:
 def topic_relevant(topic: str, paper: Json) -> bool:
     tokens = _topic_tokens(topic)
     if not tokens:
-        return True
+        return not title_key(topic).split()
     fact = paper.get("source_fact")
     if not isinstance(fact, dict):
         return True

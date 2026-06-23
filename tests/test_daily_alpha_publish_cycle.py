@@ -7454,6 +7454,79 @@ def test_source_literature_boundary_quality_accepts_distinct_boundary_papers() -
     assert reason == "ok"
 
 
+def test_source_literature_boundary_requires_specific_topic_alignment() -> None:
+    papers = [
+        {
+            "title": "Sodium-glucose cotransporter 2 inhibitors and cardiovascular outcomes",
+            "doi": "10.1234/1",
+            "source_fact": {
+                "canonical_phrase": "major adverse cardiac events (OR 0.8)",
+                "intervention": "SGLT2 inhibitors",
+                "endpoint": "cardiovascular outcomes",
+            },
+        },
+        {
+            "title": "Cardiovascular toxicity of proteasome inhibitors",
+            "doi": "10.1234/2",
+            "source_fact": {
+                "canonical_phrase": "ixazomib reduced risk of progression or death by 28%",
+                "intervention": "ixazomib maintenance",
+                "endpoint": "progression-free survival",
+            },
+        },
+        {
+            "title": "SGLT2 inhibitors for nonalcoholic fatty liver disease",
+            "doi": "10.1234/3",
+            "source_fact": {
+                "canonical_phrase": "decreased serum alanine aminotransferase",
+                "intervention": "SGLT2 inhibitors",
+                "endpoint": "alanine aminotransferase",
+            },
+        },
+        {
+            "title": "SGLT2 inhibitors in acute heart failure",
+            "doi": "10.1234/4",
+            "source_fact": {
+                "canonical_phrase": "reduced rehospitalization for heart failure",
+                "intervention": "SGLT2 inhibitors",
+                "endpoint": "heart-failure rehospitalization",
+            },
+        },
+        {
+            "title": "Sodium glucose cotransporter 2 inhibitors in diabetes mellitus",
+            "doi": "10.1234/5",
+            "source_fact": {
+                "canonical_phrase": "14% reduction in the primary composite outcome",
+                "intervention": "empagliflozin",
+                "endpoint": "cardiovascular death, myocardial infarction, or stroke",
+            },
+        },
+    ]
+
+    ok, reason = daily._source_literature_boundary_quality(
+        "ACE_inhibitors_aging", papers, 5,
+    )
+
+    assert ok is False
+    assert reason == "source_floor_below_min"
+
+
+def test_source_literature_boundary_rejects_generic_only_topic() -> None:
+    papers = [
+        {
+            "title": f"Aging intervention evidence map {i}",
+            "doi": f"10.1234/generic-{i}",
+            "source_fact": {"canonical_phrase": "reported a directional association"},
+        }
+        for i in range(5)
+    ]
+
+    ok, reason = daily._source_literature_boundary_quality("longevity", papers, 5)
+
+    assert ok is False
+    assert reason == "source_floor_below_min"
+
+
 def test_source_literature_bundle_resolves_doi_and_cochrane_review() -> None:
     title = (
         "Metformin for prevention or delay of type 2 diabetes mellitus and "
