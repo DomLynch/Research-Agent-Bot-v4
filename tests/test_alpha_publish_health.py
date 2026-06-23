@@ -55,6 +55,60 @@ def test_health_summary_reports_latest_published_ledger(tmp_path: Path) -> None:
     assert summary["next_action"] == "watch_decision_or_public_page"
 
 
+def test_check_url_requires_rendered_public_page(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    _write_ledger(tmp_path, "2026-06-01T02-06-49Z.json", {
+        "status": "published",
+        "submitted": 1,
+        "published": 1,
+        "published_topic": "grid_storage",
+        "public_url": "https://researka.org/papers/page-shell",
+    })
+    monkeypatch.setattr(
+        health,
+        "_public_url_status",
+        lambda *_args, **_kwargs: {
+            "http_status": 200,
+            "rendered": False,
+            "status": "not_rendered",
+        },
+    )
+
+    summary = health.summarize_latest(tmp_path, check_url=True)
+
+    assert summary["ok"] is False
+    assert summary["public_url_status"] == 200
+    assert summary["public_page_status"] == "not_rendered"
+
+
+def test_check_url_accepts_rendered_public_page(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    _write_ledger(tmp_path, "2026-06-01T02-06-49Z.json", {
+        "status": "published",
+        "submitted": 1,
+        "published": 1,
+        "published_topic": "grid_storage",
+        "public_url": "https://researka.org/papers/live",
+    })
+    monkeypatch.setattr(
+        health,
+        "_public_url_status",
+        lambda *_args, **_kwargs: {
+            "http_status": 200,
+            "rendered": True,
+            "status": "rendered",
+        },
+    )
+
+    summary = health.summarize_latest(tmp_path, check_url=True)
+
+    assert summary["ok"] is True
+    assert summary["public_url_status"] == 200
+    assert summary["public_page_status"] == "rendered"
+
+
 def test_health_summary_prefers_ledger_timestamp_over_sync_mtime(tmp_path: Path) -> None:
     latest = _write_ledger(tmp_path, "2026-06-01T21-59-41Z.json", {
         "status": "published",

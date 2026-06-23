@@ -135,17 +135,39 @@ def summarize_next_candidate(
     }
 
 
-def _public_url_status(url: str, *, timeout: float) -> int | None:
+def _public_url_status(url: str, *, timeout: float) -> Json:
     if not url:
-        return None
-    request = urllib.request.Request(url, method="HEAD")
+        return {"http_status": None, "rendered": False, "status": None}
+    request = urllib.request.Request(
+        url, headers={"User-Agent": "researka-v4-health/1.0"},
+    )
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
-            return int(response.status)
+            body = response.read(4096).decode("utf-8", errors="replace")
+            result: Json = {"ok": True, "status": response.status, "body": body}
     except urllib.error.HTTPError as exc:
-        return int(exc.code)
-    except OSError:
-        return None
+        result = {
+            "ok": False,
+            "status": exc.code,
+            "body": exc.read(512).decode("utf-8", errors="replace"),
+        }
+    except OSError as exc:
+        return {
+            "http_status": None,
+            "rendered": False,
+            "status": "error",
+            "error": type(exc).__name__,
+        }
+    try:
+        public = importlib.import_module("scripts.alpha_publish_public")
+    except ModuleNotFoundError:
+        public = importlib.import_module("alpha_publish_public")
+    rendered = bool(public.page_rendered(result))
+    return {
+        "http_status": int(result.get("status") or 0),
+        "rendered": rendered,
+        "status": "rendered" if rendered else "not_rendered",
+    }
 
 
 def summarize_latest(
@@ -175,7 +197,11 @@ def summarize_latest(
     mtime = dt.datetime.fromtimestamp(path.stat().st_mtime, tz=dt.UTC)
     current = now or dt.datetime.now(dt.UTC)
     url = str(ledger.get("public_url") or "")
-    url_status = _public_url_status(url, timeout=timeout) if check_url else None
+    url_check = (
+        _public_url_status(url, timeout=timeout)
+        if check_url else {"http_status": None, "rendered": False, "status": None}
+    )
+    url_status = url_check.get("http_status")
     published = int(ledger.get("published") or 0) == 1
     publish_summary = ledger.get("publish_summary")
     if not isinstance(publish_summary, dict):
@@ -188,7 +214,7 @@ def summarize_latest(
         ])
         reason = derived_reason or reason
     summary = {
-        "ok": published and (not check_url or bool(url_status and 200 <= url_status < 400)),
+        "ok": published and (not check_url or bool(url_check.get("rendered"))),
         "ledger": path.name,
         "ledger_mtime": mtime.isoformat(),
         "ledger_age_minutes": round((current - mtime).total_seconds() / 60, 1),
@@ -198,6 +224,7 @@ def summarize_latest(
         "topic": ledger.get("published_topic") or ledger.get("submitted_topic"),
         "public_url": url or None,
         "public_url_status": url_status,
+        "public_page_status": url_check.get("status"),
         "decision_poll": ledger.get("decision_poll"),
         "attempts": _attempts(ledger),
         "considered_counts": considered_counts,
