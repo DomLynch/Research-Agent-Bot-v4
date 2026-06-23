@@ -342,11 +342,15 @@ def test_discovery_hydration_tries_domain_context_after_bare_label(
 def test_paperless_topic_group_discovery_falls_back_to_paper_backed_topic(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
-    calls: list[str] = []
+    calls: list[tuple[str, int, int | None]] = []
 
-    def fake_discover(**_kwargs: Any) -> tuple[TopicCandidate, ...]:
-        calls.append(os.environ.get("TOPIC_GROUPS_DISCOVERY", "1"))
-        if calls[-1] == "0":
+    def fake_discover(**kwargs: Any) -> tuple[TopicCandidate, ...]:
+        calls.append((
+            os.environ.get("TOPIC_GROUPS_DISCOVERY", "1"),
+            kwargs["derived_topic_limit"],
+            kwargs["fact_probe_topics"],
+        ))
+        if calls[-1][0] == "0":
             return (
                 TopicCandidate(
                     topic="multi_agent_systems", paper_count=3, fact_source_count=6,
@@ -381,7 +385,7 @@ def test_paperless_topic_group_discovery_falls_back_to_paper_backed_topic(
     ])
 
     assert run_topic_discovery.main() == 0
-    assert calls == ["1", "0"]
+    assert calls == [("1", 250, None), ("0", 10, 3)]
     out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
     assert [row["topic"] for row in payload["top"]] == ["multi_agent_systems"]

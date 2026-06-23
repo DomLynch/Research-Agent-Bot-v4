@@ -393,12 +393,17 @@ def main() -> int:
             old = os.environ.get("TOPIC_GROUPS_DISCOVERY")
             os.environ["TOPIC_GROUPS_DISCOVERY"] = "0"
             try:
+                fallback_derived_limit = min(derived_limit, max(args.top * 10, 10))
+                fallback_fact_probe_topics = (
+                    min(fact_probe_topics, max(args.top, 3))
+                    if fact_probe_topics is not None else max(args.top, 3)
+                )
                 with httpx.Client() as client:
                     fallback = discover_topics(
                         seeds=seeds, settings=settings, client=client,
                         domain=profile.slug,
-                        derived_topic_limit=derived_limit,
-                        fact_probe_topics=fact_probe_topics,
+                        derived_topic_limit=fallback_derived_limit,
+                        fact_probe_topics=fallback_fact_probe_topics,
                         use_cached_source_rich=cache_supported,
                         refresh_low_source_counts=args.warm_backlog,
                     )
