@@ -5775,3 +5775,93 @@ def test_cross_domain_tension_source_floor_candidate_repairs_from_corpus_supply(
     assert cand is not None
     assert considered[0]["memo_refreshed"] is True
     assert considered[0]["status"] == "eligible"
+
+
+def test_submit_exit_code_fails_closed_for_no_publish_statuses() -> None:
+    assert daily._cycle_exit_code({"status": "published", "published": 1}, submit=True) == 0
+    assert daily._cycle_exit_code(
+        {"status": "submitted_to_researka", "published": 0}, submit=True,
+    ) == 2
+    assert daily._cycle_exit_code(
+        {"status": "submitted_to_researka", "published": 0},
+        submit=True,
+        allow_pending_success=True,
+    ) == 0
+    for status in (
+        "no_publishable_candidate",
+        "no_fresh_candidate",
+        "preflight_qa_blocked",
+        "submit_retry_exhausted",
+        "domain_dry_run_only",
+        "candidate_refresh_failed",
+    ):
+        assert daily._cycle_exit_code({"status": status, "published": 0}, submit=True) == 2
+    assert daily._cycle_exit_code({"status": "dry_run_selected", "published": 0}, submit=False) == 0
+
+
+def test_write_cycle_ledger_adds_operator_publish_summary(tmp_path: Path) -> None:
+    path = tmp_path / "runs" / "_daily_ledger" / "cycle.json"
+    ledger = {
+        "status": "no_publishable_candidate",
+        "submitted": 0,
+        "published": 0,
+        "queue_counts": {"ready_to_publish": 0, "curation_needed": 2},
+        "considered": [
+            {"status": "agent_repair_needed", "blockers": ["receipt_shape_mismatch"]},
+            {"status": "cycle_exhausted_topic", "blockers": ["source_dispersion"]},
+        ],
+    }
+
+    daily._write_cycle_ledger(path, ledger)
+
+    written = json.loads(path.read_text(encoding="utf-8"))
+    assert written["publish_summary"] == {
+        "status": "no_publishable_candidate",
+        "submitted": 0,
+        "published": 0,
+        "candidates_considered": 2,
+        "queue_counts": {"ready_to_publish": 0, "curation_needed": 2},
+        "top_blockers": {
+            "agent_repair_needed": 1,
+            "cycle_exhausted_topic": 1,
+            "receipt_shape_mismatch": 1,
+            "source_dispersion": 1,
+        },
+        "next_action": "build_source_rich_candidate",
+        "public_url": None,
+        "public_url_status": None,
+    }
+
+
+def test_main_emits_end_of_run_blocker_summary(
+    monkeypatch: MonkeyPatch, capsys: Any,
+) -> None:
+    def fake_run_cycle(**_kwargs: Any) -> dict[str, Any]:
+        return {
+            "status": "no_publishable_candidate",
+            "submitted": 0,
+            "published": 0,
+            "queue_counts": {"ready_to_publish": 0},
+            "considered": [
+                {"status": "duplicate_submission_fingerprint"},
+            ],
+        }
+
+    monkeypatch.setattr(daily, "run_cycle", fake_run_cycle)
+    monkeypatch.setattr(sys, "argv", ["daily_alpha_publish_cycle.py", "--submit"])
+
+    assert daily.main() == 2
+    out = capsys.readouterr().out
+    assert "[daily-alpha] status=no_publishable_candidate submitted=0 published=0" in out
+    assert "[daily-alpha] summary=" in out
+    assert '"candidates_considered": 1' in out
+    assert '"next_action": "build_source_rich_candidate"' in out
+    assert '"top_blockers": {"duplicate_submission_fingerprint": 1}' in out
+
+
+def test_alpha_systemd_services_do_not_mask_no_publish_exits() -> None:
+    service_dir = Path(__file__).resolve().parents[1] / "deploy" / "systemd"
+    for service_path in service_dir.glob("researka-alpha-*.service"):
+        text = service_path.read_text(encoding="utf-8")
+        assert "SuccessExitStatus=2" not in text, service_path.name
+        assert "SuccessExitStatus=3" not in text, service_path.name
