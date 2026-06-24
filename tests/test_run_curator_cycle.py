@@ -691,6 +691,7 @@ def test_stop_on_ready_uses_cache_first_discovery(
 
     assert run_curator_cycle.main() == 1
     assert "--cache-first" in calls[0]
+    assert "--seed-paper-only" in calls[0]
     assert calls[0][calls[0].index("--top") + 1] == "20"
 
 
@@ -718,6 +719,10 @@ def test_stop_on_ready_priority_below_floor_does_not_backfill_discovery_topic(
     monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
     monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
     monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fail_pipeline)
+    monkeypatch.setattr(
+        run_curator_cycle, "_cached_tier2_supply",
+        lambda *_args, **_kwargs: 0,
+    )
     monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",
                         lambda *_args, **_kwargs: set())
     monkeypatch.setattr(

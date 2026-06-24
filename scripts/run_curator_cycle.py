@@ -649,6 +649,7 @@ def main() -> int:
         ]
         if args.stop_on_ready and not args.warm_backlog:
             discovery_args.append("--cache-first")
+            discovery_args.append("--seed-paper-only")
         if args.warm_backlog:
             discovery_args.append("--warm-backlog")
         if args.derived_topic_limit is not None:

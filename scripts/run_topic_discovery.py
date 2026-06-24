@@ -400,6 +400,10 @@ def main() -> int:
         help="Emit cached source-rich topics without slow DB expansion.",
     )
     parser.add_argument(
+        "--seed-paper-only", action="store_true",
+        help="After cache, use bounded seed-paper probes only; skip slow DB expansion.",
+    )
+    parser.add_argument(
         "--exclude-topic", action="append", default=[],
         help="Exclude a topic from the emitted queue; repeatable.",
     )
@@ -442,7 +446,7 @@ def main() -> int:
         )
         ranked = _merge_candidates(ranked, seed_paper_ranked)
         paper_backed_cached = sum(1 for c in ranked if c.paper_count and c.top_paper_title)
-    if paper_backed_cached < args.top and not args.cache_only:
+    if paper_backed_cached < args.top and not args.cache_only and not args.seed_paper_only:
         with httpx.Client() as client:
             discovered = discover_topics(
                 seeds=seeds, settings=settings, client=client,
@@ -522,6 +526,7 @@ def main() -> int:
         "warm_backlog": bool(args.warm_backlog),
         "cache_first": bool(read_source_rich_cache and cache_supported),
         "cache_only": bool(args.cache_only and cache_supported),
+        "seed_paper_only": bool(args.seed_paper_only),
         "cache_supported": cache_supported,
         "source_rich_floor": 5,
         "source_rich_count": sum(1 for c in ranked if c.fact_source_count >= 5),

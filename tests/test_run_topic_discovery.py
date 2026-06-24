@@ -467,6 +467,43 @@ def test_empty_seed_paper_probe_falls_back_to_domain_discovery(
     assert [row["topic"] for row in payload["top"]] == ["multi_agent_systems"]
 
 
+def test_seed_paper_only_skips_slow_domain_discovery_when_empty(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+
+    def slow_discover(**_kwargs: Any) -> tuple[TopicCandidate, ...]:
+        calls.append("discover")
+        return ()
+
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(
+        run_topic_discovery, "load_seed_topics",
+        lambda _path=None: ("multi_agent_systems",),
+    )
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(
+        run_topic_discovery, "load_derived_topic_limit",
+        lambda _path=None: 5_000,
+    )
+    monkeypatch.setattr(run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: ())
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", lambda *_a, **_k: [])
+    monkeypatch.setattr(run_topic_discovery, "discover_topics", slow_discover)
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--domain", "ai_research", "--top", "1",
+        "--seed-paper-only",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    assert calls == []
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert payload["seed_paper_only"] is True
+    assert payload["top"] == []
+
+
 def test_partial_seed_paper_probe_still_fills_window_from_domain_discovery(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
