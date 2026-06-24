@@ -174,7 +174,13 @@ def test_health_summary_includes_manual_proof_cycle_ledgers(tmp_path: Path) -> N
         "published": 0,
         "reason": "stale failed ledger",
     })
-    _write_ledger(tmp_path, "2026-06-01Tlive-submit-reprobe-proofZ.json", {
+    alphabetically_later = _write_ledger(tmp_path, "2026-06-01Tsource-floor-cooldown-proofZ.json", {
+        "status": "no_fresh_candidate",
+        "submitted": 0,
+        "published": 0,
+        "reason": "stale alphabetically later manual ledger",
+    })
+    latest = _write_ledger(tmp_path, "2026-06-01Tlive-submit-reprobe-proofZ.json", {
         "status": "published",
         "submitted": 1,
         "published": 1,
@@ -187,6 +193,10 @@ def test_health_summary_includes_manual_proof_cycle_ledgers(tmp_path: Path) -> N
         "published": 0,
         "submitted_topic": "ignored_decision_probe",
     })
+    stale_manual_time = dt.datetime(2026, 6, 1, 3, 0, 0, tzinfo=dt.UTC).timestamp()
+    latest_manual_time = dt.datetime(2026, 6, 1, 4, 0, 0, tzinfo=dt.UTC).timestamp()
+    os.utime(alphabetically_later, (stale_manual_time, stale_manual_time))
+    os.utime(latest, (latest_manual_time, latest_manual_time))
 
     summary = health.summarize_latest(tmp_path)
 

@@ -21,6 +21,10 @@ _CYCLE_LEDGER_RE = re.compile(
     r"^\d{4}-\d{2}-\d{2}t(?!.*-decision-)[a-z0-9_.:-]+z(?:-[a-z0-9_.-]+)?\.json$",
     re.I,
 )
+_NUMERIC_LEDGER_TS_RE = re.compile(
+    r"^(\d{4})-(\d{2})-(\d{2})t(\d{2})-(\d{2})-(\d{2})z",
+    re.I,
+)
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
@@ -34,9 +38,18 @@ def _ledger_paths(runs_root: Path) -> list[Path]:
             for path in ledger_dir.glob("*.json")
             if _CYCLE_LEDGER_RE.match(path.name)
         ),
-        key=lambda path: path.name.lower(),
+        key=_ledger_sort_key,
         reverse=True,
     )
+
+
+def _ledger_sort_key(path: Path) -> tuple[float, str]:
+    match = _NUMERIC_LEDGER_TS_RE.match(path.name)
+    if match:
+        year, month, day, hour, minute, second = (int(value) for value in match.groups())
+        stamp = dt.datetime(year, month, day, hour, minute, second, tzinfo=dt.UTC)
+        return (stamp.timestamp(), path.name.lower())
+    return (path.stat().st_mtime, path.name.lower())
 
 
 def _load_json(path: Path) -> Json:
