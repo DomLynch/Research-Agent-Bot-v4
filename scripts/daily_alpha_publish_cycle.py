@@ -3523,6 +3523,8 @@ def _source_literature_topic_candidates(
             }
             if "anti" in topic_tokens and seed_scope and not ((topic_tokens - {"anti"}) & seed_scope):
                 continue
+            if topic_tokens and not (topic_tokens - _DISCOVERY_PARENT_GENERIC_TOKENS):
+                continue
             paper_count = int(row.get("paper_count") or 0)
             if paper_count >= min_sources:
                 topics.append(topic)

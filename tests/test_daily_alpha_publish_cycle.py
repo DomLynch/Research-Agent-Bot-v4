@@ -8584,6 +8584,25 @@ def test_source_literature_candidates_require_domain_seed_scope(tmp_path: Path) 
     ) == ["caloric_restriction"]
 
 
+def test_source_literature_candidates_skip_generic_fragments(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    discovery = root / "_topics_discovery"
+    discovery.mkdir(parents=True)
+    daily._write_json(discovery / "latest.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [
+            {"topic": "low_dose", "paper_count": 30, "fact_source_count": 30},
+            {"topic": "age_related", "paper_count": 29, "fact_source_count": 29},
+            {"topic": "anti_aging", "paper_count": 28, "fact_source_count": 28},
+            {"topic": "low_dose_lithium", "paper_count": 6, "fact_source_count": 6},
+        ],
+    })
+
+    assert daily._source_literature_topic_candidates(
+        root, "longevity_research", 5, limit=5,
+    ) == ["low_dose_lithium"]
+
+
 def test_source_literature_candidates_skip_exhausted_topic_family(
     tmp_path: Path,
 ) -> None:
