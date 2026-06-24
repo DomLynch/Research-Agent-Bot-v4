@@ -398,6 +398,7 @@ def test_seed_paper_candidate_skips_slow_discovery_when_enough(
     monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fake_fullraw)
     monkeypatch.setattr(sys, "argv", [
         "run_topic_discovery.py", "--domain", "ai_research", "--top", "1",
+        "--seed-paper-only",
     ])
 
     assert run_topic_discovery.main() == 0
@@ -634,6 +635,7 @@ def test_seed_paper_probe_expands_seed_queries_before_slow_discovery(
     monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fake_fullraw)
     monkeypatch.setattr(sys, "argv", [
         "run_topic_discovery.py", "--domain", "ai_research", "--top", "1",
+        "--seed-paper-only",
     ])
 
     assert run_topic_discovery.main() == 0
@@ -1123,7 +1125,7 @@ def test_partial_seed_paper_probe_still_fills_window_from_domain_discovery(
     ]
 
 
-def test_partial_seed_paper_probe_tops_up_from_domain_fullraw_supply(
+def test_domain_fullraw_supply_preempts_lower_floor_seed_top_up(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
     calls: list[str] = []
@@ -1167,7 +1169,10 @@ def test_partial_seed_paper_probe_tops_up_from_domain_fullraw_supply(
     out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
     assert "longevity anti aging" in calls
-    assert [row["topic"] for row in payload["top"]] == ["vitamin_deficiency", "metformin"]
+    assert {row["topic"] for row in payload["top"]} == {
+        "deficiency_aging",
+        "vitamin_deficiency",
+    }
 
 
 def test_discovery_hydration_tries_domain_context_after_bare_label(

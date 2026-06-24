@@ -211,6 +211,19 @@ def _context_query_terms(value: str) -> str:
     return " ".join(seen)
 
 
+def _context_supported_papers(
+    papers: list[dict[str, object]], context_terms: str,
+) -> list[dict[str, object]]:
+    context_tokens = set(_TOKEN_RE.findall(context_terms))
+    if not context_tokens:
+        return papers
+    return [
+        paper for paper in papers
+        if context_tokens & set(_TOKEN_RE.findall(
+            str(paper.get("title") or "").casefold()))
+    ]
+
+
 def _hydration_queries(candidate: TopicCandidate, *, context: str) -> tuple[str, ...]:
     seen: dict[str, None] = {}
     for query in expand_topic_queries(candidate.topic, max_queries=2):
@@ -487,22 +500,12 @@ def _fullraw_supply_candidates(
         return ()
     out: list[TopicCandidate] = []
     seen_topics: set[str] = set()
-    context_tokens = set(_TOKEN_RE.findall(context_terms))
-
-    def context_supported(scoped: list[dict[str, object]]) -> list[dict[str, object]]:
-        if not context_tokens:
-            return scoped
-        supported = [
-            paper for paper in scoped
-            if context_tokens & set(_TOKEN_RE.findall(
-                str(paper.get("title") or "").casefold()))
-        ]
-        return supported if len(supported) >= _SOURCE_RICH_FLOOR else []
 
     for query, label in query_labels.items():
         if label == "__domain_supply__":
             continue
-        scoped = context_supported(papers_by_query.get(query, []))
+        scoped = _context_supported_papers(
+            papers_by_query.get(query, []), context_terms)
         if len(scoped) < _SOURCE_RICH_FLOOR:
             continue
         topic = "_".join(query.split())
@@ -516,11 +519,11 @@ def _fullraw_supply_candidates(
         if topic in seen_topics:
             continue
         topic_tokens = set(_TOKEN_RE.findall(topic.replace("_", " ").casefold()))
-        scoped = context_supported([
+        scoped = _context_supported_papers([
             paper for paper in papers
             if topic_tokens <= set(_TOKEN_RE.findall(
                 str(paper.get("title") or "").casefold()))
-        ])
+        ], context_terms)
         if len(scoped) < _SOURCE_RICH_FLOOR:
             continue
         out.append(_score_topic(
@@ -529,7 +532,7 @@ def _fullraw_supply_candidates(
         if len(out) >= top:
             break
     if not out:
-        papers = context_supported(papers)
+        papers = _context_supported_papers(papers, context_terms)
         if not papers:
             return ()
         out.append(_score_topic(
@@ -754,6 +757,27 @@ def main() -> int:
         seed for seed in seeds
         if not _topic_family_excluded(seed, excluded)
     )
+    fullraw_supply_checked = False
+    if (
+        paper_backed_cached < args.top
+        and not args.cache_only
+        and not args.seed_paper_only
+        and not args.skip_seed_paper_probe
+    ):
+        fullraw_supply_checked = True
+        ranked = _merge_candidates(
+            ranked,
+            _filter_excluded(
+                _fullraw_supply_candidates(
+                    query_context=profile.display_name,
+                    current_year=year,
+                    top=max(1, args.top - paper_backed_cached),
+                    seeds=seed_probe_seeds,
+                ),
+                excluded,
+            ),
+        )
+        paper_backed_cached = sum(1 for c in ranked if c.paper_count and c.top_paper_title)
     if paper_backed_cached < args.top and not args.cache_only and not args.skip_seed_paper_probe:
         seed_paper_ranked = _filter_excluded(
             _seed_paper_candidates(
@@ -818,6 +842,7 @@ def main() -> int:
         and not args.cache_only
         and not args.seed_paper_only
         and not args.skip_seed_paper_probe
+        and not fullraw_supply_checked
     ):
         ranked = _merge_candidates(
             ranked,
