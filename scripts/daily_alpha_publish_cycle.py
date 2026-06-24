@@ -77,6 +77,12 @@ _OUTCOME_GENERIC_TOKENS = frozenset({
 _DISCOVERY_GENERIC_SUFFIX_TOKENS = _CLUSTER_GENERIC_TOKENS | {
     "achieve", "achieves", "finding", "findings", "result", "results",
     "show", "shows", "shown", "their", "while",
+    "achieved", "achieving", "demonstrate", "demonstrated", "demonstrates",
+    "our", "that", "those",
+}
+_DISCOVERY_SEED_SCOPE_GENERIC_TOKENS = _DISCOVERY_GENERIC_SUFFIX_TOKENS | {
+    "agent", "agents", "automation", "model", "models", "research", "source",
+    "system", "systems",
 }
 
 Json = dict[str, Any]
@@ -1071,6 +1077,46 @@ def _domain_seed_prefixes(domain: str | None) -> tuple[str, ...]:
                 if (key := _canonical_family_key(str(topic)))
             )
     return ()
+
+
+def _seed_scope_tokens(seed_prefixes: Iterable[str]) -> set[str]:
+    return {
+        token.rstrip("s")
+        for seed in seed_prefixes
+        for token in seed.split("_")
+        if len(token.rstrip("s")) >= 3
+        and token.rstrip("s") not in _DISCOVERY_SEED_SCOPE_GENERIC_TOKENS
+    }
+
+
+def _topic_in_seed_scope(topic_key: str, aliases: set[str], seed_scope: set[str]) -> bool:
+    if not seed_scope:
+        return True
+    topic_tokens = {
+        token.rstrip("s")
+        for token in topic_key.split("_")
+        if len(token.rstrip("s")) >= 3
+    }
+    alias_tokens = {
+        alias.removeprefix("topic:").rstrip("s")
+        for alias in aliases
+        if alias.startswith("topic:")
+    }
+    return bool((topic_tokens | alias_tokens) & seed_scope)
+
+
+def _other_domain_seed_scope_tokens(domain: str | None) -> set[str]:
+    current = load_domain_profile(domain)
+    out: set[str] = set()
+    for choice in domain_choices():
+        if choice == current.slug:
+            continue
+        with suppress(ValueError):
+            profile = load_domain_profile(choice)
+        if profile.seed_topics_path == current.seed_topics_path:
+            continue
+        out.update(_seed_scope_tokens(_domain_seed_prefixes(profile.slug)))
+    return out
 
 
 def _needs_tension_enrichment(verdict: Json) -> bool:
@@ -3568,6 +3614,8 @@ def _fresh_parent_topics_from_discovery(
 ) -> list[str]:
     discovery_dir = runs_root / "_topics_discovery"
     seed_prefixes = _domain_seed_prefixes(profile_slug)
+    seed_scope = _seed_scope_tokens(seed_prefixes)
+    other_seed_scope = _other_domain_seed_scope_tokens(profile_slug)
     paths = sorted(
         discovery_dir.glob("*.json"),
         key=lambda path: path.stat().st_mtime if path.exists() else 0,
@@ -3599,6 +3647,11 @@ def _fresh_parent_topics_from_discovery(
                     for token in topic_key[len(seed) + 1:].split("_")
                 )
                 for seed in seed_prefixes
+            ):
+                continue
+            if (
+                _topic_in_seed_scope(topic_key, aliases, other_seed_scope)
+                and not _topic_in_seed_scope(topic_key, aliases, seed_scope)
             ):
                 continue
             with suppress(TypeError, ValueError):

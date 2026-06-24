@@ -4157,16 +4157,22 @@ def test_fresh_parent_discovery_skips_generic_seed_suffixes(tmp_path: Path) -> N
         "domain": {"slug": "ai_research"},
         "all": [
             {"topic": "model_eval_that", "fact_source_count": 100, "paper_count": 100},
+            {"topic": "model_eval_our", "fact_source_count": 95, "paper_count": 95},
+            {"topic": "model_eval_demonstrate", "fact_source_count": 94, "paper_count": 94},
+            {"topic": "model_eval_achieving", "fact_source_count": 93, "paper_count": 93},
+            {"topic": "vitamin D supplementation", "fact_source_count": 92, "paper_count": 92},
+            {"topic": "resveratrol supplementation", "fact_source_count": 91, "paper_count": 91},
             {"topic": "model_eval_results", "fact_source_count": 90, "paper_count": 90},
+            {"topic": "LLMs", "fact_source_count": 7, "paper_count": 7},
             {"topic": "model_eval_calibration", "fact_source_count": 6, "paper_count": 6},
         ],
     })
 
     topics = daily._fresh_parent_topics_from_discovery(
-        root, "ai_research", set(), limit=1, min_sources=5,
+        root, "ai_research", set(), limit=2, min_sources=5,
     )
 
-    assert topics == ["model_eval_calibration"]
+    assert topics == ["LLMs", "model_eval_calibration"]
 
 
 def test_empty_refresh_skips_recent_source_floor_parent_topics(
