@@ -211,13 +211,6 @@ def _priority_ranked_topics(topics: list[str], *, domain: str = "longevity") -> 
         with httpx.Client() as client:
             for topic in topics:
                 discovery_sources, discovery_papers = discovery_counts.get(topic, (0, 0))
-                if (
-                    discovery_sources >= _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES
-                    and discovery_papers >= _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES
-                ):
-                    source_counts[topic] = discovery_sources
-                    paper_counts[topic] = discovery_papers
-                    continue
                 old_budget = os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS")
                 os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] = os.environ.get(
                     "TOPIC_DISCOVERY_PRIORITY_V5_SEARCH_BUDGET_SECONDS",
@@ -240,6 +233,13 @@ def _priority_ranked_topics(topics: list[str], *, domain: str = "longevity") -> 
                 if fullraw_enabled:
                     source_counts[topic] = len(papers)
                     paper_counts[topic] = len(papers)
+                    continue
+                if (
+                    discovery_sources >= _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES
+                    and discovery_papers >= _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES
+                ):
+                    source_counts[topic] = discovery_sources
+                    paper_counts[topic] = discovery_papers
                     continue
                 try:
                     source_counts[topic] = _fetch_topic_fact_source_count(

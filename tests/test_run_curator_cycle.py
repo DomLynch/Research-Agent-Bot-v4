@@ -1424,7 +1424,7 @@ def test_priority_ranked_topics_skips_slow_probe_when_fullraw_empty(
         lambda _out, **_kwargs: [{
             "topic": "empty_fullraw_priority",
             "fact_source_count": 9,
-            "paper_count": 1,
+            "paper_count": 9,
         }],
     )
 
