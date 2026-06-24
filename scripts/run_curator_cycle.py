@@ -71,6 +71,7 @@ _TIER2_SUPPLY_CACHE = _RUNS / "_tier2_supply_cache.json"
 _TIER2_SUPPLY_TTL_SECONDS = 86_400.0
 _DEFAULT_PIPELINE_TOP_N = max(5, _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES * 2)
 _PRIORITY_FULLRAW_BUDGET_SECONDS = "6"
+_FULLRAW_SUPPLY_DISCOVERY_FLOOR = 2
 
 
 def _env_enabled(name: str, default: str = "0") -> bool:
@@ -133,11 +134,14 @@ def _topic_token_jaccard(a: set[str], b: set[str]) -> float:
 
 def _discovery_top_for_plan(
     top: int, *, stop_on_ready: bool, excluded_count: int,
+    fullraw_supply_first: bool = False,
 ) -> int:
     """Over-fetch candidates before cooldown/exclusion filters in submit mode."""
     requested = max(1, top)
     if not stop_on_ready:
         return max(requested, _STOP_ON_READY_DISCOVERY_FLOOR)
+    if fullraw_supply_first:
+        return max(requested + max(0, excluded_count), _FULLRAW_SUPPLY_DISCOVERY_FLOOR)
     return max(requested + max(0, excluded_count), _STOP_ON_READY_DISCOVERY_FLOOR)
 
 
@@ -692,14 +696,19 @@ def main() -> int:
     if priority_only_submit:
         print("[cycle] priority submit refresh: skipping broad discovery")
     elif not args.dry_run:
+        fullraw_supply_first = (
+            not args.warm_backlog
+            and _env_enabled("TOPIC_DISCOVERY_FULLRAW_SUPPLY_FIRST", "1")
+        )
         discovery_top = _discovery_top_for_plan(
             args.top,
             stop_on_ready=args.stop_on_ready,
             excluded_count=0 if args.warm_backlog else len(args.exclude_topic),
+            fullraw_supply_first=fullraw_supply_first,
         )
         seed_paper_fast_path = (
             args.stop_on_ready and not args.warm_backlog
-            and not _env_enabled("TOPIC_DISCOVERY_FULLRAW_SUPPLY_FIRST", "1")
+            and not fullraw_supply_first
         )
 
         def discovery_args(

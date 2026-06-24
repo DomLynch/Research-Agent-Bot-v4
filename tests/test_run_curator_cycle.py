@@ -206,6 +206,15 @@ def test_stop_on_ready_discovery_overfetches_past_exclusions() -> None:
     ) == 20
 
 
+def test_stop_on_ready_fullraw_supply_uses_small_publish_window() -> None:
+    assert _discovery_top_for_plan(
+        1, stop_on_ready=True, excluded_count=0, fullraw_supply_first=True,
+    ) == 2
+    assert _discovery_top_for_plan(
+        1, stop_on_ready=True, excluded_count=3, fullraw_supply_first=True,
+    ) == 4
+
+
 def test_plan_topics_honors_excluded_before_cooldown() -> None:
     ranked = [
         {"topic": "duplicate", "velocity_score": 9.0},
@@ -727,7 +736,7 @@ def test_stop_on_ready_uses_cache_first_discovery(
     assert run_curator_cycle.main() == 1
     assert "--cache-first" in calls[0]
     assert "--seed-paper-only" not in calls[0]
-    assert calls[0][calls[0].index("--top") + 1] == "20"
+    assert calls[0][calls[0].index("--top") + 1] == "5"
 
 
 def test_stop_on_ready_empty_seed_paper_discovery_falls_back_to_bounded(
