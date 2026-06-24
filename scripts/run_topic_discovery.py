@@ -62,6 +62,13 @@ def _hydrate_query_limit() -> int:
         return 3
 
 
+def _seed_query_limit() -> int:
+    try:
+        return max(1, int(os.environ.get("TOPIC_DISCOVERY_SEED_QUERIES", 6)))
+    except (TypeError, ValueError):
+        return 6
+
+
 def _seed_paper_probe_limit(top: int) -> int:
     try:
         return max(0, int(os.environ.get("TOPIC_DISCOVERY_SEED_PAPER_TOPICS", 6)))
@@ -91,6 +98,28 @@ def _hydration_queries(candidate: TopicCandidate, *, context: str) -> tuple[str,
         for query in tuple(seen)[:2]:
             seen.setdefault(f"{query} {context_terms}", None)
     return tuple(seen)[:_hydrate_query_limit()]
+
+
+def _context_variants(context: str) -> tuple[str, ...]:
+    terms = _context_query_terms(context).split()
+    seen: dict[str, None] = {}
+    if terms:
+        seen.setdefault(terms[0], None)
+    if len(terms) > 1:
+        seen.setdefault(" ".join(terms[1:]), None)
+        seen.setdefault(" ".join(terms), None)
+    return tuple(seen)
+
+
+def _seed_paper_queries(seed: str, *, context: str) -> tuple[str, ...]:
+    seen: dict[str, None] = {}
+    for query in expand_topic_queries(seed, max_queries=4):
+        if query.strip():
+            seen.setdefault(query.strip(), None)
+    for query in tuple(seen)[:2]:
+        for variant in _context_variants(context):
+            seen.setdefault(f"{query} {variant}", None)
+    return tuple(seen)[:_seed_query_limit()]
 
 
 def _resolve_limits(
@@ -243,7 +272,7 @@ def _seed_paper_candidates(
                 if not _hydration_probeable(candidate):
                     continue
                 papers_by_key: dict[str, dict[str, object]] = {}
-                for query in _hydration_queries(candidate, context=query_context):
+                for query in _seed_paper_queries(seed, context=query_context):
                     for paper in _fetch_fullraw_topic_papers(query, client=client, limit=5):
                         key = str(paper.get("doi") or paper.get("paper_id")
                                   or paper.get("title") or "").strip().casefold()

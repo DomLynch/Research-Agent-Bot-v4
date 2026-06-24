@@ -319,6 +319,7 @@ def test_discovery_hydrates_paper_fields_before_writing_queue(
     monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
     monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda: 5_000)
     monkeypatch.setattr(run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: ())
+    monkeypatch.setenv("TOPIC_DISCOVERY_SEED_QUERIES", "3")
     monkeypatch.setattr(run_topic_discovery, "discover_topics", lambda **_kw: fallback)
     monkeypatch.setattr(run_topic_discovery, "_fetch_topic_papers", lambda *_a, **_k: [{
         "doi": "10.1/fullraw", "title": "Full raw source-diverse paper",
@@ -352,6 +353,7 @@ def test_seed_paper_candidate_skips_slow_discovery_when_enough(
         lambda _path=None: 5_000,
     )
     monkeypatch.setattr(run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: ())
+    monkeypatch.setenv("TOPIC_DISCOVERY_SEED_QUERIES", "3")
     monkeypatch.setattr(
         run_topic_discovery, "discover_topics",
         lambda **_kwargs: (_ for _ in ()).throw(AssertionError("slow discovery")),
@@ -395,6 +397,7 @@ def test_seed_paper_probe_expands_seed_queries_before_slow_discovery(
         lambda _path=None: 5_000,
     )
     monkeypatch.setattr(run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: ())
+    monkeypatch.setenv("TOPIC_DISCOVERY_SEED_QUERIES", "2")
     monkeypatch.setattr(
         run_topic_discovery, "discover_topics",
         lambda **_kwargs: (_ for _ in ()).throw(AssertionError("slow discovery")),
@@ -420,7 +423,6 @@ def test_seed_paper_probe_expands_seed_queries_before_slow_discovery(
     assert calls == [
         "llm_evaluation",
         "llm evaluation",
-        "llm_evaluation agents automation",
     ]
     out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
@@ -458,6 +460,7 @@ def test_empty_seed_paper_probe_falls_back_to_domain_discovery(
         lambda _path=None: 5_000,
     )
     monkeypatch.setattr(run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: ())
+    monkeypatch.setenv("TOPIC_DISCOVERY_SEED_QUERIES", "2")
     monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", lambda *_a, **_k: [])
     monkeypatch.setattr(run_topic_discovery, "discover_topics", slow_discover)
     monkeypatch.setattr(sys, "argv", [
@@ -523,6 +526,7 @@ def test_seed_paper_probe_uses_domain_context_query(
         lambda _path=None: 5_000,
     )
     monkeypatch.setattr(run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: ())
+    monkeypatch.setenv("TOPIC_DISCOVERY_SEED_QUERIES", "2")
     monkeypatch.setattr(
         run_topic_discovery, "discover_topics",
         lambda **_kwargs: (_ for _ in ()).throw(AssertionError("slow discovery")),
@@ -531,7 +535,7 @@ def test_seed_paper_probe_uses_domain_context_query(
 
     def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
         calls.append(query)
-        if query == "metformin longevity anti aging":
+        if query == "metformin longevity":
             return [{
                 "doi": "10.1/metformin-context",
                 "title": "Metformin longevity evidence",
@@ -549,7 +553,7 @@ def test_seed_paper_probe_uses_domain_context_query(
     ])
 
     assert run_topic_discovery.main() == 0
-    assert calls == ["metformin", "metformin longevity anti aging"]
+    assert calls == ["metformin", "metformin longevity"]
     out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
     assert [row["topic"] for row in payload["top"]] == ["metformin"]
