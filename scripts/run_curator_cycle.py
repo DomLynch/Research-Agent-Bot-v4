@@ -750,7 +750,7 @@ def main() -> int:
     ):
         print("[cycle] seed-paper discovery empty; retrying bounded discovery")
         ok, last = _run_step(
-            discovery_args(seed_paper_only=False, skip_seed_paper_probe=True),
+            discovery_args(seed_paper_only=False),
             "discovery",
             timeout=_DISCOVERY_TIMEOUT_SECONDS,
         )
