@@ -18,7 +18,7 @@ from typing import Any
 
 Json = dict[str, Any]
 _CYCLE_LEDGER_RE = re.compile(
-    r"^\d{4}-\d{2}-\d{2}t\d{2}-\d{2}-\d{2}z(?!-decision-)(?:-[a-z0-9_.-]+)?\.json$",
+    r"^\d{4}-\d{2}-\d{2}t(?!.*-decision-)[a-z0-9_.:-]+z(?:-[a-z0-9_.-]+)?\.json$",
     re.I,
 )
 _ROOT = Path(__file__).resolve().parents[1]

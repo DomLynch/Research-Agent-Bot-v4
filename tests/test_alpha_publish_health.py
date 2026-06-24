@@ -167,6 +167,35 @@ def test_health_summary_includes_suffixed_cycle_ledgers(tmp_path: Path) -> None:
     assert summary["topic"] == "metformin use"
 
 
+def test_health_summary_includes_manual_proof_cycle_ledgers(tmp_path: Path) -> None:
+    _write_ledger(tmp_path, "2026-06-01T02-38-47Z.json", {
+        "status": "submit_retry_exhausted",
+        "submitted": 0,
+        "published": 0,
+        "reason": "stale failed ledger",
+    })
+    _write_ledger(tmp_path, "2026-06-01Tlive-submit-reprobe-proofZ.json", {
+        "status": "published",
+        "submitted": 1,
+        "published": 1,
+        "published_topic": "exercise",
+        "public_url": "https://researka.org/papers/exercise",
+    })
+    _write_ledger(tmp_path, "2026-06-01Tlive-submit-reprobe-proofZ-decision-f61706f7.json", {
+        "status": "reviewer_revise",
+        "submitted": 1,
+        "published": 0,
+        "submitted_topic": "ignored_decision_probe",
+    })
+
+    summary = health.summarize_latest(tmp_path)
+
+    assert summary["ledger"] == "2026-06-01Tlive-submit-reprobe-proofZ.json"
+    assert summary["ok"] is True
+    assert summary["status"] == "published"
+    assert summary["topic"] == "exercise"
+
+
 def test_health_summary_ignores_probe_and_decision_ledgers(tmp_path: Path) -> None:
     _write_ledger(tmp_path, "probe-20260601T080818Z.json", {
         "status": "dry_run_selected",
