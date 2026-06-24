@@ -99,6 +99,20 @@ def query_variants(topic: str) -> tuple[str, ...]:
     return tuple(dict.fromkeys(q for q in (raw, contextual, focused) if q))
 
 
+def _fullraw_topic_papers(topic: str, limit: int) -> list[Json]:
+    try:
+        import httpx
+
+        from scripts.run_topic_discovery import _seed_fullraw_papers
+    except Exception:
+        return []
+    try:
+        with httpx.Client() as client:
+            return _seed_fullraw_papers(topic, client=client, limit=limit)
+    except Exception:
+        return []
+
+
 def boundary_quality(topic: str, papers: list[Json], min_sources: int) -> tuple[bool, str]:
     usable = [
         paper for paper in papers
@@ -380,7 +394,11 @@ def fetch_papers(
     base = settings.researka_database_url.rstrip("/")
     token = settings.researka_database_token.strip()
     if not base or not token:
-        return []
+        papers = [
+            p for p in _fullraw_topic_papers(topic, max(25, limit * 6))
+            if isinstance(p, dict) and _text_has_topic(p.get("title"), topic)
+        ]
+        return relevant_papers(topic, papers)[:limit]
     try:
         timeout = max(1.0, float(os.environ.get(_FACT_SEARCH_TIMEOUT_ENV, "12")))
     except ValueError:
@@ -430,6 +448,21 @@ def fetch_papers(
                 break
         if len(out) >= limit:
             break
+    if len(out) < limit:
+        for query in query_variants(topic):
+            for paper in _fullraw_topic_papers(query, max(25, limit * 6)):
+                if not isinstance(paper, dict) or not _text_has_topic(paper.get("title"), topic):
+                    continue
+                key = paper_key(paper, paper.get("paper_id"))
+                title = paper.get("title") or paper.get("paper_title")
+                if not key or not title or key in seen:
+                    continue
+                seen.add(key)
+                out.append(paper | {"id": key, "title": title})
+                if len(out) >= limit:
+                    break
+            if len(out) >= limit:
+                break
     if out:
         return out
     req = urllib.request.Request(

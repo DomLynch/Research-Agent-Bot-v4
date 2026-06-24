@@ -23,6 +23,7 @@ from pytest import MonkeyPatch, raises
 import scripts.daily_alpha_publish_cycle as daily
 from agent.topic_discovery import cap_topic_slug
 from scripts import alpha_publish_decisions as publish_decisions
+from scripts import alpha_publish_literature as publish_literature
 from scripts import alpha_publish_public as publish_public
 
 
@@ -8927,6 +8928,86 @@ def test_source_literature_fetcher_prefers_tier2_fact_backed_papers(
     assert papers[0]["source_fact"]["canonical_phrase"] == "Acarbose increased lifespan in mice."
     assert calls == ["https://db.test/api/v1/tier2/facts/search"]
     assert timeouts == [12.0]
+
+
+def test_source_literature_fetcher_supplements_thin_fact_search_with_fullraw(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "researka_database_url": "https://db.test",
+        "researka_database_token": "tok",
+    })())
+
+    class Response:
+        status = 200
+
+        def __enter__(self) -> Response:
+            return self
+
+        def __exit__(self, *_args: Any) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return json.dumps([
+                {
+                    "paper_id": f"pa-{idx}",
+                    "paper": {
+                        "doi": f"10.1/acarbose-fact-{idx}",
+                        "title": (
+                            "Acarbose aging lifespan trial"
+                            if idx == 0 else
+                            "Acarbose microbiome aging mouse study"
+                        ),
+                    },
+                    "canonical_phrase": "Acarbose changed an aging endpoint.",
+                    "population": "mice",
+                    "intervention": "acarbose",
+                }
+                for idx in range(2)
+            ]).encode("utf-8")
+
+    monkeypatch.setattr(urllib.request, "urlopen", lambda *_a, **_k: Response())
+    monkeypatch.setattr(
+        publish_literature,
+        "_fullraw_topic_papers",
+        lambda _query, _limit: [
+            {
+                "doi": "10.1/acarbose-fullraw-0",
+                "title": "Acarbose mice longevity inflammatory markers",
+            },
+            {
+                "doi": "10.1/acarbose-fullraw-1",
+                "title": "Acarbose mice aging glucose homeostasis",
+            },
+            {
+                "doi": "10.1/acarbose-fullraw-2",
+                "title": "Acarbose mice lifespan intervention review",
+            },
+            {
+                "doi": "10.1/acarbose-fullraw-3",
+                "title": "Acarbose mice late life metabolic response",
+            },
+            {
+                "doi": "10.1/acarbose-fullraw-4",
+                "title": "Acarbose mice geroscience translational evidence",
+            },
+        ],
+    )
+
+    papers = daily._fetch_source_literature_papers(
+        "acarbose", 5, domain="longevity_research",
+    )
+
+    assert [p["doi"] for p in papers] == [
+        "10.1/acarbose-fact-0",
+        "10.1/acarbose-fact-1",
+        "10.1/acarbose-fullraw-0",
+        "10.1/acarbose-fullraw-1",
+        "10.1/acarbose-fullraw-2",
+    ]
+    assert "source_fact" in papers[0]
+    assert "source_fact" not in papers[-1]
+    assert daily._source_literature_boundary_quality("acarbose", papers, 5) == (True, "ok")
 
 
 def test_source_literature_fetcher_retries_focused_query_variant(
