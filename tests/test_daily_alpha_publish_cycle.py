@@ -4013,6 +4013,56 @@ def test_fresh_parent_discovery_prefers_broader_parent_over_newer_child(
     assert topics == ["exercise"]
 
 
+def test_empty_refresh_skips_recent_source_floor_parent_topics(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "runs"
+    discovery = root / "_topics_discovery"
+    discovery.mkdir(parents=True)
+    daily._write_json(root / "_daily_ledger" / "2026-06-23.json", {
+        "domain": {"slug": "longevity"},
+        "source_floor_refresh_topics": ["NAD"],
+        "refresh_batches": [{
+            "skipped_below_source_floor": ["NMN"],
+        }],
+    })
+    daily._write_json(discovery / "latest.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [
+            {"topic": "NAD", "fact_source_count": 50, "paper_count": 50},
+            {"topic": "NMN", "fact_source_count": 40, "paper_count": 40},
+            {"topic": "exercise", "fact_source_count": 12, "paper_count": 12},
+        ],
+    })
+    calls: list[tuple[str, ...]] = []
+
+    def refresh(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+        priority_topics = tuple(kwargs.get("priority_topics") or ())
+        calls.append(priority_topics)
+        return {
+            "ok": True,
+            "ran_topics": list(priority_topics),
+            "top": 1,
+            "warm_backlog": False,
+        }
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", refresh)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-24",
+        domain="longevity_research",
+        refresh_candidates=True,
+        max_refresh_batches=1,
+        refresh_top=1,
+        submit=False,
+    )
+
+    assert ledger["recent_source_floor_topics_blocked"] == ["NAD", "NMN"]
+    assert ledger["refresh_parent_topics"] == ["exercise"]
+    assert calls == [("exercise",)]
+
+
 def test_latest_cycle_topics_ignores_cross_topic_sidecar(tmp_path: Path) -> None:
     cycles = tmp_path / "_curator_cycles"
     cycles.mkdir()

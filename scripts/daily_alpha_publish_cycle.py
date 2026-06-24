@@ -2064,6 +2064,38 @@ def _recent_negative_topics(
     return topics
 
 
+def _recent_source_floor_topics(
+    ledger_dir: Path, *, days: int, domain: str | None = None,
+) -> set[str]:
+    cutoff = time.time() - (max(0, days) * 86400)
+    topics: set[str] = set()
+
+    def remember(values: Any) -> None:
+        if isinstance(values, str):
+            values = [values]
+        if not isinstance(values, list):
+            return
+        for value in values:
+            topic = str(value or "").strip()
+            if topic:
+                topics.add(topic)
+
+    for path in ledger_dir.glob("*.json"):
+        if path.name.startswith("_"):
+            continue
+        with suppress(OSError):
+            if path.stat().st_mtime < cutoff:
+                continue
+        ledger = _json(path, {})
+        if not isinstance(ledger, dict) or not _same_domain(_ledger_domain(ledger), domain):
+            continue
+        remember(ledger.get("source_floor_refresh_topics"))
+        for batch in ledger.get("refresh_batches") or []:
+            if isinstance(batch, dict):
+                remember(batch.get("skipped_below_source_floor"))
+    return topics
+
+
 def _stamp_ts(value: Any) -> float | None:
     raw = str(value or "").strip()
     for fmt in ("%Y-%m-%dT%H-%M-%SZ", "%Y-%m-%dT%H:%M:%SZ"):
@@ -4363,10 +4395,20 @@ def run_cycle(
         submitted_path.parent, days=published_topic_cooldown_days,
         domain=profile.slug,
     )
-    blocked_topics = published_blocked_topics | submitted_blocked_topics | negative_blocked_topics
+    source_floor_blocked_topics = _recent_source_floor_topics(
+        submitted_path.parent, days=min(published_topic_cooldown_days, 2),
+        domain=profile.slug,
+    )
+    blocked_topics = (
+        published_blocked_topics
+        | submitted_blocked_topics
+        | negative_blocked_topics
+        | source_floor_blocked_topics
+    )
     ledger["recently_published_topics_blocked"] = sorted(published_blocked_topics)
     ledger["recently_submitted_topics_blocked"] = sorted(submitted_blocked_topics)
     ledger["recent_negative_topics_blocked"] = sorted(negative_blocked_topics)
+    ledger["recent_source_floor_topics_blocked"] = sorted(source_floor_blocked_topics)
     force_refresh = False
     accepted_shape_profiles = _accepted_shape_profiles(runs_root, domain=profile.slug)
     all_considered: list[Json] = []
