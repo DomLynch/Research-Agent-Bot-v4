@@ -626,10 +626,17 @@ def main() -> int:
     cycle_ts = cycle_start.strftime("%Y-%m-%dT%H-%M-%SZ")
     py = sys.executable
     excluded = {str(t).strip() for t in args.exclude_topic if str(t).strip()}
+    priority_topics = [
+        cap_topic_slug(str(topic).strip())
+        for topic in args.priority_topic if str(topic).strip()
+    ]
+    priority_only_submit = bool(args.stop_on_ready and priority_topics)
 
     # Step 1: refresh discovery
     print("[cycle] step 1: topic discovery")
-    if not args.dry_run:
+    if priority_only_submit:
+        print("[cycle] priority submit refresh: skipping broad discovery")
+    elif not args.dry_run:
         discovery_top = _discovery_top_for_plan(
             args.top,
             stop_on_ready=args.stop_on_ready,
@@ -662,7 +669,11 @@ def main() -> int:
         if not ok:
             print(f"[cycle] discovery failed: {last}", file=sys.stderr)
             return 1
-    ranked = _read_discovery_top(_RUNS / "_topics_discovery", domain=args.domain)
+    ranked = (
+        []
+        if priority_only_submit else
+        _read_discovery_top(_RUNS / "_topics_discovery", domain=args.domain)
+    )
     if not ranked and not args.priority_topic:
         print("[cycle] no discovery candidates; aborting.", file=sys.stderr)
         return 1
@@ -671,10 +682,7 @@ def main() -> int:
     recent = _recent_signal_topics(_RUNS, args.cooldown_hours, cycle_start)
     # Defense-in-depth: cap every inbound priority topic to the 4-token rule so
     # a malformed slug from any caller cannot be probed raw and hang the cycle.
-    priority_ranked = _priority_ranked_topics([
-        cap_topic_slug(str(topic).strip())
-        for topic in args.priority_topic if str(topic).strip()
-    ], domain=args.domain)
+    priority_ranked = _priority_ranked_topics(priority_topics, domain=args.domain)
     _cycle_settings = load_settings()
     # Cap live probes per cycle so a run of supply-less candidates cannot
     # exhaust the cycle budget; cache hits are free. The planner stops once

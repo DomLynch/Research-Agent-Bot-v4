@@ -743,7 +743,7 @@ def test_stop_on_ready_priority_below_floor_does_not_backfill_discovery_topic(
     payload = json.loads(next(cycles.glob("*.json")).read_text(encoding="utf-8"))
     assert payload["ran"] == []
     assert payload["skipped_below_source_floor"] == ["quercetin"]
-    assert calls == ["discovery", "cross_topic", "publish_queue"]
+    assert calls == ["cross_topic", "publish_queue"]
 
 
 def test_stop_on_ready_warm_backlog_probes_beyond_cache(
