@@ -7123,8 +7123,8 @@ def test_source_literature_fallback_uses_default_fetcher_after_empty_submit_lane
     (root / "_topics_discovery" / "longevity.json").write_text(json.dumps({
         "domain": {"slug": "longevity_research"},
         "all": [
-            {"topic": "thin_parent", "paper_count": 5, "fact_source_count": 30},
             {"topic": "source_rich_parent", "paper_count": 10, "fact_source_count": 20},
+            {"topic": "thin_parent", "paper_count": 5, "fact_source_count": 30},
         ],
     }), encoding="utf-8")
     papers = [
@@ -8931,7 +8931,7 @@ def test_fresh_parent_topics_scan_recent_domain_discovery_snapshots(
     ) == ["source rich parent"]
 
 
-def test_fresh_parent_topics_rank_across_discovery_snapshots_before_limiting(
+def test_fresh_parent_topics_prefer_newest_eligible_discovery_snapshot(
     tmp_path: Path,
 ) -> None:
     discovery = tmp_path / "_topics_discovery"
@@ -8963,10 +8963,10 @@ def test_fresh_parent_topics_rank_across_discovery_snapshots_before_limiting(
         set(),
         limit=1,
         min_sources=5,
-    ) == ["source diverse parent"]
+    ) == ["adequate newer parent"]
 
 
-def test_fresh_parent_topics_prefer_source_diversity_over_raw_fact_volume(
+def test_fresh_parent_topics_preserve_discovery_order_after_source_floor(
     tmp_path: Path,
 ) -> None:
     discovery = tmp_path / "_topics_discovery"
@@ -8975,13 +8975,13 @@ def test_fresh_parent_topics_prefer_source_diversity_over_raw_fact_volume(
         "domain": {"slug": "longevity_research"},
         "all": [
             {
-                "topic": "fact_heavy_narrow_parent",
-                "fact_source_count": 30,
-                "paper_count": 6,
+                "topic": "thin_first_parent",
+                "fact_source_count": 2,
+                "paper_count": 2,
                 "velocity_score": 100.0,
             },
             {
-                "topic": "source_diverse_parent",
+                "topic": "first_eligible_parent",
                 "fact_source_count": 18,
                 "paper_count": 14,
                 "velocity_score": 80.0,
@@ -8995,7 +8995,7 @@ def test_fresh_parent_topics_prefer_source_diversity_over_raw_fact_volume(
         set(),
         limit=1,
         min_sources=5,
-    ) == ["source_diverse_parent"]
+    ) == ["first_eligible_parent"]
 
 
 def test_fresh_parent_topics_dedupe_acronym_family_variants(
@@ -9042,6 +9042,29 @@ def test_fresh_parent_topics_dedupe_acronym_family_variants(
         limit=3,
         min_sources=5,
     ) == ["multi_agent_systems"]
+
+
+def test_fresh_parent_topics_skip_recent_single_token_parent_family(
+    tmp_path: Path,
+) -> None:
+    discovery = tmp_path / "_topics_discovery"
+    discovery.mkdir()
+    (discovery / "latest.json").write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [
+            {"topic": "metformin", "fact_source_count": 10, "paper_count": 10},
+            {"topic": "metformin use", "fact_source_count": 9, "paper_count": 9},
+            {"topic": "exercise", "fact_source_count": 7, "paper_count": 7},
+        ],
+    }), encoding="utf-8")
+
+    assert daily._fresh_parent_topics_from_discovery(
+        tmp_path,
+        "longevity_research",
+        {"metformin treatment"},
+        limit=3,
+        min_sources=5,
+    ) == ["exercise"]
 
 
 def test_child_topics_from_queue_caps_slug_to_four_tokens() -> None:

@@ -3298,7 +3298,7 @@ def _source_literature_topic_candidates(
         rows = data.get("all")
         if not isinstance(rows, list):
             continue
-        ranked: list[tuple[tuple[int, int, str], str]] = []
+        topics: list[str] = []
         seen: set[str] = set()
         for row in rows:
             if not isinstance(row, dict):
@@ -3307,12 +3307,11 @@ def _source_literature_topic_candidates(
             if not topic or topic in seen or _source_literature_family_blocked_topic(topic, blocked):
                 continue
             paper_count = int(row.get("paper_count") or 0)
-            fact_source_count = int(row.get("fact_source_count") or 0)
             if paper_count >= min_sources:
-                ranked.append(((-paper_count, -fact_source_count, topic), topic))
+                topics.append(topic)
                 seen.add(topic)
-        if ranked:
-            return [topic for _score, topic in sorted(ranked)[:limit]]
+        if topics:
+            return topics[:limit]
     return []
 
 
@@ -3389,9 +3388,6 @@ def _fresh_parent_topics_from_discovery(
         key=lambda path: path.stat().st_mtime if path.exists() else 0,
         reverse=True,
     )
-    ranked: list[tuple[tuple[int, int, float, int, str], str]] = []
-    seen: set[str] = set()
-    seen_families: set[str] = set()
     for path in paths:
         data = _json(path, {})
         if not isinstance(data, dict) or not _same_domain(_row_domain(data), profile_slug):
@@ -3399,6 +3395,9 @@ def _fresh_parent_topics_from_discovery(
         raw_rows = data.get("all") or data.get("top")
         if not isinstance(raw_rows, list):
             continue
+        topics: list[str] = []
+        seen: set[str] = set()
+        seen_families: set[str] = set()
         for row in raw_rows:
             if not isinstance(row, dict):
                 continue
@@ -3408,23 +3407,20 @@ def _fresh_parent_topics_from_discovery(
                 not topic
                 or topic in seen
                 or bool(aliases & seen_families)
-                or _family_blocked_topic(topic, blocked_topics)
+                or _source_literature_family_blocked_topic(topic, blocked_topics)
             ):
                 continue
             with suppress(TypeError, ValueError):
                 fact_sources = int(row.get("fact_source_count") or 0)
                 papers = int(row.get("paper_count") or 0)
-                velocity = float(row.get("velocity_score") or 0.0)
                 if max(fact_sources, papers) < min_sources:
                     continue
-                source_breadth = min(fact_sources, papers)
-                ranked.append((
-                    (-source_breadth, -papers, -velocity, -fact_sources, topic),
-                    topic,
-                ))
+                topics.append(topic)
                 seen.add(topic)
                 seen_families.update(aliases)
-    return [topic for _score, topic in sorted(ranked)[:limit]]
+        if topics:
+            return topics[:limit]
+    return []
 
 
 def _source_literature_payload(
