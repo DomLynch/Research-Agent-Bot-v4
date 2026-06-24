@@ -22,6 +22,10 @@ _GENERIC_TOPIC_TOKENS = frozenset({
     "antagonists", "blocker", "blockers", "drug", "drugs", "inhibitor",
     "inhibitors", "longevity", "therapies", "therapy", "anti",
 })
+_LONGEVITY_CONTEXT_TOKENS = frozenset({
+    "ageing", "aging", "longevity", "lifespan", "senescence", "geroscience",
+    "mortality", "survival", "frailty", "biological", "epigenetic", "clock",
+})
 
 
 def title_key(title: Any) -> str:
@@ -69,11 +73,7 @@ def topic_relevant(topic: str, paper: Json) -> bool:
     )))
     text_tokens = set(text.split())
     topic_domain_tokens = set(title_key(topic).split()) & {"ageing", "aging", "longevity"}
-    if topic_domain_tokens and (
-        {"ageing", "aging"} & topic_domain_tokens
-    ):
-        topic_domain_tokens |= {"age", "aged", "ages"}
-    if topic_domain_tokens and not (text_tokens & topic_domain_tokens):
+    if topic_domain_tokens and not (text_tokens & _LONGEVITY_CONTEXT_TOKENS):
         return False
     return bool(tokens & set(primary_text.split())) and (
         len(tokens & text_tokens) >= min(2, len(tokens))
