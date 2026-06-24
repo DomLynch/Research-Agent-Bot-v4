@@ -193,6 +193,7 @@ _DEFAULT_MIN_SUBMIT_SOURCES = _alpha_memo_int("min_source_papers", 5)
 _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES = _alpha_memo_int("min_direct_source_papers", 2)
 _DEFAULT_REFRESH_TOP = _alpha_memo_int("refresh_top", 1)
 _DEFAULT_REFRESH_COOLDOWN_HOURS = _alpha_memo_float("refresh_cooldown_hours", 2.0)
+_DEFAULT_PARENT_REFRESH_TOPIC_LIMIT = _alpha_memo_int("parent_refresh_topic_limit", 4)
 _DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS = _alpha_memo_int(
     "published_topic_cooldown_days", 30,
 )
@@ -238,6 +239,12 @@ _AGENT_REPAIR_DECISIONS = {
 def _refresh_timeout_note(refresh: Json) -> bool:
     note = str(refresh.get("note") or "")
     return "TimeoutExpired:" in note or " timed out after " in note
+
+
+def _parent_refresh_topic_limit(refresh_top: int) -> int:
+    return max(1, min(refresh_top, _DEFAULT_PARENT_REFRESH_TOPIC_LIMIT))
+
+
 _REPAIRABLE_REJECTION_REASONS = {
     "cited doi",
     "minimum_citations",
@@ -4002,9 +4009,12 @@ def _refresh_candidate_batch(
     if priorities:
         ran_raw = result.get("ran_topics")
         ran = ran_raw if isinstance(ran_raw, list) else []
-        result["ran_topics"] = list(dict.fromkeys(
-            [str(t) for t in ran if str(t)] + priorities
-        ))
+        if ok:
+            result["ran_topics"] = list(dict.fromkeys(
+                [str(t) for t in ran if str(t)] + priorities
+            ))
+        elif ran:
+            result["ran_topics"] = list(dict.fromkeys(str(t) for t in ran if str(t)))
     return result
 
 
@@ -4469,7 +4479,7 @@ def run_cycle(
             runs_root,
             profile.slug,
             blocked_topics,
-            limit=1,
+            limit=_parent_refresh_topic_limit(refresh_top),
             min_sources=max(min_submit_sources, min_direct_submit_sources),
         )
         if priority_refresh_topics:
@@ -4527,7 +4537,7 @@ def run_cycle(
                         runs_root,
                         profile.slug,
                         blocked_topics,
-                        limit=1,
+                        limit=_parent_refresh_topic_limit(refresh_top),
                         min_sources=max(min_submit_sources, min_direct_submit_sources),
                     )
                     if next_parent_topics:
@@ -4646,7 +4656,7 @@ def run_cycle(
                     runs_root,
                     profile.slug,
                     blocked_topics,
-                    limit=1,
+                    limit=_parent_refresh_topic_limit(refresh_top),
                     min_sources=max(min_submit_sources, min_direct_submit_sources),
                 )
                 if fresh_parent_topics:
@@ -4667,7 +4677,7 @@ def run_cycle(
                     runs_root,
                     profile.slug,
                     blocked_topics,
-                    limit=1,
+                    limit=_parent_refresh_topic_limit(refresh_top),
                     min_sources=max(min_submit_sources, min_direct_submit_sources),
                 )
             if refresh_candidates and fresh_parent_topics and batch < search_batch_limit:

@@ -3301,6 +3301,25 @@ def test_refresh_candidate_batch_passes_priority_child_topics(
     assert "second_child" in calls[0]
 
 
+def test_refresh_candidate_batch_timeout_does_not_mark_all_priorities_ran(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    def fake_step(_args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        return False, "TimeoutExpired: first parent timed out after 1200 seconds"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    out = daily._refresh_candidate_batch(
+        5,
+        runs_root=tmp_path,
+        priority_topics=("slow_parent", "next_parent"),
+    )
+
+    assert out["ok"] is False
+    assert out["priority_topics"] == ["slow_parent", "next_parent"]
+    assert "ran_topics" not in out
+
+
 def test_refresh_candidate_batch_ignores_stale_cycle_summary(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
@@ -6235,6 +6254,70 @@ def test_exhausted_duplicate_queue_prioritizes_fresh_parent_topic(
     assert calls[-1]["priority_topics"] == ["metformin"]
 
 
+def test_exhausted_duplicate_queue_batches_fresh_parent_topics(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    duplicate = _verdict("SGLT2 inhibitors")
+    fresh = _verdict("metformin") | {
+        "receipt_expansion": {"cited_bound_fact_ids": ["9", "8", "7"]},
+    }
+    _memo_with_source_receipts(root, duplicate, 5)
+    _memo_with_source_receipts(root, fresh, 5)
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
+        {"fingerprint": daily.memo_fingerprint(duplicate), "topic": "SGLT2 inhibitors"},
+    ])
+    daily._write_json(root / "_topics_discovery" / "latest.json", {
+        "domain": {"slug": "longevity"},
+        "all": [
+            {
+                "topic": "sglt2_inhibitors_empagliflozin_placebo",
+                "fact_source_count": 50,
+                "paper_count": 50,
+                "velocity_score": 100,
+            },
+            {"topic": "fasting", "fact_source_count": 40, "paper_count": 40},
+            {"topic": "metformin", "fact_source_count": 31, "paper_count": 31},
+            {"topic": "creatine", "fact_source_count": 25, "paper_count": 25},
+            {"topic": "rapamycin", "fact_source_count": 20, "paper_count": 20},
+            {"topic": "acarbose", "fact_source_count": 18, "paper_count": 18},
+        ],
+    })
+    calls: list[dict[str, Any]] = []
+    queues = iter([_queue(duplicate), _queue(duplicate, fresh)])
+
+    def refresh(refresh_top: int, *_args: Any, **kwargs: Any) -> dict[str, Any]:
+        priorities = list(kwargs.get("priority_topics") or [])
+        calls.append({"top": refresh_top, "priority_topics": priorities})
+        return {
+            "ok": True,
+            "note": "ok",
+            "ran_topics": priorities,
+            "priority_topics": priorities,
+        }
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", refresh)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        refresh_candidates=True,
+        refresh_top=5,
+        max_refresh_batches=2,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+        queue_builder=lambda _root, _include_archive: next(queues),
+    )
+
+    expected = ["fasting", "metformin", "creatine", "rapamycin"]
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["submitted_topic"] == "metformin"
+    assert ledger["refresh_parent_topics"] == expected
+    assert calls[-1] == {"top": 5, "priority_topics": expected}
+
+
 def test_duplicate_queue_prefers_fresh_parent_over_child_topic(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
@@ -6550,11 +6633,11 @@ def test_timed_out_priority_parent_tries_next_fresh_parent_topic(
     def refresh(*_args: Any, **kwargs: Any) -> dict[str, Any]:
         calls.append(kwargs)
         priorities = list(kwargs.get("priority_topics") or [])
-        if priorities == ["resveratrol supplementation"]:
+        if priorities and priorities[0] == "resveratrol supplementation":
             return {
                 "ok": False,
                 "note": "TimeoutExpired: resveratrol timed out after 1200 seconds",
-                "ran_topics": priorities,
+                "ran_topics": ["resveratrol supplementation"],
                 "priority_topics": priorities,
                 "top": 1,
             }
@@ -6589,7 +6672,7 @@ def test_timed_out_priority_parent_tries_next_fresh_parent_topic(
         "note": "TimeoutExpired: resveratrol timed out after 1200 seconds",
     }]
     assert [call["priority_topics"] for call in calls if call.get("priority_topics")] == [
-        ["resveratrol supplementation"], ["acarbose"],
+        ["resveratrol supplementation", "acarbose"], ["acarbose"],
     ]
 
 
