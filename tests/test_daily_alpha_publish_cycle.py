@@ -7793,7 +7793,7 @@ def test_repairable_source_literature_revise_retries_before_new_topic(
     assert ledger["submitted_topic"] == "metformin use"
     assert ledger["source_literature_fallback"]["repair_submission"] is True
     assert seen_payload["topic"] == "metformin use"
-    assert "required revision" in seen_payload["markdown"]
+    assert "required revision" not in seen_payload["markdown"]
     assert (
         seen_payload["metadata"]["reviewer_repair_notes"]
         == "required revision"
@@ -7897,7 +7897,11 @@ def test_repairable_source_literature_revise_skips_refresh_first(
     )
     assert ledger["source_literature_fallback"]["repair_submission"] is True
     assert ledger["submitted_topic"] == "metformin use"
-    assert "repair before broad refresh" in seen_payload["markdown"]
+    assert "repair before broad refresh" not in seen_payload["markdown"]
+    assert (
+        seen_payload["metadata"]["reviewer_repair_notes"]
+        == "repair before broad refresh"
+    )
 
 
 def _usable_boundary_papers() -> list[dict[str, str]]:

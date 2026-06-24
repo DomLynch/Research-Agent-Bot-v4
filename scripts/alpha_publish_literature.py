@@ -368,13 +368,6 @@ def payload(
         "## Boundary map",
         "",
     ]
-    if reviewer_notes.strip():
-        lines.extend([
-            "## Reviewer repair target",
-            "",
-            reviewer_notes.strip(),
-            "",
-        ])
     for paper in selected:
         title = str(paper.get("title") or "Untitled source").strip()
         doi = str(paper.get("doi") or "").strip()
