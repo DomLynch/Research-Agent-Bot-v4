@@ -216,6 +216,7 @@ def _priority_ranked_topics(topics: list[str], *, domain: str = "longevity") -> 
                 1 if source_counts.get(topic, 0) > 0 else 0
             ),
             "child_depth": _MAX_CHILD_RERUN_DEPTH,
+            "tier2_rescue_allowed": False,
         }
         for topic in topics
     ]
@@ -495,7 +496,10 @@ def _plan_topics(
         # Tier-2 source papers so rich-but-untagged topics are not filtered out
         # unbuilt. Universal — no per-topic logic, applies to every domain.
         floor = max(hard_floor, min_fact_sources)
-        if tier2_supply is not None and floor and count < floor:
+        if (
+            tier2_supply is not None and floor and count < floor
+            and c.get("tier2_rescue_allowed") is not False
+        ):
             count = max(count, tier2_supply(topic))
         # Hard floor first: sub-floor topics do not displace stronger
         # candidates, but nonzero topics remain a last-resort stale-run rebuild.

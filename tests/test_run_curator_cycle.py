@@ -343,6 +343,36 @@ def test_plan_topics_tier2_supply_rescues_untagged_rich_topic() -> None:
     assert below_floor == ["obscure"]
 
 
+def test_plan_topics_does_not_tier2_rescue_priority_rows() -> None:
+    ranked = [{
+        "topic": "brain_age_MRI",
+        "velocity_score": 9.0,
+        "fact_source_count": 1,
+        "paper_count": 1,
+        "tier2_rescue_allowed": False,
+    }]
+    calls: list[str] = []
+
+    def rescue(topic: str) -> int:
+        calls.append(topic)
+        return 9
+
+    plan, _skipped, _skipped_excluded, below_floor = _plan_topics(
+        ranked,
+        recent=set(),
+        excluded=set(),
+        top=1,
+        min_fact_sources=5,
+        hard_floor=3,
+        require_papers=True,
+        tier2_supply=rescue,
+    )
+
+    assert plan == []
+    assert calls == []
+    assert below_floor == ["brain_age_MRI"]
+
+
 def test_plan_topics_never_builds_zero_source_candidate() -> None:
     """Submit-seeking cycles do not build known-underfloor topics."""
     ranked = [
