@@ -7824,6 +7824,62 @@ def test_source_literature_fallback_uses_default_fetcher_after_empty_submit_lane
     assert "matched PICO" in seen_payload["markdown"]
 
 
+def test_source_literature_candidate_skips_refresh_before_submit(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "glycation_AGEs", "paper_count": 10, "fact_source_count": 20}],
+    })
+    papers = [
+        {"title": "AGE-RAGE signalling and skin collagen aging", "doi": "10.1234/1"},
+        {"title": "Glycation stress and RAGE activation in vascular aging", "doi": "10.1234/2"},
+        {"title": "Collagen crosslinking in advanced glycation biology", "doi": "10.1234/3"},
+        {"title": "RAGE pathways in age-related tissue injury", "doi": "10.1234/4"},
+        {"title": "Glycation-derived collagen stiffening review", "doi": "10.1234/5"},
+    ]
+    for idx, paper in enumerate(papers):
+        paper["source_fact"] = {
+            "canonical_phrase": f"glycation boundary finding {idx}",
+            "population": "adults",
+            "intervention": "glycation biology",
+            "comparator": "control",
+        }
+
+    def fail_refresh(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise AssertionError("source-literature candidate should skip refresh")
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", fail_refresh)
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-30-00Z",
+        domain="longevity_research",
+        refresh_candidates=True,
+        submit=True,
+        source_paper_fetcher=lambda *_args, **_kwargs: papers,
+        submitter=lambda _payload: {
+            "ok": True, "status": 200,
+            "response": {"submission": {"id": "sub-1"}},
+        },
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert ledger["refresh_batches"][0]["note"] == (
+        "skipped_source_literature_candidate_available"
+    )
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "glycation_AGEs"
+
+
 def test_repairable_source_literature_revise_retries_before_new_topic(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
