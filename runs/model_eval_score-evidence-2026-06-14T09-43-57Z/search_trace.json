@@ -1,0 +1,180 @@
+{
+  "topic": "model_eval_score",
+  "domain": {
+    "slug": "ai_research",
+    "display_name": "AI research / AI agents / research automation",
+    "seed_topics_path": "ai_research_discovery_seeds.toml",
+    "source_policy_path": "ai_research_sources.toml",
+    "claim_schema_path": "ai_research_claim_schema.toml",
+    "dry_run_only": false,
+    "database_domain": "ai_research"
+  },
+  "snapshot_utc": "2026-06-14T09-43-57Z",
+  "queries": [
+    {
+      "kind": "ai_results_index",
+      "query": "model_eval_score",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "ai_results_index",
+      "query": "model eval score",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "tier1",
+      "query": "model_eval_score",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "strict",
+      "query": "model eval score",
+      "facts": 444,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "strict",
+      "query": "model_eval_score",
+      "facts": 444,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "model eval score",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "model_eval_score",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "retrieval augmented",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "augmented generation",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "retrieval augmented generation",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "large language",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "language models",
+      "facts": 0,
+      "status": "server_error",
+      "errors": [
+        "http_503"
+      ]
+    },
+    {
+      "kind": "normal",
+      "query": "large language models",
+      "facts": 0,
+      "status": "server_error",
+      "errors": [
+        "http_503"
+      ]
+    },
+    {
+      "kind": "normal",
+      "query": "multi agent",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "normal",
+      "query": "question answering",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "ai_axis",
+      "query": "GSM8K Accuracy",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "ai_axis",
+      "query": "Medqa Accuracy",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "ai_axis",
+      "query": "MMLU Accuracy",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "ai_axis",
+      "query": "MATH Accuracy",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "ai_axis",
+      "query": "Coccolithophore Calcification Related Proteins From Uniprot Across Six Categories Relevance Score",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "ai_axis",
+      "query": "Swe Bench Verified Score",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "ai_axis",
+      "query": "Bird Accuracy",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "ai_axis",
+      "query": "American College Of Cardiology Self Assessment Program Accsap Accuracy",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    }
+  ]
+}

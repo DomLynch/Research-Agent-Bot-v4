@@ -1,0 +1,17 @@
+{
+  "claim": "LLM-based methods and models improve accuracy across diverse evaluation tasks and benchmarks.",
+  "conformance": 1.0,
+  "homogeneous": true,
+  "lead_fact_ids": [
+    "llm_evaluation/auto/2024/accuracy_205639",
+    "llm_evaluation/auto/2024/accuracy_207561",
+    "llm_evaluation/auto/2024/accuracy_207592",
+    "llm_evaluation/auto/2024/accuracy_207903",
+    "llm_evaluation/auto/2024/accuracy_208116",
+    "llm_evaluation/auto/2024/accuracy_208312",
+    "llm_evaluation/auto/2024/accuracy_209465",
+    "llm_evaluation/auto/2024/accuracy_221655",
+    "llm_evaluation/auto/2024/accuracy_323352",
+    "llm_evaluation/auto/2024/accuracy_325123"
+  ]
+}

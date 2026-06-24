@@ -1,0 +1,38 @@
+{
+  "topic": "creatine",
+  "domain": {
+    "slug": "longevity_research",
+    "display_name": "Longevity / anti-aging research",
+    "seed_topics_path": "discovery_seeds.toml",
+    "source_policy_path": "publication.toml",
+    "claim_schema_path": "publication.toml",
+    "dry_run_only": false,
+    "database_domain": "longevity_research"
+  },
+  "snapshot_utc": "2026-06-14T08-46-15Z",
+  "queries": [
+    {
+      "kind": "tier1",
+      "query": "creatine",
+      "facts": 0,
+      "status": "ok",
+      "errors": []
+    },
+    {
+      "kind": "strict",
+      "query": "creatine",
+      "facts": 0,
+      "status": "server_error",
+      "errors": [
+        "http_503"
+      ]
+    },
+    {
+      "kind": "normal",
+      "query": "creatine",
+      "facts": 16,
+      "status": "ok",
+      "errors": []
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "claim_tokens": [],
+  "coherent_receipt_ids": [],
+  "direct_sources": 0,
+  "journal_quality": {
+    "journal_named_ratio": 0.0,
+    "mean_quality_score": null,
+    "source_profiles": [],
+    "source_types": {},
+    "sources": 0,
+    "study_designs": {},
+    "with_journal": 0
+  },
+  "lead_fact_ids": [],
+  "support_level": "weak",
+  "total_sources": 0
+}

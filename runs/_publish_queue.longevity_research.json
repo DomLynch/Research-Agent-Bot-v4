@@ -1,0 +1,32 @@
+{
+  "agent_repair_needed": [],
+  "curation_needed": [],
+  "not_ready": [
+    {
+      "blockers": [
+        "missing_alpha_memo",
+        "missing_opportunities_gate",
+        "missing_claim_receipt_matrix",
+        "missing_typed_counter_evidence",
+        "missing_novelty_delta",
+        "missing_memo_audit"
+      ],
+      "decision": "not_ready",
+      "domain": {
+        "claim_schema_path": "publication.toml",
+        "database_domain": "longevity_research",
+        "display_name": "Longevity / anti-aging research",
+        "dry_run_only": false,
+        "seed_topics_path": "discovery_seeds.toml",
+        "slug": "longevity_research",
+        "source_policy_path": "publication.toml"
+      },
+      "domain_slug": "longevity_research",
+      "publish_tier": "UNBUILT",
+      "run_dir": "runs/creatine-evidence-2026-06-14T08-46-15Z",
+      "stage": "missing_alpha_memo",
+      "topic": "creatine"
+    }
+  ],
+  "ready_to_publish": []
+}

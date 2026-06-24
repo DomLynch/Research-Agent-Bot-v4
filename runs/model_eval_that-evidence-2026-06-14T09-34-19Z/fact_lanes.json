@@ -1,0 +1,11 @@
+{
+  "topic": "model_eval_that",
+  "snapshot_utc": "2026-06-14T09-34-19Z",
+  "counts": {
+    "A_core": 0,
+    "B_context": 0,
+    "C_noise": 0,
+    "D_bad_extraction": 0
+  },
+  "verdicts": []
+}

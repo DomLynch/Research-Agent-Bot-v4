@@ -1,0 +1,13 @@
+{
+  "topic": "creatine",
+  "snapshot_utc": "2026-06-14T08-46-15Z",
+  "model": "error:llm_call_failed:HTTPStatusError",
+  "lens": "",
+  "known_to_ignore": [],
+  "tensions": [],
+  "gaps": [],
+  "theses": [],
+  "reviewer_objections": [],
+  "next_extractions": [],
+  "raw_response": ""
+}

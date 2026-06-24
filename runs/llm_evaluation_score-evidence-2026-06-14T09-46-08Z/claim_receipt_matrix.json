@@ -1,0 +1,87 @@
+{
+  "claim_tokens": [
+    "accuracy",
+    "achieved",
+    "bing",
+    "claude",
+    "correct",
+    "deepseek",
+    "diagnostic",
+    "followed",
+    "forms",
+    "gemini",
+    "gpt",
+    "highest",
+    "initial",
+    "judge",
+    "opus",
+    "our",
+    "outper",
+    "r1",
+    "scorer",
+    "significantly",
+    "sonnet",
+    "vs",
+    "which",
+    "while"
+  ],
+  "coherent_receipt_ids": [
+    "llm_evaluation/auto/2025/accuracy_327318",
+    "llm_evaluation/auto/2025/accuracy_327058",
+    "llm_evaluation/auto/2025/accuracy_333571",
+    "llm_evaluation/auto/2025/accuracy_326986",
+    "llm_evaluation/auto/2023/accuracy_323347",
+    "llm_evaluation/auto/2025/accuracy_327347"
+  ],
+  "direct_sources": 5,
+  "journal_quality": {
+    "journal_named_ratio": 1.0,
+    "mean_quality_score": null,
+    "source_profiles": [
+      {
+        "source": "Automated Clinical Questionnaire Processing in Spine Surgery Using LLM Vision API: Comparative Performance Evaluation of Claude and GPT Mode",
+        "source_type": "preclinical",
+        "study_design": "preclinical"
+      },
+      {
+        "source": "Benchmarking clinical reasoning and accuracy of large language models on breast oncology multiple-choice questions.",
+        "source_type": "unknown",
+        "study_design": "unknown"
+      },
+      {
+        "source": "Evaluation of Advanced Artificial Intelligence in Minimally Invasive Surgery Training: A Preliminary Study of the Large Language Models Deep",
+        "source_type": "unknown",
+        "study_design": "unknown"
+      },
+      {
+        "source": "Evaluating Large Language Models in Interpreting MRI Reports and Recommending Treatment for Vestibular Schwannoma.",
+        "source_type": "unknown",
+        "study_design": "unknown"
+      },
+      {
+        "source": "Flames: Benchmarking Value Alignment of {LLM}s in {C}hinese",
+        "source_type": "unknown",
+        "study_design": "unknown"
+      }
+    ],
+    "source_types": {
+      "preclinical": 1,
+      "unknown": 5
+    },
+    "sources": 6,
+    "study_designs": {
+      "preclinical": 1,
+      "unknown": 5
+    },
+    "with_journal": 6
+  },
+  "lead_fact_ids": [
+    "llm_evaluation/auto/2025/accuracy_327318",
+    "llm_evaluation/auto/2025/accuracy_327058",
+    "llm_evaluation/auto/2025/accuracy_333571",
+    "llm_evaluation/auto/2025/accuracy_326986",
+    "llm_evaluation/auto/2023/accuracy_323347"
+  ],
+  "support_level": "strong",
+  "total_sources": 6
+}
