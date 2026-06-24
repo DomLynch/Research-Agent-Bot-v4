@@ -71,7 +71,8 @@ _COHERENCE_GENERIC_TOKENS = _CLUSTER_GENERIC_TOKENS | {
 _OUTCOME_GENERIC_TOKENS = frozenset({
     "change", "changed", "changes", "increase", "increased", "increases",
     "decrease", "decreased", "decreases", "reduce", "reduced", "reduces",
-    "reduction", "significantly", "observed", "mean",
+    "reduction", "significantly", "observed", "mean", "size",
+    "male", "males", "female", "females",
 })
 
 Json = dict[str, Any]
@@ -1176,8 +1177,7 @@ def _cluster_outcome_tokens(fact: Json, parent_tokens: set[str]) -> set[str]:
     ))
     outcome = _shape_tokens(
         fact,
-        ("endpoint", "metric_type", "sub_topic", "canonical_phrase", "claim",
-         "finding", "source_excerpt"),
+        ("endpoint", "metric_type", "canonical_phrase", "claim", "finding"),
     )
     return outcome - context - parent_tokens - _OUTCOME_GENERIC_TOKENS
 
