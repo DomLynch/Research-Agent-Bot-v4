@@ -297,6 +297,17 @@ def test_next_candidate_summary_reports_retry_risk(tmp_path: Path) -> None:
 def test_next_candidate_summary_separates_raw_ready_from_actionable(
     tmp_path: Path,
 ) -> None:
+    seen: dict[str, Any] = {}
+
+    def build_queue(*_args: object, **kwargs: object) -> dict[str, list[dict[str, str]]]:
+        seen.update(kwargs)
+        return {
+            "ready_to_publish": [{"topic": "exercise"}],
+            "agent_repair_needed": [],
+            "curation_needed": [],
+            "not_ready": [],
+        }
+
     def select_candidate(
         *_args: object, **_kwargs: object,
     ) -> tuple[None, list[dict[str, Any]]]:
@@ -306,12 +317,7 @@ def test_next_candidate_summary_separates_raw_ready_from_actionable(
         _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES=5,
         _DEFAULT_MIN_SUBMIT_SOURCES=5,
         _DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS=30,
-        _build_queue=lambda *_args, **_kwargs: {
-            "ready_to_publish": [{"topic": "exercise"}],
-            "agent_repair_needed": [],
-            "curation_needed": [],
-            "not_ready": [],
-        },
+        _build_queue=build_queue,
         _recently_published_topics=lambda *_args, **_kwargs: set(),
         _recent_submission_topics=lambda *_args, **_kwargs: set(),
         _recent_negative_topics=lambda *_args, **_kwargs: set(),
@@ -327,6 +333,7 @@ def test_next_candidate_summary_separates_raw_ready_from_actionable(
     assert summary["non_actionable_ready_to_publish"] == 1
     assert summary["supply_status"] == "ready_queue_blocked"
     assert summary["considered_counts"] == {"duplicate_submission_fingerprint": 1}
+    assert Path(seen["submitted_path"]).name == "_submitted_fingerprints.json"
 
 
 def test_health_summary_can_sync_pending_submission(tmp_path: Path) -> None:

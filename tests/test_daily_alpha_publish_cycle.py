@@ -205,6 +205,29 @@ def test_daily_build_queue_demotes_submit_held_evidence_maps(tmp_path: Path) -> 
     assert queue["curation_needed"][0]["queue_status"] == "evidence_map_scope_mismatch"
 
 
+def test_daily_build_queue_demotes_submitted_duplicate_ready_row(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _stored_map_run(root, "bounded_map", shared_population="older adults")
+    submitted_path = root / "runs" / "_daily_ledger" / "_submitted_fingerprints.json"
+    daily._write_json(submitted_path, [{
+        "domain": {"slug": "longevity"},
+        "topic": "bounded_map",
+        "fingerprint": daily.memo_fingerprint(verdict),
+    }])
+
+    queue = daily._build_queue(
+        root / "runs",
+        include_archive=False,
+        domain="longevity",
+        submitted_path=submitted_path,
+    )
+
+    assert queue["ready_to_publish"] == []
+    assert [row["topic"] for row in queue["curation_needed"]] == ["bounded_map"]
+    assert queue["curation_needed"][0]["queue_status"] == "duplicate_submission_fingerprint"
+    assert queue["curation_needed"][0]["blockers"] == ["duplicate_submission_fingerprint"]
+
+
 def test_daily_build_queue_demotes_evidence_map_label_even_with_alpha_surface(
     tmp_path: Path,
 ) -> None:

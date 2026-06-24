@@ -770,8 +770,32 @@ def _queue_ready_row(row: Json, runs_root: Path) -> Json:
     }
 
 
+def _queue_submitted_duplicate_row(
+    row: Json,
+    runs_root: Path,
+    submitted_path: Path | None,
+    domain: str | None,
+) -> Json:
+    if row.get("decision") != "ready_to_publish" or submitted_path is None:
+        return row
+    fp = memo_fingerprint(row)
+    if not fp or not _same_memo_seen(submitted_path, fp, _memo_sha256(row, runs_root), domain):
+        return row
+    blockers = row.get("blockers")
+    blocker_list = blockers if isinstance(blockers, list) else []
+    status = "duplicate_submission_fingerprint"
+    return row | {
+        "decision": "curation_needed",
+        "queue_status": status,
+        "blockers": sorted({*(str(b) for b in blocker_list), status}),
+    }
+
+
 def _build_queue(
-    runs_root: Path, include_archive: bool, domain: str | None = None,
+    runs_root: Path,
+    include_archive: bool,
+    domain: str | None = None,
+    submitted_path: Path | None = None,
 ) -> Json:
     """Build current verdicts without mutating run artifacts."""
     patterns = ["*-evidence-*"]
@@ -813,6 +837,7 @@ def _build_queue(
             "domain_slug": run_domain,
         }
         row = _queue_ready_row(row, runs_root)
+        row = _queue_submitted_duplicate_row(row, runs_root, submitted_path, run_domain)
         domain_rows.append(row)
     rows = domain_rows
     seed_scope_dropped_count = 0
@@ -4451,7 +4476,10 @@ def run_cycle(
 
     def build_current_queue() -> Json:
         if queue_builder is _build_queue:
-            return _build_queue(runs_root, include_archive, domain=profile.slug)
+            return _build_queue(
+                runs_root, include_archive,
+                domain=profile.slug, submitted_path=submitted_path,
+            )
         return queue_builder(runs_root, include_archive)
 
     prev_queue_sig: frozenset[str] = frozenset()
