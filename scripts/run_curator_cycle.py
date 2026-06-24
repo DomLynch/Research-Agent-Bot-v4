@@ -196,6 +196,9 @@ def _priority_ranked_topics(topics: list[str], *, domain: str = "longevity") -> 
         settings = load_settings()
         with httpx.Client() as client:
             for topic in topics:
+                if discovery_counts.get(topic, (0, 0))[0] > 0:
+                    source_counts[topic] = discovery_counts[topic][0]
+                    continue
                 try:
                     source_counts[topic] = _fetch_topic_fact_source_count(
                         topic, client=client, settings=settings, domain=domain,
