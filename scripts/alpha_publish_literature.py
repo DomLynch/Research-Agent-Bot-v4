@@ -38,7 +38,7 @@ def _topic_tokens(topic: str) -> set[str]:
         if len(token) < 3 or token in _GENERIC_TOPIC_TOKENS:
             continue
         tokens.add(token)
-        if len(token) > 4 and token.endswith("s"):
+        if len(token) > 3 and token.endswith("s"):
             tokens.add(token[:-1])
     return tokens
 
@@ -62,7 +62,7 @@ def topic_relevant(topic: str, paper: Json) -> bool:
         str(paper.get("paper_title") or ""),
         fact_text,
     )))
-    return bool(tokens & set(text.split()))
+    return len(tokens & set(text.split())) >= min(2, len(tokens))
 
 
 def relevant_papers(topic: str, papers: list[Json]) -> list[Json]:

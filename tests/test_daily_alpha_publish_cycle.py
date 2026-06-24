@@ -7844,7 +7844,7 @@ def test_source_literature_candidate_skips_refresh_before_submit(
     ]
     for idx, paper in enumerate(papers):
         paper["source_fact"] = {
-            "canonical_phrase": f"glycation boundary finding {idx}",
+            "canonical_phrase": f"glycation AGE boundary finding {idx}",
             "population": "adults",
             "intervention": "glycation biology",
             "comparator": "control",
@@ -8342,7 +8342,7 @@ def test_source_literature_fallback_is_disabled_without_explicit_submit_flag(
     (root / "_topics_discovery").mkdir(parents=True)
     (root / "_topics_discovery" / "longevity.json").write_text(json.dumps({
         "domain": {"slug": "longevity_research"},
-        "all": [{"topic": "source_rich_parent", "paper_count": 10, "fact_source_count": 20}],
+        "all": [{"topic": "metabolic_pathway", "paper_count": 10, "fact_source_count": 20}],
     }), encoding="utf-8")
     monkeypatch.delenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", raising=False)
 
@@ -8385,7 +8385,7 @@ def test_fact_backed_source_literature_fallback_submits_without_flag(
     (root / "_topics_discovery").mkdir(parents=True)
     (root / "_topics_discovery" / "longevity.json").write_text(json.dumps({
         "domain": {"slug": "longevity_research"},
-        "all": [{"topic": "source_rich_parent", "paper_count": 10, "fact_source_count": 20}],
+        "all": [{"topic": "metabolic_pathway", "paper_count": 10, "fact_source_count": 20}],
     }), encoding="utf-8")
     monkeypatch.delenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", raising=False)
     papers = [
@@ -8394,9 +8394,9 @@ def test_fact_backed_source_literature_fallback_submits_without_flag(
             "doi": f"10.1234/{idx}",
             "year": 2020 + idx,
             "source_fact": {
-                "canonical_phrase": f"finding {idx} for bounded source synthesis",
+                "canonical_phrase": f"metabolic pathway finding {idx} for bounded synthesis",
                 "population": f"population {idx}",
-                "intervention": "source intervention",
+                "intervention": "metabolic pathway intervention",
                 "comparator": "control",
             },
         }
@@ -8433,7 +8433,7 @@ def test_fact_backed_source_literature_fallback_submits_without_flag(
 
     assert ledger["status"] == "published"
     assert "Metabolic pathway source in aging" in seen_payload["markdown"]
-    assert "Finding: finding 0 for bounded source synthesis" in seen_payload["markdown"]
+    assert "Finding: metabolic pathway finding 0 for bounded synthesis" in seen_payload["markdown"]
     assert "receipt-backed scoping note" in seen_payload["abstract"]
 
 
@@ -8843,6 +8843,53 @@ def test_source_literature_boundary_quality_rejects_title_series() -> None:
 
     assert ok is False
     assert reason == "repeated_title_series"
+
+
+def test_source_literature_boundary_requires_multi_token_topic_alignment() -> None:
+    papers = [
+        {
+            "title": "The Effects of Vitamin D Supplementation on Metabolic Markers",
+            "doi": "10.1234/1",
+            "source_fact": {
+                "canonical_phrase": "oral daily doses of vitamin D improve HbA1c levels",
+            },
+        },
+        {
+            "title": "Direct oral anticoagulants for cancer-associated thrombosis",
+            "doi": "10.1234/2",
+            "source_fact": {
+                "canonical_phrase": "direct oral anticoagulants changed bleeding risk",
+            },
+        },
+        {
+            "title": "Modulation of ketamine effects by oral rapamycin",
+            "doi": "10.1234/3",
+            "source_fact": {
+                "canonical_phrase": "oral rapamycin was given before ketamine",
+            },
+        },
+        {
+            "title": "Prevalence of periodontal disease",
+            "doi": "10.1234/4",
+            "source_fact": {
+                "canonical_phrase": "periodontal disease increased cardiovascular risk",
+            },
+        },
+        {
+            "title": "Human Skin, Oral, and Gut Microbiomes Predict Chronological Age",
+            "doi": "10.1234/5",
+            "source_fact": {
+                "canonical_phrase": "the oral microbiome predicted chronological age",
+            },
+        },
+    ]
+
+    ok, reason = daily._source_literature_boundary_quality(
+        "oral_microbiome_periodontal_aging", papers, 5,
+    )
+
+    assert ok is False
+    assert reason == "source_floor_below_min"
 
 
 def test_source_literature_boundary_quality_accepts_distinct_boundary_papers() -> None:
