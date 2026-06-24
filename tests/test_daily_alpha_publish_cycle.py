@@ -3317,11 +3317,14 @@ def test_refresh_candidate_batch_can_warm_backlog(
     assert out["warm_backlog"] is True
     assert "--warm-backlog" in calls[0]
     assert "--derived-topic-limit" in calls[0]
-    assert str(daily._DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT) in calls[0]
+    assert (
+        calls[0][calls[0].index("--derived-topic-limit") + 1]
+        == str(daily._SUBMIT_WARM_BACKLOG_MIN_PROBE_TOPICS)
+    )
     assert "--fact-probe-topics" in calls[0]
     assert (
         calls[0][calls[0].index("--fact-probe-topics") + 1]
-        == str(daily._DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT)
+        == str(daily._SUBMIT_WARM_BACKLOG_MIN_PROBE_TOPICS)
     )
     assert "--no-editorial" in calls[0]
     assert "--no-frontier" in calls[0]
@@ -4262,7 +4265,7 @@ def test_refresh_candidate_batch_scales_live_probe_window_with_exclusions(
     assert out["ok"] is True
     assert (
         calls[0][calls[0].index("--fact-probe-topics") + 1]
-        == str(daily._DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT)
+        == str(daily._SUBMIT_WARM_BACKLOG_MIN_PROBE_TOPICS)
     )
 
 

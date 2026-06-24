@@ -217,6 +217,8 @@ _DEFAULT_MAX_REFRESH_BATCHES = 5
 _DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT = _alpha_memo_int(
     "warm_backlog_derived_topic_limit", 250,
 )
+_SUBMIT_WARM_BACKLOG_MIN_PROBE_TOPICS = 20
+_SUBMIT_WARM_BACKLOG_REFRESH_MULTIPLIER = 4
 _REFRESH_TIMEOUT_SECONDS = 1200
 # User-facing "3x" repair limit: one initial submit plus three repaired
 # resubmits for the same evidence fingerprint.
@@ -4100,7 +4102,13 @@ def _refresh_candidate_batch(
     domain: str = "longevity",
 ) -> Json:
     exclusions = sorted(t for t in (excluded_topics or set()) if t)
-    warm_probe_topics = _DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT
+    warm_probe_topics = min(
+        _DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT,
+        max(
+            _SUBMIT_WARM_BACKLOG_MIN_PROBE_TOPICS,
+            max(1, refresh_top) * _SUBMIT_WARM_BACKLOG_REFRESH_MULTIPLIER,
+        ),
+    )
     priorities = [str(topic).strip() for topic in priority_topics if str(topic).strip()]
     effective_top = min(refresh_top, len(priorities)) if priorities else refresh_top
     args = [
@@ -4113,7 +4121,7 @@ def _refresh_candidate_batch(
         args.extend([
             "--warm-backlog",
             "--derived-topic-limit",
-            str(_DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT),
+            str(warm_probe_topics),
             "--fact-probe-topics",
             str(warm_probe_topics),
         ])

@@ -865,19 +865,24 @@ def test_stop_on_ready_warm_backlog_probes_beyond_cache(
     monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
     monkeypatch.setattr(run_curator_cycle, "_RUNS", tmp_path / "runs")
     monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
-    monkeypatch.setattr(sys, "argv", [
+    excluded = [f"old_winner_{idx}" for idx in range(46)]
+    argv = [
         "run_curator_cycle.py", "--stop-on-ready", "--warm-backlog",
-        "--fact-probe-topics", "5", "--exclude-topic", "old_winner",
-    ])
+        "--fact-probe-topics", "5",
+    ]
+    for topic in excluded:
+        argv.extend(["--exclude-topic", topic])
+    monkeypatch.setattr(sys, "argv", argv)
 
     assert run_curator_cycle.main() == 1
     assert "--cache-first" not in calls[0]
     assert "--warm-backlog" in calls[0]
     assert "--cache-only" not in calls[0]
+    assert calls[0][calls[0].index("--top") + 1] == "20"
     assert "--fact-probe-topics" in calls[0]
     assert calls[0][calls[0].index("--fact-probe-topics") + 1] == "5"
     assert "--exclude-topic" in calls[0]
-    assert calls[0][calls[0].index("--exclude-topic") + 1] == "old_winner"
+    assert calls[0][calls[0].index("--exclude-topic") + 1] == excluded[0]
 
 
 def test_stop_on_ready_halts_plan(

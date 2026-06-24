@@ -647,7 +647,7 @@ def main() -> int:
         discovery_top = _discovery_top_for_plan(
             args.top,
             stop_on_ready=args.stop_on_ready,
-            excluded_count=len(args.exclude_topic),
+            excluded_count=0 if args.warm_backlog else len(args.exclude_topic),
         )
         seed_paper_fast_path = args.stop_on_ready and not args.warm_backlog
 
