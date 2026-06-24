@@ -85,6 +85,9 @@ _DISCOVERY_SEED_SCOPE_GENERIC_TOKENS = _DISCOVERY_GENERIC_SUFFIX_TOKENS | {
     "agent", "agents", "anti", "automation", "model", "models", "research", "source",
     "system", "systems",
 }
+_DISCOVERY_PARENT_GENERIC_TOKENS = _DISCOVERY_SEED_SCOPE_GENERIC_TOKENS | {
+    "age", "ageing", "aging", "dose", "related",
+}
 
 Json = dict[str, Any]
 Fetcher = Callable[[str], Json]
@@ -3630,6 +3633,8 @@ def _fresh_parent_topics_from_discovery(
                 if len(token.rstrip("s")) >= 3
             }
             if "anti" in topic_tokens and seed_scope and not ((topic_tokens - {"anti"}) & seed_scope):
+                continue
+            if topic_tokens and not (topic_tokens - _DISCOVERY_PARENT_GENERIC_TOKENS):
                 continue
             if any(
                 topic_key.startswith(f"{seed}_")
