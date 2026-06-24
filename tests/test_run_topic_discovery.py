@@ -790,14 +790,7 @@ def test_fullraw_supply_requires_per_topic_source_floor(monkeypatch: Any) -> Non
             "quality_score": 90.0,
         }
         for i in range(4)
-    ] + [{
-        "doi": "10.1/metformin",
-        "title": "Metformin longevity cohort",
-        "fwci": 2.0,
-        "cited_by_count": 20,
-        "publication_year": 2025,
-        "quality_score": 90.0,
-    }]
+    ]
     monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", lambda *_a, **_k: papers)
 
     rows = run_topic_discovery._fullraw_supply_candidates(
@@ -807,6 +800,39 @@ def test_fullraw_supply_requires_per_topic_source_floor(monkeypatch: Any) -> Non
     )
 
     assert rows == ()
+
+
+def test_fullraw_supply_uses_domain_query_when_titles_do_not_cluster(
+    monkeypatch: Any,
+) -> None:
+    papers = [
+        {
+            "doi": f"10.1/mixed{i}",
+            "title": title,
+            "fwci": 2.0,
+            "cited_by_count": 20 + i,
+            "publication_year": 2025,
+            "quality_score": 90.0,
+        }
+        for i, title in enumerate((
+            "Rapamycin lifespan evidence",
+            "Metformin aging cohort",
+            "Vitamin D deficiency mortality",
+            "Spermidine autophagy trial",
+            "Fisetin senescence review",
+        ))
+    ]
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", lambda *_a, **_k: papers)
+
+    rows = run_topic_discovery._fullraw_supply_candidates(
+        query_context="Longevity / anti-aging research",
+        current_year=2026,
+        top=1,
+    )
+
+    assert [(row.topic, row.paper_count, row.fact_source_count) for row in rows] == [
+        ("longevity_anti_aging", 5, 5),
+    ]
 
 
 def test_seed_paper_only_skips_slow_domain_discovery_when_empty(

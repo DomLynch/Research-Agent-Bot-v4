@@ -460,6 +460,11 @@ def _fullraw_supply_candidates(
         ))
         if len(out) >= top:
             break
+    if not out:
+        out.append(_score_topic(
+            "_".join(query.split()), papers[:25], current_year,
+            fact_source_count=len(papers),
+        ))
     for paper in papers:
         receipt = paper.get("fullraw_shard_receipt")
         if isinstance(receipt, dict):
