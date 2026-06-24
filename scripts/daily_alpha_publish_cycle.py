@@ -5129,7 +5129,7 @@ def run_cycle(
                 runs_root, profile.slug, min_submit_sources, blocked_topics,
             ) if topic not in repair_topic_set
         ]
-        for literature_topic in literature_topics:
+        for idx, literature_topic in enumerate(literature_topics):
             papers = (
                 paper_fetcher(literature_topic, min_submit_sources)
                 if paper_fetcher is not None else
@@ -5233,6 +5233,8 @@ def run_cycle(
                                 "public_page_check": ledger.get("public_page_check"),
                             })
                             _write_ledger(ledger_path, ledger)
+                            if idx + 1 < len(literature_topics):
+                                continue
                             return ledger
                     ledger["cycle_attempts"].append({
                         "topic": literature_topic,
