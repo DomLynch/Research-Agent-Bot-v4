@@ -886,6 +886,41 @@ def test_stop_on_ready_warm_backlog_probes_beyond_cache(
     assert calls[0][calls[0].index("--exclude-topic") + 1] == excluded[0]
 
 
+def test_stop_on_ready_caps_priority_topics_per_child_process(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    cycles = tmp_path / "runs" / "_curator_cycles"
+    cycles.mkdir(parents=True)
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", tmp_path / "runs")
+    monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
+    monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics", lambda *_a: set())
+    monkeypatch.setattr(run_curator_cycle, "_run_step", lambda *_a, **_k: (True, "ok"))
+    ranked_calls: list[list[str]] = []
+
+    def ranked(topics: list[str], **_k: Any) -> list[dict[str, Any]]:
+        ranked_calls.append(topics)
+        return [
+            {
+                "topic": topic, "velocity_score": 0.0,
+                "fact_source_count": 5, "paper_count": 5,
+            }
+            for topic in topics
+        ]
+
+    monkeypatch.setattr(run_curator_cycle, "_priority_ranked_topics", ranked)
+    monkeypatch.setattr(sys, "argv", [
+        "run_curator_cycle.py", "--stop-on-ready", "--dry-run",
+        "--priority-topic", "first", "--priority-topic", "second",
+    ])
+
+    assert run_curator_cycle.main() == 0
+    assert ranked_calls == [["first"]]
+
+
 def test_stop_on_ready_halts_plan(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
