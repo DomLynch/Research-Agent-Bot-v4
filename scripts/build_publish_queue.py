@@ -229,6 +229,7 @@ def build_queue(
     seed_keys = _domain_seed_keys(domain)
     default_domain = load_domain_profile(None).slug
     existing: set[tuple[str, str]] = set()
+    submitted_path = _RUNS / "_daily_ledger" / "_submitted_fingerprints.json"
     for run in _latest_per_topic(_alpha_runs(include_archive)):
         row = _verdict_for_run(run)
         run_domain = _run_domain(run, row) or (
@@ -244,6 +245,9 @@ def build_queue(
                 "domain_slug": run_domain,
             }
         row = cycle._queue_ready_row(row, _RUNS)
+        row = cycle._queue_submitted_duplicate_row(
+            row, _RUNS, submitted_path, run_domain or domain,
+        )
         rows.append(row)
         existing.add((run_domain, str(row.get("topic") or _topic(run))))
     rows.extend(_diagnostic_rows(domain=domain, existing=existing, seed_keys=seed_keys))

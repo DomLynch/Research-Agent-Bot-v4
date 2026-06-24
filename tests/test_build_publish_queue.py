@@ -10,6 +10,7 @@ from typing import Any
 from pytest import MonkeyPatch
 
 import scripts.build_publish_queue as queue
+from scripts import daily_alpha_publish_cycle as daily
 
 
 def test_write_queue_uses_output_lock(
@@ -132,6 +133,44 @@ def test_build_queue_prefers_run_row_over_matching_diagnostic(
     assert rows == 1
     assert out["not_ready"] == []
     assert out["ready_to_publish"][0]["topic"] == "ai_agents"
+
+
+def test_duplicate_runs_do_not_mutate_run_verdict_files(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    runs = tmp_path / "runs"
+    run = _run(
+        runs,
+        "open_source_models-evidence-2026-02-01T00-00-00Z",
+        label="evidence_backed_signal",
+        lanes=("A_core", "A_core", "A_core", "A_core", "A_core"),
+    )
+    run.joinpath("MANIFEST.json").write_text(json.dumps({
+        "domain": {"slug": "ai_research"},
+    }), encoding="utf-8")
+    monkeypatch.setattr(queue, "_RUNS", runs)
+    first = queue.build_queue(include_archive=False, domain="ai_research")
+    ready = first["ready_to_publish"][0]
+    verdict_path = run / "publish_verdict.json"
+    before = verdict_path.read_text(encoding="utf-8") if verdict_path.exists() else ""
+    submitted = runs / "_daily_ledger" / "_submitted_fingerprints.json"
+    submitted.parent.mkdir(parents=True)
+    submitted.write_text(json.dumps([{
+        "domain_slug": "ai_research",
+        "fingerprint": daily.memo_fingerprint(ready),
+        "memo_sha256": daily._memo_sha256(ready, runs),
+        "topic": "open_source_models",
+    }]), encoding="utf-8")
+
+    out = queue.build_queue(include_archive=False, domain="ai_research")
+
+    after = verdict_path.read_text(encoding="utf-8") if verdict_path.exists() else ""
+    assert after == before
+    assert out["ready_to_publish"] == []
+    assert [r["topic"] for r in out["curation_needed"]] == ["open_source_models"]
+    assert out["curation_needed"][0]["queue_status"] == (
+        "duplicate_submission_fingerprint"
+    )
 
 
 def _run(root: Path, name: str, *, label: str, lanes: tuple[str, ...]) -> Path:
