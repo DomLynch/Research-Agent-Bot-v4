@@ -78,7 +78,8 @@ _DISCOVERY_GENERIC_SUFFIX_TOKENS = _CLUSTER_GENERIC_TOKENS | {
     "achieve", "achieves", "finding", "findings", "result", "results",
     "show", "shows", "shown", "their", "while",
     "achieved", "achieving", "demonstrate", "demonstrated", "demonstrates",
-    "our", "that", "those",
+    "average", "averages", "outperform", "outperformed", "outperforming",
+    "outperforms", "our", "that", "those",
 }
 _DISCOVERY_SEED_SCOPE_GENERIC_TOKENS = _DISCOVERY_GENERIC_SUFFIX_TOKENS | {
     "agent", "agents", "automation", "model", "models", "research", "source",

@@ -4160,6 +4160,8 @@ def test_fresh_parent_discovery_skips_generic_seed_suffixes(tmp_path: Path) -> N
             {"topic": "model_eval_our", "fact_source_count": 95, "paper_count": 95},
             {"topic": "model_eval_demonstrate", "fact_source_count": 94, "paper_count": 94},
             {"topic": "model_eval_achieving", "fact_source_count": 93, "paper_count": 93},
+            {"topic": "model_eval_outperforming", "fact_source_count": 93, "paper_count": 93},
+            {"topic": "model_eval_average", "fact_source_count": 93, "paper_count": 93},
             {"topic": "vitamin D supplementation", "fact_source_count": 92, "paper_count": 92},
             {"topic": "resveratrol supplementation", "fact_source_count": 91, "paper_count": 91},
             {"topic": "model_eval_results", "fact_source_count": 90, "paper_count": 90},
