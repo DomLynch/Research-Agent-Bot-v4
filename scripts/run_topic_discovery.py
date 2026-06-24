@@ -218,6 +218,7 @@ def _hydrate_candidates(
 
 def _seed_paper_candidates(
     seeds: tuple[str, ...], *, settings: Settings, current_year: int, top: int,
+    query_context: str = "",
 ) -> tuple[TopicCandidate, ...]:
     out: list[TopicCandidate] = []
     old_timeout = os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS")
@@ -242,7 +243,7 @@ def _seed_paper_candidates(
                 if not _hydration_probeable(candidate):
                     continue
                 papers_by_key: dict[str, dict[str, object]] = {}
-                for query in expand_topic_queries(seed, max_queries=4):
+                for query in _hydration_queries(candidate, context=query_context):
                     for paper in _fetch_fullraw_topic_papers(query, client=client, limit=5):
                         key = str(paper.get("doi") or paper.get("paper_id")
                                   or paper.get("title") or "").strip().casefold()
@@ -440,6 +441,7 @@ def main() -> int:
         seed_paper_ranked = _filter_excluded(
             _seed_paper_candidates(
                 seeds, settings=settings, current_year=year,
+                query_context=profile.display_name,
                 top=max(1, args.top - paper_backed_cached),
             ),
             excluded,

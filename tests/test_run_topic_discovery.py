@@ -417,7 +417,11 @@ def test_seed_paper_probe_expands_seed_queries_before_slow_discovery(
     ])
 
     assert run_topic_discovery.main() == 0
-    assert calls == ["llm_evaluation", "llm evaluation"]
+    assert calls == [
+        "llm_evaluation",
+        "llm evaluation",
+        "llm_evaluation agents automation",
+    ]
     out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
     assert [row["topic"] for row in payload["top"]] == ["llm_evaluation"]
@@ -502,6 +506,54 @@ def test_seed_paper_only_skips_slow_domain_discovery_when_empty(
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
     assert payload["seed_paper_only"] is True
     assert payload["top"] == []
+
+
+def test_seed_paper_probe_uses_domain_context_query(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(
+        run_topic_discovery, "load_seed_topics", lambda _path=None: ("metformin",),
+    )
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(
+        run_topic_discovery, "load_derived_topic_limit",
+        lambda _path=None: 5_000,
+    )
+    monkeypatch.setattr(run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: ())
+    monkeypatch.setattr(
+        run_topic_discovery, "discover_topics",
+        lambda **_kwargs: (_ for _ in ()).throw(AssertionError("slow discovery")),
+    )
+    calls: list[str] = []
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        if query == "metformin longevity anti aging":
+            return [{
+                "doi": "10.1/metformin-context",
+                "title": "Metformin longevity evidence",
+                "fwci": 4.0,
+                "cited_by_count": 40,
+                "publication_year": 2026,
+                "quality_score": 90.0,
+            }]
+        return []
+
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fake_fullraw)
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--domain", "longevity_research", "--top", "1",
+        "--seed-paper-only",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    assert calls == ["metformin", "metformin longevity anti aging"]
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert [row["topic"] for row in payload["top"]] == ["metformin"]
+    assert payload["top"][0]["top_paper_doi"] == "10.1/metformin-context"
 
 
 def test_partial_seed_paper_probe_still_fills_window_from_domain_discovery(
