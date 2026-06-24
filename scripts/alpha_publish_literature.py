@@ -130,7 +130,18 @@ def _fullraw_relevant_papers(topic: str, limit: int, seen: set[str]) -> list[Jso
     return out
 
 
-def boundary_quality(topic: str, papers: list[Json], min_sources: int) -> tuple[bool, str]:
+def _paper_context_family(paper: Json) -> str:
+    raw_fact = paper.get("source_fact")
+    fact: Json = raw_fact if isinstance(raw_fact, dict) else {}
+    return context_family(" ".join(str(value or "") for value in (
+        paper.get("title"),
+        fact.get("population"),
+        fact.get("intervention"),
+        fact.get("endpoint"),
+    )))
+
+
+def select_boundary_papers(topic: str, papers: list[Json], min_sources: int) -> list[Json]:
     usable = [
         paper for paper in papers
         if isinstance(paper, dict)
@@ -139,26 +150,31 @@ def boundary_quality(topic: str, papers: list[Json], min_sources: int) -> tuple[
         and (paper.get("doi") or paper.get("url") or paper.get("pmid") or paper.get("id"))
     ]
     if len(usable) < min_sources:
+        return usable
+    buckets: dict[str, list[Json]] = {}
+    for paper in usable:
+        buckets.setdefault(_paper_context_family(paper), []).append(paper)
+    coherent = [
+        rows for family, rows in buckets.items()
+        if family != "other source context" and len(rows) >= min_sources
+    ]
+    if coherent:
+        return max(coherent, key=len)[:min_sources]
+    return usable[:min_sources]
+
+
+def boundary_quality(topic: str, papers: list[Json], min_sources: int) -> tuple[bool, str]:
+    usable = select_boundary_papers(topic, papers, min_sources)
+    if len(usable) < min_sources:
         return False, "source_floor_below_min"
-    keys = [title_key(paper.get("title")) for paper in usable[:min_sources]]
+    keys = [title_key(paper.get("title")) for paper in usable]
     counts = {key: keys.count(key) for key in set(keys) if key}
     if any(count >= max(3, min_sources - 1) for count in counts.values()):
         return False, "repeated_title_series"
     topic_key = title_key(topic)
     if topic_key and len({key for key in keys if key and key != topic_key}) < min_sources:
         return False, "repeated_title_series"
-    families = [
-        context_family(" ".join(str(value or "") for value in (
-            paper.get("title"),
-            (paper.get("source_fact") or {}).get("population")
-            if isinstance(paper.get("source_fact"), dict) else "",
-            (paper.get("source_fact") or {}).get("intervention")
-            if isinstance(paper.get("source_fact"), dict) else "",
-            (paper.get("source_fact") or {}).get("endpoint")
-            if isinstance(paper.get("source_fact"), dict) else "",
-        )))
-        for paper in usable[:min_sources]
-    ]
+    families = [_paper_context_family(paper) for paper in usable]
     specific = [family for family in families if family != "other source context"]
     if (
         len(set(specific)) >= 2
@@ -525,7 +541,7 @@ def payload(
     reviewer_notes: str = "",
 ) -> tuple[Json, Json]:
     profile = load_domain_profile(profile_slug)
-    selected = relevant_papers(topic, papers)[:5]
+    selected = select_boundary_papers(topic, papers, 5)
     run_dir = runs_root / f"{topic}-source-literature-{date}"
     run_dir.mkdir(parents=True, exist_ok=True)
     facts: list[Json] = []

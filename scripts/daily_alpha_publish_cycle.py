@@ -4571,7 +4571,7 @@ def run_cycle(
                     source_paper_fetcher(topic, min_submit_sources)
                     if source_paper_fetcher is not None else
                     _fetch_source_literature_papers(
-                        topic, min_submit_sources, domain=profile.slug,
+                        topic, min_submit_sources * 3, domain=profile.slug,
                     )
                 )
                 source_lit_available, _reason = _source_literature_boundary_quality(
@@ -5178,7 +5178,7 @@ def run_cycle(
                 paper_fetcher(literature_topic, min_submit_sources)
                 if paper_fetcher is not None else
                 _fetch_source_literature_papers(
-                    literature_topic, min_submit_sources, domain=profile.slug,
+                    literature_topic, min_submit_sources * 3, domain=profile.slug,
                 )
             )
             ok, reason = _source_literature_boundary_quality(
@@ -5199,9 +5199,10 @@ def run_cycle(
             ledger.setdefault("source_literature_fallback_attempts", []).append(fallback_attempt)
             ledger["source_literature_fallback"] = fallback_attempt
             if ok:
-                fact_backed = _source_literature_fact_count(
-                    papers[:min_submit_sources],
-                ) >= min_submit_sources
+                selected_papers = publish_literature.select_boundary_papers(
+                    literature_topic, papers, min_submit_sources,
+                )
+                fact_backed = _source_literature_fact_count(selected_papers) >= min_submit_sources
                 if (
                     not fact_backed
                     and not _source_literature_fallback_submit_enabled()

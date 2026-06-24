@@ -8745,6 +8745,95 @@ def test_source_literature_fallback_tries_next_quality_candidate(
     assert ledger["submitted_topic"] == "usable_boundary"
 
 
+def test_source_literature_fallback_overfetches_for_coherent_subset(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    (root / "_topics_discovery" / "longevity.json").write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "acarbose", "paper_count": 15, "fact_source_count": 15}],
+    }), encoding="utf-8")
+    limits: list[int] = []
+
+    def fetcher(_topic: str, limit: int, **_kwargs: Any) -> list[dict[str, Any]]:
+        limits.append(limit)
+        human_titles = (
+            "Acarbose human observational aging signal",
+            "Acarbose human diabetes cohort marker",
+        )
+        mouse_titles = (
+            "Acarbose mouse lifespan and metabolic aging",
+            "Acarbose murine glucose homeostasis response",
+            "Acarbose mouse microbiome longevity signal",
+            "Acarbose murine inflammation aging marker",
+            "Acarbose mouse healthspan intervention study",
+        )
+        human = [
+            {
+                "title": title,
+                "doi": f"10.1234/acarbose-human-{idx}",
+                "source_fact": {
+                    "canonical_phrase": "acarbose was associated with an aging marker",
+                    "population": "adult human cohort",
+                    "intervention": "acarbose",
+                    "endpoint": "aging marker",
+                },
+            }
+            for idx, title in enumerate(human_titles)
+        ]
+        mouse = [
+            {
+                "title": title,
+                "doi": f"10.1234/acarbose-mouse-{idx}",
+                "source_fact": {
+                    "canonical_phrase": "acarbose changed an aging endpoint",
+                    "population": "mice",
+                    "intervention": "acarbose",
+                    "endpoint": "aging endpoint",
+                },
+            }
+            for idx, title in enumerate(mouse_titles)
+        ]
+        return human + mouse
+
+    monkeypatch.setattr(daily, "_fetch_source_literature_papers", fetcher)
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "writer_configured": False,
+        "mimo_model": "",
+        "mimo_base_url": "",
+    })())
+    seen_payload: dict[str, Any] = {}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-05-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        submitter=lambda payload: (
+            seen_payload.update(payload)
+            or {
+                "ok": True, "status": 200,
+                "response": {"submission": {"id": "sub-1"}},
+            }
+        ),
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert ledger["status"] == "published"
+    assert limits == [15]
+    assert "adult human cohort" not in seen_payload["markdown"]
+    assert "mice" in seen_payload["markdown"]
+
+
 def test_source_literature_fallback_scans_past_first_five_thin_rows(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
@@ -9438,6 +9527,51 @@ def test_source_literature_boundary_rejects_mixed_model_context_bundle() -> None
 
     assert ok is False
     assert reason == "mixed_source_context_family"
+
+
+def test_source_literature_boundary_selects_coherent_subset_from_wider_bundle() -> None:
+    papers = [
+        {
+            "title": f"Acarbose human observational aging signal {idx}",
+            "doi": f"10.1234/human-{idx}",
+            "source_fact": {
+                "canonical_phrase": "acarbose was associated with aging markers",
+                "population": "adult human cohort",
+                "intervention": "acarbose",
+                "endpoint": "aging marker",
+            },
+        }
+        for idx in range(2)
+    ]
+    mouse_titles = (
+        "Acarbose mouse lifespan source",
+        "Acarbose murine glucose aging response",
+        "Acarbose mouse microbiome longevity signal",
+        "Acarbose murine inflammation aging marker",
+        "Acarbose mouse metabolic healthspan study",
+    )
+    papers += [
+        {
+            "title": title,
+            "doi": f"10.1234/mouse-{idx}",
+            "source_fact": {
+                "canonical_phrase": "acarbose changed an aging endpoint",
+                "population": "mice",
+                "intervention": "acarbose",
+                "endpoint": "aging endpoint",
+            },
+        }
+        for idx, title in enumerate(mouse_titles)
+    ]
+
+    ok, reason = daily._source_literature_boundary_quality("acarbose", papers, 5)
+    selected = publish_literature.select_boundary_papers("acarbose", papers, 5)
+
+    assert ok is True
+    assert reason == "ok"
+    assert {paper["doi"] for paper in selected} == {
+        f"10.1234/mouse-{idx}" for idx in range(5)
+    }
 
 
 def test_source_literature_boundary_requires_specific_topic_alignment() -> None:
