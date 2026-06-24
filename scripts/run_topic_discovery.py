@@ -74,11 +74,7 @@ def _load_v5_env_defaults() -> None:
 
 def _apply_v5_client_bounds() -> dict[str, str | None]:
     values: dict[str, str] = {}
-    timeout = os.environ.get(
-        "TOPIC_DISCOVERY_V5_TIMEOUT_SECONDS",
-        os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", ""),
-    )
-    if timeout:
+    if timeout := os.environ.get("TOPIC_DISCOVERY_V5_TIMEOUT_SECONDS"):
         values["V5_MEMO_FULL_RAW_CORPUS_TIMEOUT"] = timeout
     if budget := os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"):
         values["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] = budget
