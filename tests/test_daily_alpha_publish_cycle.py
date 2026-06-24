@@ -10052,6 +10052,38 @@ def test_fresh_parent_topics_prefer_source_breadth_over_newest_snapshot(
     ) == ["source diverse parent"]
 
 
+def test_fresh_parent_topics_prefer_fullraw_receipt_snapshot(
+    tmp_path: Path,
+) -> None:
+    discovery = tmp_path / "_topics_discovery"
+    discovery.mkdir()
+    (discovery / "older_broad.json").write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{
+            "topic": "older broad parent",
+            "fact_source_count": 40,
+            "paper_count": 40,
+        }],
+    }), encoding="utf-8")
+    (discovery / "fullraw.json").write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "fullraw_seed_probe": {"receipts": [{"shards_searched": 1514}]},
+        "all": [{
+            "topic": "metformin",
+            "fact_source_count": 5,
+            "paper_count": 5,
+        }],
+    }), encoding="utf-8")
+
+    assert daily._fresh_parent_topics_from_discovery(
+        tmp_path,
+        "longevity_research",
+        set(),
+        limit=1,
+        min_sources=5,
+    ) == ["metformin"]
+
+
 def test_fresh_parent_topics_preserve_discovery_order_after_source_floor(
     tmp_path: Path,
 ) -> None:

@@ -3622,11 +3622,13 @@ def _fresh_parent_topics_from_discovery(
         key=lambda path: path.stat().st_mtime if path.exists() else 0,
         reverse=True,
     )
-    candidates: list[tuple[tuple[int, int, int, int, int, str], str, set[str]]] = []
+    candidates: list[tuple[tuple[int, int, int, int, int, int, str], str, set[str]]] = []
     for recency, path in enumerate(paths):
         data = _json(path, {})
         if not isinstance(data, dict) or not _same_domain(_row_domain(data), profile_slug):
             continue
+        receipts = (data.get("fullraw_seed_probe") or {}).get("receipts") or data.get("fullraw_probe_receipts") or data.get("seed_probe_receipts")
+        receipt_rank = 0 if receipts else 1
         raw_rows = data.get("all") or data.get("top")
         if not isinstance(raw_rows, list):
             continue
@@ -3662,7 +3664,7 @@ def _fresh_parent_topics_from_discovery(
                     continue
                 token_count = len(_CLAIM_WORD.findall(topic.replace("_", " ")))
                 candidates.append((
-                    (-max(fact_sources, papers), -papers, -fact_sources,
+                    (receipt_rank, -max(fact_sources, papers), -papers, -fact_sources,
                      token_count, recency, topic),
                     topic,
                     aliases,
