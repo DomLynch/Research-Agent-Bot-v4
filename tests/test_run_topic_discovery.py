@@ -9,12 +9,19 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 import run_topic_discovery
 from run_topic_discovery import _resolve_limits
 
 from agent.topic_discovery import TopicCandidate
+
+
+@pytest.fixture(autouse=True)
+def _disable_live_v5_client(monkeypatch: Any) -> None:
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "0")
 
 
 def test_default_discovery_keeps_publish_path_bounded() -> None:
