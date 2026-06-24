@@ -453,9 +453,34 @@ def _current_lane_map(run: Path, facts: list[Any], topic: str) -> dict[str, str]
     if not _has_structured_facts(typed):
         return sidecar
     current = classify_lanes(typed, topic)
-    if not sidecar or any(v.reason == "topic_in_background_context" for v in current):
+    current_bindable = sum(v.lane in {"A_core", "B_context"} for v in current)
+    sidecar_bindable = sum(lane in {"A_core", "B_context"} for lane in sidecar.values())
+    if (
+        not sidecar
+        or any(v.reason == "topic_in_background_context" for v in current)
+        or current_bindable > sidecar_bindable
+    ):
         return {v.fact_id: v.lane for v in current}
     return sidecar
+
+
+def _refresh_lane_sidecar(run: Path) -> None:
+    facts = _json(run / "all_facts.json", None)
+    if not isinstance(facts, list):
+        return
+    typed = [fact for fact in facts if isinstance(fact, dict)]
+    if not _has_structured_facts(typed):
+        return
+    topic = run.name.split("-evidence-", 1)[0]
+    sidecar = _sidecar_lane_map(run)
+    current = classify_lanes(typed, topic)
+    current_bindable = sum(v.lane in {"A_core", "B_context"} for v in current)
+    sidecar_bindable = sum(lane in {"A_core", "B_context"} for lane in sidecar.values())
+    if current_bindable > sidecar_bindable:
+        _write_json(run / "fact_lanes.json", {
+            "topic": topic,
+            "verdicts": [v.as_dict() for v in current],
+        })
 
 
 def _refresh_claim_cluster(run: Path) -> None:
@@ -493,6 +518,7 @@ def _refresh_claim_cluster(run: Path) -> None:
 
 
 def _write_publish_verdict(run: Path) -> Json:
+    _refresh_lane_sidecar(run)
     _refresh_claim_cluster(run)
     verdict = publish_verdict(run)
     _write_json(run / "publish_verdict.json", verdict)
@@ -1138,14 +1164,14 @@ def _cluster_tokens(fact: Json, parent: str) -> set[str]:
     return set(_CLAIM_WORD.findall(text.lower())) - parent_tokens - _CLUSTER_GENERIC_TOKENS
 
 
-def _cluster_has_coherent_component(
+def _cluster_coherent_component_ids(
     verdict: Json, cluster_ids: list[str], root: Path, *, min_direct_source_count: int,
-) -> bool:
+) -> list[str]:
     run_dir = _run_path(root, verdict.get("run_dir"))
     facts = _json(run_dir / "all_facts.json", [])
     lanes_raw = _json(run_dir / "fact_lanes.json", {})
     if not isinstance(facts, list) or not isinstance(lanes_raw, dict):
-        return False
+        return []
     lanes = {
         str(row.get("fact_id") or ""): str(row.get("lane") or "")
         for row in lanes_raw.get("verdicts", [])
@@ -1165,13 +1191,30 @@ def _cluster_has_coherent_component(
         anchor_tokens = _cluster_tokens(anchor, parent)
         if not anchor_tokens:
             continue
-        sources = {
-            source for fid, fact, source in usable
+        component = [
+            (fid, source)
+            for fid, fact, source in usable
             if fid == anchor_id or len(anchor_tokens & _cluster_tokens(fact, parent)) >= 2
-        }
+        ]
+        sources = {source for _fid, source in component}
         if len(sources) >= min_direct_source_count:
-            return True
-    return False
+            out: list[str] = []
+            seen_sources: set[str] = set()
+            for fid, source in component:
+                if source in seen_sources:
+                    continue
+                seen_sources.add(source)
+                out.append(fid)
+            return out
+    return []
+
+
+def _cluster_has_coherent_component(
+    verdict: Json, cluster_ids: list[str], root: Path, *, min_direct_source_count: int,
+) -> bool:
+    return bool(_cluster_coherent_component_ids(
+        verdict, cluster_ids, root, min_direct_source_count=min_direct_source_count,
+    ))
 
 
 def _claim_cluster_repairable(verdict: Json, rec: Json) -> bool:
@@ -1179,8 +1222,6 @@ def _claim_cluster_repairable(verdict: Json, rec: Json) -> bool:
     if decision in _AGENT_REPAIR_DECISIONS:
         return True
     if decision != "curation_needed" or rec.get("reason") != "source_coherent_child_cluster":
-        return False
-    if int(verdict.get("alpha_score") or 0) <= 0:
         return False
     blockers = verdict.get("blockers")
     return not (
@@ -1209,13 +1250,13 @@ def _claim_cluster_candidates(
             if not isinstance(cluster, dict):
                 continue
             ids = _cluster_fact_ids(cluster)
-            if (
-                len(ids) < min_direct_source_count
-                or not _cluster_has_coherent_component(
-                    verdict, ids, runs_root,
-                    min_direct_source_count=min_direct_source_count,
-                )
-            ):
+            if len(ids) < min_direct_source_count:
+                continue
+            ids = _cluster_coherent_component_ids(
+                verdict, ids, runs_root,
+                min_direct_source_count=min_direct_source_count,
+            )
+            if not ids:
                 continue
             label = str(cluster.get("label") or "claim_cluster").strip("_")
             topic = _cluster_child_topic(parent, label)
@@ -2547,7 +2588,7 @@ def _direct_receipts_share_shape(
         if set.intersection(*shapes):
             shared_dims += 1
     if checked_dims:
-        return shared_dims >= (2 if checked_dims >= 2 else 1)
+        return checked_dims >= 2 and shared_dims >= 2
     shapes = [_shape_tokens(fact, ("canonical_phrase", "claim", "finding")) for fact in facts]
     return not all(shapes) or bool(set.intersection(*shapes))
 

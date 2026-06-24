@@ -185,6 +185,35 @@ def test_direct_topic_use_still_a_core() -> None:
     assert v.lane == "A_core"
 
 
+def test_exercise_synonyms_bind_activity_receipts() -> None:
+    """Exercise evidence often says physical activity or resistance training,
+    not the literal topic word. The binding lives in topic-pack data."""
+    v = classify_lane(_fact(
+        canonical_phrase="VO2 peak increased by 10.6% after dynamic resistance training",
+        population="older adults",
+        intervention="dynamic resistance training",
+        comparator="usual activity",
+        numeric_value=10.6,
+        units="%",
+    ), topic="exercise")
+
+    assert v.lane == "A_core"
+    assert v.reason == "topic_in_intervention_pico_complete"
+
+
+def test_exercise_synonyms_do_not_match_generic_training_word() -> None:
+    v = classify_lane(_fact(
+        canonical_phrase="safety training reduced errors by 10%",
+        population="nursing teams",
+        intervention="safety training",
+        comparator="usual onboarding",
+        numeric_value=10.0,
+        units="%",
+    ), topic="exercise")
+
+    assert v.lane == "C_noise"
+
+
 def test_topic_in_population_with_effect_is_a_core() -> None:
     """Condition/outcome topics can be direct when the topic is the studied
     population and the intervention has a real numeric effect."""

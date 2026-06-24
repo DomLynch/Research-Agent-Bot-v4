@@ -660,6 +660,39 @@ def test_refresh_cycle_recomputes_stale_verdict_before_discovery(
     assert ledger["refresh_batches"][0]["note"] == "skipped_initial_queue_probe"
 
 
+def test_write_publish_verdict_refreshes_stale_lane_sidecar_for_new_aliases(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "runs" / "exercise-evidence-ts"
+    run.mkdir(parents=True)
+    run.joinpath("alpha_memo.md").write_text("# Alpha memo\n" + _FALSIFIER, encoding="utf-8")
+    run.joinpath("opportunities_gate.json").write_text(json.dumps({
+        "audits": [{"status": "survives", "cited_fact_ids": ["1"]}],
+    }), encoding="utf-8")
+    run.joinpath("all_facts.json").write_text(json.dumps([{
+        "fact_id": "1",
+        "canonical_phrase": "VO2 peak increased by 10.6% after resistance training",
+        "population": "older adults",
+        "intervention": "dynamic resistance training",
+        "comparator": "usual care",
+        "numeric_value": 10.6,
+        "units": "%",
+        "source_paper": {"doi": "10.1000/exercise", "title": "Exercise source"},
+    }]), encoding="utf-8")
+    run.joinpath("fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": "1", "lane": "C_noise"}],
+    }), encoding="utf-8")
+    run.joinpath("claim_cluster.json").write_text(
+        json.dumps({"lead_fact_ids": [], "homogeneous": True}), encoding="utf-8",
+    )
+    _audit_sidecars(run)
+
+    daily._write_publish_verdict(run)
+
+    lanes = json.loads((run / "fact_lanes.json").read_text(encoding="utf-8"))
+    assert lanes["verdicts"][0]["lane"] == "A_core"
+
+
 def test_weak_tension_candidate_enriches_before_rotation(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("weak_tension") | {
@@ -2471,6 +2504,32 @@ def test_llm_cluster_backed_memo_with_shared_shape_submits(tmp_path: Path) -> No
     assert ledger["submitted_topic"] == "metformin_mortality"
 
 
+def test_intervention_only_overlap_is_not_enough_for_single_claim_shape(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("metformin_mixed_bundle")
+    _memo_with_receipt_shapes(root, verdict, [
+        {"canonical_phrase": "Metformin changed gut bacteria in HFD mice.",
+         "population": "mice on high-fat diet", "intervention": "metformin",
+         "endpoint": ""},
+        {"canonical_phrase": "Metformin changed HbA1c in trial patients.",
+         "population": "trial patients", "intervention": "metformin",
+         "endpoint": "HbA1c"},
+        {"canonical_phrase": "Metformin plus rapamycin changed lifespan.",
+         "population": "heterogeneous mice", "intervention": "metformin plus rapamycin",
+         "endpoint": ""},
+        {"canonical_phrase": "Metformin changed chylomicrons in diabetes.",
+         "population": "individuals with diabetes", "intervention": "metformin",
+         "endpoint": "chylomicrons"},
+        {"canonical_phrase": "Metformin changed tumorigenesis in mice.",
+         "population": "NNK-exposed mice", "intervention": "metformin injection",
+         "endpoint": "tumorigenesis"},
+    ])
+
+    assert daily._direct_receipts_share_shape(verdict, root / "runs", 5) is False
+
+
 def test_source_dispersion_cluster_backed_memo_still_requires_shape_gate(
     tmp_path: Path,
 ) -> None:
@@ -3626,7 +3685,7 @@ def test_claim_cluster_reload_preserves_single_claim_surface(
     assert refreshed["blockers"] == ["source_dispersion"]
 
 
-def test_repaired_claim_cluster_child_waives_shape_gate(tmp_path: Path) -> None:
+def test_repaired_claim_cluster_child_with_shared_shape_can_submit(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("parent_bounded_claim") | {
         "_claim_cluster_candidate": True,
@@ -3642,14 +3701,10 @@ def test_repaired_claim_cluster_child_waives_shape_gate(tmp_path: Path) -> None:
     _memo_with_source_receipts(root, verdict, 5)
     run = root / str(verdict["run_dir"])
     facts = json.loads(run.joinpath("all_facts.json").read_text(encoding="utf-8"))
-    for fact, endpoint in zip(
-        facts,
-        ("income", "memory", "hospitalization", "adherence", "mobility"),
-        strict=True,
-    ):
-        fact["canonical_phrase"] = f"Outcome shifted for {endpoint}."
-        fact["population"] = f"{endpoint} population"
-        fact["endpoint"] = endpoint
+    for fact in facts:
+        fact["canonical_phrase"] = "Shared mobility outcome improved."
+        fact["population"] = "older adults"
+        fact["endpoint"] = "mobility"
     run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
 
     cand, considered = daily.select_candidate(
@@ -3690,6 +3745,77 @@ def test_low_alpha_curation_cluster_does_not_seed_claim_candidate(
     )
 
     assert rows == []
+
+
+def test_low_alpha_map_floor_cluster_can_seed_claim_candidate(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("broad_parent") | {
+        "decision": "curation_needed",
+        "publish_tier": "TIER_1",
+        "alpha_score": 0,
+        "blockers": ["evidence_map_below_citation_floor"],
+        "subtopic_recommendations": {
+            "recommended": True,
+            "reason": "source_coherent_child_cluster",
+            "clusters": [{
+                "label": "bounded claim",
+                "member_fact_ids": ["1", "2", "3", "4", "5"],
+            }],
+        },
+    }
+    _memo_with_source_receipts(root, verdict, 5)
+
+    rows = daily._claim_cluster_candidates(
+        [verdict], root, min_direct_source_count=5,
+    )
+
+    assert [row["topic"] for row in rows] == ["broad_parent_bounded_claim"]
+
+
+def test_claim_cluster_candidate_cites_only_coherent_component(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("exercise") | {
+        "decision": "curation_needed",
+        "publish_tier": "TIER_1",
+        "alpha_score": 0,
+        "blockers": ["evidence_map_below_citation_floor"],
+        "subtopic_recommendations": {
+            "recommended": True,
+            "reason": "source_coherent_child_cluster",
+            "clusters": [{
+                "label": "resistance training",
+                "member_fact_ids": ["1", "2", "3", "4", "5", "6"],
+            }],
+        },
+    }
+    _memo_with_receipt_shapes(root, verdict, [
+        {
+            "canonical_phrase": "Resistance training improved mobility.",
+            "population": "older adults",
+            "intervention": "resistance training",
+            "endpoint": "mobility",
+        }
+        for _ in range(5)
+    ] + [{
+        "canonical_phrase": "Guideline adherence reduced cancer incidence.",
+        "population": "adult cancer-prevention cohorts",
+        "intervention": "diet and physical activity guidelines",
+        "endpoint": "cancer incidence",
+    }])
+
+    rows = daily._claim_cluster_candidates(
+        [verdict], root, min_direct_source_count=5,
+    )
+
+    assert len(rows) == 1
+    assert rows[0]["_claim_cluster_fact_ids"] == ["1", "2", "3", "4", "5"]
+    assert rows[0]["receipt_expansion"]["cited_bound_fact_ids"] == [
+        "1", "2", "3", "4", "5",
+    ]
 
 
 def test_no_candidate_refreshes_queued_child_topics_next_batch(

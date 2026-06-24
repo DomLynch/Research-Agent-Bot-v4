@@ -53,6 +53,13 @@ instances = [
     "time-restricted feeding", "intermittent fasting",
 ]
 
+[exercise]
+instances = [
+    "physical activity", "physical exercise", "exercise training",
+    "resistance training", "resistance exercise", "strength training",
+    "aerobic exercise", "endurance training",
+]
+
 [nad_booster]
 instances = [
     "NMN", "NR", "nicotinamide riboside", "nicotinamide mononucleotide",

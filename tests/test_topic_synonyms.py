@@ -87,6 +87,17 @@ def test_registered_topic_does_not_trim_to_generic_modifier() -> None:
     assert "lithium" in out
 
 
+def test_exercise_queries_include_tight_activity_aliases() -> None:
+    out = expand_topic_queries("exercise", max_queries=8)
+
+    assert out[:4] == (
+        "exercise", "physical activity", "physical exercise", "exercise training",
+    )
+    assert "resistance training" in out
+    assert "training" not in out
+    assert "activity" not in out
+
+
 def test_unregistered_long_slug_does_not_trim_to_generic_short_prefix() -> None:
     out = expand_topic_queries("low_dose_naltrexone_inflammation", max_queries=16)
 
