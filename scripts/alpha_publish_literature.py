@@ -116,6 +116,24 @@ def boundary_quality(topic: str, papers: list[Json], min_sources: int) -> tuple[
     topic_key = title_key(topic)
     if topic_key and len({key for key in keys if key and key != topic_key}) < min_sources:
         return False, "repeated_title_series"
+    families = [
+        context_family(" ".join(str(value or "") for value in (
+            paper.get("title"),
+            (paper.get("source_fact") or {}).get("population")
+            if isinstance(paper.get("source_fact"), dict) else "",
+            (paper.get("source_fact") or {}).get("intervention")
+            if isinstance(paper.get("source_fact"), dict) else "",
+            (paper.get("source_fact") or {}).get("endpoint")
+            if isinstance(paper.get("source_fact"), dict) else "",
+        )))
+        for paper in usable[:min_sources]
+    ]
+    specific = [family for family in families if family != "other source context"]
+    if (
+        len(set(specific)) >= 2
+        and max(specific.count(family) for family in set(specific)) < min_sources
+    ):
+        return False, "mixed_source_context_family"
     if _uniform_favorable_cross_pico(usable, min_sources):
         return False, "directionally_uniform_cross_pico_bundle"
     return True, "ok"
@@ -294,15 +312,22 @@ def _direction_signal_label(facts: list[Json], topic: str = "") -> str:
     return "context-dependent, not uniformly convergent associations"
 
 
+def _has_context_term(text: str, terms: tuple[str, ...]) -> bool:
+    tokens = set(title_key(text).split())
+    return any(term in tokens or (" " in term and term in text) for term in terms)
+
+
 def context_family(value: Any) -> str:
     text = str(value or "").casefold()
-    if any(term in text for term in ("patient", "participant", "adult", "human", "cohort")):
+    if _has_context_term(text, ("patient", "patients", "participant", "adult", "human", "cohort")):
         return "human clinical/observational"
-    if any(term in text for term in ("mouse", "mice", "rat", "rats", "murine", "animal")):
+    if _has_context_term(text, ("mouse", "mice", "rat", "rats", "murine", "animal")):
         return "animal model"
-    if any(term in text for term in ("cell", "cells", "huvec", "pc12", "pc3", "in vitro")):
+    if _has_context_term(text, ("plant", "plants", "leaf", "leaves", "fruit")):
+        return "plant model"
+    if _has_context_term(text, ("cell", "cells", "huvec", "pc12", "pc3", "in vitro")):
         return "cell or in-vitro model"
-    if any(term in text for term in ("crystal", "cocrystal", "solubility", "compound")):
+    if _has_context_term(text, ("crystal", "cocrystal", "solubility", "compound")):
         return "chemistry/formulation"
     return "other source context"
 

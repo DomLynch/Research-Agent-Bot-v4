@@ -9160,6 +9160,66 @@ def test_source_literature_boundary_rejects_uniform_favorable_cross_pico_bundle(
     assert reason == "directionally_uniform_cross_pico_bundle"
 
 
+def test_source_literature_boundary_rejects_mixed_model_context_bundle() -> None:
+    papers = [
+        {
+            "title": "Melatonin improves age-induced fertility decline in mice",
+            "doi": "10.1234/mouse-1",
+            "source_fact": {
+                "canonical_phrase": "melatonin increased ovarian-aging fertility markers",
+                "population": "female mice",
+                "intervention": "melatonin",
+                "endpoint": "ovarian aging",
+            },
+        },
+        {
+            "title": "Long-term melatonin treatment delays ovarian aging",
+            "doi": "10.1234/mouse-2",
+            "source_fact": {
+                "canonical_phrase": "melatonin delayed ovarian aging",
+                "population": "female mice",
+                "intervention": "melatonin",
+                "endpoint": "ovarian aging",
+            },
+        },
+        {
+            "title": "Melatonin application delays senescence of leaves",
+            "doi": "10.1234/plant-1",
+            "source_fact": {
+                "canonical_phrase": "melatonin pretreatment delayed leaf senescence",
+                "population": "plant leaves",
+                "intervention": "exogenous melatonin",
+                "endpoint": "leaf senescence",
+            },
+        },
+        {
+            "title": "Melatonin improves fruit senescence and shelf life",
+            "doi": "10.1234/plant-2",
+            "source_fact": {
+                "canonical_phrase": "melatonin improved fruit senescence and shelf life",
+                "population": "fruit plants",
+                "intervention": "melatonin",
+                "endpoint": "fruit senescence",
+            },
+        },
+        {
+            "title": "Melatonin and skin aging mechanisms",
+            "doi": "10.1234/skin",
+            "source_fact": {
+                "canonical_phrase": "mitochondria generate intracellular ROS",
+                "population": "intracellular ROS",
+                "intervention": "mitochondria",
+                "endpoint": "skin aging biology",
+            },
+        },
+    ]
+
+    ok, reason = daily._source_literature_boundary_quality("melatonin_aging", papers, 5)
+
+    assert ok is False
+    assert reason == "mixed_source_context_family"
+
+
 def test_source_literature_boundary_requires_specific_topic_alignment() -> None:
     papers = [
         {
