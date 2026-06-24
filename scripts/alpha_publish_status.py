@@ -150,10 +150,11 @@ def next_action_for_status(status: str) -> str:
 
 def no_candidate_reason(considered: list[Json]) -> str:
     statuses = [str(row.get("status") or "") for row in considered if isinstance(row, dict)]
-    if statuses and all(status == "duplicate_submission_fingerprint" for status in statuses):
+    duplicate = CandidateStatus.DUPLICATE_SUBMISSION_FINGERPRINT.value
+    if statuses and all(status == duplicate for status in statuses):
         return "all candidates were duplicate submission fingerprints"
     duplicate_exhaustion = {
-        "duplicate_submission_fingerprint",
+        duplicate,
         "duplicate_published_bundle",
         "cycle_exhausted_topic",
     }
@@ -169,13 +170,13 @@ def no_candidate_reason(considered: list[Json]) -> str:
         return "all candidates were duplicate, already published, or topic/family exhausted"
     if statuses and all(status == "cycle_exhausted_topic" for status in statuses):
         return "all candidates were topic/family exhausted"
-    if "stale_publish_verdict" in statuses:
+    if CandidateStatus.STALE_PUBLISH_VERDICT.value in statuses:
         return "selected candidate no longer matches the current publish verdict"
-    if "evidence_map_below_citation_floor" in statuses:
+    if CandidateStatus.EVIDENCE_MAP_BELOW_CITATION_FLOOR.value in statuses:
         return "best evidence-map candidate was below citation floor"
-    if "evidence_map_scope_mismatch" in statuses:
+    if CandidateStatus.EVIDENCE_MAP_SCOPE_MISMATCH.value in statuses:
         return "best evidence-map candidate was too broad for one bounded map"
-    if "duplicate_source_evidence" in statuses:
+    if CandidateStatus.DUPLICATE_SOURCE_EVIDENCE.value in statuses:
         return "best candidate counted duplicate study evidence as independent sources"
     return "no eligible non-duplicate memo"
 
