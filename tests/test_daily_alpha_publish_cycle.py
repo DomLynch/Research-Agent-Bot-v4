@@ -9057,6 +9057,93 @@ def test_source_literature_fetcher_supplements_thin_fact_search_with_fullraw(
     assert daily._source_literature_boundary_quality("acarbose", papers, 5) == (True, "ok")
 
 
+def test_source_literature_fetcher_enriches_fullraw_with_matching_fact_rows(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "researka_database_url": "https://db.test",
+        "researka_database_token": "tok",
+    })())
+    queries: list[str] = []
+    fullraw_titles = [
+        "Acarbose mice longevity inflammatory markers",
+        "Acarbose mice aging glucose homeostasis",
+        "Acarbose mice lifespan intervention review",
+    ]
+
+    class Response:
+        status = 200
+
+        def __init__(self, payload: list[dict[str, Any]]) -> None:
+            self.payload = payload
+
+        def __enter__(self) -> Response:
+            return self
+
+        def __exit__(self, *_args: Any) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return json.dumps(self.payload).encode("utf-8")
+
+    def fact_row(doi: str, title: str, phrase: str) -> dict[str, Any]:
+        return {
+            "paper_id": doi,
+            "paper": {"doi": doi, "title": title},
+            "canonical_phrase": phrase,
+            "population": "mice",
+            "intervention": "acarbose",
+            "endpoint": "aging-related endpoint",
+        }
+
+    def fake_urlopen(req: Any, timeout: int) -> Response:
+        query = str(json.loads(req.data.decode("utf-8"))["query"])
+        queries.append(query)
+        if query == "acarbose":
+            return Response([
+                fact_row(
+                    "10.1/acarbose-fact-0", "Acarbose aging lifespan trial",
+                    "Acarbose changed lifespan in mice.",
+                ),
+                fact_row(
+                    "10.1/acarbose-fact-1", "Acarbose microbiome aging mouse study",
+                    "Acarbose changed microbiome aging markers.",
+                ),
+            ])
+        if query in fullraw_titles:
+            idx = fullraw_titles.index(query)
+            return Response([fact_row(
+                f"10.1/acarbose-fullraw-{idx}", query,
+                f"Acarbose fullraw receipt {idx} reported an aging endpoint.",
+            )])
+        return Response([])
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(
+        publish_literature,
+        "_fullraw_topic_papers",
+        lambda _query, _limit: [
+            {"doi": f"10.1/acarbose-fullraw-{idx}", "title": title}
+            for idx, title in enumerate(fullraw_titles)
+        ],
+    )
+
+    papers = daily._fetch_source_literature_papers(
+        "acarbose", 5, domain="longevity_research",
+    )
+
+    assert [p["doi"] for p in papers] == [
+        "10.1/acarbose-fact-0",
+        "10.1/acarbose-fact-1",
+        "10.1/acarbose-fullraw-0",
+        "10.1/acarbose-fullraw-1",
+        "10.1/acarbose-fullraw-2",
+    ]
+    assert daily._source_literature_fact_count(papers) == 5
+    assert daily._source_literature_boundary_quality("acarbose", papers, 5) == (True, "ok")
+    assert fullraw_titles[0] in queries
+
+
 def test_source_literature_fetcher_retries_focused_query_variant(
     monkeypatch: MonkeyPatch,
 ) -> None:

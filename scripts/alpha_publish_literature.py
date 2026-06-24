@@ -418,7 +418,8 @@ def fetch_papers(
         timeout = 12.0
     out: list[Json] = []
     seen: set[str] = set()
-    for query in query_variants(topic):
+
+    def fact_rows(query: str) -> list[Json]:
         req = urllib.request.Request(
             f"{base}/api/v1/tier2/facts/search",
             data=json.dumps({
@@ -438,8 +439,14 @@ def fetch_papers(
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
         except (OSError, ValueError, json.JSONDecodeError):
-            continue
-        for item in data if isinstance(data, list) else []:
+            return []
+        return (
+            [item for item in data if isinstance(item, dict)]
+            if isinstance(data, list) else []
+        )
+
+    for query in query_variants(topic):
+        for item in fact_rows(query):
             if not isinstance(item, dict):
                 continue
             raw_paper = item.get("paper")
@@ -463,6 +470,25 @@ def fetch_papers(
             break
     if len(out) < limit:
         out.extend(_fullraw_relevant_papers(topic, limit - len(out), seen))
+    for idx, paper in enumerate(out):
+        if isinstance(paper.get("source_fact"), dict):
+            continue
+        title = str(paper.get("title") or paper.get("paper_title") or "").strip()
+        if not title:
+            continue
+        target_key = paper_key(paper, paper.get("paper_id"))
+        target_title = title_key(title)
+        for item in fact_rows(title):
+            raw_paper = item.get("paper")
+            matched: Json = raw_paper if isinstance(raw_paper, dict) else {}
+            item_key = paper_key(matched, item.get("paper_id"))
+            item_title = title_key(matched.get("title") or matched.get("paper_title"))
+            if item_key != target_key and item_title != target_title:
+                continue
+            candidate = paper | {"source_fact": source_fact(item)}
+            if topic_relevant(topic, candidate):
+                out[idx] = candidate
+                break
     if out:
         return out
     req = urllib.request.Request(
