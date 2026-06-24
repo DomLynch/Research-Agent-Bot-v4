@@ -745,17 +745,23 @@ def test_stop_on_ready_empty_seed_paper_discovery_falls_back_to_bounded(
     ) -> tuple[bool, str]:
         if step_name == "discovery":
             calls.append(args)
+            out_dir = runs / "_topics_discovery"
+            out_dir.mkdir(parents=True, exist_ok=True)
+            rows = [] if "--seed-paper-only" in args else [{
+                "topic": "fresh_bounded",
+                "velocity_score": 3.0,
+                "fact_source_count": 5,
+                "paper_count": 5,
+            }]
+            (out_dir / f"2026-06-24T00-00-0{len(calls)}Z.json").write_text(
+                json.dumps({
+                    "domain": {"slug": "longevity"},
+                    "top": rows,
+                    "all": rows,
+                }),
+                encoding="utf-8",
+            )
         return True, "ok"
-
-    def fake_read_discovery_top(_out: Path, **_kwargs: Any) -> list[dict[str, Any]]:
-        if len(calls) < 2:
-            return []
-        return [{
-            "topic": "fresh_bounded",
-            "velocity_score": 3.0,
-            "fact_source_count": 5,
-            "paper_count": 5,
-        }]
 
     def fake_pipeline(
         topic: str, velocity: float, *, with_editorial: bool,
@@ -777,7 +783,6 @@ def test_stop_on_ready_empty_seed_paper_discovery_falls_back_to_bounded(
     monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
     monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
     monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
-    monkeypatch.setattr(run_curator_cycle, "_read_discovery_top", fake_read_discovery_top)
     monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",
                         lambda *_args, **_kwargs: set())
     monkeypatch.setattr(sys, "argv", [
