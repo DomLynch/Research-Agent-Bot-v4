@@ -295,6 +295,7 @@ def payload(
     write_json: Callable[[Path, Any], None],
     safe_excerpt: Callable[[str], str],
     submission_agent_id: Callable[[str], str],
+    reviewer_notes: str = "",
 ) -> tuple[Json, Json]:
     profile = load_domain_profile(profile_slug)
     selected = relevant_papers(topic, papers)[:5]
@@ -333,6 +334,13 @@ def payload(
         "## Boundary map",
         "",
     ]
+    if reviewer_notes.strip():
+        lines.extend([
+            "## Reviewer repair target",
+            "",
+            reviewer_notes.strip(),
+            "",
+        ])
     for paper in selected:
         title = str(paper.get("title") or "Untitled source").strip()
         doi = str(paper.get("doi") or "").strip()
@@ -481,6 +489,7 @@ def payload(
             "category": category,
             "domain_slug": profile.slug,
             "topic": topic,
+            **({"reviewer_repair_notes": reviewer_notes.strip()} if reviewer_notes.strip() else {}),
         },
         "markdown": markdown,
         "citations": bundle,
@@ -490,6 +499,7 @@ def payload(
             "surface_type": "source_literature_boundary",
             "direct_source_count": len(bundle),
             "source_literature_writer": writer_meta,
+            **({"reviewer_repair_notes": reviewer_notes.strip()} if reviewer_notes.strip() else {}),
         },
         "content_hash": "sha256:" + hashlib.sha256(markdown.encode("utf-8")).hexdigest(),
     }

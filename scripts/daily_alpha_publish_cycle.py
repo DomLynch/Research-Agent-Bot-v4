@@ -1948,8 +1948,15 @@ def _source_literature_submission_count(
 def _repairable_source_literature_topics(
     runs_root: Path, domain: str | None, *, limit: int = 3,
 ) -> list[str]:
-    topics: list[str] = []
-    seen: set[str] = set()
+    return list(_repairable_source_literature_decisions(
+        runs_root, domain, limit=limit,
+    ))
+
+
+def _repairable_source_literature_decisions(
+    runs_root: Path, domain: str | None, *, limit: int = 3,
+) -> dict[str, Json]:
+    decisions: dict[str, Json] = {}
     published = _recently_published_topics(
         runs_root / "_daily_ledger",
         days=_DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS,
@@ -1961,9 +1968,9 @@ def _repairable_source_literature_topics(
             continue
         candidate = ledger.get("candidate")
         candidate_topic = str(candidate.get("topic") or "") if isinstance(candidate, dict) else ""
-        for _fp, run_ref, _decision in _repairable_submission_records(ledger):
+        for _fp, run_ref, decision in _repairable_submission_records(ledger):
             topic = candidate_topic or _source_literature_topic_from_run(run_ref)
-            if not topic or topic in seen:
+            if not topic or topic in decisions:
                 continue
             if topic in published or _family_blocked_topic(topic, published):
                 continue
@@ -1974,11 +1981,10 @@ def _repairable_source_literature_topics(
                 runs_root, domain, topic,
             ) >= _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT:
                 continue
-            seen.add(topic)
-            topics.append(topic)
-            if len(topics) >= limit:
-                return topics
-    return topics
+            decisions[topic] = decision
+            if len(decisions) >= limit:
+                return decisions
+    return decisions
 
 
 def _exhausted_source_literature_topics(
@@ -3601,6 +3607,7 @@ def _fresh_parent_topics_from_discovery(
 
 def _source_literature_payload(
     *, profile_slug: str, topic: str, papers: list[Json], runs_root: Path, date: str,
+    reviewer_notes: str = "",
 ) -> tuple[Json, Json]:
     return publish_literature.payload(
         profile_slug=profile_slug,
@@ -3614,6 +3621,7 @@ def _source_literature_payload(
         write_json=_write_json,
         safe_excerpt=_safe_excerpt,
         submission_agent_id=_submission_agent_id,
+        reviewer_notes=reviewer_notes,
     )
 
 
@@ -5029,9 +5037,10 @@ def run_cycle(
         and not ledger["cycle_attempts"]
     ):
         paper_fetcher = source_paper_fetcher
-        repair_topics = _repairable_source_literature_topics(
+        repair_decisions = _repairable_source_literature_decisions(
             runs_root, profile.slug,
         )
+        repair_topics = list(repair_decisions)
         repair_topic_set = set(repair_topics)
         literature_topics = repair_topics + [
             topic for topic in _source_literature_topic_candidates(
@@ -5080,6 +5089,9 @@ def run_cycle(
                     papers=papers,
                     runs_root=runs_root,
                     date=date,
+                    reviewer_notes=_revision_notes(
+                        repair_decisions.get(literature_topic, {}),
+                    ) if literature_topic in repair_topic_set else "",
                 )
                 assert submitter is not None
                 result = submit_with_backoff(payload, submitter)

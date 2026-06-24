@@ -7793,6 +7793,15 @@ def test_repairable_source_literature_revise_retries_before_new_topic(
     assert ledger["submitted_topic"] == "metformin use"
     assert ledger["source_literature_fallback"]["repair_submission"] is True
     assert seen_payload["topic"] == "metformin use"
+    assert "required revision" in seen_payload["markdown"]
+    assert (
+        seen_payload["metadata"]["reviewer_repair_notes"]
+        == "required revision"
+    )
+    assert (
+        seen_payload["evidence_bundle"]["reviewer_repair_notes"]
+        == "required revision"
+    )
     assert all(
         source["title"] != "Diabetes mortality patterns in national cohorts"
         for source in seen_payload["source_bundle"]
