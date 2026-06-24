@@ -4541,14 +4541,24 @@ def run_cycle(
             and profile.slug != "ai_research"
             and _repairable_source_literature_decisions(runs_root, profile.slug)
         )
-        source_lit_available = bool(
-            submit
-            and profile.slug != "ai_research"
-            and _source_literature_topic_candidates(
+        source_lit_available = False
+        if submit and profile.slug != "ai_research":
+            for topic in _source_literature_topic_candidates(
                 runs_root, profile.slug, min_submit_sources,
-                source_literature_blocked_topics, limit=1,
-            )
-        )
+                source_literature_blocked_topics, limit=2,
+            ):
+                papers = (
+                    source_paper_fetcher(topic, min_submit_sources)
+                    if source_paper_fetcher is not None else
+                    _fetch_source_literature_papers(
+                        topic, min_submit_sources, domain=profile.slug,
+                    )
+                )
+                source_lit_available, _reason = _source_literature_boundary_quality(
+                    topic, papers, min_submit_sources,
+                )
+                if source_lit_available:
+                    break
         ledger["stage"] = "initial_queue_probe_complete"
         ledger["preflight_queue_counts"] = publish_status.queue_counts(candidate_queue)
         _write_ledger(ledger_path, ledger)

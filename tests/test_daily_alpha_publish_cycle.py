@@ -7882,6 +7882,58 @@ def test_source_literature_candidate_skips_refresh_before_submit(
     assert ledger["submitted_topic"] == "glycation_AGEs"
 
 
+def test_thin_source_literature_candidate_does_not_skip_refresh(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "melatonin_aging", "paper_count": 10, "fact_source_count": 20}],
+    })
+    thin_papers = [
+        {
+            "title": f"Melatonin aging source {idx}",
+            "doi": f"10.1234/m{idx}",
+            "source_fact": {
+                "canonical_phrase": f"melatonin aging finding {idx}",
+                "population": "adults",
+                "intervention": "melatonin",
+                "endpoint": "aging biology",
+            },
+        }
+        for idx in range(4)
+    ]
+    refresh_calls: list[dict[str, Any]] = []
+
+    def refresh(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+        refresh_calls.append(kwargs)
+        return {"ok": True, "ran_topics": kwargs.get("priority_topics") or []}
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", refresh)
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-45-00Z",
+        domain="longevity_research",
+        refresh_candidates=True,
+        max_refresh_batches=1,
+        submit=True,
+        source_paper_fetcher=lambda *_args, **_kwargs: thin_papers,
+        submitter=lambda _payload: {
+            "ok": True, "status": 200,
+            "response": {"submission": {"id": "sub-1"}},
+        },
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert refresh_calls
+    assert ledger["refresh_batches"][0].get("note") != (
+        "skipped_source_literature_candidate_available"
+    )
+    assert ledger["source_literature_fallback"]["reason"] == "source_floor_below_min"
+
+
 def test_repairable_source_literature_revise_retries_before_new_topic(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
