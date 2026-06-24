@@ -4005,11 +4005,17 @@ def _cycle_topics_from_payload(
     skipped_source_floor = [
         str(t) for t in payload.get("skipped_below_source_floor") or [] if str(t)
     ]
+    probe = payload.get("fullraw_seed_probe")
+    fullraw_events = (
+        [e for e in probe.get("events") or [] if isinstance(e, dict)]
+        if isinstance(probe, dict) else []
+    )
     return {
         "cycle": cycle.name,
         "ran_topics": ran,
         "skipped_in_cooldown": skipped,
         "skipped_below_source_floor": skipped_source_floor,
+        "fullraw_probe_events": fullraw_events[:10],
     }
 
 

@@ -999,6 +999,7 @@ def test_seed_paper_only_skips_slow_domain_discovery_when_empty(
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
     assert payload["seed_paper_only"] is True
     assert payload["top"] == []
+    assert payload["fullraw_seed_probe"]["events"][0]["status"] == "no_hits"
 
 
 def test_skip_seed_paper_probe_goes_directly_to_domain_discovery(

@@ -5897,6 +5897,9 @@ def test_publish_summary_counts_blockers_and_attempts(tmp_path: Path) -> None:
         "published": 0,
         "queue_counts": {"ready_to_publish": 1, "not_ready": 2},
         "cycle_attempts": [{"status": "reviewer_rejected"}],
+        "refresh_candidates": {
+            "fullraw_probe_events": [{"status": "no_hits", "query": "metformin"}],
+        },
         "considered": [
             {"status": "duplicate_submission_fingerprint"},
             {"status": "agent_repair_needed", "blockers": ["receipt_shape_mismatch"]},
@@ -5921,9 +5924,27 @@ def test_publish_summary_counts_blockers_and_attempts(tmp_path: Path) -> None:
         "top_blockers": {
             "agent_repair_needed": 1,
             "duplicate_submission_fingerprint": 1,
+            "fullraw_no_hits": 1,
             "receipt_shape_mismatch": 1,
         },
     }
+
+
+def test_cycle_topics_carries_fullraw_probe_events(tmp_path: Path) -> None:
+    cycle = tmp_path / "cycle.json"
+    payload = {
+        "domain": {"slug": "longevity_research"},
+        "ran": [{"topic": "metformin"}],
+        "fullraw_seed_probe": {"events": [{"status": "no_hits", "query": "metformin"}]},
+    }
+
+    result = daily._cycle_topics_from_payload(
+        cycle, payload, domain="longevity_research",
+    )
+
+    assert result["fullraw_probe_events"] == [
+        {"status": "no_hits", "query": "metformin"},
+    ]
 
 
 def test_refresh_candidates_builds_one_topic_per_submit_batch(

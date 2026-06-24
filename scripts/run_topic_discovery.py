@@ -45,6 +45,7 @@ _FAST_DERIVED_TOPIC_LIMIT = 250
 _SOURCE_RICH_FLOOR = 5
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 _FULLRAW_PROBE_RECEIPTS: list[dict[str, object]] = []
+_FULLRAW_PROBE_EVENTS: list[dict[str, object]] = []
 _GENERIC_SCOPE_TOKENS = {
     "ai", "research", "study", "studies", "trial", "trials", "review",
     "meta", "analysis", "effect", "effects", "therapy", "treatment",
@@ -148,9 +149,12 @@ def _v5_client_papers(query: str, *, limit: int) -> list[dict[str, object]]:
 def _seed_fullraw_papers(
     query: str, *, client: httpx.Client, limit: int,
 ) -> list[dict[str, object]]:
-    return _v5_client_papers(query, limit=limit) or _fetch_fullraw_topic_papers(
+    papers = _v5_client_papers(query, limit=limit) or _fetch_fullraw_topic_papers(
         query, client=client, limit=limit,
     )
+    if not papers:
+        _FULLRAW_PROBE_EVENTS.append({"query": query, "status": "no_hits"})
+    return papers
 
 
 def _hydrate_limit() -> int:
@@ -720,6 +724,7 @@ def main() -> int:
     )
     args = parser.parse_args()
     _FULLRAW_PROBE_RECEIPTS.clear()
+    _FULLRAW_PROBE_EVENTS.clear()
     profile = load_domain_profile(args.domain)
     seeds = _domain_seed_topics(profile.slug)
     if not seeds:
@@ -870,6 +875,8 @@ def main() -> int:
             "configured": _fullraw_configured(),
             "receipt_count": len(_FULLRAW_PROBE_RECEIPTS),
             "receipts": _FULLRAW_PROBE_RECEIPTS[:10],
+            "event_count": len(_FULLRAW_PROBE_EVENTS),
+            "events": _FULLRAW_PROBE_EVENTS[:10],
         },
         "cache_supported": cache_supported,
         "source_rich_floor": _SOURCE_RICH_FLOOR,

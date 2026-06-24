@@ -189,6 +189,11 @@ def publish_summary(ledger: Json) -> Json:
         blockers.append(str(row.get("status") or ""))
         for blocker in row.get("blockers") or []:
             blockers.append(str(blocker))
+    refresh = ledger.get("refresh_candidates")
+    if isinstance(refresh, dict):
+        for event in refresh.get("fullraw_probe_events") or []:
+            if isinstance(event, dict) and event.get("status"):
+                blockers.append("fullraw_" + str(event.get("status")))
     page = ledger.get("public_page_check")
     page_checks = page.get("checks") if isinstance(page, dict) else []
     page_status = None
