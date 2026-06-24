@@ -3977,6 +3977,7 @@ def test_empty_initial_queue_refreshes_latest_fresh_parent_first(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     root = tmp_path / "repo"
+    monkeypatch.delenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", raising=False)
     discovery = root / "_topics_discovery"
     discovery.mkdir(parents=True)
     daily._write_json(discovery / "newer_empty.json", {
@@ -4019,6 +4020,59 @@ def test_empty_initial_queue_refreshes_latest_fresh_parent_first(
 
     assert ledger["refresh_parent_topics"] == ["exercise"]
     assert calls == [("exercise",)]
+
+
+def test_fullraw_seed_discovery_runs_before_stale_parent_priority(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "https://fullraw/search")
+    discovery = root / "_topics_discovery"
+    discovery.mkdir(parents=True)
+    (discovery / "stale.json").write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{
+            "topic": "stale_parent",
+            "fact_source_count": 30,
+            "paper_count": 30,
+            "velocity_score": 100,
+        }],
+    }), encoding="utf-8")
+    calls: list[tuple[str, ...]] = []
+
+    def refresh(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+        priority_topics = tuple(kwargs.get("priority_topics") or ())
+        calls.append(priority_topics)
+        written = json.loads(
+            (root / "_daily_ledger" / "2026-06-24.json").read_text(
+                encoding="utf-8",
+            )
+        )
+        assert written["stage"] == "refresh_batch_running"
+        assert written["refresh_candidates"]["status"] == "running"
+        assert tuple(written["refresh_candidates"]["priority_topics"]) == priority_topics
+        return {
+            "ok": True,
+            "ran_topics": list(priority_topics),
+            "top": 1,
+            "warm_backlog": False,
+        }
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", refresh)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-24",
+        refresh_candidates=True,
+        max_refresh_batches=1,
+        refresh_top=1,
+        submit=False,
+        domain="longevity_research",
+    )
+
+    assert calls == [()]
+    assert ledger["status"] == "no_fresh_candidate"
+    assert "refresh_parent_topics" not in ledger
 
 
 def test_fresh_parent_discovery_prefers_broader_parent_over_newer_child(

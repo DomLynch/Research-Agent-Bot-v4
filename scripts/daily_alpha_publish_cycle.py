@@ -3434,6 +3434,13 @@ def _fetch_source_literature_papers(
     )
 
 
+def _fullraw_seed_discovery_enabled() -> bool:
+    if not os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip():
+        return False
+    disabled = {"0", "false", "no", "off"}
+    return os.environ.get("TOPIC_DISCOVERY_FULLRAW_FALLBACK", "1").lower() not in disabled
+
+
 def _source_literature_topic_candidates(
     runs_root: Path,
     profile_slug: str,
@@ -4513,7 +4520,11 @@ def run_cycle(
     skip_next_refresh = preflight_queue is not None
     warm_backlog_next = False
     priority_refresh_topics: list[str] = []
-    if refresh_candidates and initial_probe_empty:
+    if (
+        refresh_candidates
+        and initial_probe_empty
+        and not _fullraw_seed_discovery_enabled()
+    ):
         priority_refresh_topics = _fresh_parent_topics_from_discovery(
             runs_root,
             profile.slug,
@@ -4543,6 +4554,17 @@ def run_cycle(
             ledger["refresh_candidates"] = refresh
         elif refresh_candidates:
             cooldown = 0.0 if blocked_topics or force_refresh else refresh_cooldown_hours
+            ledger["stage"] = "refresh_batch_running"
+            ledger["refresh_candidates"] = {
+                "status": "running",
+                "batch": batch,
+                "top": refresh_top,
+                "cooldown_hours": cooldown,
+                "priority_topics": priority_refresh_topics,
+                "excluded_topics": sorted(blocked_topics),
+                "warm_backlog": warm_backlog_next,
+            }
+            _write_ledger(ledger_path, ledger)
             refresh = _refresh_candidate_batch(
                 refresh_top, blocked_topics, cooldown, runs_root,
                 warm_backlog=warm_backlog_next,
