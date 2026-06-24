@@ -685,6 +685,7 @@ def main() -> int:
     if args.stop_on_ready:
         priority_topics = priority_topics[:1]
     priority_only_submit = bool(args.stop_on_ready and priority_topics)
+    seed_paper_fast_path = False
 
     # Step 1: refresh discovery
     print("[cycle] step 1: topic discovery")
@@ -793,21 +794,44 @@ def main() -> int:
                 probe=lambda: _probe_tier2(topic),
             )
 
-        plan_pool = (
-            priority_ranked
-            if args.stop_on_ready and priority_ranked
-            else [*priority_ranked, *ranked]
-        )
-        plan, skipped, skipped_excluded, below_floor = _plan_topics(
-            plan_pool, recent=recent, excluded=excluded,
-            top=args.top,
-            min_fact_sources=(
-                _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES if args.stop_on_ready else 0
-            ),
-            hard_floor=_PREBUILD_MIN_SOURCE_FLOOR,
-            require_papers=args.stop_on_ready,
-            tier2_supply=_tier2_supply,
-        )
+        def plan_current() -> tuple[
+            list[dict[str, Any]], list[str], list[str], list[str],
+        ]:
+            plan_pool = (
+                priority_ranked
+                if args.stop_on_ready and priority_ranked
+                else [*priority_ranked, *ranked]
+            )
+            return _plan_topics(
+                plan_pool, recent=recent, excluded=excluded,
+                top=args.top,
+                min_fact_sources=(
+                    _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES if args.stop_on_ready else 0
+                ),
+                hard_floor=_PREBUILD_MIN_SOURCE_FLOOR,
+                require_papers=args.stop_on_ready,
+                tier2_supply=_tier2_supply,
+            )
+
+        plan, skipped, skipped_excluded, below_floor = plan_current()
+        if (
+            seed_paper_fast_path
+            and ranked
+            and not plan
+            and not priority_only_submit
+        ):
+            print("[cycle] seed-paper discovery had no source-floor plan; "
+                  "retrying fullraw supply discovery")
+            ok, last = _run_step(
+                discovery_args(seed_paper_only=False),
+                "discovery",
+                timeout=_DISCOVERY_TIMEOUT_SECONDS,
+            )
+            if not ok:
+                print(f"[cycle] discovery fallback failed: {last}", file=sys.stderr)
+                return 1
+            ranked = _read_discovery_top(_RUNS / "_topics_discovery", domain=args.domain)
+            plan, skipped, skipped_excluded, below_floor = plan_current()
 
     print(f"[cycle] plan: {len(plan)} topics to run, {len(skipped)} skipped "
           f"(cooldown {args.cooldown_hours}h), "

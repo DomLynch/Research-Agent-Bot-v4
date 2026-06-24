@@ -10,6 +10,7 @@ from __future__ import annotations
 import datetime as dt
 import fcntl
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -795,6 +796,81 @@ def test_stop_on_ready_empty_seed_paper_discovery_falls_back_to_bounded(
     assert "--seed-paper-only" in calls[0]
     assert "--cache-first" in calls[1]
     assert "--skip-seed-paper-probe" not in calls[1]
+    assert "--seed-paper-only" not in calls[1]
+
+
+def test_stop_on_ready_underfloor_seed_paper_discovery_falls_back_to_fullraw_supply(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    runs = tmp_path / "runs"
+    cycles = runs / "_curator_cycles"
+    cycles.mkdir(parents=True)
+    calls: list[list[str]] = []
+    seen: list[str] = []
+
+    def fake_step(
+        args: list[str], step_name: str, *, timeout: int = 600,
+    ) -> tuple[bool, str]:
+        if step_name == "discovery":
+            calls.append(args)
+            out_dir = runs / "_topics_discovery"
+            out_dir.mkdir(parents=True, exist_ok=True)
+            if "--seed-paper-only" in args:
+                rows = [{
+                    "topic": "thin_seed_probe",
+                    "velocity_score": 9.0,
+                    "fact_source_count": 1,
+                    "paper_count": 1,
+                }]
+            else:
+                rows = [{
+                    "topic": "source_diverse_fullraw",
+                    "velocity_score": 3.0,
+                    "fact_source_count": 5,
+                    "paper_count": 5,
+                }]
+            path = out_dir / f"2026-06-24T00-00-0{len(calls)}Z.json"
+            path.write_text(json.dumps({
+                "domain": {"slug": "longevity"},
+                "top": rows,
+                "all": rows,
+            }), encoding="utf-8")
+            os.utime(path, (len(calls), len(calls)))
+        return True, "ok"
+
+    def fake_pipeline(
+        topic: str, velocity: float, *, with_editorial: bool,
+        top_n: int, py: str, pico_enrich: bool = False,
+        frontier_review: bool = True, parent_topic: str = "",
+        domain: str = "longevity",
+    ) -> TopicResult:
+        seen.append(topic)
+        run_dir = runs / f"{topic}-evidence-ts"
+        _write_ready_alpha_run(run_dir, source_count=5)
+        return TopicResult(
+            topic=topic, velocity=velocity, status="ran",
+            run_dir=f"runs/{topic}-evidence-ts",
+            signal_label="evidence_backed_signal", notes="",
+        )
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
+    monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
+    monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
+    monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
+    monkeypatch.setattr(
+        run_curator_cycle, "_recent_signal_topics", lambda *_args, **_kwargs: set(),
+    )
+    monkeypatch.setattr(sys, "argv", [
+        "run_curator_cycle.py", "--stop-on-ready",
+    ])
+
+    assert run_curator_cycle.main() == 0
+    assert seen == ["source_diverse_fullraw"]
+    assert len(calls) == 2
+    assert "--seed-paper-only" in calls[0]
     assert "--seed-paper-only" not in calls[1]
 
 
