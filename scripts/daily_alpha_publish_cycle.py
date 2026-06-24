@@ -3441,10 +3441,14 @@ def _fetch_source_literature_papers(
 
 
 def _fullraw_seed_discovery_enabled() -> bool:
-    if not os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip():
-        return False
     disabled = {"0", "false", "no", "off"}
-    return os.environ.get("TOPIC_DISCOVERY_FULLRAW_FALLBACK", "1").lower() not in disabled
+    if os.environ.get("TOPIC_DISCOVERY_FULLRAW_FALLBACK", "1").lower() in disabled:
+        return False
+    if os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip():
+        return True
+    if os.environ.get("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "").lower() in disabled:
+        return False
+    return Path(os.environ.get("TOPIC_DISCOVERY_V5_SRC", "/opt/v5-memo/src")).exists()
 
 
 def _source_literature_topic_candidates(

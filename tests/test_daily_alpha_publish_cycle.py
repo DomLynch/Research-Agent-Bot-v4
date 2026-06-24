@@ -4075,6 +4075,18 @@ def test_fullraw_seed_discovery_runs_before_stale_parent_priority(
     assert "refresh_parent_topics" not in ledger
 
 
+def test_v5_client_fallback_counts_as_fullraw_seed_discovery(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    src = tmp_path / "v5-src"
+    src.mkdir()
+    monkeypatch.delenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", raising=False)
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_SRC", str(src))
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "1")
+
+    assert daily._fullraw_seed_discovery_enabled() is True
+
+
 def test_fresh_parent_discovery_prefers_broader_parent_over_newer_child(
     tmp_path: Path,
 ) -> None:
