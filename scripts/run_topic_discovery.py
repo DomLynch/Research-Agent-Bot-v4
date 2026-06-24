@@ -522,10 +522,14 @@ def main() -> int:
     ranked = _filter_cached_seed_scope(_filter_excluded(ranked, excluded), seeds)
     paper_backed_cached = sum(1 for c in ranked if c.paper_count and c.top_paper_title)
     seed_paper_ranked: tuple[TopicCandidate, ...] = ()
+    seed_probe_seeds = tuple(
+        seed for seed in seeds
+        if not _topic_family_excluded(seed, excluded)
+    )
     if paper_backed_cached < args.top and not args.cache_only and not args.skip_seed_paper_probe:
         seed_paper_ranked = _filter_excluded(
             _seed_paper_candidates(
-                seeds, settings=settings, current_year=year,
+                seed_probe_seeds, settings=settings, current_year=year,
                 query_context=profile.display_name,
                 top=max(1, args.top - paper_backed_cached),
             ),
