@@ -584,19 +584,34 @@ def test_seed_paper_probe_uses_v5_client_before_direct_http(
 
 def test_v5_client_bounds_restore_environment(monkeypatch: Any) -> None:
     monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_TIMEOUT", "99")
-    monkeypatch.delenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", raising=False)
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "7200")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS", "77")
     monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", "6")
 
     old = run_topic_discovery._apply_v5_client_bounds()
     assert os.environ["V5_MEMO_FULL_RAW_CORPUS_TIMEOUT"] == "6"
+    assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "7200"
+    assert os.environ["V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS"] == "77"
+
+    run_topic_discovery._restore_env(old)
+    assert os.environ["V5_MEMO_FULL_RAW_CORPUS_TIMEOUT"] == "99"
+    assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "7200"
+    assert os.environ["V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS"] == "77"
+
+
+def test_v5_client_bounds_allow_explicit_short_probe(monkeypatch: Any) -> None:
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "7200")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS", "7200")
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", "20")
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS", "8")
+
+    old = run_topic_discovery._apply_v5_client_bounds()
     assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "20"
     assert os.environ["V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS"] == "8"
 
     run_topic_discovery._restore_env(old)
-    assert os.environ["V5_MEMO_FULL_RAW_CORPUS_TIMEOUT"] == "99"
-    assert "V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS" not in os.environ
-    assert os.environ["V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS"] == "77"
+    assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "7200"
+    assert os.environ["V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS"] == "7200"
 
 
 def test_seed_paper_probe_expands_seed_queries_before_slow_discovery(
