@@ -294,6 +294,41 @@ def test_next_candidate_summary_reports_retry_risk(tmp_path: Path) -> None:
     assert summary["considered_counts"] == {"cycle_exhausted_topic": 1, "eligible": 1}
 
 
+def test_next_candidate_summary_separates_raw_ready_from_actionable(
+    tmp_path: Path,
+) -> None:
+    def select_candidate(
+        *_args: object, **_kwargs: object,
+    ) -> tuple[None, list[dict[str, Any]]]:
+        return None, [{"topic": "exercise", "status": "duplicate_submission_fingerprint"}]
+
+    fake_cycle = SimpleNamespace(
+        _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES=5,
+        _DEFAULT_MIN_SUBMIT_SOURCES=5,
+        _DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS=30,
+        _build_queue=lambda *_args, **_kwargs: {
+            "ready_to_publish": [{"topic": "exercise"}],
+            "agent_repair_needed": [],
+            "curation_needed": [],
+            "not_ready": [],
+        },
+        _recently_published_topics=lambda *_args, **_kwargs: set(),
+        _recent_submission_topics=lambda *_args, **_kwargs: set(),
+        _recent_negative_topics=lambda *_args, **_kwargs: set(),
+        select_candidate=select_candidate,
+    )
+
+    summary = health.summarize_next_candidate(
+        tmp_path, cycle_module=fake_cycle, domain="longevity_research",
+    )
+
+    assert summary["queue_counts"]["ready_to_publish"] == 1
+    assert summary["actionable_ready_to_publish"] == 0
+    assert summary["non_actionable_ready_to_publish"] == 1
+    assert summary["supply_status"] == "ready_queue_blocked"
+    assert summary["considered_counts"] == {"duplicate_submission_fingerprint": 1}
+
+
 def test_health_summary_can_sync_pending_submission(tmp_path: Path) -> None:
     ledger = _write_ledger(tmp_path, "2026-06-01T08-29-49Z.json", {
         "status": "submitted_to_researka",

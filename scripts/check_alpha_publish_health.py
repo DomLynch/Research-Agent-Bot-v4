@@ -111,8 +111,9 @@ def summarize_next_candidate(
 
     submitted_path = runs_root / "_daily_ledger" / "_submitted_fingerprints.json"
     queue = cycle._build_queue(runs_root, include_archive=False, domain=domain)
+    raw_ready = len(queue.get("ready_to_publish") or [])
     queue_counts = {
-        key: len(queue.get(key) or [])
+        key: raw_ready if key == "ready_to_publish" else len(queue.get(key) or [])
         for key in ("ready_to_publish", "agent_repair_needed", "curation_needed", "not_ready")
     }
     blocked = cycle._recently_published_topics(
@@ -142,11 +143,20 @@ def summarize_next_candidate(
         (row for row in considered if isinstance(row, dict) and row.get("status") == "eligible"),
         {},
     )
+    has_actionable = candidate is not None
     return {
         "topic": (candidate or {}).get("topic"),
         "decision": (candidate or {}).get("decision"),
         "run_dir": (candidate or {}).get("run_dir"),
         "queue_counts": queue_counts,
+        "actionable_ready_to_publish": 1 if has_actionable else 0,
+        "non_actionable_ready_to_publish": (
+            max(0, raw_ready - 1) if has_actionable else raw_ready
+        ),
+        "supply_status": (
+            "actionable_candidate_available" if has_actionable else
+            "ready_queue_blocked" if raw_ready else "no_ready_rows"
+        ),
         "considered_counts": _considered_counts({"considered": considered}),
         "retry_after_rejection": bool(eligible_row.get("retry_after_rejection")),
         "retry_attempt_count": eligible_row.get("retry_attempt_count"),
@@ -260,6 +270,12 @@ def summarize_latest(
             )
             summary["next_candidate"] = next_candidate
             summary["current_queue_counts"] = next_candidate.get("queue_counts") or {}
+            summary["current_actionable_ready_to_publish"] = (
+                next_candidate.get("actionable_ready_to_publish")
+            )
+            summary["current_non_actionable_ready_to_publish"] = (
+                next_candidate.get("non_actionable_ready_to_publish")
+            )
         except Exception as exc:  # pragma: no cover - monitor should report, not crash.
             summary["next_candidate_error"] = f"{type(exc).__name__}: {exc}"
     return summary
