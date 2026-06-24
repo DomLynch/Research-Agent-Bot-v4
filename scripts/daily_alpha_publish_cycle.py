@@ -4388,6 +4388,7 @@ def run_cycle(
 
     prev_queue_sig: frozenset[str] = frozenset()
     preflight_queue = None
+    initial_probe_empty = False
     skip_refresh_note = "skipped_after_repairable_submission"
     if refresh_candidates and queue is None and queue_builder is _build_queue:
         ledger["stage"] = "initial_queue_probe"
@@ -4407,9 +4408,21 @@ def run_cycle(
         ):
             preflight_queue = candidate_queue
             skip_refresh_note = "skipped_initial_queue_probe"
+        else:
+            initial_probe_empty = True
     skip_next_refresh = preflight_queue is not None
     warm_backlog_next = False
     priority_refresh_topics: list[str] = []
+    if refresh_candidates and initial_probe_empty:
+        priority_refresh_topics = _fresh_parent_topics_from_discovery(
+            runs_root,
+            profile.slug,
+            blocked_topics,
+            limit=1,
+            min_sources=max(min_submit_sources, min_direct_submit_sources),
+        )
+        if priority_refresh_topics:
+            ledger["refresh_parent_topics"] = priority_refresh_topics
     for batch in range(1, batch_limit + 1):
         _sync_failed_attempt_blocks(ledger, blocked_fingerprints, blocked_topics)
         if refresh_candidates and batch > search_batch_limit and not skip_next_refresh:
