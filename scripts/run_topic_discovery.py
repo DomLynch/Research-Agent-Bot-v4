@@ -487,10 +487,22 @@ def _fullraw_supply_candidates(
         return ()
     out: list[TopicCandidate] = []
     seen_topics: set[str] = set()
+    context_tokens = set(_TOKEN_RE.findall(context_terms))
+
+    def context_supported(scoped: list[dict[str, object]]) -> list[dict[str, object]]:
+        if not context_tokens:
+            return scoped
+        supported = [
+            paper for paper in scoped
+            if context_tokens & set(_TOKEN_RE.findall(
+                str(paper.get("title") or "").casefold()))
+        ]
+        return supported if len(supported) >= _SOURCE_RICH_FLOOR else []
+
     for query, label in query_labels.items():
         if label == "__domain_supply__":
             continue
-        scoped = papers_by_query.get(query, [])
+        scoped = context_supported(papers_by_query.get(query, []))
         if len(scoped) < _SOURCE_RICH_FLOOR:
             continue
         topic = "_".join(query.split())
@@ -504,11 +516,11 @@ def _fullraw_supply_candidates(
         if topic in seen_topics:
             continue
         topic_tokens = set(_TOKEN_RE.findall(topic.replace("_", " ").casefold()))
-        scoped = [
+        scoped = context_supported([
             paper for paper in papers
             if topic_tokens <= set(_TOKEN_RE.findall(
                 str(paper.get("title") or "").casefold()))
-        ]
+        ])
         if len(scoped) < _SOURCE_RICH_FLOOR:
             continue
         out.append(_score_topic(
@@ -517,6 +529,9 @@ def _fullraw_supply_candidates(
         if len(out) >= top:
             break
     if not out:
+        papers = context_supported(papers)
+        if not papers:
+            return ()
         out.append(_score_topic(
             "_".join(next(iter(query_labels)).split()), papers[:25], current_year,
             fact_source_count=len(papers),

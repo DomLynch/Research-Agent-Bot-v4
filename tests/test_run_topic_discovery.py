@@ -801,9 +801,9 @@ def test_fullraw_supply_queries_seeds_when_domain_query_is_empty(
     def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
         calls.append(query)
         if query == "metformin":
-            return _fullraw_rows("met", "Metformin geroscience AMPK")
+            return _fullraw_rows("met", "Metformin longevity geroscience AMPK")
         if query == "resveratrol":
-            return _fullraw_rows("res", "Resveratrol sirtuin senescence")
+            return _fullraw_rows("res", "Resveratrol aging sirtuin senescence")
         return []
 
     monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
@@ -870,9 +870,9 @@ def test_fullraw_supply_fallback_does_not_resurrect_excluded_topic(
 
     def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
         if query == "longevity anti aging":
-            return _fullraw_rows("met", "Metformin geroscience AMPK")
+            return _fullraw_rows("met", "Metformin longevity geroscience AMPK")
         if query == "fisetin":
-            return _fullraw_rows("fis", "Fisetin senescence burden")
+            return _fullraw_rows("fis", "Fisetin aging senescence burden")
         return []
 
     monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fake_fullraw)
@@ -923,11 +923,11 @@ def test_fullraw_supply_uses_domain_query_when_titles_do_not_cluster(
             "quality_score": 90.0,
         }
         for i, title in enumerate((
-            "Rapamycin lifespan evidence",
+            "Rapamycin aging lifespan evidence",
             "Metformin aging cohort",
-            "Vitamin D deficiency mortality",
-            "Spermidine autophagy trial",
-            "Fisetin senescence review",
+            "Vitamin D aging mortality",
+            "Spermidine aging autophagy trial",
+            "Fisetin aging senescence review",
         ))
     ]
     monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", lambda *_a, **_k: papers)
