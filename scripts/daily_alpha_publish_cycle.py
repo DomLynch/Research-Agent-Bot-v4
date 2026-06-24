@@ -4479,6 +4479,9 @@ def run_cycle(
         | negative_blocked_topics
         | source_floor_blocked_topics
     )
+    source_literature_blocked_topics = (
+        published_blocked_topics | submitted_blocked_topics | negative_blocked_topics
+    )
     ledger["recently_published_topics_blocked"] = sorted(published_blocked_topics)
     ledger["recently_submitted_topics_blocked"] = sorted(submitted_blocked_topics)
     ledger["recent_negative_topics_blocked"] = sorted(negative_blocked_topics)
@@ -4534,7 +4537,8 @@ def run_cycle(
             submit
             and profile.slug != "ai_research"
             and _source_literature_topic_candidates(
-                runs_root, profile.slug, min_submit_sources, blocked_topics, limit=1,
+                runs_root, profile.slug, min_submit_sources,
+                source_literature_blocked_topics, limit=1,
             )
         )
         ledger["stage"] = "initial_queue_probe_complete"
@@ -5126,7 +5130,8 @@ def run_cycle(
         repair_topic_set = set(repair_topics)
         literature_topics = repair_topics + [
             topic for topic in _source_literature_topic_candidates(
-                runs_root, profile.slug, min_submit_sources, blocked_topics,
+                runs_root, profile.slug, min_submit_sources,
+                source_literature_blocked_topics,
             ) if topic not in repair_topic_set
         ]
         for idx, literature_topic in enumerate(literature_topics):

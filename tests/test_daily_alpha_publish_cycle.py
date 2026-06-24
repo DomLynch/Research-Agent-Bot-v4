@@ -8437,6 +8437,63 @@ def test_fact_backed_source_literature_fallback_submits_without_flag(
     assert "receipt-backed scoping note" in seen_payload["abstract"]
 
 
+def test_source_literature_fallback_ignores_stale_source_floor_block(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    daily._write_json(root / "_daily_ledger" / "2026-06-10T00-00-00Z.json", {
+        "domain": {"slug": "longevity_research"},
+        "source_floor_refresh_topics": ["source_rich_parent"],
+    })
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "source_rich_parent", "paper_count": 9, "fact_source_count": 9}],
+    })
+    monkeypatch.delenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", raising=False)
+    papers = [
+        {
+            "title": f"Source rich parent {stem}",
+            "doi": f"10.1234/source-rich-{idx}",
+            "source_fact": {
+                "canonical_phrase": f"source-rich fact {idx}",
+                "population": f"population {idx}",
+                "intervention": "source rich parent",
+                "comparator": "control",
+            },
+        }
+        for idx, stem in enumerate((
+            "metabolic signal", "inflammation marker", "mitochondrial stress",
+            "cellular senescence", "proteostasis map",
+        ))
+    ]
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-11T20-00-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        source_paper_fetcher=lambda *_args, **_kwargs: papers,
+        submitter=lambda _payload: {
+            "ok": True, "status": 200,
+            "response": {"submission": {"id": "sub-source-rich"}},
+        },
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-rich"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert ledger["recent_source_floor_topics_blocked"] == ["source_rich_parent"]
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "source_rich_parent"
+
+
 def test_source_literature_candidates_use_latest_domain_snapshot(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     discovery = root / "_topics_discovery"
