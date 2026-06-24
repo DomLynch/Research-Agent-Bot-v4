@@ -626,6 +626,48 @@ def test_seed_paper_probe_expands_seed_queries_before_slow_discovery(
     assert payload["top"][0]["top_paper_doi"] == "10.1/llm-eval"
 
 
+def test_seed_paper_probe_stops_when_budget_spent(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(
+        run_topic_discovery, "load_seed_topics",
+        lambda _path=None: ("first_seed", "second_seed"),
+    )
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(
+        run_topic_discovery, "load_derived_topic_limit",
+        lambda _path=None: 5_000,
+    )
+    monkeypatch.setattr(run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: ())
+    monkeypatch.setenv("TOPIC_DISCOVERY_SEED_QUERIES", "1")
+    monkeypatch.setenv("TOPIC_DISCOVERY_SEED_PAPER_BUDGET_SECONDS", "1")
+    monkeypatch.setattr(
+        run_topic_discovery,
+        "discover_topics",
+        lambda **_kwargs: (_ for _ in ()).throw(AssertionError("slow discovery")),
+    )
+    now = {"value": 0.0}
+    calls: list[str] = []
+    monkeypatch.setattr(run_topic_discovery.time, "monotonic", lambda: now["value"])
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        now["value"] += 2.0
+        return []
+
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fake_fullraw)
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--domain", "ai_research", "--top", "1",
+        "--seed-paper-only",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    assert calls == ["first_seed"]
+
+
 def test_empty_seed_paper_probe_falls_back_to_domain_discovery(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

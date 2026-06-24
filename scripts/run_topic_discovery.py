@@ -18,6 +18,7 @@ import datetime as dt
 import os
 import re
 import sys
+import time
 from pathlib import Path
 
 import httpx
@@ -186,6 +187,15 @@ def _seed_paper_probe_limit(top: int) -> int:
         return max(0, int(raw))
     except (TypeError, ValueError):
         return max(top, 6)
+
+
+def _seed_paper_budget_seconds() -> float:
+    try:
+        return max(1.0, float(os.environ.get(
+            "TOPIC_DISCOVERY_SEED_PAPER_BUDGET_SECONDS", "45",
+        )))
+    except (TypeError, ValueError):
+        return 45.0
 
 
 def _fullraw_configured() -> bool:
@@ -374,8 +384,11 @@ def _seed_paper_candidates(
     if old_timeout is None or old_timeout_value > seed_timeout_value:
         os.environ["TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"] = seed_timeout
     try:
+        deadline = time.monotonic() + _seed_paper_budget_seconds()
         with httpx.Client() as client:
             for seed in seeds[:_seed_paper_probe_limit(top)]:
+                if time.monotonic() >= deadline:
+                    break
                 candidate = TopicCandidate(
                     topic=seed, paper_count=0, fact_source_count=0,
                     top_paper_doi="", top_paper_title="",
@@ -385,6 +398,8 @@ def _seed_paper_candidates(
                     continue
                 papers_by_key: dict[str, dict[str, object]] = {}
                 for query in _seed_paper_queries(seed, context=query_context):
+                    if time.monotonic() >= deadline:
+                        break
                     for paper in _seed_fullraw_papers(query, client=client, limit=5):
                         key = str(paper.get("doi") or paper.get("paper_id")
                                   or paper.get("title") or "").strip().casefold()
