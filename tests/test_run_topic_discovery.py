@@ -351,6 +351,58 @@ def test_cache_only_skips_slow_discovery_when_cache_is_underfilled(
     assert [row["topic"] for row in payload["top"]] == ["cached_rich"]
 
 
+def test_empty_discovery_uses_fullraw_as_source_rich_supply(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    class Hit:
+        def __init__(self, n: int) -> None:
+            self.title = f"Metformin longevity paper {n}"
+            self.doi = f"10.1/fullraw.{n}"
+            self.year = 2025
+            self.metadata = {"cited_by_count": n}
+
+    class FakeFullraw:
+        def __init__(self) -> None:
+            self.calls: list[tuple[str, int]] = []
+
+        def search(self, query: str, *, limit: int = 25) -> list[Hit]:
+            self.calls.append((query, limit))
+            return [Hit(i) for i in range(6)]
+
+    fullraw = FakeFullraw()
+    cached = (
+        TopicCandidate(
+            topic="cached_rich", paper_count=0, fact_source_count=8,
+            top_paper_doi="", top_paper_title="",
+            velocity_score=0.0, mean_fwci=0.0, mean_cited_by=0.0,
+        ),
+    )
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda _path=None: ("metformin",))
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda _path=None: 5_000)
+    monkeypatch.setattr(run_topic_discovery, "discover_topics", lambda **_kwargs: ())
+    monkeypatch.setattr(
+        run_topic_discovery, "cached_source_rich_candidates",
+        lambda *, limit: cached[:limit],
+    )
+    monkeypatch.setattr(run_topic_discovery, "_fullraw_search_client", lambda: fullraw)
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--cache-first", "--top", "1",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    assert fullraw.calls == [("metformin Longevity anti-aging", 25)]
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert payload["candidate_count"] == 2
+    assert payload["top"][0]["topic"] == "metformin"
+    assert payload["top"][0]["paper_count"] == 6
+    assert payload["top"][0]["fact_source_count"] == 6
+
+
 def test_cache_first_preserves_cached_source_papers(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

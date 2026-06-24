@@ -171,7 +171,7 @@ def _fullraw_paper(hit: Any) -> dict[str, Any]:
 
 
 def _fullraw_supply_candidates(
-    *, profile_slug: str, seeds: tuple[str, ...], excluded: set[str],
+    *, profile_label: str, seeds: tuple[str, ...], excluded: set[str],
     current_year: int, limit: int,
 ) -> tuple[TopicCandidate, ...]:
     client = _fullraw_search_client()
@@ -179,9 +179,7 @@ def _fullraw_supply_candidates(
         return ()
     candidates: list[TopicCandidate] = []
     for topic in [t for t in seeds if t not in excluded][:max(1, limit)]:
-        query = topic.replace("_", " ")
-        if profile_slug not in {"longevity", "longevity_research"}:
-            query = f"{query} {profile_slug.replace('_', ' ')}"
+        query = " ".join(f"{topic.replace('_', ' ')} {profile_label.replace('/', ' ')}".split())
         try:
             hits = client.search(query, limit=25)
         except Exception as exc:  # pragma: no cover - fallback must not break discovery.
@@ -316,6 +314,11 @@ def main() -> int:
                     ),
                 )
         ranked = _merge_candidates(ranked, discovered)
+    if sum(1 for c in ranked if _paper_backed(c)) < args.top and not args.cache_only:
+        ranked = _merge_candidates(ranked, _fullraw_supply_candidates(
+            profile_label=profile.display_name, seeds=seeds, excluded=excluded,
+            current_year=dt.datetime.now(dt.UTC).year, limit=args.top,
+        ))
     top = ranked[: args.top]
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
     year = dt.datetime.now(dt.UTC).year
