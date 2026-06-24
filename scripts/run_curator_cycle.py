@@ -644,7 +644,9 @@ def main() -> int:
         )
         seed_paper_fast_path = args.stop_on_ready and not args.warm_backlog
 
-        def discovery_args(*, seed_paper_only: bool) -> list[str]:
+        def discovery_args(
+            *, seed_paper_only: bool, skip_seed_paper_probe: bool = False,
+        ) -> list[str]:
             out = [
                 py, "scripts/run_topic_discovery.py",
                 "--domain", args.domain,
@@ -654,6 +656,8 @@ def main() -> int:
                 out.append("--cache-first")
                 if seed_paper_only:
                     out.append("--seed-paper-only")
+                if skip_seed_paper_probe:
+                    out.append("--skip-seed-paper-probe")
             if args.warm_backlog:
                 out.append("--warm-backlog")
             if args.derived_topic_limit is not None:
@@ -690,7 +694,7 @@ def main() -> int:
     ):
         print("[cycle] seed-paper discovery empty; retrying bounded discovery")
         ok, last = _run_step(
-            discovery_args(seed_paper_only=False),
+            discovery_args(seed_paper_only=False, skip_seed_paper_probe=True),
             "discovery",
             timeout=_DISCOVERY_TIMEOUT_SECONDS,
         )

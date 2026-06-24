@@ -468,6 +468,10 @@ def main() -> int:
         help="After cache, use bounded seed-paper probes only; skip slow DB expansion.",
     )
     parser.add_argument(
+        "--skip-seed-paper-probe", action="store_true",
+        help="Skip fullraw seed-paper probes and go straight to domain discovery.",
+    )
+    parser.add_argument(
         "--exclude-topic", action="append", default=[],
         help="Exclude a topic from the emitted queue; repeatable.",
     )
@@ -500,7 +504,7 @@ def main() -> int:
     ranked = _filter_cached_seed_scope(_filter_excluded(ranked, excluded), seeds)
     paper_backed_cached = sum(1 for c in ranked if c.paper_count and c.top_paper_title)
     seed_paper_ranked: tuple[TopicCandidate, ...] = ()
-    if paper_backed_cached < args.top and not args.cache_only:
+    if paper_backed_cached < args.top and not args.cache_only and not args.skip_seed_paper_probe:
         seed_paper_ranked = _filter_excluded(
             _seed_paper_candidates(
                 seeds, settings=settings, current_year=year,

@@ -563,6 +563,46 @@ def test_seed_paper_only_skips_slow_domain_discovery_when_empty(
     assert payload["top"] == []
 
 
+def test_skip_seed_paper_probe_goes_directly_to_domain_discovery(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    fallback = (
+        TopicCandidate(
+            topic="seed_fresh", paper_count=5, fact_source_count=5,
+            top_paper_doi="10.1/fresh", top_paper_title="Fresh seed",
+            velocity_score=2.0, mean_fwci=1.0, mean_cited_by=4.0,
+        ),
+    )
+    calls: list[str] = []
+
+    def fake_discover(**_kwargs: Any) -> tuple[TopicCandidate, ...]:
+        calls.append("discover")
+        return fallback
+
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda _path=None: ("seed",))
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda _path=None: 5_000)
+    monkeypatch.setattr(run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: ())
+    monkeypatch.setattr(
+        run_topic_discovery, "_fetch_fullraw_topic_papers",
+        lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("seed probe")),
+    )
+    monkeypatch.setattr(run_topic_discovery, "discover_topics", fake_discover)
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--domain", "longevity_research", "--top", "1",
+        "--skip-seed-paper-probe",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    assert calls == ["discover"]
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert [row["topic"] for row in payload["top"]] == ["seed_fresh"]
+
+
 def test_seed_paper_probe_uses_domain_context_query(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

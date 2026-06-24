@@ -755,6 +755,7 @@ def test_stop_on_ready_empty_seed_paper_discovery_falls_back_to_bounded(
     assert len(calls) == 2
     assert "--seed-paper-only" in calls[0]
     assert "--cache-first" in calls[1]
+    assert "--skip-seed-paper-probe" in calls[1]
     assert "--seed-paper-only" not in calls[1]
 
 
