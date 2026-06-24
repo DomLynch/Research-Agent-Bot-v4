@@ -1017,6 +1017,49 @@ def test_business_family_discovery_filters_longevity_topics(
         assert emitted == [expected_topic]
 
 
+def test_exhausted_strict_seed_scope_uses_source_rich_domain_candidate(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    def fake_discover(**_kwargs: Any) -> tuple[TopicCandidate, ...]:
+        return (
+            TopicCandidate(
+                topic="SGLT2 inhibitors", paper_count=12, fact_source_count=18,
+                top_paper_doi="10.1/sglt2",
+                top_paper_title="SGLT2 inhibitors and aging outcomes",
+                velocity_score=5.0, mean_fwci=2.0, mean_cited_by=20.0,
+            ),
+            TopicCandidate(
+                topic="dapagliflozin", paper_count=8, fact_source_count=11,
+                top_paper_doi="10.1/fresh",
+                top_paper_title="Dapagliflozin outcomes in older adults",
+                velocity_score=4.0, mean_fwci=1.8, mean_cited_by=18.0,
+            ),
+        )
+
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(
+        run_topic_discovery, "load_seed_topics",
+        lambda _path=None: ("SGLT2 inhibitors",),
+    )
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda _path=None: 5_000)
+    monkeypatch.setattr(run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: ())
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", lambda *_a, **_k: [])
+    monkeypatch.setattr(run_topic_discovery, "discover_topics", fake_discover)
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--domain", "longevity_research", "--top", "1",
+        "--exclude-topic", "SGLT2 inhibitors",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert [row["topic"] for row in payload["top"]] == ["dapagliflozin"]
+    assert payload["source_rich_count"] == 1
+
+
 def test_cache_first_preserves_cached_source_papers(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

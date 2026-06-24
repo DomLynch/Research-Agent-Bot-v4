@@ -40,6 +40,7 @@ from agent.topic_synonyms import expand_topic_queries
 from scripts import alpha_publish_io as publish_io
 
 _FAST_DERIVED_TOPIC_LIMIT = 250
+_SOURCE_RICH_FLOOR = 5
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 _GENERIC_SCOPE_TOKENS = {
     "ai", "research", "study", "studies", "trial", "trials", "review",
@@ -374,6 +375,36 @@ def _filter_cached_seed_scope(
     )
 
 
+def _source_rich(candidate: TopicCandidate) -> bool:
+    return (
+        candidate.paper_count >= _SOURCE_RICH_FLOOR
+        and candidate.fact_source_count >= _SOURCE_RICH_FLOOR
+    )
+
+
+def _scope_and_hydrate_candidates(
+    candidates: tuple[TopicCandidate, ...], seeds: tuple[str, ...],
+    excluded: set[str], *, settings: Settings, current_year: int,
+    query_context: str,
+) -> tuple[TopicCandidate, ...]:
+    domain_scoped = _filter_domain_scope(_filter_excluded(candidates, excluded), seeds)
+    strict_scoped = _filter_cached_seed_scope(domain_scoped, seeds)
+    hydrated = _hydrate_candidates(
+        strict_scoped, settings=settings, current_year=current_year,
+        query_context=query_context,
+    )
+    if hydrated:
+        return hydrated
+    # If strict parent/child naming is exhausted by cooldowns or dedupe, allow
+    # source-rich domain-scope rows through. This keeps the evidence floor while
+    # avoiding infinite loops over already-used parent topics.
+    relaxed = tuple(c for c in domain_scoped if _source_rich(c))
+    return _hydrate_candidates(
+        relaxed, settings=settings, current_year=current_year,
+        query_context=query_context,
+    )
+
+
 def _domain_seed_topics(domain: str) -> tuple[str, ...]:
     profile = load_domain_profile(domain)
     return (
@@ -490,22 +521,8 @@ def main() -> int:
                 use_cached_source_rich=cache_supported,
                 refresh_low_source_counts=args.warm_backlog,
             )
-        # Scope discovered topics to this domain's own seeds + their children.
-        # The token-overlap filter alone leaks cross-domain topics: with 100
-        # seeds each expanded to dozens of queries, the token union is huge and
-        # an AI topic like multi_agent_systems matches longevity on generic
-        # tokens ("agent" from "senolytic agents", "systems" from "biological
-        # systems"). The strict seed-scope (seed or seed_child) is what keeps a
-        # longevity cycle from building and submitting AI topics tagged
-        # longevity. Universal: each domain scopes to its own seed list.
-        scoped_discovered = _filter_cached_seed_scope(
-            _filter_domain_scope(
-                _filter_excluded(discovered, excluded), seeds,
-            ),
-            seeds,
-        )
-        scoped_discovered = _hydrate_candidates(
-            scoped_discovered, settings=settings, current_year=year,
+        scoped_discovered = _scope_and_hydrate_candidates(
+            discovered, seeds, excluded, settings=settings, current_year=year,
             query_context=profile.display_name,
         )
         if not scoped_discovered and os.environ.get("TOPIC_GROUPS_DISCOVERY") != "0":
@@ -533,15 +550,8 @@ def main() -> int:
                     os.environ["TOPIC_GROUPS_DISCOVERY"] = old
             scoped_discovered = _merge_candidates(
                 scoped_discovered,
-                _hydrate_candidates(
-                    _filter_cached_seed_scope(
-                        _filter_domain_scope(
-                            _filter_excluded(fallback, excluded), seeds,
-                        ),
-                        seeds,
-                    ),
-                    settings=settings,
-                    current_year=year,
+                _scope_and_hydrate_candidates(
+                    fallback, seeds, excluded, settings=settings, current_year=year,
                     query_context=profile.display_name,
                 ),
             )
@@ -562,8 +572,8 @@ def main() -> int:
         "cache_only": bool(args.cache_only and cache_supported),
         "seed_paper_only": bool(args.seed_paper_only),
         "cache_supported": cache_supported,
-        "source_rich_floor": 5,
-        "source_rich_count": sum(1 for c in ranked if c.fact_source_count >= 5),
+        "source_rich_floor": _SOURCE_RICH_FLOOR,
+        "source_rich_count": sum(1 for c in ranked if _source_rich(c)),
         "top": [c.as_dict() for c in top],
         "all": [c.as_dict() for c in ranked],
     }
