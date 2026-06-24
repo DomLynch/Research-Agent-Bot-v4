@@ -6133,6 +6133,7 @@ def test_alpha_systemd_services_do_not_mask_no_publish_exits() -> None:
         assert "SuccessExitStatus=2" not in service, service_path.name
         assert "SuccessExitStatus=3" not in service, service_path.name
         assert "SuccessExitStatus=" not in service, service_path.name
+        assert "--allow-pending-success" not in service, service_path.name
 
 
 def test_refresh_cooldown_is_cycle_configurable(

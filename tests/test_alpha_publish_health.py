@@ -266,6 +266,44 @@ def test_expect_published_exits_nonzero_for_failed_latest_ledger(tmp_path: Path)
     assert health.main(["--runs-root", str(tmp_path), "--expect-published"]) == 2
 
 
+def test_expect_published_prints_no_publish_blocker_summary(
+    tmp_path: Path, capsys: Any, monkeypatch: Any,
+) -> None:
+    _write_ledger(tmp_path, "2026-06-01T01-04-07Z.json", {
+        "status": "no_fresh_candidate",
+        "submitted": 0,
+        "published": 0,
+        "public_url": "https://researka.org/alpha/missing",
+        "queue_counts": {"ready_to_publish": 0, "curation_needed": 3},
+        "publish_summary": {
+            "top_blockers": {"direct_source_floor_below_min": 3},
+            "next_action": "refresh_or_expand_candidate_supply",
+        },
+    })
+    monkeypatch.setattr(
+        health,
+        "_public_url_status",
+        lambda *_args, **_kwargs: {
+            "http_status": 404,
+            "rendered": False,
+            "status": "not_rendered",
+        },
+    )
+
+    assert health.main([
+        "--runs-root", str(tmp_path), "--expect-published", "--check-url",
+    ]) == 2
+    summary = json.loads(capsys.readouterr().out)
+
+    assert summary["ok"] is False
+    assert summary["status"] == "no_fresh_candidate"
+    assert summary["queue_counts"] == {"ready_to_publish": 0, "curation_needed": 3}
+    assert summary["top_blockers"] == {"direct_source_floor_below_min": 3}
+    assert summary["next_action"] == "refresh_or_expand_candidate_supply"
+    assert summary["public_url_status"] == 404
+    assert summary["public_page_status"] == "not_rendered"
+
+
 def test_expect_published_exits_nonzero_for_real_no_publish_statuses(
     tmp_path: Path,
 ) -> None:
