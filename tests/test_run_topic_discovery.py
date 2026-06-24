@@ -593,7 +593,7 @@ def test_seed_paper_probe_expands_seed_queries_before_slow_discovery(
         lambda _path=None: 5_000,
     )
     monkeypatch.setattr(run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: ())
-    monkeypatch.setenv("TOPIC_DISCOVERY_SEED_QUERIES", "2")
+    monkeypatch.delenv("TOPIC_DISCOVERY_SEED_QUERIES", raising=False)
     monkeypatch.setattr(
         run_topic_discovery, "discover_topics",
         lambda **_kwargs: (_ for _ in ()).throw(AssertionError("slow discovery")),

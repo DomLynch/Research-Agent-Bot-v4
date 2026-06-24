@@ -173,9 +173,9 @@ def _hydrate_query_limit() -> int:
 
 def _seed_query_limit() -> int:
     try:
-        return max(1, int(os.environ.get("TOPIC_DISCOVERY_SEED_QUERIES", 6)))
+        return max(1, int(os.environ.get("TOPIC_DISCOVERY_SEED_QUERIES", 2)))
     except (TypeError, ValueError):
-        return 6
+        return 2
 
 
 def _seed_paper_probe_limit(top: int) -> int:
