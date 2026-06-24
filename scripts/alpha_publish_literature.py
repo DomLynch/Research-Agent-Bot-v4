@@ -86,6 +86,8 @@ def boundary_quality(topic: str, papers: list[Json], min_sources: int) -> tuple[
     topic_key = title_key(topic)
     if topic_key and len({key for key in keys if key and key != topic_key}) < min_sources:
         return False, "repeated_title_series"
+    if _uniform_favorable_cross_pico(usable, min_sources):
+        return False, "directionally_uniform_cross_pico_bundle"
     return True, "ok"
 
 
@@ -136,6 +138,33 @@ def _fact_complete(fact: Json) -> bool:
     if any(phrase.count(left) > phrase.count(right) for left, right in (("(", ")"), ("[", "]"))):
         return False
     return not re.search(r"(95%\s*ci|p\s*[=<])\s*[:;,]?\s*$", phrase, flags=re.I)
+
+
+def _endpoint_key(fact: Json) -> str:
+    return title_key(fact.get("endpoint") or fact.get("metric") or "")
+
+
+def _uniform_favorable_cross_pico(papers: list[Json], min_sources: int) -> bool:
+    facts = [
+        fact for paper in papers
+        if isinstance((fact := paper.get("source_fact")), dict)
+        and str(fact.get("canonical_phrase") or "").strip()
+    ]
+    if len(facts) < min_sources:
+        return False
+    directions = [
+        _effect_direction(str(fact.get("canonical_phrase") or ""))
+        for fact in facts[:min_sources]
+    ]
+    endpoints = {
+        endpoint for fact in facts[:min_sources]
+        if (endpoint := _endpoint_key(fact))
+    }
+    return (
+        len(endpoints) >= 3
+        and bool(directions)
+        and all(direction == "directionally favorable" for direction in directions)
+    )
 
 
 def _direction_rows(papers: list[Json]) -> list[str]:

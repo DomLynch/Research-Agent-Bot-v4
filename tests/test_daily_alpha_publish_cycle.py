@@ -8523,6 +8523,32 @@ def test_source_literature_boundary_quality_accepts_distinct_boundary_papers() -
     assert reason == "ok"
 
 
+def test_source_literature_boundary_rejects_uniform_favorable_cross_pico_bundle() -> None:
+    endpoints = [
+        "cognitive decline", "cancer mortality", "cardiovascular disease",
+        "systolic blood pressure", "fasting glucose",
+    ]
+    papers = [
+        {
+            "title": f"Dietary pattern and {endpoint}",
+            "doi": f"10.1234/pico-{idx}",
+            "source_fact": {
+                "canonical_phrase": "intervention reduced the endpoint risk",
+                "population": "adults",
+                "intervention": "dietary pattern",
+                "comparator": "usual care",
+                "endpoint": endpoint,
+            },
+        }
+        for idx, endpoint in enumerate(endpoints)
+    ]
+
+    ok, reason = daily._source_literature_boundary_quality("dietary pattern", papers, 5)
+
+    assert ok is False
+    assert reason == "directionally_uniform_cross_pico_bundle"
+
+
 def test_source_literature_boundary_requires_specific_topic_alignment() -> None:
     papers = [
         {
