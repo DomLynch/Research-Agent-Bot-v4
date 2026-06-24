@@ -3617,6 +3617,64 @@ def test_claim_cluster_candidate_requires_claim_coherence(tmp_path: Path) -> Non
     assert rows == []
 
 
+def test_claim_cluster_candidate_rejects_same_intervention_mixed_outcomes(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("metformin_treatment") | {
+        "decision": "curation_needed",
+        "publish_tier": "TIER_1",
+        "alpha_score": 0,
+        "blockers": ["evidence_map_below_citation_floor"],
+        "subtopic_recommendations": {
+            "recommended": True,
+            "reason": "source_coherent_child_cluster",
+            "clusters": [{
+                "label": "intraperitoneal mice abundances",
+                "member_fact_ids": ["1", "2", "3", "4", "5"],
+            }],
+        },
+    }
+    _memo_with_receipt_shapes(root, verdict, [
+        {
+            "canonical_phrase": "Metformin reduced tumor burden.",
+            "population": "A/J mice",
+            "intervention": "intraperitoneal metformin",
+            "endpoint": "tumor burden",
+        },
+        {
+            "canonical_phrase": "Metformin increased gut microbiota abundance.",
+            "population": "high-fat diet mice",
+            "intervention": "metformin treatment",
+            "endpoint": "microbiota abundance",
+        },
+        {
+            "canonical_phrase": "Metformin combined with rapamycin extended lifespan.",
+            "population": "heterogeneous mice",
+            "intervention": "metformin and rapamycin",
+            "endpoint": "lifespan",
+        },
+        {
+            "canonical_phrase": "Metformin reduced lung tumorigenesis.",
+            "population": "NNK-exposed mice",
+            "intervention": "intraperitoneal metformin",
+            "endpoint": "lung tumorigenesis",
+        },
+        {
+            "canonical_phrase": "Metformin restored intestinal stem-cell expression.",
+            "population": "old male mice",
+            "intervention": "metformin",
+            "endpoint": "stem-cell expression",
+        },
+    ])
+
+    rows = daily._claim_cluster_candidates(
+        [verdict], root, min_direct_source_count=5,
+    )
+
+    assert rows == []
+
+
 def test_high_alpha_curation_cluster_can_seed_claim_candidate(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("curated_parent") | {

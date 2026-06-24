@@ -68,6 +68,11 @@ _COHERENCE_GENERIC_TOKENS = _CLUSTER_GENERIC_TOKENS | {
     "setting", "settings", "agent", "agents", "usual", "standard", "routine",
     "care",
 }
+_OUTCOME_GENERIC_TOKENS = frozenset({
+    "change", "changed", "changes", "increase", "increased", "increases",
+    "decrease", "decreased", "decreases", "reduce", "reduced", "reduces",
+    "reduction", "significantly", "observed", "mean",
+})
 
 Json = dict[str, Any]
 Fetcher = Callable[[str], Json]
@@ -1164,6 +1169,33 @@ def _cluster_tokens(fact: Json, parent: str) -> set[str]:
     return set(_CLAIM_WORD.findall(text.lower())) - parent_tokens - _CLUSTER_GENERIC_TOKENS
 
 
+def _cluster_outcome_tokens(fact: Json, parent_tokens: set[str]) -> set[str]:
+    context = set().union(*(
+        _shape_tokens(fact, fields)
+        for fields in (("population",), ("intervention",), ("comparator",))
+    ))
+    outcome = _shape_tokens(
+        fact,
+        ("endpoint", "metric_type", "sub_topic", "canonical_phrase", "claim",
+         "finding", "source_excerpt"),
+    )
+    return outcome - context - parent_tokens - _OUTCOME_GENERIC_TOKENS
+
+
+def _facts_share_cluster_shape(anchor: Json, fact: Json, parent_tokens: set[str]) -> bool:
+    if not (
+        _cluster_outcome_tokens(anchor, parent_tokens)
+        & _cluster_outcome_tokens(fact, parent_tokens)
+    ):
+        return False
+    for fields in (("population",), ("intervention",), ("comparator",)):
+        left = _shape_tokens(anchor, fields) - parent_tokens
+        right = _shape_tokens(fact, fields) - parent_tokens
+        if left and right and left & right:
+            return True
+    return False
+
+
 def _cluster_coherent_component_ids(
     verdict: Json, cluster_ids: list[str], root: Path, *, min_direct_source_count: int,
 ) -> list[str]:
@@ -1182,19 +1214,19 @@ def _cluster_coherent_component_ids(
         for fact in facts if isinstance(fact, dict)
     }
     parent = str(verdict.get("topic") or "")
+    parent_tokens = _topic_tokens(parent)
     usable = [
         (fid, by_id[fid], _source_key_from_fact(by_id[fid]))
         for fid in cluster_ids
         if fid in by_id and lanes.get(fid) == "A_core" and _source_key_from_fact(by_id[fid])
     ]
     for anchor_id, anchor, _source in usable:
-        anchor_tokens = _cluster_tokens(anchor, parent)
-        if not anchor_tokens:
+        if not _cluster_outcome_tokens(anchor, parent_tokens):
             continue
         component = [
             (fid, source)
             for fid, fact, source in usable
-            if fid == anchor_id or len(anchor_tokens & _cluster_tokens(fact, parent)) >= 2
+            if fid == anchor_id or _facts_share_cluster_shape(anchor, fact, parent_tokens)
         ]
         sources = {source for _fid, source in component}
         if len(sources) >= min_direct_source_count:
