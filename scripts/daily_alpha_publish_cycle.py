@@ -205,6 +205,7 @@ def _publish_tier_int(name: str, default: int) -> int:
 
 _DEFAULT_MIN_SUBMIT_SOURCES = _alpha_memo_int("min_source_papers", 5)
 _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES = _alpha_memo_int("min_direct_source_papers", 2)
+_SOURCE_LITERATURE_SCAN_LIMIT = max(10, _DEFAULT_MIN_SUBMIT_SOURCES * 3)
 _DEFAULT_REFRESH_TOP = _alpha_memo_int("refresh_top", 1)
 _DEFAULT_REFRESH_COOLDOWN_HOURS = _alpha_memo_float("refresh_cooldown_hours", 2.0)
 _DEFAULT_PARENT_REFRESH_TOPIC_LIMIT = _alpha_memo_int("parent_refresh_topic_limit", 4)
@@ -5161,6 +5162,7 @@ def run_cycle(
             topic for topic in _source_literature_topic_candidates(
                 runs_root, profile.slug, min_submit_sources,
                 source_literature_blocked_topics,
+                limit=_SOURCE_LITERATURE_SCAN_LIMIT,
             ) if topic not in repair_topic_set
         ]
         for idx, literature_topic in enumerate(literature_topics):

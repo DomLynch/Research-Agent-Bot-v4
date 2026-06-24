@@ -8675,6 +8675,86 @@ def test_source_literature_fallback_tries_next_quality_candidate(
     assert ledger["submitted_topic"] == "usable_boundary"
 
 
+def test_source_literature_fallback_scans_past_first_five_thin_rows(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    topics = [f"thin_{idx}" for idx in range(5)] + ["usable_boundary"]
+    (root / "_topics_discovery" / "longevity.json").write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [
+            {"topic": topic, "paper_count": 10, "fact_source_count": 10}
+            for topic in topics
+        ],
+    }), encoding="utf-8")
+    thin = [
+        {
+            "title": f"Thin source {idx}",
+            "doi": f"10.1234/thin-{idx}",
+            "source_fact": {
+                "canonical_phrase": f"thin finding {idx}",
+                "intervention": "thin topic",
+            },
+        }
+        for idx in range(4)
+    ]
+    usable_titles = (
+        "Usable boundary mitochondrial aging signal",
+        "Inflammation pathway source for usable boundary",
+        "Cellular senescence intervention boundary",
+        "Proteostasis response in aging tissue",
+        "Metabolic stress adaptation and lifespan",
+    )
+    usable = [
+        {
+            "title": title,
+            "doi": f"10.1234/use-{idx}",
+            "source_fact": {
+                "canonical_phrase": f"usable boundary finding {idx}",
+                "intervention": "usable boundary",
+            },
+        }
+        for idx, title in enumerate(usable_titles)
+    ]
+    monkeypatch.setattr(
+        daily,
+        "_fetch_source_literature_papers",
+        lambda topic, *_args, **_kwargs: usable if topic == "usable_boundary" else thin,
+    )
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "writer_configured": False,
+        "mimo_model": "",
+        "mimo_base_url": "",
+    })())
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-10-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        submitter=lambda _payload: {
+            "ok": True, "status": 200,
+            "response": {"submission": {"id": "sub-1"}},
+        },
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "usable_boundary"
+    assert [a["status"] for a in ledger["source_literature_fallback_attempts"]] == [
+        "blocked", "blocked", "blocked", "blocked", "blocked", "selected",
+    ]
+
+
 def test_source_literature_fallback_skips_misaligned_candidate(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
