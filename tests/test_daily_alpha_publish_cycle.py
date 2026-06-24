@@ -8861,6 +8861,65 @@ def test_source_literature_fallback_is_not_used_for_ai_domain(
     assert "source_literature_fallback" not in ledger
 
 
+def test_initial_probe_refreshes_when_ready_row_recomputes_unactionable(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("model_eval") | {"domain": {"slug": "ai_research"}}
+    _memo_with_source_receipts(root, verdict, 5)
+    run = root / str(verdict["run_dir"])
+    run.joinpath("publish_verdict.json").write_text(
+        json.dumps(verdict), encoding="utf-8",
+    )
+    current = verdict | {
+        "decision": "agent_repair_needed",
+        "surface_type": "subtopic_rerun_memo",
+        "blockers": ["metric_type_mismatch", "fact_shape_mismatch"],
+    }
+    monkeypatch.setattr(daily, "_current_selection_verdict", lambda _v, _root: current)
+    refresh_calls: list[dict[str, Any]] = []
+
+    def refresh_batch(
+        refresh_top: int,
+        excluded_topics: set[str],
+        cooldown_hours: float,
+        runs_root: Path,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        refresh_calls.append({
+            "refresh_top": refresh_top,
+            "excluded_topics": sorted(excluded_topics),
+            "cooldown_hours": cooldown_hours,
+            "runs_root": str(runs_root),
+            **kwargs,
+        })
+        return {
+            "ok": True,
+            "note": "refresh-ran",
+            "top": refresh_top,
+            "cooldown_hours": cooldown_hours,
+            "excluded_topics": sorted(excluded_topics),
+        }
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", refresh_batch)
+
+    ledger = daily.run_cycle(
+        runs_root=root / "runs",
+        date="2026-06-24T12-00-00Z",
+        domain="ai_research",
+        refresh_candidates=True,
+        refresh_top=1,
+        max_refresh_batches=1,
+        submit=False,
+        sleep=lambda _seconds: None,
+    )
+
+    assert refresh_calls
+    assert ledger["preflight_queue_counts"]["ready_to_publish"] == 1
+    assert ledger["preflight_considered_counts"] == {"agent_repair_needed": 1}
+    assert ledger["refresh_batches"][0]["note"] == "refresh-ran"
+
+
 def test_memo_without_falsifier_is_blocked(tmp_path: Path) -> None:
     """C4 submit gate: an approved memo that omits 'What would weaken this' is
     held as memo_missing_falsifier and never selected."""

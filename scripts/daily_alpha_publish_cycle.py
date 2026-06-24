@@ -4523,7 +4523,27 @@ def run_cycle(
         cluster_rows = _rows(candidate_queue, allow_tier2=True) + [
             r for r in candidate_queue.get("curation_needed") or [] if isinstance(r, dict)
         ]
-        if candidate_queue.get("ready_to_publish") or _claim_cluster_candidates(
+        preflight_candidate, preflight_considered = select_candidate(
+            candidate_queue,
+            runs_root=runs_root,
+            submitted_path=submitted_path,
+            allow_tier2=allow_tier2,
+            min_source_count=min_submit_sources,
+            min_direct_source_count=min_direct_submit_sources,
+            blocked_fingerprints=blocked_fingerprints,
+            blocked_topics=blocked_topics,
+            accepted_shape_profiles=accepted_shape_profiles,
+            retryable_fingerprints=session_retryable,
+            retry_decision_overrides=session_retry_decisions,
+            domain=profile.slug,
+        )
+        preflight_counts: dict[str, int] = {}
+        for row in preflight_considered:
+            if isinstance(row, dict):
+                status = str(row.get("status") or "unknown")
+                preflight_counts[status] = preflight_counts.get(status, 0) + 1
+        ledger["preflight_considered_counts"] = preflight_counts
+        if preflight_candidate is not None or _claim_cluster_candidates(
             cluster_rows, runs_root, min_direct_source_count=min_direct_submit_sources,
         ):
             preflight_queue = candidate_queue
