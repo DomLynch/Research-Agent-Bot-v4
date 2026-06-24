@@ -4512,6 +4512,11 @@ def run_cycle(
         candidate_queue = _with_repairable_candidates(
             build_current_queue(), runs_root, profile.slug,
         )
+        repair_source_lit_available = bool(
+            submit
+            and profile.slug != "ai_research"
+            and _repairable_source_literature_decisions(runs_root, profile.slug)
+        )
         ledger["stage"] = "initial_queue_probe_complete"
         ledger["preflight_queue_counts"] = publish_status.queue_counts(candidate_queue)
         _write_ledger(ledger_path, ledger)
@@ -4523,6 +4528,9 @@ def run_cycle(
         ):
             preflight_queue = candidate_queue
             skip_refresh_note = "skipped_initial_queue_probe"
+        elif repair_source_lit_available:
+            preflight_queue = candidate_queue
+            skip_refresh_note = "skipped_source_literature_repair_available"
         else:
             initial_probe_empty = True
     skip_next_refresh = preflight_queue is not None
@@ -4707,6 +4715,16 @@ def run_cycle(
             1 for row in all_considered if row.get("family_blocked")
         )
         if candidate is None:
+            if (
+                submit
+                and profile.slug != "ai_research"
+                and _repairable_source_literature_decisions(runs_root, profile.slug)
+            ):
+                ledger["refresh_early_exit"] = {
+                    "batch": batch,
+                    "reason": "source_literature_repair_available",
+                }
+                break
             ran_topics = [str(t) for t in refresh.get("ran_topics") or [] if str(t)]
             if ran_topics:
                 blocked_topics.update(ran_topics)

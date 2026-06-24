@@ -7816,6 +7816,90 @@ def test_repairable_source_literature_revise_retries_before_new_topic(
     assert (root / "metformin use-source-literature-2026-06-10T18-00-00Z").exists()
 
 
+def test_repairable_source_literature_revise_skips_refresh_first(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
+    root = tmp_path / "repo"
+    ledger_dir = root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    old_run = root / "metformin use-source-literature-2026-06-09T18-00-00Z"
+    old_run.mkdir()
+    old_run.joinpath("source_literature_memo.md").write_text(
+        "# Source literature boundary memo\n", encoding="utf-8",
+    )
+    daily._write_json(ledger_dir / "2026-06-09T18-00-00Z.json", {
+        "domain": {"slug": "longevity_research"},
+        "submitted": 1,
+        "candidate": {
+            "topic": "metformin use",
+            "run_dir": old_run.name,
+            "fingerprint": "old-fingerprint",
+        },
+        "researka_decision": {
+            "decision": "revise",
+            "required_revisions": ["repair before broad refresh"],
+        },
+    })
+    titles = [
+        "Metformin use and frailty outcomes",
+        "Metformin exposure in dementia cohorts",
+        "Metformin treatment and cardiovascular mortality",
+        "Metformin prevention signals in diabetes risk",
+        "Metformin therapy and inflammatory biomarkers",
+    ]
+    papers = [
+        {
+            "title": title,
+            "doi": f"10.1234/met-refresh-{idx}",
+            "year": 2020 + idx,
+            "source_fact": {
+                "canonical_phrase": "metformin use showed mixed endpoint signals",
+                "population": "adults",
+                "intervention": "metformin",
+                "comparator": "control",
+                "endpoint": "mortality",
+            },
+        }
+        for idx, title in enumerate(titles)
+    ]
+    seen_payload: dict[str, Any] = {}
+
+    def fail_refresh(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise AssertionError("known source-literature repair should run before refresh")
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", fail_refresh)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-10T19-00-00Z",
+        domain="longevity_research",
+        refresh_candidates=True,
+        queue=None,
+        submit=True,
+        source_paper_fetcher=lambda topic, _limit: papers if topic == "metformin use" else [],
+        submitter=lambda payload: (
+            seen_payload.update(payload)
+            or {"ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}}}
+        ),
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert ledger["refresh_batches"][0]["note"] == (
+        "skipped_source_literature_repair_available"
+    )
+    assert ledger["source_literature_fallback"]["repair_submission"] is True
+    assert ledger["submitted_topic"] == "metformin use"
+    assert "repair before broad refresh" in seen_payload["markdown"]
+
+
 def _usable_boundary_papers() -> list[dict[str, str]]:
     return [
         {"title": "Usable boundary signaling in aging metabolism", "doi": "10.1234/u0"},
