@@ -586,17 +586,90 @@ def test_v5_client_bounds_restore_environment(monkeypatch: Any) -> None:
     monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_TIMEOUT", "99")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "7200")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS", "77")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED", "1514")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED", "4")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH", "1")
     monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", "6")
 
     old = run_topic_discovery._apply_v5_client_bounds()
     assert os.environ["V5_MEMO_FULL_RAW_CORPUS_TIMEOUT"] == "99"
     assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "7200"
     assert os.environ["V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS"] == "77"
+    assert os.environ["V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED"] == "1"
+    assert os.environ["V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED"] == "1"
+    assert os.environ["V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH"] == "0"
 
     run_topic_discovery._restore_env(old)
     assert os.environ["V5_MEMO_FULL_RAW_CORPUS_TIMEOUT"] == "99"
     assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "7200"
     assert os.environ["V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS"] == "77"
+    assert os.environ["V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED"] == "1514"
+    assert os.environ["V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED"] == "4"
+    assert os.environ["V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH"] == "1"
+
+
+def test_v5_client_papers_relaxes_storage_audit_env(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    src = tmp_path / "src"
+    package = src / "v5_memo"
+    package.mkdir(parents=True)
+    capture = tmp_path / "capture.json"
+    package.joinpath("__init__.py").write_text("", encoding="utf-8")
+    package.joinpath("client.py").write_text(
+        """
+import json
+import os
+
+class Hit:
+    title = "Metformin longevity paper"
+    doi = "10.1/met"
+    hit_id = "W1"
+    venue = "Journal"
+    year = 2026
+    url = "https://doi.org/10.1/met"
+    metadata = {"shard_receipt": {"shards_searched": 50, "sources_searched": {"openalex": 50}}}
+
+class FullRawCorpusSearchClient:
+    @classmethod
+    def from_env(cls, *, strict=False):
+        return cls(strict)
+
+    def __init__(self, strict):
+        self.strict = strict
+
+    def search(self, query, *, limit):
+        with open(CAPTURE, "w", encoding="utf-8") as handle:
+            json.dump({
+                "strict": self.strict,
+                "min_shards": os.environ.get("V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED"),
+                "min_sources": os.environ.get("V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED"),
+                "require_complete": os.environ.get("V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH"),
+            }, handle)
+        return [Hit()]
+""".replace("CAPTURE", repr(str(capture))),
+        encoding="utf-8",
+    )
+    monkeypatch.delitem(sys.modules, "v5_memo", raising=False)
+    monkeypatch.delitem(sys.modules, "v5_memo.client", raising=False)
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "1")
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_SRC", str(src))
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED", "1514")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED", "4")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH", "1")
+
+    rows = run_topic_discovery._v5_client_papers("metformin longevity", limit=1)
+
+    assert rows[0]["title"] == "Metformin longevity paper"
+    assert json.loads(capture.read_text(encoding="utf-8")) == {
+        "strict": False,
+        "min_shards": "1",
+        "min_sources": "1",
+        "require_complete": "0",
+    }
+    assert os.environ["V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED"] == "1514"
+    assert os.environ["V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED"] == "4"
+    assert os.environ["V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH"] == "1"
 
 
 def test_v5_client_bounds_allow_explicit_short_probe(monkeypatch: Any) -> None:

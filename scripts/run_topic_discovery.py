@@ -74,7 +74,17 @@ def _load_v5_env_defaults() -> None:
 
 
 def _apply_v5_client_bounds() -> dict[str, str | None]:
-    values: dict[str, str] = {}
+    values: dict[str, str] = {
+        "V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED": os.environ.get(
+            "TOPIC_DISCOVERY_V5_MIN_SHARDS_SEARCHED", "1",
+        ),
+        "V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED": os.environ.get(
+            "TOPIC_DISCOVERY_V5_MIN_SOURCES_SEARCHED", "1",
+        ),
+        "V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH": os.environ.get(
+            "TOPIC_DISCOVERY_V5_REQUIRE_COMPLETE_SEARCH", "0",
+        ),
+    }
     if timeout := os.environ.get("TOPIC_DISCOVERY_V5_TIMEOUT_SECONDS"):
         values["V5_MEMO_FULL_RAW_CORPUS_TIMEOUT"] = timeout
     if budget := os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"):
