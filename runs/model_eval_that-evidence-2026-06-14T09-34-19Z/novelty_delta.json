@@ -1,9 +1,0 @@
-{
-  "nearest_literature": [],
-  "novelty_delta": {
-    "counter_evidence_types": [],
-    "label": "under-discussed",
-    "nearest_score": 0.0,
-    "rationale": "Weak direct support; treat as curation until better receipts arrive."
-  }
-}

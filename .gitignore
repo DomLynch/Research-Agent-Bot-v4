@@ -12,36 +12,9 @@ venv/
 .coverage
 htmlcov/
 
-# Keep runs/ tracked — they are the section deliverables.
-# If runs/ grows large later, switch to selective tracking.
-# ...except the per-topic supply cache: runtime state, not a deliverable.
-# It is rewritten every discovery cycle (incl. on the VPS cron), so tracking
-# it would create constant dirt and 3-way merge conflicts.
-runs/_topic_supply_cache.json
-runs/_topic_supply_cache.json.tmp
-# Cron-regenerated Tier-2 supply cache: runtime state rewritten every cycle.
-runs/_tier2_supply_cache.json
-# Transient diagnostic run logs (the .json artifact beside them IS tracked).
-runs/_diagnostics/*.log
-# Cron-regenerated publish queue: runtime state rewritten every cycle on the
-# VPS (build_publish_queue), so tracking it creates constant 3-way dirt.
-runs/_publish_queue.json
-runs/_publish_queue.json.tmp
-runs/*.lock
-runs/**/*.lock
-# Controlled AI Results Index scale logs: generated operator trace, not source.
-runs/_ai_results_index_scale/
-# Local domain inventory snapshots; regenerated on demand from receipts.
-runs/_domain_inventory/
-# Business-sweep diagnostics + daily ledger: runtime state rewritten every cycle.
-runs/_business_diagnostics/
-runs/_daily_ledger/
-# Opt-in advisory sidecars (citation/consensus/scorecard): per-run runtime
-# analysis written by _run_advisories when the ALPHA_* flags are on — diagnostics,
-# not deliverables, regenerated each cycle (would otherwise dirty every run dir).
-runs/*-evidence-*/citation_verify.json
-runs/*-evidence-*/consensus_split.json
-runs/*-evidence-*/quality_scorecard.json
+# Runtime/generated artifacts. Fresh clones should build or restore runs/
+# locally; production keeps runtime data outside git tracking.
+runs/
 
 # macOS Finder dedup-on-copy artifacts ("foo 2.json", "main_draft 2.md", etc.).
 # Never canonical; have polluted run-dir bundles before.
