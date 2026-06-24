@@ -287,7 +287,8 @@ set -euo pipefail
 CEILING="${LOC_CEILING:-19850}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-COUNT=$(find "$ROOT/agent" -name "*.py" -not -path "*/__pycache__/*" 2>/dev/null \
+COUNT=$(git -C "$ROOT" ls-files "agent/*.py" \
+    | sed "s#^#$ROOT/#" \
     | xargs -I {} cat "{}" 2>/dev/null \
     | wc -l \
     | tr -d ' ')
