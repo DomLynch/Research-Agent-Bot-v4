@@ -8874,6 +8874,7 @@ def test_source_literature_fetcher_prefers_tier2_fact_backed_papers(
         "researka_database_token": "tok",
     })())
     calls: list[str] = []
+    timeouts: list[float] = []
 
     class Response:
         status = 200
@@ -8893,6 +8894,7 @@ def test_source_literature_fetcher_prefers_tier2_fact_backed_papers(
     def fake_urlopen(req: Any, timeout: int) -> Response:
         url = str(req.full_url)
         calls.append(url)
+        timeouts.append(timeout)
         return Response([
             {
                 "paper_id": "p1",
@@ -8919,6 +8921,7 @@ def test_source_literature_fetcher_prefers_tier2_fact_backed_papers(
     assert [p["doi"] for p in papers] == ["10.1/a", "10.1/b"]
     assert papers[0]["source_fact"]["canonical_phrase"] == "Acarbose increased lifespan in mice."
     assert calls == ["https://db.test/api/v1/tier2/facts/search"]
+    assert timeouts == [12.0]
 
 
 def test_source_literature_fetcher_retries_focused_query_variant(

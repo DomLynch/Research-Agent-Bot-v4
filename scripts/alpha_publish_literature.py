@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import urllib.request
 from collections.abc import Callable
@@ -14,6 +15,7 @@ from agent.researka_facts import tier2_domain
 from agent.settings import load_settings
 
 Json = dict[str, Any]
+_FACT_SEARCH_TIMEOUT_ENV = "RESEARKA_SOURCE_LITERATURE_FACT_TIMEOUT_SECONDS"
 _GENERIC_TOPIC_TOKENS = frozenset({
     "association", "associations", "clinical", "effect", "effects", "evidence",
     "exposure", "intervention", "outcome", "outcomes", "review", "study",
@@ -354,6 +356,10 @@ def fetch_papers(
     token = settings.researka_database_token.strip()
     if not base or not token:
         return []
+    try:
+        timeout = max(1.0, float(os.environ.get(_FACT_SEARCH_TIMEOUT_ENV, "12")))
+    except ValueError:
+        timeout = 12.0
     out: list[Json] = []
     seen: set[str] = set()
     for query in query_variants(topic):
@@ -373,7 +379,7 @@ def fetch_papers(
             method="POST",
         )
         try:
-            with urllib.request.urlopen(req, timeout=60) as resp:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
         except (OSError, ValueError, json.JSONDecodeError):
             continue
