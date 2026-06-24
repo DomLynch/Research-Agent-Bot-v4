@@ -498,6 +498,68 @@ def test_seed_paper_probe_skips_excluded_seeds_before_fullraw(
     assert [row["topic"] for row in payload["top"]] == ["late_fresh_seed"]
 
 
+def test_seed_paper_probe_uses_v5_client_before_direct_http(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(
+        run_topic_discovery, "load_seed_topics",
+        lambda _path=None: ("metformin",),
+    )
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(
+        run_topic_discovery,
+        "load_derived_topic_limit",
+        lambda _path=None: 5_000,
+    )
+    monkeypatch.setenv("TOPIC_DISCOVERY_SEED_QUERIES", "1")
+    monkeypatch.setattr(
+        run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: (),
+    )
+    monkeypatch.setattr(
+        run_topic_discovery,
+        "discover_topics",
+        lambda **_kwargs: (_ for _ in ()).throw(AssertionError("slow discovery")),
+    )
+    monkeypatch.setattr(
+        run_topic_discovery,
+        "_fetch_fullraw_topic_papers",
+        lambda *_args, **_kwargs: (
+            (_ for _ in ()).throw(AssertionError("direct HTTP fallback"))
+        ),
+    )
+    monkeypatch.setattr(
+        run_topic_discovery,
+        "_v5_client_papers",
+        lambda *_args, **_kwargs: [{
+            "doi": "10.1/v5",
+            "title": "V5 client fullraw candidate",
+            "fwci": 4.0,
+            "cited_by_count": 40,
+            "publication_year": 2026,
+            "quality_score": 90.0,
+            "fullraw_shard_receipt": {
+                "shards_searched": 1514,
+                "partial_shard_search": False,
+                "sources_searched": {"openalex": 988},
+            },
+        }],
+    )
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--domain", "longevity_research", "--top", "1",
+        "--seed-paper-only",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert payload["top"][0]["topic"] == "metformin"
+    assert payload["top"][0]["top_paper_doi"] == "10.1/v5"
+    assert payload["fullraw_seed_probe"]["receipts"][0]["shards_searched"] == 1514
+
+
 def test_seed_paper_probe_expands_seed_queries_before_slow_discovery(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

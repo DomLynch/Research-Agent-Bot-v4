@@ -50,6 +50,83 @@ _GENERIC_SCOPE_TOKENS = {
 }
 
 
+def _truthy_env(name: str, default: str = "1") -> bool:
+    return os.environ.get(name, default).strip().lower() not in {"0", "false", "no", "off"}
+
+
+def _load_v5_env_defaults() -> None:
+    if not _truthy_env("TOPIC_DISCOVERY_V5_ENV_LOAD"):
+        return
+    env_path = Path(os.environ.get("TOPIC_DISCOVERY_V5_ENV_FILE", "/etc/v5-memo/env"))
+    try:
+        lines = env_path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, value = stripped.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip("'\""))
+
+
+def _v5_client_papers(query: str, *, limit: int) -> list[dict[str, object]]:
+    if not _truthy_env("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK"):
+        return []
+    src = Path(os.environ.get("TOPIC_DISCOVERY_V5_SRC", "/opt/v5-memo/src"))
+    if not src.exists():
+        return []
+    _load_v5_env_defaults()
+    src_text = str(src)
+    if src_text not in sys.path:
+        sys.path.insert(0, src_text)
+    try:
+        from v5_memo.client import FullRawCorpusSearchClient
+    except Exception:
+        return []
+    try:
+        hits = FullRawCorpusSearchClient.from_env(strict=False).search(
+            query, limit=limit,
+        )
+    except Exception:
+        return []
+    out: list[dict[str, object]] = []
+    for hit in hits:
+        title = str(getattr(hit, "title", "") or "").strip()
+        if not title:
+            continue
+        metadata = getattr(hit, "metadata", {}) or {}
+        receipt = (
+            metadata.get("shard_receipt")
+            if isinstance(metadata, dict) else None
+        )
+        out.append({
+            "doi": getattr(hit, "doi", None) or "",
+            "pmid": metadata.get("pmid") if isinstance(metadata, dict) else None,
+            "pmcid": metadata.get("pmcid") if isinstance(metadata, dict) else None,
+            "paper_id": getattr(hit, "hit_id", None),
+            "title": title,
+            "journal": getattr(hit, "venue", None),
+            "publication_year": getattr(hit, "year", None),
+            "fwci": 1.0,
+            "cited_by_count": (
+                metadata.get("cited_by_count") if isinstance(metadata, dict) else 0
+            ) or 0,
+            "quality_score": 70.0,
+            "url": getattr(hit, "url", "") or "",
+            "fullraw_shard_receipt": dict(receipt) if isinstance(receipt, dict) else {},
+        })
+    return out
+
+
+def _seed_fullraw_papers(
+    query: str, *, client: httpx.Client, limit: int,
+) -> list[dict[str, object]]:
+    return _v5_client_papers(query, limit=limit) or _fetch_fullraw_topic_papers(
+        query, client=client, limit=limit,
+    )
+
+
 def _hydrate_limit() -> int:
     try:
         return max(0, int(os.environ.get("TOPIC_DISCOVERY_HYDRATE_TOP", 20)))
@@ -278,7 +355,7 @@ def _seed_paper_candidates(
                     continue
                 papers_by_key: dict[str, dict[str, object]] = {}
                 for query in _seed_paper_queries(seed, context=query_context):
-                    for paper in _fetch_fullraw_topic_papers(query, client=client, limit=5):
+                    for paper in _seed_fullraw_papers(query, client=client, limit=5):
                         key = str(paper.get("doi") or paper.get("paper_id")
                                   or paper.get("title") or "").strip().casefold()
                         if not key or key in papers_by_key:
