@@ -160,14 +160,16 @@ def _stored_map_run(
     topic: str,
     *,
     shared_population: str | None,
+    surface_type: str = "evidence_map",
+    confidence_label: str = "evidence_map",
 ) -> dict[str, Any]:
     run = root / "runs" / f"{topic}-evidence-ts"
     run.mkdir(parents=True)
     fact_ids = [str(i) for i in range(1, 11)]
     verdict = _verdict(topic) | {
         "run_dir": str(run),
-        "surface_type": "evidence_map",
-        "confidence_label": "evidence_map",
+        "surface_type": surface_type,
+        "confidence_label": confidence_label,
     }
     run.joinpath("publish_verdict.json").write_text(json.dumps(verdict), encoding="utf-8")
     run.joinpath("fact_lanes.json").write_text(json.dumps({
@@ -201,6 +203,33 @@ def test_daily_build_queue_demotes_submit_held_evidence_maps(tmp_path: Path) -> 
     assert [r["topic"] for r in queue["ready_to_publish"]] == ["bounded_map"]
     assert [r["topic"] for r in queue["curation_needed"]] == ["broad_map"]
     assert queue["curation_needed"][0]["queue_status"] == "evidence_map_scope_mismatch"
+
+
+def test_daily_build_queue_demotes_evidence_map_label_even_with_alpha_surface(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _stored_map_run(
+        root,
+        "mislabelled_map",
+        shared_population="older adults",
+        surface_type="publish_alpha_memo",
+        confidence_label="evidence_map",
+    )
+    run = root / str(verdict["run_dir"])
+    facts = json.loads((run / "all_facts.json").read_text(encoding="utf-8"))
+    (run / "all_facts.json").write_text(json.dumps(facts[:5]), encoding="utf-8")
+    (run / "fact_lanes.json").write_text(json.dumps({
+        "verdicts": [{"fact_id": str(i), "lane": "A_core"} for i in range(1, 6)],
+    }), encoding="utf-8")
+
+    queue = daily._build_queue(root / "runs", include_archive=False)
+
+    assert queue["ready_to_publish"] == []
+    assert [row["topic"] for row in queue["curation_needed"]] == ["mislabelled_map"]
+    assert queue["curation_needed"][0]["queue_status"] == (
+        "evidence_map_below_citation_floor"
+    )
 
 
 def test_daily_build_queue_uses_stored_verdict_without_recomputing(

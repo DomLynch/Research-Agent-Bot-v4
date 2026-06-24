@@ -652,7 +652,7 @@ def _pre_submit_hold(
             **duplicate_studies,
         }
     if (
-        verdict.get("surface_type") != "evidence_map"
+        not _is_evidence_map_row(verdict)
         and not _direct_receipts_share_shape(verdict, root, min_direct_source_count)
     ):
         return hold | {
@@ -684,8 +684,21 @@ def _reload_verdict_after_memo_refresh(verdict: Json, run_dir: Path) -> Json:
     return refreshed
 
 
+def _is_evidence_map_row(row: Json) -> bool:
+    markers = (
+        row.get("surface_type"),
+        row.get("confidence_label"),
+        row.get("surface"),
+        row.get("memo_type"),
+        row.get("article_type"),
+    )
+    if any(str(marker or "").lower() == "evidence_map" for marker in markers):
+        return True
+    return "evidence map" in str(row.get("headline") or "").lower()
+
+
 def _queue_ready_row(row: Json, runs_root: Path) -> Json:
-    if row.get("decision") != "ready_to_publish" or row.get("surface_type") != "evidence_map":
+    if row.get("decision") != "ready_to_publish" or not _is_evidence_map_row(row):
         return row
     min_citations = _alpha_memo_int("evidence_map_min_citations", 10)
     if _direct_source_count(row, runs_root) < min_citations:
@@ -2096,7 +2109,7 @@ def _repairable_ledger(ledger: Json) -> bool:
 
 def _source_count(verdict: Json, root: Path | None = None) -> int:
     if root is not None:
-        if str(verdict.get("surface_type") or "") == "evidence_map":
+        if _is_evidence_map_row(verdict):
             landscape = len(_map_citable_facts(verdict, root))
             if landscape:
                 return landscape
@@ -2227,7 +2240,7 @@ def _study_title_key_from_fact(fact: Json) -> str:
 def _duplicate_study_evidence(verdict: Json, root: Path) -> Json:
     facts = (
         _map_citable_facts(verdict, root)
-        if str(verdict.get("surface_type") or "") == "evidence_map"
+        if _is_evidence_map_row(verdict)
         else _memo_source_facts(verdict, root, ("Evidence",), {"A_core"})
     )
     seen: dict[str, tuple[str, str]] = {}
@@ -2416,7 +2429,7 @@ def _direct_source_count(verdict: Json, root: Path) -> int:
     # A map cites its full A_core landscape (the rows it ships), not the memo's
     # narrowed single-claim cluster — so every source-floor and citation-floor
     # gate sees what is actually submitted, not the 6 the memo happened to list.
-    if str(verdict.get("surface_type") or "") == "evidence_map":
+    if _is_evidence_map_row(verdict):
         return len(_map_citable_facts(verdict, root))
     return len(_memo_source_papers(verdict, root, ("Evidence",), {"A_core"}))
 
@@ -2672,7 +2685,7 @@ def select_candidate(
             # do not yet (the reviewer panel wants a synthesized claim, not a
             # findings table), so try every single claim before any map rather
             # than letting a source-rich map's high alpha jump the queue.
-            1 if r.get("surface_type") == "evidence_map" else 0,
+            1 if _is_evidence_map_row(r) else 0,
             -(int(r.get("alpha_score") or 0) + accepted_shape_bonus(r, shape_profiles)),
             str(r.get("topic") or ""),
         ),
@@ -3039,7 +3052,7 @@ def select_candidate(
                 status = "duplicate_submission_fingerprint"
             if (
                 status == "eligible"
-                and verdict.get("surface_type") == "evidence_map"
+                and _is_evidence_map_row(verdict)
             ):
                 # Evidence maps publish (Researka accepts them as landscape
                 # syntheses — verified 2026-06-12). Two guards before submit:
@@ -3118,7 +3131,7 @@ def select_candidate(
                             .DUPLICATE_SOURCE_EVIDENCE.value
                         )
                     elif (
-                        verdict.get("surface_type") != "evidence_map"
+                        not _is_evidence_map_row(verdict)
                         and not _direct_receipts_share_shape(
                             verdict, runs_root, min_direct_source_count,
                         )
@@ -4070,7 +4083,7 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
     # themselves or core review judges them against single-claim criteria.
     article_type = (
         "evidence_map"
-        if str(verdict.get("surface_type") or "") == "evidence_map"
+        if _is_evidence_map_row(verdict)
         else "alpha_memo"
     )
     payload: Json = {
