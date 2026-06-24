@@ -779,6 +779,36 @@ def test_empty_discovery_uses_fullraw_as_domain_supply_engine(
     assert calls[-1] == "longevity anti aging"
 
 
+def test_fullraw_supply_requires_per_topic_source_floor(monkeypatch: Any) -> None:
+    papers = [
+        {
+            "doi": f"10.1/vitd{i}",
+            "title": f"Vitamin D deficiency and aging cohort {i}",
+            "fwci": 2.0,
+            "cited_by_count": 20 + i,
+            "publication_year": 2025,
+            "quality_score": 90.0,
+        }
+        for i in range(4)
+    ] + [{
+        "doi": "10.1/metformin",
+        "title": "Metformin longevity cohort",
+        "fwci": 2.0,
+        "cited_by_count": 20,
+        "publication_year": 2025,
+        "quality_score": 90.0,
+    }]
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", lambda *_a, **_k: papers)
+
+    rows = run_topic_discovery._fullraw_supply_candidates(
+        query_context="Longevity / anti-aging research",
+        current_year=2026,
+        top=1,
+    )
+
+    assert rows == ()
+
+
 def test_seed_paper_only_skips_slow_domain_discovery_when_empty(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

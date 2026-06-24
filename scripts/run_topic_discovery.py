@@ -437,6 +437,7 @@ def _seed_paper_candidates(
 def _fullraw_supply_candidates(
     *, query_context: str, current_year: int, top: int,
 ) -> tuple[TopicCandidate, ...]:
+    """Build fallback topics from fullraw only when each topic clears the floor."""
     query = _context_query_terms(query_context)
     if top <= 0 or not query:
         return ()
