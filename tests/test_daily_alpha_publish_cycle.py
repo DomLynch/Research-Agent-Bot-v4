@@ -4050,7 +4050,7 @@ def test_empty_initial_queue_refreshes_latest_fresh_parent_first(
     assert calls == [("exercise",)]
 
 
-def test_fullraw_seed_discovery_runs_before_stale_parent_priority(
+def test_fullraw_seed_discovery_still_uses_source_rich_parent_priority(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     root = tmp_path / "repo"
@@ -4098,9 +4098,9 @@ def test_fullraw_seed_discovery_runs_before_stale_parent_priority(
         domain="longevity_research",
     )
 
-    assert calls == [()]
+    assert calls == [("stale_parent",)]
     assert ledger["status"] == "no_fresh_candidate"
-    assert "refresh_parent_topics" not in ledger
+    assert ledger["refresh_parent_topics"] == ["stale_parent"]
 
 
 def test_v5_client_fallback_counts_as_fullraw_seed_discovery(

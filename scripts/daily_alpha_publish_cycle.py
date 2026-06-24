@@ -4651,7 +4651,6 @@ def run_cycle(
     if (
         refresh_candidates
         and initial_probe_empty
-        and not _fullraw_seed_discovery_enabled()
     ):
         priority_refresh_topics = _fresh_parent_topics_from_discovery(
             runs_root,
