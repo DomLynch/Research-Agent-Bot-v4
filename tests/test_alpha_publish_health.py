@@ -231,6 +231,30 @@ def test_health_summary_ignores_probe_and_decision_ledgers(tmp_path: Path) -> No
     assert summary["ok"] is True
 
 
+def test_health_summary_ignores_newer_dry_run_ledgers(tmp_path: Path) -> None:
+    published = _write_ledger(tmp_path, "2026-06-01T21-59-41Z.json", {
+        "status": "published",
+        "submitted": 1,
+        "published": 1,
+        "published_topic": "telomere",
+        "public_url": "https://researka.org/alpha/telomere",
+    })
+    dry_run = _write_ledger(tmp_path, "2026-06-01Tdryrun-fullraw2Z.json", {
+        "status": "no_fresh_candidate",
+        "submitted": 0,
+        "published": 0,
+        "reason": "manual dry-run smoke",
+    })
+    os.utime(published, (1, 1))
+    os.utime(dry_run, (2, 2))
+
+    summary = health.summarize_latest(tmp_path)
+
+    assert summary["ledger"] == "2026-06-01T21-59-41Z.json"
+    assert summary["ok"] is True
+    assert summary["topic"] == "telomere"
+
+
 def test_expect_published_exits_nonzero_for_failed_latest_ledger(tmp_path: Path) -> None:
     _write_ledger(tmp_path, "2026-06-01T01-04-07Z.json", {
         "status": "no_publishable_candidate",
@@ -240,6 +264,26 @@ def test_expect_published_exits_nonzero_for_failed_latest_ledger(tmp_path: Path)
     })
 
     assert health.main(["--runs-root", str(tmp_path), "--expect-published"]) == 2
+
+
+def test_expect_published_exits_nonzero_for_real_no_publish_statuses(
+    tmp_path: Path,
+) -> None:
+    for idx, status in enumerate((
+        "no_fresh_candidate",
+        "domain_dry_run_only",
+        "candidate_refresh_failed",
+        "submit_retry_exhausted",
+        "preflight_qa_blocked",
+    ), start=1):
+        _write_ledger(tmp_path, f"2026-06-01T01-04-0{idx}Z.json", {
+            "status": status,
+            "submitted": int(status == "submit_retry_exhausted"),
+            "published": 0,
+            "reason": status,
+        })
+
+        assert health.main(["--runs-root", str(tmp_path), "--expect-published"]) == 2
 
 
 def test_next_candidate_summary_reports_retry_risk(tmp_path: Path) -> None:

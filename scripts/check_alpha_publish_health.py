@@ -25,6 +25,7 @@ _NUMERIC_LEDGER_TS_RE = re.compile(
     r"^(\d{4})-(\d{2})-(\d{2})t(\d{2})-(\d{2})-(\d{2})z",
     re.I,
 )
+_DRY_RUN_LEDGER_RE = re.compile(r"(^|[-_t])dry[-_]?run", re.I)
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
@@ -37,6 +38,7 @@ def _ledger_paths(runs_root: Path) -> list[Path]:
             path
             for path in ledger_dir.glob("*.json")
             if _CYCLE_LEDGER_RE.match(path.name)
+            and not _DRY_RUN_LEDGER_RE.search(path.stem)
         ),
         key=_ledger_sort_key,
         reverse=True,
