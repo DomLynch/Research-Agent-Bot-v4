@@ -7927,6 +7927,52 @@ def test_source_literature_fallback_records_rejected_submit_status(
     }
 
 
+def test_source_literature_fallback_records_reviewer_revise_decision(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "usable_boundary", "paper_count": 9, "fact_source_count": 9}],
+    })
+    decision = {
+        "status": "complete",
+        "decision": "revise",
+        "claim_support_verdict": "partially_supported",
+        "required_revisions": ["tighten source-to-claim alignment"],
+    }
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-11T19-00-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        source_paper_fetcher=lambda _topic, _limit: _usable_boundary_papers(),
+        submitter=lambda _payload: {
+            "ok": True, "status": 200,
+            "response": {"submission": {"id": "sub-revise"}},
+        },
+        decision_fetcher=lambda _submission_id: decision,
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert ledger["status"] == "reviewer_revise"
+    assert ledger["final_verdict"] == "revise"
+    assert ledger["researka_decision"] == decision
+    assert ledger["cycle_attempts"] == [{
+        "topic": "usable_boundary",
+        "run_dir": "usable_boundary-source-literature-2026-06-11T19-00-00Z",
+        "fingerprint": ledger["candidate"]["fingerprint"],
+        "status": "reviewer_revise",
+        "researka_decision": decision,
+        "public_page_check": None,
+    }]
+
+
 def test_source_literature_fallback_is_disabled_without_explicit_submit_flag(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

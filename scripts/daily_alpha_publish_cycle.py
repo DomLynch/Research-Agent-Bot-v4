@@ -5125,6 +5125,21 @@ def run_cycle(
                             })
                             _write_ledger(ledger_path, ledger)
                             return ledger
+                        if final in {_DECISION_REJECTED, _DECISION_REVISE}:
+                            ledger["cycle_attempts"].append({
+                                "topic": literature_topic,
+                                "run_dir": candidate.get("run_dir"),
+                                "fingerprint": candidate.get("memo_fingerprint"),
+                                "status": (
+                                    publish_status.CycleStatus.REVIEWER_REVISE.value
+                                    if final == _DECISION_REVISE else
+                                    publish_status.CycleStatus.REVIEWER_REJECTED.value
+                                ),
+                                "researka_decision": ledger.get("researka_decision", {}),
+                                "public_page_check": ledger.get("public_page_check"),
+                            })
+                            _write_ledger(ledger_path, ledger)
+                            return ledger
                     ledger["cycle_attempts"].append({
                         "topic": literature_topic,
                         "run_dir": candidate.get("run_dir"),
