@@ -4520,9 +4520,6 @@ def run_cycle(
         ledger["stage"] = "initial_queue_probe_complete"
         ledger["preflight_queue_counts"] = publish_status.queue_counts(candidate_queue)
         _write_ledger(ledger_path, ledger)
-        cluster_rows = _rows(candidate_queue, allow_tier2=True) + [
-            r for r in candidate_queue.get("curation_needed") or [] if isinstance(r, dict)
-        ]
         preflight_candidate, preflight_considered = select_candidate(
             candidate_queue,
             runs_root=runs_root,
@@ -4543,9 +4540,28 @@ def run_cycle(
                 status = str(row.get("status") or "unknown")
                 preflight_counts[status] = preflight_counts.get(status, 0) + 1
         ledger["preflight_considered_counts"] = preflight_counts
-        if preflight_candidate is not None or _claim_cluster_candidates(
-            cluster_rows, runs_root, min_direct_source_count=min_direct_submit_sources,
-        ):
+        cluster_rows = _rows(candidate_queue, allow_tier2=True) + [
+            r for r in candidate_queue.get("curation_needed") or [] if isinstance(r, dict)
+        ]
+        seen_preflight = _seen_submission_fingerprints_for_domain(
+            submitted_path, profile.slug,
+        )
+        cluster_available = any(
+            memo_fingerprint(candidate) not in blocked_fingerprints
+            and memo_fingerprint(candidate) not in seen_preflight
+            and not any(
+                _family_blocked_topic(value, blocked_topics)
+                for value in [
+                    *_family_values(candidate),
+                    str(candidate.get("_parent_topic") or ""),
+                ]
+            )
+            for candidate in _claim_cluster_candidates(
+                cluster_rows, runs_root,
+                min_direct_source_count=min_direct_submit_sources,
+            )
+        )
+        if preflight_candidate is not None or cluster_available:
             preflight_queue = candidate_queue
             skip_refresh_note = "skipped_initial_queue_probe"
         elif repair_source_lit_available:
