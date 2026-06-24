@@ -94,6 +94,14 @@ def _no_candidate_reason(considered: list[Json]) -> str:
     return str(status_module.no_candidate_reason(considered))
 
 
+def _next_action_for_status(status: Any) -> str:
+    try:
+        status_module = importlib.import_module("scripts.alpha_publish_status")
+    except ModuleNotFoundError:
+        status_module = importlib.import_module("alpha_publish_status")
+    return str(status_module.next_action_for_status(str(status or "")))
+
+
 def _ledger_domain_slug(ledger: Json) -> str | None:
     domain = ledger.get("domain")
     if isinstance(domain, dict):
@@ -245,12 +253,26 @@ def summarize_latest(
     if not isinstance(publish_summary, dict):
         publish_summary = {}
     considered_counts = _considered_counts(ledger)
+    started_without_terminal = (
+        str(ledger.get("status") or "") == "started"
+        and not _attempts(ledger)
+        and int(ledger.get("submitted") or 0) == 0
+        and int(ledger.get("published") or 0) == 0
+    )
     reason = ledger.get("reason")
     if reason in {None, "", "no eligible non-duplicate memo"}:
         derived_reason = _no_candidate_reason([
             row for row in ledger.get("considered") or [] if isinstance(row, dict)
         ])
         reason = derived_reason or reason
+    if (
+        started_without_terminal
+        and reason in {None, "", "no eligible non-duplicate memo"}
+    ):
+        reason = "cycle_started_no_terminal_status"
+    top_blockers = publish_summary.get("top_blockers") or considered_counts
+    if started_without_terminal and not top_blockers:
+        top_blockers = {"cycle_started_no_terminal_status": 1}
     summary = {
         "ok": published and (not check_url or bool(url_check.get("rendered"))),
         "ledger": path.name,
@@ -267,8 +289,10 @@ def summarize_latest(
         "attempts": _attempts(ledger),
         "considered_counts": considered_counts,
         "queue_counts": ledger.get("queue_counts") or publish_summary.get("queue_counts") or {},
-        "top_blockers": publish_summary.get("top_blockers") or considered_counts,
-        "next_action": publish_summary.get("next_action"),
+        "top_blockers": top_blockers,
+        "next_action": publish_summary.get("next_action") or _next_action_for_status(
+            ledger.get("status"),
+        ),
         "reason": reason,
     }
     if decision_sync is not None:

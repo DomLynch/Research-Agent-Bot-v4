@@ -266,6 +266,22 @@ def test_expect_published_exits_nonzero_for_failed_latest_ledger(tmp_path: Path)
     assert health.main(["--runs-root", str(tmp_path), "--expect-published"]) == 2
 
 
+def test_started_latest_ledger_reports_terminal_status_blocker(tmp_path: Path) -> None:
+    _write_ledger(tmp_path, "2026-06-01T01-04-07Z.json", {
+        "status": "started",
+        "submitted": 0,
+        "published": 0,
+    })
+
+    summary = health.summarize_latest(tmp_path)
+
+    assert summary["ok"] is False
+    assert summary["status"] == "started"
+    assert summary["reason"] == "cycle_started_no_terminal_status"
+    assert summary["top_blockers"] == {"cycle_started_no_terminal_status": 1}
+    assert summary["next_action"] == "building_current_publish_queue"
+
+
 def test_expect_published_prints_no_publish_blocker_summary(
     tmp_path: Path, capsys: Any, monkeypatch: Any,
 ) -> None:
