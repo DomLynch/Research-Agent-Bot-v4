@@ -74,6 +74,10 @@ _OUTCOME_GENERIC_TOKENS = frozenset({
     "reduction", "significantly", "observed", "mean", "size",
     "male", "males", "female", "females",
 })
+_DISCOVERY_GENERIC_SUFFIX_TOKENS = _CLUSTER_GENERIC_TOKENS | {
+    "achieve", "achieves", "finding", "findings", "result", "results",
+    "show", "shows", "shown", "their", "while",
+}
 
 Json = dict[str, Any]
 Fetcher = Callable[[str], Json]
@@ -3560,6 +3564,7 @@ def _fresh_parent_topics_from_discovery(
     min_sources: int,
 ) -> list[str]:
     discovery_dir = runs_root / "_topics_discovery"
+    seed_prefixes = _domain_seed_prefixes(profile_slug)
     paths = sorted(
         discovery_dir.glob("*.json"),
         key=lambda path: path.stat().st_mtime if path.exists() else 0,
@@ -3581,6 +3586,16 @@ def _fresh_parent_topics_from_discovery(
             if (
                 not topic
                 or _source_literature_family_blocked_topic(topic, blocked_topics)
+            ):
+                continue
+            topic_key = _canonical_family_key(topic).removeprefix("topic:")
+            if any(
+                topic_key.startswith(f"{seed}_")
+                and all(
+                    token in _DISCOVERY_GENERIC_SUFFIX_TOKENS
+                    for token in topic_key[len(seed) + 1:].split("_")
+                )
+                for seed in seed_prefixes
             ):
                 continue
             with suppress(TypeError, ValueError):

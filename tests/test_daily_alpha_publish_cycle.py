@@ -4121,6 +4121,26 @@ def test_fresh_parent_discovery_prefers_broader_parent_over_newer_child(
     assert topics == ["exercise"]
 
 
+def test_fresh_parent_discovery_skips_generic_seed_suffixes(tmp_path: Path) -> None:
+    root = tmp_path / "runs"
+    discovery = root / "_topics_discovery"
+    discovery.mkdir(parents=True)
+    daily._write_json(discovery / "latest.json", {
+        "domain": {"slug": "ai_research"},
+        "all": [
+            {"topic": "model_eval_that", "fact_source_count": 100, "paper_count": 100},
+            {"topic": "model_eval_results", "fact_source_count": 90, "paper_count": 90},
+            {"topic": "model_eval_calibration", "fact_source_count": 6, "paper_count": 6},
+        ],
+    })
+
+    topics = daily._fresh_parent_topics_from_discovery(
+        root, "ai_research", set(), limit=1, min_sources=5,
+    )
+
+    assert topics == ["model_eval_calibration"]
+
+
 def test_empty_refresh_skips_recent_source_floor_parent_topics(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
