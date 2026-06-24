@@ -851,7 +851,7 @@ def main() -> int:
         payload["publish_queue_error"] = queue_last[:240]
         _write_cycle_json(json_path, payload)
         md_text += f"\n## Publish queue\n\n_failed: {queue_last[:240]}_\n"
-    md_path.write_text(md_text, encoding="utf-8")
+    publish_io.write_text(md_path, md_text)
     print(f"[cycle] summary -> runs/_curator_cycles/{cycle_ts}.json")
     return 0
 

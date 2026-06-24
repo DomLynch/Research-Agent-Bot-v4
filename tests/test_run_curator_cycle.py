@@ -549,7 +549,7 @@ def test_cycle_rebuilds_publish_queue_for_selected_domain(
     assert payload["domain_publish_queue"] == "runs/_publish_queue.ai_research.json"
 
 
-def test_cycle_summary_json_uses_sidecar_lock(
+def test_cycle_summary_outputs_use_sidecar_locks(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
     import run_curator_cycle
@@ -595,6 +595,10 @@ def test_cycle_summary_json_uses_sidecar_lock(
     assert run_curator_cycle.main() == 0
     assert any(
         name.endswith(".json.lock") and op == fcntl.LOCK_EX
+        for name, op in lock_calls
+    )
+    assert any(
+        name.endswith(".md.lock") and op == fcntl.LOCK_EX
         for name, op in lock_calls
     )
 
