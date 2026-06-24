@@ -440,11 +440,19 @@ def _fullraw_supply_candidates(
 ) -> tuple[TopicCandidate, ...]:
     """Build fallback topics from fullraw only when each topic clears the floor."""
     query_labels: dict[str, str] = {}
-    if query := _context_query_terms(query_context):
+    context_terms = _context_query_terms(query_context)
+    if query := context_terms:
         query_labels[query] = "__domain_supply__"
     query_cap = max(_seed_paper_probe_limit(top), top * 6)
     for seed in seeds:
-        for query in _seed_paper_queries(seed, context=query_context):
+        seed_queries: list[str] = []
+        for base in expand_topic_queries(seed, max_queries=2):
+            if not base.strip():
+                continue
+            if context_terms:
+                seed_queries.append(f"{base.strip()} {context_terms}")
+            seed_queries.append(base.strip())
+        for query in seed_queries:
             query_labels.setdefault(query, seed)
             if len(query_labels) >= query_cap:
                 break

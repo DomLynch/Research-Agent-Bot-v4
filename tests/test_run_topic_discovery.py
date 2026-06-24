@@ -822,6 +822,33 @@ def test_fullraw_supply_queries_seeds_when_domain_query_is_empty(
     assert {"metformin", "resveratrol"} <= topics
 
 
+def test_fullraw_supply_prefers_context_seed_query_over_bare_seed(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        if query == "fisetin longevity anti aging":
+            return _fullraw_rows("fis-lon", "Fisetin longevity senescence")
+        if query == "fisetin":
+            return _fullraw_rows("fis-off", "Fisetin glioblastoma cytotoxicity")
+        return []
+
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
+
+    rows = run_topic_discovery._fullraw_supply_candidates(
+        query_context="Longevity / anti-aging research",
+        current_year=2026,
+        top=1,
+        seeds=("fisetin",),
+    )
+
+    assert [row.topic for row in rows] == ["fisetin_longevity_anti_aging"]
+    assert rows[0].top_paper_title.startswith("Fisetin longevity")
+    assert calls.index("fisetin longevity anti aging") < calls.index("fisetin")
+
+
 def test_fullraw_supply_fallback_does_not_resurrect_excluded_topic(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
