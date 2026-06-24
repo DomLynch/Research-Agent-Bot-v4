@@ -98,6 +98,10 @@ def summarize_next_candidate(
 
     submitted_path = runs_root / "_daily_ledger" / "_submitted_fingerprints.json"
     queue = cycle._build_queue(runs_root, include_archive=False, domain=domain)
+    queue_counts = {
+        key: len(queue.get(key) or [])
+        for key in ("ready_to_publish", "agent_repair_needed", "curation_needed", "not_ready")
+    }
     blocked = cycle._recently_published_topics(
         runs_root / "_daily_ledger",
         days=cycle._DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS,
@@ -129,6 +133,7 @@ def summarize_next_candidate(
         "topic": (candidate or {}).get("topic"),
         "decision": (candidate or {}).get("decision"),
         "run_dir": (candidate or {}).get("run_dir"),
+        "queue_counts": queue_counts,
         "considered_counts": _considered_counts({"considered": considered}),
         "retry_after_rejection": bool(eligible_row.get("retry_after_rejection")),
         "retry_attempt_count": eligible_row.get("retry_attempt_count"),
@@ -237,9 +242,11 @@ def summarize_latest(
         summary["decision_sync"] = decision_sync
     if show_next_candidate:
         try:
-            summary["next_candidate"] = summarize_next_candidate(
+            next_candidate = summarize_next_candidate(
                 runs_root, domain=_ledger_domain_slug(ledger),
             )
+            summary["next_candidate"] = next_candidate
+            summary["current_queue_counts"] = next_candidate.get("queue_counts") or {}
         except Exception as exc:  # pragma: no cover - monitor should report, not crash.
             summary["next_candidate_error"] = f"{type(exc).__name__}: {exc}"
     return summary

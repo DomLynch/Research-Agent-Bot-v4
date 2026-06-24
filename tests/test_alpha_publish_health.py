@@ -225,7 +225,12 @@ def test_next_candidate_summary_reports_retry_risk(tmp_path: Path) -> None:
         _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES=5,
         _DEFAULT_MIN_SUBMIT_SOURCES=5,
         _DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS=30,
-        _build_queue=lambda *_args, **_kwargs: {"ready_to_publish": []},
+        _build_queue=lambda *_args, **_kwargs: {
+            "ready_to_publish": [{"topic": "grid_storage"}],
+            "agent_repair_needed": [],
+            "curation_needed": [{"topic": "old"}],
+            "not_ready": [],
+        },
         _recently_published_topics=lambda *_args, **_kwargs: {"old"},
         _recent_submission_topics=lambda *_args, **_kwargs: {"submitted"},
         _recent_negative_topics=lambda *_args, **_kwargs: {"rejected"},
@@ -239,6 +244,12 @@ def test_next_candidate_summary_reports_retry_risk(tmp_path: Path) -> None:
     assert summary["topic"] == "grid_storage"
     assert seen["domain"] == "ai_research"
     assert seen["blocked_topics"] == {"old", "submitted", "rejected"}
+    assert summary["queue_counts"] == {
+        "ready_to_publish": 1,
+        "agent_repair_needed": 0,
+        "curation_needed": 1,
+        "not_ready": 0,
+    }
     assert summary["retry_after_rejection"] is True
     assert summary["retry_attempt_count"] == 2
     assert summary["considered_counts"] == {"cycle_exhausted_topic": 1, "eligible": 1}
