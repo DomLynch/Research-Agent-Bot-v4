@@ -69,13 +69,17 @@ def test_publish_summary_contains_operator_blocker_fields() -> None:
             {"status": "agent_repair_needed", "blockers": ["receipt_shape_mismatch"]},
         ],
         "public_url": "https://researka.org/alpha/example",
-        "public_page_check": {"status": "not_rendered"},
+        "public_page_check": {
+            "status": "not_rendered",
+            "checks": [{"url": "https://researka.org/alpha/example", "http_status": 404}],
+        },
     })
 
     assert summary["considered"] == 2
     assert summary["queue_counts"] == {"ready_to_publish": 1, "curation_needed": 2}
     assert summary["next_action"] == "refresh_or_expand_candidate_supply"
     assert summary["public_url"] == "https://researka.org/alpha/example"
+    assert summary["public_url_status"] == 404
     assert summary["public_page_status"] == "not_rendered"
     assert summary["top_blockers"] == {
         "agent_repair_needed": 1,

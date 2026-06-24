@@ -189,6 +189,14 @@ def publish_summary(ledger: Json) -> Json:
         for blocker in row.get("blockers") or []:
             blockers.append(str(blocker))
     page = ledger.get("public_page_check")
+    page_checks = page.get("checks") if isinstance(page, dict) else []
+    page_status = None
+    if isinstance(page_checks, list):
+        for check in page_checks:
+            if isinstance(check, dict) and check.get("http_status") is not None:
+                page_status = check.get("http_status")
+                if check.get("url") == ledger.get("public_url"):
+                    break
     return {
         "status": ledger.get("status"),
         "submitted": int(ledger.get("submitted") or 0),
@@ -199,6 +207,7 @@ def publish_summary(ledger: Json) -> Json:
         "top_blockers": top_counts(blockers),
         "last_attempt_status": attempts[-1].get("status") if attempts else None,
         "public_url": ledger.get("public_url"),
+        "public_url_status": page_status,
         "public_page_status": page.get("status") if isinstance(page, dict) else None,
         "next_action": (
             str(ledger.get("next_action"))

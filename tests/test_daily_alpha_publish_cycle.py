@@ -5779,6 +5779,7 @@ def test_main_emits_end_of_run_blocker_summary(
             "top_blockers": {"duplicate_submission_fingerprint": 1},
             "next_action": "refresh_or_expand_candidate_supply",
             "public_url": None,
+            "public_url_status": None,
             "public_page_status": None,
         },
     }
@@ -5795,6 +5796,7 @@ def test_main_emits_end_of_run_blocker_summary(
     assert '"queue_counts": {"curation_needed": 3, "ready_to_publish": 0}' in out
     assert '"top_blockers": {"duplicate_submission_fingerprint": 1}' in out
     assert '"next_action": "refresh_or_expand_candidate_supply"' in out
+    assert '"public_url_status": null' in out
     assert '"public_page_status": null' in out
 
 
@@ -5814,6 +5816,7 @@ def test_main_submit_no_fresh_candidate_exits_nonzero_with_summary(
             "top_blockers": {"duplicate_submission_fingerprint": 1},
             "next_action": "refresh_or_expand_candidate_supply",
             "public_url": "https://researka.org/alpha/example",
+            "public_url_status": 404,
             "public_page_status": "not_rendered",
         },
     }
@@ -5833,6 +5836,7 @@ def test_main_submit_no_fresh_candidate_exits_nonzero_with_summary(
     assert '"top_blockers": {"duplicate_submission_fingerprint": 1}' in out
     assert '"next_action": "refresh_or_expand_candidate_supply"' in out
     assert '"public_url": "https://researka.org/alpha/example"' in out
+    assert '"public_url_status": 404' in out
     assert '"public_page_status": "not_rendered"' in out
 
 
@@ -5908,6 +5912,7 @@ def test_publish_summary_counts_blockers_and_attempts(tmp_path: Path) -> None:
         "next_action": "refresh_or_expand_candidate_supply",
         "public_page_status": None,
         "public_url": None,
+        "public_url_status": None,
         "published": 0,
         "queue_counts": {"ready_to_publish": 1, "not_ready": 2},
         "status": "no_fresh_candidate",
