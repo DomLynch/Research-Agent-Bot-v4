@@ -9663,3 +9663,26 @@ def test_child_topics_from_queue_caps_slug_to_four_tokens() -> None:
     for child in children:
         assert len([t for t in child.split("_") if t]) <= 4
         assert cap_topic_slug(child) == child
+
+
+def test_child_topics_from_queue_skips_blocked_parent_family() -> None:
+    queue = {
+        "agent_repair_needed": [],
+        "curation_needed": [{
+            "topic": "exercise",
+            "alpha_score": 90,
+            "domain": {"slug": "longevity_research"},
+            "subtopic_recommendations": {
+                "recommended": True,
+                "reason": "source_coherent_child_cluster",
+                "clusters": [{
+                    "label": "resistance_training_aerobic",
+                    "member_fact_ids": ["1", "2", "3", "4", "5"],
+                }],
+            },
+        }],
+    }
+
+    assert daily._child_topics_from_queue(
+        queue, {"exercise"}, limit=10, domain="longevity_research",
+    ) == []

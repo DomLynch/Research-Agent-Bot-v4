@@ -4067,6 +4067,8 @@ def _child_topics_from_queue(
             rec = verdict.get("subtopic_recommendations")
             if not parent or not isinstance(rec, dict) or not rec.get("recommended"):
                 continue
+            if _family_blocked_topic(parent, seen):
+                continue
             for cluster in rec.get("clusters") or []:
                 if not isinstance(cluster, dict):
                     continue
@@ -4090,6 +4092,8 @@ def _child_topics_from_queue(
                 child = cap_topic_slug(
                     "_".join(re.findall(r"[a-z0-9]+", f"{parent}_{label}".lower()))
                 )
+                if _family_blocked_topic(child, seen):
+                    continue
                 child_key = _canonical_family_key(child).removeprefix("topic:")
                 if seed_prefixes and not any(
                     child_key == seed or child_key.startswith(f"{seed}_")
