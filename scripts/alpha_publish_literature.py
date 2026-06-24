@@ -192,8 +192,30 @@ def _direction_rows(papers: list[Json], topic: str = "") -> list[str]:
             finding = str(fact.get("canonical_phrase") or "").strip()
         title = str(paper.get("title") or "Untitled source").strip()
         direction = _effect_direction(finding, fact if isinstance(fact, dict) else None, topic)
-        rows.append(f"- {direction}: {title}" + (f" — {finding}" if finding else ""))
+        note = (
+            " topic is comparator here; label is endpoint-specific, not a broad efficacy verdict"
+            if direction == "comparator/not favorable" else ""
+        )
+        rows.append(
+            f"- {direction}: {title}"
+            + (f" — {finding}" if finding else "")
+            + (f" ({note})" if note else ""),
+        )
     return rows
+
+
+def _direction_category_lines(topic: str) -> list[str]:
+    topic_text = topic or "the selected topic"
+    return [
+        f"- directionally favorable: {topic_text} is the intervention/exposure "
+        "and the reported clinical endpoint favors that arm.",
+        f"- comparator/not favorable: {topic_text} is the comparator arm; the "
+        "label is limited to that head-to-head endpoint.",
+        "- economic/context only: the receipt reports cost, QALY, or economic "
+        "context rather than a clinical efficacy endpoint.",
+        "- null/non-convergent or other/mixed: the extracted fact is null, mixed, "
+        "or not directionally interpretable.",
+    ]
 
 
 def _direction_summary(facts: list[Json], topic: str = "") -> str:
@@ -478,6 +500,14 @@ def payload(
         "establishing a causal, clinical, species-translated, or mechanistically "
         "integrated claim."
     )
+    if len({
+        str(fact.get("endpoint") or fact.get("metric") or "").strip()
+        for fact in facts if str(fact.get("endpoint") or fact.get("metric") or "").strip()
+    }) > 1 or len(populations) > 1:
+        synthesis += (
+            " The listed effect sizes remain source-specific across endpoints "
+            "and populations; they are not pooled or averaged."
+        )
     if findings:
         examples = [_short_finding(finding) for finding in findings[:3]]
         synthesis += " Concrete source-level examples: " + "; ".join(examples) + "."
@@ -511,6 +541,8 @@ def payload(
         "",
         "## Directional grouping",
         "",
+        *(_direction_category_lines(topic)),
+        "",
         *(_direction_rows(selected, topic) or [
             "- Direction not extractable from the selected receipts.",
         ]),
@@ -532,6 +564,10 @@ def payload(
             " The signal is purely descriptive of effect-direction heterogeneity; "
             "it cannot support even a weak causal or comparative-efficacy inference, "
             "and pooling across these PICOs would be inappropriate."
+        ),
+        (
+            f" Routing domain `{profile.slug}` is publication-lane metadata only; "
+            f"the source scope here is defined by the selected {topic} receipts."
         ),
         "",
         "## Next gaps",

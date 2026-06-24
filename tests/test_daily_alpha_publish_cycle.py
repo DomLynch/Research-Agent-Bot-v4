@@ -7833,7 +7833,7 @@ def test_source_literature_candidate_skips_refresh_before_submit(
         "domain": {"slug": "longevity_research"},
         "all": [{"topic": "glycation_AGEs", "paper_count": 10, "fact_source_count": 20}],
     })
-    papers = [
+    papers: list[dict[str, Any]] = [
         {"title": "AGE-RAGE signalling and skin collagen aging", "doi": "10.1234/1"},
         {"title": "Glycation stress and RAGE activation in vascular aging", "doi": "10.1234/2"},
         {"title": "Collagen crosslinking in advanced glycation biology", "doi": "10.1234/3"},
@@ -8969,11 +8969,16 @@ def test_source_literature_payload_separates_comparator_and_economic_rows(
     assert "directionally favorable: 3 receipt(s)" in markdown
     assert "economic/context only: 1 receipt(s)" in markdown
     assert "comparator/not favorable: 1 receipt(s)" in markdown
+    assert "directionally favorable: dapagliflozin is the intervention/exposure" in markdown
+    assert "comparator/not favorable: dapagliflozin is the comparator arm" in markdown
     assert (
         "- comparator/not favorable: Semaglutide versus dapagliflozin"
         in markdown
     )
+    assert "topic is comparator here; label is endpoint-specific" in markdown
     assert "- economic/context only: Cost-Effectiveness of Dapagliflozin" in markdown
+    assert "not pooled or averaged" in markdown
+    assert "Routing domain `longevity_research` is publication-lane metadata only" in markdown
 
 
 def test_source_literature_fallback_blocks_repeated_report_series(
