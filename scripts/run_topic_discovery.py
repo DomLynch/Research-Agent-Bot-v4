@@ -70,6 +70,33 @@ def _load_v5_env_defaults() -> None:
         os.environ.setdefault(key.strip(), value.strip().strip("'\""))
 
 
+def _apply_v5_client_bounds() -> dict[str, str | None]:
+    timeout = os.environ.get(
+        "TOPIC_DISCOVERY_V5_TIMEOUT_SECONDS",
+        os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", "10"),
+    )
+    values = {
+        "V5_MEMO_FULL_RAW_CORPUS_TIMEOUT": timeout,
+        "V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS": os.environ.get(
+            "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", "20",
+        ),
+        "V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS": os.environ.get(
+            "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS", "8",
+        ),
+    }
+    old = {key: os.environ.get(key) for key in values}
+    os.environ.update(values)
+    return old
+
+
+def _restore_env(values: dict[str, str | None]) -> None:
+    for key, value in values.items():
+        if value is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = value
+
+
 def _v5_client_papers(query: str, *, limit: int) -> list[dict[str, object]]:
     if not _truthy_env("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK"):
         return []
@@ -84,12 +111,15 @@ def _v5_client_papers(query: str, *, limit: int) -> list[dict[str, object]]:
         from v5_memo.client import FullRawCorpusSearchClient
     except Exception:
         return []
+    old_env = _apply_v5_client_bounds()
     try:
         hits = FullRawCorpusSearchClient.from_env(strict=False).search(
             query, limit=limit,
         )
     except Exception:
         return []
+    finally:
+        _restore_env(old_env)
     out: list[dict[str, object]] = []
     for hit in hits:
         title = str(getattr(hit, "title", "") or "").strip()
