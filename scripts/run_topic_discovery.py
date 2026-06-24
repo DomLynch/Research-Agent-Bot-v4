@@ -484,8 +484,13 @@ def _fullraw_supply_candidates(
         return ()
     papers_by_key: dict[str, dict[str, object]] = {}
     papers_by_query: dict[str, list[dict[str, object]]] = {}
+    out: list[TopicCandidate] = []
+    seen_topics: set[str] = set()
+    used_seed_labels: set[str] = set()
     with httpx.Client() as client:
         for query, label in query_labels.items():
+            if label != "__domain_supply__" and label in used_seed_labels:
+                continue
             receipt_recorded = False
             for paper in _seed_fullraw_papers(query, client=client, limit=25):
                 key = str(paper.get("doi") or paper.get("paper_id")
@@ -504,11 +509,22 @@ def _fullraw_supply_candidates(
                         "sources_searched": receipt.get("sources_searched"),
                     })
                     receipt_recorded = True
+            if label != "__domain_supply__":
+                scoped = _context_supported_papers(
+                    papers_by_query.get(query, []), context_terms)
+                if len(scoped) >= _SOURCE_RICH_FLOOR:
+                    topic = "_".join(query.split())
+                    seen_topics.add(topic)
+                    used_seed_labels.add(label)
+                    out.append(_score_topic(
+                        topic, scoped[:25], current_year,
+                        fact_source_count=len(scoped),
+                    ))
+                    if len(out) >= top:
+                        return tuple(sorted(out, key=_rank_key))
     papers = list(papers_by_key.values())
     if len(papers) < _SOURCE_RICH_FLOOR:
         return ()
-    out: list[TopicCandidate] = []
-    seen_topics: set[str] = set()
 
     for query, label in query_labels.items():
         if label == "__domain_supply__":

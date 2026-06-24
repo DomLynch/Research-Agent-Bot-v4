@@ -940,7 +940,8 @@ def test_fullraw_supply_prefers_context_seed_query_over_bare_seed(
 
     assert [row.topic for row in rows] == ["fisetin_longevity"]
     assert rows[0].top_paper_title.startswith("Fisetin longevity")
-    assert calls.index("fisetin longevity") < calls.index("fisetin")
+    assert "fisetin longevity" in calls
+    assert "fisetin" not in calls
 
 
 def test_fullraw_supply_fallback_does_not_resurrect_excluded_topic(
