@@ -5725,6 +5725,71 @@ def test_main_emits_end_of_run_blocker_summary(
     assert '"public_page_status": null' in out
 
 
+def test_main_submit_no_fresh_candidate_exits_nonzero_with_summary(
+    monkeypatch: MonkeyPatch, capsys: Any,
+) -> None:
+    ledger = {
+        "status": "no_fresh_candidate",
+        "submitted": 0,
+        "published": 0,
+        "publish_summary": {
+            "status": "no_fresh_candidate",
+            "submitted": 0,
+            "published": 0,
+            "considered": 2,
+            "queue_counts": {"ready_to_publish": 0, "curation_needed": 3},
+            "top_blockers": {"duplicate_submission_fingerprint": 1},
+            "next_action": "refresh_or_expand_candidate_supply",
+            "public_url": "https://researka.org/alpha/example",
+            "public_page_status": "not_rendered",
+        },
+    }
+
+    monkeypatch.setattr(sys, "argv", [
+        "daily_alpha_publish_cycle.py", "--date", "2026-06-22", "--submit",
+    ])
+    monkeypatch.setattr(daily, "run_cycle", lambda **_kwargs: ledger)
+
+    assert daily.main() == 2
+    out = capsys.readouterr().out
+
+    assert "[daily-alpha] status=no_fresh_candidate submitted=0 published=0" in out
+    assert "[daily-alpha] summary=" in out
+    assert '"considered": 2' in out
+    assert '"queue_counts": {"curation_needed": 3, "ready_to_publish": 0}' in out
+    assert '"top_blockers": {"duplicate_submission_fingerprint": 1}' in out
+    assert '"next_action": "refresh_or_expand_candidate_supply"' in out
+    assert '"public_url": "https://researka.org/alpha/example"' in out
+    assert '"public_page_status": "not_rendered"' in out
+
+
+def test_main_submitted_pending_only_succeeds_when_explicitly_allowed(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    ledger = {
+        "status": "submitted_to_researka",
+        "submitted": 1,
+        "published": 0,
+        "publish_summary": {
+            "status": "submitted_to_researka",
+            "submitted": 1,
+            "published": 0,
+        },
+    }
+
+    monkeypatch.setattr(daily, "run_cycle", lambda **_kwargs: ledger)
+    monkeypatch.setattr(sys, "argv", [
+        "daily_alpha_publish_cycle.py", "--date", "2026-06-22", "--submit",
+    ])
+    assert daily.main() == 2
+
+    monkeypatch.setattr(sys, "argv", [
+        "daily_alpha_publish_cycle.py", "--date", "2026-06-22", "--submit",
+        "--allow-pending-success",
+    ])
+    assert daily.main() == 0
+
+
 def test_legacy_allow_tier2_flag_is_removed_from_cli() -> None:
     result = subprocess.run(
         [sys.executable, "scripts/daily_alpha_publish_cycle.py", "--help"],
