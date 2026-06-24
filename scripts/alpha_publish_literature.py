@@ -123,6 +123,7 @@ def _effect_direction(finding: str) -> str:
     if any(term in text for term in (
         "lower", "reduced", "reduction", "protective", "better", "improved",
         "benefit", "decreased", "odds ratio of 0.", "hr = 0.", "hr for",
+        "ranked as the best", "ranked best", "best approach", "ranked first",
     )):
         return "directionally favorable"
     return "other/mixed"
@@ -161,10 +162,7 @@ def _direction_summary(facts: list[Json]) -> str:
         if not finding:
             continue
         groups[_effect_direction(finding)].append(_short_finding(finding, 120))
-    parts = [
-        f"{label}: " + "; ".join(values[:2])
-        for label, values in groups.items() if values
-    ]
+    parts = [f"{label}: {len(values)} receipt(s)" for label, values in groups.items() if values]
     return " | ".join(parts) if parts else "direction of effect is not extractable from the retrieved facts"
 
 
@@ -187,6 +185,13 @@ def _pico_gap(facts: list[Json]) -> str:
     )
 
 
+def _direction_signal_label(facts: list[Json]) -> str:
+    directions = [_effect_direction(str(fact.get("canonical_phrase") or "")) for fact in facts]
+    if directions and all(direction == "directionally favorable" for direction in directions):
+        return "directionally consistent but contextually heterogeneous signals"
+    return "context-dependent, not uniformly convergent associations"
+
+
 def context_family(value: Any) -> str:
     text = str(value or "").casefold()
     if any(term in text for term in ("patient", "participant", "adult", "human", "cohort")):
@@ -206,6 +211,35 @@ def join_contexts(values: list[str]) -> str:
     if len(values) == 2:
         return f"{values[0]} and {values[1]}"
     return ", ".join(values[:-1]) + f", and {values[-1]}"
+
+
+def _specific_moderator_note(facts: list[Json], source_types: list[str]) -> str:
+    endpoints = sorted({
+        str(fact.get("endpoint") or fact.get("metric") or "").strip()
+        for fact in facts if str(fact.get("endpoint") or fact.get("metric") or "").strip()
+    })
+    populations = sorted({
+        str(fact.get("population") or "").strip()
+        for fact in facts if str(fact.get("population") or "").strip()
+    })
+    parts = []
+    if endpoints:
+        parts.append("outcome type (" + "; ".join(endpoints[:5]) + ")")
+    if populations:
+        parts.append("population/indication (" + "; ".join(populations[:5]) + ")")
+    if source_types:
+        parts.append("study design/evidence type (" + "/".join(source_types) + ")")
+    note = (
+        "Specific moderators in this bundle are " + ", ".join(parts) + "."
+        if parts else
+        "Specific moderators are not extractable from the selected receipts."
+    )
+    if "primary" in source_types and "review" in source_types:
+        note += (
+            " Single primary-study estimates are separated from pooled review or "
+            "meta-analytic estimates rather than treated as interchangeable."
+        )
+    return note
 
 
 def fetch_papers(
@@ -388,9 +422,11 @@ def payload(
         if str(fact.get("canonical_phrase") or "").strip()
     ]
     direction_text = _direction_summary(facts)
+    signal_label = _direction_signal_label(facts)
+    source_types = sorted({evidence_type(paper) for paper in selected})
     synthesis = (
         f"This receipt-backed scoping note has one bounded signal: {topic} shows "
-        f"context-dependent, not convergent, associations across this "
+        f"{signal_label} across this "
         f"{len(bundle)}-source {type_text} bundle ({year_text}). Grouped by "
         f"direction, {direction_text}. The source facts cover "
         f"{len(populations) or 'multiple'} population context(s) and "
@@ -402,11 +438,7 @@ def payload(
     if findings:
         examples = [_short_finding(finding) for finding in findings[:3]]
         synthesis += " Concrete source-level examples: " + "; ".join(examples) + "."
-    moderator_note = (
-        "Candidate moderators are population or indication, endpoint, comparator, "
-        "and study design/evidence type; these dimensions explain why the receipts "
-        "should be read as divergent evidence fronts, not one pooled effect."
-    )
+    moderator_note = _specific_moderator_note(facts, source_types)
     next_gaps = [
         _pico_gap(facts),
         (
@@ -418,7 +450,8 @@ def payload(
         next_gaps.insert(0, "No source in this fallback bundle tests human clinical endpoints.")
     boundary_summary = (
         f"Source-literature boundary for {topic}: the listed sources define "
-        "separate evidence fronts. This memo does not claim causality, clinical "
+        "one bounded, context-dependent signal across separate source contexts. "
+        "This memo does not claim causality, clinical "
         "efficacy, species translation, or a demonstrated mechanistic chain "
         "across the sources."
     )
@@ -480,7 +513,7 @@ def payload(
         "domain": profile.as_metadata(),
         "domain_slug": profile.slug,
         "category": category,
-        "title": f"{topic}: receipt-backed evidence fronts",
+        "title": f"{topic}: one bounded, context-dependent signal across receipts",
         "abstract": safe_excerpt(synthesis),
         "summary": safe_excerpt(synthesis),
         "topic": topic,

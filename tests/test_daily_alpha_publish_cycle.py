@@ -7682,7 +7682,7 @@ def test_source_literature_fallback_uses_default_fetcher_after_empty_submit_lane
     }
     assert seen_payload["citations"] == seen_payload["source_bundle"]
     assert not seen_payload["abstract"].startswith("Answer:")
-    assert "context-dependent, not convergent" in seen_payload["abstract"]
+    assert "not uniformly convergent" in seen_payload["abstract"]
     assert "Grouped by direction" in seen_payload["markdown"]
     assert "latest Longevity" not in seen_payload["markdown"]
     assert "matched PICO" in seen_payload["markdown"]
@@ -8585,6 +8585,90 @@ def test_source_literature_payload_is_deterministic_boundary_only(
     assert (run_dir / "source_literature_memo.md").read_text(
         encoding="utf-8",
     ) == payload["markdown"]
+
+
+def test_source_literature_payload_labels_consistent_favorable_receipts(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    papers = [
+        {
+            "title": "Diet and cognitive outcomes cohort",
+            "doi": "10.1234/md1",
+            "year": 2023,
+            "source_fact": {
+                "canonical_phrase": "higher adherence reduced dementia risk",
+                "population": "older adults",
+                "intervention": "Mediterranean diet",
+                "comparator": "lower adherence",
+                "endpoint": "cognitive outcome",
+            },
+        },
+        {
+            "title": "Diet and cancer mortality meta analysis",
+            "doi": "10.1234/md2",
+            "year": 2022,
+            "source_fact": {
+                "canonical_phrase": "adherence reduced cancer mortality",
+                "population": "general population",
+                "intervention": "Mediterranean diet",
+                "comparator": "lower adherence",
+                "endpoint": "mortality",
+            },
+        },
+        {
+            "title": "Diet and glycemic control network meta analysis",
+            "doi": "10.1234/md3",
+            "year": 2021,
+            "source_fact": {
+                "canonical_phrase": "Mediterranean diet was ranked as the best approach",
+                "population": "adults with type 2 diabetes",
+                "intervention": "Mediterranean diet",
+                "comparator": "control diet",
+                "endpoint": "fasting glucose",
+            },
+        },
+        {
+            "title": "Diet and blood pressure trial",
+            "doi": "10.1234/md4",
+            "year": 2020,
+            "source_fact": {
+                "canonical_phrase": "intervention reduced systolic blood pressure",
+                "population": "older adults",
+                "intervention": "Mediterranean diet",
+                "comparator": "usual diet",
+                "endpoint": "systolic blood pressure",
+            },
+        },
+        {
+            "title": "Diet and cardiovascular incidence review",
+            "doi": "10.1234/md5",
+            "year": 2019,
+            "source_fact": {
+                "canonical_phrase": "diet reduced cardiovascular disease incidence",
+                "population": "adults",
+                "intervention": "Mediterranean diet",
+                "comparator": "usual care",
+                "endpoint": "cardiovascular disease incidence",
+            },
+        },
+    ]
+
+    _candidate, payload = daily._source_literature_payload(
+        profile_slug="longevity_research", topic="Mediterranean diet",
+        papers=papers, runs_root=root, date="2026-06-09T21-00-00Z",
+    )
+
+    assert payload["title"] == (
+        "Mediterranean diet: one bounded, context-dependent signal across receipts"
+    )
+    assert "..." not in payload["abstract"]
+    assert "directionally consistent but contextually heterogeneous" in payload["abstract"]
+    assert "not convergent" not in payload["abstract"]
+    assert "directionally favorable: 5 receipt(s)" in payload["markdown"]
+    assert "study design/evidence type (primary/review)" in payload["markdown"]
+    assert "fasting glucose" in payload["markdown"]
+    assert "Single primary-study estimates are separated" in payload["markdown"]
 
 
 def test_source_literature_fallback_blocks_repeated_report_series(
