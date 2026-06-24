@@ -115,13 +115,29 @@ def _short_finding(value: str, limit: int = 170) -> str:
     return text if len(text) <= limit else text[:limit].rsplit(" ", 1)[0].rstrip(",;") + "..."
 
 
-def _effect_direction(finding: str) -> str:
+def _text_has_topic(value: Any, topic: str) -> bool:
+    tokens = _topic_tokens(topic)
+    return bool(tokens and tokens & set(title_key(value).split()))
+
+
+def _effect_direction(finding: str, fact: Json | None = None, topic: str = "") -> str:
     text = finding.casefold()
+    fact = fact or {}
+    if any(term in text for term in (
+        "cost-effect", "cost effectiveness", "qaly", "£", "$", "economic",
+    )):
+        return "economic/context only"
+    if topic and _text_has_topic(fact.get("comparator"), topic) and not _text_has_topic(
+        fact.get("intervention"), topic,
+    ):
+        return "comparator/not favorable"
     if any(term in text for term in (
         "no significant", "no effect", "null", "p = 0.83", "p=0.83",
         "not associated", "no association",
     )):
         return "null/non-convergent"
+    if re.search(r"\b(?:hazard ratio|hr|risk ratio|relative risk)\b[^.;]{0,80}\b0\.\d+", text):
+        return "directionally favorable"
     if any(term in text for term in (
         "lower", "reduced", "reduction", "protective", "better", "improved",
         "benefit", "decreased", "odds ratio of 0.", "hr = 0.", "hr for",
@@ -153,7 +169,7 @@ def _uniform_favorable_cross_pico(papers: list[Json], min_sources: int) -> bool:
     if len(facts) < min_sources:
         return False
     directions = [
-        _effect_direction(str(fact.get("canonical_phrase") or ""))
+        _effect_direction(str(fact.get("canonical_phrase") or ""), fact)
         for fact in facts[:min_sources]
     ]
     endpoints = {
@@ -167,7 +183,7 @@ def _uniform_favorable_cross_pico(papers: list[Json], min_sources: int) -> bool:
     )
 
 
-def _direction_rows(papers: list[Json]) -> list[str]:
+def _direction_rows(papers: list[Json], topic: str = "") -> list[str]:
     rows: list[str] = []
     for paper in papers:
         fact = paper.get("source_fact")
@@ -175,22 +191,24 @@ def _direction_rows(papers: list[Json]) -> list[str]:
         if isinstance(fact, dict):
             finding = str(fact.get("canonical_phrase") or "").strip()
         title = str(paper.get("title") or "Untitled source").strip()
-        direction = _effect_direction(finding)
+        direction = _effect_direction(finding, fact if isinstance(fact, dict) else None, topic)
         rows.append(f"- {direction}: {title}" + (f" — {finding}" if finding else ""))
     return rows
 
 
-def _direction_summary(facts: list[Json]) -> str:
+def _direction_summary(facts: list[Json], topic: str = "") -> str:
     groups: dict[str, list[str]] = {
         "directionally favorable": [],
         "null/non-convergent": [],
+        "comparator/not favorable": [],
+        "economic/context only": [],
         "other/mixed": [],
     }
     for fact in facts:
         finding = str(fact.get("canonical_phrase") or "").strip()
         if not finding:
             continue
-        groups[_effect_direction(finding)].append(_short_finding(finding, 120))
+        groups[_effect_direction(finding, fact, topic)].append(_short_finding(finding, 120))
     parts = [f"{label}: {len(values)} receipt(s)" for label, values in groups.items() if values]
     return " | ".join(parts) if parts else "direction of effect is not extractable from the retrieved facts"
 
@@ -214,8 +232,11 @@ def _pico_gap(facts: list[Json]) -> str:
     )
 
 
-def _direction_signal_label(facts: list[Json]) -> str:
-    directions = [_effect_direction(str(fact.get("canonical_phrase") or "")) for fact in facts]
+def _direction_signal_label(facts: list[Json], topic: str = "") -> str:
+    directions = [
+        _effect_direction(str(fact.get("canonical_phrase") or ""), fact, topic)
+        for fact in facts
+    ]
     if directions and all(direction == "directionally favorable" for direction in directions):
         return "directionally consistent but contextually heterogeneous signals"
     return "context-dependent, not uniformly convergent associations"
@@ -443,8 +464,8 @@ def payload(
         str(fact.get("canonical_phrase") or "").strip() for fact in facts
         if str(fact.get("canonical_phrase") or "").strip()
     ]
-    direction_text = _direction_summary(facts)
-    signal_label = _direction_signal_label(facts)
+    direction_text = _direction_summary(facts, topic)
+    signal_label = _direction_signal_label(facts, topic)
     source_types = sorted({evidence_type(paper) for paper in selected})
     synthesis = (
         f"This receipt-backed scoping note has one bounded signal: {topic} shows "
@@ -490,7 +511,9 @@ def payload(
         "",
         "## Directional grouping",
         "",
-        *(_direction_rows(selected) or ["- Direction not extractable from the selected receipts."]),
+        *(_direction_rows(selected, topic) or [
+            "- Direction not extractable from the selected receipts.",
+        ]),
         "",
         moderator_note,
         "",

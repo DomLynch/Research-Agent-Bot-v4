@@ -8893,6 +8893,89 @@ def test_source_literature_payload_labels_consistent_favorable_receipts(
     assert "Single primary-study estimates are separated" in payload["markdown"]
 
 
+def test_source_literature_payload_separates_comparator_and_economic_rows(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    papers = [
+        {
+            "title": "Iron Deficiency in Heart Failure and Effect of Dapagliflozin",
+            "doi": "10.1234/dapa1",
+            "year": 2022,
+            "source_fact": {
+                "canonical_phrase": "hazard ratio, 0.74 [95% CI, 0.58-0.92]",
+                "population": "iron-deficient patients with heart failure",
+                "intervention": "dapagliflozin",
+                "comparator": "placebo",
+                "endpoint": "heart failure outcome",
+            },
+        },
+        {
+            "title": "Dapagliflozin and cardiovascular death in heart failure",
+            "doi": "10.1234/dapa2",
+            "year": 2022,
+            "source_fact": {
+                "canonical_phrase": "Dapagliflozin reduced cardiovascular death risk (HR 0.86)",
+                "population": "patients with heart failure",
+                "intervention": "dapagliflozin",
+                "comparator": "placebo",
+                "endpoint": "cardiovascular death",
+            },
+        },
+        {
+            "title": "Dapagliflozin renal outcomes in chronic kidney disease",
+            "doi": "10.1234/dapa3",
+            "year": 2020,
+            "source_fact": {
+                "canonical_phrase": "hazard ratio for the primary end point was 0.71",
+                "population": "patients with chronic kidney disease",
+                "intervention": "dapagliflozin",
+                "comparator": "placebo",
+                "endpoint": "renal composite",
+            },
+        },
+        {
+            "title": "Cost-Effectiveness of Dapagliflozin for Heart Failure",
+            "doi": "10.1234/dapa4",
+            "year": 2020,
+            "source_fact": {
+                "canonical_phrase": "GBP 5822/QALY in the UK",
+                "population": "patients with heart failure",
+                "intervention": "dapagliflozin added to standard therapy",
+                "comparator": "standard therapy only",
+                "endpoint": "cost-effectiveness",
+            },
+        },
+        {
+            "title": "Semaglutide versus dapagliflozin in type 2 diabetes",
+            "doi": "10.1234/dapa5",
+            "year": 2024,
+            "source_fact": {
+                "canonical_phrase": "Semaglutide induced a larger HbA1c reduction than dapagliflozin",
+                "population": "patients with type 2 diabetes",
+                "intervention": "semaglutide",
+                "comparator": "dapagliflozin",
+                "endpoint": "HbA1c",
+            },
+        },
+    ]
+
+    _candidate, payload = daily._source_literature_payload(
+        profile_slug="longevity_research", topic="dapagliflozin",
+        papers=papers, runs_root=root, date="2026-06-24T14-17-40Z",
+    )
+
+    markdown = payload["markdown"]
+    assert "directionally favorable: 3 receipt(s)" in markdown
+    assert "economic/context only: 1 receipt(s)" in markdown
+    assert "comparator/not favorable: 1 receipt(s)" in markdown
+    assert (
+        "- comparator/not favorable: Semaglutide versus dapagliflozin"
+        in markdown
+    )
+    assert "- economic/context only: Cost-Effectiveness of Dapagliflozin" in markdown
+
+
 def test_source_literature_fallback_blocks_repeated_report_series(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
