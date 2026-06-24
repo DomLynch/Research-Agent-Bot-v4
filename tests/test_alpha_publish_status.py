@@ -68,6 +68,12 @@ def test_publish_summary_contains_operator_blocker_fields() -> None:
             {"status": "duplicate_submission_fingerprint"},
             {"status": "agent_repair_needed", "blockers": ["receipt_shape_mismatch"]},
         ],
+        "source_literature_fallback_attempts": [
+            {
+                "status": "disabled",
+                "reason": "requires_fact_level_source_synthesis",
+            },
+        ],
         "public_url": "https://researka.org/alpha/example",
         "public_page_check": {
             "status": "not_rendered",
@@ -84,7 +90,9 @@ def test_publish_summary_contains_operator_blocker_fields() -> None:
     assert summary["top_blockers"] == {
         "agent_repair_needed": 1,
         "duplicate_submission_fingerprint": 1,
+        "requires_fact_level_source_synthesis": 1,
         "receipt_shape_mismatch": 1,
+        "source_literature_disabled": 1,
     }
 
 
