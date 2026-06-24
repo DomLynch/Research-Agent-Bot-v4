@@ -726,7 +726,7 @@ def test_stop_on_ready_uses_cache_first_discovery(
 
     assert run_curator_cycle.main() == 1
     assert "--cache-first" in calls[0]
-    assert "--seed-paper-only" in calls[0]
+    assert "--seed-paper-only" not in calls[0]
     assert calls[0][calls[0].index("--top") + 1] == "20"
 
 
@@ -786,6 +786,7 @@ def test_stop_on_ready_empty_seed_paper_discovery_falls_back_to_bounded(
     monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
     monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",
                         lambda *_args, **_kwargs: set())
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_FIRST", "0")
     monkeypatch.setattr(sys, "argv", [
         "run_curator_cycle.py", "--stop-on-ready",
     ])
@@ -863,6 +864,7 @@ def test_stop_on_ready_underfloor_seed_paper_discovery_falls_back_to_fullraw_sup
     monkeypatch.setattr(
         run_curator_cycle, "_recent_signal_topics", lambda *_args, **_kwargs: set(),
     )
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_FIRST", "0")
     monkeypatch.setattr(sys, "argv", [
         "run_curator_cycle.py", "--stop-on-ready",
     ])

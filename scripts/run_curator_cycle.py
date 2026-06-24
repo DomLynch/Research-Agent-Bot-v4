@@ -697,7 +697,10 @@ def main() -> int:
             stop_on_ready=args.stop_on_ready,
             excluded_count=0 if args.warm_backlog else len(args.exclude_topic),
         )
-        seed_paper_fast_path = args.stop_on_ready and not args.warm_backlog
+        seed_paper_fast_path = (
+            args.stop_on_ready and not args.warm_backlog
+            and not _env_enabled("TOPIC_DISCOVERY_FULLRAW_SUPPLY_FIRST", "1")
+        )
 
         def discovery_args(
             *, seed_paper_only: bool, skip_seed_paper_probe: bool = False,
