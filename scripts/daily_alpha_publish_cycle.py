@@ -381,6 +381,21 @@ def _verdict_for_run(run: Path) -> Json:
     }
 
 
+def _stored_verdict_for_run(run: Path) -> Json:
+    data = _json(run / "publish_verdict.json", {})
+    if isinstance(data, dict) and data:
+        return data
+    blockers = _stage_blockers(run)
+    return {
+        "topic": _topic(run),
+        "run_dir": str(run.relative_to(_ROOT)) if run.is_relative_to(_ROOT) else str(run),
+        "decision": "not_ready",
+        "publish_tier": "UNBUILT",
+        "blockers": blockers,
+        "stage": blockers[0] if blockers else "not_ready",
+    }
+
+
 def _cached_verdict_for_run(run: Path) -> Json:
     data = _json(run / "publish_verdict.json", {})
     if isinstance(data, dict) and data:
@@ -735,7 +750,7 @@ def _build_queue(
     missing_domain_count = 0
     untagged_seed_claimed_count = 0
     for run in latest.values():
-        row = _cached_verdict_for_run(run)
+        row = _stored_verdict_for_run(run)
         run_domain = _run_domain(run, row)
         if not run_domain:
             # Universal claim rule (no hardcoded slug): an untagged run joins the
@@ -753,6 +768,7 @@ def _build_queue(
                 continue
         if domain and run_domain != domain:
             continue
+        row = _cached_verdict_for_run(run)
         row = row | {
             "domain": load_domain_profile(run_domain).as_metadata(),
             "domain_slug": run_domain,

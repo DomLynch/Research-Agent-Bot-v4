@@ -252,6 +252,34 @@ def test_daily_build_queue_uses_stored_verdict_without_recomputing(
     assert [row["topic"] for row in queue["ready_to_publish"]] == ["fast_probe"]
 
 
+def test_daily_build_queue_skips_wrong_domain_before_recomputing_repair(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("RAG") | {
+        "decision": "agent_repair_needed",
+        "domain": {"slug": "ai_research"},
+        "blockers": ["fact_shape_mismatch"],
+    }
+    _memo_with_source_receipts(root, verdict, 5)
+    run = root / str(verdict["run_dir"])
+    run.joinpath("opportunities_gate.json").write_text("{}", encoding="utf-8")
+    run.joinpath("publish_verdict.json").write_text(json.dumps(verdict), encoding="utf-8")
+
+    def fail_recompute(_run: Path) -> dict[str, Any]:
+        raise AssertionError("wrong-domain repair rows must not be recomputed")
+
+    monkeypatch.setattr(daily, "publish_verdict", fail_recompute)
+
+    queue = daily._build_queue(
+        root / "runs", include_archive=False, domain="longevity_research",
+    )
+
+    assert queue["ready_to_publish"] == []
+    assert queue["agent_repair_needed"] == []
+    assert queue["curation_needed"] == []
+
+
 def _memo_with_receipt_shapes(
     root: Path, verdict: dict[str, Any], shapes: list[dict[str, str]],
 ) -> None:
