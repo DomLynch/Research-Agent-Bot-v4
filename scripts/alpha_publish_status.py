@@ -112,6 +112,8 @@ def queue_counts(queue: Json) -> Json:
 
 
 def next_action_for_status(status: str) -> str:
+    if status == CycleStatus.STARTED.value:
+        return "building_current_publish_queue"
     if status in {CycleStatus.PUBLISHED.value, CycleStatus.SUBMITTED_TO_RESEARKA.value}:
         return "watch_decision_or_public_page"
     if status == CycleStatus.DRY_RUN_SELECTED.value:

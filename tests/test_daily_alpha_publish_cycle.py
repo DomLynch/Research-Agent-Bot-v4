@@ -560,7 +560,7 @@ def test_run_cycle_persists_started_ledger_before_queue_build(tmp_path: Path) ->
     )
     assert written["status"] == "started"
     assert written["publish_summary"]["status"] == "started"
-    assert written["publish_summary"]["next_action"] == "inspect_ledger"
+    assert written["publish_summary"]["next_action"] == "building_current_publish_queue"
 
 
 def test_refresh_cycle_marks_initial_queue_probe_before_queue_build(
