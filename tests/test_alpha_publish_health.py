@@ -418,6 +418,39 @@ def test_health_summary_can_sync_pending_submission(tmp_path: Path) -> None:
     }
 
 
+def test_sync_pending_decisions_does_not_greenlight_unpublished(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    _write_ledger(tmp_path, "2026-06-01T08-29-49Z.json", {
+        "status": "submitted_to_researka",
+        "submitted": 1,
+        "published": 0,
+        "submitted_topic": "klotho",
+        "submission_id": "sub-1",
+    })
+
+    fake_cycle = SimpleNamespace(
+        sync_submission_decisions=lambda _runs_root: {
+            "checked": 1, "updated": 0, "published": 0, "pending": 1,
+        },
+    )
+    health_importlib = health.__dict__["importlib"]
+    real_import = health_importlib.import_module
+
+    def fake_import(name: str) -> Any:
+        if name in {"scripts.daily_alpha_publish_cycle", "daily_alpha_publish_cycle"}:
+            return fake_cycle
+        return real_import(name)
+
+    monkeypatch.setattr(health_importlib, "import_module", fake_import)
+
+    assert health.main([
+        "--runs-root", str(tmp_path),
+        "--expect-published",
+        "--sync-pending-decisions",
+    ]) == 2
+
+
 def test_health_summary_falls_back_to_considered_counts_for_old_ledgers(
     tmp_path: Path,
 ) -> None:
