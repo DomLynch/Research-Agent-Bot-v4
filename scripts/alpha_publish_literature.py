@@ -20,7 +20,7 @@ _GENERIC_TOPIC_TOKENS = frozenset({
     "trial", "treatment", "use", "using",
     "ageing", "aging", "agent", "agents", "agonist", "agonists", "antagonist",
     "antagonists", "blocker", "blockers", "drug", "drugs", "inhibitor",
-    "inhibitors", "longevity", "therapies", "therapy",
+    "inhibitors", "longevity", "therapies", "therapy", "anti",
 })
 
 
@@ -67,6 +67,15 @@ def topic_relevant(topic: str, paper: Json) -> bool:
 
 def relevant_papers(topic: str, papers: list[Json]) -> list[Json]:
     return [paper for paper in papers if isinstance(paper, dict) and topic_relevant(topic, paper)]
+
+
+def query_variants(topic: str) -> tuple[str, ...]:
+    raw = " ".join(title_key(topic).split())
+    focused = " ".join(
+        token for token in raw.split()
+        if len(token) >= 3 and token not in _GENERIC_TOPIC_TOKENS
+    )
+    return tuple(dict.fromkeys(q for q in (raw, focused) if q))
 
 
 def boundary_quality(topic: str, papers: list[Json], min_sources: int) -> tuple[bool, str]:
@@ -326,46 +335,49 @@ def fetch_papers(
     token = settings.researka_database_token.strip()
     if not base or not token:
         return []
-    req = urllib.request.Request(
-        f"{base}/api/v1/tier2/facts/search",
-        data=json.dumps({
-            "domain": tier2_domain(domain),
-            "query": topic[:512],
-            "top_k": max(30, limit * 6),
-            "min_confidence": "medium",
-            "numeric_only": True,
-        }).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-            "X-Researka-Token": token,
-        },
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-    except (OSError, ValueError, json.JSONDecodeError):
-        return []
     out: list[Json] = []
     seen: set[str] = set()
-    for item in data if isinstance(data, list) else []:
-        if not isinstance(item, dict):
+    for query in query_variants(topic):
+        req = urllib.request.Request(
+            f"{base}/api/v1/tier2/facts/search",
+            data=json.dumps({
+                "domain": tier2_domain(domain),
+                "query": query[:512],
+                "top_k": max(30, limit * 6),
+                "min_confidence": "medium",
+                "numeric_only": True,
+            }).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "X-Researka-Token": token,
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+        except (OSError, ValueError, json.JSONDecodeError):
             continue
-        raw_paper = item.get("paper")
-        paper: Json = raw_paper if isinstance(raw_paper, dict) else {}
-        key = paper_key(paper, item.get("paper_id"))
-        title = paper.get("title") or paper.get("paper_title")
-        if not key or not title or key in seen:
-            continue
-        candidate = paper | {
-            "id": key,
-            "title": title,
-            "source_fact": source_fact(item),
-        }
-        if not topic_relevant(topic, candidate):
-            continue
-        seen.add(key)
-        out.append(candidate)
+        for item in data if isinstance(data, list) else []:
+            if not isinstance(item, dict):
+                continue
+            raw_paper = item.get("paper")
+            paper: Json = raw_paper if isinstance(raw_paper, dict) else {}
+            key = paper_key(paper, item.get("paper_id"))
+            title = paper.get("title") or paper.get("paper_title")
+            if not key or not title or key in seen:
+                continue
+            candidate = paper | {
+                "id": key,
+                "title": title,
+                "source_fact": source_fact(item),
+            }
+            if not topic_relevant(topic, candidate):
+                continue
+            seen.add(key)
+            out.append(candidate)
+            if len(out) >= limit:
+                break
         if len(out) >= limit:
             break
     if out:

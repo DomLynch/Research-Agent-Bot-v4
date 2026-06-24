@@ -8753,6 +8753,69 @@ def test_source_literature_fetcher_prefers_tier2_fact_backed_papers(
     assert calls == ["https://db.test/api/v1/tier2/facts/search"]
 
 
+def test_source_literature_fetcher_retries_focused_query_variant(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "researka_database_url": "https://db.test",
+        "researka_database_token": "tok",
+    })())
+    queries: list[str] = []
+
+    class Response:
+        status = 200
+
+        def __init__(self, payload: Any) -> None:
+            self.payload = payload
+
+        def __enter__(self) -> Response:
+            return self
+
+        def __exit__(self, *_args: Any) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return json.dumps(self.payload).encode("utf-8")
+
+    def fact_row(index: int) -> dict[str, Any]:
+        return {
+            "paper_id": f"pa-{index}",
+            "paper": {
+                "doi": f"10.1/physical-activity-{index}",
+                "title": f"Physical activity aging cohort {index}",
+            },
+            "canonical_phrase": "Physical activity was associated with aging-related function.",
+            "population": "older adults",
+            "intervention": "physical activity",
+            "endpoint": "aging-related function",
+        }
+
+    def fake_urlopen(req: Any, timeout: int) -> Response:
+        payload = json.loads(req.data.decode("utf-8"))
+        query = str(payload["query"])
+        queries.append(query)
+        if query == "physical activity":
+            return Response([fact_row(i) for i in range(5)])
+        return Response([fact_row(i) for i in range(2)])
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+    papers = daily._fetch_source_literature_papers(
+        "physical_activity_longevity_anti_aging", 5, domain="longevity_research",
+    )
+
+    assert queries == ["physical activity longevity anti aging", "physical activity"]
+    assert len(papers) == 5
+    assert [paper["doi"] for paper in papers] == [
+        "10.1/physical-activity-0",
+        "10.1/physical-activity-1",
+        "10.1/physical-activity-2",
+        "10.1/physical-activity-3",
+        "10.1/physical-activity-4",
+    ]
+    assert {paper["source_fact"]["intervention"] for paper in papers} == {"physical activity"}
+
+
 def test_source_literature_boundary_quality_rejects_title_series() -> None:
     papers = [
         {"title": f"RAGE collagen pathway review {year}", "doi": f"10.1234/{year}"}
