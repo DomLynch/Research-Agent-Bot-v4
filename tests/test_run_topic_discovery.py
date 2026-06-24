@@ -24,6 +24,20 @@ def _disable_live_v5_client(monkeypatch: Any) -> None:
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "0")
 
 
+def _fullraw_rows(prefix: str, title_prefix: str, n: int = 5) -> list[dict[str, Any]]:
+    return [
+        {
+            "doi": f"10.1/{prefix}{i}",
+            "title": f"{title_prefix} paper {i}",
+            "fwci": 2.0,
+            "cited_by_count": 20 + i,
+            "publication_year": 2025,
+            "quality_score": 90.0,
+        }
+        for i in range(n)
+    ]
+
+
 def test_default_discovery_keeps_publish_path_bounded() -> None:
     assert _resolve_limits(
         warm_backlog=False,
@@ -776,7 +790,74 @@ def test_empty_discovery_uses_fullraw_as_domain_supply_engine(
     assert payload["top"][0]["fact_source_count"] == 5
     assert payload["source_rich_count"] == 1
     assert payload["fullraw_seed_probe"]["receipts"][-1]["seed"] == "__domain_supply__"
-    assert calls[-1] == "longevity anti aging"
+    assert "longevity anti aging" in calls
+
+
+def test_fullraw_supply_queries_seeds_when_domain_query_is_empty(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        if query == "metformin":
+            return _fullraw_rows("met", "Metformin geroscience AMPK")
+        if query == "resveratrol":
+            return _fullraw_rows("res", "Resveratrol sirtuin senescence")
+        return []
+
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
+
+    rows = run_topic_discovery._fullraw_supply_candidates(
+        query_context="Longevity / anti-aging research",
+        current_year=2026,
+        top=2,
+        seeds=("metformin", "resveratrol"),
+    )
+
+    topics = {row.topic for row in rows}
+    assert "longevity anti aging" in calls
+    assert "metformin" in calls
+    assert "resveratrol" in calls
+    assert {"metformin", "resveratrol"} <= topics
+
+
+def test_fullraw_supply_fallback_does_not_resurrect_excluded_topic(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setenv("TOPIC_DISCOVERY_SEED_QUERIES", "1")
+    monkeypatch.setattr(
+        run_topic_discovery, "load_seed_topics",
+        lambda _path=None: ("metformin", "fisetin"),
+    )
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(
+        run_topic_discovery, "load_derived_topic_limit", lambda _path=None: 5_000,
+    )
+    monkeypatch.setattr(run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: ())
+    monkeypatch.setattr(run_topic_discovery, "_seed_paper_candidates", lambda *_a, **_kw: ())
+    monkeypatch.setattr(run_topic_discovery, "discover_topics", lambda **_kw: ())
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        if query == "longevity anti aging":
+            return _fullraw_rows("met", "Metformin geroscience AMPK")
+        if query == "fisetin":
+            return _fullraw_rows("fis", "Fisetin senescence burden")
+        return []
+
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fake_fullraw)
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--domain", "longevity_research", "--top", "1",
+        "--exclude-topic", "metformin",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert [row["topic"] for row in payload["top"]] == ["fisetin"]
 
 
 def test_fullraw_supply_requires_per_topic_source_floor(monkeypatch: Any) -> None:

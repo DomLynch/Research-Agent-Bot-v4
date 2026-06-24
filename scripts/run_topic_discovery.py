@@ -436,17 +436,65 @@ def _seed_paper_candidates(
 
 def _fullraw_supply_candidates(
     *, query_context: str, current_year: int, top: int,
+    seeds: tuple[str, ...] = (),
 ) -> tuple[TopicCandidate, ...]:
     """Build fallback topics from fullraw only when each topic clears the floor."""
-    query = _context_query_terms(query_context)
-    if top <= 0 or not query:
+    query_labels: dict[str, str] = {}
+    if query := _context_query_terms(query_context):
+        query_labels[query] = "__domain_supply__"
+    query_cap = max(_seed_paper_probe_limit(top), top * 6)
+    for seed in seeds:
+        for query in _seed_paper_queries(seed, context=query_context):
+            query_labels.setdefault(query, seed)
+            if len(query_labels) >= query_cap:
+                break
+        if len(query_labels) >= query_cap:
+            break
+    if top <= 0 or not query_labels:
         return ()
+    papers_by_key: dict[str, dict[str, object]] = {}
+    papers_by_query: dict[str, list[dict[str, object]]] = {}
     with httpx.Client() as client:
-        papers = _seed_fullraw_papers(query, client=client, limit=25)
+        for query, label in query_labels.items():
+            receipt_recorded = False
+            for paper in _seed_fullraw_papers(query, client=client, limit=25):
+                key = str(paper.get("doi") or paper.get("paper_id")
+                          or paper.get("title") or "").strip().casefold()
+                if not key or key in papers_by_key:
+                    continue
+                papers_by_key[key] = paper
+                papers_by_query.setdefault(query, []).append(paper)
+                receipt = paper.get("fullraw_shard_receipt")
+                if isinstance(receipt, dict) and not receipt_recorded:
+                    _FULLRAW_PROBE_RECEIPTS.append({
+                        "seed": label,
+                        "query": query,
+                        "shards_searched": receipt.get("shards_searched"),
+                        "partial_shard_search": receipt.get("partial_shard_search"),
+                        "sources_searched": receipt.get("sources_searched"),
+                    })
+                    receipt_recorded = True
+    papers = list(papers_by_key.values())
     if len(papers) < _SOURCE_RICH_FLOOR:
         return ()
     out: list[TopicCandidate] = []
+    seen_topics: set[str] = set()
+    for query, label in query_labels.items():
+        if label == "__domain_supply__":
+            continue
+        scoped = papers_by_query.get(query, [])
+        if len(scoped) < _SOURCE_RICH_FLOOR:
+            continue
+        topic = "_".join(query.split())
+        seen_topics.add(topic)
+        out.append(_score_topic(
+            topic, scoped[:25], current_year, fact_source_count=len(scoped),
+        ))
+        if len(out) >= top:
+            return tuple(sorted(out, key=_rank_key))
     for topic in _title_topic_slugs({"fullraw": papers}, current_year, limit=top * 12):
+        if topic in seen_topics:
+            continue
         topic_tokens = set(_TOKEN_RE.findall(topic.replace("_", " ").casefold()))
         scoped = [
             paper for paper in papers
@@ -462,20 +510,9 @@ def _fullraw_supply_candidates(
             break
     if not out:
         out.append(_score_topic(
-            "_".join(query.split()), papers[:25], current_year,
+            "_".join(next(iter(query_labels)).split()), papers[:25], current_year,
             fact_source_count=len(papers),
         ))
-    for paper in papers:
-        receipt = paper.get("fullraw_shard_receipt")
-        if isinstance(receipt, dict):
-            _FULLRAW_PROBE_RECEIPTS.append({
-                "seed": "__domain_supply__",
-                "query": query,
-                "shards_searched": receipt.get("shards_searched"),
-                "partial_shard_search": receipt.get("partial_shard_search"),
-                "sources_searched": receipt.get("sources_searched"),
-            })
-            break
     return tuple(sorted(out, key=_rank_key))
 
 
@@ -761,10 +798,14 @@ def main() -> int:
     ):
         ranked = _merge_candidates(
             ranked,
-            _fullraw_supply_candidates(
-                query_context=profile.display_name,
-                current_year=year,
-                top=max(1, args.top - paper_backed_ranked),
+            _filter_excluded(
+                _fullraw_supply_candidates(
+                    query_context=profile.display_name,
+                    current_year=year,
+                    top=max(1, args.top - paper_backed_ranked),
+                    seeds=seed_probe_seeds,
+                ),
+                excluded,
             ),
         )
     top = ranked[: args.top]
