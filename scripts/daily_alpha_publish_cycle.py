@@ -416,7 +416,10 @@ def _stored_verdict_for_run(run: Path) -> Json:
 def _cached_verdict_for_run(run: Path) -> Json:
     data = _json(run / "publish_verdict.json", {})
     if isinstance(data, dict) and data:
-        if data.get("decision") in _AGENT_REPAIR_DECISIONS:
+        if (
+            data.get("decision") == "ready_to_publish"
+            or data.get("decision") in _AGENT_REPAIR_DECISIONS
+        ):
             return _verdict_for_run(run)
         return data
     return _verdict_for_run(run)

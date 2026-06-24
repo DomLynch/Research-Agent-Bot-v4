@@ -255,11 +255,15 @@ def test_daily_build_queue_demotes_evidence_map_label_even_with_alpha_surface(
     )
 
 
-def test_daily_build_queue_uses_stored_verdict_without_recomputing(
+def test_daily_build_queue_uses_stored_non_ready_verdict_without_recomputing(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     root = tmp_path / "repo"
-    verdict = _verdict("fast_probe")
+    verdict = _verdict("fast_probe") | {
+        "decision": "curation_needed",
+        "publish_tier": "TIER_3",
+        "blockers": ["source_floor_below_min"],
+    }
     _memo_with_source_receipts(root, verdict, 5)
     run = root / str(verdict["run_dir"])
     run.joinpath("opportunities_gate.json").write_text("{}", encoding="utf-8")
@@ -272,7 +276,31 @@ def test_daily_build_queue_uses_stored_verdict_without_recomputing(
 
     queue = daily._build_queue(root / "runs", include_archive=False)
 
-    assert [row["topic"] for row in queue["ready_to_publish"]] == ["fast_probe"]
+    assert [row["topic"] for row in queue["curation_needed"]] == ["fast_probe"]
+
+
+def test_daily_build_queue_revalidates_stale_ready_rows(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    ready = _verdict("stale_ready")
+    current = ready | {
+        "decision": "agent_repair_needed",
+        "publish_tier": "TIER_2",
+        "blockers": ["fact_shape_mismatch"],
+    }
+    _memo_with_source_receipts(root, ready, 5)
+    run = root / str(ready["run_dir"])
+    run.joinpath("opportunities_gate.json").write_text("{}", encoding="utf-8")
+    run.joinpath("publish_verdict.json").write_text(json.dumps(ready), encoding="utf-8")
+
+    monkeypatch.setattr(daily, "_verdict_for_run", lambda _run: current)
+
+    queue = daily._build_queue(root / "runs", include_archive=False)
+
+    assert queue["ready_to_publish"] == []
+    assert [row["topic"] for row in queue["agent_repair_needed"]] == ["stale_ready"]
+    assert queue["agent_repair_needed"][0]["blockers"] == ["fact_shape_mismatch"]
 
 
 def test_daily_build_queue_skips_wrong_domain_before_recomputing_repair(
