@@ -1253,7 +1253,7 @@ def test_priority_ranked_topics_uses_fact_source_probe(monkeypatch: Any) -> None
     assert calls == [("strong_child", "ai_research"), ("weak_child", "ai_research")]
 
 
-def test_priority_ranked_topics_preserves_discovery_source_counts(
+def test_priority_ranked_topics_reprobes_discovery_source_counts(
     monkeypatch: Any,
 ) -> None:
     import run_curator_cycle
@@ -1291,10 +1291,10 @@ def test_priority_ranked_topics_preserves_discovery_source_counts(
         (row["topic"], row["fact_source_count"], row["paper_count"])
         for row in ranked
     ] == [
-        ("source rich parent", 17, 9),
+        ("source rich parent", 0, 9),
         ("uncached child", 0, 0),
     ]
-    assert calls == ["uncached child"]
+    assert calls == ["source rich parent", "uncached child"]
 
 
 def test_priority_ranked_topics_scans_recent_domain_discovery_snapshots(
@@ -1338,7 +1338,7 @@ def test_priority_ranked_topics_scans_recent_domain_discovery_snapshots(
 
     def fake_count(topic: str, *, client: Any, settings: Any, domain: str) -> int:
         calls.append(topic)
-        return 0
+        return 6
 
     monkeypatch.setattr(run_curator_cycle, "_fetch_topic_fact_source_count", fake_count)
 
@@ -1349,8 +1349,8 @@ def test_priority_ranked_topics_scans_recent_domain_discovery_snapshots(
     assert [
         (row["topic"], row["fact_source_count"], row["paper_count"])
         for row in ranked
-    ] == [("source rich parent", 17, 9)]
-    assert calls == []
+    ] == [("source rich parent", 6, 9)]
+    assert calls == ["source rich parent"]
 
 
 def test_underfloor_priority_repair_topic_is_not_built(

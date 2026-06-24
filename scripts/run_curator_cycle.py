@@ -191,19 +191,19 @@ def _priority_ranked_topics(topics: list[str], *, domain: str = "longevity") -> 
     if not topics:
         return []
     discovery_counts = _priority_discovery_counts(topics, domain=domain)
+    source_counts: dict[str, int] = {}
     try:
         settings = load_settings()
         with httpx.Client() as client:
-            source_counts = {
-                topic: discovery_counts.get(topic, (0, 0))[0] or _fetch_topic_fact_source_count(
-                    topic, client=client, settings=settings, domain=domain,
-                )
-                for topic in topics
-            }
+            for topic in topics:
+                try:
+                    source_counts[topic] = _fetch_topic_fact_source_count(
+                        topic, client=client, settings=settings, domain=domain,
+                    )
+                except (OSError, httpx.HTTPError, ValueError):
+                    source_counts[topic] = discovery_counts.get(topic, (0, 0))[0]
     except (OSError, httpx.HTTPError, ValueError):
-        source_counts = {
-            topic: discovery_counts.get(topic, (0, 0))[0] for topic in topics
-        }
+        source_counts = {topic: discovery_counts.get(topic, (0, 0))[0] for topic in topics}
     return [
         {
             "topic": topic,
