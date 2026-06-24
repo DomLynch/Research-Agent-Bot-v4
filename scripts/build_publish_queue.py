@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import re
 import sys
 import tomllib
@@ -54,10 +53,7 @@ def _latest_per_topic(runs: list[Path]) -> list[Path]:
 
 
 def _read_json(path: Path) -> dict[str, Any]:
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return {}
+    data = publish_io.read_json(path, {})
     return data if isinstance(data, dict) else {}
 
 

@@ -22,6 +22,20 @@ def test_write_json_uses_sidecar_lock(tmp_path: Path, monkeypatch: Any) -> None:
     assert not (tmp_path / "state.json.tmp").exists()
 
 
+def test_read_json_uses_sidecar_shared_lock(tmp_path: Path, monkeypatch: Any) -> None:
+    calls: list[tuple[str, int]] = []
+    path = tmp_path / "state.json"
+    path.write_text(json.dumps({"a": 1}), encoding="utf-8")
+
+    def fake_flock(handle: Any, op: int) -> None:
+        calls.append((Path(handle.name).name, op))
+
+    monkeypatch.setattr(fcntl, "flock", fake_flock)
+
+    assert io.read_json(path, {}) == {"a": 1}
+    assert calls == [("state.json.lock", fcntl.LOCK_SH)]
+
+
 def test_write_text_uses_sidecar_lock(tmp_path: Path, monkeypatch: Any) -> None:
     calls: list[tuple[str, int]] = []
 

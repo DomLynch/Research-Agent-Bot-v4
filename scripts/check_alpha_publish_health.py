@@ -31,6 +31,11 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+try:
+    from scripts import alpha_publish_io as publish_io
+except ModuleNotFoundError:  # pragma: no cover - direct script execution fallback.
+    import alpha_publish_io as publish_io  # type: ignore[no-redef]
+
 
 def _ledger_paths(runs_root: Path) -> list[Path]:
     ledger_dir = runs_root / "_daily_ledger"
@@ -56,7 +61,7 @@ def _ledger_sort_key(path: Path) -> tuple[float, str]:
 
 
 def _load_json(path: Path) -> Json:
-    data = json.loads(path.read_text(encoding="utf-8"))
+    data = publish_io.read_json(path, {})
     return data if isinstance(data, dict) else {}
 
 

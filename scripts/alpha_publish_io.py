@@ -12,11 +12,20 @@ from scripts import alpha_publish_status as publish_status
 Json = dict[str, Any]
 
 
-def read_json(path: Path, default: Any) -> Any:
+def _load_json_unlocked(path: Path, default: Any) -> Any:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return default
+
+
+def read_json(path: Path, default: Any) -> Any:
+    if not path.exists():
+        return default
+    lock_path = path.with_name(path.name + ".lock")
+    with lock_path.open("w", encoding="utf-8") as lock:
+        fcntl.flock(lock, fcntl.LOCK_SH)
+        return _load_json_unlocked(path, default)
 
 
 def write_json(path: Path, payload: Any) -> None:
@@ -47,7 +56,7 @@ def update_json_list(path: Path, mutate: Callable[[list[Any]], bool]) -> bool:
     tmp_path = path.with_name(path.name + ".tmp")
     with lock_path.open("w", encoding="utf-8") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
-        data = read_json(path, [])
+        data = _load_json_unlocked(path, [])
         rows = data if isinstance(data, list) else []
         changed = mutate(rows)
         if changed:
