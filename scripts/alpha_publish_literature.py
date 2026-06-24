@@ -55,7 +55,7 @@ def topic_relevant(topic: str, paper: Json) -> bool:
     fact_text = ""
     fact_text = " ".join(
         str(fact.get(key) or "")
-        for key in ("canonical_phrase", "intervention", "endpoint")
+        for key in ("canonical_phrase", "population", "intervention", "endpoint")
     )
     primary_text = title_key(" ".join((
         str(paper.get("title") or ""),
@@ -67,8 +67,16 @@ def topic_relevant(topic: str, paper: Json) -> bool:
         str(paper.get("paper_title") or ""),
         fact_text,
     )))
+    text_tokens = set(text.split())
+    topic_domain_tokens = set(title_key(topic).split()) & {"ageing", "aging", "longevity"}
+    if topic_domain_tokens and (
+        {"ageing", "aging"} & topic_domain_tokens
+    ):
+        topic_domain_tokens |= {"age", "aged", "ages"}
+    if topic_domain_tokens and not (text_tokens & topic_domain_tokens):
+        return False
     return bool(tokens & set(primary_text.split())) and (
-        len(tokens & set(text.split())) >= min(2, len(tokens))
+        len(tokens & text_tokens) >= min(2, len(tokens))
     )
 
 

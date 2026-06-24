@@ -8914,6 +8914,28 @@ def test_source_literature_boundary_rejects_outcome_only_topic_mentions() -> Non
     assert reason == "source_floor_below_min"
 
 
+def test_source_literature_boundary_requires_slug_domain_context() -> None:
+    papers = [
+        {
+            "title": f"Therapeutic plasma exchange in acute indication {idx}",
+            "doi": f"10.1234/tpe-aging-{idx}",
+            "source_fact": {
+                "canonical_phrase": "therapeutic plasma exchange improved liver function tests",
+                "intervention": "therapeutic plasma exchange",
+                "comparator": "standard care",
+            },
+        }
+        for idx in range(5)
+    ]
+
+    ok, reason = daily._source_literature_boundary_quality(
+        "therapeutic_plasma_exchange_longevity_anti_aging", papers, 5,
+    )
+
+    assert ok is False
+    assert reason == "source_floor_below_min"
+
+
 def test_source_literature_boundary_quality_accepts_distinct_boundary_papers() -> None:
     papers = [
         {"title": "AGE-RAGE signalling and skin collagen aging", "doi": "10.1234/1"},
