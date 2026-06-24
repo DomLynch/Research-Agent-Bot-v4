@@ -70,8 +70,11 @@ def _seed_query_limit() -> int:
 
 
 def _seed_paper_probe_limit(top: int) -> int:
+    raw = os.environ.get("TOPIC_DISCOVERY_SEED_PAPER_TOPICS")
+    if raw is None or not raw.strip():
+        return max(top, 6)
     try:
-        return max(0, int(os.environ.get("TOPIC_DISCOVERY_SEED_PAPER_TOPICS", 6)))
+        return max(0, int(raw))
     except (TypeError, ValueError):
         return max(top, 6)
 

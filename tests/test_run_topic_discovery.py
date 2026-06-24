@@ -381,6 +381,58 @@ def test_seed_paper_candidate_skips_slow_discovery_when_enough(
     assert os.environ["TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"] == "20"
 
 
+def test_seed_paper_probe_default_scales_with_requested_window(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    seeds = (*[f"blocked_{i}" for i in range(6)], "late_fresh_seed")
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(
+        run_topic_discovery, "load_seed_topics",
+        lambda _path=None: seeds,
+    )
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(
+        run_topic_discovery, "load_derived_topic_limit",
+        lambda _path=None: 5_000,
+    )
+    monkeypatch.delenv("TOPIC_DISCOVERY_SEED_PAPER_TOPICS", raising=False)
+    monkeypatch.setenv("TOPIC_DISCOVERY_SEED_QUERIES", "1")
+    monkeypatch.setattr(run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: ())
+    monkeypatch.setattr(
+        run_topic_discovery,
+        "discover_topics",
+        lambda **_kwargs: (_ for _ in ()).throw(AssertionError("slow discovery")),
+    )
+    calls: list[str] = []
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        if query == "late_fresh_seed":
+            return [{
+                "doi": "10.1/late",
+                "title": "Late seed paper-backed candidate",
+                "fwci": 4.0,
+                "cited_by_count": 40,
+                "publication_year": 2026,
+                "quality_score": 90.0,
+            }]
+        return []
+
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fake_fullraw)
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--domain", "longevity_research", "--top", "7",
+        "--seed-paper-only",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    assert calls == list(seeds)
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert [row["topic"] for row in payload["top"]] == ["late_fresh_seed"]
+
+
 def test_seed_paper_probe_expands_seed_queries_before_slow_discovery(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
