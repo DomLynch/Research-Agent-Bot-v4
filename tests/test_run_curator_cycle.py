@@ -1369,7 +1369,7 @@ def test_priority_ranked_topics_uses_fact_source_probe(monkeypatch: Any) -> None
 
     calls: list[tuple[str, str]] = []
     counts = {"strong_child": 5, "weak_child": 0}
-    monkeypatch.delenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", raising=False)
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "0")
     monkeypatch.delenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", raising=False)
     monkeypatch.setattr(run_curator_cycle, "load_settings", lambda: object())
     monkeypatch.setattr(run_curator_cycle.httpx, "Client", DummyClient)
@@ -1494,7 +1494,7 @@ def test_priority_ranked_topics_trusts_discovery_source_counts(
             return None
 
     calls: list[str] = []
-    monkeypatch.delenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", raising=False)
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "0")
     monkeypatch.delenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", raising=False)
     monkeypatch.setattr(run_curator_cycle, "load_settings", lambda: object())
     monkeypatch.setattr(run_curator_cycle.httpx, "Client", DummyClient)
@@ -1563,9 +1563,12 @@ def test_priority_ranked_topics_scans_recent_domain_discovery_snapshots(
     }), encoding="utf-8")
 
     calls: list[str] = []
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "0")
+    monkeypatch.delenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", raising=False)
     monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
     monkeypatch.setattr(run_curator_cycle, "load_settings", lambda: object())
     monkeypatch.setattr(run_curator_cycle.httpx, "Client", DummyClient)
+    monkeypatch.setattr(run_curator_cycle, "_seed_fullraw_papers", lambda *_a, **_k: [])
 
     def fake_count(topic: str, *, client: Any, settings: Any, domain: str) -> int:
         calls.append(topic)

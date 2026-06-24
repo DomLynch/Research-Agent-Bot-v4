@@ -203,7 +203,7 @@ def _priority_ranked_topics(topics: list[str], *, domain: str = "longevity") -> 
     source_counts: dict[str, int] = {}
     paper_counts: dict[str, int] = {}
     fullraw_enabled = (
-        _env_enabled("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK")
+        _env_enabled("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "1")
         or bool(os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip())
     )
     try:
