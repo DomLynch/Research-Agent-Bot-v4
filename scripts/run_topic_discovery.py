@@ -42,6 +42,7 @@ from scripts import alpha_publish_io as publish_io
 _FAST_DERIVED_TOPIC_LIMIT = 250
 _SOURCE_RICH_FLOOR = 5
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
+_FULLRAW_PROBE_RECEIPTS: list[dict[str, object]] = []
 _GENERIC_SCOPE_TOKENS = {
     "ai", "research", "study", "studies", "trial", "trials", "review",
     "meta", "analysis", "effect", "effects", "therapy", "treatment",
@@ -280,8 +281,18 @@ def _seed_paper_candidates(
                     for paper in _fetch_fullraw_topic_papers(query, client=client, limit=5):
                         key = str(paper.get("doi") or paper.get("paper_id")
                                   or paper.get("title") or "").strip().casefold()
-                        if key:
-                            papers_by_key.setdefault(key, paper)
+                        if not key or key in papers_by_key:
+                            continue
+                        receipt = paper.get("fullraw_shard_receipt")
+                        if isinstance(receipt, dict):
+                            _FULLRAW_PROBE_RECEIPTS.append({
+                                "seed": seed,
+                                "query": query,
+                                "shards_searched": receipt.get("shards_searched"),
+                                "partial_shard_search": receipt.get("partial_shard_search"),
+                                "sources_searched": receipt.get("sources_searched"),
+                            })
+                        papers_by_key[key] = paper
                     if len(papers_by_key) >= 5:
                         break
                 papers = list(papers_by_key.values())[:5]
@@ -482,6 +493,7 @@ def main() -> int:
         help="Exclude a topic from the emitted queue; repeatable.",
     )
     args = parser.parse_args()
+    _FULLRAW_PROBE_RECEIPTS.clear()
     profile = load_domain_profile(args.domain)
     seeds = _domain_seed_topics(profile.slug)
     if not seeds:
@@ -583,6 +595,11 @@ def main() -> int:
         "cache_first": bool(read_source_rich_cache and cache_supported),
         "cache_only": bool(args.cache_only and cache_supported),
         "seed_paper_only": bool(args.seed_paper_only),
+        "fullraw_seed_probe": {
+            "configured": _fullraw_configured(),
+            "receipt_count": len(_FULLRAW_PROBE_RECEIPTS),
+            "receipts": _FULLRAW_PROBE_RECEIPTS[:10],
+        },
         "cache_supported": cache_supported,
         "source_rich_floor": _SOURCE_RICH_FLOOR,
         "source_rich_count": sum(1 for c in ranked if _source_rich(c)),

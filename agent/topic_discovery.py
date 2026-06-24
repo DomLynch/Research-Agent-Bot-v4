@@ -1219,7 +1219,7 @@ def _fetch_fullraw_topic_papers(topic: str, *, client: httpx.Client, limit: int 
         response = client.post(
             url,
             headers={"Authorization": f"Bearer {token}"} if token else {},
-            json={"query": topic.replace("_", " ")[:1024], "limit": max(1, min(limit, 25)), "top_k": max(1, min(limit, 25)), "corpus": "full_raw_450m_plus", "rank_mode": "hybrid", "timeout_seconds": timeout, "cache_only": True, "queue_if_missing": True},
+            json={"query": topic.replace("_", " ")[:1024], "limit": max(1, min(limit, 25)), "top_k": max(1, min(limit, 25)), "corpus": "full_raw_450m_plus", "rank_mode": "hybrid", "timeout_seconds": timeout},
             timeout=timeout + 2.0,
         )
         response.raise_for_status()

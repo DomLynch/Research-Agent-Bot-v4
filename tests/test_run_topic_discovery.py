@@ -359,6 +359,7 @@ def test_seed_paper_candidate_skips_slow_discovery_when_enough(
         lambda **_kwargs: (_ for _ in ()).throw(AssertionError("slow discovery")),
     )
     monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", "20")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "https://fullraw/search")
 
     def fake_fullraw(*_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
         assert os.environ["TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"] == "6"
@@ -366,6 +367,11 @@ def test_seed_paper_candidate_skips_slow_discovery_when_enough(
             "doi": "10.1/seed", "title": "Seed paper-backed candidate",
             "fwci": 4.0, "cited_by_count": 40, "publication_year": 2026,
             "quality_score": 90.0,
+            "fullraw_shard_receipt": {
+                "shards_searched": 1305,
+                "partial_shard_search": False,
+                "sources_searched": {"openalex": 988, "pubmed": 374},
+            },
         }]
 
     monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fake_fullraw)
@@ -378,6 +384,11 @@ def test_seed_paper_candidate_skips_slow_discovery_when_enough(
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
     assert [row["topic"] for row in payload["top"]] == ["multi_agent_systems"]
     assert payload["top"][0]["top_paper_doi"] == "10.1/seed"
+    assert payload["fullraw_seed_probe"]["configured"] is True
+    assert payload["fullraw_seed_probe"]["receipt_count"] == 1
+    assert payload["fullraw_seed_probe"]["receipts"][0]["shards_searched"] == 1305
+    assert payload["fullraw_seed_probe"]["receipts"][0]["partial_shard_search"] is False
+    assert payload["fullraw_seed_probe"]["receipts"][0]["sources_searched"]["openalex"] == 988
     assert os.environ["TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"] == "20"
 
 

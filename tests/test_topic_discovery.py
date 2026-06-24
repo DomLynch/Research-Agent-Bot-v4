@@ -193,7 +193,7 @@ def test_fetch_topic_papers_falls_back_to_fullraw_when_db_empty(
     assert papers[0]["title"] == "Metformin longevity source diversity"
     assert papers[0]["publication_year"] == 2025
     assert papers[0]["fullraw_shard_receipt"]["shards_searched"] == 50
-    assert payloads[0]["cache_only"] is True
+    assert "cache_only" not in payloads[0]
 
 
 def test_fetch_topic_papers_supplements_thin_db_with_fullraw(
