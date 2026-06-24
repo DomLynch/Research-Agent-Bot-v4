@@ -712,6 +712,66 @@ def test_empty_seed_paper_probe_falls_back_to_domain_discovery(
     assert [row["topic"] for row in payload["top"]] == ["multi_agent_systems"]
 
 
+def test_empty_discovery_uses_fullraw_as_domain_supply_engine(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "http://127.0.0.1/search")
+    monkeypatch.setenv("TOPIC_DISCOVERY_SEED_QUERIES", "1")
+    monkeypatch.setattr(
+        run_topic_discovery,
+        "load_seed_topics",
+        lambda _path=None: ("metformin", "resveratrol"),
+    )
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(
+        run_topic_discovery, "load_derived_topic_limit", lambda _path=None: 5_000,
+    )
+    monkeypatch.setattr(
+        run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: (),
+    )
+    monkeypatch.setattr(run_topic_discovery, "discover_topics", lambda **_kw: ())
+    calls: list[str] = []
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        if query != "longevity anti aging":
+            return []
+        return [
+            {
+                "doi": f"10.1/vitd{i}",
+                "title": f"Vitamin D deficiency and aging cohort {i}",
+                "fwci": 2.0,
+                "cited_by_count": 20 + i,
+                "publication_year": 2025,
+                "quality_score": 90.0,
+                "fullraw_shard_receipt": {
+                    "shards_searched": 1514,
+                    "partial_shard_search": False,
+                    "sources_searched": {"openalex": 900},
+                },
+            }
+            for i in range(5)
+        ]
+
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fake_fullraw)
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--domain", "longevity_research", "--top", "1",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert payload["top"][0]["topic"] == "vitamin_deficiency"
+    assert payload["top"][0]["paper_count"] == 5
+    assert payload["top"][0]["fact_source_count"] == 5
+    assert payload["source_rich_count"] == 1
+    assert payload["fullraw_seed_probe"]["receipts"][-1]["seed"] == "__domain_supply__"
+    assert calls[-1] == "longevity anti aging"
+
+
 def test_seed_paper_only_skips_slow_domain_discovery_when_empty(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

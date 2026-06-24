@@ -32,6 +32,7 @@ from agent.topic_discovery import (
     _fetch_fullraw_topic_papers,
     _fetch_topic_papers,
     _score_topic,
+    _title_topic_slugs,
     cached_source_rich_candidates,
     discover_topics,
     load_derived_topic_limit,
@@ -433,6 +434,45 @@ def _seed_paper_candidates(
     return tuple(sorted(out, key=_rank_key))
 
 
+def _fullraw_supply_candidates(
+    *, query_context: str, current_year: int, top: int,
+) -> tuple[TopicCandidate, ...]:
+    query = _context_query_terms(query_context)
+    if top <= 0 or not query:
+        return ()
+    with httpx.Client() as client:
+        papers = _seed_fullraw_papers(query, client=client, limit=25)
+    if len(papers) < _SOURCE_RICH_FLOOR:
+        return ()
+    out: list[TopicCandidate] = []
+    for topic in _title_topic_slugs({"fullraw": papers}, current_year, limit=top * 12):
+        topic_tokens = set(_TOKEN_RE.findall(topic.replace("_", " ").casefold()))
+        scoped = [
+            paper for paper in papers
+            if topic_tokens <= set(_TOKEN_RE.findall(
+                str(paper.get("title") or "").casefold()))
+        ]
+        if len(scoped) < _SOURCE_RICH_FLOOR:
+            continue
+        out.append(_score_topic(
+            topic, scoped[:25], current_year, fact_source_count=len(scoped),
+        ))
+        if len(out) >= top:
+            break
+    for paper in papers:
+        receipt = paper.get("fullraw_shard_receipt")
+        if isinstance(receipt, dict):
+            _FULLRAW_PROBE_RECEIPTS.append({
+                "seed": "__domain_supply__",
+                "query": query,
+                "shards_searched": receipt.get("shards_searched"),
+                "partial_shard_search": receipt.get("partial_shard_search"),
+                "sources_searched": receipt.get("sources_searched"),
+            })
+            break
+    return tuple(sorted(out, key=_rank_key))
+
+
 def _filter_excluded(
     candidates: tuple[TopicCandidate, ...], excluded: set[str],
 ) -> tuple[TopicCandidate, ...]:
@@ -706,6 +746,20 @@ def main() -> int:
                 ),
             )
         ranked = _merge_candidates(ranked, scoped_discovered)
+    if (
+        not any(_paper_backed(c) for c in ranked)
+        and not args.cache_only
+        and not args.seed_paper_only
+        and not args.skip_seed_paper_probe
+    ):
+        ranked = _merge_candidates(
+            ranked,
+            _fullraw_supply_candidates(
+                query_context=profile.display_name,
+                current_year=year,
+                top=args.top,
+            ),
+        )
     top = ranked[: args.top]
     ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
     out_dir = (Path(__file__).resolve().parent.parent
