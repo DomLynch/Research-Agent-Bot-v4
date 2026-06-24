@@ -385,24 +385,30 @@ def _source_rich(candidate: TopicCandidate) -> bool:
 def _scope_and_hydrate_candidates(
     candidates: tuple[TopicCandidate, ...], seeds: tuple[str, ...],
     excluded: set[str], *, settings: Settings, current_year: int,
-    query_context: str,
+    query_context: str, hydrate_source_rich: bool = True,
 ) -> tuple[TopicCandidate, ...]:
     domain_scoped = _filter_domain_scope(_filter_excluded(candidates, excluded), seeds)
     strict_scoped = _filter_cached_seed_scope(domain_scoped, seeds)
+    strict_source_rich = tuple(
+        c for c in strict_scoped if _source_rich(c)
+    ) if not hydrate_source_rich else ()
     hydrated = _hydrate_candidates(
-        strict_scoped, settings=settings, current_year=current_year,
+        tuple(c for c in strict_scoped if c not in strict_source_rich),
+        settings=settings, current_year=current_year,
         query_context=query_context,
     )
-    if hydrated:
-        return hydrated
+    if strict_source_rich or hydrated:
+        return _merge_candidates(strict_source_rich, hydrated)
     # If strict parent/child naming is exhausted by cooldowns or dedupe, allow
     # source-rich domain-scope rows through. This keeps the evidence floor while
     # avoiding infinite loops over already-used parent topics.
     relaxed = tuple(c for c in domain_scoped if _source_rich(c))
-    return _hydrate_candidates(
-        relaxed, settings=settings, current_year=current_year,
-        query_context=query_context,
-    )
+    if hydrate_source_rich:
+        return _hydrate_candidates(
+            relaxed, settings=settings, current_year=current_year,
+            query_context=query_context,
+        )
+    return tuple(sorted(relaxed, key=_rank_key))
 
 
 def _domain_seed_topics(domain: str) -> tuple[str, ...]:
@@ -528,6 +534,7 @@ def main() -> int:
         scoped_discovered = _scope_and_hydrate_candidates(
             discovered, seeds, excluded, settings=settings, current_year=year,
             query_context=profile.display_name,
+            hydrate_source_rich=not args.skip_seed_paper_probe,
         )
         if not scoped_discovered and os.environ.get("TOPIC_GROUPS_DISCOVERY") != "0":
             old = os.environ.get("TOPIC_GROUPS_DISCOVERY")
@@ -557,6 +564,7 @@ def main() -> int:
                 _scope_and_hydrate_candidates(
                     fallback, seeds, excluded, settings=settings, current_year=year,
                     query_context=profile.display_name,
+                    hydrate_source_rich=not args.skip_seed_paper_probe,
                 ),
             )
         ranked = _merge_candidates(ranked, scoped_discovered)
