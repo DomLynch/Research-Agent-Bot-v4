@@ -3625,6 +3625,12 @@ def _fresh_parent_topics_from_discovery(
             ):
                 continue
             topic_key = _canonical_family_key(topic).removeprefix("topic:")
+            topic_tokens = {
+                token.rstrip("s") for token in topic_key.split("_")
+                if len(token.rstrip("s")) >= 3
+            }
+            if "anti" in topic_tokens and seed_scope and not ((topic_tokens - {"anti"}) & seed_scope):
+                continue
             if any(
                 topic_key.startswith(f"{seed}_")
                 and all(

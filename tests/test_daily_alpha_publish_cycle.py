@@ -10685,6 +10685,29 @@ def test_fresh_parent_topics_skip_recent_single_token_parent_family(
     ) == ["exercise"]
 
 
+def test_fresh_parent_topics_require_domain_seed_scope_for_anti_only_topics(
+    tmp_path: Path,
+) -> None:
+    discovery = tmp_path / "_topics_discovery"
+    discovery.mkdir()
+    (discovery / "latest.json").write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [
+            {"topic": "anti_cancer", "fact_source_count": 20, "paper_count": 20},
+            {"topic": "anti_tumor", "fact_source_count": 18, "paper_count": 18},
+            {"topic": "caloric_restriction", "fact_source_count": 7, "paper_count": 7},
+        ],
+    }), encoding="utf-8")
+
+    assert daily._fresh_parent_topics_from_discovery(
+        tmp_path,
+        "longevity_research",
+        set(),
+        limit=3,
+        min_sources=5,
+    ) == ["caloric_restriction"]
+
+
 def test_child_topics_from_queue_caps_slug_to_four_tokens() -> None:
     # A multi-word cluster label must not emit a 6-9 token word-salad child slug
     # (those are probed raw by the curator subprocess and exhaust the refresh
