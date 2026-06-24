@@ -25,6 +25,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import re
 import subprocess
 import sys
@@ -59,6 +60,7 @@ from agent.topic_discovery import (  # noqa: E402
     topic_token_count,
 )
 from scripts import alpha_publish_io as publish_io  # noqa: E402
+from scripts.run_topic_discovery import _seed_fullraw_papers  # noqa: E402
 
 _RUNS = _ROOT / "runs"
 _CYCLES_DIR = _RUNS / "_curator_cycles"
@@ -68,6 +70,13 @@ _CYCLES_DIR = _RUNS / "_curator_cycles"
 _TIER2_SUPPLY_CACHE = _RUNS / "_tier2_supply_cache.json"
 _TIER2_SUPPLY_TTL_SECONDS = 86_400.0
 _DEFAULT_PIPELINE_TOP_N = max(5, _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES * 2)
+_PRIORITY_FULLRAW_BUDGET_SECONDS = "6"
+
+
+def _env_enabled(name: str, default: str = "0") -> bool:
+    return os.environ.get(name, default).strip().lower() not in {
+        "0", "false", "no", "off",
+    }
 
 
 def _read_tier2_cache() -> dict[str, Any]:
@@ -192,29 +201,65 @@ def _priority_ranked_topics(topics: list[str], *, domain: str = "longevity") -> 
         return []
     discovery_counts = _priority_discovery_counts(topics, domain=domain)
     source_counts: dict[str, int] = {}
+    paper_counts: dict[str, int] = {}
+    fullraw_enabled = (
+        _env_enabled("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK")
+        or bool(os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip())
+    )
     try:
         settings = load_settings()
         with httpx.Client() as client:
             for topic in topics:
-                if discovery_counts.get(topic, (0, 0))[0] > 0:
-                    source_counts[topic] = discovery_counts[topic][0]
+                discovery_sources, discovery_papers = discovery_counts.get(topic, (0, 0))
+                if (
+                    discovery_sources >= _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES
+                    and discovery_papers >= _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES
+                ):
+                    source_counts[topic] = discovery_sources
+                    paper_counts[topic] = discovery_papers
+                    continue
+                old_budget = os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS")
+                os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] = os.environ.get(
+                    "TOPIC_DISCOVERY_PRIORITY_V5_SEARCH_BUDGET_SECONDS",
+                    _PRIORITY_FULLRAW_BUDGET_SECONDS,
+                )
+                try:
+                    papers = _seed_fullraw_papers(
+                        topic, client=client,
+                        limit=_DEFAULT_MIN_DIRECT_SUBMIT_SOURCES,
+                    )
+                finally:
+                    if old_budget is None:
+                        os.environ.pop("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", None)
+                    else:
+                        os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] = old_budget
+                if len(papers) >= _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES:
+                    source_counts[topic] = len(papers)
+                    paper_counts[topic] = len(papers)
+                    continue
+                if fullraw_enabled:
+                    source_counts[topic] = max(discovery_sources, len(papers))
+                    paper_counts[topic] = max(discovery_papers, len(papers))
                     continue
                 try:
                     source_counts[topic] = _fetch_topic_fact_source_count(
                         topic, client=client, settings=settings, domain=domain,
                     )
+                    paper_counts[topic] = discovery_papers or (
+                        1 if source_counts[topic] > 0 else 0
+                    )
                 except (OSError, httpx.HTTPError, ValueError):
-                    source_counts[topic] = discovery_counts.get(topic, (0, 0))[0]
+                    source_counts[topic] = discovery_sources
+                    paper_counts[topic] = discovery_papers
     except (OSError, httpx.HTTPError, ValueError):
         source_counts = {topic: discovery_counts.get(topic, (0, 0))[0] for topic in topics}
+        paper_counts = {topic: discovery_counts.get(topic, (0, 0))[1] for topic in topics}
     return [
         {
             "topic": topic,
             "velocity_score": 0.0,
             "fact_source_count": source_counts.get(topic, 0),
-            "paper_count": discovery_counts.get(topic, (0, 0))[1] or (
-                1 if source_counts.get(topic, 0) > 0 else 0
-            ),
+            "paper_count": paper_counts.get(topic, 0),
             "child_depth": _MAX_CHILD_RERUN_DEPTH,
             "tier2_rescue_allowed": False,
         }

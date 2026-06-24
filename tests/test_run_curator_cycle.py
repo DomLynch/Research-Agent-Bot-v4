@@ -1333,8 +1333,11 @@ def test_priority_ranked_topics_uses_fact_source_probe(monkeypatch: Any) -> None
 
     calls: list[tuple[str, str]] = []
     counts = {"strong_child": 5, "weak_child": 0}
+    monkeypatch.delenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", raising=False)
+    monkeypatch.delenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", raising=False)
     monkeypatch.setattr(run_curator_cycle, "load_settings", lambda: object())
     monkeypatch.setattr(run_curator_cycle.httpx, "Client", DummyClient)
+    monkeypatch.setattr(run_curator_cycle, "_seed_fullraw_papers", lambda *_a, **_k: [])
 
     def fake_count(topic: str, *, client: Any, settings: Any, domain: str) -> int:
         calls.append((topic, domain))
@@ -1356,6 +1359,83 @@ def test_priority_ranked_topics_uses_fact_source_probe(monkeypatch: Any) -> None
     assert calls == [("strong_child", "ai_research"), ("weak_child", "ai_research")]
 
 
+def test_priority_ranked_topics_uses_fullraw_before_fact_probe(
+    monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    class DummyClient:
+        def __enter__(self) -> DummyClient:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+    calls: list[str] = []
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "1")
+    monkeypatch.setattr(run_curator_cycle, "load_settings", lambda: object())
+    monkeypatch.setattr(run_curator_cycle.httpx, "Client", DummyClient)
+    monkeypatch.setattr(
+        run_curator_cycle,
+        "_seed_fullraw_papers",
+        lambda *_a, **_k: [
+            {"title": f"Fullraw candidate paper {idx}"}
+            for idx in range(run_curator_cycle._DEFAULT_MIN_DIRECT_SUBMIT_SOURCES)
+        ],
+    )
+
+    def fake_count(topic: str, *, client: Any, settings: Any, domain: str) -> int:
+        calls.append(topic)
+        return 0
+
+    monkeypatch.setattr(run_curator_cycle, "_fetch_topic_fact_source_count", fake_count)
+
+    ranked = run_curator_cycle._priority_ranked_topics([
+        "fullraw_priority",
+    ], domain="longevity_research")
+
+    assert [
+        (row["topic"], row["fact_source_count"], row["paper_count"])
+        for row in ranked
+    ] == [("fullraw_priority", 5, 5)]
+    assert calls == []
+
+
+def test_priority_ranked_topics_skips_slow_probe_when_fullraw_empty(
+    monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    class DummyClient:
+        def __enter__(self) -> DummyClient:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+    calls: list[str] = []
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "1")
+    monkeypatch.setattr(run_curator_cycle, "load_settings", lambda: object())
+    monkeypatch.setattr(run_curator_cycle.httpx, "Client", DummyClient)
+    monkeypatch.setattr(run_curator_cycle, "_seed_fullraw_papers", lambda *_a, **_k: [])
+
+    def fake_count(topic: str, *, client: Any, settings: Any, domain: str) -> int:
+        calls.append(topic)
+        return 9
+
+    monkeypatch.setattr(run_curator_cycle, "_fetch_topic_fact_source_count", fake_count)
+
+    ranked = run_curator_cycle._priority_ranked_topics([
+        "empty_fullraw_priority",
+    ], domain="longevity_research")
+
+    assert [
+        (row["topic"], row["fact_source_count"], row["paper_count"])
+        for row in ranked
+    ] == [("empty_fullraw_priority", 0, 0)]
+    assert calls == []
+
+
 def test_priority_ranked_topics_trusts_discovery_source_counts(
     monkeypatch: Any,
 ) -> None:
@@ -1369,8 +1449,11 @@ def test_priority_ranked_topics_trusts_discovery_source_counts(
             return None
 
     calls: list[str] = []
+    monkeypatch.delenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", raising=False)
+    monkeypatch.delenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", raising=False)
     monkeypatch.setattr(run_curator_cycle, "load_settings", lambda: object())
     monkeypatch.setattr(run_curator_cycle.httpx, "Client", DummyClient)
+    monkeypatch.setattr(run_curator_cycle, "_seed_fullraw_papers", lambda *_a, **_k: [])
     monkeypatch.setattr(
         run_curator_cycle, "_read_discovery_top",
         lambda _out, **_kwargs: [{
