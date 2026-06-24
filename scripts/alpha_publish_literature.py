@@ -57,12 +57,19 @@ def topic_relevant(topic: str, paper: Json) -> bool:
         str(fact.get(key) or "")
         for key in ("canonical_phrase", "intervention", "endpoint")
     )
+    primary_text = title_key(" ".join((
+        str(paper.get("title") or ""),
+        str(paper.get("paper_title") or ""),
+        str(fact.get("intervention") or ""),
+    )))
     text = title_key(" ".join((
         str(paper.get("title") or ""),
         str(paper.get("paper_title") or ""),
         fact_text,
     )))
-    return len(tokens & set(text.split())) >= min(2, len(tokens))
+    return bool(tokens & set(primary_text.split())) and (
+        len(tokens & set(text.split())) >= min(2, len(tokens))
+    )
 
 
 def relevant_papers(topic: str, papers: list[Json]) -> list[Json]:

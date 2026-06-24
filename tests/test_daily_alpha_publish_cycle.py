@@ -8892,6 +8892,28 @@ def test_source_literature_boundary_requires_multi_token_topic_alignment() -> No
     assert reason == "source_floor_below_min"
 
 
+def test_source_literature_boundary_rejects_outcome_only_topic_mentions() -> None:
+    papers = [
+        {
+            "title": f"Caplacizumab trial report {idx}",
+            "doi": f"10.1234/tpe-{idx}",
+            "source_fact": {
+                "canonical_phrase": "median therapeutic plasma exchange days were lower",
+                "intervention": "caplacizumab",
+                "comparator": "placebo",
+            },
+        }
+        for idx in range(5)
+    ]
+
+    ok, reason = daily._source_literature_boundary_quality(
+        "therapeutic_plasma_exchange", papers, 5,
+    )
+
+    assert ok is False
+    assert reason == "source_floor_below_min"
+
+
 def test_source_literature_boundary_quality_accepts_distinct_boundary_papers() -> None:
     papers = [
         {"title": "AGE-RAGE signalling and skin collagen aging", "doi": "10.1234/1"},
