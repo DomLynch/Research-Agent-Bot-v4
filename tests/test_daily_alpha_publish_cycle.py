@@ -3979,6 +3979,40 @@ def test_empty_initial_queue_refreshes_latest_fresh_parent_first(
     assert calls == [("exercise",)]
 
 
+def test_fresh_parent_discovery_prefers_broader_parent_over_newer_child(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "runs"
+    discovery = root / "_topics_discovery"
+    discovery.mkdir(parents=True)
+    daily._write_json(discovery / "newer_child.json", {
+        "domain": {"slug": "longevity"},
+        "all": [{
+            "topic": "exercise_difference",
+            "fact_source_count": 5,
+            "paper_count": 5,
+            "velocity_score": 0,
+        }],
+    })
+    daily._write_json(discovery / "older_parent.json", {
+        "domain": {"slug": "longevity"},
+        "all": [{
+            "topic": "exercise",
+            "fact_source_count": 5,
+            "paper_count": 10,
+            "velocity_score": 0,
+        }],
+    })
+    os.utime(discovery / "newer_child.json", (2, 2))
+    os.utime(discovery / "older_parent.json", (1, 1))
+
+    topics = daily._fresh_parent_topics_from_discovery(
+        root, "longevity_research", set(), limit=1, min_sources=5,
+    )
+
+    assert topics == ["exercise"]
+
+
 def test_latest_cycle_topics_ignores_cross_topic_sidecar(tmp_path: Path) -> None:
     cycles = tmp_path / "_curator_cycles"
     cycles.mkdir()
@@ -9191,7 +9225,7 @@ def test_fresh_parent_topics_scan_recent_domain_discovery_snapshots(
     ) == ["source rich parent"]
 
 
-def test_fresh_parent_topics_prefer_newest_eligible_discovery_snapshot(
+def test_fresh_parent_topics_prefer_source_breadth_over_newest_snapshot(
     tmp_path: Path,
 ) -> None:
     discovery = tmp_path / "_topics_discovery"
@@ -9223,7 +9257,7 @@ def test_fresh_parent_topics_prefer_newest_eligible_discovery_snapshot(
         set(),
         limit=1,
         min_sources=5,
-    ) == ["adequate newer parent"]
+    ) == ["source diverse parent"]
 
 
 def test_fresh_parent_topics_preserve_discovery_order_after_source_floor(

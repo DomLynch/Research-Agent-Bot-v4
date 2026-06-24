@@ -3477,16 +3477,14 @@ def _fresh_parent_topics_from_discovery(
         key=lambda path: path.stat().st_mtime if path.exists() else 0,
         reverse=True,
     )
-    for path in paths:
+    candidates: list[tuple[tuple[int, int, int, int, int, str], str, set[str]]] = []
+    for recency, path in enumerate(paths):
         data = _json(path, {})
         if not isinstance(data, dict) or not _same_domain(_row_domain(data), profile_slug):
             continue
         raw_rows = data.get("all") or data.get("top")
         if not isinstance(raw_rows, list):
             continue
-        topics: list[str] = []
-        seen: set[str] = set()
-        seen_families: set[str] = set()
         for row in raw_rows:
             if not isinstance(row, dict):
                 continue
@@ -3494,8 +3492,6 @@ def _fresh_parent_topics_from_discovery(
             aliases = _family_alias_keys(topic)
             if (
                 not topic
-                or topic in seen
-                or bool(aliases & seen_families)
                 or _source_literature_family_blocked_topic(topic, blocked_topics)
             ):
                 continue
@@ -3504,12 +3500,25 @@ def _fresh_parent_topics_from_discovery(
                 papers = int(row.get("paper_count") or 0)
                 if max(fact_sources, papers) < min_sources:
                     continue
-                topics.append(topic)
-                seen.add(topic)
-                seen_families.update(aliases)
-        if topics:
-            return topics[:limit]
-    return []
+                token_count = len(_CLAIM_WORD.findall(topic.replace("_", " ")))
+                candidates.append((
+                    (-max(fact_sources, papers), -papers, -fact_sources,
+                     token_count, recency, topic),
+                    topic,
+                    aliases,
+                ))
+    topics: list[str] = []
+    seen: set[str] = set()
+    seen_families: set[str] = set()
+    for _score, topic, aliases in sorted(candidates):
+        if topic in seen or bool(aliases & seen_families):
+            continue
+        topics.append(topic)
+        seen.add(topic)
+        seen_families.update(aliases)
+        if len(topics) >= limit:
+            break
+    return topics
 
 
 def _source_literature_payload(
