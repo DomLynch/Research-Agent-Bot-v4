@@ -642,28 +642,34 @@ def main() -> int:
             stop_on_ready=args.stop_on_ready,
             excluded_count=len(args.exclude_topic),
         )
-        discovery_args = [
-            py, "scripts/run_topic_discovery.py",
-            "--domain", args.domain,
-            "--top", str(discovery_top),
-        ]
-        if args.stop_on_ready and not args.warm_backlog:
-            discovery_args.append("--cache-first")
-            discovery_args.append("--seed-paper-only")
-        if args.warm_backlog:
-            discovery_args.append("--warm-backlog")
-        if args.derived_topic_limit is not None:
-            discovery_args.extend([
-                "--derived-topic-limit", str(max(0, args.derived_topic_limit)),
-            ])
-        if args.fact_probe_topics is not None:
-            discovery_args.extend([
-                "--fact-probe-topics", str(max(0, args.fact_probe_topics)),
-            ])
-        for topic in sorted(excluded):
-            discovery_args.extend(["--exclude-topic", topic])
+        seed_paper_fast_path = args.stop_on_ready and not args.warm_backlog
+
+        def discovery_args(*, seed_paper_only: bool) -> list[str]:
+            out = [
+                py, "scripts/run_topic_discovery.py",
+                "--domain", args.domain,
+                "--top", str(discovery_top),
+            ]
+            if args.stop_on_ready and not args.warm_backlog:
+                out.append("--cache-first")
+                if seed_paper_only:
+                    out.append("--seed-paper-only")
+            if args.warm_backlog:
+                out.append("--warm-backlog")
+            if args.derived_topic_limit is not None:
+                out.extend([
+                    "--derived-topic-limit", str(max(0, args.derived_topic_limit)),
+                ])
+            if args.fact_probe_topics is not None:
+                out.extend([
+                    "--fact-probe-topics", str(max(0, args.fact_probe_topics)),
+                ])
+            for topic in sorted(excluded):
+                out.extend(["--exclude-topic", topic])
+            return out
+
         ok, last = _run_step(
-            discovery_args,
+            discovery_args(seed_paper_only=seed_paper_fast_path),
             "discovery",
             timeout=_DISCOVERY_TIMEOUT_SECONDS,
         )
@@ -675,6 +681,23 @@ def main() -> int:
         if priority_only_submit else
         _read_discovery_top(_RUNS / "_topics_discovery", domain=args.domain)
     )
+    if (
+        not ranked
+        and not priority_only_submit
+        and args.stop_on_ready
+        and not args.warm_backlog
+        and not args.dry_run
+    ):
+        print("[cycle] seed-paper discovery empty; retrying bounded discovery")
+        ok, last = _run_step(
+            discovery_args(seed_paper_only=False),
+            "discovery",
+            timeout=_DISCOVERY_TIMEOUT_SECONDS,
+        )
+        if not ok:
+            print(f"[cycle] discovery fallback failed: {last}", file=sys.stderr)
+            return 1
+        ranked = _read_discovery_top(_RUNS / "_topics_discovery", domain=args.domain)
     if not ranked and not args.priority_topic:
         print("[cycle] no discovery candidates; aborting.", file=sys.stderr)
         return 1

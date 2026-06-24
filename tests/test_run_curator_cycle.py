@@ -695,6 +695,69 @@ def test_stop_on_ready_uses_cache_first_discovery(
     assert calls[0][calls[0].index("--top") + 1] == "20"
 
 
+def test_stop_on_ready_empty_seed_paper_discovery_falls_back_to_bounded(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    runs = tmp_path / "runs"
+    cycles = runs / "_curator_cycles"
+    cycles.mkdir(parents=True)
+    calls: list[list[str]] = []
+    seen: list[str] = []
+
+    def fake_step(
+        args: list[str], step_name: str, *, timeout: int = 600,
+    ) -> tuple[bool, str]:
+        if step_name == "discovery":
+            calls.append(args)
+        return True, "ok"
+
+    def fake_read_discovery_top(_out: Path, **_kwargs: Any) -> list[dict[str, Any]]:
+        if len(calls) < 2:
+            return []
+        return [{
+            "topic": "fresh_bounded",
+            "velocity_score": 3.0,
+            "fact_source_count": 5,
+            "paper_count": 5,
+        }]
+
+    def fake_pipeline(
+        topic: str, velocity: float, *, with_editorial: bool,
+        top_n: int, py: str, pico_enrich: bool = False,
+        frontier_review: bool = True, parent_topic: str = "",
+        domain: str = "longevity",
+    ) -> TopicResult:
+        seen.append(topic)
+        run_dir = runs / f"{topic}-evidence-ts"
+        _write_ready_alpha_run(run_dir, source_count=5)
+        return TopicResult(
+            topic=topic, velocity=velocity, status="ran",
+            run_dir=f"runs/{topic}-evidence-ts",
+            signal_label="evidence_backed_signal", notes="",
+        )
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
+    monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
+    monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
+    monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
+    monkeypatch.setattr(run_curator_cycle, "_read_discovery_top", fake_read_discovery_top)
+    monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",
+                        lambda *_args, **_kwargs: set())
+    monkeypatch.setattr(sys, "argv", [
+        "run_curator_cycle.py", "--stop-on-ready",
+    ])
+
+    assert run_curator_cycle.main() == 0
+    assert seen == ["fresh_bounded"]
+    assert len(calls) == 2
+    assert "--seed-paper-only" in calls[0]
+    assert "--cache-first" in calls[1]
+    assert "--seed-paper-only" not in calls[1]
+
+
 def test_stop_on_ready_priority_below_floor_does_not_backfill_discovery_topic(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
