@@ -238,8 +238,8 @@ def _priority_ranked_topics(topics: list[str], *, domain: str = "longevity") -> 
                     paper_counts[topic] = len(papers)
                     continue
                 if fullraw_enabled:
-                    source_counts[topic] = max(discovery_sources, len(papers))
-                    paper_counts[topic] = max(discovery_papers, len(papers))
+                    source_counts[topic] = len(papers)
+                    paper_counts[topic] = len(papers)
                     continue
                 try:
                     source_counts[topic] = _fetch_topic_fact_source_count(

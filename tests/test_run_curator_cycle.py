@@ -1418,6 +1418,15 @@ def test_priority_ranked_topics_skips_slow_probe_when_fullraw_empty(
     monkeypatch.setattr(run_curator_cycle, "load_settings", lambda: object())
     monkeypatch.setattr(run_curator_cycle.httpx, "Client", DummyClient)
     monkeypatch.setattr(run_curator_cycle, "_seed_fullraw_papers", lambda *_a, **_k: [])
+    monkeypatch.setattr(
+        run_curator_cycle,
+        "_read_discovery_top",
+        lambda _out, **_kwargs: [{
+            "topic": "empty_fullraw_priority",
+            "fact_source_count": 9,
+            "paper_count": 1,
+        }],
+    )
 
     def fake_count(topic: str, *, client: Any, settings: Any, domain: str) -> int:
         calls.append(topic)
