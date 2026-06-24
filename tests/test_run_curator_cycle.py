@@ -1518,7 +1518,7 @@ def test_priority_ranked_topics_uses_fullraw_before_fact_probe(
     assert calls == []
 
 
-def test_priority_ranked_topics_skips_slow_probe_when_fullraw_empty(
+def test_priority_ranked_topics_uses_source_rich_discovery_when_fullraw_empty(
     monkeypatch: Any,
 ) -> None:
     import run_curator_cycle
@@ -1558,7 +1558,7 @@ def test_priority_ranked_topics_skips_slow_probe_when_fullraw_empty(
     assert [
         (row["topic"], row["fact_source_count"], row["paper_count"])
         for row in ranked
-    ] == [("empty_fullraw_priority", 0, 0)]
+    ] == [("empty_fullraw_priority", 9, 9)]
     assert calls == []
 
 
