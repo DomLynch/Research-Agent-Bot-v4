@@ -193,14 +193,15 @@ publication metadata). Touch these, not code, for domain behavior.
 # build one topic's evidence run (no LLM if --no-frontier)
 .venv/bin/python scripts/build_topic_evidence_run.py --topic rapamycin --domain longevity --top 5 --mode alpha
 # daily publish cycle for a domain (safe — no --submit)
-.venv/bin/python scripts/daily_alpha_publish_cycle.py --domain longevity_research --allow-tier2
+.venv/bin/python scripts/daily_alpha_publish_cycle.py --domain longevity_research --allow-tier2-repair
 # the real submitting form (what the timers run):
-#   ... --refresh-candidates --allow-tier2 --max-refresh-batches <N> --submit
+#   ... --refresh-candidates --allow-tier2-repair --max-refresh-batches <N> --submit
 ```
 Key flags: `--domain`, `--submit`, `--refresh-candidates`,
 `--max-refresh-batches` (⚠️ default is **5**; the VPS timers historically ran
 **500** = an aggressive backfill that can hammer the corpus API),
-`--allow-tier2`, `--max-cost-usd`, `--published-topic-cooldown-days`.
+`--allow-tier2-repair` (repair entry only; final submit floors stay strict),
+`--max-cost-usd`, `--published-topic-cooldown-days`.
 
 **Env keys (NAMES ONLY — never commit values; `.env` is gitignored):**
 - Writer (MiniMax M3): `MINIMAX_API_KEY`, `MINIMAX_BASE_URL`, `MINIMAX_MODEL`, `MINIMAX_TIMEOUT_SEC` (legacy `MIMO_*` aliases still read)
