@@ -8515,6 +8515,23 @@ def test_source_literature_candidates_use_latest_domain_snapshot(tmp_path: Path)
     ) == ["current_parent"]
 
 
+def test_source_literature_candidates_require_domain_seed_scope(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    discovery = root / "_topics_discovery"
+    discovery.mkdir(parents=True)
+    (discovery / "latest.json").write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [
+            {"topic": "anti_tumor", "paper_count": 25, "fact_source_count": 25},
+            {"topic": "caloric_restriction", "paper_count": 7, "fact_source_count": 7},
+        ],
+    }), encoding="utf-8")
+
+    assert daily._source_literature_topic_candidates(
+        root, "longevity_research", 5, limit=3,
+    ) == ["caloric_restriction"]
+
+
 def test_source_literature_candidates_skip_exhausted_topic_family(
     tmp_path: Path,
 ) -> None:
@@ -8794,7 +8811,7 @@ def test_source_literature_fetcher_retries_focused_query_variant(
         payload = json.loads(req.data.decode("utf-8"))
         query = str(payload["query"])
         queries.append(query)
-        if query == "physical activity":
+        if query == "physical activity aging":
             return Response([fact_row(i) for i in range(5)])
         return Response([fact_row(i) for i in range(2)])
 
@@ -8804,7 +8821,7 @@ def test_source_literature_fetcher_retries_focused_query_variant(
         "physical_activity_longevity_anti_aging", 5, domain="longevity_research",
     )
 
-    assert queries == ["physical activity longevity anti aging", "physical activity"]
+    assert queries == ["physical activity longevity anti aging", "physical activity aging"]
     assert len(papers) == 5
     assert [paper["doi"] for paper in papers] == [
         "10.1/physical-activity-0",

@@ -71,11 +71,15 @@ def relevant_papers(topic: str, papers: list[Json]) -> list[Json]:
 
 def query_variants(topic: str) -> tuple[str, ...]:
     raw = " ".join(title_key(topic).split())
+    contextual = " ".join(
+        token for token in raw.split()
+        if len(token) >= 3 and token not in {"longevity", "anti"}
+    )
     focused = " ".join(
         token for token in raw.split()
         if len(token) >= 3 and token not in _GENERIC_TOPIC_TOKENS
     )
-    return tuple(dict.fromkeys(q for q in (raw, focused) if q))
+    return tuple(dict.fromkeys(q for q in (raw, contextual, focused) if q))
 
 
 def boundary_quality(topic: str, papers: list[Json], min_sources: int) -> tuple[bool, str]:

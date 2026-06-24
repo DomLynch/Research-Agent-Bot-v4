@@ -82,7 +82,7 @@ _DISCOVERY_GENERIC_SUFFIX_TOKENS = _CLUSTER_GENERIC_TOKENS | {
     "outperforms", "our", "that", "those",
 }
 _DISCOVERY_SEED_SCOPE_GENERIC_TOKENS = _DISCOVERY_GENERIC_SUFFIX_TOKENS | {
-    "agent", "agents", "automation", "model", "models", "research", "source",
+    "agent", "agents", "anti", "automation", "model", "models", "research", "source",
     "system", "systems",
 }
 
@@ -3488,6 +3488,7 @@ def _source_literature_topic_candidates(
     limit: int = 5,
 ) -> list[str]:
     discovery_dir = runs_root / "_topics_discovery"
+    seed_scope = _seed_scope_tokens(_domain_seed_prefixes(profile_slug))
     paths = sorted(
         discovery_dir.glob("*.json"),
         key=lambda path: path.stat().st_mtime if path.exists() else 0,
@@ -3510,6 +3511,13 @@ def _source_literature_topic_candidates(
                 continue
             topic = str(row.get("topic") or "").strip()
             if not topic or topic in seen or _source_literature_family_blocked_topic(topic, blocked):
+                continue
+            topic_key = _canonical_family_key(topic).removeprefix("topic:")
+            topic_tokens = {
+                token.rstrip("s") for token in topic_key.split("_")
+                if len(token.rstrip("s")) >= 3
+            }
+            if "anti" in topic_tokens and seed_scope and not ((topic_tokens - {"anti"}) & seed_scope):
                 continue
             paper_count = int(row.get("paper_count") or 0)
             if paper_count >= min_sources:
