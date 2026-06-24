@@ -18,6 +18,7 @@ import datetime as dt
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 import httpx
 
@@ -28,6 +29,7 @@ from agent.settings import Settings, load_settings
 from agent.topic_discovery import (
     TopicCandidate,
     _fetch_topic_papers,
+    _paper_key,
     _score_topic,
     cached_source_rich_candidates,
     discover_topics,
@@ -37,6 +39,7 @@ from agent.topic_discovery import (
 from scripts import alpha_publish_io as publish_io
 
 _FAST_DERIVED_TOPIC_LIMIT = 250
+_FULLRAW_SOURCE_FLOOR = 5
 
 
 def _resolve_limits(
@@ -135,6 +138,60 @@ def _hydrate_candidates(
                 mean_cited_by=scored.mean_cited_by,
             ))
     return tuple(sorted(out, key=_rank_key))
+
+
+def _fullraw_search_client() -> Any | None:
+    if os.environ.get("TOPIC_DISCOVERY_FULLRAW_FALLBACK", "1") in {"0", "false", "False"}:
+        return None
+    try:
+        from v5_memo.client import FullRawCorpusSearchClient
+    except ModuleNotFoundError:
+        src = Path(os.environ.get("V5_MEMO_SRC", "/opt/v5-memo/src"))
+        if not src.exists():
+            return None
+        sys.path.insert(0, str(src))
+        try:
+            from v5_memo.client import FullRawCorpusSearchClient
+        except ModuleNotFoundError:
+            return None
+    return FullRawCorpusSearchClient.from_env(strict=True)
+
+
+def _fullraw_paper(hit: Any) -> dict[str, Any]:
+    meta = getattr(hit, "metadata", {})
+    meta = meta if isinstance(meta, dict) else {}
+    return {
+        "doi": getattr(hit, "doi", None),
+        "title": getattr(hit, "title", ""),
+        "publication_year": getattr(hit, "year", None),
+        "fwci": meta.get("fwci") or 1.0,
+        "cited_by_count": meta.get("cited_by_count") or 0,
+        "quality_score": meta.get("quality_score") or 100,
+    }
+
+
+def _fullraw_supply_candidates(
+    *, profile_slug: str, seeds: tuple[str, ...], excluded: set[str],
+    current_year: int, limit: int,
+) -> tuple[TopicCandidate, ...]:
+    client = _fullraw_search_client()
+    if client is None:
+        return ()
+    candidates: list[TopicCandidate] = []
+    for topic in [t for t in seeds if t not in excluded][:max(1, limit)]:
+        query = topic.replace("_", " ")
+        if profile_slug not in {"longevity", "longevity_research"}:
+            query = f"{query} {profile_slug.replace('_', ' ')}"
+        try:
+            hits = client.search(query, limit=25)
+        except Exception as exc:  # pragma: no cover - fallback must not break discovery.
+            print(f"[topic-discovery] fullraw fallback failed for {topic}: {exc}", file=sys.stderr)
+            continue
+        papers = list({_paper_key(_fullraw_paper(hit)): _fullraw_paper(hit) for hit in hits}.values())
+        if len(papers) >= _FULLRAW_SOURCE_FLOOR:
+            candidates.append(_score_topic(
+                topic, papers, current_year, fact_source_count=len(papers)))
+    return tuple(sorted(candidates, key=_rank_key))
 
 
 def _filter_excluded(
