@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Summarize the latest alpha publish ledger for monitoring.
 
 Default mode is observe-only and exits 0. Pass --expect-published when a
