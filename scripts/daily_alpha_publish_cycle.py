@@ -3430,34 +3430,6 @@ def _crossref_fetch(doi: str) -> Json:
     return data if isinstance(data, dict) else {}
 
 
-def _decision_fetch(submission_id: str) -> Json:
-    return publish_decisions.decision_fetch(submission_id)
-
-
-def _submission_id(payload: Json) -> str:
-    return publish_decisions.submission_id(payload)
-
-
-def _public_alpha_base() -> str:
-    return publish_public.public_alpha_base()
-
-
-def _public_alpha_url(value: Any) -> str:
-    return publish_public.public_alpha_url(value)
-
-
-def _public_alpha_urls(payload: Any) -> list[str]:
-    return publish_public.public_alpha_urls(payload)
-
-
-def _fetch_public_page(url: str) -> Json:
-    return publish_public.fetch_public_page(url)
-
-
-def _page_rendered(result: Json) -> bool:
-    return publish_public.page_rendered(result)
-
-
 def _source_literature_title_key(title: Any) -> str:
     return publish_literature.title_key(title)
 
@@ -3709,56 +3681,11 @@ _PUBLISH_RENDER_POLL_ATTEMPTS = publish_public.PUBLISH_RENDER_POLL_ATTEMPTS
 _PUBLISH_RENDER_POLL_DELAY_S = publish_public.PUBLISH_RENDER_POLL_DELAY_S
 
 
-def _public_page_check(
-    decision: Json, *, page_fetcher: PageFetcher,
-    attempts: int = 1, delay_s: float = 0.0,
-) -> Json:
-    return publish_public.public_page_check(
-        decision, page_fetcher=page_fetcher, attempts=attempts, delay_s=delay_s,
-    )
-
-
-def _apply_submission_decision(
-    ledger: Json,
-    *,
-    submission_id: str,
-    decision: Json,
-    page_fetcher: PageFetcher,
-) -> str:
-    return publish_decisions.apply_submission_decision(
-        ledger,
-        submission_id_value=submission_id,
-        decision=decision,
-        page_fetcher=page_fetcher,
-    )
-
-
-def _poll_submission_decision(
-    ledger: Json,
-    *,
-    submission_id: str,
-    fetcher: DecisionFetcher,
-    page_fetcher: PageFetcher,
-    attempts: int,
-    sleep_seconds: float,
-    sleep: Callable[[float], None] = time.sleep,
-) -> str:
-    return publish_decisions.poll_submission_decision(
-        ledger,
-        submission_id_value=submission_id,
-        fetcher=fetcher,
-        page_fetcher=page_fetcher,
-        attempts=attempts,
-        sleep_seconds=sleep_seconds,
-        sleep=sleep,
-    )
-
-
 def sync_submission_decisions(
     runs_root: Path = _RUNS,
     *,
-    fetcher: DecisionFetcher = _decision_fetch,
-    page_fetcher: PageFetcher = _fetch_public_page,
+    fetcher: DecisionFetcher = publish_decisions.decision_fetch,
+    page_fetcher: PageFetcher = publish_public.fetch_public_page,
     now: dt.datetime | None = None,
     max_pending_age_hours: float = _DEFAULT_PENDING_DECISION_MAX_AGE_HOURS,
 ) -> Json:
@@ -3773,7 +3700,7 @@ def sync_submission_decisions(
     for path in sorted(ledger_dir.glob("*.json")):
         ledger = _json(path, {})
         if isinstance(ledger, dict):
-            sid = str(ledger.get("submission_id") or "") or _submission_id(
+            sid = str(ledger.get("submission_id") or "") or publish_decisions.submission_id(
                 ledger.get("submission", {}),
             )
             if sid:
@@ -3785,7 +3712,7 @@ def sync_submission_decisions(
             continue
         if ledger.get("status") == publish_status.CycleStatus.PUBLISHED.value:
             summary["checked"] += 1
-            page = _public_page_check(
+            page = publish_public.public_page_check(
                 {"public_url": ledger.get("public_url")},
                 page_fetcher=page_fetcher,
             )
@@ -3808,7 +3735,7 @@ def sync_submission_decisions(
             # permanently stuck (the repair path would only resubmit it and get
             # duplicate-blocked).
             summary["checked"] += 1
-            page = _public_page_check(
+            page = publish_public.public_page_check(
                 {"public_url": ledger.get("public_url")},
                 page_fetcher=page_fetcher,
             )
@@ -3825,7 +3752,7 @@ def sync_submission_decisions(
             continue
         if ledger.get("final_verdict") in _FINAL_DECISION_VERDICTS:
             continue
-        submission_id = str(ledger.get("submission_id") or "") or _submission_id(
+        submission_id = str(ledger.get("submission_id") or "") or publish_decisions.submission_id(
             ledger.get("submission", {}),
         )
         if not submission_id:
@@ -3841,9 +3768,9 @@ def sync_submission_decisions(
                 "detail": str(exc)[:180],
             })
             continue
-        final = _apply_submission_decision(
+        final = publish_decisions.apply_submission_decision(
             ledger,
-            submission_id=submission_id,
+            submission_id_value=submission_id,
             decision=decision,
             page_fetcher=page_fetcher,
         )
@@ -3907,9 +3834,9 @@ def sync_submission_decisions(
                     "fingerprint": row.get("fingerprint"),
                 },
             }
-            final = _apply_submission_decision(
+            final = publish_decisions.apply_submission_decision(
                 synthetic_ledger,
-                submission_id=submission_id,
+                submission_id_value=submission_id,
                 decision=decision,
                 page_fetcher=page_fetcher,
             )
@@ -4470,8 +4397,8 @@ def run_cycle(
     submitter: Submitter | None = None,
     source_paper_fetcher: SourcePaperFetcher | None = None,
     fetcher: Fetcher = _crossref_fetch,
-    decision_fetcher: DecisionFetcher = _decision_fetch,
-    page_fetcher: PageFetcher = _fetch_public_page,
+    decision_fetcher: DecisionFetcher = publish_decisions.decision_fetch,
+    page_fetcher: PageFetcher = publish_public.fetch_public_page,
     memo_refresher: MemoRefresher = _refresh_alpha_memo,
     queue_builder: QueueBuilder = _build_queue,
     sleep: Callable[[float], None] = time.sleep,
@@ -5073,7 +5000,7 @@ def run_cycle(
         attempt["submission"] = result
         ledger["submission"] = result
         if result["status"] == _DECISION_ACCEPTED:
-            submission_id = _submission_id(result)
+            submission_id = publish_decisions.submission_id(result)
             _record_submission_attempt(
                 submitted_path,
                 date=date,
@@ -5089,13 +5016,13 @@ def run_cycle(
                 "submission_id": submission_id,
             })
             if submission_id:
-                final = _poll_submission_decision(
+                final = publish_decisions.poll_submission_decision(
                     ledger,
-                    submission_id=submission_id,
+                    submission_id_value=submission_id,
                     fetcher=decision_fetcher,
                     page_fetcher=page_fetcher,
                     attempts=decision_poll_attempts
-                    if default_submitter or decision_fetcher is not _decision_fetch
+                    if default_submitter or decision_fetcher is not publish_decisions.decision_fetch
                     else 0,
                     sleep_seconds=decision_poll_seconds,
                     sleep=sleep,
@@ -5167,7 +5094,7 @@ def run_cycle(
                 date=date,
                 candidate=candidate,
                 runs_root=runs_root,
-                submission_id=_submission_id(result),
+                submission_id=publish_decisions.submission_id(result),
                 submit_status="rejected_duplicate",
             )
         attempt["status"] = result["status"]
@@ -5258,7 +5185,7 @@ def run_cycle(
                 }
                 ledger["submission"] = result
                 if result["status"] == _DECISION_ACCEPTED:
-                    submission_id = _submission_id(result)
+                    submission_id = publish_decisions.submission_id(result)
                     _record_submission_attempt(
                         submitted_path,
                         date=date,
@@ -5274,9 +5201,9 @@ def run_cycle(
                         "submission_id": submission_id,
                     })
                     if submission_id:
-                        final = _poll_submission_decision(
+                        final = publish_decisions.poll_submission_decision(
                             ledger,
-                            submission_id=submission_id,
+                            submission_id_value=submission_id,
                             fetcher=decision_fetcher,
                             page_fetcher=page_fetcher,
                             attempts=decision_poll_attempts,

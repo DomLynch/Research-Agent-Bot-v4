@@ -22,6 +22,8 @@ from pytest import MonkeyPatch, raises
 
 import scripts.daily_alpha_publish_cycle as daily
 from agent.topic_discovery import cap_topic_slug
+from scripts import alpha_publish_decisions as publish_decisions
+from scripts import alpha_publish_public as publish_public
 
 
 def test_daily_alpha_publish_cycle_can_run_as_file() -> None:
@@ -5625,9 +5627,9 @@ def test_apply_submission_decision_keeps_accept_without_url_pending() -> None:
         "submitted_topic": "accepted_without_url",
     }
 
-    final = daily._apply_submission_decision(
+    final = publish_decisions.apply_submission_decision(
         ledger,
-        submission_id="sub-accepted-without-url",
+        submission_id_value="sub-accepted-without-url",
         decision={"status": "complete", "decision": "accept"},
         page_fetcher=lambda _url: {"ok": False, "status": 0},
     )
@@ -5647,9 +5649,9 @@ def test_apply_submission_decision_reports_accepted_dedupe_without_url() -> None
         "submitted_topic": "accepted_deduped",
     }
 
-    final = daily._apply_submission_decision(
+    final = publish_decisions.apply_submission_decision(
         ledger,
-        submission_id="sub-accepted-deduped",
+        submission_id_value="sub-accepted-deduped",
         decision={
             "status": "complete",
             "decision": "accept",
@@ -5675,7 +5677,7 @@ def test_public_alpha_urls_prefers_publication_url_over_artifact_ids() -> None:
         },
     }
 
-    urls = daily._public_alpha_urls(decision)
+    urls = publish_public.public_alpha_urls(decision)
 
     assert urls[0] == "https://researka.org/alpha/002f5fe8-38f1-4b5a-b1a1-3cdff72ddedd"
     assert "https://researka.org/alpha/claim_16e9ea4c16c74570" not in urls
@@ -5683,7 +5685,7 @@ def test_public_alpha_urls_prefers_publication_url_over_artifact_ids() -> None:
 
 
 def test_page_rendered_rejects_not_found_title_with_attrs() -> None:
-    assert daily._page_rendered({
+    assert publish_public.page_rendered({
         "ok": True,
         "status": 200,
         "body": '<title data-next-head="">Alpha Memo Not Found</title>',
@@ -10059,7 +10061,7 @@ def test_public_page_check_polls_until_rendered() -> None:
                     "body": '<title data-next-head="">Alpha Memo Not Found</title>'}
         return {"ok": True, "status": 200, "body": "<title>Real Memo</title>"}
 
-    page = daily._public_page_check(
+    page = publish_public.public_page_check(
         {"public_url": "https://researka.org/alpha/x"},
         page_fetcher=fetcher, attempts=3, delay_s=0.0,
     )
@@ -10078,7 +10080,7 @@ def test_public_page_check_default_is_single_shot() -> None:
         return {"ok": True, "status": 200,
                 "body": '<title data-next-head="">Alpha Memo Not Found</title>'}
 
-    page = daily._public_page_check(
+    page = publish_public.public_page_check(
         {"public_url": "https://researka.org/alpha/x"}, page_fetcher=fetcher,
     )
     assert page["ok"] is False
@@ -10120,11 +10122,11 @@ def test_public_alpha_urls_accepts_papers_scheme() -> None:
     # Researka migrated published alpha memos from /alpha/<id> to /papers/<id>;
     # the extractor must recognise the current scheme or accepted memos can
     # never be verified/promoted (they stay stuck at published=0).
-    assert daily._public_alpha_urls(
+    assert publish_public.public_alpha_urls(
         {"public_url": "https://researka.org/papers/0df073d3"}
     ) == ["https://researka.org/papers/0df073d3"]
     # Legacy form still works.
-    assert daily._public_alpha_urls(
+    assert publish_public.public_alpha_urls(
         {"public_url": "https://researka.org/alpha/d3c55248"}
     ) == ["https://researka.org/alpha/d3c55248"]
 
