@@ -1925,6 +1925,11 @@ def _repairable_source_literature_topics(
 ) -> list[str]:
     topics: list[str] = []
     seen: set[str] = set()
+    published = _recently_published_topics(
+        runs_root / "_daily_ledger",
+        days=_DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS,
+        domain=domain,
+    )
     for path in sorted((runs_root / "_daily_ledger").glob("*.json"), reverse=True):
         ledger = _json(path, {})
         if not isinstance(ledger, dict) or not _same_domain(_ledger_domain(ledger), domain):
@@ -1934,6 +1939,8 @@ def _repairable_source_literature_topics(
         for _fp, run_ref, _decision in _repairable_submission_records(ledger):
             topic = candidate_topic or _source_literature_topic_from_run(run_ref)
             if not topic or topic in seen:
+                continue
+            if topic in published or _family_blocked_topic(topic, published):
                 continue
             run_dir = _run_path(runs_root, run_ref)
             if not (run_dir / "source_literature_memo.md").exists():
@@ -5022,6 +5029,7 @@ def run_cycle(
                 )
                 assert submitter is not None
                 result = submit_with_backoff(payload, submitter)
+                fallback_attempt["submit_status"] = result["status"]
                 ledger["candidate"] = {
                     "topic": literature_topic,
                     "run_dir": candidate.get("run_dir"),
@@ -5071,6 +5079,8 @@ def run_cycle(
                     })
                     _write_ledger(ledger_path, ledger)
                     return ledger
+                fallback_attempt["status"] = "blocked"
+                fallback_attempt["reason"] = result["status"]
     if ledger["cycle_attempts"]:
         last_status = str(ledger["cycle_attempts"][-1].get("status") or "failed")
         ledger.update({

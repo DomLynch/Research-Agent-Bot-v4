@@ -7730,6 +7730,126 @@ def test_repairable_source_literature_revise_retries_before_new_topic(
     assert (root / "metformin use-source-literature-2026-06-10T18-00-00Z").exists()
 
 
+def _usable_boundary_papers() -> list[dict[str, str]]:
+    return [
+        {"title": "Usable boundary signaling in aging metabolism", "doi": "10.1234/u0"},
+        {"title": "Boundary markers for usable inflammation evidence", "doi": "10.1234/u1"},
+        {
+            "title": "Usable lifespan boundary conditions in mitochondrial stress",
+            "doi": "10.1234/u2",
+        },
+        {
+            "title": "Proteostasis evidence for a usable intervention boundary",
+            "doi": "10.1234/u3",
+        },
+        {
+            "title": "Cellular senescence and usable translational boundaries",
+            "doi": "10.1234/u4",
+        },
+    ]
+
+
+def test_published_source_literature_topic_is_not_repaired_again(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
+    root = tmp_path / "repo"
+    ledger_dir = root / "_daily_ledger"
+    old_run = root / "mtor-source-literature-2026-06-09T18-00-00Z"
+    old_run.mkdir(parents=True)
+    old_run.joinpath("source_literature_memo.md").write_text("# Source\n", encoding="utf-8")
+    daily._write_json(ledger_dir / "2026-06-09T18-00-00Z.json", {
+        "domain": {"slug": "longevity_research"},
+        "submitted": 1,
+        "candidate": {"topic": "mtor", "run_dir": old_run.name, "fingerprint": "old"},
+        "researka_decision": {
+            "decision": "revise",
+            "required_revisions": ["required revision"],
+        },
+    })
+    daily._write_json(ledger_dir / "2026-06-10T18-00-00Z.json", {
+        "domain": {"slug": "longevity_research"},
+        "submitted": 1,
+        "published": 1,
+        "final_verdict": "accepted",
+        "candidate": {"topic": "mtor", "run_dir": old_run.name, "fingerprint": "new"},
+    })
+    (root / "_topics_discovery").mkdir()
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "usable_boundary", "paper_count": 9, "fact_source_count": 9}],
+    })
+    papers = _usable_boundary_papers()
+    seen_topics: list[str] = []
+
+    def fetch(topic: str, _limit: int) -> list[dict[str, Any]]:
+        seen_topics.append(topic)
+        if topic == "mtor":
+            raise AssertionError("published source-literature topic should be blocked")
+        return papers
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-11T18-00-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        source_paper_fetcher=fetch,
+        submitter=lambda _payload: {
+            "ok": True, "status": 200,
+            "response": {"submission": {"id": "sub-1"}},
+        },
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert seen_topics == ["usable_boundary"]
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "usable_boundary"
+
+
+def test_source_literature_fallback_records_rejected_submit_status(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "usable_boundary", "paper_count": 9, "fact_source_count": 9}],
+    })
+    papers = _usable_boundary_papers()
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-11T18-00-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        source_paper_fetcher=lambda _topic, _limit: papers,
+        submitter=lambda _payload: {
+            "ok": False, "status": 409, "response": "duplicate publication",
+        },
+        fetcher=lambda _doi: {"message": {}},
+    )
+
+    assert ledger["status"] == "no_fresh_candidate"
+    assert ledger["source_literature_fallback"] == {
+        "topic": "usable_boundary",
+        "status": "blocked",
+        "reason": "rejected_duplicate",
+        "paper_count": 5,
+        "relevant_paper_count": 5,
+        "submit_status": "rejected_duplicate",
+    }
+
+
 def test_source_literature_fallback_is_disabled_without_explicit_submit_flag(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
