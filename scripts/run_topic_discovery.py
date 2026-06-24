@@ -752,8 +752,9 @@ def main() -> int:
                 ),
             )
         ranked = _merge_candidates(ranked, scoped_discovered)
+    paper_backed_ranked = sum(1 for c in ranked if _paper_backed(c))
     if (
-        not any(_paper_backed(c) for c in ranked)
+        paper_backed_ranked < args.top
         and not args.cache_only
         and not args.seed_paper_only
         and not args.skip_seed_paper_probe
@@ -763,7 +764,7 @@ def main() -> int:
             _fullraw_supply_candidates(
                 query_context=profile.display_name,
                 current_year=year,
-                top=args.top,
+                top=max(1, args.top - paper_backed_ranked),
             ),
         )
     top = ranked[: args.top]

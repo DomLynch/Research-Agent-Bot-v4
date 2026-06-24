@@ -1015,6 +1015,53 @@ def test_partial_seed_paper_probe_still_fills_window_from_domain_discovery(
     ]
 
 
+def test_partial_seed_paper_probe_tops_up_from_domain_fullraw_supply(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        if query == "metformin":
+            return [{
+                "doi": "10.1/metformin", "title": "Metformin longevity paper",
+                "fwci": 4.0, "cited_by_count": 40, "publication_year": 2026,
+                "quality_score": 90.0,
+            }]
+        if query == "longevity anti aging":
+            return [
+                {
+                    "doi": f"10.1/vitd{i}",
+                    "title": f"Vitamin D deficiency and aging cohort {i}",
+                    "fwci": 2.0,
+                    "cited_by_count": 20 + i,
+                    "publication_year": 2025,
+                    "quality_score": 90.0,
+                }
+                for i in range(5)
+            ]
+        return []
+
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda _path=None: ("metformin",))
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda _path=None: 5_000)
+    monkeypatch.setattr(run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: ())
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fake_fullraw)
+    monkeypatch.setattr(run_topic_discovery, "discover_topics", lambda **_kwargs: ())
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--domain", "longevity_research", "--top", "2",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert "longevity anti aging" in calls
+    assert [row["topic"] for row in payload["top"]] == ["vitamin_deficiency", "metformin"]
+
+
 def test_discovery_hydration_tries_domain_context_after_bare_label(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
