@@ -9954,8 +9954,12 @@ def test_source_literature_payload_separates_intervention_from_predictive_rows(
     assert "non-clinical/predictive: 2 receipt(s)" in markdown
     assert "other/mixed: 1 receipt(s)" in markdown
     assert "other/mixed: 5 receipt(s)" not in markdown
+    assert "Descriptive receipt labels, not pooled effect counts" in payload["abstract"]
+    assert "not one pooled evidence front" in markdown
     assert "intervention signals plus separate predictive evidence" in payload["abstract"]
-    assert payload["title"].startswith("gut microbiome:")
+    assert payload["title"] == (
+        "gut microbiome: separated intervention and predictive evidence fronts"
+    )
 
 
 def test_source_literature_fallback_blocks_repeated_report_series(

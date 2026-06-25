@@ -665,11 +665,24 @@ def payload(
     direction_text = _direction_summary(selected, topic)
     signal_label = _direction_signal_label(selected, topic)
     source_types = sorted({evidence_type(paper) for paper in selected})
-    synthesis = (
+    split_front = (
+        "directionally favorable" in direction_text
+        and "non-clinical/predictive" in direction_text
+    )
+    lead = (
+        f"This receipt-backed scoping note maps separated evidence fronts for {topic}: "
+        if split_front else
         f"This receipt-backed scoping note has one bounded signal: {topic} shows "
-        f"{signal_label} across this "
-        f"{len(bundle)}-source {type_text} bundle ({year_text}). Grouped by "
-        f"direction, {direction_text}. The source facts cover "
+    )
+    group_label = (
+        "Descriptive receipt labels, not pooled effect counts"
+        if split_front else
+        "Grouped by direction"
+    )
+    synthesis = (
+        f"{lead}{signal_label} across this "
+        f"{len(bundle)}-source {type_text} bundle ({year_text}). {group_label}: "
+        f"{direction_text}. The source facts cover "
         f"{len(populations) or 'multiple'} population context(s) and "
         f"{len(interventions) or 'multiple'} intervention/exposure context(s), "
         "so this is a scoping signal about where endpoints diverge, without "
@@ -698,8 +711,17 @@ def payload(
     if "human clinical/observational" not in contexts:
         next_gaps.insert(0, "No source in this fallback bundle tests human clinical endpoints.")
     boundary_summary = (
-        f"Source-literature boundary for {topic}: the listed sources define "
-        "one bounded, context-dependent signal across separate source contexts. "
+        (
+            f"Source-literature boundary for {topic}: the listed sources define "
+            "separated intervention and predictive evidence fronts, not one pooled "
+            "evidence front. "
+        )
+        if split_front else
+        (
+            f"Source-literature boundary for {topic}: the listed sources define "
+            "one bounded, context-dependent signal across separate source contexts. "
+        )
+    ) + (
         "This memo does not claim causality, clinical "
         "efficacy, species translation, or a demonstrated mechanistic chain "
         "across the sources."
@@ -731,6 +753,11 @@ def payload(
             f"The selected receipts group because each carries a fact-level extraction "
             f"for {topic}; they separate by context ({context_text}) and endpoint, "
             "so they are not interchangeable evidence for one pooled claim."
+            + (
+                " Intervention rows and predictive/model rows are separated as "
+                "different evidence fronts within this source-literature boundary."
+                if split_front else ""
+            )
         ),
         "",
         "## Boundary limits",
@@ -771,8 +798,12 @@ def payload(
         "domain_slug": profile.slug,
         "category": category,
         "title": (
-            f"{topic.replace('_', ' ')}: one bounded, context-dependent signal "
-            "across receipts"
+            f"{topic.replace('_', ' ')}: "
+            + (
+                "separated intervention and predictive evidence fronts"
+                if split_front else
+                "one bounded, context-dependent signal across receipts"
+            )
         ),
         "abstract": safe_excerpt(synthesis),
         "summary": safe_excerpt(synthesis),
