@@ -3526,7 +3526,11 @@ def _source_literature_topic_candidates(
             if topic_tokens and not (topic_tokens - _DISCOVERY_PARENT_GENERIC_TOKENS):
                 continue
             paper_count = int(row.get("paper_count") or 0)
-            if paper_count >= min_sources:
+            fact_source_count = int(row.get("fact_source_count") or 0)
+            if paper_count >= min_sources and (
+                fact_source_count >= min_sources
+                or _source_literature_fallback_submit_enabled()
+            ):
                 topics.append(topic)
                 seen.add(topic)
         if topics:

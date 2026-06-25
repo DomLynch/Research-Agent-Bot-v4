@@ -8699,6 +8699,26 @@ def test_source_literature_candidates_skip_generic_fragments(tmp_path: Path) -> 
     ) == ["low_dose_lithium"]
 
 
+def test_source_literature_candidates_require_fact_source_floor(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", raising=False)
+    root = tmp_path / "repo"
+    discovery = root / "_topics_discovery"
+    discovery.mkdir(parents=True)
+    daily._write_json(discovery / "latest.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [
+            {"topic": "paper_rich_fact_thin", "paper_count": 20, "fact_source_count": 1},
+            {"topic": "source_rich_parent", "paper_count": 6, "fact_source_count": 6},
+        ],
+    })
+
+    assert daily._source_literature_topic_candidates(
+        root, "longevity_research", 5, limit=5,
+    ) == ["source_rich_parent"]
+
+
 def test_source_literature_candidates_skip_exhausted_topic_family(
     tmp_path: Path,
 ) -> None:
