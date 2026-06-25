@@ -9962,6 +9962,53 @@ def test_source_literature_payload_separates_intervention_from_predictive_rows(
     )
 
 
+def test_source_literature_payload_classifies_restored_attenuated_rows_as_favorable(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    papers = [
+        {
+            "title": f"Quercetin source {idx}",
+            "doi": f"10.1234/quercetin-{idx}",
+            "year": 2020 + idx,
+            "source_fact": {
+                "canonical_phrase": phrase,
+                "population": "animal model",
+                "intervention": "quercetin",
+                "comparator": "control",
+                "endpoint": "metabolic or hepatic marker",
+            },
+        }
+        for idx, phrase in enumerate((
+            "quercetin reduced postprandial glucose by 64%",
+            "quercetin attenuated ethanol-induced hepatic damage",
+            "quercetin restored body weight insulin and glucose markers",
+            "quercetin dampened inflammatory response markers",
+        ))
+    ] + [{
+        "title": "Comparator improves more than quercetin",
+        "doi": "10.1234/quercetin-compare",
+        "year": 2024,
+        "source_fact": {
+            "canonical_phrase": "another compound improved glucose more than quercetin",
+            "population": "animal model",
+            "intervention": "another compound",
+            "comparator": "quercetin",
+            "endpoint": "glucose marker",
+        },
+    }]
+
+    _candidate, payload = daily._source_literature_payload(
+        profile_slug="longevity_research", topic="quercetin",
+        papers=papers, runs_root=root, date="2026-06-25T01-05-00Z",
+    )
+
+    markdown = payload["markdown"]
+    assert "directionally favorable: 4 receipt(s)" in markdown
+    assert "comparator/not favorable: 1 receipt(s)" in markdown
+    assert "\n- other/mixed:" not in markdown
+
+
 def test_source_literature_fallback_blocks_repeated_report_series(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

@@ -242,8 +242,9 @@ def _effect_direction(finding: str, fact: Json | None = None, topic: str = "") -
         "lower", "lowered", "reduce", "reduces", "reduced", "reduction",
         "protective", "better", "improve", "improves", "improved",
         "benefit", "decrease", "decreases", "decreased", "extends lifespan",
-        "increased lifespan", "longer lifespan", "odds ratio of 0.", "hr = 0.",
-        "hr for", "ranked as the best", "ranked best", "best approach", "ranked first",
+        "increased lifespan", "longer lifespan", "attenuat", "restore",
+        "restored", "dampen", "dampening", "odds ratio of 0.", "hr = 0.", "hr for",
+        "ranked as the best", "ranked best", "best approach", "ranked first",
     )):
         return "directionally favorable"
     return "other/mixed"
