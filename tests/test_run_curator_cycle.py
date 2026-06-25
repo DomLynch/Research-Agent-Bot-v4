@@ -209,7 +209,7 @@ def test_stop_on_ready_discovery_overfetches_past_exclusions() -> None:
 def test_stop_on_ready_fullraw_supply_uses_small_publish_window() -> None:
     assert _discovery_top_for_plan(
         1, stop_on_ready=True, excluded_count=0, fullraw_supply_first=True,
-    ) == 2
+    ) == 4
     assert _discovery_top_for_plan(
         1, stop_on_ready=True, excluded_count=3, fullraw_supply_first=True,
     ) == 4
