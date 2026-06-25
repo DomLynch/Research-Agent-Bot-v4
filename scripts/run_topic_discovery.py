@@ -657,16 +657,15 @@ def _fullraw_supply_candidates(
         ))
         if len(out) >= top:
             return tuple(sorted(out, key=_rank_key))
-    seed_exact, seed_tokens = _domain_scope(seeds)
+    seed_exact, _ = _domain_scope(seeds)
     context_scope_tokens = set(_TOKEN_RE.findall(context_terms))
-    scope_tokens = seed_tokens | context_scope_tokens
     for topic in _title_topic_slugs({"fullraw": papers}, current_year, limit=top * 12):
         if topic in seen_topics:
             continue
         if (
-            scope_tokens
+            (seed_exact or context_scope_tokens)
             and _topic_key(topic) not in seed_exact
-            and not (_topic_tokens(topic) & scope_tokens)
+            and not (_topic_tokens(topic) & context_scope_tokens)
         ):
             continue
         topic_tokens = set(_TOKEN_RE.findall(topic.replace("_", " ").casefold()))

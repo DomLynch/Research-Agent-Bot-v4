@@ -1234,6 +1234,30 @@ def test_fullraw_supply_title_slugs_stay_domain_or_seed_scoped(
     assert not any("macular" in topic or "degeneration" in topic for topic in topics)
 
 
+def test_fullraw_supply_title_slugs_do_not_truncate_seed_topics(
+    monkeypatch: Any,
+) -> None:
+    papers = _fullraw_rows(
+        "stem", "Stem cell aging intervention cohort",
+    ) + _fullraw_rows("epi", "Epigenetic clocks longevity biomarker cohort")
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        return papers if query == "longevity anti aging" else []
+
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
+
+    rows = run_topic_discovery._fullraw_supply_candidates(
+        query_context="Longevity / anti-aging research",
+        current_year=2026,
+        top=4,
+        seeds=("stem_cell_exhaustion", "epigenetic_clocks"),
+    )
+
+    topics = {row.topic for row in rows}
+    assert "stem_cell" not in topics
+    assert "epigenetic_clocks" in topics
+
+
 def test_fullraw_supply_uses_domain_query_when_titles_do_not_cluster(
     monkeypatch: Any,
 ) -> None:
