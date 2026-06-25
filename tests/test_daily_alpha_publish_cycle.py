@@ -12450,6 +12450,54 @@ def test_fresh_parent_topics_skip_generic_parent_fragments(tmp_path: Path) -> No
     ) == ["low_dose_lithium"]
 
 
+def test_fresh_parent_topics_skip_stale_fullraw_offdomain_parents(
+    tmp_path: Path,
+) -> None:
+    discovery = tmp_path / "_topics_discovery"
+    discovery.mkdir()
+    (discovery / "stale_fullraw.json").write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "fullraw_seed_probe": {"receipts": [{"shards_searched": 42}]},
+        "all": [
+            {
+                "topic": "inflammatory_bowel",
+                "fact_source_count": 6,
+                "paper_count": 6,
+                "top_paper_title": (
+                    "Serious infections in children born to mothers with "
+                    "inflammatory bowel disease"
+                ),
+            },
+            {
+                "topic": "physical_activity",
+                "fact_source_count": 8,
+                "paper_count": 8,
+                "top_paper_title": "The effect of physical activity on anti-infection immunity",
+            },
+            {
+                "topic": "GDF11",
+                "fact_source_count": 5,
+                "paper_count": 5,
+                "top_paper_title": "Anti-Aging Effects of GDF11 on Skin",
+            },
+            {
+                "topic": "resveratrol",
+                "fact_source_count": 5,
+                "paper_count": 5,
+                "top_paper_title": "Resveratrol transport and metabolism",
+            },
+        ],
+    }), encoding="utf-8")
+
+    assert daily._fresh_parent_topics_from_discovery(
+        tmp_path,
+        "longevity_research",
+        set(),
+        limit=4,
+        min_sources=5,
+    ) == ["GDF11", "resveratrol"]
+
+
 def test_child_topics_from_queue_caps_slug_to_four_tokens() -> None:
     # A multi-word cluster label must not emit a 6-9 token word-salad child slug
     # (those are probed raw by the curator subprocess and exhaust the refresh

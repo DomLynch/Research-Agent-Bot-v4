@@ -3714,6 +3714,17 @@ def _fresh_parent_topics_from_discovery(
                 continue
             if topic_tokens and not (topic_tokens - _DISCOVERY_PARENT_GENERIC_TOKENS):
                 continue
+            title_tokens = {
+                token.rstrip("s")
+                for token in _CLAIM_WORD.findall(str(row.get("top_paper_title") or "").lower())
+                if len(token.rstrip("s")) >= 3
+            }
+            domain_tokens = {"aging", "ageing", "longevity", "lifespan", "healthspan"}
+            if receipts and title_tokens and seed_scope and not (
+                _topic_in_seed_scope(topic_key, aliases, seed_scope)
+                or (topic_tokens | title_tokens) & domain_tokens
+            ):
+                continue
             if any(
                 topic_key.startswith(f"{seed}_")
                 and all(
