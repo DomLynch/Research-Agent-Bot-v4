@@ -746,6 +746,10 @@ def main() -> int:
         help="After cache, use bounded seed-paper probes only; skip slow DB expansion.",
     )
     parser.add_argument(
+        "--fullraw-supply-only", action="store_true",
+        help="Use source-rich fullraw supply only; skip seed-paper and DB expansion.",
+    )
+    parser.add_argument(
         "--skip-seed-paper-probe", action="store_true",
         help="Skip fullraw seed-paper probes and go straight to domain discovery.",
     )
@@ -809,7 +813,12 @@ def main() -> int:
             ),
         )
         paper_backed_cached = sum(1 for c in ranked if c.paper_count and c.top_paper_title)
-    if paper_backed_cached < args.top and not args.cache_only and not args.skip_seed_paper_probe:
+    if (
+        paper_backed_cached < args.top
+        and not args.cache_only
+        and not args.skip_seed_paper_probe
+        and not args.fullraw_supply_only
+    ):
         seed_paper_ranked = _filter_excluded(
             _seed_paper_candidates(
                 seed_probe_seeds, settings=settings, current_year=year,
@@ -820,7 +829,12 @@ def main() -> int:
         )
         ranked = _merge_candidates(ranked, seed_paper_ranked)
         paper_backed_cached = sum(1 for c in ranked if c.paper_count and c.top_paper_title)
-    if paper_backed_cached < args.top and not args.cache_only and not args.seed_paper_only:
+    if (
+        paper_backed_cached < args.top
+        and not args.cache_only
+        and not args.seed_paper_only
+        and not args.fullraw_supply_only
+    ):
         with httpx.Client() as client:
             discovered = discover_topics(
                 seeds=seeds, settings=settings, client=client,
@@ -902,6 +916,7 @@ def main() -> int:
         "cache_first": bool(read_source_rich_cache and cache_supported),
         "cache_only": bool(args.cache_only and cache_supported),
         "seed_paper_only": bool(args.seed_paper_only),
+        "fullraw_supply_only": bool(args.fullraw_supply_only),
         "fullraw_seed_probe": {
             "configured": _fullraw_configured(),
             "receipt_count": len(_FULLRAW_PROBE_RECEIPTS),

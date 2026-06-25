@@ -740,6 +740,8 @@ def main() -> int:
                     out.append("--seed-paper-only")
                 if skip_seed_paper_probe:
                     out.append("--skip-seed-paper-probe")
+                if fullraw_supply_first:
+                    out.append("--fullraw-supply-only")
             if args.warm_backlog:
                 out.append("--warm-backlog")
             if args.derived_topic_limit is not None:
@@ -772,6 +774,7 @@ def main() -> int:
         and args.stop_on_ready
         and not args.warm_backlog
         and not args.dry_run
+        and not fullraw_supply_first
     ):
         print("[cycle] seed-paper discovery empty; retrying bounded discovery")
         ok, last = _run_discovery_step(

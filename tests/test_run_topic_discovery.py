@@ -1093,6 +1093,42 @@ def test_seed_paper_only_skips_slow_domain_discovery_when_empty(
     assert payload["fullraw_seed_probe"]["events"][0]["status"] == "no_hits"
 
 
+def test_fullraw_supply_only_skips_seed_and_db_expansion_when_empty(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda _path=None: ("metformin",))
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(
+        run_topic_discovery, "load_derived_topic_limit", lambda _path=None: 5_000,
+    )
+    monkeypatch.setattr(run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: ())
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", lambda *_a, **_k: [])
+    monkeypatch.setattr(
+        run_topic_discovery,
+        "_seed_paper_candidates",
+        lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("seed probe")),
+    )
+    monkeypatch.setattr(
+        run_topic_discovery,
+        "discover_topics",
+        lambda **_kw: (_ for _ in ()).throw(AssertionError("slow discovery")),
+    )
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--domain", "longevity_research", "--top", "2",
+        "--fullraw-supply-only",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert payload["fullraw_supply_only"] is True
+    assert payload["candidate_count"] == 0
+    assert payload["top"] == []
+
+
 def test_skip_seed_paper_probe_goes_directly_to_domain_discovery(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

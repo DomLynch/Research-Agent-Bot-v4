@@ -739,9 +739,40 @@ def test_stop_on_ready_uses_fullraw_supply_before_cache_by_default(
     assert run_curator_cycle.main() == 1
     assert "--cache-first" not in calls[0]
     assert "--seed-paper-only" not in calls[0]
+    assert "--fullraw-supply-only" in calls[0]
     assert calls[0][calls[0].index("--top") + 1] == "5"
     assert budgets == ["12"]
     assert os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] == "45"
+
+
+def test_stop_on_ready_empty_fullraw_supply_does_not_retry_slow_discovery(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    runs = tmp_path / "runs"
+    calls: list[list[str]] = []
+
+    def fake_step(
+        args: list[str], step_name: str, *, timeout: int = 600,
+    ) -> tuple[bool, str]:
+        calls.append(args)
+        out_dir = runs / "_topics_discovery"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / "2026-06-25T00-00-00Z.json").write_text(
+            json.dumps({"domain": {"slug": "longevity"}, "top": [], "all": []}),
+            encoding="utf-8",
+        )
+        return True, "ok"
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
+    monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
+    monkeypatch.setattr(sys, "argv", ["run_curator_cycle.py", "--stop-on-ready"])
+
+    assert run_curator_cycle.main() == 1
+    assert len(calls) == 1
+    assert "--fullraw-supply-only" in calls[0]
 
 
 def test_stop_on_ready_empty_seed_paper_discovery_falls_back_to_bounded(
