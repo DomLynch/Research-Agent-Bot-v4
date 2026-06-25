@@ -8695,8 +8695,32 @@ def test_source_literature_candidates_use_latest_domain_snapshot(tmp_path: Path)
     os.utime(newer, (time.time() + 5, time.time() + 5))
 
     assert daily._source_literature_topic_candidates(
-        root, "longevity_research", 5,
+        root, "longevity_research", 5, limit=1,
     ) == ["current_parent"]
+
+
+def test_source_literature_candidates_fill_from_older_snapshots(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    discovery = root / "_topics_discovery"
+    discovery.mkdir(parents=True)
+    older = discovery / "older.json"
+    older.write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "older_source_rich", "paper_count": 50, "fact_source_count": 50}],
+    }), encoding="utf-8")
+    newer = discovery / "newer.json"
+    newer.write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "current_parent", "paper_count": 6, "fact_source_count": 6}],
+    }), encoding="utf-8")
+    os.utime(older, (100.0, 100.0))
+    os.utime(newer, (200.0, 200.0))
+
+    assert daily._source_literature_topic_candidates(
+        root, "longevity_research", 5, limit=2,
+    ) == ["current_parent", "older_source_rich"]
 
 
 def test_source_literature_candidates_require_domain_seed_scope(tmp_path: Path) -> None:

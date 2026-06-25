@@ -3522,6 +3522,8 @@ def _source_literature_topic_candidates(
     blocked = set(blocked_topics or set()) | _exhausted_source_literature_topics(
         runs_root, profile_slug,
     )
+    topics: list[str] = []
+    seen: set[str] = set()
     for path in paths:
         data = _json(path, {})
         if not isinstance(data, dict) or not _same_domain(_row_domain(data), profile_slug):
@@ -3529,8 +3531,6 @@ def _source_literature_topic_candidates(
         rows = data.get("all")
         if not isinstance(rows, list):
             continue
-        topics: list[str] = []
-        seen: set[str] = set()
         for row in rows:
             if not isinstance(row, dict):
                 continue
@@ -3554,9 +3554,11 @@ def _source_literature_topic_candidates(
             ):
                 topics.append(topic)
                 seen.add(topic)
-        if topics:
+                if len(topics) >= limit:
+                    return topics[:limit]
+        if len(topics) >= limit:
             return topics[:limit]
-    return []
+    return topics[:limit]
 
 
 def _source_literature_topic_candidate(
