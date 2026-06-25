@@ -147,7 +147,7 @@ def _fullraw_topic_papers(topic: str, limit: int) -> list[Json]:
 
 def _fullraw_relevant_papers(topic: str, limit: int, seen: set[str]) -> list[Json]:
     out: list[Json] = []
-    for query in query_variants(topic)[:1]:
+    for query in query_variants(topic):
         for paper in _fullraw_topic_papers(query, max(25, limit * 6)):
             if not isinstance(paper, dict) or not _text_has_topic(paper.get("title"), topic):
                 continue

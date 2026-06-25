@@ -9559,6 +9559,46 @@ def test_source_literature_fetcher_supplements_thin_fact_search_with_fullraw(
     assert daily._source_literature_boundary_quality("acarbose", papers, 5) == (True, "ok")
 
 
+def test_source_literature_fetcher_tries_fullraw_query_variants(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "researka_database_url": "",
+        "researka_database_token": "",
+    })())
+    queries: list[str] = []
+
+    def fullraw(query: str, _limit: int) -> list[dict[str, Any]]:
+        queries.append(query)
+        titles = (
+            [
+                "Deuterium depleted water adaptation source",
+                "Deuterium depleted water isotope regulation",
+            ] if query == "deuterium depleted water" else [
+                "Deuterium depleted water aging intervention source",
+                "Deuterium depleted water aging oxidative stress",
+                "Deuterium depleted water aging cell growth",
+                "Deuterium depleted water aging animal study",
+                "Deuterium depleted water aging translational review",
+            ]
+        )
+        return [{"doi": f"10.1/ddw-{idx}-{len(queries)}", "title": title}
+                for idx, title in enumerate(titles)]
+
+    monkeypatch.setattr(publish_literature, "_fullraw_topic_papers", fullraw)
+
+    papers = daily._fetch_source_literature_papers(
+        "deuterium_depleted_water_aging", 5, domain="longevity_research",
+    )
+
+    assert queries[:2] == ["deuterium depleted water", "deuterium depleted water aging"]
+    assert len(papers) == 5
+    assert daily._source_literature_fact_count(papers) == 5
+    assert daily._source_literature_boundary_quality(
+        "deuterium_depleted_water_aging", papers, 5,
+    ) == (True, "ok")
+
+
 def test_source_literature_fetcher_enriches_fullraw_with_matching_fact_rows(
     monkeypatch: MonkeyPatch,
 ) -> None:
