@@ -8023,7 +8023,7 @@ def test_thin_source_literature_candidate_does_not_skip_refresh(
     assert ledger["source_literature_fallback"]["reason"] == "source_floor_below_min"
 
 
-def test_source_literature_preflight_uses_default_fullraw_before_refresh(
+def test_source_literature_preflight_defers_default_fullraw_fetch_to_fallback(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     root = tmp_path / "repo"
@@ -8084,15 +8084,15 @@ def test_source_literature_preflight_uses_default_fullraw_before_refresh(
     )
 
     assert fetches == [
-        ("cellular_reprogramming_safety", 5, "longevity_research"),
+        ("cellular_reprogramming_safety", 15, "longevity_research"),
     ]
     assert not refresh_calls
     assert ledger["source_literature_preflight_attempts"] == [{
         "topic": "cellular_reprogramming_safety",
         "status": "selected",
-        "reason": "ok",
-        "paper_count": 5,
-        "relevant_paper_count": 5,
+        "reason": "metadata_candidate_available",
+        "paper_count": 0,
+        "relevant_paper_count": 0,
     }]
     assert ledger["refresh_batches"][0]["note"] == (
         "skipped_source_literature_candidate_available"

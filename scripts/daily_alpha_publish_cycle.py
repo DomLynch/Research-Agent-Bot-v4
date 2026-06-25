@@ -4630,22 +4630,23 @@ def run_cycle(
         source_lit_available = False
         source_lit_probe_attempts: list[Json] = []
         if submit and profile.slug != "ai_research":
-            source_lit_probe = source_paper_fetcher or (
-                lambda topic, limit: _fetch_source_literature_papers(
-                    topic, limit, domain=profile.slug,
-                )
-            )
+            source_lit_probe = source_paper_fetcher
             for topic in _source_literature_topic_candidates(
                 runs_root, profile.slug, min_submit_sources,
                 source_literature_blocked_topics,
                 limit=min(4, _SOURCE_LITERATURE_SCAN_LIMIT),
             ):
-                papers = source_lit_probe(topic, min_submit_sources)
-                source_lit_available, _reason = _source_literature_boundary_quality(
-                    topic, papers, min_submit_sources,
-                )
-                if source_lit_available:
-                    source_lit_preflight_papers[topic] = papers
+                if source_lit_probe is None:
+                    papers = []
+                    source_lit_available = True
+                    _reason = "metadata_candidate_available"
+                else:
+                    papers = source_lit_probe(topic, min_submit_sources)
+                    source_lit_available, _reason = _source_literature_boundary_quality(
+                        topic, papers, min_submit_sources,
+                    )
+                    if source_lit_available:
+                        source_lit_preflight_papers[topic] = papers
                 source_lit_probe_attempts.append({
                     "topic": topic,
                     "status": "selected" if source_lit_available else "blocked",
