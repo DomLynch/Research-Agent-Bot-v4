@@ -3366,6 +3366,28 @@ def test_refresh_candidate_batch_passes_priority_child_topics(
     assert "second_child" in calls[0]
 
 
+def test_refresh_candidate_batch_runs_expanded_parent_priority_window(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+
+    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        calls.append(args)
+        return True, "ok"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    out = daily._refresh_candidate_batch(
+        2, runs_root=tmp_path,
+        priority_topics=("fresh_a", "fresh_b", "fresh_c", "fresh_d"),
+    )
+
+    assert out["priority_topics"] == ["fresh_a", "fresh_b", "fresh_c", "fresh_d"]
+    assert calls[0].count("--priority-topic") == 4
+    assert calls[0][calls[0].index("--top") + 1] == "4"
+    assert out["top"] == 4
+
+
 def test_refresh_candidate_batch_timeout_does_not_mark_all_priorities_ran(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
@@ -4127,6 +4149,12 @@ def test_v5_client_fallback_counts_as_fullraw_seed_discovery(
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "1")
 
     assert daily._fullraw_seed_discovery_enabled() is True
+
+
+def test_parent_refresh_topic_limit_expands_bounded_candidate_window() -> None:
+    assert daily._parent_refresh_topic_limit(1) == 1
+    assert daily._parent_refresh_topic_limit(2) == 4
+    assert daily._parent_refresh_topic_limit(5) == 4
 
 
 def test_fresh_parent_discovery_prefers_broader_parent_over_newer_child(

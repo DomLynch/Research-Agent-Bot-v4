@@ -264,7 +264,9 @@ def _refresh_timeout_note(refresh: Json) -> bool:
 
 
 def _parent_refresh_topic_limit(refresh_top: int) -> int:
-    return max(1, min(refresh_top, _DEFAULT_PARENT_REFRESH_TOPIC_LIMIT))
+    if refresh_top <= 1:
+        return 1
+    return min(refresh_top * 2, _DEFAULT_PARENT_REFRESH_TOPIC_LIMIT)
 
 
 _REPAIRABLE_REJECTION_REASONS = {
@@ -4126,7 +4128,10 @@ def _refresh_candidate_batch(
         ),
     )
     priorities = [str(topic).strip() for topic in priority_topics if str(topic).strip()]
-    effective_top = min(refresh_top, len(priorities)) if priorities else refresh_top
+    effective_top = min(
+        len(priorities),
+        max(refresh_top, _DEFAULT_PARENT_REFRESH_TOPIC_LIMIT),
+    ) if priorities else refresh_top
     args = [
         sys.executable, "scripts/run_curator_cycle.py",
         "--domain", domain, "--stop-on-ready", "--top", str(effective_top),
