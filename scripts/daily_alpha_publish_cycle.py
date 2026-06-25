@@ -3571,15 +3571,25 @@ def _source_literature_topic_candidate(
 
 
 def _source_literature_fetch_topics(topic: str) -> list[str]:
+    raw_tokens = publish_literature.title_key(topic).split()
+    domain_token = next(
+        (token for token in ("aging", "ageing", "longevity") if token in raw_tokens),
+        "",
+    )
     tokens = [
-        token for token in publish_literature.title_key(topic).split()
+        token for token in raw_tokens
         if len(token) >= 3 and token not in (_DISCOVERY_PARENT_GENERIC_TOKENS | {"longevity"})
     ]
     topics = [topic]
     for size in range(len(tokens) - 1, 1, -1):
-        candidate = "_".join(tokens[:size])
-        if candidate and candidate not in topics:
-            topics.append(candidate)
+        core = tokens[:size]
+        candidates = []
+        if domain_token and domain_token not in core:
+            candidates.append("_".join([*core, domain_token]))
+        candidates.append("_".join(core))
+        for candidate in candidates:
+            if candidate and candidate not in topics:
+                topics.append(candidate)
     return topics
 
 

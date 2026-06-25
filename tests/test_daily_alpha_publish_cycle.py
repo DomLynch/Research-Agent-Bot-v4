@@ -9668,7 +9668,7 @@ def test_default_source_literature_fallback_tries_core_topic_after_modifier_slug
 
     def fetch(topic: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
         fetches.append(topic)
-        return core if topic == "cellular_reprogramming" else thin
+        return core if topic == "cellular_reprogramming_aging" else thin
 
     monkeypatch.setattr(daily, "_fetch_source_literature_papers", fetch)
     ledger = daily.run_cycle(
@@ -9693,13 +9693,13 @@ def test_default_source_literature_fallback_tries_core_topic_after_modifier_slug
 
     assert fetches[:2] == [
         "cellular_reprogramming_safety_longevity_anti_aging",
-        "cellular_reprogramming",
+        "cellular_reprogramming_aging",
     ]
     assert [row["status"] for row in ledger["source_literature_fallback_attempts"]] == [
         "blocked", "selected",
     ]
     assert ledger["status"] == "published"
-    assert ledger["submitted_topic"] == "cellular_reprogramming"
+    assert ledger["submitted_topic"] == "cellular_reprogramming_aging"
 
 
 def test_source_literature_fetcher_enriches_fullraw_with_matching_fact_rows(
