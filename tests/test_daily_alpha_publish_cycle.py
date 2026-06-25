@@ -10138,21 +10138,32 @@ def test_source_literature_boundary_rejects_generic_only_topic() -> None:
     assert reason == "source_floor_below_min"
 
 
-def test_source_literature_bundle_resolves_doi_and_cochrane_review() -> None:
+def test_source_literature_bundle_resolves_doi_url_and_cochrane_review() -> None:
     title = (
         "Metformin for prevention or delay of type 2 diabetes mellitus and "
         "its associated complications in persons at increased risk"
     )
+    url_title = "Deuterium depleted water behavior in chromium intoxicated rats"
     assert daily._source_bundle([{
         "title": title,
         "doi": "10.1002/14651858.CD008558.pub2",
         "year": 2019,
+    }, {
+        "title": url_title,
+        "url": "https://www.semanticscholar.org/paper/example",
+        "year": 2010,
     }]) == [{
         "title": title,
         "url": "https://doi.org/10.1002/14651858.CD008558.pub2",
         "doi": "10.1002/14651858.CD008558.pub2",
         "year": 2019,
         "evidence_type": "review",
+    }, {
+        "title": url_title,
+        "url": "https://www.semanticscholar.org/paper/example",
+        "doi": None,
+        "year": 2010,
+        "evidence_type": "primary",
     }]
 
 

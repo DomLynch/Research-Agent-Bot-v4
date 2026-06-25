@@ -2822,13 +2822,13 @@ def _source_bundle(papers: list[Json]) -> list[Json]:
         doi = str(paper.get("doi") or "").strip() or None
         pmid = str(paper.get("pmid") or "").strip() or None
         # Researka rejects bundles carrying unverifiable sources. A receipt is
-        # only citable with a resolvable identifier; drop any title-only source.
+        # only citable with a resolvable identifier or URL; drop title-only sources.
         # The accepted bundle schema has no pmid field, so a PMID-only paper is
         # made verifiable through its resolvable PubMed URL rather than presented
         # as identifier-less.
-        if not title or not (doi or pmid):
-            continue
         url = paper.get("url") or None
+        if not title or not (doi or pmid or url):
+            continue
         if not url and doi:
             url = f"https://doi.org/{doi}"
         elif not url and pmid:
