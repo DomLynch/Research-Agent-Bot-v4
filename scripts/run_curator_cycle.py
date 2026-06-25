@@ -720,7 +720,8 @@ def main() -> int:
                 "--top", str(discovery_top),
             ]
             if args.stop_on_ready and not args.warm_backlog:
-                out.append("--cache-first")
+                if not fullraw_supply_first:
+                    out.append("--cache-first")
                 if seed_paper_only:
                     out.append("--seed-paper-only")
                 if skip_seed_paper_probe:

@@ -713,7 +713,7 @@ def test_warm_backlog_passes_full_probe_flag_to_discovery(
     assert "--warm-backlog" in calls[0]
 
 
-def test_stop_on_ready_uses_cache_first_discovery(
+def test_stop_on_ready_uses_fullraw_supply_before_cache_by_default(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
     import run_curator_cycle
@@ -734,7 +734,7 @@ def test_stop_on_ready_uses_cache_first_discovery(
     ])
 
     assert run_curator_cycle.main() == 1
-    assert "--cache-first" in calls[0]
+    assert "--cache-first" not in calls[0]
     assert "--seed-paper-only" not in calls[0]
     assert calls[0][calls[0].index("--top") + 1] == "5"
 
