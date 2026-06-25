@@ -1773,8 +1773,8 @@ def test_priority_ranked_topics_trusts_source_rich_discovery_before_fullraw(
     ] == [("fullraw_parent", 8, 8)]
 
 
-def test_priority_ranked_topics_matches_normalized_discovery_topics(
-    monkeypatch: Any,
+def test_priority_ranked_topics_scans_deeper_for_normalized_discovery_counts(
+    tmp_path: Path, monkeypatch: Any,
 ) -> None:
     import run_curator_cycle
 
@@ -1785,18 +1785,31 @@ def test_priority_ranked_topics_matches_normalized_discovery_topics(
         def __exit__(self, *_args: object) -> None:
             return None
 
-    monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "1")
-    monkeypatch.setattr(run_curator_cycle, "load_settings", lambda: object())
-    monkeypatch.setattr(run_curator_cycle.httpx, "Client", DummyClient)
-    monkeypatch.setattr(
-        run_curator_cycle,
-        "_read_discovery_top",
-        lambda _out, **_kwargs: [{
+    runs = tmp_path / "runs"
+    discovery = runs / "_topics_discovery"
+    discovery.mkdir(parents=True)
+    for idx in range(21):
+        path = discovery / f"newer_{idx:02d}.json"
+        path.write_text(json.dumps({
+            "domain": {"slug": "longevity_research"},
+            "all": [{"topic": f"thin_parent_{idx}", "fact_source_count": 1}],
+        }), encoding="utf-8")
+        os.utime(path, (200.0 + idx, 200.0 + idx))
+    target = discovery / "older_source_rich.json"
+    target.write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{
             "topic": "alpha ketoglutarate akg longevity",
             "fact_source_count": 8,
             "paper_count": 8,
         }],
-    )
+    }), encoding="utf-8")
+    os.utime(target, (100.0, 100.0))
+
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "1")
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
+    monkeypatch.setattr(run_curator_cycle, "load_settings", lambda: object())
+    monkeypatch.setattr(run_curator_cycle.httpx, "Client", DummyClient)
 
     def fail_fullraw(*_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
         raise AssertionError("normalized discovery counts should avoid fullraw probe")

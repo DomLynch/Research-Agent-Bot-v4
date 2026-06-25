@@ -191,7 +191,7 @@ def _priority_discovery_counts(
         key=lambda path: path.stat().st_mtime,
         reverse=True,
     )
-    for path in paths[:20]:
+    for path in paths[:50]:
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
