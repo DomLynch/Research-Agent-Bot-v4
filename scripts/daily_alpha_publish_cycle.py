@@ -4627,12 +4627,17 @@ def run_cycle(
             build_current_queue(), runs_root, profile.slug,
         )
         source_lit_available = False
-        if submit and profile.slug != "ai_research" and source_paper_fetcher is not None:
+        if submit and profile.slug != "ai_research":
+            source_lit_probe = source_paper_fetcher or (
+                lambda topic, limit: _fetch_source_literature_papers(
+                    topic, limit * 3, domain=profile.slug,
+                )
+            )
             for topic in _source_literature_topic_candidates(
                 runs_root, profile.slug, min_submit_sources,
                 source_literature_blocked_topics, limit=2,
             ):
-                papers = source_paper_fetcher(topic, min_submit_sources)
+                papers = source_lit_probe(topic, min_submit_sources)
                 source_lit_available, _reason = _source_literature_boundary_quality(
                     topic, papers, min_submit_sources,
                 )

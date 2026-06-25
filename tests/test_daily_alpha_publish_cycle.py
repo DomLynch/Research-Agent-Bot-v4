@@ -8023,14 +8023,18 @@ def test_thin_source_literature_candidate_does_not_skip_refresh(
     assert ledger["source_literature_fallback"]["reason"] == "source_floor_below_min"
 
 
-def test_source_literature_preflight_does_not_fetch_live_fullraw_before_refresh(
+def test_source_literature_preflight_uses_default_fullraw_before_refresh(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     root = tmp_path / "repo"
     (root / "_topics_discovery").mkdir(parents=True)
     daily._write_json(root / "_topics_discovery" / "longevity.json", {
         "domain": {"slug": "longevity_research"},
-        "all": [{"topic": "cellular_reprogramming_safety", "paper_count": 10}],
+        "all": [{
+            "topic": "cellular_reprogramming_safety",
+            "paper_count": 10,
+            "fact_source_count": 10,
+        }],
     })
     refresh_calls: list[dict[str, Any]] = []
 
@@ -8038,13 +8042,35 @@ def test_source_literature_preflight_does_not_fetch_live_fullraw_before_refresh(
         refresh_calls.append(kwargs)
         return {"ok": False, "note": "refresh failed"}
 
+    titles = [
+        "Cellular reprogramming safety in aging tissue",
+        "Partial reprogramming tumor risk and longevity",
+        "Epigenetic rejuvenation safety endpoints",
+        "Transient Yamanaka factor reprogramming adverse events",
+        "Cellular reprogramming senescence safety review",
+    ]
+    papers = [
+        {
+            "title": title,
+            "doi": f"10.1234/r{idx}",
+            "source_fact": {
+                "canonical_phrase": f"reprogramming safety boundary finding {idx}",
+                "population": "adults",
+                "intervention": "cellular reprogramming",
+                "endpoint": "safety",
+            },
+        }
+        for idx, title in enumerate(titles)
+    ]
+
     monkeypatch.setattr(daily, "_refresh_candidate_batch", refresh)
-    monkeypatch.setattr(
-        daily, "_fetch_source_literature_papers",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(
-            AssertionError("preflight should not fetch live fullraw")
-        ),
-    )
+    fetches: list[tuple[str, int, str]] = []
+
+    def fetch(topic: str, limit: int, *, domain: str) -> list[dict[str, Any]]:
+        fetches.append((topic, limit, domain))
+        return papers
+
+    monkeypatch.setattr(daily, "_fetch_source_literature_papers", fetch)
     ledger = daily.run_cycle(
         runs_root=root,
         date="2026-06-09T18-50-00Z",
@@ -8057,8 +8083,17 @@ def test_source_literature_preflight_does_not_fetch_live_fullraw_before_refresh(
         sleep=lambda _seconds: None,
     )
 
-    assert refresh_calls
-    assert ledger["status"] == "candidate_refresh_failed"
+    assert fetches == [
+        ("cellular_reprogramming_safety", 15, "longevity_research"),
+        ("cellular_reprogramming_safety", 15, "longevity_research"),
+    ]
+    assert not refresh_calls
+    assert ledger["refresh_batches"][0]["note"] == (
+        "skipped_source_literature_candidate_available"
+    )
+    assert ledger["status"] == "no_fresh_candidate"
+    assert ledger["source_literature_fallback"]["status"] == "blocked"
+    assert ledger["source_literature_fallback"]["reason"] == "failed_retry_exhausted"
 
 
 def test_source_literature_fallback_tries_fresh_topic_before_repair(
