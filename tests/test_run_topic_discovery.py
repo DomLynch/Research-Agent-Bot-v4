@@ -592,9 +592,9 @@ def test_v5_client_bounds_restore_environment(monkeypatch: Any) -> None:
     monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", "6")
 
     old = run_topic_discovery._apply_v5_client_bounds()
-    assert os.environ["V5_MEMO_FULL_RAW_CORPUS_TIMEOUT"] == "99"
-    assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "7200"
-    assert os.environ["V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS"] == "77"
+    assert os.environ["V5_MEMO_FULL_RAW_CORPUS_TIMEOUT"] == "6"
+    assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "45"
+    assert os.environ["V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS"] == "20"
     assert os.environ["V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED"] == "1"
     assert os.environ["V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED"] == "1"
     assert os.environ["V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH"] == "0"
@@ -606,6 +606,22 @@ def test_v5_client_bounds_restore_environment(monkeypatch: Any) -> None:
     assert os.environ["V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED"] == "1514"
     assert os.environ["V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED"] == "4"
     assert os.environ["V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH"] == "1"
+
+
+def test_v5_client_bounds_do_not_inherit_long_storage_waits(monkeypatch: Any) -> None:
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_TIMEOUT", "45")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "7200")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS", "7200")
+
+    old = run_topic_discovery._apply_v5_client_bounds()
+    assert os.environ["V5_MEMO_FULL_RAW_CORPUS_TIMEOUT"] == "20"
+    assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "45"
+    assert os.environ["V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS"] == "20"
+
+    run_topic_discovery._restore_env(old)
+    assert os.environ["V5_MEMO_FULL_RAW_CORPUS_TIMEOUT"] == "45"
+    assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "7200"
+    assert os.environ["V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS"] == "7200"
 
 
 def test_v5_client_papers_relaxes_storage_audit_env(

@@ -75,6 +75,17 @@ def _load_v5_env_defaults() -> None:
 
 def _apply_v5_client_bounds() -> dict[str, str | None]:
     values: dict[str, str] = {
+        "V5_MEMO_FULL_RAW_CORPUS_TIMEOUT": os.environ.get(
+            "TOPIC_DISCOVERY_V5_TIMEOUT_SECONDS",
+            os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", "20"),
+        ),
+        "V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS": os.environ.get(
+            "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
+            os.environ.get("TOPIC_DISCOVERY_SEED_PAPER_BUDGET_SECONDS", "45"),
+        ),
+        "V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS": os.environ.get(
+            "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS", "20",
+        ),
         "V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED": os.environ.get(
             "TOPIC_DISCOVERY_V5_MIN_SHARDS_SEARCHED", "1",
         ),
@@ -85,12 +96,6 @@ def _apply_v5_client_bounds() -> dict[str, str | None]:
             "TOPIC_DISCOVERY_V5_REQUIRE_COMPLETE_SEARCH", "0",
         ),
     }
-    if timeout := os.environ.get("TOPIC_DISCOVERY_V5_TIMEOUT_SECONDS"):
-        values["V5_MEMO_FULL_RAW_CORPUS_TIMEOUT"] = timeout
-    if budget := os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"):
-        values["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] = budget
-    if sweep_wait := os.environ.get("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS"):
-        values["V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS"] = sweep_wait
     old = {key: os.environ.get(key) for key in values}
     os.environ.update(values)
     return old
