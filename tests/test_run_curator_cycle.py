@@ -719,16 +719,19 @@ def test_stop_on_ready_uses_fullraw_supply_before_cache_by_default(
     import run_curator_cycle
 
     calls: list[list[str]] = []
+    budgets: list[str | None] = []
 
     def fake_step(
         args: list[str], step_name: str, *, timeout: int = 600,
     ) -> tuple[bool, str]:
         calls.append(args)
+        budgets.append(os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"))
         return False, "stop after discovery"
 
     monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
     monkeypatch.setattr(run_curator_cycle, "_RUNS", tmp_path / "runs")
     monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", "45")
     monkeypatch.setattr(sys, "argv", [
         "run_curator_cycle.py", "--stop-on-ready",
     ])
@@ -737,6 +740,8 @@ def test_stop_on_ready_uses_fullraw_supply_before_cache_by_default(
     assert "--cache-first" not in calls[0]
     assert "--seed-paper-only" not in calls[0]
     assert calls[0][calls[0].index("--top") + 1] == "5"
+    assert budgets == ["12"]
+    assert os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] == "45"
 
 
 def test_stop_on_ready_empty_seed_paper_discovery_falls_back_to_bounded(

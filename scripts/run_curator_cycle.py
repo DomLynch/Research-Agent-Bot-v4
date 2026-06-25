@@ -418,6 +418,20 @@ def _run_step(
     return r.returncode == 0, last
 
 
+def _run_discovery_step(args: list[str], *, timeout: int) -> tuple[bool, str]:
+    old_budget = os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS")
+    os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] = os.environ.get(
+        "TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS", "12",
+    )
+    try:
+        return _run_step(args, "discovery", timeout=timeout)
+    finally:
+        if old_budget is None:
+            os.environ.pop("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", None)
+        else:
+            os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] = old_budget
+
+
 def _run_topic_pipeline(
     topic: str, velocity: float, *, with_editorial: bool, top_n: int,
     py: str, pico_enrich: bool = False, frontier_review: bool = True,
@@ -740,9 +754,8 @@ def main() -> int:
                 out.extend(["--exclude-topic", topic])
             return out
 
-        ok, last = _run_step(
+        ok, last = _run_discovery_step(
             discovery_args(seed_paper_only=seed_paper_fast_path),
-            "discovery",
             timeout=_DISCOVERY_TIMEOUT_SECONDS,
         )
         if not ok:
@@ -761,9 +774,8 @@ def main() -> int:
         and not args.dry_run
     ):
         print("[cycle] seed-paper discovery empty; retrying bounded discovery")
-        ok, last = _run_step(
+        ok, last = _run_discovery_step(
             discovery_args(seed_paper_only=False),
-            "discovery",
             timeout=_DISCOVERY_TIMEOUT_SECONDS,
         )
         if not ok:
@@ -833,9 +845,8 @@ def main() -> int:
         ):
             print("[cycle] seed-paper discovery had no source-floor plan; "
                   "retrying fullraw supply discovery")
-            ok, last = _run_step(
+            ok, last = _run_discovery_step(
                 discovery_args(seed_paper_only=False),
-                "discovery",
                 timeout=_DISCOVERY_TIMEOUT_SECONDS,
             )
             if not ok:
