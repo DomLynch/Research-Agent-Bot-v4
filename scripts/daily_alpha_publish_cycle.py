@@ -4653,6 +4653,8 @@ def run_cycle(
                     "paper_count": len(papers),
                     "relevant_paper_count": len(publish_literature.relevant_papers(topic, papers)),
                 })
+                ledger["source_literature_preflight_attempts"] = source_lit_probe_attempts
+                _write_ledger(ledger_path, ledger)
                 if source_lit_available:
                     break
         if source_lit_probe_attempts:
