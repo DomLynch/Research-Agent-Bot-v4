@@ -150,6 +150,14 @@ def _same_domain(left: str, right: str) -> bool:
     return left.removesuffix("_research") == right.removesuffix("_research")
 
 
+def _topic_count_keys(topic: str) -> tuple[str, ...]:
+    raw = str(topic).strip()
+    normalized = "_".join(re.findall(r"[a-z0-9]+", raw.lower()))
+    return tuple(dict.fromkeys(
+        key for key in (raw, cap_topic_slug(raw), normalized) if key
+    ))
+
+
 def _add_discovery_counts(
     rows: list[dict[str, Any]], counts: dict[str, tuple[int, int]],
 ) -> None:
@@ -164,14 +172,14 @@ def _add_discovery_counts(
             )
         except (TypeError, ValueError):
             continue
-        counts.setdefault(topic, pair)
-        counts.setdefault(cap_topic_slug(topic), pair)
+        for key in _topic_count_keys(topic):
+            counts.setdefault(key, pair)
 
 
 def _priority_discovery_counts(
     topics: list[str], *, domain: str,
 ) -> dict[str, tuple[int, int]]:
-    wanted = set(topics) | {cap_topic_slug(topic) for topic in topics}
+    wanted = {key for topic in topics for key in _topic_count_keys(topic)}
     counts: dict[str, tuple[int, int]] = {}
     _add_discovery_counts(
         _read_discovery_top(_RUNS / "_topics_discovery", domain=domain), counts,
@@ -215,7 +223,14 @@ def _priority_ranked_topics(topics: list[str], *, domain: str = "longevity") -> 
         settings = load_settings()
         with httpx.Client() as client:
             for topic in topics:
-                discovery_sources, discovery_papers = discovery_counts.get(topic, (0, 0))
+                discovery_sources, discovery_papers = next(
+                    (
+                        discovery_counts[key]
+                        for key in _topic_count_keys(topic)
+                        if key in discovery_counts
+                    ),
+                    (0, 0),
+                )
                 if (
                     discovery_sources >= _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES
                     and discovery_papers >= _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES

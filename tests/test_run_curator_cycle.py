@@ -1773,6 +1773,46 @@ def test_priority_ranked_topics_trusts_source_rich_discovery_before_fullraw(
     ] == [("fullraw_parent", 8, 8)]
 
 
+def test_priority_ranked_topics_matches_normalized_discovery_topics(
+    monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    class DummyClient:
+        def __enter__(self) -> DummyClient:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "1")
+    monkeypatch.setattr(run_curator_cycle, "load_settings", lambda: object())
+    monkeypatch.setattr(run_curator_cycle.httpx, "Client", DummyClient)
+    monkeypatch.setattr(
+        run_curator_cycle,
+        "_read_discovery_top",
+        lambda _out, **_kwargs: [{
+            "topic": "alpha ketoglutarate akg longevity",
+            "fact_source_count": 8,
+            "paper_count": 8,
+        }],
+    )
+
+    def fail_fullraw(*_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        raise AssertionError("normalized discovery counts should avoid fullraw probe")
+
+    monkeypatch.setattr(run_curator_cycle, "_seed_fullraw_papers", fail_fullraw)
+
+    ranked = run_curator_cycle._priority_ranked_topics([
+        "alpha_ketoglutarate_akg_longevity",
+    ], domain="longevity_research")
+
+    assert [
+        (row["topic"], row["fact_source_count"], row["paper_count"])
+        for row in ranked
+    ] == [("alpha_ketoglutarate_akg_longevity", 8, 8)]
+
+
 def test_priority_ranked_topics_trusts_discovery_source_counts(
     monkeypatch: Any,
 ) -> None:
