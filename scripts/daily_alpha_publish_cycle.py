@@ -3586,7 +3586,8 @@ def _source_literature_fetch_topics(topic: str) -> list[str]:
         candidates = []
         if domain_token and domain_token not in core:
             candidates.append("_".join([*core, domain_token]))
-        candidates.append("_".join(core))
+        elif not domain_token:
+            candidates.append("_".join(core))
         for candidate in candidates:
             if candidate and candidate not in topics:
                 topics.append(candidate)

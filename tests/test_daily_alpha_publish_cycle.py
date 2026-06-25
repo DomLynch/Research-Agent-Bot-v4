@@ -8174,6 +8174,12 @@ def test_source_literature_preflight_defers_default_fullraw_without_skipping_ref
         return papers
 
     monkeypatch.setattr(daily, "_fetch_source_literature_papers", fetch)
+    assert daily._source_literature_fetch_topics(
+        "cellular_reprogramming_safety_longevity_anti_aging",
+    ) == [
+        "cellular_reprogramming_safety_longevity_anti_aging",
+        "cellular_reprogramming_aging",
+    ]
     ledger = daily.run_cycle(
         runs_root=root,
         date="2026-06-09T18-50-00Z",
