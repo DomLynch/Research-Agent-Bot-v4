@@ -615,13 +615,12 @@ def _fullraw_supply_candidates(
         if len(out) >= top:
             break
     if not out:
-        papers = _context_supported_papers(papers, context_terms)
-        if not papers:
-            return ()
-        out.append(_score_topic(
-            "_".join(next(iter(query_labels)).split()), papers[:25], current_year,
-            fact_source_count=len(papers),
-        ))
+        scoped = _context_supported_papers(papers, context_terms)
+        if len(scoped) >= _SOURCE_RICH_FLOOR:
+            out.append(_score_topic(
+                "_".join(next(iter(query_labels)).split()), scoped[:25],
+                current_year, fact_source_count=len(scoped),
+            ))
     return tuple(sorted(out, key=_rank_key))
 
 

@@ -1101,6 +1101,38 @@ def test_fullraw_supply_requires_per_topic_source_floor(monkeypatch: Any) -> Non
     assert rows == ()
 
 
+def test_fullraw_supply_does_not_promote_underfloor_domain_fallback(
+    monkeypatch: Any,
+) -> None:
+    papers = [
+        {
+            "doi": f"10.1/lon{i}",
+            "title": f"Spermidine longevity aging cohort {i}",
+            "fwci": 2.0,
+            "cited_by_count": 20 + i,
+            "publication_year": 2025,
+            "quality_score": 90.0,
+        }
+        for i in range(4)
+    ] + [{
+        "doi": "10.1/offscope",
+        "title": "Glioblastoma chemotherapy response",
+        "fwci": 2.0,
+        "cited_by_count": 30,
+        "publication_year": 2025,
+        "quality_score": 90.0,
+    }]
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", lambda *_a, **_k: papers)
+
+    rows = run_topic_discovery._fullraw_supply_candidates(
+        query_context="Longevity / anti-aging research",
+        current_year=2026,
+        top=1,
+    )
+
+    assert rows == ()
+
+
 def test_fullraw_supply_uses_domain_query_when_titles_do_not_cluster(
     monkeypatch: Any,
 ) -> None:
