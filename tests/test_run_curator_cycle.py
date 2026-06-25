@@ -162,6 +162,31 @@ def test_read_discovery_top_uses_newest_matching_domain(tmp_path: Path) -> None:
     assert [row["topic"] for row in out] == ["SGLT2_inhibitors"]
 
 
+def test_read_discovery_top_skips_newer_underfloor_when_floor_set(
+    tmp_path: Path,
+) -> None:
+    older = tmp_path / "2026-06-09T06-39-50Z.json"
+    older.write_text(json.dumps({
+        "domain": {"slug": "longevity"},
+        "all": [{
+            "topic": "source_rich_parent", "velocity_score": 1.0,
+            "paper_count": 7, "fact_source_count": 7,
+        }],
+    }), encoding="utf-8")
+    newer = tmp_path / "2026-06-09T06-42-25Z.json"
+    newer.write_text(json.dumps({
+        "domain": {"slug": "longevity"},
+        "all": [{
+            "topic": "underfloor_fullraw", "velocity_score": 2.0,
+            "paper_count": 4, "fact_source_count": 4,
+        }],
+    }), encoding="utf-8")
+
+    out = _read_discovery_top(tmp_path, domain="longevity", min_sources=5)
+
+    assert [row["topic"] for row in out] == ["source_rich_parent"]
+
+
 def test_read_discovery_top_handles_missing_dir() -> None:
     assert _read_discovery_top(Path("/nonexistent")) == []
 
@@ -773,6 +798,83 @@ def test_stop_on_ready_empty_fullraw_supply_does_not_retry_slow_discovery(
     assert run_curator_cycle.main() == 1
     assert len(calls) == 1
     assert "--fullraw-supply-only" in calls[0]
+
+
+def test_stop_on_ready_uses_older_source_rich_snapshot_after_underfloor_fullraw(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    runs = tmp_path / "runs"
+    cycles = runs / "_curator_cycles"
+    discovery = runs / "_topics_discovery"
+    discovery.mkdir(parents=True)
+    cycles.mkdir(parents=True)
+    (discovery / "2026-06-24T00-00-00Z.json").write_text(json.dumps({
+        "domain": {"slug": "longevity"},
+        "top": [{
+            "topic": "source_rich_fullraw",
+            "velocity_score": 3.0,
+            "fact_source_count": 7,
+            "paper_count": 7,
+        }],
+        "all": [{
+            "topic": "source_rich_fullraw",
+            "velocity_score": 3.0,
+            "fact_source_count": 7,
+            "paper_count": 7,
+        }],
+    }), encoding="utf-8")
+    seen: list[str] = []
+
+    def fake_step(
+        args: list[str], step_name: str, *, timeout: int = 600,
+    ) -> tuple[bool, str]:
+        if step_name == "discovery":
+            (discovery / "2026-06-25T00-00-00Z.json").write_text(json.dumps({
+                "domain": {"slug": "longevity"},
+                "top": [{
+                    "topic": "underfloor_fullraw",
+                    "velocity_score": 4.0,
+                    "fact_source_count": 4,
+                    "paper_count": 4,
+                }],
+                "all": [{
+                    "topic": "underfloor_fullraw",
+                    "velocity_score": 4.0,
+                    "fact_source_count": 4,
+                    "paper_count": 4,
+                }],
+            }), encoding="utf-8")
+        return True, "ok"
+
+    def fake_pipeline(
+        topic: str, velocity: float, *, with_editorial: bool,
+        top_n: int, py: str, pico_enrich: bool = False,
+        frontier_review: bool = True, parent_topic: str = "",
+        domain: str = "longevity",
+    ) -> TopicResult:
+        seen.append(topic)
+        run_dir = runs / f"{topic}-evidence-ts"
+        _write_ready_alpha_run(run_dir, source_count=5)
+        return TopicResult(
+            topic=topic, velocity=velocity, status="ran",
+            run_dir=f"runs/{topic}-evidence-ts",
+            signal_label="evidence_backed_signal", notes="",
+        )
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
+    monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
+    monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
+    monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
+    monkeypatch.setattr(
+        run_curator_cycle, "_recent_signal_topics", lambda *_args, **_kwargs: set(),
+    )
+    monkeypatch.setattr(sys, "argv", ["run_curator_cycle.py", "--stop-on-ready"])
+
+    assert run_curator_cycle.main() == 0
+    assert seen == ["source_rich_fullraw"]
 
 
 def test_stop_on_ready_empty_seed_paper_discovery_falls_back_to_bounded(

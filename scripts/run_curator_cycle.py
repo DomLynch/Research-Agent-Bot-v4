@@ -316,7 +316,7 @@ def _recent_signal_topics(
 
 
 def _read_discovery_top(
-    out_dir: Path, *, domain: str | None = None,
+    out_dir: Path, *, domain: str | None = None, min_sources: int = 0,
 ) -> list[dict[str, Any]]:
     """Find the newest matching discovery JSON in runs/_topics_discovery/."""
     if not out_dir.exists():
@@ -335,9 +335,25 @@ def _read_discovery_top(
             continue
         raw = data.get("all") or data.get("top") or []
         if not isinstance(raw, list):
-            return []
-        return [c for c in raw if isinstance(c, dict) and c.get("topic")]
+            continue
+        rows = [c for c in raw if isinstance(c, dict) and c.get("topic")]
+        if min_sources:
+            rows = [
+                c for c in rows
+                if _discovery_row_clears_source_floor(c, min_sources)
+            ]
+        if rows:
+            return rows
     return []
+
+
+def _discovery_row_clears_source_floor(row: dict[str, Any], floor: int) -> bool:
+    with suppress(TypeError, ValueError):
+        return (
+            int(row.get("fact_source_count") or 0) >= floor
+            and int(row.get("paper_count") or 0) >= floor
+        )
+    return False
 
 
 def _newest_run_for_topic(topic: str) -> Path | None:
@@ -766,7 +782,10 @@ def main() -> int:
     ranked = (
         []
         if priority_only_submit else
-        _read_discovery_top(_RUNS / "_topics_discovery", domain=args.domain)
+        _read_discovery_top(
+            _RUNS / "_topics_discovery", domain=args.domain,
+            min_sources=_DEFAULT_MIN_DIRECT_SUBMIT_SOURCES if args.stop_on_ready else 0,
+        )
     )
     if (
         not ranked
@@ -784,7 +803,10 @@ def main() -> int:
         if not ok:
             print(f"[cycle] discovery fallback failed: {last}", file=sys.stderr)
             return 1
-        ranked = _read_discovery_top(_RUNS / "_topics_discovery", domain=args.domain)
+        ranked = _read_discovery_top(
+            _RUNS / "_topics_discovery", domain=args.domain,
+            min_sources=_DEFAULT_MIN_DIRECT_SUBMIT_SOURCES,
+        )
     if not ranked and not args.priority_topic:
         print("[cycle] no discovery candidates; aborting.", file=sys.stderr)
         return 1
@@ -855,7 +877,10 @@ def main() -> int:
             if not ok:
                 print(f"[cycle] discovery fallback failed: {last}", file=sys.stderr)
                 return 1
-            ranked = _read_discovery_top(_RUNS / "_topics_discovery", domain=args.domain)
+            ranked = _read_discovery_top(
+                _RUNS / "_topics_discovery", domain=args.domain,
+                min_sources=_DEFAULT_MIN_DIRECT_SUBMIT_SOURCES,
+            )
             plan, skipped, skipped_excluded, below_floor = plan_current()
 
     print(f"[cycle] plan: {len(plan)} topics to run, {len(skipped)} skipped "
