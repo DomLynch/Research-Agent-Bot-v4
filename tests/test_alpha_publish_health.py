@@ -496,6 +496,53 @@ def test_next_candidate_summary_separates_raw_ready_from_actionable(
     assert Path(seen["submitted_path"]).name == "_submitted_fingerprints.json"
 
 
+def test_next_candidate_summary_prefers_domain_queue_sidecar(tmp_path: Path) -> None:
+    sidecar = tmp_path / "_publish_queue.business_research.json"
+    sidecar.write_text(json.dumps({
+        "ready_to_publish": [],
+        "agent_repair_needed": [],
+        "curation_needed": [],
+        "not_ready": [{"topic": "business_model_performance"}],
+    }), encoding="utf-8")
+    seen: dict[str, Any] = {}
+
+    def select_candidate(
+        queue: dict[str, list[dict[str, str]]],
+        *_args: object,
+        **kwargs: object,
+    ) -> tuple[None, list[dict[str, Any]]]:
+        seen["queue"] = queue
+        seen.update(kwargs)
+        return None, [{"topic": "business_model_performance", "status": "no_ready_rows"}]
+
+    fake_cycle = SimpleNamespace(
+        _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES=5,
+        _DEFAULT_MIN_SUBMIT_SOURCES=5,
+        _DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS=30,
+        _build_queue=lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("domain sidecar should avoid rebuilding queue")
+        ),
+        _recently_published_topics=lambda *_args, **_kwargs: set(),
+        _recent_submission_topics=lambda *_args, **_kwargs: set(),
+        _recent_negative_topics=lambda *_args, **_kwargs: set(),
+        select_candidate=select_candidate,
+    )
+
+    summary = health.summarize_next_candidate(
+        tmp_path, cycle_module=fake_cycle, domain="business_research",
+    )
+
+    assert seen["queue"]["not_ready"] == [{"topic": "business_model_performance"}]
+    assert seen["domain"] == "business_research"
+    assert summary["queue_counts"] == {
+        "ready_to_publish": 0,
+        "agent_repair_needed": 0,
+        "curation_needed": 0,
+        "not_ready": 1,
+    }
+    assert summary["supply_status"] == "no_ready_rows"
+
+
 def test_health_summary_can_sync_pending_submission(tmp_path: Path) -> None:
     ledger = _write_ledger(tmp_path, "2026-06-01T08-29-49Z.json", {
         "status": "submitted_to_researka",

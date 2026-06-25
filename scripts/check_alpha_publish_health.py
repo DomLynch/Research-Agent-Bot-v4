@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 Json = dict[str, Any]
+_QUEUE_BUCKETS = ("ready_to_publish", "agent_repair_needed", "curation_needed", "not_ready")
 _CYCLE_LEDGER_RE = re.compile(
     r"^\d{4}-\d{2}-\d{2}t(?!.*-decision-)[a-z0-9_.:-]+z(?:-[a-z0-9_.-]+)?\.json$",
     re.I,
@@ -119,6 +120,14 @@ def _domain_list(value: str | None) -> list[str]:
     return [part.strip() for part in value.split(",") if part.strip()]
 
 
+def _queue_sidecar(runs_root: Path, domain: str | None) -> Json | None:
+    path = runs_root / (f"_publish_queue.{domain}.json" if domain else "_publish_queue.json")
+    if not path.exists():
+        return None
+    data = _load_json(path)
+    return data if any(isinstance(data.get(key), list) for key in _QUEUE_BUCKETS) else None
+
+
 def summarize_next_candidate(
     runs_root: Path,
     *,
@@ -133,13 +142,16 @@ def summarize_next_candidate(
             cycle = importlib.import_module("daily_alpha_publish_cycle")
 
     submitted_path = runs_root / "_daily_ledger" / "_submitted_fingerprints.json"
-    queue = cycle._build_queue(
-        runs_root, include_archive=False, domain=domain, submitted_path=submitted_path,
+    queue = _queue_sidecar(runs_root, domain) or cycle._build_queue(
+        runs_root,
+        include_archive=False,
+        domain=domain,
+        submitted_path=submitted_path,
     )
     raw_ready = len(queue.get("ready_to_publish") or [])
     queue_counts = {
         key: raw_ready if key == "ready_to_publish" else len(queue.get(key) or [])
-        for key in ("ready_to_publish", "agent_repair_needed", "curation_needed", "not_ready")
+        for key in _QUEUE_BUCKETS
     }
     blocked = cycle._recently_published_topics(
         runs_root / "_daily_ledger",
