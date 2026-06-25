@@ -11556,6 +11556,40 @@ def test_fresh_parent_topics_skip_locally_failed_stale_parent(
     ) == ["source_rich_parent"]
 
 
+def test_fresh_parent_topics_skip_queue_demoted_low_alpha_parent(
+    tmp_path: Path,
+) -> None:
+    discovery = tmp_path / "_topics_discovery"
+    discovery.mkdir()
+    latest = discovery / "latest.json"
+    latest.write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "fullraw_seed_probe": {"receipts": [{"shards_searched": 10}]},
+        "all": [
+            {"topic": "metformin_longevity", "fact_source_count": 9, "paper_count": 9},
+            {"topic": "source_rich_parent", "fact_source_count": 8, "paper_count": 8},
+        ],
+    }), encoding="utf-8")
+    run = tmp_path / "metformin_longevity-evidence-ts"
+    run.mkdir()
+    (run / "publish_verdict.json").write_text(json.dumps({
+        "decision": "ready_to_publish",
+        "domain_slug": "longevity_research",
+        "topic": "metformin_longevity",
+        "alpha_score": 0,
+    }), encoding="utf-8")
+    os.utime(latest, (100.0, 100.0))
+    os.utime(run / "publish_verdict.json", (200.0, 200.0))
+
+    assert daily._fresh_parent_topics_from_discovery(
+        tmp_path,
+        "longevity_research",
+        set(),
+        limit=2,
+        min_sources=5,
+    ) == ["source_rich_parent"]
+
+
 def test_fresh_parent_topics_allow_newer_discovery_after_local_failure(
     tmp_path: Path,
 ) -> None:

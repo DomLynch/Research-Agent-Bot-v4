@@ -253,6 +253,7 @@ _AGENT_REPAIR_DECISIONS = {
 }
 _LOCAL_PARENT_REFRESH_BLOCKERS = frozenset({
     "blocked_label:no_signal",
+    "low_alpha_score",
     "source_floor_below_min",
     "direct_source_floor_below_min",
 })
@@ -3735,9 +3736,10 @@ def _local_parent_refresh_blocked(
     run_domain = _run_domain(verdict_path.parent, verdict)
     if run_domain and not _same_domain(run_domain, profile_slug):
         return False
-    blockers = {str(item) for item in verdict.get("blockers") or []}
+    queue_row = _queue_ready_row(verdict, runs_root)
+    blockers = {str(item) for item in queue_row.get("blockers") or []}
     return (
-        str(verdict.get("decision") or "") == "curation_needed"
+        str(queue_row.get("decision") or "") == "curation_needed"
         and bool(blockers & _LOCAL_PARENT_REFRESH_BLOCKERS)
     )
 
