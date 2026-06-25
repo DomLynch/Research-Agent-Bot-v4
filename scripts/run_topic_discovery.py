@@ -774,7 +774,7 @@ def main() -> int:
     excluded = {str(t).strip() for t in args.exclude_topic if str(t).strip()}
     cache_supported = _cache_supported(profile.slug)
     scoped_cache_limit = max(cache_limit * 20, 1000) if cache_supported else cache_limit
-    read_source_rich_cache = args.cache_first or args.cache_only or args.warm_backlog
+    read_source_rich_cache = args.cache_first or args.cache_only
     ranked = (
         cached_source_rich_candidates(limit=scoped_cache_limit)
         if cache_supported

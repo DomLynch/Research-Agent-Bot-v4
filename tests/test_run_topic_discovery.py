@@ -171,24 +171,16 @@ def test_cache_first_skips_slow_discovery_when_window_is_filled(
     assert [row["topic"] for row in payload["top"]] == ["seed_rich_a", "seed_rich_b"]
 
 
-def test_warm_backlog_reads_source_rich_cache(
+def test_warm_backlog_probes_fullraw_before_source_rich_cache(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
-    cached = (
-        TopicCandidate(
-            topic="seed_rich_a", paper_count=5, fact_source_count=8,
-            top_paper_doi="10.1/a", top_paper_title="Paper A",
-            velocity_score=2.0, mean_fwci=1.0, mean_cited_by=10.0,
-        ),
-        TopicCandidate(
-            topic="seed_rich_b", paper_count=5, fact_source_count=7,
-            top_paper_doi="10.1/b", top_paper_title="Paper B",
-            velocity_score=1.0, mean_fwci=1.0, mean_cited_by=8.0,
-        ),
-    )
+    calls: list[str] = []
 
-    def slow_discover(**_kwargs: Any) -> tuple[TopicCandidate, ...]:
-        raise AssertionError("warm backlog should use source-rich cache first")
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        if query == "longevity anti aging":
+            return _fullraw_rows("raw", "Longevity anti aging source rich")
+        return []
 
     fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
     fake_script.parent.mkdir(parents=True)
@@ -198,20 +190,29 @@ def test_warm_backlog_reads_source_rich_cache(
     monkeypatch.setattr(run_topic_discovery, "load_derived_topic_limit", lambda: 5_000)
     monkeypatch.setattr(
         run_topic_discovery, "cached_source_rich_candidates",
-        lambda *, limit: cached[:limit],
+        lambda *, limit: (_ for _ in ()).throw(
+            AssertionError("warm backlog should not default to cache-first")
+        ),
     )
-    monkeypatch.setattr(run_topic_discovery, "discover_topics", slow_discover)
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
+    monkeypatch.setattr(
+        run_topic_discovery, "discover_topics",
+        lambda **_kwargs: (_ for _ in ()).throw(
+            AssertionError("fullraw should satisfy the warm backlog window")
+        ),
+    )
     monkeypatch.setattr(sys, "argv", [
-        "run_topic_discovery.py", "--warm-backlog", "--top", "2",
+        "run_topic_discovery.py", "--warm-backlog", "--top", "1",
     ])
 
     assert run_topic_discovery.main() == 0
     out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
-    assert payload["cache_first"] is True
+    assert payload["cache_first"] is False
     assert payload["warm_backlog"] is True
-    assert payload["candidate_count"] == 2
-    assert [row["topic"] for row in payload["top"]] == ["seed_rich_a", "seed_rich_b"]
+    assert payload["candidate_count"] == 1
+    assert calls[0] == "longevity anti aging"
+    assert payload["top"][0]["topic"].startswith("longevity")
 
 
 def test_cache_first_falls_back_when_cache_is_underfilled(
