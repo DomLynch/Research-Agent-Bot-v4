@@ -221,10 +221,10 @@ def _fullraw_supply_budget_seconds() -> float:
     try:
         return max(1.0, float(os.environ.get(
             "TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS",
-            "180",
+            "220",
         )))
     except (TypeError, ValueError):
-        return 180.0
+        return 220.0
 
 
 def _fullraw_supply_query_timeout_seconds() -> float:
@@ -580,7 +580,7 @@ def _fullraw_supply_candidates(
             query_timeout = str(min(_fullraw_supply_query_timeout_seconds(), remaining))
             sweep_wait = min(_fullraw_supply_sweep_wait_seconds(), remaining)
             query_budget = str(min(
-                max(_fullraw_supply_query_budget_seconds(), sweep_wait + 30.0),
+                _fullraw_supply_query_budget_seconds(), sweep_wait + 30.0,
                 remaining,
             ))
             old_timeout = os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS")

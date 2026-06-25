@@ -1068,7 +1068,7 @@ def test_fullraw_supply_caps_each_query_window(monkeypatch: Any) -> None:
     assert rows == ()
     assert len(caps) == 1
     assert caps[0][0] == "3.0"
-    assert 119.0 <= float(caps[0][1] or 0.0) <= 120.0
+    assert caps[0][1] == "100.0"
     assert caps[0][2] == "90.0"
     assert caps[0][3] == "4"
     assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS") is None
