@@ -543,6 +543,48 @@ def test_next_candidate_summary_prefers_domain_queue_sidecar(tmp_path: Path) -> 
     assert summary["supply_status"] == "no_ready_rows"
 
 
+def test_no_daily_ledger_still_reports_domain_sidecar_queue(tmp_path: Path) -> None:
+    sidecar = tmp_path / "_publish_queue.finance_research.json"
+    sidecar.write_text(json.dumps({
+        "ready_to_publish": [],
+        "agent_repair_needed": [],
+        "curation_needed": [],
+        "not_ready": [{"topic": "asset_pricing_replication"}],
+    }), encoding="utf-8")
+
+    fake_cycle = SimpleNamespace(
+        _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES=5,
+        _DEFAULT_MIN_SUBMIT_SOURCES=5,
+        _DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS=30,
+        _build_queue=lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("domain sidecar should avoid rebuilding queue")
+        ),
+        _recently_published_topics=lambda *_args, **_kwargs: set(),
+        _recent_submission_topics=lambda *_args, **_kwargs: set(),
+        _recent_negative_topics=lambda *_args, **_kwargs: set(),
+        select_candidate=lambda *_args, **_kwargs: (
+            None,
+            [{"topic": "asset_pricing_replication", "status": "no_ready_rows"}],
+        ),
+    )
+
+    summary = health.summarize_latest(
+        tmp_path,
+        domain="finance_research",
+        show_next_candidate=True,
+        cycle_module=fake_cycle,
+    )
+
+    assert summary["ok"] is False
+    assert summary["reason"] == "no_daily_ledger"
+    assert summary["current_queue_counts"] == {
+        "ready_to_publish": 0,
+        "agent_repair_needed": 0,
+        "curation_needed": 0,
+        "not_ready": 1,
+    }
+
+
 def test_health_summary_can_sync_pending_submission(tmp_path: Path) -> None:
     ledger = _write_ledger(tmp_path, "2026-06-01T08-29-49Z.json", {
         "status": "submitted_to_researka",

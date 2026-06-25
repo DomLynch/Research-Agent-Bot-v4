@@ -257,12 +257,28 @@ def summarize_latest(
         decision_sync = cycle.sync_submission_decisions(runs_root)
     paths = _ledger_paths(runs_root, domain=domain)
     if not paths:
-        return {
+        summary: Json = {
             "ok": False,
             "reason": "no_daily_ledger",
             "runs_root": str(runs_root),
             "domain": domain,
         }
+        if show_next_candidate:
+            try:
+                next_candidate = summarize_next_candidate(
+                    runs_root, cycle_module=cycle_module, domain=domain,
+                )
+                summary["next_candidate"] = next_candidate
+                summary["current_queue_counts"] = next_candidate.get("queue_counts") or {}
+                summary["current_actionable_ready_to_publish"] = (
+                    next_candidate.get("actionable_ready_to_publish")
+                )
+                summary["current_non_actionable_ready_to_publish"] = (
+                    next_candidate.get("non_actionable_ready_to_publish")
+                )
+            except Exception as exc:  # pragma: no cover - monitor should report, not crash.
+                summary["next_candidate_error"] = f"{type(exc).__name__}: {exc}"
+        return summary
     path = paths[0]
     ledger = _load_json(path)
     mtime = dt.datetime.fromtimestamp(path.stat().st_mtime, tz=dt.UTC)
@@ -326,7 +342,9 @@ def summarize_latest(
     if show_next_candidate:
         try:
             next_candidate = summarize_next_candidate(
-                runs_root, domain=domain or _ledger_domain_slug(ledger),
+                runs_root,
+                cycle_module=cycle_module,
+                domain=domain or _ledger_domain_slug(ledger),
             )
             summary["next_candidate"] = next_candidate
             summary["current_queue_counts"] = next_candidate.get("queue_counts") or {}
