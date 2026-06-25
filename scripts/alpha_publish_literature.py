@@ -18,6 +18,10 @@ Json = dict[str, Any]
 _FACT_SEARCH_TIMEOUT_ENV = "RESEARKA_SOURCE_LITERATURE_FACT_TIMEOUT_SECONDS"
 _FULLRAW_TIMEOUT_ENV = "RESEARKA_SOURCE_LITERATURE_FULLRAW_TIMEOUT_SECONDS"
 _FULLRAW_BUDGET_ENV = "RESEARKA_SOURCE_LITERATURE_FULLRAW_BUDGET_SECONDS"
+_FULLRAW_SWEEP_WAIT_ENV = "RESEARKA_SOURCE_LITERATURE_FULLRAW_SWEEP_WAIT_SECONDS"
+_FULLRAW_MAX_VARIANTS_ENV = "RESEARKA_SOURCE_LITERATURE_FULLRAW_MAX_VARIANTS"
+_FULLRAW_MIN_SHARDS_ENV = "RESEARKA_SOURCE_LITERATURE_FULLRAW_MIN_SHARDS_SEARCHED"
+_FULLRAW_MIN_SOURCES_ENV = "RESEARKA_SOURCE_LITERATURE_FULLRAW_MIN_SOURCES_SEARCHED"
 _GENERIC_TOPIC_TOKENS = frozenset({
     "association", "associations", "clinical", "effect", "effects", "evidence",
     "exposure", "intervention", "outcome", "outcomes", "review", "study",
@@ -119,16 +123,28 @@ def _fullraw_topic_papers(topic: str, limit: int) -> list[Json]:
         from scripts.run_topic_discovery import _seed_fullraw_papers
     except Exception:
         return []
-    timeout = os.environ.get(_FULLRAW_TIMEOUT_ENV, "30")
-    budget = os.environ.get(_FULLRAW_BUDGET_ENV, "100")
+    timeout = os.environ.get(
+        _FULLRAW_TIMEOUT_ENV, os.environ.get("V5_MEMO_FULL_RAW_CORPUS_TIMEOUT", "120"))
+    budget = os.environ.get(
+        _FULLRAW_BUDGET_ENV, os.environ.get("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "300"))
+    sweep_wait = os.environ.get(
+        _FULLRAW_SWEEP_WAIT_ENV,
+        os.environ.get("V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS", "120"),
+    )
+    max_variants = os.environ.get(
+        _FULLRAW_MAX_VARIANTS_ENV, os.environ.get("V5_MEMO_FULL_RAW_MAX_VARIANTS", "4"))
     bounds = {
         "TOPIC_DISCOVERY_V5_TIMEOUT_SECONDS": timeout,
         "TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS": timeout,
         "TOPIC_DISCOVERY_SEED_PAPER_TIMEOUT_SECONDS": timeout,
         "TOPIC_DISCOVERY_SEED_PAPER_BUDGET_SECONDS": budget,
         "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS": budget,
-        "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS": "0",
-        "TOPIC_DISCOVERY_V5_MAX_VARIANTS": "2",
+        "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS": sweep_wait,
+        "TOPIC_DISCOVERY_V5_MAX_VARIANTS": max_variants,
+        "TOPIC_DISCOVERY_V5_MIN_SHARDS_SEARCHED": os.environ.get(
+            _FULLRAW_MIN_SHARDS_ENV, os.environ.get("V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED", "50")),
+        "TOPIC_DISCOVERY_V5_MIN_SOURCES_SEARCHED": os.environ.get(
+            _FULLRAW_MIN_SOURCES_ENV, os.environ.get("V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED", "1")),
     }
     old = {key: os.environ.get(key) for key in bounds}
     try:

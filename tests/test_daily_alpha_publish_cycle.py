@@ -8999,12 +8999,18 @@ def test_source_literature_fullraw_fetch_uses_separate_query_budget(
             "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
             "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS",
             "TOPIC_DISCOVERY_V5_MAX_VARIANTS",
+            "TOPIC_DISCOVERY_V5_MIN_SHARDS_SEARCHED",
+            "TOPIC_DISCOVERY_V5_MIN_SOURCES_SEARCHED",
         ):
             seen[key] = os.environ.get(key)
         return []
 
     monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FULLRAW_TIMEOUT_SECONDS", "7")
     monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FULLRAW_BUDGET_SECONDS", "88")
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FULLRAW_SWEEP_WAIT_SECONDS", "9")
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FULLRAW_MAX_VARIANTS", "3")
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FULLRAW_MIN_SHARDS_SEARCHED", "25")
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FULLRAW_MIN_SOURCES_SEARCHED", "2")
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_TIMEOUT_SECONDS", "99")
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", "45")
     monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_seed_fullraw_papers)
@@ -9016,8 +9022,10 @@ def test_source_literature_fullraw_fetch_uses_separate_query_budget(
         "TOPIC_DISCOVERY_SEED_PAPER_TIMEOUT_SECONDS": "7",
         "TOPIC_DISCOVERY_SEED_PAPER_BUDGET_SECONDS": "88",
         "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS": "88",
-        "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS": "0",
-        "TOPIC_DISCOVERY_V5_MAX_VARIANTS": "2",
+        "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS": "9",
+        "TOPIC_DISCOVERY_V5_MAX_VARIANTS": "3",
+        "TOPIC_DISCOVERY_V5_MIN_SHARDS_SEARCHED": "25",
+        "TOPIC_DISCOVERY_V5_MIN_SOURCES_SEARCHED": "2",
     }
     assert os.environ["TOPIC_DISCOVERY_V5_TIMEOUT_SECONDS"] == "99"
     assert os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] == "45"
