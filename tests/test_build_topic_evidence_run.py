@@ -1,5 +1,6 @@
 import json
 import sys
+import time
 from typing import Any
 
 import scripts.build_topic_evidence_run as er
@@ -49,6 +50,56 @@ def test_fetch_timeout_is_not_empty_evidence(monkeypatch) -> None:  # type: igno
     assert trace
     assert {row["status"] for row in trace} == {"timeout"}
     assert er._all_primary_fetches_failed(trace) is True
+
+
+def test_fetch_fact_jobs_timeout_does_not_drain_executor(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    class _Future:
+        pass
+
+    class _Pool:
+        def __init__(self, max_workers: int) -> None:
+            self.max_workers = max_workers
+            self.shutdown_calls: list[dict[str, bool]] = []
+
+        def submit(self, *_args: Any) -> _Future:
+            return _Future()
+
+        def shutdown(self, *, wait: bool = True, cancel_futures: bool = False) -> None:
+            self.shutdown_calls.append({
+                "wait": wait,
+                "cancel_futures": cancel_futures,
+            })
+
+    pools: list[_Pool] = []
+
+    def _executor(*, max_workers: int) -> _Pool:
+        pool = _Pool(max_workers)
+        pools.append(pool)
+        return pool
+
+    def _as_completed(_futs: dict[Any, tuple[str, str]], *, timeout: float) -> list[Any]:
+        assert timeout >= 0.1
+        raise TimeoutError
+
+    monkeypatch.setattr(er, "ThreadPoolExecutor", _executor)
+    monkeypatch.setattr(er, "as_completed", _as_completed)
+
+    trace: list[dict[str, Any]] = []
+    facts = er._fetch_fact_jobs(
+        [("normal", "q1"), ("normal", "q2")],
+        "https://db.example",
+        {},
+        "caloric restriction",
+        domain="longevity",
+        trace=trace,
+        deadline=time.monotonic() + 1.0,
+    )
+
+    assert facts == []
+    assert pools[0].shutdown_calls == [{"wait": False, "cancel_futures": True}]
+    assert {row["query"] for row in trace} == {"q1", "q2"}
+    assert {row["status"] for row in trace} == {"timeout"}
+    assert {tuple(row["errors"]) for row in trace} == {("fetch_budget_timeout",)}
 
 
 def test_empty_fact_run_writes_empty_frontier_sidecars(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]

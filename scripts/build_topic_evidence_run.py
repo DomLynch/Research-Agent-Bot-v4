@@ -941,7 +941,9 @@ def _fetch_fact_jobs(
         return []
     facts: list[dict[str, Any]] = []
     done: set[int] = set()
-    with ThreadPoolExecutor(max_workers=min(_FETCH_WORKERS, len(jobs))) as pool:
+    fut_job: dict[Any, tuple[str, str]] = {}
+    pool = ThreadPoolExecutor(max_workers=min(_FETCH_WORKERS, len(jobs)))
+    try:
         fut_job = {pool.submit(_fetch_one, j, base, hdr, topic, domain): j for j in jobs}
         try:
             for fut in as_completed(fut_job, timeout=max(0.1, deadline - time.monotonic())):
@@ -957,6 +959,8 @@ def _fetch_fact_jobs(
                                   "errors": list(result.errors)})
         except TimeoutError:
             pass
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)
     if trace is not None:
         for fut, (kind, query) in fut_job.items():
             if id(fut) not in done:
