@@ -490,16 +490,28 @@ def _fullraw_supply_candidates(
     if query := context_terms:
         query_labels[query] = "__domain_supply__"
     query_cap = max(_seed_paper_probe_limit(top), top * 6)
-    for seed in seeds:
-        seed_queries: list[str] = []
-        for base in expand_topic_queries(seed, max_queries=2):
-            if not base.strip():
+    seed_bases = [
+        (seed, tuple(base.strip() for base in expand_topic_queries(seed, max_queries=2)
+                     if base.strip()))
+        for seed in seeds
+    ]
+    for variant in context_variants[:1] or ("",):
+        for seed, bases in seed_bases:
+            if not bases:
                 continue
-            for variant in context_variants:
-                seed_queries.append(f"{base.strip()} {variant}")
-            seed_queries.append(base.strip())
-        for query in seed_queries:
+            query = f"{bases[0]} {variant}".strip()
             query_labels.setdefault(query, seed)
+            if len(query_labels) >= query_cap:
+                break
+        if len(query_labels) >= query_cap:
+            break
+    for seed, bases in seed_bases:
+        for base in bases:
+            for variant in context_variants[1:]:
+                query_labels.setdefault(f"{base} {variant}", seed)
+                if len(query_labels) >= query_cap:
+                    break
+            query_labels.setdefault(base, seed)
             if len(query_labels) >= query_cap:
                 break
         if len(query_labels) >= query_cap:

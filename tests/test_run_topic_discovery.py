@@ -933,6 +933,30 @@ def test_fullraw_supply_queries_seeds_when_domain_query_is_empty(
     assert {"metformin", "resveratrol"} <= topics
 
 
+def test_fullraw_supply_samples_seed_breadth_before_seed_variants(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        if query == "metformin longevity":
+            return _fullraw_rows("met", "Metformin longevity geroscience AMPK")
+        return []
+
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
+
+    rows = run_topic_discovery._fullraw_supply_candidates(
+        query_context="Longevity / anti-aging research",
+        current_year=2026,
+        top=1,
+        seeds=("rapamycin", "metformin", "resveratrol"),
+    )
+
+    assert [row.topic for row in rows] == ["metformin_longevity"]
+    assert calls == ["longevity anti aging", "rapamycin longevity", "metformin longevity"]
+
+
 def test_fullraw_supply_stops_when_total_pass_budget_is_spent(
     monkeypatch: Any,
 ) -> None:
