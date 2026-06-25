@@ -8241,6 +8241,37 @@ def test_source_literature_preflight_uses_default_fullraw_supply_before_refresh(
     assert ledger["submitted_topic"] == "cellular_reprogramming_safety"
 
 
+def test_source_literature_preflight_uses_single_current_candidate_window(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    limits: list[int] = []
+
+    class StopAfterPreflight(Exception):
+        pass
+
+    def candidates(*_args: Any, limit: int, **_kwargs: Any) -> list[str]:
+        limits.append(limit)
+        raise StopAfterPreflight
+
+    monkeypatch.setattr(daily, "_source_literature_topic_candidates", candidates)
+
+    with raises(StopAfterPreflight):
+        daily.run_cycle(
+            runs_root=root,
+            date="2026-06-09T18-51-00Z",
+            domain="longevity_research",
+            refresh_candidates=True,
+            submit=True,
+            submitter=lambda _payload: {"ok": False, "status": 500},
+            fetcher=lambda _doi: {"message": {}},
+            sleep=lambda _seconds: None,
+        )
+
+    assert limits == [1]
+
+
 def test_metadata_only_source_literature_does_not_stop_fullraw_refresh(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

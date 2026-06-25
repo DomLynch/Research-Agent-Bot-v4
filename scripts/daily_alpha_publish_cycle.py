@@ -4679,7 +4679,7 @@ def run_cycle(
             for topic in _source_literature_topic_candidates(
                 runs_root, profile.slug, min_submit_sources,
                 source_literature_blocked_topics,
-                limit=min(4, _SOURCE_LITERATURE_SCAN_LIMIT),
+                limit=1,
                 soft_broad_blocked_topics=source_literature_soft_blocked_topics,
             ):
                 attempt_status = "blocked"
