@@ -4636,10 +4636,12 @@ def run_cycle(
                 source_literature_blocked_topics,
                 limit=min(4, _SOURCE_LITERATURE_SCAN_LIMIT),
             ):
+                attempt_status = "blocked"
                 if source_lit_probe is None:
                     papers = []
-                    source_lit_available = True
-                    _reason = "metadata_candidate_available"
+                    source_lit_available = False
+                    _reason = "metadata_candidate_deferred"
+                    attempt_status = "deferred"
                 else:
                     papers = source_lit_probe(topic, min_submit_sources)
                     source_lit_available, _reason = _source_literature_boundary_quality(
@@ -4647,9 +4649,10 @@ def run_cycle(
                     )
                     if source_lit_available:
                         source_lit_preflight_papers[topic] = papers
+                        attempt_status = "selected"
                 source_lit_probe_attempts.append({
                     "topic": topic,
-                    "status": "selected" if source_lit_available else "blocked",
+                    "status": attempt_status,
                     "reason": _reason,
                     "paper_count": len(papers),
                     "relevant_paper_count": len(publish_literature.relevant_papers(topic, papers)),

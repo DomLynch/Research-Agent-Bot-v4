@@ -8023,7 +8023,7 @@ def test_thin_source_literature_candidate_does_not_skip_refresh(
     assert ledger["source_literature_fallback"]["reason"] == "source_floor_below_min"
 
 
-def test_source_literature_preflight_defers_default_fullraw_fetch_to_fallback(
+def test_source_literature_preflight_defers_default_fullraw_without_skipping_refresh(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     root = tmp_path / "repo"
@@ -8040,7 +8040,7 @@ def test_source_literature_preflight_defers_default_fullraw_fetch_to_fallback(
 
     def refresh(*_args: Any, **kwargs: Any) -> dict[str, Any]:
         refresh_calls.append(kwargs)
-        return {"ok": False, "note": "refresh failed"}
+        return {"ok": True, "ran_topics": []}
 
     titles = [
         "Cellular reprogramming safety in aging tissue",
@@ -8086,17 +8086,15 @@ def test_source_literature_preflight_defers_default_fullraw_fetch_to_fallback(
     assert fetches == [
         ("cellular_reprogramming_safety", 15, "longevity_research"),
     ]
-    assert not refresh_calls
+    assert refresh_calls
     assert ledger["source_literature_preflight_attempts"] == [{
         "topic": "cellular_reprogramming_safety",
-        "status": "selected",
-        "reason": "metadata_candidate_available",
+        "status": "deferred",
+        "reason": "metadata_candidate_deferred",
         "paper_count": 0,
         "relevant_paper_count": 0,
     }]
-    assert ledger["refresh_batches"][0]["note"] == (
-        "skipped_source_literature_candidate_available"
-    )
+    assert ledger["refresh_batches"][0]["ok"] is True
     assert ledger["status"] == "no_fresh_candidate"
     assert ledger["source_literature_fallback"]["status"] == "blocked"
     assert ledger["source_literature_fallback"]["reason"] == "failed_retry_exhausted"
