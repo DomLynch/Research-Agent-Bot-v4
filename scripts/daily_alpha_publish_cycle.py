@@ -4209,11 +4209,9 @@ def _refresh_candidate_batch(
     if priorities:
         ran_raw = result.get("ran_topics")
         ran = ran_raw if isinstance(ran_raw, list) else []
-        if ok:
-            result["ran_topics"] = list(dict.fromkeys(
-                [str(t) for t in ran if str(t)] + priorities
-            ))
-        elif ran:
+        attempted = priorities[:effective_top]
+        result["attempted_priority_topics"] = attempted
+        if ran:
             result["ran_topics"] = list(dict.fromkeys(str(t) for t in ran if str(t)))
     return result
 
@@ -4831,7 +4829,9 @@ def run_cycle(
                 ):
                     timed_out_topics = [
                         str(t) for t in (
-                            refresh.get("ran_topics") or refresh.get("priority_topics") or []
+                            refresh.get("ran_topics")
+                            or refresh.get("attempted_priority_topics")
+                            or refresh.get("priority_topics") or []
                         ) if str(t)
                     ]
                     blocked_topics.update(timed_out_topics)
@@ -4954,22 +4954,6 @@ def run_cycle(
             ]
             if source_floor_topics:
                 blocked_topics.update(source_floor_topics)
-            if (
-                submit
-                and profile.slug != "ai_research"
-                and search_batch_limit > 3
-                and batch >= 2
-                and _source_literature_topic_candidate(
-                    runs_root, profile.slug, min_submit_sources,
-                    source_literature_blocked_topics | blocked_topics,
-                    soft_broad_blocked_topics=source_literature_soft_blocked_topics,
-                )
-            ):
-                ledger["refresh_early_exit"] = {
-                    "batch": batch,
-                    "reason": "source_literature_candidate_available",
-                }
-                break
             fresh_parent_topics: list[str] = []
             if (
                 refresh_candidates

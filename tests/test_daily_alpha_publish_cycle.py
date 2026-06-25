@@ -3358,7 +3358,8 @@ def test_refresh_candidate_batch_passes_priority_child_topics(
     )
 
     assert out["priority_topics"] == ["parent_bounded_claim", "second_child"]
-    assert out["ran_topics"] == ["parent_bounded_claim", "second_child"]
+    assert out["attempted_priority_topics"] == ["parent_bounded_claim"]
+    assert "ran_topics" not in out
     assert calls[0].count("--priority-topic") == 2
     assert calls[0][calls[0].index("--top") + 1] == "1"
     assert out["top"] == 1
@@ -6352,7 +6353,28 @@ def test_priority_refresh_runs_one_topic_per_batch(
     assert calls[0].count("--priority-topic") == 4
     assert result["top"] == 1
     assert result["priority_topics"] == ["topic_a", "topic_b", "topic_c", "topic_d"]
-    assert result["ran_topics"] == ["topic_a", "topic_b", "topic_c", "topic_d"]
+    assert result["attempted_priority_topics"] == ["topic_a"]
+    assert result["ran_topics"] == ["topic_a"]
+
+
+def test_priority_refresh_timeout_marks_only_attempted_topic(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    def fake_step(_args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        return False, "TimeoutExpired: curator timed out"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    result = daily._refresh_candidate_batch(
+        5,
+        runs_root=tmp_path,
+        priority_topics=["topic_a", "topic_b", "topic_c", "topic_d"],
+        domain="longevity_research",
+    )
+
+    assert result["ok"] is False
+    assert result["attempted_priority_topics"] == ["topic_a"]
+    assert "ran_topics" not in result
 
 
 def test_source_floor_topics_stay_refreshable_next_batch(
@@ -7877,7 +7899,7 @@ def test_source_literature_fallback_submits_after_empty_fact_lane(
     assert records[0]["bundle_signature"]
 
 
-def test_long_submit_refresh_reaches_source_lit_after_two_empty_batches(
+def test_long_submit_refresh_reaches_source_lit_after_fullraw_batches(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
@@ -7942,7 +7964,7 @@ def test_long_submit_refresh_reaches_source_lit_after_two_empty_batches(
         sleep=lambda _seconds: None,
     )
 
-    assert refresh_calls == [5, 5]
+    assert refresh_calls == [5, 5, 5, 5, 5]
     assert ledger["status"] == "published"
     assert ledger["submitted_topic"] == "glycation_AGEs"
     assert ledger["source_literature_fallback"]["status"] == "selected"
@@ -8208,6 +8230,55 @@ def test_source_literature_preflight_defers_default_fullraw_without_skipping_ref
     assert ledger["status"] == "no_fresh_candidate"
     assert ledger["source_literature_fallback"]["status"] == "blocked"
     assert ledger["source_literature_fallback"]["reason"] == "failed_retry_exhausted"
+
+
+def test_metadata_only_source_literature_does_not_stop_fullraw_refresh(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [
+            {"topic": "cellular_reprogramming_safety", "paper_count": 10, "fact_source_count": 10},
+            {"topic": "vitamin_k2_vascular_aging", "paper_count": 9, "fact_source_count": 9},
+            {"topic": "physical_activity", "paper_count": 8, "fact_source_count": 8},
+        ],
+    })
+    calls: list[tuple[str, ...]] = []
+
+    def refresh(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+        priorities = tuple(kwargs.get("priority_topics") or ())
+        calls.append(priorities)
+        return {
+            "ok": True,
+            "ran_topics": list(priorities[:1]),
+            "top": 1,
+            "warm_backlog": False,
+        }
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", refresh)
+    monkeypatch.setattr(daily, "_fetch_source_literature_papers", lambda *_a, **_k: [])
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-55-00Z",
+        domain="longevity_research",
+        refresh_candidates=True,
+        max_refresh_batches=3,
+        refresh_top=3,
+        submit=True,
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+        queue_builder=lambda _root, _include_archive: _queue(),
+    )
+
+    priority_calls = [call for call in calls if call]
+    assert len(priority_calls) >= 2
+    assert priority_calls[0][0] == "cellular_reprogramming_safety"
+    assert priority_calls[1][0] == "vitamin_k2_vascular_aging"
+    assert ledger.get("refresh_early_exit", {}).get("reason") != (
+        "source_literature_candidate_available"
+    )
 
 
 def test_source_literature_fallback_tries_fresh_topic_before_repair(
