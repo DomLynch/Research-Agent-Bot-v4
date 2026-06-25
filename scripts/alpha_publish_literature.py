@@ -253,12 +253,15 @@ def _paper_effect_direction(paper: Json, topic: str = "") -> str:
     fact = paper.get("source_fact")
     fact = fact if isinstance(fact, dict) else {}
     text = " ".join(str(value or "") for value in (
-        paper.get("title"),
         fact.get("canonical_phrase"),
         fact.get("endpoint"),
         fact.get("metric"),
     ))
-    return _effect_direction(text, fact, topic)
+    direction = _effect_direction(text, fact, topic)
+    if direction != "other/mixed":
+        return direction
+    title_direction = _effect_direction(str(paper.get("title") or ""), fact, topic)
+    return "non-clinical/predictive" if title_direction == "non-clinical/predictive" else direction
 
 
 def _fact_complete(fact: Json) -> bool:
@@ -310,6 +313,8 @@ def _direction_rows(papers: list[Json], topic: str = "") -> list[str]:
             " topic is comparator here; label is endpoint-specific, not a broad efficacy verdict"
             if direction == "comparator/not favorable" else ""
         )
+        if direction == "directionally favorable" and re.search(r"\b(?:β|beta)\s*[=:-]\s*-", finding):
+            note = " direction follows receipt wording; coefficient sign is source-specific"
         rows.append(
             f"- {direction}: {title}"
             + (f" — {finding}" if finding else "")
@@ -356,17 +361,23 @@ def _direction_summary(papers: list[Json], topic: str = "") -> str:
 
 
 def _pico_gap(facts: list[Json]) -> str:
+    endpoints = [
+        str(fact.get("endpoint") or fact.get("metric") or "").strip()
+        for fact in facts
+        if str(fact.get("endpoint") or fact.get("metric") or "").strip()
+    ]
     for fact in facts:
         population = str(fact.get("population") or "").strip()
         intervention = str(fact.get("intervention") or "").strip()
         comparator = str(fact.get("comparator") or "").strip()
-        endpoint = str(fact.get("endpoint") or fact.get("metric") or "").strip()
-        if population and intervention and comparator:
-            outcome = endpoint or "one named clinical endpoint"
+        if population and intervention and comparator and endpoints:
+            outcome = endpoints[0]
             return (
-                "A stronger memo needs one matched PICO, for example: "
-                f"population={population}; intervention/exposure={intervention}; "
-                f"comparator={comparator}; outcome={outcome}."
+                "A stronger memo needs a new matched PICO that reduces this "
+                f"bundle's heterogeneity: hold outcome={outcome} constant, "
+                f"compare intervention/exposure={intervention} against a clearly "
+                f"matched comparator, and test it in a population adjacent to "
+                f"but not duplicating {population}."
             )
     return (
         "A stronger memo needs one matched PICO: one population, one "
@@ -759,7 +770,10 @@ def payload(
         "domain": profile.as_metadata(),
         "domain_slug": profile.slug,
         "category": category,
-        "title": f"{topic}: one bounded, context-dependent signal across receipts",
+        "title": (
+            f"{topic.replace('_', ' ')}: one bounded, context-dependent signal "
+            "across receipts"
+        ),
         "abstract": safe_excerpt(synthesis),
         "summary": safe_excerpt(synthesis),
         "topic": topic,

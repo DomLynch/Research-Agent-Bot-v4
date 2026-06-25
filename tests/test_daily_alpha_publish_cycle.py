@@ -9950,10 +9950,12 @@ def test_source_literature_payload_separates_intervention_from_predictive_rows(
     )
 
     markdown = payload["markdown"]
-    assert "directionally favorable: 3 receipt(s)" in markdown
+    assert "directionally favorable: 2 receipt(s)" in markdown
     assert "non-clinical/predictive: 2 receipt(s)" in markdown
+    assert "other/mixed: 1 receipt(s)" in markdown
     assert "other/mixed: 5 receipt(s)" not in markdown
     assert "intervention signals plus separate predictive evidence" in payload["abstract"]
+    assert payload["title"].startswith("gut microbiome:")
 
 
 def test_source_literature_fallback_blocks_repeated_report_series(
