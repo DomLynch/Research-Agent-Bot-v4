@@ -17,6 +17,7 @@ from agent.settings import load_settings
 Json = dict[str, Any]
 _FACT_SEARCH_TIMEOUT_ENV = "RESEARKA_SOURCE_LITERATURE_FACT_TIMEOUT_SECONDS"
 _FULLRAW_TIMEOUT_ENV = "RESEARKA_SOURCE_LITERATURE_FULLRAW_TIMEOUT_SECONDS"
+_FULLRAW_BUDGET_ENV = "RESEARKA_SOURCE_LITERATURE_FULLRAW_BUDGET_SECONDS"
 _GENERIC_TOPIC_TOKENS = frozenset({
     "association", "associations", "clinical", "effect", "effects", "evidence",
     "exposure", "intervention", "outcome", "outcomes", "review", "study",
@@ -118,17 +119,20 @@ def _fullraw_topic_papers(topic: str, limit: int) -> list[Json]:
         from scripts.run_topic_discovery import _seed_fullraw_papers
     except Exception:
         return []
-    cap = os.environ.get(_FULLRAW_TIMEOUT_ENV, "8")
-    keys = (
-        "TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS",
-        "TOPIC_DISCOVERY_SEED_PAPER_TIMEOUT_SECONDS",
-        "TOPIC_DISCOVERY_SEED_PAPER_BUDGET_SECONDS",
-        "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
-    )
-    old = {key: os.environ.get(key) for key in keys}
+    timeout = os.environ.get(_FULLRAW_TIMEOUT_ENV, "30")
+    budget = os.environ.get(_FULLRAW_BUDGET_ENV, "100")
+    bounds = {
+        "TOPIC_DISCOVERY_V5_TIMEOUT_SECONDS": timeout,
+        "TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS": timeout,
+        "TOPIC_DISCOVERY_SEED_PAPER_TIMEOUT_SECONDS": timeout,
+        "TOPIC_DISCOVERY_SEED_PAPER_BUDGET_SECONDS": budget,
+        "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS": budget,
+        "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS": "0",
+        "TOPIC_DISCOVERY_V5_MAX_VARIANTS": "2",
+    }
+    old = {key: os.environ.get(key) for key in bounds}
     try:
-        for key in keys:
-            os.environ[key] = cap
+        os.environ.update(bounds)
         with httpx.Client() as client:
             return _seed_fullraw_papers(topic, client=client, limit=limit)
     except Exception:

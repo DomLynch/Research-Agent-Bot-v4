@@ -8781,7 +8781,7 @@ def test_source_literature_candidates_require_fact_source_floor(
     ) == ["source_rich_parent"]
 
 
-def test_source_literature_fullraw_fetch_uses_short_budget(
+def test_source_literature_fullraw_fetch_uses_separate_query_budget(
     monkeypatch: MonkeyPatch,
 ) -> None:
     from scripts import run_topic_discovery
@@ -8790,19 +8790,34 @@ def test_source_literature_fullraw_fetch_uses_short_budget(
 
     def fake_seed_fullraw_papers(*_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
         for key in (
+            "TOPIC_DISCOVERY_V5_TIMEOUT_SECONDS",
             "TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS",
             "TOPIC_DISCOVERY_SEED_PAPER_TIMEOUT_SECONDS",
             "TOPIC_DISCOVERY_SEED_PAPER_BUDGET_SECONDS",
             "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
+            "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS",
+            "TOPIC_DISCOVERY_V5_MAX_VARIANTS",
         ):
             seen[key] = os.environ.get(key)
         return []
 
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FULLRAW_TIMEOUT_SECONDS", "7")
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FULLRAW_BUDGET_SECONDS", "88")
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_TIMEOUT_SECONDS", "99")
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", "45")
     monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_seed_fullraw_papers)
 
     assert publish_literature._fullraw_topic_papers("plant based diet", 5) == []
-    assert set(seen.values()) == {"8"}
+    assert seen == {
+        "TOPIC_DISCOVERY_V5_TIMEOUT_SECONDS": "7",
+        "TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS": "7",
+        "TOPIC_DISCOVERY_SEED_PAPER_TIMEOUT_SECONDS": "7",
+        "TOPIC_DISCOVERY_SEED_PAPER_BUDGET_SECONDS": "88",
+        "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS": "88",
+        "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS": "0",
+        "TOPIC_DISCOVERY_V5_MAX_VARIANTS": "2",
+    }
+    assert os.environ["TOPIC_DISCOVERY_V5_TIMEOUT_SECONDS"] == "99"
     assert os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] == "45"
 
 
