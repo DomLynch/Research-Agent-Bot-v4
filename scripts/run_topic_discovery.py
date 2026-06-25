@@ -212,6 +212,16 @@ def _seed_paper_budget_seconds() -> float:
         return 45.0
 
 
+def _fullraw_supply_budget_seconds() -> float:
+    try:
+        return max(1.0, float(os.environ.get(
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS",
+            str(_seed_paper_budget_seconds()),
+        )))
+    except (TypeError, ValueError):
+        return _seed_paper_budget_seconds()
+
+
 def _fullraw_configured() -> bool:
     return bool(os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip())
 
@@ -492,8 +502,11 @@ def _fullraw_supply_candidates(
     out: list[TopicCandidate] = []
     seen_topics: set[str] = set()
     used_seed_labels: set[str] = set()
+    deadline = time.monotonic() + _fullraw_supply_budget_seconds()
     with httpx.Client() as client:
         for query, label in query_labels.items():
+            if time.monotonic() >= deadline:
+                break
             if label != "__domain_supply__" and label in used_seed_labels:
                 continue
             receipt_recorded = False

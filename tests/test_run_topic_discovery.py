@@ -933,6 +933,32 @@ def test_fullraw_supply_queries_seeds_when_domain_query_is_empty(
     assert {"metformin", "resveratrol"} <= topics
 
 
+def test_fullraw_supply_stops_when_total_pass_budget_is_spent(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+    now = {"value": 0.0}
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        now["value"] = 2.0
+        return []
+
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS", "1")
+    monkeypatch.setattr(run_topic_discovery.time, "monotonic", lambda: now["value"])
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
+
+    rows = run_topic_discovery._fullraw_supply_candidates(
+        query_context="Longevity / anti-aging research",
+        current_year=2026,
+        top=2,
+        seeds=("metformin", "resveratrol"),
+    )
+
+    assert rows == ()
+    assert calls == ["longevity anti aging"]
+
+
 def test_fullraw_supply_prefers_context_seed_query_over_bare_seed(
     monkeypatch: Any,
 ) -> None:
