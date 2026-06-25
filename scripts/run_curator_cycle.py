@@ -727,8 +727,6 @@ def main() -> int:
                     out.append("--skip-seed-paper-probe")
             if args.warm_backlog:
                 out.append("--warm-backlog")
-                if args.stop_on_ready:
-                    out.append("--seed-paper-only")
             if args.derived_topic_limit is not None:
                 out.extend([
                     "--derived-topic-limit", str(max(0, args.derived_topic_limit)),
