@@ -8088,6 +8088,13 @@ def test_source_literature_preflight_uses_default_fullraw_before_refresh(
         ("cellular_reprogramming_safety", 15, "longevity_research"),
     ]
     assert not refresh_calls
+    assert ledger["source_literature_preflight_attempts"] == [{
+        "topic": "cellular_reprogramming_safety",
+        "status": "selected",
+        "reason": "ok",
+        "paper_count": 5,
+        "relevant_paper_count": 5,
+    }]
     assert ledger["refresh_batches"][0]["note"] == (
         "skipped_source_literature_candidate_available"
     )

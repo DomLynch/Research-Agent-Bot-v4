@@ -4627,6 +4627,7 @@ def run_cycle(
             build_current_queue(), runs_root, profile.slug,
         )
         source_lit_available = False
+        source_lit_probe_attempts: list[Json] = []
         if submit and profile.slug != "ai_research":
             source_lit_probe = source_paper_fetcher or (
                 lambda topic, limit: _fetch_source_literature_papers(
@@ -4635,14 +4636,24 @@ def run_cycle(
             )
             for topic in _source_literature_topic_candidates(
                 runs_root, profile.slug, min_submit_sources,
-                source_literature_blocked_topics, limit=2,
+                source_literature_blocked_topics,
+                limit=min(4, _SOURCE_LITERATURE_SCAN_LIMIT),
             ):
                 papers = source_lit_probe(topic, min_submit_sources)
                 source_lit_available, _reason = _source_literature_boundary_quality(
                     topic, papers, min_submit_sources,
                 )
+                source_lit_probe_attempts.append({
+                    "topic": topic,
+                    "status": "selected" if source_lit_available else "blocked",
+                    "reason": _reason,
+                    "paper_count": len(papers),
+                    "relevant_paper_count": len(publish_literature.relevant_papers(topic, papers)),
+                })
                 if source_lit_available:
                     break
+        if source_lit_probe_attempts:
+            ledger["source_literature_preflight_attempts"] = source_lit_probe_attempts
         ledger["stage"] = "initial_queue_probe_complete"
         ledger["preflight_queue_counts"] = publish_status.queue_counts(candidate_queue)
         _write_ledger(ledger_path, ledger)
