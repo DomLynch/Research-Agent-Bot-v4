@@ -2,10 +2,21 @@ from __future__ import annotations
 
 import fcntl
 import json
+import multiprocessing as mp
+import time
 from pathlib import Path
 from typing import Any
 
 from scripts import alpha_publish_io as io
+
+
+def _append_row_in_process(path: str, row_id: int, delay: float) -> None:
+    def mutate(rows: list[Any]) -> bool:
+        time.sleep(delay)
+        rows.append({"id": row_id})
+        return True
+
+    io.update_json_list(Path(path), mutate)
 
 
 def test_write_json_uses_sidecar_lock(tmp_path: Path, monkeypatch: Any) -> None:
@@ -74,6 +85,27 @@ def test_update_json_list_locks_and_only_writes_on_change(
     changed = io.update_json_list(path, lambda _rows: False)
     assert changed is False
     assert json.loads(path.read_text()) == [{"id": 1}, {"id": 2}]
+
+
+def test_update_json_list_preserves_parallel_writers(tmp_path: Path) -> None:
+    path = tmp_path / "rows.json"
+    path.write_text("[]", encoding="utf-8")
+    processes = [
+        mp.Process(target=_append_row_in_process, args=(str(path), 1, 0.05)),
+        mp.Process(target=_append_row_in_process, args=(str(path), 2, 0.0)),
+    ]
+
+    for proc in processes:
+        proc.start()
+    for proc in processes:
+        proc.join(3)
+    for proc in processes:
+        if proc.is_alive():
+            proc.terminate()
+            proc.join(1)
+
+    assert [proc.exitcode for proc in processes] == [0, 0]
+    assert {row["id"] for row in json.loads(path.read_text())} == {1, 2}
 
 
 def test_write_ledger_adds_publish_summary(tmp_path: Path) -> None:
