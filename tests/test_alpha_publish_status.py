@@ -41,6 +41,13 @@ def test_submit_exit_codes_only_allow_pending_when_explicit() -> None:
     assert cycle_exit_code(ledger, submit=True, allow_pending_success=True) == 0
 
 
+def test_submit_exit_codes_succeed_only_for_published_output() -> None:
+    assert cycle_exit_code({
+        "status": CycleStatus.PUBLISHED.value,
+        "published": 1,
+    }, submit=True) == 0
+
+
 def test_terminal_publication_edge_statuses_have_operator_actions() -> None:
     assert (
         next_action_for_status(CycleStatus.DRY_RUN_SELECTED.value)

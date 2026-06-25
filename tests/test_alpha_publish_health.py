@@ -133,6 +133,41 @@ def test_health_summary_prefers_ledger_timestamp_over_sync_mtime(tmp_path: Path)
     assert summary["topic"] == "caloric_restriction"
 
 
+def test_health_summary_can_scope_latest_ledger_by_domain(
+    tmp_path: Path, capsys: Any,
+) -> None:
+    _write_ledger(tmp_path, "2026-06-01T08-29-49Z-business.json", {
+        "status": "no_fresh_candidate",
+        "submitted": 0,
+        "published": 0,
+        "domain_slug": "business_research",
+        "queue_counts": {"ready_to_publish": 0, "not_ready": 2},
+    })
+    _write_ledger(tmp_path, "2026-06-01T21-59-41Z-longevity.json", {
+        "status": "published",
+        "submitted": 1,
+        "published": 1,
+        "domain": {"slug": "longevity_research"},
+        "published_topic": "fisetin",
+        "public_url": "https://researka.org/alpha/fisetin",
+    })
+
+    assert health.summarize_latest(tmp_path)["ok"] is True
+
+    summary = health.summarize_latest(tmp_path, domain="business_research")
+    assert summary["ok"] is False
+    assert summary["domain"] == "business_research"
+    assert summary["ledger"] == "2026-06-01T08-29-49Z-business.json"
+    assert summary["status"] == "no_fresh_candidate"
+    assert summary["queue_counts"] == {"ready_to_publish": 0, "not_ready": 2}
+
+    assert health.main([
+        "--runs-root", str(tmp_path), "--domain", "business_research",
+        "--expect-published",
+    ]) == 2
+    assert json.loads(capsys.readouterr().out)["domain"] == "business_research"
+
+
 def test_health_summary_includes_suffixed_cycle_ledgers(tmp_path: Path) -> None:
     _write_ledger(tmp_path, "2026-06-01T21-59-41Z.json", {
         "status": "published",

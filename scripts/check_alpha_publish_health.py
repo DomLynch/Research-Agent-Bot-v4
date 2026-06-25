@@ -37,7 +37,7 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution fallba
     import alpha_publish_io as publish_io  # type: ignore[no-redef]
 
 
-def _ledger_paths(runs_root: Path) -> list[Path]:
+def _ledger_paths(runs_root: Path, *, domain: str | None = None) -> list[Path]:
     ledger_dir = runs_root / "_daily_ledger"
     return sorted(
         (
@@ -45,6 +45,7 @@ def _ledger_paths(runs_root: Path) -> list[Path]:
             for path in ledger_dir.glob("*.json")
             if _CYCLE_LEDGER_RE.match(path.name)
             and not _DRY_RUN_LEDGER_RE.search(path.stem)
+            and (domain is None or _ledger_domain_slug(_load_json(path)) == domain)
         ),
         key=_ledger_sort_key,
         reverse=True,
@@ -219,6 +220,7 @@ def _public_url_status(url: str, *, timeout: float) -> Json:
 def summarize_latest(
     runs_root: Path,
     *,
+    domain: str | None = None,
     check_url: bool = False,
     show_next_candidate: bool = False,
     sync_pending_decisions: bool = False,
@@ -235,9 +237,14 @@ def summarize_latest(
             except ModuleNotFoundError:
                 cycle = importlib.import_module("daily_alpha_publish_cycle")
         decision_sync = cycle.sync_submission_decisions(runs_root)
-    paths = _ledger_paths(runs_root)
+    paths = _ledger_paths(runs_root, domain=domain)
     if not paths:
-        return {"ok": False, "reason": "no_daily_ledger", "runs_root": str(runs_root)}
+        return {
+            "ok": False,
+            "reason": "no_daily_ledger",
+            "runs_root": str(runs_root),
+            "domain": domain,
+        }
     path = paths[0]
     ledger = _load_json(path)
     mtime = dt.datetime.fromtimestamp(path.stat().st_mtime, tz=dt.UTC)
@@ -276,6 +283,7 @@ def summarize_latest(
     summary = {
         "ok": published and (not check_url or bool(url_check.get("rendered"))),
         "ledger": path.name,
+        "domain": _ledger_domain_slug(ledger),
         "ledger_mtime": mtime.isoformat(),
         "ledger_age_minutes": round((current - mtime).total_seconds() / 60, 1),
         "status": ledger.get("status"),
@@ -300,7 +308,7 @@ def summarize_latest(
     if show_next_candidate:
         try:
             next_candidate = summarize_next_candidate(
-                runs_root, domain=_ledger_domain_slug(ledger),
+                runs_root, domain=domain or _ledger_domain_slug(ledger),
             )
             summary["next_candidate"] = next_candidate
             summary["current_queue_counts"] = next_candidate.get("queue_counts") or {}
@@ -320,6 +328,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--runs-root", type=Path, default=Path("runs"))
     parser.add_argument("--expect-published", action="store_true")
     parser.add_argument("--check-url", action="store_true")
+    parser.add_argument("--domain")
     parser.add_argument("--show-next-candidate", action="store_true")
     parser.add_argument("--sync-pending-decisions", action="store_true")
     parser.add_argument("--max-age-minutes", type=float, default=0.0)
@@ -328,6 +337,7 @@ def main(argv: list[str] | None = None) -> int:
 
     summary = summarize_latest(
         args.runs_root,
+        domain=args.domain,
         check_url=args.check_url,
         show_next_candidate=args.show_next_candidate,
         sync_pending_decisions=args.sync_pending_decisions,
