@@ -156,7 +156,11 @@ def _fullraw_relevant_papers(topic: str, limit: int, seen: set[str]) -> list[Jso
             if not key or not title or key in seen:
                 continue
             seen.add(key)
-            out.append(paper | {"id": key, "title": title})
+            out.append(paper | {
+                "id": key,
+                "title": title,
+                "source_fact": _metadata_source_fact(topic, paper | {"title": title}),
+            })
             if len(out) >= limit:
                 return out
     return out
@@ -230,6 +234,16 @@ def source_fact(item: Json) -> Json:
             "endpoint", "metric", "source_tier", "source_excerpt",
         )
         if item.get(key) not in (None, "")
+    }
+
+
+def _metadata_source_fact(topic: str, paper: Json) -> Json:
+    title = str(paper.get("title") or paper.get("paper_title") or "").strip()
+    return {
+        "canonical_phrase": f"Title-level source match for {topic}: {title}",
+        "intervention": topic.replace("_", " "),
+        "endpoint": "source-literature relevance",
+        "source_tier": "paper_metadata",
     }
 
 
@@ -596,7 +610,8 @@ def fetch_papers(
     if len(out) < limit:
         out.extend(_fullraw_relevant_papers(topic, limit - len(out), seen))
     for idx, paper in enumerate(out):
-        if isinstance(paper.get("source_fact"), dict):
+        raw_fact = paper.get("source_fact")
+        if isinstance(raw_fact, dict) and raw_fact.get("source_tier") != "paper_metadata":
             continue
         title = str(paper.get("title") or paper.get("paper_title") or "").strip()
         if not title:
@@ -661,7 +676,7 @@ def payload(
     contexts = sorted({context_family(fact.get("population")) for fact in facts})
     context_text = join_contexts(contexts[:3])
     question = (
-        f"Across retrieved fact-level receipts for {topic}, which endpoints show "
+        f"Across retrieved source-level receipts for {topic}, which endpoints show "
         "directionally favorable versus null/non-convergent signals, and what "
         "matched PICO remains untested?"
     )
@@ -676,9 +691,9 @@ def payload(
         "",
         (
             f"The source-literature fallback selected {topic} because the domain "
-            "snapshot exposed enough fact-backed, topic-overlapping papers. The "
+            "snapshot exposed enough source-backed, topic-overlapping papers. The "
             "fallback requires at least five verifiable source "
-            "papers with fact-level receipts, distinct title keys, and a non-"
+            "papers with source-level receipts, distinct title keys, and a non-"
             "repeated report series before treating the bundle as a coherent "
             "scoping front rather than proof of intervention efficacy."
         ),

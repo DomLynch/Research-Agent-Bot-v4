@@ -8765,6 +8765,59 @@ def test_fact_backed_source_literature_fallback_submits_without_flag(
     assert "receipt-backed scoping note" in seen_payload["abstract"]
 
 
+def test_fullraw_metadata_source_literature_fallback_submits_without_flag(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    (root / "_topics_discovery" / "longevity.json").write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "acarbose", "paper_count": 8, "fact_source_count": 5}],
+    }), encoding="utf-8")
+    monkeypatch.delenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", raising=False)
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "researka_database_url": "",
+        "researka_database_token": "",
+        "writer_configured": False,
+        "mimo_model": "",
+        "mimo_base_url": "",
+    })())
+    monkeypatch.setattr(publish_literature, "_fullraw_topic_papers", lambda *_args: [
+        {"doi": "10.1/a", "title": "Acarbose mice longevity inflammatory markers"},
+        {"doi": "10.1/b", "title": "Acarbose mice aging glucose homeostasis"},
+        {"doi": "10.1/c", "title": "Acarbose mice lifespan intervention review"},
+        {"doi": "10.1/d", "title": "Acarbose mice late life metabolic response"},
+        {"doi": "10.1/e", "title": "Acarbose mice geroscience translational evidence"},
+    ])
+    seen_payload: dict[str, Any] = {}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-00-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        submitter=lambda payload: (
+            seen_payload.update(payload)
+            or {"ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}}}
+        ),
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "acarbose"
+    assert ledger["source_literature_fallback"]["status"] == "selected"
+    assert "Title-level source match for acarbose" in seen_payload["markdown"]
+    assert "source-level receipts" in seen_payload["markdown"]
+
+
 def test_source_literature_fallback_ignores_stale_source_floor_block(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
@@ -9500,7 +9553,9 @@ def test_source_literature_fetcher_supplements_thin_fact_search_with_fullraw(
         "10.1/acarbose-fullraw-2",
     ]
     assert "source_fact" in papers[0]
-    assert "source_fact" not in papers[-1]
+    assert papers[-1]["source_fact"]["source_tier"] == "paper_metadata"
+    assert "Title-level source match for acarbose" in papers[-1]["source_fact"]["canonical_phrase"]
+    assert daily._source_literature_fact_count(papers) == 5
     assert daily._source_literature_boundary_quality("acarbose", papers, 5) == (True, "ok")
 
 
