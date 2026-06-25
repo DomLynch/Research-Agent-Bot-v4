@@ -720,7 +720,7 @@ def main() -> int:
         for topic in args.priority_topic if str(topic).strip()
     ]
     if args.stop_on_ready:
-        priority_topics = priority_topics[:1]
+        priority_topics = priority_topics[:max(1, args.top)]
     priority_only_submit = bool(args.stop_on_ready and priority_topics)
     seed_paper_fast_path = False
 

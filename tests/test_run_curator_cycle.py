@@ -1137,7 +1137,7 @@ def test_stop_on_ready_warm_backlog_probes_beyond_cache(
     assert calls[0][calls[0].index("--exclude-topic") + 1] == excluded[0]
 
 
-def test_stop_on_ready_caps_priority_topics_per_child_process(
+def test_stop_on_ready_caps_priority_topics_to_requested_top(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
     import run_curator_cycle
@@ -1164,12 +1164,13 @@ def test_stop_on_ready_caps_priority_topics_per_child_process(
 
     monkeypatch.setattr(run_curator_cycle, "_priority_ranked_topics", ranked)
     monkeypatch.setattr(sys, "argv", [
-        "run_curator_cycle.py", "--stop-on-ready", "--dry-run",
+        "run_curator_cycle.py", "--stop-on-ready", "--dry-run", "--top", "2",
         "--priority-topic", "first", "--priority-topic", "second",
+        "--priority-topic", "third",
     ])
 
     assert run_curator_cycle.main() == 0
-    assert ranked_calls == [["first"]]
+    assert ranked_calls == [["first", "second"]]
 
 
 def test_stop_on_ready_halts_plan(
