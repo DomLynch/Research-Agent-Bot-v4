@@ -3511,6 +3511,7 @@ def _source_literature_topic_candidates(
     blocked_topics: set[str] | None = None,
     *,
     limit: int = 5,
+    soft_broad_blocked_topics: set[str] | None = None,
 ) -> list[str]:
     discovery_dir = runs_root / "_topics_discovery"
     seed_scope = _seed_scope_tokens(_domain_seed_prefixes(profile_slug))
@@ -3535,7 +3536,9 @@ def _source_literature_topic_candidates(
             if not isinstance(row, dict):
                 continue
             topic = str(row.get("topic") or "").strip()
-            if not topic or topic in seen or _source_literature_family_blocked_topic(topic, blocked):
+            if not topic or topic in seen or _source_literature_family_blocked_topic(
+                topic, blocked, soft_broad_blocked_topics=soft_broad_blocked_topics,
+            ):
                 continue
             topic_key = _canonical_family_key(topic).removeprefix("topic:")
             topic_tokens = {
@@ -3563,9 +3566,11 @@ def _source_literature_topic_candidates(
 
 def _source_literature_topic_candidate(
     runs_root: Path, profile_slug: str, min_sources: int, blocked_topics: set[str] | None = None,
+    *, soft_broad_blocked_topics: set[str] | None = None,
 ) -> str | None:
     topics = _source_literature_topic_candidates(
         runs_root, profile_slug, min_sources, blocked_topics, limit=1,
+        soft_broad_blocked_topics=soft_broad_blocked_topics,
     )
     return topics[0] if topics else None
 
@@ -3597,15 +3602,28 @@ def _source_literature_fetch_topics(topic: str) -> list[str]:
 
 
 def _source_literature_family_blocked_topic(
-    topic: str, blocked_topics: set[str],
+    topic: str, blocked_topics: set[str], *,
+    soft_broad_blocked_topics: set[str] | None = None,
 ) -> bool:
-    if _family_blocked_topic(topic, blocked_topics):
+    soft_blocked = soft_broad_blocked_topics or set()
+    if _family_blocked_topic(topic, blocked_topics - soft_blocked):
         return True
+    topic_key = _canonical_family_key(topic)
     topic_tokens = _family_tokens(topic)
     if not topic_tokens:
         return False
     for blocked in blocked_topics:
         blocked_tokens = _family_tokens(blocked)
+        if blocked in soft_blocked:
+            if topic == blocked or topic_key == _canonical_family_key(blocked):
+                return True
+            if (
+                blocked_tokens < topic_tokens
+                and topic_tokens & {"aging", "ageing", "longevity"}
+            ):
+                continue
+        if _family_blocked_topic(topic, {blocked}):
+            return True
         if blocked_tokens and topic_tokens & blocked_tokens and min(
             len(topic_tokens), len(blocked_tokens),
         ) == 1:
@@ -4604,6 +4622,7 @@ def run_cycle(
     source_literature_blocked_topics = (
         published_blocked_topics | submitted_blocked_topics | negative_blocked_topics
     )
+    source_literature_soft_blocked_topics = negative_blocked_topics
     ledger["recently_published_topics_blocked"] = sorted(published_blocked_topics)
     ledger["recently_submitted_topics_blocked"] = sorted(submitted_blocked_topics)
     ledger["recent_negative_topics_blocked"] = sorted(negative_blocked_topics)
@@ -4659,6 +4678,7 @@ def run_cycle(
                 runs_root, profile.slug, min_submit_sources,
                 source_literature_blocked_topics,
                 limit=min(4, _SOURCE_LITERATURE_SCAN_LIMIT),
+                soft_broad_blocked_topics=source_literature_soft_blocked_topics,
             ):
                 attempt_status = "blocked"
                 if source_lit_probe is None:
@@ -4942,6 +4962,7 @@ def run_cycle(
                 and _source_literature_topic_candidate(
                     runs_root, profile.slug, min_submit_sources,
                     source_literature_blocked_topics | blocked_topics,
+                    soft_broad_blocked_topics=source_literature_soft_blocked_topics,
                 )
             ):
                 ledger["refresh_early_exit"] = {
@@ -5286,6 +5307,7 @@ def run_cycle(
                 runs_root, profile.slug, min_submit_sources,
                 source_literature_blocked_topics,
                 limit=source_lit_scan_limit,
+                soft_broad_blocked_topics=source_literature_soft_blocked_topics,
             ) if topic not in repair_topic_set
         ]
         literature_topics = fresh_topics + [

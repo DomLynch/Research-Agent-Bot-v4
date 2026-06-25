@@ -9052,6 +9052,56 @@ def test_source_literature_candidates_skip_exhausted_topic_family(
     ) == ["acarbose"]
 
 
+def test_source_literature_negative_parent_allows_domain_child(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    discovery = root / "_topics_discovery"
+    discovery.mkdir(parents=True)
+    daily._write_json(discovery / "latest.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{
+            "topic": "cellular_reprogramming_aging",
+            "paper_count": 8,
+            "fact_source_count": 8,
+        }],
+    })
+
+    assert daily._source_literature_topic_candidates(
+        root,
+        "longevity_research",
+        5,
+        {"cellular_reprogramming"},
+        limit=3,
+        soft_broad_blocked_topics={"cellular_reprogramming"},
+    ) == ["cellular_reprogramming_aging"]
+    assert daily._source_literature_family_blocked_topic(
+        "cellular_reprogramming",
+        {"cellular_reprogramming"},
+        soft_broad_blocked_topics={"cellular_reprogramming"},
+    )
+
+
+def test_source_literature_strict_parent_blocks_domain_child(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    discovery = root / "_topics_discovery"
+    discovery.mkdir(parents=True)
+    daily._write_json(discovery / "latest.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{
+            "topic": "cellular_reprogramming_aging",
+            "paper_count": 8,
+            "fact_source_count": 8,
+        }],
+    })
+
+    assert daily._source_literature_topic_candidates(
+        root, "longevity_research", 5, {"cellular_reprogramming"}, limit=3,
+    ) == []
+
+
 def test_source_literature_fallback_tries_next_quality_candidate(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
@@ -9642,6 +9692,23 @@ def test_default_source_literature_fallback_tries_core_topic_after_modifier_slug
             "fact_source_count": 20,
         }],
     }), encoding="utf-8")
+    daily._write_json(root / "_daily_ledger" / "2026-06-08.json", {
+        "domain": {"slug": "longevity_research"},
+        "final_verdict": "rejected",
+        "submitted_topic": "cellular_reprogramming",
+        "researka_decision": {
+            "status": "complete",
+            "decision": "reject",
+            "claim_support_verdict": "unsupported",
+        },
+    })
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+        "date": "2026-06-08T09-30-00Z",
+        "domain": {"slug": "longevity_research"},
+        "topic": "cellular_reprogramming",
+        "run_dir": "runs/cellular_reprogramming-source-literature-2026-06-08",
+        "fingerprint": "broad-old",
+    }])
     thin = [
         {"title": f"Cellular reprogramming safety paper {idx}", "doi": f"10.1/thin-{idx}"}
         for idx in range(4)
@@ -9706,6 +9773,7 @@ def test_default_source_literature_fallback_tries_core_topic_after_modifier_slug
     ]
     assert ledger["status"] == "published"
     assert ledger["submitted_topic"] == "cellular_reprogramming_aging"
+    assert ledger["recent_negative_topics_blocked"] == ["cellular_reprogramming"]
 
 
 def test_source_literature_fetcher_enriches_fullraw_with_matching_fact_rows(
