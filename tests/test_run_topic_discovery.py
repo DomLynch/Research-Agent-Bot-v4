@@ -969,6 +969,31 @@ def test_fullraw_supply_queries_seeds_when_domain_query_is_empty(
     assert {"metformin", "resveratrol"} <= topics
 
 
+def test_fullraw_supply_stops_after_source_rich_domain_query(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        if query == "longevity anti aging":
+            return _fullraw_rows("domain", "Longevity anti aging source rich")
+        raise AssertionError(f"unexpected seed fallback: {query}")
+
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
+
+    rows = run_topic_discovery._fullraw_supply_candidates(
+        query_context="Longevity / anti-aging research",
+        current_year=2026,
+        top=2,
+        seeds=("metformin", "resveratrol"),
+    )
+
+    assert calls == ["longevity anti aging"]
+    assert rows
+    assert all(row.fact_source_count == 5 for row in rows)
+
+
 def test_fullraw_supply_keeps_seed_query_when_context_titles_are_sparse(
     monkeypatch: Any,
 ) -> None:

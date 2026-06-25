@@ -527,7 +527,7 @@ def _seed_paper_candidates(
 
 def _fullraw_supply_candidates(
     *, query_context: str, current_year: int, top: int,
-    seeds: tuple[str, ...] = (),
+    seeds: tuple[str, ...] = (), excluded: set[str] | None = None,
 ) -> tuple[TopicCandidate, ...]:
     """Build fallback topics from fullraw only when each topic clears the floor."""
     query_labels: dict[str, str] = {}
@@ -633,6 +633,52 @@ def _fullraw_supply_candidates(
                         os.environ.pop(key, None)
                     else:
                         os.environ[key] = value
+            if (
+                label == "__domain_supply__"
+                and len(papers_by_query.get(query, [])) >= _SOURCE_RICH_FLOOR
+            ):
+                seed_exact, _ = _domain_scope(seeds)
+                context_scope_tokens = set(_TOKEN_RE.findall(context_terms))
+                domain_out: list[TopicCandidate] = []
+                for topic in _title_topic_slugs(
+                    {"fullraw": papers_by_query[query]}, current_year, limit=top * 12,
+                ):
+                    if (
+                        (seed_exact or context_scope_tokens)
+                        and _topic_key(topic) not in seed_exact
+                        and not (_topic_tokens(topic) & context_scope_tokens)
+                    ):
+                        continue
+                    topic_tokens = set(_TOKEN_RE.findall(
+                        topic.replace("_", " ").casefold()))
+                    scoped = _context_supported_papers([
+                        paper for paper in papers_by_query[query]
+                        if topic_tokens <= set(_TOKEN_RE.findall(
+                            str(paper.get("title") or "").casefold()))
+                    ], context_terms)
+                    if len(scoped) < _SOURCE_RICH_FLOOR:
+                        continue
+                    candidate = _score_topic(
+                        topic, scoped[:25], current_year,
+                        fact_source_count=len(scoped),
+                    )
+                    if excluded:
+                        if _topic_family_excluded(candidate.topic, excluded):
+                            continue
+                        title_tokens = [
+                            set(_TOKEN_RE.findall(
+                                str(paper.get("title") or "").casefold()))
+                            for paper in scoped
+                        ]
+                        if any(
+                            (blocked_tokens := _topic_tokens(blocked))
+                            and all(blocked_tokens & tokens for tokens in title_tokens)
+                            for blocked in excluded
+                        ):
+                            continue
+                    domain_out.append(candidate)
+                    if len(domain_out) >= top:
+                        return tuple(sorted(domain_out, key=_rank_key))
             if label != "__domain_supply__":
                 scoped = _query_supported_papers(
                     papers_by_query.get(query, []), query, context_terms)
@@ -934,6 +980,7 @@ def main() -> int:
                     current_year=year,
                     top=max(1, args.top - paper_backed_cached),
                     seeds=seed_probe_seeds,
+                    excluded=excluded,
                 ),
                 excluded,
             ),
@@ -1023,6 +1070,7 @@ def main() -> int:
                     current_year=year,
                     top=max(1, args.top - paper_backed_ranked),
                     seeds=seed_probe_seeds,
+                    excluded=excluded,
                 ),
                 excluded,
             ),
