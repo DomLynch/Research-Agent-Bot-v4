@@ -7985,6 +7985,44 @@ def test_thin_source_literature_candidate_does_not_skip_refresh(
     assert ledger["source_literature_fallback"]["reason"] == "source_floor_below_min"
 
 
+def test_source_literature_preflight_does_not_fetch_live_fullraw_before_refresh(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "cellular_reprogramming_safety", "paper_count": 10}],
+    })
+    refresh_calls: list[dict[str, Any]] = []
+
+    def refresh(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+        refresh_calls.append(kwargs)
+        return {"ok": False, "note": "refresh failed"}
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", refresh)
+    monkeypatch.setattr(
+        daily, "_fetch_source_literature_papers",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("preflight should not fetch live fullraw")
+        ),
+    )
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-50-00Z",
+        domain="longevity_research",
+        refresh_candidates=True,
+        max_refresh_batches=1,
+        submit=True,
+        submitter=lambda _payload: {"ok": False, "status": 500},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert refresh_calls
+    assert ledger["status"] == "candidate_refresh_failed"
+
+
 def test_source_literature_fallback_tries_fresh_topic_before_repair(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
