@@ -11451,6 +11451,67 @@ def test_fresh_parent_topics_preserve_discovery_order_after_source_floor(
     ) == ["first_eligible_parent"]
 
 
+def test_fresh_parent_topics_skip_locally_failed_stale_parent(
+    tmp_path: Path,
+) -> None:
+    discovery = tmp_path / "_topics_discovery"
+    discovery.mkdir()
+    latest = discovery / "latest.json"
+    latest.write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [
+            {"topic": "acarbose", "fact_source_count": 9, "paper_count": 9},
+            {"topic": "source_rich_parent", "fact_source_count": 8, "paper_count": 8},
+        ],
+    }), encoding="utf-8")
+    run = tmp_path / "acarbose-evidence-ts"
+    run.mkdir()
+    (run / "publish_verdict.json").write_text(json.dumps({
+        "decision": "curation_needed",
+        "domain_slug": "longevity_research",
+        "blockers": ["blocked_label:no_signal", "source_floor_below_min"],
+    }), encoding="utf-8")
+    os.utime(latest, (100.0, 100.0))
+    os.utime(run / "publish_verdict.json", (200.0, 200.0))
+
+    assert daily._fresh_parent_topics_from_discovery(
+        tmp_path,
+        "longevity_research",
+        set(),
+        limit=2,
+        min_sources=5,
+    ) == ["source_rich_parent"]
+
+
+def test_fresh_parent_topics_allow_newer_discovery_after_local_failure(
+    tmp_path: Path,
+) -> None:
+    discovery = tmp_path / "_topics_discovery"
+    discovery.mkdir()
+    latest = discovery / "latest.json"
+    latest.write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "acarbose", "fact_source_count": 9, "paper_count": 9}],
+    }), encoding="utf-8")
+    run = tmp_path / "acarbose-evidence-ts"
+    run.mkdir()
+    (run / "publish_verdict.json").write_text(json.dumps({
+        "decision": "curation_needed",
+        "domain_slug": "longevity_research",
+        "blockers": ["blocked_label:no_signal", "source_floor_below_min"],
+    }), encoding="utf-8")
+    os.utime(run / "publish_verdict.json", (100.0, 100.0))
+    os.utime(latest, (200.0, 200.0))
+
+    assert daily._fresh_parent_topics_from_discovery(
+        tmp_path,
+        "longevity_research",
+        set(),
+        limit=1,
+        min_sources=5,
+    ) == ["acarbose"]
+
+
 def test_fresh_parent_topics_dedupe_acronym_family_variants(
     tmp_path: Path,
 ) -> None:

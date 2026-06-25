@@ -251,6 +251,11 @@ _PARENT_REFRESH_BEFORE_CHILD_STATUSES = _TOPIC_EXHAUSTED_STATUSES | frozenset({
 _AGENT_REPAIR_DECISIONS = {
     "agent_repair_needed", "needs_operator_review", "needs_operator_approval",
 }
+_LOCAL_PARENT_REFRESH_BLOCKERS = frozenset({
+    "blocked_label:no_signal",
+    "source_floor_below_min",
+    "direct_source_floor_below_min",
+})
 
 
 def _refresh_timeout_note(refresh: Json) -> bool:
@@ -3624,6 +3629,9 @@ def _fresh_parent_topics_from_discovery(
         raw_rows = data.get("all") or data.get("top")
         if not isinstance(raw_rows, list):
             continue
+        discovery_mtime = 0.0
+        with suppress(OSError):
+            discovery_mtime = path.stat().st_mtime
         for row in raw_rows:
             if not isinstance(row, dict):
                 continue
@@ -3632,6 +3640,9 @@ def _fresh_parent_topics_from_discovery(
             if (
                 not topic
                 or _source_literature_family_blocked_topic(topic, blocked_topics)
+                or _local_parent_refresh_blocked(
+                    runs_root, profile_slug, topic, discovery_mtime,
+                )
             ):
                 continue
             topic_key = _canonical_family_key(topic).removeprefix("topic:")
@@ -3681,6 +3692,33 @@ def _fresh_parent_topics_from_discovery(
         if len(topics) >= limit:
             break
     return topics
+
+
+def _local_parent_refresh_blocked(
+    runs_root: Path, profile_slug: str, topic: str, discovery_mtime: float,
+) -> bool:
+    paths = sorted(
+        runs_root.glob(f"{cap_topic_slug(topic)}-evidence-*/publish_verdict.json"),
+        key=lambda path: path.stat().st_mtime if path.exists() else 0,
+        reverse=True,
+    )
+    if not paths:
+        return False
+    verdict_path = paths[0]
+    with suppress(OSError):
+        if verdict_path.stat().st_mtime < discovery_mtime:
+            return False
+    verdict = _json(verdict_path, {})
+    if not isinstance(verdict, dict):
+        return False
+    run_domain = _run_domain(verdict_path.parent, verdict)
+    if run_domain and not _same_domain(run_domain, profile_slug):
+        return False
+    blockers = {str(item) for item in verdict.get("blockers") or []}
+    return (
+        str(verdict.get("decision") or "") == "curation_needed"
+        and bool(blockers & _LOCAL_PARENT_REFRESH_BLOCKERS)
+    )
 
 
 def _source_literature_payload(
