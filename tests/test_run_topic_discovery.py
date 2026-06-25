@@ -1054,8 +1054,9 @@ def test_fullraw_supply_caps_each_query_window(monkeypatch: Any) -> None:
         ))
         return []
 
-    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS", "12")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS", "60")
     monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_TIMEOUT_SECONDS", "3")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS", "240")
     monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
 
     rows = run_topic_discovery._fullraw_supply_candidates(
@@ -1067,8 +1068,8 @@ def test_fullraw_supply_caps_each_query_window(monkeypatch: Any) -> None:
     assert rows == ()
     assert len(caps) == 1
     assert caps[0][0] == "3.0"
-    assert 11.0 <= float(caps[0][1] or 0.0) <= 12.0
-    assert 11.0 <= float(caps[0][2] or 0.0) <= 12.0
+    assert 59.0 <= float(caps[0][1] or 0.0) <= 60.0
+    assert caps[0][2] == "20.0"
     assert caps[0][3] == "4"
     assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS") is None
     assert os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS") is None

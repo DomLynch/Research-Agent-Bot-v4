@@ -249,7 +249,7 @@ def _fullraw_supply_sweep_wait_seconds() -> float:
     try:
         return max(0.0, float(os.environ.get(
             "TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS",
-            os.environ.get("V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS", "20"),
+            "20",
         )))
     except (TypeError, ValueError):
         return 20.0
