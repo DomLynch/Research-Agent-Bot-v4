@@ -9879,6 +9879,83 @@ def test_source_literature_payload_separates_comparator_and_economic_rows(
     assert "Routing domain `longevity_research` is publication-lane metadata only" in markdown
 
 
+def test_source_literature_payload_separates_intervention_from_predictive_rows(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    papers = [
+        {
+            "title": "Effect of gut microbiome modulation on muscle function and cognition",
+            "doi": "10.1234/gut1",
+            "year": 2024,
+            "source_fact": {
+                "canonical_phrase": "The prebiotic improves cognition versus placebo",
+                "population": "older adults",
+                "intervention": "prebiotic daily for 12 weeks",
+                "comparator": "placebo",
+                "endpoint": "cognitive factor score",
+            },
+        },
+        {
+            "title": "Fasting alters the gut microbiome reducing blood pressure",
+            "doi": "10.1234/gut2",
+            "year": 2021,
+            "source_fact": {
+                "canonical_phrase": "a 5-day fast reduces systolic blood pressure",
+                "population": "hypertensive metabolic syndrome patients",
+                "intervention": "5-day fast followed by DASH diet",
+                "comparator": "DASH diet alone",
+                "endpoint": "systolic blood pressure",
+            },
+        },
+        {
+            "title": "Gut microbiome remodeling improves with intermittent fasting",
+            "doi": "10.1234/gut3",
+            "year": 2024,
+            "source_fact": {
+                "canonical_phrase": "combined IF-P versus calorie restriction",
+                "population": "adults with overweight or obesity",
+                "intervention": "intermittent fasting with protein pacing",
+                "comparator": "calorie restriction",
+                "endpoint": "gut microbiome remodeling",
+            },
+        },
+        {
+            "title": "Human Skin, Oral, and Gut Microbiomes Predict Chronological Age",
+            "doi": "10.1234/gut4",
+            "year": 2020,
+            "source_fact": {
+                "canonical_phrase": "gut microbiome predicted chronological age",
+                "population": "adults",
+                "intervention": "microbiome age prediction",
+                "endpoint": "chronological age prediction",
+            },
+        },
+        {
+            "title": "The human gut microbiome and aging",
+            "doi": "10.1234/gut5",
+            "year": 2024,
+            "source_fact": {
+                "canonical_phrase": "Machine-learning analysis predicted chronologic age",
+                "population": "published gut microbiome datasets",
+                "intervention": "machine-learning analysis",
+                "endpoint": "age prediction error",
+            },
+        },
+    ]
+
+    _candidate, payload = daily._source_literature_payload(
+        profile_slug="longevity_research", topic="gut_microbiome",
+        papers=papers, runs_root=root, date="2026-06-25T00-15-00Z",
+    )
+
+    markdown = payload["markdown"]
+    assert "directionally favorable: 3 receipt(s)" in markdown
+    assert "non-clinical/predictive: 2 receipt(s)" in markdown
+    assert "other/mixed: 5 receipt(s)" not in markdown
+    assert "intervention signals plus separate predictive evidence" in payload["abstract"]
+
+
 def test_source_literature_fallback_blocks_repeated_report_series(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

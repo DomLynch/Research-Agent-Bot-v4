@@ -222,6 +222,11 @@ def _effect_direction(finding: str, fact: Json | None = None, topic: str = "") -
         "cost-effect", "cost effectiveness", "qaly", "£", "$", "economic",
     )):
         return "economic/context only"
+    if any(term in text for term in (
+        "machine learning", "machine-learning", "predict", "prediction",
+        "predictive", "chronological age", "age-prediction",
+    )):
+        return "non-clinical/predictive"
     if topic and _text_has_topic(fact.get("comparator"), topic) and not _text_has_topic(
         fact.get("intervention"), topic,
     ):
@@ -234,12 +239,26 @@ def _effect_direction(finding: str, fact: Json | None = None, topic: str = "") -
     if re.search(r"\b(?:hazard ratio|hr|risk ratio|relative risk)\b[^.;]{0,80}\b0\.\d+", text):
         return "directionally favorable"
     if any(term in text for term in (
-        "lower", "reduced", "reduction", "protective", "better", "improved",
-        "benefit", "decreased", "odds ratio of 0.", "hr = 0.", "hr for",
-        "ranked as the best", "ranked best", "best approach", "ranked first",
+        "lower", "lowered", "reduce", "reduces", "reduced", "reduction",
+        "protective", "better", "improve", "improves", "improved",
+        "benefit", "decrease", "decreases", "decreased", "extends lifespan",
+        "increased lifespan", "longer lifespan", "odds ratio of 0.", "hr = 0.",
+        "hr for", "ranked as the best", "ranked best", "best approach", "ranked first",
     )):
         return "directionally favorable"
     return "other/mixed"
+
+
+def _paper_effect_direction(paper: Json, topic: str = "") -> str:
+    fact = paper.get("source_fact")
+    fact = fact if isinstance(fact, dict) else {}
+    text = " ".join(str(value or "") for value in (
+        paper.get("title"),
+        fact.get("canonical_phrase"),
+        fact.get("endpoint"),
+        fact.get("metric"),
+    ))
+    return _effect_direction(text, fact, topic)
 
 
 def _fact_complete(fact: Json) -> bool:
@@ -286,7 +305,7 @@ def _direction_rows(papers: list[Json], topic: str = "") -> list[str]:
         if isinstance(fact, dict):
             finding = str(fact.get("canonical_phrase") or "").strip()
         title = str(paper.get("title") or "Untitled source").strip()
-        direction = _effect_direction(finding, fact if isinstance(fact, dict) else None, topic)
+        direction = _paper_effect_direction(paper, topic)
         note = (
             " topic is comparator here; label is endpoint-specific, not a broad efficacy verdict"
             if direction == "comparator/not favorable" else ""
@@ -308,24 +327,30 @@ def _direction_category_lines(topic: str) -> list[str]:
         "label is limited to that head-to-head endpoint.",
         "- economic/context only: the receipt reports cost, QALY, or economic "
         "context rather than a clinical efficacy endpoint.",
+        "- non-clinical/predictive: the receipt reports descriptive modelling, "
+        "prediction, or age-clock performance rather than an intervention endpoint.",
         "- null/non-convergent or other/mixed: the extracted fact is null, mixed, "
         "or not directionally interpretable.",
     ]
 
 
-def _direction_summary(facts: list[Json], topic: str = "") -> str:
+def _direction_summary(papers: list[Json], topic: str = "") -> str:
     groups: dict[str, list[str]] = {
         "directionally favorable": [],
         "null/non-convergent": [],
         "comparator/not favorable": [],
         "economic/context only": [],
+        "non-clinical/predictive": [],
         "other/mixed": [],
     }
-    for fact in facts:
+    for paper in papers:
+        fact = paper.get("source_fact")
+        if not isinstance(fact, dict):
+            continue
         finding = str(fact.get("canonical_phrase") or "").strip()
         if not finding:
             continue
-        groups[_effect_direction(finding, fact, topic)].append(_short_finding(finding, 120))
+        groups[_paper_effect_direction(paper, topic)].append(_short_finding(finding, 120))
     parts = [f"{label}: {len(values)} receipt(s)" for label, values in groups.items() if values]
     return " | ".join(parts) if parts else "direction of effect is not extractable from the retrieved facts"
 
@@ -349,13 +374,16 @@ def _pico_gap(facts: list[Json]) -> str:
     )
 
 
-def _direction_signal_label(facts: list[Json], topic: str = "") -> str:
-    directions = [
-        _effect_direction(str(fact.get("canonical_phrase") or ""), fact, topic)
-        for fact in facts
-    ]
+def _direction_signal_label(papers: list[Json], topic: str = "") -> str:
+    directions = [_paper_effect_direction(paper, topic) for paper in papers]
     if directions and all(direction == "directionally favorable" for direction in directions):
         return "directionally consistent but contextually heterogeneous signals"
+    if "directionally favorable" in directions and "non-clinical/predictive" in directions:
+        return "endpoint-specific intervention signals plus separate predictive evidence"
+    if "directionally favorable" in directions:
+        return "endpoint-specific favorable signals with context limits"
+    if directions and all(direction == "non-clinical/predictive" for direction in directions):
+        return "descriptive predictive signals, not intervention evidence"
     return "context-dependent, not uniformly convergent associations"
 
 
@@ -623,8 +651,8 @@ def payload(
         str(fact.get("canonical_phrase") or "").strip() for fact in facts
         if str(fact.get("canonical_phrase") or "").strip()
     ]
-    direction_text = _direction_summary(facts, topic)
-    signal_label = _direction_signal_label(facts, topic)
+    direction_text = _direction_summary(selected, topic)
+    signal_label = _direction_signal_label(selected, topic)
     source_types = sorted({evidence_type(paper) for paper in selected})
     synthesis = (
         f"This receipt-backed scoping note has one bounded signal: {topic} shows "
