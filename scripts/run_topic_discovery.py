@@ -539,6 +539,8 @@ def _fullraw_supply_candidates(
                      if base.strip()))
         for seed in seeds
     ]
+    if query := context_terms:
+        query_labels.setdefault(query, "__domain_supply__")
     for variant in context_variants[:1] or ("",):
         for seed, bases in seed_bases:
             if not bases:
@@ -549,8 +551,6 @@ def _fullraw_supply_candidates(
                 break
         if len(query_labels) >= query_cap:
             break
-    if query := context_terms:
-        query_labels.setdefault(query, "__domain_supply__")
     for seed, bases in seed_bases:
         for base in bases:
             for variant in context_variants[1:]:

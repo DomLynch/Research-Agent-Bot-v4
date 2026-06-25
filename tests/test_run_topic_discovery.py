@@ -211,7 +211,7 @@ def test_warm_backlog_probes_fullraw_before_source_rich_cache(
     assert payload["cache_first"] is False
     assert payload["warm_backlog"] is True
     assert payload["candidate_count"] == 1
-    assert calls[0] == "seed longevity"
+    assert calls[:2] == ["longevity anti aging", "seed longevity"]
     assert payload["top"][0]["paper_count"] == 5
 
 
@@ -991,7 +991,7 @@ def test_fullraw_supply_keeps_seed_query_when_context_titles_are_sparse(
     assert rows[0].fact_source_count == 5
 
 
-def test_fullraw_supply_samples_seed_breadth_before_seed_variants(
+def test_fullraw_supply_queries_domain_before_seed_breadth(
     monkeypatch: Any,
 ) -> None:
     calls: list[str] = []
@@ -1012,7 +1012,11 @@ def test_fullraw_supply_samples_seed_breadth_before_seed_variants(
     )
 
     assert [row.topic for row in rows] == ["metformin_longevity"]
-    assert calls == ["rapamycin longevity", "metformin longevity"]
+    assert calls == [
+        "longevity anti aging",
+        "rapamycin longevity",
+        "metformin longevity",
+    ]
 
 
 def test_fullraw_supply_stops_when_total_pass_budget_is_spent(
@@ -1039,10 +1043,10 @@ def test_fullraw_supply_stops_when_total_pass_budget_is_spent(
     )
 
     assert rows == ()
-    assert calls == ["metformin longevity"]
+    assert calls == ["longevity anti aging"]
     event = run_topic_discovery._FULLRAW_PROBE_EVENTS[-1]
     assert event["status"] == "budget_exhausted"
-    assert event["attempted_queries"] == ["metformin longevity"]
+    assert event["attempted_queries"] == ["longevity anti aging"]
     assert event["skipped_query_count"] > 0
 
 
