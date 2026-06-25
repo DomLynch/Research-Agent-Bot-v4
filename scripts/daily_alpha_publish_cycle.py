@@ -777,6 +777,19 @@ def _is_evidence_map_row(row: Json) -> bool:
 
 
 def _queue_ready_row(row: Json, runs_root: Path) -> Json:
+    if row.get("decision") == "ready_to_publish" and row.get("alpha_score") is not None:
+        try:
+            low_alpha = int(row.get("alpha_score") or 0) <= 0
+        except (TypeError, ValueError):
+            low_alpha = True
+        if low_alpha:
+            blockers = row.get("blockers")
+            blocker_list = blockers if isinstance(blockers, list) else []
+            return row | {
+                "decision": "curation_needed",
+                "queue_status": "low_alpha_score",
+                "blockers": sorted({*(str(b) for b in blocker_list), "low_alpha_score"}),
+            }
     if row.get("decision") != "ready_to_publish" or not _is_evidence_map_row(row):
         return row
     min_citations = _alpha_memo_int("evidence_map_min_citations", 10)

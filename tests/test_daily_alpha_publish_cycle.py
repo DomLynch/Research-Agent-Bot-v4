@@ -208,6 +208,14 @@ def test_daily_build_queue_demotes_submit_held_evidence_maps(tmp_path: Path) -> 
     assert queue["curation_needed"][0]["queue_status"] == "evidence_map_scope_mismatch"
 
 
+def test_queue_ready_row_demotes_zero_alpha_ready_row(tmp_path: Path) -> None:
+    row = daily._queue_ready_row(_verdict("zero_alpha", score=0), tmp_path)
+
+    assert row["decision"] == "curation_needed"
+    assert row["queue_status"] == "low_alpha_score"
+    assert row["blockers"] == ["low_alpha_score"]
+
+
 def test_daily_build_queue_demotes_submitted_duplicate_ready_row(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _stored_map_run(root, "bounded_map", shared_population="older adults")
