@@ -8118,7 +8118,7 @@ def test_source_literature_fallback_tries_fresh_topic_before_repair(
     assert (root / "acarbose-source-literature-2026-06-10T18-00-00Z").exists()
 
 
-def test_repairable_source_literature_revise_skips_refresh_first(
+def test_repairable_source_literature_revise_runs_after_refresh(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
@@ -8167,16 +8167,20 @@ def test_repairable_source_literature_revise_skips_refresh_first(
     ]
     seen_payload: dict[str, Any] = {}
 
-    def fail_refresh(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
-        raise AssertionError("known source-literature repair should run before refresh")
+    refresh_calls: list[dict[str, Any]] = []
 
-    monkeypatch.setattr(daily, "_refresh_candidate_batch", fail_refresh)
+    def refresh(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+        refresh_calls.append(kwargs)
+        return {"ok": True, "ran_topics": []}
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", refresh)
 
     ledger = daily.run_cycle(
         runs_root=root,
         date="2026-06-10T19-00-00Z",
         domain="longevity_research",
         refresh_candidates=True,
+        max_refresh_batches=1,
         queue=None,
         submit=True,
         source_paper_fetcher=lambda topic, _limit: papers if topic == "metformin use" else [],
@@ -8194,9 +8198,7 @@ def test_repairable_source_literature_revise_skips_refresh_first(
         sleep=lambda _seconds: None,
     )
 
-    assert ledger["refresh_batches"][0]["note"] == (
-        "skipped_source_literature_repair_available"
-    )
+    assert refresh_calls
     assert ledger["source_literature_fallback"]["repair_submission"] is True
     assert ledger["submitted_topic"] == "metformin use"
     assert "repair before broad refresh" not in seen_payload["markdown"]

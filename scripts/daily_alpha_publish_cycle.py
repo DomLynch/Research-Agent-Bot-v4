@@ -4556,11 +4556,6 @@ def run_cycle(
         candidate_queue = _with_repairable_candidates(
             build_current_queue(), runs_root, profile.slug,
         )
-        repair_source_lit_available = bool(
-            submit
-            and profile.slug != "ai_research"
-            and _repairable_source_literature_decisions(runs_root, profile.slug)
-        )
         source_lit_available = False
         if submit and profile.slug != "ai_research":
             for topic in _source_literature_topic_candidates(
@@ -4629,9 +4624,6 @@ def run_cycle(
         elif source_lit_available:
             preflight_queue = candidate_queue
             skip_refresh_note = "skipped_source_literature_candidate_available"
-        elif repair_source_lit_available:
-            preflight_queue = candidate_queue
-            skip_refresh_note = "skipped_source_literature_repair_available"
         else:
             initial_probe_empty = True
     skip_next_refresh = preflight_queue is not None
@@ -4819,16 +4811,6 @@ def run_cycle(
                 ledger["refresh_early_exit"] = {
                     "batch": batch,
                     "reason": "source_literature_candidate_available",
-                }
-                break
-            if (
-                submit
-                and profile.slug != "ai_research"
-                and _repairable_source_literature_decisions(runs_root, profile.slug)
-            ):
-                ledger["refresh_early_exit"] = {
-                    "batch": batch,
-                    "reason": "source_literature_repair_available",
                 }
                 break
             ran_topics = [str(t) for t in refresh.get("ran_topics") or [] if str(t)]
