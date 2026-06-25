@@ -736,7 +736,13 @@ def main() -> int:
     ]
     if args.stop_on_ready:
         priority_topics = priority_topics[:max(1, args.top)]
-    priority_only_submit = bool(args.stop_on_ready and priority_topics)
+    fullraw_supply_first = (
+        not args.warm_backlog
+        and _env_enabled("TOPIC_DISCOVERY_FULLRAW_SUPPLY_FIRST", "1")
+    )
+    priority_only_submit = bool(
+        args.stop_on_ready and priority_topics and not fullraw_supply_first
+    )
     seed_paper_fast_path = False
 
     # Step 1: refresh discovery
@@ -744,10 +750,6 @@ def main() -> int:
     if priority_only_submit:
         print("[cycle] priority submit refresh: skipping broad discovery")
     elif not args.dry_run:
-        fullraw_supply_first = (
-            not args.warm_backlog
-            and _env_enabled("TOPIC_DISCOVERY_FULLRAW_SUPPLY_FIRST", "1")
-        )
         discovery_top = _discovery_top_for_plan(
             args.top,
             stop_on_ready=args.stop_on_ready,

@@ -774,6 +774,33 @@ def test_stop_on_ready_uses_fullraw_supply_before_cache_by_default(
     assert os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] == "45"
 
 
+def test_priority_stop_on_ready_still_runs_fullraw_supply_first(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    calls: list[list[str]] = []
+
+    def fake_step(
+        args: list[str], step_name: str, *, timeout: int = 600,
+    ) -> tuple[bool, str]:
+        calls.append(args)
+        return False, "stop after discovery"
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", tmp_path / "runs")
+    monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
+    monkeypatch.setattr(sys, "argv", [
+        "run_curator_cycle.py", "--stop-on-ready", "--priority-topic",
+        "partial_epigenetic_reprogramming_longevity",
+    ])
+
+    assert run_curator_cycle.main() == 1
+    assert calls
+    assert "--fullraw-supply-only" in calls[0]
+    assert "--priority-topic" not in calls[0]
+
+
 def test_fullraw_supply_budget_env_overrides_default(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
@@ -1123,7 +1150,7 @@ def test_stop_on_ready_priority_below_floor_does_not_backfill_discovery_topic(
     payload = json.loads(next(cycles.glob("*.json")).read_text(encoding="utf-8"))
     assert payload["ran"] == []
     assert payload["skipped_below_source_floor"] == ["quercetin"]
-    assert calls == ["cross_topic", "publish_queue"]
+    assert calls == ["discovery", "cross_topic", "publish_queue"]
 
 
 def test_stop_on_ready_warm_backlog_probes_beyond_cache(
