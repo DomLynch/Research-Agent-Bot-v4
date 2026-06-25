@@ -74,17 +74,22 @@ def _load_v5_env_defaults() -> None:
 
 
 def _apply_v5_client_bounds() -> dict[str, str | None]:
+    timeout = os.environ.get(
+        "TOPIC_DISCOVERY_V5_TIMEOUT_SECONDS",
+        os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", "30"),
+    )
     values: dict[str, str] = {
-        "V5_MEMO_FULL_RAW_CORPUS_TIMEOUT": os.environ.get(
-            "TOPIC_DISCOVERY_V5_TIMEOUT_SECONDS",
-            os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", "20"),
-        ),
+        "V5_MEMO_FULL_RAW_CORPUS_TIMEOUT": timeout,
+        "V5_MEMO_FULL_RAW_QUERY_TIMEOUT": timeout,
         "V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS": os.environ.get(
             "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
             os.environ.get("TOPIC_DISCOVERY_SEED_PAPER_BUDGET_SECONDS", "45"),
         ),
-        "V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS": os.environ.get(
-            "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS", "20",
+        "V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS": os.environ.get(
+            "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS", "0",
+        ),
+        "V5_MEMO_FULL_RAW_MAX_VARIANTS": os.environ.get(
+            "TOPIC_DISCOVERY_V5_MAX_VARIANTS", "2",
         ),
         "V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED": os.environ.get(
             "TOPIC_DISCOVERY_V5_MIN_SHARDS_SEARCHED", "1",
@@ -216,19 +221,28 @@ def _fullraw_supply_budget_seconds() -> float:
     try:
         return max(1.0, float(os.environ.get(
             "TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS",
-            str(_seed_paper_budget_seconds()),
+            "180",
         )))
     except (TypeError, ValueError):
-        return _seed_paper_budget_seconds()
+        return 180.0
 
 
 def _fullraw_supply_query_timeout_seconds() -> float:
     try:
         return max(1.0, float(os.environ.get(
-            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_TIMEOUT_SECONDS", "1",
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_TIMEOUT_SECONDS", "30",
         )))
     except (TypeError, ValueError):
-        return 1.0
+        return 30.0
+
+
+def _fullraw_supply_query_budget_seconds() -> float:
+    try:
+        return max(1.0, float(os.environ.get(
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS", "100",
+        )))
+    except (TypeError, ValueError):
+        return 100.0
 
 
 def _fullraw_configured() -> bool:
@@ -504,8 +518,6 @@ def _fullraw_supply_candidates(
     query_labels: dict[str, str] = {}
     context_terms = _context_query_terms(query_context)
     context_variants = _context_variants(query_context)
-    if query := context_terms:
-        query_labels[query] = "__domain_supply__"
     query_cap = max(_seed_paper_probe_limit(top), top * 6)
     seed_bases = [
         (seed, tuple(base.strip() for base in expand_topic_queries(seed, max_queries=2)
@@ -522,6 +534,8 @@ def _fullraw_supply_candidates(
                 break
         if len(query_labels) >= query_cap:
             break
+    if query := context_terms:
+        query_labels.setdefault(query, "__domain_supply__")
     for seed, bases in seed_bases:
         for base in bases:
             for variant in context_variants[1:]:
@@ -549,12 +563,13 @@ def _fullraw_supply_candidates(
             if label != "__domain_supply__" and label in used_seed_labels:
                 continue
             query_timeout = str(min(_fullraw_supply_query_timeout_seconds(), remaining))
+            query_budget = str(min(_fullraw_supply_query_budget_seconds(), remaining))
             old_timeout = os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS")
             old_budget = os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS")
             old_sweep = os.environ.get("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS")
             os.environ["TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"] = query_timeout
-            os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] = query_timeout
-            os.environ["TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS"] = query_timeout
+            os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] = query_budget
+            os.environ["TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS"] = "0"
             receipt_recorded = False
             try:
                 for paper in _seed_fullraw_papers(

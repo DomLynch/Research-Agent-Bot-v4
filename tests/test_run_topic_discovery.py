@@ -178,8 +178,8 @@ def test_warm_backlog_probes_fullraw_before_source_rich_cache(
 
     def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
         calls.append(query)
-        if query == "longevity anti aging":
-            return _fullraw_rows("raw", "Longevity anti aging source rich")
+        if query == "seed longevity":
+            return _fullraw_rows("raw", "Seed longevity source rich")
         return []
 
     fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
@@ -211,8 +211,8 @@ def test_warm_backlog_probes_fullraw_before_source_rich_cache(
     assert payload["cache_first"] is False
     assert payload["warm_backlog"] is True
     assert payload["candidate_count"] == 1
-    assert calls[0] == "longevity anti aging"
-    assert payload["top"][0]["topic"].startswith("longevity")
+    assert calls[0] == "seed longevity"
+    assert payload["top"][0]["paper_count"] == 5
 
 
 def test_cache_first_falls_back_when_cache_is_underfilled(
@@ -585,8 +585,10 @@ def test_seed_paper_probe_uses_v5_client_before_direct_http(
 
 def test_v5_client_bounds_restore_environment(monkeypatch: Any) -> None:
     monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_TIMEOUT", "99")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_QUERY_TIMEOUT", "98")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "7200")
-    monkeypatch.setenv("V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS", "77")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS", "77")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_MAX_VARIANTS", "8")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED", "1514")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED", "4")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH", "1")
@@ -594,16 +596,20 @@ def test_v5_client_bounds_restore_environment(monkeypatch: Any) -> None:
 
     old = run_topic_discovery._apply_v5_client_bounds()
     assert os.environ["V5_MEMO_FULL_RAW_CORPUS_TIMEOUT"] == "6"
+    assert os.environ["V5_MEMO_FULL_RAW_QUERY_TIMEOUT"] == "6"
     assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "45"
-    assert os.environ["V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS"] == "20"
+    assert os.environ["V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS"] == "0"
+    assert os.environ["V5_MEMO_FULL_RAW_MAX_VARIANTS"] == "2"
     assert os.environ["V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED"] == "1"
     assert os.environ["V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED"] == "1"
     assert os.environ["V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH"] == "0"
 
     run_topic_discovery._restore_env(old)
     assert os.environ["V5_MEMO_FULL_RAW_CORPUS_TIMEOUT"] == "99"
+    assert os.environ["V5_MEMO_FULL_RAW_QUERY_TIMEOUT"] == "98"
     assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "7200"
-    assert os.environ["V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS"] == "77"
+    assert os.environ["V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS"] == "77"
+    assert os.environ["V5_MEMO_FULL_RAW_MAX_VARIANTS"] == "8"
     assert os.environ["V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED"] == "1514"
     assert os.environ["V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED"] == "4"
     assert os.environ["V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH"] == "1"
@@ -611,18 +617,24 @@ def test_v5_client_bounds_restore_environment(monkeypatch: Any) -> None:
 
 def test_v5_client_bounds_do_not_inherit_long_storage_waits(monkeypatch: Any) -> None:
     monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_TIMEOUT", "45")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_QUERY_TIMEOUT", "45")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "7200")
-    monkeypatch.setenv("V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS", "7200")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS", "7200")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_MAX_VARIANTS", "16")
 
     old = run_topic_discovery._apply_v5_client_bounds()
-    assert os.environ["V5_MEMO_FULL_RAW_CORPUS_TIMEOUT"] == "20"
+    assert os.environ["V5_MEMO_FULL_RAW_CORPUS_TIMEOUT"] == "30"
+    assert os.environ["V5_MEMO_FULL_RAW_QUERY_TIMEOUT"] == "30"
     assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "45"
-    assert os.environ["V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS"] == "20"
+    assert os.environ["V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS"] == "0"
+    assert os.environ["V5_MEMO_FULL_RAW_MAX_VARIANTS"] == "2"
 
     run_topic_discovery._restore_env(old)
     assert os.environ["V5_MEMO_FULL_RAW_CORPUS_TIMEOUT"] == "45"
+    assert os.environ["V5_MEMO_FULL_RAW_QUERY_TIMEOUT"] == "45"
     assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "7200"
-    assert os.environ["V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS"] == "7200"
+    assert os.environ["V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS"] == "7200"
+    assert os.environ["V5_MEMO_FULL_RAW_MAX_VARIANTS"] == "16"
 
 
 def test_v5_client_papers_relaxes_storage_audit_env(
@@ -659,6 +671,8 @@ class FullRawCorpusSearchClient:
         with open(CAPTURE, "w", encoding="utf-8") as handle:
             json.dump({
                 "strict": self.strict,
+                "query_timeout": os.environ.get("V5_MEMO_FULL_RAW_QUERY_TIMEOUT"),
+                "max_variants": os.environ.get("V5_MEMO_FULL_RAW_MAX_VARIANTS"),
                 "min_shards": os.environ.get("V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED"),
                 "min_sources": os.environ.get("V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED"),
                 "require_complete": os.environ.get("V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH"),
@@ -680,6 +694,8 @@ class FullRawCorpusSearchClient:
     assert rows[0]["title"] == "Metformin longevity paper"
     assert json.loads(capture.read_text(encoding="utf-8")) == {
         "strict": False,
+        "query_timeout": "30",
+        "max_variants": "2",
         "min_shards": "1",
         "min_sources": "1",
         "require_complete": "0",
@@ -691,21 +707,26 @@ class FullRawCorpusSearchClient:
 
 def test_v5_client_bounds_allow_explicit_short_probe(monkeypatch: Any) -> None:
     monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_TIMEOUT", "45")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_QUERY_TIMEOUT", "45")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "7200")
-    monkeypatch.setenv("V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS", "7200")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS", "7200")
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_TIMEOUT_SECONDS", "6")
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", "20")
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS", "8")
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_MAX_VARIANTS", "1")
 
     old = run_topic_discovery._apply_v5_client_bounds()
     assert os.environ["V5_MEMO_FULL_RAW_CORPUS_TIMEOUT"] == "6"
+    assert os.environ["V5_MEMO_FULL_RAW_QUERY_TIMEOUT"] == "6"
     assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "20"
-    assert os.environ["V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS"] == "8"
+    assert os.environ["V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS"] == "8"
+    assert os.environ["V5_MEMO_FULL_RAW_MAX_VARIANTS"] == "1"
 
     run_topic_discovery._restore_env(old)
     assert os.environ["V5_MEMO_FULL_RAW_CORPUS_TIMEOUT"] == "45"
+    assert os.environ["V5_MEMO_FULL_RAW_QUERY_TIMEOUT"] == "45"
     assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "7200"
-    assert os.environ["V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS"] == "7200"
+    assert os.environ["V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS"] == "7200"
 
 
 def test_seed_paper_probe_expands_seed_queries_before_slow_discovery(
@@ -981,7 +1002,7 @@ def test_fullraw_supply_samples_seed_breadth_before_seed_variants(
     )
 
     assert [row.topic for row in rows] == ["metformin_longevity"]
-    assert calls == ["longevity anti aging", "rapamycin longevity", "metformin longevity"]
+    assert calls == ["rapamycin longevity", "metformin longevity"]
 
 
 def test_fullraw_supply_stops_when_total_pass_budget_is_spent(
@@ -1007,7 +1028,7 @@ def test_fullraw_supply_stops_when_total_pass_budget_is_spent(
     )
 
     assert rows == ()
-    assert calls == ["longevity anti aging"]
+    assert calls == ["metformin longevity"]
 
 
 def test_fullraw_supply_caps_each_query_timeout(monkeypatch: Any) -> None:
@@ -1033,7 +1054,10 @@ def test_fullraw_supply_caps_each_query_timeout(monkeypatch: Any) -> None:
     )
 
     assert rows == ()
-    assert caps == [("3.0", "3.0", "3.0")]
+    assert len(caps) == 1
+    assert caps[0][0] == "3.0"
+    assert 11.0 <= float(caps[0][1] or 0.0) <= 12.0
+    assert caps[0][2] == "0"
     assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS") is None
     assert os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS") is None
     assert os.environ.get("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS") is None
