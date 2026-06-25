@@ -3570,6 +3570,19 @@ def _source_literature_topic_candidate(
     return topics[0] if topics else None
 
 
+def _source_literature_fetch_topics(topic: str) -> list[str]:
+    tokens = [
+        token for token in publish_literature.title_key(topic).split()
+        if len(token) >= 3 and token not in (_DISCOVERY_PARENT_GENERIC_TOKENS | {"longevity"})
+    ]
+    topics = [topic]
+    for size in range(len(tokens) - 1, 1, -1):
+        candidate = "_".join(tokens[:size])
+        if candidate and candidate not in topics:
+            topics.append(candidate)
+    return topics
+
+
 
 
 def _source_literature_family_blocked_topic(
@@ -5268,7 +5281,16 @@ def run_cycle(
             topic for topic in repair_topics if topic not in set(fresh_topics)
         ]
         if paper_fetcher is None:
-            literature_topics = literature_topics[:source_lit_scan_limit]
+            expanded_topics: list[str] = []
+            for topic in literature_topics:
+                for fetch_topic in _source_literature_fetch_topics(topic):
+                    if fetch_topic not in expanded_topics:
+                        expanded_topics.append(fetch_topic)
+                    if len(expanded_topics) >= source_lit_scan_limit:
+                        break
+                if len(expanded_topics) >= source_lit_scan_limit:
+                    break
+            literature_topics = expanded_topics
         for idx, literature_topic in enumerate(literature_topics):
             papers = (
                 source_lit_preflight_papers[literature_topic]

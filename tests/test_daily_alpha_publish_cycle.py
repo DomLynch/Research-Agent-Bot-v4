@@ -8188,6 +8188,7 @@ def test_source_literature_preflight_defers_default_fullraw_without_skipping_ref
 
     assert fetches == [
         ("cellular_reprogramming_safety", 15, "longevity_research"),
+        ("cellular_reprogramming", 15, "longevity_research"),
     ]
     assert refresh_calls
     assert ledger["source_literature_preflight_attempts"] == [{
@@ -9620,6 +9621,85 @@ def test_fullraw_metadata_relevance_requires_title_context(
     )
 
     assert papers == []
+
+
+def test_default_source_literature_fallback_tries_core_topic_after_modifier_slug(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    (root / "_topics_discovery" / "longevity.json").write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{
+            "topic": "cellular_reprogramming_safety_longevity_anti_aging",
+            "paper_count": 20,
+            "fact_source_count": 20,
+        }],
+    }), encoding="utf-8")
+    thin = [
+        {"title": f"Cellular reprogramming safety paper {idx}", "doi": f"10.1/thin-{idx}"}
+        for idx in range(4)
+    ]
+    core_titles = (
+        "Cellular reprogramming aging tissue repair",
+        "Cellular reprogramming epigenetic aging reset",
+        "Cellular reprogramming senescence aging reversal",
+        "Cellular reprogramming rejuvenation aging biology",
+        "Cellular reprogramming aging safety review",
+    )
+    core = [
+        {
+            "title": title,
+            "doi": f"10.1/core-{idx}",
+            "source_fact": {
+                "canonical_phrase": "cellular reprogramming changed an aging endpoint",
+                "intervention": "cellular reprogramming",
+                "endpoint": "aging endpoint",
+            },
+        }
+        for idx, title in enumerate(core_titles)
+    ]
+    fetches: list[str] = []
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "writer_configured": False,
+        "mimo_model": "",
+        "mimo_base_url": "",
+    })())
+
+    def fetch(topic: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        fetches.append(topic)
+        return core if topic == "cellular_reprogramming" else thin
+
+    monkeypatch.setattr(daily, "_fetch_source_literature_papers", fetch)
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-00-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        submitter=lambda _payload: {
+            "ok": True, "status": 200,
+            "response": {"submission": {"id": "sub-1"}},
+        },
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert fetches[:2] == [
+        "cellular_reprogramming_safety_longevity_anti_aging",
+        "cellular_reprogramming",
+    ]
+    assert [row["status"] for row in ledger["source_literature_fallback_attempts"]] == [
+        "blocked", "selected",
+    ]
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "cellular_reprogramming"
 
 
 def test_source_literature_fetcher_enriches_fullraw_with_matching_fact_rows(
