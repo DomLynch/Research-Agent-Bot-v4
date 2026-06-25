@@ -4910,6 +4910,21 @@ def run_cycle(
             ]
             if source_floor_topics:
                 blocked_topics.update(source_floor_topics)
+            if (
+                submit
+                and profile.slug != "ai_research"
+                and search_batch_limit > 3
+                and batch >= 2
+                and _source_literature_topic_candidate(
+                    runs_root, profile.slug, min_submit_sources,
+                    source_literature_blocked_topics | blocked_topics,
+                )
+            ):
+                ledger["refresh_early_exit"] = {
+                    "batch": batch,
+                    "reason": "source_literature_candidate_available",
+                }
+                break
             fresh_parent_topics: list[str] = []
             if (
                 refresh_candidates

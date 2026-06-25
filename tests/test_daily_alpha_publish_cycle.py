@@ -7877,6 +7877,77 @@ def test_source_literature_fallback_submits_after_empty_fact_lane(
     assert records[0]["bundle_signature"]
 
 
+def test_long_submit_refresh_reaches_source_lit_after_two_empty_batches(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    (root / "_topics_discovery" / "longevity.json").write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{
+            "topic": "glycation_AGEs",
+            "paper_count": 25,
+            "fact_source_count": 0,
+        }],
+    }), encoding="utf-8")
+    papers = [
+        {
+            "title": title,
+            "doi": f"10.1234/glycation-{idx}",
+            "year": 2024,
+        }
+        for idx, title in enumerate((
+            "AGE-RAGE signalling and skin collagen aging",
+            "Glycation stress and RAGE activation in vascular aging",
+            "Collagen crosslinking in advanced glycation biology",
+            "RAGE pathways in age-related tissue injury",
+            "Glycation-derived collagen stiffening review",
+        ))
+    ]
+    refresh_calls: list[int] = []
+
+    def refresh(refresh_top: int, *_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        refresh_calls.append(refresh_top)
+        return {"ok": True, "note": "empty_refresh", "top": refresh_top}
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", refresh)
+    monkeypatch.setattr(
+        daily, "_fetch_source_literature_papers",
+        lambda _topic, _limit, **_kwargs: papers,
+    )
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-00-00Z",
+        domain="longevity_research",
+        queue_builder=lambda *_args, **_kwargs: _queue(),
+        refresh_candidates=True,
+        max_refresh_batches=5,
+        refresh_top=5,
+        submit=True,
+        submitter=lambda _payload: {
+            "ok": True, "status": 200,
+            "response": {"submission": {"id": "sub-1"}},
+        },
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {
+            "ok": True, "status": 200, "body": "<title>Source</title>",
+        },
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert refresh_calls == [5, 5]
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "glycation_AGEs"
+    assert ledger["source_literature_fallback"]["status"] == "selected"
+
+
 def test_source_literature_fallback_uses_default_fetcher_after_empty_submit_lane(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
