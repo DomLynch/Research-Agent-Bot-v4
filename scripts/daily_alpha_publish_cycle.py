@@ -4619,6 +4619,7 @@ def run_cycle(
     preflight_queue = None
     initial_probe_empty = False
     skip_refresh_note = "skipped_after_repairable_submission"
+    source_lit_preflight_papers: dict[str, list[Json]] = {}
     if refresh_candidates and queue is None and queue_builder is _build_queue:
         ledger["stage"] = "initial_queue_probe"
         ledger["next_action"] = "building_current_publish_queue"
@@ -4643,6 +4644,8 @@ def run_cycle(
                 source_lit_available, _reason = _source_literature_boundary_quality(
                     topic, papers, min_submit_sources,
                 )
+                if source_lit_available:
+                    source_lit_preflight_papers[topic] = papers
                 source_lit_probe_attempts.append({
                     "topic": topic,
                     "status": "selected" if source_lit_available else "blocked",
@@ -5240,6 +5243,8 @@ def run_cycle(
         ]
         for idx, literature_topic in enumerate(literature_topics):
             papers = (
+                source_lit_preflight_papers[literature_topic]
+                if literature_topic in source_lit_preflight_papers else
                 paper_fetcher(literature_topic, min_submit_sources)
                 if paper_fetcher is not None else
                 _fetch_source_literature_papers(
@@ -5263,6 +5268,7 @@ def run_cycle(
                 fallback_attempt["repair_submission"] = True
             ledger.setdefault("source_literature_fallback_attempts", []).append(fallback_attempt)
             ledger["source_literature_fallback"] = fallback_attempt
+            _write_ledger(ledger_path, ledger)
             if ok:
                 selected_papers = publish_literature.select_boundary_papers(
                     literature_topic, papers, min_submit_sources,

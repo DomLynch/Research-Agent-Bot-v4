@@ -8085,7 +8085,6 @@ def test_source_literature_preflight_uses_default_fullraw_before_refresh(
 
     assert fetches == [
         ("cellular_reprogramming_safety", 15, "longevity_research"),
-        ("cellular_reprogramming_safety", 15, "longevity_research"),
     ]
     assert not refresh_calls
     assert ledger["source_literature_preflight_attempts"] == [{
