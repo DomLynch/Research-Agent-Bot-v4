@@ -455,7 +455,7 @@ def _run_step(
 def _run_discovery_step(args: list[str], *, timeout: int) -> tuple[bool, str]:
     old_budget = os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS")
     os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] = os.environ.get(
-        "TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS", "12",
+        "TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS", "45",
     )
     try:
         return _run_step(args, "discovery", timeout=timeout)
