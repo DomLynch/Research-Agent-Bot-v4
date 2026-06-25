@@ -7985,7 +7985,7 @@ def test_thin_source_literature_candidate_does_not_skip_refresh(
     assert ledger["source_literature_fallback"]["reason"] == "source_floor_below_min"
 
 
-def test_repairable_source_literature_revise_retries_before_new_topic(
+def test_source_literature_fallback_tries_fresh_topic_before_repair(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     root = tmp_path / "repo"
@@ -8013,9 +8013,9 @@ def test_repairable_source_literature_revise_retries_before_new_topic(
     (root / "_topics_discovery").mkdir()
     daily._write_json(root / "_topics_discovery" / "longevity.json", {
         "domain": {"slug": "longevity_research"},
-        "all": [{"topic": "new_parent", "paper_count": 10, "fact_source_count": 10}],
+        "all": [{"topic": "acarbose", "paper_count": 10, "fact_source_count": 10}],
     })
-    papers: list[dict[str, Any]] = []
+    repair_papers: list[dict[str, Any]] = []
     for idx, title in enumerate((
         "Metformin exposure and sepsis mortality",
         "Metformin use and neurodegenerative disease incidence",
@@ -8028,7 +8028,7 @@ def test_repairable_source_literature_revise_retries_before_new_topic(
             if idx in {0, 2, 3} else
             "no significant effect was found with metformin exposure"
         )
-        papers.append({
+        repair_papers.append({
             "title": title,
             "doi": f"10.1234/met{idx}",
             "year": 2020 + idx,
@@ -8039,7 +8039,7 @@ def test_repairable_source_literature_revise_retries_before_new_topic(
                 "comparator": "control",
             },
         })
-    papers.insert(3, {
+    repair_papers.insert(3, {
         "title": "Diabetes mortality patterns in national cohorts",
         "doi": "10.1234/background",
         "year": 2023,
@@ -8050,7 +8050,7 @@ def test_repairable_source_literature_revise_retries_before_new_topic(
             "comparator": "nondiabetic individuals",
         },
     })
-    papers.insert(4, {
+    repair_papers.insert(4, {
         "title": "Metformin incomplete effect estimate",
         "doi": "10.1234/truncated",
         "year": 2024,
@@ -8061,7 +8061,34 @@ def test_repairable_source_literature_revise_retries_before_new_topic(
             "comparator": "control",
         },
     })
+    fresh_papers = [
+        {
+            "title": title,
+            "doi": f"10.1234/acarbose-{idx}",
+            "year": 2020 + idx,
+            "source_fact": {
+                "canonical_phrase": "acarbose shifted an aging endpoint",
+                "population": "mice",
+                "intervention": "acarbose",
+                "endpoint": "aging endpoint",
+            },
+        }
+        for idx, title in enumerate((
+            "Acarbose mouse lifespan and metabolic aging",
+            "Acarbose murine glucose homeostasis response",
+            "Acarbose mouse microbiome longevity signal",
+            "Acarbose murine inflammation aging marker",
+            "Acarbose mouse healthspan intervention study",
+        ))
+    ]
     seen_payload: dict[str, Any] = {}
+
+    def source_papers(topic: str, _limit: int) -> list[dict[str, Any]]:
+        if topic == "acarbose":
+            return fresh_papers
+        if topic == "metformin use":
+            raise AssertionError("stale repair should not run before fresh source-lit candidate")
+        return repair_papers
 
     ledger = daily.run_cycle(
         runs_root=root,
@@ -8069,9 +8096,7 @@ def test_repairable_source_literature_revise_retries_before_new_topic(
         domain="longevity_research",
         queue=_queue(),
         submit=True,
-        source_paper_fetcher=lambda topic, _limit: (
-            papers if topic == "metformin use" else []
-        ),
+        source_paper_fetcher=source_papers,
         submitter=lambda payload: (
             seen_payload.update(payload)
             or {"ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}}}
@@ -8087,30 +8112,10 @@ def test_repairable_source_literature_revise_retries_before_new_topic(
     )
 
     assert ledger["status"] == "published"
-    assert ledger["submitted_topic"] == "metformin use"
-    assert ledger["source_literature_fallback"]["repair_submission"] is True
-    assert seen_payload["topic"] == "metformin use"
-    assert "required revision" not in seen_payload["markdown"]
-    assert (
-        seen_payload["metadata"]["reviewer_repair_notes"]
-        == "required revision"
-    )
-    assert (
-        seen_payload["evidence_bundle"]["reviewer_repair_notes"]
-        == "required revision"
-    )
-    assert all(
-        source["title"] != "Diabetes mortality patterns in national cohorts"
-        for source in seen_payload["source_bundle"]
-    )
-    assert all(
-        source["title"] != "Metformin incomplete effect estimate"
-        for source in seen_payload["source_bundle"]
-    )
-    assert "directionally favorable" in seen_payload["markdown"]
-    assert "null/non-convergent" in seen_payload["markdown"]
-    assert "matched PICO" in seen_payload["markdown"]
-    assert (root / "metformin use-source-literature-2026-06-10T18-00-00Z").exists()
+    assert ledger["submitted_topic"] == "acarbose"
+    assert "repair_submission" not in ledger["source_literature_fallback"]
+    assert seen_payload["topic"] == "acarbose"
+    assert (root / "acarbose-source-literature-2026-06-10T18-00-00Z").exists()
 
 
 def test_repairable_source_literature_revise_skips_refresh_first(

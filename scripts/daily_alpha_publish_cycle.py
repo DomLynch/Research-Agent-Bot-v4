@@ -4626,12 +4626,12 @@ def run_cycle(
         if preflight_candidate is not None or cluster_available:
             preflight_queue = candidate_queue
             skip_refresh_note = "skipped_initial_queue_probe"
-        elif repair_source_lit_available:
-            preflight_queue = candidate_queue
-            skip_refresh_note = "skipped_source_literature_repair_available"
         elif source_lit_available:
             preflight_queue = candidate_queue
             skip_refresh_note = "skipped_source_literature_candidate_available"
+        elif repair_source_lit_available:
+            preflight_queue = candidate_queue
+            skip_refresh_note = "skipped_source_literature_repair_available"
         else:
             initial_probe_empty = True
     skip_next_refresh = preflight_queue is not None
@@ -5166,12 +5166,15 @@ def run_cycle(
         )
         repair_topics = list(repair_decisions)
         repair_topic_set = set(repair_topics)
-        literature_topics = repair_topics + [
+        fresh_topics = [
             topic for topic in _source_literature_topic_candidates(
                 runs_root, profile.slug, min_submit_sources,
                 source_literature_blocked_topics,
                 limit=_SOURCE_LITERATURE_SCAN_LIMIT,
             ) if topic not in repair_topic_set
+        ]
+        literature_topics = fresh_topics + [
+            topic for topic in repair_topics if topic not in set(fresh_topics)
         ]
         for idx, literature_topic in enumerate(literature_topics):
             papers = (
