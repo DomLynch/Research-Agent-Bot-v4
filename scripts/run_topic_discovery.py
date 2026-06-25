@@ -222,6 +222,15 @@ def _fullraw_supply_budget_seconds() -> float:
         return _seed_paper_budget_seconds()
 
 
+def _fullraw_supply_query_timeout_seconds() -> float:
+    try:
+        return max(1.0, float(os.environ.get(
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_TIMEOUT_SECONDS", "4",
+        )))
+    except (TypeError, ValueError):
+        return 4.0
+
+
 def _fullraw_configured() -> bool:
     return bool(os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip())
 
@@ -505,28 +514,47 @@ def _fullraw_supply_candidates(
     deadline = time.monotonic() + _fullraw_supply_budget_seconds()
     with httpx.Client() as client:
         for query, label in query_labels.items():
-            if time.monotonic() >= deadline:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
                 break
             if label != "__domain_supply__" and label in used_seed_labels:
                 continue
+            query_timeout = str(min(_fullraw_supply_query_timeout_seconds(), remaining))
+            old_timeout = os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS")
+            old_budget = os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS")
+            old_sweep = os.environ.get("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS")
+            os.environ["TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"] = query_timeout
+            os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] = query_timeout
+            os.environ["TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS"] = query_timeout
             receipt_recorded = False
-            for paper in _seed_fullraw_papers(query, client=client, limit=25):
-                key = str(paper.get("doi") or paper.get("paper_id")
-                          or paper.get("title") or "").strip().casefold()
-                if not key or key in papers_by_key:
-                    continue
-                papers_by_key[key] = paper
-                papers_by_query.setdefault(query, []).append(paper)
-                receipt = paper.get("fullraw_shard_receipt")
-                if isinstance(receipt, dict) and not receipt_recorded:
-                    _FULLRAW_PROBE_RECEIPTS.append({
-                        "seed": label,
-                        "query": query,
-                        "shards_searched": receipt.get("shards_searched"),
-                        "partial_shard_search": receipt.get("partial_shard_search"),
-                        "sources_searched": receipt.get("sources_searched"),
-                    })
-                    receipt_recorded = True
+            try:
+                for paper in _seed_fullraw_papers(query, client=client, limit=25):
+                    key = str(paper.get("doi") or paper.get("paper_id")
+                              or paper.get("title") or "").strip().casefold()
+                    if not key or key in papers_by_key:
+                        continue
+                    papers_by_key[key] = paper
+                    papers_by_query.setdefault(query, []).append(paper)
+                    receipt = paper.get("fullraw_shard_receipt")
+                    if isinstance(receipt, dict) and not receipt_recorded:
+                        _FULLRAW_PROBE_RECEIPTS.append({
+                            "seed": label,
+                            "query": query,
+                            "shards_searched": receipt.get("shards_searched"),
+                            "partial_shard_search": receipt.get("partial_shard_search"),
+                            "sources_searched": receipt.get("sources_searched"),
+                        })
+                        receipt_recorded = True
+            finally:
+                for key, value in (
+                    ("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", old_timeout),
+                    ("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", old_budget),
+                    ("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS", old_sweep),
+                ):
+                    if value is None:
+                        os.environ.pop(key, None)
+                    else:
+                        os.environ[key] = value
             if label != "__domain_supply__":
                 scoped = _context_supported_papers(
                     papers_by_query.get(query, []), context_terms)

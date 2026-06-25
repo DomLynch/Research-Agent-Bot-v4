@@ -959,6 +959,35 @@ def test_fullraw_supply_stops_when_total_pass_budget_is_spent(
     assert calls == ["longevity anti aging"]
 
 
+def test_fullraw_supply_caps_each_query_timeout(monkeypatch: Any) -> None:
+    caps: list[tuple[str | None, str | None, str | None]] = []
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        assert query == "longevity anti aging"
+        caps.append((
+            os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"),
+            os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"),
+            os.environ.get("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS"),
+        ))
+        return []
+
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS", "12")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_TIMEOUT_SECONDS", "3")
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
+
+    rows = run_topic_discovery._fullraw_supply_candidates(
+        query_context="Longevity / anti-aging research",
+        current_year=2026,
+        top=1,
+    )
+
+    assert rows == ()
+    assert caps == [("3.0", "3.0", "3.0")]
+    assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS") is None
+    assert os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS") is None
+    assert os.environ.get("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS") is None
+
+
 def test_fullraw_supply_prefers_context_seed_query_over_bare_seed(
     monkeypatch: Any,
 ) -> None:
