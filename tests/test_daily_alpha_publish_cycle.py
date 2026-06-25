@@ -9362,6 +9362,7 @@ def test_source_literature_fetcher_enriches_fullraw_with_matching_fact_rows(
         "researka_database_token": "tok",
     })())
     queries: list[str] = []
+    timeouts: list[float] = []
     fullraw_titles = [
         "Acarbose mice longevity inflammatory markers",
         "Acarbose mice aging glucose homeostasis",
@@ -9393,9 +9394,10 @@ def test_source_literature_fetcher_enriches_fullraw_with_matching_fact_rows(
             "endpoint": "aging-related endpoint",
         }
 
-    def fake_urlopen(req: Any, timeout: int) -> Response:
+    def fake_urlopen(req: Any, timeout: float) -> Response:
         query = str(json.loads(req.data.decode("utf-8"))["query"])
         queries.append(query)
+        timeouts.append(timeout)
         if query == "acarbose":
             return Response([
                 fact_row(
@@ -9439,6 +9441,7 @@ def test_source_literature_fetcher_enriches_fullraw_with_matching_fact_rows(
     assert daily._source_literature_fact_count(papers) == 5
     assert daily._source_literature_boundary_quality("acarbose", papers, 5) == (True, "ok")
     assert fullraw_titles[0] in queries
+    assert timeouts[-3:] == [3.0, 3.0, 3.0]
 
 
 def test_source_literature_fetcher_retries_focused_query_variant(
@@ -9511,11 +9514,11 @@ def test_source_literature_fullraw_requires_multi_token_title_alignment(
         "researka_database_url": "",
         "researka_database_token": "",
     })())
+    queries: list[tuple[str, int]] = []
 
-    monkeypatch.setattr(
-        publish_literature,
-        "_fullraw_topic_papers",
-        lambda _query, _limit: [
+    def fullraw_papers(query: str, limit: int) -> list[dict[str, str]]:
+        queries.append((query, limit))
+        return [
             {
                 "doi": "10.1/hiit",
                 "title": "High intensity interval training improves insulin resistance",
@@ -9524,7 +9527,11 @@ def test_source_literature_fullraw_requires_multi_token_title_alignment(
                 "doi": "10.1/resistance",
                 "title": "Resistance training improves muscle function in aging adults",
             },
-        ],
+        ]
+
+    monkeypatch.setattr(
+        publish_literature,
+        "_fullraw_topic_papers", fullraw_papers,
     )
 
     papers = daily._fetch_source_literature_papers(
@@ -9532,6 +9539,7 @@ def test_source_literature_fullraw_requires_multi_token_title_alignment(
     )
 
     assert [paper["doi"] for paper in papers] == ["10.1/resistance"]
+    assert queries == [("resistance training", 25)]
 
 
 def test_source_literature_boundary_quality_rejects_title_series() -> None:

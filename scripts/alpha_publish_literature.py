@@ -147,7 +147,7 @@ def _fullraw_topic_papers(topic: str, limit: int) -> list[Json]:
 
 def _fullraw_relevant_papers(topic: str, limit: int, seen: set[str]) -> list[Json]:
     out: list[Json] = []
-    for query in query_variants(topic):
+    for query in query_variants(topic)[:1]:
         for paper in _fullraw_topic_papers(query, max(25, limit * 6)):
             if not isinstance(paper, dict) or not _text_has_topic(paper.get("title"), topic):
                 continue
@@ -544,7 +544,7 @@ def fetch_papers(
     out: list[Json] = []
     seen: set[str] = set()
 
-    def fact_rows(query: str) -> list[Json]:
+    def fact_rows(query: str, *, row_timeout: float = timeout) -> list[Json]:
         req = urllib.request.Request(
             f"{base}/api/v1/tier2/facts/search",
             data=json.dumps({
@@ -561,7 +561,7 @@ def fetch_papers(
             method="POST",
         )
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
+            with urllib.request.urlopen(req, timeout=row_timeout) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
         except (OSError, ValueError, json.JSONDecodeError):
             return []
@@ -603,7 +603,7 @@ def fetch_papers(
             continue
         target_key = paper_key(paper, paper.get("paper_id"))
         target_title = title_key(title)
-        for item in fact_rows(title):
+        for item in fact_rows(title, row_timeout=min(timeout, 3.0)):
             raw_paper = item.get("paper")
             matched: Json = raw_paper if isinstance(raw_paper, dict) else {}
             item_key = paper_key(matched, item.get("paper_id"))
