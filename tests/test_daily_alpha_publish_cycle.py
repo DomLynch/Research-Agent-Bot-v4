@@ -8148,7 +8148,7 @@ def test_thin_source_literature_candidate_does_not_skip_refresh(
     assert ledger["source_literature_fallback"]["reason"] == "source_floor_below_min"
 
 
-def test_source_literature_preflight_defers_default_fullraw_without_skipping_refresh(
+def test_source_literature_preflight_uses_default_fullraw_supply_before_refresh(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     root = tmp_path / "repo"
@@ -8209,27 +8209,36 @@ def test_source_literature_preflight_defers_default_fullraw_without_skipping_ref
         refresh_candidates=True,
         max_refresh_batches=1,
         submit=True,
-        submitter=lambda _payload: {"ok": False, "status": 500},
+        submitter=lambda _payload: {
+            "ok": True, "status": 200,
+            "response": {"submission": {"id": "sub-1"}},
+        },
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
         fetcher=lambda _doi: {"message": {}},
         sleep=lambda _seconds: None,
     )
 
     assert fetches == [
         ("cellular_reprogramming_safety", 15, "longevity_research"),
-        ("cellular_reprogramming", 15, "longevity_research"),
     ]
-    assert refresh_calls
+    assert not refresh_calls
     assert ledger["source_literature_preflight_attempts"] == [{
         "topic": "cellular_reprogramming_safety",
-        "status": "deferred",
-        "reason": "metadata_candidate_deferred",
-        "paper_count": 0,
-        "relevant_paper_count": 0,
+        "status": "selected",
+        "reason": "ok",
+        "paper_count": 5,
+        "relevant_paper_count": 5,
     }]
-    assert ledger["refresh_batches"][0]["ok"] is True
-    assert ledger["status"] == "no_fresh_candidate"
-    assert ledger["source_literature_fallback"]["status"] == "blocked"
-    assert ledger["source_literature_fallback"]["reason"] == "failed_retry_exhausted"
+    assert ledger["refresh_batches"][0]["note"] == (
+        "skipped_source_literature_candidate_available"
+    )
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "cellular_reprogramming_safety"
 
 
 def test_metadata_only_source_literature_does_not_stop_fullraw_refresh(
@@ -9100,6 +9109,38 @@ def test_source_literature_fullraw_fetch_uses_separate_query_budget(
     }
     assert os.environ["TOPIC_DISCOVERY_V5_TIMEOUT_SECONDS"] == "99"
     assert os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] == "45"
+
+
+def test_source_literature_fullraw_fetch_defaults_to_supply_bounds(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    from scripts import run_topic_discovery
+
+    seen: dict[str, str | None] = {}
+
+    def fake_seed_fullraw_papers(*_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        for key in (
+            "TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS",
+            "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
+            "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS",
+            "TOPIC_DISCOVERY_V5_MAX_VARIANTS",
+        ):
+            seen[key] = os.environ.get(key)
+        return []
+
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_TIMEOUT", "120")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "300")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS", "120")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_MAX_VARIANTS", "4")
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_seed_fullraw_papers)
+
+    assert publish_literature._fullraw_topic_papers("plant based diet", 5) == []
+    assert seen == {
+        "TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS": "35",
+        "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS": "45",
+        "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS": "15",
+        "TOPIC_DISCOVERY_V5_MAX_VARIANTS": "2",
+    }
 
 
 def test_source_literature_candidates_skip_exhausted_topic_family(
