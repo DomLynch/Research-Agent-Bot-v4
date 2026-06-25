@@ -225,10 +225,10 @@ def _fullraw_supply_budget_seconds() -> float:
 def _fullraw_supply_query_timeout_seconds() -> float:
     try:
         return max(1.0, float(os.environ.get(
-            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_TIMEOUT_SECONDS", "4",
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_TIMEOUT_SECONDS", "1",
         )))
     except (TypeError, ValueError):
-        return 4.0
+        return 1.0
 
 
 def _fullraw_configured() -> bool:
