@@ -679,6 +679,8 @@ def _fullraw_supply_candidates(
                     domain_out.append(candidate)
                     if len(domain_out) >= top:
                         return tuple(sorted(domain_out, key=_rank_key))
+                if domain_out:
+                    return tuple(sorted(domain_out, key=_rank_key))
             if label != "__domain_supply__":
                 scoped = _query_supported_papers(
                     papers_by_query.get(query, []), query, context_terms)
