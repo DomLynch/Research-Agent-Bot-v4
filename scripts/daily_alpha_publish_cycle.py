@@ -3687,12 +3687,18 @@ def _fresh_parent_topics_from_discovery(
                 if max(fact_sources, papers) < min_sources:
                     continue
                 token_count = len(_CLAIM_WORD.findall(topic.replace("_", " ")))
-                candidates.append((
-                    (receipt_rank, -max(fact_sources, papers), -papers, -fact_sources,
-                     token_count, recency, topic),
-                    topic,
-                    aliases,
-                ))
+                source_rank = -max(fact_sources, papers)
+                if receipt_rank == 0:
+                    score = (
+                        receipt_rank, recency, source_rank, -papers,
+                        -fact_sources, token_count, topic,
+                    )
+                else:
+                    score = (
+                        receipt_rank, source_rank, -papers, -fact_sources,
+                        token_count, recency, topic,
+                    )
+                candidates.append((score, topic, aliases))
     topics: list[str] = []
     seen: set[str] = set()
     seen_families: set[str] = set()
