@@ -9878,7 +9878,10 @@ def test_source_literature_payload_labels_consistent_favorable_receipts(
         "Mediterranean diet: one bounded, context-dependent signal across receipts"
     )
     assert "..." not in payload["abstract"]
-    assert "directionally consistent but contextually heterogeneous" in payload["abstract"]
+    assert "directional disagreement" in payload["abstract"]
+    assert "Concrete source-level examples" not in payload["abstract"]
+    assert "directionally consistent signals across heterogeneous contexts" in payload["markdown"]
+    assert "Direction is homogeneous: all selected receipts are directionally favorable" in payload["markdown"]
     assert "not convergent" not in payload["abstract"]
     assert "directionally favorable: 5 receipt(s)" in payload["markdown"]
     assert "study design/evidence type (primary/review)" in payload["markdown"]
@@ -10107,7 +10110,8 @@ def test_source_literature_payload_classifies_restored_attenuated_rows_as_favora
     assert "- comparator/not favorable: Quercetin alleviates lung injury" not in markdown
     assert "- directionally favorable: Quercetin alleviates lung injury" in markdown
     assert "mechanistic ablation supports the topic effect" in markdown
-    assert "heterogeneous indication/context map" in payload["abstract"]
+    assert "heterogeneous indication/context map" in markdown
+    assert "Concrete source-level examples" not in payload["abstract"]
     assert "\n- other/mixed:" not in markdown
 
 

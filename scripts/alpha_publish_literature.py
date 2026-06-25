@@ -218,7 +218,7 @@ def fact_count(papers: list[Json]) -> int:
 
 def _short_finding(value: str, limit: int = 170) -> str:
     text = " ".join(str(value or "").split()).rstrip(".")
-    return text if len(text) <= limit else text[:limit].rsplit(" ", 1)[0].rstrip(",;") + "..."
+    return text if len(text) <= limit else text[:limit].rsplit(" ", 1)[0].rstrip(".,;") + "..."
 
 
 def _text_has_topic(value: Any, topic: str) -> bool:
@@ -437,7 +437,7 @@ def _pico_gap(facts: list[Json]) -> str:
 def _direction_signal_label(papers: list[Json], topic: str = "") -> str:
     directions = [_paper_effect_direction(paper, topic) for paper in papers]
     if directions and all(direction == "directionally favorable" for direction in directions):
-        return "directionally consistent but contextually heterogeneous signals"
+        return "directionally consistent signals across heterogeneous contexts"
     if "directionally favorable" in directions and "non-clinical/predictive" in directions:
         return "endpoint-specific intervention signals plus separate predictive evidence"
     if "directionally favorable" in directions:
@@ -711,8 +711,16 @@ def payload(
         str(fact.get("canonical_phrase") or "").strip() for fact in facts
         if str(fact.get("canonical_phrase") or "").strip()
     ]
+    endpoint_count = len({
+        str(fact.get("endpoint") or fact.get("metric") or "").strip()
+        for fact in facts if str(fact.get("endpoint") or fact.get("metric") or "").strip()
+    })
     direction_text = _direction_summary(selected, topic)
     signal_label = _direction_signal_label(selected, topic)
+    directions = [_paper_effect_direction(paper, topic) for paper in selected]
+    all_favorable = bool(directions) and all(
+        direction == "directionally favorable" for direction in directions
+    )
     source_types = sorted({evidence_type(paper) for paper in selected})
     split_front = (
         "directionally favorable" in direction_text
@@ -738,16 +746,20 @@ def payload(
         "establishing a causal, clinical, species-translated, or mechanistically "
         "integrated claim."
     )
-    if len({
-        str(fact.get("endpoint") or fact.get("metric") or "").strip()
-        for fact in facts if str(fact.get("endpoint") or fact.get("metric") or "").strip()
-    }) > 1 or len(populations) > 1:
+    if all_favorable and (endpoint_count > 1 or len(populations) > 1 or len(interventions) > 1):
+        synthesis += (
+            " Direction is homogeneous: all selected receipts are directionally "
+            "favorable. The boundary is population, comparator, and endpoint "
+            "diversity, not directional disagreement."
+        )
+    if endpoint_count > 1 or len(populations) > 1:
         synthesis += (
             " The listed effect sizes remain source-specific across endpoints "
             "and populations; they are not pooled or averaged."
             " This is a heterogeneous indication/context map, not a unified "
             "disease-specific or endpoint-family claim."
         )
+    abstract_text = synthesis
     if findings:
         examples = [_short_finding(finding) for finding in findings[:3]]
         synthesis += " Concrete source-level examples: " + "; ".join(examples) + "."
@@ -856,8 +868,8 @@ def payload(
                 "one bounded, context-dependent signal across receipts"
             )
         ),
-        "abstract": safe_excerpt(synthesis),
-        "summary": safe_excerpt(synthesis),
+        "abstract": safe_excerpt(abstract_text),
+        "summary": safe_excerpt(abstract_text),
         "topic": topic,
         "metadata": {
             "article_type": "alpha_memo",
