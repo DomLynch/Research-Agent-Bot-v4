@@ -9964,6 +9964,45 @@ def test_source_literature_fullraw_requires_multi_token_title_alignment(
     assert queries == [("resistance training", 25)]
 
 
+def test_source_literature_fullraw_uses_relevance_not_exact_phrase(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "researka_database_url": "",
+        "researka_database_token": "",
+    })())
+
+    titles = (
+        "Sarcopenia and aging muscle mass in older adults",
+        "Aging muscle strength decline and sarcopenia risk",
+        "Sarcopenia prevention study in aging skeletal muscle",
+        "Aging adult sarcopenia and muscle function trajectories",
+        "Aging-related muscle preservation and sarcopenia biology",
+    )
+    monkeypatch.setattr(
+        publish_literature,
+        "_fullraw_topic_papers",
+        lambda *_args: [
+            {"doi": f"10.1/sarc-{idx}", "title": title}
+            for idx, title in enumerate(titles)
+        ],
+    )
+
+    papers = daily._fetch_source_literature_papers(
+        "sarcopenia_muscle_preservation_longevity_anti_aging",
+        5,
+        domain="longevity_research",
+    )
+
+    assert [paper["doi"] for paper in papers] == [
+        "10.1/sarc-0", "10.1/sarc-1", "10.1/sarc-2",
+        "10.1/sarc-3", "10.1/sarc-4",
+    ]
+    assert daily._source_literature_boundary_quality(
+        "sarcopenia_muscle_preservation_longevity_anti_aging", papers, 5,
+    ) == (True, "ok")
+
+
 def test_source_literature_boundary_quality_rejects_title_series() -> None:
     papers = [
         {"title": f"RAGE collagen pathway review {year}", "doi": f"10.1234/{year}"}

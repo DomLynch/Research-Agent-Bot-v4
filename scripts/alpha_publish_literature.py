@@ -149,10 +149,21 @@ def _fullraw_relevant_papers(topic: str, limit: int, seen: set[str]) -> list[Jso
     out: list[Json] = []
     for query in query_variants(topic):
         for paper in _fullraw_topic_papers(query, max(25, limit * 6)):
-            if not isinstance(paper, dict) or not _text_has_topic(paper.get("title"), topic):
+            if not isinstance(paper, dict):
+                continue
+            title = paper.get("title") or paper.get("paper_title")
+            topic_tokens = _topic_token_sequence(topic)
+            title_tokens = set(title_key(title).split())
+            if (
+                not _text_has_topic(title, topic)
+                and (
+                    len(topic_tokens) < 3
+                    or len(set(topic_tokens) & title_tokens)
+                    < min(len(topic_tokens), max(2, len(topic_tokens) - 1))
+                )
+            ):
                 continue
             key = paper_key(paper, paper.get("paper_id"))
-            title = paper.get("title") or paper.get("paper_title")
             if not key or not title or key in seen:
                 continue
             candidate = paper | {
