@@ -4134,7 +4134,7 @@ def _refresh_candidate_batch(
     priorities = [str(topic).strip() for topic in priority_topics if str(topic).strip()]
     effective_top = min(
         len(priorities),
-        max(refresh_top, _DEFAULT_PARENT_REFRESH_TOPIC_LIMIT),
+        1,
     ) if priorities else refresh_top
     args = [
         sys.executable, "scripts/run_curator_cycle.py",

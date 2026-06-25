@@ -3360,13 +3360,13 @@ def test_refresh_candidate_batch_passes_priority_child_topics(
     assert out["priority_topics"] == ["parent_bounded_claim", "second_child"]
     assert out["ran_topics"] == ["parent_bounded_claim", "second_child"]
     assert calls[0].count("--priority-topic") == 2
-    assert calls[0][calls[0].index("--top") + 1] == "2"
-    assert out["top"] == 2
+    assert calls[0][calls[0].index("--top") + 1] == "1"
+    assert out["top"] == 1
     assert "parent_bounded_claim" in calls[0]
     assert "second_child" in calls[0]
 
 
-def test_refresh_candidate_batch_runs_expanded_parent_priority_window(
+def test_refresh_candidate_batch_bounds_parent_priority_window(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     calls: list[list[str]] = []
@@ -3384,8 +3384,8 @@ def test_refresh_candidate_batch_runs_expanded_parent_priority_window(
 
     assert out["priority_topics"] == ["fresh_a", "fresh_b", "fresh_c", "fresh_d"]
     assert calls[0].count("--priority-topic") == 4
-    assert calls[0][calls[0].index("--top") + 1] == "4"
-    assert out["top"] == 4
+    assert calls[0][calls[0].index("--top") + 1] == "1"
+    assert out["top"] == 1
 
 
 def test_refresh_candidate_batch_timeout_does_not_mark_all_priorities_ran(
@@ -6321,6 +6321,38 @@ def test_refresh_batches_continue_until_eligible_candidate(
     assert [row["batch"] for row in ledger["considered"]] == [1, 2]
     assert ledger["considered"][0]["status"] == "corpus_source_floor_below_min"
     assert ledger["considered"][1]["status"] == "eligible"
+
+
+def test_priority_refresh_runs_one_topic_per_batch(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+
+    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        calls.append(args)
+        cycle_dir = tmp_path / "_curator_cycles"
+        cycle_dir.mkdir(parents=True)
+        name = "cycle-priority.json"
+        daily._write_json(cycle_dir / name, {
+            "domain": {"slug": "longevity_research"},
+            "ran": [{"topic": "topic_a"}],
+            "skipped_in_cooldown": [],
+        })
+        return True, f"[cycle] summary -> runs/_curator_cycles/{name}"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+    result = daily._refresh_candidate_batch(
+        5,
+        runs_root=tmp_path,
+        priority_topics=["topic_a", "topic_b", "topic_c", "topic_d"],
+        domain="longevity_research",
+    )
+
+    assert calls[0][calls[0].index("--top") + 1] == "1"
+    assert calls[0].count("--priority-topic") == 4
+    assert result["top"] == 1
+    assert result["priority_topics"] == ["topic_a", "topic_b", "topic_c", "topic_d"]
+    assert result["ran_topics"] == ["topic_a", "topic_b", "topic_c", "topic_d"]
 
 
 def test_source_floor_topics_stay_refreshable_next_batch(
