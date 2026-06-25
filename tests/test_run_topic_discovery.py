@@ -1041,8 +1041,8 @@ def test_fullraw_supply_stops_when_total_pass_budget_is_spent(
     assert calls == ["metformin longevity"]
 
 
-def test_fullraw_supply_caps_each_query_timeout(monkeypatch: Any) -> None:
-    caps: list[tuple[str | None, str | None, str | None]] = []
+def test_fullraw_supply_caps_each_query_window(monkeypatch: Any) -> None:
+    caps: list[tuple[str | None, str | None, str | None, str | None]] = []
 
     def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
         assert query == "longevity anti aging"
@@ -1050,6 +1050,7 @@ def test_fullraw_supply_caps_each_query_timeout(monkeypatch: Any) -> None:
             os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"),
             os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"),
             os.environ.get("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS"),
+            os.environ.get("TOPIC_DISCOVERY_V5_MAX_VARIANTS"),
         ))
         return []
 
@@ -1067,10 +1068,12 @@ def test_fullraw_supply_caps_each_query_timeout(monkeypatch: Any) -> None:
     assert len(caps) == 1
     assert caps[0][0] == "3.0"
     assert 11.0 <= float(caps[0][1] or 0.0) <= 12.0
-    assert caps[0][2] == "0"
+    assert 11.0 <= float(caps[0][2] or 0.0) <= 12.0
+    assert caps[0][3] == "4"
     assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS") is None
     assert os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS") is None
     assert os.environ.get("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS") is None
+    assert os.environ.get("TOPIC_DISCOVERY_V5_MAX_VARIANTS") is None
 
 
 def test_fullraw_supply_prefers_context_seed_query_over_bare_seed(

@@ -245,6 +245,16 @@ def _fullraw_supply_query_budget_seconds() -> float:
         return 100.0
 
 
+def _fullraw_supply_sweep_wait_seconds() -> float:
+    try:
+        return max(0.0, float(os.environ.get(
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS",
+            os.environ.get("V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS", "120"),
+        )))
+    except (TypeError, ValueError):
+        return 120.0
+
+
 def _fullraw_configured() -> bool:
     if os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip():
         return True
@@ -568,13 +578,22 @@ def _fullraw_supply_candidates(
             if label != "__domain_supply__" and label in used_seed_labels:
                 continue
             query_timeout = str(min(_fullraw_supply_query_timeout_seconds(), remaining))
-            query_budget = str(min(_fullraw_supply_query_budget_seconds(), remaining))
+            sweep_wait = min(_fullraw_supply_sweep_wait_seconds(), remaining)
+            query_budget = str(min(
+                max(_fullraw_supply_query_budget_seconds(), sweep_wait + 30.0),
+                remaining,
+            ))
             old_timeout = os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS")
             old_budget = os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS")
             old_sweep = os.environ.get("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS")
+            old_variants = os.environ.get("TOPIC_DISCOVERY_V5_MAX_VARIANTS")
             os.environ["TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"] = query_timeout
             os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] = query_budget
-            os.environ["TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS"] = "0"
+            os.environ["TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS"] = str(sweep_wait)
+            os.environ["TOPIC_DISCOVERY_V5_MAX_VARIANTS"] = os.environ.get(
+                "TOPIC_DISCOVERY_FULLRAW_SUPPLY_MAX_VARIANTS",
+                os.environ.get("V5_MEMO_FULL_RAW_MAX_VARIANTS", "4"),
+            )
             receipt_recorded = False
             try:
                 for paper in _seed_fullraw_papers(
@@ -601,6 +620,7 @@ def _fullraw_supply_candidates(
                     ("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", old_timeout),
                     ("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", old_budget),
                     ("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS", old_sweep),
+                    ("TOPIC_DISCOVERY_V5_MAX_VARIANTS", old_variants),
                 ):
                     if value is None:
                         os.environ.pop(key, None)
