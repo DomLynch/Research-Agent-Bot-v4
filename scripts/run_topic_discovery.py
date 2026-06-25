@@ -221,28 +221,28 @@ def _fullraw_supply_budget_seconds() -> float:
     try:
         return max(1.0, float(os.environ.get(
             "TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS",
-            "90",
+            "240",
         )))
     except (TypeError, ValueError):
-        return 90.0
+        return 240.0
 
 
 def _fullraw_supply_query_timeout_seconds() -> float:
     try:
         return max(1.0, float(os.environ.get(
-            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_TIMEOUT_SECONDS", "35",
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_TIMEOUT_SECONDS", "25",
         )))
     except (TypeError, ValueError):
-        return 35.0
+        return 25.0
 
 
 def _fullraw_supply_query_budget_seconds() -> float:
     try:
         return max(1.0, float(os.environ.get(
-            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS", "45",
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS", "25",
         )))
     except (TypeError, ValueError):
-        return 45.0
+        return 25.0
 
 
 def _fullraw_supply_sweep_wait_seconds() -> float:
@@ -569,14 +569,21 @@ def _fullraw_supply_candidates(
     out: list[TopicCandidate] = []
     seen_topics: set[str] = set()
     used_seed_labels: set[str] = set()
+    attempted_queries: list[str] = []
     deadline = time.monotonic() + _fullraw_supply_budget_seconds()
     with httpx.Client() as client:
         for query, label in query_labels.items():
             remaining = deadline - time.monotonic()
             if remaining <= 0:
+                _FULLRAW_PROBE_EVENTS.append({
+                    "status": "budget_exhausted",
+                    "attempted_queries": attempted_queries,
+                    "skipped_query_count": len(query_labels) - len(attempted_queries),
+                })
                 break
             if label != "__domain_supply__" and label in used_seed_labels:
                 continue
+            attempted_queries.append(query)
             query_timeout = str(min(_fullraw_supply_query_timeout_seconds(), remaining))
             sweep_wait = min(_fullraw_supply_sweep_wait_seconds(), remaining)
             query_budget = str(min(

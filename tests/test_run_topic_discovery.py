@@ -1029,6 +1029,7 @@ def test_fullraw_supply_stops_when_total_pass_budget_is_spent(
     monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS", "1")
     monkeypatch.setattr(run_topic_discovery.time, "monotonic", lambda: now["value"])
     monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
+    run_topic_discovery._FULLRAW_PROBE_EVENTS.clear()
 
     rows = run_topic_discovery._fullraw_supply_candidates(
         query_context="Longevity / anti-aging research",
@@ -1039,6 +1040,10 @@ def test_fullraw_supply_stops_when_total_pass_budget_is_spent(
 
     assert rows == ()
     assert calls == ["metformin longevity"]
+    event = run_topic_discovery._FULLRAW_PROBE_EVENTS[-1]
+    assert event["status"] == "budget_exhausted"
+    assert event["attempted_queries"] == ["metformin longevity"]
+    assert event["skipped_query_count"] > 0
 
 
 def test_fullraw_supply_caps_each_query_window(monkeypatch: Any) -> None:
@@ -1068,7 +1073,7 @@ def test_fullraw_supply_caps_each_query_window(monkeypatch: Any) -> None:
     assert rows == ()
     assert len(caps) == 1
     assert caps[0][0] == "3.0"
-    assert caps[0][1] == "45.0"
+    assert caps[0][1] == "25.0"
     assert caps[0][2] == "15.0"
     assert caps[0][3] == "2"
     assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS") is None
@@ -1083,9 +1088,9 @@ def test_fullraw_supply_defaults_are_candidate_supply_sized(monkeypatch: Any) ->
     monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS", raising=False)
     monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS", raising=False)
 
-    assert run_topic_discovery._fullraw_supply_budget_seconds() == 90.0
-    assert run_topic_discovery._fullraw_supply_query_timeout_seconds() == 35.0
-    assert run_topic_discovery._fullraw_supply_query_budget_seconds() == 45.0
+    assert run_topic_discovery._fullraw_supply_budget_seconds() == 240.0
+    assert run_topic_discovery._fullraw_supply_query_timeout_seconds() == 25.0
+    assert run_topic_discovery._fullraw_supply_query_budget_seconds() == 25.0
     assert run_topic_discovery._fullraw_supply_sweep_wait_seconds() == 15.0
 
 
