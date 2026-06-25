@@ -927,7 +927,7 @@ def test_empty_discovery_uses_fullraw_as_domain_supply_engine(
     assert run_topic_discovery.main() == 0
     out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
-    assert payload["top"][0]["topic"] == "vitamin_deficiency"
+    assert payload["top"][0]["topic"] == "deficiency_aging"
     assert payload["top"][0]["paper_count"] == 5
     assert payload["top"][0]["fact_source_count"] == 5
     assert payload["source_rich_count"] == 1
@@ -1208,6 +1208,30 @@ def test_fullraw_supply_does_not_promote_underfloor_domain_fallback(
     )
 
     assert rows == ()
+
+
+def test_fullraw_supply_title_slugs_stay_domain_or_seed_scoped(
+    monkeypatch: Any,
+) -> None:
+    papers = _fullraw_rows(
+        "mac", "Aging related macular degeneration retinal cohort",
+    ) + _fullraw_rows("epi", "Epigenetic clocks longevity biomarker cohort")
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        return papers if query == "longevity anti aging" else []
+
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
+
+    rows = run_topic_discovery._fullraw_supply_candidates(
+        query_context="Longevity / anti-aging research",
+        current_year=2026,
+        top=3,
+        seeds=("epigenetic_clocks",),
+    )
+
+    topics = {row.topic for row in rows}
+    assert "epigenetic_clocks" in topics
+    assert not any("macular" in topic or "degeneration" in topic for topic in topics)
 
 
 def test_fullraw_supply_uses_domain_query_when_titles_do_not_cluster(
@@ -1505,8 +1529,8 @@ def test_domain_fullraw_supply_preempts_lower_floor_seed_top_up(
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
     assert "longevity anti aging" in calls
     assert {row["topic"] for row in payload["top"]} == {
+        "aging_cohort",
         "deficiency_aging",
-        "vitamin_deficiency",
     }
 
 
