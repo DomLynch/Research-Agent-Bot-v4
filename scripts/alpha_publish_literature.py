@@ -49,6 +49,17 @@ def _topic_tokens(topic: str) -> set[str]:
     return tokens
 
 
+def _topic_token_sequence(topic: str) -> list[str]:
+    return [
+        token for token in title_key(topic).split()
+        if len(token) >= 3 and token not in _GENERIC_TOPIC_TOKENS
+    ]
+
+
+def _token_matches(word: str, token: str) -> bool:
+    return word == token or (len(word) > 3 and word.endswith("s") and word[:-1] == token)
+
+
 def topic_relevant(topic: str, paper: Json) -> bool:
     tokens = _topic_tokens(topic)
     if not tokens:
@@ -211,8 +222,28 @@ def _short_finding(value: str, limit: int = 170) -> str:
 
 
 def _text_has_topic(value: Any, topic: str) -> bool:
-    tokens = _topic_tokens(topic)
-    return bool(tokens and tokens & set(title_key(value).split()))
+    topic_tokens = _topic_token_sequence(topic)
+    words = title_key(value).split()
+    if not topic_tokens:
+        return False
+    if len(topic_tokens) == 1:
+        return any(_token_matches(word, topic_tokens[0]) for word in words)
+    for idx, word in enumerate(words):
+        if not _token_matches(word, topic_tokens[0]):
+            continue
+        cursor = idx
+        for token in topic_tokens[1:]:
+            match_idx = next(
+                (pos for pos in range(cursor + 1, min(len(words), idx + len(topic_tokens) + 1))
+                 if _token_matches(words[pos], token)),
+                -1,
+            )
+            if match_idx < 0:
+                break
+            cursor = match_idx
+        else:
+            return True
+    return False
 
 
 def _topic_effect_ablated(finding: str, topic: str) -> bool:

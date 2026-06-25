@@ -9301,6 +9301,36 @@ def test_source_literature_fetcher_retries_focused_query_variant(
     assert {paper["source_fact"]["intervention"] for paper in papers} == {"physical activity"}
 
 
+def test_source_literature_fullraw_requires_multi_token_title_alignment(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "researka_database_url": "",
+        "researka_database_token": "",
+    })())
+
+    monkeypatch.setattr(
+        publish_literature,
+        "_fullraw_topic_papers",
+        lambda _query, _limit: [
+            {
+                "doi": "10.1/hiit",
+                "title": "High intensity interval training improves insulin resistance",
+            },
+            {
+                "doi": "10.1/resistance",
+                "title": "Resistance training improves muscle function in aging adults",
+            },
+        ],
+    )
+
+    papers = daily._fetch_source_literature_papers(
+        "resistance_training", 2, domain="longevity_research",
+    )
+
+    assert [paper["doi"] for paper in papers] == ["10.1/resistance"]
+
+
 def test_source_literature_boundary_quality_rejects_title_series() -> None:
     papers = [
         {"title": f"RAGE collagen pathway review {year}", "doi": f"10.1234/{year}"}
