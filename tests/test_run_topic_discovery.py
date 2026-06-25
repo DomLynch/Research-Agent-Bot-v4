@@ -1077,6 +1077,16 @@ def test_fullraw_supply_caps_each_query_window(monkeypatch: Any) -> None:
     assert os.environ.get("TOPIC_DISCOVERY_V5_MAX_VARIANTS") is None
 
 
+def test_fullraw_supply_defaults_are_candidate_supply_sized(monkeypatch: Any) -> None:
+    monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS", raising=False)
+    monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_TIMEOUT_SECONDS", raising=False)
+    monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS", raising=False)
+
+    assert run_topic_discovery._fullraw_supply_budget_seconds() == 220.0
+    assert run_topic_discovery._fullraw_supply_query_timeout_seconds() == 90.0
+    assert run_topic_discovery._fullraw_supply_sweep_wait_seconds() == 90.0
+
+
 def test_fullraw_supply_prefers_context_seed_query_over_bare_seed(
     monkeypatch: Any,
 ) -> None:
