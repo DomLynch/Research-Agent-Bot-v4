@@ -10016,6 +10016,35 @@ def test_source_literature_payload_classifies_restored_attenuated_rows_as_favora
     assert "\n- other/mixed:" not in markdown
 
 
+def test_source_literature_payload_omits_heterogeneous_note_for_matched_context(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    papers = [
+        {
+            "title": f"Matched quercetin source {idx}",
+            "doi": f"10.1234/quercetin-matched-{idx}",
+            "year": 2020 + idx,
+            "source_fact": {
+                "canonical_phrase": "quercetin reduced glucose versus control",
+                "population": "diabetic mice",
+                "intervention": "quercetin",
+                "comparator": "control",
+                "endpoint": "glucose",
+            },
+        }
+        for idx in range(5)
+    ]
+
+    _candidate, payload = daily._source_literature_payload(
+        profile_slug="longevity_research", topic="quercetin",
+        papers=papers, runs_root=root, date="2026-06-25T01-07-00Z",
+    )
+
+    assert "directionally favorable: 5 receipt(s)" in payload["markdown"]
+    assert "heterogeneous indication/context map" not in payload["abstract"]
+
+
 def test_source_literature_fallback_blocks_repeated_report_series(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
