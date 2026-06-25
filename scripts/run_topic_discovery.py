@@ -130,7 +130,7 @@ def _v5_client_papers(query: str, *, limit: int) -> list[dict[str, object]]:
         return []
     old_env = _apply_v5_client_bounds()
     try:
-        hits = FullRawCorpusSearchClient.from_env(strict=False).search(
+        hits = FullRawCorpusSearchClient.from_env(strict=True).search(
             query, limit=limit,
         )
     except Exception:

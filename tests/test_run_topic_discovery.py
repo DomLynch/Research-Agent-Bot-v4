@@ -693,7 +693,7 @@ class FullRawCorpusSearchClient:
 
     assert rows[0]["title"] == "Metformin longevity paper"
     assert json.loads(capture.read_text(encoding="utf-8")) == {
-        "strict": False,
+        "strict": True,
         "query_timeout": "30",
         "max_variants": "2",
         "min_shards": "1",
