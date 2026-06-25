@@ -1127,6 +1127,7 @@ def test_stop_on_ready_priority_below_floor_does_not_backfill_discovery_topic(
     )
     monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",
                         lambda *_args, **_kwargs: set())
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_FIRST", "0")
     monkeypatch.setattr(
         run_curator_cycle, "_priority_ranked_topics",
         lambda _topics, **_kwargs: [{
@@ -1150,7 +1151,67 @@ def test_stop_on_ready_priority_below_floor_does_not_backfill_discovery_topic(
     payload = json.loads(next(cycles.glob("*.json")).read_text(encoding="utf-8"))
     assert payload["ran"] == []
     assert payload["skipped_below_source_floor"] == ["quercetin"]
-    assert calls == ["discovery", "cross_topic", "publish_queue"]
+    assert calls == ["cross_topic", "publish_queue"]
+
+
+def test_stop_on_ready_fullraw_supply_can_replace_underfloor_priority(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    runs = tmp_path / "runs"
+    cycles = runs / "_curator_cycles"
+    cycles.mkdir(parents=True)
+    seen: list[str] = []
+
+    def fake_step(
+        _args: list[str], step_name: str, *, timeout: int = 600,
+    ) -> tuple[bool, str]:
+        return True, "ok"
+
+    def fake_pipeline(
+        topic: str, velocity: float, *, with_editorial: bool,
+        top_n: int, py: str, pico_enrich: bool = False,
+        frontier_review: bool = True, parent_topic: str = "",
+        domain: str = "longevity",
+    ) -> TopicResult:
+        seen.append(topic)
+        return TopicResult(topic, velocity, "ran", "neutral", "", "")
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
+    monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
+    monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
+    monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
+    monkeypatch.setattr(run_curator_cycle, "_is_publish_ready", lambda _run_dir: False)
+    monkeypatch.setattr(run_curator_cycle, "_cached_tier2_supply",
+                        lambda *_args, **_kwargs: 0)
+    monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",
+                        lambda *_args, **_kwargs: set())
+    monkeypatch.setattr(
+        run_curator_cycle, "_priority_ranked_topics",
+        lambda _topics, **_kwargs: [{
+            "topic": "quercetin", "velocity_score": 0.0,
+            "fact_source_count": 1, "paper_count": 1,
+        }],
+    )
+    monkeypatch.setattr(
+        run_curator_cycle, "_read_discovery_top",
+        lambda _out, **_kwargs: [{
+            "topic": "source_diverse_fullraw", "velocity_score": 100.0,
+            "fact_source_count": 5, "paper_count": 5,
+        }],
+    )
+    monkeypatch.setattr(sys, "argv", [
+        "run_curator_cycle.py", "--domain", "longevity_research",
+        "--stop-on-ready", "--top", "1", "--priority-topic", "quercetin",
+    ])
+
+    assert run_curator_cycle.main() == 0
+    assert seen == ["source_diverse_fullraw"]
+    payload = json.loads(next(cycles.glob("*.json")).read_text(encoding="utf-8"))
+    assert payload["skipped_below_source_floor"] == ["quercetin"]
+    assert payload["ran"][0]["topic"] == "source_diverse_fullraw"
 
 
 def test_stop_on_ready_warm_backlog_probes_beyond_cache(

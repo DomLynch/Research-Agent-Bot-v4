@@ -866,9 +866,11 @@ def main() -> int:
             list[dict[str, Any]], list[str], list[str], list[str],
         ]:
             plan_pool = (
-                priority_ranked
-                if args.stop_on_ready and priority_ranked
-                else [*priority_ranked, *ranked]
+                [*priority_ranked, *ranked] if fullraw_supply_first else (
+                    priority_ranked
+                    if args.stop_on_ready and priority_ranked
+                    else [*priority_ranked, *ranked]
+                )
             )
             return _plan_topics(
                 plan_pool, recent=recent, excluded=excluded,
