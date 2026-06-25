@@ -113,6 +113,12 @@ def _ledger_domain_slug(ledger: Json) -> str | None:
     return slug or None
 
 
+def _domain_list(value: str | None) -> list[str]:
+    if not value:
+        return []
+    return [part.strip() for part in value.split(",") if part.strip()]
+
+
 def summarize_next_candidate(
     runs_root: Path,
     *,
@@ -329,11 +335,45 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--expect-published", action="store_true")
     parser.add_argument("--check-url", action="store_true")
     parser.add_argument("--domain")
+    parser.add_argument("--domains")
     parser.add_argument("--show-next-candidate", action="store_true")
     parser.add_argument("--sync-pending-decisions", action="store_true")
     parser.add_argument("--max-age-minutes", type=float, default=0.0)
     parser.add_argument("--timeout", type=float, default=15.0)
     args = parser.parse_args(argv)
+
+    domains = _domain_list(args.domains)
+    if args.domain and domains:
+        parser.error("--domain and --domains are mutually exclusive")
+    if domains:
+        domain_summaries = {
+            domain: summarize_latest(
+                args.runs_root,
+                domain=domain,
+                check_url=args.check_url,
+                show_next_candidate=args.show_next_candidate,
+                sync_pending_decisions=args.sync_pending_decisions,
+                timeout=args.timeout,
+            )
+            for domain in domains
+        }
+        for summary in domain_summaries.values():
+            if (
+                args.max_age_minutes > 0
+                and float(summary.get("ledger_age_minutes") or 0) > args.max_age_minutes
+            ):
+                summary["ok"] = False
+                summary["reason"] = "latest_ledger_stale"
+        failed = [domain for domain, summary in domain_summaries.items() if not summary.get("ok")]
+        summary = {
+            "ok": not failed,
+            "domains": domain_summaries,
+            "failed_domains": failed,
+        }
+        print(json.dumps(summary, indent=2, sort_keys=True))
+        if args.expect_published and failed:
+            return 2
+        return 0
 
     summary = summarize_latest(
         args.runs_root,

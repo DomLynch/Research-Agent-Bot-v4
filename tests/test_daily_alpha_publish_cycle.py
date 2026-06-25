@@ -6140,6 +6140,8 @@ def test_systemd_publish_health_monitor_enforces_sla() -> None:
     )
 
     assert "scripts/check_alpha_publish_health.py" in service
+    assert "--domains longevity_research,ai_research,business_research" in service
+    assert ",management_research,economics_research,finance_research,marketing_research" in service
     assert "--expect-published" in service
     assert "--check-url" in service
     assert "--sync-pending-decisions" in service

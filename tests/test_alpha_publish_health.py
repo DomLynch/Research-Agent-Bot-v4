@@ -168,6 +168,33 @@ def test_health_summary_can_scope_latest_ledger_by_domain(
     assert json.loads(capsys.readouterr().out)["domain"] == "business_research"
 
 
+def test_health_main_reports_multi_domain_failures(tmp_path: Path, capsys: Any) -> None:
+    _write_ledger(tmp_path, "2026-06-01T08-29-49Z-business.json", {
+        "status": "candidate_refresh_failed",
+        "submitted": 0,
+        "published": 0,
+        "domain_slug": "business_research",
+    })
+    _write_ledger(tmp_path, "2026-06-01T21-59-41Z-longevity.json", {
+        "status": "published",
+        "submitted": 1,
+        "published": 1,
+        "domain_slug": "longevity_research",
+    })
+
+    assert health.main([
+        "--runs-root", str(tmp_path),
+        "--domains", "longevity_research,business_research",
+        "--expect-published",
+    ]) == 2
+    summary = json.loads(capsys.readouterr().out)
+
+    assert summary["ok"] is False
+    assert summary["failed_domains"] == ["business_research"]
+    assert summary["domains"]["longevity_research"]["ok"] is True
+    assert summary["domains"]["business_research"]["status"] == "candidate_refresh_failed"
+
+
 def test_health_summary_includes_suffixed_cycle_ledgers(tmp_path: Path) -> None:
     _write_ledger(tmp_path, "2026-06-01T21-59-41Z.json", {
         "status": "published",

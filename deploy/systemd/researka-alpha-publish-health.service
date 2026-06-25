@@ -6,5 +6,5 @@ Type=oneshot
 WorkingDirectory=/root/Research-Agent-Bot-v4
 EnvironmentFile=/root/Research-Agent-Bot-v4/.env
 EnvironmentFile=/etc/researka-agent-v4.env
-ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/check_alpha_publish_health.py --expect-published --check-url --sync-pending-decisions --show-next-candidate --max-age-minutes 540
+ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/check_alpha_publish_health.py --domains longevity_research,ai_research,business_research,management_research,economics_research,finance_research,marketing_research --expect-published --check-url --sync-pending-decisions --show-next-candidate --max-age-minutes 540
 TimeoutStartSec=300
