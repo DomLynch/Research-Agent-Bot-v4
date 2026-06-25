@@ -4632,7 +4632,7 @@ def run_cycle(
         if submit and profile.slug != "ai_research":
             source_lit_probe = source_paper_fetcher or (
                 lambda topic, limit: _fetch_source_literature_papers(
-                    topic, limit * 3, domain=profile.slug,
+                    topic, limit, domain=profile.slug,
                 )
             )
             for topic in _source_literature_topic_candidates(
