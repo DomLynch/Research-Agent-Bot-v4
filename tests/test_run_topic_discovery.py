@@ -705,6 +705,16 @@ class FullRawCorpusSearchClient:
     assert os.environ["V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH"] == "1"
 
 
+def test_fullraw_configured_accepts_v5_client_path(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    monkeypatch.delenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", raising=False)
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "1")
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_SRC", str(tmp_path))
+
+    assert run_topic_discovery._fullraw_configured() is True
+
+
 def test_v5_client_bounds_allow_explicit_short_probe(monkeypatch: Any) -> None:
     monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_TIMEOUT", "45")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_QUERY_TIMEOUT", "45")

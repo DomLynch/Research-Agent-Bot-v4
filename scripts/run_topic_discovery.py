@@ -246,7 +246,12 @@ def _fullraw_supply_query_budget_seconds() -> float:
 
 
 def _fullraw_configured() -> bool:
-    return bool(os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip())
+    if os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip():
+        return True
+    return (
+        _truthy_env("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK")
+        and Path(os.environ.get("TOPIC_DISCOVERY_V5_SRC", "/opt/v5-memo/src")).exists()
+    )
 
 
 def _context_query_terms(value: str) -> str:
