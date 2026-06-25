@@ -96,6 +96,19 @@ def test_publish_summary_contains_operator_blocker_fields() -> None:
     }
 
 
+def test_publish_summary_flags_unterminated_started_cycle() -> None:
+    summary = publish_summary({
+        "status": CycleStatus.STARTED.value,
+        "submitted": 0,
+        "published": 0,
+        "considered": [],
+        "cycle_attempts": [],
+    })
+
+    assert summary["top_blockers"] == {"cycle_started_no_terminal_status": 1}
+    assert summary["next_action"] == "building_current_publish_queue"
+
+
 def test_no_candidate_reason_reports_mixed_duplicate_exhaustion() -> None:
     assert no_candidate_reason([
         {"status": "duplicate_submission_fingerprint"},

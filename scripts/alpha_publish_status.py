@@ -201,6 +201,15 @@ def publish_summary(ledger: Json) -> Json:
         for event in refresh.get("fullraw_probe_events") or []:
             if isinstance(event, dict) and event.get("status"):
                 blockers.append("fullraw_" + str(event.get("status")))
+    status = str(ledger.get("status") or "")
+    if (
+        status == CycleStatus.STARTED.value
+        and not considered
+        and not attempts
+        and int(ledger.get("submitted") or 0) == 0
+        and int(ledger.get("published") or 0) == 0
+    ):
+        blockers.append("cycle_started_no_terminal_status")
     page = ledger.get("public_page_check")
     page_checks = page.get("checks") if isinstance(page, dict) else []
     page_status = None
