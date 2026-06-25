@@ -45,6 +45,7 @@ from daily_alpha_publish_cycle import (  # noqa: E402
     _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES,
     _DEFAULT_MIN_SUBMIT_SOURCES,
     _direct_source_count,
+    _queue_ready_row,
     _run_subprocess,
     _source_count,
 )
@@ -371,6 +372,8 @@ def _is_publish_ready(run_dir: str) -> bool:
     except (OSError, json.JSONDecodeError):
         return False
     if str(verdict.get("decision") or "") != "ready_to_publish":
+        return False
+    if _queue_ready_row(verdict, _RUNS).get("decision") != "ready_to_publish":
         return False
     return bool(
         _source_count(verdict, _RUNS) >= _DEFAULT_MIN_SUBMIT_SOURCES

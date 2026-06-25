@@ -21,6 +21,7 @@ from run_curator_cycle import (
     TopicResult,
     _child_topics_from_verdict,
     _discovery_top_for_plan,
+    _is_publish_ready,
     _plan_topics,
     _read_discovery_top,
     _recent_signal_topics,
@@ -875,6 +876,26 @@ def test_stop_on_ready_uses_older_source_rich_snapshot_after_underfloor_fullraw(
 
     assert run_curator_cycle.main() == 0
     assert seen == ["source_rich_fullraw"]
+
+
+def test_is_publish_ready_applies_queue_ready_guard(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    run = tmp_path / "runs" / "map-evidence-ts"
+    _write_ready_alpha_run(run, source_count=5)
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", tmp_path / "runs")
+    monkeypatch.setattr(run_curator_cycle, "_source_count", lambda *_a, **_k: 5)
+    monkeypatch.setattr(run_curator_cycle, "_direct_source_count", lambda *_a, **_k: 5)
+    monkeypatch.setattr(
+        run_curator_cycle,
+        "_queue_ready_row",
+        lambda row, _root: row | {"decision": "curation_needed"},
+    )
+
+    assert not _is_publish_ready("runs/map-evidence-ts")
 
 
 def test_stop_on_ready_empty_seed_paper_discovery_falls_back_to_bounded(
