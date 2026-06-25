@@ -9289,7 +9289,7 @@ def test_source_literature_fetcher_retries_focused_query_variant(
         "physical_activity_longevity_anti_aging", 5, domain="longevity_research",
     )
 
-    assert queries == ["physical activity longevity anti aging", "physical activity aging"]
+    assert queries == ["physical activity", "physical activity aging"]
     assert len(papers) == 5
     assert [paper["doi"] for paper in papers] == [
         "10.1/physical-activity-0",
