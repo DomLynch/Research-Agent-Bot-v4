@@ -540,7 +540,9 @@ def _fullraw_supply_candidates(
             os.environ["TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS"] = query_timeout
             receipt_recorded = False
             try:
-                for paper in _seed_fullraw_papers(query, client=client, limit=25):
+                for paper in _seed_fullraw_papers(
+                    query, client=client, limit=_SOURCE_RICH_FLOOR,
+                ):
                     key = str(paper.get("doi") or paper.get("paper_id")
                               or paper.get("title") or "").strip().casefold()
                     if not key or key in papers_by_key:

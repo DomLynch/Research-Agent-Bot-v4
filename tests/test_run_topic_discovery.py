@@ -908,9 +908,13 @@ def test_fullraw_supply_queries_seeds_when_domain_query_is_empty(
     monkeypatch: Any,
 ) -> None:
     calls: list[str] = []
+    limits: list[int] = []
 
-    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+    def fake_fullraw(
+        query: str, *_args: Any, limit: int = 0, **_kwargs: Any,
+    ) -> list[dict[str, Any]]:
         calls.append(query)
+        limits.append(limit)
         if query == "metformin":
             return _fullraw_rows("met", "Metformin longevity geroscience AMPK")
         if query == "resveratrol":
@@ -930,6 +934,7 @@ def test_fullraw_supply_queries_seeds_when_domain_query_is_empty(
     assert "longevity anti aging" in calls
     assert "metformin" in calls
     assert "resveratrol" in calls
+    assert set(limits) == {5}
     assert {"metformin", "resveratrol"} <= topics
 
 
