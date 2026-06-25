@@ -16,6 +16,7 @@ from agent.settings import load_settings
 
 Json = dict[str, Any]
 _FACT_SEARCH_TIMEOUT_ENV = "RESEARKA_SOURCE_LITERATURE_FACT_TIMEOUT_SECONDS"
+_FULLRAW_TIMEOUT_ENV = "RESEARKA_SOURCE_LITERATURE_FULLRAW_TIMEOUT_SECONDS"
 _GENERIC_TOPIC_TOKENS = frozenset({
     "association", "associations", "clinical", "effect", "effects", "evidence",
     "exposure", "intervention", "outcome", "outcomes", "review", "study",
@@ -117,11 +118,27 @@ def _fullraw_topic_papers(topic: str, limit: int) -> list[Json]:
         from scripts.run_topic_discovery import _seed_fullraw_papers
     except Exception:
         return []
+    cap = os.environ.get(_FULLRAW_TIMEOUT_ENV, "8")
+    keys = (
+        "TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS",
+        "TOPIC_DISCOVERY_SEED_PAPER_TIMEOUT_SECONDS",
+        "TOPIC_DISCOVERY_SEED_PAPER_BUDGET_SECONDS",
+        "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
+    )
+    old = {key: os.environ.get(key) for key in keys}
     try:
+        for key in keys:
+            os.environ[key] = cap
         with httpx.Client() as client:
             return _seed_fullraw_papers(topic, client=client, limit=limit)
     except Exception:
         return []
+    finally:
+        for key, value in old.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
 
 
 def _fullraw_relevant_papers(topic: str, limit: int, seen: set[str]) -> list[Json]:
