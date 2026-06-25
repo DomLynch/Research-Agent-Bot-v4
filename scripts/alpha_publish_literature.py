@@ -155,12 +155,15 @@ def _fullraw_relevant_papers(topic: str, limit: int, seen: set[str]) -> list[Jso
             title = paper.get("title") or paper.get("paper_title")
             if not key or not title or key in seen:
                 continue
-            seen.add(key)
-            out.append(paper | {
+            candidate = paper | {
                 "id": key,
                 "title": title,
                 "source_fact": _metadata_source_fact(topic, paper | {"title": title}),
-            })
+            }
+            if not topic_relevant(topic, candidate):
+                continue
+            seen.add(key)
+            out.append(candidate)
             if len(out) >= limit:
                 return out
     return out
@@ -240,8 +243,7 @@ def source_fact(item: Json) -> Json:
 def _metadata_source_fact(topic: str, paper: Json) -> Json:
     title = str(paper.get("title") or paper.get("paper_title") or "").strip()
     return {
-        "canonical_phrase": f"Title-level source match for {topic}: {title}",
-        "intervention": topic.replace("_", " "),
+        "canonical_phrase": f"Title-level source match: {title}",
         "endpoint": "source-literature relevance",
         "source_tier": "paper_metadata",
     }

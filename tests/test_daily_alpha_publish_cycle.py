@@ -8814,7 +8814,7 @@ def test_fullraw_metadata_source_literature_fallback_submits_without_flag(
     assert ledger["status"] == "published"
     assert ledger["submitted_topic"] == "acarbose"
     assert ledger["source_literature_fallback"]["status"] == "selected"
-    assert "Title-level source match for acarbose" in seen_payload["markdown"]
+    assert "Title-level source match: Acarbose" in seen_payload["markdown"]
     assert "source-level receipts" in seen_payload["markdown"]
 
 
@@ -9554,7 +9554,7 @@ def test_source_literature_fetcher_supplements_thin_fact_search_with_fullraw(
     ]
     assert "source_fact" in papers[0]
     assert papers[-1]["source_fact"]["source_tier"] == "paper_metadata"
-    assert "Title-level source match for acarbose" in papers[-1]["source_fact"]["canonical_phrase"]
+    assert "Title-level source match: Acarbose" in papers[-1]["source_fact"]["canonical_phrase"]
     assert daily._source_literature_fact_count(papers) == 5
     assert daily._source_literature_boundary_quality("acarbose", papers, 5) == (True, "ok")
 
@@ -9575,11 +9575,11 @@ def test_source_literature_fetcher_tries_fullraw_query_variants(
                 "Deuterium depleted water adaptation source",
                 "Deuterium depleted water isotope regulation",
             ] if query == "deuterium depleted water" else [
-                "Deuterium depleted water aging intervention source",
-                "Deuterium depleted water aging oxidative stress",
-                "Deuterium depleted water aging cell growth",
-                "Deuterium depleted water aging animal study",
-                "Deuterium depleted water aging translational review",
+                "Deuterium depleted water aging mouse intervention source",
+                "Deuterium depleted water aging mice oxidative stress",
+                "Deuterium depleted water aging rat physiology",
+                "Deuterium depleted water aging animal survival",
+                "Deuterium depleted water aging murine adaptation",
             ]
         )
         return [{"doi": f"10.1/ddw-{idx}-{len(queries)}", "title": title}
@@ -9597,6 +9597,29 @@ def test_source_literature_fetcher_tries_fullraw_query_variants(
     assert daily._source_literature_boundary_quality(
         "deuterium_depleted_water_aging", papers, 5,
     ) == (True, "ok")
+
+
+def test_fullraw_metadata_relevance_requires_title_context(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "researka_database_url": "",
+        "researka_database_token": "",
+    })())
+    monkeypatch.setattr(publish_literature, "_fullraw_topic_papers", lambda *_args: [
+        {"doi": "10.1/a", "title": "Deuterium depleted water chromium intoxicated rats"},
+        {"doi": "10.1/b", "title": "Deuterium depleted water hepatic oxidative injury"},
+        {"doi": "10.1/c", "title": "Deuterium depleted water reproductive physiology"},
+        {"doi": "10.1/d", "title": "Deuterium depleted water cultured cell growth"},
+        {"doi": "10.1/e", "title": "Deuterium depleted water isotope regulation"},
+    ])
+
+    papers = daily._fetch_source_literature_papers(
+        "deuterium_depleted_water_longevity_anti_aging", 5,
+        domain="longevity_research",
+    )
+
+    assert papers == []
 
 
 def test_source_literature_fetcher_enriches_fullraw_with_matching_fact_rows(
