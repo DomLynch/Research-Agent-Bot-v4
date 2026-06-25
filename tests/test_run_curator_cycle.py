@@ -1733,6 +1733,46 @@ def test_priority_ranked_topics_uses_source_rich_discovery_when_fullraw_empty(
     assert calls == []
 
 
+def test_priority_ranked_topics_trusts_source_rich_discovery_before_fullraw(
+    monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    class DummyClient:
+        def __enter__(self) -> DummyClient:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "1")
+    monkeypatch.setattr(run_curator_cycle, "load_settings", lambda: object())
+    monkeypatch.setattr(run_curator_cycle.httpx, "Client", DummyClient)
+    monkeypatch.setattr(
+        run_curator_cycle,
+        "_read_discovery_top",
+        lambda _out, **_kwargs: [{
+            "topic": "fullraw_parent",
+            "fact_source_count": 8,
+            "paper_count": 8,
+        }],
+    )
+
+    def fail_fullraw(*_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        raise AssertionError("source-rich discovery priority should not re-probe fullraw")
+
+    monkeypatch.setattr(run_curator_cycle, "_seed_fullraw_papers", fail_fullraw)
+
+    ranked = run_curator_cycle._priority_ranked_topics([
+        "fullraw_parent",
+    ], domain="longevity_research")
+
+    assert [
+        (row["topic"], row["fact_source_count"], row["paper_count"])
+        for row in ranked
+    ] == [("fullraw_parent", 8, 8)]
+
+
 def test_priority_ranked_topics_trusts_discovery_source_counts(
     monkeypatch: Any,
 ) -> None:
