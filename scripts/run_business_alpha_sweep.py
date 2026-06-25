@@ -19,6 +19,7 @@ from agent.business_research import (
 )
 from agent.domain_profile import load_domain_profile
 from agent.settings import load_settings
+from scripts import build_publish_queue as publish_queue
 from scripts.alpha_publish_io import write_json
 from scripts.build_business_alpha_candidate import write_no_bundle_diagnostics
 from scripts.daily_alpha_publish_cycle import run_cycle
@@ -73,7 +74,18 @@ def _write_sweep_summary(runs_root: Path, rows: list[dict[str, Any]]) -> Path:
                 ],
             },
         )
+        _refresh_domain_queue(runs_root, domain)
     return out_path
+
+
+def _refresh_domain_queue(runs_root: Path, domain: str) -> None:
+    previous = publish_queue._RUNS
+    publish_queue._RUNS = runs_root
+    try:
+        queue = publish_queue.build_queue(include_archive=False, domain=domain)
+    finally:
+        publish_queue._RUNS = previous
+    write_json(runs_root / f"_publish_queue.{domain}.json", queue)
 
 
 def _bundle_fingerprint(bundle: Any) -> str:

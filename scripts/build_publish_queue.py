@@ -181,7 +181,7 @@ def _normalised_decision(row: dict[str, Any]) -> str:
 
 
 def _diagnostic_rows(
-    *, domain: str | None, existing: set[tuple[str, str]], seed_keys: set[str],
+    *, domain: str | None, existing: set[tuple[str, str]],
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     diag_dir = _RUNS / "_business_diagnostics"
@@ -194,8 +194,6 @@ def _diagnostic_rows(
         if not row_domain or not topic:
             continue
         if domain and row_domain != domain:
-            continue
-        if seed_keys and not (_scope_keys(topic) & seed_keys):
             continue
         key = (row_domain, topic)
         if key in existing:
@@ -246,7 +244,7 @@ def build_queue(
         )
         rows.append(row)
         existing.add((run_domain, str(row.get("topic") or _topic(run))))
-    rows.extend(_diagnostic_rows(domain=domain, existing=existing, seed_keys=seed_keys))
+    rows.extend(_diagnostic_rows(domain=domain, existing=existing))
     rank = {"TIER_1": 0, "TIER_2": 1, "TIER_3": 2}
     rows.sort(key=lambda r: (
         rank.get(str(r.get("publish_tier")), 9),

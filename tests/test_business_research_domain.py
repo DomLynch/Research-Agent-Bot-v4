@@ -738,6 +738,20 @@ def test_business_sweep_writes_domain_scoped_latest_summaries(
     assert {row["domain"] for row in business["results"]} == {"business_research"}
     assert marketing["domain"] == "marketing_research"
     assert {row["domain"] for row in marketing["results"]} == {"marketing_research"}
+    business_queue = json.loads(
+        (tmp_path / "runs" / "_publish_queue.business_research.json").read_text(
+            encoding="utf-8",
+        ),
+    )
+    marketing_queue = json.loads(
+        (tmp_path / "runs" / "_publish_queue.marketing_research.json").read_text(
+            encoding="utf-8",
+        ),
+    )
+    assert business_queue["not_ready"][0]["domain_slug"] == "business_research"
+    assert marketing_queue["not_ready"][0]["domain_slug"] == "marketing_research"
+    assert business_queue["not_ready"][0]["queue_status"] == "no_source_diverse_bundle"
+    assert marketing_queue["not_ready"][0]["queue_status"] == "no_source_diverse_bundle"
 
 
 def test_business_sweep_submits_after_consistent_non_dry_run_passes(
