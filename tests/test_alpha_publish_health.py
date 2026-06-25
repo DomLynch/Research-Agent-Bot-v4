@@ -576,7 +576,13 @@ def test_no_daily_ledger_still_reports_domain_sidecar_queue(tmp_path: Path) -> N
     )
 
     assert summary["ok"] is False
+    assert summary["status"] == "no_daily_ledger"
+    assert summary["published"] == 0
     assert summary["reason"] == "no_daily_ledger"
+    assert summary["top_blockers"] == {"no_daily_ledger": 1}
+    assert summary["next_action"] == "run_domain_publish_cycle"
+    assert summary["public_url_status"] is None
+    assert summary["public_page_status"] is None
     assert summary["current_queue_counts"] == {
         "ready_to_publish": 0,
         "agent_repair_needed": 0,

@@ -260,8 +260,17 @@ def summarize_latest(
         summary: Json = {
             "ok": False,
             "reason": "no_daily_ledger",
+            "status": "no_daily_ledger",
+            "submitted": 0,
+            "published": 0,
             "runs_root": str(runs_root),
             "domain": domain,
+            "queue_counts": {},
+            "top_blockers": {"no_daily_ledger": 1},
+            "next_action": "run_domain_publish_cycle",
+            "public_url": None,
+            "public_url_status": None,
+            "public_page_status": None,
         }
         if show_next_candidate:
             try:
