@@ -249,10 +249,10 @@ def _fullraw_supply_sweep_wait_seconds() -> float:
     try:
         return max(0.0, float(os.environ.get(
             "TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS",
-            "20",
+            "90",
         )))
     except (TypeError, ValueError):
-        return 20.0
+        return 90.0
 
 
 def _fullraw_configured() -> bool:
