@@ -5249,6 +5249,8 @@ def run_cycle(
         literature_topics = fresh_topics + [
             topic for topic in repair_topics if topic not in set(fresh_topics)
         ]
+        if paper_fetcher is None:
+            literature_topics = literature_topics[:source_lit_scan_limit]
         for idx, literature_topic in enumerate(literature_topics):
             papers = (
                 source_lit_preflight_papers[literature_topic]

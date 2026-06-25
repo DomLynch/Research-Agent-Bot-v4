@@ -9126,6 +9126,17 @@ def test_source_literature_fallback_caps_default_live_fetch_window(
 ) -> None:
     root = tmp_path / "repo"
     (root / "_topics_discovery").mkdir(parents=True)
+    ledger_dir = root / "_daily_ledger"
+    ledger_dir.mkdir()
+    old_run = root / "repair_topic-source-literature-2026-06-09T17-00-00Z"
+    old_run.mkdir()
+    old_run.joinpath("source_literature_memo.md").write_text("# Source\n", encoding="utf-8")
+    daily._write_json(ledger_dir / "2026-06-09T17-00-00Z.json", {
+        "domain": {"slug": "longevity_research"},
+        "submitted": 1,
+        "candidate": {"topic": "repair_topic", "run_dir": old_run.name},
+        "researka_decision": {"decision": "revise"},
+    })
     daily._write_json(root / "_topics_discovery" / "longevity.json", {
         "domain": {"slug": "longevity_research"},
         "all": [
@@ -9156,6 +9167,7 @@ def test_source_literature_fallback_caps_default_live_fetch_window(
 
     assert fetches == ["candidate_0", "candidate_1", "candidate_2", "candidate_3"]
     assert len(ledger["source_literature_fallback_attempts"]) == 4
+    assert "repair_topic" not in fetches
     assert ledger["status"] == "no_fresh_candidate"
 
 
