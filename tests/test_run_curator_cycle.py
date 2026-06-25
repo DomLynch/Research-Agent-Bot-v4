@@ -237,8 +237,11 @@ def test_stop_on_ready_fullraw_supply_uses_small_publish_window() -> None:
         1, stop_on_ready=True, excluded_count=0, fullraw_supply_first=True,
     ) == 4
     assert _discovery_top_for_plan(
-        1, stop_on_ready=True, excluded_count=3, fullraw_supply_first=True,
+        1, stop_on_ready=True, excluded_count=46, fullraw_supply_first=True,
     ) == 4
+    assert _discovery_top_for_plan(
+        5, stop_on_ready=True, excluded_count=17, fullraw_supply_first=True,
+    ) == 5
 
 
 def test_plan_topics_honors_excluded_before_cooldown() -> None:

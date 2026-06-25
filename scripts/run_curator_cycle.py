@@ -142,7 +142,7 @@ def _discovery_top_for_plan(
     if not stop_on_ready:
         return max(requested, _STOP_ON_READY_DISCOVERY_FLOOR)
     if fullraw_supply_first:
-        return max(requested + max(0, excluded_count), _FULLRAW_SUPPLY_DISCOVERY_FLOOR)
+        return max(requested, _FULLRAW_SUPPLY_DISCOVERY_FLOOR)
     return max(requested + max(0, excluded_count), _STOP_ON_READY_DISCOVERY_FLOOR)
 
 
