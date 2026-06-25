@@ -273,11 +273,11 @@ def main() -> int:
     parser.add_argument("--domain", choices=domain_choices(), default=None)
     parser.add_argument("--output", type=Path, default=None)
     args = parser.parse_args()
-    output = args.output or _default_output_path()
+    domain_output = _domain_output_path(args.domain)
+    output = args.output or domain_output or _default_output_path()
     queue = build_queue(include_archive=not args.current_only, domain=args.domain)
     _write_json(output, queue)
-    domain_output = _domain_output_path(args.domain)
-    if domain_output and domain_output != output:
+    if args.output and domain_output and domain_output != output:
         _write_json(domain_output, queue)
     print(
         "[publish-queue] "

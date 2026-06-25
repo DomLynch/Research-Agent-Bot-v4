@@ -28,7 +28,7 @@ def test_write_queue_uses_output_lock(
     assert ("_publish_queue.json.lock", fcntl.LOCK_EX) in lock_calls
 
 
-def test_domain_queue_cli_writes_legacy_and_domain_sidecar(
+def test_domain_queue_cli_writes_domain_sidecar_without_global_overwrite(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     runs = tmp_path / "runs"
@@ -48,11 +48,10 @@ def test_domain_queue_cli_writes_legacy_and_domain_sidecar(
 
     assert queue.main() == 0
 
-    legacy = json.loads((runs / "_publish_queue.json").read_text(encoding="utf-8"))
     sidecar = json.loads(
         (runs / "_publish_queue.ai_research.json").read_text(encoding="utf-8"),
     )
-    assert legacy == sidecar
+    assert not (runs / "_publish_queue.json").exists()
     rows = [
         row
         for bucket_rows in sidecar.values()
