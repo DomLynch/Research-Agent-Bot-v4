@@ -1068,9 +1068,9 @@ def test_fullraw_supply_caps_each_query_window(monkeypatch: Any) -> None:
     assert rows == ()
     assert len(caps) == 1
     assert caps[0][0] == "3.0"
-    assert caps[0][1] == "100.0"
-    assert caps[0][2] == "90.0"
-    assert caps[0][3] == "4"
+    assert caps[0][1] == "45.0"
+    assert caps[0][2] == "15.0"
+    assert caps[0][3] == "2"
     assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS") is None
     assert os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS") is None
     assert os.environ.get("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS") is None
@@ -1080,11 +1080,13 @@ def test_fullraw_supply_caps_each_query_window(monkeypatch: Any) -> None:
 def test_fullraw_supply_defaults_are_candidate_supply_sized(monkeypatch: Any) -> None:
     monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS", raising=False)
     monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_TIMEOUT_SECONDS", raising=False)
+    monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS", raising=False)
     monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS", raising=False)
 
-    assert run_topic_discovery._fullraw_supply_budget_seconds() == 220.0
-    assert run_topic_discovery._fullraw_supply_query_timeout_seconds() == 90.0
-    assert run_topic_discovery._fullraw_supply_sweep_wait_seconds() == 90.0
+    assert run_topic_discovery._fullraw_supply_budget_seconds() == 90.0
+    assert run_topic_discovery._fullraw_supply_query_timeout_seconds() == 35.0
+    assert run_topic_discovery._fullraw_supply_query_budget_seconds() == 45.0
+    assert run_topic_discovery._fullraw_supply_sweep_wait_seconds() == 15.0
 
 
 def test_fullraw_supply_prefers_context_seed_query_over_bare_seed(

@@ -221,38 +221,38 @@ def _fullraw_supply_budget_seconds() -> float:
     try:
         return max(1.0, float(os.environ.get(
             "TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS",
-            "220",
-        )))
-    except (TypeError, ValueError):
-        return 220.0
-
-
-def _fullraw_supply_query_timeout_seconds() -> float:
-    try:
-        return max(1.0, float(os.environ.get(
-            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_TIMEOUT_SECONDS", "90",
+            "90",
         )))
     except (TypeError, ValueError):
         return 90.0
 
 
+def _fullraw_supply_query_timeout_seconds() -> float:
+    try:
+        return max(1.0, float(os.environ.get(
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_TIMEOUT_SECONDS", "35",
+        )))
+    except (TypeError, ValueError):
+        return 35.0
+
+
 def _fullraw_supply_query_budget_seconds() -> float:
     try:
         return max(1.0, float(os.environ.get(
-            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS", "100",
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS", "45",
         )))
     except (TypeError, ValueError):
-        return 100.0
+        return 45.0
 
 
 def _fullraw_supply_sweep_wait_seconds() -> float:
     try:
         return max(0.0, float(os.environ.get(
             "TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS",
-            "90",
+            "15",
         )))
     except (TypeError, ValueError):
-        return 90.0
+        return 15.0
 
 
 def _fullraw_configured() -> bool:
@@ -592,7 +592,7 @@ def _fullraw_supply_candidates(
             os.environ["TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS"] = str(sweep_wait)
             os.environ["TOPIC_DISCOVERY_V5_MAX_VARIANTS"] = os.environ.get(
                 "TOPIC_DISCOVERY_FULLRAW_SUPPLY_MAX_VARIANTS",
-                os.environ.get("V5_MEMO_FULL_RAW_MAX_VARIANTS", "4"),
+                "2",
             )
             receipt_recorded = False
             try:
