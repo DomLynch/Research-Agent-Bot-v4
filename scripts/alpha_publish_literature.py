@@ -148,9 +148,13 @@ def _fullraw_topic_papers(topic: str, limit: int) -> list[Json]:
         "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS": sweep_wait,
         "TOPIC_DISCOVERY_V5_MAX_VARIANTS": max_variants,
         "TOPIC_DISCOVERY_V5_MIN_SHARDS_SEARCHED": os.environ.get(
-            _FULLRAW_MIN_SHARDS_ENV, os.environ.get("V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED", "50")),
+            _FULLRAW_MIN_SHARDS_ENV,
+            os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_MIN_SHARDS_SEARCHED", "1"),
+        ),
         "TOPIC_DISCOVERY_V5_MIN_SOURCES_SEARCHED": os.environ.get(
-            _FULLRAW_MIN_SOURCES_ENV, os.environ.get("V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED", "1")),
+            _FULLRAW_MIN_SOURCES_ENV,
+            os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_MIN_SOURCES_SEARCHED", "1"),
+        ),
     }
     old = {key: os.environ.get(key) for key in bounds}
     try:

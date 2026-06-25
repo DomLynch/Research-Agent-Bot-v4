@@ -9124,6 +9124,8 @@ def test_source_literature_fullraw_fetch_defaults_to_supply_bounds(
             "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
             "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS",
             "TOPIC_DISCOVERY_V5_MAX_VARIANTS",
+            "TOPIC_DISCOVERY_V5_MIN_SHARDS_SEARCHED",
+            "TOPIC_DISCOVERY_V5_MIN_SOURCES_SEARCHED",
         ):
             seen[key] = os.environ.get(key)
         return []
@@ -9140,6 +9142,8 @@ def test_source_literature_fullraw_fetch_defaults_to_supply_bounds(
         "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS": "45",
         "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS": "15",
         "TOPIC_DISCOVERY_V5_MAX_VARIANTS": "2",
+        "TOPIC_DISCOVERY_V5_MIN_SHARDS_SEARCHED": "1",
+        "TOPIC_DISCOVERY_V5_MIN_SOURCES_SEARCHED": "1",
     }
 
 
