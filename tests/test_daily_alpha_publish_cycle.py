@@ -9084,11 +9084,9 @@ def test_source_literature_fallback_scans_past_first_five_thin_rows(
         }
         for idx, title in enumerate(usable_titles)
     ]
-    monkeypatch.setattr(
-        daily,
-        "_fetch_source_literature_papers",
-        lambda topic, *_args, **_kwargs: usable if topic == "usable_boundary" else thin,
-    )
+    def fetch_source_papers(topic: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        return usable if topic == "usable_boundary" else thin
+
     monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
         "writer_configured": False,
         "mimo_model": "",
@@ -9101,6 +9099,7 @@ def test_source_literature_fallback_scans_past_first_five_thin_rows(
         domain="longevity_research",
         queue=_queue(),
         submit=True,
+        source_paper_fetcher=fetch_source_papers,
         submitter=lambda _payload: {
             "ok": True, "status": 200,
             "response": {"submission": {"id": "sub-1"}},
@@ -9120,6 +9119,44 @@ def test_source_literature_fallback_scans_past_first_five_thin_rows(
     assert [a["status"] for a in ledger["source_literature_fallback_attempts"]] == [
         "blocked", "blocked", "blocked", "blocked", "blocked", "selected",
     ]
+
+
+def test_source_literature_fallback_caps_default_live_fetch_window(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [
+            {
+                "topic": f"candidate_{idx}",
+                "paper_count": 10,
+                "fact_source_count": 10,
+            }
+            for idx in range(6)
+        ],
+    })
+    fetches: list[str] = []
+
+    def fetch(topic: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        fetches.append(topic)
+        return []
+
+    monkeypatch.setattr(daily, "_fetch_source_literature_papers", fetch)
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-00-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        submitter=lambda _payload: {"ok": False, "status": 500},
+        sleep=lambda _seconds: None,
+    )
+
+    assert fetches == ["candidate_0", "candidate_1", "candidate_2", "candidate_3"]
+    assert len(ledger["source_literature_fallback_attempts"]) == 4
+    assert ledger["status"] == "no_fresh_candidate"
 
 
 def test_source_literature_fallback_skips_misaligned_candidate(

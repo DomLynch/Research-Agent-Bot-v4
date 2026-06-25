@@ -5229,6 +5229,11 @@ def run_cycle(
         and not ledger["cycle_attempts"]
     ):
         paper_fetcher = source_paper_fetcher
+        source_lit_scan_limit = (
+            _SOURCE_LITERATURE_SCAN_LIMIT
+            if paper_fetcher is not None else
+            min(4, _SOURCE_LITERATURE_SCAN_LIMIT)
+        )
         repair_decisions = _repairable_source_literature_decisions(
             runs_root, profile.slug,
         )
@@ -5238,7 +5243,7 @@ def run_cycle(
             topic for topic in _source_literature_topic_candidates(
                 runs_root, profile.slug, min_submit_sources,
                 source_literature_blocked_topics,
-                limit=_SOURCE_LITERATURE_SCAN_LIMIT,
+                limit=source_lit_scan_limit,
             ) if topic not in repair_topic_set
         ]
         literature_topics = fresh_topics + [
