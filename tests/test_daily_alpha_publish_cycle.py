@@ -9986,15 +9986,18 @@ def test_source_literature_payload_classifies_restored_attenuated_rows_as_favora
             "quercetin dampened inflammatory response markers",
         ))
     ] + [{
-        "title": "Comparator improves more than quercetin",
-        "doi": "10.1234/quercetin-compare",
+        "title": "Quercetin alleviates lung injury via the Sirt1 pathway",
+        "doi": "10.1234/quercetin-mechanism",
         "year": 2024,
         "source_fact": {
-            "canonical_phrase": "another compound improved glucose more than quercetin",
-            "population": "animal model",
-            "intervention": "another compound",
-            "comparator": "quercetin",
-            "endpoint": "glucose marker",
+            "canonical_phrase": (
+                "Sirt1 knockdown significantly reduced the anti-ferroptotic "
+                "functions of quercetin"
+            ),
+            "population": "mouse and cell injury models",
+            "intervention": "Sirt1 knockdown",
+            "comparator": "quercetin treatment",
+            "endpoint": "anti-ferroptotic function",
         },
     }]
 
@@ -10004,8 +10007,12 @@ def test_source_literature_payload_classifies_restored_attenuated_rows_as_favora
     )
 
     markdown = payload["markdown"]
-    assert "directionally favorable: 4 receipt(s)" in markdown
-    assert "comparator/not favorable: 1 receipt(s)" in markdown
+    assert "directionally favorable: 5 receipt(s)" in markdown
+    assert "comparator/not favorable: 1 receipt(s)" not in markdown
+    assert "- comparator/not favorable: Quercetin alleviates lung injury" not in markdown
+    assert "- directionally favorable: Quercetin alleviates lung injury" in markdown
+    assert "mechanistic ablation supports the topic effect" in markdown
+    assert "heterogeneous indication/context map" in payload["abstract"]
     assert "\n- other/mixed:" not in markdown
 
 

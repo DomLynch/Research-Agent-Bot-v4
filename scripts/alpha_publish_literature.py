@@ -215,6 +215,19 @@ def _text_has_topic(value: Any, topic: str) -> bool:
     return bool(tokens and tokens & set(title_key(value).split()))
 
 
+def _topic_effect_ablated(finding: str, topic: str) -> bool:
+    return bool(
+        topic
+        and _text_has_topic(finding, topic)
+        and re.search(
+            r"\b(?:abolish(?:ed|es)?|block(?:ed|s)?|blunt(?:ed|s)?|diminish(?:ed|es)?|"
+            r"inhibit(?:ed|s|ion)?|knockdown|reduc(?:ed|es))\b[^.;]{0,120}"
+            r"\b(?:anti|benefit|effect|function|protect|response|activity)",
+            finding.casefold(),
+        )
+    )
+
+
 def _effect_direction(finding: str, fact: Json | None = None, topic: str = "") -> str:
     text = finding.casefold()
     fact = fact or {}
@@ -227,6 +240,8 @@ def _effect_direction(finding: str, fact: Json | None = None, topic: str = "") -
         "predictive", "chronological age", "age-prediction",
     )):
         return "non-clinical/predictive"
+    if _topic_effect_ablated(finding, topic):
+        return "directionally favorable"
     if topic and _text_has_topic(fact.get("comparator"), topic) and not _text_has_topic(
         fact.get("intervention"), topic,
     ):
@@ -314,6 +329,8 @@ def _direction_rows(papers: list[Json], topic: str = "") -> list[str]:
             " topic is comparator here; label is endpoint-specific, not a broad efficacy verdict"
             if direction == "comparator/not favorable" else ""
         )
+        if direction == "directionally favorable" and _topic_effect_ablated(finding, topic):
+            note = " mechanistic ablation supports the topic effect; not a comparator outcome"
         if direction == "directionally favorable" and re.search(r"\b(?:β|beta)\s*[=:-]\s*-", finding):
             note = " direction follows receipt wording; coefficient sign is source-specific"
         rows.append(
@@ -697,6 +714,8 @@ def payload(
         synthesis += (
             " The listed effect sizes remain source-specific across endpoints "
             "and populations; they are not pooled or averaged."
+            " This is a heterogeneous indication/context map, not a unified "
+            "disease-specific or endpoint-family claim."
         )
     if findings:
         examples = [_short_finding(finding) for finding in findings[:3]]
