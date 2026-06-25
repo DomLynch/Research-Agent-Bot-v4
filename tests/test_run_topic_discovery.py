@@ -938,6 +938,28 @@ def test_fullraw_supply_queries_seeds_when_domain_query_is_empty(
     assert {"metformin", "resveratrol"} <= topics
 
 
+def test_fullraw_supply_keeps_seed_query_when_context_titles_are_sparse(
+    monkeypatch: Any,
+) -> None:
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        if query == "metformin longevity":
+            return _fullraw_rows("met", "Metformin AMPK intervention")
+        return []
+
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
+
+    rows = run_topic_discovery._fullraw_supply_candidates(
+        query_context="Longevity / anti-aging research",
+        current_year=2026,
+        top=1,
+        seeds=("metformin",),
+    )
+
+    assert [row.topic for row in rows] == ["metformin_longevity"]
+    assert rows[0].paper_count == 5
+    assert rows[0].fact_source_count == 5
+
+
 def test_fullraw_supply_samples_seed_breadth_before_seed_variants(
     monkeypatch: Any,
 ) -> None:

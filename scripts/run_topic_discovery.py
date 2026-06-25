@@ -256,6 +256,23 @@ def _context_supported_papers(
     ]
 
 
+def _query_supported_papers(
+    papers: list[dict[str, object]], query: str, context_terms: str,
+) -> list[dict[str, object]]:
+    scoped = _context_supported_papers(papers, context_terms)
+    if len(scoped) >= _SOURCE_RICH_FLOOR:
+        return scoped
+    query_tokens = {
+        token for token in _TOKEN_RE.findall(query.casefold())
+        if len(token) > 1 and token not in _GENERIC_SCOPE_TOKENS
+    }
+    return [
+        paper for paper in papers
+        if query_tokens & set(_TOKEN_RE.findall(
+            str(paper.get("title") or "").casefold()))
+    ]
+
+
 def _hydration_queries(candidate: TopicCandidate, *, context: str) -> tuple[str, ...]:
     seen: dict[str, None] = {}
     for query in expand_topic_queries(candidate.topic, max_queries=2):
@@ -570,8 +587,8 @@ def _fullraw_supply_candidates(
                     else:
                         os.environ[key] = value
             if label != "__domain_supply__":
-                scoped = _context_supported_papers(
-                    papers_by_query.get(query, []), context_terms)
+                scoped = _query_supported_papers(
+                    papers_by_query.get(query, []), query, context_terms)
                 if len(scoped) >= _SOURCE_RICH_FLOOR:
                     topic = "_".join(query.split())
                     seen_topics.add(topic)
@@ -589,8 +606,8 @@ def _fullraw_supply_candidates(
     for query, label in query_labels.items():
         if label == "__domain_supply__":
             continue
-        scoped = _context_supported_papers(
-            papers_by_query.get(query, []), context_terms)
+        scoped = _query_supported_papers(
+            papers_by_query.get(query, []), query, context_terms)
         if len(scoped) < _SOURCE_RICH_FLOOR:
             continue
         topic = "_".join(query.split())
