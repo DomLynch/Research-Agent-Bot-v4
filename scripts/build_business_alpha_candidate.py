@@ -46,6 +46,18 @@ def write_no_bundle_diagnostics(
     return out_path
 
 
+def no_bundle_blockers_from_diagnostics(data: dict[str, Any]) -> list[str]:
+    blockers = ["no_source_diverse_bundle"]
+    for cluster in data.get("top_clusters") or []:
+        if not isinstance(cluster, dict):
+            continue
+        for blocker in cluster.get("comparability_blockers") or []:
+            key = str(blocker or "").strip()
+            if key and key not in blockers:
+                blockers.append(key)
+    return blockers
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--domain", required=True, choices=domain_choices())

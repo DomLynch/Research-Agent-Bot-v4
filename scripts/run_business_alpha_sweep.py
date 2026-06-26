@@ -23,7 +23,10 @@ from agent.settings import load_settings
 from scripts import alpha_publish_status as publish_status
 from scripts import build_publish_queue as publish_queue
 from scripts.alpha_publish_io import read_json, write_json, write_ledger
-from scripts.build_business_alpha_candidate import write_no_bundle_diagnostics
+from scripts.build_business_alpha_candidate import (
+    no_bundle_blockers_from_diagnostics,
+    write_no_bundle_diagnostics,
+)
 from scripts.daily_alpha_publish_cycle import run_cycle
 
 _RUNS = Path(__file__).resolve().parent.parent / "runs"
@@ -100,7 +103,9 @@ def _write_no_ready_ledgers(runs_root: Path, rows: list[dict[str, Any]], date: s
                 "topic": row.get("topic"),
                 "status": row.get("status") or "not_ready",
                 "domain_slug": domain,
-                "blockers": ["no_source_diverse_bundle"] if row.get("status") == "no_bundle" else [],
+                "blockers": row.get("blockers") or (
+                    ["no_source_diverse_bundle"] if row.get("status") == "no_bundle" else []
+                ),
             }
             for row in domain_rows
         ]
@@ -175,13 +180,17 @@ def main() -> int:
                 }
                 if bundle is None:
                     row["status"] = "no_bundle"
-                    row["diagnostics"] = str(write_no_bundle_diagnostics(
+                    diagnostics_path = write_no_bundle_diagnostics(
                         runs_root=args.runs_root,
                         domain=domain,
                         topic=topic,
                         facts=facts,
                         trace=trace,
-                    ))
+                    )
+                    row["diagnostics"] = str(diagnostics_path)
+                    diagnostics = read_json(diagnostics_path, {})
+                    if isinstance(diagnostics, dict):
+                        row["blockers"] = no_bundle_blockers_from_diagnostics(diagnostics)
                     rows.append(row)
                     print(f"[business-sweep] no_bundle {domain} {topic} facts={len(facts)}")
                     continue

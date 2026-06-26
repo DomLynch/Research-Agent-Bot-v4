@@ -14,6 +14,7 @@ from agent.domain_profile import domain_choices, domain_slug, load_domain_profil
 from agent.publish_tier import publish_verdict
 from scripts import alpha_publish_io as publish_io
 from scripts import daily_alpha_publish_cycle as cycle
+from scripts.build_business_alpha_candidate import no_bundle_blockers_from_diagnostics
 
 _ROOT = Path(__file__).resolve().parent.parent
 _RUNS = _ROOT / "runs"
@@ -230,7 +231,7 @@ def _diagnostic_rows(
             "publish_tier": "UNBUILT",
             "stage": "no_source_diverse_bundle",
             "queue_status": "no_source_diverse_bundle",
-            "blockers": ["no_source_diverse_bundle"],
+            "blockers": no_bundle_blockers_from_diagnostics(data),
             "diagnostics_path": _display_path(path),
             "raw_fact_count": _int(data.get("raw_fact_count")),
             "normalized_fact_count": _int(data.get("normalized_fact_count")),

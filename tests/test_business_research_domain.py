@@ -949,6 +949,53 @@ def test_business_sweep_latest_and_queue_writes_are_locked(
     } <= exclusive
 
 
+def test_business_no_bundle_diagnostic_blockers_reach_queue_and_ledger(
+    tmp_path: Path,
+) -> None:
+    runs = tmp_path / "runs"
+    diagnostics = runs / "_business_diagnostics"
+    diagnostics.mkdir(parents=True)
+    diagnostic_payload = {
+        "domain": "business_research",
+        "topic": "pricing_strategy_margin",
+        "raw_fact_count": 5,
+        "normalized_fact_count": 5,
+        "a_core_fact_count": 5,
+        "top_clusters": [{
+            "comparability_blockers": [
+                "metric_concept_mismatch",
+                "signal_family_heterogeneity_explains_spread",
+            ],
+        }],
+    }
+    diagnostic_path = diagnostics / "business_research-pricing_strategy_margin.json"
+    diagnostic_path.write_text(json.dumps(diagnostic_payload), encoding="utf-8")
+    blockers = business_cli.no_bundle_blockers_from_diagnostics(diagnostic_payload)
+    rows = [{
+        "domain": "business_research",
+        "topic": "pricing_strategy_margin",
+        "status": "no_bundle",
+        "diagnostics": str(diagnostic_path),
+        "blockers": blockers,
+    }]
+
+    sweep._write_sweep_summary(runs, rows)
+    queue_payload = json.loads(
+        (runs / "_publish_queue.business_research.json").read_text(encoding="utf-8"),
+    )
+    assert queue_payload["not_ready"][0]["blockers"] == blockers
+
+    sweep._write_no_ready_ledgers(runs, rows, "2026-06-26T02-00-00Z")
+    summary = health.summarize_latest(runs, domain="business_research")
+    assert summary["top_blockers"] == {
+        "candidate_refresh_failed": 1,
+        "metric_concept_mismatch": 1,
+        "no_bundle": 1,
+        "no_source_diverse_bundle": 1,
+        "signal_family_heterogeneity_explains_spread": 1,
+    }
+
+
 def test_business_sweep_submits_after_consistent_non_dry_run_passes(
     tmp_path: Path,
     monkeypatch: Any,
