@@ -299,7 +299,7 @@ def comparable_shape(fact: Json) -> dict[str, str]:
             "signal_family": _norm(fact.get("signal_family")) or _finance_signal_family(fact),
             "comparator": "benchmark or opposite signal portfolio",
             "outcome": "risk adjusted portfolio returns",
-            "metric": "percentage return or alpha",
+            "metric": "percentage return alpha premium",
             "study_design": "empirical asset pricing",
         }
     return {name: _norm(fact.get(name)) for name in SHAPE_FIELDS if _norm(fact.get(name))}
@@ -389,7 +389,7 @@ def _apply_finance_return_shape(fact: Json) -> None:
         "signal_family": "return predictive signal",
         "comparator": "benchmark or opposite signal portfolio",
         "outcome": "risk adjusted portfolio returns",
-        "metric": "percentage return or alpha",
+        "metric": "percentage return alpha premium",
         "study_design": "empirical asset pricing",
     })
 
