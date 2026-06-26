@@ -881,6 +881,24 @@ def _filter_domain_scope(
     )
 
 
+def _topic_matches_seed_scope(topic: str, seeds: tuple[str, ...]) -> bool:
+    exact, tokens = _domain_scope(seeds)
+    return not exact or not tokens or _topic_key(topic) in exact or bool(
+        _topic_tokens(topic) & tokens
+    )
+
+
+def topic_allowed_for_domain(topic: str, domain: str) -> bool:
+    profile = load_domain_profile(domain)
+    if _topic_matches_seed_scope(topic, _domain_seed_topics(profile.slug)):
+        return True
+    return not any(
+        other != profile.slug
+        and _topic_matches_seed_scope(topic, _domain_seed_topics(other))
+        for other in domain_choices()
+    )
+
+
 def _filter_cached_seed_scope(
     candidates: tuple[TopicCandidate, ...], seeds: tuple[str, ...],
 ) -> tuple[TopicCandidate, ...]:

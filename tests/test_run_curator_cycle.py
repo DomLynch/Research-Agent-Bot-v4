@@ -15,6 +15,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 from run_curator_cycle import (
@@ -854,6 +856,91 @@ def test_priority_stop_on_ready_probes_priority_after_fullraw_timeout(
 
     assert run_curator_cycle.main() == 0
     assert seen == ["quercetin"]
+
+
+def test_domain_topic_filter_blocks_only_known_cross_domain_seeds() -> None:
+    from run_topic_discovery import topic_allowed_for_domain
+
+    assert topic_allowed_for_domain("metformin_longevity", "longevity_research") is True
+    assert topic_allowed_for_domain("metformin_longevity", "business_research") is False
+    assert topic_allowed_for_domain("bespoke_operator_topic", "business_research") is True
+
+
+@pytest.mark.parametrize(
+    ("domain", "expected_topic"),
+    [
+        ("business_research", "pricing_strategy_margin"),
+        ("marketing_research", "advertising_elasticity_sales"),
+    ],
+)
+def test_specialist_cycle_filters_longevity_priority_and_exclusions(
+    domain: str, expected_topic: str, tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    runs = tmp_path / "runs"
+    discovery = runs / "_topics_discovery"
+    cycles = runs / "_curator_cycles"
+    cycles.mkdir(parents=True)
+    seen: list[str] = []
+    step_calls: list[list[str]] = []
+    priority_calls: list[list[str]] = []
+
+    def fake_step(
+        args: list[str], step_name: str, *, timeout: int = 600,
+    ) -> tuple[bool, str]:
+        step_calls.append(args)
+        if step_name == "discovery":
+            discovery.mkdir(parents=True)
+            (discovery / "2026-06-26T00-00-00Z.json").write_text(json.dumps({
+                "domain": {"slug": domain},
+                "all": [{
+                    "topic": expected_topic,
+                    "velocity_score": 10.0,
+                    "fact_source_count": 5,
+                    "paper_count": 5,
+                }],
+            }), encoding="utf-8")
+        return True, "ok"
+
+    def fake_pipeline(
+        topic: str, velocity: float, *, with_editorial: bool,
+        top_n: int, py: str, pico_enrich: bool = False,
+        frontier_review: bool = True, parent_topic: str = "",
+        domain: str = "longevity",
+    ) -> TopicResult:
+        seen.append(topic)
+        return TopicResult(topic, velocity, "ran", "", "", "")
+
+    def fake_priority(topics: list[str], **_kwargs: Any) -> list[dict[str, Any]]:
+        priority_calls.append(topics)
+        return []
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
+    monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
+    monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
+    monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
+    monkeypatch.setattr(run_curator_cycle, "_is_publish_ready", lambda _run_dir: False)
+    monkeypatch.setattr(run_curator_cycle, "_cached_tier2_supply",
+                        lambda *_args, **_kwargs: 0)
+    monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",
+                        lambda *_args, **_kwargs: set())
+    monkeypatch.setattr(run_curator_cycle, "_priority_ranked_topics", fake_priority)
+    monkeypatch.setattr(sys, "argv", [
+        "run_curator_cycle.py", "--domain", domain,
+        "--stop-on-ready", "--top", "1",
+        "--priority-topic", "metformin_longevity",
+        "--exclude-topic", "omega_3_longevity",
+    ])
+
+    assert run_curator_cycle.main() == 0
+    assert priority_calls == [[]]
+    assert seen == [expected_topic]
+    assert all("omega_3_longevity" not in args for args in step_calls)
+    payload = json.loads(next(cycles.glob("*.json")).read_text(encoding="utf-8"))
+    assert payload["ran"][0]["topic"] == expected_topic
+    assert payload["skipped_excluded"] == []
 
 
 def test_fullraw_supply_budget_env_overrides_default(

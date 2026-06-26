@@ -64,6 +64,7 @@ from scripts import alpha_publish_io as publish_io  # noqa: E402
 from scripts.run_topic_discovery import (  # noqa: E402
     _fullraw_supply_budget_seconds,
     _seed_fullraw_papers,
+    topic_allowed_for_domain,
 )
 
 _RUNS = _ROOT / "runs"
@@ -798,10 +799,14 @@ def main() -> int:
     cycle_start = dt.datetime.now(dt.UTC)
     cycle_ts = cycle_start.strftime("%Y-%m-%dT%H-%M-%SZ")
     py = sys.executable
-    excluded = {str(t).strip() for t in args.exclude_topic if str(t).strip()}
+    excluded = {
+        topic for t in args.exclude_topic
+        if (topic := str(t).strip()) and topic_allowed_for_domain(topic, profile.slug)
+    }
     priority_topics = [
-        cap_topic_slug(str(topic).strip())
-        for topic in args.priority_topic if str(topic).strip()
+        cap_topic_slug(topic)
+        for raw in args.priority_topic
+        if (topic := str(raw).strip()) and topic_allowed_for_domain(topic, profile.slug)
     ]
     if args.stop_on_ready:
         priority_topics = priority_topics[:max(1, args.top)]
