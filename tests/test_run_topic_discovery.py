@@ -1135,6 +1135,30 @@ def test_fullraw_supply_queries_domain_before_seed_breadth(
     ]
 
 
+def test_fullraw_supply_skips_one_token_domain_query_when_seeds_exist(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        if query == "factor premia returns finance":
+            return _fullraw_rows("factor", "Factor premia returns")
+        return []
+
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
+
+    rows = run_topic_discovery._fullraw_supply_candidates(
+        query_context="Finance research",
+        current_year=2026,
+        top=1,
+        seeds=("factor_premia_returns",),
+    )
+
+    assert calls == ["factor premia returns finance"]
+    assert [row.topic for row in rows] == ["factor_premia_returns_finance"]
+
+
 def test_fullraw_supply_stops_when_total_pass_budget_is_spent(
     monkeypatch: Any,
 ) -> None:

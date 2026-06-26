@@ -545,10 +545,11 @@ def _fullraw_supply_candidates(
     context_terms = _context_query_terms(query_context)
     context_variants = _context_variants(query_context)
     query_cap = max(_seed_paper_probe_limit(top), top * 6)
-    if context_terms:
+    if context_terms and (len(context_terms.split()) > 1 or not seeds):
         query_labels[context_terms] = "__domain_supply__"
     seed_bases = [
-        (seed, tuple(base.strip() for base in expand_topic_queries(seed, max_queries=2)
+        (seed, tuple(base.strip().replace("_", " ")
+                     for base in expand_topic_queries(seed, max_queries=2)
                      if base.strip()))
         for seed in seeds
     ]
