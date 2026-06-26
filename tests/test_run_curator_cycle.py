@@ -1214,6 +1214,74 @@ def test_stop_on_ready_fullraw_supply_can_replace_underfloor_priority(
     assert payload["ran"][0]["topic"] == "source_diverse_fullraw"
 
 
+def test_stop_on_ready_fullraw_supply_skips_known_no_signal_topic(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    runs = tmp_path / "runs"
+    cycles = runs / "_curator_cycles"
+    cycles.mkdir(parents=True)
+    prior = runs / "metformin_longevity-evidence-2026-06-25T00-00-00Z"
+    prior.mkdir(parents=True)
+    prior.joinpath("publish_verdict.json").write_text(json.dumps({
+        "decision": "ready_to_publish",
+        "topic": "metformin_longevity",
+        "alpha_score": 0,
+        "confidence_label": "no_signal",
+    }), encoding="utf-8")
+    seen: list[str] = []
+
+    def fake_step(
+        _args: list[str], step_name: str, *, timeout: int = 600,
+    ) -> tuple[bool, str]:
+        return True, "ok"
+
+    def fake_pipeline(
+        topic: str, velocity: float, *, with_editorial: bool,
+        top_n: int, py: str, pico_enrich: bool = False,
+        frontier_review: bool = True, parent_topic: str = "",
+        domain: str = "longevity",
+    ) -> TopicResult:
+        seen.append(topic)
+        return TopicResult(topic, velocity, "ran", "neutral", "", "")
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
+    monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
+    monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
+    monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
+    monkeypatch.setattr(run_curator_cycle, "_is_publish_ready", lambda _run_dir: False)
+    monkeypatch.setattr(run_curator_cycle, "_cached_tier2_supply",
+                        lambda *_args, **_kwargs: 0)
+    monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",
+                        lambda *_args, **_kwargs: set())
+    monkeypatch.setattr(
+        run_curator_cycle, "_priority_ranked_topics",
+        lambda _topics, **_kwargs: [{
+            "topic": "metformin_longevity", "velocity_score": 0.0,
+            "fact_source_count": 5, "paper_count": 5,
+        }],
+    )
+    monkeypatch.setattr(
+        run_curator_cycle, "_read_discovery_top",
+        lambda _out, **_kwargs: [{
+            "topic": "source_diverse_fullraw", "velocity_score": 100.0,
+            "fact_source_count": 5, "paper_count": 5,
+        }],
+    )
+    monkeypatch.setattr(sys, "argv", [
+        "run_curator_cycle.py", "--domain", "longevity_research",
+        "--stop-on-ready", "--top", "1", "--priority-topic", "metformin_longevity",
+    ])
+
+    assert run_curator_cycle.main() == 0
+    assert seen == ["source_diverse_fullraw"]
+    payload = json.loads(next(cycles.glob("*.json")).read_text(encoding="utf-8"))
+    assert payload["skipped_excluded"] == ["metformin_longevity"]
+    assert payload["ran"][0]["topic"] == "source_diverse_fullraw"
+
+
 def test_stop_on_ready_warm_backlog_probes_beyond_cache(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

@@ -396,6 +396,31 @@ def _is_publish_ready(run_dir: str) -> bool:
     )
 
 
+def _known_no_signal_topic(topic: str) -> bool:
+    run_dir = _newest_run_for_topic(topic)
+    if run_dir is None:
+        return False
+    try:
+        verdict = json.loads((run_dir / "publish_verdict.json").read_text(
+            encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    blockers = verdict.get("blockers")
+    blocker_text = " ".join(str(x) for x in blockers) if isinstance(blockers, list) else ""
+    status_text = " ".join(str(verdict.get(k) or "") for k in (
+        "confidence_label", "signal_label", "queue_status", "reason",
+    ))
+    if "no_signal" in status_text or "low_alpha_score" in f"{status_text} {blocker_text}":
+        return True
+    with suppress(TypeError, ValueError):
+        return (
+            str(verdict.get("decision") or "") == "ready_to_publish"
+            and "alpha_score" in verdict
+            and int(verdict.get("alpha_score") or 0) <= 0
+        )
+    return False
+
+
 def _child_topics_from_verdict(run_dir: str, seen: set[str]) -> list[str]:
     if not run_dir:
         return []
@@ -872,8 +897,14 @@ def main() -> int:
                     else [*priority_ranked, *ranked]
                 )
             )
+            plan_excluded = set(excluded)
+            if args.stop_on_ready:
+                plan_excluded.update(
+                    str(c.get("topic") or "") for c in plan_pool
+                    if _known_no_signal_topic(str(c.get("topic") or ""))
+                )
             return _plan_topics(
-                plan_pool, recent=recent, excluded=excluded,
+                plan_pool, recent=recent, excluded=plan_excluded,
                 top=args.top,
                 min_fact_sources=(
                     _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES if args.stop_on_ready else 0
