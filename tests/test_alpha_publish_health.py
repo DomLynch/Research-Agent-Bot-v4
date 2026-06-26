@@ -382,6 +382,54 @@ def test_expect_published_prints_no_publish_blocker_summary(
     assert summary["public_page_status"] == "not_rendered"
 
 
+def test_sla_monitor_full_command_fails_red_with_blocker_summary(
+    tmp_path: Path, capsys: Any, monkeypatch: Any,
+) -> None:
+    _write_ledger(tmp_path, "2026-06-01T01-04-07Z-finance.json", {
+        "status": "candidate_refresh_failed",
+        "submitted": 0,
+        "published": 0,
+        "domain_slug": "finance_research",
+        "public_url": "https://researka.org/alpha/missing-finance",
+        "queue_counts": {"ready_to_publish": 0, "not_ready": 4},
+        "publish_summary": {
+            "considered": 4,
+            "top_blockers": {"no_source_diverse_bundle": 4},
+            "next_action": "inspect_refresh_failure",
+        },
+    })
+    monkeypatch.setattr(
+        health,
+        "_public_url_status",
+        lambda *_args, **_kwargs: {
+            "http_status": 404,
+            "rendered": False,
+            "status": "not_rendered",
+        },
+    )
+
+    assert health.main([
+        "--runs-root", str(tmp_path),
+        "--domain", "finance_research",
+        "--expect-published",
+        "--check-url",
+        "--sync-pending-decisions",
+        "--show-next-candidate",
+    ]) == 2
+    summary = json.loads(capsys.readouterr().out)
+
+    assert summary["ok"] is False
+    assert summary["domain"] == "finance_research"
+    assert summary["status"] == "candidate_refresh_failed"
+    assert summary["queue_counts"] == {"ready_to_publish": 0, "not_ready": 4}
+    assert summary["top_blockers"] == {"no_source_diverse_bundle": 4}
+    assert summary["next_action"] == "inspect_refresh_failure"
+    assert summary["public_url_status"] == 404
+    assert summary["public_page_status"] == "not_rendered"
+    assert summary["current_actionable_ready_to_publish"] == 0
+    assert summary["next_candidate"]["supply_status"] == "no_ready_rows"
+
+
 def test_expect_published_exits_nonzero_for_real_no_publish_statuses(
     tmp_path: Path,
 ) -> None:
