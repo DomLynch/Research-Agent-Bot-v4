@@ -969,7 +969,7 @@ def test_fullraw_supply_queries_seeds_when_domain_query_is_empty(
     assert {"metformin", "resveratrol"} <= topics
 
 
-def test_fullraw_supply_stops_after_source_rich_domain_query(
+def test_fullraw_supply_stops_after_concrete_source_rich_domain_query(
     monkeypatch: Any,
 ) -> None:
     calls: list[str] = []
@@ -977,7 +977,7 @@ def test_fullraw_supply_stops_after_source_rich_domain_query(
     def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
         calls.append(query)
         if query == "longevity anti aging":
-            return _fullraw_rows("domain", "Longevity anti aging source rich")
+            return _fullraw_rows("domain", "Spermidine longevity source rich")
         raise AssertionError(f"unexpected seed fallback: {query}")
 
     monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
@@ -990,8 +990,35 @@ def test_fullraw_supply_stops_after_source_rich_domain_query(
     )
 
     assert calls == ["longevity anti aging"]
-    assert rows
+    assert "spermidine_longevity" in {row.topic for row in rows}
+    assert all(run_topic_discovery._concrete_topic(row.topic) for row in rows)
     assert all(row.fact_source_count == 5 for row in rows)
+
+
+def test_fullraw_supply_rejects_domain_only_placeholder_and_keeps_searching(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        if query == "longevity anti aging":
+            return _fullraw_rows("domain", "Longevity anti aging source rich")
+        if query == "metformin longevity":
+            return _fullraw_rows("met", "Metformin longevity geroscience AMPK")
+        return []
+
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
+
+    rows = run_topic_discovery._fullraw_supply_candidates(
+        query_context="Longevity / anti-aging research",
+        current_year=2026,
+        top=1,
+        seeds=("metformin",),
+    )
+
+    assert calls == ["longevity anti aging", "metformin longevity"]
+    assert [row.topic for row in rows] == ["metformin_longevity"]
 
 
 def test_fullraw_supply_keeps_seed_query_when_context_titles_are_sparse(
@@ -1322,9 +1349,7 @@ def test_fullraw_supply_uses_domain_query_when_titles_do_not_cluster(
         top=1,
     )
 
-    assert [(row.topic, row.paper_count, row.fact_source_count) for row in rows] == [
-        ("longevity_anti_aging", 5, 5),
-    ]
+    assert rows == ()
 
 
 def test_seed_paper_only_skips_slow_domain_discovery_when_empty(

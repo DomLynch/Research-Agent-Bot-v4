@@ -51,7 +51,9 @@ _GENERIC_SCOPE_TOKENS = {
     "ai", "research", "study", "studies", "trial", "trials", "review",
     "meta", "analysis", "effect", "effects", "therapy", "treatment",
     "use", "uses", "intervention", "interventions", "outcome", "outcomes",
+    "paper", "papers", "rich", "source",
 }
+_DOMAIN_ONLY_TOPIC_TOKENS = {"ageing", "aging", "anti", "longevity"}
 
 
 def _truthy_env(name: str, default: str = "1") -> bool:
@@ -644,6 +646,8 @@ def _fullraw_supply_candidates(
                 for topic in _title_topic_slugs(
                     {"fullraw": papers_by_query[query]}, current_year, limit=top * 12,
                 ):
+                    if not _concrete_topic(topic):
+                        continue
                     if (
                         (seed_exact or context_scope_tokens)
                         and _topic_key(topic) not in seed_exact
@@ -723,6 +727,8 @@ def _fullraw_supply_candidates(
     for topic in _title_topic_slugs({"fullraw": papers}, current_year, limit=top * 12):
         if topic in seen_topics:
             continue
+        if not _concrete_topic(topic):
+            continue
         if (
             (seed_exact or context_scope_tokens)
             and _topic_key(topic) not in seed_exact
@@ -746,10 +752,10 @@ def _fullraw_supply_candidates(
             break
     if not out:
         scoped = _context_supported_papers(papers, context_terms)
-        if len(scoped) >= _SOURCE_RICH_FLOOR:
+        topic = "_".join(next(iter(query_labels)).split())
+        if len(scoped) >= _SOURCE_RICH_FLOOR and _concrete_topic(topic):
             candidate = _score_topic(
-                "_".join(next(iter(query_labels)).split()), scoped[:25],
-                current_year, fact_source_count=len(scoped),
+                topic, scoped[:25], current_year, fact_source_count=len(scoped),
             )
             _remember_fullraw_supply(candidate.topic, scoped[:25])
             out.append(candidate)
@@ -786,6 +792,10 @@ def _topic_tokens(value: str) -> set[str]:
         token for token in _TOKEN_RE.findall(value.casefold())
         if len(token) > 1 and token not in _GENERIC_SCOPE_TOKENS
     }
+
+
+def _concrete_topic(topic: str) -> bool:
+    return bool(_topic_tokens(topic) - _DOMAIN_ONLY_TOPIC_TOKENS)
 
 
 def _topic_family_excluded(topic: str, excluded: set[str]) -> bool:
