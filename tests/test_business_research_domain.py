@@ -1069,8 +1069,7 @@ def test_business_systemd_timers_are_eight_hour_guarded() -> None:
         assert "scripts/daily_alpha_publish_cycle.py" not in service
         assert f"--domains {domain}" in service
         assert "--submit-after-consistent-passes 2" in service
-        if name in {"business", "management", "finance", "marketing"}:
-            assert "--topics-per-domain 6" in service
+        assert "--topics-per-domain 6" in service
         assert "SuccessExitStatus=3" not in service
         assert "EnvironmentFile=/etc/researka-agent-v4.env" in service
         assert "EnvironmentFile=/root/Research-Agent-Bot-v4/.env" in service
