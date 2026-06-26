@@ -613,12 +613,12 @@ def test_business_candidate_memo_treats_percent_spread_as_disagreement(
 
 def test_finance_return_bundle_groups_distinct_signal_families() -> None:
     rows: list[dict[str, Any]] = []
-    for i, signal in enumerate((
-        "value spread",
-        "momentum spread",
-        "quality spread",
-        "low-volatility spread",
-        "profitability spread",
+    for i, (signal, population) in enumerate((
+        ("value spread", "equity portfolios"),
+        ("momentum spread", "mutual funds"),
+        ("quality spread", "hedge funds"),
+        ("low-volatility spread", "stock portfolios"),
+        ("profitability spread", "factor portfolios"),
     ), start=1):
         rows.append({
             "id": f"finance-return-{i}",
@@ -627,7 +627,7 @@ def test_finance_return_bundle_groups_distinct_signal_families() -> None:
             "numeric_value": 5 + i,
             "units": "%",
             "canonical_phrase": f"{signal} portfolio earns alpha returns of {5 + i}%",
-            "population": "equity portfolios",
+            "population": population,
             "intervention": signal,
             "comparator": "benchmark portfolio",
             "outcome": "risk adjusted returns",

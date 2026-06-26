@@ -410,10 +410,13 @@ def comparability_blockers(receipts: tuple[Json, ...]) -> list[str]:
     if not _mixed_effect_signal(receipts):
         return []
     blockers: list[str] = []
+    finance_returns = all(_is_finance_return_fact(fact) for fact in receipts)
     for detail_field, blocker in (
         ("population_detail", "population_heterogeneity_explains_spread"),
         ("metric_detail", "metric_concept_mismatch"),
     ):
+        if finance_returns and detail_field == "population_detail":
+            continue
         values: set[str] = set()
         for fact in receipts:
             detail = _norm(fact.get(detail_field))
