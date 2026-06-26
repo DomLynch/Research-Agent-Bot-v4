@@ -211,7 +211,7 @@ def test_warm_backlog_probes_fullraw_before_source_rich_cache(
     assert payload["cache_first"] is False
     assert payload["warm_backlog"] is True
     assert payload["candidate_count"] == 1
-    assert calls[:2] == ["longevity anti aging", "seed longevity"]
+    assert calls[:1] == ["seed longevity"]
     assert payload["top"][0]["paper_count"] == 5
 
 
@@ -962,11 +962,55 @@ def test_fullraw_supply_queries_seeds_when_domain_query_is_empty(
     )
 
     topics = {row.topic for row in rows}
-    assert "longevity anti aging" in calls
     assert "metformin" in calls
     assert "resveratrol" in calls
-    assert set(limits) == {5}
+    assert set(limits) == {25}
     assert {"metformin", "resveratrol"} <= topics
+
+
+def test_fullraw_supply_mines_beyond_probe_floor_for_coherent_topic(
+    monkeypatch: Any,
+) -> None:
+    mixed = [
+        "Rapamycin aging lifespan evidence",
+        "Metformin aging cohort",
+        "Vitamin D aging mortality",
+        "Spermidine aging autophagy trial",
+        "Quercetin aging inflammation",
+    ]
+    clustered = [f"Fisetin longevity senescence trial {i}" for i in range(5)]
+    papers = [
+        {
+            "doi": f"10.1/paper{i}",
+            "title": title,
+            "fwci": 2.0,
+            "cited_by_count": 20 + i,
+            "publication_year": 2025,
+            "quality_score": 90.0,
+        }
+        for i, title in enumerate([*mixed, *clustered])
+    ]
+    limits: list[int] = []
+
+    def fake_fullraw(
+        query: str, *_args: Any, limit: int = 0, **_kwargs: Any,
+    ) -> list[dict[str, Any]]:
+        limits.append(limit)
+        return papers[:limit] if query == "longevity anti aging" else []
+
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
+
+    rows = run_topic_discovery._fullraw_supply_candidates(
+        query_context="Longevity / anti-aging research",
+        current_year=2026,
+        top=1,
+    )
+
+    assert limits == [25]
+    assert rows
+    assert rows[0].fact_source_count == 5
+    assert rows[0].top_paper_title.startswith("Fisetin longevity senescence")
+    assert rows[0].topic in run_topic_discovery._FULLRAW_SUPPLY_SOURCE_PAPERS
 
 
 def test_fullraw_supply_stops_after_concrete_source_rich_domain_query(
@@ -978,7 +1022,7 @@ def test_fullraw_supply_stops_after_concrete_source_rich_domain_query(
         calls.append(query)
         if query == "longevity anti aging":
             return _fullraw_rows("domain", "Spermidine longevity source rich")
-        raise AssertionError(f"unexpected seed fallback: {query}")
+        return []
 
     monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
 
@@ -989,13 +1033,13 @@ def test_fullraw_supply_stops_after_concrete_source_rich_domain_query(
         seeds=("metformin", "resveratrol"),
     )
 
-    assert calls == ["longevity anti aging"]
+    assert calls[-1] == "longevity anti aging"
     assert "spermidine_longevity" in {row.topic for row in rows}
     assert all(run_topic_discovery._concrete_topic(row.topic) for row in rows)
     assert all(row.fact_source_count == 5 for row in rows)
 
 
-def test_fullraw_supply_rejects_domain_only_placeholder_and_keeps_searching(
+def test_fullraw_supply_prefers_seed_query_over_domain_placeholder(
     monkeypatch: Any,
 ) -> None:
     calls: list[str] = []
@@ -1017,7 +1061,7 @@ def test_fullraw_supply_rejects_domain_only_placeholder_and_keeps_searching(
         seeds=("metformin",),
     )
 
-    assert calls == ["longevity anti aging", "metformin longevity"]
+    assert calls == ["metformin longevity"]
     assert [row.topic for row in rows] == ["metformin_longevity"]
 
 
@@ -1043,6 +1087,26 @@ def test_fullraw_supply_keeps_seed_query_when_context_titles_are_sparse(
     assert rows[0].fact_source_count == 5
 
 
+def test_fullraw_supply_rejects_seed_query_supported_only_by_context(
+    monkeypatch: Any,
+) -> None:
+    papers = _fullraw_rows("ctx", "Longevity pathway mitochondrial health", 5)
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        return papers if query == "rapamycin longevity" else []
+
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
+
+    rows = run_topic_discovery._fullraw_supply_candidates(
+        query_context="Longevity / anti-aging research",
+        current_year=2026,
+        top=1,
+        seeds=("rapamycin",),
+    )
+
+    assert rows == ()
+
+
 def test_fullraw_supply_queries_domain_before_seed_breadth(
     monkeypatch: Any,
 ) -> None:
@@ -1065,7 +1129,6 @@ def test_fullraw_supply_queries_domain_before_seed_breadth(
 
     assert [row.topic for row in rows] == ["metformin_longevity"]
     assert calls == [
-        "longevity anti aging",
         "rapamycin longevity",
         "metformin longevity",
     ]
@@ -1095,10 +1158,10 @@ def test_fullraw_supply_stops_when_total_pass_budget_is_spent(
     )
 
     assert rows == ()
-    assert calls == ["longevity anti aging"]
+    assert calls == ["metformin longevity"]
     event = run_topic_discovery._FULLRAW_PROBE_EVENTS[-1]
     assert event["status"] == "budget_exhausted"
-    assert event["attempted_queries"] == ["longevity anti aging"]
+    assert event["attempted_queries"] == ["metformin longevity"]
     assert event["skipped_query_count"] > 0
 
 
