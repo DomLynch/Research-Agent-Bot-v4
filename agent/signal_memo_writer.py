@@ -1911,7 +1911,7 @@ def render_signal_memo(
     ] if isinstance(llm_cluster, dict) else []
     min_cluster_sources = _memo_alpha_int("min_cluster_source_papers", 3)
     m3_cluster_adopted = _source_count_for_ids(llm_cluster_ids, facts) >= min_cluster_sources
-    if m3_cluster_adopted:
+    if m3_cluster_adopted and _source_count_for_ids(llm_cluster_ids, facts) >= min_direct_sources:
         coherent_direct = llm_cluster_ids
     else:
         claim = _claim_signal(
