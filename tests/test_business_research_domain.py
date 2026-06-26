@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import fcntl
 import json
 import sys
 from pathlib import Path
@@ -862,6 +863,38 @@ def test_business_sweep_writes_domain_scoped_latest_summaries(
         tmp_path / "runs" / "_daily_ledger"
         / "2026-06-26T01-00-00Z-business_research.json"
     ).exists()
+
+
+def test_business_sweep_latest_and_queue_writes_are_locked(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    lock_calls: list[tuple[str, int]] = []
+
+    def fake_flock(handle: Any, op: int) -> None:
+        lock_calls.append((Path(handle.name).name, op))
+
+    monkeypatch.setattr(fcntl, "flock", fake_flock)
+
+    rows = [{
+        "domain": "business_research",
+        "topic": "pricing_strategy_margin",
+        "status": "no_bundle",
+        "reason": "no_source_diverse_bundle",
+        "decision": "not_ready",
+        "publish_tier": "TIER_3",
+    }]
+
+    sweep._write_sweep_summary(tmp_path / "runs", rows)
+
+    exclusive = {
+        name for name, op in lock_calls
+        if op == fcntl.LOCK_EX
+    }
+    assert {
+        "latest_sweep.json.lock",
+        "latest_sweep.business_research.json.lock",
+        "_publish_queue.business_research.json.lock",
+    } <= exclusive
 
 
 def test_business_sweep_submits_after_consistent_non_dry_run_passes(
