@@ -574,6 +574,7 @@ def test_next_candidate_summary_separates_raw_ready_from_actionable(
     assert summary["non_actionable_ready_to_publish"] == 1
     assert summary["supply_status"] == "ready_queue_blocked"
     assert summary["considered_counts"] == {"duplicate_submission_fingerprint": 1}
+    assert summary["blocked_ready_reasons"] == {"duplicate_submission_fingerprint": 1}
     assert Path(seen["submitted_path"]).name == "_submitted_fingerprints.json"
 
 

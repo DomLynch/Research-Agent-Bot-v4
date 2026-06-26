@@ -217,6 +217,7 @@ def summarize_next_candidate(
         {},
     )
     has_actionable = candidate is not None
+    considered_counts = _considered_counts({"considered": considered})
     return {
         "topic": (candidate or {}).get("topic"),
         "decision": (candidate or {}).get("decision"),
@@ -230,7 +231,8 @@ def summarize_next_candidate(
             "actionable_candidate_available" if has_actionable else
             "ready_queue_blocked" if raw_ready else "no_ready_rows"
         ),
-        "considered_counts": _considered_counts({"considered": considered}),
+        "considered_counts": considered_counts,
+        "blocked_ready_reasons": considered_counts if raw_ready and not has_actionable else {},
         "retry_after_rejection": bool(eligible_row.get("retry_after_rejection")),
         "retry_attempt_count": eligible_row.get("retry_attempt_count"),
     }
