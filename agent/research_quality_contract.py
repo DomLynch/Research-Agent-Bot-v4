@@ -69,7 +69,7 @@ def evaluate_research_quality(verdict: dict[str, Any], memo_md: str) -> dict[str
     specific_claim = len(claim_tokens) >= 4 and len(overlap) >= 2
     falsifiable = _has_falsifiability(memo_md)
     boilerplate_hits = _boilerplate_hits(claim_text)
-    boilerplate_only = len(boilerplate_hits) >= 2 and not non_obvious_angle
+    boilerplate_surface = len(boilerplate_hits) >= 2
 
     score = 0
     strengths: list[str] = []
@@ -99,18 +99,18 @@ def evaluate_research_quality(verdict: dict[str, Any], memo_md: str) -> dict[str
     else:
         weaknesses.append("missing_falsifiable_next_step")
 
-    if boilerplate_only:
+    if boilerplate_surface:
         weaknesses.append("boilerplate_insight_surface")
     else:
         score += 20
-        strengths.append("not_boilerplate_only")
+        strengths.append("not_boilerplate_surface")
 
     publishable = (
         score >= 70
         and evidence_floor
         and non_obvious_angle
         and specific_claim
-        and not boilerplate_only
+        and not boilerplate_surface
     )
     return {
         "publishable": publishable,
