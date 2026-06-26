@@ -334,6 +334,7 @@ def _recent_signal_topics(
 
 def _read_discovery_top(
     out_dir: Path, *, domain: str | None = None, min_sources: int = 0,
+    since: float | None = None,
 ) -> list[dict[str, Any]]:
     """Find the newest matching discovery JSON in runs/_topics_discovery/."""
     if not out_dir.exists():
@@ -342,6 +343,8 @@ def _read_discovery_top(
     if not candidates:
         return []
     for path in candidates:
+        if since is not None and path.stat().st_mtime < since:
+            continue
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
@@ -836,8 +839,21 @@ def main() -> int:
             ),
         )
         if not ok:
-            print(f"[cycle] discovery failed: {last}", file=sys.stderr)
-            return 1
+            usable = _read_discovery_top(
+                _RUNS / "_topics_discovery", domain=args.domain,
+                min_sources=(
+                    _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES if args.stop_on_ready else 0
+                ),
+                since=cycle_start.timestamp(),
+            )
+            if not usable and not priority_topics:
+                print(f"[cycle] discovery failed: {last}", file=sys.stderr)
+                return 1
+            note = (
+                "after writing usable candidates"
+                if usable else "before priority-topic probes"
+            )
+            print(f"[cycle] discovery timed out {note}; continuing.", file=sys.stderr)
     ranked = (
         []
         if priority_only_submit else

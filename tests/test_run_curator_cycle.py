@@ -798,10 +798,62 @@ def test_priority_stop_on_ready_still_runs_fullraw_supply_first(
         "partial_epigenetic_reprogramming_longevity",
     ])
 
-    assert run_curator_cycle.main() == 1
+    assert run_curator_cycle.main() == 0
     assert calls
     assert "--fullraw-supply-only" in calls[0]
     assert "--priority-topic" not in calls[0]
+
+
+def test_priority_stop_on_ready_probes_priority_after_fullraw_timeout(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    runs = tmp_path / "runs"
+    cycles = runs / "_curator_cycles"
+    cycles.mkdir(parents=True)
+    seen: list[str] = []
+
+    def fake_step(
+        args: list[str], step_name: str, *, timeout: int = 600,
+    ) -> tuple[bool, str]:
+        if step_name == "discovery":
+            return False, "discovery: TimeoutExpired"
+        return True, "ok"
+
+    def fake_pipeline(
+        topic: str, velocity: float, *, with_editorial: bool,
+        top_n: int, py: str, pico_enrich: bool = False,
+        frontier_review: bool = True, parent_topic: str = "",
+        domain: str = "longevity",
+    ) -> TopicResult:
+        seen.append(topic)
+        return TopicResult(topic, velocity, "ran", "neutral", "", "")
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
+    monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
+    monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
+    monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
+    monkeypatch.setattr(run_curator_cycle, "_is_publish_ready", lambda _run_dir: False)
+    monkeypatch.setattr(run_curator_cycle, "_cached_tier2_supply",
+                        lambda *_args, **_kwargs: 0)
+    monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",
+                        lambda *_args, **_kwargs: set())
+    monkeypatch.setattr(
+        run_curator_cycle, "_priority_ranked_topics",
+        lambda _topics, **_kwargs: [{
+            "topic": "quercetin", "velocity_score": 0.0,
+            "fact_source_count": 5, "paper_count": 5,
+        }],
+    )
+    monkeypatch.setattr(sys, "argv", [
+        "run_curator_cycle.py", "--stop-on-ready", "--top", "1",
+        "--priority-topic", "quercetin",
+    ])
+
+    assert run_curator_cycle.main() == 0
+    assert seen == ["quercetin"]
 
 
 def test_fullraw_supply_budget_env_overrides_default(
@@ -829,6 +881,69 @@ def test_fullraw_supply_budget_env_overrides_default(
     assert run_curator_cycle.main() == 1
     assert budgets == ["90"]
     assert timeouts == [77]
+
+
+def test_stop_on_ready_uses_fresh_fullraw_snapshot_after_timeout(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    runs = tmp_path / "runs"
+    discovery = runs / "_topics_discovery"
+    cycles = runs / "_curator_cycles"
+    cycles.mkdir(parents=True)
+    seen: list[str] = []
+
+    def fake_step(
+        _args: list[str], step_name: str, *, timeout: int = 600,
+    ) -> tuple[bool, str]:
+        if step_name == "discovery":
+            discovery.mkdir(parents=True)
+            (discovery / "2026-06-26T00-00-00Z.json").write_text(json.dumps({
+                "domain": {"slug": "longevity"},
+                "top": [{
+                    "topic": "source_diverse_fullraw",
+                    "velocity_score": 100.0,
+                    "fact_source_count": 5,
+                    "paper_count": 5,
+                }],
+                "all": [{
+                    "topic": "source_diverse_fullraw",
+                    "velocity_score": 100.0,
+                    "fact_source_count": 5,
+                    "paper_count": 5,
+                }],
+            }), encoding="utf-8")
+            return False, "discovery: TimeoutExpired"
+        return True, "ok"
+
+    def fake_pipeline(
+        topic: str, velocity: float, *, with_editorial: bool,
+        top_n: int, py: str, pico_enrich: bool = False,
+        frontier_review: bool = True, parent_topic: str = "",
+        domain: str = "longevity",
+    ) -> TopicResult:
+        seen.append(topic)
+        return TopicResult(topic, velocity, "ran", "neutral", "", "")
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
+    monkeypatch.setattr(run_curator_cycle, "_CYCLES_DIR", cycles)
+    monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
+    monkeypatch.setattr(run_curator_cycle, "_run_topic_pipeline", fake_pipeline)
+    monkeypatch.setattr(run_curator_cycle, "_is_publish_ready", lambda _run_dir: False)
+    monkeypatch.setattr(run_curator_cycle, "_cached_tier2_supply",
+                        lambda *_args, **_kwargs: 0)
+    monkeypatch.setattr(run_curator_cycle, "_recent_signal_topics",
+                        lambda *_args, **_kwargs: set())
+    monkeypatch.setattr(sys, "argv", [
+        "run_curator_cycle.py", "--stop-on-ready", "--top", "1",
+    ])
+
+    assert run_curator_cycle.main() == 0
+    assert seen == ["source_diverse_fullraw"]
+    payload = json.loads(next(cycles.glob("*.json")).read_text(encoding="utf-8"))
+    assert payload["ran"][0]["topic"] == "source_diverse_fullraw"
 
 
 def test_stop_on_ready_empty_fullraw_supply_does_not_retry_slow_discovery(
