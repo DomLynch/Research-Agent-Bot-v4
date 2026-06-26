@@ -168,19 +168,27 @@ def _fullraw_topic_papers(topic: str, limit: int) -> list[Json]:
         return []
     timeout = os.environ.get(
         _FULLRAW_TIMEOUT_ENV,
-        os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_TIMEOUT_SECONDS", "35"),
+        os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_TIMEOUT_SECONDS",
+                       os.environ.get("V5_MEMO_FULL_RAW_QUERY_TIMEOUT",
+                                      os.environ.get("V5_MEMO_FULL_RAW_CORPUS_TIMEOUT", "35"))),
     )
     budget = os.environ.get(
         _FULLRAW_BUDGET_ENV,
-        os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS", "45"),
+        os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS",
+                       os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
+                                      os.environ.get("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "45"))),
     )
     sweep_wait = os.environ.get(
         _FULLRAW_SWEEP_WAIT_ENV,
-        os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS", "15"),
+        os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS",
+                       os.environ.get("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS",
+                                      os.environ.get("V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS",
+                                                     os.environ.get("V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS", "15")))),
     )
     max_variants = os.environ.get(
         _FULLRAW_MAX_VARIANTS_ENV,
-        os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_MAX_VARIANTS", "2"),
+        os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_MAX_VARIANTS",
+                       os.environ.get("V5_MEMO_FULL_RAW_MAX_VARIANTS", "2")),
     )
     bounds = {
         "TOPIC_DISCOVERY_V5_TIMEOUT_SECONDS": timeout,

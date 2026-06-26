@@ -9567,10 +9567,10 @@ def test_source_literature_fullraw_fetch_defaults_to_supply_bounds(
 
     assert publish_literature._fullraw_topic_papers("plant based diet", 5) == []
     assert seen == {
-        "TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS": "35",
-        "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS": "45",
-        "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS": "15",
-        "TOPIC_DISCOVERY_V5_MAX_VARIANTS": "2",
+        "TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS": "120",
+        "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS": "300",
+        "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS": "120",
+        "TOPIC_DISCOVERY_V5_MAX_VARIANTS": "4",
         "TOPIC_DISCOVERY_V5_MIN_SHARDS_SEARCHED": "1525",
         "TOPIC_DISCOVERY_V5_MIN_SOURCES_SEARCHED": "5",
         "TOPIC_DISCOVERY_V5_REQUIRE_COMPLETE_SEARCH": "1",

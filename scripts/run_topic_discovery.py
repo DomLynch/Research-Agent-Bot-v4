@@ -241,7 +241,8 @@ def _fullraw_supply_budget_seconds() -> float:
     try:
         return max(1.0, float(os.environ.get(
             "TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS",
-            "240",
+            os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
+                           os.environ.get("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "240")),
         )))
     except (TypeError, ValueError):
         return 240.0
@@ -259,7 +260,9 @@ def _fullraw_supply_query_timeout_seconds() -> float:
 def _fullraw_supply_query_budget_seconds() -> float:
     try:
         return max(1.0, float(os.environ.get(
-            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS", "75",
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS",
+            os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
+                           os.environ.get("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "75")),
         )))
     except (TypeError, ValueError):
         return 75.0
@@ -269,7 +272,9 @@ def _fullraw_supply_sweep_wait_seconds() -> float:
     try:
         return max(0.0, float(os.environ.get(
             "TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS",
-            "60",
+            os.environ.get("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS",
+                           os.environ.get("V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS",
+                                          os.environ.get("V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS", "60"))),
         )))
     except (TypeError, ValueError):
         return 60.0
