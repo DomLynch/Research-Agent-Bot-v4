@@ -7987,6 +7987,56 @@ def test_source_literature_fallback_blocks_under_citable_source_floor(
     assert ledger["source_literature_fallback"]["direct_source_count"] == 3
 
 
+def test_source_literature_fallback_runs_after_refresh_failure(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    (root / "_topics_discovery" / "longevity.json").write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "glycation_AGEs", "paper_count": 25}],
+    }), encoding="utf-8")
+    papers = [
+        {"title": "AGE-RAGE signalling and skin collagen aging", "doi": "10.1234/1", "year": 2024},
+        {"title": "Glycation stress and RAGE activation in vascular aging", "doi": "10.1234/2", "year": 2024},
+        {"title": "Collagen crosslinking in advanced glycation biology", "doi": "10.1234/3", "year": 2024},
+        {"title": "RAGE pathways in age-related tissue injury", "doi": "10.1234/4", "year": 2024},
+        {"title": "Glycation-derived collagen stiffening review", "doi": "10.1234/5", "year": 2024},
+    ]
+    seen_payload: dict[str, Any] = {}
+    monkeypatch.setattr(
+        daily, "_refresh_candidate_batch",
+        lambda *_args, **_kwargs: {"ok": False, "note": "simulated refresh failure"},
+    )
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-45-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        refresh_candidates=True,
+        submit=True,
+        submitter=lambda payload: (
+            seen_payload.update(payload)
+            or {"ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}}}
+        ),
+        source_paper_fetcher=lambda _topic, _limit: papers,
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        sleep=lambda _seconds: None,
+    )
+
+    assert ledger["status"] == "published"
+    assert ledger["refresh_early_exit"]["reason"] == "refresh_failed_before_source_literature"
+    assert ledger["source_literature_fallback"]["status"] == "selected"
+    assert seen_payload["topic"] == "glycation_AGEs"
+
+
 def test_long_submit_refresh_reaches_source_lit_after_fullraw_batches(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

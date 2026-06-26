@@ -4967,11 +4967,16 @@ def run_cycle(
                     }
                     break
                 ledger["considered"] = all_considered
+                ledger["refresh_early_exit"] = {
+                    "batch": batch,
+                    "reason": "refresh_failed_before_source_literature",
+                    "note": str(refresh.get("note") or "")[:240],
+                }
                 ledger.update({
                     "status": publish_status.CycleStatus.CANDIDATE_REFRESH_FAILED.value,
                 })
                 _write_ledger(ledger_path, ledger)
-                return ledger
+                break
         current_queue = (
             queue if queue is not None else preflight_queue
             if preflight_queue is not None else build_current_queue()
