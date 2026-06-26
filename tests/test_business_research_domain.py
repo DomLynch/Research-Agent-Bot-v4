@@ -447,7 +447,7 @@ def test_finance_return_facts_cluster_by_empirical_asset_pricing_shape() -> None
     assert bundle.source_count == 5
     assert bundle.shape["signal_family"] == "return predictive signal"
     assert bundle.shape["study_design"] == "empirical asset pricing"
-    assert bundle.shape["metric"] == "percentage return alpha premium"
+    assert bundle.shape["metric"] == "percentage return alpha premium abnormal excess"
     assert bundle.receipts[0]["intervention"] == "return predictive signal portfolio"
     assert bundle.receipts[0]["intervention_detail"] == "hiring-rate long-short portfolio"
     assert {receipt["signal_family_detail"] for receipt in bundle.receipts} == {
