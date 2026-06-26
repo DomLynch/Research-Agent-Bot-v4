@@ -2678,7 +2678,7 @@ def _direct_source_count(verdict: Json, root: Path) -> int:
     # gate sees what is actually submitted, not the 6 the memo happened to list.
     if _is_evidence_map_row(verdict):
         return len(_map_citable_facts(verdict, root))
-    return len(_memo_source_papers(verdict, root, ("Evidence",), {"A_core"}))
+    return len(_memo_source_papers(verdict, root, ("Evidence", "Evidence receipts"), {"A_core"}))
 
 
 def _bundle_signature(verdict: Json, root: Path) -> str:
@@ -2694,7 +2694,7 @@ def _bundle_signature(verdict: Json, root: Path) -> str:
     ids = sorted({
         (str(p.get("doi") or "").strip().lower()
          or f"pmid:{str(p.get('pmid') or '').strip()}")
-        for p in _memo_source_papers(verdict, root, ("Evidence",), {"A_core"})
+        for p in _memo_source_papers(verdict, root, ("Evidence", "Evidence receipts"), {"A_core"})
     } - {"", "pmid:"})
     if len(ids) < 2:
         run_dir = _run_path(root, verdict.get("run_dir"))

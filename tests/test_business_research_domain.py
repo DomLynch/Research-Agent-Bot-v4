@@ -10,6 +10,7 @@ import httpx
 import scripts.build_business_alpha_candidate as business_cli
 import scripts.build_publish_queue as queue
 import scripts.check_alpha_publish_health as health
+import scripts.daily_alpha_publish_cycle as cycle
 import scripts.run_business_alpha_sweep as sweep
 from agent.business_research import (
     build_candidate_bundle,
@@ -522,6 +523,16 @@ def test_business_candidate_cli_builds_ready_queue(
     assert verdict["axes"]["direct_source_papers"] == 5
     assert matrix["direct_sources"] == 5
     assert audit["verdict"] == "supported"
+    candidate, considered = cycle.select_candidate(
+        out,
+        runs_root=runs,
+        submitted_path=runs / "_daily_ledger" / "_submitted_fingerprints.json",
+        min_source_count=5,
+        min_direct_source_count=5,
+        domain="management_research",
+    )
+    assert candidate is None
+    assert considered[0]["direct_source_count"] == 5
 
 
 def test_business_candidate_memo_synthesizes_mixed_effects(
