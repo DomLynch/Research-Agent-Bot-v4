@@ -1328,7 +1328,7 @@ def test_fullraw_supply_continues_seed_variants_until_window_filled(
     assert "metformin anti aging" in calls
 
 
-def test_fullraw_supply_skips_one_token_domain_query_when_seeds_exist(
+def test_fullraw_supply_uses_configured_window_for_seed_query(
     monkeypatch: Any,
 ) -> None:
     calls: list[str] = []
@@ -1355,7 +1355,7 @@ def test_fullraw_supply_skips_one_token_domain_query_when_seeds_exist(
     )
 
     assert calls == ["factor premia returns finance"]
-    assert caps == [("35.0", "45.0", "15.0")]
+    assert caps == [("90.0", "75.0", "60.0")]
     assert [row.topic for row in rows] == ["factor_premia_returns_finance"]
 
 

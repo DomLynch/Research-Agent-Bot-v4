@@ -970,6 +970,30 @@ def test_fullraw_supply_budget_env_overrides_default(
     assert timeouts == [77]
 
 
+def test_fullraw_supply_budget_inherits_fullraw_storage_budget(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    budgets: list[str | None] = []
+
+    def fake_step(
+        _args: list[str], _step_name: str, *, timeout: int = 600,
+    ) -> tuple[bool, str]:
+        budgets.append(os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"))
+        return False, "stop after discovery"
+
+    monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", tmp_path / "runs")
+    monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
+    monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS", raising=False)
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "7200")
+    monkeypatch.setattr(sys, "argv", ["run_curator_cycle.py", "--stop-on-ready"])
+
+    assert run_curator_cycle.main() == 1
+    assert budgets == ["7200"]
+
+
 def test_stop_on_ready_uses_fresh_fullraw_snapshot_after_timeout(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

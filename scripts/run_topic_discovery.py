@@ -662,9 +662,6 @@ def _fullraw_supply_candidates(
             attempted_queries.append(query)
             query_timeout_limit = _fullraw_supply_query_timeout_seconds()
             sweep_wait_limit = _fullraw_supply_sweep_wait_seconds()
-            if label != "__domain_supply__":
-                query_timeout_limit = min(query_timeout_limit, 35.0)
-                sweep_wait_limit = min(sweep_wait_limit, 15.0)
             query_timeout = str(min(query_timeout_limit, remaining))
             sweep_wait = min(sweep_wait_limit, remaining)
             query_budget = str(min(
