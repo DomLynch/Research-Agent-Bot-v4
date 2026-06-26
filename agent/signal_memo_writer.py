@@ -795,7 +795,6 @@ def _effective_label(
 ) -> str:
     if (
         label in {"no_signal", "curation_needed", "evidence_binding_failed"}
-        and _agent_repair_requested(verdict)
         and len(lead_ids) >= min_direct_sources
         and _source_count_for_ids(lead_ids, facts) >= min_direct_sources
         and _receipt_cluster_coheres(lead_ids, facts, topic, min_direct_sources)
@@ -2078,11 +2077,6 @@ def render_signal_memo(
         lead_ids, receipt_ids, facts, topic, claim, min_direct_sources,
     )
     context_ids = [fid for fid in receipt_ids if fid not in set(lead_ids)]
-    (run_dir / "claim_receipt_matrix.json").write_text(
-        json.dumps(build_claim_receipt_matrix(claim, lead_ids, receipt_ids, facts),
-                   indent=2, sort_keys=True),
-        encoding="utf-8")
-    lead_source_count = _source_count_for_ids(lead_ids, facts)
     source_count = _source_count_for_ids(receipt_ids, facts)
     original_label = label
     label = _effective_label(
@@ -2227,6 +2221,8 @@ def render_signal_memo(
         and m3_cluster_focused
         and not grounded
         and not _agent_repair_requested(publish_verdict)
+        and (_source_count_for_ids(lead_ids, facts) < min_direct_sources
+             or _source_count_for_ids(llm_cluster_ids, facts) >= min_direct_sources)
         and set(lead_ids) != set(llm_cluster_ids)
     ):
         lead_ids = list(llm_cluster_ids)
@@ -2310,6 +2306,8 @@ def render_signal_memo(
             "subgroup and are listed per source below rather than pooled into a "
             "single estimate."
         )
+    lead_source_count = _source_count_for_ids(lead_ids, facts)
+    source_count = _source_count_for_ids(receipt_ids, facts)
     score = (
         min(95, 40 + _source_count_for_ids(acore_receipt_ids, facts) * 8)
         if evidence_map else _alpha_score(audit, label)
@@ -2396,6 +2394,9 @@ def render_signal_memo(
     if subtopic_lines:
         lines.extend(["", "## Subtopic recommendations", "", *subtopic_lines])
     body = _clean_generated_text("\n".join(lines) + "\n")
+    matrix = build_claim_receipt_matrix(claim, lead_ids, receipt_ids, facts)
+    (run_dir / "claim_receipt_matrix.json").write_text(
+        json.dumps(matrix, indent=2, sort_keys=True), encoding="utf-8")
     memo_audit = build_memo_audit(
         claim, lead_ids, receipt_ids, facts, publish_verdict,
         falsifier=falsifier_present(body),

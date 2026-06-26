@@ -2220,6 +2220,42 @@ def test_writer_adopts_three_source_cluster_receipts(tmp_path: Path) -> None:
     assert cited == {"301", "302", "303"}
 
 
+def test_no_signal_fullraw_bundle_not_narrowed_to_three_source_cluster(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    (run / "signal_post.md").write_text(
+        "# No signal — carbon_tax\n\n"
+        "## Carbon pricing signal\n\n"
+        "No publishable thesis before source-rich fullraw receipts.\n\n"
+        "## Confidence — `no_signal`\n",
+        encoding="utf-8",
+    )
+    _append_carbon_a_core_facts(
+        run, ("301", "302", "303", "404", "505"), doi_prefix="fullraw",
+    )
+    (run / "claim_cluster.json").write_text(json.dumps({
+        "claim": "Carbon pricing reduced port emissions after audit checks",
+        "lead_fact_ids": ["301", "302", "303"],
+        "homogeneous": False,
+    }), encoding="utf-8")
+
+    write_signal_memo(run)
+    memo = (run / "alpha_memo.md").read_text(encoding="utf-8")
+    evidence = memo.split("## Evidence receipts", 1)[1].split("\n## ", 1)[0]
+    matrix = json.loads((run / "claim_receipt_matrix.json").read_text(encoding="utf-8"))
+    breadth_match = re.search(r"Direct source breadth:\*\* `(\d+)`", memo)
+    assert breadth_match is not None
+    breadth = int(breadth_match.group(1))
+
+    assert breadth >= 5
+    assert matrix["direct_sources"] == breadth
+    assert "**Confidence:** `evidence_backed_signal`" in memo
+    assert "`fact_id=301` (`A_core`)" in evidence
+    assert "`fact_id=404` (`A_core`)" in evidence
+
+
 def _write_cluster_run(run: Path, phrases: dict[str, str], claim: str) -> None:
     _write_run(run)
     facts = [
