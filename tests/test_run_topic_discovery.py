@@ -616,8 +616,8 @@ def test_v5_client_bounds_restore_environment(monkeypatch: Any) -> None:
     old = run_topic_discovery._apply_v5_client_bounds()
     assert os.environ["V5_MEMO_FULL_RAW_CORPUS_TIMEOUT"] == "6"
     assert os.environ["V5_MEMO_FULL_RAW_QUERY_TIMEOUT"] == "6"
-    assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "45"
-    assert os.environ["V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS"] == "0"
+    assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "7200"
+    assert os.environ["V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS"] == "77"
     assert os.environ["V5_MEMO_FULL_RAW_MAX_VARIANTS"] == "2"
     assert os.environ["V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED"] == "1525"
     assert os.environ["V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED"] == "5"
@@ -634,7 +634,7 @@ def test_v5_client_bounds_restore_environment(monkeypatch: Any) -> None:
     assert os.environ["V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH"] == "1"
 
 
-def test_v5_client_bounds_do_not_inherit_long_storage_waits(monkeypatch: Any) -> None:
+def test_v5_client_bounds_inherit_fullraw_storage_waits(monkeypatch: Any) -> None:
     monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_TIMEOUT", "45")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_QUERY_TIMEOUT", "45")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "7200")
@@ -644,8 +644,8 @@ def test_v5_client_bounds_do_not_inherit_long_storage_waits(monkeypatch: Any) ->
     old = run_topic_discovery._apply_v5_client_bounds()
     assert os.environ["V5_MEMO_FULL_RAW_CORPUS_TIMEOUT"] == "30"
     assert os.environ["V5_MEMO_FULL_RAW_QUERY_TIMEOUT"] == "30"
-    assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "45"
-    assert os.environ["V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS"] == "0"
+    assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "7200"
+    assert os.environ["V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS"] == "7200"
     assert os.environ["V5_MEMO_FULL_RAW_MAX_VARIANTS"] == "2"
 
     run_topic_discovery._restore_env(old)

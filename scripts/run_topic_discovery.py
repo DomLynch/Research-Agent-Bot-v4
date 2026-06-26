@@ -96,16 +96,31 @@ def _apply_v5_client_bounds() -> dict[str, str | None]:
         "TOPIC_DISCOVERY_V5_TIMEOUT_SECONDS",
         os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", "30"),
     )
+    budget = os.environ.get(
+        "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
+        os.environ.get(
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS",
+            os.environ.get(
+                "TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS",
+                os.environ.get("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "240"),
+            ),
+        ),
+    )
+    sweep_wait = os.environ.get(
+        "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS",
+        os.environ.get(
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS",
+            os.environ.get(
+                "V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS",
+                os.environ.get("V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS", "60"),
+            ),
+        ),
+    )
     values: dict[str, str] = {
         "V5_MEMO_FULL_RAW_CORPUS_TIMEOUT": timeout,
         "V5_MEMO_FULL_RAW_QUERY_TIMEOUT": timeout,
-        "V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS": os.environ.get(
-            "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
-            os.environ.get("TOPIC_DISCOVERY_SEED_PAPER_BUDGET_SECONDS", "45"),
-        ),
-        "V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS": os.environ.get(
-            "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS", "0",
-        ),
+        "V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS": budget,
+        "V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS": sweep_wait,
         "V5_MEMO_FULL_RAW_MAX_VARIANTS": os.environ.get(
             "TOPIC_DISCOVERY_V5_MAX_VARIANTS", "2",
         ),

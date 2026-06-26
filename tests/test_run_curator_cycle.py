@@ -774,7 +774,7 @@ def test_stop_on_ready_uses_fullraw_supply_before_cache_by_default(
     assert "--seed-paper-only" not in calls[0]
     assert "--fullraw-supply-only" in calls[0]
     assert calls[0][calls[0].index("--top") + 1] == "5"
-    assert budgets == ["45"]
+    assert budgets == ["240"]
     assert timeouts == [300]
     assert os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] == "45"
 

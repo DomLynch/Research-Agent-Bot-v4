@@ -285,6 +285,43 @@ def test_fullraw_fallback_requires_complete_sweep_receipt(monkeypatch: Any) -> N
     assert papers == []
 
 
+def test_fullraw_fallback_rejects_non_full_5tb_receipts(monkeypatch: Any) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "https://fullraw/search")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", "1")
+    bad_receipts = [
+        {**_fullraw_receipt(), "shards_searched": 1524},
+        {**_fullraw_receipt(), "partial_shard_search": True},
+        {**_fullraw_receipt(), "sweep_failed_shards": 1},
+        {
+            **_fullraw_receipt(),
+            "sources_searched": {
+                "openalex": 900,
+                "pubmed": 120,
+                "crossref": 90,
+                "semantic_scholar": 60,
+            },
+        },
+    ]
+
+    for receipt in bad_receipts:
+        def handler(req: httpx.Request, receipt: dict[str, Any] = receipt) -> httpx.Response:
+            if req.url.host == "test":
+                return httpx.Response(200, json=[])
+            return httpx.Response(200, json={
+                "meta": {"shard_receipt": receipt},
+                "results": [{"title": "Should not be trusted"}],
+            })
+
+        with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+            papers = td._fetch_topic_papers(
+                "metformin_longevity", client=c, settings=_settings(),
+            )
+
+        assert papers == []
+
+
 def test_fullraw_fallback_polls_until_complete_receipt(monkeypatch: Any) -> None:
     from agent import topic_discovery as td
 
