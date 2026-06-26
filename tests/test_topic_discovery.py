@@ -723,9 +723,17 @@ def test_discover_topics_warm_backlog_can_probe_all_seed_topics(
 
     def handler(req: httpx.Request) -> httpx.Response:
         body = req.read().decode("utf-8") if req.content else "{}"
+        if "/topics/" in req.url.path:
+            return httpx.Response(200, json=[])
         if req.url.path.endswith("/tier2/facts/search"):
-            topic = "slow_rich_topic" if "slow rich" in body else "fast_thin_topic"
-            return httpx.Response(200, json=facts(5 if "slow rich" in body else 1, topic))
+            slow = "slow_rich" in body or "slow rich" in body
+            return httpx.Response(
+                200,
+                json=facts(
+                    5 if slow else 1,
+                    "slow_rich_topic" if slow else "fast_thin_topic",
+                ),
+            )
         if "slow_rich" in body:
             return httpx.Response(200, json=slow_rich)
         return httpx.Response(200, json=fast_thin)
@@ -796,6 +804,8 @@ def test_discover_topics_lets_fact_rich_derived_candidate_outrank_seed(
 
     def handler(req: httpx.Request) -> httpx.Response:
         body = req.read().decode("utf-8") if req.content else "{}"
+        if "/topics/" in req.url.path:
+            return httpx.Response(200, json=[])
         if req.url.path.endswith("/tier2/facts/search"):
             if "grid" not in body:
                 return httpx.Response(200, json=[])

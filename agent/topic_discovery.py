@@ -51,7 +51,7 @@ _TITLE_STOPWORDS = frozenset({
     "before", "during", "across", "study", "trial", "review", "analysis",
     "effect", "effects", "association", "associated", "based", "between",
     "patients", "adults", "human", "mouse", "mice", "model", "models",
-    "new", "novel",
+    "new", "novel", "improve", "improved", "improves",
 })
 
 
