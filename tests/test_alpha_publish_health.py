@@ -552,7 +552,11 @@ def test_next_candidate_summary_separates_raw_ready_from_actionable(
     def select_candidate(
         *_args: object, **_kwargs: object,
     ) -> tuple[None, list[dict[str, Any]]]:
-        return None, [{"topic": "exercise", "status": "duplicate_submission_fingerprint"}]
+        return None, [{
+            "topic": "exercise",
+            "status": "duplicate_submission_fingerprint",
+            "blockers": ["source_dispersion"],
+        }]
 
     fake_cycle = SimpleNamespace(
         _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES=5,
@@ -575,6 +579,7 @@ def test_next_candidate_summary_separates_raw_ready_from_actionable(
     assert summary["supply_status"] == "ready_queue_blocked"
     assert summary["considered_counts"] == {"duplicate_submission_fingerprint": 1}
     assert summary["blocked_ready_reasons"] == {"duplicate_submission_fingerprint": 1}
+    assert summary["blocked_ready_blockers"] == {"source_dispersion": 1}
     assert Path(seen["submitted_path"]).name == "_submitted_fingerprints.json"
 
 

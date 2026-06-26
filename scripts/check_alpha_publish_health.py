@@ -76,6 +76,18 @@ def _considered_counts(ledger: Json) -> dict[str, int]:
     return counts
 
 
+def _blocker_counts(ledger: Json) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for row in ledger.get("considered") or []:
+        if not isinstance(row, dict):
+            continue
+        for blocker in row.get("blockers") or []:
+            key = str(blocker or "").strip()
+            if key:
+                counts[key] = counts.get(key, 0) + 1
+    return counts
+
+
 def _attempts(ledger: Json) -> list[Json]:
     rows: list[Json] = []
     for row in ledger.get("cycle_attempts") or []:
@@ -217,7 +229,9 @@ def summarize_next_candidate(
         {},
     )
     has_actionable = candidate is not None
-    considered_counts = _considered_counts({"considered": considered})
+    considered_ledger = {"considered": considered}
+    considered_counts = _considered_counts(considered_ledger)
+    blocker_counts = _blocker_counts(considered_ledger)
     return {
         "topic": (candidate or {}).get("topic"),
         "decision": (candidate or {}).get("decision"),
@@ -233,6 +247,7 @@ def summarize_next_candidate(
         ),
         "considered_counts": considered_counts,
         "blocked_ready_reasons": considered_counts if raw_ready and not has_actionable else {},
+        "blocked_ready_blockers": blocker_counts if raw_ready and not has_actionable else {},
         "retry_after_rejection": bool(eligible_row.get("retry_after_rejection")),
         "retry_attempt_count": eligible_row.get("retry_attempt_count"),
     }
