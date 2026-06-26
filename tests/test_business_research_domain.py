@@ -9,6 +9,7 @@ import httpx
 
 import scripts.build_business_alpha_candidate as business_cli
 import scripts.build_publish_queue as queue
+import scripts.check_alpha_publish_health as health
 import scripts.run_business_alpha_sweep as sweep
 from agent.business_research import (
     build_candidate_bundle,
@@ -713,12 +714,15 @@ def test_business_sweep_writes_domain_scoped_latest_summaries(
         "--topics-per-domain", "1",
         "--domains", "business_research,marketing_research",
         "--runs-root", str(tmp_path / "runs"),
+        "--submit-date", "2026-06-26T01-00-00Z",
     ])
 
     assert sweep.main() == 2
     captured = capsys.readouterr()
     assert "[business-sweep] no_bundle business_research business_model_performance" in captured.out
     assert "[business-sweep] no_bundle marketing_research business_model_performance" in captured.out
+    assert "[business-sweep] domain=business_research summary=" in captured.out
+    assert '"top_blockers": {"no_bundle": 1, "no_source_diverse_bundle": 1}' in captured.out
     assert "[business-sweep] no_ready_candidate" in captured.err
 
     diagnostics = tmp_path / "runs" / "_business_diagnostics"
@@ -752,6 +756,19 @@ def test_business_sweep_writes_domain_scoped_latest_summaries(
     assert marketing_queue["not_ready"][0]["domain_slug"] == "marketing_research"
     assert business_queue["not_ready"][0]["queue_status"] == "no_source_diverse_bundle"
     assert marketing_queue["not_ready"][0]["queue_status"] == "no_source_diverse_bundle"
+    business_summary = health.summarize_latest(
+        tmp_path / "runs", domain="business_research",
+    )
+    assert business_summary["status"] == "candidate_refresh_failed"
+    assert business_summary["reason"] == "no_source_diverse_bundle"
+    assert business_summary["queue_counts"]["not_ready"] == 1
+    assert business_summary["top_blockers"] == {
+        "no_bundle": 1, "no_source_diverse_bundle": 1,
+    }
+    assert (
+        tmp_path / "runs" / "_daily_ledger"
+        / "2026-06-26T01-00-00Z-business_research.json"
+    ).exists()
 
 
 def test_business_sweep_submits_after_consistent_non_dry_run_passes(

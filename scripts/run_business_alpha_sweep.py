@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import json
 import sys
 import time
 import tomllib
@@ -19,8 +20,9 @@ from agent.business_research import (
 )
 from agent.domain_profile import load_domain_profile
 from agent.settings import load_settings
+from scripts import alpha_publish_status as publish_status
 from scripts import build_publish_queue as publish_queue
-from scripts.alpha_publish_io import write_json
+from scripts.alpha_publish_io import read_json, write_json, write_ledger
 from scripts.build_business_alpha_candidate import write_no_bundle_diagnostics
 from scripts.daily_alpha_publish_cycle import run_cycle
 
@@ -86,6 +88,45 @@ def _refresh_domain_queue(runs_root: Path, domain: str) -> None:
     finally:
         publish_queue._RUNS = previous
     write_json(runs_root / f"_publish_queue.{domain}.json", queue)
+
+
+def _write_no_ready_ledgers(runs_root: Path, rows: list[dict[str, Any]], date: str) -> None:
+    for domain in sorted({str(row.get("domain") or "") for row in rows if row.get("domain")}):
+        domain_rows = [row for row in rows if row.get("domain") == domain]
+        queue = read_json(runs_root / f"_publish_queue.{domain}.json", {})
+        queue_counts = publish_status.queue_counts(queue if isinstance(queue, dict) else {})
+        considered = [
+            {
+                "topic": row.get("topic"),
+                "status": row.get("status") or "not_ready",
+                "domain_slug": domain,
+                "blockers": ["no_source_diverse_bundle"] if row.get("status") == "no_bundle" else [],
+            }
+            for row in domain_rows
+        ]
+        reason = (
+            "no_source_diverse_bundle"
+            if considered and all(row.get("status") == "no_bundle" for row in domain_rows)
+            else "no_ready_business_candidate"
+        )
+        ledger = {
+            "date": date,
+            "domain": load_domain_profile(domain).as_metadata(),
+            "domain_slug": domain,
+            "status": publish_status.CycleStatus.CANDIDATE_REFRESH_FAILED.value,
+            "reason": reason,
+            "submitted": 0,
+            "published": 0,
+            "considered": considered,
+            "queue_counts": queue_counts,
+            "next_action": "inspect_refresh_failure",
+        }
+        path = runs_root / "_daily_ledger" / f"{date}-{domain}.json"
+        write_ledger(path, ledger)
+        print(
+            f"[business-sweep] domain={domain} "
+            f"summary={json.dumps(ledger['publish_summary'], sort_keys=True)}"
+        )
 
 
 def _bundle_fingerprint(bundle: Any) -> str:
@@ -190,6 +231,8 @@ def main() -> int:
         if cycle + 1 < args.cycles and args.sleep_seconds > 0:
             time.sleep(args.sleep_seconds)
     summary_path = _write_sweep_summary(args.runs_root, rows)
+    ledger_date = args.submit_date or dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
+    _write_no_ready_ledgers(args.runs_root, rows, ledger_date)
     print(f"[business-sweep] no_ready_candidate summary={summary_path}", file=sys.stderr)
     return 2
 
