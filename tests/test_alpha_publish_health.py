@@ -436,6 +436,33 @@ def test_sla_monitor_full_command_fails_red_with_blocker_summary(
     assert summary["next_candidate"]["supply_status"] == "no_ready_rows"
 
 
+def test_health_summary_does_not_double_count_stored_terminal_blocker(
+    tmp_path: Path,
+) -> None:
+    _write_ledger(tmp_path, "2026-06-01T01-04-07Z-finance.json", {
+        "status": "candidate_refresh_failed",
+        "submitted": 0,
+        "published": 0,
+        "domain_slug": "finance_research",
+        "publish_summary": {
+            "top_blockers": {
+                "candidate_refresh_failed": 1,
+                "no_bundle": 12,
+                "no_source_diverse_bundle": 12,
+            },
+            "next_action": "inspect_refresh_failure",
+        },
+    })
+
+    summary = health.summarize_latest(tmp_path, domain="finance_research")
+
+    assert summary["top_blockers"] == {
+        "candidate_refresh_failed": 1,
+        "no_bundle": 12,
+        "no_source_diverse_bundle": 12,
+    }
+
+
 def test_expect_published_exits_nonzero_for_real_no_publish_statuses(
     tmp_path: Path,
 ) -> None:

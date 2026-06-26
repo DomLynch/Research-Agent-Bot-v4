@@ -133,7 +133,7 @@ def _publish_summary(ledger: Json) -> Json:
             for key, value in blockers.items()
             if str(key) and isinstance(value, int)
         }
-        merged[status] = merged.get(status, 0) + 1
+        merged[status] = max(1, merged.get(status, 0))
         summary["top_blockers"] = dict(
             sorted(merged.items(), key=lambda item: (-item[1], item[0]))[:5]
         )

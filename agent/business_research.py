@@ -29,7 +29,7 @@ MIN_DIRECT_SOURCES = 5
 FETCH_TOP_K = 100
 PRESERVED_FIELDS = (
     "population", "organization_type", "industry", "asset_class", "geography",
-    "time_period", "intervention", "comparator", "outcome", "metric",
+    "time_period", "intervention", "signal_family", "comparator", "outcome", "metric",
     "study_design", "dataset", "estimation_method", "identification_strategy", "effect_size",
     "confidence_interval", "standard_error", "p_value", "sample_size",
 )
@@ -279,6 +279,8 @@ def normalize_business_fact(item: Json, *, topic: str, domain: str) -> Json:
         value = _clean(_specific_method(_field(item, fact, name)) if name == "study_design" else _field(item, fact, name))
         if value:
             out[name] = value
+        if detail := _clean(item.get(f"{name}_detail") or fact.get(f"{name}_detail")):
+            out[f"{name}_detail"] = detail
     if numeric is not None and not out.get("effect_size"):
         out["effect_size"] = numeric
     _apply_schema_shape(out, domain=domain)
@@ -302,8 +304,7 @@ def comparable_shape(fact: Json) -> dict[str, str]:
 
 def shape_key(fact: Json) -> str:
     shape = comparable_shape(fact)
-    fields = [name for name in SHAPE_FIELDS if not (_is_finance_return_fact(fact) and name == "signal_family")]
-    return "|".join(f"{name}={shape.get(name, '')}" for name in fields)
+    return "|".join(f"{name}={shape.get(name, '')}" for name in SHAPE_FIELDS)
 
 
 def _topic_intent_tokens(topic: Any) -> set[str]:
@@ -362,7 +363,7 @@ def _is_finance_return_fact(fact: Json) -> bool:
 
 
 def _finance_signal_family(fact: Json) -> str:
-    for field in ("intervention_detail", "intervention", "asset_class", "dataset"):
+    for field in ("signal_family_detail", "intervention_detail", "intervention", "asset_class", "dataset"):
         value = _norm(fact.get(field))
         if value and value not in _GENERIC_METHOD_VALUES:
             return value
@@ -373,8 +374,7 @@ def _apply_finance_return_shape(fact: Json) -> None:
     if not _is_finance_return_fact(fact):
         return
     for field in ("population", "intervention", "comparator", "outcome", "metric", "study_design"):
-        value = _clean(fact.get(field))
-        if value:
+        if (value := _clean(fact.get(field))) and not fact.get(f"{field}_detail"):
             fact[f"{field}_detail"] = value
     signal_detail = _finance_signal_family(fact)
     if signal_detail:
@@ -431,7 +431,6 @@ def comparability_blockers(receipts: tuple[Json, ...]) -> list[str]:
     if threshold is not None and any(abs(value) > threshold for value in numeric_values):
         blockers.append("outlier_requires_verification")
     return blockers
-
 
 def cluster_business_facts(facts: list[Json], *, min_sources: int = MIN_DIRECT_SOURCES) -> list[BusinessCandidateBundle]:
     buckets: dict[str, list[Json]] = {}

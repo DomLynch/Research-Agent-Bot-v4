@@ -142,7 +142,7 @@ def test_finance_return_bundle_rejects_mixed_signal_family_details() -> None:
             "intervention": signal,
             "comparator": "benchmark portfolio",
             "outcome": "risk adjusted return",
-            "metric": f"annual alpha return measure {i}",
+            "metric": "annual alpha return",
             "study_design": "empirical asset pricing",
             "paper": {
                 "doi": f"10.7777/finance-return-{i}",
@@ -611,14 +611,14 @@ def test_business_candidate_memo_treats_percent_spread_as_disagreement(
     assert "same measured business effect" not in memo
 
 
-def test_finance_return_bundle_groups_distinct_signal_families() -> None:
+def test_finance_return_bundle_accepts_repeated_signal_family() -> None:
     rows: list[dict[str, Any]] = []
-    for i, (signal, population) in enumerate((
-        ("value spread", "equity portfolios"),
-        ("momentum spread", "mutual funds"),
-        ("quality spread", "hedge funds"),
-        ("low-volatility spread", "stock portfolios"),
-        ("profitability spread", "factor portfolios"),
+    for i, population in enumerate((
+        "equity portfolios",
+        "mutual funds",
+        "hedge funds",
+        "stock portfolios",
+        "factor portfolios",
     ), start=1):
         rows.append({
             "id": f"finance-return-{i}",
@@ -626,16 +626,16 @@ def test_finance_return_bundle_groups_distinct_signal_families() -> None:
             "claim_type": "alpha_return",
             "numeric_value": 5 + i,
             "units": "%",
-            "canonical_phrase": f"{signal} portfolio earns alpha returns of {5 + i}%",
+            "canonical_phrase": f"value spread portfolio earns alpha returns of {5 + i}%",
             "population": population,
-            "intervention": signal,
+            "intervention": "value spread",
             "comparator": "benchmark portfolio",
             "outcome": "risk adjusted returns",
             "metric": "alpha return",
             "study_design": "empirical asset pricing",
             "paper": {
                 "doi": f"10.7777/finance-return-{i}",
-                "title": f"{signal} and portfolio returns",
+                "title": "value spread and portfolio returns",
             },
         })
 
@@ -810,7 +810,10 @@ def test_business_sweep_writes_domain_scoped_latest_summaries(
     assert "[business-sweep] no_bundle business_research business_model_performance" in captured.out
     assert "[business-sweep] no_bundle marketing_research business_model_performance" in captured.out
     assert "[business-sweep] domain=business_research summary=" in captured.out
-    assert '"top_blockers": {"no_bundle": 1, "no_source_diverse_bundle": 1}' in captured.out
+    assert (
+        '"top_blockers": {"candidate_refresh_failed": 1, '
+        '"no_bundle": 1, "no_source_diverse_bundle": 1}'
+    ) in captured.out
     assert "[business-sweep] no_ready_candidate" in captured.err
 
     diagnostics = tmp_path / "runs" / "_business_diagnostics"
@@ -851,7 +854,9 @@ def test_business_sweep_writes_domain_scoped_latest_summaries(
     assert business_summary["reason"] == "no_source_diverse_bundle"
     assert business_summary["queue_counts"]["not_ready"] == 1
     assert business_summary["top_blockers"] == {
-        "no_bundle": 1, "no_source_diverse_bundle": 1,
+        "candidate_refresh_failed": 1,
+        "no_bundle": 1,
+        "no_source_diverse_bundle": 1,
     }
     assert (
         tmp_path / "runs" / "_daily_ledger"
