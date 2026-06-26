@@ -536,7 +536,7 @@ def _metric_type_coherent(
         anchor_tokens = _tokens(
             f"{window} {unit_text}", "", shape_generic,
         )
-        if common_metric & (anchor_tokens | {token.rstrip("s") for token in anchor_tokens if len(token) > 3}):
+        if (common_metric | ({"returns", "abnormal", "excess"} if common_metric & {"return", "alpha", "premium"} else set())) & (anchor_tokens | {token.rstrip("s") for token in anchor_tokens if len(token) > 3}):
             aligned_sources.add(source)
     if len(quantified_sources) < min_sources:
         return True
