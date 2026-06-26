@@ -1187,6 +1187,8 @@ def test_fullraw_supply_fallback_does_not_resurrect_excluded_topic(
     out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
     assert [row["topic"] for row in payload["top"]] == ["fisetin"]
+    assert len(payload["top"][0]["source_papers"]) == 5
+    assert payload["top"][0]["source_papers"][0]["doi"].startswith("10.1/fis")
 
 
 def test_fullraw_supply_requires_per_topic_source_floor(monkeypatch: Any) -> None:

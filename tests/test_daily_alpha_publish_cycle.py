@@ -8268,6 +8268,70 @@ def test_source_literature_preflight_uses_default_fullraw_supply_before_refresh(
     assert ledger["submitted_topic"] == "cellular_reprogramming_safety"
 
 
+def test_source_literature_reuses_discovery_source_papers_before_refetch(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    papers = [
+        {
+            "title": title,
+            "doi": f"10.1234/reuse-{idx}",
+            "source_fact": {
+                "canonical_phrase": f"reprogramming safety source finding {idx}",
+                "population": "adults",
+                "intervention": "cellular reprogramming",
+                "endpoint": "safety",
+            },
+        }
+        for idx, title in enumerate((
+            "Cellular reprogramming safety in aging tissue",
+            "Partial reprogramming tumor risk and longevity",
+            "Epigenetic rejuvenation safety endpoints",
+            "Transient Yamanaka factor reprogramming adverse events",
+            "Cellular reprogramming senescence safety review",
+        ))
+    ]
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{
+            "topic": "cellular_reprogramming_safety",
+            "paper_count": 5,
+            "fact_source_count": 5,
+            "source_papers": papers,
+        }],
+    })
+    monkeypatch.setattr(
+        daily, "_fetch_source_literature_papers",
+        lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("refetched")),
+    )
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-50-30Z",
+        domain="longevity_research",
+        refresh_candidates=True,
+        max_refresh_batches=1,
+        submit=True,
+        submitter=lambda _payload: {
+            "ok": True, "status": 200,
+            "response": {"submission": {"id": "sub-1"}},
+        },
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "cellular_reprogramming_safety"
+    assert ledger["source_literature_preflight_attempts"][0]["paper_count"] == 5
+
+
 def test_source_literature_preflight_uses_single_current_candidate_window(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

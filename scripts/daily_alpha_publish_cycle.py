@@ -3564,6 +3564,32 @@ def _source_literature_topic_candidates(
     return topics[:limit]
 
 
+def _source_literature_discovery_papers(
+    runs_root: Path, profile_slug: str, topic: str, min_sources: int,
+) -> list[Json]:
+    discovery_dir = runs_root / "_topics_discovery"
+    paths = sorted(
+        discovery_dir.glob("*.json"),
+        key=lambda path: path.stat().st_mtime if path.exists() else 0,
+        reverse=True,
+    )
+    for path in paths:
+        data = _json(path, {})
+        if not isinstance(data, dict) or not _same_domain(_row_domain(data), profile_slug):
+            continue
+        rows = data.get("all")
+        if not isinstance(rows, list):
+            continue
+        for row in rows:
+            if not isinstance(row, dict) or str(row.get("topic") or "").strip() != topic:
+                continue
+            raw = row.get("source_papers")
+            papers = [paper for paper in raw if isinstance(paper, dict)] if isinstance(raw, list) else []
+            if len(papers) >= min_sources:
+                return papers
+    return []
+
+
 def _source_literature_topic_candidate(
     runs_root: Path, profile_slug: str, min_sources: int, blocked_topics: set[str] | None = None,
     *, soft_broad_blocked_topics: set[str] | None = None,
@@ -4687,8 +4713,13 @@ def run_cycle(
         source_lit_probe_attempts: list[Json] = []
         if submit and profile.slug != "ai_research":
             source_lit_probe = source_paper_fetcher or (
-                lambda topic, limit: _fetch_source_literature_papers(
-                    topic, limit, domain=profile.slug,
+                lambda topic, limit: (
+                    _source_literature_discovery_papers(
+                        runs_root, profile.slug, topic, min_submit_sources,
+                    )
+                    or _fetch_source_literature_papers(
+                        topic, limit, domain=profile.slug,
+                    )
                 )
             )
             for topic in _source_literature_topic_candidates(
@@ -5332,7 +5363,10 @@ def run_cycle(
                 if literature_topic in source_lit_preflight_papers else
                 paper_fetcher(literature_topic, min_submit_sources)
                 if paper_fetcher is not None else
-                _fetch_source_literature_papers(
+                _source_literature_discovery_papers(
+                    runs_root, profile.slug, literature_topic, min_submit_sources,
+                )
+                or _fetch_source_literature_papers(
                     literature_topic, min_submit_sources * 3, domain=profile.slug,
                 )
             )

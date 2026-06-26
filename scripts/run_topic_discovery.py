@@ -46,6 +46,7 @@ _SOURCE_RICH_FLOOR = 5
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 _FULLRAW_PROBE_RECEIPTS: list[dict[str, object]] = []
 _FULLRAW_PROBE_EVENTS: list[dict[str, object]] = []
+_FULLRAW_SUPPLY_SOURCE_PAPERS: dict[str, list[dict[str, object]]] = {}
 _GENERIC_SCOPE_TOKENS = {
     "ai", "research", "study", "studies", "trial", "trials", "review",
     "meta", "analysis", "effect", "effects", "therapy", "treatment",
@@ -676,6 +677,7 @@ def _fullraw_supply_candidates(
                             for blocked in excluded
                         ):
                             continue
+                    _remember_fullraw_supply(candidate.topic, scoped[:25])
                     domain_out.append(candidate)
                     if len(domain_out) >= top:
                         return tuple(sorted(domain_out, key=_rank_key))
@@ -688,10 +690,12 @@ def _fullraw_supply_candidates(
                     topic = "_".join(query.split())
                     seen_topics.add(topic)
                     used_seed_labels.add(label)
-                    out.append(_score_topic(
+                    candidate = _score_topic(
                         topic, scoped[:25], current_year,
                         fact_source_count=len(scoped),
-                    ))
+                    )
+                    _remember_fullraw_supply(candidate.topic, scoped[:25])
+                    out.append(candidate)
                     if len(out) >= top:
                         return tuple(sorted(out, key=_rank_key))
     papers = list(papers_by_key.values())
@@ -707,9 +711,11 @@ def _fullraw_supply_candidates(
             continue
         topic = "_".join(query.split())
         seen_topics.add(topic)
-        out.append(_score_topic(
+        candidate = _score_topic(
             topic, scoped[:25], current_year, fact_source_count=len(scoped),
-        ))
+        )
+        _remember_fullraw_supply(candidate.topic, scoped[:25])
+        out.append(candidate)
         if len(out) >= top:
             return tuple(sorted(out, key=_rank_key))
     seed_exact, _ = _domain_scope(seeds)
@@ -731,19 +737,28 @@ def _fullraw_supply_candidates(
         ], context_terms)
         if len(scoped) < _SOURCE_RICH_FLOOR:
             continue
-        out.append(_score_topic(
+        candidate = _score_topic(
             topic, scoped[:25], current_year, fact_source_count=len(scoped),
-        ))
+        )
+        _remember_fullraw_supply(candidate.topic, scoped[:25])
+        out.append(candidate)
         if len(out) >= top:
             break
     if not out:
         scoped = _context_supported_papers(papers, context_terms)
         if len(scoped) >= _SOURCE_RICH_FLOOR:
-            out.append(_score_topic(
+            candidate = _score_topic(
                 "_".join(next(iter(query_labels)).split()), scoped[:25],
                 current_year, fact_source_count=len(scoped),
-            ))
+            )
+            _remember_fullraw_supply(candidate.topic, scoped[:25])
+            out.append(candidate)
     return tuple(sorted(out, key=_rank_key))
+
+
+def _remember_fullraw_supply(topic: str, papers: list[dict[str, object]]) -> None:
+    if topic and papers:
+        _FULLRAW_SUPPLY_SOURCE_PAPERS[topic] = papers[:25]
 
 
 def _filter_excluded(
@@ -752,6 +767,14 @@ def _filter_excluded(
     if not excluded:
         return candidates
     return tuple(c for c in candidates if not _topic_family_excluded(c.topic, excluded))
+
+
+def _candidate_payload(candidate: TopicCandidate) -> dict[str, object]:
+    row = candidate.as_dict()
+    papers = _FULLRAW_SUPPLY_SOURCE_PAPERS.get(candidate.topic)
+    if papers:
+        row["source_papers"] = papers
+    return row
 
 
 def _topic_key(value: str) -> str:
@@ -934,6 +957,7 @@ def main() -> int:
     args = parser.parse_args()
     _FULLRAW_PROBE_RECEIPTS.clear()
     _FULLRAW_PROBE_EVENTS.clear()
+    _FULLRAW_SUPPLY_SOURCE_PAPERS.clear()
     profile = load_domain_profile(args.domain)
     seeds = _domain_seed_topics(profile.slug)
     if not seeds:
@@ -1103,8 +1127,8 @@ def main() -> int:
         "cache_supported": cache_supported,
         "source_rich_floor": _SOURCE_RICH_FLOOR,
         "source_rich_count": sum(1 for c in ranked if _source_rich(c)),
-        "top": [c.as_dict() for c in top],
-        "all": [c.as_dict() for c in ranked],
+        "top": [_candidate_payload(c) for c in top],
+        "all": [_candidate_payload(c) for c in ranked],
     }
     publish_io.write_json(out_dir / f"{ts}.json", json_payload)
     publish_io.write_text(
