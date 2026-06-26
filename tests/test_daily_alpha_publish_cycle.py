@@ -5493,6 +5493,34 @@ def test_sync_submission_decisions_locks_submitted_fingerprint_updates(
     ) in lock_calls
 
 
+def test_reviewer_revision_rewrite_uses_alpha_memo_lock(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    run = tmp_path / "run"
+    run.mkdir()
+    run.joinpath("alpha_memo.md").write_text(
+        "**Headline:** A novel signal\n\n## Why this is surprising\nReal tension: x\n",
+        encoding="utf-8",
+    )
+    lock_calls: list[tuple[str, int]] = []
+
+    def fake_flock(handle: Any, op: int) -> None:
+        lock_calls.append((Path(handle.name).name, op))
+
+    monkeypatch.setattr(fcntl, "flock", fake_flock)
+
+    changed = daily._apply_reviewer_revision_notes(
+        run,
+        {
+            "decision": "revise",
+            "notes": "overclaim; narrow repetition and surprise section",
+        },
+    )
+
+    assert changed is True
+    assert ("alpha_memo.md.lock", fcntl.LOCK_EX) in lock_calls
+
+
 def test_sync_submission_decisions_expires_stale_pending(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{

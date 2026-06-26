@@ -1709,7 +1709,7 @@ def _apply_reviewer_revision_notes(run_dir: Path, decision: Json) -> bool:
         ):
             revised = _soften_overclaim_language(revised)
         if revised != original:
-            path.write_text(revised, encoding="utf-8")
+            publish_io.write_text(path, revised)
             return True
     return False
 
