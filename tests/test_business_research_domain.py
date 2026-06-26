@@ -122,25 +122,26 @@ def test_business_bundle_materializes_shape_fallbacks() -> None:
 
 def test_finance_return_bundle_uses_generic_signal_family_shape() -> None:
     rows: list[dict[str, Any]] = []
-    for i, signal in enumerate((
+    signals = (
         "value factor long-short portfolio",
         "momentum factor long-short portfolio",
         "quality factor long-short portfolio",
         "liquidity factor long-short portfolio",
         "carbon disclosure factor portfolio",
-    ), start=1):
+    )
+    for i, signal in enumerate(signals, start=1):
         rows.append({
             "id": f"finance-return-{i}",
             "topic": "portfolio_returns",
             "claim_type": "return_premium",
-            "numeric_value": 1.0 + i,
+            "numeric_value": 13.0 if i == len(signals) else 1.0 + i,
             "units": "%",
             "canonical_phrase": f"{signal} earns abnormal return alpha.",
-            "population": "public equity portfolios",
+            "population": f"public equity portfolio segment {i}",
             "intervention": signal,
             "comparator": "benchmark portfolio",
             "outcome": "risk adjusted return",
-            "metric": "annual alpha return",
+            "metric": f"annual alpha return measure {i}",
             "study_design": "empirical asset pricing",
             "paper": {
                 "doi": f"10.7777/finance-return-{i}",

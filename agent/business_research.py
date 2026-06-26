@@ -406,7 +406,7 @@ def is_a_core_business_fact(fact: Json) -> bool:
 
 
 def comparability_blockers(receipts: tuple[Json, ...]) -> list[str]:
-    if not _mixed_effect_signal(receipts):
+    if not _mixed_effect_signal(receipts) or all(_is_finance_return_fact(fact) for fact in receipts):
         return []
     blockers: list[str] = []
     for detail_field, blocker in (
