@@ -22,22 +22,11 @@ from agent.domain_profile import DomainProfile, load_domain_profile
 from agent.settings import Settings
 from agent.signal_memo_writer import build_claim_receipt_matrix, build_memo_audit
 
-BUSINESS_DOMAINS = frozenset({
-    "business_research", "management_research", "economics_research", "finance_research", "marketing_research",
-})
+BUSINESS_DOMAINS = frozenset({"business_research", "management_research", "economics_research", "finance_research", "marketing_research"})
 MIN_DIRECT_SOURCES = 5
 FETCH_TOP_K = 100
-PRESERVED_FIELDS = (
-    "population", "organization_type", "industry", "asset_class", "geography",
-    "time_period", "intervention", "signal_family", "comparator", "outcome", "metric",
-    "study_design", "dataset", "estimation_method", "identification_strategy", "effect_size",
-    "confidence_interval", "standard_error", "p_value", "sample_size",
-)
-SHAPE_FIELDS = (
-    "population", "organization_type", "industry", "asset_class", "geography",
-    "time_period", "intervention", "signal_family", "comparator", "outcome",
-    "metric", "study_design", "dataset", "estimation_method", "identification_strategy",
-)
+PRESERVED_FIELDS = ("population", "organization_type", "industry", "asset_class", "geography", "time_period", "intervention", "signal_family", "comparator", "outcome", "metric", "study_design", "dataset", "estimation_method", "identification_strategy", "effect_size", "confidence_interval", "standard_error", "p_value", "sample_size")
+SHAPE_FIELDS = ("population", "organization_type", "industry", "asset_class", "geography", "time_period", "intervention", "signal_family", "comparator", "outcome", "metric", "study_design", "dataset", "estimation_method", "identification_strategy")
 CORE_SHAPE_FIELDS = ("intervention", "comparator", "outcome", "metric", "study_design")
 FIELD_ALIASES: dict[str, tuple[str, ...]] = {
     "comparator": ("baseline_comparator", "benchmark"),
@@ -52,6 +41,7 @@ _GENERIC_TOPIC_TOKENS = frozenset({
     "performance", "effect", "effects", "outcome", "outcomes", "model",
     "policy",
 })
+_DETAIL_BLOCKERS = (("population_detail", "population_heterogeneity_explains_spread"), ("metric_detail", "metric_concept_mismatch"), ("signal_family_detail", "signal_family_heterogeneity_explains_spread"))
 _FINANCE_RETURN_TOPICS = frozenset({"asset pricing", "portfolio returns", "market efficiency"})
 _FINANCE_RETURN_RE = re.compile(r"\b(alpha|alphas|return|returns|premium|premia)\b", re.I)
 _STUDY_DESIGN_HINTS: tuple[tuple[re.Pattern[str], str], ...] = (
@@ -406,10 +396,7 @@ def comparability_blockers(receipts: tuple[Json, ...]) -> list[str]:
         return []
     blockers: list[str] = []
     finance_returns = all(_is_finance_return_fact(fact) for fact in receipts)
-    for detail_field, blocker in (
-        ("population_detail", "population_heterogeneity_explains_spread"),
-        ("metric_detail", "metric_concept_mismatch"), ("signal_family_detail", "signal_family_heterogeneity_explains_spread"),
-    ):
+    for detail_field, blocker in _DETAIL_BLOCKERS:
         if finance_returns and detail_field == "population_detail":
             continue
         values: set[str] = set()
@@ -432,6 +419,31 @@ def comparability_blockers(receipts: tuple[Json, ...]) -> list[str]:
         blockers.append("outlier_requires_verification")
     return blockers
 
+
+def _bundle_from_rows(rows: list[Json], *, min_sources: int, detail_shape: bool = False) -> BusinessCandidateBundle | None:
+    picked: list[Json] = []
+    seen_sources: set[str] = set()
+    for fact in rows:
+        src = source_key(fact)
+        if src and src not in seen_sources:
+            picked.append(fact)
+            seen_sources.add(src)
+    if len(seen_sources) < min_sources:
+        return None
+    receipts = tuple(picked[:min_sources])
+    if comparability_blockers(receipts):
+        return None
+    first = picked[0]
+    topic = str(first.get("topic") or "").strip()
+    domain = str(first.get("_domain") or "").strip()
+    shape = comparable_shape(first)
+    if detail_shape:
+        for detail_field, base_field in (("population_detail", "population"), ("metric_detail", "metric"), ("signal_family_detail", "signal_family")):
+            values = {_norm(fact.get(detail_field)) for fact in receipts if _norm(fact.get(detail_field))}
+            if len(values) == 1:
+                shape[base_field] = next(iter(values))
+    return BusinessCandidateBundle(domain=domain, topic=topic, result_key=_result_key(topic, shape), shape=shape, receipts=receipts)
+
 def cluster_business_facts(facts: list[Json], *, min_sources: int = MIN_DIRECT_SOURCES) -> list[BusinessCandidateBundle]:
     buckets: dict[str, list[Json]] = {}
     for fact in facts:
@@ -439,30 +451,18 @@ def cluster_business_facts(facts: list[Json], *, min_sources: int = MIN_DIRECT_S
             buckets.setdefault(shape_key(fact), []).append(fact)
     bundles: list[BusinessCandidateBundle] = []
     for rows in buckets.values():
-        picked: list[Json] = []
-        seen_sources: set[str] = set()
-        for fact in rows:
-            src = source_key(fact)
-            if src and src not in seen_sources:
-                picked.append(fact)
-                seen_sources.add(src)
-        if len(seen_sources) < min_sources:
+        detail_shape = any((field != "population_detail" or not all(_is_finance_return_fact(fact) for fact in rows)) and len({_norm(fact.get(field)) for fact in rows if _norm(fact.get(field))}) > 1 for field, _ in _DETAIL_BLOCKERS)
+        if bundle := _bundle_from_rows(rows, min_sources=min_sources, detail_shape=detail_shape):
+            bundles.append(bundle)
             continue
-        receipts = tuple(picked[:min_sources])
-        if comparability_blockers(receipts):
-            continue
-        first = picked[0]
-        topic = str(first.get("topic") or "").strip()
-        domain = str(first.get("_domain") or "").strip()
-        shape = comparable_shape(first)
-        bundles.append(BusinessCandidateBundle(
-            domain=domain,
-            topic=topic,
-            result_key=_result_key(topic, shape),
-            shape=shape,
-            receipts=receipts,
-        ))
-    return sorted(bundles, key=lambda b: (-b.source_count, b.result_key))
+        for detail_field, _blocker in _DETAIL_BLOCKERS:
+            splits: dict[str, list[Json]] = {}
+            for fact in rows:
+                if detail := _norm(fact.get(detail_field)):
+                    splits.setdefault(detail, []).append(fact)
+            bundles.extend(bundle for split in splits.values() if (bundle := _bundle_from_rows(split, min_sources=min_sources, detail_shape=True)))
+    unique = {bundle.result_key: bundle for bundle in bundles}
+    return sorted(unique.values(), key=lambda b: (-b.source_count, b.result_key))
 
 
 def _result_key(topic: str, shape: dict[str, str]) -> str:

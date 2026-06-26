@@ -16,7 +16,9 @@ import scripts.run_business_alpha_sweep as sweep
 from agent.business_research import (
     build_candidate_bundle,
     business_fact_diagnostics,
+    cluster_business_facts,
     fetch_business_facts,
+    normalize_business_fact,
 )
 from agent.domain_profile import DomainProfile, load_domain_profile
 from agent.topic_discovery import load_seed_topics
@@ -166,6 +168,41 @@ def test_finance_return_bundle_rejects_mixed_signal_disagreement() -> None:
     assert diagnostics["top_clusters"][0]["comparability_blockers"] == [
         "signal_family_heterogeneity_explains_spread",
     ]
+
+
+def test_finance_return_bundle_splits_mixed_signal_when_subcluster_is_source_rich() -> None:
+    rows: list[dict[str, Any]] = []
+    for signal in ("value factor portfolio", "momentum factor portfolio"):
+        for i in range(5):
+            rows.append({
+                "id": f"{signal}-{i}",
+                "topic": "portfolio_returns",
+                "claim_type": "return_premium",
+                "numeric_value": 0.0 if i == 0 else 20.0 + i,
+                "units": "%",
+                "canonical_phrase": f"{signal} reports alpha return evidence.",
+                "intervention": signal,
+                "comparator": "benchmark portfolio",
+                "outcome": "risk adjusted return",
+                "metric": "annual alpha return",
+                "study_design": "empirical asset pricing",
+                "paper": {"doi": f"10.7777/{signal.replace(' ', '-')}-{i}"},
+            })
+
+    bundles = cluster_business_facts([
+        normalize_business_fact(row, topic="portfolio_returns", domain="finance_research")
+        for row in rows
+    ])
+    bundle = build_candidate_bundle(rows, topic="portfolio_returns", domain="finance_research")
+
+    assert bundle is not None
+    assert bundle.source_count == 5
+    assert len({row["signal_family_detail"] for row in bundle.receipts}) == 1
+    assert bundle.shape["signal_family"] in {
+        "value factor portfolio",
+        "momentum factor portfolio",
+    }
+    assert len({row.result_key for row in bundles}) == len(bundles)
 
 
 def test_business_bundle_materializes_extractor_alias_fields() -> None:
