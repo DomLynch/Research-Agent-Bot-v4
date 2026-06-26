@@ -366,6 +366,31 @@ def test_fullraw_fallback_uses_top_level_full_sweep_receipt(
     assert papers[0]["fullraw_shard_receipt"]["shards_searched"] == 1525
 
 
+def test_fullraw_fallback_uses_cached_receipt_hits_shape(
+    monkeypatch: Any,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok-index")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS", "0")
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.host == "test":
+            return httpx.Response(200, json=[])
+        return httpx.Response(200, json={
+            "receipt": _fullraw_receipt(),
+            "hits": [{"title": "Cached full sweep receipt paper"}],
+        })
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        papers = td._fetch_topic_papers(
+            "metformin_longevity", client=c, settings=_settings(),
+        )
+
+    assert papers[0]["title"] == "Cached full sweep receipt paper"
+    assert papers[0]["fullraw_shard_receipt"]["shards_searched"] == 1525
+
+
 def test_fetch_topic_papers_falls_back_to_fullraw_when_db_errors(
     monkeypatch: Any,
 ) -> None:
