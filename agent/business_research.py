@@ -408,7 +408,7 @@ def comparability_blockers(receipts: tuple[Json, ...]) -> list[str]:
     finance_returns = all(_is_finance_return_fact(fact) for fact in receipts)
     for detail_field, blocker in (
         ("population_detail", "population_heterogeneity_explains_spread"),
-        ("metric_detail", "metric_concept_mismatch"),
+        ("metric_detail", "metric_concept_mismatch"), ("signal_family_detail", "signal_family_heterogeneity_explains_spread"),
     ):
         if finance_returns and detail_field == "population_detail":
             continue

@@ -122,7 +122,7 @@ def test_business_bundle_materializes_shape_fallbacks() -> None:
     assert bundle.shape["study_design"] == "difference in differences"
 
 
-def test_finance_return_bundle_preserves_mixed_signal_family_details() -> None:
+def test_finance_return_bundle_rejects_mixed_signal_disagreement() -> None:
     rows: list[dict[str, Any]] = []
     signals = (
         "value factor long-short portfolio",
@@ -157,10 +157,15 @@ def test_finance_return_bundle_preserves_mixed_signal_family_details() -> None:
         domain="finance_research",
     )
 
-    assert bundle is not None
-    assert bundle.source_count == 5
-    assert bundle.shape["signal_family"] == "return predictive signal"
-    assert bundle.receipts[0]["signal_family_detail"] == "value factor long short portfolio"
+    assert bundle is None
+    diagnostics = business_fact_diagnostics(
+        rows, topic="factor_premia_returns", domain="finance_research",
+    )
+    # Finance has no outlier_abs_threshold policy; this regression targets the
+    # reviewer-rejected false comparison across different signal families.
+    assert diagnostics["top_clusters"][0]["comparability_blockers"] == [
+        "signal_family_heterogeneity_explains_spread",
+    ]
 
 
 def test_business_bundle_materializes_extractor_alias_fields() -> None:
@@ -445,7 +450,7 @@ def test_finance_return_facts_cluster_by_empirical_asset_pricing_shape() -> None
     assert bundle.receipts[0]["intervention_detail"] == "hiring-rate long-short portfolio"
 
 
-def test_finance_return_facts_cluster_mixed_signal_details() -> None:
+def test_finance_return_facts_reject_mixed_signal_disagreement() -> None:
     rows = [
         {
             "id": f"fin-mixed-{i}",
@@ -474,10 +479,13 @@ def test_finance_return_facts_cluster_mixed_signal_details() -> None:
         domain="finance_research",
     )
 
-    assert bundle is not None
-    assert bundle.source_count == 5
-    assert bundle.shape["signal_family"] == "return predictive signal"
-    assert bundle.receipts[0]["signal_family_detail"] == "past track record portfolio"
+    assert bundle is None
+    diagnostics = business_fact_diagnostics(
+        rows, topic="factor_premia_returns", domain="finance_research",
+    )
+    assert diagnostics["top_clusters"][0]["comparability_blockers"] == [
+        "signal_family_heterogeneity_explains_spread",
+    ]
 
 
 def test_business_candidate_cli_builds_ready_queue(
