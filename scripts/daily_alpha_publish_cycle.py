@@ -3520,9 +3520,8 @@ def _source_literature_topic_candidates(
         key=lambda path: path.stat().st_mtime if path.exists() else 0,
         reverse=True,
     )
-    blocked = set(blocked_topics or set()) | _exhausted_source_literature_topics(
-        runs_root, profile_slug,
-    )
+    exhausted_topics = _exhausted_source_literature_topics(runs_root, profile_slug)
+    blocked = set(blocked_topics or set()) | exhausted_topics
     topics: list[str] = []
     seen: set[str] = set()
     for path in paths:
@@ -3536,8 +3535,15 @@ def _source_literature_topic_candidates(
             if not isinstance(row, dict):
                 continue
             topic = str(row.get("topic") or "").strip()
+            raw_source_papers = row.get("source_papers")
+            source_paper_count = (
+                len(raw_source_papers) if isinstance(raw_source_papers, list) else 0
+            )
+            row_soft_blocked_topics = soft_broad_blocked_topics
+            if source_paper_count >= min_sources:
+                row_soft_blocked_topics = set(soft_broad_blocked_topics or set()) | exhausted_topics
             if not topic or topic in seen or _source_literature_family_blocked_topic(
-                topic, blocked, soft_broad_blocked_topics=soft_broad_blocked_topics,
+                topic, blocked, soft_broad_blocked_topics=row_soft_blocked_topics,
             ):
                 continue
             topic_key = _canonical_family_key(topic).removeprefix("topic:")

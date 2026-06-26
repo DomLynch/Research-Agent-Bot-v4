@@ -8332,6 +8332,49 @@ def test_source_literature_reuses_discovery_source_papers_before_refetch(
     assert ledger["source_literature_preflight_attempts"][0]["paper_count"] == 5
 
 
+def test_source_backed_literature_candidate_bypasses_broad_exhausted_parent(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    ledger_dir = root / "_daily_ledger"
+    ledger_dir.mkdir()
+    for idx in range(daily._MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT):
+        daily._write_json(ledger_dir / f"2026-06-09T18-0{idx}-00Z.json", {
+            "domain": {"slug": "longevity_research"},
+            "submitted": 1,
+            "candidate": {
+                "topic": "metformin use",
+                "run_dir": f"metformin use-source-literature-2026-06-09T18-0{idx}-00Z",
+            },
+        })
+    papers = [
+        {"title": f"Metformin longevity source {idx}", "doi": f"10.1234/met-{idx}"}
+        for idx in range(5)
+    ]
+    daily._write_json(root / "_topics_discovery" / "fullraw.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [
+            {
+                "topic": "metformin use",
+                "paper_count": 5,
+                "fact_source_count": 5,
+                "source_papers": papers,
+            },
+            {
+                "topic": "metformin_longevity",
+                "paper_count": 5,
+                "fact_source_count": 5,
+                "source_papers": papers,
+            },
+        ],
+    })
+
+    assert daily._source_literature_topic_candidates(
+        root, "longevity_research", 5,
+    ) == ["metformin_longevity"]
+
+
 def test_source_literature_preflight_uses_single_current_candidate_window(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
