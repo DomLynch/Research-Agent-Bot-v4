@@ -3455,6 +3455,33 @@ def test_refresh_candidate_batch_reads_current_domain_cycle(
     assert out["ran_topics"] == ["model_eval"]
 
 
+def test_refresh_candidate_batch_reads_skipped_excluded_topics(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+
+    def fake_step(_args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        cycle_dir = root / "_curator_cycles"
+        cycle_dir.mkdir(parents=True)
+        daily._write_json(cycle_dir / "2026-06-22T09-37-46Z.json", {
+            "domain": {"slug": "longevity_research"},
+            "ran": [],
+            "skipped_excluded": ["metformin_longevity", "spermidine_longevity"],
+        })
+        return True, "[cycle] summary -> runs/_curator_cycles/2026-06-22T09-37-46Z.json"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    out = daily._refresh_candidate_batch(
+        5, runs_root=root, domain="longevity_research",
+    )
+
+    assert out["ok"] is True
+    assert out["skipped_excluded"] == [
+        "metformin_longevity", "spermidine_longevity",
+    ]
+
+
 def test_refresh_candidate_batch_ignores_current_wrong_domain_cycle(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
