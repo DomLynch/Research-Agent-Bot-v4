@@ -97,10 +97,23 @@ def test_publish_summary_contains_operator_blocker_fields() -> None:
     assert summary["top_blockers"] == {
         "agent_repair_needed": 1,
         "duplicate_submission_fingerprint": 1,
+        "no_fresh_candidate": 1,
         "requires_fact_level_source_synthesis": 1,
         "receipt_shape_mismatch": 1,
-        "source_literature_disabled": 1,
     }
+
+
+def test_publish_summary_uses_terminal_status_for_reviewer_rejection() -> None:
+    summary = publish_summary({
+        "status": CycleStatus.REVIEWER_REJECTED.value,
+        "submitted": 1,
+        "published": 0,
+        "next_action": "building_current_publish_queue",
+        "source_literature_fallback_attempts": [{"status": "selected", "reason": "ok"}],
+    })
+
+    assert summary["next_action"] == "repair_researka_review_feedback"
+    assert summary["top_blockers"]["reviewer_rejected"] == 1
 
 
 def test_publish_summary_flags_unterminated_started_cycle() -> None:

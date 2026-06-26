@@ -202,6 +202,8 @@ def publish_summary(ledger: Json) -> Json:
             if isinstance(event, dict) and event.get("status"):
                 blockers.append("fullraw_" + str(event.get("status")))
     status = str(ledger.get("status") or "")
+    if status and status not in SUBMIT_SUCCESS_STATUSES | {CycleStatus.STARTED.value}:
+        blockers.append(status)
     if (
         status == CycleStatus.STARTED.value
         and not considered
@@ -231,11 +233,8 @@ def publish_summary(ledger: Json) -> Json:
         "public_url": ledger.get("public_url"),
         "public_url_status": page_status,
         "public_page_status": page.get("status") if isinstance(page, dict) else None,
-        "next_action": (
-            str(ledger.get("next_action"))
-            if ledger.get("next_action") else
-            next_action_for_status(str(ledger.get("status") or ""))
-        ),
+        "next_action": next_action_for_status(status)
+        if status else str(ledger.get("next_action") or "inspect_ledger"),
     }
 
 

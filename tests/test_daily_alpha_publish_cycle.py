@@ -6012,6 +6012,7 @@ def test_publish_summary_counts_blockers_and_attempts(tmp_path: Path) -> None:
             "agent_repair_needed": 1,
             "duplicate_submission_fingerprint": 1,
             "fullraw_no_hits": 1,
+            "no_fresh_candidate": 1,
             "receipt_shape_mismatch": 1,
         },
     }
