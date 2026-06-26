@@ -1226,9 +1226,9 @@ def _fetch_fullraw_topic_papers(topic: str, *, client: httpx.Client, limit: int 
                     receipt = dict(data["receipt"] if isinstance(data.get("receipt"), dict) else data if "shards_searched" in data else {})
                 _FULLRAW_LAST_RECEIPT = dict(receipt)
                 sources = receipt.get("sources_searched")
-                source_count = sum(1 for v in sources.values() if v) if isinstance(sources, dict) else sum(1 for v in sources if v) if isinstance(sources, (list, tuple, set)) else 0
                 try:
                     failed = receipt.get("sweep_failed_shards")
+                    source_count = sum(1 for v in sources.values() if v) if isinstance(sources, dict) else sum(1 for v in sources if v) if isinstance(sources, (list, tuple, set)) else int(receipt.get("source_count_searched") or 0)
                     ok = failed is not None and int(receipt.get("shards_searched") or 0) >= 1525 and receipt.get("partial_shard_search") is False and int(failed) == 0 and source_count >= 5
                 except (TypeError, ValueError):
                     ok = False

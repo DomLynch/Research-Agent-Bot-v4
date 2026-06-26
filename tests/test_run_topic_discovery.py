@@ -62,6 +62,14 @@ def test_fullraw_receipt_complete_accepts_list_sources() -> None:
     assert run_topic_discovery._fullraw_receipt_complete(receipt)
 
 
+def test_fullraw_receipt_complete_accepts_source_count() -> None:
+    receipt = _fullraw_receipt()
+    receipt.pop("sources_searched")
+    receipt["source_count_searched"] = 5
+
+    assert run_topic_discovery._fullraw_receipt_complete(receipt)
+
+
 def test_seed_fullraw_records_incomplete_receipt_event(monkeypatch: Any) -> None:
     run_topic_discovery._FULLRAW_PROBE_EVENTS.clear()
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
@@ -100,6 +108,38 @@ def test_seed_fullraw_records_incomplete_receipt_event(monkeypatch: Any) -> None
         "sweep_failed_shards": 0,
         "async_status": "queued",
     }
+
+
+def test_seed_fullraw_does_not_use_client_fallback_when_endpoint_incomplete(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "https://fullraw/search")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", "1")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS", "0")
+    monkeypatch.setattr(
+        run_topic_discovery,
+        "_v5_client_papers",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("direct endpoint receipt is authoritative"),
+        ),
+    )
+
+    def handler(_req: Any) -> Any:
+        return run_topic_discovery.httpx.Response(200, json={
+            "meta": {"shard_receipt": {
+                "shards_searched": 201,
+                "partial_shard_search": True,
+                "sweep_failed_shards": 0,
+                "source_count_searched": 5,
+            }},
+            "results": [{"title": "Partial endpoint result"}],
+        })
+
+    transport = run_topic_discovery.httpx.MockTransport(handler)
+    with run_topic_discovery.httpx.Client(transport=transport) as client:
+        assert run_topic_discovery._seed_fullraw_papers(
+            "metformin longevity", client=client, limit=5,
+        ) == []
 
 
 def test_default_discovery_keeps_publish_path_bounded() -> None:

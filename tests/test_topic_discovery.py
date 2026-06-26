@@ -290,10 +290,14 @@ def test_fullraw_fallback_rejects_non_full_5tb_receipts(monkeypatch: Any) -> Non
 
     monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "https://fullraw/search")
     monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", "1")
+    source_count_bad = _fullraw_receipt()
+    source_count_bad.pop("sources_searched")
+    source_count_bad["source_count_searched"] = 4
     bad_receipts = [
         {**_fullraw_receipt(), "shards_searched": 1524},
         {**_fullraw_receipt(), "partial_shard_search": True},
         {**_fullraw_receipt(), "sweep_failed_shards": 1},
+        source_count_bad,
         {
             **_fullraw_receipt(),
             "sources_searched": {
@@ -426,6 +430,34 @@ def test_fullraw_fallback_uses_cached_receipt_hits_shape(
 
     assert papers[0]["title"] == "Cached full sweep receipt paper"
     assert papers[0]["fullraw_shard_receipt"]["shards_searched"] == 1525
+
+
+def test_fullraw_fallback_accepts_source_count_receipt_shape(
+    monkeypatch: Any,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok-index")
+    receipt = _fullraw_receipt()
+    receipt.pop("sources_searched")
+    receipt["source_count_searched"] = 5
+    receipt["source_count_total"] = 5
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.host == "test":
+            return httpx.Response(200, json=[])
+        return httpx.Response(200, json={
+            "meta": {"shard_receipt": receipt},
+            "results": [{"title": "Source-count-only full sweep paper"}],
+        })
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        papers = td._fetch_topic_papers(
+            "metformin_longevity", client=c, settings=_settings(),
+        )
+
+    assert papers[0]["title"] == "Source-count-only full sweep paper"
+    assert papers[0]["fullraw_shard_receipt"]["source_count_searched"] == 5
 
 
 def test_fetch_topic_papers_falls_back_to_fullraw_when_db_errors(

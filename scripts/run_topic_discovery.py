@@ -67,11 +67,11 @@ def _fullraw_receipt_complete(receipt: dict[str, Any]) -> bool:
     source_count = (
         sum(1 for v in sources.values() if v) if isinstance(sources, dict)
         else sum(1 for v in sources if v) if isinstance(sources, (list, tuple, set))
-        else 0
+        else receipt.get("source_count_searched")
     )
     failed = receipt.get("sweep_failed_shards")
     try:
-        return failed is not None and int(receipt.get("shards_searched") or 0) >= 1525 and receipt.get("partial_shard_search") is False and int(failed) == 0 and source_count >= 5
+        return failed is not None and int(receipt.get("shards_searched") or 0) >= 1525 and receipt.get("partial_shard_search") is False and int(failed) == 0 and int(source_count or 0) >= 5
     except (TypeError, ValueError):
         return False
 
@@ -205,9 +205,14 @@ def _v5_client_papers(query: str, *, limit: int) -> list[dict[str, object]]:
 def _seed_fullraw_papers(
     query: str, *, client: httpx.Client, limit: int,
 ) -> list[dict[str, object]]:
+    endpoint_configured = bool(
+        os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip()
+        or os.environ.get("V5_MEMO_FULL_RAW_INDEX_TOKEN", "").strip()
+        or os.environ.get("V5_MEMO_FULL_RAW_CORPUS_TOKEN", "").strip()
+    )
     papers = _fetch_fullraw_topic_papers(
         query, client=client, limit=limit,
-    ) or _v5_client_papers(query, limit=limit)
+    ) or ([] if endpoint_configured else _v5_client_papers(query, limit=limit))
     if not papers:
         event: dict[str, object] = {"query": query, "status": "no_hits"}
         receipt = getattr(topic_discovery_mod, "_FULLRAW_LAST_RECEIPT", {})
