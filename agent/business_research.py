@@ -296,7 +296,7 @@ def comparable_shape(fact: Json) -> dict[str, str]:
         return {
             "population": "firms portfolios funds",
             "intervention": "return predictive signal portfolio",
-            "signal_family": _norm(fact.get("signal_family")) or _finance_signal_family(fact),
+            "signal_family": _finance_signal_family(fact),
             "comparator": "benchmark or opposite signal portfolio",
             "outcome": "risk adjusted portfolio returns",
             "metric": "percentage return or alpha premium",
@@ -406,7 +406,7 @@ def is_a_core_business_fact(fact: Json) -> bool:
 
 
 def comparability_blockers(receipts: tuple[Json, ...]) -> list[str]:
-    if not _mixed_effect_signal(receipts) or all(_is_finance_return_fact(fact) for fact in receipts):
+    if not _mixed_effect_signal(receipts):
         return []
     blockers: list[str] = []
     for detail_field, blocker in (

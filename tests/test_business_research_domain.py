@@ -121,7 +121,7 @@ def test_business_bundle_materializes_shape_fallbacks() -> None:
     assert bundle.shape["study_design"] == "difference in differences"
 
 
-def test_finance_return_bundle_uses_generic_signal_family_shape() -> None:
+def test_finance_return_bundle_rejects_mixed_signal_family_details() -> None:
     rows: list[dict[str, Any]] = []
     signals = (
         "value factor long-short portfolio",
@@ -156,18 +156,7 @@ def test_finance_return_bundle_uses_generic_signal_family_shape() -> None:
         domain="finance_research",
     )
 
-    assert bundle is not None
-    assert bundle.source_count == 5
-    assert bundle.shape["signal_family"] == "return predictive signal"
-    assert {
-        receipt["signal_family_detail"] for receipt in bundle.receipts
-    } == {
-        "value factor long short portfolio",
-        "momentum factor long short portfolio",
-        "quality factor long short portfolio",
-        "liquidity factor long short portfolio",
-        "carbon disclosure factor portfolio",
-    }
+    assert bundle is None
 
 
 def test_business_bundle_materializes_extractor_alias_fields() -> None:
@@ -445,14 +434,11 @@ def test_finance_return_facts_cluster_by_empirical_asset_pricing_shape() -> None
 
     assert bundle is not None
     assert bundle.source_count == 5
-    assert bundle.shape["signal_family"] == "return predictive signal"
+    assert bundle.shape["signal_family"] == "hiring rate long short portfolio"
     assert bundle.shape["study_design"] == "empirical asset pricing"
     assert bundle.shape["metric"] == "percentage return or alpha premium"
     assert bundle.receipts[0]["intervention"] == "return predictive signal portfolio"
     assert bundle.receipts[0]["intervention_detail"] == "hiring-rate long-short portfolio"
-    assert {receipt["signal_family_detail"] for receipt in bundle.receipts} == {
-        "hiring rate long short portfolio",
-    }
 
 
 def test_finance_return_facts_reject_mixed_signal_families() -> None:
