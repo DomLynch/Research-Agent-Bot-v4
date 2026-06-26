@@ -120,7 +120,7 @@ _FULLRAW_SUPPLY_PARENT_TIMEOUT_SECONDS = 150
 def _fullraw_supply_parent_timeout_default() -> int:
     return max(
         _FULLRAW_SUPPLY_PARENT_TIMEOUT_SECONDS,
-        int(_fullraw_supply_budget_seconds()),
+        int(_fullraw_supply_budget_seconds()) + 60,
     )
 
 
