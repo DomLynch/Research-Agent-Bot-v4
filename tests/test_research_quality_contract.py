@@ -7,6 +7,7 @@ from pathlib import Path
 from pytest import MonkeyPatch
 
 import scripts.build_publish_queue as queue
+from agent.publish_tier import publish_verdict
 from agent.research_quality_contract import (
     apply_publish_quality_contract,
     evaluate_research_quality,
@@ -65,6 +66,24 @@ def test_contract_accepts_specific_receipt_owned_angle() -> None:
     assert quality["publishable"] is True
     assert "non_obvious_angle_present" in quality["strengths"]
     assert "boilerplate_insight_surface" not in quality["weaknesses"]
+
+
+def test_contract_requires_falsifiable_next_step() -> None:
+    memo = (
+        "# Alpha memo\n\n"
+        "**Headline:** Storage threshold separates reserve reliability from cost exposure\n"
+        "**Alpha score:** 90/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## One-sentence thesis\n\n"
+        "Reserve reliability improves at the storage threshold, while cost exposure remains protocol-sensitive.\n\n"
+        "## Why this is surprising\n\n"
+        "Real tension: the same threshold behaves like a reliability gain but not a pooled cost win.\n"
+    )
+
+    quality = evaluate_research_quality(_ready_verdict(), memo)
+
+    assert quality["publishable"] is False
+    assert "missing_falsifiable_next_step" in quality["weaknesses"]
 
 
 def test_contract_demotes_structurally_ready_boilerplate_memo() -> None:
@@ -133,7 +152,7 @@ def test_publish_queue_demotes_ready_but_boilerplate_memo(
     monkeypatch: MonkeyPatch,
 ) -> None:
     runs = tmp_path / "runs"
-    _queue_run(
+    run = _queue_run(
         runs,
         memo_body=(
             "# Alpha memo\n\n"
@@ -143,8 +162,10 @@ def test_publish_queue_demotes_ready_but_boilerplate_memo(
             "## One-sentence thesis\n\n"
             "The direct receipts define the claim.\n\n"
             "## Why this is surprising\n\n"
-            "Real tension: this is worth checking because it ties a measured threshold signal "
-            "to a source-backed effect and a new angle.\n\n"
+            "Real tension: this is worth checking because reserve reliability and cost exposure "
+            "tie a measured threshold signal to a source-backed effect and a new angle.\n\n"
+            "## What would break the idea\n\n"
+            "A repeated storage threshold receipt would falsify the claimed reserve reliability split.\n\n"
             "## Evidence receipts\n\n"
             "- `fact_id=1` (`A_core`) - receipt\n"
             "- `fact_id=2` (`A_core`) - receipt\n"
@@ -155,6 +176,10 @@ def test_publish_queue_demotes_ready_but_boilerplate_memo(
     )
     monkeypatch.setattr(queue, "_RUNS", runs)
 
+    pre_quality = publish_verdict(run)
+    assert pre_quality["decision"] == "ready_to_publish"
+    assert pre_quality["surface_type"] == "publish_alpha_memo"
+
     out = queue.build_queue(include_archive=True)
 
     assert out["ready_to_publish"] == []
@@ -163,3 +188,4 @@ def test_publish_queue_demotes_ready_but_boilerplate_memo(
     assert row["surface_type"] == "quality_repair_memo"
     assert "research_quality_contract" in row["blockers"]
     assert row["research_quality"]["boilerplate_hits"]
+    assert "missing_falsifiable_next_step" not in row["research_quality"]["weaknesses"]

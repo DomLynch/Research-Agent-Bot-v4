@@ -110,6 +110,7 @@ def evaluate_research_quality(verdict: dict[str, Any], memo_md: str) -> dict[str
         and evidence_floor
         and non_obvious_angle
         and specific_claim
+        and falsifiable
         and not boilerplate_surface
     )
     return {

@@ -19,6 +19,7 @@ def _run(root: Path, name: str, *, label: str, lanes: tuple[str, ...]) -> Path:
         "**Alpha score:** 80/100\n"
         f"**Confidence:** `{label}`\n\n"
         "## Why this is surprising\n\nReal tension: costs fall while reserves rise.\n\n"
+        "## Next question\n\nWhat reserve receipt would falsify the dispatch threshold claim?\n\n"
         "## Evidence receipts\n\n"
         + "\n".join(
             f"- `fact_id={fid}` (`{lane}`) - receipt"
