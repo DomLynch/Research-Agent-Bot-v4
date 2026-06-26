@@ -63,7 +63,11 @@ def _truthy_env(name: str, default: str = "1") -> bool:
 
 def _fullraw_receipt_complete(receipt: dict[str, Any]) -> bool:
     sources = receipt.get("sources_searched")
-    source_count = sum(1 for v in sources.values() if v) if isinstance(sources, dict) else 0
+    source_count = (
+        sum(1 for v in sources.values() if v) if isinstance(sources, dict)
+        else sum(1 for v in sources if v) if isinstance(sources, (list, tuple, set))
+        else 0
+    )
     failed = receipt.get("sweep_failed_shards")
     try:
         return failed is not None and int(receipt.get("shards_searched") or 0) >= 1525 and receipt.get("partial_shard_search") is False and int(failed) == 0 and source_count >= 5

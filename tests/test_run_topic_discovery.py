@@ -53,6 +53,15 @@ def _fullraw_receipt() -> dict[str, Any]:
     }
 
 
+def test_fullraw_receipt_complete_accepts_list_sources() -> None:
+    receipt = _fullraw_receipt()
+    receipt["sources_searched"] = [
+        "openalex", "pubmed", "crossref", "semantic_scholar", "core",
+    ]
+
+    assert run_topic_discovery._fullraw_receipt_complete(receipt)
+
+
 def test_default_discovery_keeps_publish_path_bounded() -> None:
     assert _resolve_limits(
         warm_backlog=False,
