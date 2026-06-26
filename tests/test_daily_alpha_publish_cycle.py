@@ -10094,6 +10094,13 @@ def test_source_literature_fetcher_tries_fullraw_query_variants(
     ) == (True, "ok")
 
 
+def test_source_literature_query_variants_include_two_token_windows() -> None:
+    variants = publish_literature.query_variants("business_model_performance")
+
+    assert "business model" in variants
+    assert "model performance" in variants
+
+
 def test_fullraw_metadata_relevance_requires_title_context(
     monkeypatch: MonkeyPatch,
 ) -> None:

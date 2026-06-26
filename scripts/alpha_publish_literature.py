@@ -113,7 +113,8 @@ def query_variants(topic: str) -> tuple[str, ...]:
         token for token in raw.split()
         if len(token) >= 3 and token not in _GENERIC_TOPIC_TOKENS
     )
-    return tuple(dict.fromkeys(q for q in (focused, contextual, raw) if q))
+    windows = [" ".join(pair) for pair in zip(raw.split(), raw.split()[1:], strict=False)]
+    return tuple(dict.fromkeys(q for q in (focused, contextual, raw, *windows) if q))
 
 
 def _fullraw_topic_papers(topic: str, limit: int) -> list[Json]:
