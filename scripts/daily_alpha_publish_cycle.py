@@ -2821,12 +2821,15 @@ def _source_bundle(papers: list[Json]) -> list[Json]:
         title = str(paper.get("title") or "").strip()
         doi = str(paper.get("doi") or "").strip() or None
         pmid = str(paper.get("pmid") or "").strip() or None
+        ident = str(paper.get("id") or paper.get("paper_id") or "").strip()
         # Researka rejects bundles carrying unverifiable sources. A receipt is
         # only citable with a resolvable identifier or URL; drop title-only sources.
         # The accepted bundle schema has no pmid field, so a PMID-only paper is
         # made verifiable through its resolvable PubMed URL rather than presented
         # as identifier-less.
         url = paper.get("url") or None
+        if not url and ident.startswith("W") and ident[1:].isdigit():
+            url = f"https://openalex.org/{ident}"
         if not title or not (doi or pmid or url):
             continue
         if not url and doi:
@@ -5465,6 +5468,11 @@ def run_cycle(
                         repair_decisions.get(literature_topic, {}),
                     ) if literature_topic in repair_topic_set else "",
                 )
+                if len(payload.get("source_bundle") or []) < min_submit_sources:
+                    fallback_attempt["status"] = "blocked"
+                    fallback_attempt["reason"] = "source_bundle_below_min"
+                    fallback_attempt["direct_source_count"] = len(payload.get("source_bundle") or [])
+                    continue
                 assert submitter is not None
                 result = submit_with_backoff(payload, submitter)
                 fallback_attempt["submit_status"] = result["status"]

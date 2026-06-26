@@ -7926,6 +7926,67 @@ def test_source_literature_fallback_submits_after_empty_fact_lane(
     assert records[0]["bundle_signature"]
 
 
+def test_source_literature_fallback_blocks_under_citable_source_floor(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    (root / "_topics_discovery" / "economics.json").write_text(json.dumps({
+        "domain": {"slug": "economics_research"},
+        "all": [{"topic": "minimum_wage_employment", "paper_count": 25}],
+    }), encoding="utf-8")
+    papers = [
+        {
+            "title": "THE EFFECT OF MINIMUM WAGES ON EMPLOYMENT: A FACTOR MODEL APPROACH",
+            "doi": "10.1234/minwage-1",
+            "year": 2024,
+        },
+        {
+            "title": "Revisiting the Minimum Wage-Employment Debate",
+            "doi": "10.1234/minwage-2",
+            "year": 2024,
+        },
+        {
+            "title": "European Minimum Wage Policy: Wage-Led Growth and Fair Wages",
+            "id": "local-3",
+            "year": 2024,
+        },
+        {
+            "title": "At What Level Should Countries Set Their Minimum Wages",
+            "id": "local-4",
+            "year": 2024,
+        },
+        {
+            "title": "Nominal Wage Rigidity in Village Labor Markets",
+            "doi": "10.1234/minwage-5",
+            "year": 2024,
+        },
+    ]
+    submitted = {"called": False}
+
+    def submitter(_payload: dict[str, Any]) -> dict[str, Any]:
+        submitted["called"] = True
+        return {"ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}}}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-30-00Z",
+        domain="economics_research",
+        queue=_queue(),
+        submit=True,
+        submitter=submitter,
+        source_paper_fetcher=lambda _topic, _limit: papers,
+        sleep=lambda _seconds: None,
+    )
+
+    assert submitted["called"] is False
+    assert ledger["status"] == "no_fresh_candidate"
+    assert ledger["source_literature_fallback"]["status"] == "blocked"
+    assert ledger["source_literature_fallback"]["reason"] == "source_bundle_below_min"
+    assert ledger["source_literature_fallback"]["direct_source_count"] == 3
+
+
 def test_long_submit_refresh_reaches_source_lit_after_fullraw_batches(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
@@ -10799,7 +10860,7 @@ def test_source_literature_boundary_rejects_generic_only_topic() -> None:
     assert reason == "source_floor_below_min"
 
 
-def test_source_literature_bundle_resolves_doi_url_and_cochrane_review() -> None:
+def test_source_literature_bundle_resolves_doi_url_openalex_and_cochrane_review() -> None:
     title = (
         "Metformin for prevention or delay of type 2 diabetes mellitus and "
         "its associated complications in persons at increased risk"
@@ -10813,6 +10874,10 @@ def test_source_literature_bundle_resolves_doi_url_and_cochrane_review() -> None
         "title": url_title,
         "url": "https://www.semanticscholar.org/paper/example",
         "year": 2010,
+    }, {
+        "title": "European Minimum Wage Policy",
+        "id": "W330803907",
+        "year": 2015,
     }]) == [{
         "title": title,
         "url": "https://doi.org/10.1002/14651858.CD008558.pub2",
@@ -10824,6 +10889,12 @@ def test_source_literature_bundle_resolves_doi_url_and_cochrane_review() -> None
         "url": "https://www.semanticscholar.org/paper/example",
         "doi": None,
         "year": 2010,
+        "evidence_type": "primary",
+    }, {
+        "title": "European Minimum Wage Policy",
+        "url": "https://openalex.org/W330803907",
+        "doi": None,
+        "year": 2015,
         "evidence_type": "primary",
     }]
 
