@@ -267,7 +267,7 @@ def _memo_receipt_ids(
     )
     seen: set[str] = set()
     out: list[str] = []
-    for fid in re.findall(r"`fact_id=([^`\s]+)`", "\n".join(sections)):
+    for fid in re.findall(r"`fact_id=([^`]+)`", "\n".join(sections)):
         if fid not in seen:
             seen.add(fid)
             out.append(fid)
