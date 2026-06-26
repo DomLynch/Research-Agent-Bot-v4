@@ -307,7 +307,8 @@ def comparable_shape(fact: Json) -> dict[str, str]:
 
 def shape_key(fact: Json) -> str:
     shape = comparable_shape(fact)
-    return "|".join(f"{name}={shape.get(name, '')}" for name in SHAPE_FIELDS)
+    fields = [name for name in SHAPE_FIELDS if not (_is_finance_return_fact(fact) and name == "signal_family")]
+    return "|".join(f"{name}={shape.get(name, '')}" for name in fields)
 
 
 def _topic_intent_tokens(topic: Any) -> set[str]:

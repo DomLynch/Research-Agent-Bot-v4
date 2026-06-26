@@ -611,6 +611,45 @@ def test_business_candidate_memo_treats_percent_spread_as_disagreement(
     assert "same measured business effect" not in memo
 
 
+def test_finance_return_bundle_groups_distinct_signal_families() -> None:
+    rows: list[dict[str, Any]] = []
+    for i, signal in enumerate((
+        "value spread",
+        "momentum spread",
+        "quality spread",
+        "low-volatility spread",
+        "profitability spread",
+    ), start=1):
+        rows.append({
+            "id": f"finance-return-{i}",
+            "topic": "portfolio returns",
+            "claim_type": "alpha_return",
+            "numeric_value": 5 + i,
+            "units": "%",
+            "canonical_phrase": f"{signal} portfolio earns alpha returns of {5 + i}%",
+            "population": "equity portfolios",
+            "intervention": signal,
+            "comparator": "benchmark portfolio",
+            "outcome": "risk adjusted returns",
+            "metric": "alpha return",
+            "study_design": "empirical asset pricing",
+            "paper": {
+                "doi": f"10.7777/finance-return-{i}",
+                "title": f"{signal} and portfolio returns",
+            },
+        })
+
+    bundle = build_candidate_bundle(
+        rows,
+        topic="portfolio_returns",
+        domain="finance_research",
+    )
+
+    assert bundle is not None
+    assert bundle.source_count == 5
+    assert bundle.shape["signal_family"] == "value spread"
+
+
 def test_business_candidate_blocks_population_heterogeneity_false_disagreement() -> None:
     rows: list[dict[str, Any]] = []
     for i, (value, population) in enumerate([
