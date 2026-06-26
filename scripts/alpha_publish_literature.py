@@ -22,6 +22,8 @@ _FULLRAW_SWEEP_WAIT_ENV = "RESEARKA_SOURCE_LITERATURE_FULLRAW_SWEEP_WAIT_SECONDS
 _FULLRAW_MAX_VARIANTS_ENV = "RESEARKA_SOURCE_LITERATURE_FULLRAW_MAX_VARIANTS"
 _FULLRAW_MIN_SHARDS_ENV = "RESEARKA_SOURCE_LITERATURE_FULLRAW_MIN_SHARDS_SEARCHED"
 _FULLRAW_MIN_SOURCES_ENV = "RESEARKA_SOURCE_LITERATURE_FULLRAW_MIN_SOURCES_SEARCHED"
+_FULLRAW_MIN_SHARDS = 1525
+_FULLRAW_MIN_SOURCES = 5
 _GENERIC_TOPIC_TOKENS = frozenset({
     "association", "associations", "clinical", "effect", "effects", "evidence",
     "exposure", "intervention", "outcome", "outcomes", "review", "study",
@@ -30,6 +32,13 @@ _GENERIC_TOPIC_TOKENS = frozenset({
     "antagonists", "blocker", "blockers", "drug", "drugs", "inhibitor",
     "inhibitors", "longevity", "therapies", "therapy", "anti",
 })
+
+
+def _int_env_floor(name: str, fallback: str | None, floor: int) -> str:
+    try:
+        return str(max(floor, int(os.environ.get(name, fallback or str(floor)))))
+    except (TypeError, ValueError):
+        return str(floor)
 _LONGEVITY_CONTEXT_TOKENS = frozenset({
     "ageing", "aging", "longevity", "lifespan", "senescence", "geroscience",
     "mortality", "survival", "frailty", "biological", "epigenetic", "clock",
@@ -181,14 +190,17 @@ def _fullraw_topic_papers(topic: str, limit: int) -> list[Json]:
         "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS": budget,
         "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS": sweep_wait,
         "TOPIC_DISCOVERY_V5_MAX_VARIANTS": max_variants,
-        "TOPIC_DISCOVERY_V5_MIN_SHARDS_SEARCHED": os.environ.get(
+        "TOPIC_DISCOVERY_V5_MIN_SHARDS_SEARCHED": _int_env_floor(
             _FULLRAW_MIN_SHARDS_ENV,
-            os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_MIN_SHARDS_SEARCHED", "1"),
+            os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_MIN_SHARDS_SEARCHED"),
+            _FULLRAW_MIN_SHARDS,
         ),
-        "TOPIC_DISCOVERY_V5_MIN_SOURCES_SEARCHED": os.environ.get(
+        "TOPIC_DISCOVERY_V5_MIN_SOURCES_SEARCHED": _int_env_floor(
             _FULLRAW_MIN_SOURCES_ENV,
-            os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_MIN_SOURCES_SEARCHED", "1"),
+            os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_MIN_SOURCES_SEARCHED"),
+            _FULLRAW_MIN_SOURCES,
         ),
+        "TOPIC_DISCOVERY_V5_REQUIRE_COMPLETE_SEARCH": "1",
     }
     old = {key: os.environ.get(key) for key in bounds}
     try:
