@@ -9105,6 +9105,23 @@ def test_source_literature_candidates_use_latest_domain_snapshot(tmp_path: Path)
     ) == ["current_parent"]
 
 
+def test_source_literature_candidates_skip_domain_only_placeholder(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    discovery = root / "_topics_discovery"
+    discovery.mkdir(parents=True)
+    (discovery / "latest.json").write_text(json.dumps({
+        "domain": {"slug": "longevity_research"},
+        "all": [
+            {"topic": "longevity_anti_aging", "paper_count": 6, "fact_source_count": 6},
+            {"topic": "metformin_longevity", "paper_count": 5, "fact_source_count": 5},
+        ],
+    }), encoding="utf-8")
+
+    assert daily._source_literature_topic_candidates(
+        root, "longevity_research", 5, limit=1,
+    ) == ["metformin_longevity"]
+
+
 def test_source_literature_candidates_fill_from_older_snapshots(
     tmp_path: Path,
 ) -> None:

@@ -86,7 +86,7 @@ _DISCOVERY_SEED_SCOPE_GENERIC_TOKENS = _DISCOVERY_GENERIC_SUFFIX_TOKENS | {
     "system", "systems",
 }
 _DISCOVERY_PARENT_GENERIC_TOKENS = _DISCOVERY_SEED_SCOPE_GENERIC_TOKENS | {
-    "age", "ageing", "aging", "dose", "related",
+    "age", "ageing", "aging", "dose", "longevity", "related",
 }
 
 Json = dict[str, Any]
