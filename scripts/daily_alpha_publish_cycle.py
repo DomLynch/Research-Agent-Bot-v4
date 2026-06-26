@@ -2379,7 +2379,7 @@ def _memo_receipt_ids(
     section = "\n".join(sections)
     seen: set[str] = set()
     out: list[str] = []
-    for fid in re.findall(r"`fact_id=([^`\s]+)`", section):
+    for fid in re.findall(r"`fact_id=([^`]+)`", section):
         if fid not in seen:
             seen.add(fid)
             out.append(fid)
@@ -2398,7 +2398,7 @@ def _memo_receipt_lanes(
     )
     lanes: dict[str, str] = {}
     for fid, lane in re.findall(
-        r"`fact_id=([^`\s]+)`\s+\(`([^`]+)`\)",
+        r"`fact_id=([^`]+)`\s+\(`([^`]+)`\)",
         "\n".join(sections),
     ):
         lanes.setdefault(fid, lane)
