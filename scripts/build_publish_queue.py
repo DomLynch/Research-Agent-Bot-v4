@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.domain_profile import domain_choices, domain_slug
 from agent.publish_tier import publish_verdict
+from agent.research_quality_contract import apply_publish_quality_contract
 
 _ROOT = Path(__file__).resolve().parent.parent
 _RUNS = _ROOT / "runs"
@@ -71,10 +72,24 @@ def _can_recompute_verdict(run: Path) -> bool:
     )
 
 
+def _read_memo(run: Path) -> str:
+    try:
+        return (run / "alpha_memo.md").read_text(encoding="utf-8")
+    except OSError:
+        return ""
+
+
+def _quality_checked_verdict(run: Path, verdict: dict[str, Any]) -> dict[str, Any]:
+    memo_md = _read_memo(run)
+    if not memo_md:
+        return verdict
+    return apply_publish_quality_contract(verdict, memo_md)
+
+
 def _verdict_for_run(run: Path) -> dict[str, Any]:
     if _can_recompute_verdict(run):
-        return publish_verdict(run)
-    return _read_json(run / "publish_verdict.json")
+        return _quality_checked_verdict(run, publish_verdict(run))
+    return _quality_checked_verdict(run, _read_json(run / "publish_verdict.json"))
 
 
 def _normalised_decision(row: dict[str, Any]) -> str:
