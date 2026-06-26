@@ -9353,6 +9353,30 @@ def test_source_literature_candidates_require_fact_source_floor(
     ) == ["source_rich_parent"]
 
 
+def test_source_literature_candidates_use_domain_queue_not_ready_topics(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    daily._write_json(root / "_publish_queue.business_research.json", {
+        "not_ready": [
+            {
+                "topic": "business_model_performance",
+                "domain_slug": "business_research",
+                "queue_status": "no_source_diverse_bundle",
+            },
+            {
+                "topic": "employee_engagement_turnover",
+                "domain_slug": "management_research",
+                "queue_status": "no_source_diverse_bundle",
+            },
+        ],
+    })
+
+    assert daily._source_literature_topic_candidates(
+        root, "business_research", 5, limit=3,
+    ) == ["business_model_performance"]
+
+
 def test_source_literature_fullraw_fetch_uses_separate_query_budget(
     monkeypatch: MonkeyPatch,
 ) -> None:

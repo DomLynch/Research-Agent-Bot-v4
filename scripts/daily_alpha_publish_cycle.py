@@ -3567,6 +3567,40 @@ def _source_literature_topic_candidates(
                     return topics[:limit]
         if len(topics) >= limit:
             return topics[:limit]
+    queue_paths = (
+        runs_root / f"_publish_queue.{profile_slug}.json",
+        runs_root / "_publish_queue.json",
+    )
+    for path in queue_paths:
+        data = _json(path, {})
+        if not isinstance(data, dict):
+            continue
+        for bucket in ("not_ready", "curation_needed", "agent_repair_needed"):
+            rows = data.get(bucket)
+            if not isinstance(rows, list):
+                continue
+            for row in rows:
+                if not isinstance(row, dict) or not _same_domain(_row_domain(row), profile_slug):
+                    continue
+                topic = str(row.get("topic") or "").strip()
+                if not topic or topic in seen or _source_literature_family_blocked_topic(
+                    topic, blocked,
+                    soft_broad_blocked_topics=soft_broad_blocked_topics,
+                ):
+                    continue
+                topic_key = _canonical_family_key(topic).removeprefix("topic:")
+                topic_tokens = {
+                    token.rstrip("s") for token in topic_key.split("_")
+                    if len(token.rstrip("s")) >= 3
+                }
+                if "anti" in topic_tokens and seed_scope and not ((topic_tokens - {"anti"}) & seed_scope):
+                    continue
+                if topic_tokens and not (topic_tokens - _DISCOVERY_PARENT_GENERIC_TOKENS):
+                    continue
+                topics.append(topic)
+                seen.add(topic)
+                if len(topics) >= limit:
+                    return topics[:limit]
     return topics[:limit]
 
 
