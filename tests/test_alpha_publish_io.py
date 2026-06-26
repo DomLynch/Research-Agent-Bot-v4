@@ -122,6 +122,7 @@ def test_write_ledger_adds_publish_summary(tmp_path: Path) -> None:
     assert data["publish_summary"]["status"] == "no_fresh_candidate"
     assert data["publish_summary"]["top_blockers"] == {
         "duplicate_submission_fingerprint": 1,
+        "no_fresh_candidate": 1,
     }
 
 
