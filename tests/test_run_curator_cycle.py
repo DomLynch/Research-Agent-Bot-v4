@@ -749,12 +749,14 @@ def test_stop_on_ready_uses_fullraw_supply_before_cache_by_default(
 
     calls: list[list[str]] = []
     budgets: list[str | None] = []
+    timeouts: list[int] = []
 
     def fake_step(
         args: list[str], step_name: str, *, timeout: int = 600,
     ) -> tuple[bool, str]:
         calls.append(args)
         budgets.append(os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"))
+        timeouts.append(timeout)
         return False, "stop after discovery"
 
     monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
@@ -771,6 +773,7 @@ def test_stop_on_ready_uses_fullraw_supply_before_cache_by_default(
     assert "--fullraw-supply-only" in calls[0]
     assert calls[0][calls[0].index("--top") + 1] == "5"
     assert budgets == ["45"]
+    assert timeouts == [150]
     assert os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] == "45"
 
 
@@ -807,21 +810,25 @@ def test_fullraw_supply_budget_env_overrides_default(
     import run_curator_cycle
 
     budgets: list[str | None] = []
+    timeouts: list[int] = []
 
     def fake_step(
         _args: list[str], _step_name: str, *, timeout: int = 600,
     ) -> tuple[bool, str]:
         budgets.append(os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"))
+        timeouts.append(timeout)
         return False, "stop after discovery"
 
     monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
     monkeypatch.setattr(run_curator_cycle, "_RUNS", tmp_path / "runs")
     monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
     monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS", "90")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_PARENT_TIMEOUT_SECONDS", "77")
     monkeypatch.setattr(sys, "argv", ["run_curator_cycle.py", "--stop-on-ready"])
 
     assert run_curator_cycle.main() == 1
     assert budgets == ["90"]
+    assert timeouts == [77]
 
 
 def test_stop_on_ready_empty_fullraw_supply_does_not_retry_slow_discovery(

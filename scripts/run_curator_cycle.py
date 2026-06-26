@@ -111,6 +111,7 @@ def _cached_tier2_supply(
 def _write_cycle_json(path: Path, payload: dict[str, Any]) -> None:
     publish_io.write_json(path, payload)
 _DISCOVERY_TIMEOUT_SECONDS = 1800
+_FULLRAW_SUPPLY_PARENT_TIMEOUT_SECONDS = 150
 # Cheap pre-build gate: a topic whose discovery probe finds fewer bindable
 # sources than this can never clear the publish source floor, so a full
 # evidence build is wasted. Derived from the floor (margin for probe
@@ -491,6 +492,17 @@ def _run_discovery_step(args: list[str], *, timeout: int) -> tuple[bool, str]:
             os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] = old_budget
 
 
+def _discovery_timeout(*, fullraw_supply_first: bool) -> int:
+    if not fullraw_supply_first:
+        return _DISCOVERY_TIMEOUT_SECONDS
+    with suppress(TypeError, ValueError):
+        return max(30, int(float(os.environ.get(
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_PARENT_TIMEOUT_SECONDS",
+            str(_FULLRAW_SUPPLY_PARENT_TIMEOUT_SECONDS),
+        ))))
+    return _FULLRAW_SUPPLY_PARENT_TIMEOUT_SECONDS
+
+
 def _run_topic_pipeline(
     topic: str, velocity: float, *, with_editorial: bool, top_n: int,
     py: str, pico_enrich: bool = False, frontier_review: bool = True,
@@ -819,7 +831,9 @@ def main() -> int:
 
         ok, last = _run_discovery_step(
             discovery_args(seed_paper_only=seed_paper_fast_path),
-            timeout=_DISCOVERY_TIMEOUT_SECONDS,
+            timeout=_discovery_timeout(
+                fullraw_supply_first=args.stop_on_ready and fullraw_supply_first,
+            ),
         )
         if not ok:
             print(f"[cycle] discovery failed: {last}", file=sys.stderr)
@@ -843,7 +857,9 @@ def main() -> int:
         print("[cycle] seed-paper discovery empty; retrying bounded discovery")
         ok, last = _run_discovery_step(
             discovery_args(seed_paper_only=False),
-            timeout=_DISCOVERY_TIMEOUT_SECONDS,
+            timeout=_discovery_timeout(
+                fullraw_supply_first=args.stop_on_ready and fullraw_supply_first,
+            ),
         )
         if not ok:
             print(f"[cycle] discovery fallback failed: {last}", file=sys.stderr)
@@ -925,7 +941,9 @@ def main() -> int:
                   "retrying fullraw supply discovery")
             ok, last = _run_discovery_step(
                 discovery_args(seed_paper_only=False),
-                timeout=_DISCOVERY_TIMEOUT_SECONDS,
+                timeout=_discovery_timeout(
+                    fullraw_supply_first=args.stop_on_ready and fullraw_supply_first,
+                ),
             )
             if not ok:
                 print(f"[cycle] discovery fallback failed: {last}", file=sys.stderr)
