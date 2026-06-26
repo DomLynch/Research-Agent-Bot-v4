@@ -3592,7 +3592,7 @@ def _source_literature_discovery_papers(
             raw = row.get("source_papers")
             papers = [paper for paper in raw if isinstance(paper, dict)] if isinstance(raw, list) else []
             if len(papers) >= min_sources:
-                return papers
+                return publish_literature.with_metadata_source_facts(topic, papers)
     return []
 
 

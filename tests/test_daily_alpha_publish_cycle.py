@@ -8332,6 +8332,65 @@ def test_source_literature_reuses_discovery_source_papers_before_refetch(
     assert ledger["source_literature_preflight_attempts"][0]["paper_count"] == 5
 
 
+def test_source_literature_reuses_fullraw_metadata_papers_as_fact_backed(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    papers = [
+        {"title": title, "doi": f"10.1234/acarbose-fullraw-{idx}"}
+        for idx, title in enumerate((
+            "Acarbose mice longevity inflammatory markers",
+            "Acarbose mice aging glucose homeostasis",
+            "Acarbose mice lifespan intervention review",
+            "Acarbose mice late life metabolic response",
+            "Acarbose mice geroscience translational evidence",
+        ))
+    ]
+    daily._write_json(root / "_topics_discovery" / "fullraw.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{
+            "topic": "acarbose",
+            "paper_count": 5,
+            "fact_source_count": 5,
+            "source_papers": papers,
+        }],
+    })
+    monkeypatch.delenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", raising=False)
+    monkeypatch.setattr(
+        daily,
+        "_fetch_source_literature_papers",
+        lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("refetched")),
+    )
+    seen_payload: dict[str, Any] = {}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-50-45Z",
+        domain="longevity_research",
+        refresh_candidates=True,
+        max_refresh_batches=1,
+        submit=True,
+        submitter=lambda payload: (
+            seen_payload.update(payload)
+            or {"ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}}}
+        ),
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "acarbose"
+    assert "Title-level source match: Acarbose" in seen_payload["markdown"]
+    assert ledger["source_literature_preflight_attempts"][0]["paper_count"] == 5
+
+
 def test_source_backed_literature_candidate_bypasses_broad_exhausted_parent(
     tmp_path: Path,
 ) -> None:

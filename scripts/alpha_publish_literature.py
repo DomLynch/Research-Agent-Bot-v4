@@ -286,6 +286,14 @@ def _metadata_source_fact(topic: str, paper: Json) -> Json:
     }
 
 
+def with_metadata_source_facts(topic: str, papers: list[Json]) -> list[Json]:
+    return [
+        paper if isinstance(paper.get("source_fact"), dict)
+        else paper | {"source_fact": _metadata_source_fact(topic, paper)}
+        for paper in papers
+    ]
+
+
 def fact_count(papers: list[Json]) -> int:
     return sum(1 for paper in papers if isinstance(paper.get("source_fact"), dict))
 
