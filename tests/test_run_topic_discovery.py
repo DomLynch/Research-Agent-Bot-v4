@@ -1135,6 +1135,31 @@ def test_fullraw_supply_queries_domain_before_seed_breadth(
     ]
 
 
+def test_fullraw_supply_searches_past_seed_probe_cap(monkeypatch: Any) -> None:
+    calls: list[str] = []
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        if query == "late seed longevity":
+            return _fullraw_rows("late", "Late seed longevity source rich")
+        return []
+
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
+
+    rows = run_topic_discovery._fullraw_supply_candidates(
+        query_context="Longevity / anti-aging research",
+        current_year=2026,
+        top=1,
+        seeds=(
+            "seed_a", "seed_b", "seed_c", "seed_d", "seed_e", "seed_f",
+            "late_seed",
+        ),
+    )
+
+    assert [row.topic for row in rows] == ["late_seed_longevity"]
+    assert "late seed longevity" in calls
+
+
 def test_fullraw_supply_skips_one_token_domain_query_when_seeds_exist(
     monkeypatch: Any,
 ) -> None:

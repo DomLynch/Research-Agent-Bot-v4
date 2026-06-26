@@ -543,7 +543,7 @@ def _fullraw_supply_candidates(
     query_labels: dict[str, str] = {}
     context_terms = _context_query_terms(query_context)
     context_variants = _context_variants(query_context)
-    query_cap = max(_seed_paper_probe_limit(top), top * 6)
+    query_cap = max(_seed_paper_probe_limit(top), top * 20)
     if context_terms and (len(context_terms.split()) > 1 or not seeds):
         query_labels[context_terms] = "__domain_supply__"
     seed_bases = [
