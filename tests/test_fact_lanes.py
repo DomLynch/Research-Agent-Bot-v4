@@ -111,6 +111,22 @@ def test_topic_absent_is_c_noise() -> None:
     assert v.lane == "C_noise"
 
 
+def test_generic_longevity_suffix_does_not_hide_specific_topic_token() -> None:
+    v = classify_lane(_fact(
+        canonical_phrase=(
+            "a daily fasting interval and circadian alignment of feeding "
+            "acted together to extend life span by 35%"
+        ),
+        population="male C57BL/6J mice",
+        intervention="30% CR with daily fasting interval",
+        comparator="ad libitum-fed mice",
+        numeric_value=35.0,
+        units="%",
+    ), topic="fasting_longevity")
+    assert v.lane == "A_core"
+    assert v.reason == "topic_in_intervention_pico_complete"
+
+
 def test_senolytic_ignores_standalone_oncology_instance_use() -> None:
     """Class synonyms must not treat any standalone oncology use of an instance
     drug as senolytic evidence."""

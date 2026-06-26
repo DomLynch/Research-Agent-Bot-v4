@@ -13,8 +13,8 @@ from agent.topic_synonyms import expand_topic_queries, phrase_in_text
 
 LANES = ("A_core", "B_context", "C_noise", "D_bad_extraction")
 _NORM_PUNCT = re.compile(r"[\W_]+")
-_MIN_SPECIFIC_HEAD_CHARS = 8
 _BACKGROUND_CUES = ("added to", "add on to", "add-on to", "background", "receiving", "on")
+_GENERIC_TOPIC_TOKENS = frozenset({"aging", "ageing", "longevity", "anti", "research"})
 TopicType = Literal["intervention", "exposure", "disease_or_condition", "biomarker", "broad_risk_factor"]
 _POPULATION_CONTEXT_ONLY: frozenset[TopicType] = frozenset({
     "disease_or_condition", "broad_risk_factor",
@@ -63,9 +63,9 @@ def _topic_keywords(topic: str) -> list[str]:
         normed = _norm(kw)
         if normed:
             seen.setdefault(normed, None)
-    head = _norm(topic).split()[:1]
-    if head and len(head[0]) >= _MIN_SPECIFIC_HEAD_CHARS:
-        seen.setdefault(head[0], None)
+    for token in _norm(topic).split():
+        if len(token) >= 5 and token not in _GENERIC_TOPIC_TOKENS:
+            seen.setdefault(token, None)
     return list(seen)
 
 
