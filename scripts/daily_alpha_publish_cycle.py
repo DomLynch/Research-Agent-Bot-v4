@@ -3592,7 +3592,15 @@ def _source_literature_discovery_papers(
             raw = row.get("source_papers")
             papers = [paper for paper in raw if isinstance(paper, dict)] if isinstance(raw, list) else []
             if len(papers) >= min_sources:
-                return publish_literature.with_metadata_source_facts(topic, papers)
+                papers = publish_literature.with_metadata_source_facts(topic, papers)
+                unique: list[Json] = []
+                seen_titles: set[str] = set()
+                for paper in papers:
+                    key = publish_literature.title_key(paper.get("title"))
+                    if key and key not in seen_titles:
+                        seen_titles.add(key)
+                        unique.append(paper)
+                return unique if len(unique) >= min_sources else papers
     return []
 
 

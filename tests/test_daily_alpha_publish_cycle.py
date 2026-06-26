@@ -8341,6 +8341,7 @@ def test_source_literature_reuses_fullraw_metadata_papers_as_fact_backed(
         {"title": title, "doi": f"10.1234/acarbose-fullraw-{idx}"}
         for idx, title in enumerate((
             "Acarbose mice longevity inflammatory markers",
+            "Acarbose mice longevity inflammatory markers",
             "Acarbose mice aging glucose homeostasis",
             "Acarbose mice lifespan intervention review",
             "Acarbose mice late life metabolic response",
@@ -8351,8 +8352,8 @@ def test_source_literature_reuses_fullraw_metadata_papers_as_fact_backed(
         "domain": {"slug": "longevity_research"},
         "all": [{
             "topic": "acarbose",
-            "paper_count": 5,
-            "fact_source_count": 5,
+            "paper_count": 6,
+            "fact_source_count": 6,
             "source_papers": papers,
         }],
     })
