@@ -22,7 +22,7 @@ from agent.domain_profile import load_domain_profile
 from agent.settings import load_settings
 from scripts import alpha_publish_status as publish_status
 from scripts import build_publish_queue as publish_queue
-from scripts.alpha_publish_io import read_json, write_json, write_ledger
+from scripts.alpha_publish_io import read_json, update_json_list, write_json, write_ledger
 from scripts.build_business_alpha_candidate import (
     no_bundle_blockers_from_diagnostics,
     write_no_bundle_diagnostics,
@@ -143,6 +143,44 @@ def _bundle_fingerprint(bundle: Any) -> str:
     ))
 
 
+def _record_consistent_pass(
+    runs_root: Path, *, domain: str, topic: str, fingerprint: str,
+) -> int:
+    path = runs_root / "_business_diagnostics" / f"ready_consistency.{domain}.json"
+    passes = 1
+    stamp = dt.datetime.now(dt.UTC).isoformat()
+
+    def mutate(rows: list[Any]) -> bool:
+        nonlocal passes
+        rows[:] = [row for row in rows if isinstance(row, dict)]
+        for row in rows:
+            if str(row.get("fingerprint") or "") != fingerprint:
+                continue
+            try:
+                passes = int(row.get("passes") or 0) + 1
+            except (TypeError, ValueError):
+                passes = 1
+            row.update({
+                "domain": domain,
+                "topic": topic,
+                "fingerprint": fingerprint,
+                "passes": passes,
+                "updated_utc": stamp,
+            })
+            return True
+        rows.append({
+            "domain": domain,
+            "topic": topic,
+            "fingerprint": fingerprint,
+            "passes": passes,
+            "updated_utc": stamp,
+        })
+        return True
+
+    update_json_list(path, mutate)
+    return passes
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cycles", type=int, default=1)
@@ -160,7 +198,6 @@ def main() -> int:
     args = parser.parse_args()
     settings = load_settings()
     rows: list[dict[str, Any]] = []
-    consistent: dict[str, int] = {}
     domains = _selected_domains(args.domains)
     for cycle in range(max(1, args.cycles)):
         for domain in domains:
@@ -195,22 +232,27 @@ def main() -> int:
                     print(f"[business-sweep] no_bundle {domain} {topic} facts={len(facts)}")
                     continue
                 fingerprint = _bundle_fingerprint(bundle)
-                consistent[fingerprint] = consistent.get(fingerprint, 0) + 1
                 run_dir = write_candidate_run(bundle, profile=profile, runs_root=args.runs_root)
+                submit_after = max(0, args.submit_after_consistent_passes)
+                consistent_passes = (
+                    _record_consistent_pass(
+                        args.runs_root, domain=domain, topic=topic, fingerprint=fingerprint,
+                    )
+                    if submit_after else 1
+                )
                 row["run_dir"] = str(run_dir)
                 row["source_count"] = bundle.source_count
                 row["candidate_fingerprint"] = fingerprint
-                row["consistent_passes"] = consistent[fingerprint]
+                row["consistent_passes"] = consistent_passes
                 rows.append(row)
                 summary_path = _write_sweep_summary(args.runs_root, rows)
-                submit_after = max(0, args.submit_after_consistent_passes)
                 if submit_after:
-                    if consistent[fingerprint] < submit_after:
+                    if consistent_passes < submit_after:
                         row["status"] = "ready_waiting_consistency"
                         _write_sweep_summary(args.runs_root, rows)
                         print(
                             "[business-sweep] ready_waiting_consistency "
-                            f"{domain} {topic} passes={consistent[fingerprint]}/{submit_after}"
+                            f"{domain} {topic} passes={consistent_passes}/{submit_after}"
                         )
                         continue
                     if profile.dry_run_only:
@@ -218,7 +260,7 @@ def main() -> int:
                         _write_sweep_summary(args.runs_root, rows)
                         print(
                             "[business-sweep] submit_blocked_domain_dry_run_only "
-                            f"{domain} {topic} passes={consistent[fingerprint]}/{submit_after}",
+                            f"{domain} {topic} passes={consistent_passes}/{submit_after}",
                             file=sys.stderr,
                         )
                         return 2

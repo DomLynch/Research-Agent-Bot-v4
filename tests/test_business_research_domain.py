@@ -1050,6 +1050,57 @@ def test_business_sweep_submits_after_consistent_non_dry_run_passes(
     ]
 
 
+def test_business_sweep_consistency_persists_between_invocations(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("management_research")
+    live_profile = DomainProfile(
+        slug=profile.slug,
+        display_name=profile.display_name,
+        seed_topics_path=profile.seed_topics_path,
+        source_policy_path=profile.source_policy_path,
+        claim_schema_path=profile.claim_schema_path,
+        dry_run_only=False,
+    )
+    submissions: list[dict[str, Any]] = []
+    runs_root = tmp_path / "runs"
+
+    def fake_fetch(*_args: Any, **_kwargs: Any) -> tuple[list[dict[str, Any]], dict[str, str]]:
+        return _fixture_facts(), {"status": "ok"}
+
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        submissions.append(kwargs)
+        return {"status": "submitted_to_researka", "submitted": 1}
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("management_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: live_profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: ["management_practices_productivity"])
+    monkeypatch.setattr(sweep, "fetch_business_facts", fake_fetch)
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
+    argv = [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--runs-root", str(runs_root),
+        "--submit-after-consistent-passes", "2",
+    ]
+
+    monkeypatch.setattr(sys, "argv", argv)
+    assert sweep.main() == 2
+    assert submissions == []
+
+    monkeypatch.setattr(sys, "argv", argv)
+    assert sweep.main() == 0
+    assert len(submissions) == 1
+    consistency = json.loads(
+        (runs_root / "_business_diagnostics" / "ready_consistency.management_research.json").read_text(
+            encoding="utf-8",
+        )
+    )
+    assert consistency[0]["passes"] == 2
+
+
 def test_business_systemd_timers_are_eight_hour_guarded() -> None:
     expectations = {
         "business": ("business_research", "02/8:10:00"),
