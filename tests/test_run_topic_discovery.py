@@ -112,6 +112,31 @@ def test_seed_fullraw_records_incomplete_receipt_event(monkeypatch: Any) -> None
     }
 
 
+def test_seed_fullraw_records_async_event_without_receipt(monkeypatch: Any) -> None:
+    run_topic_discovery._FULLRAW_PROBE_EVENTS.clear()
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", "1")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS", "0")
+
+    def handler(_req: Any) -> Any:
+        return run_topic_discovery.httpx.Response(200, json={
+            "meta": {"async_sweep": {"status": "queued", "shard_limit": 1525}},
+            "results": [],
+        })
+
+    transport = run_topic_discovery.httpx.MockTransport(handler)
+    with run_topic_discovery.httpx.Client(transport=transport) as client:
+        assert run_topic_discovery._seed_fullraw_papers(
+            "metformin longevity", client=client, limit=5,
+        ) == []
+
+    assert run_topic_discovery._FULLRAW_PROBE_EVENTS[-1] == {
+        "query": "metformin longevity",
+        "status": "async_queued",
+        "async_status": "queued",
+    }
+
+
 def test_seed_fullraw_does_not_use_client_fallback_when_endpoint_incomplete(
     monkeypatch: Any,
 ) -> None:

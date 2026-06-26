@@ -228,7 +228,10 @@ def _seed_fullraw_papers(
             })
         async_sweep = getattr(topic_discovery_mod, "_FULLRAW_LAST_ASYNC_SWEEP", {})
         if isinstance(async_sweep, dict) and async_sweep.get("status"):
-            event["async_status"] = async_sweep.get("status")
+            async_status = str(async_sweep.get("status") or "").strip()
+            event["async_status"] = async_status
+            if async_status and event["status"] == "no_hits":
+                event["status"] = f"async_{async_status}"
         _FULLRAW_PROBE_EVENTS.append(event)
     return papers
 

@@ -119,6 +119,22 @@ def test_publish_summary_counts_incomplete_fullraw_receipt() -> None:
     }
 
 
+def test_publish_summary_counts_async_fullraw_sweep() -> None:
+    summary = publish_summary({
+        "status": CycleStatus.CANDIDATE_REFRESH_FAILED.value,
+        "submitted": 0,
+        "published": 0,
+        "refresh_candidates": {
+            "fullraw_probe_events": [{"status": "async_queued"}],
+        },
+    })
+
+    assert summary["top_blockers"] == {
+        "candidate_refresh_failed": 1,
+        "fullraw_async_queued": 1,
+    }
+
+
 def test_publish_summary_uses_terminal_status_for_reviewer_rejection() -> None:
     summary = publish_summary({
         "status": CycleStatus.REVIEWER_REJECTED.value,
