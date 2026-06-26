@@ -68,6 +68,21 @@ def _paper(**kw: Any) -> dict[str, Any]:
     return base
 
 
+def _fullraw_receipt(shards: int = 1525) -> dict[str, Any]:
+    return {
+        "shards_searched": shards,
+        "partial_shard_search": False,
+        "sweep_failed_shards": 0,
+        "sources_searched": {
+            "openalex": 900,
+            "pubmed": 120,
+            "crossref": 90,
+            "semantic_scholar": 60,
+            "core": 40,
+        },
+    }
+
+
 def test_paper_score_baseline() -> None:
     """fwci=1, cited=100, year=current → ln(101) * 1 * 1 * 0.7"""
     expected = 1.0 * math.log1p(100) * 1.0 * 0.7
@@ -170,10 +185,7 @@ def test_fetch_topic_papers_falls_back_to_fullraw_when_db_empty(
         payloads.append(payload)
         return httpx.Response(200, json={
             "meta": {
-                "shard_receipt": {
-                    "shards_searched": 50,
-                    "sources_searched": {"openalex": 16, "pubmed": 17},
-                },
+                "shard_receipt": _fullraw_receipt(),
             },
             "results": [{
                 "doi": "10.1/fullraw",
@@ -192,8 +204,14 @@ def test_fetch_topic_papers_falls_back_to_fullraw_when_db_empty(
 
     assert papers[0]["title"] == "Metformin longevity source diversity"
     assert papers[0]["publication_year"] == 2025
-    assert papers[0]["fullraw_shard_receipt"]["shards_searched"] == 50
-    assert "cache_only" not in payloads[0]
+    assert papers[0]["fullraw_shard_receipt"]["shards_searched"] == 1525
+    assert payloads[0] == {
+        "query": "metformin longevity",
+        "limit": 10,
+        "rank_mode": "relevance",
+        "cache_only": True,
+        "queue_if_missing": True,
+    }
 
 
 def test_fetch_topic_papers_supplements_thin_db_with_fullraw(
@@ -212,10 +230,7 @@ def test_fetch_topic_papers_supplements_thin_db_with_fullraw(
         if req.url.host == "test":
             return httpx.Response(200, json=[db_paper])
         return httpx.Response(200, json={
-            "meta": {"shard_receipt": {
-                "shards_searched": 1305,
-                "sources_searched": {"openalex": 1200},
-            }},
+            "meta": {"shard_receipt": _fullraw_receipt()},
             "results": [
                 {
                     "doi": "10.1/shared",
@@ -238,13 +253,14 @@ def test_fetch_topic_papers_supplements_thin_db_with_fullraw(
 
     assert [p["doi"] for p in papers] == ["10.1/shared", "10.1/fresh"]
     assert papers[0]["title"] == "Stale database metformin paper"
-    assert papers[1]["fullraw_shard_receipt"]["shards_searched"] == 1305
+    assert papers[1]["fullraw_shard_receipt"]["shards_searched"] == 1525
 
 
-def test_fullraw_fallback_requires_openalex_receipt(monkeypatch: Any) -> None:
+def test_fullraw_fallback_requires_complete_sweep_receipt(monkeypatch: Any) -> None:
     from agent import topic_discovery as td
 
     monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "https://fullraw/search")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", "1")
 
     def handler(req: httpx.Request) -> httpx.Response:
         if req.url.host == "test":
@@ -253,6 +269,8 @@ def test_fullraw_fallback_requires_openalex_receipt(monkeypatch: Any) -> None:
             "meta": {
                 "shard_receipt": {
                     "shards_searched": 50,
+                    "partial_shard_search": True,
+                    "sweep_failed_shards": 0,
                     "sources_searched": {"pubmed": 17},
                 },
             },
@@ -267,6 +285,42 @@ def test_fullraw_fallback_requires_openalex_receipt(monkeypatch: Any) -> None:
     assert papers == []
 
 
+def test_fullraw_fallback_polls_until_complete_receipt(monkeypatch: Any) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok-index")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS", "0")
+    calls: list[dict[str, Any]] = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.host == "test":
+            return httpx.Response(200, json=[])
+        assert str(req.url) == "http://127.0.0.1:9903/search"
+        assert req.headers["authorization"] == "Bearer tok-index"
+        calls.append(json.loads(req.content.decode("utf-8")))
+        receipt = (
+            {
+                "shards_searched": 50,
+                "partial_shard_search": True,
+                "sweep_failed_shards": 0,
+                "sources_searched": {"openalex": 16},
+            }
+            if len(calls) == 1 else _fullraw_receipt()
+        )
+        return httpx.Response(200, json={
+            "meta": {"shard_receipt": receipt},
+            "results": [{"title": "Full sweep metformin longevity paper"}],
+        })
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        papers = td._fetch_topic_papers(
+            "metformin_longevity", client=c, settings=_settings(),
+        )
+
+    assert len(calls) == 2
+    assert papers[0]["title"] == "Full sweep metformin longevity paper"
+
+
 def test_fetch_topic_papers_falls_back_to_fullraw_when_db_errors(
     monkeypatch: Any,
 ) -> None:
@@ -279,10 +333,7 @@ def test_fetch_topic_papers_falls_back_to_fullraw_when_db_errors(
             return httpx.Response(503)
         return httpx.Response(200, json={
             "meta": {
-                "shard_receipt": {
-                    "shards_searched": 10,
-                    "sources_searched": {"openalex": 4},
-                },
+                "shard_receipt": _fullraw_receipt(),
             },
             "results": [{"title": "Fallback after database timeout"}],
         })
@@ -355,10 +406,7 @@ def test_discover_topics_uses_fullraw_supply_but_keeps_fact_floor(
         if req.url.host == "fullraw":
             return httpx.Response(200, json={
                 "meta": {
-                    "shard_receipt": {
-                        "shards_searched": 50,
-                        "sources_searched": {"openalex": 16},
-                    },
+                    "shard_receipt": _fullraw_receipt(),
                 },
                 "results": [{
                     "doi": "10.1/fullraw",

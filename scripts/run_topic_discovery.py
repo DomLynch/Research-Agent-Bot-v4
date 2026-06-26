@@ -20,6 +20,7 @@ import re
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 import httpx
 
@@ -60,6 +61,16 @@ def _truthy_env(name: str, default: str = "1") -> bool:
     return os.environ.get(name, default).strip().lower() not in {"0", "false", "no", "off"}
 
 
+def _fullraw_receipt_complete(receipt: dict[str, Any]) -> bool:
+    sources = receipt.get("sources_searched")
+    source_count = sum(1 for v in sources.values() if v) if isinstance(sources, dict) else 0
+    failed = receipt.get("sweep_failed_shards")
+    try:
+        return failed is not None and int(receipt.get("shards_searched") or 0) >= 1525 and receipt.get("partial_shard_search") is False and int(failed) == 0 and source_count >= 5
+    except (TypeError, ValueError):
+        return False
+
+
 def _load_v5_env_defaults() -> None:
     if not _truthy_env("TOPIC_DISCOVERY_V5_ENV_LOAD"):
         return
@@ -95,13 +106,13 @@ def _apply_v5_client_bounds() -> dict[str, str | None]:
             "TOPIC_DISCOVERY_V5_MAX_VARIANTS", "2",
         ),
         "V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED": os.environ.get(
-            "TOPIC_DISCOVERY_V5_MIN_SHARDS_SEARCHED", "1",
+            "TOPIC_DISCOVERY_V5_MIN_SHARDS_SEARCHED", "1525",
         ),
         "V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED": os.environ.get(
-            "TOPIC_DISCOVERY_V5_MIN_SOURCES_SEARCHED", "1",
+            "TOPIC_DISCOVERY_V5_MIN_SOURCES_SEARCHED", "5",
         ),
         "V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH": os.environ.get(
-            "TOPIC_DISCOVERY_V5_REQUIRE_COMPLETE_SEARCH", "0",
+            "TOPIC_DISCOVERY_V5_REQUIRE_COMPLETE_SEARCH", "1",
         ),
     }
     old = {key: os.environ.get(key) for key in values}
@@ -150,6 +161,8 @@ def _v5_client_papers(query: str, *, limit: int) -> list[dict[str, object]]:
             metadata.get("shard_receipt")
             if isinstance(metadata, dict) else None
         )
+        if not isinstance(receipt, dict) or not _fullraw_receipt_complete(receipt):
+            continue
         out.append({
             "doi": getattr(hit, "doi", None) or "",
             "pmid": metadata.get("pmid") if isinstance(metadata, dict) else None,
@@ -172,9 +185,9 @@ def _v5_client_papers(query: str, *, limit: int) -> list[dict[str, object]]:
 def _seed_fullraw_papers(
     query: str, *, client: httpx.Client, limit: int,
 ) -> list[dict[str, object]]:
-    papers = _v5_client_papers(query, limit=limit) or _fetch_fullraw_topic_papers(
+    papers = _fetch_fullraw_topic_papers(
         query, client=client, limit=limit,
-    )
+    ) or _v5_client_papers(query, limit=limit)
     if not papers:
         _FULLRAW_PROBE_EVENTS.append({"query": query, "status": "no_hits"})
     return papers
@@ -259,7 +272,10 @@ def _fullraw_supply_sweep_wait_seconds() -> float:
 
 
 def _fullraw_configured() -> bool:
-    if os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip():
+    if (
+        os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip()
+        or os.environ.get("V5_MEMO_FULL_RAW_INDEX_TOKEN", "").strip()
+    ):
         return True
     return (
         _truthy_env("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK")
@@ -514,6 +530,7 @@ def _seed_paper_candidates(
                                 "query": query,
                                 "shards_searched": receipt.get("shards_searched"),
                                 "partial_shard_search": receipt.get("partial_shard_search"),
+                                "sweep_failed_shards": receipt.get("sweep_failed_shards"),
                                 "sources_searched": receipt.get("sources_searched"),
                             })
                         papers_by_key[key] = paper
@@ -635,6 +652,7 @@ def _fullraw_supply_candidates(
                             "query": query,
                             "shards_searched": receipt.get("shards_searched"),
                             "partial_shard_search": receipt.get("partial_shard_search"),
+                            "sweep_failed_shards": receipt.get("sweep_failed_shards"),
                             "sources_searched": receipt.get("sources_searched"),
                         })
                         receipt_recorded = True

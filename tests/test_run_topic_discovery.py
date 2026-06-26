@@ -38,6 +38,21 @@ def _fullraw_rows(prefix: str, title_prefix: str, n: int = 5) -> list[dict[str, 
     ]
 
 
+def _fullraw_receipt() -> dict[str, Any]:
+    return {
+        "shards_searched": 1525,
+        "partial_shard_search": False,
+        "sweep_failed_shards": 0,
+        "sources_searched": {
+            "openalex": 900,
+            "pubmed": 120,
+            "crossref": 90,
+            "semantic_scholar": 60,
+            "core": 40,
+        },
+    }
+
+
 def test_default_discovery_keeps_publish_path_bounded() -> None:
     assert _resolve_limits(
         warm_backlog=False,
@@ -389,11 +404,7 @@ def test_seed_paper_candidate_skips_slow_discovery_when_enough(
             "doi": "10.1/seed", "title": "Seed paper-backed candidate",
             "fwci": 4.0, "cited_by_count": 40, "publication_year": 2026,
             "quality_score": 90.0,
-            "fullraw_shard_receipt": {
-                "shards_searched": 1305,
-                "partial_shard_search": False,
-                "sources_searched": {"openalex": 988, "pubmed": 374},
-            },
+            "fullraw_shard_receipt": _fullraw_receipt(),
         }]
 
     monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fake_fullraw)
@@ -409,9 +420,11 @@ def test_seed_paper_candidate_skips_slow_discovery_when_enough(
     assert payload["top"][0]["top_paper_doi"] == "10.1/seed"
     assert payload["fullraw_seed_probe"]["configured"] is True
     assert payload["fullraw_seed_probe"]["receipt_count"] == 1
-    assert payload["fullraw_seed_probe"]["receipts"][0]["shards_searched"] == 1305
-    assert payload["fullraw_seed_probe"]["receipts"][0]["partial_shard_search"] is False
-    assert payload["fullraw_seed_probe"]["receipts"][0]["sources_searched"]["openalex"] == 988
+    receipt = payload["fullraw_seed_probe"]["receipts"][0]
+    assert receipt["shards_searched"] == 1525
+    assert receipt["partial_shard_search"] is False
+    assert receipt["sweep_failed_shards"] == 0
+    assert receipt["sources_searched"]["openalex"] == 900
     assert os.environ["TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"] == "20"
 
 
@@ -521,7 +534,7 @@ def test_seed_paper_probe_skips_excluded_seeds_before_fullraw(
     assert [row["topic"] for row in payload["top"]] == ["late_fresh_seed"]
 
 
-def test_seed_paper_probe_uses_v5_client_before_direct_http(
+def test_seed_paper_probe_uses_v5_client_after_direct_http_empty(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
     fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
@@ -549,9 +562,7 @@ def test_seed_paper_probe_uses_v5_client_before_direct_http(
     monkeypatch.setattr(
         run_topic_discovery,
         "_fetch_fullraw_topic_papers",
-        lambda *_args, **_kwargs: (
-            (_ for _ in ()).throw(AssertionError("direct HTTP fallback"))
-        ),
+        lambda *_args, **_kwargs: [],
     )
     monkeypatch.setattr(
         run_topic_discovery,
@@ -563,11 +574,7 @@ def test_seed_paper_probe_uses_v5_client_before_direct_http(
             "cited_by_count": 40,
             "publication_year": 2026,
             "quality_score": 90.0,
-            "fullraw_shard_receipt": {
-                "shards_searched": 1514,
-                "partial_shard_search": False,
-                "sources_searched": {"openalex": 988},
-            },
+            "fullraw_shard_receipt": _fullraw_receipt(),
         }],
     )
     monkeypatch.setattr(sys, "argv", [
@@ -580,7 +587,10 @@ def test_seed_paper_probe_uses_v5_client_before_direct_http(
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
     assert payload["top"][0]["topic"] == "metformin"
     assert payload["top"][0]["top_paper_doi"] == "10.1/v5"
-    assert payload["fullraw_seed_probe"]["receipts"][0]["shards_searched"] == 1514
+    receipt = payload["fullraw_seed_probe"]["receipts"][0]
+    assert receipt["shards_searched"] == 1525
+    assert receipt["partial_shard_search"] is False
+    assert receipt["sweep_failed_shards"] == 0
 
 
 def test_v5_client_bounds_restore_environment(monkeypatch: Any) -> None:
@@ -589,8 +599,8 @@ def test_v5_client_bounds_restore_environment(monkeypatch: Any) -> None:
     monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "7200")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS", "77")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_MAX_VARIANTS", "8")
-    monkeypatch.setenv("V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED", "1514")
-    monkeypatch.setenv("V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED", "4")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED", "1525")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED", "5")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH", "1")
     monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", "6")
 
@@ -600,9 +610,9 @@ def test_v5_client_bounds_restore_environment(monkeypatch: Any) -> None:
     assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "45"
     assert os.environ["V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS"] == "0"
     assert os.environ["V5_MEMO_FULL_RAW_MAX_VARIANTS"] == "2"
-    assert os.environ["V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED"] == "1"
-    assert os.environ["V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED"] == "1"
-    assert os.environ["V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH"] == "0"
+    assert os.environ["V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED"] == "1525"
+    assert os.environ["V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED"] == "5"
+    assert os.environ["V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH"] == "1"
 
     run_topic_discovery._restore_env(old)
     assert os.environ["V5_MEMO_FULL_RAW_CORPUS_TIMEOUT"] == "99"
@@ -610,8 +620,8 @@ def test_v5_client_bounds_restore_environment(monkeypatch: Any) -> None:
     assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "7200"
     assert os.environ["V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS"] == "77"
     assert os.environ["V5_MEMO_FULL_RAW_MAX_VARIANTS"] == "8"
-    assert os.environ["V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED"] == "1514"
-    assert os.environ["V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED"] == "4"
+    assert os.environ["V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED"] == "1525"
+    assert os.environ["V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED"] == "5"
     assert os.environ["V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH"] == "1"
 
 
@@ -657,7 +667,18 @@ class Hit:
     venue = "Journal"
     year = 2026
     url = "https://doi.org/10.1/met"
-    metadata = {"shard_receipt": {"shards_searched": 50, "sources_searched": {"openalex": 50}}}
+    metadata = {"shard_receipt": {
+        "shards_searched": 1525,
+        "partial_shard_search": False,
+        "sweep_failed_shards": 0,
+        "sources_searched": {
+            "openalex": 900,
+            "pubmed": 120,
+            "crossref": 90,
+            "semantic_scholar": 60,
+            "core": 40,
+        },
+    }}
 
 class FullRawCorpusSearchClient:
     @classmethod
@@ -685,8 +706,8 @@ class FullRawCorpusSearchClient:
     monkeypatch.delitem(sys.modules, "v5_memo.client", raising=False)
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "1")
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_SRC", str(src))
-    monkeypatch.setenv("V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED", "1514")
-    monkeypatch.setenv("V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED", "4")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED", "1525")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED", "5")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH", "1")
 
     rows = run_topic_discovery._v5_client_papers("metformin longevity", limit=1)
@@ -696,12 +717,12 @@ class FullRawCorpusSearchClient:
         "strict": True,
         "query_timeout": "30",
         "max_variants": "2",
-        "min_shards": "1",
-        "min_sources": "1",
-        "require_complete": "0",
+        "min_shards": "1525",
+        "min_sources": "5",
+        "require_complete": "1",
     }
-    assert os.environ["V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED"] == "1514"
-    assert os.environ["V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED"] == "4"
+    assert os.environ["V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED"] == "1525"
+    assert os.environ["V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED"] == "5"
     assert os.environ["V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH"] == "1"
 
 
@@ -711,6 +732,13 @@ def test_fullraw_configured_accepts_v5_client_path(
     monkeypatch.delenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", raising=False)
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "1")
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_SRC", str(tmp_path))
+
+    assert run_topic_discovery._fullraw_configured() is True
+
+
+def test_fullraw_configured_accepts_index_token_default_endpoint(monkeypatch: Any) -> None:
+    monkeypatch.delenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", raising=False)
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
 
     assert run_topic_discovery._fullraw_configured() is True
 
@@ -910,11 +938,7 @@ def test_empty_discovery_uses_fullraw_as_domain_supply_engine(
                 "cited_by_count": 20 + i,
                 "publication_year": 2025,
                 "quality_score": 90.0,
-                "fullraw_shard_receipt": {
-                    "shards_searched": 1514,
-                    "partial_shard_search": False,
-                    "sources_searched": {"openalex": 900},
-                },
+                "fullraw_shard_receipt": _fullraw_receipt(),
             }
             for i in range(5)
         ]

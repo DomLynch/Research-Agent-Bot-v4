@@ -1178,8 +1178,6 @@ def _score_topic(
         mean_fwci=sum(fwci_vals) / len(fwci_vals),
         mean_cited_by=sum(cited_vals) / len(cited_vals),
     )
-
-
 def _fetch_topic_papers(
     topic: str, *, client: httpx.Client, settings: Settings,
     limit: int = 25,
@@ -1207,36 +1205,41 @@ def _fetch_topic_papers(
         if (k := _paper_key(p)) and k not in out
     })
     return list(out.values())[:limit]
-
-
 def _fetch_fullraw_topic_papers(topic: str, *, client: httpx.Client, limit: int = 25) -> list[dict[str, Any]]:
-    url = os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip()
+    token = os.environ.get("V5_MEMO_FULL_RAW_INDEX_TOKEN", "").strip() or os.environ.get("V5_MEMO_FULL_RAW_CORPUS_TOKEN", "").strip()
+    url = os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip() or ("http://127.0.0.1:9903/search" if token else "")
     if not url or os.environ.get("TOPIC_DISCOVERY_FULLRAW_FALLBACK", "1").lower() in {"0", "false", "no", "off"}:
         return []
     timeout = _float_env("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", 20.0)
-    token = os.environ.get("V5_MEMO_FULL_RAW_CORPUS_TOKEN", "").strip()
+    payload = {"query": topic.replace("_", " ")[:1024], "limit": 10, "rank_mode": "relevance", "cache_only": True, "queue_if_missing": True}
+    wait_s = _float_env("TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS", 2.0)
+    data: Any = {}
+    receipt: dict[str, Any] = {}
+    ok = False
     try:
-        response = client.post(
-            url,
-            headers={"Authorization": f"Bearer {token}"} if token else {},
-            json={"query": topic.replace("_", " ")[:1024], "limit": max(1, min(limit, 25)), "top_k": max(1, min(limit, 25)), "corpus": "full_raw_450m_plus", "rank_mode": "hybrid", "timeout_seconds": timeout},
-            timeout=timeout + 2.0,
-        )
-        response.raise_for_status()
-        data = response.json()
+        for _ in range(max(1, int(_float_env("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", max(1.0, timeout / max(wait_s, 1.0)))))):
+            response = client.post(url, headers={"Authorization": f"Bearer {token}"} if token else {}, json=payload, timeout=timeout + 2.0)
+            response.raise_for_status()
+            data = response.json()
+            if isinstance(data, dict):
+                receipt = next((dict(c["shard_receipt"]) for c in (data.get("meta"), data.get("metadata"), data) if isinstance(c, dict) and isinstance(c.get("shard_receipt"), dict)), {})
+                if not receipt and isinstance(data.get("receipt"), dict):
+                    receipt = dict(data["receipt"])
+                sources = receipt.get("sources_searched")
+                source_count = sum(1 for v in sources.values() if v) if isinstance(sources, dict) else sum(1 for v in sources if v) if isinstance(sources, (list, tuple, set)) else 0
+                try:
+                    failed = receipt.get("sweep_failed_shards")
+                    ok = failed is not None and int(receipt.get("shards_searched") or 0) >= 1525 and receipt.get("partial_shard_search") is False and int(failed) == 0 and source_count >= 5
+                except (TypeError, ValueError):
+                    ok = False
+            if ok:
+                break
+            if wait_s:
+                time.sleep(wait_s)
     except (httpx.HTTPError, ValueError):
         return []
-    if not isinstance(data, dict) or not isinstance(meta := data.get("meta"), dict):
-        return []
-    if not isinstance(receipt := meta.get("shard_receipt"), dict):
-        return []
-    sources = receipt.get("sources_searched")
-    try:
-        shards = int(receipt.get("shards_searched") or 0)
-    except (TypeError, ValueError):
-        return []
     items = data.get("results") or data.get("hits") or []
-    if not isinstance(sources, dict) or shards <= 0 or not sources.get("openalex") or not isinstance(items, list):
+    if not ok or not isinstance(items, list):
         return []
     out = []
     for item in items:
@@ -1245,7 +1248,6 @@ def _fetch_fullraw_topic_papers(topic: str, *, client: httpx.Client, limit: int 
         doi = str(item.get("doi") or "").strip()
         out.append({"doi": doi, "pmid": item.get("pmid"), "pmcid": item.get("pmcid"), "paper_id": item.get("paper_id") or item.get("id"), "title": title, "journal": item.get("journal") or item.get("venue") or item.get("source_name"), "publication_year": item.get("publication_year") or item.get("year"), "fwci": item.get("fwci") or 1.0, "cited_by_count": item.get("cited_by_count") or item.get("citation_count") or 0, "quality_score": item.get("quality_score") or 70.0, "url": f"https://doi.org/{doi}" if doi else item.get("url"), "fullraw_shard_receipt": dict(receipt)})
     return out
-
 
 def _fetch_papers_by_topic(
     topics: list[str], *, client: httpx.Client, settings: Settings,
