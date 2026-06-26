@@ -19,6 +19,7 @@ from agent.business_research import (
     cluster_business_facts,
     fetch_business_facts,
     normalize_business_fact,
+    write_candidate_run,
 )
 from agent.domain_profile import DomainProfile, load_domain_profile
 from agent.topic_discovery import load_seed_topics
@@ -1099,6 +1100,40 @@ def test_business_sweep_consistency_persists_between_invocations(
         )
     )
     assert consistency[0]["passes"] == 2
+
+
+def test_daily_cycle_preserves_stored_business_candidate_verdict(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("management_research")
+    bundle = build_candidate_bundle(
+        _fixture_facts(),
+        topic="management_practices_productivity",
+        domain="management_research",
+    )
+    assert bundle is not None
+    runs_root = tmp_path / "runs"
+    write_candidate_run(bundle, profile=profile, runs_root=runs_root)
+
+    def fail_recompute(_run_dir: Path) -> dict[str, Any]:
+        return {
+            "topic": "management_practices_productivity",
+            "decision": "agent_repair_needed",
+            "publish_tier": "TIER_2",
+            "blockers": ["receipt_shape_mismatch"],
+        }
+
+    monkeypatch.setattr(cycle, "publish_verdict", fail_recompute)
+
+    queue_payload = cycle._build_queue(
+        runs_root, include_archive=False, domain="management_research",
+    )
+
+    assert [row["topic"] for row in queue_payload["ready_to_publish"]] == [
+        "management_practices_productivity",
+    ]
+    assert queue_payload["agent_repair_needed"] == []
 
 
 def test_business_systemd_timers_are_eight_hour_guarded() -> None:

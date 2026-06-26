@@ -403,6 +403,10 @@ def _stage_blockers(run: Path) -> list[str]:
 
 
 def _verdict_for_run(run: Path) -> Json:
+    if (run / "business_candidate_bundle.json").exists():
+        data = _json(run / "publish_verdict.json", {})
+        if isinstance(data, dict) and data:
+            return data
     if _can_recompute_verdict(run):
         return publish_verdict(run)
     data = _json(run / "publish_verdict.json", {})
