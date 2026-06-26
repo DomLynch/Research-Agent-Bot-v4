@@ -1000,6 +1000,7 @@ def test_business_no_bundle_diagnostic_blockers_reach_queue_and_ledger(
 def test_business_sweep_submits_after_consistent_non_dry_run_passes(
     tmp_path: Path,
     monkeypatch: Any,
+    capsys: Any,
 ) -> None:
     profile = load_domain_profile("management_research")
     live_profile = DomainProfile(
@@ -1021,7 +1022,22 @@ def test_business_sweep_submits_after_consistent_non_dry_run_passes(
 
     def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
         submissions.append(kwargs)
-        return {"status": "submitted_to_researka", "submitted": 1}
+        return {
+            "status": "submitted_to_researka",
+            "submitted": 1,
+            "published": 0,
+            "publish_summary": {
+                "status": "submitted_to_researka",
+                "submitted": 1,
+                "published": 0,
+                "considered": 1,
+                "queue_counts": {"ready_to_publish": 1},
+                "top_blockers": {"submitted_to_researka": 1},
+                "next_action": "watch_decision_or_public_page",
+                "public_url": None,
+                "public_url_status": None,
+            },
+        }
 
     monkeypatch.setattr(sweep, "_DOMAINS", ("management_research",))
     monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: live_profile)
@@ -1049,6 +1065,10 @@ def test_business_sweep_submits_after_consistent_non_dry_run_passes(
         "ready_waiting_consistency",
         "submitted_to_researka",
     ]
+    out = capsys.readouterr().out
+    assert "[business-sweep] domain=management_research summary=" in out
+    assert '"public_url_status": null' in out
+    assert '"top_blockers": {"submitted_to_researka": 1}' in out
 
 
 def test_business_sweep_consistency_persists_between_invocations(

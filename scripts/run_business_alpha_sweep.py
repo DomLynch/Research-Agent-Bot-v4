@@ -274,6 +274,11 @@ def main() -> int:
                     row["status"] = str(ledger.get("status") or "submit_failed")
                     row["submission_ledger"] = ledger
                     _write_sweep_summary(args.runs_root, rows)
+                    if isinstance(ledger.get("publish_summary"), dict):
+                        print(
+                            f"[business-sweep] domain={domain} "
+                            f"summary={json.dumps(ledger['publish_summary'], sort_keys=True)}"
+                        )
                     print(f"[business-sweep] {row['status']} {domain} {topic} -> {run_dir}")
                     return 0 if row["status"] in {"submitted_to_researka", "published"} else 2
                 print(f"[business-sweep] ready {domain} {topic} -> {run_dir}")
