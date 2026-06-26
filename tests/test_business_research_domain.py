@@ -122,7 +122,7 @@ def test_business_bundle_materializes_shape_fallbacks() -> None:
     assert bundle.shape["study_design"] == "difference in differences"
 
 
-def test_finance_return_bundle_rejects_mixed_signal_family_details() -> None:
+def test_finance_return_bundle_preserves_mixed_signal_family_details() -> None:
     rows: list[dict[str, Any]] = []
     signals = (
         "value factor long-short portfolio",
@@ -157,7 +157,10 @@ def test_finance_return_bundle_rejects_mixed_signal_family_details() -> None:
         domain="finance_research",
     )
 
-    assert bundle is None
+    assert bundle is not None
+    assert bundle.source_count == 5
+    assert bundle.shape["signal_family"] == "return predictive signal"
+    assert bundle.receipts[0]["signal_family_detail"] == "value factor long short portfolio"
 
 
 def test_business_bundle_materializes_extractor_alias_fields() -> None:
@@ -435,14 +438,14 @@ def test_finance_return_facts_cluster_by_empirical_asset_pricing_shape() -> None
 
     assert bundle is not None
     assert bundle.source_count == 5
-    assert bundle.shape["signal_family"] == "hiring rate long short portfolio"
+    assert bundle.shape["signal_family"] == "return predictive signal"
     assert bundle.shape["study_design"] == "empirical asset pricing"
     assert bundle.shape["metric"] == "percentage return or alpha premium"
     assert bundle.receipts[0]["intervention"] == "return predictive signal portfolio"
     assert bundle.receipts[0]["intervention_detail"] == "hiring-rate long-short portfolio"
 
 
-def test_finance_return_facts_reject_mixed_signal_families() -> None:
+def test_finance_return_facts_cluster_mixed_signal_details() -> None:
     rows = [
         {
             "id": f"fin-mixed-{i}",
@@ -457,11 +460,11 @@ def test_finance_return_facts_reject_mixed_signal_families() -> None:
             "paper": {"doi": f"10.7777/finance-mixed-{i}", "title": "Portfolio returns"},
         }
         for i, (value, phrase, intervention) in enumerate([
-            (11.0, "earns abnormal returns of roughly 11 percent per year", "past track record portfolio"),
-            (8.6, "earns an average annual return of 8.6% in high-skill industries", "hiring-rate long-short portfolio"),
-            (5.0, "firms in mobile industries earn returns over 5% higher", "labor mobility"),
-            (2.4, "earn significant out-of-sample annual alphas of 2.4%", "machine-learning fund characteristics"),
-            (1.5, "one standard deviation in EPU is associated with a 1.5% increase in abnormal returns", "economic policy uncertainty exposure"),
+            (11.0, "factor premia returns earn abnormal returns of roughly 11 percent per year", "past track record portfolio"),
+            (8.6, "factor premia returns average 8.6% annually in high-skill industries", "hiring-rate long-short portfolio"),
+            (5.0, "factor premia returns in mobile industries exceed 5%", "labor mobility"),
+            (2.4, "factor premia returns earn out-of-sample annual alphas of 2.4%", "machine-learning fund characteristics"),
+            (1.5, "factor premia returns rise 1.5% with economic policy uncertainty exposure", "economic policy uncertainty exposure"),
         ], start=1)
     ]
 
@@ -471,7 +474,10 @@ def test_finance_return_facts_reject_mixed_signal_families() -> None:
         domain="finance_research",
     )
 
-    assert bundle is None
+    assert bundle is not None
+    assert bundle.source_count == 5
+    assert bundle.shape["signal_family"] == "return predictive signal"
+    assert bundle.receipts[0]["signal_family_detail"] == "past track record portfolio"
 
 
 def test_business_candidate_cli_builds_ready_queue(
@@ -648,7 +654,8 @@ def test_finance_return_bundle_accepts_repeated_signal_family() -> None:
 
     assert bundle is not None
     assert bundle.source_count == 5
-    assert bundle.shape["signal_family"] == "value spread"
+    assert bundle.shape["signal_family"] == "return predictive signal"
+    assert bundle.receipts[0]["signal_family_detail"] == "value spread"
 
 
 def test_business_candidate_blocks_population_heterogeneity_false_disagreement() -> None:
