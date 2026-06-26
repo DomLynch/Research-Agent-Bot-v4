@@ -86,6 +86,50 @@ def test_contract_requires_falsifiable_next_step() -> None:
     assert "missing_falsifiable_next_step" in quality["weaknesses"]
 
 
+def test_contract_requires_receipt_owned_claim_terms() -> None:
+    memo = (
+        "# Alpha memo\n\n"
+        "**Headline:** Operational pattern creates a generic research opportunity\n"
+        "**Alpha score:** 90/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## One-sentence thesis\n\n"
+        "A broad operational pattern creates an actionable deployment opportunity.\n\n"
+        "## Why this is surprising\n\n"
+        "Real tension: the operational pattern is actionable but under-tested.\n\n"
+        "## Next question\n\n"
+        "What independent receipt would falsify this operational pattern?\n"
+    )
+
+    quality = evaluate_research_quality(_ready_verdict(), memo)
+
+    assert quality["publishable"] is False
+    assert "claim_too_generic_or_not_receipt_owned" in quality["weaknesses"]
+
+
+def test_contract_requires_non_obvious_angle_or_tension() -> None:
+    verdict = _ready_verdict()
+    axes = verdict["axes"]
+    assert isinstance(axes, dict)
+    verdict["axes"] = axes | {"counter_consensus_tension": False}
+    memo = (
+        "# Alpha memo\n\n"
+        "**Headline:** Storage threshold separates reserve reliability from cost exposure\n"
+        "**Alpha score:** 90/100\n"
+        "**Confidence:** `evidence_backed_signal`\n\n"
+        "## One-sentence thesis\n\n"
+        "Reserve reliability improves at the storage threshold and cost exposure remains protocol-sensitive.\n\n"
+        "## Why this is surprising\n\n"
+        "The same threshold appears in reserve reliability and cost exposure receipts.\n\n"
+        "## Next question\n\n"
+        "What repeated reserve-market receipt would falsify the reliability/cost split?\n"
+    )
+
+    quality = evaluate_research_quality(verdict, memo)
+
+    assert quality["publishable"] is False
+    assert "missing_non_obvious_angle" in quality["weaknesses"]
+
+
 def test_contract_demotes_structurally_ready_boilerplate_memo() -> None:
     memo = (
         "# Alpha memo\n\n"
