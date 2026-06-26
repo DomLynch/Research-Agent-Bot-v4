@@ -414,6 +414,8 @@ def _known_no_signal_topic(topic: str) -> bool:
     status_text = " ".join(str(verdict.get(k) or "") for k in (
         "confidence_label", "signal_label", "queue_status", "reason",
     ))
+    if "no_signal" in status_text and _current_lanes_find_direct_receipts(run_dir, topic):
+        return False
     if "no_signal" in status_text or "low_alpha_score" in f"{status_text} {blocker_text}":
         return True
     with suppress(TypeError, ValueError):
@@ -423,6 +425,20 @@ def _known_no_signal_topic(topic: str) -> bool:
             and int(verdict.get("alpha_score") or 0) <= 0
         )
     return False
+
+
+def _current_lanes_find_direct_receipts(run_dir: Path, topic: str) -> bool:
+    try:
+        facts = json.loads((run_dir / "all_facts.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    if not isinstance(facts, list):
+        return False
+    from agent.fact_lanes import classify_lanes
+    direct_count = sum(
+        1 for verdict in classify_lanes(facts, topic) if verdict.lane == "A_core"
+    )
+    return direct_count >= int(_DEFAULT_MIN_DIRECT_SUBMIT_SOURCES)
 
 
 def _child_topics_from_verdict(run_dir: str, seen: set[str]) -> list[str]:

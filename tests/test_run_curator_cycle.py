@@ -1404,6 +1404,38 @@ def test_stop_on_ready_fullraw_supply_skips_known_no_signal_topic(
     assert payload["ran"][0]["topic"] == "source_diverse_fullraw"
 
 
+def test_no_signal_topic_reopens_when_current_lanes_find_direct_receipts(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import run_curator_cycle
+
+    runs = tmp_path / "runs"
+    prior = runs / "fasting_longevity-evidence-2026-06-26T00-00-00Z"
+    prior.mkdir(parents=True)
+    prior.joinpath("publish_verdict.json").write_text(json.dumps({
+        "decision": "curation_needed",
+        "topic": "fasting_longevity",
+        "confidence_label": "no_signal",
+        "blockers": ["blocked_label:no_signal"],
+    }), encoding="utf-8")
+    prior.joinpath("all_facts.json").write_text(json.dumps([
+        {
+            "fact_id": str(idx),
+            "canonical_phrase": "fasting interval extended life span by 35%",
+            "population": "male C57BL/6J mice",
+            "intervention": "30% CR with daily fasting interval",
+            "comparator": "ad libitum-fed mice",
+            "numeric_value": 35.0,
+            "units": "%",
+        }
+        for idx in range(5)
+    ]), encoding="utf-8")
+
+    monkeypatch.setattr(run_curator_cycle, "_RUNS", runs)
+
+    assert run_curator_cycle._known_no_signal_topic("fasting_longevity") is False
+
+
 def test_stop_on_ready_warm_backlog_probes_beyond_cache(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
