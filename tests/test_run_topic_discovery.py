@@ -1139,9 +1139,15 @@ def test_fullraw_supply_skips_one_token_domain_query_when_seeds_exist(
     monkeypatch: Any,
 ) -> None:
     calls: list[str] = []
+    caps: list[tuple[str | None, str | None, str | None]] = []
 
     def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
         calls.append(query)
+        caps.append((
+            os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"),
+            os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"),
+            os.environ.get("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS"),
+        ))
         if query == "factor premia returns finance":
             return _fullraw_rows("factor", "Factor premia returns")
         return []
@@ -1156,6 +1162,7 @@ def test_fullraw_supply_skips_one_token_domain_query_when_seeds_exist(
     )
 
     assert calls == ["factor premia returns finance"]
+    assert caps == [("35.0", "45.0", "15.0")]
     assert [row.topic for row in rows] == ["factor_premia_returns_finance"]
 
 
