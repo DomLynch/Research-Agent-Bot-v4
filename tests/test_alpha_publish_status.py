@@ -103,6 +103,22 @@ def test_publish_summary_contains_operator_blocker_fields() -> None:
     }
 
 
+def test_publish_summary_counts_incomplete_fullraw_receipt() -> None:
+    summary = publish_summary({
+        "status": CycleStatus.CANDIDATE_REFRESH_FAILED.value,
+        "submitted": 0,
+        "published": 0,
+        "refresh_candidates": {
+            "fullraw_probe_events": [{"status": "incomplete_receipt"}],
+        },
+    })
+
+    assert summary["top_blockers"] == {
+        "candidate_refresh_failed": 1,
+        "fullraw_incomplete_receipt": 1,
+    }
+
+
 def test_publish_summary_uses_terminal_status_for_reviewer_rejection() -> None:
     summary = publish_summary({
         "status": CycleStatus.REVIEWER_REJECTED.value,

@@ -62,6 +62,46 @@ def test_fullraw_receipt_complete_accepts_list_sources() -> None:
     assert run_topic_discovery._fullraw_receipt_complete(receipt)
 
 
+def test_seed_fullraw_records_incomplete_receipt_event(monkeypatch: Any) -> None:
+    run_topic_discovery._FULLRAW_PROBE_EVENTS.clear()
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", "1")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS", "0")
+    receipt = {
+        "shards_searched": 201,
+        "shards_total": 1525,
+        "partial_shard_search": True,
+        "sweep_failed_shards": 0,
+        "sources_searched": {"openalex": 10, "pubmed": 4},
+    }
+
+    def handler(req: Any) -> Any:
+        assert json.loads(req.content.decode("utf-8"))["queue_if_missing"] is True
+        return run_topic_discovery.httpx.Response(200, json={
+            "meta": {
+                "async_sweep": {"status": "queued", "shard_limit": 1525},
+                "shard_receipt": receipt,
+            },
+            "results": [{"title": "Partial result must not publish"}],
+        })
+
+    transport = run_topic_discovery.httpx.MockTransport(handler)
+    with run_topic_discovery.httpx.Client(transport=transport) as client:
+        assert run_topic_discovery._seed_fullraw_papers(
+            "metformin longevity", client=client, limit=5,
+        ) == []
+
+    assert run_topic_discovery._FULLRAW_PROBE_EVENTS[-1] == {
+        "query": "metformin longevity",
+        "status": "incomplete_receipt",
+        "shards_searched": 201,
+        "shards_total": 1525,
+        "partial_shard_search": True,
+        "sweep_failed_shards": 0,
+        "async_status": "queued",
+    }
+
+
 def test_default_discovery_keeps_publish_path_bounded() -> None:
     assert _resolve_limits(
         warm_backlog=False,

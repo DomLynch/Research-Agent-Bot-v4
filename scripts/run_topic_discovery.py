@@ -26,6 +26,7 @@ import httpx
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from agent import topic_discovery as topic_discovery_mod
 from agent.domain_profile import domain_choices, load_domain_profile
 from agent.settings import Settings, load_settings
 from agent.topic_discovery import (
@@ -208,7 +209,20 @@ def _seed_fullraw_papers(
         query, client=client, limit=limit,
     ) or _v5_client_papers(query, limit=limit)
     if not papers:
-        _FULLRAW_PROBE_EVENTS.append({"query": query, "status": "no_hits"})
+        event: dict[str, object] = {"query": query, "status": "no_hits"}
+        receipt = getattr(topic_discovery_mod, "_FULLRAW_LAST_RECEIPT", {})
+        if isinstance(receipt, dict) and receipt:
+            event.update({
+                "status": "incomplete_receipt",
+                "shards_searched": receipt.get("shards_searched"),
+                "shards_total": receipt.get("shards_total"),
+                "partial_shard_search": receipt.get("partial_shard_search"),
+                "sweep_failed_shards": receipt.get("sweep_failed_shards"),
+            })
+        async_sweep = getattr(topic_discovery_mod, "_FULLRAW_LAST_ASYNC_SWEEP", {})
+        if isinstance(async_sweep, dict) and async_sweep.get("status"):
+            event["async_status"] = async_sweep.get("status")
+        _FULLRAW_PROBE_EVENTS.append(event)
     return papers
 
 

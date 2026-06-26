@@ -53,8 +53,6 @@ _TITLE_STOPWORDS = frozenset({
     "patients", "adults", "human", "mouse", "mice", "model", "models",
     "new", "novel", "improve", "improved", "improves",
 })
-
-
 def _direct_source_rich_floor() -> int:
     try:
         data = tomllib.loads(_PUBLICATION_TOML.read_text(encoding="utf-8"))
@@ -76,25 +74,20 @@ _CHILD_TOPIC_STOPWORDS = _TITLE_STOPWORDS | frozenset({
     "decrease", "decreased", "decreases", "lower", "lowered", "lowers",
     "higher", "versus", "compared", "percentage", "percent", "that", "over", "show", "shows", "showed", "showing", "achieve", "achieves", "achieved", "achieving", "demonstrate", "demonstrates", "demonstrated", "demonstrating", "outperform", "outperforms", "outperformed", "outperforming", "improvement", "results", "experiment", "experiments", "performance",
 })
-
-
 def _title_tokens(text: str) -> tuple[str, ...]:
     return tuple(
         w for w in _TITLE_WORD.findall(text.lower())
         if len(w) > 2 and w not in _TITLE_STOPWORDS
     )
-
-
 def _float_env(name: str, default: float) -> float:
     try:
         return max(0.0, float(os.environ.get(name, default)))
     except (TypeError, ValueError):
         return default
-
-
 _SUPPLY_CACHE_TTL_SECONDS = 86_400.0  # re-probe rich topics at most once/day
 _LOW_SUPPLY_CACHE_TTL_SECONDS = _float_env("RESEARCH_AGENT_LOW_TOPIC_SUPPLY_CACHE_TTL_SECONDS", 7200.0)
-
+_FULLRAW_LAST_RECEIPT: dict[str, Any] = {}
+_FULLRAW_LAST_ASYNC_SWEEP: dict[str, Any] = {}
 
 @dataclass(frozen=True, slots=True)
 class TopicCandidate:
@@ -1205,7 +1198,11 @@ def _fetch_topic_papers(
         if (k := _paper_key(p)) and k not in out
     })
     return list(out.values())[:limit]
+
 def _fetch_fullraw_topic_papers(topic: str, *, client: httpx.Client, limit: int = 25) -> list[dict[str, Any]]:
+    global _FULLRAW_LAST_ASYNC_SWEEP, _FULLRAW_LAST_RECEIPT
+    _FULLRAW_LAST_RECEIPT = {}
+    _FULLRAW_LAST_ASYNC_SWEEP = {}
     token = os.environ.get("V5_MEMO_FULL_RAW_INDEX_TOKEN", "").strip() or os.environ.get("V5_MEMO_FULL_RAW_CORPUS_TOKEN", "").strip()
     url = os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip() or ("http://127.0.0.1:9903/search" if token else "")
     if not url or os.environ.get("TOPIC_DISCOVERY_FULLRAW_FALLBACK", "1").lower() in {"0", "false", "no", "off"}:
@@ -1222,9 +1219,12 @@ def _fetch_fullraw_topic_papers(topic: str, *, client: httpx.Client, limit: int 
             response.raise_for_status()
             data = response.json()
             if isinstance(data, dict):
+                async_sweep = data.get("meta", {}).get("async_sweep") if isinstance(data.get("meta"), dict) else {}
+                _FULLRAW_LAST_ASYNC_SWEEP = dict(async_sweep) if isinstance(async_sweep, dict) else {}
                 receipt = next((dict(c["shard_receipt"]) for c in (data.get("meta"), data.get("metadata"), data) if isinstance(c, dict) and isinstance(c.get("shard_receipt"), dict)), {})
                 if not receipt:
                     receipt = dict(data["receipt"] if isinstance(data.get("receipt"), dict) else data if "shards_searched" in data else {})
+                _FULLRAW_LAST_RECEIPT = dict(receipt)
                 sources = receipt.get("sources_searched")
                 source_count = sum(1 for v in sources.values() if v) if isinstance(sources, dict) else sum(1 for v in sources if v) if isinstance(sources, (list, tuple, set)) else 0
                 try:
