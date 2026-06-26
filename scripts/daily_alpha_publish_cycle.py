@@ -3463,9 +3463,14 @@ def _source_literature_title_key(title: Any) -> str:
 
 
 def _source_literature_boundary_quality(
-    topic: str, papers: list[Json], min_sources: int,
+    topic: str, papers: list[Json], min_sources: int, profile_slug: str = "",
 ) -> tuple[bool, str]:
-    return publish_literature.boundary_quality(topic, papers, min_sources)
+    return publish_literature.boundary_quality(
+        topic,
+        papers,
+        min_sources,
+        strict_topic_coverage=publish_literature._non_biomedical(profile_slug),
+    )
 
 
 def _paper_key(paper: Json, fallback: Any = "") -> str:
@@ -3647,7 +3652,7 @@ def _source_literature_candidate_papers(
     papers = _source_literature_discovery_papers(
         runs_root, profile_slug, topic, min_sources,
     )
-    if papers and _source_literature_boundary_quality(topic, papers, min_sources)[0]:
+    if papers and _source_literature_boundary_quality(topic, papers, min_sources, profile_slug)[0]:
         return papers
     fetched = _fetch_source_literature_papers(topic, fetch_limit, domain=profile_slug)
     return fetched or papers
@@ -3905,6 +3910,7 @@ def _source_literature_payload(
         safe_excerpt=_safe_excerpt,
         submission_agent_id=_submission_agent_id,
         reviewer_notes=reviewer_notes,
+        strict_topic_coverage=publish_literature._non_biomedical(profile_slug),
     )
 
 
@@ -4791,7 +4797,7 @@ def run_cycle(
                 attempt_status = "blocked"
                 papers = source_lit_probe(topic, min_submit_sources * 3)
                 source_lit_available, _reason = _source_literature_boundary_quality(
-                    topic, papers, min_submit_sources,
+                    topic, papers, min_submit_sources, profile.slug,
                 )
                 if source_lit_available:
                     source_lit_preflight_papers[topic] = papers
@@ -5434,7 +5440,7 @@ def run_cycle(
                 )
             )
             ok, reason = _source_literature_boundary_quality(
-                literature_topic, papers, min_submit_sources,
+                literature_topic, papers, min_submit_sources, profile.slug,
             )
             relevant_paper_count = len(
                 publish_literature.relevant_papers(literature_topic, papers),
@@ -5453,7 +5459,10 @@ def run_cycle(
             _write_ledger(ledger_path, ledger)
             if ok:
                 selected_papers = publish_literature.select_boundary_papers(
-                    literature_topic, papers, min_submit_sources,
+                    literature_topic,
+                    papers,
+                    min_submit_sources,
+                    strict_topic_coverage=publish_literature._non_biomedical(profile.slug),
                 )
                 fact_backed = _source_literature_fact_count(selected_papers) >= min_submit_sources
                 if (

@@ -7934,7 +7934,7 @@ def test_source_literature_fallback_blocks_under_citable_source_floor(
     (root / "_topics_discovery").mkdir(parents=True)
     (root / "_topics_discovery" / "economics.json").write_text(json.dumps({
         "domain": {"slug": "economics_research"},
-        "all": [{"topic": "minimum_wage_employment", "paper_count": 25}],
+        "all": [{"topic": "minimum_wage", "paper_count": 25}],
     }), encoding="utf-8")
     papers = [
         {
@@ -10894,6 +10894,68 @@ def test_source_literature_boundary_requires_specific_topic_alignment() -> None:
     assert reason == "source_floor_below_min"
 
 
+def test_source_literature_boundary_rejects_partial_three_token_topic_bundle() -> None:
+    papers = [
+        {
+            "title": "THE EFFECT OF MINIMUM WAGES ON EMPLOYMENT: A FACTOR MODEL APPROACH",
+            "doi": "10.1234/1",
+            "source_fact": {
+                "canonical_phrase": "minimum wage employment elasticity estimates were null",
+                "intervention": "minimum wage",
+                "endpoint": "employment elasticity",
+            },
+        },
+        {
+            "title": "Revisiting the Minimum Wage-Employment Debate",
+            "doi": "10.1234/2",
+            "source_fact": {
+                "canonical_phrase": "teen employment elasticities near -0.15",
+                "population": "teen workers",
+                "intervention": "minimum wages",
+                "endpoint": "employment elasticity",
+            },
+        },
+        {
+            "title": "European Minimum Wage Policy",
+            "doi": "10.1234/3",
+            "source_fact": {
+                "canonical_phrase": "minimum wage policy prevalence across countries",
+                "intervention": "minimum wage policy",
+                "endpoint": "policy prevalence",
+            },
+        },
+        {
+            "title": "At What Level Should Countries Set Their Minimum Wages",
+            "doi": "10.1234/4",
+            "source_fact": {
+                "canonical_phrase": "minimum wages are common across countries",
+                "intervention": "minimum wage policy",
+                "endpoint": "policy level",
+            },
+        },
+        {
+            "title": "Nominal Wage Rigidity in Village Labor Markets",
+            "doi": "10.1234/5",
+            "source_fact": {
+                "canonical_phrase": "wage rigidity reduced employment",
+                "intervention": "rainfall shocks",
+                "endpoint": "employment",
+            },
+        },
+    ]
+
+    ok, reason = daily._source_literature_boundary_quality(
+        "minimum_wage_employment", papers, 5, "economics_research",
+    )
+    selected = publish_literature.select_boundary_papers(
+        "minimum_wage_employment", papers, 5, strict_topic_coverage=True,
+    )
+
+    assert ok is False
+    assert reason == "source_floor_below_min"
+    assert len(selected) == 2
+
+
 def test_source_literature_boundary_rejects_generic_only_topic() -> None:
     papers = [
         {
@@ -11076,6 +11138,55 @@ def test_source_literature_payload_labels_consistent_favorable_receipts(
     assert "study design/evidence type (primary/review)" in payload["markdown"]
     assert "fasting glucose" in payload["markdown"]
     assert "Single primary-study estimates are separated" in payload["markdown"]
+
+
+def test_source_literature_payload_uses_economics_language(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    papers = [
+        {
+            "title": f"Minimum wage employment elasticity source {idx}",
+            "doi": f"10.1234/minwage-{idx}",
+            "year": 2020 + idx,
+            "source_fact": {
+                "canonical_phrase": phrase,
+                "population": "local labor markets",
+                "intervention": "minimum wage policy",
+                "comparator": "lower minimum wage baseline",
+                "endpoint": "employment elasticity",
+            },
+        }
+        for idx, phrase in enumerate((
+            "minimum wage employment elasticity was not statistically different from zero",
+            "minimum wage employment elasticity was negative in teen labor markets",
+            "minimum wage employment response varied by local labor demand",
+            "minimum wage employment estimates differed across model specifications",
+            "minimum wage employment effects were heterogeneous across settings",
+        ))
+    ]
+
+    _candidate, payload = daily._source_literature_payload(
+        profile_slug="economics_research", topic="minimum_wage_employment",
+        papers=papers, runs_root=root, date="2026-06-26T09-00-00Z",
+    )
+
+    markdown = payload["markdown"]
+    lower = markdown.lower()
+    for phrase in (
+        "clinical",
+        "species",
+        "comparative-efficacy",
+        "endpoint-specific favorable",
+        "directionally favorable",
+        "intervention efficacy",
+        "human clinical",
+    ):
+        assert phrase not in lower
+    assert "directional estimate:" in markdown
+    assert "policy/exposure/practice" in markdown
+    assert "matched design" in markdown
+    assert "pooled elasticity" in markdown
 
 
 def test_source_literature_payload_separates_comparator_and_economic_rows(

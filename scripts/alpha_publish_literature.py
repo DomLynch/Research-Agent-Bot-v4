@@ -34,6 +34,10 @@ _LONGEVITY_CONTEXT_TOKENS = frozenset({
     "ageing", "aging", "longevity", "lifespan", "senescence", "geroscience",
     "mortality", "survival", "frailty", "biological", "epigenetic", "clock",
 })
+_NON_BIOMEDICAL_DOMAINS = frozenset({
+    "business_research", "economics_research", "finance_research",
+    "management_research", "marketing_research", "ai_research",
+})
 
 
 def title_key(title: Any) -> str:
@@ -60,6 +64,35 @@ def _topic_token_sequence(topic: str) -> list[str]:
         token for token in title_key(topic).split()
         if len(token) >= 3 and token not in _GENERIC_TOPIC_TOKENS
     ]
+
+
+def _topic_token_coverage(topic: str, paper: Json) -> int:
+    fact = paper.get("source_fact")
+    fact = fact if isinstance(fact, dict) else {}
+    text = title_key(" ".join(str(value or "") for value in (
+        paper.get("title"), paper.get("paper_title"), fact.get("canonical_phrase"),
+        fact.get("population"), fact.get("intervention"), fact.get("endpoint"),
+    )))
+    words = text.split()
+    return sum(
+        1 for token in set(_topic_token_sequence(topic))
+        if any(_token_matches(word, token) for word in words)
+    )
+
+
+def _non_biomedical(profile_slug: str) -> bool:
+    return profile_slug in _NON_BIOMEDICAL_DOMAINS
+
+
+def _display_direction(direction: str, profile_slug: str) -> str:
+    if not _non_biomedical(profile_slug):
+        return direction
+    return {
+        "directionally favorable": "directional estimate",
+        "comparator/not favorable": "reference/comparator contrast",
+        "non-clinical/predictive": "descriptive/modeling",
+        "null/non-convergent": "null/mixed",
+    }.get(direction, direction)
 
 
 def _token_matches(word: str, token: str) -> bool:
@@ -218,7 +251,9 @@ def _paper_context_family(paper: Json) -> str:
     )))
 
 
-def select_boundary_papers(topic: str, papers: list[Json], min_sources: int) -> list[Json]:
+def select_boundary_papers(
+    topic: str, papers: list[Json], min_sources: int, *, strict_topic_coverage: bool = False,
+) -> list[Json]:
     usable = [
         paper for paper in papers
         if isinstance(paper, dict)
@@ -228,6 +263,15 @@ def select_boundary_papers(topic: str, papers: list[Json], min_sources: int) -> 
     ]
     if len(usable) < min_sources:
         return usable
+    topic_tokens = set(_topic_token_sequence(topic))
+    if strict_topic_coverage and len(topic_tokens) >= 3:
+        precise = [
+            paper for paper in usable
+            if _topic_token_coverage(topic, paper) >= len(topic_tokens)
+        ]
+        if len(precise) < min_sources:
+            return precise
+        usable = precise
     buckets: dict[str, list[Json]] = {}
     for paper in usable:
         buckets.setdefault(_paper_context_family(paper), []).append(paper)
@@ -240,8 +284,12 @@ def select_boundary_papers(topic: str, papers: list[Json], min_sources: int) -> 
     return usable[:min_sources]
 
 
-def boundary_quality(topic: str, papers: list[Json], min_sources: int) -> tuple[bool, str]:
-    usable = select_boundary_papers(topic, papers, min_sources)
+def boundary_quality(
+    topic: str, papers: list[Json], min_sources: int, *, strict_topic_coverage: bool = False,
+) -> tuple[bool, str]:
+    usable = select_boundary_papers(
+        topic, papers, min_sources, strict_topic_coverage=strict_topic_coverage,
+    )
     if len(usable) < min_sources:
         return False, "source_floor_below_min"
     keys = [title_key(paper.get("title")) for paper in usable]
@@ -430,7 +478,7 @@ def _uniform_favorable_cross_pico(papers: list[Json], min_sources: int) -> bool:
     )
 
 
-def _direction_rows(papers: list[Json], topic: str = "") -> list[str]:
+def _direction_rows(papers: list[Json], topic: str = "", profile_slug: str = "") -> list[str]:
     rows: list[str] = []
     for paper in papers:
         fact = paper.get("source_fact")
@@ -439,24 +487,41 @@ def _direction_rows(papers: list[Json], topic: str = "") -> list[str]:
             finding = str(fact.get("canonical_phrase") or "").strip()
         title = str(paper.get("title") or "Untitled source").strip()
         direction = _paper_effect_direction(paper, topic)
-        note = (
-            " topic is comparator here; label is endpoint-specific, not a broad efficacy verdict"
-            if direction == "comparator/not favorable" else ""
-        )
+        note = ""
+        if direction == "comparator/not favorable":
+            note = (
+                " topic is the reference/comparator here; label is metric-specific,"
+                " not a broad policy verdict"
+                if _non_biomedical(profile_slug) else
+                " topic is comparator here; label is endpoint-specific, not a broad efficacy verdict"
+            )
         if direction == "directionally favorable" and _topic_effect_ablated(finding, topic):
             note = " mechanistic ablation supports the topic effect; not a comparator outcome"
         if direction == "directionally favorable" and re.search(r"\b(?:β|beta)\s*[=:-]\s*-", finding):
             note = " direction follows receipt wording; coefficient sign is source-specific"
         rows.append(
-            f"- {direction}: {title}"
+            f"- {_display_direction(direction, profile_slug)}: {title}"
             + (f" — {finding}" if finding else "")
             + (f" ({note})" if note else ""),
         )
     return rows
 
 
-def _direction_category_lines(topic: str) -> list[str]:
+def _direction_category_lines(topic: str, profile_slug: str = "") -> list[str]:
     topic_text = topic or "the selected topic"
+    if _non_biomedical(profile_slug):
+        return [
+            f"- directional estimate: {topic_text} is the policy, exposure, "
+            "method, or practice being measured; the label is not an efficacy verdict.",
+            f"- reference/comparator contrast: {topic_text} is the reference side "
+            "of the extracted contrast; interpret only within that metric.",
+            "- economic/context only: the receipt reports cost, market, prevalence, "
+            "policy, or institutional context rather than a policy-effect estimate.",
+            "- descriptive/modeling: the receipt reports modelling or prediction "
+            "rather than a policy-effect estimate.",
+            "- null/mixed or other/mixed: the extracted finding is null, mixed, "
+            "or not directionally interpretable.",
+        ]
     return [
         f"- directionally favorable: {topic_text} is the intervention/exposure "
         "and the reported clinical endpoint favors that arm.",
@@ -471,7 +536,7 @@ def _direction_category_lines(topic: str) -> list[str]:
     ]
 
 
-def _direction_summary(papers: list[Json], topic: str = "") -> str:
+def _direction_summary(papers: list[Json], topic: str = "", profile_slug: str = "") -> str:
     groups: dict[str, list[str]] = {
         "directionally favorable": [],
         "null/non-convergent": [],
@@ -488,11 +553,14 @@ def _direction_summary(papers: list[Json], topic: str = "") -> str:
         if not finding:
             continue
         groups[_paper_effect_direction(paper, topic)].append(_short_finding(finding, 120))
-    parts = [f"{label}: {len(values)} receipt(s)" for label, values in groups.items() if values]
+    parts = [
+        f"{_display_direction(label, profile_slug)}: {len(values)} receipt(s)"
+        for label, values in groups.items() if values
+    ]
     return " | ".join(parts) if parts else "direction of effect is not extractable from the retrieved facts"
 
 
-def _pico_gap(facts: list[Json]) -> str:
+def _pico_gap(facts: list[Json], profile_slug: str = "") -> str:
     endpoints = [
         str(fact.get("endpoint") or fact.get("metric") or "").strip()
         for fact in facts
@@ -505,6 +573,12 @@ def _pico_gap(facts: list[Json]) -> str:
         if population and intervention and comparator and endpoints:
             outcome = endpoints[0]
             return (
+                "A stronger memo needs a matched design that reduces this "
+                f"bundle's heterogeneity: hold metric={outcome} constant, "
+                f"compare policy/exposure={intervention} against a clearly "
+                f"matched reference group, and test it in a setting adjacent to "
+                f"but not duplicating {population}."
+            ) if _non_biomedical(profile_slug) else (
                 "A stronger memo needs a new matched PICO that reduces this "
                 f"bundle's heterogeneity: hold outcome={outcome} constant, "
                 f"compare intervention/exposure={intervention} against a clearly "
@@ -512,13 +586,26 @@ def _pico_gap(facts: list[Json]) -> str:
                 f"but not duplicating {population}."
             )
     return (
+        "A stronger memo needs one matched design: one setting, one policy/exposure, "
+        "one comparator/reference group, and one named metric."
+        if _non_biomedical(profile_slug) else
         "A stronger memo needs one matched PICO: one population, one "
         "intervention/exposure, one comparator, and one named outcome."
     )
 
 
-def _direction_signal_label(papers: list[Json], topic: str = "") -> str:
+def _direction_signal_label(papers: list[Json], topic: str = "", profile_slug: str = "") -> str:
     directions = [_paper_effect_direction(paper, topic) for paper in papers]
+    if _non_biomedical(profile_slug):
+        if directions and all(direction == "directionally favorable" for direction in directions):
+            return "directionally consistent estimates across heterogeneous contexts"
+        if "directionally favorable" in directions and "non-clinical/predictive" in directions:
+            return "policy/exposure estimates plus separate descriptive evidence"
+        if "directionally favorable" in directions:
+            return "directional estimates with context limits"
+        if directions and all(direction == "non-clinical/predictive" for direction in directions):
+            return "descriptive predictive signals, not policy-effect evidence"
+        return "context-dependent, not uniformly convergent findings"
     if directions and all(direction == "directionally favorable" for direction in directions):
         return "directionally consistent signals across heterogeneous contexts"
     if "directionally favorable" in directions and "non-clinical/predictive" in directions:
@@ -711,9 +798,13 @@ def payload(
     safe_excerpt: Callable[[str], str],
     submission_agent_id: Callable[[str], str],
     reviewer_notes: str = "",
+    strict_topic_coverage: bool = False,
 ) -> tuple[Json, Json]:
     profile = load_domain_profile(profile_slug)
-    selected = select_boundary_papers(topic, papers, 5)
+    non_bio = _non_biomedical(profile.slug)
+    selected = select_boundary_papers(
+        topic, papers, 5, strict_topic_coverage=strict_topic_coverage,
+    )
     run_dir = runs_root / f"{topic}-source-literature-{date}"
     run_dir.mkdir(parents=True, exist_ok=True)
     facts: list[Json] = []
@@ -724,6 +815,10 @@ def payload(
     contexts = sorted({context_family(fact.get("population")) for fact in facts})
     context_text = join_contexts(contexts[:3])
     question = (
+        f"Across retrieved source-level receipts for {topic}, which metrics, "
+        "settings, or contrasts differ versus remain null/mixed, and what "
+        "matched design remains untested?"
+        if non_bio else
         f"Across retrieved source-level receipts for {topic}, which endpoints show "
         "directionally favorable versus null/non-convergent signals, and what "
         "matched PICO remains untested?"
@@ -743,7 +838,11 @@ def payload(
             "fallback requires at least five verifiable source "
             "papers with source-level receipts, distinct title keys, and a non-"
             "repeated report series before treating the bundle as a coherent "
-            "scoping front rather than proof of intervention efficacy."
+            + (
+                "scoping front rather than proof of a policy or market conclusion."
+                if non_bio else
+                "scoping front rather than proof of intervention efficacy."
+            )
         ),
         "",
         "## Boundary map",
@@ -764,8 +863,8 @@ def payload(
             lines.append(f"  - Finding: {phrase}")
         for label, key in (
             ("Population", "population"),
-            ("Intervention/exposure", "intervention"),
-            ("Comparator", "comparator"),
+            ("Policy/exposure/practice" if non_bio else "Intervention/exposure", "intervention"),
+            ("Comparator/reference" if non_bio else "Comparator", "comparator"),
             ("Endpoint/metric", "endpoint"),
         ):
             value = str(fact.get(key) or "").strip()
@@ -799,8 +898,8 @@ def payload(
         str(fact.get("endpoint") or fact.get("metric") or "").strip()
         for fact in facts if str(fact.get("endpoint") or fact.get("metric") or "").strip()
     })
-    direction_text = _direction_summary(selected, topic)
-    signal_label = _direction_signal_label(selected, topic)
+    direction_text = _direction_summary(selected, topic, profile.slug)
+    signal_label = _direction_signal_label(selected, topic, profile.slug)
     directions = [_paper_effect_direction(paper, topic) for paper in selected]
     all_favorable = bool(directions) and all(
         direction == "directionally favorable" for direction in directions
@@ -825,23 +924,44 @@ def payload(
         f"{len(bundle)}-source {type_text} bundle ({year_text}). {group_label}: "
         f"{direction_text}. The source facts cover "
         f"{len(populations) or 'multiple'} population context(s) and "
-        f"{len(interventions) or 'multiple'} intervention/exposure context(s), "
-        "so this is a scoping signal about where endpoints diverge, without "
-        "establishing a causal, clinical, species-translated, or mechanistically "
-        "integrated claim."
+        f"{len(interventions) or 'multiple'} "
+        f"{'policy/exposure/practice' if non_bio else 'intervention/exposure'} context(s), "
+        f"so this is a scoping signal about where {'metrics' if non_bio else 'endpoints'} "
+        "diverge, without "
+        + (
+            "establishing a causal, policy-prescriptive, market-generalized, "
+            "or pooled econometric claim."
+            if non_bio else
+            "establishing a causal, clinical, species-translated, or mechanistically "
+            "integrated claim."
+        )
     )
     if all_favorable and (endpoint_count > 1 or len(populations) > 1 or len(interventions) > 1):
         synthesis += (
+            " Direction is homogeneous: all selected receipts point in the same "
+            "estimated direction. The boundary is setting, comparator/reference, "
+            "and metric diversity, not directional disagreement."
+            if non_bio else
             " Direction is homogeneous: all selected receipts are directionally "
             "favorable. The boundary is population, comparator, and endpoint "
             "diversity, not directional disagreement."
         )
     if endpoint_count > 1 or len(populations) > 1:
         synthesis += (
-            " The listed effect sizes remain source-specific across endpoints "
-            "and populations; they are not pooled or averaged."
-            " This is a heterogeneous indication/context map, not a unified "
-            "disease-specific or endpoint-family claim."
+            (
+                " The listed estimates remain source-specific across metrics "
+                "and settings; they are not pooled or averaged."
+                if non_bio else
+                " The listed effect sizes remain source-specific across endpoints "
+                "and populations; they are not pooled or averaged."
+            )
+            + (
+                " This is a heterogeneous policy/setting map, not a unified "
+                "pooled economics claim."
+                if non_bio else
+                " This is a heterogeneous indication/context map, not a unified "
+                "disease-specific or endpoint-family claim."
+            )
         )
     abstract_text = synthesis
     if findings:
@@ -849,13 +969,13 @@ def payload(
         synthesis += " Concrete source-level examples: " + "; ".join(examples) + "."
     moderator_note = _specific_moderator_note(facts, source_types)
     next_gaps = [
-        _pico_gap(facts),
+        _pico_gap(facts, profile.slug),
         (
             f"If {topic} is promoted beyond a scoping note, the next run should "
             f"select sources sharing one context family rather than mixing {context_text}."
         ),
     ]
-    if "human clinical/observational" not in contexts:
+    if not non_bio and "human clinical/observational" not in contexts:
         next_gaps.insert(0, "No source in this fallback bundle tests human clinical endpoints.")
     boundary_summary = (
         (
@@ -869,6 +989,9 @@ def payload(
             "one bounded, context-dependent signal across separate source contexts. "
         )
     ) + (
+        "This memo does not claim causality, policy prescription, a pooled "
+        "elasticity estimate, or a market-generalized effect across the sources."
+        if non_bio else
         "This memo does not claim causality, clinical "
         "efficacy, species translation, or a demonstrated mechanistic chain "
         "across the sources."
@@ -886,9 +1009,9 @@ def payload(
         "",
         "## Directional grouping",
         "",
-        *(_direction_category_lines(topic)),
+        *(_direction_category_lines(topic, profile.slug)),
         "",
-        *(_direction_rows(selected, topic) or [
+        *(_direction_rows(selected, topic, profile.slug) or [
             "- Direction not extractable from the selected receipts.",
         ]),
         "",
@@ -898,10 +1021,16 @@ def payload(
         "",
         (
             f"The selected receipts group because each carries a fact-level extraction "
-            f"for {topic}; they separate by context ({context_text}) and endpoint, "
+            f"for {topic}; they separate by context ({context_text}) and "
+            f"{'metric' if non_bio else 'endpoint'}, "
             "so they are not interchangeable evidence for one pooled claim."
             + (
-                " Intervention rows and predictive/model rows are separated as "
+                (
+                    " Policy/exposure rows and predictive/model rows are separated as "
+                    if non_bio else
+                    " Intervention rows and predictive/model rows are separated as "
+                )
+                +
                 "different evidence fronts within this source-literature boundary."
                 if split_front else ""
             )
@@ -912,8 +1041,13 @@ def payload(
         boundary_summary,
         (
             " The signal is purely descriptive of effect-direction heterogeneity; "
-            "it cannot support even a weak causal or comparative-efficacy inference, "
-            "and pooling across these PICOs would be inappropriate."
+            + (
+                "it cannot support a causal, policy-prescriptive, or pooled "
+                "elasticity inference, and pooling across these designs would be inappropriate."
+                if non_bio else
+                "it cannot support even a weak causal or comparative-efficacy inference, "
+                "and pooling across these PICOs would be inappropriate."
+            )
         ),
         (
             f" Routing domain `{profile.slug}` is publication-lane metadata only; "
@@ -948,6 +1082,8 @@ def payload(
             f"{topic.replace('_', ' ')}: "
             + (
                 "separated intervention and predictive evidence fronts"
+                if split_front and not non_bio else
+                "separated policy/exposure and predictive evidence fronts"
                 if split_front else
                 "one bounded, context-dependent signal across receipts"
             )
