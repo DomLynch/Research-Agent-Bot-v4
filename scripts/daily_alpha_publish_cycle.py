@@ -3596,6 +3596,18 @@ def _source_literature_discovery_papers(
     return []
 
 
+def _source_literature_candidate_papers(
+    runs_root: Path, profile_slug: str, topic: str, min_sources: int, fetch_limit: int,
+) -> list[Json]:
+    papers = _source_literature_discovery_papers(
+        runs_root, profile_slug, topic, min_sources,
+    )
+    if papers and _source_literature_boundary_quality(topic, papers, min_sources)[0]:
+        return papers
+    fetched = _fetch_source_literature_papers(topic, fetch_limit, domain=profile_slug)
+    return fetched or papers
+
+
 def _source_literature_topic_candidate(
     runs_root: Path, profile_slug: str, min_sources: int, blocked_topics: set[str] | None = None,
     *, soft_broad_blocked_topics: set[str] | None = None,
@@ -4720,11 +4732,8 @@ def run_cycle(
         if submit and profile.slug != "ai_research":
             source_lit_probe = source_paper_fetcher or (
                 lambda topic, limit: (
-                    _source_literature_discovery_papers(
-                        runs_root, profile.slug, topic, min_submit_sources,
-                    )
-                    or _fetch_source_literature_papers(
-                        topic, limit, domain=profile.slug,
+                    _source_literature_candidate_papers(
+                        runs_root, profile.slug, topic, min_submit_sources, limit,
                     )
                 )
             )
@@ -5369,11 +5378,9 @@ def run_cycle(
                 if literature_topic in source_lit_preflight_papers else
                 paper_fetcher(literature_topic, min_submit_sources)
                 if paper_fetcher is not None else
-                _source_literature_discovery_papers(
+                _source_literature_candidate_papers(
                     runs_root, profile.slug, literature_topic, min_submit_sources,
-                )
-                or _fetch_source_literature_papers(
-                    literature_topic, min_submit_sources * 3, domain=profile.slug,
+                    min_submit_sources * 3,
                 )
             )
             ok, reason = _source_literature_boundary_quality(

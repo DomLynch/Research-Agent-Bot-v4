@@ -8375,6 +8375,54 @@ def test_source_backed_literature_candidate_bypasses_broad_exhausted_parent(
     ) == ["metformin_longevity"]
 
 
+def test_source_literature_candidate_papers_refetches_repeated_discovery_bundle(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    repeated = [
+        {"title": f"Metformin longevity repeated title {idx % 2}", "doi": f"10.1/r{idx}"}
+        for idx in range(5)
+    ]
+    fetched_titles = [
+        "Metformin longevity AMPK geroscience signal",
+        "Metformin longevity methylation aging profile",
+        "Metformin longevity mortality cohort boundary",
+        "Metformin longevity mitochondrial stress response",
+        "Metformin longevity healthspan translational review",
+    ]
+    fetched = [
+        {"title": title, "doi": f"10.1/f{idx}"}
+        for idx, title in enumerate(fetched_titles)
+    ]
+    daily._write_json(root / "_topics_discovery" / "fullraw.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{
+            "topic": "metformin_longevity",
+            "paper_count": 5,
+            "fact_source_count": 5,
+            "source_papers": repeated,
+        }],
+    })
+    calls: list[tuple[str, int, str]] = []
+
+    def fetch(topic: str, limit: int, *, domain: str) -> list[dict[str, Any]]:
+        calls.append((topic, limit, domain))
+        return fetched
+
+    monkeypatch.setattr(daily, "_fetch_source_literature_papers", fetch)
+
+    papers = daily._source_literature_candidate_papers(
+        root, "longevity_research", "metformin_longevity", 5, 15,
+    )
+
+    assert papers == fetched
+    assert calls == [("metformin_longevity", 15, "longevity_research")]
+    assert daily._source_literature_boundary_quality(
+        "metformin_longevity", papers, 5,
+    ) == (True, "ok")
+
+
 def test_source_literature_preflight_uses_single_current_candidate_window(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
