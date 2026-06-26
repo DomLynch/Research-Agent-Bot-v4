@@ -251,7 +251,7 @@ def build_queue(
     for run in _latest_per_topic(_alpha_runs(include_archive)):
         row = _verdict_for_run(run)
         run_domain = _run_domain(run, row) or (
-            default_domain if domain == default_domain else ""
+            default_domain if domain is None or domain == default_domain else ""
         )
         if domain and run_domain != domain:
             continue

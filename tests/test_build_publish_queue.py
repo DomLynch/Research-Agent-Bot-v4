@@ -10,6 +10,7 @@ from typing import Any
 from pytest import MonkeyPatch
 
 import scripts.build_publish_queue as queue
+from agent.domain_profile import load_domain_profile
 from scripts import daily_alpha_publish_cycle as daily
 
 
@@ -488,6 +489,24 @@ def test_build_queue_reports_pre_memo_stage_failures(
     assert out["not_ready"][0]["domain"]["slug"] == "ai_research"
     assert out["not_ready"][0]["domain_slug"] == "ai_research"
     assert "missing_alpha_memo" in out["not_ready"][0]["blockers"]
+
+
+def test_global_queue_assigns_default_domain_to_legacy_untagged_rows(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    runs = tmp_path / "runs"
+    run = runs / "legacy_topic-evidence-2026-02-01T00-00-00Z"
+    run.mkdir(parents=True)
+    monkeypatch.setattr(queue, "_RUNS", runs)
+
+    out = queue.build_queue(include_archive=True)
+
+    row = out["not_ready"][0]
+    assert row["topic"] == "legacy_topic"
+    assert row["domain_slug"] == load_domain_profile(None).slug
+    assert row["domain"]["slug"] == load_domain_profile(None).slug
+    assert "missing_alpha_memo" in row["blockers"]
 
 
 def _stored_evidence_map_run(
