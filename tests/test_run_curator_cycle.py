@@ -235,13 +235,13 @@ def test_stop_on_ready_discovery_overfetches_past_exclusions() -> None:
 def test_stop_on_ready_fullraw_supply_uses_publish_window() -> None:
     assert _discovery_top_for_plan(
         1, stop_on_ready=True, excluded_count=0, fullraw_supply_first=True,
-    ) == 20
+    ) == 4
     assert _discovery_top_for_plan(
         1, stop_on_ready=True, excluded_count=46, fullraw_supply_first=True,
-    ) == 20
+    ) == 4
     assert _discovery_top_for_plan(
         5, stop_on_ready=True, excluded_count=17, fullraw_supply_first=True,
-    ) == 20
+    ) == 4
 
 
 def test_plan_topics_honors_excluded_before_cooldown() -> None:
@@ -769,7 +769,7 @@ def test_stop_on_ready_uses_fullraw_supply_before_cache_by_default(
     assert "--cache-first" not in calls[0]
     assert "--seed-paper-only" not in calls[0]
     assert "--fullraw-supply-only" in calls[0]
-    assert calls[0][calls[0].index("--top") + 1] == "20"
+    assert calls[0][calls[0].index("--top") + 1] == "4"
     assert budgets == ["45"]
     assert os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] == "45"
 
