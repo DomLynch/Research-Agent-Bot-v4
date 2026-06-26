@@ -1217,14 +1217,14 @@ def _fetch_fullraw_topic_papers(topic: str, *, client: httpx.Client, limit: int 
     receipt: dict[str, Any] = {}
     ok = False
     try:
-        for _ in range(max(1, int(_float_env("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", max(1.0, timeout / max(wait_s, 1.0)))))):
+        for _ in range(max(1, int(_float_env("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", max(1.0, _float_env("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", timeout) / max(wait_s, 1.0)))))):
             response = client.post(url, headers={"Authorization": f"Bearer {token}"} if token else {}, json=payload, timeout=timeout + 2.0)
             response.raise_for_status()
             data = response.json()
             if isinstance(data, dict):
                 receipt = next((dict(c["shard_receipt"]) for c in (data.get("meta"), data.get("metadata"), data) if isinstance(c, dict) and isinstance(c.get("shard_receipt"), dict)), {})
-                if not receipt and isinstance(data.get("receipt"), dict):
-                    receipt = dict(data["receipt"])
+                if not receipt:
+                    receipt = dict(data["receipt"] if isinstance(data.get("receipt"), dict) else data if "shards_searched" in data else {})
                 sources = receipt.get("sources_searched")
                 source_count = sum(1 for v in sources.values() if v) if isinstance(sources, dict) else sum(1 for v in sources if v) if isinstance(sources, (list, tuple, set)) else 0
                 try:
