@@ -104,6 +104,42 @@ def _next_action_for_status(status: Any) -> str:
     return str(status_module.next_action_for_status(str(status or "")))
 
 
+def _publish_summary(ledger: Json) -> Json:
+    try:
+        status_module = importlib.import_module("scripts.alpha_publish_status")
+    except ModuleNotFoundError:
+        status_module = importlib.import_module("alpha_publish_status")
+    computed = status_module.publish_summary(ledger)
+    computed = computed if isinstance(computed, dict) else {}
+    stored = ledger.get("publish_summary")
+    if not isinstance(stored, dict):
+        return computed
+    summary = dict(stored)
+    for key in ("considered", "queue_counts", "public_url_status", "public_page_status"):
+        if key not in summary and key in computed:
+            summary[key] = computed[key]
+    if computed.get("next_action"):
+        summary["next_action"] = computed["next_action"]
+    blockers = summary.get("top_blockers")
+    if not isinstance(blockers, dict) or not blockers:
+        summary["top_blockers"] = computed.get("top_blockers") or {}
+        return summary
+    status = str(ledger.get("status") or "")
+    if status and status not in (
+        status_module.SUBMIT_SUCCESS_STATUSES | {status_module.CycleStatus.STARTED.value}
+    ):
+        merged: dict[str, int] = {
+            str(key): int(value)
+            for key, value in blockers.items()
+            if str(key) and isinstance(value, int)
+        }
+        merged[status] = merged.get(status, 0) + 1
+        summary["top_blockers"] = dict(
+            sorted(merged.items(), key=lambda item: (-item[1], item[0]))[:5]
+        )
+    return summary
+
+
 def _ledger_domain_slug(ledger: Json) -> str | None:
     domain = ledger.get("domain")
     if isinstance(domain, dict):
@@ -299,9 +335,7 @@ def summarize_latest(
     )
     url_status = url_check.get("http_status")
     published = int(ledger.get("published") or 0) == 1
-    publish_summary = ledger.get("publish_summary")
-    if not isinstance(publish_summary, dict):
-        publish_summary = {}
+    publish_summary = _publish_summary(ledger)
     considered_counts = _considered_counts(ledger)
     started_without_terminal = (
         str(ledger.get("status") or "") == "started"

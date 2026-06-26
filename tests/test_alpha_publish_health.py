@@ -376,7 +376,10 @@ def test_expect_published_prints_no_publish_blocker_summary(
     assert summary["ok"] is False
     assert summary["status"] == "no_fresh_candidate"
     assert summary["queue_counts"] == {"ready_to_publish": 0, "curation_needed": 3}
-    assert summary["top_blockers"] == {"direct_source_floor_below_min": 3}
+    assert summary["top_blockers"] == {
+        "direct_source_floor_below_min": 3,
+        "no_fresh_candidate": 1,
+    }
     assert summary["next_action"] == "refresh_or_expand_candidate_supply"
     assert summary["public_url_status"] == 404
     assert summary["public_page_status"] == "not_rendered"
@@ -422,7 +425,10 @@ def test_sla_monitor_full_command_fails_red_with_blocker_summary(
     assert summary["domain"] == "finance_research"
     assert summary["status"] == "candidate_refresh_failed"
     assert summary["queue_counts"] == {"ready_to_publish": 0, "not_ready": 4}
-    assert summary["top_blockers"] == {"no_source_diverse_bundle": 4}
+    assert summary["top_blockers"] == {
+        "no_source_diverse_bundle": 4,
+        "candidate_refresh_failed": 1,
+    }
     assert summary["next_action"] == "inspect_refresh_failure"
     assert summary["public_url_status"] == 404
     assert summary["public_page_status"] == "not_rendered"
@@ -729,6 +735,7 @@ def test_health_summary_falls_back_to_considered_counts_for_old_ledgers(
     assert summary["top_blockers"] == {
         "agent_repair_needed": 2,
         "memo_missing_audit_sidecars": 1,
+        "no_fresh_candidate": 1,
     }
 
 
