@@ -72,7 +72,7 @@ _TIER2_SUPPLY_CACHE = _RUNS / "_tier2_supply_cache.json"
 _TIER2_SUPPLY_TTL_SECONDS = 86_400.0
 _DEFAULT_PIPELINE_TOP_N = max(5, _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES * 2)
 _PRIORITY_FULLRAW_BUDGET_SECONDS = "6"
-_FULLRAW_SUPPLY_DISCOVERY_FLOOR = 4
+_FULLRAW_SUPPLY_DISCOVERY_FLOOR = 2
 
 
 def _env_enabled(name: str, default: str = "0") -> bool:
@@ -142,7 +142,7 @@ def _discovery_top_for_plan(
     if not stop_on_ready:
         return max(requested, _STOP_ON_READY_DISCOVERY_FLOOR)
     if fullraw_supply_first:
-        return _FULLRAW_SUPPLY_DISCOVERY_FLOOR
+        return max(requested, _FULLRAW_SUPPLY_DISCOVERY_FLOOR)
     return max(requested + max(0, excluded_count), _STOP_ON_READY_DISCOVERY_FLOOR)
 
 
