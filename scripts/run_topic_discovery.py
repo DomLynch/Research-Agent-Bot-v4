@@ -223,6 +223,8 @@ def _seed_fullraw_papers(
                 "shards_total": receipt.get("shards_total"),
                 "partial_shard_search": receipt.get("partial_shard_search"),
                 "sweep_failed_shards": receipt.get("sweep_failed_shards"),
+                "source_count_searched": receipt.get("source_count_searched"),
+                "sources_searched": receipt.get("sources_searched"),
             })
         async_sweep = getattr(topic_discovery_mod, "_FULLRAW_LAST_ASYNC_SWEEP", {})
         if isinstance(async_sweep, dict) and async_sweep.get("status"):

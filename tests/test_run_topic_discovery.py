@@ -106,6 +106,8 @@ def test_seed_fullraw_records_incomplete_receipt_event(monkeypatch: Any) -> None
         "shards_total": 1525,
         "partial_shard_search": True,
         "sweep_failed_shards": 0,
+        "source_count_searched": None,
+        "sources_searched": {"openalex": 10, "pubmed": 4},
         "async_status": "queued",
     }
 
