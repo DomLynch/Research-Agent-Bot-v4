@@ -211,7 +211,7 @@ def test_warm_backlog_probes_fullraw_before_source_rich_cache(
     assert payload["cache_first"] is False
     assert payload["warm_backlog"] is True
     assert payload["candidate_count"] == 1
-    assert calls[:1] == ["seed longevity"]
+    assert calls[:1] == ["longevity anti aging"]
     assert payload["top"][0]["paper_count"] == 5
 
 
@@ -1033,7 +1033,7 @@ def test_fullraw_supply_stops_after_concrete_source_rich_domain_query(
         seeds=("metformin", "resveratrol"),
     )
 
-    assert calls[-1] == "longevity anti aging"
+    assert calls[0] == "longevity anti aging"
     assert "spermidine_longevity" in {row.topic for row in rows}
     assert all(run_topic_discovery._concrete_topic(row.topic) for row in rows)
     assert all(row.fact_source_count == 5 for row in rows)
@@ -1061,7 +1061,7 @@ def test_fullraw_supply_prefers_seed_query_over_domain_placeholder(
         seeds=("metformin",),
     )
 
-    assert calls == ["metformin longevity"]
+    assert calls == ["longevity anti aging", "metformin longevity"]
     assert [row.topic for row in rows] == ["metformin_longevity"]
 
 
@@ -1129,6 +1129,7 @@ def test_fullraw_supply_queries_domain_before_seed_breadth(
 
     assert [row.topic for row in rows] == ["metformin_longevity"]
     assert calls == [
+        "longevity anti aging",
         "rapamycin longevity",
         "metformin longevity",
     ]
@@ -1158,10 +1159,10 @@ def test_fullraw_supply_stops_when_total_pass_budget_is_spent(
     )
 
     assert rows == ()
-    assert calls == ["metformin longevity"]
+    assert calls == ["longevity anti aging"]
     event = run_topic_discovery._FULLRAW_PROBE_EVENTS[-1]
     assert event["status"] == "budget_exhausted"
-    assert event["attempted_queries"] == ["metformin longevity"]
+    assert event["attempted_queries"] == ["longevity anti aging"]
     assert event["skipped_query_count"] > 0
 
 
@@ -1237,7 +1238,7 @@ def test_fullraw_supply_prefers_context_seed_query_over_bare_seed(
 
     assert [row.topic for row in rows] == ["fisetin_longevity"]
     assert rows[0].top_paper_title.startswith("Fisetin longevity")
-    assert "fisetin longevity" in calls
+    assert calls[:2] == ["longevity anti aging", "fisetin longevity"]
     assert "fisetin" not in calls
 
 

@@ -545,6 +545,8 @@ def _fullraw_supply_candidates(
     context_terms = _context_query_terms(query_context)
     context_variants = _context_variants(query_context)
     query_cap = max(_seed_paper_probe_limit(top), top * 6)
+    if context_terms:
+        query_labels[context_terms] = "__domain_supply__"
     seed_bases = [
         (seed, tuple(base.strip() for base in expand_topic_queries(seed, max_queries=2)
                      if base.strip()))
@@ -571,8 +573,6 @@ def _fullraw_supply_candidates(
                 break
         if len(query_labels) >= query_cap:
             break
-    if query := context_terms:
-        query_labels.setdefault(query, "__domain_supply__")
     if top <= 0 or not query_labels:
         return ()
     papers_by_key: dict[str, dict[str, object]] = {}
