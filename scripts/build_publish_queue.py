@@ -180,14 +180,38 @@ def _normalised_decision(row: dict[str, Any]) -> str:
     return "agent_repair_needed" if decision in _LEGACY_AGENT_REPAIR_DECISIONS else decision
 
 
+def _current_diagnostic_paths(diag_dir: Path, domain: str | None) -> list[Path]:
+    latest = diag_dir / (f"latest_sweep.{domain}.json" if domain else "latest_sweep.json")
+    results = _read_json(latest).get("results")
+    if not isinstance(results, list):
+        return []
+    paths: list[Path] = []
+    for row in results:
+        if not isinstance(row, dict):
+            continue
+        row_domain = domain_slug(row.get("domain"))
+        topic = str(row.get("topic") or "").strip()
+        if domain and row_domain != domain:
+            continue
+        path_text = str(row.get("diagnostics") or "").strip()
+        path = Path(path_text) if path_text else diag_dir / f"{row_domain}-{topic}.json"
+        if not path.is_absolute():
+            path = _ROOT / path
+        if row_domain and topic and path.exists():
+            paths.append(path)
+    return paths
+
+
 def _diagnostic_rows(
     *, domain: str | None, existing: set[tuple[str, str]],
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     diag_dir = _RUNS / "_business_diagnostics"
-    for path in sorted(diag_dir.glob("*.json")):
-        if path.name.startswith("latest_sweep"):
-            continue
+    paths = _current_diagnostic_paths(diag_dir, domain) or [
+        path for path in sorted(diag_dir.glob("*.json"))
+        if not path.name.startswith("latest_sweep")
+    ]
+    for path in paths:
         data = _read_json(path)
         row_domain = domain_slug(data.get("domain"))
         topic = str(data.get("topic") or "").strip()

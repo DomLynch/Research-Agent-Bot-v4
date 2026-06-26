@@ -101,6 +101,37 @@ def test_build_queue_includes_pre_memo_diagnostic_failures(
     assert row["a_core_fact_count"] == 1
 
 
+def test_build_queue_uses_latest_sweep_for_current_diagnostics(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    runs = tmp_path / "runs"
+    diagnostics = runs / "_business_diagnostics"
+    diagnostics.mkdir(parents=True)
+    stale = diagnostics / "business_research-minimum_wage_employment.json"
+    current = diagnostics / "business_research-pricing_strategy_margin.json"
+    stale.write_text(json.dumps({
+        "domain": "business_research",
+        "topic": "minimum_wage_employment",
+    }), encoding="utf-8")
+    current.write_text(json.dumps({
+        "domain": "business_research",
+        "topic": "pricing_strategy_margin",
+    }), encoding="utf-8")
+    (diagnostics / "latest_sweep.business_research.json").write_text(json.dumps({
+        "domain": "business_research",
+        "results": [{
+            "domain": "business_research",
+            "topic": "pricing_strategy_margin",
+            "diagnostics": str(current),
+        }],
+    }), encoding="utf-8")
+    monkeypatch.setattr(queue, "_RUNS", runs)
+
+    out = queue.build_queue(include_archive=False, domain="business_research")
+
+    assert [row["topic"] for row in out["not_ready"]] == ["pricing_strategy_margin"]
+
+
 def test_build_queue_prefers_run_row_over_matching_diagnostic(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
