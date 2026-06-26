@@ -120,6 +120,54 @@ def test_business_bundle_materializes_shape_fallbacks() -> None:
     assert bundle.shape["study_design"] == "difference in differences"
 
 
+def test_finance_return_bundle_uses_generic_signal_family_shape() -> None:
+    rows: list[dict[str, Any]] = []
+    for i, signal in enumerate((
+        "value factor long-short portfolio",
+        "momentum factor long-short portfolio",
+        "quality factor long-short portfolio",
+        "liquidity factor long-short portfolio",
+        "carbon disclosure factor portfolio",
+    ), start=1):
+        rows.append({
+            "id": f"finance-return-{i}",
+            "topic": "portfolio_returns",
+            "claim_type": "return_premium",
+            "numeric_value": 1.0 + i,
+            "units": "%",
+            "canonical_phrase": f"{signal} earns abnormal return alpha.",
+            "population": "public equity portfolios",
+            "intervention": signal,
+            "comparator": "benchmark portfolio",
+            "outcome": "risk adjusted return",
+            "metric": "annual alpha return",
+            "study_design": "empirical asset pricing",
+            "paper": {
+                "doi": f"10.7777/finance-return-{i}",
+                "title": "Predictive signals and portfolio returns",
+            },
+        })
+
+    bundle = build_candidate_bundle(
+        rows,
+        topic="factor_premia_returns",
+        domain="finance_research",
+    )
+
+    assert bundle is not None
+    assert bundle.source_count == 5
+    assert bundle.shape["signal_family"] == "return predictive signal"
+    assert {
+        receipt["signal_family_detail"] for receipt in bundle.receipts
+    } == {
+        "value factor long short portfolio",
+        "momentum factor long short portfolio",
+        "quality factor long short portfolio",
+        "liquidity factor long short portfolio",
+        "carbon disclosure factor portfolio",
+    }
+
+
 def test_business_bundle_materializes_extractor_alias_fields() -> None:
     rows = _fixture_facts()
     for row in rows:
@@ -395,11 +443,14 @@ def test_finance_return_facts_cluster_by_empirical_asset_pricing_shape() -> None
 
     assert bundle is not None
     assert bundle.source_count == 5
-    assert bundle.shape["signal_family"] == "hiring rate long short portfolio"
+    assert bundle.shape["signal_family"] == "return predictive signal"
     assert bundle.shape["study_design"] == "empirical asset pricing"
     assert bundle.shape["metric"] == "percentage return or alpha"
     assert bundle.receipts[0]["intervention"] == "return predictive signal portfolio"
     assert bundle.receipts[0]["intervention_detail"] == "hiring-rate long-short portfolio"
+    assert {receipt["signal_family_detail"] for receipt in bundle.receipts} == {
+        "hiring rate long short portfolio",
+    }
 
 
 def test_finance_return_facts_reject_mixed_signal_families() -> None:

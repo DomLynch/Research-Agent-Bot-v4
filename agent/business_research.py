@@ -296,7 +296,7 @@ def comparable_shape(fact: Json) -> dict[str, str]:
         return {
             "population": "firms portfolios funds",
             "intervention": "return predictive signal portfolio",
-            "signal_family": _finance_signal_family(fact),
+            "signal_family": _norm(fact.get("signal_family")) or _finance_signal_family(fact),
             "comparator": "benchmark or opposite signal portfolio",
             "outcome": "risk adjusted portfolio returns",
             "metric": "percentage return or alpha",
