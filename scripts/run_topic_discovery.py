@@ -592,7 +592,7 @@ def _fullraw_supply_candidates(
                     "skipped_query_count": len(query_labels) - len(attempted_queries),
                 })
                 break
-            if label != "__domain_supply__" and label in used_seed_labels:
+            if label != "__domain_supply__" and label in used_seed_labels and len(out) >= top:
                 continue
             attempted_queries.append(query)
             query_timeout_limit = _fullraw_supply_query_timeout_seconds()

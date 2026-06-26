@@ -1160,6 +1160,34 @@ def test_fullraw_supply_searches_past_seed_probe_cap(monkeypatch: Any) -> None:
     assert "late seed longevity" in calls
 
 
+def test_fullraw_supply_continues_seed_variants_until_window_filled(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        if query == "metformin longevity":
+            return _fullraw_rows("lon", "Metformin longevity cohort")
+        if query == "metformin anti aging":
+            return _fullraw_rows("aging", "Metformin anti aging senescence")
+        return []
+
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
+
+    rows = run_topic_discovery._fullraw_supply_candidates(
+        query_context="Longevity / anti-aging research",
+        current_year=2026,
+        top=2,
+        seeds=("metformin",),
+    )
+
+    assert {row.topic for row in rows} == {
+        "metformin_anti_aging", "metformin_longevity",
+    }
+    assert "metformin anti aging" in calls
+
+
 def test_fullraw_supply_skips_one_token_domain_query_when_seeds_exist(
     monkeypatch: Any,
 ) -> None:
