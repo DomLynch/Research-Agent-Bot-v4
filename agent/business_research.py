@@ -837,7 +837,7 @@ def fetch_business_facts(
             f"{base}/api/v1/tier2/facts/search",
             headers=headers,
             json=domain_body,
-            timeout=30.0,
+            timeout=60.0,
         )
         status_code = response.status_code
         if status_code == 422:
@@ -845,7 +845,7 @@ def fetch_business_facts(
                 f"{base}/api/v1/tier2/facts/search",
                 headers=headers,
                 json=body,
-                timeout=30.0,
+                timeout=60.0,
             )
             fallback_status = response.status_code
             response.raise_for_status()
