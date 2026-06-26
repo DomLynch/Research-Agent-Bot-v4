@@ -4660,6 +4660,7 @@ def run_cycle(
     ledger: Json = {
         "date": date,
         "domain": profile.as_metadata(),
+        "domain_slug": profile.slug,
         "dry_run": (not submit) or profile.dry_run_only,
         "submit_requested": bool(submit),
         "decision_sync": decision_sync,

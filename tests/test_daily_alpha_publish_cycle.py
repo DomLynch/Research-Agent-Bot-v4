@@ -4873,6 +4873,29 @@ def test_submit_token_accepts_research_alias(monkeypatch: MonkeyPatch) -> None:
     assert daily._submit_token() == ("alias-token", "RESEARCH_API_KEY_V4")
 
 
+def test_submit_not_configured_ledger_is_domain_scoped(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    for name in daily._SUBMIT_TOKEN_ENVS:
+        monkeypatch.delenv(name, raising=False)
+
+    ledger = daily.run_cycle(
+        runs_root=tmp_path,
+        date="2026-06-27T00-00-00Z",
+        domain="finance_research",
+        submit=True,
+    )
+    written = json.loads(
+        (tmp_path / "_daily_ledger" / "2026-06-27T00-00-00Z.json").read_text(
+            encoding="utf-8",
+        )
+    )
+
+    assert ledger["status"] == "submit_not_configured"
+    assert written["domain_slug"] == "finance_research"
+    assert written["publish_summary"]["next_action"] == "fix_runtime_configuration"
+
+
 def test_submission_payload_preserves_alpha_memo_contract(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict()
