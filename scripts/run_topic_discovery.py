@@ -296,20 +296,19 @@ def _query_supported_papers(
         if len(token) > 1 and token not in _GENERIC_SCOPE_TOKENS
     }
     required_tokens = (query_tokens - set(_TOKEN_RE.findall(context_terms))) or query_tokens
+    min_required_hits = min(2, len(required_tokens))
     scoped = _context_supported_papers(papers, context_terms)
     scoped_required = [
         paper for paper in scoped
-        if required_tokens & set(_TOKEN_RE.findall(
-            str(paper.get("title") or "").casefold()))
+        if len(required_tokens & set(_TOKEN_RE.findall(
+            str(paper.get("title") or "").casefold()))) >= min_required_hits
     ]
     if len(scoped_required) >= _SOURCE_RICH_FLOOR:
         return scoped_required
-    if len(scoped) >= _SOURCE_RICH_FLOOR and required_tokens == query_tokens:
-        return scoped
     return [
         paper for paper in papers
-        if required_tokens & set(_TOKEN_RE.findall(
-            str(paper.get("title") or "").casefold()))
+        if len(required_tokens & set(_TOKEN_RE.findall(
+            str(paper.get("title") or "").casefold()))) >= min_required_hits
     ]
 
 
@@ -748,8 +747,10 @@ def _fullraw_supply_candidates(
         if not _concrete_topic(topic):
             continue
         topic_tokens = _topic_tokens(topic)
-        in_seed_scope = _topic_key(topic) in seed_exact or bool(
-            topic_tokens & seed_scope_tokens
+        seed_overlap = topic_tokens & seed_scope_tokens
+        in_seed_scope = _topic_key(topic) in seed_exact or (
+            bool(seed_overlap)
+            and len(seed_overlap) >= min(2, len(topic_tokens), len(seed_scope_tokens))
         )
         in_domain_scope = domain_supply_seen and bool(topic_tokens & context_scope_tokens)
         if (seed_exact or context_scope_tokens) and not (in_seed_scope or in_domain_scope):
