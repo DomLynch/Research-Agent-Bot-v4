@@ -61,7 +61,10 @@ from agent.topic_discovery import (  # noqa: E402
     topic_token_count,
 )
 from scripts import alpha_publish_io as publish_io  # noqa: E402
-from scripts.run_topic_discovery import _seed_fullraw_papers  # noqa: E402
+from scripts.run_topic_discovery import (  # noqa: E402
+    _fullraw_supply_budget_seconds,
+    _seed_fullraw_papers,
+)
 
 _RUNS = _ROOT / "runs"
 _CYCLES_DIR = _RUNS / "_curator_cycles"
@@ -112,6 +115,15 @@ def _write_cycle_json(path: Path, payload: dict[str, Any]) -> None:
     publish_io.write_json(path, payload)
 _DISCOVERY_TIMEOUT_SECONDS = 1800
 _FULLRAW_SUPPLY_PARENT_TIMEOUT_SECONDS = 150
+
+
+def _fullraw_supply_parent_timeout_default() -> int:
+    return max(
+        _FULLRAW_SUPPLY_PARENT_TIMEOUT_SECONDS,
+        int(_fullraw_supply_budget_seconds()),
+    )
+
+
 # Cheap pre-build gate: a topic whose discovery probe finds fewer bindable
 # sources than this can never clear the publish source floor, so a full
 # evidence build is wasted. Derived from the floor (margin for probe
@@ -514,12 +526,13 @@ def _run_discovery_step(args: list[str], *, timeout: int) -> tuple[bool, str]:
 def _discovery_timeout(*, fullraw_supply_first: bool) -> int:
     if not fullraw_supply_first:
         return _DISCOVERY_TIMEOUT_SECONDS
+    default = _fullraw_supply_parent_timeout_default()
     with suppress(TypeError, ValueError):
         return max(30, int(float(os.environ.get(
             "TOPIC_DISCOVERY_FULLRAW_SUPPLY_PARENT_TIMEOUT_SECONDS",
-            str(_FULLRAW_SUPPLY_PARENT_TIMEOUT_SECONDS),
+            str(default),
         ))))
-    return _FULLRAW_SUPPLY_PARENT_TIMEOUT_SECONDS
+    return default
 
 
 def _run_topic_pipeline(

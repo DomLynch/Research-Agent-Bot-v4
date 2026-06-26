@@ -773,7 +773,7 @@ def test_stop_on_ready_uses_fullraw_supply_before_cache_by_default(
     assert "--fullraw-supply-only" in calls[0]
     assert calls[0][calls[0].index("--top") + 1] == "5"
     assert budgets == ["45"]
-    assert timeouts == [150]
+    assert timeouts == [240]
     assert os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] == "45"
 
 

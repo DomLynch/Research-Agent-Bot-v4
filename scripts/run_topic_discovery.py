@@ -233,29 +233,29 @@ def _fullraw_supply_budget_seconds() -> float:
 def _fullraw_supply_query_timeout_seconds() -> float:
     try:
         return max(1.0, float(os.environ.get(
-            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_TIMEOUT_SECONDS", "25",
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_TIMEOUT_SECONDS", "90",
         )))
     except (TypeError, ValueError):
-        return 25.0
+        return 90.0
 
 
 def _fullraw_supply_query_budget_seconds() -> float:
     try:
         return max(1.0, float(os.environ.get(
-            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS", "25",
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS", "75",
         )))
     except (TypeError, ValueError):
-        return 25.0
+        return 75.0
 
 
 def _fullraw_supply_sweep_wait_seconds() -> float:
     try:
         return max(0.0, float(os.environ.get(
             "TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS",
-            "15",
+            "60",
         )))
     except (TypeError, ValueError):
-        return 15.0
+        return 60.0
 
 
 def _fullraw_configured() -> bool:
