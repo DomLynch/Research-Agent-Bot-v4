@@ -6,11 +6,11 @@ from pathlib import Path
 
 from pytest import MonkeyPatch
 
+import scripts.build_publish_queue as queue
 from agent.research_quality_contract import (
     apply_publish_quality_contract,
     evaluate_research_quality,
 )
-import scripts.build_publish_queue as queue
 
 
 def _ready_verdict() -> dict[str, object]:
