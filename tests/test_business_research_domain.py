@@ -1110,12 +1110,13 @@ def test_business_sweep_fullraw_probe_uses_foreground_budget_with_storage_budget
         "TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS",
         "TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS",
         "TOPIC_DISCOVERY_FULLRAW_PRIORITY",
-        "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
         "TOPIC_DISCOVERY_V5_MAX_VARIANTS",
     ):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "7200")
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", "7200")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", "999")
     discovery._FULLRAW_PROBE_EVENTS.clear()
 
     def fake_seed_fullraw(topic: str, **_kwargs: Any) -> list[dict[str, Any]]:
@@ -1158,9 +1159,9 @@ def test_business_sweep_fullraw_probe_uses_foreground_budget_with_storage_budget
         "variants": None,
         "storage_budget": "7200",
     }
-    assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS") is None
+    assert os.environ["TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS"] == "999"
     assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_PRIORITY") is None
-    assert os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS") is None
+    assert os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] == "7200"
 
 
 def test_business_sweep_fullraw_probe_does_not_dogpile_busy_worker(

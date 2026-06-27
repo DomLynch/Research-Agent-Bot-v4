@@ -82,7 +82,6 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
     ):
         return {"status": "not_configured"}
     lock_handle = None
-    budget_overrode = False
     budget_key = "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"
     old_budget = os.environ.get(budget_key)
     attempts_key = "TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS"
@@ -98,12 +97,10 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
             fcntl.flock(lock_handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             return {"status": "busy"}
-        if old_budget is None:
-            os.environ[budget_key] = os.environ.get(
-                "TOPIC_DISCOVERY_BUSINESS_FULLRAW_FOREGROUND_SECONDS",
-                _BUSINESS_FULLRAW_FOREGROUND_SECONDS,
-            )
-            budget_overrode = True
+        os.environ[budget_key] = os.environ.get(
+            "TOPIC_DISCOVERY_BUSINESS_FULLRAW_FOREGROUND_SECONDS",
+            _BUSINESS_FULLRAW_FOREGROUND_SECONDS,
+        )
         httpx_mod = importlib.import_module("httpx")
         topic_discovery_mod = importlib.import_module("agent.topic_discovery")
         discovery = importlib.import_module("scripts.run_topic_discovery")
@@ -111,8 +108,7 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
             "TOPIC_DISCOVERY_BUSINESS_FULLRAW_HTTP_TIMEOUT_SECONDS",
             os.environ.get(budget_key, _BUSINESS_FULLRAW_FOREGROUND_SECONDS),
         ))
-        if old_attempts is None:
-            os.environ[attempts_key] = str(max(1, int(timeout_seconds // 2.0)))
+        os.environ[attempts_key] = str(max(1, int(timeout_seconds // 2.0)))
 
         events = discovery.__dict__.get("_FULLRAW_PROBE_EVENTS", [])
         before = len(events)
@@ -163,9 +159,9 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
     except Exception as exc:
         return {"status": "failed", "error": exc.__class__.__name__}
     finally:
-        if budget_overrode:
+        if old_budget is None:
             os.environ.pop(budget_key, None)
-        elif old_budget is not None:
+        else:
             os.environ[budget_key] = old_budget
         if old_attempts is None:
             os.environ.pop(attempts_key, None)
@@ -362,7 +358,8 @@ def _write_no_ready_ledgers(runs_root: Path, rows: list[dict[str, Any]], date: s
         write_ledger(path, ledger)
         print(
             f"[business-sweep] domain={domain} "
-            f"summary={json.dumps(ledger['publish_summary'], sort_keys=True)}"
+            f"summary={json.dumps(ledger['publish_summary'], sort_keys=True)}",
+            flush=True,
         )
 
 
@@ -517,7 +514,10 @@ def main() -> int:
                             if submit_after else 1
                         )
                     rows.append(row)
-                    print(f"[business-sweep] no_bundle {domain} {topic} facts={len(facts)}")
+                    print(
+                        f"[business-sweep] no_bundle {domain} {topic} facts={len(facts)}",
+                        flush=True,
+                    )
                     if _fullraw_should_stop_sweep(fullraw_trace):
                         summary_path = _write_sweep_summary(args.runs_root, rows)
                         ledger_date = args.submit_date or dt.datetime.now(dt.UTC).strftime(
@@ -527,6 +527,7 @@ def main() -> int:
                         print(
                             f"[business-sweep] no_ready_candidate summary={summary_path}",
                             file=sys.stderr,
+                            flush=True,
                         )
                         return 2
                     if fullraw_ready and max(0, args.submit_after_consistent_passes):
@@ -536,7 +537,8 @@ def main() -> int:
                             print(
                                 "[business-sweep] source_literature_waiting_consistency "
                                 f"{domain} {topic} passes={row['consistent_passes']}/"
-                                f"{args.submit_after_consistent_passes}"
+                                f"{args.submit_after_consistent_passes}",
+                                flush=True,
                             )
                             continue
                         if profile.dry_run_only:
@@ -546,6 +548,7 @@ def main() -> int:
                                 "[business-sweep] submit_blocked_domain_dry_run_only "
                                 f"{domain} {topic} via_fullraw_source_literature",
                                 file=sys.stderr,
+                                flush=True,
                             )
                             return 2
                         ledger = run_cycle(
@@ -562,11 +565,13 @@ def main() -> int:
                         if isinstance(ledger.get("publish_summary"), dict):
                             print(
                                 f"[business-sweep] domain={domain} "
-                                f"summary={json.dumps(ledger['publish_summary'], sort_keys=True)}"
+                                f"summary={json.dumps(ledger['publish_summary'], sort_keys=True)}",
+                                flush=True,
                             )
                         print(
                             "[business-sweep] "
-                            f"{row['status']} {domain} {topic} via_fullraw_source_literature"
+                            f"{row['status']} {domain} {topic} via_fullraw_source_literature",
+                            flush=True,
                         )
                         if row["status"] == "no_fresh_candidate":
                             continue
@@ -596,7 +601,8 @@ def main() -> int:
                         _write_sweep_summary(args.runs_root, rows)
                         print(
                             "[business-sweep] ready_waiting_consistency "
-                            f"{domain} {topic} passes={consistent_passes}/{submit_after}"
+                            f"{domain} {topic} passes={consistent_passes}/{submit_after}",
+                            flush=True,
                         )
                         continue
                     if profile.dry_run_only:
@@ -606,6 +612,7 @@ def main() -> int:
                             "[business-sweep] submit_blocked_domain_dry_run_only "
                             f"{domain} {topic} passes={consistent_passes}/{submit_after}",
                             file=sys.stderr,
+                            flush=True,
                         )
                         return 2
                     ledger = run_cycle(
@@ -621,21 +628,29 @@ def main() -> int:
                     if isinstance(ledger.get("publish_summary"), dict):
                         print(
                             f"[business-sweep] domain={domain} "
-                            f"summary={json.dumps(ledger['publish_summary'], sort_keys=True)}"
+                            f"summary={json.dumps(ledger['publish_summary'], sort_keys=True)}",
+                            flush=True,
                         )
-                    print(f"[business-sweep] {row['status']} {domain} {topic} -> {run_dir}")
+                    print(
+                        f"[business-sweep] {row['status']} {domain} {topic} -> {run_dir}",
+                        flush=True,
+                    )
                     if row["status"] == "no_fresh_candidate":
                         continue
                     return 0 if row["status"] in {"submitted_to_researka", "published"} else 2
-                print(f"[business-sweep] ready {domain} {topic} -> {run_dir}")
-                print(f"[business-sweep] summary={summary_path}")
+                print(f"[business-sweep] ready {domain} {topic} -> {run_dir}", flush=True)
+                print(f"[business-sweep] summary={summary_path}", flush=True)
                 return 0
         if cycle + 1 < args.cycles and args.sleep_seconds > 0:
             time.sleep(args.sleep_seconds)
     summary_path = _write_sweep_summary(args.runs_root, rows)
     ledger_date = args.submit_date or dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
     _write_no_ready_ledgers(args.runs_root, rows, ledger_date)
-    print(f"[business-sweep] no_ready_candidate summary={summary_path}", file=sys.stderr)
+    print(
+        f"[business-sweep] no_ready_candidate summary={summary_path}",
+        file=sys.stderr,
+        flush=True,
+    )
     return 2
 
 
