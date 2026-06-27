@@ -894,10 +894,16 @@ def test_business_sweep_writes_domain_scoped_latest_summaries(
         "marketing_research",
     }
     assert {row["status"] for row in aggregate["results"]} == {"no_bundle"}
+    assert {row["domain_slug"] for row in aggregate["results"]} == {
+        "business_research",
+        "marketing_research",
+    }
     assert business["domain"] == "business_research"
     assert {row["domain"] for row in business["results"]} == {"business_research"}
+    assert {row["domain_slug"] for row in business["results"]} == {"business_research"}
     assert marketing["domain"] == "marketing_research"
     assert {row["domain"] for row in marketing["results"]} == {"marketing_research"}
+    assert {row["domain_slug"] for row in marketing["results"]} == {"marketing_research"}
     business_queue = json.loads(
         (tmp_path / "runs" / "_publish_queue.business_research.json").read_text(
             encoding="utf-8",

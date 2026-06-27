@@ -579,6 +579,7 @@ def main() -> int:
                 row: dict[str, Any] = {
                     "cycle": cycle + 1,
                     "domain": domain,
+                    "domain_slug": domain,
                     "topic": topic,
                     "facts": len(facts),
                     "trace": trace,
