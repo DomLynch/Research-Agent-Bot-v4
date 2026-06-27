@@ -6278,6 +6278,9 @@ def test_domain_source_floors_are_policy_owned() -> None:
         "longevity_research", "min_source_papers", 99,
     ) == 5
     assert daily._domain_alpha_memo_int(
+        "longevity_research", "source_literature_scan_limit", 4,
+    ) == 10
+    assert daily._domain_alpha_memo_int(
         "ai_research", "min_direct_source_papers", 99,
     ) == 5
 
@@ -10226,6 +10229,14 @@ def test_source_literature_fallback_caps_default_live_fetch_window(
         return []
 
     monkeypatch.setattr(daily, "_fetch_source_literature_papers", fetch)
+    original_domain_int = daily._domain_alpha_memo_int
+
+    def domain_int(domain: str, name: str, default: int) -> int:
+        if name == "source_literature_scan_limit":
+            return default
+        return original_domain_int(domain, name, default)
+
+    monkeypatch.setattr(daily, "_domain_alpha_memo_int", domain_int)
     ledger = daily.run_cycle(
         runs_root=root,
         date="2026-06-09T18-00-00Z",
@@ -10240,6 +10251,84 @@ def test_source_literature_fallback_caps_default_live_fetch_window(
     assert len(ledger["source_literature_fallback_attempts"]) == 4
     assert "repair_topic" not in fetches
     assert ledger["status"] == "no_fresh_candidate"
+
+
+def test_source_literature_fallback_uses_domain_scan_limit(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    topics = [f"thin_{idx}" for idx in range(5)] + ["usable_boundary"]
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [
+            {"topic": topic, "paper_count": 10, "fact_source_count": 10}
+            for topic in topics
+        ],
+    })
+    fetches: list[str] = []
+    thin = [
+        {
+            "title": f"Thin source {idx}",
+            "doi": f"10.1234/thin-{idx}",
+        }
+        for idx in range(4)
+    ]
+    usable = [
+        {
+            "title": title,
+            "doi": f"10.1234/use-{idx}",
+            "source_fact": {
+                "canonical_phrase": f"usable boundary finding {idx}",
+                "intervention": "usable boundary",
+            },
+        }
+        for idx, title in enumerate((
+            "Usable boundary mitochondrial aging signal",
+            "Inflammation pathway source for usable boundary",
+            "Cellular senescence intervention boundary",
+            "Proteostasis response in aging tissue",
+            "Metabolic stress adaptation and lifespan",
+        ))
+    ]
+
+    def fetch(topic: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        fetches.append(topic)
+        return usable if topic == "usable_boundary" else thin
+
+    monkeypatch.setattr(daily, "_fetch_source_literature_papers", fetch)
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "writer_configured": False,
+        "mimo_model": "",
+        "mimo_base_url": "",
+    })())
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-15-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        submitter=lambda _payload: {
+            "ok": True, "status": 200,
+            "response": {"submission": {"id": "sub-1"}},
+        },
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert fetches == topics
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "usable_boundary"
+    assert [a["status"] for a in ledger["source_literature_fallback_attempts"]] == [
+        "blocked", "blocked", "blocked", "blocked", "blocked", "selected",
+    ]
 
 
 def test_source_literature_fallback_skips_misaligned_candidate(

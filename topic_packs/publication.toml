@@ -41,10 +41,12 @@ decision_poll_seconds = 10
 [alpha_memo.domains.longevity]
 min_source_papers = 5
 min_direct_source_papers = 5
+source_literature_scan_limit = 10
 
 [alpha_memo.domains.longevity_research]
 min_source_papers = 5
 min_direct_source_papers = 5
+source_literature_scan_limit = 10
 
 [alpha_memo.domains.ai_research]
 min_source_papers = 5

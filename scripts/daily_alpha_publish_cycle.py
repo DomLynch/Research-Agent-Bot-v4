@@ -5525,7 +5525,10 @@ def run_cycle(
         source_lit_scan_limit = (
             _SOURCE_LITERATURE_SCAN_LIMIT
             if paper_fetcher is not None else
-            min(4, _SOURCE_LITERATURE_SCAN_LIMIT)
+            _domain_alpha_memo_int(
+                profile.slug, "source_literature_scan_limit",
+                min(4, _SOURCE_LITERATURE_SCAN_LIMIT),
+            )
         )
         repair_decisions = _repairable_source_literature_decisions(
             runs_root, profile.slug,
