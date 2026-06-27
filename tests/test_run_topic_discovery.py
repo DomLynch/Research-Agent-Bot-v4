@@ -22,6 +22,7 @@ from agent.topic_discovery import TopicCandidate
 @pytest.fixture(autouse=True)
 def _disable_live_v5_client(monkeypatch: Any, tmp_path: Path) -> Any:
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "0")
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_ENV_LOAD", "0")
     monkeypatch.setattr(
         run_topic_discovery,
         "_FULLRAW_COMPLETED_SWEEP_CACHE_PATH",
@@ -1266,6 +1267,7 @@ def test_v5_env_loader_maps_researka_fullraw_aliases(
         encoding="utf-8",
     )
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_ENV_FILE", str(env_file))
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_ENV_LOAD", "1")
     for key in (
         "V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL",
         "V5_MEMO_FULL_RAW_INDEX_TOKEN",
@@ -2327,6 +2329,7 @@ def test_fullraw_supply_only_loads_v5_env_before_config_receipt(
     ):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_ENV_FILE", str(env_file))
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_ENV_LOAD", "1")
     monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
     monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda _path=None: ("metformin",))
     monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
