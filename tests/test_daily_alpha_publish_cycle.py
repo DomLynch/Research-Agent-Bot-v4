@@ -2413,6 +2413,95 @@ def test_receipt_shape_mismatch_reranks_before_submit(tmp_path: Path) -> None:
     assert submissions[0]["topic"] == "matched_direct_receipts"
 
 
+def test_identical_placeholder_result_shape_requires_source_title_focus(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    bad = _verdict("placeholder_finance_bundle", score=100)
+    good = _verdict("matched_direct_receipts", score=90)
+    placeholder: dict[str, Any] = {
+        "population": "firms portfolios funds",
+        "intervention": "return predictive signal portfolio",
+        "comparator": "benchmark or opposite signal portfolio",
+        "outcome": "risk adjusted portfolio returns",
+        "metric": "percentage return or alpha premium",
+        "signal_family": "narrow first-source signal",
+        "study_design": "empirical asset pricing",
+    }
+    shapes: list[dict[str, Any]] = [
+        {
+            "canonical_phrase": f"Return signal {idx} changed alpha.",
+            "population": placeholder["population"],
+            "intervention": placeholder["intervention"],
+            "comparator": placeholder["comparator"],
+            "endpoint": "effect size",
+            "result_shape": placeholder,
+        }
+        for idx in range(5)
+    ]
+    _memo_with_receipt_shapes(root, bad, shapes)
+    run = root / str(bad["run_dir"])
+    facts = json.loads(run.joinpath("all_facts.json").read_text(encoding="utf-8"))
+    titles = [
+        "Social Screens and Systematic Investor Boycott Risk",
+        "Orchestration Framework for Financial Agents",
+        "Hedge Fund Alpha Cycle or Sunset",
+        "Are Financial Constraints Priced",
+        "Credit Expansion and Neglected Crash Risk",
+    ]
+    for fact, title in zip(facts, titles, strict=True):
+        fact["source_paper"]["title"] = title
+    run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    _memo_with_source_receipts(root, good, 5)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-26T09-30-00Z",
+        queue=_queue(bad, good),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda _payload: {"ok": True, "status": 200, "response": {}},
+    )
+
+    assert ledger["submitted_topic"] == "matched_direct_receipts"
+    assert ledger["considered"][0]["status"] == "receipt_shape_mismatch"
+    assert ledger["considered"][1]["status"] == "eligible"
+
+
+def test_identical_result_shape_allows_shared_source_title_focus(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("focused_liquidity_factor", score=100)
+    shape: dict[str, Any] = {
+        "population": "listed firms",
+        "intervention": "liquidity factor portfolio",
+        "comparator": "benchmark portfolio",
+        "outcome": "risk adjusted returns",
+        "metric": "alpha premium",
+        "signal_family": "liquidity factor",
+        "study_design": "empirical asset pricing",
+    }
+    shapes: list[dict[str, Any]] = [
+        {
+            "canonical_phrase": f"Liquidity factor signal {idx} changed alpha.",
+            "population": shape["population"],
+            "intervention": shape["intervention"],
+            "comparator": shape["comparator"],
+            "endpoint": "risk adjusted returns",
+            "result_shape": shape,
+        }
+        for idx in range(5)
+    ]
+    _memo_with_receipt_shapes(root, verdict, shapes)
+    run = root / str(verdict["run_dir"])
+    facts = json.loads(run.joinpath("all_facts.json").read_text(encoding="utf-8"))
+    for fact in facts:
+        fact["source_paper"]["title"] = "Liquidity factor returns in listed firms"
+    run.joinpath("all_facts.json").write_text(json.dumps(facts), encoding="utf-8")
+
+    assert daily._direct_receipts_share_shape(verdict, root, 5) is True
+
+
 def test_duplicate_study_evidence_reranks_before_submit(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     bad = _verdict("duplicate_study_evidence", score=100)

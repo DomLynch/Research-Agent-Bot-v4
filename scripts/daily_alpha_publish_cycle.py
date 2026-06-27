@@ -2754,6 +2754,54 @@ def _shape_tokens(fact: Json, fields: tuple[str, ...]) -> set[str]:
     }
 
 
+def _source_titles_share_focus(facts: list[Json], min_sources: int, topic: str) -> bool:
+    counts: dict[str, int] = {}
+    titled_sources = 0
+    title_generic = _COHERENCE_GENERIC_TOKENS | {"paper", "source", "sources"}
+    topic_tokens = {
+        token for token in _CLAIM_WORD.findall(topic.lower())
+        if len(token) >= 4 and token not in title_generic
+    }
+    for fact in facts:
+        paper = fact.get("source_paper") or {}
+        title = str(paper.get("title") or "").strip() if isinstance(paper, dict) else ""
+        tokens = {
+            token for token in _CLAIM_WORD.findall(title.lower())
+            if len(token) >= 4 and token not in title_generic
+        }
+        if not tokens:
+            continue
+        titled_sources += 1
+        for token in tokens:
+            counts[token] = counts.get(token, 0) + 1
+    threshold = min(3, min_sources)
+    if titled_sources < min_sources:
+        return True
+    if topic_tokens:
+        return any(counts.get(token, 0) >= threshold for token in topic_tokens)
+    return max(counts.values(), default=0) >= threshold
+
+
+def _identical_result_shape_bundle(facts: list[Json], min_sources: int) -> bool:
+    signatures: list[str] = []
+    fields = (
+        "population", "intervention", "comparator", "outcome", "endpoint",
+        "metric", "signal_family", "study_design",
+    )
+    for fact in facts:
+        shape = fact.get("result_shape")
+        if not isinstance(shape, dict):
+            return False
+        signature = json.dumps(
+            {field: _norm(shape.get(field)) for field in fields if shape.get(field)},
+            sort_keys=True,
+        )
+        if not signature:
+            return False
+        signatures.append(signature)
+    return len(signatures) >= min_sources and len(set(signatures)) == 1
+
+
 def _llm_cluster_backed(verdict: Json, root: Path) -> bool:
     """Whether the memo leads with a validated claim cluster for source floors."""
     if verdict.get("_claim_cluster_candidate") and verdict.get("_claim_cluster_fact_ids"):
@@ -2772,6 +2820,13 @@ def _direct_receipts_share_shape(
     facts = _memo_source_facts(verdict, root, ("Evidence",), {"A_core"})
     if len(facts) < min_direct_source_count:
         return True
+    if (
+        _identical_result_shape_bundle(facts, min_direct_source_count)
+        and not _source_titles_share_focus(
+            facts, min_direct_source_count, _selection_topic(verdict),
+        )
+    ):
+        return False
     shared_dims = 0
     checked_dims = 0
     for fields in (("population",), ("intervention",), ("comparator",), ("endpoint",)):
