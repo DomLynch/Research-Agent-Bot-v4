@@ -257,15 +257,35 @@ def _seed_fullraw_papers(
         return cached
     in_progress = _cached_fullraw_in_progress(cache_key) if cache_key else None
     if in_progress:
+        raw_cache_age = in_progress.pop("_cache_age_seconds", 0.0)
+        try:
+            cache_age = (
+                float(raw_cache_age)
+                if isinstance(raw_cache_age, (int, float, str))
+                else 0.0
+            )
+        except (TypeError, ValueError):
+            cache_age = 0.0
+        if cache_age < _fullraw_in_progress_poll_interval_seconds():
+            _FULLRAW_PROBE_EVENTS.append({
+                **in_progress,
+                "query": query,
+                "status": "in_progress_cache_hit",
+                "cached_status": in_progress.get("status"),
+                "cache_key": cache_key,
+                "cache_age_seconds": cache_age,
+                "paper_count": 0,
+            })
+            return []
         _FULLRAW_PROBE_EVENTS.append({
             **in_progress,
             "query": query,
-            "status": "in_progress_cache_hit",
+            "status": "in_progress_poll_due",
             "cached_status": in_progress.get("status"),
             "cache_key": cache_key,
+            "cache_age_seconds": cache_age,
             "paper_count": 0,
         })
-        return []
     topic_discovery_mod._FULLRAW_LAST_RECEIPT = {}
     topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
     papers = _fetch_fullraw_topic_papers(
@@ -463,6 +483,15 @@ def _fullraw_in_progress_ttl_seconds() -> float:
         return 900.0
 
 
+def _fullraw_in_progress_poll_interval_seconds() -> float:
+    try:
+        return max(0.0, float(os.environ.get(
+            "TOPIC_DISCOVERY_FULLRAW_IN_PROGRESS_POLL_INTERVAL_SECONDS", "60",
+        )))
+    except (TypeError, ValueError):
+        return 60.0
+
+
 def _fullraw_in_progress_event(event: dict[str, object]) -> bool:
     return (
         str(event.get("async_status") or "") in {"queued", "running"}
@@ -482,7 +511,11 @@ def _cached_fullraw_in_progress(cache_key: str) -> dict[str, object] | None:
     if age > _fullraw_in_progress_ttl_seconds():
         return None
     event = entry.get("event")
-    return dict(event) if isinstance(event, dict) and _fullraw_in_progress_event(event) else None
+    if not isinstance(event, dict) or not _fullraw_in_progress_event(event):
+        return None
+    out = dict(event)
+    out["_cache_age_seconds"] = age
+    return out
 
 
 def _remember_fullraw_in_progress(cache_key: str, event: dict[str, object]) -> None:

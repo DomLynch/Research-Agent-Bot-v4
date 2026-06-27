@@ -392,6 +392,57 @@ def test_seed_fullraw_backs_off_recent_incomplete_receipt(
     assert event["result_citation_diversity"] == 3
 
 
+def test_seed_fullraw_polls_due_in_progress_receipt_before_ttl(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+    monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_IN_PROGRESS_CACHE_TTL_SECONDS", raising=False)
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "900")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_IN_PROGRESS_POLL_INTERVAL_SECONDS", "60")
+
+    def fake_fetch(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        if len(calls) == 1:
+            run_topic_discovery.topic_discovery_mod._FULLRAW_LAST_RECEIPT = {
+                **_fullraw_receipt(),
+                "partial_shard_search": True,
+                "shards_searched": 192,
+            }
+            run_topic_discovery.topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {
+                "status": "queued",
+            }
+            return []
+        receipt = _fullraw_receipt()
+        run_topic_discovery.topic_discovery_mod._FULLRAW_LAST_RECEIPT = receipt
+        run_topic_discovery.topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
+        return [{
+            "doi": "10.1/platform",
+            "title": "Platform strategy network replication",
+            "fullraw_shard_receipt": receipt,
+        }]
+
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fake_fetch)
+
+    with run_topic_discovery.httpx.Client() as client:
+        assert run_topic_discovery._seed_fullraw_papers(
+            "platform strategy network", client=client, limit=5,
+        ) == []
+        cache = run_topic_discovery.publish_io.read_json(
+            run_topic_discovery._FULLRAW_IN_PROGRESS_SWEEP_CACHE_PATH, {},
+        )
+        cache["network platform strategy"]["ts"] -= 120
+        run_topic_discovery.publish_io.write_json(
+            run_topic_discovery._FULLRAW_IN_PROGRESS_SWEEP_CACHE_PATH, cache,
+        )
+        rows = run_topic_discovery._seed_fullraw_papers(
+            "platform strategy network", client=client, limit=5,
+        )
+
+    assert calls == ["platform strategy network", "platform strategy network"]
+    assert rows[0]["title"] == "Platform strategy network replication"
+    assert run_topic_discovery._FULLRAW_PROBE_EVENTS[-1]["status"] == "in_progress_poll_due"
+
+
 def test_fullraw_in_progress_backoff_default_covers_sweep_runtime(
     monkeypatch: Any,
 ) -> None:
@@ -468,6 +519,7 @@ def test_seed_fullraw_reuses_budget_fresh_incomplete_receipt(
     calls: list[str] = []
     monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_IN_PROGRESS_CACHE_TTL_SECONDS", raising=False)
     monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "900")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_IN_PROGRESS_POLL_INTERVAL_SECONDS", "700")
 
     def fake_fetch(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
         calls.append(query)
