@@ -85,6 +85,8 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
     budget_overrode = False
     budget_key = "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"
     old_budget = os.environ.get(budget_key)
+    attempts_key = "TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS"
+    old_attempts = os.environ.get(attempts_key)
     try:
         lock_path = Path(os.environ.get(
             "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
@@ -109,6 +111,8 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
             "TOPIC_DISCOVERY_BUSINESS_FULLRAW_HTTP_TIMEOUT_SECONDS",
             os.environ.get(budget_key, _BUSINESS_FULLRAW_FOREGROUND_SECONDS),
         ))
+        if old_attempts is None:
+            os.environ[attempts_key] = str(max(1, int(timeout_seconds // 2.0)))
 
         events = discovery.__dict__.get("_FULLRAW_PROBE_EVENTS", [])
         before = len(events)
@@ -163,6 +167,10 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
             os.environ.pop(budget_key, None)
         elif old_budget is not None:
             os.environ[budget_key] = old_budget
+        if old_attempts is None:
+            os.environ.pop(attempts_key, None)
+        else:
+            os.environ[attempts_key] = old_attempts
         if lock_handle is not None:
             with suppress(OSError):
                 fcntl.flock(lock_handle, fcntl.LOCK_UN)

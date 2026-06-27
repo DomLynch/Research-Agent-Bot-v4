@@ -1123,7 +1123,7 @@ def test_business_sweep_fullraw_probe_uses_foreground_budget_with_storage_budget
     assert captured == {
         "client_timeout": "30.0",
         "timeout": None,
-        "attempts": None,
+        "attempts": "15",
         "poll_seconds": None,
         "foreground_budget": "30",
         "variants": None,
