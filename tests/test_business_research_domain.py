@@ -4,6 +4,7 @@ import fcntl
 import json
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, cast
 
 import httpx
@@ -1289,6 +1290,75 @@ def test_business_sweep_consistency_persists_between_invocations(
         )
     )
     assert consistency[0]["passes"] == 2
+
+
+def test_business_sweep_continues_after_no_fresh_candidate(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("management_research")
+    live_profile = DomainProfile(
+        slug=profile.slug,
+        display_name=profile.display_name,
+        seed_topics_path=profile.seed_topics_path,
+        source_policy_path=profile.source_policy_path,
+        claim_schema_path=profile.claim_schema_path,
+        dry_run_only=False,
+    )
+    submissions: list[dict[str, Any]] = []
+
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        submissions.append(kwargs)
+        if len(submissions) == 1:
+            return {"status": "no_fresh_candidate", "published": 0}
+        return {"status": "submitted_to_researka", "submitted": 1, "published": 0}
+
+    def fake_bundle(
+        _facts: list[dict[str, Any]], *, topic: str, domain: str,
+    ) -> Any:
+        return SimpleNamespace(
+            domain=domain, topic=topic, result_key="ready",
+            receipts=({"fact_id": topic},), source_count=5,
+        )
+
+    def fake_write_candidate_run(bundle: Any, **kwargs: Any) -> Path:
+        runs_root = cast(Path, kwargs["runs_root"])
+        run_dir = runs_root / f"{bundle.topic}-evidence-test"
+        run_dir.mkdir(parents=True)
+        return run_dir
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("management_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: live_profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [
+        "management_practices_productivity",
+        "employee_engagement_turnover",
+    ])
+    monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_a, **_k: (_fixture_facts(), {"status": "ok"}))
+    monkeypatch.setattr(sweep, "build_candidate_bundle", fake_bundle)
+    monkeypatch.setattr(sweep, "write_candidate_run", fake_write_candidate_run)
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "2",
+        "--runs-root", str(tmp_path / "runs"),
+        "--submit-after-consistent-passes", "1",
+    ])
+
+    assert sweep.main() == 0
+    assert [call["domain"] for call in submissions] == [
+        "management_research",
+        "management_research",
+    ]
+    summary = json.loads(
+        (tmp_path / "runs" / "_business_diagnostics" / "latest_sweep.json").read_text(
+            encoding="utf-8",
+        )
+    )
+    assert [row["status"] for row in summary["results"]] == [
+        "no_fresh_candidate",
+        "submitted_to_researka",
+    ]
 
 
 def test_daily_cycle_preserves_stored_business_candidate_verdict(

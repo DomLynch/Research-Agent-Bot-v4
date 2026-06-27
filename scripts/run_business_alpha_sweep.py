@@ -425,6 +425,8 @@ def main() -> int:
                             "[business-sweep] "
                             f"{row['status']} {domain} {topic} via_fullraw_source_literature"
                         )
+                        if row["status"] == "no_fresh_candidate":
+                            continue
                         return 0 if row["status"] in {
                             "submitted_to_researka", "published",
                         } else 2
@@ -478,6 +480,8 @@ def main() -> int:
                             f"summary={json.dumps(ledger['publish_summary'], sort_keys=True)}"
                         )
                     print(f"[business-sweep] {row['status']} {domain} {topic} -> {run_dir}")
+                    if row["status"] == "no_fresh_candidate":
+                        continue
                     return 0 if row["status"] in {"submitted_to_researka", "published"} else 2
                 print(f"[business-sweep] ready {domain} {topic} -> {run_dir}")
                 print(f"[business-sweep] summary={summary_path}")
