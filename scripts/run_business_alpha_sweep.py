@@ -253,7 +253,8 @@ def _diagnostic_rank(
         raw == 0
         and (
             str(fullraw.get("status") or "") in {
-                "busy", "complete_no_hits", "failed", "not_configured",
+                "async_queued", "async_running", "busy", "complete_no_hits",
+                "failed", "incomplete_receipt", "no_hits", "not_configured",
             }
             or str(fullraw.get("async_status") or "") in {"queued", "running"}
             or fullraw.get("partial_shard_search") is True

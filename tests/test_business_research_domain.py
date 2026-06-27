@@ -1403,6 +1403,26 @@ def test_business_sweep_uses_diagnostics_to_skip_known_empty_seed(
     assert summary["results"][0]["topic"] == "source_rich_seed"
 
 
+def test_business_sweep_deprioritizes_no_receipt_fullraw_seeds(tmp_path: Path) -> None:
+    diagnostics = tmp_path / "runs" / "_business_diagnostics"
+    diagnostics.mkdir(parents=True)
+    for topic, status in (
+        ("no_receipt_seed", "no_hits"),
+        ("partial_receipt_seed", "incomplete_receipt"),
+    ):
+        (diagnostics / f"business_research-{topic}.json").write_text(json.dumps({
+            "raw_fact_count": 0,
+            "a_core_fact_count": 0,
+            "retrieval_trace": {"fullraw": {"status": status}},
+        }), encoding="utf-8")
+
+    assert sweep._prioritized_seed_topics(
+        tmp_path / "runs",
+        "business_research",
+        ["no_receipt_seed", "partial_receipt_seed", "untried_seed"],
+    ) == ["untried_seed", "no_receipt_seed", "partial_receipt_seed"]
+
+
 def test_business_sweep_continues_after_running_fullraw_probe(
     tmp_path: Path,
     monkeypatch: Any,
