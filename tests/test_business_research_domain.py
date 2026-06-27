@@ -1211,6 +1211,48 @@ def test_business_sweep_fullraw_probe_does_not_inherit_storage_budget(
     assert os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] == "7200"
 
 
+def test_business_sweep_fullraw_probe_preserves_in_progress_cache_receipt(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import agent.topic_discovery as topic_discovery_mod
+    import scripts.run_topic_discovery as discovery
+
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
+        str(tmp_path / "fullraw.lock"),
+    )
+    discovery._FULLRAW_PROBE_EVENTS.clear()
+
+    def fake_seed_fullraw(topic: str, **_kwargs: Any) -> list[dict[str, Any]]:
+        topic_discovery_mod._FULLRAW_LAST_RECEIPT = {}
+        topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
+        discovery._FULLRAW_PROBE_EVENTS.append({
+            "query": topic,
+            "status": "in_progress_cache_hit",
+            "async_status": "queued",
+            "partial_shard_search": True,
+            "shards_searched": 192,
+            "sweep_failed_shards": 0,
+            "sources_searched": {"openalex": 59, "pubmed": 58},
+        })
+        return []
+
+    monkeypatch.setattr(discovery, "_seed_fullraw_papers", fake_seed_fullraw)
+
+    result = sweep._strict_fullraw_probe("platform_strategy_network")
+
+    assert result["status"] == "in_progress_cache_hit"
+    assert result["async_status"] == "queued"
+    assert result["partial_shard_search"] is True
+    assert result["shards_searched"] == 192
+    assert result["sweep_failed_shards"] == 0
+    assert result["sources_searched"] == {"openalex": 59, "pubmed": 58}
+    assert business_cli.no_bundle_blockers_from_diagnostics({
+        "retrieval_trace": {"fullraw": result},
+    }) == ["no_source_diverse_bundle", "fullraw_probe_busy"]
+
+
 def test_business_sweep_fullraw_probe_tries_compact_alpha_query(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

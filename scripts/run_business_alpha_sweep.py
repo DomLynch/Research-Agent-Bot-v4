@@ -150,19 +150,21 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
                         "paper_count": len(papers),
                         "async_status": (
                             async_sweep.get("status") if isinstance(async_sweep, dict) else None
-                        ),
+                        ) or event.get("async_status"),
                         "shards_searched": (
                             receipt.get("shards_searched") if isinstance(receipt, dict) else None
-                        ),
+                        ) or event.get("shards_searched"),
                         "partial_shard_search": (
                             receipt.get("partial_shard_search") if isinstance(receipt, dict) else None
-                        ),
+                        ) if isinstance(receipt, dict) and "partial_shard_search" in receipt
+                        else event.get("partial_shard_search"),
                         "sweep_failed_shards": (
                             receipt.get("sweep_failed_shards") if isinstance(receipt, dict) else None
-                        ),
+                        ) if isinstance(receipt, dict) and "sweep_failed_shards" in receipt
+                        else event.get("sweep_failed_shards"),
                         "sources_searched": (
                             receipt.get("sources_searched") if isinstance(receipt, dict) else None
-                        ),
+                        ) or event.get("sources_searched"),
                     }
                     if include_papers:
                         result["_papers"] = papers
