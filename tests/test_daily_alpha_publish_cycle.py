@@ -241,25 +241,30 @@ def test_queue_ready_row_demotes_zero_alpha_ready_row(tmp_path: Path) -> None:
     assert row["blockers"] == ["low_alpha_score"]
 
 
-def test_queue_demotes_raw_query_alpha_title(tmp_path: Path) -> None:
+def test_queue_demotes_raw_query_alpha_titles(tmp_path: Path) -> None:
     root = tmp_path / "repo"
-    verdict = _verdict("caffeine_during_exercise") | {
-        "headline": "caffeine / during / exercise",
-    }
-    _memo_with_acceptance_text(
-        root,
-        verdict,
-        headline="caffeine / during / exercise",
-        thesis="A bounded alpha signal appears only in the cited exercise context.",
-        why="Real tension: the source bundle is context-specific, not universal advice.",
-    )
+    for topic, headline in (
+        ("desk", "desk"),
+        ("caffeine_during_exercise", "caffeine / during / exercise"),
+    ):
+        verdict = _verdict(topic) | {"headline": headline}
+        _memo_with_acceptance_text(
+            root,
+            verdict,
+            headline=headline,
+            thesis="A bounded alpha signal appears only in the cited context.",
+            why="Real tension: the source bundle is context-specific, not universal advice.",
+        )
 
     queue = daily._build_queue(root / "runs", include_archive=False)
 
     assert queue["ready_to_publish"] == []
-    assert queue["agent_repair_needed"][0]["queue_status"] == (
-        "alpha_title_not_human_readable"
-    )
+    assert {
+        row["topic"]: row["queue_status"] for row in queue["agent_repair_needed"]
+    } == {
+        "desk": "alpha_title_not_human_readable",
+        "caffeine_during_exercise": "alpha_title_not_human_readable",
+    }
 
 
 def test_pre_submit_blocks_boilerplate_alpha_memo(tmp_path: Path) -> None:
@@ -320,6 +325,30 @@ def test_pre_submit_accepts_bounded_alpha_signal(tmp_path: Path) -> None:
 
     assert cand is not None
     assert considered[0]["status"] == "eligible"
+
+
+def test_pre_submit_blocks_recent_duplicate_after_quality_pass(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("recent_signal")
+    _memo_with_acceptance_text(
+        root,
+        verdict,
+        headline="Recent signal has a threshold contrast",
+        thesis="A bounded alpha signal appears in the cited receipts.",
+        why="Real tension: the source bundle suggests context-specific limits.",
+    )
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
+        {"fingerprint": daily.memo_fingerprint(verdict), "topic": "recent_signal"},
+    ])
+
+    cand, considered = daily.select_candidate(
+        _queue(verdict), runs_root=root,
+        submitted_path=root / "_daily_ledger" / "_submitted_fingerprints.json",
+        min_source_count=5, min_direct_source_count=5,
+    )
+
+    assert cand is None
+    assert considered[0]["status"] == "duplicate_submission_fingerprint"
 
 
 def test_daily_build_queue_demotes_submitted_duplicate_ready_row(tmp_path: Path) -> None:
