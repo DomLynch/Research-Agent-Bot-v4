@@ -1411,6 +1411,7 @@ def test_business_sweep_maps_researka_fullraw_env_aliases(
     env_file.write_text(
         "\n".join((
             "RESEARKA_FULLRAW_SEARCH_URL=http://127.0.0.1:9903/search",
+            "RESEARKA_FULLRAW_INDEX_TOKEN=tok-researka",
             "RESEARKA_FULLRAW_TOKEN=tok-researka",
             "RESEARKA_FULLRAW_MIN_SHARDS_SEARCHED=1525",
             "RESEARKA_FULLRAW_MIN_SOURCES_SEARCHED=5",
@@ -1429,6 +1430,7 @@ def test_business_sweep_maps_researka_fullraw_env_aliases(
         "V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH",
         "V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS",
         "RESEARKA_FULLRAW_SEARCH_URL",
+        "RESEARKA_FULLRAW_INDEX_TOKEN",
         "RESEARKA_FULLRAW_TOKEN",
         "RESEARKA_FULLRAW_MIN_SHARDS_SEARCHED",
         "RESEARKA_FULLRAW_MIN_SOURCES_SEARCHED",
