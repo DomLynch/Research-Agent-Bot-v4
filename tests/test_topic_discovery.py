@@ -362,6 +362,46 @@ def test_fullraw_fallback_polls_until_complete_receipt(monkeypatch: Any) -> None
     assert papers[0]["title"] == "Full sweep metformin longevity paper"
 
 
+def test_fullraw_fallback_default_budget_outlives_request_timeout(
+    monkeypatch: Any,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok-index")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", "1")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS", "0")
+    monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", raising=False)
+    monkeypatch.delenv("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", raising=False)
+    monkeypatch.delenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", raising=False)
+    calls = 0
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        if req.url.host == "test":
+            return httpx.Response(200, json=[])
+        calls += 1
+        if calls < 3:
+            return httpx.Response(200, json={
+                "meta": {
+                    "async_sweep": {"status": "queued", "shard_limit": 1525},
+                    "shard_receipt": {},
+                },
+                "results": [],
+            })
+        return httpx.Response(200, json={
+            "meta": {"shard_receipt": _fullraw_receipt()},
+            "results": [{"title": "Queued sweep completed paper"}],
+        })
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        papers = td._fetch_topic_papers(
+            "business_model_performance", client=c, settings=_settings(),
+        )
+
+    assert calls == 3
+    assert papers[0]["title"] == "Queued sweep completed paper"
+
+
 def test_fullraw_fallback_uses_top_level_full_sweep_receipt(
     monkeypatch: Any,
 ) -> None:
