@@ -274,15 +274,18 @@ def _diagnostic_rank(
     fullraw = trace.get("fullraw") if isinstance(trace, dict) else {}
     if not isinstance(fullraw, dict):
         fullraw = {}
+    fullraw_pending = (
+        str(fullraw.get("async_status") or "") in {"queued", "running"}
+        or fullraw.get("partial_shard_search") is True
+    )
     bad_empty = int(
         raw == 0
+        and not fullraw_pending
         and (
             str(fullraw.get("status") or "") in {
                 "async_queued", "async_running", "busy", "complete_no_hits",
                 "failed", "incomplete_receipt", "no_hits", "not_configured",
             }
-            or str(fullraw.get("async_status") or "") in {"queued", "running"}
-            or fullraw.get("partial_shard_search") is True
         )
     )
     return (bad_empty, -top_sources, -a_core, -raw, idx)

@@ -1423,6 +1423,32 @@ def test_business_sweep_deprioritizes_no_receipt_fullraw_seeds(tmp_path: Path) -
     ) == ["untried_seed", "no_receipt_seed", "partial_receipt_seed"]
 
 
+def test_business_sweep_retries_queued_fullraw_before_new_variants(tmp_path: Path) -> None:
+    diagnostics = tmp_path / "runs" / "_business_diagnostics"
+    diagnostics.mkdir(parents=True)
+    (diagnostics / "business_research-queued_seed.json").write_text(json.dumps({
+        "raw_fact_count": 0,
+        "a_core_fact_count": 0,
+        "retrieval_trace": {
+            "fullraw": {
+                "status": "incomplete_receipt",
+                "async_status": "queued",
+            },
+        },
+    }), encoding="utf-8")
+    (diagnostics / "business_research-dead_seed.json").write_text(json.dumps({
+        "raw_fact_count": 0,
+        "a_core_fact_count": 0,
+        "retrieval_trace": {"fullraw": {"status": "no_hits"}},
+    }), encoding="utf-8")
+
+    assert sweep._prioritized_seed_topics(
+        tmp_path / "runs",
+        "business_research",
+        ["dead_seed", "queued_seed", "untried_seed"],
+    ) == ["queued_seed", "untried_seed", "dead_seed"]
+
+
 def test_business_seed_topics_include_trimmed_variants_without_biomed_suffixes(
     tmp_path: Path,
 ) -> None:
