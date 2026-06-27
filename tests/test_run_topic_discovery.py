@@ -362,6 +362,10 @@ def test_seed_fullraw_backs_off_recent_incomplete_receipt(
     assert event["async_status"] == "queued"
 
 
+def test_fullraw_in_progress_backoff_default_covers_sweep_runtime() -> None:
+    assert run_topic_discovery._fullraw_in_progress_ttl_seconds() == 300.0
+
+
 def test_seed_fullraw_retries_expired_incomplete_receipt(
     monkeypatch: Any,
 ) -> None:

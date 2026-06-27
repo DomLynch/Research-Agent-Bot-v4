@@ -416,10 +416,10 @@ def _remember_fullraw_sweep(cache_key: str, query: str, papers: list[dict[str, o
 def _fullraw_in_progress_ttl_seconds() -> float:
     try:
         return max(0.0, float(os.environ.get(
-            "TOPIC_DISCOVERY_FULLRAW_IN_PROGRESS_CACHE_TTL_SECONDS", "60",
+            "TOPIC_DISCOVERY_FULLRAW_IN_PROGRESS_CACHE_TTL_SECONDS", "300",
         )))
     except (TypeError, ValueError):
-        return 60.0
+        return 300.0
 
 
 def _fullraw_in_progress_event(event: dict[str, object]) -> bool:
