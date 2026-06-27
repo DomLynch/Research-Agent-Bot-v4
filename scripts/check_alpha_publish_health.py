@@ -179,6 +179,13 @@ def _queue_sidecar(runs_root: Path, domain: str | None) -> Json | None:
 
 
 def _current_queue(runs_root: Path, cycle: Any, domain: str | None, submitted_path: Path) -> Json:
+    sidecar = _queue_sidecar(runs_root, domain)
+    if (
+        isinstance(sidecar, dict)
+        and not sidecar.get("ready_to_publish")
+        and any(sidecar.get(key) for key in ("agent_repair_needed", "curation_needed", "not_ready"))
+    ):
+        return sidecar
     try:
         queue_module = importlib.import_module("scripts.build_publish_queue")
     except ModuleNotFoundError:
@@ -202,7 +209,7 @@ def _current_queue(runs_root: Path, cycle: Any, domain: str | None, submitted_pa
         )
         return queue if isinstance(queue, dict) else {}
     except Exception:
-        return _queue_sidecar(runs_root, domain) or {}
+        return sidecar or {}
 
 
 def summarize_next_candidate(
