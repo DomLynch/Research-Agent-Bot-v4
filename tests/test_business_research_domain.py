@@ -1126,6 +1126,27 @@ def test_business_sweep_fullraw_probe_uses_foreground_budget_with_storage_budget
     assert os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS") is None
 
 
+def test_business_sweep_fullraw_probe_does_not_dogpile_busy_worker(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    lock_path = tmp_path / "fullraw.lock"
+    lock_path.touch()
+    handle = lock_path.open("a", encoding="utf-8")
+    fcntl.flock(handle, fcntl.LOCK_EX)
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH", str(lock_path))
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+
+    try:
+        result = sweep._strict_fullraw_probe("pricing_strategy_margin")
+    finally:
+        fcntl.flock(handle, fcntl.LOCK_UN)
+        handle.close()
+
+    assert result == {"status": "busy"}
+    assert os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS") is None
+
+
 def test_business_no_bundle_complete_fullraw_requires_fact_synthesis() -> None:
     blockers = business_cli.no_bundle_blockers_from_diagnostics({
         "retrieval_trace": {
@@ -1150,6 +1171,9 @@ def test_business_no_bundle_complete_fullraw_requires_fact_synthesis() -> None:
     assert business_cli.no_bundle_blockers_from_diagnostics({
         "retrieval_trace": {"fullraw": {"status": "complete_no_hits", "paper_count": 0}},
     }) == ["no_source_diverse_bundle", "fullraw_no_hits"]
+    assert business_cli.no_bundle_blockers_from_diagnostics({
+        "retrieval_trace": {"fullraw": {"status": "busy"}},
+    }) == ["no_source_diverse_bundle", "fullraw_probe_busy"]
 
 
 def test_business_sweep_complete_fullraw_hands_off_to_source_literature(

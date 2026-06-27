@@ -64,6 +64,8 @@ def no_bundle_blockers_from_diagnostics(data: dict[str, Any]) -> list[str]:
             blockers.append("fullraw_no_hits")
         elif status == "not_configured":
             blockers.append("fullraw_not_configured")
+        elif status == "busy":
+            blockers.append("fullraw_probe_busy")
         elif status:
             blockers.append("fullraw_complete_receipt_missing")
     for cluster in data.get("top_clusters") or []:
