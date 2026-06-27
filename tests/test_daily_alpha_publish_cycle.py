@@ -158,6 +158,31 @@ def _memo_with_source_receipts(root: Path, verdict: dict[str, Any], count: int) 
     _audit_sidecars(run)
 
 
+def _memo_with_acceptance_text(
+    root: Path,
+    verdict: dict[str, Any],
+    *,
+    headline: str,
+    thesis: str,
+    why: str,
+    changes: str = "This keeps the claim framed as a falsifiable alpha signal.",
+) -> None:
+    _memo_with_source_receipts(root, verdict, 5)
+    run = root / str(verdict["run_dir"])
+    run.joinpath("alpha_memo.md").write_text(
+        "# Alpha memo\n\n"
+        f"**Headline:** {headline}\n\n"
+        f"## One-sentence thesis\n\n{thesis}\n\n"
+        f"## Why this is surprising\n\n{why}\n\n"
+        "## Evidence receipts\n\n"
+        + "\n".join(f"- `fact_id={fid}` (`A_core`) - receipt" for fid in range(1, 6))
+        + f"\n\n## What this changes\n\n{changes}\n"
+        + _FALSIFIER,
+        encoding="utf-8",
+    )
+    run.joinpath("publish_verdict.json").write_text(json.dumps(verdict), encoding="utf-8")
+
+
 def _stored_map_run(
     root: Path,
     topic: str,
@@ -214,6 +239,87 @@ def test_queue_ready_row_demotes_zero_alpha_ready_row(tmp_path: Path) -> None:
     assert row["decision"] == "curation_needed"
     assert row["queue_status"] == "low_alpha_score"
     assert row["blockers"] == ["low_alpha_score"]
+
+
+def test_queue_demotes_raw_query_alpha_title(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("caffeine_during_exercise") | {
+        "headline": "caffeine / during / exercise",
+    }
+    _memo_with_acceptance_text(
+        root,
+        verdict,
+        headline="caffeine / during / exercise",
+        thesis="A bounded alpha signal appears only in the cited exercise context.",
+        why="Real tension: the source bundle is context-specific, not universal advice.",
+    )
+
+    queue = daily._build_queue(root / "runs", include_archive=False)
+
+    assert queue["ready_to_publish"] == []
+    assert queue["agent_repair_needed"][0]["queue_status"] == (
+        "alpha_title_not_human_readable"
+    )
+
+
+def test_pre_submit_blocks_boilerplate_alpha_memo(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("caffeine_exercise")
+    _memo_with_acceptance_text(
+        root,
+        verdict,
+        headline="Caffeine exercise response has a threshold signal",
+        thesis="This is a source-backed effect worth checking.",
+        why="This is a new angle with direct evidence.",
+    )
+
+    cand, considered = daily.select_candidate(
+        _queue(verdict), runs_root=root, submitted_path=root / "submitted.json",
+        min_source_count=5, min_direct_source_count=5,
+    )
+
+    assert cand is None
+    assert considered[0]["status"] == "alpha_memo_boilerplate"
+
+
+def test_pre_submit_blocks_settled_or_advice_framing(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("caffeine_exercise")
+    _memo_with_acceptance_text(
+        root,
+        verdict,
+        headline="Caffeine exercise response has a threshold signal",
+        thesis="The cited receipts prove caffeine works during exercise.",
+        why="Clinicians should recommend it because the evidence is settled science.",
+    )
+
+    cand, considered = daily.select_candidate(
+        _queue(verdict), runs_root=root, submitted_path=root / "submitted.json",
+        min_source_count=5, min_direct_source_count=5,
+    )
+
+    assert cand is None
+    assert considered[0]["status"] == "alpha_memo_overclaims_or_advises"
+
+
+def test_pre_submit_accepts_bounded_alpha_signal(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("caffeine_exercise")
+    _memo_with_acceptance_text(
+        root,
+        verdict,
+        headline="Caffeine exercise response has a threshold signal",
+        thesis="A bounded alpha signal appears in the cited exercise receipts.",
+        why="Real tension: the source bundle suggests context-specific response limits.",
+    )
+
+    cand, considered = daily.select_candidate(
+        _queue(verdict), runs_root=root, submitted_path=root / "submitted.json",
+        min_source_count=5, min_direct_source_count=5,
+    )
+
+    assert cand is not None
+    assert considered[0]["status"] == "eligible"
 
 
 def test_daily_build_queue_demotes_submitted_duplicate_ready_row(tmp_path: Path) -> None:

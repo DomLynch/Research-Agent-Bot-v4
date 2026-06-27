@@ -705,6 +705,8 @@ def _pre_submit_hold(
         return hold | {"status": "stale_publish_verdict"}
     if not _has_falsifier(verdict, root):
         return hold | {"status": "memo_missing_falsifier"}
+    if status := _alpha_acceptance_status(verdict, root):
+        return hold | {"status": status}
     missing_audit_sidecars = _missing_audit_sidecars(verdict, root)
     if missing_audit_sidecars:
         return hold | {
@@ -797,6 +799,16 @@ def _queue_ready_row(row: Json, runs_root: Path) -> Json:
                 "queue_status": "low_alpha_score",
                 "blockers": sorted({*(str(b) for b in blocker_list), "low_alpha_score"}),
             }
+    if row.get("decision") == "ready_to_publish" and (
+        status := _alpha_acceptance_status(row, runs_root)
+    ):
+        blockers = row.get("blockers")
+        blocker_list = blockers if isinstance(blockers, list) else []
+        return row | {
+            "decision": "agent_repair_needed",
+            "queue_status": status,
+            "blockers": sorted({*(str(b) for b in blocker_list), status}),
+        }
     if row.get("decision") != "ready_to_publish" or not _is_evidence_map_row(row):
         return row
     min_citations = _alpha_memo_int("evidence_map_min_citations", 10)
@@ -1513,6 +1525,55 @@ def _has_falsifier(verdict: Json, root: Path) -> bool:
 
     run_dir = _run_path(root, verdict.get("run_dir"))
     return falsifier_present(_read_text(run_dir / "alpha_memo.md"))
+
+
+_BOUNDED_SIGNAL_TERMS = frozenset({
+    "alpha", "boundary", "bounded", "conditional", "context", "counter",
+    "contrast", "diverge", "falsif", "flip", "gap", "heterogen", "limit",
+    "mixed", "paradox", "specific", "split", "tension", "threshold", "varies",
+})
+_BOILERPLATE_MEMO_RE = re.compile(
+    r"\b(?:worth checking|new angle|source[- ]backed effect|direct evidence)\b",
+    re.I,
+)
+_ADVICE_OR_SETTLED_RE = re.compile(
+    r"\b(?:patients|clinicians|investors|managers|firms)\s+should\b|"
+    r"\b(?:proves|guarantees|cures|settled science|definitively)\b",
+    re.I,
+)
+
+
+def _alpha_acceptance_status(verdict: Json, root: Path) -> str:
+    """Mirror Researka's alpha-memo intake bar before submit."""
+    if _is_evidence_map_row(verdict):
+        return ""
+    run_dir = _run_path(root, verdict.get("run_dir"))
+    memo = _read_text(run_dir / "alpha_memo.md")
+    title = str(_memo_headline(memo) or verdict.get("headline") or "").strip()
+    if not title:
+        return ""
+    topic = str(verdict.get("topic") or "")
+    title_tokens = _CLAIM_WORD.findall(title.lower())
+    topic_tokens = _CLAIM_WORD.findall(topic.replace("_", " ").lower())
+    if (
+        len(title_tokens) < 3
+        or "/" in title
+        or (title_tokens == topic_tokens and len(title_tokens) <= 4)
+    ):
+        return "alpha_title_not_human_readable"
+    text = "\n".join((
+        title,
+        _plain_section(memo, "One-sentence thesis"),
+        _plain_section(memo, "Why this is surprising"),
+        _plain_section(memo, "What this changes"),
+    )).lower()
+    if _ADVICE_OR_SETTLED_RE.search(text):
+        return "alpha_memo_overclaims_or_advises"
+    if _BOILERPLATE_MEMO_RE.search(text):
+        return "alpha_memo_boilerplate"
+    if not any(term in text for term in _BOUNDED_SIGNAL_TERMS):
+        return "alpha_memo_lacks_bounded_signal"
+    return ""
 
 
 _REQUIRED_AUDIT_SIDECARS = (
@@ -3278,7 +3339,12 @@ def select_candidate(
         elif not _has_falsifier(verdict, runs_root):
             status = "memo_missing_falsifier"
         else:
-            missing_audit_sidecars = _missing_audit_sidecars(verdict, runs_root)
+            alpha_acceptance_status = _alpha_acceptance_status(verdict, runs_root)
+            if alpha_acceptance_status:
+                status = alpha_acceptance_status
+                missing_audit_sidecars = []
+            else:
+                missing_audit_sidecars = _missing_audit_sidecars(verdict, runs_root)
             if missing_audit_sidecars and memo_refresher and not memo_refreshed:
                 run_dir = _run_path(runs_root, verdict.get("run_dir"))
                 refresh_verdict = verdict | {"_repair_decision": retry_decisions.get(fp)}
