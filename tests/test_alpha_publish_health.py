@@ -424,7 +424,13 @@ def test_sla_monitor_full_command_fails_red_with_blocker_summary(
     assert summary["ok"] is False
     assert summary["domain"] == "finance_research"
     assert summary["status"] == "candidate_refresh_failed"
-    assert summary["queue_counts"] == {"ready_to_publish": 0, "not_ready": 4}
+    assert summary["queue_counts"] == {
+        "ready_to_publish": 0,
+        "agent_repair_needed": 0,
+        "curation_needed": 0,
+        "not_ready": 0,
+    }
+    assert summary["ledger_queue_counts"] == {"ready_to_publish": 0, "not_ready": 4}
     assert summary["top_blockers"] == {
         "no_source_diverse_bundle": 4,
         "candidate_refresh_failed": 1,
@@ -724,6 +730,66 @@ def test_no_daily_ledger_still_reports_domain_sidecar_queue(tmp_path: Path) -> N
         "curation_needed": 0,
         "not_ready": 1,
     }
+
+
+def test_health_summary_prefers_current_queue_counts_over_stale_ledger(
+    tmp_path: Path,
+) -> None:
+    _write_ledger(tmp_path, "2026-06-01T01-04-07Z-ai.json", {
+        "status": "no_fresh_candidate",
+        "submitted": 0,
+        "published": 0,
+        "domain_slug": "ai_research",
+        "queue_counts": {"ready_to_publish": 2, "curation_needed": 9},
+        "publish_summary": {
+            "top_blockers": {"duplicate_submission_fingerprint": 2},
+            "next_action": "refresh_or_expand_candidate_supply",
+        },
+    })
+    sidecar = tmp_path / "_publish_queue.ai_research.json"
+    sidecar.write_text(json.dumps({
+        "ready_to_publish": [],
+        "agent_repair_needed": [{"topic": "rag"}],
+        "curation_needed": [{"topic": "open_source_models"}],
+        "not_ready": [],
+    }), encoding="utf-8")
+
+    fake_cycle = SimpleNamespace(
+        _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES=5,
+        _DEFAULT_MIN_SUBMIT_SOURCES=5,
+        _DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS=30,
+        _build_queue=lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            RuntimeError("current queue unavailable")
+        ),
+        _recently_published_topics=lambda *_args, **_kwargs: set(),
+        _recent_submission_topics=lambda *_args, **_kwargs: set(),
+        _recent_negative_topics=lambda *_args, **_kwargs: set(),
+        select_candidate=lambda *_args, **_kwargs: (
+            None,
+            [{"topic": "rag", "status": "agent_repair_needed"}],
+        ),
+    )
+
+    summary = health.summarize_latest(
+        tmp_path,
+        domain="ai_research",
+        show_next_candidate=True,
+        cycle_module=fake_cycle,
+    )
+
+    assert summary["queue_counts"] == {
+        "ready_to_publish": 0,
+        "agent_repair_needed": 1,
+        "curation_needed": 1,
+        "not_ready": 0,
+    }
+    assert summary["current_queue_counts"] == summary["queue_counts"]
+    assert summary["ledger_queue_counts"] == {
+        "ready_to_publish": 2,
+        "curation_needed": 9,
+    }
+    assert summary["current_actionable_ready_to_publish"] == 0
+    assert summary["next_candidate"]["supply_status"] == "no_ready_rows"
 
 
 def test_health_summary_can_sync_pending_submission(tmp_path: Path) -> None:

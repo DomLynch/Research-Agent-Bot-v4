@@ -256,6 +256,26 @@ def summarize_next_candidate(
     }
 
 
+def _attach_current_queue_summary(summary: Json, next_candidate: Json) -> None:
+    current_counts = next_candidate.get("queue_counts")
+    if isinstance(current_counts, dict):
+        ledger_counts = summary.get("queue_counts")
+        if (
+            isinstance(ledger_counts, dict)
+            and ledger_counts
+            and ledger_counts != current_counts
+        ):
+            summary["ledger_queue_counts"] = ledger_counts
+        summary["queue_counts"] = current_counts
+        summary["current_queue_counts"] = current_counts
+    summary["current_actionable_ready_to_publish"] = (
+        next_candidate.get("actionable_ready_to_publish")
+    )
+    summary["current_non_actionable_ready_to_publish"] = (
+        next_candidate.get("non_actionable_ready_to_publish")
+    )
+
+
 def _public_url_status(url: str, *, timeout: float) -> Json:
     if not url:
         return {"http_status": None, "rendered": False, "status": None}
@@ -334,13 +354,7 @@ def summarize_latest(
                     runs_root, cycle_module=cycle_module, domain=domain,
                 )
                 summary["next_candidate"] = next_candidate
-                summary["current_queue_counts"] = next_candidate.get("queue_counts") or {}
-                summary["current_actionable_ready_to_publish"] = (
-                    next_candidate.get("actionable_ready_to_publish")
-                )
-                summary["current_non_actionable_ready_to_publish"] = (
-                    next_candidate.get("non_actionable_ready_to_publish")
-                )
+                _attach_current_queue_summary(summary, next_candidate)
             except Exception as exc:  # pragma: no cover - monitor should report, not crash.
                 summary["next_candidate_error"] = f"{type(exc).__name__}: {exc}"
         return summary
@@ -410,13 +424,7 @@ def summarize_latest(
                 domain=domain or _ledger_domain_slug(ledger),
             )
             summary["next_candidate"] = next_candidate
-            summary["current_queue_counts"] = next_candidate.get("queue_counts") or {}
-            summary["current_actionable_ready_to_publish"] = (
-                next_candidate.get("actionable_ready_to_publish")
-            )
-            summary["current_non_actionable_ready_to_publish"] = (
-                next_candidate.get("non_actionable_ready_to_publish")
-            )
+            _attach_current_queue_summary(summary, next_candidate)
         except Exception as exc:  # pragma: no cover - monitor should report, not crash.
             summary["next_candidate_error"] = f"{type(exc).__name__}: {exc}"
     return summary
