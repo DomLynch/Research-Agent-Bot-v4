@@ -51,6 +51,7 @@ _BROAD_SEED_TOKENS = frozenset({
 })
 _BUSINESS_FULLRAW_FOREGROUND_SECONDS = "30"
 _BUSINESS_FULLRAW_LOCK_PATH = "/tmp/researka-v4-business-fullraw.lock"
+_BUSINESS_FULLRAW_LOCK_WAIT_SECONDS = "0"
 _NON_BUSINESS_QUERY_SUFFIXES = (
     "_intervention", "_supplementation", "_therapy", "_treatment",
 )
@@ -63,6 +64,19 @@ def _business_fullraw_foreground_seconds() -> str:
         or os.environ.get("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS")
         or _BUSINESS_FULLRAW_FOREGROUND_SECONDS
     )
+
+
+def _business_fullraw_lock_wait_seconds() -> float:
+    try:
+        return max(
+            0.0,
+            float(
+                os.environ.get("TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_WAIT_SECONDS")
+                or _BUSINESS_FULLRAW_LOCK_WAIT_SECONDS
+            ),
+        )
+    except ValueError:
+        return 0.0
 
 
 def _raise_fullraw_timeout(_signum: int, _frame: Any) -> None:
@@ -106,10 +120,16 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
         ))
         lock_path.parent.mkdir(parents=True, exist_ok=True)
         lock_handle = lock_path.open("a", encoding="utf-8")
-        try:
-            fcntl.flock(lock_handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            return {"status": "busy"}
+        lock_deadline = time.monotonic() + _business_fullraw_lock_wait_seconds()
+        while True:
+            try:
+                fcntl.flock(lock_handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                remaining = lock_deadline - time.monotonic()
+                if remaining <= 0:
+                    return {"status": "busy"}
+                time.sleep(min(5.0, remaining))
         os.environ[budget_key] = _business_fullraw_foreground_seconds()
         httpx_mod = importlib.import_module("httpx")
         topic_discovery_mod = importlib.import_module("agent.topic_discovery")

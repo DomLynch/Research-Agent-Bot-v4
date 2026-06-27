@@ -1356,6 +1356,54 @@ def test_business_sweep_fullraw_probe_does_not_dogpile_busy_worker(
     assert os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS") is None
 
 
+def test_business_sweep_fullraw_probe_waits_for_busy_worker(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import agent.topic_discovery as topic_discovery_mod
+    import scripts.run_topic_discovery as discovery
+
+    calls: list[int] = []
+    sleeps: list[float] = []
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
+        str(tmp_path / "fullraw.lock"),
+    )
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_WAIT_SECONDS", "1")
+
+    def fake_flock(_handle: Any, flags: int) -> None:
+        if flags & fcntl.LOCK_UN:
+            return
+        calls.append(flags)
+        if len(calls) == 1:
+            raise BlockingIOError
+
+    def fake_sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    def fake_seed_fullraw(_topic: str, **_kwargs: Any) -> list[dict[str, Any]]:
+        topic_discovery_mod._FULLRAW_LAST_RECEIPT = {
+            "shards_searched": 1525,
+            "partial_shard_search": False,
+            "sweep_failed_shards": 0,
+            "source_count_searched": 5,
+        }
+        topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
+        return [{"paper_id": f"paper-{idx}"} for idx in range(5)]
+
+    monkeypatch.setattr(fcntl, "flock", fake_flock)
+    monkeypatch.setattr("scripts.run_business_alpha_sweep.time.sleep", fake_sleep)
+    monkeypatch.setattr(discovery, "_seed_fullraw_papers", fake_seed_fullraw)
+
+    result = sweep._strict_fullraw_probe("pricing_strategy_margin")
+
+    assert len(calls) == 2
+    assert len(sleeps) == 1
+    assert 0 < sleeps[0] <= 1.0
+    assert result["status"] == "complete"
+    assert result["paper_count"] == 5
+
+
 def test_business_sweep_fullraw_probe_has_hard_timeout(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
@@ -2062,4 +2110,6 @@ def test_business_systemd_timers_are_eight_hour_guarded() -> None:
         assert "SuccessExitStatus=3" not in service
         assert "EnvironmentFile=/etc/researka-agent-v4.env" in service
         assert "EnvironmentFile=/root/Research-Agent-Bot-v4/.env" in service
+        assert "Environment=TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_WAIT_SECONDS=7200" in service
+        assert "TimeoutStartSec=12600" in service
         assert f"OnCalendar=*-*-* {schedule}" in timer

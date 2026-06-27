@@ -8,5 +8,6 @@ Type=oneshot
 WorkingDirectory=/root/Research-Agent-Bot-v4
 EnvironmentFile=/root/Research-Agent-Bot-v4/.env
 EnvironmentFile=/etc/researka-agent-v4.env
+Environment=TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_WAIT_SECONDS=7200
 ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/run_business_alpha_sweep.py --domains finance_research --cycles 1 --topics-per-domain 2 --submit-after-consistent-passes 2
-TimeoutStartSec=2700
+TimeoutStartSec=12600
