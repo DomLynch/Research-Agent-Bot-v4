@@ -1248,43 +1248,46 @@ def test_business_sweep_fullraw_probe_has_hard_timeout(
     assert os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS") is None
 
 
-def test_business_sweep_stops_after_busy_fullraw_probe(
+def test_business_sweep_continues_after_busy_fullraw_probe(
     tmp_path: Path,
     monkeypatch: Any,
 ) -> None:
-    profile = load_domain_profile("business_research")
+    profile = load_domain_profile("management_research")
     probed_topics: list[str] = []
+
+    def fake_fetch(topic: str, *_args: Any, **_kwargs: Any) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        if topic == "management_practices_productivity":
+            return _fixture_facts(), {"status": "ok"}
+        return [], {"status": "ok"}
 
     def fake_probe(topic: str, **_kwargs: Any) -> dict[str, Any]:
         probed_topics.append(topic)
         return {"status": "busy"}
 
-    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "_DOMAINS", ("management_research",))
     monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
     monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [
         "business_model_performance",
-        "pricing_strategy_margin",
+        "management_practices_productivity",
     ])
-    monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: (
-        [], {"status": "ok"},
-    ))
+    monkeypatch.setattr(sweep, "fetch_business_facts", fake_fetch)
     monkeypatch.setattr(sweep, "_strict_fullraw_probe", fake_probe)
     monkeypatch.setattr(sys, "argv", [
         "run_business_alpha_sweep.py",
         "--cycles", "2",
         "--topics-per-domain", "2",
-        "--domains", "business_research",
+        "--domains", "management_research",
         "--runs-root", str(tmp_path / "runs"),
     ])
 
-    assert sweep.main() == 2
+    assert sweep.main() == 0
     assert probed_topics == ["business_model_performance"]
     summary = json.loads(
         (tmp_path / "runs" / "_business_diagnostics" / "latest_sweep.json").read_text(
             encoding="utf-8",
         ),
     )
-    assert len(summary["results"]) == 1
+    assert [row["status"] for row in summary["results"]] == ["no_bundle", "ready"]
     assert summary["results"][0]["blockers"] == [
         "no_source_diverse_bundle",
         "fullraw_probe_busy",

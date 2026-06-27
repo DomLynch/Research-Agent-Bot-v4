@@ -207,10 +207,6 @@ def _write_fullraw_discovery(
     return out_path
 
 
-def _fullraw_should_stop_sweep(trace: dict[str, Any]) -> bool:
-    return str(trace.get("status") or "") == "busy"
-
-
 def _seed_topics(seed_path: Path, *, limit: int) -> list[str]:
     data = tomllib.loads(seed_path.read_text(encoding="utf-8"))
     topics = data.get("seeds", {}).get("topics", [])
@@ -523,18 +519,6 @@ def main() -> int:
                             "%Y-%m-%dT%H-%M-%SZ",
                         )
                         _write_no_ready_ledgers(args.runs_root, [row], ledger_date)
-                    if _fullraw_should_stop_sweep(fullraw_trace):
-                        summary_path = _write_sweep_summary(args.runs_root, rows)
-                        ledger_date = args.submit_date or dt.datetime.now(dt.UTC).strftime(
-                            "%Y-%m-%dT%H-%M-%SZ",
-                        )
-                        _write_no_ready_ledgers(args.runs_root, rows, ledger_date)
-                        print(
-                            f"[business-sweep] no_ready_candidate summary={summary_path}",
-                            file=sys.stderr,
-                            flush=True,
-                        )
-                        return 2
                     if fullraw_ready and max(0, args.submit_after_consistent_passes):
                         if row["consistent_passes"] < args.submit_after_consistent_passes:
                             row["status"] = "source_literature_waiting_consistency"
