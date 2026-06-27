@@ -48,6 +48,24 @@ def write_no_bundle_diagnostics(
 
 def no_bundle_blockers_from_diagnostics(data: dict[str, Any]) -> list[str]:
     blockers = ["no_source_diverse_bundle"]
+    trace = data.get("retrieval_trace")
+    fullraw = trace.get("fullraw") if isinstance(trace, dict) else None
+    if isinstance(fullraw, dict):
+        status = str(fullraw.get("status") or "")
+        try:
+            paper_count = int(fullraw.get("paper_count") or 0)
+        except (TypeError, ValueError):
+            paper_count = 0
+        if status == "complete" and paper_count >= 5:
+            blockers.append("requires_fact_level_source_synthesis")
+        elif status == "complete":
+            blockers.append("fullraw_insufficient_papers")
+        elif status == "complete_no_hits":
+            blockers.append("fullraw_no_hits")
+        elif status == "not_configured":
+            blockers.append("fullraw_not_configured")
+        elif status:
+            blockers.append("fullraw_complete_receipt_missing")
     for cluster in data.get("top_clusters") or []:
         if not isinstance(cluster, dict):
             continue

@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import importlib
 import json
+import os
 import sys
 import time
 import tomllib
@@ -37,6 +39,73 @@ _DOMAINS = (
     "business_research",
     "marketing_research",
 )
+_FULLRAW_ENV_FILE = "/etc/v5-memo/env"
+
+
+def _load_fullraw_env_defaults() -> None:
+    if os.environ.get("V5_MEMO_FULL_RAW_INDEX_TOKEN") or os.environ.get(
+        "V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL",
+    ):
+        return
+    try:
+        lines = Path(os.environ.get("V5_MEMO_FULL_RAW_ENV_FILE", _FULLRAW_ENV_FILE)).read_text(
+            encoding="utf-8",
+        ).splitlines()
+    except OSError:
+        return
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, value = stripped.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip("'\""))
+
+
+def _strict_fullraw_probe(topic: str) -> dict[str, Any]:
+    _load_fullraw_env_defaults()
+    if not (
+        os.environ.get("V5_MEMO_FULL_RAW_INDEX_TOKEN")
+        or os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL")
+    ):
+        return {"status": "not_configured"}
+    try:
+        httpx_mod = importlib.import_module("httpx")
+        topic_discovery_mod = importlib.import_module("agent.topic_discovery")
+        discovery = importlib.import_module("scripts.run_topic_discovery")
+
+        events = discovery.__dict__.get("_FULLRAW_PROBE_EVENTS", [])
+        before = len(events)
+        with httpx_mod.Client() as client:
+            papers = discovery.__dict__["_seed_fullraw_papers"](topic, client=client, limit=10)
+        receipt = topic_discovery_mod.__dict__.get("_FULLRAW_LAST_RECEIPT", {})
+        async_sweep = topic_discovery_mod.__dict__.get("_FULLRAW_LAST_ASYNC_SWEEP", {})
+        receipt_complete = bool(discovery.__dict__["_fullraw_receipt_complete"](receipt))
+        events = discovery.__dict__.get("_FULLRAW_PROBE_EVENTS", [])
+        event = (
+            events[-1]
+            if len(events) > before else {}
+        )
+        return {
+            "status": (
+                "complete" if papers else
+                "complete_no_hits" if receipt_complete else
+                str(event.get("status") or "no_hits")
+            ),
+            "paper_count": len(papers),
+            "async_status": (
+                async_sweep.get("status") if isinstance(async_sweep, dict) else None
+            ),
+            "shards_searched": receipt.get("shards_searched") if isinstance(receipt, dict) else None,
+            "partial_shard_search": (
+                receipt.get("partial_shard_search") if isinstance(receipt, dict) else None
+            ),
+            "sweep_failed_shards": (
+                receipt.get("sweep_failed_shards") if isinstance(receipt, dict) else None
+            ),
+            "sources_searched": receipt.get("sources_searched") if isinstance(receipt, dict) else None,
+        }
+    except Exception as exc:
+        return {"status": "failed", "error": exc.__class__.__name__}
 
 
 def _seed_topics(seed_path: Path, *, limit: int) -> list[str]:
@@ -216,7 +285,11 @@ def main() -> int:
                     "ready": bundle is not None,
                 }
                 if bundle is None:
+                    fullraw_trace = _strict_fullraw_probe(topic)
+                    trace = {**trace, "fullraw": fullraw_trace}
+                    row["trace"] = trace
                     row["status"] = "no_bundle"
+                    row["fullraw"] = fullraw_trace
                     diagnostics_path = write_no_bundle_diagnostics(
                         runs_root=args.runs_root,
                         domain=domain,

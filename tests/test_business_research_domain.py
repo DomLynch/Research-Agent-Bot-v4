@@ -4,7 +4,7 @@ import fcntl
 import json
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import httpx
 
@@ -369,7 +369,7 @@ def test_business_fetch_filters_global_fallback_when_live_schema_rejects_domain(
     rows, trace = fetch_business_facts(
         "factor_premia_returns",
         domain="finance_research",
-        settings=_Settings(),  # type: ignore[arg-type]
+        settings=cast(Any, _Settings()),
     )
 
     assert [row["id"] for row in rows] == ["finance-1"]
@@ -850,6 +850,7 @@ def test_business_sweep_writes_domain_scoped_latest_summaries(
         lambda _path, *, limit: ["business_model_performance"],
     )
     monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: ([], {"status": "ok"}))
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", lambda _topic: {"status": "not_configured"})
     monkeypatch.setattr(sys, "argv", [
         "run_business_alpha_sweep.py",
         "--cycles", "1",
@@ -866,7 +867,7 @@ def test_business_sweep_writes_domain_scoped_latest_summaries(
     assert "[business-sweep] domain=business_research summary=" in captured.out
     assert (
         '"top_blockers": {"candidate_refresh_failed": 1, '
-        '"no_bundle": 1, "no_source_diverse_bundle": 1}'
+        '"fullraw_not_configured": 1, "no_bundle": 1, "no_source_diverse_bundle": 1}'
     ) in captured.out
     assert "[business-sweep] no_ready_candidate" in captured.err
 
@@ -909,6 +910,7 @@ def test_business_sweep_writes_domain_scoped_latest_summaries(
     assert business_summary["queue_counts"]["not_ready"] == 1
     assert business_summary["top_blockers"] == {
         "candidate_refresh_failed": 1,
+        "fullraw_not_configured": 1,
         "no_bundle": 1,
         "no_source_diverse_bundle": 1,
     }
@@ -995,6 +997,72 @@ def test_business_no_bundle_diagnostic_blockers_reach_queue_and_ledger(
         "no_source_diverse_bundle": 1,
         "signal_family_heterogeneity_explains_spread": 1,
     }
+
+
+def test_business_sweep_surfaces_incomplete_fullraw_receipt(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: ["pricing_strategy_margin"])
+    monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: ([], {"status": "failed"}))
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", lambda _topic: {
+        "status": "incomplete_receipt",
+        "paper_count": 0,
+        "shards_searched": 346,
+        "partial_shard_search": True,
+        "sweep_failed_shards": 0,
+        "sources_searched": {"openalex": 300, "pubmed": 12, "crossref": 8, "core": 3, "semantic_scholar": 2},
+    })
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(tmp_path / "runs"),
+        "--submit-date", "2026-06-26T03-00-00Z",
+    ])
+
+    assert sweep.main() == 2
+    diagnostic = json.loads(
+        (tmp_path / "runs" / "_business_diagnostics" / "business_research-pricing_strategy_margin.json").read_text(
+            encoding="utf-8",
+        ),
+    )
+    assert diagnostic["retrieval_trace"]["fullraw"]["partial_shard_search"] is True
+    queue_payload = json.loads(
+        (tmp_path / "runs" / "_publish_queue.business_research.json").read_text(
+            encoding="utf-8",
+        ),
+    )
+    assert "fullraw_complete_receipt_missing" in queue_payload["not_ready"][0]["blockers"]
+    summary = health.summarize_latest(tmp_path / "runs", domain="business_research")
+    assert summary["top_blockers"]["fullraw_complete_receipt_missing"] == 1
+
+
+def test_business_no_bundle_complete_fullraw_requires_fact_synthesis() -> None:
+    blockers = business_cli.no_bundle_blockers_from_diagnostics({
+        "retrieval_trace": {
+            "fullraw": {
+                "status": "complete",
+                "paper_count": 8,
+                "shards_searched": 1525,
+                "partial_shard_search": False,
+                "sweep_failed_shards": 0,
+            },
+        },
+        "top_clusters": [],
+    })
+
+    assert blockers == [
+        "no_source_diverse_bundle",
+        "requires_fact_level_source_synthesis",
+    ]
+    assert business_cli.no_bundle_blockers_from_diagnostics({
+        "retrieval_trace": {"fullraw": {"status": "complete", "paper_count": 3}},
+    }) == ["no_source_diverse_bundle", "fullraw_insufficient_papers"]
+    assert business_cli.no_bundle_blockers_from_diagnostics({
+        "retrieval_trace": {"fullraw": {"status": "complete_no_hits", "paper_count": 0}},
+    }) == ["no_source_diverse_bundle", "fullraw_no_hits"]
 
 
 def test_business_sweep_submits_after_consistent_non_dry_run_passes(
