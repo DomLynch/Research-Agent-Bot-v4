@@ -6472,11 +6472,11 @@ def test_systemd_cache_warmer_fills_source_rich_backlog() -> None:
         encoding="utf-8",
     )
 
-    assert "scripts/run_topic_discovery.py" in service
-    assert "--domain longevity_research" in service
+    assert "scripts/run_alpha_cache_warm.py" in service
+    assert "--domain longevity_research" not in service
     assert "--warm-backlog" in service
-    assert "--derived-topic-limit 5000" in service
-    assert "--fact-probe-topics 250" in service
+    assert "--derived-topic-limit 1000" in service
+    assert "--fact-probe-topics 120" in service
     assert "--cache-only" not in service
     assert "TimeoutStartSec=2700" in service
     assert "OnCalendar=*-*-* 01/4:05:00" in timer
