@@ -5,6 +5,7 @@ import json
 import os
 import signal as signal_mod
 import sys
+from contextlib import suppress
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
@@ -1096,6 +1097,48 @@ def test_business_sweep_surfaces_incomplete_fullraw_receipt(
     summary = health.summarize_latest(tmp_path / "runs", domain="business_research")
     assert summary["next_action"] == "wait_for_fullraw_completion"
     assert summary["top_blockers"]["fullraw_probe_busy"] == 1
+
+
+def test_business_sweep_writes_no_ready_summary_before_next_probe_failure(
+    tmp_path: Path, monkeypatch: Any, capsys: Any,
+) -> None:
+    calls = 0
+    monkeypatch.setattr(
+        sweep, "_DOMAINS", ("business_research", "management_research"),
+    )
+    monkeypatch.setattr(
+        sweep, "_seed_topics", lambda _path, *, limit: ["platform_strategy_network_effects"],
+    )
+    monkeypatch.setattr(
+        sweep, "fetch_business_facts", lambda *_args, **_kwargs: ([], {"status": "failed"}),
+    )
+
+    def probe(_topic: str, **_kwargs: Any) -> dict[str, Any]:
+        nonlocal calls
+        calls += 1
+        if calls > 1:
+            raise RuntimeError("later probe failed")
+        return {"status": "failed", "error": "TimeoutError"}
+
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", probe)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research,management_research",
+        "--runs-root", str(tmp_path / "runs"),
+        "--submit-date", "2026-06-26T03-30-00Z",
+    ])
+
+    with suppress(RuntimeError):
+        sweep.main()
+
+    out = capsys.readouterr().out
+    assert "[business-sweep] domain=business_research summary=" in out
+    summary = health.summarize_latest(tmp_path / "runs", domain="business_research")
+    assert summary["status"] == "candidate_refresh_failed"
+    assert summary["considered_counts"] == {"no_bundle": 1}
+    assert summary["published"] == 0
 
 
 def test_business_sweep_fullraw_probe_uses_foreground_budget_with_storage_budget(

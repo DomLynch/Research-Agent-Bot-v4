@@ -518,6 +518,11 @@ def main() -> int:
                         f"[business-sweep] no_bundle {domain} {topic} facts={len(facts)}",
                         flush=True,
                     )
+                    if not fullraw_ready:
+                        ledger_date = args.submit_date or dt.datetime.now(dt.UTC).strftime(
+                            "%Y-%m-%dT%H-%M-%SZ",
+                        )
+                        _write_no_ready_ledgers(args.runs_root, [row], ledger_date)
                     if _fullraw_should_stop_sweep(fullraw_trace):
                         summary_path = _write_sweep_summary(args.runs_root, rows)
                         ledger_date = args.submit_date or dt.datetime.now(dt.UTC).strftime(
