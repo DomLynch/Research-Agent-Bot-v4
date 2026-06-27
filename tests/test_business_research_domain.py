@@ -1141,8 +1141,8 @@ def test_business_sweep_writes_no_ready_summary_before_next_probe_failure(
     assert summary["published"] == 0
 
 
-def test_business_sweep_fullraw_probe_uses_foreground_budget_with_storage_budget(
-    monkeypatch: Any,
+def test_business_sweep_fullraw_probe_does_not_inherit_storage_budget(
+    tmp_path: Path, monkeypatch: Any,
 ) -> None:
     import agent.topic_discovery as topic_discovery_mod
     import scripts.run_topic_discovery as discovery
@@ -1157,6 +1157,10 @@ def test_business_sweep_fullraw_probe_uses_foreground_budget_with_storage_budget
     ):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
+        str(tmp_path / "fullraw.lock"),
+    )
     monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "7200")
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", "7200")
     monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", "999")
@@ -1193,12 +1197,12 @@ def test_business_sweep_fullraw_probe_uses_foreground_budget_with_storage_budget
 
     assert result["status"] == "incomplete_receipt"
     assert captured == {
-        "client_timeout": "7200.0",
+        "client_timeout": "30.0",
         "timeout": None,
-        "attempts": "3600",
+        "attempts": "15",
         "priority": None,
         "poll_seconds": None,
-        "foreground_budget": "7200",
+        "foreground_budget": "30",
         "variants": None,
         "storage_budget": "7200",
     }
@@ -1229,11 +1233,15 @@ def test_business_sweep_fullraw_probe_does_not_dogpile_busy_worker(
 
 
 def test_business_sweep_fullraw_probe_has_hard_timeout(
-    monkeypatch: Any,
+    tmp_path: Path, monkeypatch: Any,
 ) -> None:
     import scripts.run_topic_discovery as discovery
 
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
+        str(tmp_path / "fullraw.lock"),
+    )
     monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_FOREGROUND_SECONDS", "5")
 
     def fake_seed_fullraw(_topic: str, **_kwargs: Any) -> list[dict[str, Any]]:
