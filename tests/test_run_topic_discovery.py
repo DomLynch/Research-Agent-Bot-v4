@@ -20,7 +20,7 @@ from agent.topic_discovery import TopicCandidate
 
 
 @pytest.fixture(autouse=True)
-def _disable_live_v5_client(monkeypatch: Any, tmp_path: Path) -> None:
+def _disable_live_v5_client(monkeypatch: Any, tmp_path: Path) -> Any:
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "0")
     monkeypatch.setattr(
         run_topic_discovery,
@@ -33,6 +33,19 @@ def _disable_live_v5_client(monkeypatch: Any, tmp_path: Path) -> None:
         tmp_path / "fullraw_in_progress_sweeps.json",
     )
     run_topic_discovery._FULLRAW_COMPLETED_SWEEP_CACHE.clear()
+    yield
+    for key in (
+        "V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL",
+        "V5_MEMO_FULL_RAW_INDEX_TOKEN",
+        "V5_MEMO_FULL_RAW_CORPUS_TOKEN",
+        "V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED",
+        "V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED",
+        "V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH",
+        "V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS",
+        "V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS",
+        "V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS",
+    ):
+        os.environ.pop(key, None)
 
 
 def _fullraw_rows(prefix: str, title_prefix: str, n: int = 5) -> list[dict[str, Any]]:
@@ -372,8 +385,32 @@ def test_seed_fullraw_backs_off_recent_incomplete_receipt(
     assert event["result_citation_diversity"] == 3
 
 
-def test_fullraw_in_progress_backoff_default_covers_sweep_runtime() -> None:
-    assert run_topic_discovery._fullraw_in_progress_ttl_seconds() == 300.0
+def test_fullraw_in_progress_backoff_default_covers_sweep_runtime(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_IN_PROGRESS_CACHE_TTL_SECONDS", raising=False)
+    monkeypatch.delenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", raising=False)
+    monkeypatch.delenv("RESEARKA_FULLRAW_SEARCH_BUDGET_SECONDS", raising=False)
+
+    assert run_topic_discovery._fullraw_in_progress_ttl_seconds() == 900.0
+
+
+def test_fullraw_in_progress_backoff_uses_search_budget(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_IN_PROGRESS_CACHE_TTL_SECONDS", raising=False)
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "1800")
+
+    assert run_topic_discovery._fullraw_in_progress_ttl_seconds() == 1800.0
+
+
+def test_fullraw_in_progress_backoff_allows_explicit_override(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_IN_PROGRESS_CACHE_TTL_SECONDS", "120")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "1800")
+
+    assert run_topic_discovery._fullraw_in_progress_ttl_seconds() == 120.0
 
 
 def test_seed_fullraw_retries_expired_incomplete_receipt(
@@ -405,6 +442,46 @@ def test_seed_fullraw_retries_expired_incomplete_receipt(
         )
 
     assert calls == ["platform strategy network", "platform strategy network"]
+
+
+def test_seed_fullraw_reuses_budget_fresh_incomplete_receipt(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+    monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_IN_PROGRESS_CACHE_TTL_SECONDS", raising=False)
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "900")
+
+    def fake_fetch(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        run_topic_discovery.topic_discovery_mod._FULLRAW_LAST_RECEIPT = {
+            **_fullraw_receipt(),
+            "partial_shard_search": True,
+            "shards_searched": 192,
+        }
+        run_topic_discovery.topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {
+            "status": "queued",
+        }
+        return []
+
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fake_fetch)
+
+    with run_topic_discovery.httpx.Client() as client:
+        run_topic_discovery._seed_fullraw_papers(
+            "platform strategy network", client=client, limit=5,
+        )
+        cache = run_topic_discovery.publish_io.read_json(
+            run_topic_discovery._FULLRAW_IN_PROGRESS_SWEEP_CACHE_PATH, {},
+        )
+        cache["network platform strategy"]["ts"] -= 600
+        run_topic_discovery.publish_io.write_json(
+            run_topic_discovery._FULLRAW_IN_PROGRESS_SWEEP_CACHE_PATH, cache,
+        )
+        run_topic_discovery._seed_fullraw_papers(
+            "platform strategy network", client=client, limit=5,
+        )
+
+    assert calls == ["platform strategy network"]
+    assert run_topic_discovery._FULLRAW_PROBE_EVENTS[-1]["status"] == "in_progress_cache_hit"
 
 
 def test_seed_fullraw_completed_sweep_overrides_in_progress_backoff(
@@ -1680,6 +1757,8 @@ def test_fullraw_supply_uses_configured_window_for_seed_query(
 ) -> None:
     calls: list[str] = []
     caps: list[tuple[str | None, str | None, str | None]] = []
+    monkeypatch.delenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", raising=False)
+    monkeypatch.delenv("RESEARKA_FULLRAW_SEARCH_BUDGET_SECONDS", raising=False)
 
     def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
         calls.append(query)
@@ -1759,6 +1838,8 @@ def test_fullraw_supply_stops_when_total_pass_budget_is_spent(
 
 def test_fullraw_supply_caps_each_query_window(monkeypatch: Any) -> None:
     caps: list[tuple[str | None, str | None, str | None, str | None]] = []
+    monkeypatch.delenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", raising=False)
+    monkeypatch.delenv("RESEARKA_FULLRAW_SEARCH_BUDGET_SECONDS", raising=False)
 
     def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
         assert query == "longevity anti aging"
@@ -1798,6 +1879,11 @@ def test_fullraw_supply_defaults_are_candidate_supply_sized(monkeypatch: Any) ->
     monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_TIMEOUT_SECONDS", raising=False)
     monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS", raising=False)
     monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS", raising=False)
+    monkeypatch.delenv("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", raising=False)
+    monkeypatch.delenv("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS", raising=False)
+    monkeypatch.delenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", raising=False)
+    monkeypatch.delenv("V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS", raising=False)
+    monkeypatch.delenv("RESEARKA_FULLRAW_SEARCH_BUDGET_SECONDS", raising=False)
 
     assert run_topic_discovery._fullraw_supply_budget_seconds() == 240.0
     assert run_topic_discovery._fullraw_supply_query_timeout_seconds() == 90.0
