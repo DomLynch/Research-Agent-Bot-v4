@@ -1200,7 +1200,7 @@ def test_business_sweep_fullraw_probe_inherits_fullraw_search_budget(
         "client_timeout": "7200.0",
         "timeout": None,
         "attempts": "3600",
-        "priority": None,
+        "priority": "1",
         "poll_seconds": None,
         "foreground_budget": "7200",
         "variants": None,

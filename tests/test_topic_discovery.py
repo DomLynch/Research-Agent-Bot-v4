@@ -214,7 +214,7 @@ def test_fetch_topic_papers_falls_back_to_fullraw_when_db_empty(
     }
 
 
-def test_fullraw_payload_ignores_priority_env_to_preserve_cache_key(
+def test_fullraw_payload_can_request_foreground_priority(
     monkeypatch: Any,
 ) -> None:
     from agent import topic_discovery as td
@@ -245,6 +245,7 @@ def test_fullraw_payload_ignores_priority_env_to_preserve_cache_key(
         "rank_mode": "relevance",
         "cache_only": True,
         "queue_if_missing": True,
+        "priority": True,
     }
 
 

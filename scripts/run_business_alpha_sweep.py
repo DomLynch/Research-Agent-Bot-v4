@@ -134,6 +134,8 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
     old_budget = os.environ.get(budget_key)
     attempts_key = "TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS"
     old_attempts = os.environ.get(attempts_key)
+    priority_key = "TOPIC_DISCOVERY_FULLRAW_PRIORITY"
+    old_priority = os.environ.get(priority_key)
     try:
         lock_path = Path(os.environ.get(
             "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
@@ -160,6 +162,7 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
             os.environ.get(budget_key, _BUSINESS_FULLRAW_FOREGROUND_SECONDS),
         ))
         os.environ[attempts_key] = str(max(1, int(timeout_seconds // 2.0)))
+        os.environ[priority_key] = "1"
 
         old_handler = signal.getsignal(signal.SIGALRM)
         old_timer = signal.setitimer(signal.ITIMER_REAL, 0.0)
@@ -248,6 +251,10 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
             os.environ.pop(attempts_key, None)
         else:
             os.environ[attempts_key] = old_attempts
+        if old_priority is None:
+            os.environ.pop(priority_key, None)
+        else:
+            os.environ[priority_key] = old_priority
         if lock_handle is not None:
             with suppress(OSError):
                 fcntl.flock(lock_handle, fcntl.LOCK_UN)

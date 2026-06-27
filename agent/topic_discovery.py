@@ -1200,7 +1200,7 @@ def _fetch_fullraw_topic_papers(topic: str, *, client: httpx.Client, limit: int 
     if not url or os.environ.get("TOPIC_DISCOVERY_FULLRAW_FALLBACK", "1").lower() in {"0", "false", "no", "off"}:
         return []
     timeout = _float_env("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", 20.0)
-    payload = {"query": topic.replace("_", " ")[:1024], "limit": 10, "rank_mode": "relevance", "cache_only": True, "queue_if_missing": True}
+    payload = {"query": topic.replace("_", " ")[:1024], "limit": 10, "rank_mode": "relevance", "cache_only": True, "queue_if_missing": True} | ({"priority": True} if os.environ.get("TOPIC_DISCOVERY_FULLRAW_PRIORITY", "").lower() in {"1", "true", "yes", "on"} else {})
     wait_s = _float_env("TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS", 2.0)
     data: Any = {}
     receipt: dict[str, Any] = {}
