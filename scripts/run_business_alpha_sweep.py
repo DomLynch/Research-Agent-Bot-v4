@@ -7,6 +7,7 @@ import fcntl
 import importlib
 import json
 import os
+import signal
 import sys
 import time
 import tomllib
@@ -49,6 +50,10 @@ _BROAD_SEED_TOKENS = frozenset({
 })
 _BUSINESS_FULLRAW_FOREGROUND_SECONDS = "120"
 _BUSINESS_FULLRAW_LOCK_PATH = "/tmp/researka-v4-business-fullraw.lock"
+
+
+def _raise_fullraw_timeout(_signum: int, _frame: Any) -> None:
+    raise TimeoutError("business fullraw probe exceeded foreground budget")
 
 def _load_fullraw_env_defaults() -> None:
     if os.environ.get("V5_MEMO_FULL_RAW_INDEX_TOKEN") or os.environ.get(
@@ -107,10 +112,20 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
 
         events = discovery.__dict__.get("_FULLRAW_PROBE_EVENTS", [])
         before = len(events)
-        with httpx_mod.Client(timeout=timeout_seconds) as client:
-            papers = discovery.__dict__["_seed_fullraw_papers"](
-                topic, client=client, limit=10,
-            )
+        old_handler = signal.getsignal(signal.SIGALRM)
+        old_timer = signal.setitimer(signal.ITIMER_REAL, 0.0)
+        signal.signal(signal.SIGALRM, _raise_fullraw_timeout)
+        signal.setitimer(signal.ITIMER_REAL, timeout_seconds)
+        try:
+            with httpx_mod.Client(timeout=timeout_seconds) as client:
+                papers = discovery.__dict__["_seed_fullraw_papers"](
+                    topic, client=client, limit=10,
+                )
+        finally:
+            signal.setitimer(signal.ITIMER_REAL, 0.0)
+            signal.signal(signal.SIGALRM, old_handler)
+            if old_timer[0] > 0.0:
+                signal.setitimer(signal.ITIMER_REAL, old_timer[0], old_timer[1])
         receipt = topic_discovery_mod.__dict__.get("_FULLRAW_LAST_RECEIPT", {})
         async_sweep = topic_discovery_mod.__dict__.get("_FULLRAW_LAST_ASYNC_SWEEP", {})
         receipt_complete = bool(discovery.__dict__["_fullraw_receipt_complete"](receipt))

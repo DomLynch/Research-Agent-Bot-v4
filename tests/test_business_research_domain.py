@@ -3,6 +3,7 @@ from __future__ import annotations
 import fcntl
 import json
 import os
+import signal as signal_mod
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -1147,6 +1148,26 @@ def test_business_sweep_fullraw_probe_does_not_dogpile_busy_worker(
         handle.close()
 
     assert result == {"status": "busy"}
+    assert os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS") is None
+
+
+def test_business_sweep_fullraw_probe_has_hard_timeout(
+    monkeypatch: Any,
+) -> None:
+    import scripts.run_topic_discovery as discovery
+
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_FOREGROUND_SECONDS", "5")
+
+    def fake_seed_fullraw(_topic: str, **_kwargs: Any) -> list[dict[str, Any]]:
+        signal_mod.raise_signal(signal_mod.SIGALRM)
+        return []
+
+    monkeypatch.setattr(discovery, "_seed_fullraw_papers", fake_seed_fullraw)
+
+    result = sweep._strict_fullraw_probe("pricing_strategy_margin")
+
+    assert result == {"status": "failed", "error": "TimeoutError"}
     assert os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS") is None
 
 
