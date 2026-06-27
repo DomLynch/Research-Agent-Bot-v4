@@ -11474,6 +11474,38 @@ def test_source_literature_boundary_rejects_generic_only_topic() -> None:
     assert reason == "source_floor_below_min"
 
 
+def test_source_literature_boundary_rejects_diagnostic_model_only_longevity_bundle() -> None:
+    papers = [
+        {
+            "title": "Fully automated detection of diabetic macular edema and dry age-related macular degeneration from optical coherence tomography images",
+            "doi": "10.1234/amd-1",
+        },
+        {
+            "title": "A machine-learning classification system for age-related macular degeneration diagnosis using fundus images",
+            "doi": "10.1234/amd-2",
+        },
+        {
+            "title": "Deep-learning screening for age-related macular degeneration with AUC improvements",
+            "doi": "10.1234/amd-3",
+        },
+        {
+            "title": "Super-resolution OCT images improve age-related macular degeneration diagnosis accuracy",
+            "doi": "10.1234/amd-4",
+        },
+        {
+            "title": "Automatic detection of age-related macular degeneration in retinal fundus images",
+            "doi": "10.1234/amd-5",
+        },
+    ]
+
+    ok, reason = daily._source_literature_boundary_quality(
+        "related_macular", papers, 5, "longevity_research",
+    )
+
+    assert ok is False
+    assert reason == "predictive_model_only_bundle"
+
+
 def test_source_literature_bundle_resolves_doi_url_openalex_and_cochrane_review() -> None:
     title = (
         "Metformin for prevention or delay of type 2 diabetes mellitus and "

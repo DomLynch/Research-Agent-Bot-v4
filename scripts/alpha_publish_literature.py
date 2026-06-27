@@ -314,7 +314,9 @@ def select_boundary_papers(
 
 
 def boundary_quality(
-    topic: str, papers: list[Json], min_sources: int, *, strict_topic_coverage: bool = False,
+    topic: str, papers: list[Json], min_sources: int, *,
+    strict_topic_coverage: bool = False,
+    profile_slug: str = "",
 ) -> tuple[bool, str]:
     usable = select_boundary_papers(
         topic, papers, min_sources, strict_topic_coverage=strict_topic_coverage,
@@ -335,6 +337,14 @@ def boundary_quality(
         and max(specific.count(family) for family in set(specific)) < min_sources
     ):
         return False, "mixed_source_context_family"
+    directions = [_paper_effect_direction(paper, topic) for paper in usable]
+    if (
+        profile_slug
+        and not _non_biomedical(profile_slug)
+        and directions
+        and all(direction == "non-clinical/predictive" for direction in directions)
+    ):
+        return False, "predictive_model_only_bundle"
     if _uniform_favorable_cross_pico(usable, min_sources):
         return False, "directionally_uniform_cross_pico_bundle"
     return True, "ok"
@@ -451,8 +461,11 @@ def _effect_direction(finding: str, fact: Json | None = None, topic: str = "") -
     )):
         return "economic/context only"
     if any(term in text for term in (
-        "machine learning", "machine-learning", "predict", "prediction",
-        "predictive", "chronological age", "age-prediction",
+        "machine learning", "machine-learning", "deep learning", "predict",
+        "prediction", "predictive", "chronological age", "age-prediction",
+        "diagnosis", "diagnostic", "detection", "screening", "classification",
+        "classifier", "accuracy", "auc", "fundus", "oct", "image", "images",
+        "imaging", "neural network", "super-resolution", "segmentation",
     )):
         return "non-clinical/predictive"
     if _topic_effect_ablated(finding, topic):

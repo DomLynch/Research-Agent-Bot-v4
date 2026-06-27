@@ -3595,6 +3595,7 @@ def _source_literature_boundary_quality(
         papers,
         min_sources,
         strict_topic_coverage=publish_literature._non_biomedical(profile_slug),
+        profile_slug=profile_slug,
     )
 
 
