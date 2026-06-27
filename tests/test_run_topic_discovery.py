@@ -1585,6 +1585,46 @@ def test_fullraw_supply_query_cap_defaults_to_small_candidate_window(
     assert run_topic_discovery._fullraw_supply_query_cap(2) == 16
 
 
+def test_fullraw_supply_prefers_alpha_shape_queries_before_bare_seed(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        if query == "urolithin mitochondrial aging replication":
+            return _fullraw_rows("urolithin", "Urolithin mitochondrial aging replication")
+        return []
+
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
+
+    rows = run_topic_discovery._fullraw_supply_candidates(
+        query_context="",
+        current_year=2026,
+        top=1,
+        seeds=("urolithin_mitochondrial_aging",),
+    )
+
+    assert [row.topic for row in rows] == ["urolithin_mitochondrial_aging_replication"]
+    assert calls[:3] == [
+        "urolithin mitochondrial aging",
+        "urolithin mitochondrial aging null",
+        "urolithin mitochondrial aging replication",
+    ]
+
+
+def test_fullraw_alpha_shape_terms_are_configurable_and_bounded(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_FULLRAW_ALPHA_SHAPE_TERMS",
+        "null,failed,blunted,subgroup",
+    )
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_ALPHA_SHAPE_QUERY_LIMIT", "2")
+
+    assert run_topic_discovery._alpha_shape_query_terms() == ("null", "failed")
+
+
 def test_fullraw_supply_prefers_context_seed_query_over_bare_seed(
     monkeypatch: Any,
 ) -> None:

@@ -60,6 +60,10 @@ _FULLRAW_QUERY_DROP_TOKENS = (_GENERIC_SCOPE_TOKENS - {"trial", "trials"}) | {
     "randomized", "controlled", "determine", "efficacy", "healthy", "older",
     "adult", "adults",
 }
+_DEFAULT_ALPHA_SHAPE_QUERY_TERMS = (
+    "null", "replication", "human trial", "failed", "blunted",
+    "subgroup", "primary endpoint",
+)
 
 
 def _truthy_env(name: str, default: str = "1") -> bool:
@@ -359,6 +363,24 @@ def _fullraw_supply_query_cap(top: int) -> int:
     return max(_seed_paper_probe_limit(top), top * multiplier)
 
 
+def _alpha_shape_query_terms() -> tuple[str, ...]:
+    raw = os.environ.get(
+        "TOPIC_DISCOVERY_FULLRAW_ALPHA_SHAPE_TERMS",
+        ",".join(_DEFAULT_ALPHA_SHAPE_QUERY_TERMS),
+    )
+    terms = tuple(
+        term for item in raw.split(",")
+        if (term := _compact_fullraw_query(item.strip(), max_terms=3))
+    )
+    try:
+        limit = max(0, int(os.environ.get(
+            "TOPIC_DISCOVERY_FULLRAW_ALPHA_SHAPE_QUERY_LIMIT", "3",
+        )))
+    except (TypeError, ValueError):
+        limit = 3
+    return terms[:limit]
+
+
 def _context_supported_papers(
     papers: list[dict[str, object]], context_terms: str,
 ) -> list[dict[str, object]]:
@@ -652,6 +674,15 @@ def _fullraw_supply_candidates(
                 continue
             query = f"{bases[0]} {variant}".strip()
             add_query(query, seed)
+            if len(query_labels) >= query_cap:
+                break
+        if len(query_labels) >= query_cap:
+            break
+    for alpha_term in _alpha_shape_query_terms():
+        for seed, bases in seed_bases:
+            if not bases:
+                continue
+            add_query(f"{bases[0]} {alpha_term}", seed)
             if len(query_labels) >= query_cap:
                 break
         if len(query_labels) >= query_cap:
