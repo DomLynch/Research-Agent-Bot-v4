@@ -190,12 +190,15 @@ def summarize_next_candidate(
             cycle = importlib.import_module("daily_alpha_publish_cycle")
 
     submitted_path = runs_root / "_daily_ledger" / "_submitted_fingerprints.json"
-    queue = _queue_sidecar(runs_root, domain) or cycle._build_queue(
-        runs_root,
-        include_archive=False,
-        domain=domain,
-        submitted_path=submitted_path,
-    )
+    try:
+        queue = cycle._build_queue(
+            runs_root,
+            include_archive=False,
+            domain=domain,
+            submitted_path=submitted_path,
+        )
+    except Exception:
+        queue = _queue_sidecar(runs_root, domain) or {}
     raw_ready = len(queue.get("ready_to_publish") or [])
     queue_counts = {
         key: raw_ready if key == "ready_to_publish" else len(queue.get(key) or [])

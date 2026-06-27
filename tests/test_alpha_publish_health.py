@@ -583,7 +583,7 @@ def test_next_candidate_summary_separates_raw_ready_from_actionable(
     assert Path(seen["submitted_path"]).name == "_submitted_fingerprints.json"
 
 
-def test_next_candidate_summary_prefers_domain_queue_sidecar(tmp_path: Path) -> None:
+def test_next_candidate_summary_falls_back_to_domain_queue_sidecar(tmp_path: Path) -> None:
     sidecar = tmp_path / "_publish_queue.business_research.json"
     sidecar.write_text(json.dumps({
         "ready_to_publish": [],
@@ -607,7 +607,7 @@ def test_next_candidate_summary_prefers_domain_queue_sidecar(tmp_path: Path) -> 
         _DEFAULT_MIN_SUBMIT_SOURCES=5,
         _DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS=30,
         _build_queue=lambda *_args, **_kwargs: (_ for _ in ()).throw(
-            AssertionError("domain sidecar should avoid rebuilding queue")
+            RuntimeError("current queue unavailable")
         ),
         _recently_published_topics=lambda *_args, **_kwargs: set(),
         _recent_submission_topics=lambda *_args, **_kwargs: set(),
@@ -626,6 +626,54 @@ def test_next_candidate_summary_prefers_domain_queue_sidecar(tmp_path: Path) -> 
         "agent_repair_needed": 0,
         "curation_needed": 0,
         "not_ready": 1,
+    }
+    assert summary["supply_status"] == "no_ready_rows"
+
+
+def test_next_candidate_summary_prefers_rebuilt_queue_over_stale_sidecar(
+    tmp_path: Path,
+) -> None:
+    sidecar = tmp_path / "_publish_queue.finance_research.json"
+    sidecar.write_text(json.dumps({
+        "ready_to_publish": [{"topic": "stale_duplicate"}],
+        "agent_repair_needed": [],
+        "curation_needed": [],
+        "not_ready": [],
+    }), encoding="utf-8")
+
+    def select_candidate(
+        queue: dict[str, list[dict[str, str]]],
+        *_args: object,
+        **_kwargs: object,
+    ) -> tuple[None, list[dict[str, Any]]]:
+        assert queue["ready_to_publish"] == []
+        return None, [{"topic": "current_blocked", "status": "no_ready_rows"}]
+
+    fake_cycle = SimpleNamespace(
+        _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES=5,
+        _DEFAULT_MIN_SUBMIT_SOURCES=5,
+        _DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS=30,
+        _build_queue=lambda *_args, **_kwargs: {
+            "ready_to_publish": [],
+            "agent_repair_needed": [],
+            "curation_needed": [{"topic": "current_blocked"}],
+            "not_ready": [],
+        },
+        _recently_published_topics=lambda *_args, **_kwargs: set(),
+        _recent_submission_topics=lambda *_args, **_kwargs: set(),
+        _recent_negative_topics=lambda *_args, **_kwargs: set(),
+        select_candidate=select_candidate,
+    )
+
+    summary = health.summarize_next_candidate(
+        tmp_path, cycle_module=fake_cycle, domain="finance_research",
+    )
+
+    assert summary["queue_counts"] == {
+        "ready_to_publish": 0,
+        "agent_repair_needed": 0,
+        "curation_needed": 1,
+        "not_ready": 0,
     }
     assert summary["supply_status"] == "no_ready_rows"
 
