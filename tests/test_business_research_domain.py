@@ -850,7 +850,10 @@ def test_business_sweep_writes_domain_scoped_latest_summaries(
         lambda _path, *, limit: ["business_model_performance"],
     )
     monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: ([], {"status": "ok"}))
-    monkeypatch.setattr(sweep, "_strict_fullraw_probe", lambda _topic: {"status": "not_configured"})
+    monkeypatch.setattr(
+        sweep, "_strict_fullraw_probe",
+        lambda _topic, **_kwargs: {"status": "not_configured"},
+    )
     monkeypatch.setattr(sys, "argv", [
         "run_business_alpha_sweep.py",
         "--cycles", "1",
@@ -1005,7 +1008,7 @@ def test_business_sweep_surfaces_incomplete_fullraw_receipt(
     monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
     monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: ["pricing_strategy_margin"])
     monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: ([], {"status": "failed"}))
-    monkeypatch.setattr(sweep, "_strict_fullraw_probe", lambda _topic: {
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", lambda _topic, **_kwargs: {
         "status": "incomplete_receipt",
         "paper_count": 0,
         "shards_searched": 346,
@@ -1063,6 +1066,104 @@ def test_business_no_bundle_complete_fullraw_requires_fact_synthesis() -> None:
     assert business_cli.no_bundle_blockers_from_diagnostics({
         "retrieval_trace": {"fullraw": {"status": "complete_no_hits", "paper_count": 0}},
     }) == ["no_source_diverse_bundle", "fullraw_no_hits"]
+
+
+def test_business_sweep_complete_fullraw_hands_off_to_source_literature(
+    tmp_path: Path,
+    monkeypatch: Any,
+    capsys: Any,
+) -> None:
+    profile = load_domain_profile("economics_research")
+    submissions: list[dict[str, Any]] = []
+    papers = [
+        {
+            "title": f"Minimum wage employment evidence paper {i}",
+            "doi": f"10.9999/fullraw-{i}",
+            "abstract": "Minimum wage and employment evidence.",
+        }
+        for i in range(5)
+    ]
+
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        submissions.append(kwargs)
+        return {
+            "status": "published",
+            "submitted": 1,
+            "published": 1,
+            "publish_summary": {
+                "status": "published",
+                "submitted": 1,
+                "published": 1,
+                "considered": 1,
+                "queue_counts": {"ready_to_publish": 1},
+                "top_blockers": {},
+                "next_action": "public_page_verified",
+                "public_url": "https://example.test/memo",
+                "public_url_status": 200,
+            },
+        }
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("economics_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: ["minimum_wage_employment"])
+    monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: ([], {"status": "failed"}))
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", lambda _topic, **_kwargs: {
+        "status": "complete",
+        "paper_count": 5,
+        "shards_searched": 1525,
+        "partial_shard_search": False,
+        "sweep_failed_shards": 0,
+        "sources_searched": {
+            "openalex": 2,
+            "pubmed": 1,
+            "crossref": 1,
+            "core": 1,
+            "semantic_scholar": 1,
+        },
+        "_papers": papers,
+    })
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "2",
+        "--topics-per-domain", "1",
+        "--domains", "economics_research",
+        "--runs-root", str(tmp_path / "runs"),
+        "--submit-after-consistent-passes", "2",
+        "--submit-date", "2026-06-27T01-00-00Z",
+    ])
+
+    assert sweep.main() == 0
+    discovery = json.loads(
+        (
+            tmp_path / "runs" / "_topics_discovery"
+            / "business_sweep_fullraw.economics_research.minimum_wage_employment.json"
+        ).read_text(encoding="utf-8"),
+    )
+    assert discovery["source"] == "business_sweep_fullraw"
+    assert discovery["all"][0]["paper_count"] == 5
+    assert discovery["all"][0]["fact_source_count"] == 5
+    assert len(discovery["all"][0]["source_papers"]) == 5
+    assert submissions == [{
+        "runs_root": tmp_path / "runs",
+        "date": "2026-06-27T01-00-00Z",
+        "domain": "economics_research",
+        "submit": True,
+        "refresh_candidates": True,
+    }]
+    summary = json.loads(
+        (tmp_path / "runs" / "_business_diagnostics" / "latest_sweep.json").read_text(
+            encoding="utf-8",
+        ),
+    )
+    assert [row["status"] for row in summary["results"]] == [
+        "source_literature_waiting_consistency",
+        "published",
+    ]
+    out = capsys.readouterr().out
+    assert "source_literature_waiting_consistency" in out
+    assert "via_fullraw_source_literature" in out
+    assert '"public_url_status": 200' in out
 
 
 def test_business_sweep_submits_after_consistent_non_dry_run_passes(

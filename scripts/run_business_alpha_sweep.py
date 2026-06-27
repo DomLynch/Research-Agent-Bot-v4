@@ -61,7 +61,7 @@ def _load_fullraw_env_defaults() -> None:
         os.environ.setdefault(key.strip(), value.strip().strip("'\""))
 
 
-def _strict_fullraw_probe(topic: str) -> dict[str, Any]:
+def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[str, Any]:
     _load_fullraw_env_defaults()
     if not (
         os.environ.get("V5_MEMO_FULL_RAW_INDEX_TOKEN")
@@ -85,7 +85,7 @@ def _strict_fullraw_probe(topic: str) -> dict[str, Any]:
             events[-1]
             if len(events) > before else {}
         )
-        return {
+        result = {
             "status": (
                 "complete" if papers else
                 "complete_no_hits" if receipt_complete else
@@ -104,8 +104,45 @@ def _strict_fullraw_probe(topic: str) -> dict[str, Any]:
             ),
             "sources_searched": receipt.get("sources_searched") if isinstance(receipt, dict) else None,
         }
+        if include_papers:
+            result["_papers"] = papers
+        return result
     except Exception as exc:
         return {"status": "failed", "error": exc.__class__.__name__}
+
+
+def _write_fullraw_discovery(
+    runs_root: Path, *, domain: str, topic: str, profile: Any, papers: list[dict[str, Any]],
+) -> Path:
+    out_dir = runs_root / "_topics_discovery"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    unique: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for paper in papers:
+        key = str(
+            paper.get("doi")
+            or paper.get("pmid")
+            or paper.get("paper_id")
+            or paper.get("title")
+            or ""
+        )
+        if not key or key.casefold() in seen:
+            continue
+        seen.add(key.casefold())
+        unique.append(paper)
+    payload = {
+        "domain": profile.as_metadata(),
+        "source": "business_sweep_fullraw",
+        "all": [{
+            "topic": topic,
+            "paper_count": len(unique),
+            "fact_source_count": len(unique),
+            "source_papers": unique,
+        }],
+    }
+    out_path = out_dir / f"business_sweep_fullraw.{domain}.{topic}.json"
+    write_json(out_path, payload)
+    return out_path
 
 
 def _seed_topics(seed_path: Path, *, limit: int) -> list[str]:
@@ -285,7 +322,22 @@ def main() -> int:
                     "ready": bundle is not None,
                 }
                 if bundle is None:
-                    fullraw_trace = _strict_fullraw_probe(topic)
+                    fullraw_trace = _strict_fullraw_probe(topic, include_papers=True)
+                    fullraw_papers = [
+                        paper for paper in fullraw_trace.pop("_papers", [])
+                        if isinstance(paper, dict)
+                    ]
+                    fullraw_keys: set[str] = set()
+                    for paper in fullraw_papers:
+                        key = str(
+                            paper.get("doi")
+                            or paper.get("pmid")
+                            or paper.get("paper_id")
+                            or paper.get("title")
+                            or ""
+                        ).strip()
+                        if key:
+                            fullraw_keys.add(key.casefold())
                     trace = {**trace, "fullraw": fullraw_trace}
                     row["trace"] = trace
                     row["status"] = "no_bundle"
@@ -301,8 +353,81 @@ def main() -> int:
                     diagnostics = read_json(diagnostics_path, {})
                     if isinstance(diagnostics, dict):
                         row["blockers"] = no_bundle_blockers_from_diagnostics(diagnostics)
+                    fullraw_ready = (
+                        fullraw_trace.get("status") == "complete"
+                        and len(fullraw_keys) >= 5
+                    )
+                    if fullraw_ready:
+                        discovery_path = _write_fullraw_discovery(
+                            args.runs_root,
+                            domain=domain,
+                            topic=topic,
+                            profile=profile,
+                            papers=fullraw_papers,
+                        )
+                        row["source_literature_discovery"] = str(discovery_path)
+                        row["status"] = "source_literature_candidate_available"
+                        fingerprint = "|".join((
+                            domain,
+                            topic,
+                            "fullraw_source_literature",
+                            ",".join(sorted(fullraw_keys)),
+                        ))
+                        submit_after = max(0, args.submit_after_consistent_passes)
+                        row["candidate_fingerprint"] = fingerprint
+                        row["consistent_passes"] = (
+                            _record_consistent_pass(
+                                args.runs_root,
+                                domain=domain,
+                                topic=topic,
+                                fingerprint=fingerprint,
+                            )
+                            if submit_after else 1
+                        )
                     rows.append(row)
                     print(f"[business-sweep] no_bundle {domain} {topic} facts={len(facts)}")
+                    if fullraw_ready and max(0, args.submit_after_consistent_passes):
+                        if row["consistent_passes"] < args.submit_after_consistent_passes:
+                            row["status"] = "source_literature_waiting_consistency"
+                            _write_sweep_summary(args.runs_root, rows)
+                            print(
+                                "[business-sweep] source_literature_waiting_consistency "
+                                f"{domain} {topic} passes={row['consistent_passes']}/"
+                                f"{args.submit_after_consistent_passes}"
+                            )
+                            continue
+                        if profile.dry_run_only:
+                            row["status"] = "submit_blocked_domain_dry_run_only"
+                            _write_sweep_summary(args.runs_root, rows)
+                            print(
+                                "[business-sweep] submit_blocked_domain_dry_run_only "
+                                f"{domain} {topic} via_fullraw_source_literature",
+                                file=sys.stderr,
+                            )
+                            return 2
+                        ledger = run_cycle(
+                            runs_root=args.runs_root,
+                            date=args.submit_date
+                            or dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ"),
+                            domain=domain,
+                            submit=True,
+                            refresh_candidates=True,
+                        )
+                        row["status"] = str(ledger.get("status") or "submit_failed")
+                        row["submission_ledger"] = ledger
+                        _write_sweep_summary(args.runs_root, rows)
+                        if isinstance(ledger.get("publish_summary"), dict):
+                            print(
+                                f"[business-sweep] domain={domain} "
+                                f"summary={json.dumps(ledger['publish_summary'], sort_keys=True)}"
+                            )
+                        print(
+                            "[business-sweep] "
+                            f"{row['status']} {domain} {topic} via_fullraw_source_literature"
+                        )
+                        return 0 if row["status"] in {
+                            "submitted_to_researka", "published",
+                        } else 2
                     continue
                 fingerprint = _bundle_fingerprint(bundle)
                 run_dir = write_candidate_run(bundle, profile=profile, runs_root=args.runs_root)
