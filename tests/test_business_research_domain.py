@@ -2150,9 +2150,10 @@ def test_business_systemd_timers_are_eight_hour_guarded() -> None:
         assert "EnvironmentFile=/root/Research-Agent-Bot-v4/.env" in service
         assert "EnvironmentFile=/etc/researka-fullraw.env" in service
         assert "researka-fullraw-search.service" in service
-        assert "Environment=TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_WAIT_SECONDS=7200" in service
-        assert "Environment=TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS=7200" in service
-        assert "Environment=V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS=7200" in service
-        assert "Environment=V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS=7200" in service
-        assert "TimeoutStartSec=12600" in service
+        assert "Environment=TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_WAIT_SECONDS=30" in service
+        assert "Environment=TOPIC_DISCOVERY_BUSINESS_FULLRAW_FOREGROUND_SECONDS=120" in service
+        assert "Environment=TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS=120" in service
+        assert "Environment=V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS=120" in service
+        assert "Environment=V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS=120" in service
+        assert "TimeoutStartSec=900" in service
         assert f"OnCalendar=*-*-* {schedule}" in timer
