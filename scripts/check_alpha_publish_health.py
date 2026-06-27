@@ -178,6 +178,33 @@ def _queue_sidecar(runs_root: Path, domain: str | None) -> Json | None:
     return data if any(isinstance(data.get(key), list) for key in _QUEUE_BUCKETS) else None
 
 
+def _current_queue(runs_root: Path, cycle: Any, domain: str | None, submitted_path: Path) -> Json:
+    try:
+        queue_module = importlib.import_module("scripts.build_publish_queue")
+    except ModuleNotFoundError:
+        queue_module = None
+    if queue_module is not None:
+        old_runs = getattr(queue_module, "_RUNS", None)
+        try:
+            queue_module._RUNS = runs_root  # type: ignore[attr-defined]
+            queue = queue_module.build_queue(include_archive=False, domain=domain)
+        finally:
+            if old_runs is not None:
+                queue_module._RUNS = old_runs  # type: ignore[attr-defined]
+        if isinstance(queue, dict) and any(queue.get(key) for key in _QUEUE_BUCKETS):
+            return queue
+    try:
+        queue = cycle._build_queue(
+            runs_root,
+            include_archive=False,
+            domain=domain,
+            submitted_path=submitted_path,
+        )
+        return queue if isinstance(queue, dict) else {}
+    except Exception:
+        return _queue_sidecar(runs_root, domain) or {}
+
+
 def summarize_next_candidate(
     runs_root: Path,
     *,
@@ -192,15 +219,7 @@ def summarize_next_candidate(
             cycle = importlib.import_module("daily_alpha_publish_cycle")
 
     submitted_path = runs_root / "_daily_ledger" / "_submitted_fingerprints.json"
-    try:
-        queue = cycle._build_queue(
-            runs_root,
-            include_archive=False,
-            domain=domain,
-            submitted_path=submitted_path,
-        )
-    except Exception:
-        queue = _queue_sidecar(runs_root, domain) or {}
+    queue = _current_queue(runs_root, cycle, domain, submitted_path)
     raw_ready = len(queue.get("ready_to_publish") or [])
     queue_counts = {
         key: raw_ready if key == "ready_to_publish" else len(queue.get(key) or [])

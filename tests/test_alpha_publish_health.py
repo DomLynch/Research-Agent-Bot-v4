@@ -729,6 +729,72 @@ def test_next_candidate_summary_falls_back_to_domain_queue_sidecar(tmp_path: Pat
     assert summary["supply_status"] == "no_ready_rows"
 
 
+def test_next_candidate_summary_uses_pre_memo_diagnostic_queue_rows(
+    tmp_path: Path,
+) -> None:
+    diagnostics = tmp_path / "_business_diagnostics"
+    diagnostics.mkdir()
+    diagnostic_path = diagnostics / "business_research-platform_strategy_network.json"
+    diagnostic_path.write_text(json.dumps({
+        "domain": "business_research",
+        "topic": "platform_strategy_network",
+        "raw_fact_count": 0,
+        "normalized_fact_count": 0,
+        "a_core_fact_count": 0,
+        "retrieval_trace": {
+            "fullraw": {
+                "status": "incomplete_receipt",
+                "async_status": "queued",
+                "partial_shard_search": True,
+            },
+        },
+    }), encoding="utf-8")
+    (diagnostics / "latest_sweep.business_research.json").write_text(json.dumps({
+        "results": [{
+            "domain": "business_research",
+            "topic": "platform_strategy_network",
+            "status": "no_bundle",
+            "diagnostics": str(diagnostic_path),
+        }],
+    }), encoding="utf-8")
+    seen: dict[str, Any] = {}
+
+    def select_candidate(queue: dict[str, Any], *_args: Any, **_kwargs: Any) -> tuple[None, list[dict[str, Any]]]:
+        seen["queue"] = queue
+        return None, [{"topic": "platform_strategy_network", "status": "no_ready_rows"}]
+
+    fake_cycle = SimpleNamespace(
+        _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES=5,
+        _DEFAULT_MIN_SUBMIT_SOURCES=5,
+        _DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS=30,
+        _build_queue=lambda *_args, **_kwargs: {
+            "ready_to_publish": [],
+            "agent_repair_needed": [],
+            "curation_needed": [],
+            "not_ready": [],
+        },
+        _recently_published_topics=lambda *_args, **_kwargs: set(),
+        _recent_submission_topics=lambda *_args, **_kwargs: set(),
+        _recent_negative_topics=lambda *_args, **_kwargs: set(),
+        select_candidate=select_candidate,
+    )
+
+    summary = health.summarize_next_candidate(
+        tmp_path, cycle_module=fake_cycle, domain="business_research",
+    )
+
+    row = seen["queue"]["not_ready"][0]
+    assert row["domain_slug"] == "business_research"
+    assert row["topic"] == "platform_strategy_network"
+    assert row["blockers"] == ["no_source_diverse_bundle", "fullraw_probe_busy"]
+    assert summary["queue_counts"] == {
+        "ready_to_publish": 0,
+        "agent_repair_needed": 0,
+        "curation_needed": 0,
+        "not_ready": 1,
+    }
+
+
 def test_next_candidate_summary_prefers_rebuilt_queue_over_stale_sidecar(
     tmp_path: Path,
 ) -> None:
