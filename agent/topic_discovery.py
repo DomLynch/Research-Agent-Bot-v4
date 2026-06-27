@@ -1213,8 +1213,8 @@ def _fetch_fullraw_topic_papers(topic: str, *, client: httpx.Client, limit: int 
     data: Any = {}
     receipt: dict[str, Any] = {}
     ok = False
-    try:
-        for _ in range(max(1, int(_float_env("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", max(1.0, _float_env("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", _float_env("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", timeout)) / max(wait_s, 1.0)))))):
+    for _ in range(max(1, int(_float_env("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", max(1.0, _float_env("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", _float_env("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", timeout)) / max(wait_s, 1.0)))))):
+        try:
             response = client.post(url, headers={"Authorization": f"Bearer {token}"} if token else {}, json=payload, timeout=timeout + 2.0)
             response.raise_for_status()
             data = response.json()
@@ -1232,12 +1232,12 @@ def _fetch_fullraw_topic_papers(topic: str, *, client: httpx.Client, limit: int 
                     ok = failed is not None and int(receipt.get("shards_searched") or 0) >= 1525 and receipt.get("partial_shard_search") is False and int(failed) == 0 and source_count >= 5
                 except (TypeError, ValueError):
                     ok = False
-            if ok:
-                break
-            if wait_s:
-                time.sleep(wait_s)
-    except (httpx.HTTPError, ValueError):
-        return []
+        except (httpx.HTTPError, ValueError):
+            ok = False
+        if ok:
+            break
+        if wait_s:
+            time.sleep(wait_s)
     items = data.get("results") or data.get("hits") or []
     if not ok or not isinstance(items, list):
         return []
