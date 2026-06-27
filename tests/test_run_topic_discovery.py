@@ -168,7 +168,7 @@ def test_seed_fullraw_default_polls_until_budget_not_derived_attempts(
 ) -> None:
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
     monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", raising=False)
-    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", "20")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", "1")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "5")
     monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS", "1")
     now = [0.0]
@@ -728,7 +728,7 @@ def test_seed_paper_probe_skips_excluded_seeds_before_fullraw(
     assert [row["topic"] for row in payload["top"]] == ["late_fresh_seed"]
 
 
-def test_seed_paper_probe_uses_v5_client_after_direct_http_empty(
+def test_seed_paper_probe_requires_fullraw_endpoint_not_v5_client(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
     fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
@@ -761,15 +761,9 @@ def test_seed_paper_probe_uses_v5_client_after_direct_http_empty(
     monkeypatch.setattr(
         run_topic_discovery,
         "_v5_client_papers",
-        lambda *_args, **_kwargs: [{
-            "doi": "10.1/v5",
-            "title": "V5 client fullraw candidate",
-            "fwci": 4.0,
-            "cited_by_count": 40,
-            "publication_year": 2026,
-            "quality_score": 90.0,
-            "fullraw_shard_receipt": _fullraw_receipt(),
-        }],
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("v4 fullraw must use the 9903 endpoint"),
+        ),
     )
     monkeypatch.setattr(sys, "argv", [
         "run_topic_discovery.py", "--domain", "longevity_research", "--top", "1",
@@ -779,12 +773,8 @@ def test_seed_paper_probe_uses_v5_client_after_direct_http_empty(
     assert run_topic_discovery.main() == 0
     out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
     payload = json.loads(out[-1].read_text(encoding="utf-8"))
-    assert payload["top"][0]["topic"] == "metformin"
-    assert payload["top"][0]["top_paper_doi"] == "10.1/v5"
-    receipt = payload["fullraw_seed_probe"]["receipts"][0]
-    assert receipt["shards_searched"] == 1525
-    assert receipt["partial_shard_search"] is False
-    assert receipt["sweep_failed_shards"] == 0
+    assert payload["top"] == []
+    assert payload["fullraw_seed_probe"]["configured"] is False
 
 
 def test_v5_client_bounds_restore_environment(monkeypatch: Any) -> None:
@@ -920,14 +910,16 @@ class FullRawCorpusSearchClient:
     assert os.environ["V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH"] == "1"
 
 
-def test_fullraw_configured_accepts_v5_client_path(
+def test_fullraw_configured_rejects_v5_client_path_without_endpoint(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
     monkeypatch.delenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", raising=False)
+    monkeypatch.delenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", raising=False)
+    monkeypatch.delenv("V5_MEMO_FULL_RAW_CORPUS_TOKEN", raising=False)
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "1")
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_SRC", str(tmp_path))
 
-    assert run_topic_discovery._fullraw_configured() is True
+    assert run_topic_discovery._fullraw_configured() is False
 
 
 def test_fullraw_configured_accepts_index_token_default_endpoint(monkeypatch: Any) -> None:

@@ -3630,11 +3630,11 @@ def _fullraw_seed_discovery_enabled() -> bool:
     disabled = {"0", "false", "no", "off"}
     if os.environ.get("TOPIC_DISCOVERY_FULLRAW_FALLBACK", "1").lower() in disabled:
         return False
-    if os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip():
-        return True
-    if os.environ.get("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "").lower() in disabled:
-        return False
-    return Path(os.environ.get("TOPIC_DISCOVERY_V5_SRC", "/opt/v5-memo/src")).exists()
+    return bool(
+        os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip()
+        or os.environ.get("V5_MEMO_FULL_RAW_INDEX_TOKEN", "").strip()
+        or os.environ.get("V5_MEMO_FULL_RAW_CORPUS_TOKEN", "").strip()
+    )
 
 
 def _source_literature_topic_candidates(

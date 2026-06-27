@@ -4420,16 +4420,18 @@ def test_fullraw_seed_discovery_still_uses_source_rich_parent_priority(
     assert ledger["refresh_parent_topics"] == ["stale_parent"]
 
 
-def test_v5_client_fallback_counts_as_fullraw_seed_discovery(
+def test_v5_client_fallback_does_not_count_as_fullraw_seed_discovery(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     src = tmp_path / "v5-src"
     src.mkdir()
     monkeypatch.delenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", raising=False)
+    monkeypatch.delenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", raising=False)
+    monkeypatch.delenv("V5_MEMO_FULL_RAW_CORPUS_TOKEN", raising=False)
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_SRC", str(src))
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "1")
 
-    assert daily._fullraw_seed_discovery_enabled() is True
+    assert daily._fullraw_seed_discovery_enabled() is False
 
 
 def test_parent_refresh_topic_limit_expands_bounded_candidate_window() -> None:

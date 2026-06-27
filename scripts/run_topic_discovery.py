@@ -205,14 +205,9 @@ def _v5_client_papers(query: str, *, limit: int) -> list[dict[str, object]]:
 def _seed_fullraw_papers(
     query: str, *, client: httpx.Client, limit: int,
 ) -> list[dict[str, object]]:
-    endpoint_configured = bool(
-        os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip()
-        or os.environ.get("V5_MEMO_FULL_RAW_INDEX_TOKEN", "").strip()
-        or os.environ.get("V5_MEMO_FULL_RAW_CORPUS_TOKEN", "").strip()
-    )
     papers = _fetch_fullraw_topic_papers(
         query, client=client, limit=limit,
-    ) or ([] if endpoint_configured else _v5_client_papers(query, limit=limit))
+    )
     if not papers:
         event: dict[str, object] = {"query": query, "status": "no_hits"}
         receipt = getattr(topic_discovery_mod, "_FULLRAW_LAST_RECEIPT", {})
@@ -320,14 +315,10 @@ def _fullraw_supply_sweep_wait_seconds() -> float:
 
 
 def _fullraw_configured() -> bool:
-    if (
+    return bool(
         os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip()
         or os.environ.get("V5_MEMO_FULL_RAW_INDEX_TOKEN", "").strip()
-    ):
-        return True
-    return (
-        _truthy_env("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK")
-        and Path(os.environ.get("TOPIC_DISCOVERY_V5_SRC", "/opt/v5-memo/src")).exists()
+        or os.environ.get("V5_MEMO_FULL_RAW_CORPUS_TOKEN", "").strip()
     )
 
 
