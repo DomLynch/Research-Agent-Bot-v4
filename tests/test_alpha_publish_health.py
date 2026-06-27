@@ -195,6 +195,62 @@ def test_health_main_reports_multi_domain_failures(tmp_path: Path, capsys: Any) 
     assert summary["domains"]["business_research"]["status"] == "candidate_refresh_failed"
 
 
+def test_health_main_writes_blocker_summary_artifact(tmp_path: Path, capsys: Any) -> None:
+    _write_ledger(tmp_path, "2026-06-01T08-29-49Z-business.json", {
+        "status": "candidate_refresh_failed",
+        "reason": "no_source_diverse_bundle",
+        "submitted": 0,
+        "published": 0,
+        "domain_slug": "business_research",
+        "queue_counts": {
+            "ready_to_publish": 0,
+            "agent_repair_needed": 1,
+            "curation_needed": 2,
+            "not_ready": 0,
+        },
+        "considered": [{
+            "status": "no_bundle",
+            "blockers": ["no_source_diverse_bundle", "fullraw_probe_busy"],
+        }],
+        "publish_summary": {
+            "top_blockers": {
+                "candidate_refresh_failed": 1,
+                "no_source_diverse_bundle": 1,
+            },
+            "next_action": "wait_for_fullraw_completion",
+            "public_url_status": None,
+        },
+    })
+
+    assert health.main([
+        "--runs-root", str(tmp_path),
+        "--domains", "business_research",
+        "--expect-published",
+        "--check-url",
+        "--show-next-candidate",
+        "--write-summary",
+    ]) == 2
+
+    stdout = json.loads(capsys.readouterr().out)
+    artifact = tmp_path / "_daily_ledger" / "alpha_publish_health_summary.json"
+    assert stdout["summary_artifact"] == str(artifact)
+    summary = json.loads(artifact.read_text(encoding="utf-8"))
+    business = summary["domains"]["business_research"]
+    assert summary["failed_domains"] == ["business_research"]
+    assert business["top_blockers"]["candidate_refresh_failed"] == 1
+    assert business["queue_counts"] == {
+        "ready_to_publish": 0,
+        "agent_repair_needed": 0,
+        "curation_needed": 0,
+        "not_ready": 0,
+    }
+    assert business["ledger_queue_counts"]["curation_needed"] == 2
+    assert business["considered_counts"] == {"no_bundle": 1}
+    assert business["next_action"] == "wait_for_fullraw_completion"
+    assert business["public_url_status"] is None
+    assert business["next_candidate"]["supply_status"] == "no_ready_rows"
+
+
 def test_health_summary_includes_suffixed_cycle_ledgers(tmp_path: Path) -> None:
     _write_ledger(tmp_path, "2026-06-01T21-59-41Z.json", {
         "status": "published",

@@ -6484,6 +6484,7 @@ def test_systemd_publish_health_monitor_enforces_sla() -> None:
     assert "--check-url" in service
     assert "--sync-pending-decisions" in service
     assert "--show-next-candidate" in service
+    assert "--write-summary" in service
     assert "OnCalendar=*-*-* 02/8:45:00" in timer
     assert "Unit=researka-alpha-publish-health.service" in timer
 

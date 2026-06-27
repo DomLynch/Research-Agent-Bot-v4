@@ -276,6 +276,12 @@ def _attach_current_queue_summary(summary: Json, next_candidate: Json) -> None:
     )
 
 
+def _write_summary_artifact(runs_root: Path, summary: Json) -> Path:
+    path = runs_root / "_daily_ledger" / "alpha_publish_health_summary.json"
+    publish_io.write_json(path, summary)
+    return path
+
+
 def _public_url_status(url: str, *, timeout: float) -> Json:
     if not url:
         return {"http_status": None, "rendered": False, "status": None}
@@ -439,6 +445,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--domains")
     parser.add_argument("--show-next-candidate", action="store_true")
     parser.add_argument("--sync-pending-decisions", action="store_true")
+    parser.add_argument("--write-summary", action="store_true")
     parser.add_argument("--max-age-minutes", type=float, default=0.0)
     parser.add_argument("--timeout", type=float, default=15.0)
     args = parser.parse_args(argv)
@@ -471,6 +478,8 @@ def main(argv: list[str] | None = None) -> int:
             "domains": domain_summaries,
             "failed_domains": failed,
         }
+        if args.write_summary:
+            summary["summary_artifact"] = str(_write_summary_artifact(args.runs_root, summary))
         print(json.dumps(summary, indent=2, sort_keys=True))
         if args.expect_published and failed:
             return 2
@@ -487,6 +496,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.max_age_minutes > 0 and float(summary.get("ledger_age_minutes") or 0) > args.max_age_minutes:
         summary["ok"] = False
         summary["reason"] = "latest_ledger_stale"
+    if args.write_summary:
+        summary["summary_artifact"] = str(_write_summary_artifact(args.runs_root, summary))
     print(json.dumps(summary, indent=2, sort_keys=True))
     if args.expect_published and not summary.get("ok"):
         return 2
