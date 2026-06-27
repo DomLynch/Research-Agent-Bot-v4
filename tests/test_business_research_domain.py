@@ -1088,7 +1088,9 @@ def test_business_sweep_fullraw_probe_uses_foreground_budget_with_storage_budget
     discovery._FULLRAW_PROBE_EVENTS.clear()
 
     def fake_seed_fullraw(topic: str, **_kwargs: Any) -> list[dict[str, Any]]:
+        client_timeout = _kwargs["client"].timeout
         captured.update({
+            "client_timeout": str(client_timeout.read),
             "timeout": os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"),
             "attempts": os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS"),
             "poll_seconds": os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS"),
@@ -1115,6 +1117,7 @@ def test_business_sweep_fullraw_probe_uses_foreground_budget_with_storage_budget
 
     assert result["status"] == "incomplete_receipt"
     assert captured == {
+        "client_timeout": "120.0",
         "timeout": None,
         "attempts": None,
         "poll_seconds": None,

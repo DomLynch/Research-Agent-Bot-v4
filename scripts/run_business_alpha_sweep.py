@@ -100,10 +100,14 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
         httpx_mod = importlib.import_module("httpx")
         topic_discovery_mod = importlib.import_module("agent.topic_discovery")
         discovery = importlib.import_module("scripts.run_topic_discovery")
+        timeout_seconds = float(os.environ.get(
+            "TOPIC_DISCOVERY_BUSINESS_FULLRAW_HTTP_TIMEOUT_SECONDS",
+            os.environ.get(budget_key, _BUSINESS_FULLRAW_FOREGROUND_SECONDS),
+        ))
 
         events = discovery.__dict__.get("_FULLRAW_PROBE_EVENTS", [])
         before = len(events)
-        with httpx_mod.Client() as client:
+        with httpx_mod.Client(timeout=timeout_seconds) as client:
             papers = discovery.__dict__["_seed_fullraw_papers"](
                 topic, client=client, limit=10,
             )
