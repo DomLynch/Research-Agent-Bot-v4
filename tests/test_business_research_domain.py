@@ -1044,7 +1044,7 @@ def test_business_sweep_surfaces_incomplete_fullraw_receipt(
     assert summary["top_blockers"]["fullraw_complete_receipt_missing"] == 1
 
 
-def test_business_sweep_fullraw_probe_bounds_storage_budget(
+def test_business_sweep_fullraw_probe_inherits_storage_budget(
     monkeypatch: Any,
 ) -> None:
     import agent.topic_discovery as topic_discovery_mod
@@ -1089,10 +1089,10 @@ def test_business_sweep_fullraw_probe_bounds_storage_budget(
 
     assert result["status"] == "incomplete_receipt"
     assert captured == {
-        "timeout": "20",
-        "attempts": "2",
-        "poll_seconds": "2",
-        "variants": "2",
+        "timeout": None,
+        "attempts": None,
+        "poll_seconds": None,
+        "variants": None,
         "storage_budget": "7200",
     }
     assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS") is None
