@@ -563,7 +563,7 @@ def _scaled_effect_value(fact: Json) -> float | None:
 def _mixed_synthesis_lines(bundle: BusinessCandidateBundle) -> list[str]:
     if not _mixed_effect_signal(bundle.receipts):
         return [
-            "The receipts point to the same measured business effect across independent sources, within a narrow comparable evidence shape.",
+            "The bounded signal is source-diverse replication within a narrow comparable evidence shape: independent receipts point to the same measured business effect without treating it as settled advice.",
         ]
     metric = bundle.shape.get("metric") or bundle.shape.get("outcome") or "effect"
     near_zero = [

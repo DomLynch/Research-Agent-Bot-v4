@@ -925,6 +925,30 @@ def test_business_sweep_writes_domain_scoped_latest_summaries(
     ).exists()
 
 
+def test_business_sweep_seed_topics_prioritize_bounded_before_broad(
+    tmp_path: Path,
+) -> None:
+    seeds = tmp_path / "seeds.toml"
+    seeds.write_text(
+        """
+[seeds]
+topics = [
+    "business_model_performance",
+    "platform_strategy_network_effects",
+    "supply_chain_resilience_performance",
+    "pricing_strategy_margin",
+]
+""",
+        encoding="utf-8",
+    )
+
+    assert sweep._seed_topics(seeds, limit=3) == [
+        "platform_strategy_network_effects",
+        "supply_chain_resilience_performance",
+        "pricing_strategy_margin",
+    ]
+
+
 def test_business_sweep_latest_and_queue_writes_are_locked(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

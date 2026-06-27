@@ -40,6 +40,11 @@ _DOMAINS = (
     "marketing_research",
 )
 _FULLRAW_ENV_FILE = "/etc/v5-memo/env"
+_BROAD_SEED_TOKENS = frozenset({
+    "business", "management", "economics", "finance", "marketing",
+    "model", "performance", "effect", "effects", "outcome", "outcomes",
+    "returns", "return", "research",
+})
 
 def _load_fullraw_env_defaults() -> None:
     if os.environ.get("V5_MEMO_FULL_RAW_INDEX_TOKEN") or os.environ.get(
@@ -151,7 +156,17 @@ def _seed_topics(seed_path: Path, *, limit: int) -> list[str]:
     topics = data.get("seeds", {}).get("topics", [])
     if not isinstance(topics, list):
         return []
-    return [str(topic) for topic in topics[:limit] if str(topic).strip()]
+    ranked: list[tuple[int, int, str]] = []
+    for idx, raw in enumerate(topics):
+        topic = str(raw).strip()
+        if not topic:
+            continue
+        tokens = {
+            token for token in topic.replace("-", "_").split("_")
+            if token and token not in _BROAD_SEED_TOKENS
+        }
+        ranked.append((-len(tokens), idx, topic))
+    return [topic for *_rank, topic in sorted(ranked)[:limit]]
 
 
 def _selected_domains(value: str) -> tuple[str, ...]:
