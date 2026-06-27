@@ -307,6 +307,7 @@ def _attach_current_queue_summary(summary: Json, next_candidate: Json) -> None:
 
 def _write_summary_artifact(runs_root: Path, summary: Json) -> Path:
     path = runs_root / "_daily_ledger" / "alpha_publish_health_summary.json"
+    summary["summary_artifact"] = str(path)
     publish_io.write_json(path, summary)
     return path
 

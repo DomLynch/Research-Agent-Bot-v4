@@ -455,6 +455,7 @@ def test_health_main_writes_blocker_summary_artifact(tmp_path: Path, capsys: Any
     artifact = tmp_path / "_daily_ledger" / "alpha_publish_health_summary.json"
     assert stdout["summary_artifact"] == str(artifact)
     summary = json.loads(artifact.read_text(encoding="utf-8"))
+    assert summary["summary_artifact"] == str(artifact)
     business = summary["domains"]["business_research"]
     assert summary["failed_domains"] == ["business_research"]
     assert summary["published"] == 0
