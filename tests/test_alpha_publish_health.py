@@ -232,6 +232,50 @@ def test_health_main_reports_multi_domain_failures(tmp_path: Path, capsys: Any) 
     assert summary["domains"]["business_research"]["status"] == "candidate_refresh_failed"
 
 
+def test_health_summary_reports_active_systemd_run_without_greenlighting(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    _write_ledger(tmp_path, "2026-06-01T08-29-49Z-business.json", {
+        "status": "candidate_refresh_failed",
+        "submitted": 0,
+        "published": 0,
+        "domain_slug": "business_research",
+    })
+
+    def fake_run(*_args: Any, **_kwargs: Any) -> Any:
+        return SimpleNamespace(
+            returncode=0,
+            stdout=(
+                "ActiveState=activating\n"
+                "SubState=start\n"
+                "Result=success\n"
+                "ExecMainStatus=0\n"
+                "MainPID=1234\n"
+            ),
+        )
+
+    monkeypatch.setattr(health.__dict__["subprocess"], "run", fake_run)
+
+    summary = health.summarize_latest(
+        tmp_path,
+        domain="business_research",
+        systemd_unit="researka-alpha-business-research.service",
+    )
+
+    assert summary["ok"] is False
+    assert summary["published"] == 0
+    assert summary["active_run"] == {
+        "unit": "researka-alpha-business-research.service",
+        "returncode": 0,
+        "ActiveState": "activating",
+        "SubState": "start",
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "MainPID": "1234",
+        "running": True,
+    }
+
+
 def test_health_main_writes_blocker_summary_artifact(tmp_path: Path, capsys: Any) -> None:
     _write_ledger(tmp_path, "2026-06-01T08-29-49Z-business.json", {
         "status": "candidate_refresh_failed",
@@ -943,6 +987,29 @@ def test_no_daily_ledger_still_reports_domain_sidecar_queue(tmp_path: Path) -> N
         "curation_needed": 0,
         "not_ready": 1,
     }
+
+
+def test_no_daily_ledger_reports_active_systemd_run(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    def fake_run(*_args: Any, **_kwargs: Any) -> Any:
+        return SimpleNamespace(
+            returncode=0,
+            stdout="ActiveState=active\nSubState=running\nMainPID=5678\n",
+        )
+
+    monkeypatch.setattr(health.__dict__["subprocess"], "run", fake_run)
+
+    summary = health.summarize_latest(
+        tmp_path,
+        domain="business_research",
+        systemd_unit="researka-alpha-business-research.service",
+    )
+
+    assert summary["ok"] is False
+    assert summary["status"] == "no_daily_ledger"
+    assert summary["active_run"]["running"] is True
+    assert summary["active_run"]["MainPID"] == "5678"
 
 
 def test_health_summary_prefers_current_queue_counts_over_stale_ledger(

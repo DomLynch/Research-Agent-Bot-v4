@@ -11,6 +11,7 @@ import datetime as dt
 import importlib
 import json
 import re
+import subprocess
 import sys
 import urllib.error
 import urllib.request
@@ -388,6 +389,39 @@ def _public_url_status(url: str, *, timeout: float) -> Json:
     }
 
 
+def _systemd_unit_status(unit: str) -> Json:
+    if not unit:
+        return {}
+    try:
+        result = subprocess.run(
+            [
+                "systemctl", "show", unit,
+                "-p", "ActiveState",
+                "-p", "SubState",
+                "-p", "Result",
+                "-p", "ExecMainStatus",
+                "-p", "MainPID",
+                "--no-pager",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {"unit": unit, "error": type(exc).__name__}
+    fields: Json = {"unit": unit, "returncode": result.returncode}
+    for line in result.stdout.splitlines():
+        if "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        fields[key] = value
+    state = str(fields.get("ActiveState") or "")
+    pid = str(fields.get("MainPID") or "0")
+    fields["running"] = state in {"active", "activating"} and pid not in {"", "0"}
+    return fields
+
+
 def summarize_latest(
     runs_root: Path,
     *,
@@ -395,6 +429,7 @@ def summarize_latest(
     check_url: bool = False,
     show_next_candidate: bool = False,
     sync_pending_decisions: bool = False,
+    systemd_unit: str | None = None,
     cycle_module: Any | None = None,
     timeout: float = 15.0,
     now: dt.datetime | None = None,
@@ -434,6 +469,8 @@ def summarize_latest(
                 _attach_current_queue_summary(summary, next_candidate)
             except Exception as exc:  # pragma: no cover - monitor should report, not crash.
                 summary["next_candidate_error"] = f"{type(exc).__name__}: {exc}"
+        if systemd_unit:
+            summary["active_run"] = _systemd_unit_status(systemd_unit)
         return summary
     path = paths[0]
     ledger = _load_json(path)
@@ -504,6 +541,8 @@ def summarize_latest(
             _attach_current_queue_summary(summary, next_candidate)
         except Exception as exc:  # pragma: no cover - monitor should report, not crash.
             summary["next_candidate_error"] = f"{type(exc).__name__}: {exc}"
+    if systemd_unit:
+        summary["active_run"] = _systemd_unit_status(systemd_unit)
     return summary
 
 
@@ -517,6 +556,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--show-next-candidate", action="store_true")
     parser.add_argument("--sync-pending-decisions", action="store_true")
     parser.add_argument("--write-summary", action="store_true")
+    parser.add_argument("--systemd-unit")
     parser.add_argument("--max-age-minutes", type=float, default=0.0)
     parser.add_argument("--timeout", type=float, default=15.0)
     args = parser.parse_args(argv)
@@ -532,6 +572,7 @@ def main(argv: list[str] | None = None) -> int:
                 check_url=args.check_url,
                 show_next_candidate=args.show_next_candidate,
                 sync_pending_decisions=args.sync_pending_decisions,
+                systemd_unit=None,
                 timeout=args.timeout,
             )
             for domain in domains
@@ -563,6 +604,7 @@ def main(argv: list[str] | None = None) -> int:
         check_url=args.check_url,
         show_next_candidate=args.show_next_candidate,
         sync_pending_decisions=args.sync_pending_decisions,
+        systemd_unit=args.systemd_unit,
         timeout=args.timeout,
     )
     if args.max_age_minutes > 0 and float(summary.get("ledger_age_minutes") or 0) > args.max_age_minutes:
