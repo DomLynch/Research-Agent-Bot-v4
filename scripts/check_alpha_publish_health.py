@@ -401,6 +401,7 @@ def _systemd_unit_status(unit: str) -> Json:
                 "-p", "Result",
                 "-p", "ExecMainStatus",
                 "-p", "MainPID",
+                "-p", "ExecMainStartTimestamp",
                 "--no-pager",
             ],
             check=False,
@@ -420,6 +421,52 @@ def _systemd_unit_status(unit: str) -> Json:
     pid = str(fields.get("MainPID") or "0")
     fields["running"] = state in {"active", "activating"} and pid not in {"", "0"}
     return fields
+
+
+def _parse_systemd_timestamp(value: Any) -> dt.datetime | None:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+    if re.search(r" [+-]\d{2}$", raw):
+        raw = f"{raw}00"
+    for fmt in ("%a %Y-%m-%d %H:%M:%S %z", "%a %Y-%m-%d %H:%M:%S %Z"):
+        try:
+            parsed = dt.datetime.strptime(raw, fmt)
+        except ValueError:
+            continue
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=dt.UTC)
+        return parsed.astimezone(dt.UTC)
+    return None
+
+
+def _mark_active_run_if_newer(summary: Json, *, ledger_mtime: dt.datetime) -> None:
+    active_run = summary.get("active_run")
+    if not isinstance(active_run, dict) or not active_run.get("running"):
+        return
+    started_at = _parse_systemd_timestamp(active_run.get("ExecMainStartTimestamp"))
+    if started_at is None or started_at <= ledger_mtime:
+        return
+    summary["active_run_supersedes_ledger"] = True
+    summary["active_run_started_at"] = started_at.isoformat()
+    summary["stale_ledger"] = {
+        "ledger": summary.get("ledger"),
+        "status": summary.get("status"),
+        "reason": summary.get("reason"),
+        "top_blockers": summary.get("top_blockers") or {},
+        "queue_counts": summary.get("queue_counts") or {},
+    }
+    summary["status"] = "active_run_in_progress"
+    summary["reason"] = "active_run_in_progress"
+    summary["top_blockers"] = {"active_run_in_progress": 1}
+    summary["next_action"] = "wait_for_active_run_completion"
+
+
+def _default_systemd_unit(domain: str | None) -> str | None:
+    slug = str(domain or "").strip()
+    if not slug:
+        return None
+    return f"researka-alpha-{slug.replace('_', '-')}.service"
 
 
 def summarize_latest(
@@ -543,6 +590,7 @@ def summarize_latest(
             summary["next_candidate_error"] = f"{type(exc).__name__}: {exc}"
     if systemd_unit:
         summary["active_run"] = _systemd_unit_status(systemd_unit)
+        _mark_active_run_if_newer(summary, ledger_mtime=mtime)
     return summary
 
 
@@ -572,7 +620,7 @@ def main(argv: list[str] | None = None) -> int:
                 check_url=args.check_url,
                 show_next_candidate=args.show_next_candidate,
                 sync_pending_decisions=args.sync_pending_decisions,
-                systemd_unit=None,
+                systemd_unit=_default_systemd_unit(domain),
                 timeout=args.timeout,
             )
             for domain in domains
@@ -604,7 +652,7 @@ def main(argv: list[str] | None = None) -> int:
         check_url=args.check_url,
         show_next_candidate=args.show_next_candidate,
         sync_pending_decisions=args.sync_pending_decisions,
-        systemd_unit=args.systemd_unit,
+        systemd_unit=args.systemd_unit or _default_systemd_unit(args.domain),
         timeout=args.timeout,
     )
     if args.max_age_minutes > 0 and float(summary.get("ledger_age_minutes") or 0) > args.max_age_minutes:
