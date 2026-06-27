@@ -1353,7 +1353,7 @@ def test_business_sweep_uses_diagnostics_to_skip_known_empty_seed(
     assert summary["results"][0]["topic"] == "source_rich_seed"
 
 
-def test_business_sweep_stops_after_running_fullraw_probe(
+def test_business_sweep_continues_after_running_fullraw_probe(
     tmp_path: Path,
     monkeypatch: Any,
 ) -> None:
@@ -1389,16 +1389,20 @@ def test_business_sweep_stops_after_running_fullraw_probe(
     ])
 
     assert sweep.main() == 2
-    assert probed_topics == ["platform_strategy_network_effects"]
+    assert probed_topics == [
+        "platform_strategy_network_effects",
+        "management_practices_productivity",
+    ]
     summary = json.loads(
         (tmp_path / "runs" / "_business_diagnostics" / "latest_sweep.json").read_text(
             encoding="utf-8",
         ),
     )
-    assert summary["results"][0]["blockers"] == [
+    assert len(summary["results"]) == 2
+    assert all(row["blockers"] == [
         "no_source_diverse_bundle",
         "fullraw_probe_busy",
-    ]
+    ] for row in summary["results"])
 
 
 def test_business_no_bundle_complete_fullraw_requires_fact_synthesis() -> None:

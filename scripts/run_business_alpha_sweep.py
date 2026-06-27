@@ -219,11 +219,7 @@ def _write_fullraw_discovery(
 
 
 def _fullraw_should_stop_sweep(trace: dict[str, Any]) -> bool:
-    return (
-        str(trace.get("status") or "") == "busy"
-        or str(trace.get("async_status") or "") in {"queued", "running"}
-        or trace.get("partial_shard_search") is True
-    )
+    return str(trace.get("status") or "") == "busy"
 
 
 def _seed_topics(seed_path: Path, *, limit: int) -> list[str]:
