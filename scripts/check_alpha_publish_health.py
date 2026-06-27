@@ -445,7 +445,13 @@ def _mark_active_run_if_newer(summary: Json, *, ledger_mtime: dt.datetime) -> No
     if not isinstance(active_run, dict) or not active_run.get("running"):
         return
     started_at = _parse_systemd_timestamp(active_run.get("ExecMainStartTimestamp"))
-    if started_at is None or started_at <= ledger_mtime:
+    if (
+        started_at is None
+        or (
+            started_at <= ledger_mtime
+            and str(summary.get("status") or "") != "started"
+        )
+    ):
         return
     summary["active_run_supersedes_ledger"] = True
     summary["active_run_started_at"] = started_at.isoformat()

@@ -377,6 +377,44 @@ def test_domain_health_auto_checks_systemd_active_run(
     assert business["stale_ledger"]["top_blockers"]["fullraw_not_configured"] == 2
 
 
+def test_running_started_ledger_reports_active_run(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    ledger = _write_ledger(tmp_path, "2026-06-01T09-00-05Z-ai.json", {
+        "status": "started",
+        "submitted": 0,
+        "published": 0,
+        "domain_slug": "ai_research",
+    })
+    mtime = dt.datetime(2026, 6, 1, 9, 0, 5, tzinfo=dt.UTC).timestamp()
+    os.utime(ledger, (mtime, mtime))
+
+    def fake_run(*_args: Any, **_kwargs: Any) -> Any:
+        return SimpleNamespace(
+            returncode=0,
+            stdout=(
+                "ActiveState=activating\n"
+                "SubState=start\n"
+                "ExecMainStatus=0\n"
+                "MainPID=1234\n"
+                "ExecMainStartTimestamp=Mon 2026-06-01 09:00:00 +00\n"
+            ),
+        )
+
+    monkeypatch.setattr(health.__dict__["subprocess"], "run", fake_run)
+
+    summary = health.summarize_latest(
+        tmp_path,
+        domain="ai_research",
+        systemd_unit="researka-alpha-ai-research.service",
+    )
+
+    assert summary["ok"] is False
+    assert summary["status"] == "active_run_in_progress"
+    assert summary["top_blockers"] == {"active_run_in_progress": 1}
+    assert summary["next_action"] == "wait_for_active_run_completion"
+
+
 def test_health_main_writes_blocker_summary_artifact(tmp_path: Path, capsys: Any) -> None:
     _write_ledger(tmp_path, "2026-06-01T08-29-49Z-business.json", {
         "status": "candidate_refresh_failed",
