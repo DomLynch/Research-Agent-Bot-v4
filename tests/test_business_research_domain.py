@@ -1260,6 +1260,29 @@ def test_business_sweep_fullraw_probe_tries_compact_alpha_query(
     assert len(result["_papers"]) == 5
 
 
+def test_business_fullraw_queries_are_compact_deduped_and_alpha_shaped(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_FULLRAW_ALPHA_SHAPE_TERMS",
+        "replication,primary endpoint",
+    )
+
+    queries = sweep._business_fullraw_queries("pricing_strategy_margin_effects")
+
+    assert queries[:3] == (
+        "pricing strategy margin",
+        "pricing strategy margin replication",
+        "pricing strategy margin primary endpoint",
+    )
+    assert all("effects" not in query for query in queries)
+    assert all(len(query.split()) <= 5 for query in queries)
+    assert len(queries) == len({
+        " ".join(sorted(set(query.split())))
+        for query in queries
+    })
+
+
 def test_business_sweep_fullraw_probe_does_not_dogpile_busy_worker(
     tmp_path: Path,
     monkeypatch: Any,
