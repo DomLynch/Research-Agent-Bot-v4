@@ -4434,6 +4434,21 @@ def test_v5_client_fallback_does_not_count_as_fullraw_seed_discovery(
     assert daily._fullraw_seed_discovery_enabled() is False
 
 
+def test_researka_fullraw_env_counts_as_fullraw_seed_discovery(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    for key in (
+        "V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL",
+        "V5_MEMO_FULL_RAW_INDEX_TOKEN",
+        "V5_MEMO_FULL_RAW_CORPUS_TOKEN",
+    ):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv("RESEARKA_FULLRAW_SEARCH_URL", "http://127.0.0.1:9903/search")
+    monkeypatch.setenv("RESEARKA_FULLRAW_TOKEN", "tok-researka")
+
+    assert daily._fullraw_seed_discovery_enabled() is True
+
+
 def test_parent_refresh_topic_limit_expands_bounded_candidate_window() -> None:
     assert daily._parent_refresh_topic_limit(1) == 1
     assert daily._parent_refresh_topic_limit(2) == 4

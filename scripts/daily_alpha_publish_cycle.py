@@ -3634,6 +3634,9 @@ def _fullraw_seed_discovery_enabled() -> bool:
         os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip()
         or os.environ.get("V5_MEMO_FULL_RAW_INDEX_TOKEN", "").strip()
         or os.environ.get("V5_MEMO_FULL_RAW_CORPUS_TOKEN", "").strip()
+        or os.environ.get("RESEARKA_FULLRAW_SEARCH_URL", "").strip()
+        or os.environ.get("RESEARKA_FULLRAW_INDEX_TOKEN", "").strip()
+        or os.environ.get("RESEARKA_FULLRAW_TOKEN", "").strip()
     )
 
 
