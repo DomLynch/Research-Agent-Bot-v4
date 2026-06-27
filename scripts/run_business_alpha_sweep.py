@@ -203,8 +203,8 @@ def _write_fullraw_discovery(
     return out_path
 
 
-def _fullraw_temporarily_unavailable(trace: dict[str, Any]) -> bool:
-    return str(trace.get("status") or "") in {"busy", "failed", "incomplete_receipt", "no_hits"}
+def _fullraw_should_stop_sweep(trace: dict[str, Any]) -> bool:
+    return str(trace.get("status") or "") == "busy"
 
 
 def _seed_topics(seed_path: Path, *, limit: int) -> list[str]:
@@ -458,7 +458,7 @@ def main() -> int:
                         )
                     rows.append(row)
                     print(f"[business-sweep] no_bundle {domain} {topic} facts={len(facts)}")
-                    if _fullraw_temporarily_unavailable(fullraw_trace):
+                    if _fullraw_should_stop_sweep(fullraw_trace):
                         summary_path = _write_sweep_summary(args.runs_root, rows)
                         ledger_date = args.submit_date or dt.datetime.now(dt.UTC).strftime(
                             "%Y-%m-%dT%H-%M-%SZ",
@@ -527,6 +527,7 @@ def main() -> int:
                 row["source_count"] = bundle.source_count
                 row["candidate_fingerprint"] = fingerprint
                 row["consistent_passes"] = consistent_passes
+                row["status"] = "ready"
                 rows.append(row)
                 summary_path = _write_sweep_summary(args.runs_root, rows)
                 if submit_after:

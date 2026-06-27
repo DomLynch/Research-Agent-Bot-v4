@@ -1214,6 +1214,52 @@ def test_business_sweep_stops_after_busy_fullraw_probe(
     ]
 
 
+def test_business_sweep_continues_after_failed_fullraw_probe(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("management_research")
+    probed_topics: list[str] = []
+
+    def fake_fetch(topic: str, *_args: Any, **_kwargs: Any) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        if topic == "management_practices_productivity":
+            return _fixture_facts(), {"status": "ok"}
+        return [], {"status": "failed", "http_status": 503}
+
+    def fake_probe(topic: str, **_kwargs: Any) -> dict[str, Any]:
+        probed_topics.append(topic)
+        return {"status": "failed", "error": "TimeoutError"}
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("management_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [
+        "platform_strategy_network_effects",
+        "management_practices_productivity",
+    ])
+    monkeypatch.setattr(sweep, "fetch_business_facts", fake_fetch)
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", fake_probe)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "2",
+        "--domains", "management_research",
+        "--runs-root", str(tmp_path / "runs"),
+    ])
+
+    assert sweep.main() == 0
+    assert probed_topics == ["platform_strategy_network_effects"]
+    summary = json.loads(
+        (tmp_path / "runs" / "_business_diagnostics" / "latest_sweep.json").read_text(
+            encoding="utf-8",
+        ),
+    )
+    assert [row["status"] for row in summary["results"]] == ["no_bundle", "ready"]
+    assert summary["results"][0]["blockers"] == [
+        "no_source_diverse_bundle",
+        "fullraw_complete_receipt_missing",
+    ]
+
+
 def test_business_no_bundle_complete_fullraw_requires_fact_synthesis() -> None:
     blockers = business_cli.no_bundle_blockers_from_diagnostics({
         "retrieval_trace": {
