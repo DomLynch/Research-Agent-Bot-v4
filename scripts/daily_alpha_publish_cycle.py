@@ -824,7 +824,7 @@ def _queue_submitted_duplicate_row(
     if row.get("decision") != "ready_to_publish" or submitted_path is None:
         return row
     fp = memo_fingerprint(row)
-    if not fp or not _same_memo_seen(submitted_path, fp, _memo_sha256(row, runs_root), domain):
+    if not fp or fp not in _seen_submission_fingerprints_for_domain(submitted_path, domain):
         return row
     blockers = row.get("blockers")
     blocker_list = blockers if isinstance(blockers, list) else []

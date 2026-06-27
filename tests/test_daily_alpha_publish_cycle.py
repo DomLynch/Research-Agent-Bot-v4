@@ -239,6 +239,35 @@ def test_daily_build_queue_demotes_submitted_duplicate_ready_row(tmp_path: Path)
     assert queue["curation_needed"][0]["blockers"] == ["duplicate_submission_fingerprint"]
 
 
+def test_daily_build_queue_demotes_submitted_fingerprint_after_memo_rewrite(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("asset_pricing_replication") | {
+        "domain": {"slug": "finance_research"},
+    }
+    _memo_with_source_receipts(root, verdict, 5)
+    daily._write_json(root / str(verdict["run_dir"]) / "publish_verdict.json", verdict)
+    submitted_path = root / "runs" / "_daily_ledger" / "_submitted_fingerprints.json"
+    daily._write_json(submitted_path, [{
+        "domain": {"slug": "finance_research"},
+        "topic": "asset_pricing_replication",
+        "fingerprint": daily.memo_fingerprint(verdict),
+        "memo_sha256": "old-render",
+    }])
+
+    queue = daily._build_queue(
+        root / "runs",
+        include_archive=False,
+        domain="finance_research",
+        submitted_path=submitted_path,
+    )
+
+    assert queue["ready_to_publish"] == []
+    assert queue["curation_needed"][0]["topic"] == "asset_pricing_replication"
+    assert queue["curation_needed"][0]["queue_status"] == "duplicate_submission_fingerprint"
+
+
 def test_daily_build_queue_demotes_evidence_map_label_even_with_alpha_surface(
     tmp_path: Path,
 ) -> None:
