@@ -10951,6 +10951,71 @@ def test_source_literature_boundary_rejects_outcome_only_topic_mentions() -> Non
     assert reason == "source_floor_below_min"
 
 
+def test_source_literature_boundary_rejects_split_multitoken_topic_match() -> None:
+    papers = [
+        {
+            "title": "Resistance Training Added to Caloric Restriction and Aerobic Exercise",
+            "doi": "10.1234/rt-hfpef",
+            "source_fact": {
+                "canonical_phrase": "RT+CR+AT produced greater increases in leg muscle strength",
+                "population": "older patients with heart failure",
+                "intervention": "RT+CR+AT",
+                "comparator": "CR+AT",
+                "endpoint": "leg muscle strength",
+            },
+        },
+        {
+            "title": "Resistance Training on Muscle Quality in Older Adult Women",
+            "doi": "10.1234/rt-sarcopenia",
+            "source_fact": {
+                "canonical_phrase": "resistance training improved muscle quality",
+                "population": "older adult women with sarcopenia",
+                "intervention": "resistance training",
+                "comparator": "non-exercise control",
+                "endpoint": "muscle quality",
+            },
+        },
+        {
+            "title": "Body composition in oncology clinical trials",
+            "doi": "10.1234/rt-oncology",
+            "source_fact": {
+                "canonical_phrase": "resistance training exercise increased lean body mass",
+                "population": "patients with non-metastatic cancer",
+                "intervention": "resistance training exercise",
+                "comparator": "usual care",
+                "endpoint": "lean body mass",
+            },
+        },
+        {
+            "title": "Physical fitness training for stroke patients",
+            "doi": "10.1234/stroke-mixed",
+            "source_fact": {
+                "canonical_phrase": "death was not influenced by any intervention",
+                "population": "stroke survivors",
+                "intervention": "any intervention (cardiorespiratory, resistance, mixed training)",
+                "comparator": "control",
+                "endpoint": "mortality",
+            },
+        },
+        {
+            "title": "High-intensity interval training on glucose regulation and insulin resistance",
+            "doi": "10.1234/hiit-insulin-resistance",
+            "source_fact": {
+                "canonical_phrase": "HIIT reduced insulin resistance compared with control",
+                "population": "adults",
+                "intervention": "high-intensity interval training",
+                "comparator": "control",
+                "endpoint": "insulin resistance",
+            },
+        },
+    ]
+
+    ok, reason = daily._source_literature_boundary_quality("resistance_training", papers, 5)
+
+    assert ok is False
+    assert reason == "source_floor_below_min"
+
+
 def test_source_literature_boundary_requires_slug_domain_context() -> None:
     papers = [
         {
@@ -11724,6 +11789,86 @@ def test_source_literature_payload_classifies_restored_attenuated_rows_as_favora
     assert "heterogeneous indication/context map" in markdown
     assert "Concrete source-level examples" not in payload["abstract"]
     assert "\n- other/mixed:" not in markdown
+
+
+def test_source_literature_payload_labels_active_intervention_gains_as_favorable(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    papers = [
+        {
+            "title": "Resistance Training Added to Caloric Restriction and Aerobic Exercise",
+            "doi": "10.1234/rt-hfpef",
+            "year": 2022,
+            "source_fact": {
+                "canonical_phrase": "RT+CR+AT produced greater increases in leg muscle strength",
+                "population": "older patients with heart failure",
+                "intervention": "RT+CR+AT",
+                "comparator": "CR+AT",
+                "endpoint": "leg muscle strength",
+            },
+        },
+        {
+            "title": "Resistance Training on Muscle Quality in Older Adult Women",
+            "doi": "10.1234/rt-sarcopenia",
+            "year": 2021,
+            "source_fact": {
+                "canonical_phrase": "resistance training improved muscle quality",
+                "population": "older adult women with sarcopenia",
+                "intervention": "resistance training",
+                "comparator": "non-exercise control",
+                "endpoint": "muscle quality",
+            },
+        },
+        {
+            "title": "Body composition in oncology clinical trials",
+            "doi": "10.1234/rt-oncology",
+            "year": 2018,
+            "source_fact": {
+                "canonical_phrase": "resistance training exercise increased lean body mass",
+                "population": "patients with non-metastatic cancer",
+                "intervention": "resistance training exercise",
+                "comparator": "usual care",
+                "endpoint": "lean body mass",
+            },
+        },
+        {
+            "title": "Resistance training after orthopedic surgery",
+            "doi": "10.1234/rt-ortho",
+            "year": 2020,
+            "source_fact": {
+                "canonical_phrase": "resistance training increased quadriceps strength",
+                "population": "postoperative adults",
+                "intervention": "resistance training",
+                "comparator": "usual rehabilitation",
+                "endpoint": "quadriceps strength",
+            },
+        },
+        {
+            "title": "Resistance training and frailty outcomes",
+            "doi": "10.1234/rt-frailty",
+            "year": 2019,
+            "source_fact": {
+                "canonical_phrase": "resistance training improved frailty score",
+                "population": "older adults",
+                "intervention": "resistance training",
+                "comparator": "usual care",
+                "endpoint": "frailty score",
+            },
+        },
+    ]
+
+    _candidate, payload = daily._source_literature_payload(
+        profile_slug="longevity_research", topic="resistance_training",
+        papers=papers, runs_root=root, date="2026-06-27T17-00-00Z",
+    )
+
+    markdown = payload["markdown"]
+    assert "directionally favorable: 5 receipt(s)" in markdown
+    assert "- other/mixed: Resistance Training Added" not in markdown
+    assert "- other/mixed: Body composition in oncology" not in markdown
+    assert "- directionally favorable: Resistance Training Added" in markdown
+    assert "- directionally favorable: Body composition in oncology" in markdown
 
 
 def test_source_literature_payload_omits_heterogeneous_note_for_matched_context(

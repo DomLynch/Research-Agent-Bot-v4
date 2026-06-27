@@ -127,6 +127,15 @@ def topic_relevant(topic: str, paper: Json) -> bool:
         str(paper.get("paper_title") or ""),
         str(fact.get("intervention") or ""),
     )))
+    if (
+        len(tokens) == 2
+        and not _paper_has_active_topic_phrase(paper, topic)
+        and all(
+            any(_token_matches(word, token) for word in primary_text.split())
+            for token in tokens
+        )
+    ):
+        return False
     text = title_key(" ".join((
         str(paper.get("title") or ""),
         str(paper.get("paper_title") or ""),
@@ -397,6 +406,30 @@ def _text_has_topic(value: Any, topic: str) -> bool:
     return False
 
 
+def _text_has_topic_phrase(value: Any, topic: str) -> bool:
+    topic_tokens = _topic_token_sequence(topic)
+    words = title_key(value).split()
+    if not topic_tokens:
+        return False
+    width = len(topic_tokens)
+    return any(
+        all(
+            _token_matches(word, token)
+            for word, token in zip(words[idx:idx + width], topic_tokens, strict=False)
+        )
+        for idx in range(0, len(words) - width + 1)
+    )
+
+
+def _paper_has_active_topic_phrase(paper: Json, topic: str) -> bool:
+    fact = paper.get("source_fact")
+    fact = fact if isinstance(fact, dict) else {}
+    return (
+        _text_has_topic_phrase(paper.get("title") or paper.get("paper_title"), topic)
+        or _text_has_topic_phrase(fact.get("intervention"), topic)
+    )
+
+
 def _topic_effect_ablated(finding: str, topic: str) -> bool:
     return bool(
         topic
@@ -458,6 +491,15 @@ def _paper_effect_direction(paper: Json, topic: str = "") -> str:
     direction = _effect_direction(text, fact, topic)
     if direction != "other/mixed":
         return direction
+    if _paper_has_active_topic_phrase(paper, topic) and re.search(
+        r"\b(?:greater increases?|increas(?:e|ed|es|ing)|gains?|improv(?:e|ed|es|ing))\b",
+        text.casefold(),
+    ) and not re.search(
+        r"\b(?:death|mortality|risk|adverse|harm)\b[^.;]{0,50}\bincreas"
+        r"|\bonly observed in (?:the )?(?:cg|control|comparator|placebo)",
+        text.casefold(),
+    ):
+        return "directionally favorable"
     title_direction = _effect_direction(str(paper.get("title") or ""), fact, topic)
     return "non-clinical/predictive" if title_direction == "non-clinical/predictive" else direction
 
