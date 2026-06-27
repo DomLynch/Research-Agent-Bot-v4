@@ -2148,6 +2148,8 @@ def test_business_systemd_timers_are_eight_hour_guarded() -> None:
         assert "SuccessExitStatus=3" not in service
         assert "EnvironmentFile=/etc/researka-agent-v4.env" in service
         assert "EnvironmentFile=/root/Research-Agent-Bot-v4/.env" in service
+        assert "EnvironmentFile=/etc/researka-fullraw.env" in service
+        assert "researka-fullraw-search.service" in service
         assert "Environment=TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_WAIT_SECONDS=7200" in service
         assert "Environment=TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS=7200" in service
         assert "Environment=V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS=7200" in service

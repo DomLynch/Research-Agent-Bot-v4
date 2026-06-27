@@ -43,7 +43,7 @@ _DOMAINS = (
     "business_research",
     "marketing_research",
 )
-_FULLRAW_ENV_FILE = "/etc/v5-memo/env"
+_FULLRAW_ENV_FILE = "/etc/researka-fullraw.env"
 _BROAD_SEED_TOKENS = frozenset({
     "business", "management", "economics", "finance", "marketing",
     "model", "performance", "effect", "effects", "outcome", "outcomes",

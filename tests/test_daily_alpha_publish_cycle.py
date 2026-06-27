@@ -6513,6 +6513,27 @@ def test_alpha_systemd_services_do_not_mask_no_publish_exits() -> None:
         assert "--allow-pending-success" not in service, service_path.name
 
 
+def test_alpha_fullraw_runtime_services_use_generic_fullraw_service() -> None:
+    fullraw_services = {
+        "researka-alpha-ai-research.service",
+        "researka-alpha-business-research.service",
+        "researka-alpha-cache-warm.service",
+        "researka-alpha-economics-research.service",
+        "researka-alpha-finance-research.service",
+        "researka-alpha-longevity-research.service",
+        "researka-alpha-management-research.service",
+        "researka-alpha-marketing-research.service",
+    }
+    for service_path in sorted(Path("deploy/systemd").glob("researka-alpha-*.service")):
+        service = service_path.read_text(encoding="utf-8")
+        assert "v5-memo-fullraw-index.service" not in service, service_path.name
+        assert "/etc/v5-memo/env" not in service, service_path.name
+        if service_path.name not in fullraw_services:
+            continue
+        assert "researka-fullraw-search.service" in service, service_path.name
+        assert "EnvironmentFile=/etc/researka-fullraw.env" in service, service_path.name
+
+
 def test_refresh_cooldown_is_cycle_configurable(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

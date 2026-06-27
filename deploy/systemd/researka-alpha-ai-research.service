@@ -1,12 +1,13 @@
 [Unit]
 Description=Research Agent v4 AI Research alpha memo publisher
-Wants=network-online.target
-After=network-online.target
+Wants=network-online.target researka-fullraw-search.service
+After=network-online.target researka-fullraw-search.service
 
 [Service]
 Type=oneshot
 WorkingDirectory=/root/Research-Agent-Bot-v4
 EnvironmentFile=/root/Research-Agent-Bot-v4/.env
 EnvironmentFile=/etc/researka-agent-v4.env
+EnvironmentFile=/etc/researka-fullraw.env
 ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/daily_alpha_publish_cycle.py --domain ai_research --refresh-candidates --allow-tier2-repair --max-refresh-batches 5 --estimated-cost-usd 5.00 --max-cost-usd 5.00 --submit
 TimeoutStartSec=2700

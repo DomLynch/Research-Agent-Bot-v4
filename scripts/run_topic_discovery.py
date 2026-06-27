@@ -111,7 +111,7 @@ def _fullraw_receipt_complete(receipt: dict[str, Any]) -> bool:
 def _load_v5_env_defaults() -> None:
     if not _truthy_env("TOPIC_DISCOVERY_V5_ENV_LOAD"):
         return
-    env_path = Path(os.environ.get("TOPIC_DISCOVERY_V5_ENV_FILE", "/etc/v5-memo/env"))
+    env_path = Path(os.environ.get("TOPIC_DISCOVERY_V5_ENV_FILE", "/etc/researka-fullraw.env"))
     try:
         lines = env_path.read_text(encoding="utf-8").splitlines()
     except OSError:

@@ -1,13 +1,14 @@
 [Unit]
 Description=Research Agent v4 Marketing Research guarded alpha submit sweep
-Wants=network-online.target
-After=network-online.target
+Wants=network-online.target researka-fullraw-search.service
+After=network-online.target researka-fullraw-search.service
 
 [Service]
 Type=oneshot
 WorkingDirectory=/root/Research-Agent-Bot-v4
 EnvironmentFile=/root/Research-Agent-Bot-v4/.env
 EnvironmentFile=/etc/researka-agent-v4.env
+EnvironmentFile=/etc/researka-fullraw.env
 Environment=TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_WAIT_SECONDS=7200
 Environment=TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS=7200
 Environment=V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS=7200
