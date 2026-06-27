@@ -64,7 +64,11 @@ def no_bundle_blockers_from_diagnostics(data: dict[str, Any]) -> list[str]:
             blockers.append("fullraw_no_hits")
         elif status == "not_configured":
             blockers.append("fullraw_not_configured")
-        elif status == "busy" or str(fullraw.get("async_status") or "") in {"queued", "running"}:
+        elif (
+            status == "busy"
+            or str(fullraw.get("async_status") or "") in {"queued", "running"}
+            or fullraw.get("partial_shard_search") is True
+        ):
             blockers.append("fullraw_probe_busy")
         elif status:
             blockers.append("fullraw_complete_receipt_missing")

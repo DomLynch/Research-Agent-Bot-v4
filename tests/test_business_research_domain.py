@@ -1067,9 +1067,9 @@ def test_business_sweep_surfaces_incomplete_fullraw_receipt(
             encoding="utf-8",
         ),
     )
-    assert "fullraw_complete_receipt_missing" in queue_payload["not_ready"][0]["blockers"]
+    assert "fullraw_probe_busy" in queue_payload["not_ready"][0]["blockers"]
     summary = health.summarize_latest(tmp_path / "runs", domain="business_research")
-    assert summary["top_blockers"]["fullraw_complete_receipt_missing"] == 1
+    assert summary["top_blockers"]["fullraw_probe_busy"] == 1
 
 
 def test_business_sweep_fullraw_probe_uses_foreground_budget_with_storage_budget(

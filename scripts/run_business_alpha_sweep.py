@@ -215,6 +215,7 @@ def _fullraw_should_stop_sweep(trace: dict[str, Any]) -> bool:
     return (
         str(trace.get("status") or "") == "busy"
         or str(trace.get("async_status") or "") in {"queued", "running"}
+        or trace.get("partial_shard_search") is True
     )
 
 
