@@ -20,8 +20,13 @@ from agent.topic_discovery import TopicCandidate
 
 
 @pytest.fixture(autouse=True)
-def _disable_live_v5_client(monkeypatch: Any) -> None:
+def _disable_live_v5_client(monkeypatch: Any, tmp_path: Path) -> None:
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "0")
+    monkeypatch.setattr(
+        run_topic_discovery,
+        "_FULLRAW_COMPLETED_SWEEP_CACHE_PATH",
+        tmp_path / "fullraw_completed_sweeps.json",
+    )
     run_topic_discovery._FULLRAW_COMPLETED_SWEEP_CACHE.clear()
 
 
@@ -248,6 +253,67 @@ def test_seed_fullraw_reuses_completed_sweep_for_equivalent_query(
         "cache_key": "aging mitochondrial urolithin",
         "paper_count": 1,
     }
+
+
+def test_seed_fullraw_reuses_completed_sweep_from_disk(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+    receipt = _fullraw_receipt()
+
+    def fake_fetch(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        return [{
+            "doi": "10.1/urolithin",
+            "title": "Urolithin mitochondrial aging replication",
+            "fullraw_shard_receipt": receipt,
+        }]
+
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fake_fetch)
+
+    with run_topic_discovery.httpx.Client() as client:
+        run_topic_discovery._seed_fullraw_papers(
+            "urolithin A mitochondrial aging", client=client, limit=5,
+        )
+        run_topic_discovery._FULLRAW_COMPLETED_SWEEP_CACHE.clear()
+        second = run_topic_discovery._seed_fullraw_papers(
+            "urolithin mitochondrial aging", client=client, limit=5,
+        )
+
+    assert calls == ["urolithin A mitochondrial aging"]
+    assert second[0]["title"] == "Urolithin mitochondrial aging replication"
+    assert run_topic_discovery._FULLRAW_PROBE_EVENTS[-1]["status"] == "cache_hit"
+
+
+def test_seed_fullraw_does_not_cache_incomplete_receipt(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+    receipt = {
+        **_fullraw_receipt(),
+        "partial_shard_search": True,
+        "shards_searched": 128,
+    }
+
+    def fake_fetch(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        return [{
+            "doi": "10.1/urolithin",
+            "title": "Urolithin mitochondrial aging partial",
+            "fullraw_shard_receipt": receipt,
+        }]
+
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fake_fetch)
+
+    with run_topic_discovery.httpx.Client() as client:
+        run_topic_discovery._seed_fullraw_papers(
+            "urolithin mitochondrial aging", client=client, limit=5,
+        )
+        run_topic_discovery._seed_fullraw_papers(
+            "urolithin mitochondrial aging", client=client, limit=5,
+        )
+
+    assert calls == ["urolithin mitochondrial aging", "urolithin mitochondrial aging"]
 
 
 def test_seed_fullraw_does_not_use_client_fallback_when_endpoint_incomplete(
