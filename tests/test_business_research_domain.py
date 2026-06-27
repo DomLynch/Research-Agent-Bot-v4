@@ -1047,6 +1047,7 @@ def test_business_no_bundle_diagnostic_blockers_reach_queue_and_ledger(
 
     sweep._write_no_ready_ledgers(runs, rows, "2026-06-26T02-00-00Z")
     summary = health.summarize_latest(runs, domain="business_research")
+    assert summary["next_action"] == "inspect_refresh_failure"
     assert summary["top_blockers"] == {
         "candidate_refresh_failed": 1,
         "metric_concept_mismatch": 1,
@@ -1093,6 +1094,7 @@ def test_business_sweep_surfaces_incomplete_fullraw_receipt(
     )
     assert "fullraw_probe_busy" in queue_payload["not_ready"][0]["blockers"]
     summary = health.summarize_latest(tmp_path / "runs", domain="business_research")
+    assert summary["next_action"] == "wait_for_fullraw_completion"
     assert summary["top_blockers"]["fullraw_probe_busy"] == 1
 
 

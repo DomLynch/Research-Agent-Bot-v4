@@ -221,6 +221,16 @@ def publish_summary(ledger: Json) -> Json:
                 page_status = check.get("http_status")
                 if check.get("url") == ledger.get("public_url"):
                     break
+    top_blockers = top_counts(blockers)
+    next_action = (
+        next_action_for_status(status)
+        if status else str(ledger.get("next_action") or "inspect_ledger")
+    )
+    if (
+        status == CycleStatus.CANDIDATE_REFRESH_FAILED.value
+        and {"fullraw_probe_busy", "fullraw_complete_receipt_missing"} & set(top_blockers)
+    ):
+        next_action = "wait_for_fullraw_completion"
     return {
         "status": ledger.get("status"),
         "submitted": int(ledger.get("submitted") or 0),
@@ -228,13 +238,12 @@ def publish_summary(ledger: Json) -> Json:
         "considered": len(considered),
         "attempts": len(attempts),
         "queue_counts": ledger.get("queue_counts") or {},
-        "top_blockers": top_counts(blockers),
+        "top_blockers": top_blockers,
         "last_attempt_status": attempts[-1].get("status") if attempts else None,
         "public_url": ledger.get("public_url"),
         "public_url_status": page_status,
         "public_page_status": page.get("status") if isinstance(page, dict) else None,
-        "next_action": next_action_for_status(status)
-        if status else str(ledger.get("next_action") or "inspect_ledger"),
+        "next_action": next_action,
     }
 
 
