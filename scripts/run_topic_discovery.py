@@ -71,6 +71,23 @@ _DEFAULT_ALPHA_SHAPE_QUERY_TERMS = (
     "null", "replication", "human trial", "failed", "blunted",
     "subgroup", "primary endpoint",
 )
+_FULLRAW_ENV_ALIASES = {
+    "V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL": ("RESEARKA_FULLRAW_SEARCH_URL",),
+    "V5_MEMO_FULL_RAW_INDEX_TOKEN": (
+        "RESEARKA_FULLRAW_INDEX_TOKEN", "RESEARKA_FULLRAW_TOKEN",
+    ),
+    "V5_MEMO_FULL_RAW_CORPUS_TOKEN": ("RESEARKA_FULLRAW_TOKEN",),
+    "V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED": ("RESEARKA_FULLRAW_MIN_SHARDS_SEARCHED",),
+    "V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED": ("RESEARKA_FULLRAW_MIN_SOURCES_SEARCHED",),
+    "V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH": ("RESEARKA_FULLRAW_REQUIRE_COMPLETE_SEARCH",),
+    "V5_MEMO_FULL_RAW_MAX_VARIANTS": ("RESEARKA_FULLRAW_MAX_VARIANTS",),
+    "V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS": ("RESEARKA_FULLRAW_SEARCH_BUDGET_SECONDS",),
+    "V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS": ("RESEARKA_FULLRAW_SWEEP_WAIT_SECONDS",),
+    "V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS": (
+        "RESEARKA_FULLRAW_FOREGROUND_SWEEP_WAIT_SECONDS",
+        "RESEARKA_FULLRAW_SWEEP_WAIT_SECONDS",
+    ),
+}
 
 
 def _truthy_env(name: str, default: str = "1") -> bool:
@@ -103,8 +120,16 @@ def _load_v5_env_defaults() -> None:
         stripped = line.strip()
         if not stripped or stripped.startswith("#") or "=" not in stripped:
             continue
-        key, value = stripped.split("=", 1)
-        os.environ.setdefault(key.strip(), value.strip().strip("'\""))
+        key, raw_value = stripped.split("=", 1)
+        os.environ.setdefault(key.strip(), raw_value.strip().strip("'\""))
+    for target, sources in _FULLRAW_ENV_ALIASES.items():
+        if os.environ.get(target):
+            continue
+        for source in sources:
+            alias_value = os.environ.get(source)
+            if alias_value:
+                os.environ[target] = alias_value
+                break
 
 
 def _apply_v5_client_bounds() -> dict[str, str | None]:

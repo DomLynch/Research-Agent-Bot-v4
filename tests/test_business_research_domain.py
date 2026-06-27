@@ -1404,6 +1404,44 @@ def test_business_sweep_fullraw_probe_waits_for_busy_worker(
     assert result["paper_count"] == 5
 
 
+def test_business_sweep_maps_researka_fullraw_env_aliases(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    env_file = tmp_path / "fullraw.env"
+    env_file.write_text(
+        "\n".join((
+            "RESEARKA_FULLRAW_SEARCH_URL=http://127.0.0.1:9903/search",
+            "RESEARKA_FULLRAW_TOKEN=tok-researka",
+            "RESEARKA_FULLRAW_MIN_SHARDS_SEARCHED=1525",
+            "RESEARKA_FULLRAW_MIN_SOURCES_SEARCHED=5",
+            "RESEARKA_FULLRAW_REQUIRE_COMPLETE_SEARCH=1",
+            "RESEARKA_FULLRAW_SEARCH_BUDGET_SECONDS=900",
+        )),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_ENV_FILE", str(env_file))
+    for key in (
+        "V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL",
+        "V5_MEMO_FULL_RAW_INDEX_TOKEN",
+        "V5_MEMO_FULL_RAW_CORPUS_TOKEN",
+        "V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED",
+        "V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED",
+        "V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH",
+        "V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS",
+    ):
+        monkeypatch.delenv(key, raising=False)
+
+    sweep._load_fullraw_env_defaults()
+
+    assert os.environ["V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL"] == "http://127.0.0.1:9903/search"
+    assert os.environ["V5_MEMO_FULL_RAW_INDEX_TOKEN"] == "tok-researka"
+    assert os.environ["V5_MEMO_FULL_RAW_CORPUS_TOKEN"] == "tok-researka"
+    assert os.environ["V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED"] == "1525"
+    assert os.environ["V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED"] == "5"
+    assert os.environ["V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH"] == "1"
+    assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "900"
+
+
 def test_business_sweep_fullraw_probe_has_hard_timeout(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
@@ -2111,5 +2149,8 @@ def test_business_systemd_timers_are_eight_hour_guarded() -> None:
         assert "EnvironmentFile=/etc/researka-agent-v4.env" in service
         assert "EnvironmentFile=/root/Research-Agent-Bot-v4/.env" in service
         assert "Environment=TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_WAIT_SECONDS=7200" in service
+        assert "Environment=TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS=7200" in service
+        assert "Environment=V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS=7200" in service
+        assert "Environment=V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS=7200" in service
         assert "TimeoutStartSec=12600" in service
         assert f"OnCalendar=*-*-* {schedule}" in timer

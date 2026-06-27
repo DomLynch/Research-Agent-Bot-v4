@@ -1167,6 +1167,45 @@ def test_fullraw_configured_accepts_index_token_default_endpoint(monkeypatch: An
     assert run_topic_discovery._fullraw_configured() is True
 
 
+def test_v5_env_loader_maps_researka_fullraw_aliases(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    env_file = tmp_path / "fullraw.env"
+    env_file.write_text(
+        "\n".join((
+            "RESEARKA_FULLRAW_SEARCH_URL=http://127.0.0.1:9903/search",
+            "RESEARKA_FULLRAW_TOKEN=tok-researka",
+            "RESEARKA_FULLRAW_MIN_SHARDS_SEARCHED=1525",
+            "RESEARKA_FULLRAW_MIN_SOURCES_SEARCHED=5",
+            "RESEARKA_FULLRAW_REQUIRE_COMPLETE_SEARCH=1",
+            "RESEARKA_FULLRAW_SEARCH_BUDGET_SECONDS=900",
+        )),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_ENV_FILE", str(env_file))
+    for key in (
+        "V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL",
+        "V5_MEMO_FULL_RAW_INDEX_TOKEN",
+        "V5_MEMO_FULL_RAW_CORPUS_TOKEN",
+        "V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED",
+        "V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED",
+        "V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH",
+        "V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS",
+    ):
+        monkeypatch.delenv(key, raising=False)
+
+    run_topic_discovery._load_v5_env_defaults()
+
+    assert run_topic_discovery._fullraw_configured() is True
+    assert os.environ["V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL"] == "http://127.0.0.1:9903/search"
+    assert os.environ["V5_MEMO_FULL_RAW_INDEX_TOKEN"] == "tok-researka"
+    assert os.environ["V5_MEMO_FULL_RAW_CORPUS_TOKEN"] == "tok-researka"
+    assert os.environ["V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED"] == "1525"
+    assert os.environ["V5_MEMO_FULL_RAW_MIN_SOURCES_SEARCHED"] == "5"
+    assert os.environ["V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH"] == "1"
+    assert os.environ["V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"] == "900"
+
+
 def test_v5_client_bounds_allow_explicit_short_probe(monkeypatch: Any) -> None:
     monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_TIMEOUT", "45")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_QUERY_TIMEOUT", "45")
