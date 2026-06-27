@@ -27,6 +27,11 @@ def _disable_live_v5_client(monkeypatch: Any, tmp_path: Path) -> None:
         "_FULLRAW_COMPLETED_SWEEP_CACHE_PATH",
         tmp_path / "fullraw_completed_sweeps.json",
     )
+    monkeypatch.setattr(
+        run_topic_discovery,
+        "_FULLRAW_IN_PROGRESS_SWEEP_CACHE_PATH",
+        tmp_path / "fullraw_in_progress_sweeps.json",
+    )
     run_topic_discovery._FULLRAW_COMPLETED_SWEEP_CACHE.clear()
 
 
@@ -314,6 +319,124 @@ def test_seed_fullraw_does_not_cache_incomplete_receipt(
         )
 
     assert calls == ["urolithin mitochondrial aging", "urolithin mitochondrial aging"]
+
+
+def test_seed_fullraw_backs_off_recent_incomplete_receipt(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+
+    def fake_fetch(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        run_topic_discovery.topic_discovery_mod._FULLRAW_LAST_RECEIPT = {
+            **_fullraw_receipt(),
+            "partial_shard_search": True,
+            "shards_searched": 192,
+        }
+        run_topic_discovery.topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {
+            "status": "queued",
+        }
+        return []
+
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fake_fetch)
+
+    with run_topic_discovery.httpx.Client() as client:
+        first = run_topic_discovery._seed_fullraw_papers(
+            "platform strategy network", client=client, limit=5,
+        )
+        second = run_topic_discovery._seed_fullraw_papers(
+            "platform strategy network", client=client, limit=5,
+        )
+
+    assert first == second == []
+    assert calls == ["platform strategy network"]
+    event = run_topic_discovery._FULLRAW_PROBE_EVENTS[-1]
+    assert event["query"] == "platform strategy network"
+    assert event["status"] == "in_progress_cache_hit"
+    assert event["cached_status"] == "incomplete_receipt"
+    assert event["cache_key"] == "network platform strategy"
+    assert event["paper_count"] == 0
+    assert event["shards_searched"] == 192
+    assert event["partial_shard_search"] is True
+    assert event["sweep_failed_shards"] == 0
+    assert event["async_status"] == "queued"
+
+
+def test_seed_fullraw_retries_expired_incomplete_receipt(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_IN_PROGRESS_CACHE_TTL_SECONDS", "0")
+
+    def fake_fetch(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        run_topic_discovery.topic_discovery_mod._FULLRAW_LAST_RECEIPT = {
+            **_fullraw_receipt(),
+            "partial_shard_search": True,
+            "shards_searched": 192,
+        }
+        run_topic_discovery.topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {
+            "status": "queued",
+        }
+        return []
+
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fake_fetch)
+
+    with run_topic_discovery.httpx.Client() as client:
+        run_topic_discovery._seed_fullraw_papers(
+            "platform strategy network", client=client, limit=5,
+        )
+        run_topic_discovery._seed_fullraw_papers(
+            "platform strategy network", client=client, limit=5,
+        )
+
+    assert calls == ["platform strategy network", "platform strategy network"]
+
+
+def test_seed_fullraw_completed_sweep_overrides_in_progress_backoff(
+    monkeypatch: Any,
+) -> None:
+    receipt = _fullraw_receipt()
+    key = run_topic_discovery._fullraw_query_fingerprint("platform strategy network")
+    run_topic_discovery.publish_io.write_json(
+        run_topic_discovery._FULLRAW_IN_PROGRESS_SWEEP_CACHE_PATH,
+        {
+            key: {
+                "ts": 1,
+                "event": {
+                    "status": "incomplete_receipt",
+                    "async_status": "queued",
+                    "partial_shard_search": True,
+                },
+            },
+        },
+    )
+    run_topic_discovery.publish_io.write_json(
+        run_topic_discovery._FULLRAW_COMPLETED_SWEEP_CACHE_PATH,
+        {
+            key: {
+                "query": "platform strategy network",
+                "ts": 2,
+                "papers": [{
+                    "doi": "10.1/platform",
+                    "title": "Platform strategy network replication",
+                    "fullraw_shard_receipt": receipt,
+                }],
+            },
+        },
+    )
+
+    def fail_fetch(*_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        raise AssertionError("complete cache should avoid endpoint")
+
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fail_fetch)
+
+    with run_topic_discovery.httpx.Client() as client:
+        rows = run_topic_discovery._seed_fullraw_papers(
+            "platform strategy network", client=client, limit=5,
+        )
+
+    assert rows[0]["title"] == "Platform strategy network replication"
 
 
 def test_seed_fullraw_does_not_use_client_fallback_when_endpoint_incomplete(

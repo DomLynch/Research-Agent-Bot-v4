@@ -53,6 +53,9 @@ _FULLRAW_COMPLETED_SWEEP_CACHE: dict[str, list[dict[str, object]]] = {}
 _FULLRAW_COMPLETED_SWEEP_CACHE_PATH = (
     Path(__file__).resolve().parent.parent / "runs" / "_fullraw_completed_sweeps.json"
 )
+_FULLRAW_IN_PROGRESS_SWEEP_CACHE_PATH = (
+    Path(__file__).resolve().parent.parent / "runs" / "_fullraw_in_progress_sweeps.json"
+)
 _GENERIC_SCOPE_TOKENS = {
     "ai", "research", "study", "studies", "trial", "trials", "review",
     "meta", "analysis", "effect", "effects", "therapy", "treatment",
@@ -227,6 +230,17 @@ def _seed_fullraw_papers(
             "paper_count": len(cached),
         })
         return cached
+    in_progress = _cached_fullraw_in_progress(cache_key) if cache_key else None
+    if in_progress:
+        _FULLRAW_PROBE_EVENTS.append({
+            **in_progress,
+            "query": query,
+            "status": "in_progress_cache_hit",
+            "cached_status": in_progress.get("status"),
+            "cache_key": cache_key,
+            "paper_count": 0,
+        })
+        return []
     papers = _fetch_fullraw_topic_papers(
         query, client=client, limit=limit,
     )
@@ -251,6 +265,8 @@ def _seed_fullraw_papers(
             event["async_status"] = async_status
             if async_status and event["status"] == "no_hits":
                 event["status"] = f"async_{async_status}"
+        if cache_key:
+            _remember_fullraw_in_progress(cache_key, event)
         _FULLRAW_PROBE_EVENTS.append(event)
     return papers
 
@@ -395,6 +411,46 @@ def _remember_fullraw_sweep(cache_key: str, query: str, papers: list[dict[str, o
     cache = cache if isinstance(cache, dict) else {}
     cache[cache_key] = {"query": query, "ts": time.time(), "papers": rows}
     publish_io.write_json(_FULLRAW_COMPLETED_SWEEP_CACHE_PATH, cache)
+
+
+def _fullraw_in_progress_ttl_seconds() -> float:
+    try:
+        return max(0.0, float(os.environ.get(
+            "TOPIC_DISCOVERY_FULLRAW_IN_PROGRESS_CACHE_TTL_SECONDS", "60",
+        )))
+    except (TypeError, ValueError):
+        return 60.0
+
+
+def _fullraw_in_progress_event(event: dict[str, object]) -> bool:
+    return (
+        str(event.get("async_status") or "") in {"queued", "running"}
+        or event.get("partial_shard_search") is True
+    )
+
+
+def _cached_fullraw_in_progress(cache_key: str) -> dict[str, object] | None:
+    cache = publish_io.read_json(_FULLRAW_IN_PROGRESS_SWEEP_CACHE_PATH, {})
+    entry = cache.get(cache_key) if isinstance(cache, dict) else None
+    if not isinstance(entry, dict):
+        return None
+    try:
+        age = time.time() - float(entry.get("ts") or 0.0)
+    except (TypeError, ValueError):
+        return None
+    if age > _fullraw_in_progress_ttl_seconds():
+        return None
+    event = entry.get("event")
+    return dict(event) if isinstance(event, dict) and _fullraw_in_progress_event(event) else None
+
+
+def _remember_fullraw_in_progress(cache_key: str, event: dict[str, object]) -> None:
+    if not cache_key or not _fullraw_in_progress_event(event):
+        return
+    cache = publish_io.read_json(_FULLRAW_IN_PROGRESS_SWEEP_CACHE_PATH, {})
+    cache = cache if isinstance(cache, dict) else {}
+    cache[cache_key] = {"ts": time.time(), "event": dict(event)}
+    publish_io.write_json(_FULLRAW_IN_PROGRESS_SWEEP_CACHE_PATH, cache)
 
 
 def _fullraw_supply_query_cap(top: int) -> int:
