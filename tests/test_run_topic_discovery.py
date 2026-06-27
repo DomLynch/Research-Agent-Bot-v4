@@ -163,6 +163,58 @@ def test_seed_fullraw_retries_after_endpoint_timeout(monkeypatch: Any) -> None:
     assert papers[0]["title"] == "Complete fullraw result"
 
 
+def test_seed_fullraw_default_polls_until_budget_not_derived_attempts(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", raising=False)
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", "20")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "5")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS", "1")
+    now = [0.0]
+    monkeypatch.setattr(
+        run_topic_discovery.topic_discovery_mod.time,
+        "monotonic",
+        lambda: now[0],
+    )
+    monkeypatch.setattr(
+        run_topic_discovery.topic_discovery_mod.time,
+        "sleep",
+        lambda seconds: now.__setitem__(0, now[0] + seconds),
+    )
+    calls = 0
+
+    def handler(req: Any) -> Any:
+        nonlocal calls
+        calls += 1
+        body = json.loads(req.content.decode("utf-8"))
+        assert body == {
+            "query": "metformin longevity",
+            "limit": 10,
+            "rank_mode": "relevance",
+            "cache_only": True,
+            "queue_if_missing": True,
+        }
+        if calls < 3:
+            return run_topic_discovery.httpx.Response(200, json={
+                "meta": {"async_sweep": {"status": "queued", "shard_limit": 1525}},
+                "results": [],
+            })
+        return run_topic_discovery.httpx.Response(200, json={
+            "meta": {"shard_receipt": _fullraw_receipt()},
+            "results": [{"title": "Complete budget-polled result", "doi": "10.1/fullraw"}],
+        })
+
+    transport = run_topic_discovery.httpx.MockTransport(handler)
+    with run_topic_discovery.httpx.Client(transport=transport) as client:
+        papers = run_topic_discovery._seed_fullraw_papers(
+            "metformin_longevity", client=client, limit=5,
+        )
+
+    assert calls == 3
+    assert papers[0]["title"] == "Complete budget-polled result"
+
+
 def test_seed_fullraw_does_not_use_client_fallback_when_endpoint_incomplete(
     monkeypatch: Any,
 ) -> None:

@@ -22,20 +22,12 @@ from agent.researka_facts import fetch_topic_groups
 from agent.settings import Settings
 from agent.topic_synonyms import expand_topic_queries
 
-_SEEDS_TOML = (Path(__file__).resolve().parent.parent
-               / "topic_packs" / "discovery_seeds.toml")
-_SUPPLY_CACHE_PATH = (Path(__file__).resolve().parent.parent
-                      / "runs" / "_topic_supply_cache.json")
-_PUBLICATION_TOML = (Path(__file__).resolve().parent.parent
-                     / "topic_packs" / "publication.toml")
+_SEEDS_TOML = Path(__file__).resolve().parent.parent / "topic_packs" / "discovery_seeds.toml"
+_SUPPLY_CACHE_PATH = Path(__file__).resolve().parent.parent / "runs" / "_topic_supply_cache.json"
+_PUBLICATION_TOML = Path(__file__).resolve().parent.parent / "topic_packs" / "publication.toml"
 _SUPPLY_CACHE_VERSION = 12
 _PUBLISHABLE_SOURCE_FLOOR = 5
-_NONPUBLISHABLE_SUPPLY_BLOCKERS = frozenset({
-    "blocked_label:no_signal",
-    "cross_domain_forced",
-    "feed_scope_mismatch",
-    "low_alpha_score",
-})
+_NONPUBLISHABLE_SUPPLY_BLOCKERS = frozenset({"blocked_label:no_signal", "cross_domain_forced", "feed_scope_mismatch", "low_alpha_score"})
 _PROBE_INCONCLUSIVE = -1  # all queries failed (timeout/error), not a real 0
 _DERIVED_TOPIC_LIMIT = 5_000
 _FACT_PROBE_TOPICS = 20
@@ -1213,7 +1205,9 @@ def _fetch_fullraw_topic_papers(topic: str, *, client: httpx.Client, limit: int 
     data: Any = {}
     receipt: dict[str, Any] = {}
     ok = False
-    for _ in range(max(1, int(_float_env("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", max(1.0, _float_env("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", _float_env("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", 240.0)) / max(timeout + 2.0 + wait_s, 1.0)))))):
+    polls = range(max(1, int(_float_env("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", 1.0)))) if (attempts_raw := os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", "").strip()) else iter(int, 1)
+    deadline = time.monotonic() + max(1.0, _float_env("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", _float_env("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", 240.0)))
+    for _ in polls:
         try:
             response = client.post(url, headers={"Authorization": f"Bearer {token}"} if token else {}, json=payload, timeout=timeout + 2.0)
             response.raise_for_status()
@@ -1236,7 +1230,12 @@ def _fetch_fullraw_topic_papers(topic: str, *, client: httpx.Client, limit: int 
             ok = False
         if ok:
             break
-        if wait_s:
+        if not attempts_raw:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0.0:
+                break
+            time.sleep(min(wait_s or 0.1, remaining))
+        elif wait_s:
             time.sleep(wait_s)
     items = data.get("results") or data.get("hits") or []
     if not ok or not isinstance(items, list):
