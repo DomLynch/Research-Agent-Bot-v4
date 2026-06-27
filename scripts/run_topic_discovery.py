@@ -448,14 +448,17 @@ def _remember_fullraw_sweep(cache_key: str, query: str, papers: list[dict[str, o
 
 def _fullraw_in_progress_ttl_seconds() -> float:
     raw = os.environ.get("TOPIC_DISCOVERY_FULLRAW_IN_PROGRESS_CACHE_TTL_SECONDS")
-    if raw is None or not raw.strip():
-        raw = (
-            os.environ.get("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS")
-            or os.environ.get("RESEARKA_FULLRAW_SEARCH_BUDGET_SECONDS")
-            or "900"
-        )
+    if raw is not None and raw.strip():
+        values: list[str | None] = [raw]
+    else:
+        values = [
+            os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"),
+            os.environ.get("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"),
+            os.environ.get("RESEARKA_FULLRAW_SEARCH_BUDGET_SECONDS"),
+            "900",
+        ]
     try:
-        return max(0.0, float(raw))
+        return max(0.0, *(float(value) for value in values if value))
     except (TypeError, ValueError):
         return 900.0
 

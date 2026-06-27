@@ -411,6 +411,17 @@ def test_fullraw_in_progress_backoff_uses_search_budget(
     assert run_topic_discovery._fullraw_in_progress_ttl_seconds() == 1800.0
 
 
+def test_fullraw_in_progress_backoff_uses_largest_configured_budget(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_IN_PROGRESS_CACHE_TTL_SECONDS", raising=False)
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", "120")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "120")
+    monkeypatch.setenv("RESEARKA_FULLRAW_SEARCH_BUDGET_SECONDS", "900")
+
+    assert run_topic_discovery._fullraw_in_progress_ttl_seconds() == 900.0
+
+
 def test_fullraw_in_progress_backoff_allows_explicit_override(
     monkeypatch: Any,
 ) -> None:
