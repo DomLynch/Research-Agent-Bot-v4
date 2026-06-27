@@ -1442,6 +1442,37 @@ def test_business_seed_topics_include_trimmed_variants_without_biomed_suffixes(
     assert "platform_strategy_therapy" not in topics
 
 
+def test_business_seed_pool_rotates_beyond_first_exhausted_window(tmp_path: Path) -> None:
+    seed_path = tmp_path / "seeds.toml"
+    seed_path.write_text(
+        """
+[seeds]
+topics = [
+    "platform_strategy_network_effects",
+    "supply_chain_resilience_performance",
+    "pricing_strategy_margin",
+    "operations_process_improvement",
+    "digital_transformation_firm_performance",
+    "business_model_performance",
+]
+""",
+        encoding="utf-8",
+    )
+    topics = sweep._seed_topics(seed_path, limit=16)
+    diagnostics = tmp_path / "runs" / "_business_diagnostics"
+    diagnostics.mkdir(parents=True)
+    for topic in topics[:8]:
+        (diagnostics / f"business_research-{topic}.json").write_text(json.dumps({
+            "raw_fact_count": 0,
+            "a_core_fact_count": 0,
+            "retrieval_trace": {"fullraw": {"status": "no_hits"}},
+        }), encoding="utf-8")
+
+    assert sweep._prioritized_seed_topics(
+        tmp_path / "runs", "business_research", topics,
+    )[0] == topics[8]
+
+
 def test_business_sweep_continues_after_running_fullraw_probe(
     tmp_path: Path,
     monkeypatch: Any,

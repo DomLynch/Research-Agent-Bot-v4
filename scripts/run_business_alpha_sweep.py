@@ -457,7 +457,7 @@ def main() -> int:
                 continue
             seed_pool = _seed_topics(
                 profile.seed_topics_path,
-                limit=max(args.topics_per_domain, args.topics_per_domain * 4),
+                limit=max(args.topics_per_domain, args.topics_per_domain * 8),
             )
             for topic in _prioritized_seed_topics(
                 args.runs_root, domain, seed_pool,
