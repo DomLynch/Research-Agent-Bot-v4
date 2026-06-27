@@ -214,7 +214,7 @@ def test_fetch_topic_papers_falls_back_to_fullraw_when_db_empty(
     }
 
 
-def test_fullraw_priority_payload_is_explicit_opt_in(
+def test_fullraw_payload_ignores_priority_env_to_preserve_cache_key(
     monkeypatch: Any,
 ) -> None:
     from agent import topic_discovery as td
@@ -239,7 +239,13 @@ def test_fullraw_priority_payload_is_explicit_opt_in(
         )
 
     assert papers[0]["title"] == "Priority fullraw paper"
-    assert payloads[0]["priority"] is True
+    assert payloads[0] == {
+        "query": "metformin longevity",
+        "limit": 10,
+        "rank_mode": "relevance",
+        "cache_only": True,
+        "queue_if_missing": True,
+    }
 
 
 def test_fetch_topic_papers_supplements_thin_db_with_fullraw(

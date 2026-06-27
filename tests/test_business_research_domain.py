@@ -1109,6 +1109,7 @@ def test_business_sweep_fullraw_probe_uses_foreground_budget_with_storage_budget
         "TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS",
         "TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS",
         "TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS",
+        "TOPIC_DISCOVERY_FULLRAW_PRIORITY",
         "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
         "TOPIC_DISCOVERY_V5_MAX_VARIANTS",
     ):
@@ -1151,7 +1152,7 @@ def test_business_sweep_fullraw_probe_uses_foreground_budget_with_storage_budget
         "client_timeout": "30.0",
         "timeout": None,
         "attempts": "15",
-        "priority": "1",
+        "priority": None,
         "poll_seconds": None,
         "foreground_budget": "30",
         "variants": None,
