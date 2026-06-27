@@ -1542,6 +1542,49 @@ def test_fullraw_supply_defaults_inherit_fullraw_search_contract(
     assert run_topic_discovery._fullraw_supply_sweep_wait_seconds() == 900.0
 
 
+def test_fullraw_compacts_long_queries_to_high_signal_terms() -> None:
+    query = (
+        "randomized controlled clinical trial healthy older adults determine "
+        "efficacy urolithin A mitochondrial aging"
+    )
+
+    assert run_topic_discovery._compact_fullraw_query(query) == (
+        "clinical trial urolithin mitochondrial aging"
+    )
+
+
+def test_fullraw_supply_dedupes_near_duplicate_query_shapes(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        return []
+
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_CAP_MULTIPLIER", "20")
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
+
+    rows = run_topic_discovery._fullraw_supply_candidates(
+        query_context="",
+        current_year=2026,
+        top=1,
+        seeds=("urolithin_a_mitochondrial_aging", "urolithin_mitochondrial_aging"),
+    )
+
+    assert rows == ()
+    assert calls.count("urolithin mitochondrial aging") == 1
+    assert not any(query == "urolithin a mitochondrial aging" for query in calls)
+
+
+def test_fullraw_supply_query_cap_defaults_to_small_candidate_window(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_CAP_MULTIPLIER", raising=False)
+
+    assert run_topic_discovery._fullraw_supply_query_cap(2) == 16
+
+
 def test_fullraw_supply_prefers_context_seed_query_over_bare_seed(
     monkeypatch: Any,
 ) -> None:

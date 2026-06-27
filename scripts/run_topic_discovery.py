@@ -56,6 +56,10 @@ _GENERIC_SCOPE_TOKENS = {
     "paper", "papers", "rich", "source",
 }
 _DOMAIN_ONLY_TOPIC_TOKENS = {"ageing", "aging", "anti", "longevity"}
+_FULLRAW_QUERY_DROP_TOKENS = (_GENERIC_SCOPE_TOKENS - {"trial", "trials"}) | {
+    "randomized", "controlled", "determine", "efficacy", "healthy", "older",
+    "adult", "adults",
+}
 
 
 def _truthy_env(name: str, default: str = "1") -> bool:
@@ -330,6 +334,31 @@ def _context_query_terms(value: str) -> str:
     return " ".join(seen)
 
 
+def _compact_fullraw_query(query: str, *, max_terms: int = 5) -> str:
+    tokens = [
+        token for token in _TOKEN_RE.findall(query.casefold())
+        if len(token) > 1 and token not in _FULLRAW_QUERY_DROP_TOKENS
+    ]
+    compact = list(dict.fromkeys(tokens))
+    if len(compact) > max_terms:
+        compact = compact[:2] + compact[-3:]
+    return " ".join(compact)
+
+
+def _fullraw_query_fingerprint(query: str) -> str:
+    return " ".join(sorted(set(_TOKEN_RE.findall(_compact_fullraw_query(query)))))
+
+
+def _fullraw_supply_query_cap(top: int) -> int:
+    try:
+        multiplier = max(1, int(os.environ.get(
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_CAP_MULTIPLIER", "8",
+        )))
+    except (TypeError, ValueError):
+        multiplier = 8
+    return max(_seed_paper_probe_limit(top), top * multiplier)
+
+
 def _context_supported_papers(
     papers: list[dict[str, object]], context_terms: str,
 ) -> list[dict[str, object]]:
@@ -597,11 +626,20 @@ def _fullraw_supply_candidates(
 ) -> tuple[TopicCandidate, ...]:
     """Build fallback topics from fullraw only when each topic clears the floor."""
     query_labels: dict[str, str] = {}
+    query_fingerprints: set[str] = set()
+
+    def add_query(query: str, label: str) -> None:
+        compact = _compact_fullraw_query(query)
+        fingerprint = _fullraw_query_fingerprint(compact)
+        if compact and fingerprint and fingerprint not in query_fingerprints:
+            query_fingerprints.add(fingerprint)
+            query_labels[compact] = label
+
     context_terms = _context_query_terms(query_context)
     context_variants = _context_variants(query_context)
-    query_cap = max(_seed_paper_probe_limit(top), top * 20)
+    query_cap = _fullraw_supply_query_cap(top)
     if context_terms and (len(context_terms.split()) > 1 or not seeds):
-        query_labels[context_terms] = "__domain_supply__"
+        add_query(context_terms, "__domain_supply__")
     seed_bases = [
         (seed, tuple(base.strip().replace("_", " ")
                      for base in expand_topic_queries(seed, max_queries=2)
@@ -613,7 +651,7 @@ def _fullraw_supply_candidates(
             if not bases:
                 continue
             query = f"{bases[0]} {variant}".strip()
-            query_labels.setdefault(query, seed)
+            add_query(query, seed)
             if len(query_labels) >= query_cap:
                 break
         if len(query_labels) >= query_cap:
@@ -621,10 +659,10 @@ def _fullraw_supply_candidates(
     for seed, bases in seed_bases:
         for base in bases:
             for variant in context_variants[1:]:
-                query_labels.setdefault(f"{base} {variant}", seed)
+                add_query(f"{base} {variant}", seed)
                 if len(query_labels) >= query_cap:
                     break
-            query_labels.setdefault(base, seed)
+            add_query(base, seed)
             if len(query_labels) >= query_cap:
                 break
         if len(query_labels) >= query_cap:
