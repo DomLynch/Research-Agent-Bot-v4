@@ -45,6 +45,7 @@ _BROAD_SEED_TOKENS = frozenset({
     "model", "performance", "effect", "effects", "outcome", "outcomes",
     "returns", "return", "research",
 })
+_BUSINESS_FULLRAW_FOREGROUND_SECONDS = "120"
 
 def _load_fullraw_env_defaults() -> None:
     if os.environ.get("V5_MEMO_FULL_RAW_INDEX_TOKEN") or os.environ.get(
@@ -72,6 +73,13 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
         or os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL")
     ):
         return {"status": "not_configured"}
+    budget_key = "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"
+    old_budget = os.environ.get(budget_key)
+    if old_budget is None:
+        os.environ[budget_key] = os.environ.get(
+            "TOPIC_DISCOVERY_BUSINESS_FULLRAW_FOREGROUND_SECONDS",
+            _BUSINESS_FULLRAW_FOREGROUND_SECONDS,
+        )
     try:
         httpx_mod = importlib.import_module("httpx")
         topic_discovery_mod = importlib.import_module("agent.topic_discovery")
@@ -115,6 +123,11 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
         return result
     except Exception as exc:
         return {"status": "failed", "error": exc.__class__.__name__}
+    finally:
+        if old_budget is None:
+            os.environ.pop(budget_key, None)
+        else:
+            os.environ[budget_key] = old_budget
 
 
 def _write_fullraw_discovery(

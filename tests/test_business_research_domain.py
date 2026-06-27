@@ -1068,7 +1068,7 @@ def test_business_sweep_surfaces_incomplete_fullraw_receipt(
     assert summary["top_blockers"]["fullraw_complete_receipt_missing"] == 1
 
 
-def test_business_sweep_fullraw_probe_inherits_storage_budget(
+def test_business_sweep_fullraw_probe_uses_foreground_budget_with_storage_budget(
     monkeypatch: Any,
 ) -> None:
     import agent.topic_discovery as topic_discovery_mod
@@ -1079,6 +1079,7 @@ def test_business_sweep_fullraw_probe_inherits_storage_budget(
         "TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS",
         "TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS",
         "TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS",
+        "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
         "TOPIC_DISCOVERY_V5_MAX_VARIANTS",
     ):
         monkeypatch.delenv(key, raising=False)
@@ -1091,6 +1092,7 @@ def test_business_sweep_fullraw_probe_inherits_storage_budget(
             "timeout": os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"),
             "attempts": os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS"),
             "poll_seconds": os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS"),
+            "foreground_budget": os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"),
             "variants": os.environ.get("TOPIC_DISCOVERY_V5_MAX_VARIANTS"),
             "storage_budget": os.environ.get("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"),
         })
@@ -1116,10 +1118,12 @@ def test_business_sweep_fullraw_probe_inherits_storage_budget(
         "timeout": None,
         "attempts": None,
         "poll_seconds": None,
+        "foreground_budget": "120",
         "variants": None,
         "storage_budget": "7200",
     }
     assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS") is None
+    assert os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS") is None
 
 
 def test_business_no_bundle_complete_fullraw_requires_fact_synthesis() -> None:
