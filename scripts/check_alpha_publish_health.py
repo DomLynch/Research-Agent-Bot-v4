@@ -58,6 +58,8 @@ def _ledger_sort_key(path: Path) -> tuple[float, str]:
     if match:
         year, month, day, hour, minute, second = (int(value) for value in match.groups())
         stamp = dt.datetime(year, month, day, hour, minute, second, tzinfo=dt.UTC)
+        if stamp > dt.datetime.now(dt.UTC) + dt.timedelta(minutes=5):
+            return (path.stat().st_mtime, path.name.lower())
         return (stamp.timestamp(), path.name.lower())
     return (path.stat().st_mtime, path.name.lower())
 

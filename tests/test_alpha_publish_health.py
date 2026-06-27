@@ -133,6 +133,43 @@ def test_health_summary_prefers_ledger_timestamp_over_sync_mtime(tmp_path: Path)
     assert summary["topic"] == "caloric_restriction"
 
 
+def test_health_summary_does_not_let_future_ledgers_shadow_fresher_runs(
+    tmp_path: Path,
+) -> None:
+    future_stale = _write_ledger(tmp_path, "9999-06-01T21-59-41Z-business.json", {
+        "status": "candidate_refresh_failed",
+        "submitted": 0,
+        "published": 0,
+        "domain_slug": "business_research",
+        "considered": [{
+            "status": "no_bundle",
+            "blockers": ["no_source_diverse_bundle", "fullraw_complete_receipt_missing"],
+        }],
+    })
+    current = _write_ledger(tmp_path, "2026-06-01T08-29-49Z-business.json", {
+        "status": "candidate_refresh_failed",
+        "submitted": 0,
+        "published": 0,
+        "domain_slug": "business_research",
+        "considered": [{
+            "status": "no_bundle",
+            "blockers": ["no_source_diverse_bundle", "fullraw_probe_busy"],
+        }],
+    })
+    os.utime(future_stale, (1, 1))
+    os.utime(current, (2, 2))
+
+    summary = health.summarize_latest(tmp_path, domain="business_research")
+
+    assert summary["ledger"] == "2026-06-01T08-29-49Z-business.json"
+    assert summary["top_blockers"] == {
+        "candidate_refresh_failed": 1,
+        "fullraw_probe_busy": 1,
+        "no_bundle": 1,
+        "no_source_diverse_bundle": 1,
+    }
+
+
 def test_health_summary_can_scope_latest_ledger_by_domain(
     tmp_path: Path, capsys: Any,
 ) -> None:
