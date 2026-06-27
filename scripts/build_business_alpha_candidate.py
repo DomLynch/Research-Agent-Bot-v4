@@ -18,6 +18,7 @@ from agent.business_research import (
 )
 from agent.domain_profile import domain_choices, load_domain_profile
 from agent.settings import load_settings
+from scripts import alpha_publish_io as publish_io
 
 _RUNS = Path(__file__).resolve().parent.parent / "runs"
 
@@ -42,7 +43,7 @@ def write_no_bundle_diagnostics(
     payload = business_fact_diagnostics(facts, topic=topic, domain=domain)
     payload["retrieval_trace"] = trace
     out_path = out_dir / f"{domain}-{topic}.json"
-    out_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    publish_io.write_json(out_path, payload)
     return out_path
 
 
