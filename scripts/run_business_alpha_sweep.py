@@ -40,6 +40,12 @@ _DOMAINS = (
     "marketing_research",
 )
 _FULLRAW_ENV_FILE = "/etc/v5-memo/env"
+_FULLRAW_PROBE_BOUNDS = {
+    "TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS": "20",
+    "TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS": "2",
+    "TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS": "2",
+    "TOPIC_DISCOVERY_V5_MAX_VARIANTS": "2",
+}
 
 
 def _load_fullraw_env_defaults() -> None:
@@ -61,6 +67,21 @@ def _load_fullraw_env_defaults() -> None:
         os.environ.setdefault(key.strip(), value.strip().strip("'\""))
 
 
+def _apply_fullraw_probe_bounds() -> dict[str, str | None]:
+    old = {key: os.environ.get(key) for key in _FULLRAW_PROBE_BOUNDS}
+    for key, default in _FULLRAW_PROBE_BOUNDS.items():
+        os.environ[key] = os.environ.get(f"BUSINESS_SWEEP_{key}", old[key] or default)
+    return old
+
+
+def _restore_env(values: dict[str, str | None]) -> None:
+    for key, value in values.items():
+        if value is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = value
+
+
 def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[str, Any]:
     _load_fullraw_env_defaults()
     if not (
@@ -75,8 +96,14 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
 
         events = discovery.__dict__.get("_FULLRAW_PROBE_EVENTS", [])
         before = len(events)
-        with httpx_mod.Client() as client:
-            papers = discovery.__dict__["_seed_fullraw_papers"](topic, client=client, limit=10)
+        old_env = _apply_fullraw_probe_bounds()
+        try:
+            with httpx_mod.Client() as client:
+                papers = discovery.__dict__["_seed_fullraw_papers"](
+                    topic, client=client, limit=10,
+                )
+        finally:
+            _restore_env(old_env)
         receipt = topic_discovery_mod.__dict__.get("_FULLRAW_LAST_RECEIPT", {})
         async_sweep = topic_discovery_mod.__dict__.get("_FULLRAW_LAST_ASYNC_SWEEP", {})
         receipt_complete = bool(discovery.__dict__["_fullraw_receipt_complete"](receipt))

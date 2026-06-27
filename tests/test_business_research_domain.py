@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import fcntl
 import json
+import os
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -1041,6 +1042,60 @@ def test_business_sweep_surfaces_incomplete_fullraw_receipt(
     assert "fullraw_complete_receipt_missing" in queue_payload["not_ready"][0]["blockers"]
     summary = health.summarize_latest(tmp_path / "runs", domain="business_research")
     assert summary["top_blockers"]["fullraw_complete_receipt_missing"] == 1
+
+
+def test_business_sweep_fullraw_probe_bounds_storage_budget(
+    monkeypatch: Any,
+) -> None:
+    import agent.topic_discovery as topic_discovery_mod
+    import scripts.run_topic_discovery as discovery
+
+    captured: dict[str, str | None] = {}
+    for key in (
+        "TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS",
+        "TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS",
+        "TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS",
+        "TOPIC_DISCOVERY_V5_MAX_VARIANTS",
+    ):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "7200")
+    discovery._FULLRAW_PROBE_EVENTS.clear()
+
+    def fake_seed_fullraw(topic: str, **_kwargs: Any) -> list[dict[str, Any]]:
+        captured.update({
+            "timeout": os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"),
+            "attempts": os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS"),
+            "poll_seconds": os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS"),
+            "variants": os.environ.get("TOPIC_DISCOVERY_V5_MAX_VARIANTS"),
+            "storage_budget": os.environ.get("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"),
+        })
+        topic_discovery_mod._FULLRAW_LAST_RECEIPT = {
+            "shards_searched": 48,
+            "partial_shard_search": True,
+            "sweep_failed_shards": 0,
+            "source_count_searched": 5,
+        }
+        topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {"status": "queued"}
+        discovery._FULLRAW_PROBE_EVENTS.append({
+            "query": topic,
+            "status": "incomplete_receipt",
+        })
+        return []
+
+    monkeypatch.setattr(discovery, "_seed_fullraw_papers", fake_seed_fullraw)
+
+    result = sweep._strict_fullraw_probe("portfolio_returns")
+
+    assert result["status"] == "incomplete_receipt"
+    assert captured == {
+        "timeout": "20",
+        "attempts": "2",
+        "poll_seconds": "2",
+        "variants": "2",
+        "storage_budget": "7200",
+    }
+    assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS") is None
 
 
 def test_business_no_bundle_complete_fullraw_requires_fact_synthesis() -> None:
