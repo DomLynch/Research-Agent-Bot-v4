@@ -43,6 +43,7 @@ def main() -> int:
     parser.add_argument("--no-warm-backlog", dest="warm_backlog", action="store_false")
     parser.add_argument("--derived-topic-limit", type=int, default=1000)
     parser.add_argument("--fact-probe-topics", type=int, default=120)
+    parser.add_argument("--per-domain-timeout-seconds", type=float, default=360.0)
     parser.set_defaults(warm_backlog=True)
     args = parser.parse_args()
 
@@ -63,9 +64,15 @@ def main() -> int:
         ]
         if args.warm_backlog:
             cmd.append("--warm-backlog")
-        result = subprocess.run(cmd, check=False)
-        print(f"[alpha-cache-warm] domain={domain} rc={result.returncode}", flush=True)
-        if result.returncode != 0:
+        timeout = args.per_domain_timeout_seconds if args.per_domain_timeout_seconds > 0 else None
+        print(f"[alpha-cache-warm] domain={domain} start", flush=True)
+        try:
+            result = subprocess.run(cmd, check=False, timeout=timeout)
+            returncode = result.returncode
+        except subprocess.TimeoutExpired:
+            returncode = 124
+        print(f"[alpha-cache-warm] domain={domain} rc={returncode}", flush=True)
+        if returncode != 0:
             failures += 1
     return 0 if failures == 0 else 2
 

@@ -9,5 +9,5 @@ WorkingDirectory=/root/Research-Agent-Bot-v4
 EnvironmentFile=/root/Research-Agent-Bot-v4/.env
 EnvironmentFile=/etc/researka-agent-v4.env
 EnvironmentFile=/etc/researka-fullraw.env
-ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/run_alpha_cache_warm.py --top 40 --warm-backlog --derived-topic-limit 1000 --fact-probe-topics 120
+ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/run_alpha_cache_warm.py --top 40 --warm-backlog --derived-topic-limit 1000 --fact-probe-topics 120 --per-domain-timeout-seconds 360
 TimeoutStartSec=2700

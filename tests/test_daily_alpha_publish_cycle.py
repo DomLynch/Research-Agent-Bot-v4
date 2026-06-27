@@ -6477,6 +6477,7 @@ def test_systemd_cache_warmer_fills_source_rich_backlog() -> None:
     assert "--warm-backlog" in service
     assert "--derived-topic-limit 1000" in service
     assert "--fact-probe-topics 120" in service
+    assert "--per-domain-timeout-seconds 360" in service
     assert "--cache-only" not in service
     assert "TimeoutStartSec=2700" in service
     assert "OnCalendar=*-*-* 01/4:05:00" in timer
