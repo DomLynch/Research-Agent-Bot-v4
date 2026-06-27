@@ -119,7 +119,7 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
         old_handler = signal.getsignal(signal.SIGALRM)
         old_timer = signal.setitimer(signal.ITIMER_REAL, 0.0)
         signal.signal(signal.SIGALRM, _raise_fullraw_timeout)
-        signal.setitimer(signal.ITIMER_REAL, timeout_seconds)
+        signal.setitimer(signal.ITIMER_REAL, timeout_seconds + max(5.0, timeout_seconds * 0.1))
         try:
             with httpx_mod.Client(timeout=timeout_seconds) as client:
                 papers = discovery.__dict__["_seed_fullraw_papers"](
