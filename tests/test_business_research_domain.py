@@ -1141,7 +1141,7 @@ def test_business_sweep_writes_no_ready_summary_before_next_probe_failure(
     assert summary["published"] == 0
 
 
-def test_business_sweep_fullraw_probe_does_not_inherit_storage_budget(
+def test_business_sweep_fullraw_probe_inherits_fullraw_search_budget(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
     import agent.topic_discovery as topic_discovery_mod
@@ -1197,12 +1197,12 @@ def test_business_sweep_fullraw_probe_does_not_inherit_storage_budget(
 
     assert result["status"] == "incomplete_receipt"
     assert captured == {
-        "client_timeout": "30.0",
+        "client_timeout": "7200.0",
         "timeout": None,
-        "attempts": "15",
+        "attempts": "3600",
         "priority": None,
         "poll_seconds": None,
-        "foreground_budget": "30",
+        "foreground_budget": "7200",
         "variants": None,
         "storage_budget": "7200",
     }

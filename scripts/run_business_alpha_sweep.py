@@ -59,6 +59,8 @@ _NON_BUSINESS_QUERY_SUFFIXES = (
 def _business_fullraw_foreground_seconds() -> str:
     return (
         os.environ.get("TOPIC_DISCOVERY_BUSINESS_FULLRAW_FOREGROUND_SECONDS")
+        or os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS")
+        or os.environ.get("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS")
         or _BUSINESS_FULLRAW_FOREGROUND_SECONDS
     )
 
