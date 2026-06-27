@@ -316,7 +316,27 @@ def _seed_fullraw_papers(
         if isinstance(async_sweep, dict) and async_sweep.get("status"):
             async_status = str(async_sweep.get("status") or "").strip()
             event["async_status"] = async_status
-            if async_status and event["status"] == "no_hits":
+            for key in (
+                "cache_key", "inflight_count", "key_queued", "key_running",
+                "max_inflight", "max_queue", "queued_count", "shard_limit",
+            ):
+                if async_sweep.get(key) is not None:
+                    event[key] = async_sweep.get(key)
+            queue_full = False
+            try:
+                queue_full = (
+                    async_status == "queued"
+                    and async_sweep.get("key_queued") is False
+                    and async_sweep.get("key_running") is False
+                    and int(async_sweep.get("queued_count") or 0)
+                    >= int(async_sweep.get("max_queue") or 0)
+                    > 0
+                )
+            except (TypeError, ValueError):
+                queue_full = False
+            if queue_full:
+                event["status"] = "queue_saturated"
+            elif async_status and event["status"] == "no_hits":
                 event["status"] = f"async_{async_status}"
         if cache_key:
             _remember_fullraw_in_progress(cache_key, event)
