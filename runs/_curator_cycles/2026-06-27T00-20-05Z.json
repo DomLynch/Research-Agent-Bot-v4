@@ -1,0 +1,23 @@
+{
+  "cooldown_hours": 24.0,
+  "cross_topic_memo_error": "stop after discovery",
+  "cycle_ts": "2026-06-27T00-20-05Z",
+  "domain": {
+    "claim_schema_path": "publication.toml",
+    "database_domain": "longevity",
+    "display_name": "Longevity / anti-aging",
+    "dry_run_only": false,
+    "seed_topics_path": "discovery_seeds.toml",
+    "slug": "longevity",
+    "source_policy_path": "publication.toml"
+  },
+  "publish_queue_error": "stop after discovery",
+  "ran": [],
+  "skipped_below_source_floor": [
+    "partial_epigenetic_reprogramming_longevity"
+  ],
+  "skipped_excluded": [],
+  "skipped_in_cooldown": [],
+  "stopped_on_ready": false,
+  "top_requested": 5
+}
