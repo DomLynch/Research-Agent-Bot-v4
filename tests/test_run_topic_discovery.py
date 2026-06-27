@@ -2182,6 +2182,49 @@ def test_fullraw_supply_only_skips_seed_and_db_expansion_when_empty(
     assert payload["top"] == []
 
 
+def test_fullraw_supply_only_loads_v5_env_before_config_receipt(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    fake_script = tmp_path / "scripts" / "run_topic_discovery.py"
+    fake_script.parent.mkdir(parents=True)
+    env_file = tmp_path / "v5.env"
+    env_file.write_text("V5_MEMO_FULL_RAW_INDEX_TOKEN=tok-from-file\n", encoding="utf-8")
+    for key in (
+        "V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL",
+        "V5_MEMO_FULL_RAW_INDEX_TOKEN",
+        "V5_MEMO_FULL_RAW_CORPUS_TOKEN",
+    ):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_ENV_FILE", str(env_file))
+    monkeypatch.setattr(run_topic_discovery, "__file__", str(fake_script))
+    monkeypatch.setattr(run_topic_discovery, "load_seed_topics", lambda _path=None: ("metformin",))
+    monkeypatch.setattr(run_topic_discovery, "load_settings", MagicMock())
+    monkeypatch.setattr(
+        run_topic_discovery, "load_derived_topic_limit", lambda _path=None: 5_000,
+    )
+    monkeypatch.setattr(run_topic_discovery, "cached_source_rich_candidates", lambda *, limit: ())
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", lambda *_a, **_k: [])
+    monkeypatch.setattr(
+        run_topic_discovery,
+        "_seed_paper_candidates",
+        lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("seed probe")),
+    )
+    monkeypatch.setattr(
+        run_topic_discovery,
+        "discover_topics",
+        lambda **_kw: (_ for _ in ()).throw(AssertionError("slow discovery")),
+    )
+    monkeypatch.setattr(sys, "argv", [
+        "run_topic_discovery.py", "--domain", "longevity_research", "--top", "1",
+        "--fullraw-supply-only",
+    ])
+
+    assert run_topic_discovery.main() == 0
+    out = sorted((tmp_path / "runs" / "_topics_discovery").glob("*.json"))
+    payload = json.loads(out[-1].read_text(encoding="utf-8"))
+    assert payload["fullraw_seed_probe"]["configured"] is True
+
+
 def test_skip_seed_paper_probe_goes_directly_to_domain_discovery(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

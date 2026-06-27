@@ -241,6 +241,8 @@ def _seed_fullraw_papers(
             "paper_count": 0,
         })
         return []
+    topic_discovery_mod._FULLRAW_LAST_RECEIPT = {}
+    topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
     papers = _fetch_fullraw_topic_papers(
         query, client=client, limit=limit,
     )
@@ -1273,6 +1275,7 @@ def main() -> int:
         help="Exclude a topic from the emitted queue; repeatable.",
     )
     args = parser.parse_args()
+    _load_v5_env_defaults()
     _FULLRAW_PROBE_RECEIPTS.clear()
     _FULLRAW_PROBE_EVENTS.clear()
     _FULLRAW_SUPPLY_SOURCE_PAPERS.clear()
