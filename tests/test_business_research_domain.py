@@ -1121,6 +1121,7 @@ def test_business_sweep_fullraw_probe_uses_foreground_budget_with_storage_budget
             "client_timeout": str(client_timeout.read),
             "timeout": os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"),
             "attempts": os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS"),
+            "priority": os.environ.get("TOPIC_DISCOVERY_FULLRAW_PRIORITY"),
             "poll_seconds": os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS"),
             "foreground_budget": os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"),
             "variants": os.environ.get("TOPIC_DISCOVERY_V5_MAX_VARIANTS"),
@@ -1148,12 +1149,14 @@ def test_business_sweep_fullraw_probe_uses_foreground_budget_with_storage_budget
         "client_timeout": "30.0",
         "timeout": None,
         "attempts": "15",
+        "priority": "1",
         "poll_seconds": None,
         "foreground_budget": "30",
         "variants": None,
         "storage_budget": "7200",
     }
     assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS") is None
+    assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_PRIORITY") is None
     assert os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS") is None
 
 

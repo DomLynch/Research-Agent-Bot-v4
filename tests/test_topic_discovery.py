@@ -214,6 +214,34 @@ def test_fetch_topic_papers_falls_back_to_fullraw_when_db_empty(
     }
 
 
+def test_fullraw_priority_payload_is_explicit_opt_in(
+    monkeypatch: Any,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "https://fullraw/search")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_TOKEN", "tok-fullraw")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_PRIORITY", "1")
+    payloads: list[dict[str, Any]] = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.host == "test":
+            return httpx.Response(200, json=[])
+        payloads.append(json.loads(req.content.decode("utf-8")))
+        return httpx.Response(200, json={
+            "meta": {"shard_receipt": _fullraw_receipt()},
+            "results": [{"title": "Priority fullraw paper"}],
+        })
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        papers = td._fetch_topic_papers(
+            "metformin_longevity", client=c, settings=_settings(),
+        )
+
+    assert papers[0]["title"] == "Priority fullraw paper"
+    assert payloads[0]["priority"] is True
+
+
 def test_fetch_topic_papers_supplements_thin_db_with_fullraw(
     monkeypatch: Any,
 ) -> None:
