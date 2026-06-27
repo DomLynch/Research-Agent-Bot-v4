@@ -953,6 +953,30 @@ topics = [
     ]
 
 
+def test_business_sweep_prioritizes_diagnostic_source_signal(
+    tmp_path: Path,
+) -> None:
+    diagnostics = tmp_path / "runs" / "_business_diagnostics"
+    diagnostics.mkdir(parents=True)
+    (diagnostics / "finance_research-empty_seed.json").write_text(json.dumps({
+        "raw_fact_count": 0,
+        "a_core_fact_count": 0,
+        "retrieval_trace": {"fullraw": {"status": "failed"}},
+    }), encoding="utf-8")
+    (diagnostics / "finance_research-source_rich_seed.json").write_text(json.dumps({
+        "raw_fact_count": 11,
+        "a_core_fact_count": 7,
+        "retrieval_trace": {"fullraw": {"status": "failed"}},
+        "top_clusters": [{"source_count": 7}],
+    }), encoding="utf-8")
+
+    assert sweep._prioritized_seed_topics(
+        tmp_path / "runs",
+        "finance_research",
+        ["empty_seed", "unknown_seed", "source_rich_seed"],
+    ) == ["source_rich_seed", "unknown_seed", "empty_seed"]
+
+
 def test_business_sweep_latest_and_queue_writes_are_locked(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
@@ -1261,6 +1285,69 @@ def test_business_sweep_continues_after_failed_fullraw_probe(
         "no_source_diverse_bundle",
         "fullraw_complete_receipt_missing",
     ]
+
+
+def test_business_sweep_uses_diagnostics_to_skip_known_empty_seed(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("finance_research")
+    diagnostics = tmp_path / "runs" / "_business_diagnostics"
+    diagnostics.mkdir(parents=True)
+    (diagnostics / "finance_research-empty_seed.json").write_text(json.dumps({
+        "raw_fact_count": 0,
+        "a_core_fact_count": 0,
+        "retrieval_trace": {"fullraw": {"status": "failed"}},
+    }), encoding="utf-8")
+    (diagnostics / "finance_research-source_rich_seed.json").write_text(json.dumps({
+        "raw_fact_count": 9,
+        "a_core_fact_count": 7,
+        "top_clusters": [{"source_count": 6}],
+    }), encoding="utf-8")
+    fetched_topics: list[str] = []
+
+    def fake_bundle(_facts: list[dict[str, Any]], *, topic: str, domain: str) -> Any:
+        return SimpleNamespace(
+            domain=domain, topic=topic, result_key="ready",
+            receipts=({"fact_id": topic},), source_count=5,
+        )
+
+    def fake_write_candidate_run(bundle: Any, **kwargs: Any) -> Path:
+        run_dir = cast(Path, kwargs["runs_root"]) / f"{bundle.topic}-evidence-test"
+        run_dir.mkdir(parents=True)
+        return run_dir
+
+    def fake_fetch(topic: str, *_args: Any, **_kwargs: Any) -> tuple[list[dict[str, Any]], dict[str, str]]:
+        fetched_topics.append(topic)
+        return _fixture_facts(), {"status": "ok"}
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("finance_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [
+        "empty_seed",
+        "unknown_seed",
+        "source_rich_seed",
+        "other_seed",
+    ][:limit])
+    monkeypatch.setattr(sweep, "fetch_business_facts", fake_fetch)
+    monkeypatch.setattr(sweep, "build_candidate_bundle", fake_bundle)
+    monkeypatch.setattr(sweep, "write_candidate_run", fake_write_candidate_run)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "finance_research",
+        "--runs-root", str(tmp_path / "runs"),
+    ])
+
+    assert sweep.main() == 0
+    assert fetched_topics == ["source_rich_seed"]
+    summary = json.loads(
+        (tmp_path / "runs" / "_business_diagnostics" / "latest_sweep.json").read_text(
+            encoding="utf-8",
+        ),
+    )
+    assert summary["results"][0]["topic"] == "source_rich_seed"
 
 
 def test_business_sweep_stops_after_running_fullraw_probe(

@@ -237,6 +237,52 @@ def _seed_topics(seed_path: Path, *, limit: int) -> list[str]:
     return [topic for *_rank, topic in sorted(ranked)[:limit]]
 
 
+def _diagnostic_rank(
+    runs_root: Path, domain: str, topic: str, idx: int,
+) -> tuple[int, int, int, int, int]:
+    data = read_json(runs_root / "_business_diagnostics" / f"{domain}-{topic}.json", {})
+    if not isinstance(data, dict):
+        return (0, 0, 0, 0, idx)
+
+    def count(value: Any) -> int:
+        try:
+            return int(value or 0)
+        except (TypeError, ValueError):
+            return 0
+
+    clusters = data.get("top_clusters") or []
+    top_sources = max(
+        (count(cluster.get("source_count")) for cluster in clusters if isinstance(cluster, dict)),
+        default=0,
+    )
+    raw = count(data.get("raw_fact_count"))
+    a_core = count(data.get("a_core_fact_count"))
+    trace = data.get("retrieval_trace")
+    fullraw = trace.get("fullraw") if isinstance(trace, dict) else {}
+    if not isinstance(fullraw, dict):
+        fullraw = {}
+    bad_empty = int(
+        raw == 0
+        and (
+            str(fullraw.get("status") or "") in {
+                "busy", "complete_no_hits", "failed", "not_configured",
+            }
+            or str(fullraw.get("async_status") or "") in {"queued", "running"}
+            or fullraw.get("partial_shard_search") is True
+        )
+    )
+    return (bad_empty, -top_sources, -a_core, -raw, idx)
+
+
+def _prioritized_seed_topics(runs_root: Path, domain: str, topics: list[str]) -> list[str]:
+    return [
+        topic for idx, topic in sorted(
+            enumerate(topics),
+            key=lambda item: _diagnostic_rank(runs_root, domain, item[1], item[0]),
+        )
+    ]
+
+
 def _selected_domains(value: str) -> tuple[str, ...]:
     if not value.strip():
         return _DOMAINS
@@ -394,7 +440,13 @@ def main() -> int:
             profile = load_domain_profile(domain)
             if profile.slug not in BUSINESS_DOMAINS:
                 continue
-            for topic in _seed_topics(profile.seed_topics_path, limit=args.topics_per_domain):
+            seed_pool = _seed_topics(
+                profile.seed_topics_path,
+                limit=max(args.topics_per_domain, args.topics_per_domain * 4),
+            )
+            for topic in _prioritized_seed_topics(
+                args.runs_root, domain, seed_pool,
+            )[:args.topics_per_domain]:
                 facts, trace = fetch_business_facts(topic, domain=domain, settings=settings)
                 bundle = build_candidate_bundle(facts, topic=topic, domain=domain)
                 row: dict[str, Any] = {
