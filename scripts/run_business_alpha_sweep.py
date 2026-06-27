@@ -165,6 +165,22 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
                         "sources_searched": (
                             receipt.get("sources_searched") if isinstance(receipt, dict) else None
                         ) or event.get("sources_searched"),
+                        "papers_searched": (
+                            receipt.get("papers_searched") if isinstance(receipt, dict) else None
+                        ) or event.get("papers_searched"),
+                        "papers_total": (
+                            receipt.get("papers_total") if isinstance(receipt, dict) else None
+                        ) or event.get("papers_total"),
+                        "result_count_returned": (
+                            receipt.get("result_count_returned") if isinstance(receipt, dict) else None
+                        ) or event.get("result_count_returned"),
+                        "result_count_unique": (
+                            receipt.get("result_count_unique") if isinstance(receipt, dict) else None
+                        ) or event.get("result_count_unique"),
+                        "result_citation_diversity": (
+                            receipt.get("result_citation_diversity")
+                            if isinstance(receipt, dict) else None
+                        ) or event.get("result_citation_diversity"),
                     }
                     if include_papers:
                         result["_papers"] = papers

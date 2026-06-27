@@ -1235,6 +1235,11 @@ def test_business_sweep_fullraw_probe_preserves_in_progress_cache_receipt(
             "shards_searched": 192,
             "sweep_failed_shards": 0,
             "sources_searched": {"openalex": 59, "pubmed": 58},
+            "papers_searched": 313447963,
+            "papers_total": 1456919317,
+            "result_count_returned": 10,
+            "result_count_unique": 17,
+            "result_citation_diversity": 3,
         })
         return []
 
@@ -1248,6 +1253,11 @@ def test_business_sweep_fullraw_probe_preserves_in_progress_cache_receipt(
     assert result["shards_searched"] == 192
     assert result["sweep_failed_shards"] == 0
     assert result["sources_searched"] == {"openalex": 59, "pubmed": 58}
+    assert result["papers_searched"] == 313447963
+    assert result["papers_total"] == 1456919317
+    assert result["result_count_returned"] == 10
+    assert result["result_count_unique"] == 17
+    assert result["result_citation_diversity"] == 3
     assert business_cli.no_bundle_blockers_from_diagnostics({
         "retrieval_trace": {"fullraw": result},
     }) == ["no_source_diverse_bundle", "fullraw_probe_busy"]

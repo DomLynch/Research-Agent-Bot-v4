@@ -259,6 +259,12 @@ def _seed_fullraw_papers(
                 "source_count_searched": receipt.get("source_count_searched"),
                 "sources_searched": receipt.get("sources_searched"),
             })
+            for key in (
+                "papers_searched", "papers_total", "result_count_returned",
+                "result_count_unique", "result_citation_diversity",
+            ):
+                if receipt.get(key) is not None:
+                    event[key] = receipt.get(key)
         async_sweep = getattr(topic_discovery_mod, "_FULLRAW_LAST_ASYNC_SWEEP", {})
         if isinstance(async_sweep, dict) and async_sweep.get("status"):
             async_status = str(async_sweep.get("status") or "").strip()

@@ -332,6 +332,11 @@ def test_seed_fullraw_backs_off_recent_incomplete_receipt(
             **_fullraw_receipt(),
             "partial_shard_search": True,
             "shards_searched": 192,
+            "papers_searched": 313447963,
+            "papers_total": 1456919317,
+            "result_count_returned": 10,
+            "result_count_unique": 17,
+            "result_citation_diversity": 3,
         }
         run_topic_discovery.topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {
             "status": "queued",
@@ -360,6 +365,11 @@ def test_seed_fullraw_backs_off_recent_incomplete_receipt(
     assert event["partial_shard_search"] is True
     assert event["sweep_failed_shards"] == 0
     assert event["async_status"] == "queued"
+    assert event["papers_searched"] == 313447963
+    assert event["papers_total"] == 1456919317
+    assert event["result_count_returned"] == 10
+    assert event["result_count_unique"] == 17
+    assert event["result_citation_diversity"] == 3
 
 
 def test_fullraw_in_progress_backoff_default_covers_sweep_runtime() -> None:
