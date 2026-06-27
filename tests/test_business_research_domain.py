@@ -1193,12 +1193,12 @@ def test_business_sweep_fullraw_probe_uses_foreground_budget_with_storage_budget
 
     assert result["status"] == "incomplete_receipt"
     assert captured == {
-        "client_timeout": "30.0",
+        "client_timeout": "7200.0",
         "timeout": None,
-        "attempts": "15",
+        "attempts": "3600",
         "priority": None,
         "poll_seconds": None,
-        "foreground_budget": "30",
+        "foreground_budget": "7200",
         "variants": None,
         "storage_budget": "7200",
     }

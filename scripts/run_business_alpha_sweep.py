@@ -56,6 +56,15 @@ _NON_BUSINESS_QUERY_SUFFIXES = (
 )
 
 
+def _business_fullraw_foreground_seconds() -> str:
+    return (
+        os.environ.get("TOPIC_DISCOVERY_BUSINESS_FULLRAW_FOREGROUND_SECONDS")
+        or os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS")
+        or os.environ.get("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS")
+        or _BUSINESS_FULLRAW_FOREGROUND_SECONDS
+    )
+
+
 def _raise_fullraw_timeout(_signum: int, _frame: Any) -> None:
     raise TimeoutError("business fullraw probe exceeded foreground budget")
 
@@ -101,10 +110,7 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
             fcntl.flock(lock_handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             return {"status": "busy"}
-        os.environ[budget_key] = os.environ.get(
-            "TOPIC_DISCOVERY_BUSINESS_FULLRAW_FOREGROUND_SECONDS",
-            _BUSINESS_FULLRAW_FOREGROUND_SECONDS,
-        )
+        os.environ[budget_key] = _business_fullraw_foreground_seconds()
         httpx_mod = importlib.import_module("httpx")
         topic_discovery_mod = importlib.import_module("agent.topic_discovery")
         discovery = importlib.import_module("scripts.run_topic_discovery")
