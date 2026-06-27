@@ -22,6 +22,7 @@ from agent.topic_discovery import TopicCandidate
 @pytest.fixture(autouse=True)
 def _disable_live_v5_client(monkeypatch: Any) -> None:
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "0")
+    run_topic_discovery._FULLRAW_COMPLETED_SWEEP_CACHE.clear()
 
 
 def _fullraw_rows(prefix: str, title_prefix: str, n: int = 5) -> list[dict[str, Any]]:
@@ -213,6 +214,40 @@ def test_seed_fullraw_default_polls_until_budget_not_derived_attempts(
 
     assert calls == 3
     assert papers[0]["title"] == "Complete budget-polled result"
+
+
+def test_seed_fullraw_reuses_completed_sweep_for_equivalent_query(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+    receipt = _fullraw_receipt()
+
+    def fake_fetch(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        return [{
+            "doi": "10.1/urolithin",
+            "title": "Urolithin mitochondrial aging replication",
+            "fullraw_shard_receipt": receipt,
+        }]
+
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fake_fetch)
+
+    with run_topic_discovery.httpx.Client() as client:
+        first = run_topic_discovery._seed_fullraw_papers(
+            "urolithin A mitochondrial aging", client=client, limit=5,
+        )
+        second = run_topic_discovery._seed_fullraw_papers(
+            "urolithin mitochondrial aging", client=client, limit=5,
+        )
+
+    assert [row["title"] for row in first] == [row["title"] for row in second]
+    assert calls == ["urolithin A mitochondrial aging"]
+    assert run_topic_discovery._FULLRAW_PROBE_EVENTS[-1] == {
+        "query": "urolithin mitochondrial aging",
+        "status": "cache_hit",
+        "cache_key": "aging mitochondrial urolithin",
+        "paper_count": 1,
+    }
 
 
 def test_seed_fullraw_does_not_use_client_fallback_when_endpoint_incomplete(
@@ -1611,6 +1646,49 @@ def test_fullraw_supply_prefers_alpha_shape_queries_before_bare_seed(
         "urolithin mitochondrial aging null",
         "urolithin mitochondrial aging replication",
     ]
+
+
+def test_fullraw_supply_stops_after_repeated_busy_receipts(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+
+    def fake_fullraw(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        run_topic_discovery._FULLRAW_PROBE_EVENTS.append({
+            "query": query,
+            "status": "incomplete_receipt",
+            "partial_shard_search": True,
+            "shards_searched": 200,
+        })
+        return []
+
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_BUSY_PROBE_LIMIT", "2")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_CAP_MULTIPLIER", "20")
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_fullraw)
+    run_topic_discovery._FULLRAW_PROBE_EVENTS.clear()
+
+    rows = run_topic_discovery._fullraw_supply_candidates(
+        query_context="",
+        current_year=2026,
+        top=1,
+        seeds=(
+            "urolithin_mitochondrial_aging",
+            "resveratrol_exercise_adaptation",
+            "metformin_longevity",
+        ),
+    )
+
+    assert rows == ()
+    assert calls == [
+        "urolithin mitochondrial aging",
+        "resveratrol exercise adaptation",
+    ]
+    assert run_topic_discovery._FULLRAW_PROBE_EVENTS[-1] == {
+        "status": "fullraw_busy_probe_limit_reached",
+        "attempted_queries": calls,
+        "skipped_query_count": 10,
+    }
 
 
 def test_fullraw_alpha_shape_terms_are_configurable_and_bounded(

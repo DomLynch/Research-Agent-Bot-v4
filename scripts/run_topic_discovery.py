@@ -49,6 +49,7 @@ _TOKEN_RE = re.compile(r"[a-z0-9]+")
 _FULLRAW_PROBE_RECEIPTS: list[dict[str, object]] = []
 _FULLRAW_PROBE_EVENTS: list[dict[str, object]] = []
 _FULLRAW_SUPPLY_SOURCE_PAPERS: dict[str, list[dict[str, object]]] = {}
+_FULLRAW_COMPLETED_SWEEP_CACHE: dict[str, list[dict[str, object]]] = {}
 _GENERIC_SCOPE_TOKENS = {
     "ai", "research", "study", "studies", "trial", "trials", "review",
     "meta", "analysis", "effect", "effects", "therapy", "treatment",
@@ -213,9 +214,23 @@ def _v5_client_papers(query: str, *, limit: int) -> list[dict[str, object]]:
 def _seed_fullraw_papers(
     query: str, *, client: httpx.Client, limit: int,
 ) -> list[dict[str, object]]:
+    cache_key = _fullraw_query_fingerprint(query)
+    if cache_key and cache_key in _FULLRAW_COMPLETED_SWEEP_CACHE:
+        cached = [dict(p) for p in _FULLRAW_COMPLETED_SWEEP_CACHE[cache_key]][:limit]
+        _FULLRAW_PROBE_EVENTS.append({
+            "query": query,
+            "status": "cache_hit",
+            "cache_key": cache_key,
+            "paper_count": len(cached),
+        })
+        return cached
     papers = _fetch_fullraw_topic_papers(
         query, client=client, limit=limit,
     )
+    if cache_key and papers:
+        receipt = papers[0].get("fullraw_shard_receipt")
+        if isinstance(receipt, dict) and _fullraw_receipt_complete(receipt):
+            _FULLRAW_COMPLETED_SWEEP_CACHE[cache_key] = [dict(p) for p in papers]
     if not papers:
         event: dict[str, object] = {"query": query, "status": "no_hits"}
         receipt = getattr(topic_discovery_mod, "_FULLRAW_LAST_RECEIPT", {})
@@ -379,6 +394,25 @@ def _alpha_shape_query_terms() -> tuple[str, ...]:
     except (TypeError, ValueError):
         limit = 3
     return terms[:limit]
+
+
+def _fullraw_busy_probe_limit() -> int:
+    try:
+        return max(0, int(os.environ.get(
+            "TOPIC_DISCOVERY_FULLRAW_BUSY_PROBE_LIMIT", "3",
+        )))
+    except (TypeError, ValueError):
+        return 3
+
+
+def _fullraw_event_busy(event: dict[str, object]) -> bool:
+    status = str(event.get("status") or "").strip()
+    async_status = str(event.get("async_status") or "").strip()
+    return (
+        status in {"incomplete_receipt", "async_queued", "async_running", "busy", "failed"}
+        or async_status in {"queued", "running", "busy"}
+        or event.get("partial_shard_search") is True
+    )
 
 
 def _context_supported_papers(
@@ -706,6 +740,8 @@ def _fullraw_supply_candidates(
     seen_topics: set[str] = set()
     used_seed_labels: set[str] = set()
     attempted_queries: list[str] = []
+    busy_streak = 0
+    busy_probe_limit = _fullraw_busy_probe_limit()
     deadline = time.monotonic() + _fullraw_supply_budget_seconds()
     with httpx.Client() as client:
         for query, label in query_labels.items():
@@ -740,6 +776,7 @@ def _fullraw_supply_candidates(
                 "2",
             )
             receipt_recorded = False
+            event_start = len(_FULLRAW_PROBE_EVENTS)
             try:
                 for paper in _seed_fullraw_papers(
                     query, client=client, limit=max(25, top * _SOURCE_RICH_FLOOR),
@@ -772,6 +809,20 @@ def _fullraw_supply_candidates(
                         os.environ.pop(key, None)
                     else:
                         os.environ[key] = value
+            new_events = _FULLRAW_PROBE_EVENTS[event_start:]
+            if papers_by_query.get(query):
+                busy_streak = 0
+            elif any(_fullraw_event_busy(event) for event in new_events):
+                busy_streak += 1
+            else:
+                busy_streak = 0
+            if busy_probe_limit and busy_streak >= busy_probe_limit:
+                _FULLRAW_PROBE_EVENTS.append({
+                    "status": "fullraw_busy_probe_limit_reached",
+                    "attempted_queries": attempted_queries,
+                    "skipped_query_count": len(query_labels) - len(attempted_queries),
+                })
+                break
             if (
                 label == "__domain_supply__"
                 and len(papers_by_query.get(query, [])) >= _SOURCE_RICH_FLOOR
@@ -1134,6 +1185,7 @@ def main() -> int:
     _FULLRAW_PROBE_RECEIPTS.clear()
     _FULLRAW_PROBE_EVENTS.clear()
     _FULLRAW_SUPPLY_SOURCE_PAPERS.clear()
+    _FULLRAW_COMPLETED_SWEEP_CACHE.clear()
     profile = load_domain_profile(args.domain)
     seeds = _domain_seed_topics(profile.slug)
     if not seeds:
