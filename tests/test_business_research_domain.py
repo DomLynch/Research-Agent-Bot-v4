@@ -1423,6 +1423,25 @@ def test_business_sweep_deprioritizes_no_receipt_fullraw_seeds(tmp_path: Path) -
     ) == ["untried_seed", "no_receipt_seed", "partial_receipt_seed"]
 
 
+def test_business_seed_topics_include_trimmed_variants_without_biomed_suffixes(
+    tmp_path: Path,
+) -> None:
+    seed_path = tmp_path / "seeds.toml"
+    seed_path.write_text(
+        '[seeds]\ntopics = ["platform_strategy_network_effects"]\n',
+        encoding="utf-8",
+    )
+
+    topics = sweep._seed_topics(seed_path, limit=8)
+
+    assert topics[:3] == [
+        "platform_strategy_network_effects",
+        "platform_strategy_network",
+        "platform_strategy",
+    ]
+    assert "platform_strategy_therapy" not in topics
+
+
 def test_business_sweep_continues_after_running_fullraw_probe(
     tmp_path: Path,
     monkeypatch: Any,

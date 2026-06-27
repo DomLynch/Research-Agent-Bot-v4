@@ -25,6 +25,7 @@ from agent.business_research import (
 )
 from agent.domain_profile import load_domain_profile
 from agent.settings import load_settings
+from agent.topic_synonyms import expand_topic_queries
 from scripts import alpha_publish_status as publish_status
 from scripts import build_publish_queue as publish_queue
 from scripts.alpha_publish_io import read_json, update_json_list, write_json, write_ledger
@@ -50,6 +51,9 @@ _BROAD_SEED_TOKENS = frozenset({
 })
 _BUSINESS_FULLRAW_FOREGROUND_SECONDS = "30"
 _BUSINESS_FULLRAW_LOCK_PATH = "/tmp/researka-v4-business-fullraw.lock"
+_NON_BUSINESS_QUERY_SUFFIXES = (
+    "_intervention", "_supplementation", "_therapy", "_treatment",
+)
 
 
 def _raise_fullraw_timeout(_signum: int, _frame: Any) -> None:
@@ -207,22 +211,43 @@ def _write_fullraw_discovery(
     return out_path
 
 
+def _seed_topic_variants(topic: str) -> tuple[str, ...]:
+    out: list[str] = []
+    seen: set[str] = set()
+    for query in expand_topic_queries(topic, max_queries=8):
+        slug = "_".join(query.replace("-", " ").replace("/", " ").split())
+        if not slug or slug in seen or slug.endswith(_NON_BUSINESS_QUERY_SUFFIXES):
+            continue
+        seen.add(slug)
+        out.append(slug)
+    return tuple(out)
+
+
 def _seed_topics(seed_path: Path, *, limit: int) -> list[str]:
     data = tomllib.loads(seed_path.read_text(encoding="utf-8"))
     topics = data.get("seeds", {}).get("topics", [])
     if not isinstance(topics, list):
         return []
-    ranked: list[tuple[int, int, str]] = []
+    base_ranked: list[tuple[int, int, str]] = []
+    variant_ranked: list[tuple[int, int, str]] = []
+    seen: set[str] = set()
     for idx, raw in enumerate(topics):
-        topic = str(raw).strip()
-        if not topic:
-            continue
-        tokens = {
-            token for token in topic.replace("-", "_").split("_")
-            if token and token not in _BROAD_SEED_TOKENS
-        }
-        ranked.append((-len(tokens), idx, topic))
-    return [topic for *_rank, topic in sorted(ranked)[:limit]]
+        for offset, topic in enumerate(_seed_topic_variants(str(raw).strip())):
+            if topic in seen:
+                continue
+            seen.add(topic)
+            tokens = {
+                token for token in topic.replace("-", "_").split("_")
+                if token and token not in _BROAD_SEED_TOKENS
+            }
+            row = (-len(tokens), idx * 10 + offset, topic)
+            if offset == 0:
+                base_ranked.append(row)
+            else:
+                variant_ranked.append(row)
+    ordered = [topic for *_rank, topic in sorted(base_ranked)]
+    ordered.extend(topic for *_rank, topic in sorted(variant_ranked))
+    return ordered[:limit]
 
 
 def _diagnostic_rank(
