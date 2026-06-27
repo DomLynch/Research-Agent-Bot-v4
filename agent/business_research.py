@@ -24,7 +24,7 @@ from agent.signal_memo_writer import build_claim_receipt_matrix, build_memo_audi
 
 BUSINESS_DOMAINS = frozenset({"business_research", "management_research", "economics_research", "finance_research", "marketing_research"})
 MIN_DIRECT_SOURCES = 5
-FETCH_TOP_K = 100
+FETCH_TOP_K, FACT_FETCH_TIMEOUT_SECONDS = 100, 20.0
 PRESERVED_FIELDS = ("population", "organization_type", "industry", "asset_class", "geography", "time_period", "intervention", "signal_family", "comparator", "outcome", "metric", "study_design", "dataset", "estimation_method", "identification_strategy", "effect_size", "confidence_interval", "standard_error", "p_value", "sample_size")
 SHAPE_FIELDS = ("population", "organization_type", "industry", "asset_class", "geography", "time_period", "intervention", "signal_family", "comparator", "outcome", "metric", "study_design", "dataset", "estimation_method", "identification_strategy")
 CORE_SHAPE_FIELDS = ("intervention", "comparator", "outcome", "metric", "study_design")
@@ -837,7 +837,7 @@ def fetch_business_facts(
             f"{base}/api/v1/tier2/facts/search",
             headers=headers,
             json=domain_body,
-            timeout=60.0,
+            timeout=FACT_FETCH_TIMEOUT_SECONDS,
         )
         status_code = response.status_code
         if status_code == 422:
@@ -845,7 +845,7 @@ def fetch_business_facts(
                 f"{base}/api/v1/tier2/facts/search",
                 headers=headers,
                 json=body,
-                timeout=60.0,
+                timeout=FACT_FETCH_TIMEOUT_SECONDS,
             )
             fallback_status = response.status_code
             response.raise_for_status()

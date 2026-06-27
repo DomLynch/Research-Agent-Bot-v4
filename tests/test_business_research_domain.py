@@ -322,6 +322,7 @@ def test_business_fetch_filters_global_fallback_when_live_schema_rejects_domain(
     monkeypatch: Any,
 ) -> None:
     calls: list[dict[str, Any]] = []
+    timeouts: list[float] = []
 
     class _Settings:
         researka_database_url = "https://database.test"
@@ -336,6 +337,7 @@ def test_business_fetch_filters_global_fallback_when_live_schema_rejects_domain(
     ) -> httpx.Response:
         request = httpx.Request("POST", url)
         calls.append(json)
+        timeouts.append(timeout)
         if len(calls) == 2:
             return httpx.Response(
                 200,
@@ -379,6 +381,7 @@ def test_business_fetch_filters_global_fallback_when_live_schema_rejects_domain(
     assert calls[0]["domain"] == "econ_business"
     assert "domain" not in calls[1]
     assert len(calls) == 2
+    assert timeouts == [20.0, 20.0]
     assert trace["status"] == "fallback_filtered"
     assert trace["http_status"] == 200
     assert trace["domain_http_status"] == 422
