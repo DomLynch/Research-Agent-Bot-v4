@@ -1211,6 +1211,55 @@ def test_business_sweep_fullraw_probe_does_not_inherit_storage_budget(
     assert os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] == "7200"
 
 
+def test_business_sweep_fullraw_probe_tries_compact_alpha_query(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import agent.topic_discovery as topic_discovery_mod
+    import scripts.run_topic_discovery as discovery
+
+    calls: list[str] = []
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
+        str(tmp_path / "fullraw.lock"),
+    )
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_ALPHA_SHAPE_TERMS", "replication")
+
+    complete_receipt = {
+        "shards_searched": 1525,
+        "partial_shard_search": False,
+        "sweep_failed_shards": 0,
+        "source_count_searched": 5,
+    }
+
+    def fake_seed_fullraw(query: str, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        topic_discovery_mod._FULLRAW_LAST_RECEIPT = dict(complete_receipt)
+        topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
+        if query.endswith("replication"):
+            return [
+                {"paper_id": f"paper-{idx}", "title": f"{query} source {idx}"}
+                for idx in range(5)
+            ]
+        return []
+
+    monkeypatch.setattr(discovery, "_seed_fullraw_papers", fake_seed_fullraw)
+
+    result = sweep._strict_fullraw_probe(
+        "platform_strategy_network_effects",
+        include_papers=True,
+    )
+
+    assert calls == [
+        "platform strategy network",
+        "platform strategy network replication",
+    ]
+    assert result["status"] == "complete"
+    assert result["paper_count"] == 5
+    assert result["query"] == "platform strategy network replication"
+    assert len(result["_papers"]) == 5
+
+
 def test_business_sweep_fullraw_probe_does_not_dogpile_busy_worker(
     tmp_path: Path,
     monkeypatch: Any,

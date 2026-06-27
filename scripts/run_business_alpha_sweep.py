@@ -118,52 +118,64 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
         ))
         os.environ[attempts_key] = str(max(1, int(timeout_seconds // 2.0)))
 
-        events = discovery.__dict__.get("_FULLRAW_PROBE_EVENTS", [])
-        before = len(events)
         old_handler = signal.getsignal(signal.SIGALRM)
         old_timer = signal.setitimer(signal.ITIMER_REAL, 0.0)
         signal.signal(signal.SIGALRM, _raise_fullraw_timeout)
         signal.setitimer(signal.ITIMER_REAL, timeout_seconds + max(5.0, timeout_seconds * 0.1))
         try:
             with httpx_mod.Client(timeout=timeout_seconds) as client:
-                papers = discovery.__dict__["_seed_fullraw_papers"](
-                    topic, client=client, limit=10,
-                )
+                result: dict[str, Any] = {}
+                attempted: list[str] = []
+                for query in _business_fullraw_queries(topic):
+                    attempted.append(query)
+                    events = discovery.__dict__.get("_FULLRAW_PROBE_EVENTS", [])
+                    before = len(events)
+                    papers = discovery.__dict__["_seed_fullraw_papers"](
+                        query, client=client, limit=10,
+                    )
+                    receipt = topic_discovery_mod.__dict__.get("_FULLRAW_LAST_RECEIPT", {})
+                    async_sweep = topic_discovery_mod.__dict__.get("_FULLRAW_LAST_ASYNC_SWEEP", {})
+                    receipt_complete = bool(discovery.__dict__["_fullraw_receipt_complete"](receipt))
+                    events = discovery.__dict__.get("_FULLRAW_PROBE_EVENTS", [])
+                    event = events[-1] if len(events) > before else {}
+                    status = (
+                        "complete" if papers else
+                        "complete_no_hits" if receipt_complete else
+                        str(event.get("status") or "no_hits")
+                    )
+                    result = {
+                        "status": status,
+                        "query": query,
+                        "attempted_queries": list(attempted),
+                        "paper_count": len(papers),
+                        "async_status": (
+                            async_sweep.get("status") if isinstance(async_sweep, dict) else None
+                        ),
+                        "shards_searched": (
+                            receipt.get("shards_searched") if isinstance(receipt, dict) else None
+                        ),
+                        "partial_shard_search": (
+                            receipt.get("partial_shard_search") if isinstance(receipt, dict) else None
+                        ),
+                        "sweep_failed_shards": (
+                            receipt.get("sweep_failed_shards") if isinstance(receipt, dict) else None
+                        ),
+                        "sources_searched": (
+                            receipt.get("sources_searched") if isinstance(receipt, dict) else None
+                        ),
+                    }
+                    if include_papers:
+                        result["_papers"] = papers
+                    if len(papers) >= 5 or status not in {
+                        "complete", "complete_no_hits", "no_hits",
+                    }:
+                        break
+                return result
         finally:
             signal.setitimer(signal.ITIMER_REAL, 0.0)
             signal.signal(signal.SIGALRM, old_handler)
             if old_timer[0] > 0.0:
                 signal.setitimer(signal.ITIMER_REAL, old_timer[0], old_timer[1])
-        receipt = topic_discovery_mod.__dict__.get("_FULLRAW_LAST_RECEIPT", {})
-        async_sweep = topic_discovery_mod.__dict__.get("_FULLRAW_LAST_ASYNC_SWEEP", {})
-        receipt_complete = bool(discovery.__dict__["_fullraw_receipt_complete"](receipt))
-        events = discovery.__dict__.get("_FULLRAW_PROBE_EVENTS", [])
-        event = (
-            events[-1]
-            if len(events) > before else {}
-        )
-        result = {
-            "status": (
-                "complete" if papers else
-                "complete_no_hits" if receipt_complete else
-                str(event.get("status") or "no_hits")
-            ),
-            "paper_count": len(papers),
-            "async_status": (
-                async_sweep.get("status") if isinstance(async_sweep, dict) else None
-            ),
-            "shards_searched": receipt.get("shards_searched") if isinstance(receipt, dict) else None,
-            "partial_shard_search": (
-                receipt.get("partial_shard_search") if isinstance(receipt, dict) else None
-            ),
-            "sweep_failed_shards": (
-                receipt.get("sweep_failed_shards") if isinstance(receipt, dict) else None
-            ),
-            "sources_searched": receipt.get("sources_searched") if isinstance(receipt, dict) else None,
-        }
-        if include_papers:
-            result["_papers"] = papers
-        return result
     except Exception as exc:
         return {"status": "failed", "error": exc.__class__.__name__}
     finally:
@@ -179,6 +191,31 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
             with suppress(OSError):
                 fcntl.flock(lock_handle, fcntl.LOCK_UN)
             lock_handle.close()
+
+
+def _business_fullraw_queries(topic: str) -> tuple[str, ...]:
+    discovery = importlib.import_module("scripts.run_topic_discovery")
+    compact = discovery.__dict__.get("_compact_fullraw_query", lambda q: " ".join(q.split()))
+    alpha_terms = discovery.__dict__.get("_alpha_shape_query_terms", lambda: ())()
+    seen: set[str] = set()
+    out: list[str] = []
+
+    def add(raw: str) -> None:
+        query = str(compact(raw.replace("_", " "))).strip()
+        key = " ".join(sorted(set(query.split())))
+        if query and key not in seen:
+            seen.add(key)
+            out.append(query)
+
+    bases = tuple(expand_topic_queries(topic, max_queries=3))
+    for raw in bases[:1]:
+        add(raw)
+    for term in tuple(alpha_terms)[:2]:
+        if out:
+            add(f"{out[0]} {term}")
+    for raw in bases[1:]:
+        add(raw)
+    return tuple(out[:4])
 
 
 def _write_fullraw_discovery(
