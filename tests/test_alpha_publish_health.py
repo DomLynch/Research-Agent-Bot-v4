@@ -274,6 +274,21 @@ def test_health_main_writes_blocker_summary_artifact(tmp_path: Path, capsys: Any
     summary = json.loads(artifact.read_text(encoding="utf-8"))
     business = summary["domains"]["business_research"]
     assert summary["failed_domains"] == ["business_research"]
+    assert summary["published"] == 0
+    assert summary["submitted"] == 0
+    assert summary["candidates_considered"] == 1
+    assert summary["queue_counts"] == {
+        "ready_to_publish": 0,
+        "agent_repair_needed": 0,
+        "curation_needed": 0,
+        "not_ready": 0,
+    }
+    assert summary["top_blockers"] == {
+        "candidate_refresh_failed": 1,
+        "no_source_diverse_bundle": 1,
+    }
+    assert summary["next_action"] == "wait_for_fullraw_completion"
+    assert summary["public_url_status"] == {"business_research": None}
     assert business["top_blockers"]["candidate_refresh_failed"] == 1
     assert business["queue_counts"] == {
         "ready_to_publish": 0,

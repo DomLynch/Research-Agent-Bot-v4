@@ -310,6 +310,49 @@ def _write_summary_artifact(runs_root: Path, summary: Json) -> Path:
     return path
 
 
+def _count_int(value: Any) -> int:
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _aggregate_domain_summaries(domain_summaries: dict[str, Json]) -> Json:
+    queue_counts = {key: 0 for key in _QUEUE_BUCKETS}
+    blocker_counts: dict[str, int] = {}
+    public_status: dict[str, Any] = {}
+    candidates_considered = 0
+    next_action: str | None = None
+    for domain, summary in domain_summaries.items():
+        counts = summary.get("current_queue_counts") or summary.get("queue_counts") or {}
+        if isinstance(counts, dict):
+            for key in _QUEUE_BUCKETS:
+                queue_counts[key] += _count_int(counts.get(key))
+        blockers = summary.get("top_blockers") or {}
+        if isinstance(blockers, dict):
+            for key, value in blockers.items():
+                name = str(key or "").strip()
+                if name:
+                    blocker_counts[name] = blocker_counts.get(name, 0) + _count_int(value)
+        considered = summary.get("considered_counts") or {}
+        if isinstance(considered, dict):
+            candidates_considered += sum(_count_int(value) for value in considered.values())
+        public_status[domain] = summary.get("public_url_status")
+        if not summary.get("ok") and not next_action and summary.get("next_action"):
+            next_action = str(summary.get("next_action"))
+    return {
+        "submitted": sum(_count_int(row.get("submitted")) for row in domain_summaries.values()),
+        "published": sum(_count_int(row.get("published")) for row in domain_summaries.values()),
+        "queue_counts": queue_counts,
+        "top_blockers": dict(
+            sorted(blocker_counts.items(), key=lambda item: (-item[1], item[0]))[:5]
+        ),
+        "candidates_considered": candidates_considered,
+        "next_action": next_action,
+        "public_url_status": public_status,
+    }
+
+
 def _public_url_status(url: str, *, timeout: float) -> Json:
     if not url:
         return {"http_status": None, "rendered": False, "status": None}
@@ -505,6 +548,7 @@ def main(argv: list[str] | None = None) -> int:
             "ok": not failed,
             "domains": domain_summaries,
             "failed_domains": failed,
+            **_aggregate_domain_summaries(domain_summaries),
         }
         if args.write_summary:
             summary["summary_artifact"] = str(_write_summary_artifact(args.runs_root, summary))
