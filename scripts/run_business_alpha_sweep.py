@@ -149,6 +149,13 @@ def _business_fullraw_priority_enabled() -> bool:
     ).strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _business_fullraw_query_limit() -> int:
+    try:
+        return max(1, int(os.environ.get("BUSINESS_SWEEP_FULLRAW_QUERY_LIMIT", "1")))
+    except ValueError:
+        return 1
+
+
 def _fullraw_busy_event(event: dict[str, Any]) -> bool:
     status = str(event.get("status") or "")
     return (
@@ -447,7 +454,7 @@ def _business_fullraw_queries(topic: str) -> tuple[str, ...]:
             add(f"{out[0]} {term}")
     for raw in bases[1:]:
         add(raw)
-    return tuple(out[:4])
+    return tuple(out[:_business_fullraw_query_limit()])
 
 
 def _write_fullraw_discovery(

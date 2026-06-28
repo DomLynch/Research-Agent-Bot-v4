@@ -1759,6 +1759,7 @@ def test_business_sweep_fullraw_probe_tries_compact_alpha_query(
         str(tmp_path / "fullraw.lock"),
     )
     monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_ALPHA_SHAPE_TERMS", "replication")
+    monkeypatch.setenv("BUSINESS_SWEEP_FULLRAW_QUERY_LIMIT", "4")
 
     complete_receipt = {
         "shards_searched": 1525,
@@ -1802,6 +1803,7 @@ def test_business_fullraw_queries_are_compact_deduped_and_alpha_shaped(
         "TOPIC_DISCOVERY_FULLRAW_ALPHA_SHAPE_TERMS",
         "replication,primary endpoint",
     )
+    monkeypatch.setenv("BUSINESS_SWEEP_FULLRAW_QUERY_LIMIT", "4")
 
     queries = sweep._business_fullraw_queries("pricing_strategy_margin_effects")
 
@@ -1818,6 +1820,20 @@ def test_business_fullraw_queries_are_compact_deduped_and_alpha_shaped(
     })
 
 
+def test_business_fullraw_queries_default_to_single_compact_sweep(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_FULLRAW_ALPHA_SHAPE_TERMS",
+        "replication,primary endpoint",
+    )
+    monkeypatch.delenv("BUSINESS_SWEEP_FULLRAW_QUERY_LIMIT", raising=False)
+
+    assert sweep._business_fullraw_queries("pricing_strategy_margin_effects") == (
+        "pricing strategy margin",
+    )
+
+
 def test_business_fullraw_queries_do_not_drop_all_specific_intent(
     monkeypatch: Any,
 ) -> None:
@@ -1825,6 +1841,7 @@ def test_business_fullraw_queries_do_not_drop_all_specific_intent(
         "TOPIC_DISCOVERY_FULLRAW_ALPHA_SHAPE_TERMS",
         "replication,primary endpoint",
     )
+    monkeypatch.setenv("BUSINESS_SWEEP_FULLRAW_QUERY_LIMIT", "4")
 
     queries = sweep._business_fullraw_queries("business_model_performance")
 
