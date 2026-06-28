@@ -1207,9 +1207,9 @@ def _fetch_fullraw_topic_papers(topic: str, *, client: httpx.Client, limit: int 
     ok = False
     polls = range(max(1, int(_float_env("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", 1.0)))) if (attempts_raw := os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", "").strip()) else iter(int, 1)
     deadline = time.monotonic() + max(1.0, _float_env("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", _float_env("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", 240.0)))
-    for _ in polls:
+    for attempt_idx, _ in enumerate(polls):
         try:
-            response = client.post(url, headers={"Authorization": f"Bearer {token}"} if token else {}, json=payload, timeout=timeout + 2.0)
+            response = client.post(url, headers={"Authorization": f"Bearer {token}"} if token else {}, json=payload | {"queue_if_missing": attempt_idx == 0}, timeout=timeout + 2.0)
             response.raise_for_status()
             data = response.json()
             if isinstance(data, dict):
