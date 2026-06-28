@@ -298,6 +298,35 @@ def test_business_bundle_infers_study_design_from_method_text() -> None:
     assert bundle.shape["study_design"] == "randomized controlled trial"
 
 
+def test_business_fact_infers_study_design_from_source_topic() -> None:
+    fact = normalize_business_fact(
+        {
+            "id": "field-exp-1",
+            "topic": "field_experiment_rct",
+            "claim_type": "effect_size",
+            "numeric_value": 13.21,
+            "units": "%",
+            "canonical_phrase": (
+                "Social nudges boosted video supply by 13.21% without changing quality."
+            ),
+            "population": "video content providers",
+            "intervention": "social nudges",
+            "comparator": "control providers",
+            "metric": "video supply",
+            "paper": {
+                "doi": "10.1287/mnsc.2022.4622",
+                "title": "The Impact of Social Nudges on User-Generated Content",
+                "journal_name": "Management Science",
+                "publication_year": 2022,
+            },
+        },
+        topic="platform_strategy_network_effects",
+        domain="business_research",
+    )
+
+    assert fact["study_design"] == "randomized controlled trial"
+
+
 def test_business_bundle_ignores_generic_study_design_other() -> None:
     rows = _fixture_facts()
     for row in rows:

@@ -137,6 +137,7 @@ def _infer_study_design(item: Json, fact: Json, paper: Json) -> str:
             fact.get("identification_strategy"),
             item.get("estimation_method"),
             fact.get("estimation_method"),
+            item.get("topic"), fact.get("topic"),
             item.get("sub_topic"),
             fact.get("sub_topic"),
             item.get("claim_type"),
