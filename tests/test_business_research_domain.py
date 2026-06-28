@@ -1239,6 +1239,59 @@ def test_business_sweep_fullraw_probe_inherits_fullraw_search_budget(
     assert os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] == "7200"
 
 
+def test_business_sweep_fullraw_probe_defaults_to_strict_sweep_budget(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import agent.topic_discovery as topic_discovery_mod
+    import scripts.run_topic_discovery as discovery
+
+    captured: dict[str, str | None] = {}
+    for key in (
+        "TOPIC_DISCOVERY_BUSINESS_FULLRAW_FOREGROUND_SECONDS",
+        "TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS",
+        "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
+        "V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS",
+    ):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
+        str(tmp_path / "fullraw.lock"),
+    )
+
+    def fake_seed_fullraw(_topic: str, **_kwargs: Any) -> list[dict[str, Any]]:
+        captured.update({
+            "client_timeout": str(_kwargs["client"].timeout.read),
+            "attempts": os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS"),
+            "foreground_budget": os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"),
+        })
+        topic_discovery_mod._FULLRAW_LAST_RECEIPT = {
+            "shards_searched": 64,
+            "partial_shard_search": True,
+            "sweep_failed_shards": 0,
+            "source_count_searched": 5,
+        }
+        topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {"status": "queued"}
+        discovery._FULLRAW_PROBE_EVENTS.append({
+            "query": _topic,
+            "status": "incomplete_receipt",
+        })
+        return []
+
+    monkeypatch.setattr(discovery, "_seed_fullraw_papers", fake_seed_fullraw)
+
+    result = sweep._strict_fullraw_probe("portfolio_returns")
+
+    assert result["status"] == "incomplete_receipt"
+    assert captured == {
+        "client_timeout": "900.0",
+        "attempts": "450",
+        "foreground_budget": "900",
+    }
+    assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS") is None
+    assert os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS") is None
+
+
 def test_business_sweep_fullraw_probe_preserves_in_progress_cache_receipt(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

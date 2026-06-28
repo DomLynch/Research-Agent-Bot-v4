@@ -49,7 +49,7 @@ _BROAD_SEED_TOKENS = frozenset({
     "model", "performance", "effect", "effects", "outcome", "outcomes",
     "returns", "return", "research",
 })
-_BUSINESS_FULLRAW_FOREGROUND_SECONDS = "30"
+_BUSINESS_FULLRAW_FOREGROUND_SECONDS = "900"
 _BUSINESS_FULLRAW_LOCK_PATH = "/tmp/researka-v4-business-fullraw.lock"
 _BUSINESS_FULLRAW_LOCK_WAIT_SECONDS = "0"
 _BUSINESS_FULLRAW_BACKOFF_SECONDS = "180"
