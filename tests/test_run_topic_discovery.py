@@ -263,6 +263,7 @@ def test_seed_fullraw_reserves_strict_fullraw_inflight_headroom(
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH", "1")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED", "1525")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_RESERVED_INFLIGHT_SLOTS", "1")
 
     def handler(req: Any) -> Any:
         if req.url.path.endswith("/health"):
@@ -289,7 +290,7 @@ def test_seed_fullraw_reserves_strict_fullraw_inflight_headroom(
     assert event["max_inflight"] == 2
 
 
-def test_seed_fullraw_uses_queue_when_single_inflight_worker_has_room(
+def test_seed_fullraw_uses_second_inflight_worker_when_available(
     monkeypatch: Any,
 ) -> None:
     run_topic_discovery._FULLRAW_PROBE_EVENTS.clear()
@@ -306,10 +307,10 @@ def test_seed_fullraw_uses_queue_when_single_inflight_worker_has_room(
             return run_topic_discovery.httpx.Response(200, json={
                 "async_sweep": {
                     "inflight_count": 1,
-                    "max_inflight": 1,
+                    "max_inflight": 2,
                     "max_queue": 16,
                     "priority_queued_count": 0,
-                    "queued_count": 1,
+                    "queued_count": 0,
                 },
             })
         posted = True

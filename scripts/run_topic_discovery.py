@@ -477,10 +477,10 @@ def _fullraw_reserved_inflight_slots() -> int:
         return 0
     try:
         return max(0, int(os.environ.get(
-            "TOPIC_DISCOVERY_FULLRAW_RESERVED_INFLIGHT_SLOTS", "1",
+            "TOPIC_DISCOVERY_FULLRAW_RESERVED_INFLIGHT_SLOTS", "0",
         )))
     except (TypeError, ValueError):
-        return 1
+        return 0
 
 
 def _fullraw_strict_floor(seconds: float, *, explicit: bool) -> float:
