@@ -1230,7 +1230,7 @@ def test_business_sweep_fullraw_probe_inherits_fullraw_search_budget(
         "client_timeout": "7200.0",
         "timeout": "7200.0",
         "attempts": "3600",
-        "priority": None,
+        "priority": "1",
         "poll_seconds": None,
         "foreground_budget": "7200",
         "sweep_wait": "7200.0",
@@ -1244,7 +1244,7 @@ def test_business_sweep_fullraw_probe_inherits_fullraw_search_budget(
     assert os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] == "7200"
 
 
-def test_business_sweep_fullraw_probe_priority_is_explicit_opt_in(
+def test_business_sweep_fullraw_probe_priority_can_be_disabled(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
     import agent.topic_discovery as topic_discovery_mod
@@ -1252,7 +1252,7 @@ def test_business_sweep_fullraw_probe_priority_is_explicit_opt_in(
 
     captured: dict[str, str | None] = {}
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
-    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_PRIORITY", "1")
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_PRIORITY", "0")
     monkeypatch.setenv(
         "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
         str(tmp_path / "fullraw.lock"),
@@ -1278,7 +1278,7 @@ def test_business_sweep_fullraw_probe_priority_is_explicit_opt_in(
     result = sweep._strict_fullraw_probe("portfolio_returns")
 
     assert result["status"] == "incomplete_receipt"
-    assert captured == {"priority": "1"}
+    assert captured == {"priority": None}
     assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_PRIORITY") is None
 
 

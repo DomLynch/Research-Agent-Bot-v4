@@ -116,7 +116,7 @@ def _business_fullraw_backoff_seconds() -> float:
 
 def _business_fullraw_priority_enabled() -> bool:
     return os.environ.get(
-        "TOPIC_DISCOVERY_BUSINESS_FULLRAW_PRIORITY", "",
+        "TOPIC_DISCOVERY_BUSINESS_FULLRAW_PRIORITY", "1",
     ).strip().lower() in {"1", "true", "yes", "on"}
 
 

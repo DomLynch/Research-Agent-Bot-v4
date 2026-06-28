@@ -392,7 +392,7 @@ def test_seed_fullraw_papers_allows_priority_when_background_queue_saturated(
                     "inflight_count": 3,
                     "max_inflight": 2,
                     "priority_queued_count": 0,
-                    "priority_burst": True,
+                    "priority_burst": False,
                 },
             })
         if str(req.url) == "https://fullraw/search":
