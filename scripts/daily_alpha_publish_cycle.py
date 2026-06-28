@@ -5656,7 +5656,9 @@ def run_cycle(
                     min_submit_sources,
                     strict_topic_coverage=publish_literature._non_biomedical(profile.slug),
                 )
-                fact_backed = _source_literature_fact_count(selected_papers) >= min_submit_sources
+                fact_backed = publish_literature.substantive_fact_count(
+                    selected_papers,
+                ) >= min(2, min_submit_sources)
                 if (
                     not fact_backed
                     and not _source_literature_fallback_submit_enabled()

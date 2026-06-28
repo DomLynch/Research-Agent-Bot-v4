@@ -8935,7 +8935,7 @@ def test_source_literature_reuses_discovery_source_papers_before_refetch(
     assert ledger["source_literature_preflight_attempts"][0]["paper_count"] == 5
 
 
-def test_source_literature_reuses_fullraw_metadata_papers_as_fact_backed(
+def test_source_literature_reuses_fullraw_metadata_but_does_not_submit_without_facts(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     root = tmp_path / "repo"
@@ -8966,7 +8966,7 @@ def test_source_literature_reuses_fullraw_metadata_papers_as_fact_backed(
         "_fetch_source_literature_papers",
         lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("refetched")),
     )
-    seen_payload: dict[str, Any] = {}
+    submitted = {"called": False}
 
     ledger = daily.run_cycle(
         runs_root=root,
@@ -8975,10 +8975,9 @@ def test_source_literature_reuses_fullraw_metadata_papers_as_fact_backed(
         refresh_candidates=True,
         max_refresh_batches=1,
         submit=True,
-        submitter=lambda payload: (
-            seen_payload.update(payload)
-            or {"ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}}}
-        ),
+        submitter=lambda _payload: submitted.update(called=True) or {
+            "ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}},
+        },
         decision_fetcher=lambda _submission_id: {
             "status": "complete",
             "decision": "accept",
@@ -8989,10 +8988,14 @@ def test_source_literature_reuses_fullraw_metadata_papers_as_fact_backed(
         sleep=lambda _seconds: None,
     )
 
-    assert ledger["status"] == "published"
-    assert ledger["submitted_topic"] == "acarbose"
-    assert "Title-level source match: Acarbose" in seen_payload["markdown"]
+    assert submitted["called"] is False
+    assert ledger["status"] == "no_fresh_candidate"
+    assert ledger["submitted"] == 0
     assert ledger["source_literature_preflight_attempts"][0]["paper_count"] == 5
+    assert (
+        ledger["source_literature_fallback"]["reason"]
+        == "requires_fact_level_source_synthesis"
+    )
 
 
 def test_source_backed_literature_candidate_bypasses_broad_exhausted_parent(
@@ -9728,7 +9731,7 @@ def test_fact_backed_source_literature_fallback_submits_without_flag(
     assert "receipt-backed scoping note" in seen_payload["abstract"]
 
 
-def test_fullraw_metadata_source_literature_fallback_submits_without_flag(
+def test_fullraw_metadata_only_source_literature_fallback_does_not_submit(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     root = tmp_path / "repo"
@@ -9752,7 +9755,7 @@ def test_fullraw_metadata_source_literature_fallback_submits_without_flag(
         {"doi": "10.1/d", "title": "Acarbose mice late life metabolic response"},
         {"doi": "10.1/e", "title": "Acarbose mice geroscience translational evidence"},
     ])
-    seen_payload: dict[str, Any] = {}
+    submitted = {"called": False}
 
     ledger = daily.run_cycle(
         runs_root=root,
@@ -9760,10 +9763,9 @@ def test_fullraw_metadata_source_literature_fallback_submits_without_flag(
         domain="longevity_research",
         queue=_queue(),
         submit=True,
-        submitter=lambda payload: (
-            seen_payload.update(payload)
-            or {"ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}}}
-        ),
+        submitter=lambda _payload: submitted.update(called=True) or {
+            "ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}},
+        },
         decision_fetcher=lambda _submission_id: {
             "status": "complete",
             "decision": "accept",
@@ -9774,11 +9776,14 @@ def test_fullraw_metadata_source_literature_fallback_submits_without_flag(
         sleep=lambda _seconds: None,
     )
 
-    assert ledger["status"] == "published"
-    assert ledger["submitted_topic"] == "acarbose"
-    assert ledger["source_literature_fallback"]["status"] == "selected"
-    assert "Title-level source match: Acarbose" in seen_payload["markdown"]
-    assert "source-level receipts" in seen_payload["markdown"]
+    assert submitted["called"] is False
+    assert ledger["published"] == 0
+    assert ledger["submitted"] == 0
+    assert ledger["source_literature_fallback"]["status"] == "disabled"
+    assert (
+        ledger["source_literature_fallback"]["reason"]
+        == "requires_fact_level_source_synthesis"
+    )
 
 
 def test_source_literature_fallback_ignores_stale_source_floor_block(
@@ -10752,6 +10757,47 @@ def test_source_literature_fetcher_supplements_thin_fact_search_with_fullraw(
     assert papers[-1]["source_fact"]["source_tier"] == "paper_metadata"
     assert "Title-level source match: Acarbose" in papers[-1]["source_fact"]["canonical_phrase"]
     assert daily._source_literature_fact_count(papers) == 5
+    assert daily._source_literature_boundary_quality("acarbose", papers, 5) == (True, "ok")
+
+
+def test_source_literature_fetcher_preserves_fullraw_source_facts(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "researka_database_url": "",
+        "researka_database_token": "",
+    })())
+    monkeypatch.setattr(
+        publish_literature,
+        "_fullraw_topic_papers",
+        lambda _query, _limit: [
+            {
+                "doi": f"10.1/acarbose-fullraw-{idx}",
+                "title": title,
+                "source_fact": {
+                    "canonical_phrase": f"Acarbose changed aging endpoint {idx}.",
+                    "population": "mice",
+                    "intervention": "acarbose",
+                    "endpoint": f"aging endpoint {idx}",
+                    "source_tier": "fullraw_search",
+                },
+            }
+            for idx, title in enumerate((
+                "Acarbose mice lifespan response",
+                "Acarbose mice glucose aging marker",
+                "Acarbose mice microbiome aging signal",
+                "Acarbose mice inflammatory aging endpoint",
+                "Acarbose mice metabolic aging profile",
+            ))
+        ],
+    )
+
+    papers = daily._fetch_source_literature_papers(
+        "acarbose", 5, domain="longevity_research",
+    )
+
+    assert publish_literature.substantive_fact_count(papers) == 5
+    assert "Title-level source match" not in papers[0]["source_fact"]["canonical_phrase"]
     assert daily._source_literature_boundary_quality("acarbose", papers, 5) == (True, "ok")
 
 

@@ -492,6 +492,39 @@ def test_fullraw_fallback_polls_until_complete_receipt(monkeypatch: Any) -> None
     assert papers[0]["title"] == "Full sweep metformin longevity paper"
 
 
+def test_fullraw_fallback_preserves_source_fact_fields(monkeypatch: Any) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok-index")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", "1")
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.host == "test":
+            return httpx.Response(200, json=[])
+        return httpx.Response(200, json={
+            "meta": {"shard_receipt": _fullraw_receipt()},
+            "results": [{
+                "doi": "10.1/acarbose-fullraw",
+                "title": "Acarbose lifespan response in mice",
+                "canonical_phrase": "Acarbose changed lifespan response in mice.",
+                "population": "mice",
+                "intervention": "acarbose",
+                "endpoint": "lifespan response",
+                "source_excerpt": "Acarbose changed lifespan response in mice.",
+            }],
+        })
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        papers = td._fetch_topic_papers(
+            "acarbose_longevity", client=c, settings=_settings(),
+        )
+
+    fact = papers[0]["source_fact"]
+    assert fact["canonical_phrase"] == "Acarbose changed lifespan response in mice."
+    assert fact["population"] == "mice"
+    assert fact["source_tier"] == "fullraw_search"
+
+
 def test_fullraw_fallback_default_budget_outlives_request_timeout(
     monkeypatch: Any,
 ) -> None:

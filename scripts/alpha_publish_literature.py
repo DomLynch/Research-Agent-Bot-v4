@@ -255,10 +255,14 @@ def _fullraw_relevant_papers(topic: str, limit: int, seen: set[str]) -> list[Jso
             key = paper_key(paper, paper.get("paper_id"))
             if not key or not title or key in seen:
                 continue
+            raw_fact = paper.get("source_fact")
             candidate = paper | {
                 "id": key,
                 "title": title,
-                "source_fact": _metadata_source_fact(topic, paper | {"title": title}),
+                "source_fact": (
+                    raw_fact if isinstance(raw_fact, dict) and raw_fact.get("canonical_phrase")
+                    else _metadata_source_fact(topic, paper | {"title": title})
+                ),
             }
             if not topic_relevant(topic, candidate):
                 continue
@@ -384,6 +388,27 @@ def with_metadata_source_facts(topic: str, papers: list[Json]) -> list[Json]:
 
 def fact_count(papers: list[Json]) -> int:
     return sum(1 for paper in papers if isinstance(paper.get("source_fact"), dict))
+
+
+def _substantive_source_fact(fact: Json) -> bool:
+    phrase = str(fact.get("canonical_phrase") or "").strip()
+    if not phrase or phrase.casefold().startswith("title-level source match:"):
+        return False
+    if str(fact.get("source_tier") or "").casefold() == "paper_metadata":
+        return False
+    return bool(
+        str(fact.get("population") or "").strip()
+        or str(fact.get("intervention") or "").strip()
+        or str(fact.get("endpoint") or fact.get("metric") or "").strip()
+    )
+
+
+def substantive_fact_count(papers: list[Json]) -> int:
+    return sum(
+        1 for paper in papers
+        if isinstance((fact := paper.get("source_fact")), dict)
+        and _substantive_source_fact(fact)
+    )
 
 
 def _short_finding(value: str, limit: int = 170) -> str:
