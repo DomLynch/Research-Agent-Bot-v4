@@ -61,6 +61,23 @@ def test_write_text_uses_sidecar_lock(tmp_path: Path, monkeypatch: Any) -> None:
     assert not (tmp_path / "state.md.tmp").exists()
 
 
+def test_lock_path_uses_named_sidecar_lock(tmp_path: Path, monkeypatch: Any) -> None:
+    calls: list[tuple[str, int]] = []
+
+    def fake_flock(handle: Any, op: int) -> None:
+        calls.append((Path(handle.name).name, op))
+
+    monkeypatch.setattr(fcntl, "flock", fake_flock)
+
+    with io.lock_path(tmp_path / "_sync_submission_decisions"):
+        calls.append(("inside", 0))
+
+    assert calls == [
+        ("_sync_submission_decisions.lock", fcntl.LOCK_EX),
+        ("inside", 0),
+    ]
+
+
 def test_update_json_list_locks_and_only_writes_on_change(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

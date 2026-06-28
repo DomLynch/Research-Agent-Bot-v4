@@ -4077,6 +4077,25 @@ def sync_submission_decisions(
     max_pending_age_hours: float = _DEFAULT_PENDING_DECISION_MAX_AGE_HOURS,
 ) -> Json:
     ledger_dir = runs_root / "_daily_ledger"
+    with publish_io.lock_path(ledger_dir / "_sync_submission_decisions"):
+        return _sync_submission_decisions_unlocked(
+            runs_root,
+            fetcher=fetcher,
+            page_fetcher=page_fetcher,
+            now=now,
+            max_pending_age_hours=max_pending_age_hours,
+        )
+
+
+def _sync_submission_decisions_unlocked(
+    runs_root: Path = _RUNS,
+    *,
+    fetcher: DecisionFetcher = publish_decisions.decision_fetch,
+    page_fetcher: PageFetcher = publish_public.fetch_public_page,
+    now: dt.datetime | None = None,
+    max_pending_age_hours: float = _DEFAULT_PENDING_DECISION_MAX_AGE_HOURS,
+) -> Json:
+    ledger_dir = runs_root / "_daily_ledger"
     current = now or dt.datetime.now(dt.UTC)
     summary: Json = {
         "checked": 0, "updated": 0, "published": 0, _DECISION_PENDING: 0,

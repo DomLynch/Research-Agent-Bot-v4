@@ -5807,6 +5807,30 @@ def test_sync_submission_decisions_locks_daily_ledger_updates(
     assert ("2026-05-21.json.lock", fcntl.LOCK_EX) in lock_calls
 
 
+def test_sync_submission_decisions_uses_transaction_lock(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submitted_to_researka",
+        "submission_id": "sub_123",
+    })
+    lock_calls: list[tuple[str, int]] = []
+
+    def fake_flock(handle: Any, op: int) -> None:
+        lock_calls.append((Path(handle.name).name, op))
+
+    monkeypatch.setattr(fcntl, "flock", fake_flock)
+
+    daily.sync_submission_decisions(
+        root,
+        fetcher=lambda _submission_id: {"status": "complete", "decision": "reject"},
+    )
+
+    assert lock_calls[0] == ("_sync_submission_decisions.lock", fcntl.LOCK_EX)
+    assert ("2026-05-21.json.lock", fcntl.LOCK_EX) in lock_calls
+
+
 def test_sync_submission_decisions_locks_submitted_fingerprint_updates(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

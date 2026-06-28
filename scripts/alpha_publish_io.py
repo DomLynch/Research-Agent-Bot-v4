@@ -3,13 +3,23 @@ from __future__ import annotations
 
 import fcntl
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
 from scripts import alpha_publish_status as publish_status
 
 Json = dict[str, Any]
+
+
+@contextmanager
+def lock_path(path: Path, *, shared: bool = False) -> Iterator[None]:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = path.with_name(path.name + ".lock")
+    with lock_path.open("w", encoding="utf-8") as lock:
+        fcntl.flock(lock, fcntl.LOCK_SH if shared else fcntl.LOCK_EX)
+        yield
 
 
 def _load_json_unlocked(path: Path, default: Any) -> Any:
