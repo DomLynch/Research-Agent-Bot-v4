@@ -289,6 +289,62 @@ def test_seed_fullraw_reserves_strict_fullraw_inflight_headroom(
     assert event["max_inflight"] == 2
 
 
+def test_seed_fullraw_uses_queue_when_single_inflight_worker_has_room(
+    monkeypatch: Any,
+) -> None:
+    run_topic_discovery._FULLRAW_PROBE_EVENTS.clear()
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH", "1")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED", "1525")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", "1")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS", "0")
+    posted = False
+
+    def handler(req: Any) -> Any:
+        nonlocal posted
+        if req.url.path.endswith("/health"):
+            return run_topic_discovery.httpx.Response(200, json={
+                "async_sweep": {
+                    "inflight_count": 1,
+                    "max_inflight": 1,
+                    "max_queue": 16,
+                    "priority_queued_count": 0,
+                    "queued_count": 1,
+                },
+            })
+        posted = True
+        return run_topic_discovery.httpx.Response(200, json={
+            "meta": {
+                "async_sweep": {
+                    "status": "queued",
+                    "key_queued": True,
+                    "key_running": False,
+                    "queued_count": 2,
+                    "max_queue": 16,
+                },
+                "shard_receipt": {
+                    "shards_searched": 128,
+                    "partial_shard_search": True,
+                    "sweep_failed_shards": 0,
+                    "source_count_searched": 5,
+                },
+            },
+            "results": [],
+        })
+
+    transport = run_topic_discovery.httpx.MockTransport(handler)
+    with run_topic_discovery.httpx.Client(transport=transport) as client:
+        assert run_topic_discovery._seed_fullraw_papers(
+            "business supply chain", client=client, limit=5,
+        ) == []
+
+    assert posted
+    event = run_topic_discovery._FULLRAW_PROBE_EVENTS[-1]
+    assert event["status"] == "incomplete_receipt"
+    assert event["async_status"] == "queued"
+    assert event["queued_count"] == 2
+
+
 def test_seed_fullraw_backs_off_when_fullraw_health_is_unavailable(
     monkeypatch: Any,
 ) -> None:

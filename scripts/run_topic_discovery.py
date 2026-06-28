@@ -544,6 +544,7 @@ def _fullraw_queue_saturated(*, client: httpx.Client) -> dict[str, object]:
     elif (
         max_inflight > 0
         and inflight >= max(1, max_inflight - reserved_inflight)
+        and not (max_inflight == 1 and max_queue > 0 and queued < max_queue)
     ):
         saturated_status = "inflight_saturated"
     if saturated_status:
