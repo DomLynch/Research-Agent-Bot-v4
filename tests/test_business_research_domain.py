@@ -382,7 +382,7 @@ def test_business_fetch_filters_global_fallback_when_live_schema_rejects_domain(
     assert calls[0]["domain"] == "econ_business"
     assert "domain" not in calls[1]
     assert len(calls) == 2
-    assert timeouts == [20.0, 20.0]
+    assert timeouts == [90.0, 90.0]
     assert trace["status"] == "fallback_filtered"
     assert trace["http_status"] == 200
     assert trace["domain_http_status"] == 422
