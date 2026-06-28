@@ -2814,6 +2814,44 @@ def test_business_sweep_backfills_pubmed_abstract_for_title_only_fullraw(
     assert enriched[0]["source_fact"]["endpoint"] == "firm performance"
 
 
+def test_business_sweep_backfills_crossref_abstract_for_doi_only_fullraw(
+    monkeypatch: Any,
+) -> None:
+    crossref_calls: list[str] = []
+
+    def fake_crossref(doi: str, _settings: Any) -> str:
+        crossref_calls.append(doi)
+        return (
+            "Empirical results indicate that digital transformation improves "
+            "firm profitability in listed firms."
+        )
+
+    monkeypatch.setenv("BUSINESS_SWEEP_PUBMED_ABSTRACT_BACKFILL_LIMIT", "1")
+    monkeypatch.setattr(sweep, "_fetch_pubmed_abstract", lambda *_args: "")
+    monkeypatch.setattr(sweep, "_fetch_crossref_abstract", fake_crossref)
+    settings = SimpleNamespace(
+        researka_database_url="",
+        researka_database_token="",
+        crossref_polite_email="",
+    )
+    papers = [{
+        "doi": "10.64753/jcasc.v10i4.3152",
+        "title": "The Impact of Digital Transformation on Firm Profitability",
+    }]
+
+    enriched = sweep._enrich_fullraw_papers_with_db_facts(
+        "digital_transformation_firm",
+        domain="business_research",
+        papers=papers,
+        settings=settings,
+    )
+
+    assert crossref_calls == ["10.64753/jcasc.v10i4.3152"]
+    assert publish_literature.substantive_fact_count(enriched) == 1
+    assert enriched[0]["abstract"].startswith("Empirical results indicate")
+    assert enriched[0]["source_fact"]["endpoint"] == "firm profitability"
+
+
 def test_business_sweep_abstract_fact_prefers_results_over_methods() -> None:
     paper = {
         "doi": "10.1000/digital-result",

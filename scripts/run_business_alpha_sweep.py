@@ -13,6 +13,7 @@ import sys
 import time
 import tomllib
 import urllib.error
+import urllib.parse
 import urllib.request
 from contextlib import suppress
 from pathlib import Path
@@ -680,6 +681,30 @@ def _fetch_pubmed_abstract(pmid: str, settings: Any) -> str:
         return ""
 
 
+def _fetch_crossref_abstract(doi: str, settings: Any) -> str:
+    if not str(doi or "").strip():
+        return ""
+    try:
+        retrieval_base = importlib.import_module("agent.retrieval.base")
+        params = ""
+        email = str(getattr(settings, "crossref_polite_email", "") or "").strip()
+        if email:
+            params = "?mailto=" + urllib.parse.quote(email, safe="")
+        req = urllib.request.Request(
+            "https://api.crossref.org/works/"
+            + urllib.parse.quote(str(doi).strip(), safe="")
+            + params,
+            headers={"User-Agent": "researka-v4/1.0"},
+        )
+        with urllib.request.urlopen(req, timeout=15) as response:
+            data = json.loads(response.read().decode("utf-8"))
+        message = data.get("message") if isinstance(data, dict) else {}
+        abstract = message.get("abstract") if isinstance(message, dict) else ""
+        return str(retrieval_base.clean_text(abstract, limit=8000) or "").strip()
+    except Exception:
+        return ""
+
+
 def _tier2_facts_for_paper(
     *, base: str, token: str, paper_id: str, domain: str, timeout: float,
 ) -> list[dict[str, Any]]:
@@ -749,6 +774,8 @@ def _enrich_fullraw_papers_with_db_facts(
                 and not str(paper.get("abstract") or paper.get("source_excerpt") or "").strip()
             ):
                 abstract = _fetch_pubmed_abstract(str(paper.get("pmid") or ""), settings)
+                if not abstract:
+                    abstract = _fetch_crossref_abstract(str(paper.get("doi") or ""), settings)
                 backfills_remaining -= 1
                 if abstract:
                     paper = paper | {"abstract": abstract}
