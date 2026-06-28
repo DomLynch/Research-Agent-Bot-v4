@@ -1284,12 +1284,22 @@ def test_business_sweep_fullraw_probe_defaults_to_strict_sweep_budget(
 
     assert result["status"] == "incomplete_receipt"
     assert captured == {
-        "client_timeout": "900.0",
-        "attempts": "450",
-        "foreground_budget": "900",
+        "client_timeout": "2400.0",
+        "attempts": "1200",
+        "foreground_budget": "2400",
     }
     assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS") is None
     assert os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS") is None
+
+
+def test_business_sweep_fullraw_probe_uses_strict_floor_over_generic_budget(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.delenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_FOREGROUND_SECONDS", raising=False)
+    monkeypatch.delenv("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", raising=False)
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "900")
+
+    assert sweep._business_fullraw_foreground_seconds() == "2400"
 
 
 def test_business_sweep_fullraw_probe_preserves_in_progress_cache_receipt(

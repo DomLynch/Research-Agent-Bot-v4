@@ -49,7 +49,7 @@ _BROAD_SEED_TOKENS = frozenset({
     "model", "performance", "effect", "effects", "outcome", "outcomes",
     "returns", "return", "research",
 })
-_BUSINESS_FULLRAW_FOREGROUND_SECONDS = "900"
+_BUSINESS_FULLRAW_FOREGROUND_SECONDS = "2400"
 _BUSINESS_FULLRAW_LOCK_PATH = "/tmp/researka-v4-business-fullraw.lock"
 _BUSINESS_FULLRAW_LOCK_WAIT_SECONDS = "0"
 _BUSINESS_FULLRAW_BACKOFF_SECONDS = "180"
@@ -76,12 +76,16 @@ _NON_BUSINESS_QUERY_SUFFIXES = (
 
 
 def _business_fullraw_foreground_seconds() -> str:
-    return (
-        os.environ.get("TOPIC_DISCOVERY_BUSINESS_FULLRAW_FOREGROUND_SECONDS")
-        or os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS")
+    if explicit := os.environ.get("TOPIC_DISCOVERY_BUSINESS_FULLRAW_FOREGROUND_SECONDS"):
+        return explicit
+    configured = (
+        os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS")
         or os.environ.get("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS")
-        or _BUSINESS_FULLRAW_FOREGROUND_SECONDS
     )
+    try:
+        return str(int(max(float(configured or 0), float(_BUSINESS_FULLRAW_FOREGROUND_SECONDS))))
+    except ValueError:
+        return _BUSINESS_FULLRAW_FOREGROUND_SECONDS
 
 
 def _business_fullraw_lock_wait_seconds() -> float:
