@@ -11,6 +11,8 @@ import signal
 import sys
 import time
 import tomllib
+import urllib.error
+import urllib.request
 from contextlib import suppress
 from pathlib import Path
 from typing import Any
@@ -24,6 +26,7 @@ from agent.business_research import (
     write_candidate_run,
 )
 from agent.domain_profile import load_domain_profile
+from agent.researka_facts import tier2_domain
 from agent.settings import load_settings
 from agent.topic_synonyms import expand_topic_queries
 from scripts import alpha_publish_literature as publish_literature
@@ -444,6 +447,90 @@ def _write_fullraw_discovery(
     return out_path
 
 
+def _fullraw_paper_lookup_ids(paper: dict[str, Any]) -> tuple[str, ...]:
+    seen: set[str] = set()
+    ids: list[str] = []
+    for key in ("paper_id", "id", "doi", "pmid", "openalex_id"):
+        raw = str(paper.get(key) or "").strip()
+        if not raw:
+            continue
+        candidates = [raw]
+        if key == "openalex_id" and "/" in raw:
+            candidates.append(raw.rstrip("/").rsplit("/", 1)[-1])
+        for candidate in candidates:
+            if candidate and candidate.casefold() not in seen:
+                seen.add(candidate.casefold())
+                ids.append(candidate)
+    return tuple(ids)
+
+
+def _tier2_facts_for_paper(
+    *, base: str, token: str, paper_id: str, domain: str, timeout: float,
+) -> list[dict[str, Any]]:
+    req = urllib.request.Request(
+        f"{base}/api/v1/tier2/facts/by-paper",
+        data=json.dumps({
+            "paper_id": paper_id,
+            "limit": 5,
+            "min_confidence": "medium",
+            "numeric_only": True,
+            "strict_audit_required": False,
+            "domain": tier2_domain(domain),
+        }).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "X-Researka-Token": token,
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except (OSError, urllib.error.HTTPError, ValueError, json.JSONDecodeError):
+        return []
+    return [row for row in data if isinstance(row, dict)] if isinstance(data, list) else []
+
+
+def _enrich_fullraw_papers_with_db_facts(
+    topic: str, *, domain: str, papers: list[dict[str, Any]], settings: Any,
+) -> list[dict[str, Any]]:
+    base = str(getattr(settings, "researka_database_url", "") or "").rstrip("/")
+    token = str(getattr(settings, "researka_database_token", "") or "").strip()
+    if not base or not token:
+        return papers
+    try:
+        timeout = max(0.5, float(os.environ.get(
+            "BUSINESS_SWEEP_BY_PAPER_FACT_TIMEOUT_SECONDS", "4",
+        )))
+    except ValueError:
+        timeout = 4.0
+    enriched: list[dict[str, Any]] = []
+    for paper in papers:
+        if publish_literature.substantive_fact_count([paper]) > 0:
+            enriched.append(paper)
+            continue
+        replacement = paper
+        for paper_id in _fullraw_paper_lookup_ids(paper):
+            rows = _tier2_facts_for_paper(
+                base=base, token=token, paper_id=paper_id, domain=domain, timeout=timeout,
+            )
+            for row in rows:
+                candidate = paper | {
+                    "id": publish_literature.paper_key(paper, paper_id),
+                    "source_fact": publish_literature.source_fact(row),
+                }
+                if (
+                    publish_literature.substantive_fact_count([candidate]) > 0
+                    and publish_literature.topic_relevant(topic, candidate)
+                ):
+                    replacement = candidate
+                    break
+            if replacement is not paper:
+                break
+        enriched.append(replacement)
+    return enriched
+
+
 def _seed_topic_variants(topic: str) -> tuple[str, ...]:
     out: list[str] = []
     seen: set[str] = set()
@@ -816,6 +903,9 @@ def main() -> int:
                         paper for paper in fullraw_trace.pop("_papers", [])
                         if isinstance(paper, dict)
                     ]
+                    fullraw_papers = _enrich_fullraw_papers_with_db_facts(
+                        topic, domain=domain, papers=fullraw_papers, settings=settings,
+                    )
                     fullraw_keys: set[str] = set()
                     for paper in fullraw_papers:
                         key = str(

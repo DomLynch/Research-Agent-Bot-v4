@@ -27,6 +27,7 @@ from agent.business_research import (
 )
 from agent.domain_profile import DomainProfile, load_domain_profile
 from agent.topic_discovery import load_seed_topics
+from scripts import alpha_publish_literature as publish_literature
 
 
 def _fixture_facts() -> list[dict[str, Any]]:
@@ -2382,6 +2383,54 @@ def test_business_sweep_metadata_only_fullraw_does_not_handoff_to_submit(
     assert row["status"] == "no_bundle"
     assert "requires_fact_level_source_synthesis" in row["blockers"]
     assert run_cycle_calls == 0
+
+
+def test_business_sweep_enriches_fullraw_papers_with_exact_db_facts(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+
+    def fake_facts_for_paper(
+        *, base: str, token: str, paper_id: str, domain: str, timeout: float,
+    ) -> list[dict[str, Any]]:
+        calls.append(paper_id)
+        if paper_id != "W123":
+            return []
+        return [{
+            "id": "fact-1",
+            "canonical_phrase": (
+                "Platform strategy changed network-effect monetization in "
+                "multi-sided markets."
+            ),
+            "population": "multi-sided markets",
+            "intervention": "platform strategy",
+            "endpoint": "network-effect monetization",
+            "source_tier": "tier2",
+        }]
+
+    monkeypatch.setattr(sweep, "_tier2_facts_for_paper", fake_facts_for_paper)
+    settings = SimpleNamespace(
+        researka_database_url="https://db.test",
+        researka_database_token="tok-test",
+    )
+    papers = [{
+        "openalex_id": "https://openalex.org/W123",
+        "title": "Platform strategy and network effects in multi-sided markets",
+    }]
+
+    enriched = sweep._enrich_fullraw_papers_with_db_facts(
+        "platform_strategy_network_effects",
+        domain="business_research",
+        papers=papers,
+        settings=settings,
+    )
+
+    assert calls == ["https://openalex.org/W123", "W123"]
+    assert publish_literature.substantive_fact_count(enriched) == 1
+    assert enriched[0]["id"] == "W123"
+    assert enriched[0]["source_fact"]["canonical_phrase"].startswith(
+        "Platform strategy changed network-effect monetization",
+    )
 
 
 def test_business_sweep_submits_after_consistent_non_dry_run_passes(
