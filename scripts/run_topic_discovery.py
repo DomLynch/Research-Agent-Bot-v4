@@ -537,7 +537,8 @@ def _fullraw_queue_saturated(*, client: httpx.Client) -> dict[str, object]:
     priority_requested = os.environ.get(
         "TOPIC_DISCOVERY_FULLRAW_PRIORITY", "",
     ).lower() in {"1", "true", "yes", "on"}
-    if priority_requested and priority_queued == 0:
+    priority_burst = async_sweep.get("priority_burst") is True
+    if priority_requested and (priority_burst or priority_queued == 0):
         return {}
     saturated_status = ""
     reserved_inflight = _fullraw_reserved_inflight_slots()
