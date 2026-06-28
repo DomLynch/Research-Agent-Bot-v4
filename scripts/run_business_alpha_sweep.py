@@ -654,6 +654,32 @@ def _fullraw_paper_lookup_ids(paper: dict[str, Any]) -> tuple[str, ...]:
     return tuple(ids)
 
 
+def _pubmed_backfill_limit() -> int:
+    raw = (
+        os.environ.get("BUSINESS_SWEEP_PUBMED_ABSTRACT_BACKFILL_LIMIT")
+        or os.environ.get("RESEARKA_FULLRAW_DOI_ABSTRACT_BACKFILL_LIMIT")
+        or "0"
+    )
+    with suppress(ValueError):
+        return max(0, int(raw))
+    return 0
+
+
+def _fetch_pubmed_abstract(pmid: str, settings: Any) -> str:
+    if not str(pmid or "").strip():
+        return ""
+    try:
+        httpx_mod = importlib.import_module("httpx")
+        source_audit = importlib.import_module("agent.source_audit")
+        with httpx_mod.Client(timeout=15.0) as client:
+            return str(source_audit.fetch_pubmed_abstract(
+                str(pmid), client=client,
+                ncbi_api_key=str(getattr(settings, "ncbi_api_key", "") or ""),
+            ) or "").strip()
+    except Exception:
+        return ""
+
+
 def _tier2_facts_for_paper(
     *, base: str, token: str, paper_id: str, domain: str, timeout: float,
 ) -> list[dict[str, Any]]:
@@ -686,38 +712,46 @@ def _enrich_fullraw_papers_with_db_facts(
 ) -> list[dict[str, Any]]:
     base = str(getattr(settings, "researka_database_url", "") or "").rstrip("/")
     token = str(getattr(settings, "researka_database_token", "") or "").strip()
-    if not base or not token:
-        return papers
     try:
         timeout = max(0.5, float(os.environ.get(
             "BUSINESS_SWEEP_BY_PAPER_FACT_TIMEOUT_SECONDS", "4",
         )))
     except ValueError:
         timeout = 4.0
+    backfills_remaining = _pubmed_backfill_limit()
     enriched: list[dict[str, Any]] = []
     for paper in papers:
         if publish_literature.substantive_fact_count([paper]) > 0:
             enriched.append(paper)
             continue
         replacement = paper
-        for paper_id in _fullraw_paper_lookup_ids(paper):
-            rows = _tier2_facts_for_paper(
-                base=base, token=token, paper_id=paper_id, domain=domain, timeout=timeout,
-            )
-            for row in rows:
-                candidate = paper | {
-                    "id": publish_literature.paper_key(paper, paper_id),
-                    "source_fact": publish_literature.source_fact(row),
-                }
-                if (
-                    publish_literature.substantive_fact_count([candidate]) > 0
-                    and publish_literature.topic_relevant(topic, candidate)
-                ):
-                    replacement = candidate
+        if base and token:
+            for paper_id in _fullraw_paper_lookup_ids(paper):
+                rows = _tier2_facts_for_paper(
+                    base=base, token=token, paper_id=paper_id, domain=domain, timeout=timeout,
+                )
+                for row in rows:
+                    candidate = paper | {
+                        "id": publish_literature.paper_key(paper, paper_id),
+                        "source_fact": publish_literature.source_fact(row),
+                    }
+                    if (
+                        publish_literature.substantive_fact_count([candidate]) > 0
+                        and publish_literature.topic_relevant(topic, candidate)
+                    ):
+                        replacement = candidate
+                        break
+                if replacement is not paper:
                     break
-            if replacement is not paper:
-                break
         if replacement is paper:
+            if (
+                backfills_remaining > 0
+                and not str(paper.get("abstract") or paper.get("source_excerpt") or "").strip()
+            ):
+                abstract = _fetch_pubmed_abstract(str(paper.get("pmid") or ""), settings)
+                backfills_remaining -= 1
+                if abstract:
+                    paper = paper | {"abstract": abstract}
             abstract_fact = _abstract_source_fact(topic, paper)
             if abstract_fact is not None:
                 replacement = paper | {

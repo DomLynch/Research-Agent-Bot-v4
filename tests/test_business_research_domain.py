@@ -2773,6 +2773,47 @@ def test_business_sweep_enriches_fullraw_article_abstracts_without_metadata_only
     assert "source_fact" not in enriched[1]
 
 
+def test_business_sweep_backfills_pubmed_abstract_for_title_only_fullraw(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+
+    def fake_fetch(pmid: str, _settings: Any) -> str:
+        calls.append(pmid)
+        return (
+            "Results show that digital transformation significantly improves "
+            "firm performance among small and medium enterprises."
+        )
+
+    monkeypatch.setenv("BUSINESS_SWEEP_PUBMED_ABSTRACT_BACKFILL_LIMIT", "1")
+    monkeypatch.setattr(sweep, "_fetch_pubmed_abstract", fake_fetch)
+    settings = SimpleNamespace(
+        researka_database_url="",
+        researka_database_token="",
+        ncbi_api_key="",
+    )
+    papers = [{
+        "pmid": "38509885",
+        "title": (
+            "Effects of digital transformation on firm performance: "
+            "The role of IT capabilities and digital orientation"
+        ),
+    }]
+
+    enriched = sweep._enrich_fullraw_papers_with_db_facts(
+        "digital_transformation_firm",
+        domain="business_research",
+        papers=papers,
+        settings=settings,
+    )
+
+    assert calls == ["38509885"]
+    assert publish_literature.substantive_fact_count(enriched) == 1
+    assert enriched[0]["abstract"].startswith("Results show")
+    assert enriched[0]["source_fact"]["source_tier"] == "fullraw_abstract"
+    assert enriched[0]["source_fact"]["endpoint"] == "firm performance"
+
+
 def test_business_sweep_abstract_fact_prefers_results_over_methods() -> None:
     paper = {
         "doi": "10.1000/digital-result",
