@@ -2748,6 +2748,30 @@ def test_business_sweep_enriches_fullraw_article_abstracts_without_metadata_only
     assert "source_fact" not in enriched[1]
 
 
+def test_business_sweep_abstract_fact_prefers_results_over_methods() -> None:
+    paper = {
+        "doi": "10.1000/digital-result",
+        "title": (
+            "Digital Transformation and Firm Environmental Performance: "
+            "Does Managerial Overseas Experience Matter?"
+        ),
+        "abstract": (
+            "This paper aims to address this gap by examining the impact of "
+            "digital transformation on firm environmental performance. "
+            "Using a sample of Chinese listed companies from 2011 to 2021, "
+            "we employ robust econometric models to analyse the effects and "
+            "variations across firms. Our findings reveal that digital "
+            "transformation significantly enhances firm environmental performance."
+        ),
+    }
+
+    fact = sweep._abstract_source_fact("digital_transformation_firm", paper)
+
+    assert fact is not None
+    assert fact["canonical_phrase"].startswith("Our findings reveal")
+    assert "Using a sample" not in fact["canonical_phrase"]
+
+
 def test_source_literature_selection_keeps_substantive_facts_ahead_of_metadata() -> None:
     papers = [
         {

@@ -474,12 +474,16 @@ _ABSTRACT_FINDING_TERMS = (
     "significant", "significantly", "positive", "negative", "associated",
     "effect", "effects", "impact", "impacts", "improves", "improved",
     "enhances", "enhanced", "mediates", "moderates", "increases", "decreases",
+    "reveal", "reveals", "indicate", "indicates", "demonstrate",
+    "demonstrates", "suggest", "suggests", "substantially",
 )
 _ABSTRACT_INTRO_STARTS = (
     "abstract", "background", "introduction", "purpose", "objective",
     "this paper aims", "this study aims", "this research aims",
     "this paper examines", "this study examines", "this research examines",
     "this paper investigates", "this study investigates", "this research investigates",
+    "using a sample", "using data", "we employ", "we use",
+    "design/methodology/approach",
 )
 
 
@@ -500,7 +504,8 @@ def _abstract_finding_sentence(text: str, *, limit: int = 700) -> str:
         lowered = candidate.casefold()
         if not candidate or any(lowered.startswith(prefix) for prefix in _ABSTRACT_INTRO_STARTS):
             continue
-        if any(term in lowered for term in _ABSTRACT_FINDING_TERMS):
+        tokens = set(re.findall(r"[a-z]+", lowered))
+        if tokens & set(_ABSTRACT_FINDING_TERMS):
             if len(candidate) <= limit:
                 return candidate.rstrip(".")
             return candidate[:limit].rsplit(" ", 1)[0].rstrip(".,;")
