@@ -26,6 +26,7 @@ from agent.business_research import (
 from agent.domain_profile import load_domain_profile
 from agent.settings import load_settings
 from agent.topic_synonyms import expand_topic_queries
+from scripts import alpha_publish_literature as publish_literature
 from scripts import alpha_publish_status as publish_status
 from scripts import build_publish_queue as publish_queue
 from scripts.alpha_publish_io import read_json, update_json_list, write_json, write_ledger
@@ -434,7 +435,7 @@ def _write_fullraw_discovery(
         "all": [{
             "topic": topic,
             "paper_count": len(unique),
-            "fact_source_count": len(unique),
+            "fact_source_count": publish_literature.substantive_fact_count(unique),
             "source_papers": unique,
         }],
     }

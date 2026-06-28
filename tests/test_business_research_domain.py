@@ -2166,6 +2166,16 @@ def test_business_sweep_complete_fullraw_hands_off_to_source_literature(
             "title": f"Minimum wage employment evidence paper {i}",
             "doi": f"10.9999/fullraw-{i}",
             "abstract": "Minimum wage and employment evidence.",
+            "source_fact": {
+                "canonical_phrase": (
+                    "Minimum wage policy changed employment outcomes in "
+                    "state labor markets."
+                ),
+                "population": "state labor markets",
+                "intervention": "minimum wage policy",
+                "endpoint": "employment outcomes",
+                "source_tier": "fullraw_search",
+            },
         }
         for i in range(5)
     ]
@@ -2250,6 +2260,52 @@ def test_business_sweep_complete_fullraw_hands_off_to_source_literature(
     assert "source_literature_waiting_consistency" in out
     assert "via_fullraw_source_literature" in out
     assert '"public_url_status": 200' in out
+
+
+def test_business_sweep_fullraw_discovery_does_not_count_metadata_as_facts(
+    tmp_path: Path,
+) -> None:
+    profile = load_domain_profile("business_research")
+    papers = [
+        {
+            "paper_id": f"metadata-{idx}",
+            "title": f"Platform strategy network effects title match {idx}",
+            "source_fact": {
+                "canonical_phrase": (
+                    "Title-level source match: Platform strategy network effects"
+                ),
+                "endpoint": "source-literature relevance",
+                "source_tier": "paper_metadata",
+            },
+        }
+        for idx in range(5)
+    ]
+    papers.append({
+        "paper_id": "fullraw-fact-1",
+        "title": "Platform strategy changed network monetization",
+        "source_fact": {
+            "canonical_phrase": (
+                "Platform strategy changed network-effect monetization in "
+                "multi-sided markets."
+            ),
+            "population": "multi-sided markets",
+            "intervention": "platform strategy",
+            "endpoint": "network-effect monetization",
+            "source_tier": "fullraw_search",
+        },
+    })
+
+    path = sweep._write_fullraw_discovery(
+        tmp_path,
+        domain="business_research",
+        topic="platform_strategy_network_effects",
+        profile=profile,
+        papers=papers,
+    )
+
+    row = json.loads(path.read_text(encoding="utf-8"))["all"][0]
+    assert row["paper_count"] == 6
+    assert row["fact_source_count"] == 1
 
 
 def test_business_sweep_submits_after_consistent_non_dry_run_passes(
