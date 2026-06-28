@@ -259,6 +259,9 @@ def _seed_fullraw_papers(
         return cached
     should_poll_in_progress = False
     in_progress = _cached_fullraw_in_progress(cache_key) if cache_key else None
+    priority_requested = os.environ.get(
+        "TOPIC_DISCOVERY_FULLRAW_PRIORITY", "",
+    ).lower() in {"1", "true", "yes", "on"}
     if in_progress:
         raw_cache_age = in_progress.pop("_cache_age_seconds", 0.0)
         try:
@@ -269,7 +272,7 @@ def _seed_fullraw_papers(
             )
         except (TypeError, ValueError):
             cache_age = 0.0
-        if cache_age < _fullraw_in_progress_poll_interval_seconds():
+        if cache_age < _fullraw_in_progress_poll_interval_seconds() and not priority_requested:
             _FULLRAW_PROBE_EVENTS.append({
                 **in_progress,
                 "query": query,
