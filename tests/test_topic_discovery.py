@@ -461,6 +461,53 @@ def test_seed_fullraw_papers_allows_priority_burst_when_priority_queue_exists(
     assert payload["priority"] is True
 
 
+def test_seed_fullraw_papers_refetches_smaller_completed_sweep_cache(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from scripts import run_topic_discovery as discovery
+
+    cache_key = discovery._fullraw_query_fingerprint("pricing strategy margin")
+    cache_path = tmp_path / "done.json"
+    old_rows = [
+        {
+            "title": f"Old cached source {idx}",
+            "fullraw_shard_receipt": _fullraw_receipt(),
+        }
+        for idx in range(10)
+    ]
+    cache_path.write_text(json.dumps({
+        cache_key: {"query": "pricing strategy margin", "ts": time.time(), "papers": old_rows},
+    }))
+    monkeypatch.setattr(discovery, "_FULLRAW_COMPLETED_SWEEP_CACHE", {})
+    monkeypatch.setattr(discovery, "_FULLRAW_COMPLETED_SWEEP_CACHE_LIMITS", {})
+    monkeypatch.setattr(discovery, "_FULLRAW_COMPLETED_SWEEP_CACHE_PATH", cache_path)
+    monkeypatch.setattr(discovery, "_FULLRAW_IN_PROGRESS_SWEEP_CACHE_PATH", tmp_path / "busy.json")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "https://fullraw/search")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_PRIORITY", "1")
+    requests: list[dict[str, Any]] = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        requests.append(json.loads(req.content.decode("utf-8")))
+        return httpx.Response(200, json={
+            "meta": {"shard_receipt": _fullraw_receipt()},
+            "results": [
+                {"title": f"Fresh wider source {idx}", "source": "openalex"}
+                for idx in range(20)
+            ],
+        })
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        papers = discovery._seed_fullraw_papers(
+            "pricing strategy margin", client=client, limit=20,
+        )
+
+    assert requests[0]["limit"] == 20
+    assert len(papers) == 20
+    saved = json.loads(cache_path.read_text())
+    assert saved[cache_key]["result_limit"] == 20
+
+
 def test_fullraw_fallback_rejects_non_full_5tb_receipts(monkeypatch: Any) -> None:
     from agent import topic_discovery as td
 

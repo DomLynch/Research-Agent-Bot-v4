@@ -50,6 +50,7 @@ _FULLRAW_PROBE_RECEIPTS: list[dict[str, object]] = []
 _FULLRAW_PROBE_EVENTS: list[dict[str, object]] = []
 _FULLRAW_SUPPLY_SOURCE_PAPERS: dict[str, list[dict[str, object]]] = {}
 _FULLRAW_COMPLETED_SWEEP_CACHE: dict[str, list[dict[str, object]]] = {}
+_FULLRAW_COMPLETED_SWEEP_CACHE_LIMITS: dict[str, int] = {}
 _FULLRAW_COMPLETED_SWEEP_CACHE_PATH = (
     Path(__file__).resolve().parent.parent / "runs" / "_fullraw_completed_sweeps.json"
 )
@@ -315,7 +316,7 @@ def _seed_fullraw_papers(
         query, client=client, limit=limit,
     )
     if cache_key and papers:
-        _remember_fullraw_sweep(cache_key, query, papers)
+        _remember_fullraw_sweep(cache_key, query, papers, limit=limit)
     if not papers:
         event: dict[str, object] = {"query": query, "status": "no_hits"}
         receipt = getattr(topic_discovery_mod, "_FULLRAW_LAST_RECEIPT", {})
@@ -592,19 +593,34 @@ def _fullraw_query_fingerprint(query: str) -> str:
 
 def _cached_fullraw_sweep(cache_key: str, *, limit: int) -> list[dict[str, object]]:
     cached = _FULLRAW_COMPLETED_SWEEP_CACHE.get(cache_key, [])
+    cached_limit = _FULLRAW_COMPLETED_SWEEP_CACHE_LIMITS.get(cache_key, len(cached))
     if not cached:
         cache = publish_io.read_json(_FULLRAW_COMPLETED_SWEEP_CACHE_PATH, {})
         entry = cache.get(cache_key) if isinstance(cache, dict) else None
         cached = entry.get("papers", []) if isinstance(entry, dict) else []
+        try:
+            cached_limit = (
+                int(entry.get("result_limit") or len(cached))
+                if isinstance(entry, dict) else 0
+            )
+        except (TypeError, ValueError):
+            cached_limit = len(cached)
     papers = [dict(p) for p in cached if isinstance(p, dict)]
     receipt = papers[0].get("fullraw_shard_receipt") if papers else None
-    if not isinstance(receipt, dict) or not _fullraw_receipt_complete(receipt):
+    if (
+        cached_limit < limit
+        or not isinstance(receipt, dict)
+        or not _fullraw_receipt_complete(receipt)
+    ):
         return []
     _FULLRAW_COMPLETED_SWEEP_CACHE[cache_key] = papers
+    _FULLRAW_COMPLETED_SWEEP_CACHE_LIMITS[cache_key] = cached_limit
     return papers[:limit]
 
 
-def _remember_fullraw_sweep(cache_key: str, query: str, papers: list[dict[str, object]]) -> None:
+def _remember_fullraw_sweep(
+    cache_key: str, query: str, papers: list[dict[str, object]], *, limit: int,
+) -> None:
     if not cache_key or not papers:
         return
     receipt = papers[0].get("fullraw_shard_receipt")
@@ -612,9 +628,12 @@ def _remember_fullraw_sweep(cache_key: str, query: str, papers: list[dict[str, o
         return
     rows = [dict(p) for p in papers[:25]]
     _FULLRAW_COMPLETED_SWEEP_CACHE[cache_key] = rows
+    _FULLRAW_COMPLETED_SWEEP_CACHE_LIMITS[cache_key] = limit
     cache = publish_io.read_json(_FULLRAW_COMPLETED_SWEEP_CACHE_PATH, {})
     cache = cache if isinstance(cache, dict) else {}
-    cache[cache_key] = {"query": query, "ts": time.time(), "papers": rows}
+    cache[cache_key] = {
+        "query": query, "ts": time.time(), "result_limit": limit, "papers": rows,
+    }
     publish_io.write_json(_FULLRAW_COMPLETED_SWEEP_CACHE_PATH, cache)
 
 
