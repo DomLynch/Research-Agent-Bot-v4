@@ -13,7 +13,7 @@ ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/daily_alpha_publi
 ExecStopPost=-/root/Research-Agent-Bot-v4/.venv/bin/python scripts/check_alpha_publish_health.py --domains longevity_research,ai_research,business_research,management_research,economics_research,finance_research,marketing_research --expect-published --check-url --sync-pending-decisions --show-next-candidate --write-summary --max-age-minutes 540
 # Keep each publish cycle bounded. The cache warmer owns broad backlog refresh;
 # the submitter should repair a small candidate window and fail loud if none pass.
-TimeoutStartSec=2700
+TimeoutStartSec=7200
 # Retry infra interruptions, but keep deliberate no-publish exit 2 red.
 Restart=on-failure
 RestartSec=60
