@@ -4443,9 +4443,15 @@ def test_v5_client_fallback_does_not_count_as_fullraw_seed_discovery(
 ) -> None:
     src = tmp_path / "v5-src"
     src.mkdir()
-    monkeypatch.delenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", raising=False)
-    monkeypatch.delenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", raising=False)
-    monkeypatch.delenv("V5_MEMO_FULL_RAW_CORPUS_TOKEN", raising=False)
+    for key in (
+        "V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL",
+        "V5_MEMO_FULL_RAW_INDEX_TOKEN",
+        "V5_MEMO_FULL_RAW_CORPUS_TOKEN",
+        "RESEARKA_FULLRAW_SEARCH_URL",
+        "RESEARKA_FULLRAW_INDEX_TOKEN",
+        "RESEARKA_FULLRAW_TOKEN",
+    ):
+        monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_SRC", str(src))
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "1")
 
