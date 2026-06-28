@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.business_research import (
     BUSINESS_DOMAINS,
+    MIN_DIRECT_SOURCES,
     build_candidate_bundle,
     fetch_business_facts,
     write_candidate_run,
@@ -574,8 +575,8 @@ def _diagnostic_rank(
     runs_root: Path, domain: str, topic: str, idx: int,
 ) -> tuple[int, int, int, int, int]:
     data = read_json(runs_root / "_business_diagnostics" / f"{domain}-{topic}.json", {})
-    if not isinstance(data, dict):
-        return (0, 0, 0, 0, idx)
+    if not isinstance(data, dict) or not data:
+        return (1, 0, 0, 0, idx)
 
     def count(value: Any) -> int:
         try:
@@ -594,24 +595,35 @@ def _diagnostic_rank(
     fullraw = trace.get("fullraw") if isinstance(trace, dict) else {}
     if not isinstance(fullraw, dict):
         fullraw = {}
+    status = str(fullraw.get("status") or "")
     fullraw_pending = (
         str(fullraw.get("async_status") or "") in {"queued", "running"}
-        or str(fullraw.get("status") or "") in {
-            "health_unavailable", "inflight_saturated",
-        }
+        or status in {"async_queued", "async_running"}
         or fullraw.get("partial_shard_search") is True
     )
+    source_rich = top_sources >= MIN_DIRECT_SOURCES or a_core >= MIN_DIRECT_SOURCES
+    if source_rich or fullraw_pending:
+        return (0, -top_sources, -a_core, -raw, idx)
+    service_busy = status in {
+        "busy", "health_unavailable", "inflight_saturated",
+        "queue_saturated", "async_queue_saturated",
+    }
+    if service_busy:
+        return (2, -top_sources, -a_core, -raw, idx)
+    exhausted_complete = status == "complete" and raw > 0 and not source_rich
+    if exhausted_complete:
+        return (3, -top_sources, -a_core, -raw, idx)
     bad_empty = int(
         raw == 0
         and not fullraw_pending
         and (
-            str(fullraw.get("status") or "") in {
-                "async_queued", "async_running", "busy", "complete_no_hits",
-                "failed", "incomplete_receipt", "no_hits", "not_configured",
+            status in {
+                "complete_no_hits", "failed", "incomplete_receipt",
+                "no_hits", "not_configured",
             }
         )
     )
-    return (bad_empty, -top_sources, -a_core, -raw, idx)
+    return (4 if bad_empty else 1, -top_sources, -a_core, -raw, idx)
 
 
 def _prioritized_seed_topics(runs_root: Path, domain: str, topics: list[str]) -> list[str]:
