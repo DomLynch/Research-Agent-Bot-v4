@@ -1980,6 +1980,9 @@ def test_business_no_bundle_complete_fullraw_requires_fact_synthesis() -> None:
         "retrieval_trace": {"fullraw": {"status": "busy"}},
     }) == ["no_source_diverse_bundle", "fullraw_probe_busy"]
     assert business_cli.no_bundle_blockers_from_diagnostics({
+        "retrieval_trace": {"fullraw": {"status": "health_unavailable"}},
+    }) == ["no_source_diverse_bundle", "fullraw_probe_busy"]
+    assert business_cli.no_bundle_blockers_from_diagnostics({
         "retrieval_trace": {"fullraw": {"status": "queue_saturated"}},
     }) == ["no_source_diverse_bundle", "fullraw_probe_busy"]
     assert business_cli.no_bundle_blockers_from_diagnostics({

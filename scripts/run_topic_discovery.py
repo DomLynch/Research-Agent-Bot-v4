@@ -506,6 +506,8 @@ def _fullraw_queue_saturated(*, client: httpx.Client) -> dict[str, object]:
         response.raise_for_status()
         data = response.json()
     except (httpx.HTTPError, ValueError):
+        if _strict_fullraw_receipt_required():
+            return {"status": "health_unavailable"}
         return {}
     async_sweep = data.get("async_sweep") if isinstance(data, dict) else None
     if not isinstance(async_sweep, dict):
@@ -621,7 +623,9 @@ def _fullraw_in_progress_poll_interval_seconds() -> float:
 
 def _fullraw_in_progress_event(event: dict[str, object]) -> bool:
     return (
-        str(event.get("status") or "") in {"queue_saturated", "inflight_saturated"}
+        str(event.get("status") or "") in {
+            "health_unavailable", "queue_saturated", "inflight_saturated",
+        }
         or str(event.get("async_status") or "") in {"queued", "running"}
         or event.get("partial_shard_search") is True
     )
@@ -698,8 +702,8 @@ def _fullraw_event_busy(event: dict[str, object]) -> bool:
     return (
         status in {
             "incomplete_receipt", "async_queued", "async_running",
-            "busy", "failed", "inflight_saturated", "queue_saturated",
-            "async_queue_saturated",
+            "busy", "failed", "health_unavailable", "inflight_saturated",
+            "queue_saturated", "async_queue_saturated",
         }
         or async_status in {"queued", "running", "busy", "queue_saturated"}
         or event.get("partial_shard_search") is True

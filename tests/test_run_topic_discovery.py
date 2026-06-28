@@ -104,6 +104,8 @@ def test_fullraw_receipt_complete_accepts_source_count() -> None:
 def test_seed_fullraw_records_incomplete_receipt_event(monkeypatch: Any) -> None:
     run_topic_discovery._FULLRAW_PROBE_EVENTS.clear()
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH", "1")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED", "1525")
     monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", "1")
     monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS", "0")
     receipt = {
@@ -115,6 +117,16 @@ def test_seed_fullraw_records_incomplete_receipt_event(monkeypatch: Any) -> None
     }
 
     def handler(req: Any) -> Any:
+        if req.url.path.endswith("/health"):
+            return run_topic_discovery.httpx.Response(200, json={
+                "async_sweep": {
+                    "inflight_count": 0,
+                    "max_inflight": 2,
+                    "max_queue": 16,
+                    "priority_queued_count": 0,
+                    "queued_count": 0,
+                },
+            })
         assert json.loads(req.content.decode("utf-8"))["queue_if_missing"] is True
         return run_topic_discovery.httpx.Response(200, json={
             "meta": {
@@ -215,6 +227,8 @@ def test_seed_fullraw_backs_off_when_fullraw_inflight_is_saturated(
 ) -> None:
     run_topic_discovery._FULLRAW_PROBE_EVENTS.clear()
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH", "1")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED", "1525")
 
     def handler(req: Any) -> Any:
         if req.url.path.endswith("/health"):
@@ -239,6 +253,30 @@ def test_seed_fullraw_backs_off_when_fullraw_inflight_is_saturated(
     assert event["status"] == "inflight_saturated"
     assert event["inflight_count"] == 3
     assert event["max_inflight"] == 2
+
+
+def test_seed_fullraw_backs_off_when_fullraw_health_is_unavailable(
+    monkeypatch: Any,
+) -> None:
+    run_topic_discovery._FULLRAW_PROBE_EVENTS.clear()
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH", "1")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED", "1525")
+
+    def handler(req: Any) -> Any:
+        if req.url.path.endswith("/health"):
+            raise run_topic_discovery.httpx.ReadTimeout("fullraw health overloaded")
+        raise AssertionError("search should not run while fullraw health is unavailable")
+
+    transport = run_topic_discovery.httpx.MockTransport(handler)
+    with run_topic_discovery.httpx.Client(transport=transport) as client:
+        assert run_topic_discovery._seed_fullraw_papers(
+            "business supply chain", client=client, limit=5,
+        ) == []
+
+    event = run_topic_discovery._FULLRAW_PROBE_EVENTS[-1]
+    assert event["status"] == "health_unavailable"
+    assert event["paper_count"] == 0
 
 
 def test_seed_fullraw_retries_after_endpoint_timeout(monkeypatch: Any) -> None:

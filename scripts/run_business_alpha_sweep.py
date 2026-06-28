@@ -125,8 +125,8 @@ def _fullraw_busy_event(event: dict[str, Any]) -> bool:
     return (
         status in {
             "async_queue_saturated", "async_queued", "async_running", "busy",
-            "failed", "in_progress_cache_hit", "incomplete_receipt",
-            "inflight_saturated", "queue_saturated",
+            "failed", "health_unavailable", "in_progress_cache_hit",
+            "incomplete_receipt", "inflight_saturated", "queue_saturated",
         }
         or str(event.get("async_status") or "") in {"queued", "running"}
         or event.get("partial_shard_search") is True
@@ -468,7 +468,9 @@ def _diagnostic_rank(
         fullraw = {}
     fullraw_pending = (
         str(fullraw.get("async_status") or "") in {"queued", "running"}
-        or str(fullraw.get("status") or "") == "inflight_saturated"
+        or str(fullraw.get("status") or "") in {
+            "health_unavailable", "inflight_saturated",
+        }
         or fullraw.get("partial_shard_search") is True
     )
     bad_empty = int(
