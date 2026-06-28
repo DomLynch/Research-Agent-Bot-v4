@@ -32,6 +32,7 @@ def test_submit_exit_codes_fail_closed_for_zero_output_statuses() -> None:
         CycleStatus.CANDIDATE_REFRESH_FAILED,
     ):
         assert cycle_exit_code({"status": status.value, "published": 0}, submit=True) == 2
+        assert cycle_exit_code({"status": status.value, "published": 0}, submit=False) == 2
 
 
 def test_submit_exit_codes_only_allow_pending_when_explicit() -> None:

@@ -56,6 +56,13 @@ class CandidateStatus(StrEnum):
 
 SUBMIT_SUCCESS_STATUSES = frozenset({CycleStatus.PUBLISHED.value})
 PENDING_SUCCESS_STATUSES = frozenset({CycleStatus.SUBMITTED_TO_RESEARKA.value})
+ZERO_OUTPUT_FAILURE_STATUSES = frozenset({
+    CycleStatus.NO_FRESH_CANDIDATE.value,
+    CycleStatus.SUBMIT_RETRY_EXHAUSTED.value,
+    CycleStatus.CANDIDATE_REFRESH_FAILED.value,
+    CycleStatus.DOMAIN_DRY_RUN_ONLY.value,
+    CycleStatus.PREFLIGHT_QA_BLOCKED.value,
+})
 EXHAUSTED_STATUSES = frozenset({
     CandidateStatus.DUPLICATE_SUBMISSION_FINGERPRINT.value,
     CandidateStatus.STALE_PUBLISH_VERDICT.value,
@@ -252,7 +259,7 @@ def cycle_exit_code(
 ) -> int:
     status = str(ledger.get("status") or "")
     if not submit:
-        return 2 if status == CycleStatus.CANDIDATE_REFRESH_FAILED.value else 0
+        return 2 if status in ZERO_OUTPUT_FAILURE_STATUSES else 0
     if status in SUBMIT_SUCCESS_STATUSES or int(ledger.get("published") or 0) == 1:
         return 0
     if allow_pending_success and status in PENDING_SUCCESS_STATUSES:

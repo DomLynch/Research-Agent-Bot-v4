@@ -6292,7 +6292,7 @@ def test_main_emits_end_of_run_blocker_summary(
     monkeypatch.setattr(sys, "argv", ["daily_alpha_publish_cycle.py", "--date", "2026-06-22"])
     monkeypatch.setattr(daily, "run_cycle", lambda **_kwargs: ledger)
 
-    assert daily.main() == 0
+    assert daily.main() == 2
     out = capsys.readouterr().out
 
     assert "[daily-alpha] status=no_fresh_candidate submitted=0 published=0" in out
