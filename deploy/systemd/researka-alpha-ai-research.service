@@ -11,3 +11,8 @@ EnvironmentFile=/etc/researka-agent-v4.env
 EnvironmentFile=/etc/researka-fullraw.env
 ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/daily_alpha_publish_cycle.py --domain ai_research --refresh-candidates --allow-tier2-repair --max-refresh-batches 5 --estimated-cost-usd 5.00 --max-cost-usd 5.00 --submit
 TimeoutStartSec=2700
+# Retry infra interruptions, but keep deliberate no-publish exit 2 red.
+Restart=on-failure
+RestartSec=60
+RestartPreventExitStatus=2
+RestartForceExitStatus=SIGTERM

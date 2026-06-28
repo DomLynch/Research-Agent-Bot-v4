@@ -11,3 +11,8 @@ EnvironmentFile=/etc/researka-agent-v4.env
 EnvironmentFile=/etc/researka-fullraw.env
 ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/run_business_alpha_sweep.py --domains economics_research --cycles 1 --topics-per-domain 2 --submit-after-consistent-passes 2
 TimeoutStartSec=2700
+# Retry infra interruptions, but keep deliberate no-publish exit 2 red.
+Restart=on-failure
+RestartSec=60
+RestartPreventExitStatus=2
+RestartForceExitStatus=SIGTERM

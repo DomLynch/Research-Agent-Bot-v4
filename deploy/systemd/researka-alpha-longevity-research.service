@@ -13,3 +13,8 @@ ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/daily_alpha_publi
 # Keep each publish cycle bounded. The cache warmer owns broad backlog refresh;
 # the submitter should repair a small candidate window and fail loud if none pass.
 TimeoutStartSec=2700
+# Retry infra interruptions, but keep deliberate no-publish exit 2 red.
+Restart=on-failure
+RestartSec=60
+RestartPreventExitStatus=2
+RestartForceExitStatus=SIGTERM

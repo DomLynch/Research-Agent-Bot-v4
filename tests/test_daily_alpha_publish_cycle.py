@@ -6662,6 +6662,26 @@ def test_alpha_fullraw_runtime_services_use_generic_fullraw_service() -> None:
         assert "EnvironmentFile=/etc/researka-fullraw.env" in service, service_path.name
 
 
+def test_alpha_research_services_retry_infra_interruptions_without_masking_no_publish() -> None:
+    services = {
+        "researka-alpha-ai-research.service",
+        "researka-alpha-business-research.service",
+        "researka-alpha-economics-research.service",
+        "researka-alpha-finance-research.service",
+        "researka-alpha-longevity-research.service",
+        "researka-alpha-management-research.service",
+        "researka-alpha-marketing-research.service",
+    }
+    for service_path in sorted(Path("deploy/systemd").glob("researka-alpha-*-research.service")):
+        assert service_path.name in services
+        service = service_path.read_text(encoding="utf-8")
+        assert "Restart=on-failure" in service, service_path.name
+        assert "RestartSec=60" in service, service_path.name
+        assert "RestartPreventExitStatus=2" in service, service_path.name
+        assert "RestartForceExitStatus=SIGTERM" in service, service_path.name
+        assert "SuccessExitStatus=" not in service, service_path.name
+
+
 def test_refresh_cooldown_is_cycle_configurable(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
