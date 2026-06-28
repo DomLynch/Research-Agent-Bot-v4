@@ -289,6 +289,10 @@ def _strict_fullraw_probe(
                         query, client=client, limit=10,
                     )
                     receipt = topic_discovery_mod.__dict__.get("_FULLRAW_LAST_RECEIPT", {})
+                    if (not isinstance(receipt, dict) or not receipt) and papers:
+                        paper_receipt = papers[0].get("fullraw_shard_receipt")
+                        if isinstance(paper_receipt, dict):
+                            receipt = paper_receipt
                     async_sweep = topic_discovery_mod.__dict__.get("_FULLRAW_LAST_ASYNC_SWEEP", {})
                     receipt_complete = bool(discovery.__dict__["_fullraw_receipt_complete"](receipt))
                     events = discovery.__dict__.get("_FULLRAW_PROBE_EVENTS", [])

@@ -1552,6 +1552,53 @@ def test_business_sweep_fullraw_probe_rejects_papers_without_complete_receipt(
     }) == ["no_source_diverse_bundle", "fullraw_complete_receipt_missing"]
 
 
+def test_business_sweep_fullraw_probe_uses_cached_paper_receipt(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import agent.topic_discovery as topic_discovery_mod
+    import scripts.run_topic_discovery as discovery
+
+    receipt = {
+        "shards_searched": 1525,
+        "partial_shard_search": False,
+        "sweep_failed_shards": 0,
+        "source_count_searched": 5,
+    }
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
+        str(tmp_path / "fullraw.lock"),
+    )
+
+    def fake_seed_fullraw(query: str, **_kwargs: Any) -> list[dict[str, Any]]:
+        topic_discovery_mod._FULLRAW_LAST_RECEIPT = {}
+        topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
+        discovery._FULLRAW_PROBE_EVENTS.append({
+            "query": query,
+            "status": "cache_hit",
+            "paper_count": 5,
+        })
+        return [
+            {
+                "paper_id": f"paper-{idx}",
+                "title": f"{query} source {idx}",
+                "fullraw_shard_receipt": receipt,
+            }
+            for idx in range(5)
+        ]
+
+    monkeypatch.setattr(discovery, "_seed_fullraw_papers", fake_seed_fullraw)
+
+    result = sweep._strict_fullraw_probe(
+        "platform_strategy_network", runs_root=tmp_path / "runs",
+    )
+
+    assert result["status"] == "complete"
+    assert result["paper_count"] == 5
+    assert result["shards_searched"] == 1525
+    assert result["partial_shard_search"] is False
+
+
 def test_business_sweep_fullraw_probe_tries_compact_alpha_query(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
