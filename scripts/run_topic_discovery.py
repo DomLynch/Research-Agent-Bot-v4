@@ -472,6 +472,17 @@ def _strict_fullraw_receipt_required() -> bool:
     return require and min_shards >= 1525
 
 
+def _fullraw_reserved_inflight_slots() -> int:
+    if not _strict_fullraw_receipt_required():
+        return 0
+    try:
+        return max(0, int(os.environ.get(
+            "TOPIC_DISCOVERY_FULLRAW_RESERVED_INFLIGHT_SLOTS", "1",
+        )))
+    except (TypeError, ValueError):
+        return 1
+
+
 def _fullraw_strict_floor(seconds: float, *, explicit: bool) -> float:
     if explicit or not _strict_fullraw_receipt_required():
         return seconds
@@ -527,9 +538,13 @@ def _fullraw_queue_saturated(*, client: httpx.Client) -> dict[str, object]:
     if priority_requested and priority_burst and priority_queued == 0:
         return {}
     saturated_status = ""
+    reserved_inflight = _fullraw_reserved_inflight_slots()
     if max_queue > 0 and queued >= max_queue:
         saturated_status = "queue_saturated"
-    elif max_inflight > 0 and inflight >= max_inflight:
+    elif (
+        max_inflight > 0
+        and inflight >= max(1, max_inflight - reserved_inflight)
+    ):
         saturated_status = "inflight_saturated"
     if saturated_status:
         return {
