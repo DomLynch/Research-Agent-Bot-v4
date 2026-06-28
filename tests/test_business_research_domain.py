@@ -1291,6 +1291,52 @@ def test_business_sweep_fullraw_probe_preserves_in_progress_cache_receipt(
     }) == ["no_source_diverse_bundle", "fullraw_probe_busy"]
 
 
+def test_business_sweep_fullraw_probe_backoff_avoids_redundant_busy_calls(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import agent.topic_discovery as topic_discovery_mod
+    import scripts.run_topic_discovery as discovery
+
+    calls: list[str] = []
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
+        str(tmp_path / "fullraw.lock"),
+    )
+
+    def fake_seed_fullraw(query: str, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        topic_discovery_mod._FULLRAW_LAST_RECEIPT = {
+            "shards_searched": 231,
+            "partial_shard_search": True,
+            "sweep_failed_shards": 0,
+        }
+        topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {"status": "running"}
+        discovery._FULLRAW_PROBE_EVENTS.append({
+            "query": query,
+            "status": "incomplete_receipt",
+            "async_status": "running",
+            "partial_shard_search": True,
+            "shards_searched": 231,
+        })
+        return []
+
+    monkeypatch.setattr(discovery, "_seed_fullraw_papers", fake_seed_fullraw)
+
+    first = sweep._strict_fullraw_probe(
+        "platform_strategy_network", runs_root=tmp_path / "runs",
+    )
+    second = sweep._strict_fullraw_probe(
+        "pricing_strategy_margin", runs_root=tmp_path / "runs",
+    )
+
+    assert first["status"] == "incomplete_receipt"
+    assert second["status"] == "busy"
+    assert second["reason"] == "fullraw_backoff"
+    assert second["previous_status"] == "incomplete_receipt"
+    assert calls == ["platform strategy network"]
+
+
 def test_business_sweep_fullraw_probe_tries_compact_alpha_query(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

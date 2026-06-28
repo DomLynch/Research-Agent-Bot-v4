@@ -52,6 +52,7 @@ _BROAD_SEED_TOKENS = frozenset({
 _BUSINESS_FULLRAW_FOREGROUND_SECONDS = "30"
 _BUSINESS_FULLRAW_LOCK_PATH = "/tmp/researka-v4-business-fullraw.lock"
 _BUSINESS_FULLRAW_LOCK_WAIT_SECONDS = "0"
+_BUSINESS_FULLRAW_BACKOFF_SECONDS = "180"
 _FULLRAW_ENV_ALIASES = {
     "V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL": ("RESEARKA_FULLRAW_SEARCH_URL",),
     "V5_MEMO_FULL_RAW_INDEX_TOKEN": (
@@ -96,8 +97,73 @@ def _business_fullraw_lock_wait_seconds() -> float:
         return 0.0
 
 
+def _business_fullraw_backoff_seconds() -> float:
+    try:
+        return max(
+            0.0,
+            float(
+                os.environ.get("TOPIC_DISCOVERY_BUSINESS_FULLRAW_BACKOFF_SECONDS")
+                or _BUSINESS_FULLRAW_BACKOFF_SECONDS
+            ),
+        )
+    except ValueError:
+        return float(_BUSINESS_FULLRAW_BACKOFF_SECONDS)
+
+
+def _fullraw_busy_event(event: dict[str, Any]) -> bool:
+    status = str(event.get("status") or "")
+    return (
+        status in {
+            "async_queue_saturated", "async_queued", "async_running", "busy",
+            "failed", "in_progress_cache_hit", "incomplete_receipt",
+            "queue_saturated",
+        }
+        or str(event.get("async_status") or "") in {"queued", "running"}
+        or event.get("partial_shard_search") is True
+    )
+
+
+def _fullraw_backoff_path(runs_root: Path) -> Path:
+    return runs_root / "_business_diagnostics" / "fullraw_backoff.json"
+
+
+def _fullraw_backoff(runs_root: Path | None) -> dict[str, Any] | None:
+    if runs_root is None:
+        return None
+    data = read_json(_fullraw_backoff_path(runs_root), {})
+    if not isinstance(data, dict):
+        return None
+    try:
+        age = time.time() - float(data.get("ts") or 0.0)
+    except (TypeError, ValueError):
+        return None
+    ttl = _business_fullraw_backoff_seconds()
+    if ttl <= 0 or age > ttl:
+        return None
+    return {
+        "status": "busy",
+        "reason": "fullraw_backoff",
+        "previous_status": data.get("status"),
+        "backoff_age_seconds": age,
+        "backoff_seconds": ttl,
+    }
+
+
+def _record_fullraw_backoff(runs_root: Path | None, event: dict[str, Any]) -> None:
+    if runs_root is None or not _fullraw_busy_event(event):
+        return
+    write_json(_fullraw_backoff_path(runs_root), {
+        "ts": time.time(),
+        "status": event.get("status"),
+        "async_status": event.get("async_status"),
+        "shards_searched": event.get("shards_searched"),
+        "partial_shard_search": event.get("partial_shard_search"),
+    })
+
+
 def _raise_fullraw_timeout(_signum: int, _frame: Any) -> None:
     raise TimeoutError("business fullraw probe exceeded foreground budget")
+
 
 def _load_fullraw_env_defaults() -> None:
     try:
@@ -122,13 +188,18 @@ def _load_fullraw_env_defaults() -> None:
                 break
 
 
-def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[str, Any]:
+def _strict_fullraw_probe(
+    topic: str, *, include_papers: bool = False, runs_root: Path | None = None,
+) -> dict[str, Any]:
     _load_fullraw_env_defaults()
     if not (
         os.environ.get("V5_MEMO_FULL_RAW_INDEX_TOKEN")
         or os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL")
     ):
         return {"status": "not_configured"}
+    backoff = _fullraw_backoff(runs_root)
+    if backoff:
+        return backoff
     lock_handle = None
     budget_key = "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"
     old_budget = os.environ.get(budget_key)
@@ -230,6 +301,7 @@ def _strict_fullraw_probe(topic: str, *, include_papers: bool = False) -> dict[s
                     }
                     if include_papers:
                         result["_papers"] = papers
+                    _record_fullraw_backoff(runs_root, result)
                     if len(papers) >= 5 or status not in {
                         "complete", "complete_no_hits", "no_hits",
                     }:
@@ -682,7 +754,9 @@ def main() -> int:
                     "ready": bundle is not None,
                 }
                 if bundle is None:
-                    fullraw_trace = _strict_fullraw_probe(topic, include_papers=True)
+                    fullraw_trace = _strict_fullraw_probe(
+                        topic, include_papers=True, runs_root=args.runs_root,
+                    )
                     fullraw_papers = [
                         paper for paper in fullraw_trace.pop("_papers", [])
                         if isinstance(paper, dict)
