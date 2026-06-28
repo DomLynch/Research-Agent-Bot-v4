@@ -2194,22 +2194,26 @@ def test_business_sweep_deprioritizes_complete_fullraw_without_raw_facts(
     ) == ["untried_seed", "weak_seed"]
 
 
-def test_business_seed_topics_include_trimmed_variants_without_biomed_suffixes(
+def test_business_seed_topics_keep_specific_intent_variants_only(
     tmp_path: Path,
 ) -> None:
     seed_path = tmp_path / "seeds.toml"
     seed_path.write_text(
-        '[seeds]\ntopics = ["platform_strategy_network_effects"]\n',
+        '[seeds]\ntopics = ["platform_strategy_network_effects", '
+        '"digital_transformation_firm_performance"]\n',
         encoding="utf-8",
     )
 
     topics = sweep._seed_topics(seed_path, limit=8)
 
-    assert topics[:3] == [
+    assert topics[:4] == [
         "platform_strategy_network_effects",
+        "digital_transformation_firm_performance",
         "platform_strategy_network",
-        "platform_strategy",
+        "digital_transformation_firm",
     ]
+    assert "platform_strategy" not in topics
+    assert "digital_transformation" not in topics
     assert "platform_strategy_therapy" not in topics
 
 

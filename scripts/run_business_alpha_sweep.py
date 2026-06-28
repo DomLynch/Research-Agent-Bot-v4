@@ -715,9 +715,19 @@ def _enrich_fullraw_papers_with_db_facts(
 def _seed_topic_variants(topic: str) -> tuple[str, ...]:
     out: list[str] = []
     seen: set[str] = set()
+    base_tokens = {
+        token for token in str(topic).replace("-", "_").split("_")
+        if token and token not in _BROAD_SEED_TOKENS
+    }
     for query in expand_topic_queries(topic, max_queries=8):
         slug = "_".join(query.replace("-", " ").replace("/", " ").split())
         if not slug or slug in seen or slug.endswith(_NON_BUSINESS_QUERY_SUFFIXES):
+            continue
+        tokens = {
+            token for token in slug.split("_")
+            if token and token not in _BROAD_SEED_TOKENS
+        }
+        if out and base_tokens and not base_tokens <= tokens:
             continue
         seen.add(slug)
         out.append(slug)
