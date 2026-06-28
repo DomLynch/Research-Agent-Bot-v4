@@ -1182,6 +1182,7 @@ def test_business_sweep_fullraw_probe_inherits_fullraw_search_budget(
         "TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS",
         "TOPIC_DISCOVERY_FULLRAW_PRIORITY",
         "TOPIC_DISCOVERY_V5_MAX_VARIANTS",
+        "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS",
     ):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
@@ -1203,6 +1204,7 @@ def test_business_sweep_fullraw_probe_inherits_fullraw_search_budget(
             "priority": os.environ.get("TOPIC_DISCOVERY_FULLRAW_PRIORITY"),
             "poll_seconds": os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS"),
             "foreground_budget": os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"),
+            "sweep_wait": os.environ.get("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS"),
             "variants": os.environ.get("TOPIC_DISCOVERY_V5_MAX_VARIANTS"),
             "storage_budget": os.environ.get("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS"),
         })
@@ -1231,11 +1233,13 @@ def test_business_sweep_fullraw_probe_inherits_fullraw_search_budget(
         "priority": None,
         "poll_seconds": None,
         "foreground_budget": "7200",
+        "sweep_wait": "7200.0",
         "variants": None,
         "storage_budget": "7200",
     }
     assert os.environ["TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS"] == "999"
     assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS") is None
+    assert os.environ.get("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS") is None
     assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_PRIORITY") is None
     assert os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] == "7200"
 
@@ -1343,6 +1347,7 @@ def test_business_sweep_fullraw_probe_overrides_stale_short_timeout(
     captured: dict[str, str | None] = {}
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
     monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", "20")
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS", "20")
     monkeypatch.setenv(
         "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
         str(tmp_path / "fullraw.lock"),
@@ -1353,6 +1358,7 @@ def test_business_sweep_fullraw_probe_overrides_stale_short_timeout(
             "client_timeout": str(_kwargs["client"].timeout.read),
             "timeout": os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"),
             "foreground_budget": os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"),
+            "sweep_wait": os.environ.get("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS"),
         })
         topic_discovery_mod._FULLRAW_LAST_RECEIPT = {
             "shards_searched": 64,
@@ -1376,8 +1382,10 @@ def test_business_sweep_fullraw_probe_overrides_stale_short_timeout(
         "client_timeout": "2400.0",
         "timeout": "2400.0",
         "foreground_budget": "2400",
+        "sweep_wait": "2400.0",
     }
     assert os.environ["TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"] == "20"
+    assert os.environ["TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS"] == "20"
 
 
 def test_business_sweep_fullraw_probe_uses_strict_floor_over_generic_budget(
