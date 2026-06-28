@@ -320,6 +320,51 @@ def test_fullraw_fallback_requires_complete_sweep_receipt(monkeypatch: Any) -> N
     assert papers == []
 
 
+def test_seed_fullraw_papers_does_not_enqueue_when_fullraw_queue_saturated(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from scripts import run_topic_discovery as discovery
+
+    requests: list[tuple[str, str]] = []
+    discovery._FULLRAW_PROBE_EVENTS.clear()
+    monkeypatch.setattr(discovery, "_FULLRAW_COMPLETED_SWEEP_CACHE", {})
+    monkeypatch.setattr(discovery, "_FULLRAW_COMPLETED_SWEEP_CACHE_PATH", tmp_path / "done.json")
+    monkeypatch.setattr(discovery, "_FULLRAW_IN_PROGRESS_SWEEP_CACHE_PATH", tmp_path / "busy.json")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "https://fullraw/search")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        requests.append((req.method, str(req.url)))
+        if str(req.url) == "https://fullraw/health":
+            return httpx.Response(200, json={
+                "async_sweep": {
+                    "queued_count": 16,
+                    "max_queue": 16,
+                    "inflight_count": 3,
+                    "max_inflight": 2,
+                },
+            })
+        raise AssertionError(f"unexpected enqueue request: {req.method} {req.url}")
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        papers = discovery._seed_fullraw_papers(
+            "pricing strategy margin", client=client, limit=10,
+        )
+
+    assert papers == []
+    assert requests == [("GET", "https://fullraw/health")]
+    assert discovery._FULLRAW_PROBE_EVENTS[-1] == {
+        "status": "queue_saturated",
+        "queued_count": 16,
+        "max_queue": 16,
+        "inflight_count": 3,
+        "max_inflight": 2,
+        "query": "pricing strategy margin",
+        "cache_key": "margin pricing strategy",
+        "paper_count": 0,
+    }
+
+
 def test_fullraw_fallback_rejects_non_full_5tb_receipts(monkeypatch: Any) -> None:
     from agent import topic_discovery as td
 

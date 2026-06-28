@@ -286,6 +286,18 @@ def _seed_fullraw_papers(
             "cache_age_seconds": cache_age,
             "paper_count": 0,
         })
+    saturated = _fullraw_queue_saturated(client=client)
+    if saturated:
+        saturated_event = {
+            **saturated,
+            "query": query,
+            "cache_key": cache_key,
+            "paper_count": 0,
+        }
+        if cache_key:
+            _remember_fullraw_in_progress(cache_key, saturated_event)
+        _FULLRAW_PROBE_EVENTS.append(saturated_event)
+        return []
     topic_discovery_mod._FULLRAW_LAST_RECEIPT = {}
     topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
     papers = _fetch_fullraw_topic_papers(
@@ -435,6 +447,46 @@ def _fullraw_configured() -> bool:
     )
 
 
+def _fullraw_health_url() -> str:
+    url = os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip()
+    if not url:
+        token = (
+            os.environ.get("V5_MEMO_FULL_RAW_INDEX_TOKEN", "").strip()
+            or os.environ.get("V5_MEMO_FULL_RAW_CORPUS_TOKEN", "").strip()
+        )
+        return "http://127.0.0.1:9903/health" if token else ""
+    return url.rsplit("/", 1)[0] + "/health"
+
+
+def _fullraw_queue_saturated(*, client: httpx.Client) -> dict[str, object]:
+    url = _fullraw_health_url()
+    if not url:
+        return {}
+    try:
+        response = client.get(url, timeout=5.0)
+        response.raise_for_status()
+        data = response.json()
+    except (httpx.HTTPError, ValueError):
+        return {}
+    async_sweep = data.get("async_sweep") if isinstance(data, dict) else None
+    if not isinstance(async_sweep, dict):
+        return {}
+    try:
+        queued = int(async_sweep.get("queued_count") or 0)
+        max_queue = int(async_sweep.get("max_queue") or 0)
+    except (TypeError, ValueError):
+        return {}
+    if max_queue > 0 and queued >= max_queue:
+        return {
+            "status": "queue_saturated",
+            "queued_count": queued,
+            "max_queue": max_queue,
+            "inflight_count": async_sweep.get("inflight_count"),
+            "max_inflight": async_sweep.get("max_inflight"),
+        }
+    return {}
+
+
 def _context_query_terms(value: str) -> str:
     seen: dict[str, None] = {}
     for token in _TOKEN_RE.findall(value.casefold()):
@@ -514,7 +566,8 @@ def _fullraw_in_progress_poll_interval_seconds() -> float:
 
 def _fullraw_in_progress_event(event: dict[str, object]) -> bool:
     return (
-        str(event.get("async_status") or "") in {"queued", "running"}
+        str(event.get("status") or "") == "queue_saturated"
+        or str(event.get("async_status") or "") in {"queued", "running"}
         or event.get("partial_shard_search") is True
     )
 
@@ -588,8 +641,11 @@ def _fullraw_event_busy(event: dict[str, object]) -> bool:
     status = str(event.get("status") or "").strip()
     async_status = str(event.get("async_status") or "").strip()
     return (
-        status in {"incomplete_receipt", "async_queued", "async_running", "busy", "failed"}
-        or async_status in {"queued", "running", "busy"}
+        status in {
+            "incomplete_receipt", "async_queued", "async_running",
+            "busy", "failed", "queue_saturated", "async_queue_saturated",
+        }
+        or async_status in {"queued", "running", "busy", "queue_saturated"}
         or event.get("partial_shard_search") is True
     )
 
