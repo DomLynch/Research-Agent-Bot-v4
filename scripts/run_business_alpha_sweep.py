@@ -497,6 +497,80 @@ def _write_no_ready_ledgers(runs_root: Path, rows: list[dict[str, Any]], date: s
         )
 
 
+def _sweep_end_summary(
+    runs_root: Path, rows: list[dict[str, Any]], date: str,
+) -> dict[str, Any]:
+    domains = sorted({str(row.get("domain") or "") for row in rows if row.get("domain")})
+    queue_counts = {
+        "ready_to_publish": 0,
+        "agent_repair_needed": 0,
+        "curation_needed": 0,
+        "not_ready": 0,
+    }
+    considered: list[dict[str, Any]] = []
+    submitted = 0
+    published = 0
+    public_url_status: dict[str, Any] = {}
+    for domain in domains:
+        queue = read_json(runs_root / f"_publish_queue.{domain}.json", {})
+        counts = publish_status.queue_counts(queue if isinstance(queue, dict) else {})
+        for key in queue_counts:
+            queue_counts[key] += int(counts.get(key) or 0)
+        public_url_status[domain] = None
+    for row in rows:
+        status = str(row.get("status") or "not_ready")
+        blockers = row.get("blockers")
+        if not isinstance(blockers, list):
+            blockers = ["no_source_diverse_bundle"] if status == "no_bundle" else []
+        considered.append({
+            "topic": row.get("topic"),
+            "status": status,
+            "domain_slug": row.get("domain"),
+            "blockers": blockers,
+        })
+        ledger = row.get("submission_ledger")
+        if isinstance(ledger, dict):
+            raw_summary = ledger.get("publish_summary")
+            summary = (
+                raw_summary if isinstance(raw_summary, dict)
+                else publish_status.publish_summary(ledger)
+            )
+            submitted += int(summary.get("submitted") or ledger.get("submitted") or 0)
+            published += int(summary.get("published") or ledger.get("published") or 0)
+            domain = str(row.get("domain") or "")
+            if domain:
+                public_url_status[domain] = summary.get("public_url_status")
+    status = (
+        publish_status.CycleStatus.PUBLISHED.value if published else
+        publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value if submitted else
+        publish_status.CycleStatus.CANDIDATE_REFRESH_FAILED.value if considered else
+        publish_status.CycleStatus.NO_FRESH_CANDIDATE.value
+    )
+    payload = publish_status.publish_summary({
+        "date": date,
+        "status": status,
+        "submitted": submitted,
+        "published": published,
+        "considered": considered,
+        "queue_counts": queue_counts,
+    })
+    payload["candidates_considered"] = payload["considered"]
+    payload["public_url_status"] = public_url_status
+    payload["domains"] = domains
+    return payload
+
+
+def _write_sweep_end_summary(
+    runs_root: Path, rows: list[dict[str, Any]], date: str,
+) -> Path:
+    path = runs_root / "_daily_ledger" / "business_alpha_sweep_summary.json"
+    summary = _sweep_end_summary(runs_root, rows, date)
+    summary["summary_artifact"] = str(path)
+    write_json(path, summary)
+    print("[business-sweep] end_summary=" + json.dumps(summary, sort_keys=True), flush=True)
+    return path
+
+
 def _bundle_fingerprint(bundle: Any) -> str:
     return "|".join((
         str(bundle.domain),
@@ -672,6 +746,13 @@ def main() -> int:
                         if profile.dry_run_only:
                             row["status"] = "submit_blocked_domain_dry_run_only"
                             _write_sweep_summary(args.runs_root, rows)
+                            _write_sweep_end_summary(
+                                args.runs_root,
+                                rows,
+                                args.submit_date or dt.datetime.now(dt.UTC).strftime(
+                                    "%Y-%m-%dT%H-%M-%SZ",
+                                ),
+                            )
                             print(
                                 "[business-sweep] submit_blocked_domain_dry_run_only "
                                 f"{domain} {topic} via_fullraw_source_literature",
@@ -690,6 +771,12 @@ def main() -> int:
                         row["status"] = str(ledger.get("status") or "submit_failed")
                         row["submission_ledger"] = ledger
                         _write_sweep_summary(args.runs_root, rows)
+                        _write_sweep_end_summary(
+                            args.runs_root,
+                            rows,
+                            str(ledger.get("date") or args.submit_date)
+                            or dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ"),
+                        )
                         if isinstance(ledger.get("publish_summary"), dict):
                             print(
                                 f"[business-sweep] domain={domain} "
@@ -736,6 +823,13 @@ def main() -> int:
                     if profile.dry_run_only:
                         row["status"] = "submit_blocked_domain_dry_run_only"
                         _write_sweep_summary(args.runs_root, rows)
+                        _write_sweep_end_summary(
+                            args.runs_root,
+                            rows,
+                            args.submit_date or dt.datetime.now(dt.UTC).strftime(
+                                "%Y-%m-%dT%H-%M-%SZ",
+                            ),
+                        )
                         print(
                             "[business-sweep] submit_blocked_domain_dry_run_only "
                             f"{domain} {topic} passes={consistent_passes}/{submit_after}",
@@ -753,6 +847,12 @@ def main() -> int:
                     row["status"] = str(ledger.get("status") or "submit_failed")
                     row["submission_ledger"] = ledger
                     _write_sweep_summary(args.runs_root, rows)
+                    _write_sweep_end_summary(
+                        args.runs_root,
+                        rows,
+                        str(ledger.get("date") or args.submit_date)
+                        or dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ"),
+                    )
                     if isinstance(ledger.get("publish_summary"), dict):
                         print(
                             f"[business-sweep] domain={domain} "
@@ -768,12 +868,20 @@ def main() -> int:
                     return 0 if row["status"] in {"submitted_to_researka", "published"} else 2
                 print(f"[business-sweep] ready {domain} {topic} -> {run_dir}", flush=True)
                 print(f"[business-sweep] summary={summary_path}", flush=True)
+                _write_sweep_end_summary(
+                    args.runs_root,
+                    rows,
+                    args.submit_date or dt.datetime.now(dt.UTC).strftime(
+                        "%Y-%m-%dT%H-%M-%SZ",
+                    ),
+                )
                 return 0
         if cycle + 1 < args.cycles and args.sleep_seconds > 0:
             time.sleep(args.sleep_seconds)
     summary_path = _write_sweep_summary(args.runs_root, rows)
     ledger_date = args.submit_date or dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
     _write_no_ready_ledgers(args.runs_root, rows, ledger_date)
+    _write_sweep_end_summary(args.runs_root, rows, ledger_date)
     print(
         f"[business-sweep] no_ready_candidate summary={summary_path}",
         file=sys.stderr,

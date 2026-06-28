@@ -879,6 +879,7 @@ def test_business_sweep_writes_domain_scoped_latest_summaries(
         '"top_blockers": {"candidate_refresh_failed": 1, '
         '"fullraw_not_configured": 1, "no_bundle": 1, "no_source_diverse_bundle": 1}'
     ) in captured.out
+    assert "[business-sweep] end_summary=" in captured.out
     assert "[business-sweep] no_ready_candidate" in captured.err
 
     diagnostics = tmp_path / "runs" / "_business_diagnostics"
@@ -918,6 +919,27 @@ def test_business_sweep_writes_domain_scoped_latest_summaries(
     assert marketing_queue["not_ready"][0]["domain_slug"] == "marketing_research"
     assert business_queue["not_ready"][0]["queue_status"] == "no_source_diverse_bundle"
     assert marketing_queue["not_ready"][0]["queue_status"] == "no_source_diverse_bundle"
+    artifact = tmp_path / "runs" / "_daily_ledger" / "business_alpha_sweep_summary.json"
+    sweep_summary = json.loads(artifact.read_text(encoding="utf-8"))
+    assert sweep_summary["summary_artifact"] == str(artifact)
+    assert sweep_summary["candidates_considered"] == 2
+    assert sweep_summary["queue_counts"] == {
+        "ready_to_publish": 0,
+        "agent_repair_needed": 0,
+        "curation_needed": 0,
+        "not_ready": 2,
+    }
+    assert sweep_summary["top_blockers"] == {
+        "fullraw_not_configured": 2,
+        "no_bundle": 2,
+        "no_source_diverse_bundle": 2,
+        "candidate_refresh_failed": 1,
+    }
+    assert sweep_summary["next_action"] == "inspect_refresh_failure"
+    assert sweep_summary["public_url_status"] == {
+        "business_research": None,
+        "marketing_research": None,
+    }
     business_summary = health.summarize_latest(
         tmp_path / "runs", domain="business_research",
     )
@@ -1986,8 +2008,15 @@ def test_business_sweep_submits_after_consistent_non_dry_run_passes(
     ]
     out = capsys.readouterr().out
     assert "[business-sweep] domain=management_research summary=" in out
+    assert "[business-sweep] end_summary=" in out
     assert '"public_url_status": null' in out
     assert '"top_blockers": {"submitted_to_researka": 1}' in out
+    artifact = tmp_path / "runs" / "_daily_ledger" / "business_alpha_sweep_summary.json"
+    sweep_summary = json.loads(artifact.read_text(encoding="utf-8"))
+    assert sweep_summary["submitted"] == 1
+    assert sweep_summary["published"] == 0
+    assert sweep_summary["public_url_status"] == {"management_research": None}
+    assert sweep_summary["next_action"] == "watch_decision_or_public_page"
 
 
 def test_business_sweep_consistency_persists_between_invocations(
