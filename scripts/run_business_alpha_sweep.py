@@ -455,11 +455,29 @@ def _refresh_domain_queue(runs_root: Path, domain: str) -> None:
     write_json(runs_root / f"_publish_queue.{domain}.json", queue)
 
 
+def _queue_counts_from_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
+    counts = {
+        "ready_to_publish": 0,
+        "agent_repair_needed": 0,
+        "curation_needed": 0,
+        "not_ready": 0,
+    }
+    for row in rows:
+        status = str(row.get("status") or "not_ready")
+        if status in {"ready", "source_literature_candidate_available"}:
+            counts["ready_to_publish"] += 1
+        else:
+            counts["not_ready"] += 1
+    return counts
+
+
 def _write_no_ready_ledgers(runs_root: Path, rows: list[dict[str, Any]], date: str) -> None:
     for domain in sorted({str(row.get("domain") or "") for row in rows if row.get("domain")}):
         domain_rows = [row for row in rows if row.get("domain") == domain]
         queue = read_json(runs_root / f"_publish_queue.{domain}.json", {})
         queue_counts = publish_status.queue_counts(queue if isinstance(queue, dict) else {})
+        if not any(int(queue_counts.get(key) or 0) for key in _queue_counts_from_rows([])):
+            queue_counts = _queue_counts_from_rows(domain_rows)
         considered = [
             {
                 "topic": row.get("topic"),
@@ -514,6 +532,10 @@ def _sweep_end_summary(
     for domain in domains:
         queue = read_json(runs_root / f"_publish_queue.{domain}.json", {})
         counts = publish_status.queue_counts(queue if isinstance(queue, dict) else {})
+        if not any(int(counts.get(key) or 0) for key in queue_counts):
+            counts = _queue_counts_from_rows([
+                row for row in rows if str(row.get("domain") or "") == domain
+            ])
         for key in queue_counts:
             queue_counts[key] += int(counts.get(key) or 0)
         public_url_status[domain] = None
@@ -878,10 +900,10 @@ def main() -> int:
                 return 0
         if cycle + 1 < args.cycles and args.sleep_seconds > 0:
             time.sleep(args.sleep_seconds)
-    summary_path = _write_sweep_summary(args.runs_root, rows)
     ledger_date = args.submit_date or dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
     _write_no_ready_ledgers(args.runs_root, rows, ledger_date)
     _write_sweep_end_summary(args.runs_root, rows, ledger_date)
+    summary_path = _write_sweep_summary(args.runs_root, rows)
     print(
         f"[business-sweep] no_ready_candidate summary={summary_path}",
         file=sys.stderr,
