@@ -474,7 +474,14 @@ def _fullraw_queue_saturated(*, client: httpx.Client) -> dict[str, object]:
     try:
         queued = int(async_sweep.get("queued_count") or 0)
         max_queue = int(async_sweep.get("max_queue") or 0)
+        priority_queued = int(async_sweep.get("priority_queued_count") or 0)
     except (TypeError, ValueError):
+        return {}
+    priority_requested = os.environ.get(
+        "TOPIC_DISCOVERY_FULLRAW_PRIORITY", "",
+    ).lower() in {"1", "true", "yes", "on"}
+    priority_burst = bool(async_sweep.get("priority_burst"))
+    if priority_requested and priority_burst and priority_queued == 0:
         return {}
     if max_queue > 0 and queued >= max_queue:
         return {
@@ -483,6 +490,8 @@ def _fullraw_queue_saturated(*, client: httpx.Client) -> dict[str, object]:
             "max_queue": max_queue,
             "inflight_count": async_sweep.get("inflight_count"),
             "max_inflight": async_sweep.get("max_inflight"),
+            "priority_queued_count": async_sweep.get("priority_queued_count"),
+            "priority_burst": async_sweep.get("priority_burst"),
         }
     return {}
 

@@ -359,10 +359,60 @@ def test_seed_fullraw_papers_does_not_enqueue_when_fullraw_queue_saturated(
         "max_queue": 16,
         "inflight_count": 3,
         "max_inflight": 2,
+        "priority_queued_count": None,
+        "priority_burst": None,
         "query": "pricing strategy margin",
         "cache_key": "margin pricing strategy",
         "paper_count": 0,
     }
+
+
+def test_seed_fullraw_papers_allows_priority_when_background_queue_saturated(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    from scripts import run_topic_discovery as discovery
+
+    requests: list[tuple[str, str, dict[str, Any] | None]] = []
+    discovery._FULLRAW_PROBE_EVENTS.clear()
+    monkeypatch.setattr(discovery, "_FULLRAW_COMPLETED_SWEEP_CACHE", {})
+    monkeypatch.setattr(discovery, "_FULLRAW_COMPLETED_SWEEP_CACHE_PATH", tmp_path / "done.json")
+    monkeypatch.setattr(discovery, "_FULLRAW_IN_PROGRESS_SWEEP_CACHE_PATH", tmp_path / "busy.json")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "https://fullraw/search")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_PRIORITY", "1")
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        payload = json.loads(req.content.decode("utf-8")) if req.content else None
+        requests.append((req.method, str(req.url), payload))
+        if str(req.url) == "https://fullraw/health":
+            return httpx.Response(200, json={
+                "async_sweep": {
+                    "queued_count": 16,
+                    "max_queue": 16,
+                    "inflight_count": 3,
+                    "max_inflight": 2,
+                    "priority_queued_count": 0,
+                    "priority_burst": True,
+                },
+            })
+        if str(req.url) == "https://fullraw/search":
+            return httpx.Response(200, json={
+                "meta": {"shard_receipt": _fullraw_receipt()},
+                "results": [{"title": "Priority fullraw source", "source": "openalex"}],
+            })
+        raise AssertionError(f"unexpected request: {req.method} {req.url}")
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        papers = discovery._seed_fullraw_papers(
+            "pricing strategy margin", client=client, limit=10,
+        )
+
+    assert papers and papers[0]["title"] == "Priority fullraw source"
+    assert requests[0] == ("GET", "https://fullraw/health", None)
+    assert requests[1][0:2] == ("POST", "https://fullraw/search")
+    payload = requests[1][2]
+    assert payload is not None
+    assert payload["priority"] is True
 
 
 def test_fullraw_fallback_rejects_non_full_5tb_receipts(monkeypatch: Any) -> None:
