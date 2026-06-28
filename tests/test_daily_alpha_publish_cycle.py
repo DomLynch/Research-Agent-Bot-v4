@@ -6662,6 +6662,17 @@ def test_alpha_fullraw_runtime_services_use_generic_fullraw_service() -> None:
         assert "EnvironmentFile=/etc/researka-fullraw.env" in service, service_path.name
 
 
+def test_alpha_runtime_services_use_vps_local_database() -> None:
+    services = sorted(Path("deploy/systemd").glob("researka-alpha-*.service"))
+    for service_path in services:
+        if service_path.name == "researka-alpha-daily.service":
+            continue
+        service = service_path.read_text(encoding="utf-8")
+        assert (
+            "Environment=RESEARKA_DATABASE_URL=http://127.0.0.1:8810" in service
+        ), service_path.name
+
+
 def test_alpha_research_services_retry_infra_interruptions_without_masking_no_publish() -> None:
     services = {
         "researka-alpha-ai-research.service",
