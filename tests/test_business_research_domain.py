@@ -1261,7 +1261,7 @@ def test_business_sweep_fullraw_probe_inherits_fullraw_search_budget(
         "timeout": "7200.0",
         "attempts": "3600",
         "priority": "1",
-        "poll_seconds": None,
+        "poll_seconds": "15",
         "foreground_budget": "7200",
         "sweep_wait": "7200.0",
         "variants": None,
@@ -1269,6 +1269,7 @@ def test_business_sweep_fullraw_probe_inherits_fullraw_search_budget(
     }
     assert os.environ["TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS"] == "999"
     assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS") is None
+    assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS") is None
     assert os.environ.get("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS") is None
     assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_PRIORITY") is None
     assert os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] == "7200"
