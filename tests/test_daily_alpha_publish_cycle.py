@@ -10576,7 +10576,15 @@ def test_source_literature_fallback_skips_misaligned_candidate(
 def test_source_literature_fetcher_prefers_tier2_fact_backed_papers(
     monkeypatch: MonkeyPatch,
 ) -> None:
-    monkeypatch.delenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", raising=False)
+    for key in (
+        "V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL",
+        "V5_MEMO_FULL_RAW_INDEX_TOKEN",
+        "V5_MEMO_FULL_RAW_CORPUS_TOKEN",
+        "RESEARKA_FULLRAW_SEARCH_URL",
+        "RESEARKA_FULLRAW_INDEX_TOKEN",
+        "RESEARKA_FULLRAW_TOKEN",
+    ):
+        monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "0")
     monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
         "researka_database_url": "https://db.test",
