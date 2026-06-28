@@ -2308,6 +2308,82 @@ def test_business_sweep_fullraw_discovery_does_not_count_metadata_as_facts(
     assert row["fact_source_count"] == 1
 
 
+def test_business_sweep_metadata_only_fullraw_does_not_handoff_to_submit(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    papers = [
+        {
+            "paper_id": f"metadata-{idx}",
+            "title": f"Platform strategy network effects title match {idx}",
+            "source_fact": {
+                "canonical_phrase": (
+                    "Title-level source match: Platform strategy network effects"
+                ),
+                "endpoint": "source-literature relevance",
+                "source_tier": "paper_metadata",
+            },
+        }
+        for idx in range(5)
+    ]
+    run_cycle_calls = 0
+
+    def fail_run_cycle(**_kwargs: Any) -> dict[str, Any]:
+        nonlocal run_cycle_calls
+        run_cycle_calls += 1
+        return {"status": "published", "submitted": 1, "published": 1}
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(
+        sweep,
+        "_seed_topics",
+        lambda _path, *, limit: ["platform_strategy_network_effects"],
+    )
+    monkeypatch.setattr(
+        sweep,
+        "fetch_business_facts",
+        lambda *_args, **_kwargs: ([], {"status": "failed", "http_status": 503}),
+    )
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", lambda _topic, **_kwargs: {
+        "status": "complete",
+        "paper_count": 5,
+        "shards_searched": 1525,
+        "partial_shard_search": False,
+        "sweep_failed_shards": 0,
+        "sources_searched": {
+            "openalex": 2,
+            "pubmed": 1,
+            "crossref": 1,
+            "core": 1,
+            "semantic_scholar": 1,
+        },
+        "_papers": papers,
+    })
+    monkeypatch.setattr(sweep, "run_cycle", fail_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(tmp_path / "runs"),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-06-28T13-41-06Z",
+    ])
+
+    assert sweep.main() == 2
+
+    summary = json.loads(
+        (tmp_path / "runs" / "_business_diagnostics" / "latest_sweep.json")
+        .read_text(encoding="utf-8"),
+    )
+    row = summary["results"][0]
+    assert row["status"] == "no_bundle"
+    assert "requires_fact_level_source_synthesis" in row["blockers"]
+    assert run_cycle_calls == 0
+
+
 def test_business_sweep_submits_after_consistent_non_dry_run_passes(
     tmp_path: Path,
     monkeypatch: Any,

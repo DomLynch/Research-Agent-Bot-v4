@@ -842,11 +842,15 @@ def main() -> int:
                     diagnostics = read_json(diagnostics_path, {})
                     if isinstance(diagnostics, dict):
                         row["blockers"] = no_bundle_blockers_from_diagnostics(diagnostics)
-                    fullraw_ready = (
+                    fullraw_has_complete_receipt = (
                         fullraw_trace.get("status") == "complete"
                         and len(fullraw_keys) >= 5
                     )
-                    if fullraw_ready:
+                    fullraw_fact_count = publish_literature.substantive_fact_count(
+                        fullraw_papers,
+                    )
+                    fullraw_ready = fullraw_has_complete_receipt and fullraw_fact_count >= 2
+                    if fullraw_has_complete_receipt:
                         discovery_path = _write_fullraw_discovery(
                             args.runs_root,
                             domain=domain,
@@ -855,6 +859,12 @@ def main() -> int:
                             papers=fullraw_papers,
                         )
                         row["source_literature_discovery"] = str(discovery_path)
+                    if fullraw_has_complete_receipt and not fullraw_ready:
+                        blockers = list(row.get("blockers") or [])
+                        if "requires_fact_level_source_synthesis" not in blockers:
+                            blockers.append("requires_fact_level_source_synthesis")
+                        row["blockers"] = blockers
+                    if fullraw_ready:
                         row["status"] = "source_literature_candidate_available"
                         fingerprint = "|".join((
                             domain,
