@@ -294,7 +294,8 @@ def _strict_fullraw_probe(
                     events = discovery.__dict__.get("_FULLRAW_PROBE_EVENTS", [])
                     event = events[-1] if len(events) > before else {}
                     status = (
-                        "complete" if papers else
+                        "complete" if papers and receipt_complete else
+                        "incomplete_receipt" if papers else
                         "complete_no_hits" if receipt_complete else
                         str(event.get("status") or "no_hits")
                     )
