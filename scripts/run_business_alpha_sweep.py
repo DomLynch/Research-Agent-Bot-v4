@@ -151,9 +151,9 @@ def _business_fullraw_priority_enabled() -> bool:
 
 def _business_fullraw_query_limit() -> int:
     try:
-        return max(1, int(os.environ.get("BUSINESS_SWEEP_FULLRAW_QUERY_LIMIT", "1")))
+        return max(1, int(os.environ.get("BUSINESS_SWEEP_FULLRAW_QUERY_LIMIT", "3")))
     except ValueError:
-        return 1
+        return 3
 
 
 def _fullraw_busy_event(event: dict[str, Any]) -> bool:
@@ -323,7 +323,8 @@ def _strict_fullraw_probe(
                 result: dict[str, Any] = {}
                 attempted: list[str] = []
                 result_limit = _business_fullraw_result_limit()
-                for query in _business_fullraw_queries(topic):
+                queries = _business_fullraw_queries(topic)
+                for idx, query in enumerate(queries):
                     attempted.append(query)
                     events = discovery.__dict__.get("_FULLRAW_PROBE_EVENTS", [])
                     before = len(events)
@@ -384,10 +385,19 @@ def _strict_fullraw_probe(
                             if isinstance(receipt, dict) else None
                         ) or event.get("result_citation_diversity"),
                     }
+                    source_papers = papers
+                    if status == "complete" and papers:
+                        source_papers = _merge_fullraw_hit_text(
+                            papers, _fullraw_search_hits(query, limit=result_limit),
+                        )
+                        result["candidate_fact_source_count"] = (
+                            _fullraw_substantive_fact_candidates(topic, source_papers)
+                        )
                     if include_papers:
-                        result["_papers"] = papers
+                        result["_papers"] = source_papers
                     _record_fullraw_backoff(runs_root, topic, result)
-                    if len(papers) >= 5 or status not in {
+                    source_candidates = int(result.get("candidate_fact_source_count") or 0)
+                    if source_candidates > 0 or idx + 1 >= len(queries) or status not in {
                         "complete", "complete_no_hits", "no_hits",
                     }:
                         break
@@ -449,6 +459,12 @@ def _business_fullraw_queries(topic: str) -> tuple[str, ...]:
     bases = tuple(expand_topic_queries(topic, max_queries=3))
     for raw in bases[:1]:
         add(raw)
+    if out:
+        base = out[0]
+        base_tokens = _seed_tokens(base)
+        if not base_tokens & {"performance", "profitability", "returns", "return"}:
+            add(f"{base} performance")
+        add(f"{base} empirical")
     for term in tuple(alpha_terms)[:2]:
         if out:
             add(f"{out[0]} {term}")
@@ -531,7 +547,8 @@ def _first_sentence(text: str, *, limit: int = 220) -> str:
 
 
 def _abstract_finding_sentence(text: str, *, limit: int = 700) -> str:
-    clean = " ".join(str(text or "").split()).strip()
+    clean = re.sub(r"<[^>]+>", " ", str(text or ""))
+    clean = " ".join(clean.split()).strip()
     for sentence in re.split(r"(?<=[.!?])\s+", clean):
         candidate = sentence.strip()
         lowered = candidate.casefold()
@@ -543,6 +560,10 @@ def _abstract_finding_sentence(text: str, *, limit: int = 700) -> str:
                 return candidate.rstrip(".")
             return candidate[:limit].rsplit(" ", 1)[0].rstrip(".,;")
     return ""
+
+
+def _strip_markup_text(value: Any) -> str:
+    return " ".join(re.sub(r"<[^>]+>", " ", str(value or "")).split()).strip()
 
 
 def _norm_text(value: Any) -> str:
@@ -596,6 +617,28 @@ def _fullraw_search_hits(query: str, *, limit: int | None = None) -> list[dict[s
     return [item for item in items if isinstance(item, dict)]
 
 
+def _clean_paper_source_fact(paper: dict[str, Any]) -> dict[str, Any]:
+    fact = paper.get("source_fact")
+    if not isinstance(fact, dict):
+        return paper
+    cleaned = dict(fact)
+    for key in ("canonical_phrase", "source_excerpt"):
+        if cleaned.get(key):
+            cleaned[key] = _strip_markup_text(cleaned[key])
+    return paper | {"source_fact": cleaned}
+
+
+def _fullraw_substantive_fact_candidates(topic: str, papers: list[dict[str, Any]]) -> int:
+    count = 0
+    for paper in papers:
+        if publish_literature.substantive_fact_count([paper]) > 0:
+            count += 1
+            continue
+        if _abstract_source_fact(topic, paper) is not None:
+            count += 1
+    return count
+
+
 def _merge_fullraw_hit_text(
     papers: list[dict[str, Any]], hits: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
@@ -629,11 +672,13 @@ def _abstract_source_fact(topic: str, paper: dict[str, Any]) -> dict[str, Any] |
     abstract = str(
         paper.get("abstract") or paper.get("source_excerpt") or paper.get("snippet") or "",
     ).strip()
+    abstract = _strip_markup_text(abstract)
     if len(abstract) < 80:
         return None
-    artifact_text = f"{title} {abstract}".casefold()
-    if any(term in artifact_text for term in _FULLRAW_METADATA_ARTIFACT_TERMS):
+    artifact_title = title.casefold()
+    if any(term in artifact_title for term in _FULLRAW_METADATA_ARTIFACT_TERMS):
         return None
+    artifact_text = f"{title} {abstract}".casefold()
     topic_tokens = set(_norm_text(topic).split()) - _BROAD_SEED_TOKENS
     text_tokens = set(_norm_text(f"{title} {abstract}").split())
     if len(topic_tokens & text_tokens) < min(2, len(topic_tokens)):
@@ -673,14 +718,12 @@ def _fullraw_paper_lookup_ids(paper: dict[str, Any]) -> tuple[str, ...]:
 
 
 def _pubmed_backfill_limit() -> int:
-    raw = (
-        os.environ.get("BUSINESS_SWEEP_PUBMED_ABSTRACT_BACKFILL_LIMIT")
-        or os.environ.get("RESEARKA_FULLRAW_DOI_ABSTRACT_BACKFILL_LIMIT")
-        or "0"
-    )
+    explicit = os.environ.get("BUSINESS_SWEEP_PUBMED_ABSTRACT_BACKFILL_LIMIT")
+    raw = explicit or os.environ.get("RESEARKA_FULLRAW_DOI_ABSTRACT_BACKFILL_LIMIT") or "10"
     with suppress(ValueError):
-        return max(0, int(raw))
-    return 0
+        limit = max(0, int(raw))
+        return limit if explicit is not None else max(_business_fullraw_result_limit(), limit)
+    return 0 if explicit is not None else _business_fullraw_result_limit()
 
 
 def _fetch_pubmed_abstract(pmid: str, settings: Any) -> str:
@@ -763,6 +806,7 @@ def _enrich_fullraw_papers_with_db_facts(
     backfills_remaining = _pubmed_backfill_limit()
     enriched: list[dict[str, Any]] = []
     for paper in papers:
+        paper = _clean_paper_source_fact(paper)
         if publish_literature.substantive_fact_count([paper]) > 0:
             enriched.append(paper)
             continue
@@ -790,10 +834,13 @@ def _enrich_fullraw_papers_with_db_facts(
                 backfills_remaining > 0
                 and not str(paper.get("abstract") or paper.get("source_excerpt") or "").strip()
             ):
-                abstract = _fetch_pubmed_abstract(str(paper.get("pmid") or ""), settings)
-                if not abstract:
-                    abstract = _fetch_crossref_abstract(str(paper.get("doi") or ""), settings)
-                backfills_remaining -= 1
+                pmid = str(paper.get("pmid") or "").strip()
+                doi = str(paper.get("doi") or "").strip()
+                abstract = _fetch_pubmed_abstract(pmid, settings) if pmid else ""
+                if not abstract and doi:
+                    abstract = _fetch_crossref_abstract(doi, settings)
+                if pmid or doi:
+                    backfills_remaining -= 1
                 if abstract:
                     paper = paper | {"abstract": abstract}
             abstract_fact = _abstract_source_fact(topic, paper)
@@ -892,7 +939,9 @@ def _diagnostic_rank(
     source_literature_ready = (
         status == "complete" and fullraw_fact_count >= MIN_DIRECT_SOURCES
     )
-    if source_rich or fullraw_pending or source_literature_ready:
+    if source_literature_ready:
+        return (0, -fullraw_fact_count, -top_sources, -a_core, idx)
+    if source_rich or fullraw_pending:
         return (0, -top_sources, -a_core, -raw, idx)
     service_busy = status in {
         "busy", "health_unavailable", "inflight_saturated",
@@ -900,6 +949,13 @@ def _diagnostic_rank(
     }
     if service_busy:
         return (2, -top_sources, -a_core, -raw, idx)
+    reprocessable_complete = (
+        status == "complete"
+        and not source_rich
+        and (raw > 0 or fullraw_fact_count > 0)
+    )
+    if reprocessable_complete:
+        return (0, -fullraw_fact_count, -top_sources, -a_core, idx)
     insufficient_fullraw_facts = (
         status == "complete"
         and fullraw_fact_count < MIN_DIRECT_SOURCES
@@ -907,9 +963,6 @@ def _diagnostic_rank(
     )
     if insufficient_fullraw_facts:
         return (3, -fullraw_fact_count, -top_sources, -a_core, idx)
-    reprocessable_complete = status == "complete" and raw > 0 and not source_rich
-    if reprocessable_complete:
-        return (0, -top_sources, -a_core, -raw, idx)
     weak_complete = status == "complete" and raw == 0 and not source_rich
     if weak_complete:
         return (2, -top_sources, -a_core, -raw, idx)

@@ -1537,7 +1537,22 @@ def test_business_sweep_fullraw_probe_backoff_is_topic_scoped(
             status = "complete"
             async_status = None
             partial = False
-            papers = [{"paper_id": f"paper-{idx}", "title": f"{query} source {idx}"} for idx in range(5)]
+            # This test is about topic-scoped backoff, not source quality.
+            # Under the live contract, title-only completions are source-poor
+            # and correctly fall through to the next compact query.
+            papers = [
+                {
+                    "paper_id": f"paper-{idx}",
+                    "title": f"{query} source {idx}",
+                    "source_fact": {
+                        "canonical_phrase": f"{query} changes firm performance {idx}.",
+                        "population": "firms",
+                        "intervention": query,
+                        "endpoint": "firm performance",
+                    },
+                }
+                for idx in range(5)
+            ]
         discovery._FULLRAW_PROBE_EVENTS.append({
             "query": query,
             "status": status,
@@ -1594,8 +1609,19 @@ def test_business_sweep_priority_probe_bypasses_stale_fullraw_backoff(
             "query": query,
             "status": "complete",
         })
+        # This test isolates priority/backoff behaviour. Use source-fact
+        # papers so the adaptive source-quality fallback is not the subject.
         return [
-            {"paper_id": f"paper-{idx}", "title": f"{query} source {idx}"}
+            {
+                "paper_id": f"paper-{idx}",
+                "title": f"{query} source {idx}",
+                "source_fact": {
+                    "canonical_phrase": f"{query} changes firm performance {idx}.",
+                    "population": "firms",
+                    "intervention": query,
+                    "endpoint": "firm performance",
+                },
+            }
             for idx in range(5)
         ]
 
@@ -1774,7 +1800,19 @@ def test_business_sweep_fullraw_probe_tries_compact_alpha_query(
         topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
         if query.endswith("replication"):
             return [
-                {"paper_id": f"paper-{idx}", "title": f"{query} source {idx}"}
+                {
+                    "paper_id": f"paper-{idx}",
+                    "title": f"{query} source {idx}",
+                    "source_fact": {
+                        "canonical_phrase": (
+                            "Platform strategy changed network-effect monetization "
+                            f"in multi-sided markets {idx}."
+                        ),
+                        "population": "multi-sided markets",
+                        "intervention": "platform strategy",
+                        "endpoint": "network-effect monetization",
+                    },
+                }
                 for idx in range(5)
             ]
         return []
@@ -1788,12 +1826,72 @@ def test_business_sweep_fullraw_probe_tries_compact_alpha_query(
 
     assert calls == [
         "platform strategy network",
+        "platform strategy network performance",
+        "platform strategy network empirical",
         "platform strategy network replication",
     ]
     assert result["status"] == "complete"
     assert result["paper_count"] == 5
     assert result["query"] == "platform strategy network replication"
     assert len(result["_papers"]) == 5
+
+
+def test_business_sweep_fullraw_probe_skips_complete_source_poor_query(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import agent.topic_discovery as topic_discovery_mod
+    import scripts.run_topic_discovery as discovery
+
+    calls: list[str] = []
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
+        str(tmp_path / "fullraw.lock"),
+    )
+    monkeypatch.setenv("BUSINESS_SWEEP_FULLRAW_QUERY_LIMIT", "3")
+
+    complete_receipt = {
+        "shards_searched": 1525,
+        "partial_shard_search": False,
+        "sweep_failed_shards": 0,
+        "source_count_searched": 5,
+    }
+
+    def fake_seed_fullraw(query: str, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        topic_discovery_mod._FULLRAW_LAST_RECEIPT = dict(complete_receipt)
+        topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
+        if query.endswith("performance"):
+            return [
+                {
+                    "paper_id": f"article-{idx}",
+                    "title": f"{query} article {idx}",
+                    "abstract": (
+                        "Findings show that platform strategy significantly "
+                        f"improves firm performance in source {idx}."
+                    ),
+                }
+                for idx in range(5)
+            ]
+        return [
+            {"paper_id": f"dataset-{idx}", "title": f"Dataset for {query} {idx}"}
+            for idx in range(10)
+        ]
+
+    monkeypatch.setattr(discovery, "_seed_fullraw_papers", fake_seed_fullraw)
+
+    result = sweep._strict_fullraw_probe(
+        "platform_strategy_network_effects",
+        include_papers=True,
+    )
+
+    assert calls == [
+        "platform strategy network",
+        "platform strategy network performance",
+    ]
+    assert result["status"] == "complete"
+    assert result["query"] == "platform strategy network performance"
+    assert result["candidate_fact_source_count"] == 5
 
 
 def test_business_fullraw_queries_are_compact_deduped_and_alpha_shaped(
@@ -1809,8 +1907,8 @@ def test_business_fullraw_queries_are_compact_deduped_and_alpha_shaped(
 
     assert queries[:3] == (
         "pricing strategy margin",
-        "pricing strategy margin replication",
-        "pricing strategy margin primary endpoint",
+        "pricing strategy margin performance",
+        "pricing strategy margin empirical",
     )
     assert all("effects" not in query for query in queries)
     assert all(len(query.split()) <= 5 for query in queries)
@@ -1820,7 +1918,7 @@ def test_business_fullraw_queries_are_compact_deduped_and_alpha_shaped(
     })
 
 
-def test_business_fullraw_queries_default_to_single_compact_sweep(
+def test_business_fullraw_queries_default_to_source_rich_compact_sweeps(
     monkeypatch: Any,
 ) -> None:
     monkeypatch.setenv(
@@ -1831,6 +1929,8 @@ def test_business_fullraw_queries_default_to_single_compact_sweep(
 
     assert sweep._business_fullraw_queries("pricing_strategy_margin_effects") == (
         "pricing strategy margin",
+        "pricing strategy margin performance",
+        "pricing strategy margin empirical",
     )
 
 
@@ -1847,6 +1947,7 @@ def test_business_fullraw_queries_do_not_drop_all_specific_intent(
 
     assert queries == (
         "business model performance",
+        "business model performance empirical",
         "business model performance replication",
         "business model performance primary endpoint",
     )
@@ -2218,6 +2319,68 @@ def test_business_sweep_retries_complete_fact_bearing_fullraw_before_unknown(
         "business_research",
         ["heterogeneous_seed", "untried_seed"],
     ) == ["heterogeneous_seed", "untried_seed"]
+
+
+def test_business_sweep_retries_complete_partial_source_fullraw_before_unknown(
+    tmp_path: Path,
+) -> None:
+    diagnostics = tmp_path / "runs" / "_business_diagnostics"
+    diagnostics.mkdir(parents=True)
+    (diagnostics / "business_research-partial_source_seed.json").write_text(json.dumps({
+        "raw_fact_count": 0,
+        "a_core_fact_count": 0,
+        "top_clusters": [],
+        "retrieval_trace": {
+            "fullraw": {
+                "status": "complete",
+                "paper_count": 10,
+                "fact_source_count": 3,
+                "shards_searched": 1525,
+                "partial_shard_search": False,
+                "sweep_failed_shards": 0,
+            },
+        },
+    }), encoding="utf-8")
+
+    assert sweep._prioritized_seed_topics(
+        tmp_path / "runs",
+        "business_research",
+        ["partial_source_seed", "untried_seed"],
+    ) == ["partial_source_seed", "untried_seed"]
+
+
+def test_business_sweep_prioritizes_ready_source_literature_over_weak_db_cluster(
+    tmp_path: Path,
+) -> None:
+    diagnostics = tmp_path / "runs" / "_business_diagnostics"
+    diagnostics.mkdir(parents=True)
+    (diagnostics / "business_research-ready_source_lit.json").write_text(json.dumps({
+        "raw_fact_count": 0,
+        "a_core_fact_count": 0,
+        "top_clusters": [],
+        "retrieval_trace": {
+            "fullraw": {
+                "status": "complete",
+                "paper_count": 10,
+                "fact_source_count": 6,
+                "shards_searched": 1525,
+                "partial_shard_search": False,
+                "sweep_failed_shards": 0,
+            },
+        },
+    }), encoding="utf-8")
+    (diagnostics / "business_research-weak_db_cluster.json").write_text(json.dumps({
+        "raw_fact_count": 8,
+        "a_core_fact_count": 2,
+        "top_clusters": [{"source_count": 1}],
+        "retrieval_trace": {"fullraw": {"status": "complete", "paper_count": 10}},
+    }), encoding="utf-8")
+
+    assert sweep._prioritized_seed_topics(
+        tmp_path / "runs",
+        "business_research",
+        ["weak_db_cluster", "ready_source_lit"],
+    ) == ["ready_source_lit", "weak_db_cluster"]
 
 
 def test_business_sweep_deprioritizes_complete_fullraw_without_raw_facts(
@@ -2806,6 +2969,46 @@ def test_business_sweep_enriches_fullraw_article_abstracts_without_metadata_only
     assert enriched[0]["source_fact"]["endpoint"] == "environmental performance"
     assert enriched[0]["source_fact"]["canonical_phrase"].startswith("Findings show")
     assert "source_fact" not in enriched[1]
+
+
+def test_business_sweep_backfills_crossref_abstracts_and_strips_markup(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.delenv("BUSINESS_SWEEP_PUBMED_ABSTRACT_BACKFILL_LIMIT", raising=False)
+    monkeypatch.delenv("RESEARKA_FULLRAW_DOI_ABSTRACT_BACKFILL_LIMIT", raising=False)
+    monkeypatch.setattr(sweep, "_tier2_facts_for_paper", lambda **_kwargs: [])
+    monkeypatch.setattr(sweep, "_fetch_pubmed_abstract", lambda *_args: "")
+    monkeypatch.setattr(
+        sweep,
+        "_fetch_crossref_abstract",
+        lambda *_args: (
+            "<jats:p>The research findings reveal that visibility significantly "
+            "influences supply chain resilience and firm performance.</jats:p>"
+        ),
+    )
+    settings = SimpleNamespace(
+        researka_database_url="https://db.test",
+        researka_database_token="tok-test",
+    )
+    papers = [{
+        "doi": "10.1000/article",
+        "title": (
+            "The Impacts of Supply Chain Capabilities, Visibility, Resilience "
+            "on Supply Chain Performance and Firm Performance"
+        ),
+    }]
+
+    enriched = sweep._enrich_fullraw_papers_with_db_facts(
+        "supply_chain_resilience_performance",
+        domain="business_research",
+        papers=papers,
+        settings=settings,
+    )
+
+    fact = enriched[0]["source_fact"]
+    assert publish_literature.substantive_fact_count(enriched) == 1
+    assert fact["canonical_phrase"].startswith("The research findings reveal")
+    assert "<jats" not in fact["canonical_phrase"]
 
 
 def test_business_sweep_backfills_pubmed_abstract_for_title_only_fullraw(
