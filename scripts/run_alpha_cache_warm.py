@@ -2,8 +2,11 @@
 from __future__ import annotations
 
 import argparse
+import json
+import os
 import subprocess
 import sys
+import urllib.request
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -56,6 +59,42 @@ def _fullraw_cache_progress(before: dict[Path, tuple[int, int]]) -> bool:
     return any(after.get(path) != before.get(path) for path in _FULLRAW_CACHE_FILES)
 
 
+def _fullraw_health_url() -> str:
+    url = os.environ.get("RESEARKA_FULLRAW_SEARCH_URL") or os.environ.get(
+        "V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "",
+    )
+    if url:
+        return url.rsplit("/", 1)[0] + "/health"
+    return "http://127.0.0.1:9903/health" if (
+        os.environ.get("RESEARKA_FULLRAW_INDEX_TOKEN")
+        or os.environ.get("RESEARKA_FULLRAW_TOKEN")
+        or os.environ.get("V5_MEMO_FULL_RAW_INDEX_TOKEN")
+    ) else ""
+
+
+def _fullraw_busy() -> tuple[bool, str]:
+    url = _fullraw_health_url()
+    if not url:
+        return False, "not_configured"
+    try:
+        with urllib.request.urlopen(url, timeout=5) as response:
+            data = json.load(response)
+    except (OSError, ValueError):
+        return True, "health_unavailable"
+    async_sweep = data.get("async_sweep") if isinstance(data, dict) else None
+    if not isinstance(async_sweep, dict):
+        return False, "no_async_sweep"
+    try:
+        inflight = int(async_sweep.get("inflight_count") or 0)
+        queued = int(async_sweep.get("queued_count") or 0)
+        priority_queued = int(async_sweep.get("priority_queued_count") or 0)
+    except (TypeError, ValueError):
+        return True, "health_malformed"
+    busy = inflight > 0 or queued > 0 or priority_queued > 0
+    reason = f"inflight={inflight} queued={queued} priority_queued={priority_queued}"
+    return busy, reason
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--domains", default="")
@@ -71,6 +110,13 @@ def main() -> int:
     script = Path(__file__).with_name("run_topic_discovery.py")
     failures = 0
     for domain in _selected_domains(args.domains):
+        busy, reason = _fullraw_busy()
+        if busy:
+            print(
+                f"[alpha-cache-warm] domain={domain} skipped fullraw_busy {reason}",
+                flush=True,
+            )
+            continue
         cmd = [
             sys.executable,
             str(script),

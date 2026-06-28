@@ -5,7 +5,21 @@ import sys
 from types import SimpleNamespace
 from typing import Any
 
+import pytest
+
 from scripts import run_alpha_cache_warm as warm
+
+
+@pytest.fixture(autouse=True)
+def _clear_fullraw_env(monkeypatch: Any) -> None:
+    for name in (
+        "RESEARKA_FULLRAW_SEARCH_URL",
+        "RESEARKA_FULLRAW_INDEX_TOKEN",
+        "RESEARKA_FULLRAW_TOKEN",
+        "V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL",
+        "V5_MEMO_FULL_RAW_INDEX_TOKEN",
+    ):
+        monkeypatch.delenv(name, raising=False)
 
 
 def test_default_cache_warm_domains_cover_unique_v4_seed_sets() -> None:
@@ -105,3 +119,30 @@ def test_cache_warmer_treats_timeout_after_fullraw_progress_as_success(
 
     assert warm.main() == 0
     assert calls == ["business_research", "finance_research"]
+
+
+def test_cache_warmer_skips_when_fullraw_already_busy(
+    monkeypatch: Any, capsys: Any,
+) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run(cmd: list[str], *, check: bool, timeout: float | None) -> SimpleNamespace:
+        calls.append(cmd)
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(sys, "argv", [
+        "run_alpha_cache_warm.py",
+        "--domains",
+        "business_research,finance_research",
+    ])
+    monkeypatch.setattr(
+        "scripts.run_alpha_cache_warm._fullraw_busy",
+        lambda: (True, "inflight=2 queued=1 priority_queued=0"),
+    )
+    monkeypatch.setattr("scripts.run_alpha_cache_warm.subprocess.run", fake_run)
+
+    assert warm.main() == 0
+    assert calls == []
+    out = capsys.readouterr().out
+    assert "[alpha-cache-warm] domain=business_research skipped fullraw_busy" in out
+    assert "[alpha-cache-warm] domain=finance_research skipped fullraw_busy" in out
