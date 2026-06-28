@@ -771,13 +771,27 @@ def _diagnostic_rank(
     if not isinstance(fullraw, dict):
         fullraw = {}
     status = str(fullraw.get("status") or "")
+    fullraw_fact_count = count(fullraw.get("fact_source_count"))
+    if not fullraw_fact_count:
+        discovery = read_json(
+            runs_root / "_topics_discovery"
+            / f"business_sweep_fullraw.{domain}.{topic}.json",
+            {},
+        )
+        if isinstance(discovery, dict):
+            rows = discovery.get("all")
+            if isinstance(rows, list) and rows and isinstance(rows[0], dict):
+                fullraw_fact_count = count(rows[0].get("fact_source_count"))
     fullraw_pending = (
         str(fullraw.get("async_status") or "") in {"queued", "running"}
         or status in {"async_queued", "async_running"}
         or fullraw.get("partial_shard_search") is True
     )
     source_rich = top_sources >= MIN_DIRECT_SOURCES or a_core >= MIN_DIRECT_SOURCES
-    if source_rich or fullraw_pending:
+    source_literature_ready = (
+        status == "complete" and fullraw_fact_count >= MIN_DIRECT_SOURCES
+    )
+    if source_rich or fullraw_pending or source_literature_ready:
         return (0, -top_sources, -a_core, -raw, idx)
     service_busy = status in {
         "busy", "health_unavailable", "inflight_saturated",
@@ -785,6 +799,13 @@ def _diagnostic_rank(
     }
     if service_busy:
         return (2, -top_sources, -a_core, -raw, idx)
+    insufficient_fullraw_facts = (
+        status == "complete"
+        and fullraw_fact_count < MIN_DIRECT_SOURCES
+        and not source_rich
+    )
+    if insufficient_fullraw_facts:
+        return (3, -fullraw_fact_count, -top_sources, -a_core, idx)
     reprocessable_complete = status == "complete" and raw > 0 and not source_rich
     if reprocessable_complete:
         return (0, -top_sources, -a_core, -raw, idx)
@@ -1112,10 +1133,19 @@ def main() -> int:
                         ).strip()
                         if key:
                             fullraw_keys.add(key.casefold())
+                    fullraw_has_complete_receipt = (
+                        fullraw_trace.get("status") == "complete"
+                        and len(fullraw_keys) >= 5
+                    )
+                    fullraw_fact_count = publish_literature.substantive_fact_count(
+                        fullraw_papers,
+                    )
+                    fullraw_trace["fact_source_count"] = fullraw_fact_count
                     trace = {**trace, "fullraw": fullraw_trace}
                     row["trace"] = trace
                     row["status"] = "no_bundle"
                     row["fullraw"] = fullraw_trace
+                    row["fullraw_fact_source_count"] = fullraw_fact_count
                     diagnostics_path = write_no_bundle_diagnostics(
                         runs_root=args.runs_root,
                         domain=domain,
@@ -1127,14 +1157,10 @@ def main() -> int:
                     diagnostics = read_json(diagnostics_path, {})
                     if isinstance(diagnostics, dict):
                         row["blockers"] = no_bundle_blockers_from_diagnostics(diagnostics)
-                    fullraw_has_complete_receipt = (
-                        fullraw_trace.get("status") == "complete"
-                        and len(fullraw_keys) >= 5
+                    fullraw_ready = (
+                        fullraw_has_complete_receipt
+                        and fullraw_fact_count >= MIN_DIRECT_SOURCES
                     )
-                    fullraw_fact_count = publish_literature.substantive_fact_count(
-                        fullraw_papers,
-                    )
-                    fullraw_ready = fullraw_has_complete_receipt and fullraw_fact_count >= 2
                     if fullraw_has_complete_receipt:
                         discovery_path = _write_fullraw_discovery(
                             args.runs_root,

@@ -2152,6 +2152,7 @@ def test_business_sweep_retries_complete_fact_bearing_fullraw_before_unknown(
         "retrieval_trace": {
             "fullraw": {
                 "status": "complete",
+                "fact_source_count": 5,
                 "shards_searched": 1525,
                 "partial_shard_search": False,
                 "sweep_failed_shards": 0,
@@ -2562,6 +2563,91 @@ def test_business_sweep_metadata_only_fullraw_does_not_handoff_to_submit(
     )
     row = summary["results"][0]
     assert row["status"] == "no_bundle"
+    assert "requires_fact_level_source_synthesis" in row["blockers"]
+    assert run_cycle_calls == 0
+
+
+def test_business_sweep_thin_fact_fullraw_does_not_handoff_to_submit(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    papers = [
+        {
+            "paper_id": f"fullraw-fact-{idx}",
+            "title": f"Platform strategy network effects evidence {idx}",
+            "source_fact": {
+                "canonical_phrase": (
+                    "Platform strategy changed network-effect monetization in "
+                    f"multi-sided markets {idx}."
+                ),
+                "population": "multi-sided markets",
+                "intervention": "platform strategy",
+                "endpoint": "network-effect monetization",
+                "source_tier": "fullraw_search",
+            },
+        }
+        for idx in range(2)
+    ]
+    papers.extend({
+        "paper_id": f"fullraw-title-{idx}",
+        "title": f"Platform strategy network effects title match {idx}",
+    } for idx in range(3))
+    run_cycle_calls = 0
+
+    def fail_run_cycle(**_kwargs: Any) -> dict[str, Any]:
+        nonlocal run_cycle_calls
+        run_cycle_calls += 1
+        return {"status": "published", "submitted": 1, "published": 1}
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(
+        sweep,
+        "_seed_topics",
+        lambda _path, *, limit: ["platform_strategy_network_effects"],
+    )
+    monkeypatch.setattr(
+        sweep,
+        "fetch_business_facts",
+        lambda *_args, **_kwargs: ([], {"status": "failed", "http_status": 503}),
+    )
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", lambda _topic, **_kwargs: {
+        "status": "complete",
+        "paper_count": 5,
+        "shards_searched": 1525,
+        "partial_shard_search": False,
+        "sweep_failed_shards": 0,
+        "sources_searched": {
+            "openalex": 2,
+            "pubmed": 1,
+            "crossref": 1,
+            "core": 1,
+            "semantic_scholar": 1,
+        },
+        "_papers": papers,
+    })
+    monkeypatch.setattr(sweep, "run_cycle", fail_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(tmp_path / "runs"),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-06-28T14-11-00Z",
+    ])
+
+    assert sweep.main() == 2
+
+    summary = json.loads(
+        (tmp_path / "runs" / "_business_diagnostics" / "latest_sweep.json")
+        .read_text(encoding="utf-8"),
+    )
+    row = summary["results"][0]
+    assert row["status"] == "no_bundle"
+    assert row["fullraw_fact_source_count"] == 2
+    assert row["fullraw"]["fact_source_count"] == 2
     assert "requires_fact_level_source_synthesis" in row["blockers"]
     assert run_cycle_calls == 0
 
