@@ -3903,11 +3903,16 @@ def _fresh_parent_topics_from_discovery(
     *,
     limit: int,
     min_sources: int,
+    soft_source_floor_blocked_topics: set[str] | None = None,
 ) -> list[str]:
     discovery_dir = runs_root / "_topics_discovery"
     seed_prefixes = _domain_seed_prefixes(profile_slug)
     seed_scope = _seed_scope_tokens(seed_prefixes)
     other_seed_scope = _other_domain_seed_scope_tokens(profile_slug)
+    soft_source_floor_blocked_topics = soft_source_floor_blocked_topics or set()
+    soft_source_floor_blocked_keys = {
+        _canonical_family_key(topic) for topic in soft_source_floor_blocked_topics
+    }
     paths = sorted(
         discovery_dir.glob("*.json"),
         key=lambda path: path.stat().st_mtime if path.exists() else 0,
@@ -3933,7 +3938,12 @@ def _fresh_parent_topics_from_discovery(
             aliases = _family_alias_keys(topic)
             if (
                 not topic
-                or _source_literature_family_blocked_topic(topic, blocked_topics)
+                or topic in soft_source_floor_blocked_topics
+                or _canonical_family_key(topic) in soft_source_floor_blocked_keys
+                or _source_literature_family_blocked_topic(
+                    topic,
+                    blocked_topics - soft_source_floor_blocked_topics,
+                )
                 or _local_parent_refresh_blocked(
                     runs_root, profile_slug, topic, discovery_mtime,
                 )
@@ -5018,6 +5028,7 @@ def run_cycle(
             blocked_topics,
             limit=_parent_refresh_topic_limit(refresh_top),
             min_sources=max(min_submit_sources, min_direct_submit_sources),
+            soft_source_floor_blocked_topics=source_floor_blocked_topics,
         )
         if priority_refresh_topics:
             ledger["refresh_parent_topics"] = priority_refresh_topics
@@ -5089,6 +5100,7 @@ def run_cycle(
                         blocked_topics,
                         limit=_parent_refresh_topic_limit(refresh_top),
                         min_sources=max(min_submit_sources, min_direct_submit_sources),
+                        soft_source_floor_blocked_topics=source_floor_blocked_topics,
                     )
                     if next_parent_topics:
                         ledger.setdefault("refresh_timeout_deferrals", []).append({
@@ -5224,6 +5236,7 @@ def run_cycle(
                     blocked_topics,
                     limit=_parent_refresh_topic_limit(refresh_top),
                     min_sources=max(min_submit_sources, min_direct_submit_sources),
+                    soft_source_floor_blocked_topics=source_floor_blocked_topics,
                 )
                 if fresh_parent_topics:
                     ledger["refresh_parent_topics"] = fresh_parent_topics
@@ -5245,6 +5258,7 @@ def run_cycle(
                     blocked_topics,
                     limit=_parent_refresh_topic_limit(refresh_top),
                     min_sources=max(min_submit_sources, min_direct_submit_sources),
+                    soft_source_floor_blocked_topics=source_floor_blocked_topics,
                 )
             if refresh_candidates and fresh_parent_topics and batch < search_batch_limit:
                 ledger["refresh_parent_topics"] = fresh_parent_topics

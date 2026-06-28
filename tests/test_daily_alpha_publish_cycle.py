@@ -4574,6 +4574,53 @@ def test_empty_refresh_skips_recent_source_floor_parent_topics(
     assert calls == [("exercise",)]
 
 
+def test_empty_refresh_allows_broader_parent_after_source_floor_child_topic(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "runs"
+    discovery = root / "_topics_discovery"
+    discovery.mkdir(parents=True)
+    daily._write_json(root / "_daily_ledger" / "2026-06-23.json", {
+        "domain": {"slug": "longevity"},
+        "source_floor_refresh_topics": ["metformin_longevity"],
+    })
+    daily._write_json(discovery / "latest.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [
+            {"topic": "metformin_longevity", "fact_source_count": 50, "paper_count": 50},
+            {"topic": "metformin", "fact_source_count": 40, "paper_count": 40},
+            {"topic": "resveratrol", "fact_source_count": 30, "paper_count": 30},
+        ],
+    })
+    calls: list[tuple[str, ...]] = []
+
+    def refresh(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+        priority_topics = tuple(kwargs.get("priority_topics") or ())
+        calls.append(priority_topics)
+        return {
+            "ok": True,
+            "ran_topics": list(priority_topics),
+            "top": 1,
+            "warm_backlog": False,
+        }
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", refresh)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-24",
+        domain="longevity_research",
+        refresh_candidates=True,
+        max_refresh_batches=1,
+        refresh_top=1,
+        submit=False,
+    )
+
+    assert ledger["recent_source_floor_topics_blocked"] == ["metformin_longevity"]
+    assert ledger["refresh_parent_topics"] == ["metformin"]
+    assert calls == [("metformin",)]
+
+
 def test_latest_cycle_topics_ignores_cross_topic_sidecar(tmp_path: Path) -> None:
     cycles = tmp_path / "_curator_cycles"
     cycles.mkdir()
