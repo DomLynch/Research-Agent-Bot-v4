@@ -210,6 +210,37 @@ def test_seed_fullraw_records_saturated_async_queue(monkeypatch: Any) -> None:
     assert event["key_running"] is False
 
 
+def test_seed_fullraw_backs_off_when_fullraw_inflight_is_saturated(
+    monkeypatch: Any,
+) -> None:
+    run_topic_discovery._FULLRAW_PROBE_EVENTS.clear()
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+
+    def handler(req: Any) -> Any:
+        if req.url.path.endswith("/health"):
+            return run_topic_discovery.httpx.Response(200, json={
+                "async_sweep": {
+                    "inflight_count": 3,
+                    "max_inflight": 2,
+                    "max_queue": 16,
+                    "priority_queued_count": 0,
+                    "queued_count": 0,
+                },
+            })
+        raise AssertionError("search should not run while fullraw inflight is saturated")
+
+    transport = run_topic_discovery.httpx.MockTransport(handler)
+    with run_topic_discovery.httpx.Client(transport=transport) as client:
+        assert run_topic_discovery._seed_fullraw_papers(
+            "business supply chain", client=client, limit=5,
+        ) == []
+
+    event = run_topic_discovery._FULLRAW_PROBE_EVENTS[-1]
+    assert event["status"] == "inflight_saturated"
+    assert event["inflight_count"] == 3
+    assert event["max_inflight"] == 2
+
+
 def test_seed_fullraw_retries_after_endpoint_timeout(monkeypatch: Any) -> None:
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
     monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", "2")

@@ -513,6 +513,8 @@ def _fullraw_queue_saturated(*, client: httpx.Client) -> dict[str, object]:
     try:
         queued = int(async_sweep.get("queued_count") or 0)
         max_queue = int(async_sweep.get("max_queue") or 0)
+        inflight = int(async_sweep.get("inflight_count") or 0)
+        max_inflight = int(async_sweep.get("max_inflight") or 0)
         priority_queued = int(async_sweep.get("priority_queued_count") or 0)
     except (TypeError, ValueError):
         return {}
@@ -522,9 +524,14 @@ def _fullraw_queue_saturated(*, client: httpx.Client) -> dict[str, object]:
     priority_burst = bool(async_sweep.get("priority_burst"))
     if priority_requested and priority_burst and priority_queued == 0:
         return {}
+    saturated_status = ""
     if max_queue > 0 and queued >= max_queue:
+        saturated_status = "queue_saturated"
+    elif max_inflight > 0 and inflight >= max_inflight:
+        saturated_status = "inflight_saturated"
+    if saturated_status:
         return {
-            "status": "queue_saturated",
+            "status": saturated_status,
             "queued_count": queued,
             "max_queue": max_queue,
             "inflight_count": async_sweep.get("inflight_count"),
@@ -614,7 +621,7 @@ def _fullraw_in_progress_poll_interval_seconds() -> float:
 
 def _fullraw_in_progress_event(event: dict[str, object]) -> bool:
     return (
-        str(event.get("status") or "") == "queue_saturated"
+        str(event.get("status") or "") in {"queue_saturated", "inflight_saturated"}
         or str(event.get("async_status") or "") in {"queued", "running"}
         or event.get("partial_shard_search") is True
     )
@@ -691,7 +698,8 @@ def _fullraw_event_busy(event: dict[str, object]) -> bool:
     return (
         status in {
             "incomplete_receipt", "async_queued", "async_running",
-            "busy", "failed", "queue_saturated", "async_queue_saturated",
+            "busy", "failed", "inflight_saturated", "queue_saturated",
+            "async_queue_saturated",
         }
         or async_status in {"queued", "running", "busy", "queue_saturated"}
         or event.get("partial_shard_search") is True

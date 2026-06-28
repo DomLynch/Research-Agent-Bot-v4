@@ -66,7 +66,10 @@ def no_bundle_blockers_from_diagnostics(data: dict[str, Any]) -> list[str]:
         elif status == "not_configured":
             blockers.append("fullraw_not_configured")
         elif (
-            status in {"busy", "queue_saturated", "async_queue_saturated"}
+            status in {
+                "busy", "inflight_saturated", "queue_saturated",
+                "async_queue_saturated",
+            }
             or str(fullraw.get("async_status") or "") in {
                 "queued", "running", "queue_saturated",
             }
