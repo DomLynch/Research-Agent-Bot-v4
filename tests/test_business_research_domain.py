@@ -1229,6 +1229,7 @@ def test_business_sweep_fullraw_probe_inherits_fullraw_search_budget(
         client_timeout = _kwargs["client"].timeout
         captured.update({
             "client_timeout": str(client_timeout.read),
+            "limit": str(_kwargs.get("limit")),
             "timeout": os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"),
             "attempts": os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS"),
             "priority": os.environ.get("TOPIC_DISCOVERY_FULLRAW_PRIORITY"),
@@ -1258,6 +1259,7 @@ def test_business_sweep_fullraw_probe_inherits_fullraw_search_budget(
     assert result["status"] == "incomplete_receipt"
     assert captured == {
         "client_timeout": "7200.0",
+        "limit": "20",
         "timeout": "7200.0",
         "attempts": "3600",
         "priority": "1",
@@ -1273,6 +1275,22 @@ def test_business_sweep_fullraw_probe_inherits_fullraw_search_budget(
     assert os.environ.get("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS") is None
     assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_PRIORITY") is None
     assert os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] == "7200"
+
+
+def test_business_fullraw_result_limit_is_bounded_and_configurable(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.delenv("BUSINESS_SWEEP_FULLRAW_RESULT_LIMIT", raising=False)
+    assert sweep._business_fullraw_result_limit() == 20
+
+    monkeypatch.setenv("BUSINESS_SWEEP_FULLRAW_RESULT_LIMIT", "3")
+    assert sweep._business_fullraw_result_limit() == 5
+
+    monkeypatch.setenv("BUSINESS_SWEEP_FULLRAW_RESULT_LIMIT", "24")
+    assert sweep._business_fullraw_result_limit() == 24
+
+    monkeypatch.setenv("BUSINESS_SWEEP_FULLRAW_RESULT_LIMIT", "bad")
+    assert sweep._business_fullraw_result_limit() == 20
 
 
 def test_business_sweep_fullraw_probe_priority_can_be_disabled(

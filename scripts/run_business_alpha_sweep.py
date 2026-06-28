@@ -57,6 +57,7 @@ _BROAD_SEED_TOKENS = frozenset({
     "returns", "return", "research",
 })
 _BUSINESS_FULLRAW_FOREGROUND_SECONDS = "2400"
+_BUSINESS_FULLRAW_RESULT_LIMIT = "20"
 _BUSINESS_FULLRAW_LOCK_PATH = "/tmp/researka-v4-business-fullraw.lock"
 _BUSINESS_FULLRAW_LOCK_WAIT_SECONDS = "0"
 _BUSINESS_FULLRAW_BACKOFF_SECONDS = "180"
@@ -107,6 +108,13 @@ def _business_fullraw_foreground_seconds() -> str:
         return str(int(max(float(configured or 0), float(_BUSINESS_FULLRAW_FOREGROUND_SECONDS))))
     except ValueError:
         return _BUSINESS_FULLRAW_FOREGROUND_SECONDS
+
+
+def _business_fullraw_result_limit() -> int:
+    raw = os.environ.get("BUSINESS_SWEEP_FULLRAW_RESULT_LIMIT", _BUSINESS_FULLRAW_RESULT_LIMIT)
+    with suppress(ValueError):
+        return max(MIN_DIRECT_SOURCES, int(raw))
+    return int(_BUSINESS_FULLRAW_RESULT_LIMIT)
 
 
 def _business_fullraw_lock_wait_seconds() -> float:
@@ -307,12 +315,13 @@ def _strict_fullraw_probe(
             with httpx_mod.Client(timeout=timeout_seconds) as client:
                 result: dict[str, Any] = {}
                 attempted: list[str] = []
+                result_limit = _business_fullraw_result_limit()
                 for query in _business_fullraw_queries(topic):
                     attempted.append(query)
                     events = discovery.__dict__.get("_FULLRAW_PROBE_EVENTS", [])
                     before = len(events)
                     papers = discovery.__dict__["_seed_fullraw_papers"](
-                        query, client=client, limit=10,
+                        query, client=client, limit=result_limit,
                     )
                     receipt = topic_discovery_mod.__dict__.get("_FULLRAW_LAST_RECEIPT", {})
                     if (not isinstance(receipt, dict) or not receipt) and papers:
@@ -544,8 +553,9 @@ def _fullraw_hit_key(item: dict[str, Any]) -> str:
     ).strip().casefold()
 
 
-def _fullraw_search_hits(query: str, *, limit: int = 10) -> list[dict[str, Any]]:
+def _fullraw_search_hits(query: str, *, limit: int | None = None) -> list[dict[str, Any]]:
     _load_fullraw_env_defaults()
+    limit = _business_fullraw_result_limit() if limit is None else limit
     url = str(os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL") or "").strip()
     token = str(
         os.environ.get("V5_MEMO_FULL_RAW_INDEX_TOKEN")
