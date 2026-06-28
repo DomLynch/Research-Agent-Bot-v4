@@ -1800,6 +1800,24 @@ def test_business_fullraw_queries_are_compact_deduped_and_alpha_shaped(
     })
 
 
+def test_business_fullraw_queries_do_not_drop_all_specific_intent(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_FULLRAW_ALPHA_SHAPE_TERMS",
+        "replication,primary endpoint",
+    )
+
+    queries = sweep._business_fullraw_queries("business_model_performance")
+
+    assert queries == (
+        "business model performance",
+        "business model performance replication",
+        "business model performance primary endpoint",
+    )
+    assert "business model" not in queries
+
+
 def test_business_sweep_fullraw_probe_does_not_dogpile_busy_worker(
     tmp_path: Path,
     monkeypatch: Any,
@@ -2199,21 +2217,24 @@ def test_business_seed_topics_keep_specific_intent_variants_only(
 ) -> None:
     seed_path = tmp_path / "seeds.toml"
     seed_path.write_text(
-        '[seeds]\ntopics = ["platform_strategy_network_effects", '
+        '[seeds]\ntopics = ["business_model_performance", '
+        '"platform_strategy_network_effects", '
         '"digital_transformation_firm_performance"]\n',
         encoding="utf-8",
     )
 
     topics = sweep._seed_topics(seed_path, limit=8)
 
-    assert topics[:4] == [
+    assert topics[:3] == [
         "platform_strategy_network_effects",
         "digital_transformation_firm_performance",
-        "platform_strategy_network",
-        "digital_transformation_firm",
+        "business_model_performance",
     ]
+    assert "platform_strategy_network" in topics
+    assert "digital_transformation_firm" in topics
     assert "platform_strategy" not in topics
     assert "digital_transformation" not in topics
+    assert "business_model" not in topics
     assert "platform_strategy_therapy" not in topics
 
 

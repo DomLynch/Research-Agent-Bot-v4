@@ -81,6 +81,20 @@ _NON_BUSINESS_QUERY_SUFFIXES = (
 )
 
 
+def _seed_tokens(value: str) -> set[str]:
+    return set(re.findall(r"[a-z0-9]+", str(value).replace("-", "_").lower()))
+
+
+def _variant_keeps_seed_intent(seed: str, variant: str) -> bool:
+    base_tokens = _seed_tokens(seed)
+    variant_tokens = _seed_tokens(variant)
+    base_specific = base_tokens - _BROAD_SEED_TOKENS
+    variant_specific = variant_tokens - _BROAD_SEED_TOKENS
+    if base_specific:
+        return base_specific <= variant_specific
+    return base_tokens <= variant_tokens
+
+
 def _business_fullraw_foreground_seconds() -> str:
     if explicit := os.environ.get("TOPIC_DISCOVERY_BUSINESS_FULLRAW_FOREGROUND_SECONDS"):
         return explicit
@@ -409,6 +423,8 @@ def _business_fullraw_queries(topic: str) -> tuple[str, ...]:
     def add(raw: str) -> None:
         query = str(compact(raw.replace("_", " "))).strip()
         key = " ".join(sorted(set(query.split())))
+        if out and not _variant_keeps_seed_intent(topic, query):
+            return
         if query and key not in seen:
             seen.add(key)
             out.append(query)
@@ -715,19 +731,11 @@ def _enrich_fullraw_papers_with_db_facts(
 def _seed_topic_variants(topic: str) -> tuple[str, ...]:
     out: list[str] = []
     seen: set[str] = set()
-    base_tokens = {
-        token for token in str(topic).replace("-", "_").split("_")
-        if token and token not in _BROAD_SEED_TOKENS
-    }
     for query in expand_topic_queries(topic, max_queries=8):
         slug = "_".join(query.replace("-", " ").replace("/", " ").split())
         if not slug or slug in seen or slug.endswith(_NON_BUSINESS_QUERY_SUFFIXES):
             continue
-        tokens = {
-            token for token in slug.split("_")
-            if token and token not in _BROAD_SEED_TOKENS
-        }
-        if out and base_tokens and not base_tokens <= tokens:
+        if out and not _variant_keeps_seed_intent(topic, slug):
             continue
         seen.add(slug)
         out.append(slug)
