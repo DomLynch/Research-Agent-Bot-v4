@@ -293,7 +293,11 @@ def _seed_fullraw_papers(
             "cache_age_seconds": cache_age,
             "paper_count": 0,
         })
-    saturated = {} if should_poll_in_progress else _fullraw_queue_saturated(client=client)
+    saturated = (
+        {}
+        if should_poll_in_progress or priority_requested
+        else _fullraw_queue_saturated(client=client)
+    )
     if saturated:
         saturated_event = {
             **saturated,

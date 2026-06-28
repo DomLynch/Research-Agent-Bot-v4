@@ -1595,6 +1595,58 @@ def test_business_sweep_priority_probe_bypasses_stale_fullraw_backoff(
     assert calls == ["platform strategy network", "platform strategy network"]
 
 
+def test_business_sweep_priority_probe_checks_exact_key_when_queue_is_full(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import agent.topic_discovery as topic_discovery_mod
+    import scripts.run_topic_discovery as discovery
+
+    calls: list[str] = []
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
+        str(tmp_path / "fullraw.lock"),
+    )
+
+    monkeypatch.setattr(
+        discovery,
+        "_fullraw_queue_saturated",
+        lambda **_kwargs: {
+            "status": "inflight_saturated",
+            "inflight_count": 2,
+            "max_inflight": 2,
+        },
+    )
+
+    def fake_fetch_fullraw(query: str, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        topic_discovery_mod._FULLRAW_LAST_RECEIPT = {
+            "shards_searched": 1453,
+            "shards_total": 1525,
+            "partial_shard_search": True,
+            "sweep_failed_shards": 0,
+            "source_count_searched": 5,
+        }
+        topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {
+            "status": "running",
+            "key_running": True,
+            "queued_count": 1,
+            "inflight_count": 2,
+        }
+        return []
+
+    monkeypatch.setattr(discovery, "_fetch_fullraw_topic_papers", fake_fetch_fullraw)
+
+    result = sweep._strict_fullraw_probe(
+        "digital_transformation_firm", runs_root=tmp_path / "runs",
+    )
+
+    assert calls == ["digital transformation firm"]
+    assert result["status"] == "incomplete_receipt"
+    assert result["async_status"] == "running"
+    assert result["shards_searched"] == 1453
+
+
 def test_business_sweep_fullraw_probe_rejects_papers_without_complete_receipt(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
