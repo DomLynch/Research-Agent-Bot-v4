@@ -549,6 +549,33 @@ def test_fullraw_fallback_rejects_non_full_5tb_receipts(monkeypatch: Any) -> Non
         assert papers == []
 
 
+def test_fullraw_fallback_preserves_coverage_error_receipt(monkeypatch: Any) -> None:
+    from agent import topic_discovery as td
+
+    receipt = {**_fullraw_receipt(), "shards_searched": 416, "partial_shard_search": True}
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "https://fullraw/search")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", "1")
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.host == "test":
+            return httpx.Response(200, json=[])
+        return httpx.Response(422, json={
+            "error": "coverage_too_narrow",
+            "failures": ["partial_shard_search true while complete search is required"],
+            "shard_receipt": receipt,
+            "results": [{"title": "Partial receipt should not publish"}],
+        })
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        papers = td._fetch_topic_papers(
+            "supply_chain_resilience_performance", client=c, settings=_settings(),
+        )
+
+    assert papers == []
+    assert td._FULLRAW_LAST_RECEIPT["shards_searched"] == 416
+    assert td._FULLRAW_LAST_RECEIPT["partial_shard_search"] is True
+
+
 def test_fullraw_fallback_polls_until_complete_receipt(monkeypatch: Any) -> None:
     from agent import topic_discovery as td
 

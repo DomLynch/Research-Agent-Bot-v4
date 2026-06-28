@@ -313,7 +313,6 @@ def _fact_source_facets(
 
 _MAX_TOPIC_TOKENS = 4
 
-
 def topic_token_count(topic: str) -> int:
     return sum(1 for token in str(topic).split("_") if token)
 
@@ -1193,8 +1192,7 @@ def _fetch_topic_papers(
 
 def _fetch_fullraw_topic_papers(topic: str, *, client: httpx.Client, limit: int = 25) -> list[dict[str, Any]]:
     global _FULLRAW_LAST_ASYNC_SWEEP, _FULLRAW_LAST_RECEIPT
-    _FULLRAW_LAST_RECEIPT = {}
-    _FULLRAW_LAST_ASYNC_SWEEP = {}
+    _FULLRAW_LAST_RECEIPT, _FULLRAW_LAST_ASYNC_SWEEP = {}, {}
     token = os.environ.get("V5_MEMO_FULL_RAW_INDEX_TOKEN", "").strip() or os.environ.get("V5_MEMO_FULL_RAW_CORPUS_TOKEN", "").strip()
     url = os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip() or ("http://127.0.0.1:9903/search" if token else "")
     if not url or os.environ.get("TOPIC_DISCOVERY_FULLRAW_FALLBACK", "1").lower() in {"0", "false", "no", "off"}:
@@ -1210,8 +1208,10 @@ def _fetch_fullraw_topic_papers(topic: str, *, client: httpx.Client, limit: int 
     for attempt_idx, _ in enumerate(polls):
         try:
             response = client.post(url, headers={"Authorization": f"Bearer {token}"} if token else {}, json=payload | {"queue_if_missing": attempt_idx == 0}, timeout=timeout + 2.0)
-            response.raise_for_status()
             data = response.json()
+            has_receipt_error = isinstance(data, dict) and (data.get("shard_receipt") or data.get("receipt"))
+            if response.is_error and not has_receipt_error:
+                response.raise_for_status()
             if isinstance(data, dict):
                 async_sweep = data.get("meta", {}).get("async_sweep") if isinstance(data.get("meta"), dict) else {}
                 _FULLRAW_LAST_ASYNC_SWEEP = dict(async_sweep) if isinstance(async_sweep, dict) else {}
