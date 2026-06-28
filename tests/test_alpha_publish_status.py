@@ -70,6 +70,8 @@ def test_publish_summary_contains_operator_blocker_fields() -> None:
         "status": CycleStatus.NO_FRESH_CANDIDATE.value,
         "submitted": 0,
         "published": 0,
+        "actionable_ready_to_publish": 0,
+        "non_actionable_ready_to_publish": 2,
         "queue_counts": {"ready_to_publish": 1, "curation_needed": 2},
         "cycle_attempts": [{"status": "reviewer_revise"}],
         "considered": [
@@ -95,6 +97,8 @@ def test_publish_summary_contains_operator_blocker_fields() -> None:
     assert summary["public_url"] == "https://researka.org/alpha/example"
     assert summary["public_url_status"] == 404
     assert summary["public_page_status"] == "not_rendered"
+    assert summary["actionable_ready_to_publish"] == 0
+    assert summary["non_actionable_ready_to_publish"] == 2
     assert summary["top_blockers"] == {
         "agent_repair_needed": 1,
         "duplicate_submission_fingerprint": 1,

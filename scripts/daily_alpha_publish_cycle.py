@@ -5193,6 +5193,15 @@ def run_cycle(
             retry_decision_overrides=session_retry_decisions,
             domain=profile.slug,
         )
+        raw_ready_count = len(current_queue.get("ready_to_publish") or [])
+        actionable_ready_count = (
+            1 if candidate is not None and candidate.get("decision") == "ready_to_publish"
+            else 0
+        )
+        ledger["actionable_ready_to_publish"] = actionable_ready_count
+        ledger["non_actionable_ready_to_publish"] = max(
+            0, raw_ready_count - actionable_ready_count,
+        )
         for row in considered:
             if refresh_candidates:
                 row["batch"] = batch

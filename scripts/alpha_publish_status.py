@@ -238,7 +238,7 @@ def publish_summary(ledger: Json) -> Json:
         and {"fullraw_probe_busy", "fullraw_complete_receipt_missing"} & set(top_blockers)
     ):
         next_action = "wait_for_fullraw_completion"
-    return {
+    summary = {
         "status": ledger.get("status"),
         "submitted": int(ledger.get("submitted") or 0),
         "published": int(ledger.get("published") or 0),
@@ -252,6 +252,10 @@ def publish_summary(ledger: Json) -> Json:
         "public_page_status": page.get("status") if isinstance(page, dict) else None,
         "next_action": next_action,
     }
+    for key in ("actionable_ready_to_publish", "non_actionable_ready_to_publish"):
+        if key in ledger:
+            summary[key] = int(ledger.get(key) or 0)
+    return summary
 
 
 def cycle_exit_code(
