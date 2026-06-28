@@ -2140,7 +2140,7 @@ def test_business_sweep_retries_queued_fullraw_before_new_variants(tmp_path: Pat
     ) == ["queued_seed", "untried_seed", "dead_seed"]
 
 
-def test_business_sweep_rotates_past_complete_but_unbundleable_fullraw(
+def test_business_sweep_retries_complete_fact_bearing_fullraw_before_unknown(
     tmp_path: Path,
 ) -> None:
     diagnostics = tmp_path / "runs" / "_business_diagnostics"
@@ -2163,7 +2163,34 @@ def test_business_sweep_rotates_past_complete_but_unbundleable_fullraw(
         tmp_path / "runs",
         "business_research",
         ["heterogeneous_seed", "untried_seed"],
-    ) == ["untried_seed", "heterogeneous_seed"]
+    ) == ["heterogeneous_seed", "untried_seed"]
+
+
+def test_business_sweep_deprioritizes_complete_fullraw_without_raw_facts(
+    tmp_path: Path,
+) -> None:
+    diagnostics = tmp_path / "runs" / "_business_diagnostics"
+    diagnostics.mkdir(parents=True)
+    (diagnostics / "business_research-weak_seed.json").write_text(json.dumps({
+        "raw_fact_count": 0,
+        "a_core_fact_count": 0,
+        "top_clusters": [],
+        "retrieval_trace": {
+            "fullraw": {
+                "status": "complete",
+                "paper_count": 10,
+                "shards_searched": 1525,
+                "partial_shard_search": False,
+                "sweep_failed_shards": 0,
+            },
+        },
+    }), encoding="utf-8")
+
+    assert sweep._prioritized_seed_topics(
+        tmp_path / "runs",
+        "business_research",
+        ["weak_seed", "untried_seed"],
+    ) == ["untried_seed", "weak_seed"]
 
 
 def test_business_seed_topics_include_trimmed_variants_without_biomed_suffixes(

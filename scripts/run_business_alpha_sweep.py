@@ -756,9 +756,12 @@ def _diagnostic_rank(
     }
     if service_busy:
         return (2, -top_sources, -a_core, -raw, idx)
-    exhausted_complete = status == "complete" and raw > 0 and not source_rich
-    if exhausted_complete:
-        return (3, -top_sources, -a_core, -raw, idx)
+    reprocessable_complete = status == "complete" and raw > 0 and not source_rich
+    if reprocessable_complete:
+        return (0, -top_sources, -a_core, -raw, idx)
+    weak_complete = status == "complete" and raw == 0 and not source_rich
+    if weak_complete:
+        return (2, -top_sources, -a_core, -raw, idx)
     bad_empty = int(
         raw == 0
         and not fullraw_pending
