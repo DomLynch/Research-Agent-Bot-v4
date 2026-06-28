@@ -255,6 +255,7 @@ def _seed_fullraw_papers(
             "paper_count": len(cached),
         })
         return cached
+    should_poll_in_progress = False
     in_progress = _cached_fullraw_in_progress(cache_key) if cache_key else None
     if in_progress:
         raw_cache_age = in_progress.pop("_cache_age_seconds", 0.0)
@@ -277,6 +278,7 @@ def _seed_fullraw_papers(
                 "paper_count": 0,
             })
             return []
+        should_poll_in_progress = True
         _FULLRAW_PROBE_EVENTS.append({
             **in_progress,
             "query": query,
@@ -286,7 +288,7 @@ def _seed_fullraw_papers(
             "cache_age_seconds": cache_age,
             "paper_count": 0,
         })
-    saturated = _fullraw_queue_saturated(client=client)
+    saturated = {} if should_poll_in_progress else _fullraw_queue_saturated(client=client)
     if saturated:
         saturated_event = {
             **saturated,

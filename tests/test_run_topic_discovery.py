@@ -485,6 +485,66 @@ def test_seed_fullraw_polls_due_in_progress_receipt_before_ttl(
     assert run_topic_discovery._FULLRAW_PROBE_EVENTS[-1]["status"] == "in_progress_poll_due"
 
 
+def test_seed_fullraw_polls_due_in_progress_despite_full_queue(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+    monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_IN_PROGRESS_CACHE_TTL_SECONDS", raising=False)
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "900")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_IN_PROGRESS_POLL_INTERVAL_SECONDS", "60")
+
+    def fake_fetch(query: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        if len(calls) == 1:
+            run_topic_discovery.topic_discovery_mod._FULLRAW_LAST_RECEIPT = {
+                **_fullraw_receipt(),
+                "partial_shard_search": True,
+                "shards_searched": 416,
+                "source_count_searched": 4,
+            }
+            run_topic_discovery.topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {
+                "status": "queued",
+                "queued_count": 16,
+                "max_queue": 16,
+            }
+            return []
+        receipt = _fullraw_receipt()
+        run_topic_discovery.topic_discovery_mod._FULLRAW_LAST_RECEIPT = receipt
+        run_topic_discovery.topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
+        return [{
+            "doi": "10.1/platform",
+            "title": "Platform strategy network completed sweep",
+            "fullraw_shard_receipt": receipt,
+        }]
+
+    def fail_if_saturation_checked(*_args: Any, **_kwargs: Any) -> dict[str, object]:
+        raise AssertionError("due in-progress fullraw keys must be polled")
+
+    monkeypatch.setattr(run_topic_discovery, "_fetch_fullraw_topic_papers", fake_fetch)
+
+    with run_topic_discovery.httpx.Client() as client:
+        assert run_topic_discovery._seed_fullraw_papers(
+            "platform strategy network", client=client, limit=5,
+        ) == []
+        cache = run_topic_discovery.publish_io.read_json(
+            run_topic_discovery._FULLRAW_IN_PROGRESS_SWEEP_CACHE_PATH, {},
+        )
+        cache["network platform strategy"]["ts"] -= 120
+        run_topic_discovery.publish_io.write_json(
+            run_topic_discovery._FULLRAW_IN_PROGRESS_SWEEP_CACHE_PATH, cache,
+        )
+        monkeypatch.setattr(
+            run_topic_discovery, "_fullraw_queue_saturated", fail_if_saturation_checked,
+        )
+        rows = run_topic_discovery._seed_fullraw_papers(
+            "platform strategy network", client=client, limit=5,
+        )
+
+    assert calls == ["platform strategy network", "platform strategy network"]
+    assert rows[0]["title"] == "Platform strategy network completed sweep"
+    assert run_topic_discovery._FULLRAW_PROBE_EVENTS[-1]["status"] == "in_progress_poll_due"
+
+
 def test_fullraw_in_progress_backoff_default_covers_sweep_runtime(
     monkeypatch: Any,
 ) -> None:
