@@ -4284,6 +4284,16 @@ def test_claim_cluster_candidate_cites_only_coherent_component(
 def test_no_candidate_refreshes_queued_child_topics_next_batch(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
+    for key in (
+        "RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT",
+        "V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL",
+        "V5_MEMO_FULL_RAW_INDEX_TOKEN",
+        "V5_MEMO_FULL_RAW_CORPUS_TOKEN",
+        "RESEARKA_FULLRAW_SEARCH_URL",
+        "RESEARKA_FULLRAW_INDEX_TOKEN",
+        "RESEARKA_FULLRAW_TOKEN",
+    ):
+        monkeypatch.delenv(key, raising=False)
     root = tmp_path / "repo"
     verdict = _verdict("parent") | {
         "decision": "agent_repair_needed",

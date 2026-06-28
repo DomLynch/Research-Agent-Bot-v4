@@ -241,7 +241,17 @@ def _write_ai_memo(root: Path, verdict: dict[str, Any]) -> None:
     }), encoding="utf-8")
     ids = ["1", "2", "3", "4", "5"]
     run.joinpath("alpha_memo.md").write_text(
-        "# Alpha memo\n\n"
+        "# AI agents expose a bounded workflow-throughput signal\n\n"
+        "## One-sentence thesis\n\n"
+        "AI agents show a bounded workflow-throughput signal in benchmarked "
+        "research settings, but the context remains conditional on task design.\n\n"
+        "## Why this is surprising\n\n"
+        "The tension is that benchmark gains do not automatically transfer "
+        "across research workflows, so the signal is falsifiable rather than "
+        "settled.\n\n"
+        "## What this changes\n\n"
+        "The next test is whether independent receipts keep the same contrast "
+        "when workflow scope, tool access, and evaluation context vary.\n\n"
         "## Evidence receipts\n\n"
         + "\n".join(f"- `fact_id={fid}` (`A_core`) - receipt" for fid in ids)
         + "\n\n## What would weaken this\n\n"
@@ -313,9 +323,12 @@ def test_ai_research_queue_excludes_seed_mismatched_domain_runs(tmp_path: Path) 
 
     out = daily._build_queue(runs, include_archive=False, domain="ai_research")
 
-    topics = [r["topic"] for r in out["ready_to_publish"]]
+    topics = [r["topic"] for r in out["agent_repair_needed"]]
     assert "sglt2_inhibitors_events" not in topics
     assert set(topics) == {"ai_agents", "llm_judge_reliability", "research_automation"}
+    assert {r["queue_status"] for r in out["agent_repair_needed"]} == {
+        "alpha_memo_lacks_bounded_signal",
+    }
     assert out["_meta"]["seed_scope_dropped_count"] == 1
     assert out["_meta"]["seed_scope_fallback_used"] is False
 
@@ -327,7 +340,8 @@ def test_ai_research_queue_keeps_seed_scope_when_thin(tmp_path: Path) -> None:
 
     out = daily._build_queue(runs, include_archive=False, domain="ai_research")
 
-    assert [r["topic"] for r in out["ready_to_publish"]] == ["llm_judge_reliability"]
+    assert [r["topic"] for r in out["agent_repair_needed"]] == ["llm_judge_reliability"]
+    assert out["agent_repair_needed"][0]["queue_status"] == "alpha_memo_lacks_bounded_signal"
     assert out["_meta"]["seed_scope_dropped_count"] == 1
     assert out["_meta"]["seed_scope_fallback_count"] == 0
     assert out["_meta"]["seed_scope_fallback_used"] is False

@@ -764,6 +764,8 @@ def test_stop_on_ready_uses_fullraw_supply_before_cache_by_default(
     monkeypatch.setattr(run_curator_cycle, "_ROOT", tmp_path)
     monkeypatch.setattr(run_curator_cycle, "_RUNS", tmp_path / "runs")
     monkeypatch.setattr(run_curator_cycle, "_run_step", fake_step)
+    monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS", raising=False)
+    monkeypatch.delenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", raising=False)
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", "45")
     monkeypatch.setattr(sys, "argv", [
         "run_curator_cycle.py", "--stop-on-ready",
