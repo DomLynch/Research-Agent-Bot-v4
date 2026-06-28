@@ -213,6 +213,8 @@ def _strict_fullraw_probe(
     lock_handle = None
     budget_key = "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"
     old_budget = os.environ.get(budget_key)
+    timeout_key = "TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"
+    old_timeout = os.environ.get(timeout_key)
     attempts_key = "TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS"
     old_attempts = os.environ.get(attempts_key)
     priority_key = "TOPIC_DISCOVERY_FULLRAW_PRIORITY"
@@ -242,6 +244,7 @@ def _strict_fullraw_probe(
             "TOPIC_DISCOVERY_BUSINESS_FULLRAW_HTTP_TIMEOUT_SECONDS",
             os.environ.get(budget_key, _BUSINESS_FULLRAW_FOREGROUND_SECONDS),
         ))
+        os.environ[timeout_key] = str(timeout_seconds)
         os.environ[attempts_key] = str(max(1, int(timeout_seconds // 2.0)))
         if _business_fullraw_priority_enabled():
             os.environ[priority_key] = "1"
@@ -330,6 +333,10 @@ def _strict_fullraw_probe(
             os.environ.pop(budget_key, None)
         else:
             os.environ[budget_key] = old_budget
+        if old_timeout is None:
+            os.environ.pop(timeout_key, None)
+        else:
+            os.environ[timeout_key] = old_timeout
         if old_attempts is None:
             os.environ.pop(attempts_key, None)
         else:

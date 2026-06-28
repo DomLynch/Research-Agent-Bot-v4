@@ -1226,7 +1226,7 @@ def test_business_sweep_fullraw_probe_inherits_fullraw_search_budget(
     assert result["status"] == "incomplete_receipt"
     assert captured == {
         "client_timeout": "7200.0",
-        "timeout": None,
+        "timeout": "7200.0",
         "attempts": "3600",
         "priority": None,
         "poll_seconds": None,
@@ -1235,6 +1235,7 @@ def test_business_sweep_fullraw_probe_inherits_fullraw_search_budget(
         "storage_budget": "7200",
     }
     assert os.environ["TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS"] == "999"
+    assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS") is None
     assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_PRIORITY") is None
     assert os.environ["TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"] == "7200"
 
@@ -1300,6 +1301,7 @@ def test_business_sweep_fullraw_probe_defaults_to_strict_sweep_budget(
     def fake_seed_fullraw(_topic: str, **_kwargs: Any) -> list[dict[str, Any]]:
         captured.update({
             "client_timeout": str(_kwargs["client"].timeout.read),
+            "timeout": os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"),
             "attempts": os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS"),
             "foreground_budget": os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"),
         })
@@ -1323,11 +1325,59 @@ def test_business_sweep_fullraw_probe_defaults_to_strict_sweep_budget(
     assert result["status"] == "incomplete_receipt"
     assert captured == {
         "client_timeout": "2400.0",
+        "timeout": "2400.0",
         "attempts": "1200",
         "foreground_budget": "2400",
     }
+    assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS") is None
     assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS") is None
     assert os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS") is None
+
+
+def test_business_sweep_fullraw_probe_overrides_stale_short_timeout(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import agent.topic_discovery as topic_discovery_mod
+    import scripts.run_topic_discovery as discovery
+
+    captured: dict[str, str | None] = {}
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", "20")
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
+        str(tmp_path / "fullraw.lock"),
+    )
+
+    def fake_seed_fullraw(_topic: str, **_kwargs: Any) -> list[dict[str, Any]]:
+        captured.update({
+            "client_timeout": str(_kwargs["client"].timeout.read),
+            "timeout": os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"),
+            "foreground_budget": os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"),
+        })
+        topic_discovery_mod._FULLRAW_LAST_RECEIPT = {
+            "shards_searched": 64,
+            "partial_shard_search": True,
+            "sweep_failed_shards": 0,
+            "source_count_searched": 5,
+        }
+        topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {"status": "queued"}
+        discovery._FULLRAW_PROBE_EVENTS.append({
+            "query": _topic,
+            "status": "incomplete_receipt",
+        })
+        return []
+
+    monkeypatch.setattr(discovery, "_seed_fullraw_papers", fake_seed_fullraw)
+
+    result = sweep._strict_fullraw_probe("platform_strategy_network")
+
+    assert result["status"] == "incomplete_receipt"
+    assert captured == {
+        "client_timeout": "2400.0",
+        "timeout": "2400.0",
+        "foreground_budget": "2400",
+    }
+    assert os.environ["TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS"] == "20"
 
 
 def test_business_sweep_fullraw_probe_uses_strict_floor_over_generic_budget(
