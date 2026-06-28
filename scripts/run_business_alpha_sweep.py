@@ -114,6 +114,12 @@ def _business_fullraw_backoff_seconds() -> float:
         return float(_BUSINESS_FULLRAW_BACKOFF_SECONDS)
 
 
+def _business_fullraw_priority_enabled() -> bool:
+    return os.environ.get(
+        "TOPIC_DISCOVERY_BUSINESS_FULLRAW_PRIORITY", "",
+    ).strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _fullraw_busy_event(event: dict[str, Any]) -> bool:
     status = str(event.get("status") or "")
     return (
@@ -237,7 +243,8 @@ def _strict_fullraw_probe(
             os.environ.get(budget_key, _BUSINESS_FULLRAW_FOREGROUND_SECONDS),
         ))
         os.environ[attempts_key] = str(max(1, int(timeout_seconds // 2.0)))
-        os.environ[priority_key] = "1"
+        if _business_fullraw_priority_enabled():
+            os.environ[priority_key] = "1"
 
         old_handler = signal.getsignal(signal.SIGALRM)
         old_timer = signal.setitimer(signal.ITIMER_REAL, 0.0)
