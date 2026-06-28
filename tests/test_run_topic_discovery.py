@@ -2078,6 +2078,46 @@ def test_fullraw_supply_defaults_inherit_fullraw_search_contract(
     assert run_topic_discovery._fullraw_supply_sweep_wait_seconds() == 900.0
 
 
+def test_fullraw_supply_strict_contract_floors_short_researka_budget(
+    monkeypatch: Any,
+) -> None:
+    for key in (
+        "TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS",
+        "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS",
+        "TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS",
+        "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
+        "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS",
+        "V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS",
+        "V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS",
+        "V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS",
+        "V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH",
+        "V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED",
+    ):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv("RESEARKA_FULLRAW_SEARCH_BUDGET_SECONDS", "900")
+    monkeypatch.setenv("RESEARKA_FULLRAW_FOREGROUND_SWEEP_WAIT_SECONDS", "30")
+    monkeypatch.setenv("RESEARKA_FULLRAW_REQUIRE_COMPLETE_SEARCH", "1")
+    monkeypatch.setenv("RESEARKA_FULLRAW_MIN_SHARDS_SEARCHED", "1525")
+
+    assert run_topic_discovery._fullraw_supply_budget_seconds() == 2400.0
+    assert run_topic_discovery._fullraw_supply_query_budget_seconds() == 2400.0
+    assert run_topic_discovery._fullraw_supply_sweep_wait_seconds() == 2370.0
+
+
+def test_fullraw_supply_explicit_overrides_are_not_strict_floored(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS", "90")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS", "80")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS", "70")
+    monkeypatch.setenv("RESEARKA_FULLRAW_REQUIRE_COMPLETE_SEARCH", "1")
+    monkeypatch.setenv("RESEARKA_FULLRAW_MIN_SHARDS_SEARCHED", "1525")
+
+    assert run_topic_discovery._fullraw_supply_budget_seconds() == 90.0
+    assert run_topic_discovery._fullraw_supply_query_budget_seconds() == 80.0
+    assert run_topic_discovery._fullraw_supply_sweep_wait_seconds() == 70.0
+
+
 def test_fullraw_compacts_long_queries_to_high_signal_terms() -> None:
     query = (
         "randomized controlled clinical trial healthy older adults determine "

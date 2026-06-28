@@ -71,6 +71,8 @@ _DEFAULT_ALPHA_SHAPE_QUERY_TERMS = (
     "null", "replication", "human trial", "failed", "blunted",
     "subgroup", "primary endpoint",
 )
+_STRICT_FULLRAW_MIN_BUDGET_SECONDS = 2400.0
+_FULLRAW_SWEEP_MARGIN_SECONDS = 30.0
 _FULLRAW_ENV_ALIASES = {
     "V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL": ("RESEARKA_FULLRAW_SEARCH_URL",),
     "V5_MEMO_FULL_RAW_INDEX_TOKEN": (
@@ -399,14 +401,17 @@ def _seed_paper_budget_seconds() -> float:
 
 
 def _fullraw_supply_budget_seconds() -> float:
+    explicit = os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS")
     try:
-        return max(1.0, float(os.environ.get(
-            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS",
-            os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
-                           os.environ.get("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "240")),
-        )))
+        value = float(explicit) if explicit is not None else float(
+            os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS")
+            or os.environ.get("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS")
+            or os.environ.get("RESEARKA_FULLRAW_SEARCH_BUDGET_SECONDS")
+            or "240"
+        )
     except (TypeError, ValueError):
-        return 240.0
+        value = 240.0
+    return _fullraw_strict_floor(max(1.0, value), explicit=explicit is not None)
 
 
 def _fullraw_supply_query_timeout_seconds() -> float:
@@ -419,26 +424,58 @@ def _fullraw_supply_query_timeout_seconds() -> float:
 
 
 def _fullraw_supply_query_budget_seconds() -> float:
+    explicit = os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS")
     try:
-        return max(1.0, float(os.environ.get(
-            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS",
-            os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
-                           os.environ.get("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "75")),
-        )))
+        value = float(explicit) if explicit is not None else float(
+            os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS")
+            or os.environ.get("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS")
+            or os.environ.get("RESEARKA_FULLRAW_SEARCH_BUDGET_SECONDS")
+            or "75"
+        )
     except (TypeError, ValueError):
-        return 75.0
+        value = 75.0
+    return _fullraw_strict_floor(max(1.0, value), explicit=explicit is not None)
 
 
 def _fullraw_supply_sweep_wait_seconds() -> float:
+    explicit = os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS")
     try:
-        return max(0.0, float(os.environ.get(
-            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS",
-            os.environ.get("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS",
-                           os.environ.get("V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS",
-                                          os.environ.get("V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS", "60"))),
-        )))
+        value = float(explicit) if explicit is not None else float(
+            os.environ.get("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS")
+            or os.environ.get("V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS")
+            or os.environ.get("V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS")
+            or os.environ.get("RESEARKA_FULLRAW_FOREGROUND_SWEEP_WAIT_SECONDS")
+            or os.environ.get("RESEARKA_FULLRAW_SWEEP_WAIT_SECONDS")
+            or "60"
+        )
     except (TypeError, ValueError):
-        return 60.0
+        value = 60.0
+    if explicit is None and _strict_fullraw_receipt_required():
+        value = max(value, _fullraw_supply_query_budget_seconds() - _FULLRAW_SWEEP_MARGIN_SECONDS)
+    return max(0.0, value)
+
+
+def _strict_fullraw_receipt_required() -> bool:
+    require = (
+        os.environ.get("V5_MEMO_FULL_RAW_REQUIRE_COMPLETE_SEARCH")
+        or os.environ.get("RESEARKA_FULLRAW_REQUIRE_COMPLETE_SEARCH")
+        or ""
+    ).strip().lower() in {"1", "true", "yes", "on"}
+    try:
+        min_shards = int(
+            os.environ.get("V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED")
+            or os.environ.get("RESEARKA_FULLRAW_MIN_SHARDS_SEARCHED")
+            or 0
+        )
+    except (TypeError, ValueError):
+        min_shards = 0
+    return require and min_shards >= 1525
+
+
+def _fullraw_strict_floor(seconds: float, *, explicit: bool) -> float:
+    if explicit or not _strict_fullraw_receipt_required():
+        return seconds
+    return max(seconds, _STRICT_FULLRAW_MIN_BUDGET_SECONDS)
 
 
 def _fullraw_configured() -> bool:
