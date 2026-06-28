@@ -137,11 +137,23 @@ def _fullraw_backoff_path(runs_root: Path) -> Path:
     return runs_root / "_business_diagnostics" / "fullraw_backoff.json"
 
 
-def _fullraw_backoff(runs_root: Path | None) -> dict[str, Any] | None:
+def _fullraw_backoff_key(topic: str) -> str:
+    return " ".join(str(topic or "").replace("_", " ").split()).casefold()
+
+
+def _fullraw_backoff(runs_root: Path | None, topic: str) -> dict[str, Any] | None:
     if runs_root is None:
         return None
     data = read_json(_fullraw_backoff_path(runs_root), {})
     if not isinstance(data, dict):
+        return None
+    key = _fullraw_backoff_key(topic)
+    entries = data.get("entries")
+    if isinstance(entries, dict):
+        data = entries.get(key, {})
+        if not isinstance(data, dict):
+            return None
+    elif data.get("key") != key:
         return None
     try:
         age = time.time() - float(data.get("ts") or 0.0)
@@ -156,19 +168,28 @@ def _fullraw_backoff(runs_root: Path | None) -> dict[str, Any] | None:
         "previous_status": data.get("status"),
         "backoff_age_seconds": age,
         "backoff_seconds": ttl,
+        "backoff_key": key,
     }
 
 
-def _record_fullraw_backoff(runs_root: Path | None, event: dict[str, Any]) -> None:
+def _record_fullraw_backoff(runs_root: Path | None, topic: str, event: dict[str, Any]) -> None:
     if runs_root is None or not _fullraw_busy_event(event):
         return
-    write_json(_fullraw_backoff_path(runs_root), {
+    path = _fullraw_backoff_path(runs_root)
+    current = read_json(path, {})
+    entries = current.get("entries") if isinstance(current, dict) else {}
+    if not isinstance(entries, dict):
+        entries = {}
+    key = _fullraw_backoff_key(topic)
+    entries[key] = {
+        "key": key,
         "ts": time.time(),
         "status": event.get("status"),
         "async_status": event.get("async_status"),
         "shards_searched": event.get("shards_searched"),
         "partial_shard_search": event.get("partial_shard_search"),
-    })
+    }
+    write_json(path, {"entries": entries})
 
 
 def _raise_fullraw_timeout(_signum: int, _frame: Any) -> None:
@@ -207,7 +228,7 @@ def _strict_fullraw_probe(
         or os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL")
     ):
         return {"status": "not_configured"}
-    backoff = _fullraw_backoff(runs_root)
+    backoff = _fullraw_backoff(runs_root, topic)
     if backoff:
         return backoff
     lock_handle = None
@@ -318,7 +339,7 @@ def _strict_fullraw_probe(
                     }
                     if include_papers:
                         result["_papers"] = papers
-                    _record_fullraw_backoff(runs_root, result)
+                    _record_fullraw_backoff(runs_root, topic, result)
                     if len(papers) >= 5 or status not in {
                         "complete", "complete_no_hits", "no_hits",
                     }:
