@@ -467,6 +467,8 @@ def test_health_main_writes_blocker_summary_artifact(tmp_path: Path, capsys: Any
         "curation_needed": 0,
         "not_ready": 0,
     }
+    assert summary["current_actionable_ready_to_publish"] == 0
+    assert summary["current_non_actionable_ready_to_publish"] == 0
     assert summary["top_blockers"] == {
         "candidate_refresh_failed": 1,
         "no_source_diverse_bundle": 1,

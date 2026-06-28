@@ -324,12 +324,18 @@ def _aggregate_domain_summaries(domain_summaries: dict[str, Json]) -> Json:
     blocker_counts: dict[str, int] = {}
     public_status: dict[str, Any] = {}
     candidates_considered = 0
+    actionable_ready = 0
+    non_actionable_ready = 0
     next_action: str | None = None
     for domain, summary in domain_summaries.items():
         counts = summary.get("current_queue_counts") or summary.get("queue_counts") or {}
         if isinstance(counts, dict):
             for key in _QUEUE_BUCKETS:
                 queue_counts[key] += _count_int(counts.get(key))
+        actionable_ready += _count_int(summary.get("current_actionable_ready_to_publish"))
+        non_actionable_ready += _count_int(
+            summary.get("current_non_actionable_ready_to_publish"),
+        )
         blockers = summary.get("top_blockers") or {}
         if isinstance(blockers, dict):
             for key, value in blockers.items():
@@ -350,6 +356,8 @@ def _aggregate_domain_summaries(domain_summaries: dict[str, Json]) -> Json:
             sorted(blocker_counts.items(), key=lambda item: (-item[1], item[0]))[:5]
         ),
         "candidates_considered": candidates_considered,
+        "current_actionable_ready_to_publish": actionable_ready,
+        "current_non_actionable_ready_to_publish": non_actionable_ready,
         "next_action": next_action,
         "public_url_status": public_status,
     }
