@@ -1,0 +1,29 @@
+{
+  "acarbose": {
+    "event": {
+      "cache_key": "acarbose",
+      "paper_count": 0,
+      "query": "acarbose",
+      "status": "health_unavailable"
+    },
+    "ts": 1782626725.783085
+  },
+  "epigenetic longevity partial reprogramming": {
+    "event": {
+      "cache_key": "epigenetic longevity partial reprogramming",
+      "paper_count": 0,
+      "query": "partial_epigenetic_reprogramming_longevity",
+      "status": "health_unavailable"
+    },
+    "ts": 1782627722.4793322
+  },
+  "fresh parent": {
+    "event": {
+      "cache_key": "fresh parent",
+      "paper_count": 0,
+      "query": "fresh parent",
+      "status": "health_unavailable"
+    },
+    "ts": 1782626158.385182
+  }
+}
