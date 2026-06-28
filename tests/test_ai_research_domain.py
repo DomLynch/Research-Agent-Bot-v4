@@ -13,6 +13,20 @@ from agent.domain_profile import load_domain_profile
 from agent.topic_discovery import TopicCandidate, load_seed_topics
 
 
+def _isolate_fullraw_env(monkeypatch: Any) -> None:
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_ENV_LOAD", "0")
+    monkeypatch.setenv("TOPIC_DISCOVERY_V5_CLIENT_FALLBACK", "0")
+    for key in (
+        "V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL",
+        "V5_MEMO_FULL_RAW_INDEX_TOKEN",
+        "V5_MEMO_FULL_RAW_CORPUS_TOKEN",
+        "RESEARKA_FULLRAW_SEARCH_URL",
+        "RESEARKA_FULLRAW_INDEX_TOKEN",
+        "RESEARKA_FULLRAW_TOKEN",
+    ):
+        monkeypatch.delenv(key, raising=False)
+
+
 def _ai_queue_run(runs: Path, topic: str) -> None:
     run = runs / f"{topic}-evidence-ts"
     run.mkdir(parents=True)
@@ -49,6 +63,7 @@ def test_default_domain_remains_longevity() -> None:
 def test_ai_research_discovery_uses_ai_seed_pack(
     tmp_path: Path, monkeypatch: Any,
     ) -> None:
+    _isolate_fullraw_env(monkeypatch)
     seen: list[tuple[str, ...]] = []
     seen_domains: list[str] = []
     seen_cache_flags: list[bool] = []
@@ -87,6 +102,7 @@ def test_ai_research_discovery_uses_ai_seed_pack(
 def test_ai_research_cache_only_does_not_leak_longevity_cache(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
+    _isolate_fullraw_env(monkeypatch)
     def cached_source_rich_candidates(*, limit: int) -> tuple[TopicCandidate, ...]:
         raise AssertionError("non-longevity domains must not use global cache")
 
