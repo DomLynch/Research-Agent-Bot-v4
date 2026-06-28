@@ -207,7 +207,7 @@ def test_fetch_topic_papers_falls_back_to_fullraw_when_db_empty(
     assert papers[0]["fullraw_shard_receipt"]["shards_searched"] == 1525
     assert payloads[0] == {
         "query": "metformin longevity",
-        "limit": 10,
+        "limit": 25,
         "rank_mode": "relevance",
         "cache_only": True,
         "queue_if_missing": True,
@@ -241,7 +241,7 @@ def test_fullraw_payload_can_request_foreground_priority(
     assert papers[0]["title"] == "Priority fullraw paper"
     assert payloads[0] == {
         "query": "metformin longevity",
-        "limit": 10,
+        "limit": 25,
         "rank_mode": "relevance",
         "cache_only": True,
         "queue_if_missing": True,
@@ -408,9 +408,8 @@ def test_seed_fullraw_papers_allows_priority_when_background_queue_saturated(
         )
 
     assert papers and papers[0]["title"] == "Priority fullraw source"
-    assert requests[0] == ("GET", "https://fullraw/health", None)
-    assert requests[1][0:2] == ("POST", "https://fullraw/search")
-    payload = requests[1][2]
+    assert requests[0][0:2] == ("POST", "https://fullraw/search")
+    payload = requests[0][2]
     assert payload is not None
     assert payload["priority"] is True
 
@@ -456,9 +455,8 @@ def test_seed_fullraw_papers_allows_priority_burst_when_priority_queue_exists(
         )
 
     assert papers and papers[0]["title"] == "Priority burst fullraw source"
-    assert requests[0] == ("GET", "https://fullraw/health", None)
-    assert requests[1][0:2] == ("POST", "https://fullraw/search")
-    payload = requests[1][2]
+    assert requests[0][0:2] == ("POST", "https://fullraw/search")
+    payload = requests[0][2]
     assert payload is not None
     assert payload["priority"] is True
 
@@ -537,6 +535,7 @@ def test_fullraw_fallback_polls_until_complete_receipt(monkeypatch: Any) -> None
         )
 
     assert len(calls) == 2
+    assert {call["limit"] for call in calls} == {25}
     assert papers[0]["title"] == "Full sweep metformin longevity paper"
 
 
@@ -681,7 +680,7 @@ def test_fullraw_fallback_uses_top_level_full_sweep_receipt(
 
     assert calls == [{
         "query": "metformin longevity",
-        "limit": 10,
+        "limit": 25,
         "rank_mode": "relevance",
         "cache_only": True,
         "queue_if_missing": True,
