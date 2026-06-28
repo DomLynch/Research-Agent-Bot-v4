@@ -3620,6 +3620,24 @@ def test_refresh_candidate_batch_passes_priority_child_topics(
     assert "second_child" in calls[0]
 
 
+def test_refresh_candidate_batch_sets_fullraw_priority_for_subprocess(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    seen_priority: list[str | None] = []
+    monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_PRIORITY", raising=False)
+
+    def fake_step(_args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        seen_priority.append(os.environ.get("TOPIC_DISCOVERY_FULLRAW_PRIORITY"))
+        return True, "ok"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    daily._refresh_candidate_batch(5, runs_root=tmp_path)
+
+    assert seen_priority == ["1"]
+    assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_PRIORITY") is None
+
+
 def test_refresh_candidate_batch_bounds_parent_priority_window(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

@@ -4453,7 +4453,16 @@ def _refresh_candidate_batch(
         args.extend(["--priority-topic", topic])
     for topic in exclusions:
         args.extend(["--exclude-topic", topic])
-    ok, note = _run_step(args, timeout=_REFRESH_TIMEOUT_SECONDS)
+    priority_key = "TOPIC_DISCOVERY_FULLRAW_PRIORITY"
+    old_priority = os.environ.get(priority_key)
+    os.environ[priority_key] = "1"
+    try:
+        ok, note = _run_step(args, timeout=_REFRESH_TIMEOUT_SECONDS)
+    finally:
+        if old_priority is None:
+            os.environ.pop(priority_key, None)
+        else:
+            os.environ[priority_key] = old_priority
     result = {
         "ok": ok,
         "note": note,
