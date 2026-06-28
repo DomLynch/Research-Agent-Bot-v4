@@ -10,6 +10,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.domain_profile import domain_choices, load_domain_profile
 
+_FULLRAW_CACHE_FILES = (
+    Path("runs/_fullraw_completed_sweeps.json"),
+    Path("runs/_fullraw_in_progress_sweeps.json"),
+)
+
 
 def _default_domains() -> tuple[str, ...]:
     by_seed: dict[str, str] = {}
@@ -33,6 +38,22 @@ def _selected_domains(raw: str) -> tuple[str, ...]:
     if unknown:
         raise ValueError(f"unknown domain(s): {', '.join(unknown)}")
     return selected
+
+
+def _fullraw_cache_state() -> dict[Path, tuple[int, int]]:
+    out: dict[Path, tuple[int, int]] = {}
+    for path in _FULLRAW_CACHE_FILES:
+        try:
+            stat = path.stat()
+        except OSError:
+            continue
+        out[path] = (stat.st_mtime_ns, stat.st_size)
+    return out
+
+
+def _fullraw_cache_progress(before: dict[Path, tuple[int, int]]) -> bool:
+    after = _fullraw_cache_state()
+    return any(after.get(path) != before.get(path) for path in _FULLRAW_CACHE_FILES)
 
 
 def main() -> int:
@@ -66,12 +87,16 @@ def main() -> int:
             cmd.append("--warm-backlog")
         timeout = args.per_domain_timeout_seconds if args.per_domain_timeout_seconds > 0 else None
         print(f"[alpha-cache-warm] domain={domain} start", flush=True)
+        cache_before = _fullraw_cache_state()
+        timed_out_with_progress = False
         try:
             result = subprocess.run(cmd, check=False, timeout=timeout)
             returncode = result.returncode
         except subprocess.TimeoutExpired:
-            returncode = 124
-        print(f"[alpha-cache-warm] domain={domain} rc={returncode}", flush=True)
+            timed_out_with_progress = _fullraw_cache_progress(cache_before)
+            returncode = 0 if timed_out_with_progress else 124
+        progress_note = " fullraw_cache_progress=1" if timed_out_with_progress else ""
+        print(f"[alpha-cache-warm] domain={domain} rc={returncode}{progress_note}", flush=True)
         if returncode != 0:
             failures += 1
     return 0 if failures == 0 else 2

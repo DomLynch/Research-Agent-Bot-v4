@@ -75,3 +75,33 @@ def test_cache_warmer_continues_after_domain_timeout(monkeypatch: Any) -> None:
 
     assert warm.main() == 2
     assert calls == ["business_research", "finance_research"]
+
+
+def test_cache_warmer_treats_timeout_after_fullraw_progress_as_success(
+    tmp_path: Any, monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+
+    def fake_run(cmd: list[str], *, check: bool, timeout: float | None) -> SimpleNamespace:
+        domain = cmd[cmd.index("--domain") + 1]
+        calls.append(domain)
+        assert timeout == 5.0
+        if domain == "business_research":
+            cache = tmp_path / "runs" / "_fullraw_in_progress_sweeps.json"
+            cache.parent.mkdir(parents=True)
+            cache.write_text('{"queued": {"event": {"status": "async_queued"}}}', encoding="utf-8")
+            raise subprocess.TimeoutExpired(cmd, timeout)
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", [
+        "run_alpha_cache_warm.py",
+        "--domains",
+        "business_research,finance_research",
+        "--per-domain-timeout-seconds",
+        "5",
+    ])
+    monkeypatch.setattr("scripts.run_alpha_cache_warm.subprocess.run", fake_run)
+
+    assert warm.main() == 0
+    assert calls == ["business_research", "finance_research"]
