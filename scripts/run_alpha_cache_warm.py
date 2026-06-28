@@ -43,7 +43,7 @@ def main() -> int:
     parser.add_argument("--no-warm-backlog", dest="warm_backlog", action="store_false")
     parser.add_argument("--derived-topic-limit", type=int, default=1000)
     parser.add_argument("--fact-probe-topics", type=int, default=120)
-    parser.add_argument("--per-domain-timeout-seconds", type=float, default=360.0)
+    parser.add_argument("--per-domain-timeout-seconds", type=float, default=900.0)
     parser.set_defaults(warm_backlog=True)
     args = parser.parse_args()
 

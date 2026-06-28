@@ -25,7 +25,7 @@ def test_cache_warmer_runs_each_domain_and_fails_loud(monkeypatch: Any) -> None:
 
     def fake_run(cmd: list[str], *, check: bool, timeout: float | None) -> SimpleNamespace:
         calls.append(cmd)
-        assert timeout == 360.0
+        assert timeout == 900.0
         rc = 2 if cmd[cmd.index("--domain") + 1] == "finance_research" else 0
         return SimpleNamespace(returncode=rc)
 
