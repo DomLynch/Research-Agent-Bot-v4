@@ -3600,14 +3600,26 @@ def _source_literature_title_key(title: Any) -> str:
 
 def _source_literature_boundary_quality(
     topic: str, papers: list[Json], min_sources: int, profile_slug: str = "",
+    *, require_substantive_sources: bool = False,
 ) -> tuple[bool, str]:
-    return publish_literature.boundary_quality(
+    ok, reason = publish_literature.boundary_quality(
         topic,
         papers,
         min_sources,
         strict_topic_coverage=publish_literature._non_biomedical(profile_slug),
         profile_slug=profile_slug,
     )
+    if not ok or not require_substantive_sources:
+        return ok, reason
+    selected = publish_literature.select_boundary_papers(
+        topic,
+        papers,
+        min_sources,
+        strict_topic_coverage=publish_literature._non_biomedical(profile_slug),
+    )
+    if publish_literature.substantive_fact_count(selected) < min_sources:
+        return False, "requires_fact_level_source_synthesis"
+    return True, "ok"
 
 
 def _paper_key(paper: Json, fallback: Any = "") -> str:
@@ -4974,6 +4986,7 @@ def run_cycle(
                 papers = source_lit_probe(topic, min_submit_sources * 3)
                 source_lit_available, _reason = _source_literature_boundary_quality(
                     topic, papers, min_submit_sources, profile.slug,
+                    require_substantive_sources=not _source_literature_fallback_submit_enabled(),
                 )
                 if source_lit_available:
                     source_lit_preflight_papers[topic] = papers
@@ -5633,6 +5646,7 @@ def run_cycle(
             )
             ok, reason = _source_literature_boundary_quality(
                 literature_topic, papers, min_submit_sources, profile.slug,
+                require_substantive_sources=not _source_literature_fallback_submit_enabled(),
             )
             relevant_paper_count = len(
                 publish_literature.relevant_papers(literature_topic, papers),
@@ -5658,7 +5672,7 @@ def run_cycle(
                 )
                 fact_backed = publish_literature.substantive_fact_count(
                     selected_papers,
-                ) >= min(2, min_submit_sources)
+                ) >= min_submit_sources
                 if (
                     not fact_backed
                     and not _source_literature_fallback_submit_enabled()
@@ -5770,7 +5784,7 @@ def run_cycle(
             "reason": (
                 "requires_fact_level_source_synthesis"
                 if fallback_attempts and all(
-                    row.get("status") == "disabled"
+                    row.get("status") in {"blocked", "disabled"}
                     and row.get("reason") == "requires_fact_level_source_synthesis"
                     for row in fallback_attempts
                 )

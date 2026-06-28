@@ -469,6 +469,18 @@ _BUSINESS_ENDPOINT_PHRASES = (
     "supply chain disruption risk", "supply chain resilience",
     "inventory management", "human capital",
 )
+_ABSTRACT_FINDING_TERMS = (
+    "finding", "findings", "result", "results", "revealed", "shows", "showed",
+    "significant", "significantly", "positive", "negative", "associated",
+    "effect", "effects", "impact", "impacts", "improves", "improved",
+    "enhances", "enhanced", "mediates", "moderates", "increases", "decreases",
+)
+_ABSTRACT_INTRO_STARTS = (
+    "abstract", "background", "introduction", "purpose", "objective",
+    "this paper aims", "this study aims", "this research aims",
+    "this paper examines", "this study examines", "this research examines",
+    "this paper investigates", "this study investigates", "this research investigates",
+)
 
 
 def _first_sentence(text: str, *, limit: int = 220) -> str:
@@ -479,6 +491,20 @@ def _first_sentence(text: str, *, limit: int = 220) -> str:
     if len(sentence) <= limit:
         return sentence.rstrip(".")
     return sentence[:limit].rsplit(" ", 1)[0].rstrip(".,;")
+
+
+def _abstract_finding_sentence(text: str, *, limit: int = 700) -> str:
+    clean = " ".join(str(text or "").split()).strip()
+    for sentence in re.split(r"(?<=[.!?])\s+", clean):
+        candidate = sentence.strip()
+        lowered = candidate.casefold()
+        if not candidate or any(lowered.startswith(prefix) for prefix in _ABSTRACT_INTRO_STARTS):
+            continue
+        if any(term in lowered for term in _ABSTRACT_FINDING_TERMS):
+            if len(candidate) <= limit:
+                return candidate.rstrip(".")
+            return candidate[:limit].rsplit(" ", 1)[0].rstrip(".,;")
+    return ""
 
 
 def _norm_text(value: Any) -> str:
@@ -573,17 +599,20 @@ def _abstract_source_fact(topic: str, paper: dict[str, Any]) -> dict[str, Any] |
     text_tokens = set(_norm_text(f"{title} {abstract}").split())
     if len(topic_tokens & text_tokens) < min(2, len(topic_tokens)):
         return None
+    finding = _abstract_finding_sentence(abstract)
+    if not finding:
+        return None
     endpoint = next(
         (phrase for phrase in _BUSINESS_ENDPOINT_PHRASES if phrase in artifact_text),
         "business outcome",
     )
     return {
-        "canonical_phrase": _first_sentence(abstract),
+        "canonical_phrase": finding,
         "population": "firms",
         "intervention": " ".join(sorted(topic_tokens)) or _clean_topic(topic),
         "endpoint": endpoint,
         "source_tier": "fullraw_abstract",
-        "source_excerpt": _first_sentence(abstract, limit=700),
+        "source_excerpt": finding,
     }
 
 

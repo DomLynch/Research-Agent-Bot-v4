@@ -2633,7 +2633,9 @@ def test_business_sweep_enriches_fullraw_article_abstracts_without_metadata_only
                 "Digital transformation and firm environmental performance have "
                 "emerged as central topics in corporate sustainability. This paper "
                 "examines the impact of digital transformation on firm environmental "
-                "performance using a sample of listed firms."
+                "performance using a sample of listed firms. Findings show that "
+                "digital transformation significantly improves firm environmental "
+                "performance."
             ),
         },
         {
@@ -2656,6 +2658,7 @@ def test_business_sweep_enriches_fullraw_article_abstracts_without_metadata_only
     assert publish_literature.substantive_fact_count(enriched) == 1
     assert enriched[0]["source_fact"]["source_tier"] == "fullraw_abstract"
     assert enriched[0]["source_fact"]["endpoint"] == "environmental performance"
+    assert enriched[0]["source_fact"]["canonical_phrase"].startswith("Findings show")
     assert "source_fact" not in enriched[1]
 
 

@@ -9665,7 +9665,7 @@ def test_source_literature_fallback_is_disabled_without_explicit_submit_flag(
     assert ledger["status"] == "no_fresh_candidate"
     assert ledger["published"] == 0
     assert ledger["reason"] == "requires_fact_level_source_synthesis"
-    assert ledger["source_literature_fallback"]["status"] == "disabled"
+    assert ledger["source_literature_fallback"]["status"] == "blocked"
     assert (
         ledger["source_literature_fallback"]["reason"]
         == "requires_fact_level_source_synthesis"
@@ -9779,7 +9779,7 @@ def test_fullraw_metadata_only_source_literature_fallback_does_not_submit(
     assert submitted["called"] is False
     assert ledger["published"] == 0
     assert ledger["submitted"] == 0
-    assert ledger["source_literature_fallback"]["status"] == "disabled"
+    assert ledger["source_literature_fallback"]["status"] == "blocked"
     assert (
         ledger["source_literature_fallback"]["reason"]
         == "requires_fact_level_source_synthesis"
