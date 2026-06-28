@@ -1489,6 +1489,7 @@ def test_business_sweep_fullraw_probe_backoff_is_topic_scoped(
 
     calls: list[str] = []
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_PRIORITY", "0")
     monkeypatch.setenv(
         "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
         str(tmp_path / "fullraw.lock"),
@@ -1547,6 +1548,51 @@ def test_business_sweep_fullraw_probe_backoff_is_topic_scoped(
     assert different_topic["status"] == "complete"
     assert different_topic["paper_count"] == 5
     assert calls == ["platform strategy network", "pricing strategy margin"]
+
+
+def test_business_sweep_priority_probe_bypasses_stale_fullraw_backoff(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import agent.topic_discovery as topic_discovery_mod
+    import scripts.run_topic_discovery as discovery
+
+    calls: list[str] = []
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
+        str(tmp_path / "fullraw.lock"),
+    )
+
+    def fake_seed_fullraw(query: str, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        topic_discovery_mod._FULLRAW_LAST_RECEIPT = {
+            "shards_searched": 1525,
+            "partial_shard_search": False,
+            "sweep_failed_shards": 0,
+            "source_count_searched": 5,
+        }
+        topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
+        discovery._FULLRAW_PROBE_EVENTS.append({
+            "query": query,
+            "status": "complete",
+        })
+        return [
+            {"paper_id": f"paper-{idx}", "title": f"{query} source {idx}"}
+            for idx in range(5)
+        ]
+
+    monkeypatch.setattr(discovery, "_seed_fullraw_papers", fake_seed_fullraw)
+
+    first = sweep._strict_fullraw_probe(
+        "platform_strategy_network", runs_root=tmp_path / "runs",
+    )
+    same_topic = sweep._strict_fullraw_probe(
+        "platform_strategy_network", runs_root=tmp_path / "runs",
+    )
+
+    assert first["status"] == "complete"
+    assert same_topic["status"] == "complete"
+    assert calls == ["platform strategy network", "platform strategy network"]
 
 
 def test_business_sweep_fullraw_probe_rejects_papers_without_complete_receipt(
