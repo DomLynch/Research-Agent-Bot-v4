@@ -305,6 +305,7 @@ def select_boundary_papers(
         if len(precise) < min_sources:
             return precise
         usable = precise
+    usable = sorted(usable, key=lambda paper: not _paper_has_substantive_source_fact(paper))
     buckets: dict[str, list[Json]] = {}
     for paper in usable:
         buckets.setdefault(_paper_context_family(paper), []).append(paper)
@@ -403,11 +404,15 @@ def _substantive_source_fact(fact: Json) -> bool:
     )
 
 
+def _paper_has_substantive_source_fact(paper: Json) -> bool:
+    fact = paper.get("source_fact")
+    return isinstance(fact, dict) and _substantive_source_fact(fact)
+
+
 def substantive_fact_count(papers: list[Json]) -> int:
     return sum(
         1 for paper in papers
-        if isinstance((fact := paper.get("source_fact")), dict)
-        and _substantive_source_fact(fact)
+        if _paper_has_substantive_source_fact(paper)
     )
 
 

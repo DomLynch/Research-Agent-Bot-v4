@@ -2659,6 +2659,75 @@ def test_business_sweep_enriches_fullraw_article_abstracts_without_metadata_only
     assert "source_fact" not in enriched[1]
 
 
+def test_source_literature_selection_keeps_substantive_facts_ahead_of_metadata() -> None:
+    papers = [
+        {
+            "doi": f"10.1000/meta-{idx}",
+            "title": title,
+            "source_fact": {
+                "canonical_phrase": f"Title-level source match: {title}",
+                "endpoint": "source-literature relevance",
+                "source_tier": "paper_metadata",
+            },
+        }
+        for idx, title in enumerate([
+            "Dataset on the Impact of Digital Transformation on Firm Value",
+            "Digital transformation firm source material",
+            "Digital transformation and firm performance metadata",
+            "Digital transformation and firm profitability metadata",
+        ], 1)
+    ]
+    papers.extend([
+        {
+            "doi": "10.1000/article-1",
+            "title": (
+                "Digital Transformation and Firm Environmental Performance: "
+                "Does Managerial Overseas Experience Matter?"
+            ),
+            "source_fact": {
+                "canonical_phrase": (
+                    "Digital transformation changed firm environmental performance "
+                    "conditional on managerial overseas experience."
+                ),
+                "population": "firms",
+                "intervention": "digital transformation",
+                "endpoint": "environmental performance",
+                "source_tier": "fullraw_abstract",
+            },
+        },
+        {
+            "doi": "10.1000/article-2",
+            "title": (
+                "Assessing the mediating role of human capital in the relationship "
+                "between digital transformation and firm performance"
+            ),
+            "source_fact": {
+                "canonical_phrase": (
+                    "Digital transformation related to firm performance through "
+                    "human capital mediation."
+                ),
+                "population": "firms",
+                "intervention": "digital transformation",
+                "endpoint": "firm performance",
+                "source_tier": "fullraw_abstract",
+            },
+        },
+    ])
+
+    selected = publish_literature.select_boundary_papers(
+        "digital_transformation_firm",
+        papers,
+        5,
+        strict_topic_coverage=True,
+    )
+
+    assert publish_literature.substantive_fact_count(selected) == 2
+    assert [paper["doi"] for paper in selected[:2]] == [
+        "10.1000/article-1",
+        "10.1000/article-2",
+    ]
+
+
 def test_business_sweep_submits_after_consistent_non_dry_run_passes(
     tmp_path: Path,
     monkeypatch: Any,
