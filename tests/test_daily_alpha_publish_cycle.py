@@ -3583,12 +3583,12 @@ def test_refresh_candidate_batch_can_warm_backlog(
     assert "--derived-topic-limit" in calls[0]
     assert (
         calls[0][calls[0].index("--derived-topic-limit") + 1]
-        == str(daily._SUBMIT_WARM_BACKLOG_MIN_PROBE_TOPICS)
+        == str(daily._submit_warm_backlog_probe_topics(5))
     )
     assert "--fact-probe-topics" in calls[0]
     assert (
         calls[0][calls[0].index("--fact-probe-topics") + 1]
-        == str(daily._SUBMIT_WARM_BACKLOG_MIN_PROBE_TOPICS)
+        == str(daily._submit_warm_backlog_probe_topics(5))
     )
     assert "--no-editorial" in calls[0]
     assert "--no-frontier" in calls[0]
@@ -4455,6 +4455,13 @@ def test_parent_refresh_topic_limit_expands_bounded_candidate_window() -> None:
     assert daily._parent_refresh_topic_limit(5) == 4
 
 
+def test_submit_warm_backlog_probe_topics_stays_bounded() -> None:
+    assert daily._submit_warm_backlog_probe_topics(1) == 4
+    assert daily._submit_warm_backlog_probe_topics(2) == 4
+    assert daily._submit_warm_backlog_probe_topics(5) == 4
+    assert daily._submit_warm_backlog_probe_topics(20) == 4
+
+
 def test_fresh_parent_discovery_prefers_broader_parent_over_newer_child(
     tmp_path: Path,
 ) -> None:
@@ -4602,7 +4609,7 @@ def test_refresh_candidate_batch_scales_live_probe_window_with_exclusions(
     assert out["ok"] is True
     assert (
         calls[0][calls[0].index("--fact-probe-topics") + 1]
-        == str(daily._SUBMIT_WARM_BACKLOG_MIN_PROBE_TOPICS)
+        == str(daily._submit_warm_backlog_probe_topics(5))
     )
 
 

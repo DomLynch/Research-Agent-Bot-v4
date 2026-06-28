@@ -221,8 +221,13 @@ _DEFAULT_MAX_REFRESH_BATCHES = 5
 _DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT = _alpha_memo_int(
     "warm_backlog_derived_topic_limit", 250,
 )
-_SUBMIT_WARM_BACKLOG_MIN_PROBE_TOPICS = 20
-_SUBMIT_WARM_BACKLOG_REFRESH_MULTIPLIER = 4
+_SUBMIT_WARM_BACKLOG_MIN_PROBE_TOPICS = max(
+    2, min(4, _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES)
+)
+_SUBMIT_WARM_BACKLOG_MAX_PROBE_TOPICS = max(
+    _SUBMIT_WARM_BACKLOG_MIN_PROBE_TOPICS,
+    min(4, _DEFAULT_MIN_SUBMIT_SOURCES),
+)
 _REFRESH_TIMEOUT_SECONDS = 1200
 # User-facing "3x" repair limit: one initial submit plus three repaired
 # resubmits for the same evidence fingerprint.
@@ -268,6 +273,12 @@ def _parent_refresh_topic_limit(refresh_top: int) -> int:
     if refresh_top <= 1:
         return 1
     return min(refresh_top * 2, _DEFAULT_PARENT_REFRESH_TOPIC_LIMIT)
+
+
+def _submit_warm_backlog_probe_topics(refresh_top: int) -> int:
+    requested = max(1, refresh_top)
+    bounded = min(_SUBMIT_WARM_BACKLOG_MAX_PROBE_TOPICS, requested)
+    return max(_SUBMIT_WARM_BACKLOG_MIN_PROBE_TOPICS, bounded)
 
 
 _REPAIRABLE_REJECTION_REASONS = {
@@ -4407,10 +4418,7 @@ def _refresh_candidate_batch(
     exclusions = sorted(t for t in (excluded_topics or set()) if t)
     warm_probe_topics = min(
         _DEFAULT_WARM_BACKLOG_DERIVED_TOPIC_LIMIT,
-        max(
-            _SUBMIT_WARM_BACKLOG_MIN_PROBE_TOPICS,
-            max(1, refresh_top) * _SUBMIT_WARM_BACKLOG_REFRESH_MULTIPLIER,
-        ),
+        _submit_warm_backlog_probe_topics(refresh_top),
     )
     priorities = [str(topic).strip() for topic in priority_topics if str(topic).strip()]
     effective_top = min(

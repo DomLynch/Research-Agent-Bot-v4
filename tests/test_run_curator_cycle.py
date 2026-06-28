@@ -228,7 +228,7 @@ def test_stop_on_ready_discovery_overfetches_past_exclusions() -> None:
     ) == 47
     assert _discovery_top_for_plan(
         1, stop_on_ready=True, excluded_count=0,
-    ) == 20
+    ) == 4
     assert _discovery_top_for_plan(
         2, stop_on_ready=False, excluded_count=46,
     ) == 20
@@ -1577,7 +1577,7 @@ def test_stop_on_ready_warm_backlog_probes_beyond_cache(
     assert "--warm-backlog" in calls[0]
     assert "--seed-paper-only" not in calls[0]
     assert "--cache-only" not in calls[0]
-    assert calls[0][calls[0].index("--top") + 1] == "20"
+    assert calls[0][calls[0].index("--top") + 1] == "5"
     assert "--fact-probe-topics" in calls[0]
     assert calls[0][calls[0].index("--fact-probe-topics") + 1] == "5"
     assert "--exclude-topic" in calls[0]
