@@ -15,4 +15,3 @@ TimeoutStartSec=2700
 Restart=on-failure
 RestartSec=60
 RestartPreventExitStatus=2
-RestartForceExitStatus=SIGTERM

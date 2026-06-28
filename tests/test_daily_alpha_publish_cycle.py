@@ -6678,7 +6678,6 @@ def test_alpha_research_services_retry_infra_interruptions_without_masking_no_pu
         assert "Restart=on-failure" in service, service_path.name
         assert "RestartSec=60" in service, service_path.name
         assert "RestartPreventExitStatus=2" in service, service_path.name
-        assert "RestartForceExitStatus=SIGTERM" in service, service_path.name
         assert "SuccessExitStatus=" not in service, service_path.name
 
 
