@@ -7,6 +7,7 @@ import fcntl
 import importlib
 import json
 import os
+import re
 import signal
 import sys
 import time
@@ -457,6 +458,135 @@ def _write_fullraw_discovery(
     return out_path
 
 
+_FULLRAW_METADATA_ARTIFACT_TERMS = (
+    "dataset", "data set", "replication package", "research instrument",
+    "survey instrument", "supplementary material",
+)
+
+_BUSINESS_ENDPOINT_PHRASES = (
+    "environmental performance", "firm performance", "firm value",
+    "firm profitability", "profitability", "competitiveness",
+    "supply chain disruption risk", "supply chain resilience",
+    "inventory management", "human capital",
+)
+
+
+def _first_sentence(text: str, *, limit: int = 220) -> str:
+    clean = " ".join(str(text or "").split()).strip()
+    if not clean:
+        return ""
+    sentence = str(re.split(r"(?<=[.!?])\s+", clean, maxsplit=1)[0]).strip()
+    if len(sentence) <= limit:
+        return sentence.rstrip(".")
+    return sentence[:limit].rsplit(" ", 1)[0].rstrip(".,;")
+
+
+def _norm_text(value: Any) -> str:
+    return " ".join(re.findall(r"[a-z0-9]+", str(value or "").lower()))
+
+
+def _clean_topic(value: Any) -> str:
+    return " ".join(str(value or "").replace("_", " ").split()).strip()
+
+
+def _fullraw_hit_key(item: dict[str, Any]) -> str:
+    return str(
+        item.get("doi") or item.get("pmid") or item.get("pmcid")
+        or item.get("paper_id") or item.get("id") or item.get("title") or ""
+    ).strip().casefold()
+
+
+def _fullraw_search_hits(query: str, *, limit: int = 10) -> list[dict[str, Any]]:
+    _load_fullraw_env_defaults()
+    url = str(os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL") or "").strip()
+    token = str(
+        os.environ.get("V5_MEMO_FULL_RAW_INDEX_TOKEN")
+        or os.environ.get("V5_MEMO_FULL_RAW_CORPUS_TOKEN")
+        or ""
+    ).strip()
+    if not url:
+        return []
+    req = urllib.request.Request(
+        url,
+        data=json.dumps({
+            "query": query,
+            "limit": limit,
+            "rank_mode": "relevance",
+            "cache_only": True,
+            "queue_if_missing": True,
+            "priority": _business_fullraw_priority_enabled(),
+        }).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            **({"Authorization": f"Bearer {token}"} if token else {}),
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except (OSError, urllib.error.HTTPError, ValueError, json.JSONDecodeError):
+        return []
+    items = (data.get("results") or data.get("hits") or []) if isinstance(data, dict) else []
+    return [item for item in items if isinstance(item, dict)]
+
+
+def _merge_fullraw_hit_text(
+    papers: list[dict[str, Any]], hits: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    by_key = {
+        key: hit
+        for hit in hits
+        if (key := _fullraw_hit_key(hit))
+    }
+    out: list[dict[str, Any]] = []
+    for paper in papers:
+        hit = by_key.get(_fullraw_hit_key(paper))
+        if not hit:
+            out.append(paper)
+            continue
+        enriched = dict(paper)
+        for source_key, target_key in (
+            ("abstract", "abstract"),
+            ("source_excerpt", "source_excerpt"),
+            ("snippet", "source_excerpt"),
+            ("text", "source_excerpt"),
+        ):
+            value = str(hit.get(source_key) or "").strip()
+            if value and not enriched.get(target_key):
+                enriched[target_key] = value
+        out.append(enriched)
+    return out
+
+
+def _abstract_source_fact(topic: str, paper: dict[str, Any]) -> dict[str, Any] | None:
+    title = str(paper.get("title") or paper.get("paper_title") or "").strip()
+    abstract = str(
+        paper.get("abstract") or paper.get("source_excerpt") or paper.get("snippet") or "",
+    ).strip()
+    if len(abstract) < 80:
+        return None
+    artifact_text = f"{title} {abstract}".casefold()
+    if any(term in artifact_text for term in _FULLRAW_METADATA_ARTIFACT_TERMS):
+        return None
+    topic_tokens = set(_norm_text(topic).split()) - _BROAD_SEED_TOKENS
+    text_tokens = set(_norm_text(f"{title} {abstract}").split())
+    if len(topic_tokens & text_tokens) < min(2, len(topic_tokens)):
+        return None
+    endpoint = next(
+        (phrase for phrase in _BUSINESS_ENDPOINT_PHRASES if phrase in artifact_text),
+        "business outcome",
+    )
+    return {
+        "canonical_phrase": _first_sentence(abstract),
+        "population": "firms",
+        "intervention": " ".join(sorted(topic_tokens)) or _clean_topic(topic),
+        "endpoint": endpoint,
+        "source_tier": "fullraw_abstract",
+        "source_excerpt": _first_sentence(abstract, limit=700),
+    }
+
+
 def _fullraw_paper_lookup_ids(paper: dict[str, Any]) -> tuple[str, ...]:
     seen: set[str] = set()
     ids: list[str] = []
@@ -537,6 +667,13 @@ def _enrich_fullraw_papers_with_db_facts(
                     break
             if replacement is not paper:
                 break
+        if replacement is paper:
+            abstract_fact = _abstract_source_fact(topic, paper)
+            if abstract_fact is not None:
+                replacement = paper | {
+                    "id": publish_literature.paper_key(paper, _fullraw_hit_key(paper)),
+                    "source_fact": abstract_fact,
+                }
         enriched.append(replacement)
     return enriched
 
@@ -924,6 +1061,11 @@ def main() -> int:
                         paper for paper in fullraw_trace.pop("_papers", [])
                         if isinstance(paper, dict)
                     ]
+                    if fullraw_trace.get("status") == "complete":
+                        fullraw_papers = _merge_fullraw_hit_text(
+                            fullraw_papers,
+                            _fullraw_search_hits(str(fullraw_trace.get("query") or topic)),
+                        )
                     fullraw_papers = _enrich_fullraw_papers_with_db_facts(
                         topic, domain=domain, papers=fullraw_papers, settings=settings,
                     )

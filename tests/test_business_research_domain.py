@@ -2587,6 +2587,51 @@ def test_business_sweep_enriches_fullraw_papers_with_exact_db_facts(
     )
 
 
+def test_business_sweep_enriches_fullraw_article_abstracts_without_metadata_only(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(sweep, "_tier2_facts_for_paper", lambda **_kwargs: [])
+    settings = SimpleNamespace(
+        researka_database_url="https://db.test",
+        researka_database_token="tok-test",
+    )
+    papers = [
+        {
+            "doi": "10.1000/article",
+            "title": (
+                "Digital Transformation and Firm Environmental Performance: "
+                "Does Managerial Overseas Experience Matter?"
+            ),
+            "abstract": (
+                "Digital transformation and firm environmental performance have "
+                "emerged as central topics in corporate sustainability. This paper "
+                "examines the impact of digital transformation on firm environmental "
+                "performance using a sample of listed firms."
+            ),
+        },
+        {
+            "doi": "10.1000/dataset",
+            "title": "Dataset on the Impact of Digital Transformation on Firm Value",
+            "abstract": (
+                "This dataset contains data from a study examining digital "
+                "transformation and firm value."
+            ),
+        },
+    ]
+
+    enriched = sweep._enrich_fullraw_papers_with_db_facts(
+        "digital_transformation_firm",
+        domain="business_research",
+        papers=papers,
+        settings=settings,
+    )
+
+    assert publish_literature.substantive_fact_count(enriched) == 1
+    assert enriched[0]["source_fact"]["source_tier"] == "fullraw_abstract"
+    assert enriched[0]["source_fact"]["endpoint"] == "environmental performance"
+    assert "source_fact" not in enriched[1]
+
+
 def test_business_sweep_submits_after_consistent_non_dry_run_passes(
     tmp_path: Path,
     monkeypatch: Any,
