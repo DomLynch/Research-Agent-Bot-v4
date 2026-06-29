@@ -1344,6 +1344,7 @@ def test_business_sweep_fullraw_probe_defaults_to_strict_sweep_budget(
         "TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS",
         "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
         "V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS",
+        "RESEARKA_FULLRAW_SEARCH_BUDGET_SECONDS",
     ):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
