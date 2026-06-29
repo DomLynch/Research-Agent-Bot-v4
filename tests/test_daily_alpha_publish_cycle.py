@@ -10089,8 +10089,8 @@ def test_source_literature_scope_boundary_feedback_gets_bounded_retry(
         "claim_support_verdict": "partially_supported",
         "notes": ["editorial decision is terminal; external author must resubmit"],
         "required_revisions": [
-            "Rename the title as a scoping note instead of an effect synthesis.",
-            "Strengthen source grounding: only one receipt carries a direct effect.",
+            "Rename the title as a scoping claim instead of a source-bundle label.",
+            "Resolve the scope caveat: only one receipt carries a direct effect.",
             "Move the no-pooling disclaimer into the evidence matrix header.",
             "Sharpen the falsifier around a matched industry, comparator, and metric.",
         ],
