@@ -2328,6 +2328,35 @@ def _source_literature_submission_count(
     return count
 
 
+def _source_literature_clean_terminal_submission_count(
+    runs_root: Path, domain: str | None, topic: str,
+) -> int:
+    count = 0
+    for path in (runs_root / "_daily_ledger").glob("*.json"):
+        ledger = _json(path, {})
+        if (
+            not isinstance(ledger, dict)
+            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
+            or not int(ledger.get("submitted") or 0)
+        ):
+            continue
+        candidate = ledger.get("candidate")
+        if not isinstance(candidate, dict):
+            continue
+        run_ref = candidate.get("run_dir")
+        if not _source_literature_topic_from_run(run_ref):
+            continue
+        row_topic = str(candidate.get("topic") or "") or _source_literature_topic_from_run(run_ref)
+        decision = ledger.get("researka_decision")
+        if (
+            row_topic == topic
+            and isinstance(decision, dict)
+            and _source_literature_clean_terminal_resubmit(decision)
+        ):
+            count += 1
+    return count
+
+
 def _source_literature_parent_link_repair_needed(
     runs_root: Path, domain: str | None, topic: str, decision: Json,
     *, require_submission_parent: bool = False,
@@ -2746,9 +2775,16 @@ def _source_literature_attempt_budget(
                 ):
                     count = _source_literature_submission_count(runs_root, domain, topic)
                     if clean_terminal_resubmit:
-                        if _source_literature_parent_link_repair_needed(
+                        terminal_count = _source_literature_clean_terminal_submission_count(
+                            runs_root, domain, topic,
+                        )
+                        missing_object_parent = _source_literature_parent_link_repair_needed(
                             runs_root, domain, topic, decision,
                             require_submission_parent=True,
+                        )
+                        if (
+                            terminal_count < _SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT
+                            or missing_object_parent
                         ):
                             budget = max(budget, count + 1)
                     else:

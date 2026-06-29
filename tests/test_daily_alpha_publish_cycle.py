@@ -9528,6 +9528,77 @@ def test_repairable_source_literature_exhausted_topic_is_checked_once(
     assert budget_calls == 1
 
 
+def test_clean_terminal_source_literature_gets_parent_link_retry_after_old_attempts(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    topic = "supply_chain_resilience_performance"
+    ledger_dir = root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    old_decision = {
+        "decision": "revise",
+        "claim_support_verdict": "partially_supported",
+        "required_revisions": ["repair old source scope"],
+        "major_issues": [],
+        "minor_issues": [],
+        "failed_checks": [],
+        "gate_failures": [],
+        "rubric_scores": {
+            "claim_evidence_alignment": 3,
+            "source_grounding": 3,
+            "synthesis_quality": 3,
+        },
+        "resubmission": {"allowed": True},
+    }
+    decision = {
+        "decision": "revise",
+        "claim_support_verdict": "supported",
+        "notes": ["editorial decision is terminal; external author must resubmit"],
+        "required_revisions": [],
+        "major_issues": [],
+        "minor_issues": [],
+        "failed_checks": [],
+        "gate_failures": [],
+        "rubric_scores": {
+            "claim_evidence_alignment": 5,
+            "source_grounding": 5,
+            "synthesis_quality": 4,
+        },
+        "resubmission": {"allowed": True},
+    }
+    attempts = daily._SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT + 3
+    for idx in range(attempts):
+        run_dir = root / f"{topic}-source-literature-2026-06-29T08-{idx:02d}-00Z"
+        run_dir.mkdir(parents=True)
+        run_dir.joinpath("source_literature_memo.md").write_text(
+            "# Source literature boundary memo\n", encoding="utf-8",
+        )
+        daily._write_json(ledger_dir / f"2026-06-29T08-{idx:02d}-00Z.json", {
+            "domain": {"slug": "business_research"},
+            "submitted": 1,
+            "submission_id": f"sub-clean-{idx}",
+            "candidate": {
+                "topic": topic,
+                "run_dir": run_dir.name,
+                "fingerprint": f"fp-clean-{idx}",
+            },
+            "researka_decision": old_decision if idx < attempts - 1 else decision,
+        })
+
+    assert daily._source_literature_submission_count(
+        root, "business_research", topic,
+    ) == attempts
+    assert daily._source_literature_clean_terminal_submission_count(
+        root, "business_research", topic,
+    ) == 1
+    assert daily._source_literature_attempt_budget(
+        root, "business_research", topic,
+    ) == attempts + 1
+    assert daily._repairable_source_literature_topics(
+        root, "business_research", limit=3,
+    ) == [topic]
+
+
 def test_source_literature_renderer_revise_gets_bounded_extra_retry(
     tmp_path: Path,
 ) -> None:
