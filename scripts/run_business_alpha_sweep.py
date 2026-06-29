@@ -738,6 +738,45 @@ def _fullraw_hit_key(item: dict[str, Any]) -> str:
     ).strip().casefold()
 
 
+def _count_int(value: Any) -> int:
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _cached_fullraw_discovery_papers(
+    runs_root: Path, domain: str, topic: str,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    discovery = read_json(
+        runs_root / "_topics_discovery" / f"business_sweep_fullraw.{domain}.{topic}.json",
+        {},
+    )
+    rows = discovery.get("all") if isinstance(discovery, dict) else None
+    if not isinstance(rows, list) or not rows or not isinstance(rows[0], dict):
+        return [], {}
+    row = rows[0]
+    papers = [paper for paper in row.get("source_papers") or [] if isinstance(paper, dict)]
+    if _count_int(row.get("paper_count")) < MIN_DIRECT_SOURCES:
+        return [], {}
+    fact_count = publish_literature.substantive_fact_count(papers)
+    source_count = publish_literature.source_identity_count(
+        papers, require_substantive=True,
+    )
+    if fact_count < MIN_DIRECT_SOURCES or source_count < MIN_DIRECT_SOURCES:
+        return [], {}
+    trace = {
+        "status": "complete",
+        "source": "business_sweep_fullraw_cache",
+        "query": str(row.get("query") or topic),
+        "paper_count": len(papers),
+        "fact_source_count": fact_count,
+        "candidate_fact_source_count": fact_count,
+        "source_identity_count": source_count,
+    }
+    return papers, trace
+
+
 def _fullraw_search_response(
     query: str, *, limit: int | None = None, queue_if_missing: bool = True,
 ) -> dict[str, Any]:
@@ -1619,18 +1658,22 @@ def main() -> int:
                     "ready": bundle is not None,
                 }
                 if bundle is None:
-                    fullraw_trace = _strict_fullraw_probe(
-                        topic, include_papers=True, runs_root=args.runs_root,
+                    fullraw_papers, fullraw_trace = _cached_fullraw_discovery_papers(
+                        args.runs_root, domain, topic,
                     )
-                    fullraw_papers = [
-                        paper for paper in fullraw_trace.pop("_papers", [])
-                        if isinstance(paper, dict)
-                    ]
-                    if fullraw_trace.get("status") == "complete":
-                        fullraw_papers = _merge_fullraw_hit_text(
-                            fullraw_papers,
-                            _fullraw_search_hits(str(fullraw_trace.get("query") or topic)),
+                    if not fullraw_papers:
+                        fullraw_trace = _strict_fullraw_probe(
+                            topic, include_papers=True, runs_root=args.runs_root,
                         )
+                        fullraw_papers = [
+                            paper for paper in fullraw_trace.pop("_papers", [])
+                            if isinstance(paper, dict)
+                        ]
+                        if fullraw_trace.get("status") == "complete":
+                            fullraw_papers = _merge_fullraw_hit_text(
+                                fullraw_papers,
+                                _fullraw_search_hits(str(fullraw_trace.get("query") or topic)),
+                            )
                     fullraw_papers = _enrich_fullraw_papers_with_db_facts(
                         topic, domain=domain, papers=fullraw_papers, settings=settings,
                     )

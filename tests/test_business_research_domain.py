@@ -2940,6 +2940,97 @@ def test_business_sweep_complete_fullraw_hands_off_to_source_literature(
     assert '"public_url_status": 200' in out
 
 
+def test_business_sweep_uses_cached_complete_fullraw_discovery_without_live_probe(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    runs_root = tmp_path / "runs"
+    topic = "business_model_performance"
+    submissions: list[dict[str, Any]] = []
+    papers = [
+        {
+            "title": f"Business model performance source paper {idx}",
+            "doi": f"10.6161/business-model-{idx}",
+            "abstract": "Business model evidence tied to firm performance.",
+            "source_fact": {
+                "canonical_phrase": (
+                    "Business model changes were associated with bounded firm "
+                    f"performance outcomes in source setting {idx}."
+                ),
+                "population": "firms",
+                "intervention": "business model changes",
+                "endpoint": "firm performance",
+                "source_tier": "fullraw_search",
+            },
+        }
+        for idx in range(5)
+    ]
+    sweep._write_fullraw_discovery(
+        runs_root,
+        domain="business_research",
+        topic=topic,
+        profile=profile,
+        papers=papers,
+    )
+
+    def fail_live_probe(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise AssertionError("cached complete fullraw discovery should avoid live probe")
+
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        submissions.append(kwargs)
+        forced = kwargs["source_literature_forced_papers"][topic]
+        assert publish_literature.substantive_fact_count(forced) == 5
+        assert publish_literature.source_identity_count(
+            forced, require_substantive=True,
+        ) == 5
+        return {
+            "status": "published",
+            "submitted": 1,
+            "published": 1,
+            "publish_summary": {
+                "status": "published",
+                "submitted": 1,
+                "published": 1,
+                "top_blockers": {},
+                "next_action": "public_page_verified",
+                "queue_counts": {"ready_to_publish": 1},
+                "public_url_status": 200,
+            },
+        }
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [topic])
+    monkeypatch.setattr(
+        sweep,
+        "fetch_business_facts",
+        lambda *_args, **_kwargs: ([], {"status": "failed"}),
+    )
+    monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", lambda _topic: 0)
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", fail_live_probe)
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(runs_root),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-06-29T04-10-00Z",
+    ])
+
+    assert sweep.main() == 0
+    assert submissions == [{
+        "runs_root": runs_root,
+        "date": "2026-06-29T04-10-00Z",
+        "domain": "business_research",
+        "submit": True,
+        "refresh_candidates": False,
+        "source_literature_forced_papers": {topic: papers},
+    }]
+
+
 def test_business_sweep_skips_recent_source_literature_topics_before_fullraw(
     tmp_path: Path,
     monkeypatch: Any,
