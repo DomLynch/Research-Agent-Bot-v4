@@ -1082,8 +1082,8 @@ def payload(
     contrast_text = _direction_contrast_sentence(selected, topic, profile.slug)
     signal_label = _direction_signal_label(selected, topic, profile.slug)
     non_bio_signal_parts: list[str] = []
+    endpoints_by_label: dict[str, list[str]] = {}
     if non_bio:
-        endpoints_by_label: dict[str, list[str]] = {}
         for paper in selected:
             source_fact = paper.get("source_fact")
             if not isinstance(source_fact, dict):
@@ -1190,6 +1190,15 @@ def payload(
     ]
     if not non_bio and "human clinical/observational" not in contexts:
         next_gaps.insert(0, "No source in this fallback bundle tests human clinical endpoints.")
+    if non_bio and endpoints_by_label.get("directional estimate") and endpoints_by_label.get("null/mixed"):
+        directional = ", ".join(list(dict.fromkeys(endpoints_by_label["directional estimate"]))[:2])
+        nullish = ", ".join(list(dict.fromkeys(endpoints_by_label["null/mixed"]))[:2])
+        next_gaps.insert(
+            0,
+            "Resolve the directional/null conflict by retesting "
+            f"{directional} and {nullish} inside one matched industry, comparator, "
+            "and metric frame before generalizing the directional receipts.",
+        )
     boundary_summary = (
         (
             f"Source-literature boundary for {topic}: the listed sources define "

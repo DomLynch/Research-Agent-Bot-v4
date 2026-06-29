@@ -12213,6 +12213,9 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "direction-bearing receipts support supply chain performance" in markdown
     assert "null/mixed receipts limit firm performance" in markdown
     assert "descriptive/modeling receipts only contextualize resilience scoring model" in markdown
+    assert "Resolve the directional/null conflict" in markdown
+    assert "supply chain performance and firm performance" in markdown
+    assert "inside one matched industry, comparator, and metric frame" in markdown
     assert "Concrete contrast:" in markdown
     assert "hypotheses of a positive impact" in markdown
     assert "have been rejected" in markdown
