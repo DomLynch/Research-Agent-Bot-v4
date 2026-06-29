@@ -12107,6 +12107,14 @@ def test_source_literature_payload_is_deterministic_boundary_only(
     assert "primary; 2024" in payload["markdown"]
     assert writer["status"] == "skipped"
     assert writer["reason"] == "deterministic_boundary_only"
+    assert payload["citations"] == payload["source_bundle"]
+    assert payload["evidence_bundle"]["source_bundle"] == payload["source_bundle"]
+    assert payload["evidence_bundle"]["source_bundle_count"] == 5
+    assert payload["evidence_bundle"]["bound_source_count"] == 5
+    assert payload["evidence_bundle"]["direct_source_count"] == 5
+    assert len(payload["evidence_bundle"]["source_papers"]) == 5
+    assert len(payload["evidence_bundle"]["direct_source_papers"]) == 5
+    assert payload["evidence_bundle"]["context_source_count"] == 0
     assert sidecar["content_hash"] == writer["content_hash"]
     assert (run_dir / "source_literature_memo.md").read_text(
         encoding="utf-8",
