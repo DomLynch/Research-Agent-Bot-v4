@@ -14024,14 +14024,93 @@ def test_source_literature_payload_keeps_multiple_economics_directional_metrics(
     markdown = payload["markdown"]
     assert payload["title"] == (
         "minimum wage: direction-bearing map across price pass-through, "
-        "restaurant price pass-through, and share of fall in earnings inequality receipts"
+        "poverty elasticity, and earnings inequality share receipts"
     )
-    assert "direction-bearing receipts: 3" in markdown
-    assert "Substantive signal: direction-bearing evidence covers price pass-through, restaurant price pass-through, and share of fall in earnings inequality." in markdown
+    assert "direction-bearing receipts: 4" in markdown
+    assert "Substantive signal: direction-bearing evidence covers price pass-through, poverty elasticity, and earnings inequality share." in markdown
     assert "direction-bearing evidence is limited to share of fall" not in markdown
     assert "| price pass through | Minimum wage price pass-through" in markdown
-    assert "| restaurant price pass | Minimum wage restaurant price pass-through" in markdown
-    assert "| share of fall | Minimum wage and the share of fall" in markdown
+    assert "| poverty elasticity | Minimum wage poverty elasticity" in markdown
+    assert "| earnings inequality share | Minimum wage and the share of fall" in markdown
+
+
+def test_source_literature_payload_infers_missing_non_bio_metrics(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    papers = [
+        {
+            "title": "The Pass-Through of Minimum Wages into U.S. Retail Prices",
+            "doi": "10.1162/rest_a_00981",
+            "year": 2020,
+            "source_fact": {
+                "canonical_phrase": "a 10% minimum wage hike translates into a 0.36% increase in the prices of grocery products",
+                "population": "U.S. grocery and drug stores",
+                "intervention": "10% minimum wage hike",
+                "comparator": "baseline prices before the minimum wage increase",
+            },
+        },
+        {
+            "title": "The Short-Run Employment Effects of Recent Minimum Wage Changes",
+            "doi": "10.1111/coep.12279",
+            "year": 2018,
+            "source_fact": {
+                "canonical_phrase": "relatively large minimum wage increases reduced employment among low-skilled population groups by just over 1 percentage point",
+                "population": "low-skilled population groups in US states",
+                "intervention": "relatively large state minimum wage increases",
+                "comparator": "smaller minimum wage increases",
+            },
+        },
+        {
+            "title": "Are Local Minimum Wages Absorbed by Price Increases?",
+            "doi": "10.1177/0019793917713735",
+            "year": 2017,
+            "source_fact": {
+                "canonical_phrase": "nearly all of the cost increase was passed through to consumers, as prices rose 1.45% on average",
+                "population": "Internet-based restaurants inside and outside San Jose",
+                "intervention": "San Jose 25% minimum wage increase",
+                "comparator": "prices before the minimum wage increase",
+            },
+        },
+        {
+            "title": "Minimum Wages and the Distribution of Family Incomes",
+            "doi": "10.1257/app.20170085",
+            "year": 2019,
+            "source_fact": {
+                "canonical_phrase": "long-run minimum wage elasticity of the non-elderly poverty rate ranges between -0.220 and -0.459",
+                "metric": "minimum wage elasticity of poverty rate",
+                "population": "non-elderly population (US)",
+                "intervention": "minimum wage increase",
+                "comparator": "no minimum wage change",
+            },
+        },
+        {
+            "title": "Earnings Inequality and the Minimum Wage: Evidence from Brazil",
+            "doi": "10.1257/aer.20181506",
+            "year": 2022,
+            "source_fact": {
+                "canonical_phrase": "The increased minimum wage accounts for 45 percent of a large fall in earnings inequality over this period.",
+                "metric": "share of fall in earnings inequality attributable to minimum wage",
+                "population": "Brazilian labor market, 1996-2018",
+                "intervention": "128% real minimum wage increase",
+                "comparator": "counterfactual without minimum wage increase",
+            },
+        },
+    ]
+
+    _candidate, payload = daily._source_literature_payload(
+        profile_slug="business_research", topic="minimum_wage",
+        papers=papers, runs_root=root, date="2026-06-29T19-00-00Z",
+    )
+
+    markdown = payload["markdown"]
+    assert payload["title"] == (
+        "minimum wage: direction-bearing map across price pass-through, "
+        "employment effects, poverty elasticity, and earnings inequality share receipts"
+    )
+    assert "direction-bearing receipts: 5" in markdown
+    assert "direction-bearing evidence covers price pass-through, employment effects, poverty elasticity, and earnings inequality share." in markdown
+    assert "firm-performance, supply-chain performance" not in markdown
 
 
 def test_source_literature_payload_maps_business_repair_directional_contrast(

@@ -640,6 +640,38 @@ def _non_bio_mixed_significant_performance_receipt(paper: Json) -> bool:
     )
 
 
+def _inferred_non_bio_endpoint(text: str) -> str:
+    words = set(title_key(text).split())
+    if "price" in words or "prices" in words:
+        return "price pass-through"
+    if "employment" in words:
+        return "employment effects"
+    if "poverty" in words and "elasticity" in words:
+        return "poverty elasticity"
+    if "earnings" in words and "inequality" in words:
+        return "earnings inequality share"
+    return ""
+
+
+def _non_bio_numeric_direction_receipt(paper: Json) -> bool:
+    fact = paper.get("source_fact")
+    fact = fact if isinstance(fact, dict) else {}
+    text = " ".join(str(value or "") for value in (
+        paper.get("title"), paper.get("paper_title"), fact.get("canonical_phrase"),
+        fact.get("endpoint"), fact.get("metric"),
+    )).casefold()
+    if re.search(r"\b(?:no significant|not statistically different|not supported)\b", text):
+        return False
+    return bool(
+        re.search(r"\d|percent|percentage|point|elasticity", text)
+        and re.search(
+            r"\b(?:accounts? for|effect|effects|elasticity|fall|increas|pass(?:ed)? through|"
+            r"pass-through|rang(?:e|es)|reduc|rose|translates? into)\b",
+            text,
+        )
+    )
+
+
 def _fact_complete(fact: Json) -> bool:
     phrase = str(fact.get("canonical_phrase") or "").strip()
     if not phrase:
@@ -682,6 +714,12 @@ def _paper_evidence_role(paper: Json, topic: str = "", profile_slug: str = "") -
         _non_biomedical(profile_slug)
         and direction == "other/mixed"
         and _non_bio_mixed_significant_performance_receipt(paper)
+    ):
+        return "directional association"
+    if (
+        _non_biomedical(profile_slug)
+        and direction in {"other/mixed", "economic/context only"}
+        and _non_bio_numeric_direction_receipt(paper)
     ):
         return "directional association"
     label = _display_direction(direction, profile_slug)
@@ -1086,6 +1124,12 @@ def _endpoint_context_label(paper: Json, topic: str, *, non_bio: bool) -> str:
     fact = paper.get("source_fact")
     fact = fact if isinstance(fact, dict) else {}
     endpoint = str(fact.get("endpoint") or fact.get("metric") or "").strip()
+    if non_bio:
+        inferred = _inferred_non_bio_endpoint(" ".join(str(value or "") for value in (
+            endpoint, paper.get("title"), paper.get("paper_title"), fact.get("canonical_phrase"),
+        )))
+        if inferred:
+            return inferred
     if non_bio and title_key(endpoint) == "scp":
         return "supply chain performance"
     if not non_bio or not _endpoint_mirrors_topic(endpoint, topic):
@@ -1128,8 +1172,14 @@ def _endpoint_mirrors_topic(endpoint: str, topic: str) -> bool:
     return bool(endpoint_key and endpoint_key == topic_key)
 
 
-def _source_fact_endpoint_label(fact: Json, topic: str) -> str:
+def _source_fact_endpoint_label(fact: Json, topic: str, paper: Json | None = None) -> str:
     endpoint = str(fact.get("endpoint") or fact.get("metric") or "").strip()
+    inferred = _inferred_non_bio_endpoint(" ".join(str(value or "") for value in (
+        endpoint, (paper or {}).get("title"), (paper or {}).get("paper_title"),
+        fact.get("canonical_phrase"),
+    )))
+    if inferred:
+        return inferred
     if title_key(endpoint) == "scp":
         return "supply chain performance"
     topic_performance = _topic_performance_endpoint(topic, endpoint)
@@ -1534,7 +1584,7 @@ def payload(
         if not isinstance(source_fact, dict):
             continue
         label = _paper_evidence_role(paper, topic, profile.slug)
-        endpoint = _source_fact_endpoint_label(source_fact, topic)
+        endpoint = _source_fact_endpoint_label(source_fact, topic, paper)
         if endpoint:
             endpoints_by_label.setdefault(label, []).append(endpoint)
     directional_endpoints = list(dict.fromkeys(
@@ -1555,7 +1605,7 @@ def payload(
                 else "direction-bearing evidence is limited to"
             )
             non_bio_signal_parts.append(
-                f"{direction_prefix} {join_contexts(directional_endpoints[:3])}",
+                f"{direction_prefix} {join_contexts(directional_endpoints[:4])}",
             )
         for label, prefix in (
             ("null/mixed", "metric-scope caveat receipts concern"),
@@ -1712,16 +1762,18 @@ def payload(
             "scope contrast between the named outcomes."
         )
     if non_bio:
-        synthesis += " Within-vs-across outcome rule: direction-bearing rows are "
+        metric_scope = join_contexts(directional_endpoints[:4]) or "their named metrics"
         synthesis += (
-            "only compared within their named metric; firm-performance, supply-chain "
-            "performance, and modelling receipts are not treated as one outcome."
+            " Within-vs-across outcome rule: direction-bearing rows are only "
+            f"compared within {metric_scope}; unrelated receipt families are not "
+            "treated as one outcome."
         )
-        if outcome_families:
+        family_scope = directional_endpoints[:4] or outcome_families[:4]
+        if family_scope:
             synthesis += (
                 " Outcome families named here are "
-                f"{join_contexts(outcome_families[:4])}; this is not one "
-                "harmonized SCR-to-performance endpoint."
+                f"{join_contexts(family_scope)}; this is not one "
+                "harmonized endpoint."
             )
     if contrast_text:
         synthesis += " " + contrast_text
@@ -1895,7 +1947,7 @@ def payload(
         **({"revision_of_object_id": parent_submission_id} if parent_submission_id else {}),
     }
     title_directional_endpoints = _title_endpoint_labels(
-        directional_endpoints[:3], topic, selected,
+        directional_endpoints[:4], topic, selected,
     )
     title_tail = (
         f"directional support for {join_contexts(title_directional_endpoints)} "
