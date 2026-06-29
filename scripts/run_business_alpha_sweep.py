@@ -1156,8 +1156,8 @@ def _diagnostic_rank(
     runs_root: Path, domain: str, topic: str, idx: int,
 ) -> tuple[int, int, int, int, int]:
     data = read_json(runs_root / "_business_diagnostics" / f"{domain}-{topic}.json", {})
-    if not isinstance(data, dict) or not data:
-        return (1, 0, 0, 0, idx)
+    if not isinstance(data, dict):
+        data = {}
 
     def count(value: Any) -> int:
         try:
@@ -1198,6 +1198,8 @@ def _diagnostic_rank(
         status == "complete" and fullraw_fact_count >= MIN_DIRECT_SOURCES
     )
     if source_literature_ready:
+        return (0, -fullraw_fact_count, -top_sources, -a_core, idx)
+    if fullraw_fact_count > 0:
         return (0, -fullraw_fact_count, -top_sources, -a_core, idx)
     if source_rich or fullraw_pending:
         return (0, -top_sources, -a_core, -raw, idx)

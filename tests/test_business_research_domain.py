@@ -3142,6 +3142,62 @@ def test_business_sweep_enriches_cached_fullraw_discovery_before_fact_gate(
     }
 
 
+def test_business_sweep_prioritizes_cached_fullraw_facts_over_busy_probe(
+    tmp_path: Path,
+) -> None:
+    profile = load_domain_profile("business_research")
+    runs_root = tmp_path / "runs"
+    diagnostic_dir = runs_root / "_business_diagnostics"
+    diagnostic_dir.mkdir(parents=True)
+    (diagnostic_dir / "business_research-platform_strategy_network.json").write_text(
+        json.dumps({
+            "raw_fact_count": 2,
+            "a_core_fact_count": 2,
+            "top_clusters": [{"source_count": 1, "fact_count": 2}],
+            "retrieval_trace": {
+                "fullraw": {
+                    "status": "queue_saturated",
+                    "async_status": "queued",
+                    "fact_source_count": 0,
+                },
+            },
+        }),
+        encoding="utf-8",
+    )
+    papers = [
+        {
+            "title": f"Digital transformation firm performance paper {idx}",
+            "doi": f"10.6161/digital-rank-{idx}",
+            **({
+                "source_fact": {
+                    "canonical_phrase": (
+                        "Digital transformation changed firm performance in "
+                        f"source setting {idx}."
+                    ),
+                    "population": "firms",
+                    "intervention": "digital transformation",
+                    "endpoint": "firm performance",
+                    "source_tier": "fullraw_search",
+                },
+            } if idx < 4 else {}),
+        }
+        for idx in range(5)
+    ]
+    sweep._write_fullraw_discovery(
+        runs_root,
+        domain="business_research",
+        topic="digital_transformation_firm",
+        profile=profile,
+        papers=papers,
+    )
+
+    assert sweep._prioritized_seed_topics(
+        runs_root,
+        "business_research",
+        ["platform_strategy_network", "digital_transformation_firm"],
+    ) == ["digital_transformation_firm", "platform_strategy_network"]
+
+
 def test_business_sweep_skips_recent_source_literature_topics_before_fullraw(
     tmp_path: Path,
     monkeypatch: Any,
