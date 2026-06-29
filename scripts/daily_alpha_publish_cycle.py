@@ -293,6 +293,34 @@ _REPAIRABLE_REJECTION_REASONS = {
     "source_bundle_schema",
     "title/abstract",
 }
+_SOURCE_LITERATURE_RENDER_REPAIR_ATTEMPT_LIMIT = (
+    _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 2
+)
+_SOURCE_LITERATURE_RENDER_REPAIR_TERMS = (
+    "abstract",
+    "bounded signal",
+    "context only",
+    "descriptive modeling",
+    "direction bearing",
+    "directional count",
+    "effect bearing",
+    "falsifier",
+    "heterogeneity matrix",
+    "matched setting",
+    "metric heterogeneity",
+    "outcome family",
+    "topic level claim",
+    "within outcome",
+)
+_SOURCE_LITERATURE_RENDER_REPAIR_BLOCK_TERMS = (
+    "cited doi",
+    "hallucinated",
+    "minimum citations",
+    "missing citation",
+    "not verifiably grounded",
+    "source bundle below",
+    "unsupported",
+)
 # Hard scope-reset rejects: the title/claims fundamentally miss the cited
 # bundle, so the repair skips the cosmetic note and rebuilds the memo around
 # the grounded source angle (a genuinely different, bundle-aligned memo instead
@@ -2226,7 +2254,7 @@ def _source_literature_attempt_budget(
         for _fp, run_ref, decision in _repairable_submission_records(ledger):
             row_topic = candidate_topic or _source_literature_topic_from_run(run_ref)
             if row_topic == topic:
-                return _repair_attempt_limit(decision)
+                return _source_literature_repair_attempt_limit(decision)
     return _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
 
 
@@ -2464,6 +2492,42 @@ def _repair_attempt_limit(decision: Any) -> int:
     ):
         return budget + 1
     return budget
+
+
+def _source_literature_repair_attempt_limit(decision: Any) -> int:
+    budget = _repair_attempt_limit(decision)
+    if _source_literature_render_repair_revise(decision):
+        return max(budget, _SOURCE_LITERATURE_RENDER_REPAIR_ATTEMPT_LIMIT)
+    return budget
+
+
+def _source_literature_render_repair_revise(decision: Any) -> bool:
+    if (
+        not isinstance(decision, dict)
+        or decision.get("decision") != _DECISION_REVISE
+        or not _resubmission_allowed(decision)
+    ):
+        return False
+    if str(decision.get("claim_support_verdict") or "").lower() == "unsupported":
+        return False
+    if decision.get("failure_category"):
+        return False
+    for key in ("failed_checks", "gate_failures"):
+        values = decision.get(key)
+        if isinstance(values, list) and values:
+            return False
+    scores = decision.get("rubric_scores")
+    if isinstance(scores, dict):
+        for key in ("claim_evidence_alignment", "source_grounding", "synthesis_quality"):
+            try:
+                if int(scores.get(key, 0)) <= 2:
+                    return False
+            except (TypeError, ValueError):
+                continue
+    notes = _norm(_revision_notes(decision))
+    if any(term in notes for term in _SOURCE_LITERATURE_RENDER_REPAIR_BLOCK_TERMS):
+        return False
+    return any(term in notes for term in _SOURCE_LITERATURE_RENDER_REPAIR_TERMS)
 
 
 def _clean_supported_revise(decision: Any) -> bool:
