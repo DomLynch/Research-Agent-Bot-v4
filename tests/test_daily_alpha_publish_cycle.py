@@ -8977,6 +8977,50 @@ def test_source_literature_candidate_skips_refresh_before_submit(
     assert ledger["submitted_topic"] == "glycation_AGEs"
 
 
+def test_source_literature_candidate_fetches_when_cached_sources_are_metadata_only(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{
+            "topic": "glycation_AGEs",
+            "paper_count": 5,
+            "fact_source_count": 5,
+            "source_papers": [
+                {"title": f"Glycation AGEs cached source {idx}", "doi": f"10.5555/c{idx}"}
+                for idx in range(5)
+            ],
+        }],
+    })
+    fetched = [
+        {
+            "title": f"Glycation AGEs fact-backed source {idx}",
+            "doi": f"10.1234/f{idx}",
+            "source_fact": {
+                "canonical_phrase": f"glycation AGE boundary finding {idx}",
+                "population": "adult tissue evidence",
+                "intervention": "glycation AGEs",
+                "endpoint": "aging signal",
+            },
+        }
+        for idx in range(5)
+    ]
+    monkeypatch.setattr(daily, "_fetch_source_literature_papers", lambda *_args, **_kwargs: fetched)
+
+    selected = daily._source_literature_candidate_papers(
+        root, "longevity_research", "glycation_AGEs", 5, 15,
+    )
+
+    assert selected == fetched
+    assert publish_literature.substantive_fact_count(selected) == 5
+    assert publish_literature.source_identity_count(
+        selected, require_substantive=True,
+    ) == 5
+
+
 def test_thin_source_literature_candidate_does_not_skip_refresh(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

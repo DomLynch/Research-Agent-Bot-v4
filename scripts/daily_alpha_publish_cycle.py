@@ -4461,7 +4461,10 @@ def _source_literature_candidate_papers(
     papers = _source_literature_discovery_papers(
         runs_root, profile_slug, topic, min_sources,
     )
-    if papers and _source_literature_boundary_quality(topic, papers, min_sources, profile_slug)[0]:
+    if papers and _source_literature_boundary_quality(
+        topic, papers, min_sources, profile_slug,
+        require_substantive_sources=_source_literature_fallback_submit_enabled(),
+    )[0]:
         return papers
     fetched = _fetch_source_literature_papers(topic, fetch_limit, domain=profile_slug)
     return fetched or papers
