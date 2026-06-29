@@ -14130,6 +14130,95 @@ def test_source_literature_payload_infers_missing_non_bio_metrics(
     assert "firm-performance, supply-chain performance" not in markdown
 
 
+def test_source_literature_payload_prefers_distinct_outcomes_when_available(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    papers = [
+        {
+            "title": "The Pass-Through of Minimum Wages into U.S. Retail Prices",
+            "doi": "10.1162/rest_a_00981",
+            "year": 2020,
+            "source_fact": {
+                "canonical_phrase": "a 10% minimum wage hike translates into a 0.36% increase in the prices of grocery products",
+                "population": "U.S. grocery and drug stores",
+                "intervention": "10% minimum wage hike",
+                "comparator": "baseline prices before the minimum wage increase",
+            },
+        },
+        {
+            "title": "The Short-Run Employment Effects of Recent Minimum Wage Changes",
+            "doi": "10.1111/coep.12279",
+            "year": 2018,
+            "source_fact": {
+                "canonical_phrase": "large minimum wage increases reduced employment among low-skilled population groups",
+                "population": "low-skilled population groups in US states",
+                "intervention": "relatively large state minimum wage increases",
+                "comparator": "smaller minimum wage increases",
+            },
+        },
+        {
+            "title": "Are Local Minimum Wages Absorbed by Price Increases?",
+            "doi": "10.1177/0019793917713735",
+            "year": 2017,
+            "source_fact": {
+                "canonical_phrase": "nearly all of the cost increase was passed through to consumers, as prices rose 1.45% on average",
+                "population": "Internet-based restaurants inside and outside San Jose",
+                "intervention": "San Jose 25% minimum wage increase",
+                "comparator": "prices before the minimum wage increase",
+            },
+        },
+        {
+            "title": "Minimum Wages and the Distribution of Family Incomes",
+            "doi": "10.1257/app.20170085",
+            "year": 2019,
+            "source_fact": {
+                "canonical_phrase": "long-run minimum wage elasticity of the non-elderly poverty rate ranges between -0.220 and -0.459",
+                "metric": "minimum wage elasticity of poverty rate",
+                "population": "non-elderly population (US)",
+                "intervention": "minimum wage increase",
+                "comparator": "no minimum wage change",
+            },
+        },
+        {
+            "title": "Earnings Inequality and the Minimum Wage: Evidence from Brazil",
+            "doi": "10.1257/aer.20181506",
+            "year": 2022,
+            "source_fact": {
+                "canonical_phrase": "The increased minimum wage accounts for 45 percent of a large fall in earnings inequality over this period.",
+                "metric": "share of fall in earnings inequality attributable to minimum wage",
+                "population": "Brazilian labor market, 1996-2018",
+                "intervention": "128% real minimum wage increase",
+                "comparator": "counterfactual without minimum wage increase",
+            },
+        },
+        {
+            "title": "Minimum wage worker turnover in service labor markets",
+            "doi": "10.1234/minwage-turnover",
+            "year": 2021,
+            "source_fact": {
+                "canonical_phrase": "minimum wage increases were associated with lower worker turnover in service labor markets",
+                "endpoint": "worker turnover",
+                "population": "service labor markets",
+                "intervention": "minimum wage increase",
+                "comparator": "lower minimum wage baseline",
+            },
+        },
+    ]
+
+    _candidate, payload = daily._source_literature_payload(
+        profile_slug="business_research", topic="minimum_wage",
+        papers=papers, runs_root=root, date="2026-06-29T20-00-00Z",
+    )
+
+    source_titles = [source["title"] for source in payload["source_bundle"]]
+    assert len(source_titles) == 5
+    assert "Minimum wage worker turnover in service labor markets" in source_titles
+    assert "Are Local Minimum Wages Absorbed by Price Increases?" not in source_titles
+    assert "Coverage balance: price pass-through" not in payload["markdown"]
+    assert "worker turnover" in payload["markdown"]
+
+
 def test_source_literature_payload_maps_business_repair_directional_contrast(
     tmp_path: Path,
 ) -> None:

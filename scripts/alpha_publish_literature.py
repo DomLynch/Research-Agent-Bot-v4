@@ -284,6 +284,52 @@ def _paper_context_family(paper: Json) -> str:
     )))
 
 
+def _paper_outcome_family_key(topic: str, paper: Json) -> str:
+    raw_fact = paper.get("source_fact")
+    fact: Json = raw_fact if isinstance(raw_fact, dict) else {}
+    label = _source_fact_endpoint_label(fact, topic, paper) if fact else ""
+    if not label:
+        label = " ".join(str(value or "") for value in (
+            fact.get("endpoint"),
+            fact.get("metric"),
+            paper.get("title"),
+            paper.get("paper_title"),
+        ))
+    return title_key(label)
+
+
+def _source_diverse_order(topic: str, papers: list[Json]) -> list[Json]:
+    picked: list[Json] = []
+    duplicate_outcomes: list[Json] = []
+    duplicate_sources: list[Json] = []
+    used_sources: set[str] = set()
+    used_outcomes: set[str] = set()
+    for paper in papers:
+        source_key = source_identity_key(paper)
+        outcome_key = _paper_outcome_family_key(topic, paper)
+        if source_key and source_key in used_sources:
+            duplicate_sources.append(paper)
+            continue
+        if outcome_key and outcome_key in used_outcomes:
+            duplicate_outcomes.append(paper)
+            continue
+        picked.append(paper)
+        if source_key:
+            used_sources.add(source_key)
+        if outcome_key:
+            used_outcomes.add(outcome_key)
+    for paper in duplicate_outcomes:
+        source_key = source_identity_key(paper)
+        if source_key and source_key in used_sources:
+            duplicate_sources.append(paper)
+            continue
+        picked.append(paper)
+        if source_key:
+            used_sources.add(source_key)
+    picked.extend(duplicate_sources)
+    return picked
+
+
 def select_boundary_papers(
     topic: str, papers: list[Json], min_sources: int, *, strict_topic_coverage: bool = False,
 ) -> list[Json]:
@@ -314,8 +360,8 @@ def select_boundary_papers(
         if family != "other source context" and len(rows) >= min_sources
     ]
     if coherent:
-        return max(coherent, key=len)[:min_sources]
-    return usable[:min_sources]
+        return _source_diverse_order(topic, max(coherent, key=len))[:min_sources]
+    return _source_diverse_order(topic, usable)[:min_sources]
 
 
 def boundary_quality(
