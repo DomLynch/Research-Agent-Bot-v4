@@ -9476,14 +9476,97 @@ def test_repairable_source_literature_revise_runs_after_refresh(
         sleep=lambda _seconds: None,
     )
 
-    assert refresh_calls
+    assert refresh_calls == []
     assert ledger["source_literature_fallback"]["repair_submission"] is True
+    assert ledger["refresh_batches"][0]["note"] == "skipped_source_literature_candidate_available"
     assert ledger["submitted_topic"] == "metformin use"
     assert "repair before broad refresh" not in seen_payload["markdown"]
     assert (
         seen_payload["metadata"]["reviewer_repair_notes"]
         == "repair before broad refresh"
     )
+
+
+def test_repairable_source_literature_preflight_skips_broad_refresh(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", raising=False)
+    root = tmp_path / "repo"
+    ledger_dir = root / "_daily_ledger"
+    old_run = root / "metformin use-source-literature-2026-06-09T18-00-00Z"
+    old_run.mkdir(parents=True)
+    old_run.joinpath("source_literature_memo.md").write_text(
+        "# Source literature boundary memo\n", encoding="utf-8",
+    )
+    daily._write_json(ledger_dir / "2026-06-09T18-00-00Z.json", {
+        "domain": {"slug": "longevity_research"},
+        "submitted": 1,
+        "candidate": {
+            "topic": "metformin use",
+            "run_dir": old_run.name,
+            "fingerprint": "old-fingerprint",
+        },
+        "researka_decision": {
+            "decision": "revise",
+            "required_revisions": ["repair before broad refresh"],
+        },
+    })
+    papers = [
+        {
+            "title": title,
+            "doi": f"10.1234/met-preflight-{idx}",
+            "year": 2020 + idx,
+            "source_fact": {
+                "canonical_phrase": "metformin use showed mixed endpoint signals",
+                "population": "adults",
+                "intervention": "metformin",
+                "comparator": "control",
+                "endpoint": "mortality",
+            },
+        }
+        for idx, title in enumerate((
+            "Metformin use and frailty outcomes",
+            "Metformin exposure in dementia cohorts",
+            "Metformin treatment and cardiovascular mortality",
+            "Metformin prevention signals in diabetes risk",
+            "Metformin therapy and inflammatory biomarkers",
+        ))
+    ]
+    seen_payload: dict[str, Any] = {}
+
+    def fail_refresh(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise AssertionError("repairable source-lit candidate should skip broad refresh")
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", fail_refresh)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-10T19-00-00Z",
+        domain="longevity_research",
+        refresh_candidates=True,
+        max_refresh_batches=1,
+        queue=None,
+        submit=True,
+        source_paper_fetcher=lambda topic, _limit: papers if topic == "metformin use" else [],
+        submitter=lambda payload: (
+            seen_payload.update(payload)
+            or {"ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}}}
+        ),
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "metformin use"
+    assert ledger["refresh_batches"][0]["note"] == "skipped_source_literature_candidate_available"
+    assert ledger["source_literature_fallback"]["repair_submission"] is True
+    assert seen_payload["metadata"]["reviewer_repair_notes"] == "repair before broad refresh"
 
 
 def _usable_boundary_papers() -> list[dict[str, str]]:

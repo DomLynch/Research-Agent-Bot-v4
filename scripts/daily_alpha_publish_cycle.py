@@ -5007,6 +5007,7 @@ def run_cycle(
     initial_probe_empty = False
     skip_refresh_note = "skipped_after_repairable_submission"
     source_lit_preflight_papers: dict[str, list[Json]] = {}
+    source_lit_preflight_selected: list[str] = []
     if refresh_candidates and queue is None and queue_builder is _build_queue:
         ledger["stage"] = "initial_queue_probe"
         ledger["next_action"] = "building_current_publish_queue"
@@ -5024,12 +5025,18 @@ def run_cycle(
                     )
                 )
             )
-            for topic in _source_literature_topic_candidates(
+            source_lit_probe_topics = _source_literature_topic_candidates(
                 runs_root, profile.slug, min_submit_sources,
                 source_literature_blocked_topics,
                 limit=1,
                 soft_broad_blocked_topics=source_literature_soft_blocked_topics,
+            )
+            for topic in _repairable_source_literature_decisions(
+                runs_root, profile.slug, limit=1,
             ):
+                if topic not in source_lit_probe_topics:
+                    source_lit_probe_topics.append(topic)
+            for topic in source_lit_probe_topics:
                 attempt_status = "blocked"
                 papers = source_lit_probe(topic, min_submit_sources * 3)
                 source_lit_available, _reason = _source_literature_boundary_quality(
@@ -5038,6 +5045,7 @@ def run_cycle(
                 )
                 if source_lit_available:
                     source_lit_preflight_papers[topic] = papers
+                    source_lit_preflight_selected.append(topic)
                     attempt_status = "selected"
                 source_lit_probe_attempts.append({
                     "topic": topic,
@@ -5667,9 +5675,10 @@ def run_cycle(
                 soft_broad_blocked_topics=source_literature_soft_blocked_topics,
             ) if topic not in repair_topic_set
         ]
-        literature_topics = fresh_topics + [
-            topic for topic in repair_topics if topic not in set(fresh_topics)
-        ]
+        literature_topics: list[str] = []
+        for topic in [*source_lit_preflight_selected, *fresh_topics, *repair_topics]:
+            if topic not in literature_topics:
+                literature_topics.append(topic)
         if paper_fetcher is None:
             expanded_topics: list[str] = []
             for topic in literature_topics:
