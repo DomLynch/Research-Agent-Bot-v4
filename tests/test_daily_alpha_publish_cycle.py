@@ -11360,8 +11360,10 @@ def test_source_literature_fallback_resumes_stranded_fact_backed_payload(
     )
     seen_payload: dict[str, Any] = {}
 
-    def fail_fetch(_topic: str, _limit: int) -> list[dict[str, Any]]:
+    def fail_fetch(*_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
         raise AssertionError("stranded source-lit payload should be resumed")
+
+    monkeypatch.setattr(daily, "_source_literature_candidate_papers", fail_fetch)
 
     ledger = daily.run_cycle(
         runs_root=root,
@@ -11369,7 +11371,6 @@ def test_source_literature_fallback_resumes_stranded_fact_backed_payload(
         domain="longevity_research",
         queue=_queue(),
         submit=True,
-        source_paper_fetcher=fail_fetch,
         submitter=lambda submitted_payload: (
             seen_payload.update(submitted_payload)
             or {"ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}}}

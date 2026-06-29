@@ -6377,7 +6377,7 @@ def run_cycle(
         if paper_fetcher is None:
             expanded_topics: list[str] = []
             for topic in literature_topics:
-                if topic in forced_source_lit:
+                if topic in forced_source_lit or topic in resumable_source_lit:
                     if topic not in expanded_topics:
                         expanded_topics.append(topic)
                     if len(expanded_topics) >= source_lit_scan_limit:
