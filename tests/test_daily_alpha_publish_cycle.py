@@ -13405,6 +13405,83 @@ def test_source_literature_payload_uses_economics_language(
     assert "pooled elasticity" in markdown
 
 
+def test_source_literature_payload_keeps_multiple_economics_directional_metrics(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+
+    def paper(
+        title: str, doi: str, phrase: str, population: str, endpoint: str,
+    ) -> dict[str, Any]:
+        return {
+            "title": title,
+            "doi": doi,
+            "year": 2024,
+            "source_fact": {
+                "canonical_phrase": phrase,
+                "population": population,
+                "intervention": "minimum wage policy",
+                "comparator": "lower minimum wage baseline",
+                "endpoint": endpoint,
+            },
+        }
+
+    papers = [
+        paper(
+            "Minimum wage price pass-through in grocery markets",
+            "10.1234/minwage-price-grocery",
+            "minimum wage increases grocery price pass-through by 0.36 percent",
+            "grocery markets",
+            "price pass-through",
+        ),
+        paper(
+            "Minimum wage employment effects in local labor markets",
+            "10.1234/minwage-employment",
+            "minimum wage employment elasticity was not statistically different from zero",
+            "local labor markets",
+            "employment effects",
+        ),
+        paper(
+            "Minimum wage restaurant price pass-through",
+            "10.1234/minwage-restaurant",
+            "minimum wage increases restaurant price pass-through by 1.45 percent",
+            "restaurant markets",
+            "restaurant price pass-through",
+        ),
+        paper(
+            "Minimum wage poverty elasticity across local areas",
+            "10.1234/minwage-poverty",
+            "minimum wage poverty elasticity estimates varied by local specification",
+            "local labor markets",
+            "poverty elasticity",
+        ),
+        paper(
+            "Minimum wage and the share of fall in earnings inequality",
+            "10.1234/minwage-inequality",
+            "minimum wage had a positive effect on share of fall in earnings inequality",
+            "earnings distribution",
+            "share of fall in earnings inequality",
+        ),
+    ]
+
+    _candidate, payload = daily._source_literature_payload(
+        profile_slug="economics_research", topic="minimum_wage",
+        papers=papers, runs_root=root, date="2026-06-29T12-30-00Z",
+    )
+
+    markdown = payload["markdown"]
+    assert payload["title"] == (
+        "minimum wage: direction-bearing map across price pass-through, "
+        "restaurant price pass-through, and share of fall in earnings inequality receipts"
+    )
+    assert "direction-bearing receipts: 3" in markdown
+    assert "Substantive signal: direction-bearing evidence covers price pass-through, restaurant price pass-through, and share of fall in earnings inequality." in markdown
+    assert "direction-bearing evidence is limited to share of fall" not in markdown
+    assert "| price pass through | Minimum wage price pass-through" in markdown
+    assert "| restaurant price pass | Minimum wage restaurant price pass-through" in markdown
+    assert "| share of fall | Minimum wage and the share of fall" in markdown
+
+
 def test_source_literature_payload_maps_business_repair_directional_contrast(
     tmp_path: Path,
 ) -> None:

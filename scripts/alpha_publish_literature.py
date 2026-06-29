@@ -1150,6 +1150,14 @@ def _title_endpoint_label(label: str, topic: str, papers: list[Json]) -> str:
     return _performance_endpoint_label(topic, source_text) or topic.replace("_", " ")
 
 
+def _title_endpoint_labels(labels: list[str], topic: str, papers: list[Json]) -> list[str]:
+    return list(dict.fromkeys(
+        _title_endpoint_label(label, topic, papers)
+        for label in labels
+        if label
+    ))
+
+
 def _bounded_signal_sentence(
     topic: str,
     endpoints_by_label: dict[str, list[str]],
@@ -1180,14 +1188,20 @@ def _bounded_signal_sentence(
             "That supports a narrow scoping contrast, not support for the topic as a whole."
         )
     if non_bio and directional:
+        directional_text = join_contexts(directional[:3])
         tail = (
             f", while descriptive/modeling receipts only contextualize "
             f"{', '.join(descriptive[:2])}"
             if descriptive else ""
         )
+        if len(directional) > 1:
+            return (
+                f"Bounded signal: {topic_text} has direction-bearing evidence across "
+                f"{directional_text}{tail}; this is bounded to those metrics and settings."
+            )
         return (
             f"Bounded signal: {topic_text} has direction-bearing evidence limited to "
-            f"{', '.join(directional[:2])}{tail}; this is bounded to those "
+            f"{directional_text}{tail}; this is bounded to those "
             "metrics and settings."
         )
     if directional and nullish:
@@ -1499,7 +1513,6 @@ def payload(
     role_text = _evidence_role_summary(selected, topic, profile.slug)
     contrast_text = _direction_contrast_sentence(selected, topic, profile.slug)
     signal_label = _direction_signal_label(selected, topic, profile.slug)
-    non_bio_signal_parts: list[str] = []
     endpoints_by_label: dict[str, list[str]] = {}
     for paper in selected:
         source_fact = paper.get("source_fact")
@@ -1509,17 +1522,6 @@ def payload(
         endpoint = _source_fact_endpoint_label(source_fact, topic)
         if endpoint:
             endpoints_by_label.setdefault(label, []).append(endpoint)
-    if non_bio:
-        for label, prefix in (
-            ("directional association", "direction-bearing evidence is limited to"),
-            ("directional estimate", "direction-bearing evidence is limited to"),
-            ("null/mixed", "metric-scope caveat receipts concern"),
-            ("antecedent/support", "antecedent/support receipts contextualize"),
-            ("descriptive/modeling", "descriptive/modeling receipts only contextualize"),
-        ):
-            endpoints = list(dict.fromkeys(endpoints_by_label.get(label, [])))
-            if endpoints:
-                non_bio_signal_parts.append(f"{prefix} {', '.join(endpoints[:3])}")
     directional_endpoints = list(dict.fromkeys(
         endpoints_by_label.get("directional association", [])
         + endpoints_by_label.get("directional estimate", [])
@@ -1529,6 +1531,25 @@ def payload(
         endpoints_by_label.get("null/mixed", [])
         + endpoints_by_label.get("null/non-convergent", []),
     ))
+    non_bio_signal_parts: list[str] = []
+    if non_bio:
+        if directional_endpoints:
+            direction_prefix = (
+                "direction-bearing evidence covers"
+                if len(directional_endpoints) > 1
+                else "direction-bearing evidence is limited to"
+            )
+            non_bio_signal_parts.append(
+                f"{direction_prefix} {join_contexts(directional_endpoints[:3])}",
+            )
+        for label, prefix in (
+            ("null/mixed", "metric-scope caveat receipts concern"),
+            ("antecedent/support", "antecedent/support receipts contextualize"),
+            ("descriptive/modeling", "descriptive/modeling receipts only contextualize"),
+        ):
+            endpoints = list(dict.fromkeys(endpoints_by_label.get(label, [])))
+            if endpoints:
+                non_bio_signal_parts.append(f"{prefix} {join_contexts(endpoints[:3])}")
     directional_count = sum(
         1 for paper in selected
         if _paper_evidence_role(paper, topic, profile.slug)
@@ -1857,10 +1878,15 @@ def payload(
         **({"revision_feedback": reviewer_notes} if reviewer_notes else {}),
         **({"revision_of": parent_submission_id} if parent_submission_id else {}),
     }
+    title_directional_endpoints = _title_endpoint_labels(
+        directional_endpoints[:3], topic, selected,
+    )
     title_tail = (
-        f"directional support for {_title_endpoint_label(directional_endpoints[0], topic, selected)} "
+        f"directional support for {join_contexts(title_directional_endpoints)} "
         f"but null or mixed support for {join_contexts(nullish_endpoints[:2])}"
-        if non_bio and directional_endpoints and nullish_endpoints else
+        if non_bio and title_directional_endpoints and nullish_endpoints else
+        f"direction-bearing map across {join_contexts(title_directional_endpoints)} receipts"
+        if non_bio and len(title_directional_endpoints) > 1 else
         f"boundary map across {join_contexts(outcome_families[:3])} receipts"
         if non_bio and len(outcome_families) >= 2 else
         "separated intervention and predictive evidence fronts"
