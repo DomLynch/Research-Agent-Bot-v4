@@ -1,0 +1,24 @@
+{
+  "cooldown_hours": 2.0,
+  "cross_topic_memo": "runs/_curator_cycles/2026-06-29T09-59-33Z_cross_topic_alpha_memo.md",
+  "cycle_ts": "2026-06-29T09-59-33Z",
+  "domain": {
+    "claim_schema_path": "publication.toml",
+    "database_domain": "longevity_research",
+    "display_name": "Longevity / anti-aging research",
+    "dry_run_only": false,
+    "seed_topics_path": "discovery_seeds.toml",
+    "slug": "longevity_research",
+    "source_policy_path": "publication.toml"
+  },
+  "domain_publish_queue": "runs/_publish_queue.longevity_research.json",
+  "publish_queue": "runs/_publish_queue.json",
+  "ran": [],
+  "skipped_below_source_floor": [
+    "acarbose"
+  ],
+  "skipped_excluded": [],
+  "skipped_in_cooldown": [],
+  "stopped_on_ready": false,
+  "top_requested": 1
+}
