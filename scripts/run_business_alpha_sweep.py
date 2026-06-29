@@ -604,7 +604,8 @@ _FULLRAW_METADATA_ARTIFACT_TERMS = (
 _BUSINESS_ENDPOINT_PHRASES = (
     "environmental performance", "firm performance", "firm value",
     "firm profitability", "profitability", "competitiveness",
-    "supply chain disruption risk", "supply chain resilience",
+    "supply chain performance", "supply chain disruption risk",
+    "supply chain resilience",
     "inventory management", "human capital",
 )
 _ABSTRACT_FINDING_TERMS = (
@@ -661,6 +662,45 @@ def _norm_text(value: Any) -> str:
 
 def _clean_topic(value: Any) -> str:
     return " ".join(str(value or "").replace("_", " ").split()).strip()
+
+
+def _clean_endpoint_tail(value: str) -> str:
+    tail = re.split(
+        r"\b(?:using|among|within|during|while|where|when|through|based on|from)\b",
+        value,
+        maxsplit=1,
+    )[0]
+    tail = re.split(r"\bof\s+(?:a|an|the|chemical|manufacturing|listed|public|private)\b", tail, maxsplit=1)[0]
+    words = [word for word in tail.split() if len(word) > 1]
+    return " ".join(words[:6]).strip()
+
+
+def _abstract_endpoint_phrase(topic: str, finding: str, artifact_text: str) -> str:
+    topic_words = set(_norm_text(topic).split()) - _BROAD_SEED_TOKENS
+    candidates = [phrase for phrase in _BUSINESS_ENDPOINT_PHRASES if phrase in artifact_text]
+    finding_text = _norm_text(finding)
+    for pattern in (
+        r"\b(?:effect|impact|influence)s?\s+of\b[^.;]{0,120}\b(?:on|to)\s+([a-z ]{3,100})",
+        r"\b(?:effect|impact|influence)s?\s+on\s+([a-z ]{3,100})",
+        r"\b(?:affects?|improves?|improved|enhances?|enhanced|influences?)\s+([a-z ]{3,100})",
+    ):
+        match = re.search(pattern, finding_text)
+        if not match:
+            continue
+        endpoint = _clean_endpoint_tail(match.group(1))
+        if endpoint:
+            for phrase in candidates:
+                phrase_words = set(_norm_text(phrase).split())
+                if phrase in endpoint and not phrase_words <= topic_words:
+                    return phrase
+            return endpoint
+    if not candidates:
+        return "business outcome"
+    for phrase in candidates:
+        phrase_words = set(_norm_text(phrase).split())
+        if phrase_words and not phrase_words <= topic_words:
+            return phrase
+    return candidates[0]
 
 
 def _fullraw_hit_key(item: dict[str, Any]) -> str:
@@ -831,10 +871,7 @@ def _abstract_source_fact(topic: str, paper: dict[str, Any]) -> dict[str, Any] |
     finding = _abstract_finding_sentence(abstract)
     if not finding:
         return None
-    endpoint = next(
-        (phrase for phrase in _BUSINESS_ENDPOINT_PHRASES if phrase in artifact_text),
-        "business outcome",
-    )
+    endpoint = _abstract_endpoint_phrase(topic, finding, artifact_text)
     return {
         "canonical_phrase": finding,
         "population": "firms",

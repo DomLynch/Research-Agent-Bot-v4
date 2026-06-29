@@ -3809,6 +3809,29 @@ def test_business_sweep_abstract_fact_prefers_results_over_methods() -> None:
     assert "Using a sample" not in fact["canonical_phrase"]
 
 
+def test_business_sweep_abstract_fact_uses_downstream_effect_endpoint() -> None:
+    paper = {
+        "doi": "10.5267/j.uscm.2022.8.001",
+        "title": (
+            "The effect of supply chain resilience on supply chain performance "
+            "of chemical industrial companies"
+        ),
+        "abstract": (
+            "The aim of this study is to identify the effect of supply chain "
+            "resilience as measured by supply chain flexibility, supply chain "
+            "collaboration, and supply chain agility on supply chain performance. "
+            "The findings show that supply chain resilience positively affects "
+            "supply chain performance."
+        ),
+    }
+
+    fact = sweep._abstract_source_fact("supply_chain_resilience_performance", paper)
+
+    assert fact is not None
+    assert fact["endpoint"] == "supply chain performance"
+    assert fact["endpoint"] != "supply chain resilience"
+
+
 def test_source_literature_selection_keeps_substantive_facts_ahead_of_metadata() -> None:
     papers = [
         {
