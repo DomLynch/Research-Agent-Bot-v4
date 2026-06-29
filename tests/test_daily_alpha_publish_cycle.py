@@ -6855,7 +6855,16 @@ def test_systemd_publish_health_monitor_enforces_sla() -> None:
 
 
 def test_alpha_systemd_services_do_not_mask_no_publish_exits() -> None:
-    services = sorted(Path("deploy/systemd").glob("researka-alpha-*.service"))
+    root = Path(__file__).resolve().parents[1]
+    result = subprocess.run(
+        ["git", "ls-files", "deploy/systemd/researka-alpha-*.service"],
+        cwd=root,
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+    assert result.returncode == 0, result.stderr
+    services = sorted(root / line for line in result.stdout.splitlines() if line)
     expected = {
         "researka-alpha-ai-research.service",
         "researka-alpha-business-research.service",
@@ -10411,6 +10420,72 @@ def test_clean_terminal_source_literature_missing_object_parent_gets_one_repair(
     assert daily._repairable_source_literature_topics(
         root, "business_research", limit=3,
     ) == []
+
+
+def test_clean_terminal_source_literature_wrong_parent_stays_repairable(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    topic = "supply_chain_resilience_performance"
+    ledger_dir = root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    current_parent = "sub-terminal-current"
+    old_parent = "sub-terminal-old"
+    decision = {
+        "decision": "revise",
+        "claim_support_verdict": "supported",
+        "notes": ["editorial decision is terminal; external author must resubmit"],
+        "required_revisions": [],
+        "major_issues": [],
+        "minor_issues": [],
+        "failed_checks": [],
+        "gate_failures": [],
+        "rubric_scores": {
+            "claim_evidence_alignment": 5,
+            "source_grounding": 5,
+            "synthesis_quality": 4,
+        },
+        "resubmission": {
+            "allowed": True,
+            "parent_submission_id": current_parent,
+        },
+    }
+    for idx in range(daily._SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT):
+        stamp = f"2026-06-29T13-{idx:02d}-00Z"
+        run_dir = root / f"{topic}-source-literature-{stamp}"
+        run_dir.mkdir(parents=True)
+        run_dir.joinpath("source_literature_memo.md").write_text(
+            "# Source literature boundary memo\n", encoding="utf-8",
+        )
+        daily._write_json(run_dir / "source_literature_payload.json", {
+            "parent_submission_id": old_parent,
+            "parent_object_id": old_parent,
+            "metadata": {
+                "revision_of": old_parent,
+                "revision_of_object_id": old_parent,
+            },
+        })
+        daily._write_json(ledger_dir / f"{stamp}.json", {
+            "domain": {"slug": "business_research"},
+            "submitted": 1,
+            "submission_id": f"sub-terminal-{idx}",
+            "candidate": {
+                "topic": topic,
+                "run_dir": run_dir.name,
+                "fingerprint": f"fp-terminal-{idx}",
+            },
+            "researka_decision": decision,
+        })
+
+    assert daily._source_literature_submission_count(
+        root, "business_research", topic,
+    ) == daily._SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT
+    assert daily._source_literature_attempt_budget(
+        root, "business_research", topic,
+    ) == daily._SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT + 1
+    assert daily._repairable_source_literature_topics(
+        root, "business_research", limit=3,
+    ) == [topic]
 
 
 def test_old_source_literature_publish_framing_gets_one_bounded_retry(

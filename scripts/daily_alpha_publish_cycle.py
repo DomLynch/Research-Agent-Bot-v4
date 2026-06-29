@@ -2365,7 +2365,7 @@ def _source_literature_parent_link_repair_needed(
     if not parent_submission_id:
         return False
     saw_submitted_source_literature = False
-    saw_submission_parent_payload = False
+    saw_other_submission_parent_payload = False
     for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
         ledger = _json(path, {})
         if (
@@ -2402,18 +2402,18 @@ def _source_literature_parent_link_repair_needed(
             str(evidence.get("revision_of_object_id") or "").strip()
             if isinstance(evidence, dict) else "",
         )
-        if require_submission_parent:
-            if any(submission_parent_values):
-                return not any(object_parent_values)
-            continue
         has_submission_parent = parent_submission_id in submission_parent_values
         has_object_parent = parent_submission_id in object_parent_values
+        if require_submission_parent:
+            if has_submission_parent:
+                return not has_object_parent
+            if any(submission_parent_values):
+                saw_other_submission_parent_payload = True
+            continue
         if has_submission_parent and has_object_parent:
             return False
-        if has_submission_parent:
-            saw_submission_parent_payload = True
     return (
-        saw_submission_parent_payload
+        saw_other_submission_parent_payload
         if require_submission_parent else
         saw_submitted_source_literature
     )
