@@ -468,7 +468,11 @@ def _strict_fullraw_probe(
                     if _fullraw_busy_event(result):
                         best_progress = result
                     source_candidates = int(result.get("candidate_fact_source_count") or 0)
-                    if source_candidates > 0 or idx + 1 >= len(queries):
+                    complete_source_bundle = (
+                        status == "complete"
+                        and int(result.get("paper_count") or 0) >= MIN_DIRECT_SOURCES
+                    )
+                    if source_candidates > 0 or complete_source_bundle or idx + 1 >= len(queries):
                         break
                     if status in {"complete", "complete_no_hits", "no_hits"}:
                         continue

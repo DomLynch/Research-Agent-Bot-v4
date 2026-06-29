@@ -1965,7 +1965,7 @@ def test_business_sweep_fullraw_probe_tries_compact_alpha_query(
     assert len(result["_papers"]) == 5
 
 
-def test_business_sweep_fullraw_probe_skips_complete_source_poor_query(
+def test_business_sweep_fullraw_probe_keeps_complete_source_poor_query_for_enrichment(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
     import agent.topic_discovery as topic_discovery_mod
@@ -2014,13 +2014,11 @@ def test_business_sweep_fullraw_probe_skips_complete_source_poor_query(
         include_papers=True,
     )
 
-    assert calls == [
-        "platform strategy network",
-        "platform strategy network performance",
-    ]
+    assert calls == ["platform strategy network"]
     assert result["status"] == "complete"
-    assert result["query"] == "platform strategy network performance"
-    assert result["candidate_fact_source_count"] == 5
+    assert result["query"] == "platform strategy network"
+    assert result["paper_count"] == 10
+    assert result["candidate_fact_source_count"] == 0
 
 
 def test_business_fullraw_queries_are_compact_deduped_and_alpha_shaped(
