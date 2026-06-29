@@ -6,6 +6,7 @@ import datetime as dt
 import fcntl
 import importlib
 import json
+import math
 import os
 import re
 import signal
@@ -173,6 +174,12 @@ def _business_fullraw_query_limit() -> int:
         return max(1, int(os.environ.get("BUSINESS_SWEEP_FULLRAW_QUERY_LIMIT", "3")))
     except ValueError:
         return 3
+
+
+def _business_fullraw_poll_attempts(poll_seconds: float) -> int:
+    if poll_seconds <= 0:
+        return 1
+    return max(1, math.ceil(_business_fullraw_advance_max_seconds() / poll_seconds))
 
 
 def _fullraw_busy_event(event: dict[str, Any]) -> bool:
@@ -347,10 +354,16 @@ def _strict_fullraw_probe(
         ))
         os.environ[timeout_key] = str(timeout_seconds)
         os.environ[sweep_wait_key] = str(timeout_seconds)
-        os.environ[attempts_key] = str(max(1, int(timeout_seconds // 2.0)))
-        os.environ[poll_seconds_key] = os.environ.get(
-            "TOPIC_DISCOVERY_BUSINESS_FULLRAW_POLL_SECONDS", "15",
+        try:
+            poll_seconds = float(os.environ.get(
+                "TOPIC_DISCOVERY_BUSINESS_FULLRAW_POLL_SECONDS", "15",
+            ))
+        except ValueError:
+            poll_seconds = 15.0
+        os.environ[poll_seconds_key] = str(
+            int(poll_seconds) if poll_seconds.is_integer() else poll_seconds
         )
+        os.environ[attempts_key] = str(_business_fullraw_poll_attempts(poll_seconds))
         if _business_fullraw_priority_enabled():
             os.environ[priority_key] = "1"
 

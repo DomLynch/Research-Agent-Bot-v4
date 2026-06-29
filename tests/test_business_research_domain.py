@@ -1262,7 +1262,7 @@ def test_business_sweep_fullraw_probe_inherits_fullraw_search_budget(
         "client_timeout": "7200.0",
         "limit": "10",
         "timeout": "7200.0",
-        "attempts": "3600",
+        "attempts": "4",
         "priority": "1",
         "poll_seconds": "15",
         "foreground_budget": "7200",
@@ -1380,7 +1380,7 @@ def test_business_sweep_fullraw_probe_defaults_to_strict_sweep_budget(
     assert captured == {
         "client_timeout": "2400.0",
         "timeout": "2400.0",
-        "attempts": "1200",
+        "attempts": "4",
         "foreground_budget": "2400",
     }
     assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS") is None
