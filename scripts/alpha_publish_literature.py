@@ -675,7 +675,7 @@ def _heterogeneity_matrix_lines(
     for paper in papers:
         fact = paper.get("source_fact")
         fact = fact if isinstance(fact, dict) else {}
-        metric = str(fact.get("endpoint") or fact.get("metric") or "").strip()
+        metric = _endpoint_context_label(paper, topic, non_bio=non_bio)
         direction = _paper_effect_direction(paper, topic)
         finding = _display_finding(fact, direction)
         role = _paper_evidence_role(paper, topic, profile_slug)
@@ -966,6 +966,16 @@ def _exposure_context_label(paper: Json, *, non_bio: bool) -> str:
     base = str(fact.get("intervention") or "").strip()
     if not non_bio:
         return base
+    title = title_key(" ".join(str(value or "") for value in (
+        paper.get("title"), paper.get("paper_title"),
+    )))
+    base_key = title_key(base)
+    if (
+        base and base_key and base_key in title
+        and "factors affecting" not in title
+        and f"effect of {base_key}" in title
+    ):
+        return base
     text = title_key(" ".join(str(value or "") for value in (
         paper.get("title"), paper.get("paper_title"), fact.get("canonical_phrase"), base,
     )))
@@ -980,6 +990,30 @@ def _exposure_context_label(paper: Json, *, non_bio: bool) -> str:
     if {"flexibility", "collaboration", "agility"} & set(text.split()):
         return "flexibility, collaboration, and agility antecedents"
     return base
+
+
+def _performance_endpoint_label(topic: str, text: str) -> str:
+    topic_text = topic.replace("_", " ")
+    if "performance" not in text or "performance" in topic_text:
+        return ""
+    words = topic_text.split()
+    if len(words) >= 2:
+        candidate = " ".join((*words[:-1], "performance"))
+        if candidate in text or "and performance" in text:
+            return candidate
+    return f"{topic_text} performance"
+
+
+def _endpoint_context_label(paper: Json, topic: str, *, non_bio: bool) -> str:
+    fact = paper.get("source_fact")
+    fact = fact if isinstance(fact, dict) else {}
+    endpoint = str(fact.get("endpoint") or fact.get("metric") or "").strip()
+    if not non_bio or not _endpoint_mirrors_topic(endpoint, topic):
+        return endpoint
+    text = title_key(" ".join(str(value or "") for value in (
+        paper.get("title"), paper.get("paper_title"), fact.get("canonical_phrase"),
+    )))
+    return _performance_endpoint_label(topic, text) or endpoint
 
 
 def _outcome_family(endpoint: Any) -> str:
@@ -1024,11 +1058,8 @@ def _source_fact_endpoint_label(fact: Json, topic: str) -> str:
 def _title_endpoint_label(label: str, topic: str, papers: list[Json]) -> str:
     if label != "the stated downstream outcome":
         return label
-    topic_text = topic.replace("_", " ")
-    source_titles = " ".join(str(paper.get("title") or "").lower() for paper in papers)
-    if "performance" in source_titles and "performance" not in topic_text:
-        return f"{topic_text} performance"
-    return topic_text
+    source_text = title_key(" ".join(str(paper.get("title") or "") for paper in papers))
+    return _performance_endpoint_label(topic, source_text) or topic.replace("_", " ")
 
 
 def _bounded_signal_sentence(
@@ -1346,6 +1377,8 @@ def payload(
                 if key == "population" else
                 _exposure_context_label(paper, non_bio=non_bio)
                 if key == "intervention" else
+                _endpoint_context_label(paper, topic, non_bio=non_bio)
+                if key == "endpoint" else
                 str(fact.get(key) or "").strip()
             )
             if value:
@@ -1572,6 +1605,12 @@ def payload(
         "reason": "deterministic_boundary_only",
         "content_hash": hashlib.sha256(synthesis.encode("utf-8")).hexdigest(),
     }
+    post_matrix_note = (
+        "Audit note: effect-bearing rows stay metric-specific; "
+        "context/antecedent/model rows are excluded from effect support and no "
+        "rows are pooled."
+        if thin_non_bio_scope else synthesis
+    )
     lines.extend([
         "",
         "## Source synthesis",
@@ -1584,7 +1623,7 @@ def payload(
         "",
         *_heterogeneity_matrix_lines(selected, topic, profile.slug),
         "",
-        synthesis,
+        post_matrix_note,
         "",
         *(
             [
@@ -1684,8 +1723,8 @@ def payload(
         **({"revision_of": parent_submission_id} if parent_submission_id else {}),
     }
     title_tail = (
-        f"{_title_endpoint_label(directional_endpoints[0], topic, selected)} "
-        f"and {_title_endpoint_label(nullish_endpoints[0], topic, selected)} evidence"
+        f"directional {_title_endpoint_label(directional_endpoints[0], topic, selected)} "
+        f"vs null/mixed {_title_endpoint_label(nullish_endpoints[0], topic, selected)} evidence"
         if thin_non_bio_scope and directional_endpoints and nullish_endpoints else
         f"heterogeneity map across {join_contexts(outcome_families[:3])} receipts"
         if non_bio and len(outcome_families) >= 2 else

@@ -9647,7 +9647,7 @@ def test_source_literature_renderer_feedback_gets_one_bounded_retry(
     daily._write_json(final_run / "source_literature_payload.json", {
         "title": (
             "supply chain resilience performance: "
-            "supply chain performance and firm performance evidence"
+            "directional supply chain performance vs null/mixed firm performance evidence"
         ),
         "markdown": "## Evidence role definitions\n\n- directional association: revised label",
     })
@@ -9738,7 +9738,7 @@ def test_source_literature_unowned_title_gets_one_bounded_retry(
     daily._write_json(final_run / "source_literature_payload.json", {
         "title": (
             "supply chain resilience performance: "
-            "supply chain performance and firm performance evidence"
+            "directional supply chain performance vs null/mixed firm performance evidence"
         ),
         "markdown": "## Evidence role definitions\n\n- directional association: revised label",
     })
@@ -12959,12 +12959,14 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     markdown = payload["markdown"]
     assert payload["title"] == (
         "supply chain resilience performance: "
-        "supply chain performance and firm performance evidence"
+        "directional supply chain performance vs null/mixed firm performance evidence"
     )
-    assert "directional association: 1 receipt(s)" in markdown
-    assert "antecedent/support: 1 receipt(s)" in markdown
-    assert "descriptive/modeling: 2 receipt(s)" in markdown
-    assert "null/mixed: 1 receipt(s)" in markdown
+    assert (
+        "Evidence role summary: direction-bearing evidence base k=1; "
+        "null/mixed outcome receipts k=1; context/antecedent/model "
+        "receipts k=3 excluded from effect support."
+    ) in markdown
+    assert "directional association: 1 receipt(s)" not in markdown
     assert "other/mixed: 5 receipt(s)" not in markdown
     assert "fallback" not in markdown.lower()
     assert "Bounded signal:" in markdown
@@ -12973,11 +12975,6 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "direction-bearing evidence base k=1" in markdown
     assert "context/antecedent/model receipts k=3 excluded from effect support" in markdown
     assert "It excludes duplicate reports, metadata-only title matches" in markdown
-    assert "Substantive signal:" in markdown
-    assert "direction-bearing evidence is limited to supply chain performance" in markdown
-    assert "antecedent/support receipts contextualize supply chain performance" in markdown
-    assert "null/mixed receipts concern firm performance" in markdown
-    assert "descriptive/modeling receipts only contextualize resilience scoring model" in markdown
     assert "Resolve the directional/null conflict" in markdown
     assert "supply chain performance and firm performance" in markdown
     assert "inside one matched industry, comparator, and metric frame" in markdown
@@ -12994,7 +12991,11 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "automotive firms" in markdown
     assert "chemical firms" in markdown
     assert "manufacturing firms" in markdown
-    assert "Concrete contrast:" in markdown
+    assert (
+        "Audit note: effect-bearing rows stay metric-specific; "
+        "context/antecedent/model rows are excluded from effect support and no "
+        "rows are pooled."
+    ) in markdown
     assert "## Heterogeneity matrix" in markdown
     assert "## Evidence role definitions" in markdown
     assert "## Directional grouping" not in markdown
@@ -13018,6 +13019,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "hypotheses of a positive impact" in markdown
     assert "have been rejected" in markdown
     assert "method or modelling receipt; no direct effect estimate extracted" in markdown
+    assert "Policy/exposure/practice: supply chain resilience" in markdown
     assert "Finding: The aim of this study is to identify" not in markdown
 
 
