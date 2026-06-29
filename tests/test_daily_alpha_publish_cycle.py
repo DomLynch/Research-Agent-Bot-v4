@@ -12353,7 +12353,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     markdown = payload["markdown"]
     assert payload["title"] == (
         "supply chain resilience performance: "
-        "evidence-base heterogeneity map across receipts"
+        "heterogeneity map across firm-level, chain-level, and business-outcome receipts"
     )
     assert "directional estimate: 2 receipt(s)" in markdown
     assert "descriptive/modeling: 2 receipt(s)" in markdown
@@ -12361,7 +12361,10 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "other/mixed: 5 receipt(s)" not in markdown
     assert "fallback" not in markdown.lower()
     assert "Bounded signal:" in markdown
-    assert "metric-and-setting contrast, not a generalized performance claim" in markdown
+    assert "multi-outcome heterogeneity map across firm-level, chain-level, and business-outcome receipts" in markdown
+    assert "between outcome families, not within one harmonized performance outcome" in markdown
+    assert "direction-bearing evidence base k=2" in markdown
+    assert "context-only method/model receipts k=2 excluded from effect support" in markdown
     assert "It excludes duplicate reports, metadata-only title matches" in markdown
     assert "Substantive signal:" in markdown
     assert "direction-bearing receipts support supply chain performance" in markdown

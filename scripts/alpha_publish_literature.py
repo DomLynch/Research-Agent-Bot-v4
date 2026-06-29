@@ -741,12 +741,12 @@ def _evidence_role_summary(papers: list[Json], topic: str = "", profile_slug: st
         elif label in {"descriptive/modeling", "non-clinical/predictive"}:
             context_only += 1
     parts = [
-        f"direction-bearing receipts: {directional}",
-        f"null/mixed outcome receipts: {nullish}",
+        f"direction-bearing evidence base k={directional}",
+        f"null/mixed outcome receipts k={nullish}",
     ]
     if context_only:
         parts.append(
-            f"non-directional method/model receipts excluded from effect support: {context_only}",
+            f"context-only method/model receipts k={context_only} excluded from effect support",
         )
     return "; ".join(parts)
 
@@ -872,13 +872,63 @@ def _source_context_label(paper: Json, *, non_bio: bool) -> str:
     return join_contexts(labels[:2]) if labels else (population or "mixed firms/settings")
 
 
+def _exposure_context_label(paper: Json, *, non_bio: bool) -> str:
+    fact = paper.get("source_fact")
+    fact = fact if isinstance(fact, dict) else {}
+    base = str(fact.get("intervention") or "").strip()
+    if not non_bio:
+        return base
+    text = title_key(" ".join(str(value or "") for value in (
+        paper.get("title"), paper.get("paper_title"), fact.get("canonical_phrase"), base,
+    )))
+    if {"artificial", "intelligence"} <= set(text.split()) or "collaboration" in text:
+        return "AI, adaptive capability, and collaboration antecedents"
+    if "visibility" in text:
+        return "supply chain visibility and capability antecedents"
+    if "disruption" in text:
+        return "supply chain disruption context"
+    if {"fuzzy", "ahp"} <= set(text.split()) or "vikor" in text:
+        return "Pythagorean fuzzy AHP-VIKOR modelling"
+    if {"flexibility", "collaboration", "agility"} & set(text.split()):
+        return "flexibility, collaboration, and agility antecedents"
+    return base
+
+
+def _outcome_family(endpoint: Any) -> str:
+    text = title_key(endpoint)
+    words = set(text.split())
+    if "firm" in words or "firms" in words:
+        return "firm-level"
+    if "supply" in words and "chain" in words:
+        return "chain-level"
+    if "model" in words or "scoring" in words:
+        return "business-outcome"
+    if "business" in words:
+        return "business-outcome"
+    return " ".join(text.split()[:3]) or "outcome-specific"
+
+
+def _outcome_families(facts: list[Json]) -> list[str]:
+    seen = {
+        _outcome_family(fact.get("endpoint") or fact.get("metric"))
+        for fact in facts
+        if str(fact.get("endpoint") or fact.get("metric") or "").strip()
+    }
+    priority = ("firm-level", "chain-level", "business-outcome")
+    ordered = [family for family in priority if family in seen]
+    ordered.extend(sorted(seen - set(ordered)))
+    return ordered
+
+
 def _bounded_signal_sentence(
     topic: str,
     endpoints_by_label: dict[str, list[str]],
     *,
     non_bio: bool,
+    outcome_families: list[str] | None = None,
 ) -> str:
     topic_text = topic.replace("_", " ")
+    family_text = join_contexts((outcome_families or [])[:3])
     directional = list(dict.fromkeys(
         endpoints_by_label.get("directional estimate", [])
         + endpoints_by_label.get("directionally favorable", []),
@@ -893,10 +943,12 @@ def _bounded_signal_sentence(
     ))
     if non_bio and directional and nullish:
         return (
-            f"Bounded signal: {topic_text} has direction-bearing receipts for "
+            f"Bounded signal: {topic_text} is a multi-outcome heterogeneity map"
+            f"{f' across {family_text} receipts' if family_text else ''}: "
+            "direction-bearing receipts cover "
             f"{', '.join(directional[:2])}, but {', '.join(nullish[:2])} remains "
-            "null/mixed; this is a metric-and-setting contrast, not a generalized "
-            "performance claim."
+            "null/mixed; the contrast is between outcome families, not within one "
+            "harmonized performance outcome."
         )
     if non_bio and directional:
         tail = (
@@ -1178,6 +1230,8 @@ def payload(
             value = (
                 _source_context_label(paper, non_bio=non_bio)
                 if key == "population" else
+                _exposure_context_label(paper, non_bio=non_bio)
+                if key == "intervention" else
                 str(fact.get(key) or "").strip()
             )
             if value:
@@ -1198,6 +1252,7 @@ def payload(
         value for paper in selected
         if (value := _source_context_label(paper, non_bio=non_bio))
     })
+    outcome_families = _outcome_families(facts)
     interventions = sorted({
         str(fact.get("intervention") or "").strip() for fact in facts
         if str(fact.get("intervention") or "").strip()
@@ -1231,6 +1286,7 @@ def payload(
                 non_bio_signal_parts.append(f"{prefix} {', '.join(endpoints[:3])}")
     bounded_signal = _bounded_signal_sentence(
         topic, endpoints_by_label, non_bio=non_bio,
+        outcome_families=outcome_families,
     )
     directions = [_paper_effect_direction(paper, topic) for paper in selected]
     all_favorable = bool(directions) and all(
@@ -1242,6 +1298,8 @@ def payload(
         and "non-clinical/predictive" in direction_text
     )
     lead = (
+        f"This receipt-backed scoping note is a multi-outcome heterogeneity map for {topic}: "
+        if non_bio and len(outcome_families) >= 2 else
         f"This receipt-backed scoping note maps separated evidence fronts for {topic}: "
         if split_front else
         f"This receipt-backed scoping note has one bounded signal: {topic} shows "
@@ -1254,7 +1312,7 @@ def payload(
     synthesis = (
         f"{lead}{signal_label} across this "
         f"{len(bundle)}-source {type_text} bundle ({year_text}). {group_label}: "
-        f"{direction_text}. The source facts cover "
+        f"{role_text}. Direction labels for audit: {direction_text}. The source facts cover "
         f"{len(populations) or 'multiple'} population/setting context(s) and "
         f"{len(interventions) or 'multiple'} "
         f"{'policy/exposure/practice' if non_bio else 'intervention/exposure'} context(s), "
@@ -1303,6 +1361,12 @@ def payload(
             "only compared within their named metric; firm-performance, supply-chain "
             "performance, and modelling receipts are not treated as one outcome."
         )
+        if outcome_families:
+            synthesis += (
+                " Outcome families named here are "
+                f"{join_contexts(outcome_families[:4])}; this is not one "
+                "harmonized SCR-to-performance endpoint."
+            )
     if contrast_text:
         synthesis += " " + contrast_text
     abstract_text = synthesis
@@ -1449,6 +1513,8 @@ def payload(
         "title": (
             f"{topic.replace('_', ' ')}: "
             + (
+                f"heterogeneity map across {join_contexts(outcome_families[:3])} receipts"
+                if non_bio and len(outcome_families) >= 2 else
                 "separated intervention and predictive evidence fronts"
                 if split_front and not non_bio else
                 "separated policy/exposure and predictive evidence fronts"
