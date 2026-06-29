@@ -127,6 +127,20 @@ def _native_research_object_payload(payload: Json) -> Json:
     return native
 
 
+def _legacy_fallback_payload(payload: Json) -> Json:
+    fallback = dict(payload)
+    metadata: Json = dict(fallback.get("metadata") or {})
+    article_type = str(fallback.get("article_type") or metadata.get("article_type") or "")
+    if article_type in {"", "alpha_memo"}:
+        article_type = "rapid_evidence_synthesis"
+    fallback["article_type"] = article_type
+    fallback.setdefault("research_mode", "source_grounded_synthesis")
+    metadata["article_type"] = article_type
+    metadata.setdefault("research_mode", fallback["research_mode"])
+    fallback["metadata"] = metadata
+    return fallback
+
+
 def http_submitter(url: str, token: str) -> Submitter:
     def legacy_url() -> str:
         parts = urllib.parse.urlsplit(url)
@@ -161,7 +175,7 @@ def http_submitter(url: str, token: str) -> Submitter:
         body_payload = _native_research_object_payload(payload) if native else payload
         result = send(url, body_payload, native=native)
         if native and result.get("status") == 404 and "not found" in str(result.get("response", "")).lower():
-            fallback = send(legacy_url(), payload, native=False)
+            fallback = send(legacy_url(), _legacy_fallback_payload(payload), native=False)
             fallback["fallback_from_url"] = url
             fallback["fallback_reason"] = "native_research_objects_not_found"
             return fallback

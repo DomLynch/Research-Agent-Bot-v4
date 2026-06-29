@@ -5917,6 +5917,7 @@ def test_http_submitter_falls_back_when_native_research_objects_route_missing(
         "title": "Minimum wage employment: bounded source map",
         "abstract": "A bounded source-grounded alpha memo.",
         "markdown": "## Signal\nMinimum wage effects vary by metric and context.",
+        "metadata": {"revision_of_object_id": "sub-parent-123"},
         "source_bundle": [],
     }
     result = daily._http_submitter(
@@ -5930,7 +5931,17 @@ def test_http_submitter_falls_back_when_native_research_objects_route_missing(
         "https://api.example/submissions",
     ]
     assert seen[0]["body"]["object_type"] == "proposal"
-    assert seen[1]["body"] == payload
+    assert seen[1]["body"] == {
+        **payload,
+        "article_type": "rapid_evidence_synthesis",
+        "research_mode": "source_grounded_synthesis",
+        "metadata": {
+            "article_type": "rapid_evidence_synthesis",
+            "research_mode": "source_grounded_synthesis",
+            "revision_of_object_id": "sub-parent-123",
+        },
+    }
+    assert payload["article_type"] == "alpha_memo"
 
 
 def test_successful_submit_records_submission_not_publication(tmp_path: Path) -> None:
