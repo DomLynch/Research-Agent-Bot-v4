@@ -609,6 +609,37 @@ def _paper_effect_direction(paper: Json, topic: str = "") -> str:
     return "non-clinical/predictive" if title_direction == "non-clinical/predictive" else direction
 
 
+def _non_bio_directional_performance_receipt(paper: Json) -> bool:
+    fact = paper.get("source_fact")
+    fact = fact if isinstance(fact, dict) else {}
+    text = title_key(" ".join(str(value or "") for value in (
+        paper.get("title"),
+        paper.get("paper_title"),
+        fact.get("canonical_phrase"),
+        fact.get("endpoint"),
+        fact.get("metric"),
+    )))
+    return bool(set(text.split()) & {
+        "performance", "profitability", "productivity", "returns", "return",
+        "revenue", "value", "margin", "margins",
+    })
+
+
+def _non_bio_mixed_significant_performance_receipt(paper: Json) -> bool:
+    fact = paper.get("source_fact")
+    fact = fact if isinstance(fact, dict) else {}
+    text = " ".join(str(value or "") for value in (
+        fact.get("canonical_phrase"),
+        fact.get("endpoint"),
+        fact.get("metric"),
+    )).casefold()
+    return (
+        _non_bio_directional_performance_receipt(paper)
+        and bool(re.search(r"\bsignificant\s+(?:effect|effects|influence|impact)s?\b", text))
+        and not re.search(r"\b(?:rejected|not supported|failed to support|no significant)\b", text)
+    )
+
+
 def _fact_complete(fact: Json) -> bool:
     phrase = str(fact.get("canonical_phrase") or "").strip()
     if not phrase:
@@ -647,9 +678,17 @@ def _uniform_favorable_cross_pico(papers: list[Json], min_sources: int) -> bool:
 
 def _paper_evidence_role(paper: Json, topic: str = "", profile_slug: str = "") -> str:
     direction = _paper_effect_direction(paper, topic)
+    if (
+        _non_biomedical(profile_slug)
+        and direction == "other/mixed"
+        and _non_bio_mixed_significant_performance_receipt(paper)
+    ):
+        return "directional association"
     label = _display_direction(direction, profile_slug)
     if label != "directional estimate" or not _non_biomedical(profile_slug):
         return label
+    if _non_bio_directional_performance_receipt(paper):
+        return "directional association"
     title = title_key(paper.get("title") or paper.get("paper_title") or "")
     exposure = title_key(_exposure_context_label(paper, non_bio=True))
     if "antecedent" in exposure or "factors affecting" in title:
@@ -1047,6 +1086,8 @@ def _endpoint_context_label(paper: Json, topic: str, *, non_bio: bool) -> str:
     fact = paper.get("source_fact")
     fact = fact if isinstance(fact, dict) else {}
     endpoint = str(fact.get("endpoint") or fact.get("metric") or "").strip()
+    if non_bio and title_key(endpoint) == "scp":
+        return "supply chain performance"
     if not non_bio or not _endpoint_mirrors_topic(endpoint, topic):
         return _topic_performance_endpoint(topic, endpoint) or endpoint
     text = title_key(" ".join(str(value or "") for value in (
@@ -1089,6 +1130,8 @@ def _endpoint_mirrors_topic(endpoint: str, topic: str) -> bool:
 
 def _source_fact_endpoint_label(fact: Json, topic: str) -> str:
     endpoint = str(fact.get("endpoint") or fact.get("metric") or "").strip()
+    if title_key(endpoint) == "scp":
+        return "supply chain performance"
     topic_performance = _topic_performance_endpoint(topic, endpoint)
     if topic_performance:
         return topic_performance
@@ -1817,7 +1860,7 @@ def payload(
     title_tail = (
         f"directional support for {_title_endpoint_label(directional_endpoints[0], topic, selected)} "
         f"but null or mixed support for {join_contexts(nullish_endpoints[:2])}"
-        if thin_non_bio_scope and directional_endpoints and nullish_endpoints else
+        if non_bio and directional_endpoints and nullish_endpoints else
         f"boundary map across {join_contexts(outcome_families[:3])} receipts"
         if non_bio and len(outcome_families) >= 2 else
         "separated intervention and predictive evidence fronts"

@@ -682,7 +682,7 @@ def _clean_endpoint_tail(value: str) -> str:
     )[0]
     tail = re.split(r"\bof\s+(?:a|an|the|chemical|manufacturing|listed|public|private)\b", tail, maxsplit=1)[0]
     words = [word for word in tail.split() if len(word) > 1]
-    return " ".join(words[:6]).strip()
+    return " ".join(words[:8]).strip()
 
 
 def _abstract_endpoint_phrase(topic: str, finding: str, artifact_text: str) -> str:

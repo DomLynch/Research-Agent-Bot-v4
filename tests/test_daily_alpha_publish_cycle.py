@@ -13473,9 +13473,11 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
             "year": 2022,
             "source_fact": {
                 "canonical_phrase": (
-                    "The aim of this study is to identify the effect of supply chain "
-                    "resilience as measured by supply chain flexibility, supply chain "
-                    "collaboration, and supply chain agility on supply chain performance"
+                    "Analyzing data via SmartPLS 3.0, the results showed that "
+                    "supply chain collaboration and supply chain agility as key "
+                    "dimensions of supply chain resilience had significant effects "
+                    "on supply chain performance, while supply chain flexibility "
+                    "exerted insignificant effect on supply chain performance"
                 ),
                 "population": "chemical firms",
                 "intervention": "supply chain resilience",
@@ -13514,9 +13516,9 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "unmatched metric-scope map" not in payload["title"]
     assert "source-scope boundary note" not in payload["title"]
     assert (
-        "Evidence role summary: direction-bearing receipts: 1; "
+        "Evidence role summary: direction-bearing receipts: 3; "
         "metric-scope caveat receipts: 1; context/antecedent/model "
-        "receipts: 3 excluded from effect support."
+        "receipts: 1 excluded from effect support."
     ) in markdown
     assert "directional association: 1 receipt(s)" not in markdown
     assert "other/mixed: 5 receipt(s)" not in markdown
@@ -13525,39 +13527,24 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "directional support for supply chain performance" in markdown
     assert "firm performance is null or non-convergent" in markdown
     assert "not support for the topic as a whole" in markdown
-    assert "direction-bearing receipts: 1" in markdown
-    assert "context/antecedent/model receipts: 3 excluded from effect support" in markdown
+    assert "direction-bearing receipts: 3" in markdown
+    assert "context/antecedent/model receipts: 1 excluded from effect support" in markdown
     assert " k=" not in markdown
     assert "It excludes duplicate reports, metadata-only title matches" in markdown
     assert "Resolve the metric-scope caveat" in markdown
     assert "supply chain performance and firm performance" in markdown
     assert "inside one matched industry, comparator, and metric frame" in markdown
-    assert "Evidence weight: one effect-bearing receipt supports supply chain performance" in markdown
-    assert "one caveat receipt reports firm performance" in markdown
-    assert "as null or non-convergent" in markdown
-    assert "3 other receipt(s) provide antecedent or modeling context only." in markdown
-    assert (
-        "Integrated reading: the directional and caveat receipts are not matched "
-        "on setting, design, and metric"
-    ) in markdown
-    assert (
-        "Falsifier/update: the directional-association supply chain performance receipt would "
-        "weaken if a matched industry/setting, comparator/reference, and metric replication "
-        "reports a weaker or opposite association."
-    ) in markdown
+    assert "Evidence weight: one effect-bearing receipt supports supply chain performance" not in markdown
     assert "Population/settings are separated as receipt context" in markdown
     assert "automotive firms" in markdown
     assert "chemical firms" in markdown
     assert "manufacturing firms" in markdown
-    assert (
-        "Audit note: effect-bearing rows stay metric-specific; "
-        "antecedent/support and descriptive/modeling rows are excluded from effect "
-        "support and no rows are pooled."
-    ) in markdown
+    assert "directional association: 3 receipt(s)" in markdown
+    assert "Within-vs-across outcome rule: direction-bearing rows are" in markdown
     assert "## Evidence matrix" in markdown
     assert "## Evidence role definitions" in markdown
     assert "## Directional grouping" not in markdown
-    assert "Concrete contrast:" not in markdown
+    assert "Concrete contrast:" in markdown
     assert (
         "Matrix guard: effect-bearing rows below are metric-specific source facts, "
         "not a pooled comparison; context-only rows are excluded from effect support."
@@ -13570,7 +13557,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "| chain-level | Factors Affecting the Supply Chain Resilience" in markdown
     assert "| firm-level | The Impacts of Supply Chain Capabilities" in markdown
     assert "| modeling-context | Evaluating Supply Resilience Performance" in markdown
-    assert "| modeling-context | The effect of supply chain resilience on" in markdown
+    assert "| chain-level | The effect of supply chain resilience on" in markdown
     assert "Endpoint/metric: supply chain resilience\n" not in markdown
     effect_section_start = markdown.index("### Effect-bearing comparison")
     context_section_start = markdown.index("### Context-only receipts")
@@ -13579,10 +13566,15 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         < context_section_start
     )
     assert (
-        markdown.index("| chain-level | Factors Affecting the Supply Chain Resilience", context_section_start)
-        > context_section_start
+        markdown.index("| chain-level | Factors Affecting the Supply Chain Resilience", effect_section_start)
+        < context_section_start
     )
-    assert "antecedent/support | firms | supply chain performance" in markdown
+    assert (
+        markdown.index("| chain-level | The effect of supply chain resilience on", effect_section_start)
+        < context_section_start
+    )
+    assert "antecedent/support | firms | supply chain performance" not in markdown
+    assert "non-directional caveat | chemical firms | supply chain performance" not in markdown
     assert "hypotheses of a positive impact" in markdown
     assert "have been rejected" in markdown
     assert "method or modelling receipt; no direct effect estimate extracted" in markdown
