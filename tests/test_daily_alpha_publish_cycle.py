@@ -10986,6 +10986,77 @@ def test_source_literature_fallback_tries_next_after_reviewer_revise(
     ]
 
 
+def test_source_literature_fallback_resubmits_clean_terminal_revise_same_cycle(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", raising=False)
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "usable_boundary", "paper_count": 9, "fact_source_count": 9}],
+    })
+    submitted_payloads: list[dict[str, Any]] = []
+    submission_ids = ["sub-clean-1", "sub-clean-2"]
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submitted_payloads.append(payload)
+        return {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": submission_ids[len(submitted_payloads) - 1]}},
+        }
+
+    def decision_fetcher(submission_id: str) -> dict[str, Any]:
+        if submission_id == "sub-clean-1":
+            return {
+                "status": "complete",
+                "decision": "revise",
+                "claim_support_verdict": "supported",
+                "notes": ["editorial decision is terminal; external author must resubmit"],
+                "required_revisions": [],
+                "major_issues": [],
+                "minor_issues": [],
+                "failed_checks": [],
+                "gate_failures": [],
+                "rubric_scores": {
+                    "claim_evidence_alignment": 5,
+                    "source_grounding": 5,
+                    "synthesis_quality": 5,
+                },
+                "resubmission": {"allowed": True},
+            }
+        return {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        }
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-11T19-45-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        source_paper_fetcher=lambda _topic, _limit: _usable_boundary_papers(),
+        submitter=submitter,
+        decision_fetcher=decision_fetcher,
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "usable_boundary"
+    assert [row["status"] for row in ledger["cycle_attempts"]] == [
+        "reviewer_revise", "published",
+    ]
+    assert len(submitted_payloads) == 2
+    assert submitted_payloads[1]["parent_submission_id"] == "sub-clean-1"
+    assert submitted_payloads[1]["metadata"]["revision_of"] == "sub-clean-1"
+    assert ledger["source_literature_fallback_attempts"][0]["terminal_resubmit_queued"] is True
+
+
 def test_source_literature_fallback_is_disabled_without_explicit_submit_flag(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

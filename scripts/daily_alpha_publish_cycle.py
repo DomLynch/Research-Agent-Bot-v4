@@ -2493,6 +2493,13 @@ def _source_literature_terminal_feedback_repair_needed(decision: Json) -> bool:
     )
 
 
+def _source_literature_clean_terminal_resubmit(decision: Json) -> bool:
+    return (
+        _clean_supported_revise(decision)
+        and "external author must resubmit" in _norm(_revision_notes(decision))
+    )
+
+
 def _source_literature_source_scope_repair_needed(
     runs_root: Path, domain: str | None, topic: str, decision: Json,
 ) -> bool:
@@ -6440,6 +6447,7 @@ def run_cycle(
                             _write_ledger(ledger_path, ledger)
                             return ledger
                         if final in {_DECISION_REJECTED, _DECISION_REVISE}:
+                            researka_decision = ledger.get("researka_decision", {})
                             ledger["cycle_attempts"].append({
                                 "topic": literature_topic,
                                 "run_dir": candidate.get("run_dir"),
@@ -6449,10 +6457,27 @@ def run_cycle(
                                     if final == _DECISION_REVISE else
                                     publish_status.CycleStatus.REVIEWER_REJECTED.value
                                 ),
-                                "researka_decision": ledger.get("researka_decision", {}),
+                                "researka_decision": researka_decision,
                                 "public_page_check": ledger.get("public_page_check"),
                             })
                             _write_ledger(ledger_path, ledger)
+                            if (
+                                final == _DECISION_REVISE
+                                and isinstance(researka_decision, dict)
+                                and _source_literature_clean_terminal_resubmit(
+                                    researka_decision,
+                                )
+                                and literature_topics.count(literature_topic) < 2
+                            ):
+                                repair_decisions[literature_topic] = (
+                                    _decision_with_resubmission_parent(
+                                        researka_decision, submission_id,
+                                    )
+                                )
+                                repair_topic_set.add(literature_topic)
+                                literature_topics.append(literature_topic)
+                                fallback_attempt["terminal_resubmit_queued"] = True
+                                continue
                             if idx + 1 < len(literature_topics):
                                 continue
                             return ledger
