@@ -1116,6 +1116,89 @@ def test_sync_backfills_decision_for_submitted_fingerprint_only_record(
     assert fp in daily._repairable_rejected_fingerprints(root / "_daily_ledger")
 
 
+def test_synced_source_literature_decision_preserves_domain_for_repair(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    run_dir = root / "supply_chain_resilience_performance-source-literature-2026-06-28T23-08-06Z"
+    run_dir.mkdir(parents=True)
+    run_dir.joinpath("source_literature_memo.md").write_text("# Source memo\n", encoding="utf-8")
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+        "date": "2026-06-28T23-08-06Z",
+        "domain": {"slug": "business_research"},
+        "topic": "supply_chain_resilience_performance",
+        "run_dir": run_dir.name,
+        "fingerprint": "fp-source-lit",
+        "submission_id": "sub-source-lit",
+    }])
+
+    summary = daily.sync_submission_decisions(
+        root,
+        fetcher=lambda _sid: {
+            "status": "complete",
+            "decision": "reject",
+            "claim_support_verdict": "partially_supported",
+            "required_revisions": ["Apply directional grouping per receipt."],
+            "resubmission": {"allowed": True},
+        },
+        page_fetcher=lambda _url: {"ok": False, "status": 0},
+    )
+
+    assert summary["updated"] == 1
+    ledgers = list((root / "_daily_ledger").glob("*decision-sub-sour.json"))
+    assert len(ledgers) == 1
+    synthetic = json.loads(ledgers[0].read_text(encoding="utf-8"))
+    assert synthetic["domain"]["slug"] == "business_research"
+    assert synthetic["candidate"]["domain"]["slug"] == "business_research"
+    assert daily._ledger_domain(synthetic) == "business_research"
+    repairs = daily._repairable_source_literature_decisions(
+        root, "business_research", limit=3,
+    )
+    assert list(repairs) == ["supply_chain_resilience_performance"]
+
+
+def test_legacy_synced_source_literature_decision_uses_submission_record_domain(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    run_dir = root / "supply_chain_resilience_performance-source-literature-2026-06-28T23-08-06Z"
+    run_dir.mkdir(parents=True)
+    run_dir.joinpath("source_literature_memo.md").write_text("# Source memo\n", encoding="utf-8")
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+        "date": "2026-06-28T23-08-06Z",
+        "domain": {"slug": "business_research"},
+        "topic": "supply_chain_resilience_performance",
+        "run_dir": run_dir.name,
+        "fingerprint": "fp-source-lit",
+        "submission_id": "sub-source-lit",
+    }])
+    daily._write_json(root / "_daily_ledger" / "2026-06-28t23-08-06z-decision-sub-sour.json", {
+        "date": "2026-06-28T23-08-06Z",
+        "status": "reviewer_rejected",
+        "submitted": 1,
+        "published": 0,
+        "submitted_topic": "supply_chain_resilience_performance",
+        "submission_id": "sub-source-lit",
+        "candidate": {
+            "topic": "supply_chain_resilience_performance",
+            "run_dir": run_dir.name,
+            "fingerprint": "fp-source-lit",
+        },
+        "researka_decision": {
+            "decision": "reject",
+            "claim_support_verdict": "partially_supported",
+            "required_revisions": ["Apply directional grouping per receipt."],
+            "resubmission": {"allowed": True},
+        },
+    })
+
+    repairs = daily._repairable_source_literature_decisions(
+        root, "business_research", limit=3,
+    )
+
+    assert list(repairs) == ["supply_chain_resilience_performance"]
+
+
 def test_default_memo_refresher_never_mutates_archive(tmp_path: Path) -> None:
     run = tmp_path / "runs" / "_archive" / "cycle" / "topic-evidence-ts"
     run.mkdir(parents=True)

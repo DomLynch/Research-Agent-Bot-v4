@@ -1810,10 +1810,45 @@ def _ledger_domain(ledger: Json) -> str:
     if not isinstance(candidate, dict):
         candidate = {}
     return (
-        domain_slug(ledger.get("domain"))
+        domain_slug(ledger.get("domain_slug"))
+        or domain_slug(ledger.get("domain"))
+        or domain_slug(candidate.get("domain_slug"))
         or domain_slug(candidate.get("domain"))
         or load_domain_profile(None).slug
     )
+
+
+def _ledger_has_explicit_domain(ledger: Json) -> bool:
+    candidate = ledger.get("candidate")
+    if not isinstance(candidate, dict):
+        candidate = {}
+    return bool(
+        domain_slug(ledger.get("domain_slug"))
+        or domain_slug(ledger.get("domain"))
+        or domain_slug(candidate.get("domain_slug"))
+        or domain_slug(candidate.get("domain"))
+    )
+
+
+def _submitted_record_domain_for_ledger(runs_root: Path, ledger: Json) -> str:
+    submission_id = str(ledger.get("submission_id") or "").strip()
+    if not submission_id:
+        return ""
+    data = _json(runs_root / "_daily_ledger" / "_submitted_fingerprints.json", [])
+    if not isinstance(data, list):
+        return ""
+    for row in data:
+        if not isinstance(row, dict):
+            continue
+        if str(row.get("submission_id") or "").strip() == submission_id:
+            return _row_domain(row)
+    return ""
+
+
+def _ledger_domain_for_runs(runs_root: Path, ledger: Json) -> str:
+    if _ledger_has_explicit_domain(ledger):
+        return _ledger_domain(ledger)
+    return _submitted_record_domain_for_ledger(runs_root, ledger) or _ledger_domain(ledger)
 
 
 def _same_domain(record_domain: str, domain: str | None) -> bool:
@@ -2088,7 +2123,10 @@ def _source_literature_submission_count(
     count = 0
     for path in (runs_root / "_daily_ledger").glob("*.json"):
         ledger = _json(path, {})
-        if not isinstance(ledger, dict) or not _same_domain(_ledger_domain(ledger), domain):
+        if (
+            not isinstance(ledger, dict)
+            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
+        ):
             continue
         candidate = ledger.get("candidate")
         if not isinstance(candidate, dict):
@@ -2121,7 +2159,10 @@ def _repairable_source_literature_decisions(
     )
     for path in sorted((runs_root / "_daily_ledger").glob("*.json"), reverse=True):
         ledger = _json(path, {})
-        if not isinstance(ledger, dict) or not _same_domain(_ledger_domain(ledger), domain):
+        if (
+            not isinstance(ledger, dict)
+            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
+        ):
             continue
         candidate = ledger.get("candidate")
         candidate_topic = str(candidate.get("topic") or "") if isinstance(candidate, dict) else ""
@@ -2150,7 +2191,10 @@ def _exhausted_source_literature_topics(
     counts: dict[str, int] = {}
     for path in (runs_root / "_daily_ledger").glob("*.json"):
         ledger = _json(path, {})
-        if not isinstance(ledger, dict) or not _same_domain(_ledger_domain(ledger), domain):
+        if (
+            not isinstance(ledger, dict)
+            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
+        ):
             continue
         candidate = ledger.get("candidate")
         if not isinstance(candidate, dict):
@@ -4241,12 +4285,16 @@ def _sync_submission_decisions_unlocked(
                 continue
             synthetic_ledger: Json = {
                 "date": row.get("date"),
+                "domain": row.get("domain"),
+                "domain_slug": row.get("domain_slug"),
                 "status": publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value,
                 "submitted": 1,
                 "published": 0,
                 "submitted_topic": row.get("topic"),
                 "submission_id": submission_id,
                 "candidate": {
+                    "domain": row.get("domain"),
+                    "domain_slug": row.get("domain_slug"),
                     "topic": row.get("topic"),
                     "run_dir": row.get("run_dir"),
                     "fingerprint": row.get("fingerprint"),
