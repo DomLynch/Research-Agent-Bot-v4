@@ -61,6 +61,7 @@ _BUSINESS_FULLRAW_RESULT_LIMIT = "10"
 _BUSINESS_FULLRAW_LOCK_PATH = "/tmp/researka-v4-business-fullraw.lock"
 _BUSINESS_FULLRAW_LOCK_WAIT_SECONDS = "0"
 _BUSINESS_FULLRAW_BACKOFF_SECONDS = "180"
+_BUSINESS_FULLRAW_ADVANCE_MAX_SECONDS = "60"
 _FULLRAW_ENV_ALIASES = {
     "V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL": ("RESEARKA_FULLRAW_SEARCH_URL",),
     "V5_MEMO_FULL_RAW_INDEX_TOKEN": (
@@ -143,6 +144,19 @@ def _business_fullraw_backoff_seconds() -> float:
         return float(_BUSINESS_FULLRAW_BACKOFF_SECONDS)
 
 
+def _business_fullraw_advance_max_seconds() -> float:
+    try:
+        return max(
+            0.0,
+            float(
+                os.environ.get("TOPIC_DISCOVERY_BUSINESS_FULLRAW_ADVANCE_MAX_SECONDS")
+                or _BUSINESS_FULLRAW_ADVANCE_MAX_SECONDS
+            ),
+        )
+    except ValueError:
+        return float(_BUSINESS_FULLRAW_ADVANCE_MAX_SECONDS)
+
+
 def _business_fullraw_priority_enabled() -> bool:
     return os.environ.get(
         "TOPIC_DISCOVERY_BUSINESS_FULLRAW_PRIORITY", "1",
@@ -163,6 +177,27 @@ def _fullraw_busy_event(event: dict[str, Any]) -> bool:
             "async_queue_saturated", "async_queued", "async_running", "busy",
             "failed", "health_unavailable", "in_progress_cache_hit",
             "incomplete_receipt", "inflight_saturated", "queue_saturated",
+        }
+        or str(event.get("async_status") or "") in {"queued", "running"}
+        or event.get("partial_shard_search") is True
+    )
+
+
+def _fullraw_can_try_next_query(event: dict[str, Any]) -> bool:
+    if not _business_fullraw_priority_enabled():
+        return False
+    status = str(event.get("status") or "")
+    if status in {
+        "busy", "failed", "health_unavailable", "inflight_saturated",
+        "queue_saturated", "async_queue_saturated",
+    }:
+        return False
+    if event.get("key_queued") is True or event.get("key_running") is True:
+        return False
+    return (
+        status in {
+            "async_queued", "async_running", "in_progress_cache_hit",
+            "in_progress_poll_due", "incomplete_receipt",
         }
         or str(event.get("async_status") or "") in {"queued", "running"}
         or event.get("partial_shard_search") is True
@@ -321,10 +356,12 @@ def _strict_fullraw_probe(
         try:
             with httpx_mod.Client(timeout=timeout_seconds) as client:
                 result: dict[str, Any] = {}
+                best_progress: dict[str, Any] = {}
                 attempted: list[str] = []
                 result_limit = _business_fullraw_result_limit()
                 queries = _business_fullraw_queries(topic)
                 for idx, query in enumerate(queries):
+                    query_started = time.monotonic()
                     attempted.append(query)
                     events = discovery.__dict__.get("_FULLRAW_PROBE_EVENTS", [])
                     before = len(events)
@@ -339,7 +376,14 @@ def _strict_fullraw_probe(
                     async_sweep = topic_discovery_mod.__dict__.get("_FULLRAW_LAST_ASYNC_SWEEP", {})
                     receipt_complete = bool(discovery.__dict__["_fullraw_receipt_complete"](receipt))
                     events = discovery.__dict__.get("_FULLRAW_PROBE_EVENTS", [])
-                    event = events[-1] if len(events) > before else {}
+                    new_events = [
+                        event for event in events[before:]
+                        if isinstance(event, dict)
+                    ]
+                    event = next(
+                        (item for item in reversed(new_events) if _fullraw_busy_event(item)),
+                        new_events[-1] if new_events else {},
+                    )
                     status = (
                         "complete" if papers and receipt_complete else
                         "incomplete_receipt" if papers else
@@ -354,6 +398,30 @@ def _strict_fullraw_probe(
                         "async_status": (
                             async_sweep.get("status") if isinstance(async_sweep, dict) else None
                         ) or event.get("async_status"),
+                        "key_queued": (
+                            async_sweep.get("key_queued") if isinstance(async_sweep, dict) else None
+                        ) if isinstance(async_sweep, dict) and "key_queued" in async_sweep
+                        else event.get("key_queued"),
+                        "key_running": (
+                            async_sweep.get("key_running") if isinstance(async_sweep, dict) else None
+                        ) if isinstance(async_sweep, dict) and "key_running" in async_sweep
+                        else event.get("key_running"),
+                        "queued_count": (
+                            async_sweep.get("queued_count") if isinstance(async_sweep, dict) else None
+                        ) if isinstance(async_sweep, dict) and "queued_count" in async_sweep
+                        else event.get("queued_count"),
+                        "inflight_count": (
+                            async_sweep.get("inflight_count") if isinstance(async_sweep, dict) else None
+                        ) if isinstance(async_sweep, dict) and "inflight_count" in async_sweep
+                        else event.get("inflight_count"),
+                        "max_inflight": (
+                            async_sweep.get("max_inflight") if isinstance(async_sweep, dict) else None
+                        ) if isinstance(async_sweep, dict) and "max_inflight" in async_sweep
+                        else event.get("max_inflight"),
+                        "max_queue": (
+                            async_sweep.get("max_queue") if isinstance(async_sweep, dict) else None
+                        ) if isinstance(async_sweep, dict) and "max_queue" in async_sweep
+                        else event.get("max_queue"),
                         "shards_searched": (
                             receipt.get("shards_searched") if isinstance(receipt, dict) else None
                         ) or event.get("shards_searched"),
@@ -396,11 +464,25 @@ def _strict_fullraw_probe(
                     if include_papers:
                         result["_papers"] = source_papers
                     _record_fullraw_backoff(runs_root, topic, result)
+                    if _fullraw_busy_event(result):
+                        best_progress = result
                     source_candidates = int(result.get("candidate_fact_source_count") or 0)
-                    if source_candidates > 0 or idx + 1 >= len(queries) or status not in {
-                        "complete", "complete_no_hits", "no_hits",
-                    }:
+                    if source_candidates > 0 or idx + 1 >= len(queries):
                         break
+                    if status in {"complete", "complete_no_hits", "no_hits"}:
+                        continue
+                    if (
+                        _fullraw_can_try_next_query(result)
+                        and time.monotonic() - query_started
+                        <= _business_fullraw_advance_max_seconds()
+                    ):
+                        continue
+                    break
+                if (
+                    best_progress
+                    and result.get("status") in {"complete_no_hits", "no_hits"}
+                ):
+                    result = best_progress | {"attempted_queries": list(attempted)}
                 return result
         finally:
             signal.setitimer(signal.ITIMER_REAL, 0.0)
