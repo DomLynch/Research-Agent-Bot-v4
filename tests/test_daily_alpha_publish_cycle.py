@@ -13283,7 +13283,7 @@ def test_source_literature_payload_uses_economics_language(
         "human clinical",
     ):
         assert phrase not in lower
-    assert "firm-performance caveat:" in markdown
+    assert "metric-scope caveat:" in markdown
     assert "policy/exposure/practice" in markdown
     assert "matched design" in markdown
     assert "pooled elasticity" in markdown
@@ -13393,11 +13393,11 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     markdown = payload["markdown"]
     assert payload["title"] == (
         "supply chain resilience performance: "
-        "directional supply chain performance with firm performance caveat evidence"
+        "unmatched metric-scope map across firm-level, chain-level, and business-outcome receipts"
     )
     assert (
         "Evidence role summary: direction-bearing evidence base k=1; "
-        "business-outcome caveat receipts k=1; context/antecedent/model "
+        "metric-scope caveat receipts k=1; context/antecedent/model "
         "receipts k=3 excluded from effect support."
     ) in markdown
     assert "directional association: 1 receipt(s)" not in markdown
@@ -13405,7 +13405,8 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "fallback" not in markdown.lower()
     assert "Bounded signal:" in markdown
     assert "multi-outcome boundary map across firm-level, chain-level, and business-outcome receipts" in markdown
-    assert "between named outcome families, not support for the topic as a whole" in markdown
+    assert "unmatched scoping map across named outcome families" in markdown
+    assert "not support for the topic as a whole" in markdown
     assert "direction-bearing evidence base k=1" in markdown
     assert "context/antecedent/model receipts k=3 excluded from effect support" in markdown
     assert "It excludes duplicate reports, metadata-only title matches" in markdown
@@ -13415,7 +13416,8 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert (
         "Evidence weight: this bounded scope rests on k=1 directional association, "
         "k=1 caveat receipt, and k=3 context/antecedent/model receipts; "
-        "it keeps metric-specific support separate from broader business outcomes."
+        "it keeps metric-specific support separate from broader outcomes and does "
+        "not treat unmatched settings as a matched comparison."
     ) in markdown
     assert (
         "Falsifier/update: the directional-association supply chain performance receipt would "
@@ -13433,6 +13435,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "## Evidence matrix" in markdown
     assert "## Evidence role definitions" in markdown
     assert "## Directional grouping" not in markdown
+    assert "Concrete contrast:" not in markdown
     assert "### Effect-bearing comparison" in markdown
     assert "### Context-only receipts" in markdown
     assert "| Outcome family | Receipt | Evidence role | Population/setting | Metric | Extracted finding |" in markdown

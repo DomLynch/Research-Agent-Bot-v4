@@ -661,7 +661,7 @@ def _memo_role_label(label: str, profile_slug: str = "") -> str:
     if not _non_biomedical(profile_slug):
         return label
     return {
-        "null/mixed": "firm-performance caveat",
+        "null/mixed": "metric-scope caveat",
         "other/mixed": "non-directional caveat",
         "null/non-convergent": "non-directional caveat",
     }.get(label, label)
@@ -763,8 +763,8 @@ def _direction_category_lines(topic: str, profile_slug: str = "") -> list[str]:
             "policy, or institutional context rather than a policy-effect estimate.",
             "- descriptive/modeling: the receipt reports modelling or prediction "
             "rather than a policy-effect estimate.",
-            "- firm-performance caveat: the receipt constrains the directional "
-            "scope to the named metric rather than the full business outcome set.",
+            "- metric-scope caveat: the receipt constrains the directional "
+            "scope to the named metric rather than the broader outcome set.",
             "- non-directional caveat: the extracted finding is not directionally "
             "interpretable for the named metric.",
         ]
@@ -796,7 +796,7 @@ def _used_direction_category_lines(
         if (
             label in used_roles
             or (
-                label == "firm-performance caveat"
+                label == "metric-scope caveat"
                 and bool(used_roles & {"null/mixed", "other/mixed"})
             )
             or (
@@ -847,7 +847,7 @@ def _evidence_role_summary(papers: list[Json], topic: str = "", profile_slug: st
             context_only += 1
     parts = [
         f"direction-bearing evidence base k={directional}",
-        f"business-outcome caveat receipts k={nullish}",
+        f"metric-scope caveat receipts k={nullish}",
     ]
     if context_only:
         parts.append(
@@ -1124,8 +1124,9 @@ def _bounded_signal_sentence(
             f"Bounded signal: {topic_text} is a multi-outcome boundary map"
             f"{f' across {family_text} receipts' if family_text else ''}: "
             f"direction-bearing evidence is limited to {', '.join(directional[:2])}, "
-            f"while {', '.join(nullish[:2])} is the caveat outcome; the contrast is between "
-            "named outcome families, not support for the topic as a whole."
+            f"while {', '.join(nullish[:2])} is the caveat outcome. This is an "
+            "unmatched scoping map across named outcome families, not support "
+            "for the topic as a whole."
         )
     if non_bio and directional:
         tail = (
@@ -1461,7 +1462,7 @@ def payload(
         for label, prefix in (
             ("directional association", "direction-bearing evidence is limited to"),
             ("directional estimate", "direction-bearing evidence is limited to"),
-            ("null/mixed", "business-outcome caveat receipts concern"),
+            ("null/mixed", "metric-scope caveat receipts concern"),
             ("antecedent/support", "antecedent/support receipts contextualize"),
             ("descriptive/modeling", "descriptive/modeling receipts only contextualize"),
         ):
@@ -1492,13 +1493,16 @@ def payload(
         non_bio and directional_count <= 1 and nullish_count >= 1
         and context_only_count >= 1 and bool(directional_endpoints)
     )
+    if thin_non_bio_scope:
+        contrast_text = ""
     evidence_weight_note = ""
     if thin_non_bio_scope:
         evidence_weight_note = (
             f"Evidence weight: this bounded scope rests on k={directional_count} "
             f"directional association, k={nullish_count} caveat receipt, and "
             f"k={context_only_count} context/antecedent/model receipts; it keeps "
-            "metric-specific support separate from broader business outcomes. "
+            "metric-specific support separate from broader outcomes and does not "
+            "treat unmatched settings as a matched comparison. "
             f"Falsifier/update: the directional-association {directional_endpoints[0]} receipt "
             "would weaken if a matched setting and metric replication reports a "
             "weaker or opposite association."
@@ -1517,7 +1521,7 @@ def payload(
         and "non-clinical/predictive" in direction_text
     )
     lead = (
-        f"This receipt-backed scoping note is a bounded metric-scope map for {topic}: "
+        f"This receipt-backed scoping note is an unmatched metric-scope map for {topic}: "
         if thin_non_bio_scope else
         f"This receipt-backed scoping note is a multi-outcome boundary map for {topic}: "
         if non_bio and len(outcome_families) >= 2 else
@@ -1576,6 +1580,11 @@ def payload(
         )
     if non_bio_signal_parts:
         synthesis += " Substantive signal: " + "; ".join(non_bio_signal_parts) + "."
+    if thin_non_bio_scope:
+        synthesis += (
+            " The directional and caveat receipts are not matched on setting, "
+            "design, and metric; they are juxtaposed only to define source scope."
+        )
     if non_bio:
         synthesis += " Within-vs-across outcome rule: direction-bearing rows are "
         synthesis += (
@@ -1758,8 +1767,7 @@ def payload(
         **({"revision_of": parent_submission_id} if parent_submission_id else {}),
     }
     title_tail = (
-        f"directional {_title_endpoint_label(directional_endpoints[0], topic, selected)} "
-        f"with {_title_endpoint_label(nullish_endpoints[0], topic, selected)} caveat evidence"
+        f"unmatched metric-scope map across {join_contexts(outcome_families[:3])} receipts"
         if thin_non_bio_scope and directional_endpoints and nullish_endpoints else
         f"boundary map across {join_contexts(outcome_families[:3])} receipts"
         if non_bio and len(outcome_families) >= 2 else
