@@ -13107,8 +13107,12 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "### Context-only receipts" in markdown
     assert "| Outcome family | Receipt | Evidence role | Population/setting | Metric | Extracted finding |" in markdown
     assert "| chain-level | Supply chain resilience and performance of manufacturing firms" in markdown
+    assert "| manufacturing firms | supply chain performance | SCR has a significant positive effect on SCP |" in markdown
     assert "| chain-level | Factors Affecting the Supply Chain Resilience" in markdown
     assert "| firm-level | The Impacts of Supply Chain Capabilities" in markdown
+    assert "| modeling-context | Evaluating Supply Resilience Performance" in markdown
+    assert "| modeling-context | The effect of supply chain resilience on" in markdown
+    assert "Endpoint/metric: supply chain resilience\n" not in markdown
     effect_section_start = markdown.index("### Effect-bearing comparison")
     context_section_start = markdown.index("### Context-only receipts")
     assert (

@@ -679,10 +679,11 @@ def _heterogeneity_matrix_lines(
         direction = _paper_effect_direction(paper, topic)
         finding = _display_finding(fact, direction)
         role = _paper_evidence_role(paper, topic, profile_slug)
+        family = "modeling-context" if role == "descriptive/modeling" else _outcome_family(metric)
         row = (
             "| "
             + " | ".join((
-                _table_cell(_outcome_family(metric), 40),
+                _table_cell(family, 40),
                 _table_cell(paper.get("title") or "Untitled source", 72),
                 _table_cell(role, 36),
                 _table_cell(_source_context_label(paper, non_bio=non_bio), 48),
@@ -992,6 +993,18 @@ def _exposure_context_label(paper: Json, *, non_bio: bool) -> str:
     return base
 
 
+def _topic_performance_endpoint(topic: str, endpoint: str) -> str:
+    topic_words = topic.replace("_", " ").split()
+    endpoint_words = str(endpoint or "").replace("_", " ").split()
+    if (
+        len(topic_words) >= 3
+        and topic_words[-1] == "performance"
+        and endpoint_words == topic_words[:-1]
+    ):
+        return " ".join((*endpoint_words[:-1], "performance"))
+    return ""
+
+
 def _performance_endpoint_label(topic: str, text: str) -> str:
     topic_text = topic.replace("_", " ")
     if "performance" not in text or "performance" in topic_text:
@@ -1009,7 +1022,7 @@ def _endpoint_context_label(paper: Json, topic: str, *, non_bio: bool) -> str:
     fact = fact if isinstance(fact, dict) else {}
     endpoint = str(fact.get("endpoint") or fact.get("metric") or "").strip()
     if not non_bio or not _endpoint_mirrors_topic(endpoint, topic):
-        return endpoint
+        return _topic_performance_endpoint(topic, endpoint) or endpoint
     text = title_key(" ".join(str(value or "") for value in (
         paper.get("title"), paper.get("paper_title"), fact.get("canonical_phrase"),
     )))
@@ -1050,12 +1063,18 @@ def _endpoint_mirrors_topic(endpoint: str, topic: str) -> bool:
 
 def _source_fact_endpoint_label(fact: Json, topic: str) -> str:
     endpoint = str(fact.get("endpoint") or fact.get("metric") or "").strip()
+    topic_performance = _topic_performance_endpoint(topic, endpoint)
+    if topic_performance:
+        return topic_performance
     if _endpoint_mirrors_topic(endpoint, topic):
         return "the stated downstream outcome"
     return endpoint
 
 
 def _title_endpoint_label(label: str, topic: str, papers: list[Json]) -> str:
+    topic_performance = _topic_performance_endpoint(topic, label)
+    if topic_performance:
+        return topic_performance
     if label != "the stated downstream outcome":
         return label
     source_text = title_key(" ".join(str(paper.get("title") or "") for paper in papers))
