@@ -6128,6 +6128,15 @@ def test_sync_submission_decisions_uses_top_level_submission_id(tmp_path: Path) 
     assert patched["researka_decision"]["seen_id"] == "sub_top"
 
 
+def test_submission_id_reads_native_research_object_id() -> None:
+    assert publish_decisions.submission_id({
+        "status": "accepted",
+        "attempts": [{
+            "response": {"id": "native-object-123"},
+        }],
+    }) == "native-object-123"
+
+
 def test_sync_submission_decisions_records_revise_as_retryable(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("revise")

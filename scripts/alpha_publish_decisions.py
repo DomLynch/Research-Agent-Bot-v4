@@ -28,6 +28,9 @@ def decision_fetch(submission_id: str) -> Json:
 
 
 def submission_id(payload: Json) -> str:
+    object_id = payload.get("id")
+    if object_id:
+        return str(object_id)
     direct = payload.get("submission_id")
     if direct:
         return str(direct)
