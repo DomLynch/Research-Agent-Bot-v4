@@ -2330,11 +2330,13 @@ def _source_literature_submission_count(
 
 def _source_literature_parent_link_repair_needed(
     runs_root: Path, domain: str | None, topic: str, decision: Json,
+    *, require_submission_parent: bool = False,
 ) -> bool:
     parent_submission_id = _resubmission_parent_submission_id(decision)
     if not parent_submission_id:
         return False
     saw_submitted_source_literature = False
+    saw_submission_parent_payload = False
     for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
         ledger = _json(path, {})
         if (
@@ -2356,15 +2358,36 @@ def _source_literature_parent_link_repair_needed(
         if not isinstance(payload, dict):
             continue
         metadata = payload.get("metadata")
-        if (
-            str(payload.get("parent_submission_id") or "").strip() == parent_submission_id
-            or (
-                isinstance(metadata, dict)
-                and str(metadata.get("revision_of") or "").strip() == parent_submission_id
-            )
-        ):
+        evidence = payload.get("evidence_bundle")
+        submission_parent_values = (
+            str(payload.get("parent_submission_id") or "").strip(),
+            str(metadata.get("revision_of") or "").strip()
+            if isinstance(metadata, dict) else "",
+            str(evidence.get("revision_of") or "").strip()
+            if isinstance(evidence, dict) else "",
+        )
+        object_parent_values = (
+            str(payload.get("parent_object_id") or "").strip(),
+            str(metadata.get("revision_of_object_id") or "").strip()
+            if isinstance(metadata, dict) else "",
+            str(evidence.get("revision_of_object_id") or "").strip()
+            if isinstance(evidence, dict) else "",
+        )
+        if require_submission_parent:
+            if any(submission_parent_values):
+                return not any(object_parent_values)
+            continue
+        has_submission_parent = parent_submission_id in submission_parent_values
+        has_object_parent = parent_submission_id in object_parent_values
+        if has_submission_parent and has_object_parent:
             return False
-    return saw_submitted_source_literature
+        if has_submission_parent:
+            saw_submission_parent_payload = True
+    return (
+        saw_submission_parent_payload
+        if require_submission_parent else
+        saw_submitted_source_literature
+    )
 
 
 def _source_literature_renderer_feedback_repair_needed(
@@ -2697,12 +2720,15 @@ def _source_literature_attempt_budget(
         for _fp, run_ref, decision in _repairable_submission_records(ledger):
             row_topic = candidate_topic or _source_literature_topic_from_run(run_ref)
             if row_topic == topic:
-                if (
+                clean_terminal_resubmit = (
                     _clean_supported_revise(decision)
                     and "external author must resubmit" in _norm(_revision_notes(decision))
-                ):
-                    return _SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT
-                budget = _source_literature_repair_attempt_limit(decision)
+                )
+                budget = (
+                    _SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT
+                    if clean_terminal_resubmit else
+                    _source_literature_repair_attempt_limit(decision)
+                )
                 if (
                     _clean_supported_revise(decision)
                     and "external author must resubmit" not in _norm(_revision_notes(decision))
@@ -2719,13 +2745,22 @@ def _source_literature_attempt_budget(
                     runs_root, domain, topic, decision,
                 ):
                     count = _source_literature_submission_count(runs_root, domain, topic)
-                    budget = max(
-                        budget,
-                        min(
-                            count + 1,
-                            _SOURCE_LITERATURE_PARENT_LINK_REPAIR_ATTEMPT_LIMIT,
-                        ),
-                    )
+                    if clean_terminal_resubmit:
+                        if _source_literature_parent_link_repair_needed(
+                            runs_root, domain, topic, decision,
+                            require_submission_parent=True,
+                        ):
+                            budget = max(budget, count + 1)
+                    else:
+                        budget = max(
+                            budget,
+                            min(
+                                count + 1,
+                                _SOURCE_LITERATURE_PARENT_LINK_REPAIR_ATTEMPT_LIMIT,
+                            ),
+                        )
+                if clean_terminal_resubmit:
+                    return budget
                 if _source_literature_renderer_feedback_repair_needed(
                     runs_root, domain, topic, decision,
                 ):
@@ -5551,6 +5586,7 @@ def run_cycle(
     submitter: Submitter | None = None,
     source_paper_fetcher: SourcePaperFetcher | None = None,
     source_literature_forced_papers: dict[str, list[Json]] | None = None,
+    source_literature_priority_topics: list[str] | None = None,
     fetcher: Fetcher = _crossref_fetch,
     decision_fetcher: DecisionFetcher = publish_decisions.decision_fetch,
     page_fetcher: PageFetcher = publish_public.fetch_public_page,
@@ -6363,10 +6399,12 @@ def run_cycle(
                 soft_broad_blocked_topics=source_literature_soft_blocked_topics,
             ) if topic not in repair_topic_set
         ]
+        forced_priority_topics = source_literature_priority_topics or []
         literature_topics: list[str] = []
         for topic in [
             *resumable_source_lit,
             *forced_source_lit,
+            *forced_priority_topics,
             *priority_repair_topics,
             *source_lit_preflight_selected,
             *fresh_topics,

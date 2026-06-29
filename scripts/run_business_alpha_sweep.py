@@ -1484,13 +1484,26 @@ def main() -> int:
                     skipped_recent.append(seed_topic)
                     continue
                 fresh_topics.append(seed_topic)
-            selected_topics = [
+            repairable_source_lit_set = set(repairable_source_lit_topics)
+            repairable_fresh_topics = [
+                topic for topic in fresh_topics
+                if topic in repairable_source_lit_set
+            ]
+            standard_fresh_topics = [
+                topic for topic in fresh_topics
+                if topic not in repairable_source_lit_set
+            ]
+            ranked_standard_topics = [
                 topic for _hits, _idx, topic in sorted(
                     (
                         (-_cached_fullraw_complete_hit_count(topic), idx, topic)
-                        for idx, topic in enumerate(fresh_topics)
+                        for idx, topic in enumerate(standard_fresh_topics)
                     )
                 )
+            ]
+            selected_topics = [
+                *repairable_fresh_topics,
+                *ranked_standard_topics,
             ][:args.topics_per_domain]
             if skipped_recent:
                 print(
@@ -1498,7 +1511,6 @@ def main() -> int:
                     f"{domain} topics={','.join(skipped_recent[:5])}",
                     flush=True,
                 )
-            repairable_source_lit_set = set(repairable_source_lit_topics)
             for topic in selected_topics:
                 if topic in repairable_source_lit_set and max(0, args.submit_after_consistent_passes):
                     repair_row: dict[str, Any] = {
@@ -1534,6 +1546,7 @@ def main() -> int:
                         domain=domain,
                         submit=True,
                         refresh_candidates=False,
+                        source_literature_priority_topics=[topic],
                     )
                     repair_row["status"] = str(ledger.get("status") or "submit_failed")
                     repair_row["submission_ledger"] = ledger

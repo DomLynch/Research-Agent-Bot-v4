@@ -3126,6 +3126,7 @@ def test_business_sweep_retries_repairable_recent_source_literature_topic(
         "domain": "business_research",
         "submit": True,
         "refresh_candidates": False,
+        "source_literature_priority_topics": [repaired_topic],
     }]
 
 
@@ -3241,6 +3242,10 @@ def test_business_sweep_promotes_repairable_source_lit_outside_seed_window(
     monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
     monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [seed_topic])
     monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: ([], {"status": "failed"}))
+    monkeypatch.setattr(
+        sweep, "_cached_fullraw_complete_hit_count",
+        lambda topic: 99 if topic == seed_topic else 0,
+    )
     monkeypatch.setattr(sweep, "_strict_fullraw_probe", fake_fullraw)
     monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
     monkeypatch.setattr(sys, "argv", [
@@ -3261,6 +3266,7 @@ def test_business_sweep_promotes_repairable_source_lit_outside_seed_window(
         "domain": "business_research",
         "submit": True,
         "refresh_candidates": False,
+        "source_literature_priority_topics": [repaired_topic],
     }]
 
 

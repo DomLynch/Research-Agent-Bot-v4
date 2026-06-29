@@ -10173,6 +10173,108 @@ def test_source_literature_clean_terminal_revise_gets_one_resubmit(
     ) == []
 
 
+def test_clean_terminal_source_literature_missing_object_parent_gets_one_repair(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    topic = "supply_chain_resilience_performance"
+    ledger_dir = root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    parent_id = "sub-terminal-final"
+    previous_parent_id = "sub-terminal-previous"
+    decision = {
+        "decision": "revise",
+        "claim_support_verdict": "supported",
+        "notes": ["editorial decision is terminal; external author must resubmit"],
+        "required_revisions": [],
+        "major_issues": [],
+        "minor_issues": [],
+        "failed_checks": [],
+        "gate_failures": [],
+        "rubric_scores": {
+            "claim_evidence_alignment": 5,
+            "source_grounding": 5,
+            "synthesis_quality": 5,
+        },
+        "resubmission": {
+            "allowed": True,
+            "parent_submission_id": parent_id,
+        },
+    }
+    for idx in range(daily._SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT):
+        stamp = f"2026-06-29T11-{idx:02d}-00Z"
+        run_dir = root / f"{topic}-source-literature-{stamp}"
+        run_dir.mkdir(parents=True)
+        run_dir.joinpath("source_literature_memo.md").write_text(
+            "# Source literature boundary memo\n", encoding="utf-8",
+        )
+        payload: dict[str, Any] = {
+            "title": (
+                "supply chain resilience performance: directional supply chain "
+                "performance vs null/mixed firm performance evidence"
+            ),
+            "markdown": (
+                "Audit note: effect-bearing rows stay metric-specific; "
+                "context/antecedent/model rows are excluded from effect support and no "
+                "rows are pooled."
+            ),
+        }
+        if idx == daily._SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT - 1:
+            payload["parent_submission_id"] = previous_parent_id
+            payload["metadata"] = {"revision_of": previous_parent_id}
+        daily._write_json(run_dir / "source_literature_payload.json", payload)
+        daily._write_json(ledger_dir / f"{stamp}.json", {
+            "domain": {"slug": "business_research"},
+            "submitted": 1,
+            "submission_id": f"sub-terminal-{idx}",
+            "candidate": {
+                "topic": topic,
+                "run_dir": run_dir.name,
+                "fingerprint": f"fp-terminal-{idx}",
+            },
+            "researka_decision": decision,
+        })
+
+    assert daily._source_literature_submission_count(
+        root, "business_research", topic,
+    ) == daily._SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT
+    assert daily._source_literature_attempt_budget(
+        root, "business_research", topic,
+    ) == daily._SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT + 1
+    assert daily._repairable_source_literature_topics(
+        root, "business_research", limit=3,
+    ) == [topic]
+
+    final_run = root / f"{topic}-source-literature-2026-06-29T11-99-00Z"
+    final_run.mkdir(parents=True)
+    final_run.joinpath("source_literature_memo.md").write_text(
+        "# Source literature boundary memo\n", encoding="utf-8",
+    )
+    daily._write_json(final_run / "source_literature_payload.json", {
+        "parent_submission_id": parent_id,
+        "parent_object_id": parent_id,
+        "metadata": {
+            "revision_of": parent_id,
+            "revision_of_object_id": parent_id,
+        },
+    })
+    daily._write_json(ledger_dir / "2026-06-29T11-99-00Z.json", {
+        "domain": {"slug": "business_research"},
+        "submitted": 1,
+        "submission_id": "sub-terminal-final",
+        "candidate": {
+            "topic": topic,
+            "run_dir": final_run.name,
+            "fingerprint": "fp-terminal-final",
+        },
+        "researka_decision": decision,
+    })
+
+    assert daily._repairable_source_literature_topics(
+        root, "business_research", limit=3,
+    ) == []
+
+
 def test_old_source_literature_publish_framing_gets_one_bounded_retry(
     tmp_path: Path,
 ) -> None:
@@ -10903,6 +11005,59 @@ def test_repairable_source_literature_preflight_skips_broad_refresh(
     assert ledger["refresh_batches"][0]["note"] == "skipped_source_literature_candidate_available"
     assert ledger["source_literature_fallback"]["repair_submission"] is True
     assert seen_payload["metadata"]["reviewer_repair_notes"] == "repair before broad refresh"
+
+
+def test_source_literature_priority_topic_runs_before_fresh_candidate(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
+    root = tmp_path / "repo"
+    discovery = root / "_topics_discovery"
+    discovery.mkdir(parents=True)
+    daily._write_json(discovery / "fresh.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{
+            "topic": "fresh_boundary",
+            "paper_count": 5,
+            "fact_source_count": 5,
+            "source_papers": _usable_boundary_papers(),
+        }],
+    })
+    fetched_topics: list[str] = []
+    seen_payload: dict[str, Any] = {}
+
+    def source_papers(topic: str, _limit: int) -> list[dict[str, Any]]:
+        fetched_topics.append(topic)
+        if topic != "usable_boundary":
+            raise AssertionError("fresh source-lit topic should not outrank priority")
+        return _usable_boundary_papers()
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-10T19-30-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        source_paper_fetcher=source_papers,
+        source_literature_priority_topics=["usable_boundary"],
+        submitter=lambda payload: (
+            seen_payload.update(payload)
+            or {"ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}}}
+        ),
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert fetched_topics == ["usable_boundary"]
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "usable_boundary"
+    assert seen_payload["topic"] == "usable_boundary"
 
 
 def _usable_boundary_papers() -> list[dict[str, Any]]:
