@@ -12361,7 +12361,8 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     markdown = payload["markdown"]
     assert payload["title"] == (
         "supply chain resilience performance: "
-        "heterogeneity map across firm-level, chain-level, and business-outcome receipts"
+        "directional support for supply chain performance but null/mixed support "
+        "for firm performance (5-source scoping map)"
     )
     assert "directional estimate: 1 receipt(s)" in markdown
     assert "antecedent/support: 1 receipt(s)" in markdown
@@ -12383,16 +12384,37 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "Resolve the directional/null conflict" in markdown
     assert "supply chain performance and firm performance" in markdown
     assert "inside one matched industry, comparator, and metric frame" in markdown
+    assert (
+        "Evidence weight: this descriptive map rests on k=1 directional estimate, "
+        "k=1 null/mixed receipt, and k=3 context/antecedent/model receipts; "
+        "it shows metric heterogeneity, not a broad empirical disagreement."
+    ) in markdown
+    assert (
+        "Falsifier/update: the directional supply chain performance receipt would "
+        "weaken if a matched setting and metric replication reports a null or negative association."
+    ) in markdown
     assert "Population/settings are separated as receipt context" in markdown
     assert "automotive firms" in markdown
     assert "chemical firms" in markdown
     assert "manufacturing firms" in markdown
     assert "Concrete contrast:" in markdown
     assert "## Heterogeneity matrix" in markdown
+    assert "### Effect-bearing comparison" in markdown
+    assert "### Context-only receipts" in markdown
     assert "| Outcome family | Receipt | Evidence role | Population/setting | Metric | Extracted finding |" in markdown
     assert "| chain-level | Supply chain resilience and performance of manufacturing firms" in markdown
     assert "| chain-level | Factors Affecting the Supply Chain Resilience" in markdown
     assert "| firm-level | The Impacts of Supply Chain Capabilities" in markdown
+    effect_section_start = markdown.index("### Effect-bearing comparison")
+    context_section_start = markdown.index("### Context-only receipts")
+    assert (
+        markdown.index("| chain-level | Supply chain resilience and performance of manufacturing firms", effect_section_start)
+        < context_section_start
+    )
+    assert (
+        markdown.index("| chain-level | Factors Affecting the Supply Chain Resilience", context_section_start)
+        > context_section_start
+    )
     assert "antecedent/support | firms | supply chain performance" in markdown
     assert "hypotheses of a positive impact" in markdown
     assert "have been rejected" in markdown

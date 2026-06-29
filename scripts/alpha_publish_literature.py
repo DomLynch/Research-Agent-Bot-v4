@@ -665,10 +665,12 @@ def _table_cell(value: Any, limit: int = 90) -> str:
 def _heterogeneity_matrix_lines(
     papers: list[Json], topic: str = "", profile_slug: str = "",
 ) -> list[str]:
-    rows = [
+    header = [
         "| Outcome family | Receipt | Evidence role | Population/setting | Metric | Extracted finding |",
         "|---|---|---|---|---|---|",
     ]
+    effect_rows: list[str] = []
+    context_rows: list[str] = []
     non_bio = _non_biomedical(profile_slug)
     for paper in papers:
         fact = paper.get("source_fact")
@@ -676,18 +678,27 @@ def _heterogeneity_matrix_lines(
         metric = str(fact.get("endpoint") or fact.get("metric") or "").strip()
         direction = _paper_effect_direction(paper, topic)
         finding = _display_finding(fact, direction)
-        rows.append(
+        role = _paper_evidence_role(paper, topic, profile_slug)
+        row = (
             "| "
             + " | ".join((
                 _table_cell(_outcome_family(metric), 40),
                 _table_cell(paper.get("title") or "Untitled source", 72),
-                _table_cell(_paper_evidence_role(paper, topic, profile_slug), 36),
+                _table_cell(role, 36),
                 _table_cell(_source_context_label(paper, non_bio=non_bio), 48),
                 _table_cell(metric, 40),
                 _table_cell(finding, 110),
             ))
-            + " |",
+            + " |"
         )
+        if role in {"directional estimate", "directionally favorable", "null/mixed", "null/non-convergent"}:
+            effect_rows.append(row)
+        else:
+            context_rows.append(row)
+    rows = ["### Effect-bearing comparison", "", *header]
+    rows.extend(effect_rows or ["| - | - | - | - | - | No effect-bearing receipts extracted. |"])
+    if context_rows:
+        rows.extend(["", "### Context-only receipts", "", *header, *context_rows])
     return rows
 
 
@@ -1336,6 +1347,40 @@ def payload(
             endpoints = list(dict.fromkeys(endpoints_by_label.get(label, [])))
             if endpoints:
                 non_bio_signal_parts.append(f"{prefix} {', '.join(endpoints[:3])}")
+    directional_endpoints = list(dict.fromkeys(
+        endpoints_by_label.get("directional estimate", [])
+        + endpoints_by_label.get("directionally favorable", []),
+    ))
+    nullish_endpoints = list(dict.fromkeys(
+        endpoints_by_label.get("null/mixed", [])
+        + endpoints_by_label.get("null/non-convergent", []),
+    ))
+    directional_count = sum(
+        1 for paper in selected
+        if _paper_evidence_role(paper, topic, profile.slug)
+        in {"directional estimate", "directionally favorable"}
+    )
+    nullish_count = sum(
+        1 for paper in selected
+        if _paper_evidence_role(paper, topic, profile.slug)
+        in {"null/mixed", "null/non-convergent"}
+    )
+    context_only_count = len(selected) - directional_count - nullish_count
+    thin_non_bio_scope = (
+        non_bio and directional_count <= 1 and nullish_count >= 1
+        and context_only_count >= 1 and bool(directional_endpoints)
+    )
+    evidence_weight_note = ""
+    if thin_non_bio_scope:
+        evidence_weight_note = (
+            f"Evidence weight: this descriptive map rests on k={directional_count} "
+            f"directional estimate, k={nullish_count} null/mixed receipt, and "
+            f"k={context_only_count} context/antecedent/model receipts; it shows "
+            "metric heterogeneity, not a broad empirical disagreement. "
+            f"Falsifier/update: the directional {directional_endpoints[0]} receipt "
+            "would weaken if a matched setting and metric replication reports a "
+            "null or negative association."
+        )
     bounded_signal = _bounded_signal_sentence(
         topic, endpoints_by_label, non_bio=non_bio,
         outcome_families=outcome_families,
@@ -1350,6 +1395,8 @@ def payload(
         and "non-clinical/predictive" in direction_text
     )
     lead = (
+        f"This receipt-backed scoping note is a descriptive metric-heterogeneity map for {topic}: "
+        if thin_non_bio_scope else
         f"This receipt-backed scoping note is a multi-outcome heterogeneity map for {topic}: "
         if non_bio and len(outcome_families) >= 2 else
         f"This receipt-backed scoping note maps separated evidence fronts for {topic}: "
@@ -1471,6 +1518,8 @@ def payload(
         "",
         bounded_signal,
         "",
+        *([evidence_weight_note, ""] if evidence_weight_note else []),
+        "",
         "## Heterogeneity matrix",
         "",
         *_heterogeneity_matrix_lines(selected, topic, profile.slug),
@@ -1558,6 +1607,20 @@ def payload(
     }
     agent_id = submission_agent_id(profile.slug)
     category = profile.slug.removesuffix("_research")
+    title_tail = (
+        f"directional support for {directional_endpoints[0]} but null/mixed support "
+        f"for {nullish_endpoints[0]} ({len(bundle)}-source scoping map)"
+        if thin_non_bio_scope and directional_endpoints and nullish_endpoints else
+        f"heterogeneity map across {join_contexts(outcome_families[:3])} receipts"
+        if non_bio and len(outcome_families) >= 2 else
+        "separated intervention and predictive evidence fronts"
+        if split_front and not non_bio else
+        "separated policy/exposure and predictive evidence fronts"
+        if split_front else
+        "evidence-base heterogeneity map across receipts"
+        if non_bio and non_bio_signal_parts else
+        "one bounded, context-dependent signal across receipts"
+    )
     out = {
         "artifact_type": "alpha_memo",
         "article_type": "alpha_memo",
@@ -1566,20 +1629,7 @@ def payload(
         "domain": profile.as_metadata(),
         "domain_slug": profile.slug,
         "category": category,
-        "title": (
-            f"{topic.replace('_', ' ')}: "
-            + (
-                f"heterogeneity map across {join_contexts(outcome_families[:3])} receipts"
-                if non_bio and len(outcome_families) >= 2 else
-                "separated intervention and predictive evidence fronts"
-                if split_front and not non_bio else
-                "separated policy/exposure and predictive evidence fronts"
-                if split_front else
-                "evidence-base heterogeneity map across receipts"
-                if non_bio and non_bio_signal_parts else
-                "one bounded, context-dependent signal across receipts"
-            )
-        ),
+        "title": f"{topic.replace('_', ' ')}: {title_tail}",
         "abstract": safe_excerpt(abstract_text),
         "summary": safe_excerpt(abstract_text),
         "topic": topic,
