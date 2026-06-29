@@ -10443,10 +10443,9 @@ def test_repairable_source_literature_preflight_runs_before_fresh_topic(
     )
     daily._write_json(old_run / "source_literature_payload.json", {
         "title": (
-            "metformin use: directional support for mortality but null/mixed "
-            "support for frailty evidence"
+            "metformin use: unmatched metric-scope map across mortality receipts"
         ),
-        "markdown": "## Boundary map\n\nOld heterogeneity language.",
+        "markdown": "## Boundary map\n\nCurrent scoped framing.",
     })
     daily._write_json(ledger_dir / "2026-06-09T18-00-00Z.json", {
         "domain": {"slug": "longevity_research"},
@@ -10458,17 +10457,22 @@ def test_repairable_source_literature_preflight_runs_before_fresh_topic(
         },
         "researka_decision": {
             "decision": "revise",
-            "claim_support_verdict": "supported",
+            "claim_support_verdict": "partially_supported",
             "notes": ["editorial decision is terminal; external author must resubmit"],
-            "required_revisions": [],
-            "major_issues": [],
+            "required_revisions": [
+                "Rename the topic so the title matches the actual source contrast.",
+                "Add one sentence acknowledging receipts are not from matched settings.",
+            ],
+            "major_issues": [
+                "The directional and caveat receipts come from unmatched settings.",
+            ],
             "minor_issues": [],
             "failed_checks": [],
             "gate_failures": [],
             "rubric_scores": {
-                "claim_evidence_alignment": 5,
-                "source_grounding": 5,
-                "synthesis_quality": 5,
+                "claim_evidence_alignment": 4,
+                "source_grounding": 4,
+                "synthesis_quality": 3,
             },
             "resubmission": {"allowed": True},
         },
@@ -10545,7 +10549,9 @@ def test_repairable_source_literature_preflight_runs_before_fresh_topic(
     assert ledger["status"] == "published"
     assert ledger["submitted_topic"] == "metformin use"
     assert ledger["source_literature_fallback"]["repair_submission"] is True
-    assert "null/mixed" not in seen_payload["markdown"]
+    assert seen_payload["metadata"]["reviewer_repair_notes"].startswith(
+        "editorial decision is terminal",
+    )
 
 
 def test_repairable_source_literature_preflight_skips_broad_refresh(

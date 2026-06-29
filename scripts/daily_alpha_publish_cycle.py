@@ -317,6 +317,9 @@ _SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT = (
 _SOURCE_LITERATURE_PUBLISH_FRAMING_ATTEMPT_LIMIT = (
     _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 9
 )
+_SOURCE_LITERATURE_TERMINAL_FEEDBACK_ATTEMPT_LIMIT = (
+    _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 10
+)
 _SOURCE_LITERATURE_UNOWNED_TITLE_MARKERS = (
     "directional evidence for",
     "heterogeneous metrics",
@@ -2455,6 +2458,13 @@ def _source_literature_publish_framing_repair_needed(
     return False
 
 
+def _source_literature_terminal_feedback_repair_needed(decision: Json) -> bool:
+    return (
+        _source_literature_render_repair_revise(decision)
+        and "external author must resubmit" in _norm(_revision_notes(decision))
+    )
+
+
 def _repairable_source_literature_topics(
     runs_root: Path, domain: str | None, *, limit: int = 3,
 ) -> list[str]:
@@ -2508,8 +2518,11 @@ def _priority_source_literature_repair_decisions(
     )
     priority: dict[str, Json] = {}
     for topic, decision in decisions.items():
-        if _source_literature_publish_framing_repair_needed(
-            runs_root, domain, topic, decision,
+        if (
+            _source_literature_publish_framing_repair_needed(
+                runs_root, domain, topic, decision,
+            )
+            or _source_literature_terminal_feedback_repair_needed(decision)
         ):
             priority[topic] = decision
             if len(priority) >= limit:
@@ -2632,6 +2645,15 @@ def _source_literature_attempt_budget(
                         min(
                             count + 1,
                             _SOURCE_LITERATURE_PUBLISH_FRAMING_ATTEMPT_LIMIT,
+                        ),
+                    )
+                if _source_literature_terminal_feedback_repair_needed(decision):
+                    count = _source_literature_submission_count(runs_root, domain, topic)
+                    budget = max(
+                        budget,
+                        min(
+                            count + 1,
+                            _SOURCE_LITERATURE_TERMINAL_FEEDBACK_ATTEMPT_LIMIT,
                         ),
                     )
                 return budget
