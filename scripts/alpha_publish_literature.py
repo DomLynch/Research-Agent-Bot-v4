@@ -1021,6 +1021,16 @@ def _source_fact_endpoint_label(fact: Json, topic: str) -> str:
     return endpoint
 
 
+def _title_endpoint_label(label: str, topic: str, papers: list[Json]) -> str:
+    if label != "the stated downstream outcome":
+        return label
+    topic_text = topic.replace("_", " ")
+    source_titles = " ".join(str(paper.get("title") or "").lower() for paper in papers)
+    if "performance" in source_titles and "performance" not in topic_text:
+        return f"{topic_text} performance"
+    return topic_text
+
+
 def _bounded_signal_sentence(
     topic: str,
     endpoints_by_label: dict[str, list[str]],
@@ -1674,9 +1684,8 @@ def payload(
         **({"revision_of": parent_submission_id} if parent_submission_id else {}),
     }
     title_tail = (
-        f"directional evidence for {directional_endpoints[0]}, null/mixed for "
-        f"{nullish_endpoints[0]}, heterogeneous metrics across {len(bundle)} "
-        f"sources ({year_text})"
+        f"{_title_endpoint_label(directional_endpoints[0], topic, selected)} "
+        f"and {_title_endpoint_label(nullish_endpoints[0], topic, selected)} evidence"
         if thin_non_bio_scope and directional_endpoints and nullish_endpoints else
         f"heterogeneity map across {join_contexts(outcome_families[:3])} receipts"
         if non_bio and len(outcome_families) >= 2 else

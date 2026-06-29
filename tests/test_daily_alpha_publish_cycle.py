@@ -12868,8 +12868,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     markdown = payload["markdown"]
     assert payload["title"] == (
         "supply chain resilience performance: "
-        "directional evidence for supply chain performance, null/mixed for "
-        "firm performance, heterogeneous metrics across 5 sources (2022-2023)"
+        "supply chain performance and firm performance evidence"
     )
     assert "directional association: 1 receipt(s)" in markdown
     assert "antecedent/support: 1 receipt(s)" in markdown
