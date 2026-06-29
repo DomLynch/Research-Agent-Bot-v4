@@ -1592,6 +1592,20 @@ def payload(
         + endpoints_by_label.get("directional estimate", [])
         + endpoints_by_label.get("directionally favorable", []),
     ))
+    directional_endpoint_rows = (
+        endpoints_by_label.get("directional association", [])
+        + endpoints_by_label.get("directional estimate", [])
+        + endpoints_by_label.get("directionally favorable", [])
+    )
+    directional_endpoint_counts = {
+        endpoint: directional_endpoint_rows.count(endpoint)
+        for endpoint in dict.fromkeys(directional_endpoint_rows)
+    }
+    duplicated_directional_endpoints = [
+        (endpoint, count)
+        for endpoint, count in directional_endpoint_counts.items()
+        if count > 1
+    ]
     nullish_endpoints = list(dict.fromkeys(
         endpoints_by_label.get("null/mixed", [])
         + endpoints_by_label.get("null/non-convergent", []),
@@ -1716,8 +1730,9 @@ def payload(
         f"{len(populations) or 'multiple'} population/setting context(s) and "
         f"{len(interventions) or 'multiple'} "
         f"{'policy/exposure/practice' if non_bio else 'intervention/exposure'} context(s), "
-        f"so this is a scoping signal about where {'metrics' if non_bio else 'endpoints'} "
-        "diverge, without "
+            f"so this is a {'multi-outcome scoping map' if non_bio and len(directional_endpoints) > 1 else 'scoping signal'} "
+            f"about where {'metrics' if non_bio else 'endpoints'} "
+            "diverge, without "
         + (
             "establishing a causal, policy-prescriptive, market-generalized, "
             "or pooled econometric claim."
@@ -1753,8 +1768,22 @@ def payload(
                 "disease-specific or endpoint-family claim."
             )
         )
+    if non_bio and populations:
+        synthesis += f" Named setting scope includes {join_contexts(populations[:5])}."
     if non_bio_signal_parts:
-        synthesis += " Substantive signal: " + "; ".join(non_bio_signal_parts) + "."
+        signal_heading = "Substantive map" if non_bio and len(directional_endpoints) > 1 else "Substantive signal"
+        synthesis += f" {signal_heading}: " + "; ".join(non_bio_signal_parts) + "."
+    if non_bio and duplicated_directional_endpoints:
+        duplicate_text = join_contexts(
+            [
+                f"{endpoint} ({count} of {directional_count} direction-bearing receipts)"
+                for endpoint, count in duplicated_directional_endpoints[:3]
+            ]
+        )
+        synthesis += (
+            f" Coverage balance: {duplicate_text} is represented more than once; "
+            "that is a scope imbalance to disclose, not stronger evidence for the topic."
+        )
     if thin_non_bio_scope:
         synthesis += (
             " Integrated reading: the directional and caveat receipts are not matched "
@@ -1803,6 +1832,13 @@ def payload(
             f"{directional} and {nullish} inside one matched industry, comparator, "
             "and metric frame before generalizing the directional receipts.",
         )
+    if non_bio and duplicated_directional_endpoints:
+        next_gaps.insert(
+            0,
+            "Resolve the coverage imbalance by adding or swapping receipts so "
+            f"{join_contexts([endpoint for endpoint, _count in duplicated_directional_endpoints[:3]])} "
+            "is not over-represented relative to the other named metrics inside the same scoping map.",
+        )
     boundary_summary = (
         (
             f"Source-literature boundary for {topic}: the listed sources define "
@@ -1812,7 +1848,11 @@ def payload(
         if split_front else
         (
             f"Source-literature boundary for {topic}: the listed sources define "
-            "one bounded, context-dependent signal across separate source contexts. "
+            + (
+                "separate outcome-specific signals across multiple metric families. "
+                if non_bio and len(directional_endpoints) > 1 else
+                "one bounded, context-dependent signal across separate source contexts. "
+            )
         )
     ) + (
         "This memo does not claim causality, policy prescription, a pooled "

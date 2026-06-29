@@ -14032,7 +14032,8 @@ def test_source_literature_payload_keeps_multiple_economics_directional_metrics(
         "poverty elasticity, and earnings inequality share receipts"
     )
     assert "direction-bearing receipts: 4" in markdown
-    assert "Substantive signal: direction-bearing evidence covers price pass-through, poverty elasticity, and earnings inequality share." in markdown
+    assert "Substantive map: direction-bearing evidence covers price pass-through, poverty elasticity, and earnings inequality share." in markdown
+    assert "Coverage balance: price pass-through" in markdown
     assert "direction-bearing evidence is limited to share of fall" not in markdown
     assert "| price pass through | Minimum wage price pass-through" in markdown
     assert "| poverty elasticity | Minimum wage poverty elasticity" in markdown
@@ -14114,7 +14115,10 @@ def test_source_literature_payload_infers_missing_non_bio_metrics(
         "employment effects, poverty elasticity, and earnings inequality share receipts"
     )
     assert "direction-bearing receipts: 5" in markdown
-    assert "direction-bearing evidence covers price pass-through, employment effects, poverty elasticity, and earnings inequality share." in markdown
+    assert "Substantive map: direction-bearing evidence covers price pass-through, employment effects, poverty elasticity, and earnings inequality share." in markdown
+    assert "Named setting scope includes Brazilian labor market, 1996-2018" in markdown
+    assert "Coverage balance: price pass-through (2 of 5 direction-bearing receipts)" in markdown
+    assert "one bounded signal" not in markdown
     assert "firm-performance, supply-chain performance" not in markdown
 
 
