@@ -14212,7 +14212,12 @@ def test_source_literature_payload_prefers_distinct_outcomes_when_available(
     )
 
     source_titles = [source["title"] for source in payload["source_bundle"]]
+    direct_papers = payload["evidence_bundle"]["direct_source_papers"]
     assert len(source_titles) == 5
+    assert publish_literature.substantive_fact_count(direct_papers) == 5
+    assert publish_literature.source_identity_count(
+        direct_papers, require_substantive=True,
+    ) == 5
     assert "Minimum wage worker turnover in service labor markets" in source_titles
     assert "Are Local Minimum Wages Absorbed by Price Increases?" not in source_titles
     assert "Coverage balance: price pass-through" not in payload["markdown"]
