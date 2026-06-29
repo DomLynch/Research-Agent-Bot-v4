@@ -11379,6 +11379,7 @@ def test_source_literature_fallback_resubmits_clean_terminal_revise_same_cycle(
     })
     submitted_payloads: list[dict[str, Any]] = []
     submission_ids = ["sub-clean-1", "sub-clean-2"]
+    paper_fetch_calls: list[tuple[str, int]] = []
 
     def submitter(payload: dict[str, Any]) -> dict[str, Any]:
         submitted_payloads.append(payload)
@@ -11413,13 +11414,17 @@ def test_source_literature_fallback_resubmits_clean_terminal_revise_same_cycle(
             "publication": {"url": "https://researka.org/alpha/source-lit"},
         }
 
+    def source_paper_fetcher(topic: str, limit: int) -> list[dict[str, Any]]:
+        paper_fetch_calls.append((topic, limit))
+        return _usable_boundary_papers()
+
     ledger = daily.run_cycle(
         runs_root=root,
         date="2026-06-11T19-45-00Z",
         domain="longevity_research",
         queue=_queue(),
         submit=True,
-        source_paper_fetcher=lambda _topic, _limit: _usable_boundary_papers(),
+        source_paper_fetcher=source_paper_fetcher,
         submitter=submitter,
         decision_fetcher=decision_fetcher,
         page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
@@ -11438,6 +11443,8 @@ def test_source_literature_fallback_resubmits_clean_terminal_revise_same_cycle(
     assert submitted_payloads[1]["metadata"]["revision_of"] == "sub-clean-1"
     assert submitted_payloads[1]["metadata"]["revision_of_object_id"] == "sub-clean-1"
     assert ledger["source_literature_fallback_attempts"][0]["terminal_resubmit_queued"] is True
+    assert ledger["source_literature_fallback_attempts"][0]["terminal_resubmit_immediate"] is True
+    assert paper_fetch_calls == [("usable_boundary", 5)]
 
 
 def test_source_literature_fallback_is_disabled_without_explicit_submit_flag(

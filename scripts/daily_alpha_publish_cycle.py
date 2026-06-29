@@ -6587,17 +6587,90 @@ def run_cycle(
                                 )
                                 and literature_topic not in terminal_resubmit_topics
                             ):
-                                repair_decisions[literature_topic] = (
-                                    _decision_with_resubmission_parent(
-                                        researka_decision, submission_id,
-                                    )
+                                repair_decision = _decision_with_resubmission_parent(
+                                    researka_decision, submission_id,
                                 )
-                                repair_topic_set.add(literature_topic)
                                 terminal_resubmit_topics.add(literature_topic)
-                                if literature_topic not in literature_topics[idx + 1:]:
-                                    literature_topics.append(literature_topic)
                                 fallback_attempt["terminal_resubmit_queued"] = True
-                                continue
+                                fallback_attempt["terminal_resubmit_immediate"] = True
+                                candidate, payload = _source_literature_payload(
+                                    profile_slug=profile.slug,
+                                    topic=literature_topic,
+                                    papers=papers,
+                                    runs_root=runs_root,
+                                    date=date,
+                                    reviewer_notes=_revision_notes(repair_decision),
+                                    parent_submission_id=_resubmission_parent_submission_id(
+                                        repair_decision,
+                                    ),
+                                )
+                                result = submit_with_backoff(payload, submitter)
+                                fallback_attempt["terminal_resubmit_status"] = result["status"]
+                                if result["status"] == _DECISION_ACCEPTED:
+                                    submission_id = publish_decisions.submission_id(result)
+                                    _record_submission_attempt(
+                                        submitted_path,
+                                        date=date,
+                                        candidate=candidate,
+                                        runs_root=runs_root,
+                                        submission_id=submission_id,
+                                    )
+                                    ledger.update({
+                                        "final_verdict": _DECISION_PENDING,
+                                        "status": publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value,
+                                        "submitted": 1,
+                                        "submitted_topic": literature_topic,
+                                        "submission_id": submission_id,
+                                    })
+                                    if submission_id:
+                                        final = publish_decisions.poll_submission_decision(
+                                            ledger,
+                                            submission_id_value=submission_id,
+                                            fetcher=decision_fetcher,
+                                            page_fetcher=page_fetcher,
+                                            attempts=decision_poll_attempts,
+                                            sleep_seconds=decision_poll_seconds,
+                                            sleep=sleep,
+                                        )
+                                        if final == _DECISION_ACCEPTED:
+                                            ledger["cycle_attempts"].append({
+                                                "topic": literature_topic,
+                                                "run_dir": candidate.get("run_dir"),
+                                                "fingerprint": candidate.get("memo_fingerprint"),
+                                                "status": publish_status.CycleStatus.PUBLISHED.value,
+                                            })
+                                            _write_ledger(ledger_path, ledger)
+                                            return ledger
+                                        if final in {_DECISION_REJECTED, _DECISION_REVISE}:
+                                            ledger["cycle_attempts"].append({
+                                                "topic": literature_topic,
+                                                "run_dir": candidate.get("run_dir"),
+                                                "fingerprint": candidate.get("memo_fingerprint"),
+                                                "status": (
+                                                    publish_status.CycleStatus.REVIEWER_REVISE.value
+                                                    if final == _DECISION_REVISE else
+                                                    publish_status.CycleStatus.REVIEWER_REJECTED.value
+                                                ),
+                                                "researka_decision": ledger.get("researka_decision", {}),
+                                                "public_page_check": ledger.get("public_page_check"),
+                                            })
+                                            _write_ledger(ledger_path, ledger)
+                                            if idx + 1 < len(literature_topics):
+                                                continue
+                                            return ledger
+                                    ledger["cycle_attempts"].append({
+                                        "topic": literature_topic,
+                                        "run_dir": candidate.get("run_dir"),
+                                        "fingerprint": candidate.get("memo_fingerprint"),
+                                        "status": publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value,
+                                    })
+                                    _write_ledger(ledger_path, ledger)
+                                    return ledger
+                                fallback_attempt["status"] = "blocked"
+                                fallback_attempt["reason"] = result["status"]
+                                if idx + 1 < len(literature_topics):
+                                    continue
+                                return ledger
                             if idx + 1 < len(literature_topics):
                                 continue
                             return ledger
