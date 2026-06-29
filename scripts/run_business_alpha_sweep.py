@@ -1156,7 +1156,16 @@ def _recent_source_literature_blocked_topics(runs_root: Path, domain: str) -> se
         | publish_cycle._recent_submission_topics(submitted_path, days=days, domain=domain)
         | publish_cycle._recent_negative_topics(ledger_dir, days=days, domain=domain)
     )
-    return {_topic_key(topic) for topic in blocked if _topic_key(topic)}
+    repairable_keys = {
+        key for topic in publish_cycle._repairable_source_literature_topics(
+            runs_root, domain,
+        )
+        if (key := _topic_key(topic))
+    }
+    return {
+        key for topic in blocked
+        if (key := _topic_key(topic)) and key not in repairable_keys
+    }
 
 
 def _write_sweep_summary(runs_root: Path, rows: list[dict[str, Any]]) -> Path:
