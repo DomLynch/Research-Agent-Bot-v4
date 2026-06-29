@@ -304,6 +304,7 @@ def _load_fullraw_env_defaults() -> None:
 
 def _strict_fullraw_probe(
     topic: str, *, include_papers: bool = False, runs_root: Path | None = None,
+    queries: tuple[str, ...] | None = None,
 ) -> dict[str, Any]:
     _load_fullraw_env_defaults()
     if not (
@@ -378,7 +379,7 @@ def _strict_fullraw_probe(
                 attempted: list[str] = []
                 result_limit = _business_fullraw_result_limit()
                 queries = _rank_fullraw_queries_by_cached_receipt(
-                    _business_fullraw_queries(topic),
+                    queries or _business_fullraw_queries(topic),
                 )
                 for idx, query in enumerate(queries):
                     query_started = time.monotonic()
@@ -793,8 +794,71 @@ def _merge_source_literature_papers(
     )
 
 
-def _strict_fullraw_probe_papers(topic: str, runs_root: Path) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    trace = _strict_fullraw_probe(topic, include_papers=True, runs_root=runs_root)
+_SOURCE_COMPLETION_QUERY_STOP_TOKENS = _BROAD_SEED_TOKENS | frozenset({
+    "analysis", "approach", "dataset", "evidence", "impact", "impacts",
+    "on", "paper", "role", "study", "using",
+})
+
+
+def _ordered_query_tokens(value: Any) -> list[str]:
+    return list(dict.fromkeys(re.findall(r"[a-z0-9]+", str(value or "").casefold())))
+
+
+def _source_completion_fullraw_queries(
+    topic: str, papers: list[dict[str, Any]],
+) -> tuple[str, ...]:
+    discovery = importlib.import_module("scripts.run_topic_discovery")
+    compact = discovery.__dict__.get("_compact_fullraw_query", lambda q: " ".join(q.split()))
+    base = [
+        token for token in _ordered_query_tokens(topic.replace("_", " "))
+        if token not in _BROAD_SEED_TOKENS
+    ]
+    if not base:
+        base = _ordered_query_tokens(_business_fullraw_queries(topic)[0] if _business_fullraw_queries(topic) else topic)
+    seen = {" ".join(sorted(set(query.split()))) for query in _business_fullraw_queries(topic)}
+    out: list[str] = []
+
+    def add(extras: list[str]) -> None:
+        room = max(1, 5 - len(base))
+        tail = [token for token in extras if token not in base][-_business_fullraw_query_limit():]
+        query = str(compact(" ".join([*base, *tail[-room:]]))).strip()
+        key = " ".join(sorted(set(query.split())))
+        if query and key not in seen:
+            seen.add(key)
+            out.append(query)
+
+    for paper in papers:
+        if publish_literature.substantive_fact_count([paper]) > 0:
+            continue
+        text = " ".join(str(paper.get(key) or "") for key in (
+            "title", "paper_title", "abstract", "source_excerpt", "snippet",
+        )).casefold()
+        if any(term in text for term in _FULLRAW_METADATA_ARTIFACT_TERMS):
+            continue
+        before = len(out)
+        for phrase in _BUSINESS_ENDPOINT_PHRASES:
+            if phrase in text:
+                add([
+                    token for token in _ordered_query_tokens(phrase)
+                    if token not in _SOURCE_COMPLETION_QUERY_STOP_TOKENS
+                ])
+        if len(out) > before:
+            continue
+        add([
+            token for token in _ordered_query_tokens(text)
+            if token not in _SOURCE_COMPLETION_QUERY_STOP_TOKENS
+        ])
+        if len(out) >= 2:
+            break
+    return tuple(out[:2])
+
+
+def _strict_fullraw_probe_papers(
+    topic: str, runs_root: Path, *, queries: tuple[str, ...] | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    trace = _strict_fullraw_probe(
+        topic, include_papers=True, runs_root=runs_root, queries=queries,
+    )
     papers = [paper for paper in trace.pop("_papers", []) if isinstance(paper, dict)]
     if trace.get("status") == "complete":
         papers = _merge_fullraw_hit_text(
@@ -1708,9 +1772,17 @@ def main() -> int:
                         cached_fact_count = publish_literature.substantive_fact_count(
                             cached_papers,
                         )
+                        completion_queries = _source_completion_fullraw_queries(
+                            topic, cached_papers,
+                        )
                         fullraw_papers, fullraw_trace = _strict_fullraw_probe_papers(
                             topic, args.runs_root,
+                            queries=completion_queries or None,
                         )
+                        if completion_queries:
+                            fullraw_trace["source_completion_queries"] = list(
+                                completion_queries,
+                            )
                         fullraw_trace["cached_fact_source_count"] = cached_trace.get(
                             "fact_source_count",
                         )

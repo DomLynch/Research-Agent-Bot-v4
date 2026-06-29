@@ -3433,6 +3433,127 @@ def test_business_sweep_merges_cached_and_live_fullraw_facts_to_reach_gate(
     assert "10.6161/live-merge-digital-5" in {paper["doi"] for paper in forced}
 
 
+def test_business_sweep_targets_near_ready_sources_to_complete_fact_gate(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    import agent.topic_discovery as topic_discovery_mod
+    import scripts.run_topic_discovery as discovery
+
+    profile = load_domain_profile("business_research")
+    runs_root = tmp_path / "runs"
+    topic = "digital_transformation_firm"
+    calls: list[str] = []
+    submissions: list[dict[str, Any]] = []
+    cached_papers = [
+        {
+            "title": f"Cached digital transformation paper {idx}",
+            "doi": f"10.6161/cached-target-digital-{idx}",
+            "source_fact": {
+                "canonical_phrase": f"Cached digital transformation fact {idx}.",
+                "population": "firms",
+                "intervention": "digital transformation",
+                "endpoint": "firm performance",
+                "source_tier": "fullraw_search",
+            },
+        }
+        for idx in range(4)
+    ] + [{
+        "title": "The Impact of Digital Transformation on Firm Profitability",
+        "doi": "10.6161/unfactored-digital-profitability",
+    }]
+    sweep._write_fullraw_discovery(
+        runs_root,
+        domain="business_research",
+        topic=topic,
+        profile=profile,
+        papers=cached_papers,
+    )
+    receipt = {
+        "shards_searched": 1525,
+        "partial_shard_search": False,
+        "sweep_failed_shards": 0,
+        "source_count_searched": 5,
+    }
+
+    def fake_seed_fullraw(query: str, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        topic_discovery_mod._FULLRAW_LAST_RECEIPT = dict(receipt)
+        topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
+        discovery._FULLRAW_PROBE_EVENTS.append({
+            "query": query,
+            "status": "complete",
+            "shards_searched": 1525,
+            "partial_shard_search": False,
+        })
+        return [{
+            "title": "Live digital transformation profitability source",
+            "doi": "10.6161/live-digital-profitability",
+            "source_fact": {
+                "canonical_phrase": (
+                    "Digital transformation improved firm profitability "
+                    "in listed firms."
+                ),
+                "population": "listed firms",
+                "intervention": "digital transformation",
+                "endpoint": "firm profitability",
+                "source_tier": "fullraw_search",
+            },
+        }]
+
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        submissions.append(kwargs)
+        forced = kwargs["source_literature_forced_papers"][topic]
+        assert publish_literature.substantive_fact_count(forced) == 5
+        assert publish_literature.source_identity_count(
+            forced, require_substantive=True,
+        ) == 5
+        return {
+            "status": "submitted_to_researka",
+            "submitted": 1,
+            "published": 0,
+            "publish_summary": {
+                "status": "submitted_to_researka",
+                "submitted": 1,
+                "published": 0,
+                "top_blockers": {},
+                "next_action": "watch_decision_or_public_page",
+                "queue_counts": {"ready_to_publish": 1},
+                "public_url_status": None,
+            },
+        }
+
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
+        str(tmp_path / "fullraw.lock"),
+    )
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [topic])
+    monkeypatch.setattr(
+        sweep,
+        "fetch_business_facts",
+        lambda *_args, **_kwargs: ([], {"status": "failed"}),
+    )
+    monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", lambda _topic: 0)
+    monkeypatch.setattr(discovery, "_seed_fullraw_papers", fake_seed_fullraw)
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(runs_root),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-06-29T04-45-00Z",
+    ])
+
+    assert sweep.main() == 0
+    assert calls == ["digital transformation firm profitability"]
+    assert submissions
+
+
 def test_business_sweep_prioritizes_cached_fullraw_facts_over_busy_probe(
     tmp_path: Path,
 ) -> None:
