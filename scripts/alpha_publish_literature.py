@@ -709,7 +709,17 @@ def _heterogeneity_matrix_lines(
             effect_rows.append(row)
         else:
             context_rows.append(row)
-    rows = ["### Effect-bearing comparison", "", *header]
+    rows = []
+    if non_bio:
+        rows.extend([
+            (
+                "Matrix guard: effect-bearing rows below are metric-specific "
+                "source facts, not a pooled comparison; context-only rows are "
+                "excluded from effect support."
+            ),
+            "",
+        ])
+    rows.extend(["### Effect-bearing comparison", "", *header])
     rows.extend(effect_rows or ["| - | - | - | - | - | No effect-bearing receipts extracted. |"])
     if context_rows:
         rows.extend(["", "### Context-only receipts", "", *header, *context_rows])
@@ -1121,12 +1131,12 @@ def _bounded_signal_sentence(
     ))
     if non_bio and directional and nullish:
         return (
-            f"Bounded signal: {topic_text} is a multi-outcome boundary map"
+            f"Bounded signal: {topic_text} is a source-scope boundary note"
             f"{f' across {family_text} receipts' if family_text else ''}: "
             f"direction-bearing evidence is limited to {', '.join(directional[:2])}, "
             f"while {', '.join(nullish[:2])} is the caveat outcome. This is an "
-            "unmatched scoping map across named outcome families, not support "
-            "for the topic as a whole."
+            "unmatched source-scope note across named outcome families, not "
+            "support for the topic as a whole."
         )
     if non_bio and directional:
         tail = (
@@ -1489,6 +1499,14 @@ def payload(
         in {"null/mixed", "null/non-convergent"}
     )
     context_only_count = len(selected) - directional_count - nullish_count
+    antecedent_count = sum(
+        1 for paper in selected
+        if _paper_evidence_role(paper, topic, profile.slug) == "antecedent/support"
+    )
+    modeling_count = sum(
+        1 for paper in selected
+        if _paper_evidence_role(paper, topic, profile.slug) == "descriptive/modeling"
+    )
     thin_non_bio_scope = (
         non_bio and directional_count <= 1 and nullish_count >= 1
         and context_only_count >= 1 and bool(directional_endpoints)
@@ -1498,14 +1516,16 @@ def payload(
     evidence_weight_note = ""
     if thin_non_bio_scope:
         evidence_weight_note = (
-            f"Evidence weight: this bounded scope rests on k={directional_count} "
-            f"directional association, k={nullish_count} caveat receipt, and "
-            f"k={context_only_count} context/antecedent/model receipts; it keeps "
-            "metric-specific support separate from broader outcomes and does not "
-            "treat unmatched settings as a matched comparison. "
+            f"Evidence weight: this is a source-scoping boundary note, not an "
+            f"effect synthesis. Only k={directional_count} receipt carries a direct "
+            f"topic-to-outcome directional statement; k={nullish_count} receipt is "
+            f"a metric-scope caveat; k={antecedent_count} antecedent/support and "
+            f"k={modeling_count} descriptive/modeling receipts are context only. "
+            "It keeps metric-specific support separate from broader outcomes and "
+            "does not treat unmatched settings as a matched comparison. "
             f"Falsifier/update: the directional-association {directional_endpoints[0]} receipt "
-            "would weaken if a matched setting and metric replication reports a "
-            "weaker or opposite association."
+            "would weaken if a matched industry/setting, comparator/reference, "
+            "and metric replication reports a weaker or opposite association."
         )
     bounded_signal = _bounded_signal_sentence(
         topic, endpoints_by_label, non_bio=non_bio,
@@ -1521,7 +1541,8 @@ def payload(
         and "non-clinical/predictive" in direction_text
     )
     lead = (
-        f"This receipt-backed scoping note is an unmatched metric-scope map for {topic}: "
+        f"This receipt-backed scoping note is a source-scope boundary note for {topic}, "
+        "not a pooled effect synthesis: "
         if thin_non_bio_scope else
         f"This receipt-backed scoping note is a multi-outcome boundary map for {topic}: "
         if non_bio and len(outcome_families) >= 2 else
@@ -1651,8 +1672,8 @@ def payload(
     }
     post_matrix_note = (
         "Audit note: effect-bearing rows stay metric-specific; "
-        "context/antecedent/model rows are excluded from effect support and no "
-        "rows are pooled."
+        "antecedent/support and descriptive/modeling rows are excluded from effect "
+        "support and no rows are pooled."
         if thin_non_bio_scope else synthesis
     )
     lines.extend([
@@ -1767,7 +1788,7 @@ def payload(
         **({"revision_of": parent_submission_id} if parent_submission_id else {}),
     }
     title_tail = (
-        f"unmatched metric-scope map across {join_contexts(outcome_families[:3])} receipts"
+        f"source-scope boundary note across {join_contexts(outcome_families[:3])} receipts"
         if thin_non_bio_scope and directional_endpoints and nullish_endpoints else
         f"boundary map across {join_contexts(outcome_families[:3])} receipts"
         if non_bio and len(outcome_families) >= 2 else

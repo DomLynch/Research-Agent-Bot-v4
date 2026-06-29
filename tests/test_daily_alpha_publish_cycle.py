@@ -13399,8 +13399,9 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     markdown = payload["markdown"]
     assert payload["title"] == (
         "supply chain resilience performance: "
-        "unmatched metric-scope map across firm-level, chain-level, and business-outcome receipts"
+        "source-scope boundary note across firm-level, chain-level, and business-outcome receipts"
     )
+    assert "unmatched metric-scope map" not in payload["title"]
     assert (
         "Evidence role summary: direction-bearing evidence base k=1; "
         "metric-scope caveat receipts k=1; context/antecedent/model "
@@ -13410,8 +13411,8 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "other/mixed: 5 receipt(s)" not in markdown
     assert "fallback" not in markdown.lower()
     assert "Bounded signal:" in markdown
-    assert "multi-outcome boundary map across firm-level, chain-level, and business-outcome receipts" in markdown
-    assert "unmatched scoping map across named outcome families" in markdown
+    assert "source-scope boundary note across firm-level, chain-level, and business-outcome receipts" in markdown
+    assert "unmatched source-scope note across named outcome families" in markdown
     assert "not support for the topic as a whole" in markdown
     assert "direction-bearing evidence base k=1" in markdown
     assert "context/antecedent/model receipts k=3 excluded from effect support" in markdown
@@ -13420,14 +13421,15 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "supply chain performance and firm performance" in markdown
     assert "inside one matched industry, comparator, and metric frame" in markdown
     assert (
-        "Evidence weight: this bounded scope rests on k=1 directional association, "
-        "k=1 caveat receipt, and k=3 context/antecedent/model receipts; "
-        "it keeps metric-specific support separate from broader outcomes and does "
-        "not treat unmatched settings as a matched comparison."
+        "Evidence weight: this is a source-scoping boundary note, not an "
+        "effect synthesis. Only k=1 receipt carries a direct topic-to-outcome "
+        "directional statement; k=1 receipt is a metric-scope caveat; "
+        "k=1 antecedent/support and k=2 descriptive/modeling receipts are context only."
     ) in markdown
     assert (
         "Falsifier/update: the directional-association supply chain performance receipt would "
-        "weaken if a matched setting and metric replication reports a weaker or opposite association."
+        "weaken if a matched industry/setting, comparator/reference, and metric replication "
+        "reports a weaker or opposite association."
     ) in markdown
     assert "Population/settings are separated as receipt context" in markdown
     assert "automotive firms" in markdown
@@ -13435,13 +13437,17 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "manufacturing firms" in markdown
     assert (
         "Audit note: effect-bearing rows stay metric-specific; "
-        "context/antecedent/model rows are excluded from effect support and no "
-        "rows are pooled."
+        "antecedent/support and descriptive/modeling rows are excluded from effect "
+        "support and no rows are pooled."
     ) in markdown
     assert "## Evidence matrix" in markdown
     assert "## Evidence role definitions" in markdown
     assert "## Directional grouping" not in markdown
     assert "Concrete contrast:" not in markdown
+    assert (
+        "Matrix guard: effect-bearing rows below are metric-specific source facts, "
+        "not a pooled comparison; context-only rows are excluded from effect support."
+    ) in markdown
     assert "### Effect-bearing comparison" in markdown
     assert "### Context-only receipts" in markdown
     assert "| Outcome family | Receipt | Evidence role | Population/setting | Metric | Extracted finding |" in markdown
