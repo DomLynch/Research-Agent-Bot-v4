@@ -1965,6 +1965,82 @@ def test_business_sweep_fullraw_probe_tries_compact_alpha_query(
     assert len(result["_papers"]) == 5
 
 
+def test_business_sweep_fullraw_probe_prefers_cached_complete_query_variant(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import agent.topic_discovery as topic_discovery_mod
+    import scripts.run_topic_discovery as discovery
+
+    calls: list[str] = []
+    complete_receipt = {
+        "shards_searched": 1525,
+        "partial_shard_search": False,
+        "sweep_failed_shards": 0,
+        "source_count_searched": 5,
+    }
+    complete_results = [
+        {
+            "paper_id": f"paper-{idx}",
+            "title": f"Supply chain resilience performance source {idx}",
+            "source_fact": {
+                "canonical_phrase": (
+                    "Supply chain resilience changed firm performance "
+                    f"in disruption setting {idx}."
+                ),
+                "population": "firms",
+                "intervention": "supply chain resilience",
+                "endpoint": "firm performance",
+            },
+        }
+        for idx in range(5)
+    ]
+
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
+        str(tmp_path / "fullraw.lock"),
+    )
+    monkeypatch.setattr(
+        sweep,
+        "_business_fullraw_queries",
+        lambda _topic: ("supply chain resilience", "supply chain resilience performance"),
+    )
+
+    def fake_search_response(
+        query: str, **_kwargs: Any,
+    ) -> dict[str, Any]:
+        if query != "supply chain resilience performance":
+            return {}
+        return {
+            "results": complete_results,
+            "meta": {"shard_receipt": complete_receipt},
+        }
+
+    def fake_seed_fullraw(query: str, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        topic_discovery_mod._FULLRAW_LAST_RECEIPT = dict(complete_receipt)
+        topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
+        discovery._FULLRAW_PROBE_EVENTS.append({
+            "query": query,
+            "status": "complete",
+            "partial_shard_search": False,
+            "shards_searched": 1525,
+        })
+        return complete_results
+
+    monkeypatch.setattr(sweep, "_fullraw_search_response", fake_search_response)
+    monkeypatch.setattr(discovery, "_seed_fullraw_papers", fake_seed_fullraw)
+
+    result = sweep._strict_fullraw_probe(
+        "supply_chain_resilience", include_papers=True,
+    )
+
+    assert calls == ["supply chain resilience performance"]
+    assert result["status"] == "complete"
+    assert result["query"] == "supply chain resilience performance"
+    assert result["candidate_fact_source_count"] == 5
+
+
 def test_business_sweep_fullraw_probe_keeps_complete_source_poor_query_for_enrichment(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

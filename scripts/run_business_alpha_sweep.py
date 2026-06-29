@@ -360,7 +360,9 @@ def _strict_fullraw_probe(
                 best_progress: dict[str, Any] = {}
                 attempted: list[str] = []
                 result_limit = _business_fullraw_result_limit()
-                queries = _business_fullraw_queries(topic)
+                queries = _rank_fullraw_queries_by_cached_receipt(
+                    _business_fullraw_queries(topic),
+                )
                 for idx, query in enumerate(queries):
                     query_started = time.monotonic()
                     attempted.append(query)
@@ -738,6 +740,26 @@ def _cached_fullraw_complete_hit_count(topic: str) -> int:
         if best >= MIN_DIRECT_SOURCES:
             break
     return best
+
+
+def _rank_fullraw_queries_by_cached_receipt(queries: tuple[str, ...]) -> tuple[str, ...]:
+    ranked: list[tuple[int, int, int, str]] = []
+    for idx, query in enumerate(queries):
+        data = _fullraw_search_response(
+            query, limit=_business_fullraw_result_limit(), queue_if_missing=False,
+        )
+        items = data.get("results") or data.get("hits") or []
+        complete_hits = (
+            len([item for item in items if isinstance(item, dict)])
+            if data and _fullraw_response_complete(data) else 0
+        )
+        ranked.append((
+            0 if complete_hits >= MIN_DIRECT_SOURCES else 1,
+            -complete_hits,
+            idx,
+            query,
+        ))
+    return tuple(item[-1] for item in sorted(ranked))
 
 
 def _clean_paper_source_fact(paper: dict[str, Any]) -> dict[str, Any]:
