@@ -3095,7 +3095,19 @@ def test_business_sweep_promotes_repairable_source_lit_outside_seed_window(
 
     runs_root = tmp_path / "runs"
     ledger_dir = runs_root / "_daily_ledger"
+    diagnostics_dir = runs_root / "_business_diagnostics"
     ledger_dir.mkdir(parents=True)
+    diagnostics_dir.mkdir(parents=True)
+    (diagnostics_dir / f"business_research-{seed_topic}.json").write_text(json.dumps({
+        "raw_fact_count": 0,
+        "a_core_fact_count": 0,
+        "retrieval_trace": {
+            "fullraw": {
+                "status": "complete",
+                "fact_source_count": 5,
+            },
+        },
+    }), encoding="utf-8")
     run_dir = runs_root / f"{repaired_topic}-source-literature-2026-06-29T03-00-00Z"
     run_dir.mkdir(parents=True)
     (run_dir / "source_literature_memo.md").write_text(

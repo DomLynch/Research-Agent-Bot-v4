@@ -1473,6 +1473,10 @@ def main() -> int:
             prioritized_topics = _prioritized_seed_topics(
                 args.runs_root, domain, seed_pool,
             )
+            prioritized_topics = list(dict.fromkeys([
+                *repairable_source_lit_topics,
+                *prioritized_topics,
+            ]))
             selected_topics: list[str] = []
             skipped_recent: list[str] = []
             fresh_topics: list[str] = []
