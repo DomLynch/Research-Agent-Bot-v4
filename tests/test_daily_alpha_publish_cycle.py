@@ -9349,6 +9349,103 @@ def test_source_literature_renderer_revise_gets_bounded_extra_retry(
     assert daily._source_literature_render_repair_revise(blocked) is False
 
 
+def test_clean_supported_source_literature_after_render_repair_gets_final_resubmit(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    topic = "supply_chain_resilience"
+    discovery = root / "_topics_discovery"
+    ledger_dir = root / "_daily_ledger"
+    discovery.mkdir(parents=True)
+    ledger_dir.mkdir()
+    daily._write_json(discovery / "fullraw.json", {
+        "domain": {"slug": "business_research"},
+        "all": [{
+            "topic": topic,
+            "paper_count": 5,
+            "fact_source_count": 5,
+        }],
+    })
+    renderer_revise = {
+        "decision": "revise",
+        "claim_support_verdict": "partially_supported",
+        "required_revisions": ["Move context-only rows out of the effect-bearing matrix."],
+        "failed_checks": [],
+        "gate_failures": [],
+        "rubric_scores": {
+            "claim_evidence_alignment": 3,
+            "source_grounding": 3,
+            "synthesis_quality": 3,
+        },
+        "resubmission": {"allowed": True},
+    }
+    clean_supported = {
+        "decision": "revise",
+        "claim_support_verdict": "supported",
+        "required_revisions": [],
+        "major_issues": [],
+        "minor_issues": [],
+        "failed_checks": [],
+        "gate_failures": [],
+        "rubric_scores": {
+            "claim_evidence_alignment": 5,
+            "source_grounding": 5,
+            "synthesis_quality": 5,
+        },
+        "resubmission": {"allowed": True},
+    }
+
+    for idx in range(daily._MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 2):
+        run_dir = root / f"{topic}-source-literature-2026-06-29T05-0{idx}-00Z"
+        run_dir.mkdir(parents=True)
+        run_dir.joinpath("source_literature_memo.md").write_text(
+            "# Source literature boundary memo\n", encoding="utf-8",
+        )
+        daily._write_json(ledger_dir / f"2026-06-29T05-0{idx}-00Z.json", {
+            "domain": {"slug": "business_research"},
+            "submitted": 1,
+            "candidate": {
+                "topic": topic,
+                "run_dir": run_dir.name,
+                "fingerprint": f"fp-clean-{idx}",
+            },
+            "researka_decision": (
+                clean_supported
+                if idx == daily._MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 1
+                else renderer_revise
+            ),
+        })
+
+    assert daily._source_literature_attempt_budget(
+        root, "business_research", topic,
+    ) == daily._MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 3
+    assert daily._repairable_source_literature_topics(
+        root, "business_research", limit=3,
+    ) == [topic]
+
+    final_run = root / f"{topic}-source-literature-2026-06-29T05-99-00Z"
+    final_run.mkdir(parents=True)
+    final_run.joinpath("source_literature_memo.md").write_text(
+        "# Source literature boundary memo\n", encoding="utf-8",
+    )
+    daily._write_json(ledger_dir / "2026-06-29T05-99-00Z.json", {
+        "domain": {"slug": "business_research"},
+        "submitted": 1,
+        "candidate": {
+            "topic": topic,
+            "run_dir": final_run.name,
+            "fingerprint": "fp-clean-final",
+        },
+        "researka_decision": clean_supported,
+    })
+    assert daily._source_literature_attempt_budget(
+        root, "business_research", topic,
+    ) == daily._MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 3
+    assert daily._repairable_source_literature_topics(
+        root, "business_research", limit=3,
+    ) == []
+
+
 def test_source_literature_candidate_papers_refetches_repeated_discovery_bundle(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

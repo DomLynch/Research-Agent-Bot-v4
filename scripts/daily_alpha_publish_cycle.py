@@ -296,6 +296,9 @@ _REPAIRABLE_REJECTION_REASONS = {
 _SOURCE_LITERATURE_RENDER_REPAIR_ATTEMPT_LIMIT = (
     _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 2
 )
+_SOURCE_LITERATURE_CLEAN_SUPPORTED_ATTEMPT_LIMIT = (
+    _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 3
+)
 _SOURCE_LITERATURE_RENDER_REPAIR_TERMS = (
     "abstract",
     "bounded signal",
@@ -2254,7 +2257,17 @@ def _source_literature_attempt_budget(
         for _fp, run_ref, decision in _repairable_submission_records(ledger):
             row_topic = candidate_topic or _source_literature_topic_from_run(run_ref)
             if row_topic == topic:
-                return _source_literature_repair_attempt_limit(decision)
+                budget = _source_literature_repair_attempt_limit(decision)
+                if _clean_supported_revise(decision):
+                    count = _source_literature_submission_count(runs_root, domain, topic)
+                    budget = max(
+                        budget,
+                        min(
+                            count + 1,
+                            _SOURCE_LITERATURE_CLEAN_SUPPORTED_ATTEMPT_LIMIT,
+                        ),
+                    )
+                return budget
     return _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
 
 
