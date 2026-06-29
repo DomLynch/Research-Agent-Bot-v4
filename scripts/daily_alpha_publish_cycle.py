@@ -299,6 +299,9 @@ _SOURCE_LITERATURE_RENDER_REPAIR_ATTEMPT_LIMIT = (
 _SOURCE_LITERATURE_CLEAN_SUPPORTED_ATTEMPT_LIMIT = (
     _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 3
 )
+_SOURCE_LITERATURE_PARENT_LINK_REPAIR_ATTEMPT_LIMIT = (
+    _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 4
+)
 _SOURCE_LITERATURE_RENDER_REPAIR_TERMS = (
     "abstract",
     "bounded signal",
@@ -2187,6 +2190,45 @@ def _source_literature_submission_count(
     return count
 
 
+def _source_literature_parent_link_repair_needed(
+    runs_root: Path, domain: str | None, topic: str, decision: Json,
+) -> bool:
+    parent_submission_id = _resubmission_parent_submission_id(decision)
+    if not parent_submission_id:
+        return False
+    saw_submitted_source_literature = False
+    for path in sorted((runs_root / "_daily_ledger").glob("*.json"), reverse=True):
+        ledger = _json(path, {})
+        if (
+            not isinstance(ledger, dict)
+            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
+        ):
+            continue
+        candidate = ledger.get("candidate")
+        if not isinstance(candidate, dict) or not int(ledger.get("submitted") or 0):
+            continue
+        run_ref = candidate.get("run_dir")
+        if not _source_literature_topic_from_run(run_ref):
+            continue
+        row_topic = str(candidate.get("topic") or "") or _source_literature_topic_from_run(run_ref)
+        if row_topic != topic:
+            continue
+        saw_submitted_source_literature = True
+        payload = _json(_run_path(runs_root, run_ref) / "source_literature_payload.json", {})
+        if not isinstance(payload, dict):
+            continue
+        metadata = payload.get("metadata")
+        if (
+            str(payload.get("parent_submission_id") or "").strip() == parent_submission_id
+            or (
+                isinstance(metadata, dict)
+                and str(metadata.get("revision_of") or "").strip() == parent_submission_id
+            )
+        ):
+            return False
+    return saw_submitted_source_literature
+
+
 def _repairable_source_literature_topics(
     runs_root: Path, domain: str | None, *, limit: int = 3,
 ) -> list[str]:
@@ -2281,6 +2323,17 @@ def _source_literature_attempt_budget(
                         min(
                             count + 1,
                             _SOURCE_LITERATURE_CLEAN_SUPPORTED_ATTEMPT_LIMIT,
+                        ),
+                    )
+                if _source_literature_parent_link_repair_needed(
+                    runs_root, domain, topic, decision,
+                ):
+                    count = _source_literature_submission_count(runs_root, domain, topic)
+                    budget = max(
+                        budget,
+                        min(
+                            count + 1,
+                            _SOURCE_LITERATURE_PARENT_LINK_REPAIR_ATTEMPT_LIMIT,
                         ),
                     )
                 return budget
