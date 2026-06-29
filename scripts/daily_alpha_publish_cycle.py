@@ -2547,6 +2547,7 @@ def _repairable_source_literature_decisions(
     runs_root: Path, domain: str | None, *, limit: int = 3,
 ) -> dict[str, Json]:
     decisions: dict[str, Json] = {}
+    checked_topics: set[str] = set()
     published = _recently_published_topics(
         runs_root / "_daily_ledger",
         days=_DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS,
@@ -2563,13 +2564,14 @@ def _repairable_source_literature_decisions(
         candidate_topic = str(candidate.get("topic") or "") if isinstance(candidate, dict) else ""
         for _fp, run_ref, decision in _repairable_submission_records(ledger):
             topic = candidate_topic or _source_literature_topic_from_run(run_ref)
-            if not topic or topic in decisions:
+            if not topic or topic in decisions or topic in checked_topics:
                 continue
             if topic in published or _family_blocked_topic(topic, published):
                 continue
             run_dir = _run_path(runs_root, run_ref)
             if not (run_dir / "source_literature_memo.md").exists():
                 continue
+            checked_topics.add(topic)
             if _source_literature_submission_count(
                 runs_root, domain, topic,
             ) >= _source_literature_attempt_budget(runs_root, domain, topic):

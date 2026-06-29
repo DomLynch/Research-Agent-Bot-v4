@@ -9411,6 +9411,56 @@ def test_clean_supported_source_literature_revise_gets_one_extra_retry(
     ) == [topic]
 
 
+def test_repairable_source_literature_exhausted_topic_is_checked_once(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    topic = "minimum_wage_employment"
+    ledger_dir = root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    decision = {
+        "decision": "revise",
+        "claim_support_verdict": "supported",
+        "notes": ["editorial decision is terminal; external author must resubmit"],
+        "required_revisions": [],
+        "major_issues": [],
+        "minor_issues": [],
+        "failed_checks": [],
+        "gate_failures": [],
+        "resubmission": {"allowed": True},
+    }
+    for idx in range(3):
+        run_dir = root / f"{topic}-source-literature-2026-06-29T08-0{idx}-00Z"
+        run_dir.mkdir(parents=True)
+        run_dir.joinpath("source_literature_memo.md").write_text(
+            "# Source literature boundary memo\n", encoding="utf-8",
+        )
+        daily._write_json(ledger_dir / f"2026-06-29T08-0{idx}-00Z.json", {
+            "domain": {"slug": "business_research"},
+            "submitted": 1,
+            "candidate": {
+                "topic": topic,
+                "run_dir": run_dir.name,
+                "fingerprint": f"fp-{idx}",
+            },
+            "researka_decision": decision,
+        })
+    budget_calls = 0
+
+    def exhausted_budget(*_args: Any, **_kwargs: Any) -> int:
+        nonlocal budget_calls
+        budget_calls += 1
+        return 0
+
+    monkeypatch.setattr(daily, "_source_literature_submission_count", lambda *_a, **_k: 1)
+    monkeypatch.setattr(daily, "_source_literature_attempt_budget", exhausted_budget)
+
+    assert daily._repairable_source_literature_decisions(
+        root, "business_research", limit=3,
+    ) == {}
+    assert budget_calls == 1
+
+
 def test_source_literature_renderer_revise_gets_bounded_extra_retry(
     tmp_path: Path,
 ) -> None:
