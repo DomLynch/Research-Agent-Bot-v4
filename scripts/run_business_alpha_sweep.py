@@ -1499,7 +1499,72 @@ def main() -> int:
                     f"{domain} topics={','.join(skipped_recent[:5])}",
                     flush=True,
                 )
+            repairable_source_lit_set = set(repairable_source_lit_topics)
             for topic in selected_topics:
+                if topic in repairable_source_lit_set and max(0, args.submit_after_consistent_passes):
+                    repair_row: dict[str, Any] = {
+                        "cycle": cycle + 1,
+                        "domain": domain,
+                        "domain_slug": domain,
+                        "topic": topic,
+                        "ready": True,
+                        "status": "source_literature_repair_candidate",
+                    }
+                    rows.append(repair_row)
+                    if profile.dry_run_only:
+                        repair_row["status"] = "submit_blocked_domain_dry_run_only"
+                        _write_sweep_summary(args.runs_root, rows)
+                        _write_sweep_end_summary(
+                            args.runs_root,
+                            rows,
+                            args.submit_date or dt.datetime.now(dt.UTC).strftime(
+                                "%Y-%m-%dT%H-%M-%SZ",
+                            ),
+                        )
+                        print(
+                            "[business-sweep] submit_blocked_domain_dry_run_only "
+                            f"{domain} {topic} via_source_literature_repair",
+                            file=sys.stderr,
+                            flush=True,
+                        )
+                        return 2
+                    ledger = run_cycle(
+                        runs_root=args.runs_root,
+                        date=args.submit_date
+                        or dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ"),
+                        domain=domain,
+                        submit=True,
+                        refresh_candidates=False,
+                    )
+                    repair_row["status"] = str(ledger.get("status") or "submit_failed")
+                    repair_row["submission_ledger"] = ledger
+                    _write_sweep_summary(args.runs_root, rows)
+                    _write_sweep_end_summary(
+                        args.runs_root,
+                        rows,
+                        str(ledger.get("date") or args.submit_date)
+                        or dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ"),
+                    )
+                    if isinstance(ledger.get("publish_summary"), dict):
+                        print(
+                            f"[business-sweep] domain={domain} "
+                            f"summary={json.dumps(ledger['publish_summary'], sort_keys=True)}",
+                            flush=True,
+                        )
+                    print(
+                        "[business-sweep] "
+                        f"{repair_row['status']} {domain} {topic} via_source_literature_repair",
+                        flush=True,
+                    )
+                    if repair_row["status"] in {
+                        "no_fresh_candidate",
+                        "reviewer_rejected",
+                        "reviewer_revise",
+                    }:
+                        continue
+                    return 0 if repair_row["status"] in {
+                        "submitted_to_researka", "published",
+                    } else 2
                 facts, trace = fetch_business_facts(topic, domain=domain, settings=settings)
                 bundle = build_candidate_bundle(facts, topic=topic, domain=domain)
                 row: dict[str, Any] = {
