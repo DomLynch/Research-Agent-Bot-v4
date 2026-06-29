@@ -2128,6 +2128,7 @@ def _repairable_submission_records(ledger: Json) -> list[tuple[str, Any, Json]]:
         and isinstance(candidate, dict)
         and _repairable_rejection(decision)
     ):
+        decision = _decision_with_resubmission_parent(decision, ledger.get("submission_id"))
         fp = str(candidate.get("fingerprint") or "")
         if fp:
             records.append((fp, candidate.get("run_dir"), decision))
@@ -2137,10 +2138,25 @@ def _repairable_submission_records(ledger: Json) -> list[tuple[str, Any, Json]]:
         decision = attempt.get("researka_decision")
         if not isinstance(decision, dict) or not _repairable_rejection(decision):
             continue
+        decision = _decision_with_resubmission_parent(decision, attempt.get("submission_id"))
         fp = str(attempt.get("fingerprint") or "")
         if fp:
             records.append((fp, attempt.get("run_dir"), decision))
     return records
+
+
+def _decision_with_resubmission_parent(decision: Json, parent_submission_id: Any) -> Json:
+    parent = str(parent_submission_id or "").strip()
+    if not parent:
+        return decision
+    resubmission = decision.get("resubmission")
+    if not isinstance(resubmission, dict) or resubmission.get("allowed") is not True:
+        return decision
+    if str(resubmission.get("parent_submission_id") or "").strip():
+        return decision
+    merged = dict(decision)
+    merged["resubmission"] = dict(resubmission) | {"parent_submission_id": parent}
+    return merged
 
 
 def _source_literature_topic_from_run(run_ref: Any) -> str:
@@ -2587,6 +2603,15 @@ def _retry_after_rejection(
 def _resubmission_allowed(decision: Json) -> bool:
     resubmission = decision.get("resubmission")
     return isinstance(resubmission, dict) and resubmission.get("allowed") is True
+
+
+def _resubmission_parent_submission_id(decision: Json) -> str:
+    if not _resubmission_allowed(decision):
+        return ""
+    resubmission = decision.get("resubmission")
+    if not isinstance(resubmission, dict):
+        return ""
+    return str(resubmission.get("parent_submission_id") or "").strip()
 
 
 def _repairable_ledger(ledger: Json) -> bool:
@@ -4233,6 +4258,7 @@ def _local_parent_refresh_blocked(
 def _source_literature_payload(
     *, profile_slug: str, topic: str, papers: list[Json], runs_root: Path, date: str,
     reviewer_notes: str = "",
+    parent_submission_id: str = "",
 ) -> tuple[Json, Json]:
     return publish_literature.payload(
         profile_slug=profile_slug,
@@ -4247,6 +4273,7 @@ def _source_literature_payload(
         safe_excerpt=_safe_excerpt,
         submission_agent_id=_submission_agent_id,
         reviewer_notes=reviewer_notes,
+        parent_submission_id=parent_submission_id,
         strict_topic_coverage=publish_literature._non_biomedical(profile_slug),
     )
 
@@ -5888,15 +5915,18 @@ def run_cycle(
                     fallback_attempt["status"] = "disabled"
                     fallback_attempt["reason"] = "source_fact_diversity_below_min"
                     continue
+                repair_decision = (
+                    repair_decisions.get(literature_topic, {})
+                    if literature_topic in repair_topic_set else {}
+                )
                 candidate, payload = _source_literature_payload(
                     profile_slug=profile.slug,
                     topic=literature_topic,
                     papers=papers,
                     runs_root=runs_root,
                     date=date,
-                    reviewer_notes=_revision_notes(
-                        repair_decisions.get(literature_topic, {}),
-                    ) if literature_topic in repair_topic_set else "",
+                    reviewer_notes=_revision_notes(repair_decision),
+                    parent_submission_id=_resubmission_parent_submission_id(repair_decision),
                 )
                 if len(payload.get("source_bundle") or []) < min_submit_sources:
                     fallback_attempt["status"] = "blocked"

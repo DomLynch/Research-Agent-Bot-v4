@@ -1229,10 +1229,13 @@ def payload(
     safe_excerpt: Callable[[str], str],
     submission_agent_id: Callable[[str], str],
     reviewer_notes: str = "",
+    parent_submission_id: str = "",
     strict_topic_coverage: bool = False,
 ) -> tuple[Json, Json]:
     profile = load_domain_profile(profile_slug)
     non_bio = _non_biomedical(profile.slug)
+    reviewer_notes = reviewer_notes.strip()
+    parent_submission_id = parent_submission_id.strip()
     selected = select_boundary_papers(
         topic, papers, 5, strict_topic_coverage=strict_topic_coverage,
     )
@@ -1625,6 +1628,11 @@ def payload(
     }
     agent_id = submission_agent_id(profile.slug)
     category = profile.slug.removesuffix("_research")
+    revision_metadata: dict[str, Any] = {
+        **({"reviewer_repair_notes": reviewer_notes} if reviewer_notes else {}),
+        **({"revision_feedback": reviewer_notes} if reviewer_notes else {}),
+        **({"revision_of": parent_submission_id} if parent_submission_id else {}),
+    }
     title_tail = (
         f"directional support for {directional_endpoints[0]} but null/mixed support "
         f"for {nullish_endpoints[0]} ({len(bundle)}-source scoping map)"
@@ -1639,6 +1647,27 @@ def payload(
         if non_bio and non_bio_signal_parts else
         "one bounded, context-dependent signal across receipts"
     )
+    metadata: dict[str, Any] = {
+        "article_type": "alpha_memo",
+        "category": category,
+        "domain_slug": profile.slug,
+        "topic": topic,
+    }
+    metadata.update(revision_metadata)
+    evidence_bundle: dict[str, Any] = {
+        "domain": profile.as_metadata(),
+        "surface_type": "source_literature_boundary",
+        "source_papers": selected,
+        "direct_source_papers": selected,
+        "source_bundle": bundle,
+        "source_bundle_count": len(bundle),
+        "bound_source_count": len(selected),
+        "direct_source_count": len(bundle),
+        "context_source_count": 0,
+        "context_sources_are_not_direct_support": False,
+        "source_literature_writer": writer_meta,
+    }
+    evidence_bundle.update(revision_metadata)
     out = {
         "artifact_type": "alpha_memo",
         "article_type": "alpha_memo",
@@ -1651,31 +1680,14 @@ def payload(
         "abstract": safe_excerpt(abstract_text),
         "summary": safe_excerpt(abstract_text),
         "topic": topic,
-        "metadata": {
-            "article_type": "alpha_memo",
-            "category": category,
-            "domain_slug": profile.slug,
-            "topic": topic,
-            **({"reviewer_repair_notes": reviewer_notes.strip()} if reviewer_notes.strip() else {}),
-        },
+        "metadata": metadata,
         "markdown": markdown,
         "citations": bundle,
         "source_bundle": bundle,
-        "evidence_bundle": {
-            "domain": profile.as_metadata(),
-            "surface_type": "source_literature_boundary",
-            "source_papers": selected,
-            "direct_source_papers": selected,
-            "source_bundle": bundle,
-            "source_bundle_count": len(bundle),
-            "bound_source_count": len(selected),
-            "direct_source_count": len(bundle),
-            "context_source_count": 0,
-            "context_sources_are_not_direct_support": False,
-            "source_literature_writer": writer_meta,
-            **({"reviewer_repair_notes": reviewer_notes.strip()} if reviewer_notes.strip() else {}),
-        },
+        "evidence_bundle": evidence_bundle,
         "content_hash": "sha256:" + hashlib.sha256(markdown.encode("utf-8")).hexdigest(),
     }
+    if parent_submission_id:
+        out["parent_submission_id"] = parent_submission_id
     write_json(run_dir / "source_literature_payload.json", out)
     return candidate, out

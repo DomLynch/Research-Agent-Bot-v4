@@ -9446,6 +9446,53 @@ def test_clean_supported_source_literature_after_render_repair_gets_final_resubm
     ) == []
 
 
+def test_repairable_source_literature_decision_backfills_parent_submission_id(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    topic = "supply_chain_resilience"
+    run_dir = root / f"{topic}-source-literature-2026-06-29T05-56-58Z"
+    run_dir.mkdir(parents=True)
+    run_dir.joinpath("source_literature_memo.md").write_text(
+        "# Source literature boundary memo\n", encoding="utf-8",
+    )
+    decision = {
+        "decision": "revise",
+        "claim_support_verdict": "supported",
+        "required_revisions": [],
+        "major_issues": [],
+        "minor_issues": [],
+        "failed_checks": [],
+        "gate_failures": [],
+        "rubric_scores": {
+            "claim_evidence_alignment": 5,
+            "source_grounding": 5,
+            "synthesis_quality": 5,
+        },
+        "resubmission": {"allowed": True},
+    }
+    daily._write_json(root / "_daily_ledger" / "2026-06-29T05-56-58Z.json", {
+        "domain": {"slug": "business_research"},
+        "submitted": 1,
+        "submission_id": "sub-parent-123",
+        "candidate": {
+            "topic": topic,
+            "run_dir": run_dir.name,
+            "fingerprint": "fp-source-lit",
+        },
+        "researka_decision": decision,
+    })
+
+    repair_decisions = daily._repairable_source_literature_decisions(
+        root, "business_research", limit=3,
+    )
+
+    assert repair_decisions[topic]["resubmission"] == {
+        "allowed": True,
+        "parent_submission_id": "sub-parent-123",
+    }
+
+
 def test_source_literature_candidate_papers_refetches_repeated_discovery_bundle(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
@@ -12360,6 +12407,47 @@ def test_source_literature_payload_is_deterministic_boundary_only(
     assert (run_dir / "source_literature_memo.md").read_text(
         encoding="utf-8",
     ) == payload["markdown"]
+
+
+def test_source_literature_payload_carries_resubmission_parent_metadata(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    papers = [
+        {
+            "title": f"Supply chain resilience evidence source {idx}",
+            "doi": f"10.1234/scr-{idx}",
+            "year": 2024,
+            "source_fact": {
+                "canonical_phrase": f"source-specific supply-chain finding {idx}",
+                "population": "firms",
+                "intervention": "supply chain resilience",
+                "endpoint": "supply chain performance",
+            },
+        }
+        for idx in range(5)
+    ]
+
+    _candidate, payload = daily._source_literature_payload(
+        profile_slug="business_research",
+        topic="supply_chain_resilience",
+        papers=papers,
+        runs_root=root,
+        date="2026-06-29T06-20-00Z",
+        reviewer_notes="editorial decision is terminal; external author must resubmit",
+        parent_submission_id="sub-parent-123",
+    )
+
+    run_dir = root / "supply_chain_resilience-source-literature-2026-06-29T06-20-00Z"
+    stored = json.loads((run_dir / "source_literature_payload.json").read_text(
+        encoding="utf-8",
+    ))
+    assert payload["parent_submission_id"] == "sub-parent-123"
+    assert payload["metadata"]["revision_of"] == "sub-parent-123"
+    assert payload["metadata"]["revision_feedback"].startswith("editorial decision")
+    assert payload["evidence_bundle"]["revision_of"] == "sub-parent-123"
+    assert stored["parent_submission_id"] == "sub-parent-123"
+    assert stored["metadata"]["revision_of"] == "sub-parent-123"
 
 
 def test_source_literature_payload_labels_consistent_favorable_receipts(
