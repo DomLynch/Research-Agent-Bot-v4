@@ -6330,6 +6330,7 @@ def run_cycle(
                 if len(expanded_topics) >= source_lit_scan_limit:
                     break
             literature_topics = expanded_topics
+        terminal_resubmit_topics: set[str] = set()
         for idx, literature_topic in enumerate(literature_topics):
             papers = (
                 forced_source_lit[literature_topic]
@@ -6467,7 +6468,7 @@ def run_cycle(
                                 and _source_literature_clean_terminal_resubmit(
                                     researka_decision,
                                 )
-                                and literature_topics.count(literature_topic) < 2
+                                and literature_topic not in terminal_resubmit_topics
                             ):
                                 repair_decisions[literature_topic] = (
                                     _decision_with_resubmission_parent(
@@ -6475,7 +6476,9 @@ def run_cycle(
                                     )
                                 )
                                 repair_topic_set.add(literature_topic)
-                                literature_topics.append(literature_topic)
+                                terminal_resubmit_topics.add(literature_topic)
+                                if literature_topic not in literature_topics[idx + 1:]:
+                                    literature_topics.append(literature_topic)
                                 fallback_attempt["terminal_resubmit_queued"] = True
                                 continue
                             if idx + 1 < len(literature_topics):
