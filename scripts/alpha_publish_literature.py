@@ -1606,6 +1606,10 @@ def payload(
         for endpoint, count in directional_endpoint_counts.items()
         if count > 1
     ]
+    primary_duplicated_endpoint = (
+        sorted(duplicated_directional_endpoints, key=lambda item: item[1], reverse=True)[0][0]
+        if duplicated_directional_endpoints else ""
+    )
     nullish_endpoints = list(dict.fromkeys(
         endpoints_by_label.get("null/mixed", [])
         + endpoints_by_label.get("null/non-convergent", []),
@@ -1726,7 +1730,7 @@ def payload(
     synthesis = (
         f"{lead}{signal_label} across this "
         f"{len(bundle)}-source {type_text} bundle ({year_text}). {group_label}: "
-        f"{role_text}. Direction labels for audit: {direction_text}. The source facts cover "
+        f"{role_text}. The source facts cover "
         f"{len(populations) or 'multiple'} population/setting context(s) and "
         f"{len(interventions) or 'multiple'} "
         f"{'policy/exposure/practice' if non_bio else 'intervention/exposure'} context(s), "
@@ -1770,6 +1774,18 @@ def payload(
         )
     if non_bio and populations:
         synthesis += f" Named setting scope includes {join_contexts(populations[:5])}."
+    if non_bio and primary_duplicated_endpoint:
+        comparator_endpoints = [
+            endpoint for endpoint in directional_endpoints
+            if endpoint != primary_duplicated_endpoint
+        ]
+        if comparator_endpoints:
+            synthesis += (
+                f" Bounded research signal: {primary_duplicated_endpoint} is the repeated "
+                f"anchor, while {join_contexts(comparator_endpoints[:3])} are comparator "
+                f"outcome families under the shared {topic.replace('_', ' ')} exposure; "
+                "the memo tests outcome-specific divergence, not one topic-level effect."
+            )
     if non_bio_signal_parts:
         signal_heading = "Substantive map" if non_bio and len(directional_endpoints) > 1 else "Substantive signal"
         synthesis += f" {signal_heading}: " + "; ".join(non_bio_signal_parts) + "."
@@ -1908,6 +1924,7 @@ def payload(
             ]
         ),
         f"Evidence role summary: {role_text}.",
+        f"Direction labels for audit: {direction_text}.",
         "",
         moderator_note,
         "",
@@ -1989,7 +2006,13 @@ def payload(
     title_directional_endpoints = _title_endpoint_labels(
         directional_endpoints[:4], topic, selected,
     )
+    comparator_title_endpoints = [
+        endpoint for endpoint in title_directional_endpoints
+        if endpoint != primary_duplicated_endpoint
+    ]
     title_tail = (
+        f"{primary_duplicated_endpoint} with {join_contexts(comparator_title_endpoints[:3])} comparator outcomes"
+        if non_bio and primary_duplicated_endpoint and comparator_title_endpoints else
         f"directional support for {join_contexts(title_directional_endpoints)} "
         f"but null or mixed support for {join_contexts(nullish_endpoints[:2])}"
         if non_bio and title_directional_endpoints and nullish_endpoints else

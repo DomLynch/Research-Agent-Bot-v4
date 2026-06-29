@@ -14028,12 +14028,14 @@ def test_source_literature_payload_keeps_multiple_economics_directional_metrics(
 
     markdown = payload["markdown"]
     assert payload["title"] == (
-        "minimum wage: direction-bearing map across price pass-through, "
-        "poverty elasticity, and earnings inequality share receipts"
+        "minimum wage: price pass-through with poverty elasticity and "
+        "earnings inequality share comparator outcomes"
     )
     assert "direction-bearing receipts: 4" in markdown
     assert "Substantive map: direction-bearing evidence covers price pass-through, poverty elasticity, and earnings inequality share." in markdown
     assert "Coverage balance: price pass-through" in markdown
+    assert "Bounded research signal: price pass-through is the repeated anchor" in markdown
+    assert "Direction labels for audit" not in payload["abstract"]
     assert "direction-bearing evidence is limited to share of fall" not in markdown
     assert "| price pass through | Minimum wage price pass-through" in markdown
     assert "| poverty elasticity | Minimum wage poverty elasticity" in markdown
@@ -14111,13 +14113,19 @@ def test_source_literature_payload_infers_missing_non_bio_metrics(
 
     markdown = payload["markdown"]
     assert payload["title"] == (
-        "minimum wage: direction-bearing map across price pass-through, "
-        "employment effects, poverty elasticity, and earnings inequality share receipts"
+        "minimum wage: price pass-through with employment effects, "
+        "poverty elasticity, and earnings inequality share comparator outcomes"
     )
     assert "direction-bearing receipts: 5" in markdown
     assert "Substantive map: direction-bearing evidence covers price pass-through, employment effects, poverty elasticity, and earnings inequality share." in markdown
     assert "Named setting scope includes Brazilian labor market, 1996-2018" in markdown
     assert "Coverage balance: price pass-through (2 of 5 direction-bearing receipts)" in markdown
+    assert (
+        "Bounded research signal: price pass-through is the repeated anchor, while "
+        "employment effects, poverty elasticity, and earnings inequality share are "
+        "comparator outcome families"
+    ) in markdown
+    assert "Direction labels for audit" not in payload["abstract"]
     assert "one bounded signal" not in markdown
     assert "firm-performance, supply-chain performance" not in markdown
 
