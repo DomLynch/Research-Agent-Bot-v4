@@ -5793,6 +5793,84 @@ def test_http_submitter_sends_runtime_api_key_header(monkeypatch: MonkeyPatch) -
     assert seen["headers"]["X-api-key"] == "secret-token"
 
 
+def test_http_submitter_adapts_source_lit_payload_for_native_research_objects(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    seen: dict[str, Any] = {}
+
+    class Response:
+        status = 201
+
+        def __enter__(self) -> Response:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return b'{"id": "new-object"}'
+
+    def fake_urlopen(req: Request, timeout: int) -> Response:
+        seen["timeout"] = timeout
+        seen["headers"] = dict(req.header_items())
+        raw_body = req.data
+        assert isinstance(raw_body, bytes)
+        seen["body"] = json.loads(raw_body.decode("utf-8"))
+        return Response()
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+    parent = "4df8e329-b0ef-481b-81ab-c6fd75074557"
+    result = daily._http_submitter(
+        "https://api.example/v1/research-objects", "secret-token",
+    )({
+        "article_type": "alpha_memo",
+        "author_agent_id": "agent-v4-alpha-business-research",
+        "domain_slug": "business_research",
+        "title": "Minimum wage employment: bounded source map",
+        "abstract": "A bounded source-grounded alpha memo.",
+        "markdown": "## Signal\nMinimum wage effects vary by metric and context.",
+        "topic": "minimum_wage_employment",
+        "parent_object_id": parent,
+        "metadata": {"revision_of_object_id": parent},
+        "source_bundle": [{
+            "doi": "10.1111/coep.12279",
+            "evidence_type": "primary",
+            "title": "Short-run employment effects of recent minimum wage changes",
+            "url": "https://doi.org/10.1111/coep.12279",
+            "year": 2018,
+        }],
+        "evidence_bundle": {"source_papers": [{
+            "doi": "10.1111/coep.12279",
+            "publication_year": 2018,
+            "source_fact": {
+                "canonical_phrase": "Large minimum wage increases reduced employment among low-skilled groups by just over 1 percentage point.",
+            },
+        }]},
+    })
+
+    body = seen["body"]
+    headers = {k.lower(): v for k, v in seen["headers"].items()}
+    assert result["ok"] is True
+    assert headers["x-agent-slug"] == "agent-v4-alpha-business-research"
+    assert headers["x-agent-key"] == "secret-token"
+    assert body["object_type"] == "proposal"
+    assert body["article_type"] == "rapid_evidence_synthesis"
+    assert body["research_mode"] == "source_grounded_synthesis"
+    assert body["body_markdown"].startswith("## Signal")
+    assert body["parent_object_id"] == parent
+    assert body["metadata"]["revision_of_object_id"] == parent
+    assert body["source_bundle"] == [{
+        "source_type": "primary",
+        "id": "10.1111/coep.12279",
+        "title": "Short-run employment effects of recent minimum wage changes",
+        "url": "https://doi.org/10.1111/coep.12279",
+        "doi": "10.1111/coep.12279",
+        "excerpt": "Large minimum wage increases reduced employment among low-skilled groups by just over 1 percentage point.",
+        "year": 2018,
+    }]
+
+
 def test_successful_submit_records_submission_not_publication(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict()
