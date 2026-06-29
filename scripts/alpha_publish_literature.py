@@ -1344,7 +1344,7 @@ def fetch_papers(
             break
     if len(out) < limit:
         out.extend(_fullraw_relevant_papers(topic, limit - len(out), seen))
-    for idx, paper in enumerate(out):
+    for idx, paper in enumerate(list(out)):
         raw_fact = paper.get("source_fact")
         if isinstance(raw_fact, dict) and raw_fact.get("source_tier") != "paper_metadata":
             continue
@@ -1353,17 +1353,32 @@ def fetch_papers(
             continue
         target_key = paper_key(paper, paper.get("paper_id"))
         target_title = title_key(title)
-        for item in fact_rows(title, row_timeout=min(timeout, 3.0)):
+        target_updated = False
+        for item in fact_rows(title, row_timeout=min(timeout, 8.0)):
             raw_paper = item.get("paper")
             matched: Json = raw_paper if isinstance(raw_paper, dict) else {}
             item_key = paper_key(matched, item.get("paper_id"))
-            item_title = title_key(matched.get("title") or matched.get("paper_title"))
-            if item_key != target_key and item_title != target_title:
+            item_title_raw = matched.get("title") or matched.get("paper_title")
+            item_title = title_key(item_title_raw)
+            if not target_updated and (item_key == target_key or item_title == target_title):
+                candidate = paper | {"source_fact": source_fact(item)}
+                if topic_relevant(topic, candidate):
+                    out[idx] = candidate
+                    target_updated = True
                 continue
-            candidate = paper | {"source_fact": source_fact(item)}
+            key = item_key or item_title
+            if not key or key in seen or not item_title_raw:
+                continue
+            candidate = matched | {
+                "id": key,
+                "title": item_title_raw,
+                "source_fact": source_fact(item),
+            }
             if topic_relevant(topic, candidate):
-                out[idx] = candidate
-                break
+                seen.add(key)
+                out.append(candidate)
+                if len(out) >= limit:
+                    break
     if out:
         return out
     req = urllib.request.Request(

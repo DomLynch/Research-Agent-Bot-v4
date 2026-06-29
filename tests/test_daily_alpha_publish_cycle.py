@@ -12707,7 +12707,7 @@ def test_source_literature_fetcher_enriches_fullraw_with_matching_fact_rows(
     assert daily._source_literature_fact_count(papers) == 5
     assert daily._source_literature_boundary_quality("acarbose", papers, 5) == (True, "ok")
     assert fullraw_titles[0] in queries
-    assert timeouts[-3:] == [3.0, 3.0, 3.0]
+    assert timeouts[-3:] == [8.0, 8.0, 8.0]
 
 
 def test_source_literature_fetcher_retries_focused_query_variant(
