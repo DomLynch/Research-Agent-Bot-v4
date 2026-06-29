@@ -9205,6 +9205,81 @@ def test_source_backed_literature_candidate_bypasses_broad_exhausted_parent(
     ) == ["metformin_longevity"]
 
 
+def test_clean_supported_source_literature_revise_gets_one_extra_retry(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    topic = "supply_chain_resilience"
+    discovery = root / "_topics_discovery"
+    ledger_dir = root / "_daily_ledger"
+    discovery.mkdir(parents=True)
+    ledger_dir.mkdir()
+    papers = [
+        {
+            "title": f"Supply chain resilience receipt {idx}",
+            "doi": f"10.4242/scr-{idx}",
+            "source_fact": {
+                "canonical_phrase": f"supply chain resilience bounded finding {idx}",
+                "population": "firms",
+                "intervention": "supply chain resilience",
+                "endpoint": "supply chain performance",
+            },
+        }
+        for idx in range(5)
+    ]
+    daily._write_json(discovery / "fullraw.json", {
+        "domain": {"slug": "business_research"},
+        "all": [{
+            "topic": topic,
+            "paper_count": 5,
+            "fact_source_count": 5,
+            "source_papers": papers,
+        }],
+    })
+    clean_supported_revise = {
+        "decision": "revise",
+        "claim_support_verdict": "supported",
+        "required_revisions": [],
+        "major_issues": [],
+        "minor_issues": [],
+        "failed_checks": [],
+        "gate_failures": [],
+        "rubric_scores": {
+            "claim_evidence_alignment": 5,
+            "source_grounding": 5,
+            "synthesis_quality": 5,
+        },
+        "resubmission": {"allowed": True},
+    }
+    for idx in range(daily._MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT):
+        run_dir = root / f"{topic}-source-literature-2026-06-29T05-0{idx}-00Z"
+        run_dir.mkdir(parents=True)
+        run_dir.joinpath("source_literature_memo.md").write_text(
+            "# Source literature boundary memo\n", encoding="utf-8",
+        )
+        daily._write_json(ledger_dir / f"2026-06-29T05-0{idx}-00Z.json", {
+            "domain": {"slug": "business_research"},
+            "submitted": 1,
+            "candidate": {
+                "topic": topic,
+                "run_dir": run_dir.name,
+                "fingerprint": f"fp-{idx}",
+            },
+            "researka_decision": clean_supported_revise,
+        })
+
+    assert daily._source_literature_submission_count(
+        root, "business_research", topic,
+    ) == daily._MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
+    assert daily._source_literature_attempt_budget(root, "business_research", topic) == 5
+    assert daily._repairable_source_literature_topics(
+        root, "business_research", limit=3,
+    ) == [topic]
+    assert daily._source_literature_topic_candidates(
+        root, "business_research", 5, limit=3,
+    ) == [topic]
+
+
 def test_source_literature_candidate_papers_refetches_repeated_discovery_bundle(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

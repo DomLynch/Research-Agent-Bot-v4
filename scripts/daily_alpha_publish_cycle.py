@@ -2177,7 +2177,7 @@ def _repairable_source_literature_decisions(
                 continue
             if _source_literature_submission_count(
                 runs_root, domain, topic,
-            ) >= _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT:
+            ) >= _source_literature_attempt_budget(runs_root, domain, topic):
                 continue
             decisions[topic] = decision
             if len(decisions) >= limit:
@@ -2207,8 +2207,27 @@ def _exhausted_source_literature_topics(
             counts[topic] = counts.get(topic, 0) + 1
     return {
         topic for topic, count in counts.items()
-        if count >= _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
+        if count >= _source_literature_attempt_budget(runs_root, domain, topic)
     }
+
+
+def _source_literature_attempt_budget(
+    runs_root: Path, domain: str | None, topic: str,
+) -> int:
+    for path in sorted((runs_root / "_daily_ledger").glob("*.json"), reverse=True):
+        ledger = _json(path, {})
+        if (
+            not isinstance(ledger, dict)
+            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
+        ):
+            continue
+        candidate = ledger.get("candidate")
+        candidate_topic = str(candidate.get("topic") or "") if isinstance(candidate, dict) else ""
+        for _fp, run_ref, decision in _repairable_submission_records(ledger):
+            row_topic = candidate_topic or _source_literature_topic_from_run(run_ref)
+            if row_topic == topic:
+                return _repair_attempt_limit(decision)
+    return _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
 
 
 def _accepted_shape_profiles(
@@ -2429,6 +2448,8 @@ def _repairable_rejection(decision: Json) -> bool:
 
 
 def _submission_attempt_budget(decision: Any) -> int:
+    if _clean_supported_revise(decision):
+        return _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 1
     if isinstance(decision, dict) and decision.get("decision") == _DECISION_REJECT:
         return _MAX_REJECT_ATTEMPTS_PER_FINGERPRINT
     return _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT
@@ -2443,6 +2464,34 @@ def _repair_attempt_limit(decision: Any) -> int:
     ):
         return budget + 1
     return budget
+
+
+def _clean_supported_revise(decision: Any) -> bool:
+    if (
+        not isinstance(decision, dict)
+        or decision.get("decision") != _DECISION_REVISE
+        or str(decision.get("claim_support_verdict") or "").lower() != "supported"
+        or not _resubmission_allowed(decision)
+    ):
+        return False
+    if decision.get("failure_category"):
+        return False
+    for key in (
+        "required_revisions", "major_issues", "minor_issues", "failed_checks",
+        "gate_failures",
+    ):
+        values = decision.get(key)
+        if isinstance(values, list) and values:
+            return False
+    scores = decision.get("rubric_scores")
+    if isinstance(scores, dict):
+        for value in scores.values():
+            try:
+                if int(value) < 4:
+                    return False
+            except (TypeError, ValueError):
+                continue
+    return True
 
 
 def _retry_after_rejection(
