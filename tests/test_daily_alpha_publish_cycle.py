@@ -11053,7 +11053,9 @@ def test_source_literature_fallback_resubmits_clean_terminal_revise_same_cycle(
     ]
     assert len(submitted_payloads) == 2
     assert submitted_payloads[1]["parent_submission_id"] == "sub-clean-1"
+    assert submitted_payloads[1]["parent_object_id"] == "sub-clean-1"
     assert submitted_payloads[1]["metadata"]["revision_of"] == "sub-clean-1"
+    assert submitted_payloads[1]["metadata"]["revision_of_object_id"] == "sub-clean-1"
     assert ledger["source_literature_fallback_attempts"][0]["terminal_resubmit_queued"] is True
 
 
@@ -13333,11 +13335,16 @@ def test_source_literature_payload_carries_resubmission_parent_metadata(
         encoding="utf-8",
     ))
     assert payload["parent_submission_id"] == "sub-parent-123"
+    assert payload["parent_object_id"] == "sub-parent-123"
     assert payload["metadata"]["revision_of"] == "sub-parent-123"
+    assert payload["metadata"]["revision_of_object_id"] == "sub-parent-123"
     assert payload["metadata"]["revision_feedback"].startswith("editorial decision")
     assert payload["evidence_bundle"]["revision_of"] == "sub-parent-123"
+    assert payload["evidence_bundle"]["revision_of_object_id"] == "sub-parent-123"
     assert stored["parent_submission_id"] == "sub-parent-123"
+    assert stored["parent_object_id"] == "sub-parent-123"
     assert stored["metadata"]["revision_of"] == "sub-parent-123"
+    assert stored["metadata"]["revision_of_object_id"] == "sub-parent-123"
 
 
 def test_source_literature_payload_labels_consistent_favorable_receipts(

@@ -1877,6 +1877,7 @@ def payload(
         **({"reviewer_repair_notes": reviewer_notes} if reviewer_notes else {}),
         **({"revision_feedback": reviewer_notes} if reviewer_notes else {}),
         **({"revision_of": parent_submission_id} if parent_submission_id else {}),
+        **({"revision_of_object_id": parent_submission_id} if parent_submission_id else {}),
     }
     title_directional_endpoints = _title_endpoint_labels(
         directional_endpoints[:3], topic, selected,
@@ -1939,5 +1940,6 @@ def payload(
     }
     if parent_submission_id:
         out["parent_submission_id"] = parent_submission_id
+        out["parent_object_id"] = parent_submission_id
     write_json(run_dir / "source_literature_payload.json", out)
     return candidate, out
