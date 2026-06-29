@@ -245,7 +245,43 @@ def test_fullraw_payload_can_request_foreground_priority(
         "rank_mode": "relevance",
         "cache_only": True,
         "queue_if_missing": True,
-        "priority": True,
+    }
+
+
+def test_fullraw_uses_generic_researka_env_aliases(
+    monkeypatch: Any,
+) -> None:
+    from agent import topic_discovery as td
+
+    monkeypatch.delenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", raising=False)
+    monkeypatch.delenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", raising=False)
+    monkeypatch.delenv("V5_MEMO_FULL_RAW_CORPUS_TOKEN", raising=False)
+    monkeypatch.setenv("RESEARKA_FULLRAW_SEARCH_URL", "https://fullraw/search")
+    monkeypatch.setenv("RESEARKA_FULLRAW_INDEX_TOKEN", "tok-fullraw")
+    payloads: list[dict[str, Any]] = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.host == "test":
+            return httpx.Response(200, json=[])
+        assert req.headers["authorization"] == "Bearer tok-fullraw"
+        payloads.append(json.loads(req.content.decode("utf-8")))
+        return httpx.Response(200, json={
+            "meta": {"shard_receipt": _fullraw_receipt()},
+            "results": [{"title": "Generic fullraw paper"}],
+        })
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as c:
+        papers = td._fetch_topic_papers(
+            "metformin_longevity", client=c, settings=_settings(),
+        )
+
+    assert papers[0]["title"] == "Generic fullraw paper"
+    assert payloads[0] == {
+        "query": "metformin longevity",
+        "limit": 25,
+        "rank_mode": "relevance",
+        "cache_only": True,
+        "queue_if_missing": True,
     }
 
 
@@ -411,7 +447,7 @@ def test_seed_fullraw_papers_allows_priority_when_background_queue_saturated(
     assert requests[0][0:2] == ("POST", "https://fullraw/search")
     payload = requests[0][2]
     assert payload is not None
-    assert payload["priority"] is True
+    assert "priority" not in payload
 
 
 def test_seed_fullraw_papers_allows_priority_burst_when_priority_queue_exists(
@@ -458,7 +494,7 @@ def test_seed_fullraw_papers_allows_priority_burst_when_priority_queue_exists(
     assert requests[0][0:2] == ("POST", "https://fullraw/search")
     payload = requests[0][2]
     assert payload is not None
-    assert payload["priority"] is True
+    assert "priority" not in payload
 
 
 def test_seed_fullraw_papers_refetches_smaller_completed_sweep_cache(

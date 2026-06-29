@@ -1193,12 +1193,12 @@ def _fetch_topic_papers(
 def _fetch_fullraw_topic_papers(topic: str, *, client: httpx.Client, limit: int = 25) -> list[dict[str, Any]]:
     global _FULLRAW_LAST_ASYNC_SWEEP, _FULLRAW_LAST_RECEIPT
     _FULLRAW_LAST_RECEIPT, _FULLRAW_LAST_ASYNC_SWEEP = {}, {}
-    token = os.environ.get("V5_MEMO_FULL_RAW_INDEX_TOKEN", "").strip() or os.environ.get("V5_MEMO_FULL_RAW_CORPUS_TOKEN", "").strip()
-    url = os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip() or ("http://127.0.0.1:9903/search" if token else "")
+    token = (os.environ.get("V5_MEMO_FULL_RAW_INDEX_TOKEN", "").strip() or os.environ.get("V5_MEMO_FULL_RAW_CORPUS_TOKEN", "").strip() or os.environ.get("RESEARKA_FULLRAW_INDEX_TOKEN", "").strip() or os.environ.get("RESEARKA_FULLRAW_TOKEN", "").strip())
+    url = (os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "").strip() or os.environ.get("RESEARKA_FULLRAW_SEARCH_URL", "").strip() or ("http://127.0.0.1:9903/search" if token else ""))
     if not url or os.environ.get("TOPIC_DISCOVERY_FULLRAW_FALLBACK", "1").lower() in {"0", "false", "no", "off"}:
         return []
     timeout = _float_env("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", 20.0)
-    payload = {"query": topic.replace("_", " ")[:1024], "limit": limit, "rank_mode": "relevance", "cache_only": True, "queue_if_missing": True} | ({"priority": True} if os.environ.get("TOPIC_DISCOVERY_FULLRAW_PRIORITY", "").lower() in {"1", "true", "yes", "on"} else {})
+    payload = {"query": topic.replace("_", " ")[:1024], "limit": limit, "rank_mode": "relevance", "cache_only": True, "queue_if_missing": True}
     wait_s = _float_env("TOPIC_DISCOVERY_FULLRAW_POLL_SECONDS", 2.0)
     data: Any = {}
     receipt: dict[str, Any] = {}

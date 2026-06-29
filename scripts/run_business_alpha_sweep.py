@@ -741,7 +741,6 @@ def _fullraw_search_response(
             "rank_mode": "relevance",
             "cache_only": True,
             "queue_if_missing": queue_if_missing,
-            "priority": _business_fullraw_priority_enabled(),
         }).encode("utf-8"),
         headers={
             "Content-Type": "application/json",

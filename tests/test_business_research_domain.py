@@ -5,6 +5,7 @@ import json
 import os
 import signal as signal_mod
 import sys
+import urllib.request
 from contextlib import suppress
 from pathlib import Path
 from types import SimpleNamespace
@@ -2039,6 +2040,47 @@ def test_business_sweep_fullraw_probe_prefers_cached_complete_query_variant(
     assert result["status"] == "complete"
     assert result["query"] == "supply chain resilience performance"
     assert result["candidate_fact_source_count"] == 5
+
+
+def test_business_fullraw_search_response_uses_canonical_payload(
+    monkeypatch: Any,
+) -> None:
+    captured: dict[str, Any] = {}
+
+    class FakeResponse:
+        def __enter__(self) -> FakeResponse:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return b'{"results": []}'
+
+    def fake_urlopen(req: Any, timeout: int = 0) -> FakeResponse:
+        captured["timeout"] = timeout
+        captured["url"] = req.full_url
+        captured["headers"] = dict(req.header_items())
+        captured["body"] = json.loads(req.data.decode("utf-8"))
+        return FakeResponse()
+
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "http://fullraw/search")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_PRIORITY", "1")
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+    result = sweep._fullraw_search_response("minimum wage", limit=10)
+
+    assert result == {"results": []}
+    assert captured["url"] == "http://fullraw/search"
+    assert captured["headers"]["Authorization"] == "Bearer tok"
+    assert captured["body"] == {
+        "query": "minimum wage",
+        "limit": 10,
+        "rank_mode": "relevance",
+        "cache_only": True,
+        "queue_if_missing": True,
+    }
 
 
 def test_business_sweep_fullraw_probe_keeps_complete_source_poor_query_for_enrichment(
