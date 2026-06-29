@@ -3031,6 +3031,117 @@ def test_business_sweep_uses_cached_complete_fullraw_discovery_without_live_prob
     }]
 
 
+def test_business_sweep_enriches_cached_fullraw_discovery_before_fact_gate(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    runs_root = tmp_path / "runs"
+    topic = "digital_transformation_firm"
+    submissions: list[dict[str, Any]] = []
+    papers = [
+        {
+            "title": f"Digital transformation firm performance paper {idx}",
+            "doi": f"10.6161/digital-firm-{idx}",
+            "abstract": "Digital transformation evidence tied to firm performance.",
+            **({
+                "source_fact": {
+                    "canonical_phrase": (
+                        "Digital transformation was associated with bounded firm "
+                        f"performance outcomes in source setting {idx}."
+                    ),
+                    "population": "firms",
+                    "intervention": "digital transformation",
+                    "endpoint": "firm performance",
+                    "source_tier": "fullraw_search",
+                },
+            } if idx < 4 else {}),
+        }
+        for idx in range(5)
+    ]
+    enriched_papers = [
+        paper if idx < 4 else paper | {
+            "source_fact": {
+                "canonical_phrase": (
+                    "Digital transformation changed firm performance in the "
+                    "fifth independent source setting."
+                ),
+                "population": "firms",
+                "intervention": "digital transformation",
+                "endpoint": "firm performance",
+                "source_tier": "fullraw_abstract",
+            },
+        }
+        for idx, paper in enumerate(papers)
+    ]
+    sweep._write_fullraw_discovery(
+        runs_root,
+        domain="business_research",
+        topic=topic,
+        profile=profile,
+        papers=papers,
+    )
+
+    def fake_enrich(
+        _topic: str, *, domain: str, papers: list[dict[str, Any]], settings: Any,
+    ) -> list[dict[str, Any]]:
+        assert domain == "business_research"
+        assert len(papers) == 5
+        return enriched_papers
+
+    def fail_live_probe(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise AssertionError("near-complete cached fullraw discovery should avoid live probe")
+
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        submissions.append(kwargs)
+        forced = kwargs["source_literature_forced_papers"][topic]
+        assert publish_literature.substantive_fact_count(forced) == 5
+        assert publish_literature.source_identity_count(
+            forced, require_substantive=True,
+        ) == 5
+        return {
+            "status": "published",
+            "submitted": 1,
+            "published": 1,
+            "publish_summary": {
+                "status": "published",
+                "submitted": 1,
+                "published": 1,
+                "top_blockers": {},
+                "next_action": "public_page_verified",
+                "queue_counts": {"ready_to_publish": 1},
+                "public_url_status": 200,
+            },
+        }
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [topic])
+    monkeypatch.setattr(
+        sweep,
+        "fetch_business_facts",
+        lambda *_args, **_kwargs: ([], {"status": "failed"}),
+    )
+    monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", lambda _topic: 0)
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", fail_live_probe)
+    monkeypatch.setattr(sweep, "_enrich_fullraw_papers_with_db_facts", fake_enrich)
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(runs_root),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-06-29T04-20-00Z",
+    ])
+
+    assert sweep.main() == 0
+    assert submissions[0]["source_literature_forced_papers"] == {
+        topic: enriched_papers,
+    }
+
+
 def test_business_sweep_skips_recent_source_literature_topics_before_fullraw(
     tmp_path: Path,
     monkeypatch: Any,

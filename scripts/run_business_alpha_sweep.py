@@ -760,10 +760,8 @@ def _cached_fullraw_discovery_papers(
     if _count_int(row.get("paper_count")) < MIN_DIRECT_SOURCES:
         return [], {}
     fact_count = publish_literature.substantive_fact_count(papers)
-    source_count = publish_literature.source_identity_count(
-        papers, require_substantive=True,
-    )
-    if fact_count < MIN_DIRECT_SOURCES or source_count < MIN_DIRECT_SOURCES:
+    source_count = publish_literature.source_identity_count(papers)
+    if fact_count <= 0 or source_count < MIN_DIRECT_SOURCES:
         return [], {}
     trace = {
         "status": "complete",
