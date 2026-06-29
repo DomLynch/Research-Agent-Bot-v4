@@ -645,6 +645,52 @@ def _uniform_favorable_cross_pico(papers: list[Json], min_sources: int) -> bool:
     )
 
 
+def _paper_evidence_role(paper: Json, topic: str = "", profile_slug: str = "") -> str:
+    direction = _paper_effect_direction(paper, topic)
+    label = _display_direction(direction, profile_slug)
+    if label != "directional estimate" or not _non_biomedical(profile_slug):
+        return label
+    title = title_key(paper.get("title") or paper.get("paper_title") or "")
+    exposure = title_key(_exposure_context_label(paper, non_bio=True))
+    if "antecedent" in exposure or "factors affecting" in title:
+        return "antecedent/support"
+    return label
+
+
+def _table_cell(value: Any, limit: int = 90) -> str:
+    text = str(value or "").replace("|", "/").strip()
+    return _short_finding(text, limit) or "-"
+
+
+def _heterogeneity_matrix_lines(
+    papers: list[Json], topic: str = "", profile_slug: str = "",
+) -> list[str]:
+    rows = [
+        "| Outcome family | Receipt | Evidence role | Population/setting | Metric | Extracted finding |",
+        "|---|---|---|---|---|---|",
+    ]
+    non_bio = _non_biomedical(profile_slug)
+    for paper in papers:
+        fact = paper.get("source_fact")
+        fact = fact if isinstance(fact, dict) else {}
+        metric = str(fact.get("endpoint") or fact.get("metric") or "").strip()
+        direction = _paper_effect_direction(paper, topic)
+        finding = _display_finding(fact, direction)
+        rows.append(
+            "| "
+            + " | ".join((
+                _table_cell(_outcome_family(metric), 40),
+                _table_cell(paper.get("title") or "Untitled source", 72),
+                _table_cell(_paper_evidence_role(paper, topic, profile_slug), 36),
+                _table_cell(_source_context_label(paper, non_bio=non_bio), 48),
+                _table_cell(metric, 40),
+                _table_cell(finding, 110),
+            ))
+            + " |",
+        )
+    return rows
+
+
 def _direction_rows(papers: list[Json], topic: str = "", profile_slug: str = "") -> list[str]:
     rows: list[str] = []
     for paper in papers:
@@ -654,6 +700,7 @@ def _direction_rows(papers: list[Json], topic: str = "", profile_slug: str = "")
             finding = str(fact.get("canonical_phrase") or "").strip()
         title = str(paper.get("title") or "Untitled source").strip()
         direction = _paper_effect_direction(paper, topic)
+        label = _paper_evidence_role(paper, topic, profile_slug)
         if isinstance(fact, dict):
             finding = _display_finding(fact, direction)
         note = ""
@@ -669,7 +716,7 @@ def _direction_rows(papers: list[Json], topic: str = "", profile_slug: str = "")
         if direction == "directionally favorable" and re.search(r"\b(?:β|beta)\s*[=:-]\s*-", finding):
             note = " direction follows receipt wording; coefficient sign is source-specific"
         rows.append(
-            f"- {_display_direction(direction, profile_slug)}: {title}"
+            f"- {label}: {title}"
             + (f" — {finding}" if finding else "")
             + (f" ({note})" if note else ""),
         )
@@ -682,6 +729,8 @@ def _direction_category_lines(topic: str, profile_slug: str = "") -> list[str]:
         return [
             f"- directional estimate: {topic_text} is the policy, exposure, "
             "method, or practice being measured; the label is not an efficacy verdict.",
+            "- antecedent/support: the receipt explains inputs, enablers, or "
+            "context for the topic rather than a clean topic-to-outcome effect.",
             f"- reference/comparator contrast: {topic_text} is the reference side "
             "of the extracted contrast; interpret only within that metric.",
             "- economic/context only: the receipt reports cost, market, prevalence, "
@@ -721,9 +770,10 @@ def _direction_summary(papers: list[Json], topic: str = "", profile_slug: str = 
         finding = _display_finding(fact, _paper_effect_direction(paper, topic))
         if not finding:
             continue
-        groups[_paper_effect_direction(paper, topic)].append(_short_finding(finding, 120))
+        label = _paper_evidence_role(paper, topic, profile_slug)
+        groups.setdefault(label, []).append(_short_finding(finding, 120))
     parts = [
-        f"{_display_direction(label, profile_slug)}: {len(values)} receipt(s)"
+        f"{label}: {len(values)} receipt(s)"
         for label, values in groups.items() if values
     ]
     return " | ".join(parts) if parts else "direction of effect is not extractable from the retrieved facts"
@@ -732,13 +782,14 @@ def _direction_summary(papers: list[Json], topic: str = "", profile_slug: str = 
 def _evidence_role_summary(papers: list[Json], topic: str = "", profile_slug: str = "") -> str:
     directional = nullish = context_only = 0
     for paper in papers:
-        direction = _paper_effect_direction(paper, topic)
-        label = _display_direction(direction, profile_slug)
+        label = _paper_evidence_role(paper, topic, profile_slug)
         if label in {"directional estimate", "directionally favorable"}:
             directional += 1
         elif label in {"null/mixed", "null/non-convergent"}:
             nullish += 1
-        elif label in {"descriptive/modeling", "non-clinical/predictive"}:
+        elif label in {
+            "antecedent/support", "descriptive/modeling", "non-clinical/predictive",
+        }:
             context_only += 1
     parts = [
         f"direction-bearing evidence base k={directional}",
@@ -746,7 +797,7 @@ def _evidence_role_summary(papers: list[Json], topic: str = "", profile_slug: st
     ]
     if context_only:
         parts.append(
-            f"context-only method/model receipts k={context_only} excluded from effect support",
+            f"context/antecedent/model receipts k={context_only} excluded from effect support",
         )
     return "; ".join(parts)
 
@@ -763,7 +814,7 @@ def _direction_contrast_sentence(
         finding = _display_finding(fact, direction)
         if not finding:
             continue
-        label = _display_direction(direction, profile_slug)
+        label = _paper_evidence_role(paper, topic, profile_slug)
         title = str(paper.get("title") or "Untitled source").strip()
         groups.setdefault(label, []).append(
             f"{title}: {_short_finding(finding, 110)}",
@@ -772,7 +823,7 @@ def _direction_contrast_sentence(
         return ""
     priority = (
         "directional estimate", "null/mixed", "reference/comparator contrast",
-        "descriptive/modeling", "economic/context only", "other/mixed",
+        "antecedent/support", "descriptive/modeling", "economic/context only", "other/mixed",
         "directionally favorable", "null/non-convergent", "comparator/not favorable",
         "non-clinical/predictive",
     )
@@ -1271,7 +1322,7 @@ def payload(
         source_fact = paper.get("source_fact")
         if not isinstance(source_fact, dict):
             continue
-        label = _display_direction(_paper_effect_direction(paper, topic), profile.slug)
+        label = _paper_evidence_role(paper, topic, profile.slug)
         endpoint = str(source_fact.get("endpoint") or source_fact.get("metric") or "").strip()
         if endpoint:
             endpoints_by_label.setdefault(label, []).append(endpoint)
@@ -1279,6 +1330,7 @@ def payload(
         for label, prefix in (
             ("directional estimate", "direction-bearing receipts support"),
             ("null/mixed", "null/mixed receipts limit"),
+            ("antecedent/support", "antecedent/support receipts contextualize"),
             ("descriptive/modeling", "descriptive/modeling receipts only contextualize"),
         ):
             endpoints = list(dict.fromkeys(endpoints_by_label.get(label, [])))
@@ -1418,6 +1470,10 @@ def payload(
         "## Source synthesis",
         "",
         bounded_signal,
+        "",
+        "## Heterogeneity matrix",
+        "",
+        *_heterogeneity_matrix_lines(selected, topic, profile.slug),
         "",
         synthesis,
         "",

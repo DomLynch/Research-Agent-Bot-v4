@@ -12363,7 +12363,8 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         "supply chain resilience performance: "
         "heterogeneity map across firm-level, chain-level, and business-outcome receipts"
     )
-    assert "directional estimate: 2 receipt(s)" in markdown
+    assert "directional estimate: 1 receipt(s)" in markdown
+    assert "antecedent/support: 1 receipt(s)" in markdown
     assert "descriptive/modeling: 2 receipt(s)" in markdown
     assert "null/mixed: 1 receipt(s)" in markdown
     assert "other/mixed: 5 receipt(s)" not in markdown
@@ -12371,11 +12372,12 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "Bounded signal:" in markdown
     assert "multi-outcome heterogeneity map across firm-level, chain-level, and business-outcome receipts" in markdown
     assert "between outcome families, not within one harmonized performance outcome" in markdown
-    assert "direction-bearing evidence base k=2" in markdown
-    assert "context-only method/model receipts k=2 excluded from effect support" in markdown
+    assert "direction-bearing evidence base k=1" in markdown
+    assert "context/antecedent/model receipts k=3 excluded from effect support" in markdown
     assert "It excludes duplicate reports, metadata-only title matches" in markdown
     assert "Substantive signal:" in markdown
     assert "direction-bearing receipts support supply chain performance" in markdown
+    assert "antecedent/support receipts contextualize supply chain performance" in markdown
     assert "null/mixed receipts limit firm performance" in markdown
     assert "descriptive/modeling receipts only contextualize resilience scoring model" in markdown
     assert "Resolve the directional/null conflict" in markdown
@@ -12386,6 +12388,12 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "chemical firms" in markdown
     assert "manufacturing firms" in markdown
     assert "Concrete contrast:" in markdown
+    assert "## Heterogeneity matrix" in markdown
+    assert "| Outcome family | Receipt | Evidence role | Population/setting | Metric | Extracted finding |" in markdown
+    assert "| chain-level | Supply chain resilience and performance of manufacturing firms" in markdown
+    assert "| chain-level | Factors Affecting the Supply Chain Resilience" in markdown
+    assert "| firm-level | The Impacts of Supply Chain Capabilities" in markdown
+    assert "antecedent/support | firms | supply chain performance" in markdown
     assert "hypotheses of a positive impact" in markdown
     assert "have been rejected" in markdown
     assert "method or modelling receipt; no direct effect estimate extracted" in markdown
