@@ -312,7 +312,7 @@ _SOURCE_LITERATURE_FIELD_OWNERSHIP_ATTEMPT_LIMIT = (
     _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 7
 )
 _SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT = (
-    _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 8
+    2
 )
 _SOURCE_LITERATURE_PUBLISH_FRAMING_ATTEMPT_LIMIT = (
     _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 9
@@ -2697,8 +2697,15 @@ def _source_literature_attempt_budget(
         for _fp, run_ref, decision in _repairable_submission_records(ledger):
             row_topic = candidate_topic or _source_literature_topic_from_run(run_ref)
             if row_topic == topic:
+                if _source_literature_terminal_resubmit_needed(
+                    runs_root, domain, topic, decision,
+                ):
+                    return _SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT
                 budget = _source_literature_repair_attempt_limit(decision)
-                if _clean_supported_revise(decision):
+                if (
+                    _clean_supported_revise(decision)
+                    and "external author must resubmit" not in _norm(_revision_notes(decision))
+                ):
                     count = _source_literature_submission_count(runs_root, domain, topic)
                     budget = max(
                         budget,
@@ -2751,17 +2758,6 @@ def _source_literature_attempt_budget(
                             _SOURCE_LITERATURE_FIELD_OWNERSHIP_ATTEMPT_LIMIT,
                         ),
                     )
-                if _source_literature_terminal_resubmit_needed(
-                    runs_root, domain, topic, decision,
-                ):
-                    count = _source_literature_submission_count(runs_root, domain, topic)
-                    budget = max(
-                        budget,
-                        min(
-                            count + 1,
-                            _SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT,
-                        ),
-                    )
                 if _source_literature_publish_framing_repair_needed(
                     runs_root, domain, topic, decision,
                 ):
@@ -2773,7 +2769,10 @@ def _source_literature_attempt_budget(
                             _SOURCE_LITERATURE_PUBLISH_FRAMING_ATTEMPT_LIMIT,
                         ),
                     )
-                if _source_literature_terminal_feedback_repair_needed(decision):
+                if (
+                    _source_literature_terminal_feedback_repair_needed(decision)
+                    and not _clean_supported_revise(decision)
+                ):
                     count = _source_literature_submission_count(runs_root, domain, topic)
                     budget = max(
                         budget,

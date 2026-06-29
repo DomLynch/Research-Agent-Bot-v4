@@ -10069,8 +10069,47 @@ def test_source_literature_clean_terminal_revise_gets_one_resubmit(
             "parent_submission_id": "sub-terminal-final",
         },
     }
-    for idx in range(daily._SOURCE_LITERATURE_FIELD_OWNERSHIP_ATTEMPT_LIMIT):
-        run_dir = root / f"{topic}-source-literature-2026-06-29T09-{idx:02d}-00Z"
+    initial_run = root / f"{topic}-source-literature-2026-06-29T09-00-00Z"
+    initial_run.mkdir(parents=True)
+    initial_run.joinpath("source_literature_memo.md").write_text(
+        "# Source literature boundary memo\n", encoding="utf-8",
+    )
+    daily._write_json(initial_run / "source_literature_payload.json", {
+        "title": (
+            "supply chain resilience performance: "
+            "directional supply chain performance vs null/mixed firm performance evidence"
+        ),
+        "markdown": (
+            "Audit note: effect-bearing rows stay metric-specific; "
+            "context/antecedent/model rows are excluded from effect support and no "
+            "rows are pooled."
+        ),
+    })
+    daily._write_json(ledger_dir / "2026-06-29T09-00-00Z.json", {
+        "domain": {"slug": "business_research"},
+        "submitted": 1,
+        "submission_id": "sub-terminal-0",
+        "candidate": {
+            "topic": topic,
+            "run_dir": initial_run.name,
+            "fingerprint": "fp-terminal-0",
+        },
+        "researka_decision": decision,
+    })
+
+    assert daily._source_literature_submission_count(
+        root, "business_research", topic,
+    ) == 1
+    assert daily._source_literature_attempt_budget(
+        root, "business_research", topic,
+    ) == daily._SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT
+    assert daily._repairable_source_literature_topics(
+        root, "business_research", limit=3,
+    ) == [topic]
+
+    for idx in range(daily._SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT - 1):
+        stamp = f"2026-06-29T09-{idx + 1:02d}-00Z"
+        run_dir = root / f"{topic}-source-literature-{stamp}"
         run_dir.mkdir(parents=True)
         run_dir.joinpath("source_literature_memo.md").write_text(
             "# Source literature boundary memo\n", encoding="utf-8",
@@ -10086,14 +10125,14 @@ def test_source_literature_clean_terminal_revise_gets_one_resubmit(
                 "rows are pooled."
             ),
         })
-        daily._write_json(ledger_dir / f"2026-06-29T09-{idx:02d}-00Z.json", {
+        daily._write_json(ledger_dir / f"{stamp}.json", {
             "domain": {"slug": "business_research"},
             "submitted": 1,
-            "submission_id": f"sub-terminal-{idx}",
+            "submission_id": f"sub-terminal-resubmit-{idx}",
             "candidate": {
                 "topic": topic,
                 "run_dir": run_dir.name,
-                "fingerprint": f"fp-terminal-{idx}",
+                "fingerprint": f"fp-terminal-resubmit-{idx}",
             },
             "researka_decision": decision,
         })
@@ -10125,37 +10164,6 @@ def test_source_literature_clean_terminal_revise_gets_one_resubmit(
         },
     })
     os.utime(stale_ledger, (1, 1))
-
-    assert daily._source_literature_attempt_budget(
-        root, "business_research", topic,
-    ) == daily._SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT
-    assert daily._repairable_source_literature_topics(
-        root, "business_research", limit=3,
-    ) == [topic]
-
-    final_run = root / f"{topic}-source-literature-2026-06-29T10-00-00Z"
-    final_run.mkdir(parents=True)
-    final_run.joinpath("source_literature_memo.md").write_text(
-        "# Source literature boundary memo\n", encoding="utf-8",
-    )
-    daily._write_json(final_run / "source_literature_payload.json", {
-        "title": (
-            "supply chain resilience performance: "
-            "directional supply chain performance with firm-performance caveat evidence"
-        ),
-        "markdown": "## Boundary map\n\nFirm-performance caveat framing.",
-    })
-    daily._write_json(ledger_dir / "2026-06-29T10-00-00Z.json", {
-        "domain": {"slug": "business_research"},
-        "submitted": 1,
-        "submission_id": "sub-terminal-final",
-        "candidate": {
-            "topic": topic,
-            "run_dir": final_run.name,
-            "fingerprint": "fp-terminal-final",
-        },
-        "researka_decision": decision,
-    })
 
     assert daily._source_literature_submission_count(
         root, "business_research", topic,
@@ -10219,40 +10227,46 @@ def test_old_source_literature_publish_framing_gets_one_bounded_retry(
     assert daily._source_literature_submission_count(
         root, "business_research", topic,
     ) == daily._SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT
-    assert daily._source_literature_attempt_budget(
+    budget = daily._source_literature_attempt_budget(
         root, "business_research", topic,
-    ) == daily._SOURCE_LITERATURE_PUBLISH_FRAMING_ATTEMPT_LIMIT
+    )
+    assert budget == daily._MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 1
     assert daily._repairable_source_literature_topics(
         root, "business_research", limit=3,
     ) == [topic]
 
-    final_run = root / f"{topic}-source-literature-2026-06-29T11-00-00Z"
-    final_run.mkdir(parents=True)
-    final_run.joinpath("source_literature_memo.md").write_text(
-        "# Source literature boundary memo\n", encoding="utf-8",
-    )
-    daily._write_json(final_run / "source_literature_payload.json", {
-        "title": (
-            "supply chain resilience performance: directional supply chain "
-            "performance with firm-performance caveat evidence"
-        ),
-        "markdown": "## Boundary map\n\nFirm-performance caveat framing.",
-    })
-    daily._write_json(ledger_dir / "2026-06-29T11-00-00Z.json", {
-        "domain": {"slug": "business_research"},
-        "submitted": 1,
-        "submission_id": "sub-framing-final",
-        "candidate": {
-            "topic": topic,
-            "run_dir": final_run.name,
-            "fingerprint": "fp-framing-final",
-        },
-        "researka_decision": decision,
-    })
+    for idx in range(daily._SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT, budget):
+        stamp = f"2026-06-29T11-{idx:02d}-00Z"
+        final_run = root / f"{topic}-source-literature-{stamp}"
+        final_run.mkdir(parents=True)
+        final_run.joinpath("source_literature_memo.md").write_text(
+            "# Source literature boundary memo\n", encoding="utf-8",
+        )
+        daily._write_json(final_run / "source_literature_payload.json", {
+            "title": (
+                "supply chain resilience performance: directional supply chain "
+                "performance with firm-performance caveat evidence"
+            ),
+            "markdown": "## Boundary map\n\nFirm-performance caveat framing.",
+            "parent_submission_id": "sub-framing-final",
+            "parent_object_id": "sub-framing-final",
+            "metadata": {"revision_of": "sub-framing-final"},
+        })
+        daily._write_json(ledger_dir / f"{stamp}.json", {
+            "domain": {"slug": "business_research"},
+            "submitted": 1,
+            "submission_id": f"sub-framing-final-{idx}",
+            "candidate": {
+                "topic": topic,
+                "run_dir": final_run.name,
+                "fingerprint": f"fp-framing-final-{idx}",
+            },
+            "researka_decision": decision,
+        })
 
     assert daily._source_literature_submission_count(
         root, "business_research", topic,
-    ) == daily._SOURCE_LITERATURE_PUBLISH_FRAMING_ATTEMPT_LIMIT
+    ) == budget
     assert daily._repairable_source_literature_topics(
         root, "business_research", limit=3,
     ) == []
