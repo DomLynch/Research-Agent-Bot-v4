@@ -12099,6 +12099,119 @@ def test_source_literature_payload_uses_economics_language(
     assert "pooled elasticity" in markdown
 
 
+def test_source_literature_payload_maps_business_repair_directional_contrast(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    papers = [
+        {
+            "title": (
+                "Evaluating Supply Resilience Performance of an Automotive Industry "
+                "during Operational Shocks: A Pythagorean Fuzzy AHP-VIKOR-Based Approach"
+            ),
+            "doi": "10.3390/systems11080396",
+            "year": 2023,
+            "source_fact": {
+                "canonical_phrase": (
+                    "In the first stage, significant criteria and their corresponding "
+                    "sub-criteria were determined through a vast review of the literature "
+                    "and nominal group technique, while the relative weights for RSS were "
+                    "obtained through the Pythagorean Fuzzy Analytic Hierarchy Process "
+                    "(PFAHP) method"
+                ),
+                "population": "automotive firms",
+                "intervention": "supply chain resilience",
+                "endpoint": "resilience scoring model",
+            },
+        },
+        {
+            "title": (
+                "The Impacts of Supply Chain Capabilities, Visibility, Resilience on "
+                "Supply Chain Performance and Firm Performance"
+            ),
+            "doi": "10.3390/admsci13100225",
+            "year": 2023,
+            "source_fact": {
+                "canonical_phrase": (
+                    "The research findings reveal that visibility significantly "
+                    "influences supply chain resilience; while the hypotheses of a "
+                    "positive impact of supply chain visibility and supply chain "
+                    "resilience on firm performance have been rejected"
+                ),
+                "population": "firms",
+                "intervention": "supply chain resilience",
+                "endpoint": "firm performance",
+            },
+        },
+        {
+            "title": "Factors Affecting the Supply Chain Resilience and Supply Chain Performance",
+            "doi": "10.57044/sajol.2022.1.2.2212",
+            "year": 2022,
+            "source_fact": {
+                "canonical_phrase": (
+                    "supply chain artificial intelligence, adaptive capability, and "
+                    "supply chain collaboration have a positive and significant influence "
+                    "on supply chain resilience and supply chain performance"
+                ),
+                "population": "firms",
+                "intervention": "supply chain resilience",
+                "endpoint": "supply chain performance",
+            },
+        },
+        {
+            "title": (
+                "The effect of supply chain resilience on supply chain performance of "
+                "chemical industrial companies"
+            ),
+            "doi": "10.5267/j.uscm.2022.8.001",
+            "year": 2022,
+            "source_fact": {
+                "canonical_phrase": (
+                    "The aim of this study is to identify the effect of supply chain "
+                    "resilience as measured by supply chain flexibility, supply chain "
+                    "collaboration, and supply chain agility on supply chain performance"
+                ),
+                "population": "chemical firms",
+                "intervention": "supply chain resilience",
+                "endpoint": "supply chain performance",
+            },
+        },
+        {
+            "title": (
+                "Supply chain resilience and performance of manufacturing firms: role "
+                "of supply chain disruption"
+            ),
+            "doi": "10.1108/jmtm-08-2022-0307",
+            "year": 2023,
+            "source_fact": {
+                "canonical_phrase": "SCR has a significant positive effect on SCP",
+                "population": "manufacturing firms",
+                "intervention": "supply chain resilience",
+                "endpoint": "supply chain performance",
+            },
+        },
+    ]
+
+    _candidate, payload = daily._source_literature_payload(
+        profile_slug="business_research",
+        topic="supply_chain_resilience_performance",
+        papers=papers,
+        runs_root=root,
+        date="2026-06-29T02-00-00Z",
+    )
+
+    markdown = payload["markdown"]
+    assert "directional estimate: 2 receipt(s)" in markdown
+    assert "descriptive/modeling: 2 receipt(s)" in markdown
+    assert "null/mixed: 1 receipt(s)" in markdown
+    assert "other/mixed: 5 receipt(s)" not in markdown
+    assert "Concrete contrast:" in markdown
+    assert "hypotheses of a positive impact" in markdown
+    assert "have been rejected" in markdown
+    assert "method or modelling receipt; no direct effect estimate extracted" in markdown
+    assert "Finding: The aim of this study is to identify" not in markdown
+
+
 def test_source_literature_payload_separates_comparator_and_economic_rows(
     tmp_path: Path,
 ) -> None:

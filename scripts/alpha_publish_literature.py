@@ -486,6 +486,8 @@ def _topic_effect_ablated(finding: str, topic: str) -> bool:
 def _effect_direction(finding: str, fact: Json | None = None, topic: str = "") -> str:
     text = finding.casefold()
     fact = fact or {}
+    if _looks_method_or_aim_only(text):
+        return "non-clinical/predictive"
     if any(term in text for term in (
         "cost-effect", "cost effectiveness", "qaly", "£", "$", "economic",
     )):
@@ -506,7 +508,10 @@ def _effect_direction(finding: str, fact: Json | None = None, topic: str = "") -
         return "comparator/not favorable"
     if any(term in text for term in (
         "no significant", "no effect", "null", "p = 0.83", "p=0.83",
-        "not associated", "no association",
+        "not associated", "no association", "hypothesis rejected",
+        "hypotheses rejected", "hypotheses have been rejected",
+        "hypothesis has been rejected", "rejected", "not supported",
+        "failed to support",
     )):
         return "null/non-convergent"
     if re.search(r"\b(?:hazard ratio|hr|risk ratio|relative risk)\b[^.;]{0,80}\b0\.\d+", text):
@@ -518,9 +523,41 @@ def _effect_direction(finding: str, fact: Json | None = None, topic: str = "") -
         "increased lifespan", "longer lifespan", "attenuat", "restore",
         "restored", "dampen", "dampening", "odds ratio of 0.", "hr = 0.", "hr for",
         "ranked as the best", "ranked best", "best approach", "ranked first",
+        "positive and significant", "significant positive", "significantly influences",
+        "significantly influence", "positive effect", "positive impact",
+        "positive influence",
     )):
         return "directionally favorable"
     return "other/mixed"
+
+
+def _looks_method_or_aim_only(text: str) -> bool:
+    return bool(
+        re.search(r"\b(?:aim|purpose|objective)s? of (?:this|the) study\b", text)
+        or (
+            re.search(
+                r"\b(?:method|approach|framework|model|criteria|sub-criteria|"
+                r"relative weights?|analytic hierarchy process|ahp|vikor|"
+                r"fuzzy|nominal group technique)\b",
+                text,
+            )
+            and not re.search(
+                r"\b(?:positive|negative|rejected|not supported|"
+                r"no significant|improv|reduc|increas|decreas|effect|"
+                r"rank(?:ed|ing)?|best)\b",
+                text,
+            )
+        )
+    )
+
+
+def _display_finding(fact: Json, direction: str = "") -> str:
+    finding = str(fact.get("canonical_phrase") or "").strip()
+    if not finding:
+        return ""
+    if direction == "non-clinical/predictive" and _looks_method_or_aim_only(finding.casefold()):
+        return "method or modelling receipt; no direct effect estimate extracted"
+    return finding
 
 
 def _paper_effect_direction(paper: Json, topic: str = "") -> str:
@@ -592,6 +629,8 @@ def _direction_rows(papers: list[Json], topic: str = "", profile_slug: str = "")
             finding = str(fact.get("canonical_phrase") or "").strip()
         title = str(paper.get("title") or "Untitled source").strip()
         direction = _paper_effect_direction(paper, topic)
+        if isinstance(fact, dict):
+            finding = _display_finding(fact, direction)
         note = ""
         if direction == "comparator/not favorable":
             note = (
@@ -654,7 +693,7 @@ def _direction_summary(papers: list[Json], topic: str = "", profile_slug: str = 
         fact = paper.get("source_fact")
         if not isinstance(fact, dict):
             continue
-        finding = str(fact.get("canonical_phrase") or "").strip()
+        finding = _display_finding(fact, _paper_effect_direction(paper, topic))
         if not finding:
             continue
         groups[_paper_effect_direction(paper, topic)].append(_short_finding(finding, 120))
@@ -663,6 +702,42 @@ def _direction_summary(papers: list[Json], topic: str = "", profile_slug: str = 
         for label, values in groups.items() if values
     ]
     return " | ".join(parts) if parts else "direction of effect is not extractable from the retrieved facts"
+
+
+def _direction_contrast_sentence(
+    papers: list[Json], topic: str = "", profile_slug: str = "",
+) -> str:
+    groups: dict[str, list[str]] = {}
+    for paper in papers:
+        fact = paper.get("source_fact")
+        if not isinstance(fact, dict):
+            continue
+        direction = _paper_effect_direction(paper, topic)
+        finding = _display_finding(fact, direction)
+        if not finding:
+            continue
+        label = _display_direction(direction, profile_slug)
+        title = str(paper.get("title") or "Untitled source").strip()
+        groups.setdefault(label, []).append(
+            f"{title}: {_short_finding(finding, 110)}",
+        )
+    if len(groups) < 2:
+        return ""
+    priority = (
+        "directional estimate", "null/mixed", "reference/comparator contrast",
+        "descriptive/modeling", "economic/context only", "other/mixed",
+        "directionally favorable", "null/non-convergent", "comparator/not favorable",
+        "non-clinical/predictive",
+    )
+    parts: list[str] = []
+    for label in priority:
+        values = groups.get(label)
+        if values:
+            parts.append(f"{label}: {values[0]}")
+    for label, values in groups.items():
+        if label not in priority and values:
+            parts.append(f"{label}: {values[0]}")
+    return "Concrete contrast: " + "; ".join(parts[:4]) + "."
 
 
 def _pico_gap(facts: list[Json], profile_slug: str = "") -> str:
@@ -963,7 +1038,7 @@ def payload(
         annotation = "; ".join(str(x) for x in (source_type, year) if x)
         suffix = f" [{annotation}]" if annotation else ""
         lines.append(f"- {title}{suffix}" + (f" doi:{doi}" if doi else ""))
-        phrase = str(fact.get("canonical_phrase") or "").strip()
+        phrase = _display_finding(fact, _paper_effect_direction(paper, topic))
         if phrase:
             lines.append(f"  - Finding: {phrase}")
         for label, key in (
@@ -1004,6 +1079,7 @@ def payload(
         for fact in facts if str(fact.get("endpoint") or fact.get("metric") or "").strip()
     })
     direction_text = _direction_summary(selected, topic, profile.slug)
+    contrast_text = _direction_contrast_sentence(selected, topic, profile.slug)
     signal_label = _direction_signal_label(selected, topic, profile.slug)
     directions = [_paper_effect_direction(paper, topic) for paper in selected]
     all_favorable = bool(directions) and all(
@@ -1068,9 +1144,20 @@ def payload(
                 "disease-specific or endpoint-family claim."
             )
         )
+    if contrast_text:
+        synthesis += " " + contrast_text
     abstract_text = synthesis
     if findings:
-        examples = [_short_finding(finding) for finding in findings[:3]]
+        examples: list[str] = []
+        for paper in selected:
+            raw_fact = paper.get("source_fact")
+            if not isinstance(raw_fact, dict):
+                continue
+            display = _display_finding(raw_fact, _paper_effect_direction(paper, topic))
+            if display:
+                examples.append(_short_finding(display))
+            if len(examples) >= 3:
+                break
         synthesis += " Concrete source-level examples: " + "; ".join(examples) + "."
     moderator_note = _specific_moderator_note(facts, source_types)
     next_gaps = [
