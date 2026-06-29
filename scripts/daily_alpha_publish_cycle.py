@@ -331,6 +331,9 @@ _SOURCE_LITERATURE_UNOWNED_TITLE_MARKERS = (
 _SOURCE_LITERATURE_SOURCE_SCOPE_OLD_MARKERS = (
     "unmatched metric-scope map",
     "unmatched metric-scope",
+    "source-scope boundary note",
+    "source-scoping boundary note",
+    "unmatched source-scope note",
     "effect synthesis",
 )
 _SOURCE_LITERATURE_SOURCE_SCOPE_FEEDBACK_TERMS = (
