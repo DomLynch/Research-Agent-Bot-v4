@@ -2651,7 +2651,8 @@ def test_business_sweep_complete_fullraw_hands_off_to_source_literature(
         "date": "2026-06-27T01-00-00Z",
         "domain": "economics_research",
         "submit": True,
-        "refresh_candidates": True,
+        "refresh_candidates": False,
+        "source_literature_forced_papers": {"minimum_wage_employment": papers},
     }]
     summary = json.loads(
         (tmp_path / "runs" / "_business_diagnostics" / "latest_sweep.json").read_text(

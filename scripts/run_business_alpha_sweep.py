@@ -1392,7 +1392,8 @@ def main() -> int:
                             or dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ"),
                             domain=domain,
                             submit=True,
-                            refresh_candidates=True,
+                            refresh_candidates=False,
+                            source_literature_forced_papers={topic: fullraw_papers},
                         )
                         row["status"] = str(ledger.get("status") or "submit_failed")
                         row["submission_ledger"] = ledger

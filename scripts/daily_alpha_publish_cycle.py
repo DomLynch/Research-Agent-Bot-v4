@@ -4884,6 +4884,7 @@ def run_cycle(
     decision_poll_seconds: float = _DEFAULT_DECISION_POLL_SECONDS,
     submitter: Submitter | None = None,
     source_paper_fetcher: SourcePaperFetcher | None = None,
+    source_literature_forced_papers: dict[str, list[Json]] | None = None,
     fetcher: Fetcher = _crossref_fetch,
     decision_fetcher: DecisionFetcher = publish_decisions.decision_fetch,
     page_fetcher: PageFetcher = publish_public.fetch_public_page,
@@ -5672,6 +5673,7 @@ def run_cycle(
         )
         repair_topics = list(repair_decisions)
         repair_topic_set = set(repair_topics)
+        forced_source_lit = source_literature_forced_papers or {}
         fresh_topics = [
             topic for topic in _source_literature_topic_candidates(
                 runs_root, profile.slug, min_submit_sources,
@@ -5681,12 +5683,23 @@ def run_cycle(
             ) if topic not in repair_topic_set
         ]
         literature_topics: list[str] = []
-        for topic in [*source_lit_preflight_selected, *fresh_topics, *repair_topics]:
+        for topic in [
+            *forced_source_lit,
+            *source_lit_preflight_selected,
+            *fresh_topics,
+            *repair_topics,
+        ]:
             if topic not in literature_topics:
                 literature_topics.append(topic)
         if paper_fetcher is None:
             expanded_topics: list[str] = []
             for topic in literature_topics:
+                if topic in forced_source_lit:
+                    if topic not in expanded_topics:
+                        expanded_topics.append(topic)
+                    if len(expanded_topics) >= source_lit_scan_limit:
+                        break
+                    continue
                 for fetch_topic in _source_literature_fetch_topics(topic):
                     if fetch_topic not in expanded_topics:
                         expanded_topics.append(fetch_topic)
@@ -5697,6 +5710,8 @@ def run_cycle(
             literature_topics = expanded_topics
         for idx, literature_topic in enumerate(literature_topics):
             papers = (
+                forced_source_lit[literature_topic]
+                if literature_topic in forced_source_lit else
                 source_lit_preflight_papers[literature_topic]
                 if literature_topic in source_lit_preflight_papers else
                 paper_fetcher(literature_topic, min_submit_sources)
