@@ -2083,7 +2083,7 @@ def test_business_fullraw_search_response_uses_canonical_payload(
     }
 
 
-def test_business_sweep_fullraw_probe_keeps_complete_source_poor_query_for_enrichment(
+def test_business_sweep_fullraw_probe_continues_after_complete_source_poor_query(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
     import agent.topic_discovery as topic_discovery_mod
@@ -2132,11 +2132,11 @@ def test_business_sweep_fullraw_probe_keeps_complete_source_poor_query_for_enric
         include_papers=True,
     )
 
-    assert calls == ["platform strategy network"]
+    assert calls == ["platform strategy network", "platform strategy network performance"]
     assert result["status"] == "complete"
-    assert result["query"] == "platform strategy network"
-    assert result["paper_count"] == 10
-    assert result["candidate_fact_source_count"] == 0
+    assert result["query"] == "platform strategy network performance"
+    assert result["paper_count"] == 5
+    assert result["candidate_fact_source_count"] == 5
 
 
 def test_business_fullraw_queries_are_compact_deduped_and_alpha_shaped(
