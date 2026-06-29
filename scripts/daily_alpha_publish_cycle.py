@@ -320,10 +320,30 @@ _SOURCE_LITERATURE_PUBLISH_FRAMING_ATTEMPT_LIMIT = (
 _SOURCE_LITERATURE_TERMINAL_FEEDBACK_ATTEMPT_LIMIT = (
     _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 10
 )
+_SOURCE_LITERATURE_SOURCE_SCOPE_ATTEMPT_LIMIT = (
+    _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 20
+)
 _SOURCE_LITERATURE_UNOWNED_TITLE_MARKERS = (
     "directional evidence for",
     "heterogeneous metrics",
     "null/mixed for",
+)
+_SOURCE_LITERATURE_SOURCE_SCOPE_OLD_MARKERS = (
+    "unmatched metric-scope map",
+    "unmatched metric-scope",
+    "effect synthesis",
+)
+_SOURCE_LITERATURE_SOURCE_SCOPE_FEEDBACK_TERMS = (
+    "source grounding",
+    "only one",
+    "no pooling",
+    "no-pooling",
+    "scoping note",
+    "boundary memo",
+    "matched industry",
+    "matched setting",
+    "matched design",
+    "effect synthesis",
 )
 _SOURCE_LITERATURE_OLD_PUBLISH_FRAMING_MARKERS = (
     "null/mixed",
@@ -2465,6 +2485,41 @@ def _source_literature_terminal_feedback_repair_needed(decision: Json) -> bool:
     )
 
 
+def _source_literature_source_scope_repair_needed(
+    runs_root: Path, domain: str | None, topic: str, decision: Json,
+) -> bool:
+    if not _source_literature_terminal_feedback_repair_needed(decision):
+        return False
+    notes = _norm(_revision_notes(decision))
+    if not any(term in notes for term in _SOURCE_LITERATURE_SOURCE_SCOPE_FEEDBACK_TERMS):
+        return False
+    for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
+        ledger = _json(path, {})
+        if (
+            not isinstance(ledger, dict)
+            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
+        ):
+            continue
+        candidate = ledger.get("candidate")
+        if not isinstance(candidate, dict) or not int(ledger.get("submitted") or 0):
+            continue
+        run_ref = candidate.get("run_dir")
+        if not _source_literature_topic_from_run(run_ref):
+            continue
+        row_topic = str(candidate.get("topic") or "") or _source_literature_topic_from_run(run_ref)
+        if row_topic != topic:
+            continue
+        payload = _json(_run_path(runs_root, run_ref) / "source_literature_payload.json", {})
+        if not isinstance(payload, dict):
+            continue
+        text = f"{payload.get('title') or ''}\n{payload.get('markdown') or ''}".lower()
+        return (
+            any(marker in text for marker in _SOURCE_LITERATURE_SOURCE_SCOPE_OLD_MARKERS)
+            or "matrix guard: effect-bearing rows below" not in text
+        )
+    return False
+
+
 def _repairable_source_literature_topics(
     runs_root: Path, domain: str | None, *, limit: int = 3,
 ) -> list[str]:
@@ -2523,6 +2578,9 @@ def _priority_source_literature_repair_decisions(
                 runs_root, domain, topic, decision,
             )
             or _source_literature_terminal_feedback_repair_needed(decision)
+            or _source_literature_source_scope_repair_needed(
+                runs_root, domain, topic, decision,
+            )
         ):
             priority[topic] = decision
             if len(priority) >= limit:
@@ -2654,6 +2712,17 @@ def _source_literature_attempt_budget(
                         min(
                             count + 1,
                             _SOURCE_LITERATURE_TERMINAL_FEEDBACK_ATTEMPT_LIMIT,
+                        ),
+                    )
+                if _source_literature_source_scope_repair_needed(
+                    runs_root, domain, topic, decision,
+                ):
+                    count = _source_literature_submission_count(runs_root, domain, topic)
+                    budget = max(
+                        budget,
+                        min(
+                            count + 1,
+                            _SOURCE_LITERATURE_SOURCE_SCOPE_ATTEMPT_LIMIT,
                         ),
                     )
                 return budget

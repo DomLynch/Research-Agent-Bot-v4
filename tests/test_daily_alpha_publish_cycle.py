@@ -10077,6 +10077,116 @@ def test_old_source_literature_publish_framing_gets_one_bounded_retry(
     ) == []
 
 
+def test_source_literature_scope_boundary_feedback_gets_bounded_retry(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    topic = "supply_chain_resilience_performance"
+    ledger_dir = root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    decision = {
+        "decision": "revise",
+        "claim_support_verdict": "partially_supported",
+        "notes": ["editorial decision is terminal; external author must resubmit"],
+        "required_revisions": [
+            "Rename the title as a scoping note instead of an effect synthesis.",
+            "Strengthen source grounding: only one receipt carries a direct effect.",
+            "Move the no-pooling disclaimer into the evidence matrix header.",
+            "Sharpen the falsifier around a matched industry, comparator, and metric.",
+        ],
+        "major_issues": [
+            "The unmatched metric-scope map title overstates what the receipts support.",
+        ],
+        "minor_issues": [],
+        "failed_checks": [],
+        "gate_failures": [],
+        "rubric_scores": {
+            "claim_evidence_alignment": 4,
+            "source_grounding": 3,
+            "synthesis_quality": 4,
+        },
+        "resubmission": {
+            "allowed": True,
+            "parent_submission_id": "sub-source-scope-final",
+        },
+    }
+    for idx in range(daily._SOURCE_LITERATURE_TERMINAL_FEEDBACK_ATTEMPT_LIMIT):
+        run_dir = root / f"{topic}-source-literature-2026-06-29T11-{idx:02d}-00Z"
+        run_dir.mkdir(parents=True)
+        run_dir.joinpath("source_literature_memo.md").write_text(
+            "# Source literature boundary memo\n", encoding="utf-8",
+        )
+        daily._write_json(run_dir / "source_literature_payload.json", {
+            "title": (
+                "supply chain resilience performance: unmatched metric-scope map "
+                "across firm-level and chain-level receipts"
+            ),
+            "markdown": (
+                "## Evidence matrix\n\n"
+                "Audit note: effect-bearing rows stay metric-specific."
+            ),
+        })
+        daily._write_json(ledger_dir / f"2026-06-29T11-{idx:02d}-00Z.json", {
+            "domain": {"slug": "business_research"},
+            "submitted": 1,
+            "submission_id": f"sub-source-scope-{idx}",
+            "candidate": {
+                "topic": topic,
+                "run_dir": run_dir.name,
+                "fingerprint": f"fp-source-scope-{idx}",
+            },
+            "researka_decision": decision,
+        })
+
+    assert daily._source_literature_attempt_budget(
+        root, "business_research", topic,
+    ) == daily._SOURCE_LITERATURE_TERMINAL_FEEDBACK_ATTEMPT_LIMIT + 1
+    assert daily._repairable_source_literature_topics(
+        root, "business_research", limit=3,
+    ) == [topic]
+    assert list(daily._priority_source_literature_repair_decisions(
+        root, "business_research", limit=3,
+    )) == [topic]
+
+    for idx in range(
+        daily._SOURCE_LITERATURE_TERMINAL_FEEDBACK_ATTEMPT_LIMIT,
+        daily._SOURCE_LITERATURE_SOURCE_SCOPE_ATTEMPT_LIMIT,
+    ):
+        run_dir = root / f"{topic}-source-literature-2026-06-29T12-{idx:02d}-00Z"
+        run_dir.mkdir(parents=True)
+        run_dir.joinpath("source_literature_memo.md").write_text(
+            "# Source literature boundary memo\n", encoding="utf-8",
+        )
+        daily._write_json(run_dir / "source_literature_payload.json", {
+            "title": (
+                "supply chain resilience performance: "
+                "source-scope boundary note across firm-level and chain-level receipts"
+            ),
+            "markdown": (
+                "Matrix guard: effect-bearing rows below are metric-specific source facts, "
+                "not a pooled comparison; context-only rows are excluded from effect support."
+            ),
+        })
+        daily._write_json(ledger_dir / f"2026-06-29T12-{idx:02d}-00Z.json", {
+            "domain": {"slug": "business_research"},
+            "submitted": 1,
+            "submission_id": f"sub-source-scope-final-{idx}",
+            "candidate": {
+                "topic": topic,
+                "run_dir": run_dir.name,
+                "fingerprint": f"fp-source-scope-final-{idx}",
+            },
+            "researka_decision": decision,
+        })
+
+    assert daily._source_literature_submission_count(
+        root, "business_research", topic,
+    ) == daily._SOURCE_LITERATURE_SOURCE_SCOPE_ATTEMPT_LIMIT
+    assert daily._repairable_source_literature_topics(
+        root, "business_research", limit=3,
+    ) == []
+
+
 def test_source_literature_candidate_papers_refetches_repeated_discovery_bundle(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
