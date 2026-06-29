@@ -57,6 +57,10 @@ _BROAD_SEED_TOKENS = frozenset({
     "model", "performance", "effect", "effects", "outcome", "outcomes",
     "returns", "return", "research",
 })
+_BUSINESS_OUTCOME_QUERY_TOKENS = frozenset({
+    "employment", "margin", "margins", "performance", "productivity",
+    "profit", "profitability", "return", "returns", "sales", "value",
+})
 _BUSINESS_FULLRAW_FOREGROUND_SECONDS = "2400"
 _BUSINESS_FULLRAW_RESULT_LIMIT = "10"
 _BUSINESS_FULLRAW_LOCK_PATH = "/tmp/researka-v4-business-fullraw.lock"
@@ -542,12 +546,17 @@ def _business_fullraw_queries(topic: str) -> tuple[str, ...]:
             out.append(query)
 
     bases = tuple(expand_topic_queries(topic, max_queries=3))
-    for raw in bases[:1]:
-        add(raw)
+    if bases:
+        base = str(compact(str(bases[0]).replace("_", " "))).strip()
+        if _seed_tokens(base) & _BUSINESS_OUTCOME_QUERY_TOKENS:
+            add(base)
+        else:
+            add(f"{base} performance")
+            add(base)
     if out:
         base = out[0]
         base_tokens = _seed_tokens(base)
-        if not base_tokens & {"performance", "profitability", "returns", "return"}:
+        if not base_tokens & {"performance", "profitability", "return", "returns"}:
             add(f"{base} performance")
         add(f"{base} empirical")
     for term in tuple(alpha_terms)[:2]:
@@ -781,25 +790,37 @@ def _cached_fullraw_complete_hit_count(topic: str) -> int:
         if not data or not _fullraw_response_complete(data):
             continue
         items = data.get("results") or data.get("hits") or []
-        best = max(best, len([item for item in items if isinstance(item, dict)]))
+        best = max(best, _fullraw_substantive_fact_candidates(
+            query, [item for item in items if isinstance(item, dict)],
+        ))
         if best >= MIN_DIRECT_SOURCES:
             break
     return best
 
 
 def _rank_fullraw_queries_by_cached_receipt(queries: tuple[str, ...]) -> tuple[str, ...]:
-    ranked: list[tuple[int, int, int, str]] = []
+    ranked: list[tuple[int, int, int, int, str]] = []
     for idx, query in enumerate(queries):
         data = _fullraw_search_response(
             query, limit=_business_fullraw_result_limit(), queue_if_missing=False,
         )
         items = data.get("results") or data.get("hits") or []
-        complete_hits = (
-            len([item for item in items if isinstance(item, dict)])
-            if data and _fullraw_response_complete(data) else 0
+        complete = bool(data and _fullraw_response_complete(data))
+        complete_items = [item for item in items if isinstance(item, dict)] if complete else []
+        complete_hits = len(complete_items)
+        fact_candidates = (
+            _fullraw_substantive_fact_candidates(query, complete_items)
+            if complete else 0
+        )
+        rank = (
+            0 if fact_candidates >= MIN_DIRECT_SOURCES else
+            1 if fact_candidates else
+            3 if complete_hits else
+            2
         )
         ranked.append((
-            0 if complete_hits >= MIN_DIRECT_SOURCES else 1,
+            rank,
+            -fact_candidates,
             -complete_hits,
             idx,
             query,

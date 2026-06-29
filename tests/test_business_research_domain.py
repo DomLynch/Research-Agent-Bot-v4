@@ -1710,7 +1710,7 @@ def test_business_sweep_fullraw_probe_backoff_is_topic_scoped(
     assert same_topic["previous_status"] == "incomplete_receipt"
     assert different_topic["status"] == "complete"
     assert different_topic["paper_count"] == 5
-    assert calls == ["platform strategy network", "pricing strategy margin"]
+    assert calls == ["platform strategy network performance", "pricing strategy margin"]
 
 
 def test_business_sweep_priority_probe_bypasses_stale_fullraw_backoff(
@@ -1766,7 +1766,10 @@ def test_business_sweep_priority_probe_bypasses_stale_fullraw_backoff(
 
     assert first["status"] == "complete"
     assert same_topic["status"] == "complete"
-    assert calls == ["platform strategy network", "platform strategy network"]
+    assert calls == [
+        "platform strategy network performance",
+        "platform strategy network performance",
+    ]
 
 
 def test_business_sweep_priority_probe_checks_exact_key_when_queue_is_full(
@@ -1815,7 +1818,7 @@ def test_business_sweep_priority_probe_checks_exact_key_when_queue_is_full(
         "digital_transformation_firm", runs_root=tmp_path / "runs",
     )
 
-    assert calls == ["digital transformation firm"]
+    assert calls == ["digital transformation firm performance"]
     assert result["status"] == "incomplete_receipt"
     assert result["async_status"] == "running"
     assert result["shards_searched"] == 1453
@@ -1955,14 +1958,14 @@ def test_business_sweep_fullraw_probe_tries_compact_alpha_query(
     )
 
     assert calls == [
-        "platform strategy network",
         "platform strategy network performance",
-        "platform strategy network empirical",
-        "platform strategy network replication",
+        "platform strategy network",
+        "platform strategy network performance empirical",
+        "platform strategy network performance replication",
     ]
     assert result["status"] == "complete"
     assert result["paper_count"] == 5
-    assert result["query"] == "platform strategy network replication"
+    assert result["query"] == "platform strategy network performance replication"
     assert len(result["_papers"]) == 5
 
 
@@ -2011,7 +2014,16 @@ def test_business_sweep_fullraw_probe_prefers_cached_complete_query_variant(
         query: str, **_kwargs: Any,
     ) -> dict[str, Any]:
         if query != "supply chain resilience performance":
-            return {}
+            return {
+                "results": [
+                    {
+                        "paper_id": f"metadata-{idx}",
+                        "title": f"Dataset for {query} {idx}",
+                    }
+                    for idx in range(10)
+                ],
+                "meta": {"shard_receipt": complete_receipt},
+            }
         return {
             "results": complete_results,
             "meta": {"shard_receipt": complete_receipt},
@@ -2096,6 +2108,11 @@ def test_business_sweep_fullraw_probe_continues_after_complete_source_poor_query
         str(tmp_path / "fullraw.lock"),
     )
     monkeypatch.setenv("BUSINESS_SWEEP_FULLRAW_QUERY_LIMIT", "3")
+    monkeypatch.setattr(
+        sweep,
+        "_business_fullraw_queries",
+        lambda _topic: ("platform strategy network", "platform strategy network performance"),
+    )
 
     complete_receipt = {
         "shards_searched": 1525,
