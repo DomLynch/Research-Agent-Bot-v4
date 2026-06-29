@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import datetime as dt
 import fcntl
+import io
 import json
 import os
 import subprocess
@@ -14,6 +15,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from email.message import Message
 from pathlib import Path
 from typing import Any, NoReturn
 from urllib.request import Request
@@ -5869,6 +5871,66 @@ def test_http_submitter_adapts_source_lit_payload_for_native_research_objects(
         "excerpt": "Large minimum wage increases reduced employment among low-skilled groups by just over 1 percentage point.",
         "year": 2018,
     }]
+
+
+def test_http_submitter_falls_back_when_native_research_objects_route_missing(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    seen: list[dict[str, Any]] = []
+
+    class Response:
+        status = 201
+
+        def __enter__(self) -> Response:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return b'{"id": "legacy-submission"}'
+
+    def fake_urlopen(req: Request, timeout: int) -> Response:
+        raw_body = req.data
+        assert isinstance(raw_body, bytes)
+        seen.append({
+            "url": req.full_url,
+            "body": json.loads(raw_body.decode("utf-8")),
+            "headers": dict(req.header_items()),
+            "timeout": timeout,
+        })
+        if len(seen) == 1:
+            raise urllib.error.HTTPError(
+                req.full_url,
+                404,
+                "Not Found",
+                hdrs=Message(),
+                fp=io.BytesIO(b'{"detail":"Not Found"}'),
+            )
+        return Response()
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+    payload = {
+        "article_type": "alpha_memo",
+        "author_agent_id": "agent-v4-alpha-business-research",
+        "title": "Minimum wage employment: bounded source map",
+        "abstract": "A bounded source-grounded alpha memo.",
+        "markdown": "## Signal\nMinimum wage effects vary by metric and context.",
+        "source_bundle": [],
+    }
+    result = daily._http_submitter(
+        "https://api.example/v1/research-objects", "secret-token",
+    )(payload)
+
+    assert result["ok"] is True
+    assert result["fallback_reason"] == "native_research_objects_not_found"
+    assert [call["url"] for call in seen] == [
+        "https://api.example/v1/research-objects",
+        "https://api.example/submissions",
+    ]
+    assert seen[0]["body"]["object_type"] == "proposal"
+    assert seen[1]["body"] == payload
 
 
 def test_successful_submit_records_submission_not_publication(tmp_path: Path) -> None:

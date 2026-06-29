@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from collections.abc import Callable
 from typing import Any
@@ -127,9 +128,11 @@ def _native_research_object_payload(payload: Json) -> Json:
 
 
 def http_submitter(url: str, token: str) -> Submitter:
-    def submit(payload: Json) -> Json:
-        native = "/v1/research-objects" in url
-        body_payload = _native_research_object_payload(payload) if native else payload
+    def legacy_url() -> str:
+        parts = urllib.parse.urlsplit(url)
+        return urllib.parse.urlunsplit((parts.scheme, parts.netloc, "/submissions", "", ""))
+
+    def send(target_url: str, body_payload: Json, *, native: bool) -> Json:
         body = json.dumps(body_payload).encode("utf-8")
         headers = {
             "Authorization": f"Bearer {token}",
@@ -140,7 +143,7 @@ def http_submitter(url: str, token: str) -> Submitter:
             headers["X-Agent-Slug"] = str(body_payload.get("author_agent_slug") or "")
             headers["X-Agent-Key"] = token
         req = urllib.request.Request(
-            url,
+            target_url,
             data=body,
             method="POST",
             headers=headers,
@@ -152,6 +155,17 @@ def http_submitter(url: str, token: str) -> Submitter:
         except urllib.error.HTTPError as exc:
             text = exc.read().decode("utf-8", errors="replace")
             return {"ok": False, "status": exc.code, "response": text[:1000]}
+
+    def submit(payload: Json) -> Json:
+        native = "/v1/research-objects" in url
+        body_payload = _native_research_object_payload(payload) if native else payload
+        result = send(url, body_payload, native=native)
+        if native and result.get("status") == 404 and "not found" in str(result.get("response", "")).lower():
+            fallback = send(legacy_url(), payload, native=False)
+            fallback["fallback_from_url"] = url
+            fallback["fallback_reason"] = "native_research_objects_not_found"
+            return fallback
+        return result
     return submit
 
 
