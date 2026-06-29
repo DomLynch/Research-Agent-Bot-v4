@@ -2891,6 +2891,88 @@ def test_business_sweep_skips_recent_source_literature_topics_before_fullraw(
     assert "supply_chain_resilience_performance" in out
 
 
+def test_business_sweep_promotes_cached_complete_fullraw_topic(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    topics = [
+        "pricing_strategy_margin",
+        "operations_process_improvement",
+        "platform_strategy_network",
+    ]
+    fullraw_calls: list[str] = []
+    submissions: list[dict[str, Any]] = []
+
+    def papers_for(topic: str) -> list[dict[str, Any]]:
+        return [
+            {
+                "title": f"{topic.replace('_', ' ')} evidence paper {idx}",
+                "doi": f"10.5252/{topic}-{idx}",
+                "abstract": f"{topic} evidence.",
+                "source_fact": {
+                    "canonical_phrase": f"{topic} bounded fact {idx}",
+                    "population": "firms",
+                    "intervention": topic.replace("_", " "),
+                    "endpoint": "business performance",
+                    "source_tier": "fullraw_search",
+                },
+            }
+            for idx in range(5)
+        ]
+
+    def fake_fullraw(topic: str, **_kwargs: Any) -> dict[str, Any]:
+        fullraw_calls.append(topic)
+        return {
+            "status": "complete",
+            "paper_count": 5,
+            "shards_searched": 1525,
+            "partial_shard_search": False,
+            "sweep_failed_shards": 0,
+            "_papers": papers_for(topic),
+        }
+
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        submissions.append(kwargs)
+        return {
+            "status": "published",
+            "submitted": 1,
+            "published": 1,
+            "publish_summary": {
+                "status": "published",
+                "submitted": 1,
+                "published": 1,
+                "top_blockers": {},
+                "next_action": "public_page_verified",
+                "queue_counts": {"ready_to_publish": 1},
+                "public_url_status": 200,
+            },
+        }
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: topics)
+    monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: ([], {"status": "failed"}))
+    monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", lambda topic: 10 if topic == "platform_strategy_network" else 0)
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", fake_fullraw)
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(tmp_path / "runs"),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-06-29T04-30-00Z",
+    ])
+
+    assert sweep.main() == 0
+    assert fullraw_calls == ["platform_strategy_network"]
+    assert submissions[0]["source_literature_forced_papers"] == {
+        "platform_strategy_network": papers_for("platform_strategy_network"),
+    }
+
+
 def test_business_sweep_fullraw_continues_after_reviewer_revise(
     tmp_path: Path,
     monkeypatch: Any,

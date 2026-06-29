@@ -664,7 +664,9 @@ def _fullraw_hit_key(item: dict[str, Any]) -> str:
     ).strip().casefold()
 
 
-def _fullraw_search_hits(query: str, *, limit: int | None = None) -> list[dict[str, Any]]:
+def _fullraw_search_response(
+    query: str, *, limit: int | None = None, queue_if_missing: bool = True,
+) -> dict[str, Any]:
     _load_fullraw_env_defaults()
     limit = _business_fullraw_result_limit() if limit is None else limit
     url = str(os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL") or "").strip()
@@ -674,7 +676,7 @@ def _fullraw_search_hits(query: str, *, limit: int | None = None) -> list[dict[s
         or ""
     ).strip()
     if not url:
-        return []
+        return {}
     req = urllib.request.Request(
         url,
         data=json.dumps({
@@ -682,7 +684,7 @@ def _fullraw_search_hits(query: str, *, limit: int | None = None) -> list[dict[s
             "limit": limit,
             "rank_mode": "relevance",
             "cache_only": True,
-            "queue_if_missing": True,
+            "queue_if_missing": queue_if_missing,
             "priority": _business_fullraw_priority_enabled(),
         }).encode("utf-8"),
         headers={
@@ -695,9 +697,43 @@ def _fullraw_search_hits(query: str, *, limit: int | None = None) -> list[dict[s
         with urllib.request.urlopen(req, timeout=30) as resp:
             data = json.loads(resp.read().decode("utf-8"))
     except (OSError, urllib.error.HTTPError, ValueError, json.JSONDecodeError):
-        return []
-    items = (data.get("results") or data.get("hits") or []) if isinstance(data, dict) else []
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _fullraw_search_hits(query: str, *, limit: int | None = None) -> list[dict[str, Any]]:
+    data = _fullraw_search_response(query, limit=limit)
+    items = data.get("results") or data.get("hits") or []
     return [item for item in items if isinstance(item, dict)]
+
+
+def _fullraw_response_complete(data: dict[str, Any]) -> bool:
+    raw_meta = data.get("meta")
+    meta = raw_meta if isinstance(raw_meta, dict) else data
+    raw_receipt = meta.get("shard_receipt")
+    receipt = raw_receipt if isinstance(raw_receipt, dict) else meta
+    try:
+        shards = int(receipt.get("shards_searched") or 0)
+        failed = int(receipt.get("sweep_failed_shards") or 0)
+        min_shards = int(os.environ.get("V5_MEMO_FULL_RAW_MIN_SHARDS_SEARCHED") or 1525)
+    except (TypeError, ValueError):
+        return False
+    return shards >= min_shards and not bool(receipt.get("partial_shard_search")) and failed == 0
+
+
+def _cached_fullraw_complete_hit_count(topic: str) -> int:
+    best = 0
+    for query in _business_fullraw_queries(topic):
+        data = _fullraw_search_response(
+            query, limit=_business_fullraw_result_limit(), queue_if_missing=False,
+        )
+        if not data or not _fullraw_response_complete(data):
+            continue
+        items = data.get("results") or data.get("hits") or []
+        best = max(best, len([item for item in items if isinstance(item, dict)]))
+        if best >= MIN_DIRECT_SOURCES:
+            break
+    return best
 
 
 def _clean_paper_source_fact(paper: dict[str, Any]) -> dict[str, Any]:
@@ -1353,13 +1389,20 @@ def main() -> int:
             )
             selected_topics: list[str] = []
             skipped_recent: list[str] = []
+            fresh_topics: list[str] = []
             for seed_topic in prioritized_topics:
                 if _topic_key(seed_topic) in blocked_topic_keys:
                     skipped_recent.append(seed_topic)
                     continue
-                selected_topics.append(seed_topic)
-                if len(selected_topics) >= args.topics_per_domain:
-                    break
+                fresh_topics.append(seed_topic)
+            selected_topics = [
+                topic for _hits, _idx, topic in sorted(
+                    (
+                        (-_cached_fullraw_complete_hit_count(topic), idx, topic)
+                        for idx, topic in enumerate(fresh_topics)
+                    )
+                )
+            ][:args.topics_per_domain]
             if skipped_recent:
                 print(
                     "[business-sweep] skipped_recent_source_literature_topics "
