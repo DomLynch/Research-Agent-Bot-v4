@@ -2798,6 +2798,99 @@ def test_business_sweep_complete_fullraw_hands_off_to_source_literature(
     assert '"public_url_status": 200' in out
 
 
+def test_business_sweep_skips_recent_source_literature_topics_before_fullraw(
+    tmp_path: Path,
+    monkeypatch: Any,
+    capsys: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    topics = ["supply_chain_resilience_performance", "business_model_performance"]
+    fullraw_calls: list[str] = []
+    submissions: list[dict[str, Any]] = []
+
+    runs_root = tmp_path / "runs"
+    ledger_dir = runs_root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    (ledger_dir / "_submitted_fingerprints.json").write_text(
+        json.dumps([{
+            "date": "2026-06-29T03-00-00Z",
+            "domain": "business_research",
+            "topic": "supply_chain_resilience_performance",
+        }]),
+        encoding="utf-8",
+    )
+
+    def papers_for(topic: str) -> list[dict[str, Any]]:
+        return [
+            {
+                "title": f"{topic.replace('_', ' ')} evidence paper {idx}",
+                "doi": f"10.4242/{topic}-{idx}",
+                "abstract": f"{topic} evidence.",
+                "source_fact": {
+                    "canonical_phrase": f"{topic} bounded source fact {idx}",
+                    "population": "firms",
+                    "intervention": topic.replace("_", " "),
+                    "endpoint": "business performance",
+                    "source_tier": "fullraw_search",
+                },
+            }
+            for idx in range(5)
+        ]
+
+    def fake_fullraw(topic: str, **_kwargs: Any) -> dict[str, Any]:
+        fullraw_calls.append(topic)
+        return {
+            "status": "complete",
+            "paper_count": 5,
+            "shards_searched": 1525,
+            "partial_shard_search": False,
+            "sweep_failed_shards": 0,
+            "_papers": papers_for(topic),
+        }
+
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        submissions.append(kwargs)
+        return {
+            "status": "published",
+            "submitted": 1,
+            "published": 1,
+            "publish_summary": {
+                "status": "published",
+                "submitted": 1,
+                "published": 1,
+                "top_blockers": {},
+                "next_action": "public_page_verified",
+                "queue_counts": {"ready_to_publish": 1},
+                "public_url_status": 200,
+            },
+        }
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: topics)
+    monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: ([], {"status": "failed"}))
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", fake_fullraw)
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(runs_root),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-06-29T04-00-00Z",
+    ])
+
+    assert sweep.main() == 0
+    assert fullraw_calls == ["business_model_performance"]
+    assert submissions[0]["source_literature_forced_papers"] == {
+        "business_model_performance": papers_for("business_model_performance"),
+    }
+    out = capsys.readouterr().out
+    assert "skipped_recent_source_literature_topics" in out
+    assert "supply_chain_resilience_performance" in out
+
+
 def test_business_sweep_fullraw_continues_after_reviewer_revise(
     tmp_path: Path,
     monkeypatch: Any,

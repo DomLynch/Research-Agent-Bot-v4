@@ -35,6 +35,7 @@ from agent.topic_synonyms import expand_topic_queries
 from scripts import alpha_publish_literature as publish_literature
 from scripts import alpha_publish_status as publish_status
 from scripts import build_publish_queue as publish_queue
+from scripts import daily_alpha_publish_cycle as publish_cycle
 from scripts.alpha_publish_io import read_json, update_json_list, write_json, write_ledger
 from scripts.build_business_alpha_candidate import (
     no_bundle_blockers_from_diagnostics,
@@ -1080,6 +1081,22 @@ def _selected_domains(value: str) -> tuple[str, ...]:
     return wanted
 
 
+def _topic_key(value: Any) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", str(value or "").casefold()).strip("_")
+
+
+def _recent_source_literature_blocked_topics(runs_root: Path, domain: str) -> set[str]:
+    ledger_dir = runs_root / "_daily_ledger"
+    submitted_path = ledger_dir / "_submitted_fingerprints.json"
+    days = int(getattr(publish_cycle, "_DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS", 30))
+    blocked = (
+        publish_cycle._recently_published_topics(ledger_dir, days=days, domain=domain)
+        | publish_cycle._recent_submission_topics(submitted_path, days=days, domain=domain)
+        | publish_cycle._recent_negative_topics(ledger_dir, days=days, domain=domain)
+    )
+    return {_topic_key(topic) for topic in blocked if _topic_key(topic)}
+
+
 def _write_sweep_summary(runs_root: Path, rows: list[dict[str, Any]]) -> Path:
     out_dir = runs_root / "_business_diagnostics"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -1328,9 +1345,28 @@ def main() -> int:
                 profile.seed_topics_path,
                 limit=max(args.topics_per_domain, args.topics_per_domain * 8),
             )
-            for topic in _prioritized_seed_topics(
+            blocked_topic_keys = _recent_source_literature_blocked_topics(
+                args.runs_root, domain,
+            )
+            prioritized_topics = _prioritized_seed_topics(
                 args.runs_root, domain, seed_pool,
-            )[:args.topics_per_domain]:
+            )
+            selected_topics: list[str] = []
+            skipped_recent: list[str] = []
+            for seed_topic in prioritized_topics:
+                if _topic_key(seed_topic) in blocked_topic_keys:
+                    skipped_recent.append(seed_topic)
+                    continue
+                selected_topics.append(seed_topic)
+                if len(selected_topics) >= args.topics_per_domain:
+                    break
+            if skipped_recent:
+                print(
+                    "[business-sweep] skipped_recent_source_literature_topics "
+                    f"{domain} topics={','.join(skipped_recent[:5])}",
+                    flush=True,
+                )
+            for topic in selected_topics:
                 facts, trace = fetch_business_facts(topic, domain=domain, settings=settings)
                 bundle = build_candidate_bundle(facts, topic=topic, domain=domain)
                 row: dict[str, Any] = {
