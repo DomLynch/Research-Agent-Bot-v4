@@ -646,7 +646,7 @@ def test_fullraw_fallback_polls_until_complete_receipt(monkeypatch: Any) -> None
 
     assert len(calls) == 2
     assert {call["limit"] for call in calls} == {25}
-    assert [call["queue_if_missing"] for call in calls] == [True, False]
+    assert [call["queue_if_missing"] for call in calls] == [True, True]
     assert papers[0]["title"] == "Full sweep metformin longevity paper"
 
 
@@ -797,8 +797,8 @@ def test_fullraw_fallback_uses_top_level_full_sweep_receipt(
     }
     assert calls == [
         {**base_payload, "queue_if_missing": True},
-        {**base_payload, "queue_if_missing": False},
-        {**base_payload, "queue_if_missing": False},
+        {**base_payload, "queue_if_missing": True},
+        {**base_payload, "queue_if_missing": True},
     ]
     assert papers[0]["title"] == "Full sweep top-level receipt paper"
     assert papers[0]["fullraw_shard_receipt"]["shards_searched"] == 1525
