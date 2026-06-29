@@ -328,6 +328,8 @@ def boundary_quality(
     )
     if len(usable) < min_sources:
         return False, "source_floor_below_min"
+    if source_identity_count(usable) < min_sources:
+        return False, "source_diverse_floor_below_min"
     keys = [title_key(paper.get("title")) for paper in usable]
     counts = {key: keys.count(key) for key in set(keys) if key}
     if any(count >= max(3, min_sources - 1) for count in counts.values()):
@@ -357,6 +359,29 @@ def boundary_quality(
 
 def paper_key(paper: Json, fallback: Any = "") -> str:
     return str(paper.get("doi") or paper.get("pmid") or paper.get("id") or fallback or "")
+
+
+def source_identity_key(paper: Json) -> str:
+    raw = (
+        paper.get("doi")
+        or paper.get("pmid")
+        or paper.get("id")
+        or paper.get("url")
+        or paper.get("paper_id")
+        or ""
+    )
+    return str(raw).strip().casefold()
+
+
+def source_identity_count(papers: list[Json], *, require_substantive: bool = False) -> int:
+    keys: set[str] = set()
+    for paper in papers:
+        if require_substantive and not _paper_has_substantive_source_fact(paper):
+            continue
+        key = source_identity_key(paper)
+        if key:
+            keys.add(key)
+    return len(keys)
 
 
 def source_fact(item: Json) -> Json:

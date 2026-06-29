@@ -8451,11 +8451,24 @@ def test_source_literature_fallback_submits_after_empty_fact_lane(
     }), encoding="utf-8")
     os.utime(business_path, (time.time() + 5, time.time() + 5))
     papers = [
-        {"title": "AGE-RAGE signalling and skin collagen aging", "doi": "10.1234/1", "year": 2024},
-        {"title": "Glycation stress and RAGE activation in vascular aging", "doi": "10.1234/2", "year": 2024},
-        {"title": "Collagen crosslinking in advanced glycation biology", "doi": "10.1234/3", "year": 2024},
-        {"title": "RAGE pathways in age-related tissue injury", "doi": "10.1234/4", "year": 2024},
-        {"title": "Glycation-derived collagen stiffening review", "doi": "10.1234/5", "year": 2024},
+        {
+            "title": title,
+            "doi": f"10.1234/{idx}",
+            "year": 2024,
+            "source_fact": {
+                "canonical_phrase": f"glycation boundary fact {idx}",
+                "population": "adult tissue evidence",
+                "intervention": "glycation AGEs",
+                "endpoint": "AGEs aging marker",
+            },
+        }
+        for idx, title in enumerate((
+            "AGE-RAGE signalling and skin collagen aging",
+            "Glycation stress and RAGE activation in vascular aging",
+            "Collagen crosslinking in advanced glycation biology",
+            "RAGE pathways in age-related tissue injury",
+            "Glycation-derived collagen stiffening review",
+        ), start=1)
     ]
     seen_payload: dict[str, Any] = {}
     monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
@@ -8527,26 +8540,51 @@ def test_source_literature_fallback_blocks_under_citable_source_floor(
             "title": "THE EFFECT OF MINIMUM WAGES ON EMPLOYMENT: A FACTOR MODEL APPROACH",
             "doi": "10.1234/minwage-1",
             "year": 2024,
+            "source_fact": {
+                "canonical_phrase": "minimum wage employment elasticity was modelled",
+                "intervention": "minimum wage",
+                "endpoint": "employment elasticity",
+            },
         },
         {
             "title": "Revisiting the Minimum Wage-Employment Debate",
             "doi": "10.1234/minwage-2",
             "year": 2024,
+            "source_fact": {
+                "canonical_phrase": "minimum wage employment estimates were mixed",
+                "intervention": "minimum wage",
+                "endpoint": "employment",
+            },
         },
         {
             "title": "European Minimum Wage Policy: Wage-Led Growth and Fair Wages",
             "id": "local-3",
             "year": 2024,
+            "source_fact": {
+                "canonical_phrase": "minimum wage policy evidence was descriptive",
+                "intervention": "minimum wage policy",
+                "endpoint": "employment policy",
+            },
         },
         {
             "title": "At What Level Should Countries Set Their Minimum Wages",
             "id": "local-4",
             "year": 2024,
+            "source_fact": {
+                "canonical_phrase": "minimum wage setting varied across labor markets",
+                "intervention": "minimum wage",
+                "endpoint": "employment policy",
+            },
         },
         {
             "title": "Nominal Wage Rigidity in Village Labor Markets",
             "doi": "10.1234/minwage-5",
             "year": 2024,
+            "source_fact": {
+                "canonical_phrase": "minimum wage evidence was compared with wage rigidity",
+                "intervention": "minimum wage",
+                "endpoint": "employment",
+            },
         },
     ]
     submitted = {"called": False}
@@ -8584,11 +8622,24 @@ def test_source_literature_fallback_runs_after_refresh_failure(
         "all": [{"topic": "glycation_AGEs", "paper_count": 25}],
     }), encoding="utf-8")
     papers = [
-        {"title": "AGE-RAGE signalling and skin collagen aging", "doi": "10.1234/1", "year": 2024},
-        {"title": "Glycation stress and RAGE activation in vascular aging", "doi": "10.1234/2", "year": 2024},
-        {"title": "Collagen crosslinking in advanced glycation biology", "doi": "10.1234/3", "year": 2024},
-        {"title": "RAGE pathways in age-related tissue injury", "doi": "10.1234/4", "year": 2024},
-        {"title": "Glycation-derived collagen stiffening review", "doi": "10.1234/5", "year": 2024},
+        {
+            "title": title,
+            "doi": f"10.1234/{idx}",
+            "year": 2024,
+            "source_fact": {
+                "canonical_phrase": f"glycation refresh fact {idx}",
+                "population": "adult tissue evidence",
+                "intervention": "glycation AGEs",
+                "endpoint": "AGEs aging marker",
+            },
+        }
+        for idx, title in enumerate((
+            "AGE-RAGE signalling and skin collagen aging",
+            "Glycation stress and RAGE activation in vascular aging",
+            "Collagen crosslinking in advanced glycation biology",
+            "RAGE pathways in age-related tissue injury",
+            "Glycation-derived collagen stiffening review",
+        ), start=1)
     ]
     seen_payload: dict[str, Any] = {}
     monkeypatch.setattr(
@@ -8642,6 +8693,12 @@ def test_long_submit_refresh_reaches_source_lit_after_fullraw_batches(
             "title": title,
             "doi": f"10.1234/glycation-{idx}",
             "year": 2024,
+            "source_fact": {
+                "canonical_phrase": f"glycation fullraw fact {idx}",
+                "population": "adult tissue evidence",
+                "intervention": "glycation AGEs",
+                "endpoint": "AGEs aging marker",
+            },
         }
         for idx, title in enumerate((
             "AGE-RAGE signalling and skin collagen aging",
@@ -8708,11 +8765,24 @@ def test_source_literature_fallback_uses_default_fetcher_after_empty_submit_lane
         ],
     }), encoding="utf-8")
     papers = [
-        {"title": "Metabolic pathway review in aging", "doi": "10.1234/1", "year": 2024},
-        {"title": "Inflammation signalling across lifespan", "doi": "10.1234/2", "year": 2024},
-        {"title": "Mitochondrial stress response biology", "doi": "10.1234/3", "year": 2024},
-        {"title": "Cellular senescence intervention map", "doi": "10.1234/4", "year": 2024},
-        {"title": "Proteostasis mechanisms in age-related decline", "doi": "10.1234/5", "year": 2024},
+        {
+            "title": title,
+            "doi": f"10.1234/{idx}",
+            "year": 2024,
+            "source_fact": {
+                "canonical_phrase": f"source rich parent fact {idx}",
+                "population": "adult source context",
+                "intervention": "source rich parent",
+                "endpoint": "aging signal",
+            },
+        }
+        for idx, title in enumerate((
+            "Metabolic pathway review in aging",
+            "Inflammation signalling across lifespan",
+            "Mitochondrial stress response biology",
+            "Cellular senescence intervention map",
+            "Proteostasis mechanisms in age-related decline",
+        ), start=1)
     ]
     seen_payload: dict[str, Any] = {}
     monkeypatch.setattr(daily, "_fetch_source_literature_papers", lambda *_args, **_kwargs: papers)
@@ -9569,22 +9639,25 @@ def test_repairable_source_literature_preflight_skips_broad_refresh(
     assert seen_payload["metadata"]["reviewer_repair_notes"] == "repair before broad refresh"
 
 
-def _usable_boundary_papers() -> list[dict[str, str]]:
+def _usable_boundary_papers() -> list[dict[str, Any]]:
     return [
-        {"title": "Usable boundary signaling in aging metabolism", "doi": "10.1234/u0"},
-        {"title": "Boundary markers for usable inflammation evidence", "doi": "10.1234/u1"},
         {
-            "title": "Usable lifespan boundary conditions in mitochondrial stress",
-            "doi": "10.1234/u2",
-        },
-        {
-            "title": "Proteostasis evidence for a usable intervention boundary",
-            "doi": "10.1234/u3",
-        },
-        {
-            "title": "Cellular senescence and usable translational boundaries",
-            "doi": "10.1234/u4",
-        },
+            "title": title,
+            "doi": f"10.1234/u{idx}",
+            "source_fact": {
+                "canonical_phrase": f"usable boundary fact {idx}",
+                "population": "adult source context",
+                "intervention": "usable boundary",
+                "endpoint": "aging signal",
+            },
+        }
+        for idx, title in enumerate((
+            "Usable boundary signaling in aging metabolism",
+            "Boundary markers for usable inflammation evidence",
+            "Usable lifespan boundary conditions in mitochondrial stress",
+            "Proteostasis evidence for a usable intervention boundary",
+            "Cellular senescence and usable translational boundaries",
+        ))
     ]
 
 
@@ -10347,11 +10420,23 @@ def test_source_literature_fallback_tries_next_quality_candidate(
         for year in range(2020, 2025)
     ]
     usable = [
-        {"title": "Metabolic pathway review in aging", "doi": "10.1234/1"},
-        {"title": "Inflammation signalling across lifespan", "doi": "10.1234/2"},
-        {"title": "Mitochondrial stress response biology", "doi": "10.1234/3"},
-        {"title": "Cellular senescence intervention map", "doi": "10.1234/4"},
-        {"title": "Proteostasis mechanisms in age-related decline", "doi": "10.1234/5"},
+        {
+            "title": title,
+            "doi": f"10.1234/{idx}",
+            "source_fact": {
+                "canonical_phrase": f"usable quality fact {idx}",
+                "population": "adult source context",
+                "intervention": "usable boundary",
+                "endpoint": "aging signal",
+            },
+        }
+        for idx, title in enumerate((
+            "Metabolic pathway review in aging",
+            "Inflammation signalling across lifespan",
+            "Mitochondrial stress response biology",
+            "Cellular senescence intervention map",
+            "Proteostasis mechanisms in age-related decline",
+        ), start=1)
     ]
     monkeypatch.setattr(
         daily,
@@ -11382,6 +11467,71 @@ def test_source_literature_boundary_quality_rejects_title_series() -> None:
 
     assert ok is False
     assert reason == "repeated_title_series"
+
+
+def test_source_literature_boundary_rejects_duplicate_source_identity() -> None:
+    papers = [
+        {
+            "title": f"Glycation AGE boundary source {idx}",
+            "doi": "10.1234/shared-source",
+            "source_fact": {
+                "canonical_phrase": f"glycation AGE source fact {idx}",
+                "population": "adult tissue evidence",
+                "intervention": "glycation AGEs",
+                "endpoint": "AGEs aging marker",
+            },
+        }
+        for idx in range(5)
+    ]
+
+    ok, reason = daily._source_literature_boundary_quality("glycation_AGEs", papers, 5)
+
+    assert ok is False
+    assert reason == "source_diverse_floor_below_min"
+
+
+def test_source_literature_submit_gate_rejects_metadata_even_with_legacy_flag(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "glycation_AGEs", "paper_count": 9, "fact_source_count": 9}],
+    })
+    papers = [
+        {"title": title, "doi": f"10.1234/meta-{idx}"}
+        for idx, title in enumerate((
+            "AGE-RAGE signalling and skin collagen aging",
+            "Glycation stress and RAGE activation in vascular aging",
+            "Collagen crosslinking in advanced glycation biology",
+            "RAGE pathways in age-related tissue injury",
+            "Glycation-derived collagen stiffening review",
+        ))
+    ]
+    submitted = {"called": False}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-12T18-00-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        source_paper_fetcher=lambda *_args, **_kwargs: papers,
+        submitter=lambda _payload: submitted.update(called=True) or {
+            "ok": True,
+            "status": 200,
+        },
+        sleep=lambda _seconds: None,
+    )
+
+    assert submitted["called"] is False
+    assert ledger["status"] == "no_fresh_candidate"
+    assert ledger["source_literature_fallback"]["reason"] == (
+        "requires_fact_level_source_synthesis"
+    )
 
 
 def test_source_literature_boundary_requires_multi_token_topic_alignment() -> None:

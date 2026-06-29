@@ -3663,6 +3663,11 @@ def _source_literature_boundary_quality(
     )
     if publish_literature.substantive_fact_count(selected) < min_sources:
         return False, "requires_fact_level_source_synthesis"
+    if publish_literature.source_identity_count(
+        selected,
+        require_substantive=True,
+    ) < min_sources:
+        return False, "source_fact_diversity_below_min"
     return True, "ok"
 
 
@@ -5041,7 +5046,7 @@ def run_cycle(
                 papers = source_lit_probe(topic, min_submit_sources * 3)
                 source_lit_available, _reason = _source_literature_boundary_quality(
                     topic, papers, min_submit_sources, profile.slug,
-                    require_substantive_sources=not _source_literature_fallback_submit_enabled(),
+                    require_substantive_sources=True,
                 )
                 if source_lit_available:
                     source_lit_preflight_papers[topic] = papers
@@ -5703,7 +5708,7 @@ def run_cycle(
             )
             ok, reason = _source_literature_boundary_quality(
                 literature_topic, papers, min_submit_sources, profile.slug,
-                require_substantive_sources=not _source_literature_fallback_submit_enabled(),
+                require_substantive_sources=True,
             )
             relevant_paper_count = len(
                 publish_literature.relevant_papers(literature_topic, papers),
@@ -5730,12 +5735,17 @@ def run_cycle(
                 fact_backed = publish_literature.substantive_fact_count(
                     selected_papers,
                 ) >= min_submit_sources
-                if (
-                    not fact_backed
-                    and not _source_literature_fallback_submit_enabled()
-                ):
+                source_diverse = publish_literature.source_identity_count(
+                    selected_papers,
+                    require_substantive=True,
+                ) >= min_submit_sources
+                if not fact_backed:
                     fallback_attempt["status"] = "disabled"
                     fallback_attempt["reason"] = "requires_fact_level_source_synthesis"
+                    continue
+                if not source_diverse:
+                    fallback_attempt["status"] = "disabled"
+                    fallback_attempt["reason"] = "source_fact_diversity_below_min"
                     continue
                 candidate, payload = _source_literature_payload(
                     profile_slug=profile.slug,
