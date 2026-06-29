@@ -2103,11 +2103,19 @@ def _repairable_rejected_fingerprints(
     return retryable
 
 
+def _ledger_paths_newest_first(ledger_dir: Path) -> list[Path]:
+    return sorted(
+        ledger_dir.glob("*.json"),
+        key=lambda path: (path.stat().st_mtime_ns, path.name),
+        reverse=True,
+    )
+
+
 def _repairable_decisions_by_fingerprint(
     ledger_dir: Path, domain: str | None = None,
 ) -> dict[str, Json]:
     retryable: dict[str, Json] = {}
-    for path in sorted(ledger_dir.glob("*.json"), reverse=True):
+    for path in _ledger_paths_newest_first(ledger_dir):
         ledger = _json(path, {})
         if not isinstance(ledger, dict):
             continue
@@ -2125,7 +2133,7 @@ def _repairable_candidate_verdicts(
 ) -> list[Json]:
     verdicts: list[Json] = []
     seen: set[str] = set()
-    for path in sorted((runs_root / "_daily_ledger").glob("*.json"), reverse=True):
+    for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
         ledger = _json(path, {})
         if not isinstance(ledger, dict):
             continue
@@ -2237,7 +2245,7 @@ def _source_literature_parent_link_repair_needed(
     if not parent_submission_id:
         return False
     saw_submitted_source_literature = False
-    for path in sorted((runs_root / "_daily_ledger").glob("*.json"), reverse=True):
+    for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
         ledger = _json(path, {})
         if (
             not isinstance(ledger, dict)
@@ -2274,7 +2282,7 @@ def _source_literature_renderer_feedback_repair_needed(
 ) -> bool:
     if not _source_literature_render_repair_revise(decision):
         return False
-    for path in sorted((runs_root / "_daily_ledger").glob("*.json"), reverse=True):
+    for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
         ledger = _json(path, {})
         if (
             not isinstance(ledger, dict)
@@ -2313,7 +2321,7 @@ def _source_literature_title_ownership_repair_needed(
         or str(decision.get("claim_support_verdict") or "").lower() == "unsupported"
     ):
         return False
-    for path in sorted((runs_root / "_daily_ledger").glob("*.json"), reverse=True):
+    for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
         ledger = _json(path, {})
         if (
             not isinstance(ledger, dict)
@@ -2345,7 +2353,7 @@ def _source_literature_field_ownership_repair_needed(
     notes = _norm(_revision_notes(decision))
     if not any(marker in notes for marker in _SOURCE_LITERATURE_FIELD_OWNERSHIP_MARKERS):
         return False
-    for path in sorted((runs_root / "_daily_ledger").glob("*.json"), reverse=True):
+    for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
         ledger = _json(path, {})
         if (
             not isinstance(ledger, dict)
@@ -2380,7 +2388,7 @@ def _source_literature_terminal_resubmit_needed(
         return False
     if "external author must resubmit" not in _norm(_revision_notes(decision)):
         return False
-    for path in sorted((runs_root / "_daily_ledger").glob("*.json"), reverse=True):
+    for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
         ledger = _json(path, {})
         if (
             not isinstance(ledger, dict)
@@ -2425,7 +2433,7 @@ def _repairable_source_literature_decisions(
         days=_DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS,
         domain=domain,
     )
-    for path in sorted((runs_root / "_daily_ledger").glob("*.json"), reverse=True):
+    for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
         ledger = _json(path, {})
         if (
             not isinstance(ledger, dict)
@@ -2482,7 +2490,7 @@ def _exhausted_source_literature_topics(
 def _source_literature_attempt_budget(
     runs_root: Path, domain: str | None, topic: str,
 ) -> int:
-    for path in sorted((runs_root / "_daily_ledger").glob("*.json"), reverse=True):
+    for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
         ledger = _json(path, {})
         if (
             not isinstance(ledger, dict)

@@ -9921,6 +9921,34 @@ def test_source_literature_clean_terminal_revise_gets_one_resubmit(
             "researka_decision": decision,
         })
 
+    stale_run = root / f"{topic}-source-literature-2026-06-29t00-00-00z"
+    stale_run.mkdir(parents=True)
+    stale_run.joinpath("source_literature_memo.md").write_text(
+        "# Source literature boundary memo\n", encoding="utf-8",
+    )
+    daily._write_json(stale_run / "source_literature_payload.json", {
+        "title": "stale source literature title",
+        "markdown": "stale source literature body",
+    })
+    stale_ledger = ledger_dir / "2026-06-29t00-00-00z-decision-stale.json"
+    daily._write_json(stale_ledger, {
+        "domain": {"slug": "business_research"},
+        "submitted": 0,
+        "candidate": {
+            "topic": topic,
+            "run_dir": stale_run.name,
+            "fingerprint": "fp-stale-lowercase-t",
+        },
+        "researka_decision": {
+            "decision": "revise",
+            "claim_support_verdict": "partially_supported",
+            "notes": ["older stale renderer feedback"],
+            "required_revisions": ["fix old draft"],
+            "resubmission": {"allowed": True},
+        },
+    })
+    os.utime(stale_ledger, (1, 1))
+
     assert daily._source_literature_attempt_budget(
         root, "business_research", topic,
     ) == daily._SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT
