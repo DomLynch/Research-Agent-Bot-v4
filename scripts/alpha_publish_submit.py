@@ -127,6 +127,23 @@ def _native_research_object_payload(payload: Json) -> Json:
     return native
 
 
+def _legacy_fallback_payload(payload: Json) -> Json:
+    fallback = dict(payload)
+    metadata: Json = dict(fallback.get("metadata") or {})
+    parent = _as_uuid(
+        fallback.get("parent_submission_id")
+        or fallback.get("parent_object_id")
+        or metadata.get("revision_of_object_id")
+        or metadata.get("revision_of")
+    )
+    if parent:
+        fallback.setdefault("parent_submission_id", parent)
+        fallback.setdefault("parent_object_id", parent)
+        metadata.setdefault("revision_of_object_id", parent)
+    fallback["metadata"] = metadata
+    return fallback
+
+
 def http_submitter(url: str, token: str) -> Submitter:
     def legacy_url() -> str:
         parts = urllib.parse.urlsplit(url)
@@ -161,7 +178,7 @@ def http_submitter(url: str, token: str) -> Submitter:
         body_payload = _native_research_object_payload(payload) if native else payload
         result = send(url, body_payload, native=native)
         if native and result.get("status") == 404 and "not found" in str(result.get("response", "")).lower():
-            fallback = send(legacy_url(), payload, native=False)
+            fallback = send(legacy_url(), _legacy_fallback_payload(payload), native=False)
             fallback["fallback_from_url"] = url
             fallback["fallback_reason"] = "native_research_objects_not_found"
             return fallback
