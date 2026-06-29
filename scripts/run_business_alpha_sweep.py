@@ -775,6 +775,24 @@ def _cached_fullraw_discovery_papers(
     return papers, trace
 
 
+def _merge_source_literature_papers(
+    *paper_sets: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    merged: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for papers in paper_sets:
+        for paper in papers:
+            key = publish_literature.source_identity_key(paper) or _fullraw_hit_key(paper)
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            merged.append(paper)
+    return sorted(
+        merged,
+        key=lambda paper: not publish_literature.substantive_fact_count([paper]),
+    )
+
+
 def _strict_fullraw_probe_papers(topic: str, runs_root: Path) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     trace = _strict_fullraw_probe(topic, include_papers=True, runs_root=runs_root)
     papers = [paper for paper in trace.pop("_papers", []) if isinstance(paper, dict)]
@@ -1686,6 +1704,10 @@ def main() -> int:
                         < MIN_DIRECT_SOURCES
                     ):
                         cached_trace = dict(fullraw_trace)
+                        cached_papers = list(fullraw_papers)
+                        cached_fact_count = publish_literature.substantive_fact_count(
+                            cached_papers,
+                        )
                         fullraw_papers, fullraw_trace = _strict_fullraw_probe_papers(
                             topic, args.runs_root,
                         )
@@ -1695,6 +1717,21 @@ def main() -> int:
                         fullraw_papers = _enrich_fullraw_papers_with_db_facts(
                             topic, domain=domain, papers=fullraw_papers, settings=settings,
                         )
+                        live_fact_count = publish_literature.substantive_fact_count(
+                            fullraw_papers,
+                        )
+                        if cached_papers and live_fact_count < MIN_DIRECT_SOURCES:
+                            merged_papers = _merge_source_literature_papers(
+                                cached_papers, fullraw_papers,
+                            )
+                            if (
+                                publish_literature.substantive_fact_count(merged_papers)
+                                >= max(
+                                    cached_fact_count,
+                                    live_fact_count,
+                                )
+                            ):
+                                fullraw_papers = merged_papers
                     fullraw_keys: set[str] = set()
                     for paper in fullraw_papers:
                         key = str(
@@ -1712,6 +1749,10 @@ def main() -> int:
                     )
                     fullraw_fact_count = publish_literature.substantive_fact_count(
                         fullraw_papers,
+                    )
+                    fullraw_trace["paper_count"] = max(
+                        _count_int(fullraw_trace.get("paper_count")),
+                        len(fullraw_papers),
                     )
                     fullraw_trace["fact_source_count"] = fullraw_fact_count
                     try:
