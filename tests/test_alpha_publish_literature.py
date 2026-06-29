@@ -100,3 +100,83 @@ def test_fetch_papers_enriches_fullraw_metadata_with_adjacent_fact_rows(
         strict_topic_coverage=True,
         profile_slug="business_research",
     ) == (True, "ok")
+
+
+def test_select_boundary_papers_preserves_fact_backed_floor_before_metadata() -> None:
+    topic = "supply_chain_resilience_performance"
+    fact_backed = [
+        {
+            "doi": f"10.7000/scr-{idx}",
+            "title": title,
+            "source_fact": {
+                "canonical_phrase": phrase,
+                "population": "firms",
+                "intervention": "supply chain resilience",
+                "endpoint": endpoint,
+                "source_tier": "fullraw_abstract",
+            },
+        }
+        for idx, (title, endpoint, phrase) in enumerate((
+            (
+                "Evaluating supply resilience performance during operational shocks",
+                "business outcome",
+                "relative weights for resilience criteria were estimated during shocks",
+            ),
+            (
+                "Supply chain resilience and firm performance",
+                "firm performance",
+                "supply chain resilience did not significantly improve firm performance",
+            ),
+            (
+                "Factors affecting supply chain resilience and supply chain performance",
+                "supply chain performance",
+                "collaboration had positive significant effects on supply chain performance",
+            ),
+            (
+                "Resilience effects on supply chain performance of manufacturers",
+                "supply chain performance",
+                "agility significantly affected supply chain performance",
+            ),
+            (
+                "Supply chain disruption and performance of manufacturing firms",
+                "supply chain performance",
+                "resilience had a significant positive effect on supply chain performance",
+            ),
+            (
+                "Relational practices in supply chain resilience for performance",
+                "supply chain performance",
+                "network practices moderated the resilience to performance relationship",
+            ),
+        ))
+    ]
+    metadata_only = [
+        {
+            "doi": f"10.7000/meta-{idx}",
+            "title": title,
+            "source_fact": {
+                "canonical_phrase": f"Title-level source match: {title}",
+                "endpoint": "source-literature relevance",
+                "source_tier": "paper_metadata",
+            },
+        }
+        for idx, title in enumerate((
+            "Industry 4.0 enables supply chain resilience and supply chain performance",
+            "Exposure to risks: what matters most to supply chain resilience performance",
+            "Forecasting supply chain resilience performance using grey prediction",
+        ))
+    ]
+
+    selected = literature.select_boundary_papers(
+        topic,
+        [*fact_backed[:3], *metadata_only[:2], *fact_backed[3:], metadata_only[2]],
+        5,
+        strict_topic_coverage=True,
+    )
+
+    assert len(selected) == 5
+    assert literature.substantive_fact_count(selected) == 5
+    assert literature.source_identity_count(selected, require_substantive=True) == 5
+    assert all(
+        paper["source_fact"]["source_tier"] == "fullraw_abstract"
+        for paper in selected
+    )

@@ -352,6 +352,20 @@ def select_boundary_papers(
             return precise
         usable = precise
     usable = sorted(usable, key=lambda paper: not _paper_has_substantive_source_fact(paper))
+    substantive = [
+        paper for paper in usable if _paper_has_substantive_source_fact(paper)
+    ]
+    if len(substantive) >= min_sources:
+        substantive_buckets: dict[str, list[Json]] = {}
+        for paper in substantive:
+            substantive_buckets.setdefault(_paper_context_family(paper), []).append(paper)
+        coherent_substantive = [
+            rows for family, rows in substantive_buckets.items()
+            if family != "other source context" and len(rows) >= min_sources
+        ]
+        if coherent_substantive:
+            return _source_diverse_order(topic, max(coherent_substantive, key=len))[:min_sources]
+        return _source_diverse_order(topic, substantive)[:min_sources]
     buckets: dict[str, list[Json]] = {}
     for paper in usable:
         buckets.setdefault(_paper_context_family(paper), []).append(paper)
