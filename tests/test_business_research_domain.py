@@ -2908,6 +2908,12 @@ def test_business_sweep_complete_fullraw_hands_off_to_source_literature(
     assert discovery["all"][0]["paper_count"] == 5
     assert discovery["all"][0]["fact_source_count"] == 5
     assert len(discovery["all"][0]["source_papers"]) == 5
+    source_papers = discovery["all"][0]["source_papers"]
+    assert publish_literature.substantive_fact_count(source_papers) == 5
+    assert publish_literature.source_identity_count(source_papers) == 5
+    assert publish_literature.source_identity_count(
+        source_papers, require_substantive=True,
+    ) == 5
     assert submissions == [{
         "runs_root": tmp_path / "runs",
         "date": "2026-06-27T01-00-00Z",
