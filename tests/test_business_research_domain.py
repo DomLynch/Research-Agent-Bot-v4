@@ -1217,6 +1217,7 @@ def test_business_sweep_fullraw_probe_inherits_fullraw_search_budget(
     ):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_ENV_FILE", str(tmp_path / "missing-fullraw.env"))
     monkeypatch.setenv(
         "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
         str(tmp_path / "fullraw.lock"),
@@ -1348,6 +1349,7 @@ def test_business_sweep_fullraw_probe_defaults_to_strict_sweep_budget(
     ):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_ENV_FILE", str(tmp_path / "missing-fullraw.env"))
     monkeypatch.setenv(
         "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
         str(tmp_path / "fullraw.lock"),
