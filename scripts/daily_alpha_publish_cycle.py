@@ -3671,8 +3671,8 @@ def _source_literature_boundary_quality(
     return True, "ok"
 
 
-def _paper_key(paper: Json, fallback: Any = "") -> str:
-    return publish_literature.paper_key(paper, fallback)
+def _paper_key(paper: Json, default: Any = "") -> str:
+    return publish_literature.paper_key(paper, default)
 
 
 def _source_literature_fact(item: Json) -> Json:

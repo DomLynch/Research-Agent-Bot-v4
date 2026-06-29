@@ -1,4 +1,4 @@
-"""Source-literature fallback helpers for alpha publish cycles."""
+"""Source-literature selected-bundle helpers for alpha publish cycles."""
 from __future__ import annotations
 
 import hashlib
@@ -357,8 +357,8 @@ def boundary_quality(
     return True, "ok"
 
 
-def paper_key(paper: Json, fallback: Any = "") -> str:
-    return str(paper.get("doi") or paper.get("pmid") or paper.get("id") or fallback or "")
+def paper_key(paper: Json, default: Any = "") -> str:
+    return str(paper.get("doi") or paper.get("pmid") or paper.get("id") or default or "")
 
 
 def source_identity_key(paper: Json) -> str:
@@ -822,6 +822,56 @@ def _direction_signal_label(papers: list[Json], topic: str = "", profile_slug: s
     return "context-dependent, not uniformly convergent associations"
 
 
+def _bounded_signal_sentence(
+    topic: str,
+    endpoints_by_label: dict[str, list[str]],
+    *,
+    non_bio: bool,
+) -> str:
+    topic_text = topic.replace("_", " ")
+    directional = list(dict.fromkeys(
+        endpoints_by_label.get("directional estimate", [])
+        + endpoints_by_label.get("directionally favorable", []),
+    ))
+    nullish = list(dict.fromkeys(
+        endpoints_by_label.get("null/mixed", [])
+        + endpoints_by_label.get("null/non-convergent", []),
+    ))
+    descriptive = list(dict.fromkeys(
+        endpoints_by_label.get("descriptive/modeling", [])
+        + endpoints_by_label.get("non-clinical/predictive", []),
+    ))
+    if non_bio and directional and nullish:
+        return (
+            f"Bounded signal: {topic_text} has direction-bearing receipts for "
+            f"{', '.join(directional[:2])}, but {', '.join(nullish[:2])} remains "
+            "null/mixed; this is a metric-and-setting contrast, not a generalized "
+            "performance claim."
+        )
+    if non_bio and directional:
+        tail = (
+            f", while descriptive/modeling receipts only contextualize "
+            f"{', '.join(descriptive[:2])}"
+            if descriptive else ""
+        )
+        return (
+            f"Bounded signal: {topic_text} has direction-bearing receipts for "
+            f"{', '.join(directional[:2])}{tail}; this is bounded to those "
+            "metrics and settings."
+        )
+    if directional and nullish:
+        return (
+            f"Bounded signal: {topic_text} has directionally favorable receipts for "
+            f"{', '.join(directional[:2])}, but {', '.join(nullish[:2])} remains "
+            "null/non-convergent; this is an endpoint-specific contrast, not an "
+            "efficacy claim."
+        )
+    return (
+        f"Bounded signal: {topic_text} is only a source-level context map; "
+        "the selected receipts do not establish one pooled effect."
+    )
+
+
 def _has_context_term(text: str, terms: tuple[str, ...]) -> bool:
     tokens = set(title_key(text).split())
     return any(term in tokens or (" " in term and term in text) for term in terms)
@@ -1019,6 +1069,7 @@ def payload(
             facts.append(raw_fact)
     contexts = sorted({context_family(fact.get("population")) for fact in facts})
     context_text = join_contexts(contexts[:3])
+    source_identity_total = source_identity_count(selected, require_substantive=True)
     question = (
         f"Across retrieved source-level receipts for {topic}, which metrics, "
         "settings, or contrasts differ versus remain null/mixed, and what "
@@ -1038,11 +1089,13 @@ def payload(
         "## Selection criteria",
         "",
         (
-            f"The source-literature fallback selected {topic} because the domain "
-            "snapshot exposed enough source-backed, topic-overlapping papers. The "
-            "fallback requires at least five verifiable source "
-            "papers with source-level receipts, distinct title keys, and a non-"
-            "repeated report series before treating the bundle as a coherent "
+            f"The source-literature selector kept {topic} because the candidate "
+            f"bundle met the public source rule: {len(selected)} citable papers, "
+            f"{source_identity_total} distinct fact-backed source identities, "
+            "topic-overlapping source facts, and enough shared scope to compare "
+            "metric/context disagreement. It excludes duplicate reports, "
+            "metadata-only title matches, off-topic papers, and sources without "
+            "fact-level extraction before treating the bundle as a coherent "
             + (
                 "scoping front rather than proof of a policy or market conclusion."
                 if non_bio else
@@ -1108,15 +1161,15 @@ def payload(
     signal_label = _direction_signal_label(selected, topic, profile.slug)
     non_bio_signal_parts: list[str] = []
     endpoints_by_label: dict[str, list[str]] = {}
+    for paper in selected:
+        source_fact = paper.get("source_fact")
+        if not isinstance(source_fact, dict):
+            continue
+        label = _display_direction(_paper_effect_direction(paper, topic), profile.slug)
+        endpoint = str(source_fact.get("endpoint") or source_fact.get("metric") or "").strip()
+        if endpoint:
+            endpoints_by_label.setdefault(label, []).append(endpoint)
     if non_bio:
-        for paper in selected:
-            source_fact = paper.get("source_fact")
-            if not isinstance(source_fact, dict):
-                continue
-            label = _display_direction(_paper_effect_direction(paper, topic), profile.slug)
-            endpoint = str(source_fact.get("endpoint") or source_fact.get("metric") or "").strip()
-            if endpoint:
-                endpoints_by_label.setdefault(label, []).append(endpoint)
         for label, prefix in (
             ("directional estimate", "direction-bearing receipts support"),
             ("null/mixed", "null/mixed receipts limit"),
@@ -1125,6 +1178,9 @@ def payload(
             endpoints = list(dict.fromkeys(endpoints_by_label.get(label, [])))
             if endpoints:
                 non_bio_signal_parts.append(f"{prefix} {', '.join(endpoints[:3])}")
+    bounded_signal = _bounded_signal_sentence(
+        topic, endpoints_by_label, non_bio=non_bio,
+    )
     directions = [_paper_effect_direction(paper, topic) for paper in selected]
     all_favorable = bool(directions) and all(
         direction == "directionally favorable" for direction in directions
@@ -1214,7 +1270,7 @@ def payload(
         ),
     ]
     if not non_bio and "human clinical/observational" not in contexts:
-        next_gaps.insert(0, "No source in this fallback bundle tests human clinical endpoints.")
+        next_gaps.insert(0, "No source in this selected bundle tests human clinical endpoints.")
     if non_bio and endpoints_by_label.get("directional estimate") and endpoints_by_label.get("null/mixed"):
         directional = ", ".join(list(dict.fromkeys(endpoints_by_label["directional estimate"]))[:2])
         nullish = ", ".join(list(dict.fromkeys(endpoints_by_label["null/mixed"]))[:2])
@@ -1252,6 +1308,8 @@ def payload(
         "",
         "## Source synthesis",
         "",
+        bounded_signal,
+        "",
         synthesis,
         "",
         "## Directional grouping",
@@ -1267,6 +1325,13 @@ def payload(
         "## Context separation",
         "",
         (
+            "Population/settings are separated as receipt context: "
+            + (
+                join_contexts(populations[:5])
+                if populations else
+                "specific population context is not extractable"
+            )
+            + ". "
             f"The selected receipts group because each carries a fact-level extraction "
             f"for {topic}; they separate by context ({context_text}) and "
             f"{'metric' if non_bio else 'endpoint'}, "
