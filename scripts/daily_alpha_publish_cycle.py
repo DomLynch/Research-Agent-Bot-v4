@@ -2697,8 +2697,9 @@ def _source_literature_attempt_budget(
         for _fp, run_ref, decision in _repairable_submission_records(ledger):
             row_topic = candidate_topic or _source_literature_topic_from_run(run_ref)
             if row_topic == topic:
-                if _source_literature_terminal_resubmit_needed(
-                    runs_root, domain, topic, decision,
+                if (
+                    _clean_supported_revise(decision)
+                    and "external author must resubmit" in _norm(_revision_notes(decision))
                 ):
                     return _SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT
                 budget = _source_literature_repair_attempt_limit(decision)

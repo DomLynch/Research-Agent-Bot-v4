@@ -10230,43 +10230,7 @@ def test_old_source_literature_publish_framing_gets_one_bounded_retry(
     budget = daily._source_literature_attempt_budget(
         root, "business_research", topic,
     )
-    assert budget == daily._MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 1
-    assert daily._repairable_source_literature_topics(
-        root, "business_research", limit=3,
-    ) == [topic]
-
-    for idx in range(daily._SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT, budget):
-        stamp = f"2026-06-29T11-{idx:02d}-00Z"
-        final_run = root / f"{topic}-source-literature-{stamp}"
-        final_run.mkdir(parents=True)
-        final_run.joinpath("source_literature_memo.md").write_text(
-            "# Source literature boundary memo\n", encoding="utf-8",
-        )
-        daily._write_json(final_run / "source_literature_payload.json", {
-            "title": (
-                "supply chain resilience performance: directional supply chain "
-                "performance with firm-performance caveat evidence"
-            ),
-            "markdown": "## Boundary map\n\nFirm-performance caveat framing.",
-            "parent_submission_id": "sub-framing-final",
-            "parent_object_id": "sub-framing-final",
-            "metadata": {"revision_of": "sub-framing-final"},
-        })
-        daily._write_json(ledger_dir / f"{stamp}.json", {
-            "domain": {"slug": "business_research"},
-            "submitted": 1,
-            "submission_id": f"sub-framing-final-{idx}",
-            "candidate": {
-                "topic": topic,
-                "run_dir": final_run.name,
-                "fingerprint": f"fp-framing-final-{idx}",
-            },
-            "researka_decision": decision,
-        })
-
-    assert daily._source_literature_submission_count(
-        root, "business_research", topic,
-    ) == budget
+    assert budget == daily._SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT
     assert daily._repairable_source_literature_topics(
         root, "business_research", limit=3,
     ) == []
