@@ -8829,7 +8829,7 @@ def test_source_literature_fallback_uses_default_fetcher_after_empty_submit_lane
     assert seen_payload["citations"] == seen_payload["source_bundle"]
     assert not seen_payload["abstract"].startswith("Answer:")
     assert "not uniformly convergent" in seen_payload["abstract"]
-    assert "Grouped by direction" in seen_payload["markdown"]
+    assert "Evidence role grouping" in seen_payload["markdown"]
     assert "latest Longevity" not in seen_payload["markdown"]
     assert "matched PICO" in seen_payload["markdown"]
 
@@ -12544,7 +12544,7 @@ def test_source_literature_payload_separates_intervention_from_predictive_rows(
     assert "non-clinical/predictive: 2 receipt(s)" in markdown
     assert "other/mixed: 1 receipt(s)" in markdown
     assert "other/mixed: 5 receipt(s)" not in markdown
-    assert "Descriptive receipt labels, not pooled effect counts" in payload["abstract"]
+    assert "Evidence role grouping; non-directional method receipts are context only" in payload["abstract"]
     assert "not one pooled evidence front" in markdown
     assert "intervention signals plus separate predictive evidence" in payload["abstract"]
     assert payload["title"] == (

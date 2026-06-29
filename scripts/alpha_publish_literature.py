@@ -729,6 +729,28 @@ def _direction_summary(papers: list[Json], topic: str = "", profile_slug: str = 
     return " | ".join(parts) if parts else "direction of effect is not extractable from the retrieved facts"
 
 
+def _evidence_role_summary(papers: list[Json], topic: str = "", profile_slug: str = "") -> str:
+    directional = nullish = context_only = 0
+    for paper in papers:
+        direction = _paper_effect_direction(paper, topic)
+        label = _display_direction(direction, profile_slug)
+        if label in {"directional estimate", "directionally favorable"}:
+            directional += 1
+        elif label in {"null/mixed", "null/non-convergent"}:
+            nullish += 1
+        elif label in {"descriptive/modeling", "non-clinical/predictive"}:
+            context_only += 1
+    parts = [
+        f"direction-bearing receipts: {directional}",
+        f"null/mixed outcome receipts: {nullish}",
+    ]
+    if context_only:
+        parts.append(
+            f"non-directional method/model receipts excluded from effect support: {context_only}",
+        )
+    return "; ".join(parts)
+
+
 def _direction_contrast_sentence(
     papers: list[Json], topic: str = "", profile_slug: str = "",
 ) -> str:
@@ -820,6 +842,34 @@ def _direction_signal_label(papers: list[Json], topic: str = "", profile_slug: s
     if directions and all(direction == "non-clinical/predictive" for direction in directions):
         return "descriptive predictive signals, not intervention evidence"
     return "context-dependent, not uniformly convergent associations"
+
+
+def _source_context_label(paper: Json, *, non_bio: bool) -> str:
+    fact = paper.get("source_fact")
+    fact = fact if isinstance(fact, dict) else {}
+    population = str(fact.get("population") or "").strip()
+    if not non_bio:
+        return population
+    generic = {"", "firm", "firms", "companies", "businesses", "organizations"}
+    if title_key(population) not in generic:
+        return population
+    text = title_key(" ".join(str(value or "") for value in (
+        paper.get("title"), paper.get("paper_title"), fact.get("canonical_phrase"),
+        fact.get("endpoint"), fact.get("metric"),
+    )))
+    labels: list[str] = []
+    for token, label in (
+        ("automotive", "automotive firms"),
+        ("chemical", "chemical industrial companies"),
+        ("manufacturing", "manufacturing firms"),
+        ("retail", "retail firms"),
+        ("bank", "banking/financial firms"),
+        ("financial", "banking/financial firms"),
+        ("market", "market setting"),
+    ):
+        if token in text.split() and label not in labels:
+            labels.append(label)
+    return join_contexts(labels[:2]) if labels else (population or "mixed firms/settings")
 
 
 def _bounded_signal_sentence(
@@ -1120,12 +1170,16 @@ def payload(
         if phrase:
             lines.append(f"  - Finding: {phrase}")
         for label, key in (
-            ("Population", "population"),
+            ("Population/setting" if non_bio else "Population", "population"),
             ("Policy/exposure/practice" if non_bio else "Intervention/exposure", "intervention"),
             ("Comparator/reference" if non_bio else "Comparator", "comparator"),
             ("Endpoint/metric", "endpoint"),
         ):
-            value = str(fact.get(key) or "").strip()
+            value = (
+                _source_context_label(paper, non_bio=non_bio)
+                if key == "population" else
+                str(fact.get(key) or "").strip()
+            )
             if value:
                 lines.append(f"  - {label}: {value}")
     bundle = source_bundle(selected)
@@ -1141,22 +1195,19 @@ def payload(
         str(source.get("evidence_type") or "source") for source in bundle
     }))
     populations = sorted({
-        str(fact.get("population") or "").strip() for fact in facts
-        if str(fact.get("population") or "").strip()
+        value for paper in selected
+        if (value := _source_context_label(paper, non_bio=non_bio))
     })
     interventions = sorted({
         str(fact.get("intervention") or "").strip() for fact in facts
         if str(fact.get("intervention") or "").strip()
     })
-    findings = [
-        str(fact.get("canonical_phrase") or "").strip() for fact in facts
-        if str(fact.get("canonical_phrase") or "").strip()
-    ]
     endpoint_count = len({
         str(fact.get("endpoint") or fact.get("metric") or "").strip()
         for fact in facts if str(fact.get("endpoint") or fact.get("metric") or "").strip()
     })
     direction_text = _direction_summary(selected, topic, profile.slug)
+    role_text = _evidence_role_summary(selected, topic, profile.slug)
     contrast_text = _direction_contrast_sentence(selected, topic, profile.slug)
     signal_label = _direction_signal_label(selected, topic, profile.slug)
     non_bio_signal_parts: list[str] = []
@@ -1196,15 +1247,15 @@ def payload(
         f"This receipt-backed scoping note has one bounded signal: {topic} shows "
     )
     group_label = (
-        "Descriptive receipt labels, not pooled effect counts"
+        "Evidence role grouping; non-directional method receipts are context only"
         if split_front else
-        "Grouped by direction"
+        "Evidence role grouping"
     )
     synthesis = (
         f"{lead}{signal_label} across this "
         f"{len(bundle)}-source {type_text} bundle ({year_text}). {group_label}: "
         f"{direction_text}. The source facts cover "
-        f"{len(populations) or 'multiple'} population context(s) and "
+        f"{len(populations) or 'multiple'} population/setting context(s) and "
         f"{len(interventions) or 'multiple'} "
         f"{'policy/exposure/practice' if non_bio else 'intervention/exposure'} context(s), "
         f"so this is a scoping signal about where {'metrics' if non_bio else 'endpoints'} "
@@ -1246,21 +1297,15 @@ def payload(
         )
     if non_bio_signal_parts:
         synthesis += " Substantive signal: " + "; ".join(non_bio_signal_parts) + "."
+    if non_bio:
+        synthesis += " Within-vs-across outcome rule: direction-bearing rows are "
+        synthesis += (
+            "only compared within their named metric; firm-performance, supply-chain "
+            "performance, and modelling receipts are not treated as one outcome."
+        )
     if contrast_text:
         synthesis += " " + contrast_text
     abstract_text = synthesis
-    if findings:
-        examples: list[str] = []
-        for paper in selected:
-            raw_fact = paper.get("source_fact")
-            if not isinstance(raw_fact, dict):
-                continue
-            display = _display_finding(raw_fact, _paper_effect_direction(paper, topic))
-            if display:
-                examples.append(_short_finding(display))
-            if len(examples) >= 3:
-                break
-        synthesis += " Concrete source-level examples: " + "; ".join(examples) + "."
     moderator_note = _specific_moderator_note(facts, source_types)
     next_gaps = [
         _pico_gap(facts, profile.slug),
@@ -1316,6 +1361,8 @@ def payload(
         "",
         *(_direction_category_lines(topic, profile.slug)),
         "",
+        f"Evidence role summary: {role_text}.",
+        "",
         *(_direction_rows(selected, topic, profile.slug) or [
             "- Direction not extractable from the selected receipts.",
         ]),
@@ -1351,6 +1398,15 @@ def payload(
         "## Boundary limits",
         "",
         boundary_summary,
+        (
+            f" Material limitations: small k={len(bundle)} source bundle; no pooled "
+            "estimate is possible; method/model receipts without direct effect "
+            "estimates are context only; outcomes are not harmonized across studies."
+            if non_bio else
+            f" Material limitations: small k={len(bundle)} source bundle; no pooled "
+            "estimate is possible; method/model receipts without direct effect "
+            "estimates are context only; endpoints are not harmonized across studies."
+        ),
         (
             " The signal is purely descriptive of effect-direction heterogeneity; "
             + (
