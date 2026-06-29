@@ -1377,6 +1377,15 @@ def main() -> int:
                         fullraw_papers,
                     )
                     fullraw_trace["fact_source_count"] = fullraw_fact_count
+                    try:
+                        pre_enrichment_fact_count = int(
+                            fullraw_trace.get("candidate_fact_source_count") or 0,
+                        )
+                    except (TypeError, ValueError):
+                        pre_enrichment_fact_count = 0
+                    fullraw_trace["candidate_fact_source_count"] = max(
+                        pre_enrichment_fact_count, fullraw_fact_count,
+                    )
                     trace = {**trace, "fullraw": fullraw_trace}
                     row["trace"] = trace
                     row["status"] = "no_bundle"

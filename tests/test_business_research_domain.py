@@ -3115,6 +3115,94 @@ def test_business_sweep_thin_fact_fullraw_does_not_handoff_to_submit(
     assert run_cycle_calls == 0
 
 
+def test_business_sweep_reports_enriched_fullraw_candidate_fact_source_count(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    raw_papers = [
+        {
+            "doi": f"10.1000/source-{idx}",
+            "title": f"Supply chain resilience performance source {idx}",
+        }
+        for idx in range(5)
+    ]
+    enriched_papers = [
+        paper | {
+            "source_fact": {
+                "canonical_phrase": (
+                    f"Supply chain resilience changed firm performance in setting {idx}."
+                ),
+                "population": "firms",
+                "intervention": "supply chain resilience",
+                "endpoint": "firm performance",
+                "source_tier": "fullraw_search",
+            },
+        }
+        for idx, paper in enumerate(raw_papers)
+    ]
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(
+        sweep,
+        "_seed_topics",
+        lambda _path, *, limit: ["supply_chain_resilience_performance"],
+    )
+    monkeypatch.setattr(
+        sweep,
+        "fetch_business_facts",
+        lambda *_args, **_kwargs: ([], {"status": "failed", "http_status": 503}),
+    )
+    monkeypatch.setattr(sweep, "_fullraw_search_hits", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(
+        sweep,
+        "_enrich_fullraw_papers_with_db_facts",
+        lambda *_args, **_kwargs: enriched_papers,
+    )
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", lambda _topic, **_kwargs: {
+        "status": "complete",
+        "paper_count": 5,
+        "candidate_fact_source_count": 1,
+        "shards_searched": 1525,
+        "partial_shard_search": False,
+        "sweep_failed_shards": 0,
+        "sources_searched": {
+            "openalex": 2,
+            "pubmed": 1,
+            "crossref": 1,
+            "core": 1,
+            "semantic_scholar": 1,
+        },
+        "_papers": raw_papers,
+    })
+    monkeypatch.setattr(sweep, "run_cycle", lambda **_kwargs: {
+        "status": "no_fresh_candidate",
+        "submitted": 0,
+        "published": 0,
+    })
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(tmp_path / "runs"),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-06-29T03-20-00Z",
+    ])
+
+    assert sweep.main() == 2
+
+    summary = json.loads(
+        (tmp_path / "runs" / "_business_diagnostics" / "latest_sweep.json")
+        .read_text(encoding="utf-8"),
+    )
+    row = summary["results"][0]
+    assert row["fullraw_fact_source_count"] == 5
+    assert row["fullraw"]["fact_source_count"] == 5
+    assert row["fullraw"]["candidate_fact_source_count"] == 5
+
+
 def test_business_sweep_enriches_fullraw_papers_with_exact_db_facts(
     monkeypatch: Any,
 ) -> None:
