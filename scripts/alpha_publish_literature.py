@@ -856,12 +856,12 @@ def _evidence_role_summary(papers: list[Json], topic: str = "", profile_slug: st
         }:
             context_only += 1
     parts = [
-        f"direction-bearing evidence base k={directional}",
-        f"metric-scope caveat receipts k={nullish}",
+        f"direction-bearing receipts: {directional}",
+        f"metric-scope caveat receipts: {nullish}",
     ]
     if context_only:
         parts.append(
-            f"context/antecedent/model receipts k={context_only} excluded from effect support",
+            f"context/antecedent/model receipts: {context_only} excluded from effect support",
         )
     return "; ".join(parts)
 
@@ -1131,12 +1131,10 @@ def _bounded_signal_sentence(
     ))
     if non_bio and directional and nullish:
         return (
-            f"Bounded signal: {topic_text} is a source-scope boundary note"
-            f"{f' across {family_text} receipts' if family_text else ''}: "
-            f"direction-bearing evidence is limited to {', '.join(directional[:2])}, "
-            f"while {', '.join(nullish[:2])} is the caveat outcome. This is an "
-            "unmatched source-scope note across named outcome families, not "
-            "support for the topic as a whole."
+            f"Bounded signal: {topic_text} has directional support for "
+            f"{', '.join(directional[:2])}, while {', '.join(nullish[:2])} "
+            f"is null or non-convergent{f' across {family_text}' if family_text else ''}. "
+            "That supports a narrow scoping contrast, not support for the topic as a whole."
         )
     if non_bio and directional:
         tail = (
@@ -1513,19 +1511,46 @@ def payload(
     )
     if thin_non_bio_scope:
         contrast_text = ""
+    directional_contexts = sorted({
+        _source_context_label(paper, non_bio=non_bio)
+        for paper in selected
+        if _paper_evidence_role(paper, topic, profile.slug)
+        in {"directional association", "directional estimate", "directionally favorable"}
+        and _source_context_label(paper, non_bio=non_bio)
+    })
+    nullish_contexts = sorted({
+        _source_context_label(paper, non_bio=non_bio)
+        for paper in selected
+        if _paper_evidence_role(paper, topic, profile.slug)
+        in {"null/mixed", "null/non-convergent"}
+        and _source_context_label(paper, non_bio=non_bio)
+    })
     evidence_weight_note = ""
+    scope_integration_note = ""
     if thin_non_bio_scope:
+        context_tail = (
+            f" in {join_contexts(directional_contexts[:2])}"
+            if directional_contexts else ""
+        )
+        nullish_tail = (
+            f" in {join_contexts(nullish_contexts[:2])}"
+            if nullish_contexts else ""
+        )
         evidence_weight_note = (
-            f"Evidence weight: this is a source-scoping boundary note, not an "
-            f"effect synthesis. Only k={directional_count} receipt carries a direct "
-            f"topic-to-outcome directional statement; k={nullish_count} receipt is "
-            f"a metric-scope caveat; k={antecedent_count} antecedent/support and "
-            f"k={modeling_count} descriptive/modeling receipts are context only. "
-            "It keeps metric-specific support separate from broader outcomes and "
-            "does not treat unmatched settings as a matched comparison. "
+            f"Evidence weight: one effect-bearing receipt supports "
+            f"{directional_endpoints[0]}{context_tail}; one caveat receipt reports "
+            f"{join_contexts(nullish_endpoints[:2])}{nullish_tail} as null or "
+            f"non-convergent; {antecedent_count + modeling_count} other receipt(s) "
+            "provide antecedent or modeling context only. This is not an effect "
+            "synthesis or a pooled comparison. "
             f"Falsifier/update: the directional-association {directional_endpoints[0]} receipt "
             "would weaken if a matched industry/setting, comparator/reference, "
             "and metric replication reports a weaker or opposite association."
+        )
+        scope_integration_note = (
+            "Integrated reading: the directional and caveat receipts are not matched "
+            "on setting, design, and metric, so the bundle supports only a narrow "
+            "scope contrast between the named outcomes."
         )
     bounded_signal = _bounded_signal_sentence(
         topic, endpoints_by_label, non_bio=non_bio,
@@ -1541,7 +1566,7 @@ def payload(
         and "non-clinical/predictive" in direction_text
     )
     lead = (
-        f"This receipt-backed scoping note is a source-scope boundary note for {topic}, "
+        f"This memo makes a narrow source-grounded scope claim for {topic}, "
         "not a pooled effect synthesis: "
         if thin_non_bio_scope else
         f"This receipt-backed scoping note is a multi-outcome boundary map for {topic}: "
@@ -1603,8 +1628,9 @@ def payload(
         synthesis += " Substantive signal: " + "; ".join(non_bio_signal_parts) + "."
     if thin_non_bio_scope:
         synthesis += (
-            " The directional and caveat receipts are not matched on setting, "
-            "design, and metric; they are juxtaposed only to define source scope."
+            " Integrated reading: the directional and caveat receipts are not matched "
+            "on setting, design, and metric, so the bundle supports only a narrow "
+            "scope contrast between the named outcomes."
         )
     if non_bio:
         synthesis += " Within-vs-across outcome rule: direction-bearing rows are "
@@ -1621,10 +1647,10 @@ def payload(
     if contrast_text:
         synthesis += " " + contrast_text
     abstract_text = (
-        f"{topic}: k={directional_count} directional receipt is limited to "
-        f"{join_contexts(directional_endpoints[:2])}; k={nullish_count} caveat "
-        f"receipt concerns {join_contexts(nullish_endpoints[:2])}; "
-        f"k={context_only_count} antecedent/model receipts are context only."
+        f"{topic}: one receipt supports {join_contexts(directional_endpoints[:2])}; "
+        f"one separate receipt is null or non-convergent for "
+        f"{join_contexts(nullish_endpoints[:2])}; the remaining sources are context "
+        "only, so this is a scoping contrast rather than a generalized effect."
         if thin_non_bio_scope else synthesis
     )
     moderator_note = _specific_moderator_note(facts, source_types)
@@ -1683,6 +1709,7 @@ def payload(
         bounded_signal,
         "",
         *([evidence_weight_note, ""] if evidence_weight_note else []),
+        *([scope_integration_note, ""] if scope_integration_note else []),
         "",
         "## Evidence matrix",
         "",
@@ -1743,11 +1770,11 @@ def payload(
         "",
         boundary_summary,
         (
-            f" Material limitations: small k={len(bundle)} source bundle; no pooled "
+            f" Material limitations: small {len(bundle)}-source bundle; no pooled "
             "estimate is possible; method/model receipts without direct effect "
             "estimates are context only; outcomes are not harmonized across studies."
             if non_bio else
-            f" Material limitations: small k={len(bundle)} source bundle; no pooled "
+            f" Material limitations: small {len(bundle)}-source bundle; no pooled "
             "estimate is possible; method/model receipts without direct effect "
             "estimates are context only; endpoints are not harmonized across studies."
         ),
@@ -1788,7 +1815,8 @@ def payload(
         **({"revision_of": parent_submission_id} if parent_submission_id else {}),
     }
     title_tail = (
-        f"source-scope boundary note across {join_contexts(outcome_families[:3])} receipts"
+        f"directional support for {_title_endpoint_label(directional_endpoints[0], topic, selected)} "
+        f"but null or mixed support for {join_contexts(nullish_endpoints[:2])}"
         if thin_non_bio_scope and directional_endpoints and nullish_endpoints else
         f"boundary map across {join_contexts(outcome_families[:3])} receipts"
         if non_bio and len(outcome_families) >= 2 else

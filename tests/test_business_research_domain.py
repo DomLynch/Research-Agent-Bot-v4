@@ -3830,6 +3830,8 @@ def test_business_sweep_abstract_fact_uses_downstream_effect_endpoint() -> None:
     assert fact is not None
     assert fact["endpoint"] == "supply chain performance"
     assert fact["endpoint"] != "supply chain resilience"
+    assert fact["canonical_phrase"].startswith("The findings show")
+    assert "aim of this study" not in fact["canonical_phrase"].lower()
 
 
 def test_source_literature_selection_keeps_substantive_facts_ahead_of_metadata() -> None:

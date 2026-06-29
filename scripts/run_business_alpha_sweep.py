@@ -616,6 +616,9 @@ _ABSTRACT_FINDING_TERMS = (
     "reveal", "reveals", "indicate", "indicates", "demonstrate",
     "demonstrates", "suggest", "suggests", "substantially",
 )
+_ABSTRACT_RESULT_TERMS = set(_ABSTRACT_FINDING_TERMS) - {
+    "effect", "effects", "impact", "impacts",
+}
 _ABSTRACT_INTRO_STARTS = (
     "abstract", "background", "introduction", "purpose", "objective",
     "this paper aims", "this study aims", "this research aims",
@@ -623,6 +626,11 @@ _ABSTRACT_INTRO_STARTS = (
     "this paper investigates", "this study investigates", "this research investigates",
     "using a sample", "using data", "we employ", "we use",
     "design/methodology/approach",
+)
+_ABSTRACT_AIM_ONLY_RE = re.compile(
+    r"\b(?:aim|aims|aimed|purpose|objective|objectives|"
+    r"this (?:paper|study|research) (?:examines|investigates|seeks)|"
+    r"identify|evaluate|assess)\b"
 )
 
 
@@ -645,7 +653,9 @@ def _abstract_finding_sentence(text: str, *, limit: int = 700) -> str:
         if not candidate or any(lowered.startswith(prefix) for prefix in _ABSTRACT_INTRO_STARTS):
             continue
         tokens = set(re.findall(r"[a-z]+", lowered))
-        if tokens & set(_ABSTRACT_FINDING_TERMS):
+        if _ABSTRACT_AIM_ONLY_RE.search(lowered) and not (tokens & _ABSTRACT_RESULT_TERMS):
+            continue
+        if tokens & _ABSTRACT_RESULT_TERMS:
             if len(candidate) <= limit:
                 return candidate.rstrip(".")
             return candidate[:limit].rsplit(" ", 1)[0].rstrip(".,;")

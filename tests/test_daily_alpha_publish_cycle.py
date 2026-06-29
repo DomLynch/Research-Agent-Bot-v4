@@ -13509,32 +13509,36 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     markdown = payload["markdown"]
     assert payload["title"] == (
         "supply chain resilience performance: "
-        "source-scope boundary note across firm-level, chain-level, and business-outcome receipts"
+        "directional support for supply chain performance but null or mixed support for firm performance"
     )
     assert "unmatched metric-scope map" not in payload["title"]
+    assert "source-scope boundary note" not in payload["title"]
     assert (
-        "Evidence role summary: direction-bearing evidence base k=1; "
-        "metric-scope caveat receipts k=1; context/antecedent/model "
-        "receipts k=3 excluded from effect support."
+        "Evidence role summary: direction-bearing receipts: 1; "
+        "metric-scope caveat receipts: 1; context/antecedent/model "
+        "receipts: 3 excluded from effect support."
     ) in markdown
     assert "directional association: 1 receipt(s)" not in markdown
     assert "other/mixed: 5 receipt(s)" not in markdown
     assert "fallback" not in markdown.lower()
     assert "Bounded signal:" in markdown
-    assert "source-scope boundary note across firm-level, chain-level, and business-outcome receipts" in markdown
-    assert "unmatched source-scope note across named outcome families" in markdown
+    assert "directional support for supply chain performance" in markdown
+    assert "firm performance is null or non-convergent" in markdown
     assert "not support for the topic as a whole" in markdown
-    assert "direction-bearing evidence base k=1" in markdown
-    assert "context/antecedent/model receipts k=3 excluded from effect support" in markdown
+    assert "direction-bearing receipts: 1" in markdown
+    assert "context/antecedent/model receipts: 3 excluded from effect support" in markdown
+    assert " k=" not in markdown
     assert "It excludes duplicate reports, metadata-only title matches" in markdown
     assert "Resolve the metric-scope caveat" in markdown
     assert "supply chain performance and firm performance" in markdown
     assert "inside one matched industry, comparator, and metric frame" in markdown
+    assert "Evidence weight: one effect-bearing receipt supports supply chain performance" in markdown
+    assert "one caveat receipt reports firm performance" in markdown
+    assert "as null or non-convergent" in markdown
+    assert "3 other receipt(s) provide antecedent or modeling context only." in markdown
     assert (
-        "Evidence weight: this is a source-scoping boundary note, not an "
-        "effect synthesis. Only k=1 receipt carries a direct topic-to-outcome "
-        "directional statement; k=1 receipt is a metric-scope caveat; "
-        "k=1 antecedent/support and k=2 descriptive/modeling receipts are context only."
+        "Integrated reading: the directional and caveat receipts are not matched "
+        "on setting, design, and metric"
     ) in markdown
     assert (
         "Falsifier/update: the directional-association supply chain performance receipt would "
