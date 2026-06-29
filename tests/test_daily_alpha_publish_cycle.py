@@ -12447,14 +12447,14 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "fallback" not in markdown.lower()
     assert "Bounded signal:" in markdown
     assert "multi-outcome heterogeneity map across firm-level, chain-level, and business-outcome receipts" in markdown
-    assert "between outcome families, not within one harmonized performance outcome" in markdown
+    assert "between named outcome families, not support for the topic as a whole" in markdown
     assert "direction-bearing evidence base k=1" in markdown
     assert "context/antecedent/model receipts k=3 excluded from effect support" in markdown
     assert "It excludes duplicate reports, metadata-only title matches" in markdown
     assert "Substantive signal:" in markdown
-    assert "direction-bearing receipts support supply chain performance" in markdown
+    assert "direction-bearing evidence is limited to supply chain performance" in markdown
     assert "antecedent/support receipts contextualize supply chain performance" in markdown
-    assert "null/mixed receipts limit firm performance" in markdown
+    assert "null/mixed receipts concern firm performance" in markdown
     assert "descriptive/modeling receipts only contextualize resilience scoring model" in markdown
     assert "Resolve the directional/null conflict" in markdown
     assert "supply chain performance and firm performance" in markdown
@@ -12495,6 +12495,23 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "have been rejected" in markdown
     assert "method or modelling receipt; no direct effect estimate extracted" in markdown
     assert "Finding: The aim of this study is to identify" not in markdown
+
+
+def test_source_literature_endpoint_label_does_not_promote_topic_as_outcome() -> None:
+    assert (
+        publish_literature._source_fact_endpoint_label(
+            {"endpoint": "supply chain resilience"},
+            "supply_chain_resilience",
+        )
+        == "the stated downstream outcome"
+    )
+    assert (
+        publish_literature._source_fact_endpoint_label(
+            {"endpoint": "supply chain performance"},
+            "supply_chain_resilience",
+        )
+        == "supply chain performance"
+    )
 
 
 def test_source_literature_payload_separates_comparator_and_economic_rows(

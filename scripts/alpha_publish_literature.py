@@ -982,6 +982,19 @@ def _outcome_families(facts: list[Json]) -> list[str]:
     return ordered
 
 
+def _endpoint_mirrors_topic(endpoint: str, topic: str) -> bool:
+    endpoint_key = title_key(endpoint)
+    topic_key = title_key(topic)
+    return bool(endpoint_key and endpoint_key == topic_key)
+
+
+def _source_fact_endpoint_label(fact: Json, topic: str) -> str:
+    endpoint = str(fact.get("endpoint") or fact.get("metric") or "").strip()
+    if _endpoint_mirrors_topic(endpoint, topic):
+        return "the stated downstream outcome"
+    return endpoint
+
+
 def _bounded_signal_sentence(
     topic: str,
     endpoints_by_label: dict[str, list[str]],
@@ -1007,10 +1020,9 @@ def _bounded_signal_sentence(
         return (
             f"Bounded signal: {topic_text} is a multi-outcome heterogeneity map"
             f"{f' across {family_text} receipts' if family_text else ''}: "
-            "direction-bearing receipts cover "
-            f"{', '.join(directional[:2])}, but {', '.join(nullish[:2])} remains "
-            "null/mixed; the contrast is between outcome families, not within one "
-            "harmonized performance outcome."
+            f"direction-bearing evidence is limited to {', '.join(directional[:2])}, "
+            f"while {', '.join(nullish[:2])} is null/mixed; the contrast is between "
+            "named outcome families, not support for the topic as a whole."
         )
     if non_bio and directional:
         tail = (
@@ -1019,7 +1031,7 @@ def _bounded_signal_sentence(
             if descriptive else ""
         )
         return (
-            f"Bounded signal: {topic_text} has direction-bearing receipts for "
+            f"Bounded signal: {topic_text} has direction-bearing evidence limited to "
             f"{', '.join(directional[:2])}{tail}; this is bounded to those "
             "metrics and settings."
         )
@@ -1334,13 +1346,13 @@ def payload(
         if not isinstance(source_fact, dict):
             continue
         label = _paper_evidence_role(paper, topic, profile.slug)
-        endpoint = str(source_fact.get("endpoint") or source_fact.get("metric") or "").strip()
+        endpoint = _source_fact_endpoint_label(source_fact, topic)
         if endpoint:
             endpoints_by_label.setdefault(label, []).append(endpoint)
     if non_bio:
         for label, prefix in (
-            ("directional estimate", "direction-bearing receipts support"),
-            ("null/mixed", "null/mixed receipts limit"),
+            ("directional estimate", "direction-bearing evidence is limited to"),
+            ("null/mixed", "null/mixed receipts concern"),
             ("antecedent/support", "antecedent/support receipts contextualize"),
             ("descriptive/modeling", "descriptive/modeling receipts only contextualize"),
         ):
@@ -1468,7 +1480,13 @@ def payload(
             )
     if contrast_text:
         synthesis += " " + contrast_text
-    abstract_text = synthesis
+    abstract_text = (
+        f"{topic}: k={directional_count} directional receipt is limited to "
+        f"{join_contexts(directional_endpoints[:2])}; k={nullish_count} null/mixed "
+        f"receipt concerns {join_contexts(nullish_endpoints[:2])}; "
+        f"k={context_only_count} antecedent/model receipts are context only."
+        if thin_non_bio_scope else synthesis
+    )
     moderator_note = _specific_moderator_note(facts, source_types)
     next_gaps = [
         _pico_gap(facts, profile.slug),
