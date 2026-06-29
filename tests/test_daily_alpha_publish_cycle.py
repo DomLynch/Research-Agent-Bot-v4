@@ -9866,6 +9866,104 @@ def test_source_literature_field_ownership_feedback_gets_one_bounded_retry(
     ) == []
 
 
+def test_source_literature_clean_terminal_revise_gets_one_resubmit(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    topic = "supply_chain_resilience_performance"
+    ledger_dir = root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    decision = {
+        "decision": "revise",
+        "claim_support_verdict": "supported",
+        "notes": ["editorial decision is terminal; external author must resubmit"],
+        "required_revisions": [],
+        "major_issues": [],
+        "minor_issues": [],
+        "failed_checks": [],
+        "gate_failures": [],
+        "rubric_scores": {
+            "claim_evidence_alignment": 5,
+            "source_grounding": 5,
+            "synthesis_quality": 5,
+        },
+        "resubmission": {
+            "allowed": True,
+            "parent_submission_id": "sub-terminal-final",
+        },
+    }
+    for idx in range(daily._SOURCE_LITERATURE_FIELD_OWNERSHIP_ATTEMPT_LIMIT):
+        run_dir = root / f"{topic}-source-literature-2026-06-29T09-{idx:02d}-00Z"
+        run_dir.mkdir(parents=True)
+        run_dir.joinpath("source_literature_memo.md").write_text(
+            "# Source literature boundary memo\n", encoding="utf-8",
+        )
+        daily._write_json(run_dir / "source_literature_payload.json", {
+            "title": (
+                "supply chain resilience performance: "
+                "directional supply chain performance vs null/mixed firm performance evidence"
+            ),
+            "markdown": (
+                "Audit note: effect-bearing rows stay metric-specific; "
+                "context/antecedent/model rows are excluded from effect support and no "
+                "rows are pooled."
+            ),
+        })
+        daily._write_json(ledger_dir / f"2026-06-29T09-{idx:02d}-00Z.json", {
+            "domain": {"slug": "business_research"},
+            "submitted": 1,
+            "submission_id": f"sub-terminal-{idx}",
+            "candidate": {
+                "topic": topic,
+                "run_dir": run_dir.name,
+                "fingerprint": f"fp-terminal-{idx}",
+            },
+            "researka_decision": decision,
+        })
+
+    assert daily._source_literature_attempt_budget(
+        root, "business_research", topic,
+    ) == daily._SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT
+    assert daily._repairable_source_literature_topics(
+        root, "business_research", limit=3,
+    ) == [topic]
+
+    final_run = root / f"{topic}-source-literature-2026-06-29T10-00-00Z"
+    final_run.mkdir(parents=True)
+    final_run.joinpath("source_literature_memo.md").write_text(
+        "# Source literature boundary memo\n", encoding="utf-8",
+    )
+    daily._write_json(final_run / "source_literature_payload.json", {
+        "title": (
+            "supply chain resilience performance: "
+            "directional supply chain performance vs null/mixed firm performance evidence"
+        ),
+        "markdown": (
+            "Audit note: effect-bearing rows stay metric-specific; "
+            "context/antecedent/model rows are excluded from effect support and no "
+            "rows are pooled."
+        ),
+    })
+    daily._write_json(ledger_dir / "2026-06-29T10-00-00Z.json", {
+        "domain": {"slug": "business_research"},
+        "submitted": 1,
+        "submission_id": "sub-terminal-final",
+        "candidate": {
+            "topic": topic,
+            "run_dir": final_run.name,
+            "fingerprint": "fp-terminal-final",
+        },
+        "researka_decision": decision,
+    })
+
+    assert daily._source_literature_submission_count(
+        root, "business_research", topic,
+    ) == daily._SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT
+    assert daily._repairable_source_literature_topics(
+        root, "business_research", limit=3,
+    ) == []
+
+
 def test_source_literature_candidate_papers_refetches_repeated_discovery_bundle(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
