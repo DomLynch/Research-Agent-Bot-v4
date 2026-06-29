@@ -9838,13 +9838,9 @@ def test_source_literature_field_ownership_feedback_gets_one_bounded_retry(
     daily._write_json(final_run / "source_literature_payload.json", {
         "title": (
             "supply chain resilience performance: "
-            "directional supply chain performance vs null/mixed firm performance evidence"
+            "directional supply chain performance with firm-performance caveat evidence"
         ),
-        "markdown": (
-            "Audit note: effect-bearing rows stay metric-specific; "
-            "context/antecedent/model rows are excluded from effect support and no "
-            "rows are pooled."
-        ),
+        "markdown": "## Boundary map\n\nFirm-performance caveat framing.",
     })
     daily._write_json(ledger_dir / "2026-06-29T09-00-00Z.json", {
         "domain": {"slug": "business_research"},
@@ -9964,13 +9960,9 @@ def test_source_literature_clean_terminal_revise_gets_one_resubmit(
     daily._write_json(final_run / "source_literature_payload.json", {
         "title": (
             "supply chain resilience performance: "
-            "directional supply chain performance vs null/mixed firm performance evidence"
+            "directional supply chain performance with firm-performance caveat evidence"
         ),
-        "markdown": (
-            "Audit note: effect-bearing rows stay metric-specific; "
-            "context/antecedent/model rows are excluded from effect support and no "
-            "rows are pooled."
-        ),
+        "markdown": "## Boundary map\n\nFirm-performance caveat framing.",
     })
     daily._write_json(ledger_dir / "2026-06-29T10-00-00Z.json", {
         "domain": {"slug": "business_research"},
@@ -9987,6 +9979,99 @@ def test_source_literature_clean_terminal_revise_gets_one_resubmit(
     assert daily._source_literature_submission_count(
         root, "business_research", topic,
     ) == daily._SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT
+    assert daily._repairable_source_literature_topics(
+        root, "business_research", limit=3,
+    ) == []
+
+
+def test_old_source_literature_publish_framing_gets_one_bounded_retry(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    topic = "supply_chain_resilience_performance"
+    ledger_dir = root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    decision = {
+        "decision": "revise",
+        "claim_support_verdict": "supported",
+        "notes": ["editorial decision is terminal; external author must resubmit"],
+        "required_revisions": [],
+        "major_issues": [],
+        "minor_issues": [],
+        "failed_checks": [],
+        "gate_failures": [],
+        "rubric_scores": {
+            "claim_evidence_alignment": 5,
+            "source_grounding": 5,
+            "synthesis_quality": 5,
+        },
+        "resubmission": {
+            "allowed": True,
+            "parent_submission_id": "sub-framing-final",
+        },
+    }
+    for idx in range(daily._SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT):
+        run_dir = root / f"{topic}-source-literature-2026-06-29T10-{idx:02d}-00Z"
+        run_dir.mkdir(parents=True)
+        run_dir.joinpath("source_literature_memo.md").write_text(
+            "# Source literature boundary memo\n", encoding="utf-8",
+        )
+        daily._write_json(run_dir / "source_literature_payload.json", {
+            "title": (
+                "supply chain resilience performance: directional supply chain "
+                "performance vs null/mixed firm performance evidence"
+            ),
+            "markdown": "## Boundary map\n\nOld heterogeneity language.",
+        })
+        daily._write_json(ledger_dir / f"2026-06-29T10-{idx:02d}-00Z.json", {
+            "domain": {"slug": "business_research"},
+            "submitted": 1,
+            "submission_id": f"sub-framing-{idx}",
+            "candidate": {
+                "topic": topic,
+                "run_dir": run_dir.name,
+                "fingerprint": f"fp-framing-{idx}",
+            },
+            "researka_decision": decision,
+        })
+
+    assert daily._source_literature_submission_count(
+        root, "business_research", topic,
+    ) == daily._SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT
+    assert daily._source_literature_attempt_budget(
+        root, "business_research", topic,
+    ) == daily._SOURCE_LITERATURE_PUBLISH_FRAMING_ATTEMPT_LIMIT
+    assert daily._repairable_source_literature_topics(
+        root, "business_research", limit=3,
+    ) == [topic]
+
+    final_run = root / f"{topic}-source-literature-2026-06-29T11-00-00Z"
+    final_run.mkdir(parents=True)
+    final_run.joinpath("source_literature_memo.md").write_text(
+        "# Source literature boundary memo\n", encoding="utf-8",
+    )
+    daily._write_json(final_run / "source_literature_payload.json", {
+        "title": (
+            "supply chain resilience performance: directional supply chain "
+            "performance with firm-performance caveat evidence"
+        ),
+        "markdown": "## Boundary map\n\nFirm-performance caveat framing.",
+    })
+    daily._write_json(ledger_dir / "2026-06-29T11-00-00Z.json", {
+        "domain": {"slug": "business_research"},
+        "submitted": 1,
+        "submission_id": "sub-framing-final",
+        "candidate": {
+            "topic": topic,
+            "run_dir": final_run.name,
+            "fingerprint": "fp-framing-final",
+        },
+        "researka_decision": decision,
+    })
+
+    assert daily._source_literature_submission_count(
+        root, "business_research", topic,
+    ) == daily._SOURCE_LITERATURE_PUBLISH_FRAMING_ATTEMPT_LIMIT
     assert daily._repairable_source_literature_topics(
         root, "business_research", limit=3,
     ) == []
@@ -10342,6 +10427,125 @@ def test_repairable_source_literature_revise_runs_after_refresh(
         seen_payload["metadata"]["reviewer_repair_notes"]
         == "repair before broad refresh"
     )
+
+
+def test_repairable_source_literature_preflight_runs_before_fresh_topic(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", raising=False)
+    root = tmp_path / "repo"
+    ledger_dir = root / "_daily_ledger"
+    discovery = root / "_topics_discovery"
+    old_run = root / "metformin use-source-literature-2026-06-09T18-00-00Z"
+    old_run.mkdir(parents=True)
+    old_run.joinpath("source_literature_memo.md").write_text(
+        "# Source literature boundary memo\n", encoding="utf-8",
+    )
+    daily._write_json(old_run / "source_literature_payload.json", {
+        "title": (
+            "metformin use: directional support for mortality but null/mixed "
+            "support for frailty evidence"
+        ),
+        "markdown": "## Boundary map\n\nOld heterogeneity language.",
+    })
+    daily._write_json(ledger_dir / "2026-06-09T18-00-00Z.json", {
+        "domain": {"slug": "longevity_research"},
+        "submitted": 1,
+        "candidate": {
+            "topic": "metformin use",
+            "run_dir": old_run.name,
+            "fingerprint": "old-fingerprint",
+        },
+        "researka_decision": {
+            "decision": "revise",
+            "claim_support_verdict": "supported",
+            "notes": ["editorial decision is terminal; external author must resubmit"],
+            "required_revisions": [],
+            "major_issues": [],
+            "minor_issues": [],
+            "failed_checks": [],
+            "gate_failures": [],
+            "rubric_scores": {
+                "claim_evidence_alignment": 5,
+                "source_grounding": 5,
+                "synthesis_quality": 5,
+            },
+            "resubmission": {"allowed": True},
+        },
+    })
+    discovery.mkdir(parents=True)
+    daily._write_json(discovery / "fresh.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{
+            "topic": "acarbose",
+            "paper_count": 5,
+            "fact_source_count": 5,
+            "source_papers": _usable_boundary_papers(),
+        }],
+    })
+    repair_papers = [
+        {
+            "title": title,
+            "doi": f"10.1234/met-priority-{idx}",
+            "year": 2020 + idx,
+            "source_fact": {
+                "canonical_phrase": "metformin use showed endpoint-specific signals",
+                "population": "adults",
+                "intervention": "metformin",
+                "comparator": "control",
+                "endpoint": "mortality",
+            },
+        }
+        for idx, title in enumerate((
+            "Metformin use and frailty outcomes",
+            "Metformin exposure in dementia cohorts",
+            "Metformin treatment and cardiovascular mortality",
+            "Metformin prevention signals in diabetes risk",
+            "Metformin therapy and inflammatory biomarkers",
+        ))
+    ]
+    fetched_topics: list[str] = []
+    seen_payload: dict[str, Any] = {}
+
+    def source_papers(topic: str, _limit: int) -> list[dict[str, Any]]:
+        fetched_topics.append(topic)
+        if topic == "acarbose":
+            raise AssertionError("fresh source-lit topic should not outrank repair")
+        return repair_papers
+
+    def fail_refresh(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise AssertionError("repairable source-lit candidate should skip broad refresh")
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", fail_refresh)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-10T19-00-00Z",
+        domain="longevity_research",
+        refresh_candidates=True,
+        max_refresh_batches=1,
+        queue=None,
+        submit=True,
+        source_paper_fetcher=source_papers,
+        submitter=lambda payload: (
+            seen_payload.update(payload)
+            or {"ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}}}
+        ),
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert fetched_topics == ["metformin use"]
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "metformin use"
+    assert ledger["source_literature_fallback"]["repair_submission"] is True
+    assert "null/mixed" not in seen_payload["markdown"]
 
 
 def test_repairable_source_literature_preflight_skips_broad_refresh(

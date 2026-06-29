@@ -314,10 +314,18 @@ _SOURCE_LITERATURE_FIELD_OWNERSHIP_ATTEMPT_LIMIT = (
 _SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT = (
     _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 8
 )
+_SOURCE_LITERATURE_PUBLISH_FRAMING_ATTEMPT_LIMIT = (
+    _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 9
+)
 _SOURCE_LITERATURE_UNOWNED_TITLE_MARKERS = (
     "directional evidence for",
     "heterogeneous metrics",
     "null/mixed for",
+)
+_SOURCE_LITERATURE_OLD_PUBLISH_FRAMING_MARKERS = (
+    "null/mixed",
+    "heterogeneity",
+    "heterogeneous",
 )
 _SOURCE_LITERATURE_FIELD_OWNERSHIP_MARKERS = (
     "policy/exposure/practice",
@@ -2416,6 +2424,37 @@ def _source_literature_terminal_resubmit_needed(
     return False
 
 
+def _source_literature_publish_framing_repair_needed(
+    runs_root: Path, domain: str | None, topic: str, decision: Json,
+) -> bool:
+    if not _clean_supported_revise(decision):
+        return False
+    if "external author must resubmit" not in _norm(_revision_notes(decision)):
+        return False
+    for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
+        ledger = _json(path, {})
+        if (
+            not isinstance(ledger, dict)
+            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
+        ):
+            continue
+        candidate = ledger.get("candidate")
+        if not isinstance(candidate, dict) or not int(ledger.get("submitted") or 0):
+            continue
+        run_ref = candidate.get("run_dir")
+        if not _source_literature_topic_from_run(run_ref):
+            continue
+        row_topic = str(candidate.get("topic") or "") or _source_literature_topic_from_run(run_ref)
+        if row_topic != topic:
+            continue
+        payload = _json(_run_path(runs_root, run_ref) / "source_literature_payload.json", {})
+        if not isinstance(payload, dict):
+            continue
+        text = f"{payload.get('title') or ''}\n{payload.get('markdown') or ''}".lower()
+        return any(marker in text for marker in _SOURCE_LITERATURE_OLD_PUBLISH_FRAMING_MARKERS)
+    return False
+
+
 def _repairable_source_literature_topics(
     runs_root: Path, domain: str | None, *, limit: int = 3,
 ) -> list[str]:
@@ -2459,6 +2498,23 @@ def _repairable_source_literature_decisions(
             if len(decisions) >= limit:
                 return decisions
     return decisions
+
+
+def _priority_source_literature_repair_decisions(
+    runs_root: Path, domain: str | None, *, limit: int = 3,
+) -> dict[str, Json]:
+    decisions = _repairable_source_literature_decisions(
+        runs_root, domain, limit=max(limit * 3, limit),
+    )
+    priority: dict[str, Json] = {}
+    for topic, decision in decisions.items():
+        if _source_literature_publish_framing_repair_needed(
+            runs_root, domain, topic, decision,
+        ):
+            priority[topic] = decision
+            if len(priority) >= limit:
+                return priority
+    return priority
 
 
 def _exhausted_source_literature_topics(
@@ -2565,6 +2621,17 @@ def _source_literature_attempt_budget(
                         min(
                             count + 1,
                             _SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT,
+                        ),
+                    )
+                if _source_literature_publish_framing_repair_needed(
+                    runs_root, domain, topic, decision,
+                ):
+                    count = _source_literature_submission_count(runs_root, domain, topic)
+                    budget = max(
+                        budget,
+                        min(
+                            count + 1,
+                            _SOURCE_LITERATURE_PUBLISH_FRAMING_ATTEMPT_LIMIT,
                         ),
                     )
                 return budget
@@ -5468,12 +5535,17 @@ def run_cycle(
                     )
                 )
             )
-            source_lit_probe_topics = _source_literature_topic_candidates(
+            source_lit_probe_topics = list(_priority_source_literature_repair_decisions(
+                runs_root, profile.slug, limit=1,
+            ))
+            for topic in _source_literature_topic_candidates(
                 runs_root, profile.slug, min_submit_sources,
                 source_literature_blocked_topics,
                 limit=1,
                 soft_broad_blocked_topics=source_literature_soft_blocked_topics,
-            )
+            ):
+                if topic not in source_lit_probe_topics:
+                    source_lit_probe_topics.append(topic)
             for topic in _repairable_source_literature_decisions(
                 runs_root, profile.slug, limit=1,
             ):
@@ -6110,6 +6182,12 @@ def run_cycle(
         )
         repair_topics = list(repair_decisions)
         repair_topic_set = set(repair_topics)
+        priority_repair_topics = list(_priority_source_literature_repair_decisions(
+            runs_root, profile.slug,
+        ))
+        standard_repair_topics = [
+            topic for topic in repair_topics if topic not in set(priority_repair_topics)
+        ]
         forced_source_lit = source_literature_forced_papers or {}
         fresh_topics = [
             topic for topic in _source_literature_topic_candidates(
@@ -6122,9 +6200,10 @@ def run_cycle(
         literature_topics: list[str] = []
         for topic in [
             *forced_source_lit,
+            *priority_repair_topics,
             *source_lit_preflight_selected,
             *fresh_topics,
-            *repair_topics,
+            *standard_repair_topics,
         ]:
             if topic not in literature_topics:
                 literature_topics.append(topic)
