@@ -2254,6 +2254,57 @@ def _source_literature_topic_from_run(run_ref: Any) -> str:
     return name.split("-source-literature-", 1)[0] if "-source-literature-" in name else ""
 
 
+def _resumable_source_literature_payloads(
+    runs_root: Path, domain: str | None, min_sources: int, blocked_topics: set[str],
+    *, limit: int = 3,
+) -> dict[str, tuple[Json, Json, list[Json]]]:
+    out: dict[str, tuple[Json, Json, list[Json]]] = {}
+    profile = load_domain_profile(domain)
+    for run_dir in sorted(runs_root.glob("*-source-literature-*"), reverse=True):
+        topic = _source_literature_topic_from_run(run_dir)
+        if not topic or topic in out or _family_blocked_topic(topic, blocked_topics):
+            continue
+        if _source_literature_submission_count(runs_root, domain, topic):
+            continue
+        payload = _json(run_dir / "source_literature_payload.json", {})
+        evidence = payload.get("evidence_bundle") if isinstance(payload, dict) else {}
+        payload_domain = (
+            domain_slug(payload.get("domain"))
+            or domain_slug(payload.get("domain_slug"))
+            if isinstance(payload, dict) else ""
+        )
+        if not isinstance(evidence, dict) or not _same_domain(payload_domain, domain):
+            continue
+        direct_papers = [
+            paper for paper in evidence.get("direct_source_papers") or []
+            if isinstance(paper, dict)
+        ]
+        source_bundle = payload.get("source_bundle")
+        if (
+            not isinstance(source_bundle, list)
+            or len(source_bundle) < min_sources
+            or int(evidence.get("direct_source_count") or 0) < min_sources
+            or publish_literature.substantive_fact_count(direct_papers) < min_sources
+            or publish_literature.source_identity_count(
+                direct_papers, require_substantive=True,
+            ) < min_sources
+        ):
+            continue
+        markdown = str(payload.get("markdown") or "")
+        if not markdown.strip():
+            continue
+        candidate = {
+            "topic": topic,
+            "run_dir": str(run_dir.relative_to(runs_root)),
+            "memo_fingerprint": hashlib.sha256(markdown.encode("utf-8")).hexdigest(),
+            "domain": profile.as_metadata(),
+        }
+        out[topic] = (candidate, payload, direct_papers)
+        if len(out) >= limit:
+            break
+    return out
+
+
 def _source_literature_submission_count(
     runs_root: Path, domain: str | None, topic: str,
 ) -> int:
@@ -6300,6 +6351,10 @@ def run_cycle(
             topic for topic in repair_topics if topic not in set(priority_repair_topics)
         ]
         forced_source_lit = source_literature_forced_papers or {}
+        resumable_source_lit = _resumable_source_literature_payloads(
+            runs_root, profile.slug, min_submit_sources, published_blocked_topics,
+            limit=source_lit_scan_limit,
+        )
         fresh_topics = [
             topic for topic in _source_literature_topic_candidates(
                 runs_root, profile.slug, min_submit_sources,
@@ -6310,6 +6365,7 @@ def run_cycle(
         ]
         literature_topics: list[str] = []
         for topic in [
+            *resumable_source_lit,
             *forced_source_lit,
             *priority_repair_topics,
             *source_lit_preflight_selected,
@@ -6337,22 +6393,27 @@ def run_cycle(
             literature_topics = expanded_topics
         terminal_resubmit_topics: set[str] = set()
         for idx, literature_topic in enumerate(literature_topics):
-            papers = (
-                forced_source_lit[literature_topic]
-                if literature_topic in forced_source_lit else
-                source_lit_preflight_papers[literature_topic]
-                if literature_topic in source_lit_preflight_papers else
-                paper_fetcher(literature_topic, min_submit_sources)
-                if paper_fetcher is not None else
-                _source_literature_candidate_papers(
-                    runs_root, profile.slug, literature_topic, min_submit_sources,
-                    min_submit_sources * 3,
+            resumed = resumable_source_lit.get(literature_topic)
+            if resumed is not None:
+                papers = resumed[2]
+                ok, reason = True, "ok"
+            else:
+                papers = (
+                    forced_source_lit[literature_topic]
+                    if literature_topic in forced_source_lit else
+                    source_lit_preflight_papers[literature_topic]
+                    if literature_topic in source_lit_preflight_papers else
+                    paper_fetcher(literature_topic, min_submit_sources)
+                    if paper_fetcher is not None else
+                    _source_literature_candidate_papers(
+                        runs_root, profile.slug, literature_topic, min_submit_sources,
+                        min_submit_sources * 3,
+                    )
                 )
-            )
-            ok, reason = _source_literature_boundary_quality(
-                literature_topic, papers, min_submit_sources, profile.slug,
-                require_substantive_sources=True,
-            )
+                ok, reason = _source_literature_boundary_quality(
+                    literature_topic, papers, min_submit_sources, profile.slug,
+                    require_substantive_sources=True,
+                )
             relevant_paper_count = len(
                 publish_literature.relevant_papers(literature_topic, papers),
             )
@@ -6363,6 +6424,8 @@ def run_cycle(
                 "paper_count": len(papers),
                 "relevant_paper_count": relevant_paper_count,
             }
+            if resumed is not None:
+                fallback_attempt["resumed_payload"] = True
             if literature_topic in repair_topic_set:
                 fallback_attempt["repair_submission"] = True
             ledger.setdefault("source_literature_fallback_attempts", []).append(fallback_attempt)
@@ -6390,19 +6453,22 @@ def run_cycle(
                     fallback_attempt["status"] = "disabled"
                     fallback_attempt["reason"] = "source_fact_diversity_below_min"
                     continue
-                repair_decision = (
-                    repair_decisions.get(literature_topic, {})
-                    if literature_topic in repair_topic_set else {}
-                )
-                candidate, payload = _source_literature_payload(
-                    profile_slug=profile.slug,
-                    topic=literature_topic,
-                    papers=papers,
-                    runs_root=runs_root,
-                    date=date,
-                    reviewer_notes=_revision_notes(repair_decision),
-                    parent_submission_id=_resubmission_parent_submission_id(repair_decision),
-                )
+                if resumed is not None:
+                    candidate, payload, _resumed_papers = resumed
+                else:
+                    repair_decision = (
+                        repair_decisions.get(literature_topic, {})
+                        if literature_topic in repair_topic_set else {}
+                    )
+                    candidate, payload = _source_literature_payload(
+                        profile_slug=profile.slug,
+                        topic=literature_topic,
+                        papers=papers,
+                        runs_root=runs_root,
+                        date=date,
+                        reviewer_notes=_revision_notes(repair_decision),
+                        parent_submission_id=_resubmission_parent_submission_id(repair_decision),
+                    )
                 if len(payload.get("source_bundle") or []) < min_submit_sources:
                     fallback_attempt["status"] = "blocked"
                     fallback_attempt["reason"] = "source_bundle_below_min"

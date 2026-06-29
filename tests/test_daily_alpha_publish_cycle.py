@@ -11342,6 +11342,56 @@ def test_fact_backed_source_literature_fallback_submits_without_flag(
     assert "receipt-backed scoping note" in seen_payload["abstract"]
 
 
+def test_source_literature_fallback_resumes_stranded_fact_backed_payload(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    monkeypatch.delenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", raising=False)
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "usable_boundary", "paper_count": 9, "fact_source_count": 9}],
+    })
+    _candidate, payload = daily._source_literature_payload(
+        profile_slug="longevity_research",
+        topic="usable_boundary",
+        papers=_usable_boundary_papers(),
+        runs_root=root,
+        date="2026-06-09T17-00-00Z",
+    )
+    seen_payload: dict[str, Any] = {}
+
+    def fail_fetch(_topic: str, _limit: int) -> list[dict[str, Any]]:
+        raise AssertionError("stranded source-lit payload should be resumed")
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-00-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        source_paper_fetcher=fail_fetch,
+        submitter=lambda submitted_payload: (
+            seen_payload.update(submitted_payload)
+            or {"ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}}}
+        ),
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "usable_boundary"
+    assert ledger["source_literature_fallback"]["resumed_payload"] is True
+    assert seen_payload["source_bundle"] == payload["source_bundle"]
+    assert len(seen_payload["source_bundle"]) == 5
+    assert seen_payload["evidence_bundle"]["direct_source_count"] == 5
+
+
 def test_fullraw_metadata_only_source_literature_fallback_does_not_submit(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
