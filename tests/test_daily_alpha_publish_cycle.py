@@ -9646,8 +9646,8 @@ def test_source_literature_renderer_feedback_gets_one_bounded_retry(
     )
     daily._write_json(final_run / "source_literature_payload.json", {
         "title": (
-            "supply chain resilience: directional evidence for chain-level "
-            "performance, null/mixed for firm performance, heterogeneous metrics"
+            "supply chain resilience performance: "
+            "supply chain performance and firm performance evidence"
         ),
         "markdown": "## Evidence role definitions\n\n- directional association: revised label",
     })
@@ -9666,6 +9666,97 @@ def test_source_literature_renderer_feedback_gets_one_bounded_retry(
     assert daily._source_literature_submission_count(
         root, "business_research", topic,
     ) == daily._SOURCE_LITERATURE_RENDERER_FEEDBACK_ATTEMPT_LIMIT
+    assert daily._repairable_source_literature_topics(
+        root, "business_research", limit=3,
+    ) == []
+
+
+def test_source_literature_unowned_title_gets_one_bounded_retry(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    topic = "supply_chain_resilience"
+    ledger_dir = root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    decision = {
+        "decision": "revise",
+        "claim_support_verdict": "supported",
+        "required_revisions": [],
+        "major_issues": [],
+        "minor_issues": [
+            "The memo's title is unusually long and should be source-owned.",
+        ],
+        "failed_checks": [],
+        "gate_failures": [],
+        "rubric_scores": {
+            "claim_evidence_alignment": 4,
+            "source_grounding": 4,
+            "synthesis_quality": 4,
+        },
+        "resubmission": {
+            "allowed": True,
+            "parent_submission_id": "sub-title-final",
+        },
+    }
+    for idx in range(daily._SOURCE_LITERATURE_RENDERER_FEEDBACK_ATTEMPT_LIMIT):
+        run_dir = root / f"{topic}-source-literature-2026-06-29T07-{idx:02d}-00Z"
+        run_dir.mkdir(parents=True)
+        run_dir.joinpath("source_literature_memo.md").write_text(
+            "# Source literature boundary memo\n", encoding="utf-8",
+        )
+        daily._write_json(run_dir / "source_literature_payload.json", {
+            "title": (
+                "supply chain resilience: directional evidence for chain-level "
+                "performance, null/mixed for firm performance, heterogeneous metrics"
+            ),
+            "markdown": "## Evidence role definitions\n\n- directional association: revised label",
+        })
+        daily._write_json(ledger_dir / f"2026-06-29T07-{idx:02d}-00Z.json", {
+            "domain": {"slug": "business_research"},
+            "submitted": 1,
+            "submission_id": f"sub-title-{idx}",
+            "candidate": {
+                "topic": topic,
+                "run_dir": run_dir.name,
+                "fingerprint": f"fp-title-{idx}",
+            },
+            "researka_decision": decision,
+        })
+
+    assert daily._source_literature_attempt_budget(
+        root, "business_research", topic,
+    ) == daily._SOURCE_LITERATURE_TITLE_OWNERSHIP_ATTEMPT_LIMIT
+    assert daily._repairable_source_literature_topics(
+        root, "business_research", limit=3,
+    ) == [topic]
+
+    final_run = root / f"{topic}-source-literature-2026-06-29T08-00-00Z"
+    final_run.mkdir(parents=True)
+    final_run.joinpath("source_literature_memo.md").write_text(
+        "# Source literature boundary memo\n", encoding="utf-8",
+    )
+    daily._write_json(final_run / "source_literature_payload.json", {
+        "title": (
+            "supply chain resilience performance: "
+            "supply chain performance and firm performance evidence"
+        ),
+        "markdown": "## Evidence role definitions\n\n- directional association: revised label",
+    })
+    daily._write_json(ledger_dir / "2026-06-29T08-00-00Z.json", {
+        "domain": {"slug": "business_research"},
+        "submitted": 1,
+        "submission_id": "sub-title-final",
+        "candidate": {
+            "topic": topic,
+            "run_dir": final_run.name,
+            "fingerprint": "fp-title-final",
+        },
+        "researka_decision": decision,
+    })
+
+    assert daily._source_literature_submission_count(
+        root, "business_research", topic,
+    ) == daily._SOURCE_LITERATURE_TITLE_OWNERSHIP_ATTEMPT_LIMIT
     assert daily._repairable_source_literature_topics(
         root, "business_research", limit=3,
     ) == []
