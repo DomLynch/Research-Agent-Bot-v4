@@ -308,10 +308,19 @@ _SOURCE_LITERATURE_RENDERER_FEEDBACK_ATTEMPT_LIMIT = (
 _SOURCE_LITERATURE_TITLE_OWNERSHIP_ATTEMPT_LIMIT = (
     _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 6
 )
+_SOURCE_LITERATURE_FIELD_OWNERSHIP_ATTEMPT_LIMIT = (
+    _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT + 7
+)
 _SOURCE_LITERATURE_UNOWNED_TITLE_MARKERS = (
     "directional evidence for",
     "heterogeneous metrics",
     "null/mixed for",
+)
+_SOURCE_LITERATURE_FIELD_OWNERSHIP_MARKERS = (
+    "policy/exposure/practice",
+    "source synthesis",
+    "duplicate heterogeneity",
+    "duplicate heterogeneity tables",
 )
 _SOURCE_LITERATURE_RENDER_REPAIR_TERMS = (
     "abstract",
@@ -323,9 +332,12 @@ _SOURCE_LITERATURE_RENDER_REPAIR_TERMS = (
     "effect bearing",
     "falsifier",
     "heterogeneity matrix",
+    "duplicate heterogeneity",
     "matched setting",
     "metric heterogeneity",
     "outcome family",
+    "policy/exposure/practice",
+    "source synthesis",
     "topic level claim",
     "within outcome",
 )
@@ -2137,10 +2149,17 @@ def _repairable_submission_records(ledger: Json) -> list[tuple[str, Any, Json]]:
     records: list[tuple[str, Any, Json]] = []
     decision = ledger.get("researka_decision")
     candidate = ledger.get("candidate")
+    candidate_run = candidate.get("run_dir") if isinstance(candidate, dict) else None
     if (
         isinstance(decision, dict)
         and isinstance(candidate, dict)
-        and _repairable_rejection(decision)
+        and (
+            _repairable_rejection(decision)
+            or (
+                bool(_source_literature_topic_from_run(candidate_run))
+                and _source_literature_render_repair_revise(decision)
+            )
+        )
     ):
         decision = _decision_with_resubmission_parent(decision, ledger.get("submission_id"))
         fp = str(candidate.get("fingerprint") or "")
@@ -2150,12 +2169,19 @@ def _repairable_submission_records(ledger: Json) -> list[tuple[str, Any, Json]]:
         if not isinstance(attempt, dict):
             continue
         decision = attempt.get("researka_decision")
-        if not isinstance(decision, dict) or not _repairable_rejection(decision):
+        run_ref = attempt.get("run_dir")
+        if not isinstance(decision, dict) or not (
+            _repairable_rejection(decision)
+            or (
+                bool(_source_literature_topic_from_run(run_ref))
+                and _source_literature_render_repair_revise(decision)
+            )
+        ):
             continue
         decision = _decision_with_resubmission_parent(decision, attempt.get("submission_id"))
         fp = str(attempt.get("fingerprint") or "")
         if fp:
-            records.append((fp, attempt.get("run_dir"), decision))
+            records.append((fp, run_ref, decision))
     return records
 
 
@@ -2308,6 +2334,42 @@ def _source_literature_title_ownership_repair_needed(
     return False
 
 
+def _source_literature_field_ownership_repair_needed(
+    runs_root: Path, domain: str | None, topic: str, decision: Json,
+) -> bool:
+    if not _source_literature_render_repair_revise(decision):
+        return False
+    notes = _norm(_revision_notes(decision))
+    if not any(marker in notes for marker in _SOURCE_LITERATURE_FIELD_OWNERSHIP_MARKERS):
+        return False
+    for path in sorted((runs_root / "_daily_ledger").glob("*.json"), reverse=True):
+        ledger = _json(path, {})
+        if (
+            not isinstance(ledger, dict)
+            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
+        ):
+            continue
+        candidate = ledger.get("candidate")
+        if not isinstance(candidate, dict) or not int(ledger.get("submitted") or 0):
+            continue
+        run_ref = candidate.get("run_dir")
+        if not _source_literature_topic_from_run(run_ref):
+            continue
+        row_topic = str(candidate.get("topic") or "") or _source_literature_topic_from_run(run_ref)
+        if row_topic != topic:
+            continue
+        payload = _json(_run_path(runs_root, run_ref) / "source_literature_payload.json", {})
+        if not isinstance(payload, dict):
+            continue
+        title = str(payload.get("title") or "").lower()
+        markdown = str(payload.get("markdown") or "").lower()
+        return (
+            " vs null/mixed " not in title
+            or "audit note: effect-bearing rows stay metric-specific" not in markdown
+        )
+    return False
+
+
 def _repairable_source_literature_topics(
     runs_root: Path, domain: str | None, *, limit: int = 3,
 ) -> list[str]:
@@ -2435,6 +2497,17 @@ def _source_literature_attempt_budget(
                         min(
                             count + 1,
                             _SOURCE_LITERATURE_TITLE_OWNERSHIP_ATTEMPT_LIMIT,
+                        ),
+                    )
+                if _source_literature_field_ownership_repair_needed(
+                    runs_root, domain, topic, decision,
+                ):
+                    count = _source_literature_submission_count(runs_root, domain, topic)
+                    budget = max(
+                        budget,
+                        min(
+                            count + 1,
+                            _SOURCE_LITERATURE_FIELD_OWNERSHIP_ATTEMPT_LIMIT,
                         ),
                     )
                 return budget
