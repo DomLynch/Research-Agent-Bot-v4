@@ -2669,6 +2669,116 @@ def test_business_sweep_complete_fullraw_hands_off_to_source_literature(
     assert '"public_url_status": 200' in out
 
 
+def test_business_sweep_fullraw_continues_after_reviewer_revise(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("economics_research")
+    topics = ["minimum_wage_employment", "asset_pricing_replication"]
+    submissions: list[dict[str, Any]] = []
+
+    def papers_for(topic: str) -> list[dict[str, Any]]:
+        return [
+            {
+                "title": f"{topic.replace('_', ' ')} evidence paper {idx}",
+                "doi": f"10.7777/{topic}-{idx}",
+                "abstract": f"{topic} evidence.",
+                "source_fact": {
+                    "canonical_phrase": f"{topic} bounded evidence fact {idx}",
+                    "population": "market setting",
+                    "intervention": topic.replace("_", " "),
+                    "endpoint": "research outcome",
+                    "source_tier": "fullraw_search",
+                },
+            }
+            for idx in range(5)
+        ]
+
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        submissions.append(kwargs)
+        if len(submissions) == 1:
+            return {
+                "status": "reviewer_revise",
+                "submitted": 1,
+                "published": 0,
+                "publish_summary": {
+                    "status": "reviewer_revise",
+                    "submitted": 1,
+                    "published": 0,
+                    "top_blockers": {"reviewer_revise": 1},
+                    "next_action": "repair_researka_review_feedback",
+                    "queue_counts": {"ready_to_publish": 0},
+                    "public_url_status": None,
+                },
+            }
+        return {
+            "status": "published",
+            "submitted": 1,
+            "published": 1,
+            "publish_summary": {
+                "status": "published",
+                "submitted": 1,
+                "published": 1,
+                "top_blockers": {},
+                "next_action": "public_page_verified",
+                "queue_counts": {"ready_to_publish": 1},
+                "public_url_status": 200,
+            },
+        }
+
+    def fake_fullraw(topic: str, **_kwargs: Any) -> dict[str, Any]:
+        return {
+            "status": "complete",
+            "paper_count": 5,
+            "shards_searched": 1525,
+            "partial_shard_search": False,
+            "sweep_failed_shards": 0,
+            "sources_searched": {
+                "openalex": 2,
+                "pubmed": 1,
+                "crossref": 1,
+                "core": 1,
+                "semantic_scholar": 1,
+            },
+            "_papers": papers_for(topic),
+        }
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("economics_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: topics)
+    monkeypatch.setattr(
+        sweep,
+        "fetch_business_facts",
+        lambda *_args, **_kwargs: ([], {"status": "failed"}),
+    )
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", fake_fullraw)
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "2",
+        "--domains", "economics_research",
+        "--runs-root", str(tmp_path / "runs"),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-06-27T02-00-00Z",
+    ])
+
+    assert sweep.main() == 0
+    assert [call["source_literature_forced_papers"] for call in submissions] == [
+        {"minimum_wage_employment": papers_for("minimum_wage_employment")},
+        {"asset_pricing_replication": papers_for("asset_pricing_replication")},
+    ]
+    summary = json.loads(
+        (tmp_path / "runs" / "_business_diagnostics" / "latest_sweep.json").read_text(
+            encoding="utf-8",
+        ),
+    )
+    assert [row["status"] for row in summary["results"]] == [
+        "reviewer_revise",
+        "published",
+    ]
+
+
 def test_business_sweep_fullraw_discovery_does_not_count_metadata_as_facts(
     tmp_path: Path,
 ) -> None:

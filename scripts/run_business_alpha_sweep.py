@@ -1415,7 +1415,11 @@ def main() -> int:
                             f"{row['status']} {domain} {topic} via_fullraw_source_literature",
                             flush=True,
                         )
-                        if row["status"] == "no_fresh_candidate":
+                        if row["status"] in {
+                            "no_fresh_candidate",
+                            "reviewer_rejected",
+                            "reviewer_revise",
+                        }:
                             continue
                         return 0 if row["status"] in {
                             "submitted_to_researka", "published",
@@ -1490,7 +1494,11 @@ def main() -> int:
                         f"[business-sweep] {row['status']} {domain} {topic} -> {run_dir}",
                         flush=True,
                     )
-                    if row["status"] == "no_fresh_candidate":
+                    if row["status"] in {
+                        "no_fresh_candidate",
+                        "reviewer_rejected",
+                        "reviewer_revise",
+                    }:
                         continue
                     return 0 if row["status"] in {"submitted_to_researka", "published"} else 2
                 print(f"[business-sweep] ready {domain} {topic} -> {run_dir}", flush=True)
