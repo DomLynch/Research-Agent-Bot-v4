@@ -775,6 +775,17 @@ def _cached_fullraw_discovery_papers(
     return papers, trace
 
 
+def _strict_fullraw_probe_papers(topic: str, runs_root: Path) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    trace = _strict_fullraw_probe(topic, include_papers=True, runs_root=runs_root)
+    papers = [paper for paper in trace.pop("_papers", []) if isinstance(paper, dict)]
+    if trace.get("status") == "complete":
+        papers = _merge_fullraw_hit_text(
+            papers,
+            _fullraw_search_hits(str(trace.get("query") or topic)),
+        )
+    return papers, trace
+
+
 def _fullraw_search_response(
     query: str, *, limit: int | None = None, queue_if_missing: bool = True,
 ) -> dict[str, Any]:
@@ -1661,22 +1672,29 @@ def main() -> int:
                     fullraw_papers, fullraw_trace = _cached_fullraw_discovery_papers(
                         args.runs_root, domain, topic,
                     )
+                    fullraw_from_cache = bool(fullraw_papers)
                     if not fullraw_papers:
-                        fullraw_trace = _strict_fullraw_probe(
-                            topic, include_papers=True, runs_root=args.runs_root,
+                        fullraw_papers, fullraw_trace = _strict_fullraw_probe_papers(
+                            topic, args.runs_root,
                         )
-                        fullraw_papers = [
-                            paper for paper in fullraw_trace.pop("_papers", [])
-                            if isinstance(paper, dict)
-                        ]
-                        if fullraw_trace.get("status") == "complete":
-                            fullraw_papers = _merge_fullraw_hit_text(
-                                fullraw_papers,
-                                _fullraw_search_hits(str(fullraw_trace.get("query") or topic)),
-                            )
                     fullraw_papers = _enrich_fullraw_papers_with_db_facts(
                         topic, domain=domain, papers=fullraw_papers, settings=settings,
                     )
+                    if (
+                        fullraw_from_cache
+                        and publish_literature.substantive_fact_count(fullraw_papers)
+                        < MIN_DIRECT_SOURCES
+                    ):
+                        cached_trace = dict(fullraw_trace)
+                        fullraw_papers, fullraw_trace = _strict_fullraw_probe_papers(
+                            topic, args.runs_root,
+                        )
+                        fullraw_trace["cached_fact_source_count"] = cached_trace.get(
+                            "fact_source_count",
+                        )
+                        fullraw_papers = _enrich_fullraw_papers_with_db_facts(
+                            topic, domain=domain, papers=fullraw_papers, settings=settings,
+                        )
                     fullraw_keys: set[str] = set()
                     for paper in fullraw_papers:
                         key = str(
