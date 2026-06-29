@@ -6376,20 +6376,28 @@ def run_cycle(
                 literature_topics.append(topic)
         if paper_fetcher is None:
             expanded_topics: list[str] = []
+
+            def add_expanded(topic: str) -> bool:
+                if topic not in expanded_topics:
+                    expanded_topics.append(topic)
+                return len(expanded_topics) >= source_lit_scan_limit
+
             for topic in literature_topics:
                 if topic in forced_source_lit or topic in resumable_source_lit:
-                    if topic not in expanded_topics:
-                        expanded_topics.append(topic)
-                    if len(expanded_topics) >= source_lit_scan_limit:
+                    if add_expanded(topic):
                         break
                     continue
-                for fetch_topic in _source_literature_fetch_topics(topic):
-                    if fetch_topic not in expanded_topics:
-                        expanded_topics.append(fetch_topic)
+                if add_expanded(topic):
+                    break
+            if len(expanded_topics) < source_lit_scan_limit:
+                for topic in literature_topics:
+                    if topic in forced_source_lit or topic in resumable_source_lit:
+                        continue
+                    for fetch_topic in _source_literature_fetch_topics(topic)[1:]:
+                        if add_expanded(fetch_topic):
+                            break
                     if len(expanded_topics) >= source_lit_scan_limit:
                         break
-                if len(expanded_topics) >= source_lit_scan_limit:
-                    break
             literature_topics = expanded_topics
         terminal_resubmit_topics: set[str] = set()
         for idx, literature_topic in enumerate(literature_topics):

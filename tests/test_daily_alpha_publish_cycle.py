@@ -12170,6 +12170,53 @@ def test_source_literature_fallback_uses_domain_scan_limit(
     ]
 
 
+def test_source_literature_fallback_tries_candidate_topics_before_variants(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    candidate_topics = [
+        "platform_strategy_network_effects",
+        "business_model_performance",
+        "digital_transformation_firm_performance",
+        "operations_process_improvement",
+    ]
+    fetches: list[str] = []
+
+    def candidates(*_args: Any, limit: int, **_kwargs: Any) -> list[str]:
+        return candidate_topics[:limit]
+
+    def fetch(topic: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        fetches.append(topic)
+        return []
+
+    original_domain_int = daily._domain_alpha_memo_int
+
+    def domain_int(domain: str, name: str, default: int) -> int:
+        if name == "source_literature_scan_limit":
+            return 4
+        return original_domain_int(domain, name, default)
+
+    monkeypatch.setattr(daily, "_source_literature_topic_candidates", candidates)
+    monkeypatch.setattr(daily, "_fetch_source_literature_papers", fetch)
+    monkeypatch.setattr(daily, "_domain_alpha_memo_int", domain_int)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-20-00Z",
+        domain="business_research",
+        queue=_queue(),
+        submit=True,
+        submitter=lambda _payload: {"ok": False, "status": 500},
+        sleep=lambda _seconds: None,
+    )
+
+    assert fetches == candidate_topics
+    assert "platform_strategy_network" not in fetches
+    assert "platform_strategy" not in fetches
+    assert len(ledger["source_literature_fallback_attempts"]) == 4
+    assert ledger["status"] == "no_fresh_candidate"
+
+
 def test_source_literature_fallback_skips_misaligned_candidate(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
