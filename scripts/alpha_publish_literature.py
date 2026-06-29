@@ -1081,6 +1081,25 @@ def payload(
     direction_text = _direction_summary(selected, topic, profile.slug)
     contrast_text = _direction_contrast_sentence(selected, topic, profile.slug)
     signal_label = _direction_signal_label(selected, topic, profile.slug)
+    non_bio_signal_parts: list[str] = []
+    if non_bio:
+        endpoints_by_label: dict[str, list[str]] = {}
+        for paper in selected:
+            source_fact = paper.get("source_fact")
+            if not isinstance(source_fact, dict):
+                continue
+            label = _display_direction(_paper_effect_direction(paper, topic), profile.slug)
+            endpoint = str(source_fact.get("endpoint") or source_fact.get("metric") or "").strip()
+            if endpoint:
+                endpoints_by_label.setdefault(label, []).append(endpoint)
+        for label, prefix in (
+            ("directional estimate", "direction-bearing receipts support"),
+            ("null/mixed", "null/mixed receipts limit"),
+            ("descriptive/modeling", "descriptive/modeling receipts only contextualize"),
+        ):
+            endpoints = list(dict.fromkeys(endpoints_by_label.get(label, [])))
+            if endpoints:
+                non_bio_signal_parts.append(f"{prefix} {', '.join(endpoints[:3])}")
     directions = [_paper_effect_direction(paper, topic) for paper in selected]
     all_favorable = bool(directions) and all(
         direction == "directionally favorable" for direction in directions
@@ -1144,6 +1163,8 @@ def payload(
                 "disease-specific or endpoint-family claim."
             )
         )
+    if non_bio_signal_parts:
+        synthesis += " Substantive signal: " + "; ".join(non_bio_signal_parts) + "."
     if contrast_text:
         synthesis += " " + contrast_text
     abstract_text = synthesis
@@ -1277,6 +1298,8 @@ def payload(
                 if split_front and not non_bio else
                 "separated policy/exposure and predictive evidence fronts"
                 if split_front else
+                "evidence-base heterogeneity map across receipts"
+                if non_bio and non_bio_signal_parts else
                 "one bounded, context-dependent signal across receipts"
             )
         ),

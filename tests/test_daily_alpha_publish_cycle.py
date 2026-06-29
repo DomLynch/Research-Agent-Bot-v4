@@ -12201,10 +12201,18 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     )
 
     markdown = payload["markdown"]
+    assert payload["title"] == (
+        "supply chain resilience performance: "
+        "evidence-base heterogeneity map across receipts"
+    )
     assert "directional estimate: 2 receipt(s)" in markdown
     assert "descriptive/modeling: 2 receipt(s)" in markdown
     assert "null/mixed: 1 receipt(s)" in markdown
     assert "other/mixed: 5 receipt(s)" not in markdown
+    assert "Substantive signal:" in markdown
+    assert "direction-bearing receipts support supply chain performance" in markdown
+    assert "null/mixed receipts limit firm performance" in markdown
+    assert "descriptive/modeling receipts only contextualize resilience scoring model" in markdown
     assert "Concrete contrast:" in markdown
     assert "hypotheses of a positive impact" in markdown
     assert "have been rejected" in markdown
