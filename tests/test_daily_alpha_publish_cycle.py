@@ -13079,7 +13079,7 @@ def test_source_literature_payload_uses_economics_language(
         "human clinical",
     ):
         assert phrase not in lower
-    assert "null/mixed or other/mixed:" in markdown
+    assert "firm-performance caveat:" in markdown
     assert "policy/exposure/practice" in markdown
     assert "matched design" in markdown
     assert "pooled elasticity" in markdown
@@ -13189,33 +13189,33 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     markdown = payload["markdown"]
     assert payload["title"] == (
         "supply chain resilience performance: "
-        "directional supply chain performance vs null/mixed firm performance evidence"
+        "directional supply chain performance with firm performance caveat evidence"
     )
     assert (
         "Evidence role summary: direction-bearing evidence base k=1; "
-        "null/mixed outcome receipts k=1; context/antecedent/model "
+        "business-outcome caveat receipts k=1; context/antecedent/model "
         "receipts k=3 excluded from effect support."
     ) in markdown
     assert "directional association: 1 receipt(s)" not in markdown
     assert "other/mixed: 5 receipt(s)" not in markdown
     assert "fallback" not in markdown.lower()
     assert "Bounded signal:" in markdown
-    assert "multi-outcome heterogeneity map across firm-level, chain-level, and business-outcome receipts" in markdown
+    assert "multi-outcome boundary map across firm-level, chain-level, and business-outcome receipts" in markdown
     assert "between named outcome families, not support for the topic as a whole" in markdown
     assert "direction-bearing evidence base k=1" in markdown
     assert "context/antecedent/model receipts k=3 excluded from effect support" in markdown
     assert "It excludes duplicate reports, metadata-only title matches" in markdown
-    assert "Resolve the directional/null conflict" in markdown
+    assert "Resolve the metric-scope caveat" in markdown
     assert "supply chain performance and firm performance" in markdown
     assert "inside one matched industry, comparator, and metric frame" in markdown
     assert (
-        "Evidence weight: this descriptive map rests on k=1 directional association, "
-        "k=1 null/mixed receipt, and k=3 context/antecedent/model receipts; "
-        "it shows metric heterogeneity, not a broad empirical disagreement."
+        "Evidence weight: this bounded scope rests on k=1 directional association, "
+        "k=1 caveat receipt, and k=3 context/antecedent/model receipts; "
+        "it keeps metric-specific support separate from broader business outcomes."
     ) in markdown
     assert (
         "Falsifier/update: the directional-association supply chain performance receipt would "
-        "weaken if a matched setting and metric replication reports a null or negative association."
+        "weaken if a matched setting and metric replication reports a weaker or opposite association."
     ) in markdown
     assert "Population/settings are separated as receipt context" in markdown
     assert "automotive firms" in markdown
@@ -13226,7 +13226,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         "context/antecedent/model rows are excluded from effect support and no "
         "rows are pooled."
     ) in markdown
-    assert "## Heterogeneity matrix" in markdown
+    assert "## Evidence matrix" in markdown
     assert "## Evidence role definitions" in markdown
     assert "## Directional grouping" not in markdown
     assert "### Effect-bearing comparison" in markdown
@@ -13253,6 +13253,8 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "hypotheses of a positive impact" in markdown
     assert "have been rejected" in markdown
     assert "method or modelling receipt; no direct effect estimate extracted" in markdown
+    assert "null/mixed" not in markdown
+    assert "heterogeneity" not in markdown.lower()
     assert "Policy/exposure/practice: supply chain resilience" in markdown
     assert "Finding: The aim of this study is to identify" not in markdown
 

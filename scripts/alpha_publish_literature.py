@@ -657,6 +657,16 @@ def _paper_evidence_role(paper: Json, topic: str = "", profile_slug: str = "") -
     return "directional association"
 
 
+def _memo_role_label(label: str, profile_slug: str = "") -> str:
+    if not _non_biomedical(profile_slug):
+        return label
+    return {
+        "null/mixed": "firm-performance caveat",
+        "other/mixed": "non-directional caveat",
+        "null/non-convergent": "non-directional caveat",
+    }.get(label, label)
+
+
 def _table_cell(value: Any, limit: int = 90) -> str:
     text = str(value or "").replace("|", "/").strip()
     return _short_finding(text, limit) or "-"
@@ -685,7 +695,7 @@ def _heterogeneity_matrix_lines(
             + " | ".join((
                 _table_cell(family, 40),
                 _table_cell(paper.get("title") or "Untitled source", 72),
-                _table_cell(role, 36),
+                _table_cell(_memo_role_label(role, profile_slug), 36),
                 _table_cell(_source_context_label(paper, non_bio=non_bio), 48),
                 _table_cell(metric, 40),
                 _table_cell(finding, 110),
@@ -753,8 +763,10 @@ def _direction_category_lines(topic: str, profile_slug: str = "") -> list[str]:
             "policy, or institutional context rather than a policy-effect estimate.",
             "- descriptive/modeling: the receipt reports modelling or prediction "
             "rather than a policy-effect estimate.",
-            "- null/mixed or other/mixed: the extracted finding is null, mixed, "
-            "or not directionally interpretable.",
+            "- firm-performance caveat: the receipt constrains the directional "
+            "scope to the named metric rather than the full business outcome set.",
+            "- non-directional caveat: the extracted finding is not directionally "
+            "interpretable for the named metric.",
         ]
     return [
         f"- directionally favorable: {topic_text} is the intervention/exposure "
@@ -784,8 +796,12 @@ def _used_direction_category_lines(
         if (
             label in used_roles
             or (
-                label == "null/mixed or other/mixed"
+                label == "firm-performance caveat"
                 and bool(used_roles & {"null/mixed", "other/mixed"})
+            )
+            or (
+                label == "non-directional caveat"
+                and bool(used_roles & {"other/mixed"})
             )
         ):
             out.append(line)
@@ -811,7 +827,7 @@ def _direction_summary(papers: list[Json], topic: str = "", profile_slug: str = 
         label = _paper_evidence_role(paper, topic, profile_slug)
         groups.setdefault(label, []).append(_short_finding(finding, 120))
     parts = [
-        f"{label}: {len(values)} receipt(s)"
+        f"{_memo_role_label(label, profile_slug)}: {len(values)} receipt(s)"
         for label, values in groups.items() if values
     ]
     return " | ".join(parts) if parts else "direction of effect is not extractable from the retrieved facts"
@@ -831,7 +847,7 @@ def _evidence_role_summary(papers: list[Json], topic: str = "", profile_slug: st
             context_only += 1
     parts = [
         f"direction-bearing evidence base k={directional}",
-        f"null/mixed outcome receipts k={nullish}",
+        f"business-outcome caveat receipts k={nullish}",
     ]
     if context_only:
         parts.append(
@@ -869,10 +885,10 @@ def _direction_contrast_sentence(
     for label in priority:
         values = groups.get(label)
         if values:
-            parts.append(f"{label}: {values[0]}")
+            parts.append(f"{_memo_role_label(label, profile_slug)}: {values[0]}")
     for label, values in groups.items():
         if label not in priority and values:
-            parts.append(f"{label}: {values[0]}")
+            parts.append(f"{_memo_role_label(label, profile_slug)}: {values[0]}")
     return "Concrete contrast: " + "; ".join(parts[:4]) + "."
 
 
@@ -890,7 +906,7 @@ def _pico_gap(facts: list[Json], profile_slug: str = "") -> str:
             outcome = endpoints[0]
             return (
                 "A stronger memo needs a matched design that reduces this "
-                f"bundle's heterogeneity: hold metric={outcome} constant, "
+                f"bundle's scope spread: hold metric={outcome} constant, "
                 f"compare policy/exposure={intervention} against a clearly "
                 f"matched reference group, and test it in a setting adjacent to "
                 f"but not duplicating {population}."
@@ -914,7 +930,7 @@ def _direction_signal_label(papers: list[Json], topic: str = "", profile_slug: s
     directions = [_paper_effect_direction(paper, topic) for paper in papers]
     if _non_biomedical(profile_slug):
         if directions and all(direction == "directionally favorable" for direction in directions):
-            return "directionally consistent estimates across heterogeneous contexts"
+            return "directionally consistent estimates across separate contexts"
         if "directionally favorable" in directions and "non-clinical/predictive" in directions:
             return "policy/exposure estimates plus separate descriptive evidence"
         if "directionally favorable" in directions:
@@ -1105,10 +1121,10 @@ def _bounded_signal_sentence(
     ))
     if non_bio and directional and nullish:
         return (
-            f"Bounded signal: {topic_text} is a multi-outcome heterogeneity map"
+            f"Bounded signal: {topic_text} is a multi-outcome boundary map"
             f"{f' across {family_text} receipts' if family_text else ''}: "
             f"direction-bearing evidence is limited to {', '.join(directional[:2])}, "
-            f"while {', '.join(nullish[:2])} is null/mixed; the contrast is between "
+            f"while {', '.join(nullish[:2])} is the caveat outcome; the contrast is between "
             "named outcome families, not support for the topic as a whole."
         )
     if non_bio and directional:
@@ -1338,8 +1354,8 @@ def payload(
     source_identity_total = source_identity_count(selected, require_substantive=True)
     question = (
         f"Across retrieved source-level receipts for {topic}, which metrics, "
-        "settings, or contrasts differ versus remain null/mixed, and what "
-        "matched design remains untested?"
+        "settings, or contrasts carry directional support versus caveat evidence, "
+        "and what matched design remains untested?"
         if non_bio else
         f"Across retrieved source-level receipts for {topic}, which endpoints show "
         "directionally favorable versus null/non-convergent signals, and what "
@@ -1445,7 +1461,7 @@ def payload(
         for label, prefix in (
             ("directional association", "direction-bearing evidence is limited to"),
             ("directional estimate", "direction-bearing evidence is limited to"),
-            ("null/mixed", "null/mixed receipts concern"),
+            ("null/mixed", "business-outcome caveat receipts concern"),
             ("antecedent/support", "antecedent/support receipts contextualize"),
             ("descriptive/modeling", "descriptive/modeling receipts only contextualize"),
         ):
@@ -1479,13 +1495,13 @@ def payload(
     evidence_weight_note = ""
     if thin_non_bio_scope:
         evidence_weight_note = (
-            f"Evidence weight: this descriptive map rests on k={directional_count} "
-            f"directional association, k={nullish_count} null/mixed receipt, and "
-            f"k={context_only_count} context/antecedent/model receipts; it shows "
-            "metric heterogeneity, not a broad empirical disagreement. "
+            f"Evidence weight: this bounded scope rests on k={directional_count} "
+            f"directional association, k={nullish_count} caveat receipt, and "
+            f"k={context_only_count} context/antecedent/model receipts; it keeps "
+            "metric-specific support separate from broader business outcomes. "
             f"Falsifier/update: the directional-association {directional_endpoints[0]} receipt "
             "would weaken if a matched setting and metric replication reports a "
-            "null or negative association."
+            "weaker or opposite association."
         )
     bounded_signal = _bounded_signal_sentence(
         topic, endpoints_by_label, non_bio=non_bio,
@@ -1501,9 +1517,9 @@ def payload(
         and "non-clinical/predictive" in direction_text
     )
     lead = (
-        f"This receipt-backed scoping note is a descriptive metric-heterogeneity map for {topic}: "
+        f"This receipt-backed scoping note is a bounded metric-scope map for {topic}: "
         if thin_non_bio_scope else
-        f"This receipt-backed scoping note is a multi-outcome heterogeneity map for {topic}: "
+        f"This receipt-backed scoping note is a multi-outcome boundary map for {topic}: "
         if non_bio and len(outcome_families) >= 2 else
         f"This receipt-backed scoping note maps separated evidence fronts for {topic}: "
         if split_front else
@@ -1551,7 +1567,7 @@ def payload(
                 "and populations; they are not pooled or averaged."
             )
             + (
-                " This is a heterogeneous policy/setting map, not a unified "
+                " This is a separated policy/setting map, not a unified "
                 "pooled economics claim."
                 if non_bio else
                 " This is a heterogeneous indication/context map, not a unified "
@@ -1576,7 +1592,7 @@ def payload(
         synthesis += " " + contrast_text
     abstract_text = (
         f"{topic}: k={directional_count} directional receipt is limited to "
-        f"{join_contexts(directional_endpoints[:2])}; k={nullish_count} null/mixed "
+        f"{join_contexts(directional_endpoints[:2])}; k={nullish_count} caveat "
         f"receipt concerns {join_contexts(nullish_endpoints[:2])}; "
         f"k={context_only_count} antecedent/model receipts are context only."
         if thin_non_bio_scope else synthesis
@@ -1586,7 +1602,7 @@ def payload(
         _pico_gap(facts, profile.slug),
         (
             f"If {topic} is promoted beyond a scoping note, the next run should "
-            f"select sources sharing one context family rather than mixing {context_text}."
+            f"select sources sharing one context family rather than spanning {context_text}."
         ),
     ]
     if not non_bio and "human clinical/observational" not in contexts:
@@ -1596,7 +1612,7 @@ def payload(
         nullish = ", ".join(list(dict.fromkeys(endpoints_by_label["null/mixed"]))[:2])
         next_gaps.insert(
             0,
-            "Resolve the directional/null conflict by retesting "
+            "Resolve the metric-scope caveat by retesting "
             f"{directional} and {nullish} inside one matched industry, comparator, "
             "and metric frame before generalizing the directional receipts.",
         )
@@ -1638,7 +1654,7 @@ def payload(
         "",
         *([evidence_weight_note, ""] if evidence_weight_note else []),
         "",
-        "## Heterogeneity matrix",
+        "## Evidence matrix",
         "",
         *_heterogeneity_matrix_lines(selected, topic, profile.slug),
         "",
@@ -1706,7 +1722,7 @@ def payload(
             "estimates are context only; endpoints are not harmonized across studies."
         ),
         (
-            " The signal is purely descriptive of effect-direction heterogeneity; "
+            " The signal is purely descriptive of source-level direction and scope; "
             + (
                 "it cannot support a causal, policy-prescriptive, or pooled "
                 "elasticity inference, and pooling across these designs would be inappropriate."
@@ -1743,15 +1759,15 @@ def payload(
     }
     title_tail = (
         f"directional {_title_endpoint_label(directional_endpoints[0], topic, selected)} "
-        f"vs null/mixed {_title_endpoint_label(nullish_endpoints[0], topic, selected)} evidence"
+        f"with {_title_endpoint_label(nullish_endpoints[0], topic, selected)} caveat evidence"
         if thin_non_bio_scope and directional_endpoints and nullish_endpoints else
-        f"heterogeneity map across {join_contexts(outcome_families[:3])} receipts"
+        f"boundary map across {join_contexts(outcome_families[:3])} receipts"
         if non_bio and len(outcome_families) >= 2 else
         "separated intervention and predictive evidence fronts"
         if split_front and not non_bio else
         "separated policy/exposure and predictive evidence fronts"
         if split_front else
-        "evidence-base heterogeneity map across receipts"
+        "evidence-base boundary map across receipts"
         if non_bio and non_bio_signal_parts else
         "one bounded, context-dependent signal across receipts"
     )
