@@ -654,7 +654,7 @@ def _paper_evidence_role(paper: Json, topic: str = "", profile_slug: str = "") -
     exposure = title_key(_exposure_context_label(paper, non_bio=True))
     if "antecedent" in exposure or "factors affecting" in title:
         return "antecedent/support"
-    return label
+    return "directional association"
 
 
 def _table_cell(value: Any, limit: int = 90) -> str:
@@ -691,7 +691,10 @@ def _heterogeneity_matrix_lines(
             ))
             + " |"
         )
-        if role in {"directional estimate", "directionally favorable", "null/mixed", "null/non-convergent"}:
+        if role in {
+            "directional association", "directional estimate", "directionally favorable",
+            "null/mixed", "null/non-convergent",
+        }:
             effect_rows.append(row)
         else:
             context_rows.append(row)
@@ -738,8 +741,9 @@ def _direction_category_lines(topic: str, profile_slug: str = "") -> list[str]:
     topic_text = topic or "the selected topic"
     if _non_biomedical(profile_slug):
         return [
-            f"- directional estimate: {topic_text} is the policy, exposure, "
-            "method, or practice being measured; the label is not an efficacy verdict.",
+            f"- directional association: {topic_text} is the policy, exposure, "
+            "method, or practice linked to the named metric; the label is not "
+            "an effect-size estimate or efficacy verdict.",
             "- antecedent/support: the receipt explains inputs, enablers, or "
             "context for the topic rather than a clean topic-to-outcome effect.",
             f"- reference/comparator contrast: {topic_text} is the reference side "
@@ -763,6 +767,28 @@ def _direction_category_lines(topic: str, profile_slug: str = "") -> list[str]:
         "- null/non-convergent or other/mixed: the extracted fact is null, mixed, "
         "or not directionally interpretable.",
     ]
+
+
+def _used_direction_category_lines(
+    papers: list[Json], topic: str = "", profile_slug: str = "",
+) -> list[str]:
+    used_roles = {
+        _paper_evidence_role(paper, topic, profile_slug)
+        for paper in papers
+    }
+    lines = _direction_category_lines(topic, profile_slug)
+    out: list[str] = []
+    for line in lines:
+        label = line.removeprefix("- ").split(":", 1)[0]
+        if (
+            label in used_roles
+            or (
+                label == "null/mixed or other/mixed"
+                and bool(used_roles & {"null/mixed", "other/mixed"})
+            )
+        ):
+            out.append(line)
+    return out or lines
 
 
 def _direction_summary(papers: list[Json], topic: str = "", profile_slug: str = "") -> str:
@@ -794,7 +820,7 @@ def _evidence_role_summary(papers: list[Json], topic: str = "", profile_slug: st
     directional = nullish = context_only = 0
     for paper in papers:
         label = _paper_evidence_role(paper, topic, profile_slug)
-        if label in {"directional estimate", "directionally favorable"}:
+        if label in {"directional association", "directional estimate", "directionally favorable"}:
             directional += 1
         elif label in {"null/mixed", "null/non-convergent"}:
             nullish += 1
@@ -833,7 +859,7 @@ def _direction_contrast_sentence(
     if len(groups) < 2:
         return ""
     priority = (
-        "directional estimate", "null/mixed", "reference/comparator contrast",
+        "directional association", "directional estimate", "null/mixed", "reference/comparator contrast",
         "antecedent/support", "descriptive/modeling", "economic/context only", "other/mixed",
         "directionally favorable", "null/non-convergent", "comparator/not favorable",
         "non-clinical/predictive",
@@ -1005,7 +1031,8 @@ def _bounded_signal_sentence(
     topic_text = topic.replace("_", " ")
     family_text = join_contexts((outcome_families or [])[:3])
     directional = list(dict.fromkeys(
-        endpoints_by_label.get("directional estimate", [])
+        endpoints_by_label.get("directional association", [])
+        + endpoints_by_label.get("directional estimate", [])
         + endpoints_by_label.get("directionally favorable", []),
     ))
     nullish = list(dict.fromkeys(
@@ -1354,6 +1381,7 @@ def payload(
             endpoints_by_label.setdefault(label, []).append(endpoint)
     if non_bio:
         for label, prefix in (
+            ("directional association", "direction-bearing evidence is limited to"),
             ("directional estimate", "direction-bearing evidence is limited to"),
             ("null/mixed", "null/mixed receipts concern"),
             ("antecedent/support", "antecedent/support receipts contextualize"),
@@ -1363,7 +1391,8 @@ def payload(
             if endpoints:
                 non_bio_signal_parts.append(f"{prefix} {', '.join(endpoints[:3])}")
     directional_endpoints = list(dict.fromkeys(
-        endpoints_by_label.get("directional estimate", [])
+        endpoints_by_label.get("directional association", [])
+        + endpoints_by_label.get("directional estimate", [])
         + endpoints_by_label.get("directionally favorable", []),
     ))
     nullish_endpoints = list(dict.fromkeys(
@@ -1373,7 +1402,7 @@ def payload(
     directional_count = sum(
         1 for paper in selected
         if _paper_evidence_role(paper, topic, profile.slug)
-        in {"directional estimate", "directionally favorable"}
+        in {"directional association", "directional estimate", "directionally favorable"}
     )
     nullish_count = sum(
         1 for paper in selected
@@ -1389,10 +1418,10 @@ def payload(
     if thin_non_bio_scope:
         evidence_weight_note = (
             f"Evidence weight: this descriptive map rests on k={directional_count} "
-            f"directional estimate, k={nullish_count} null/mixed receipt, and "
+            f"directional association, k={nullish_count} null/mixed receipt, and "
             f"k={context_only_count} context/antecedent/model receipts; it shows "
             "metric heterogeneity, not a broad empirical disagreement. "
-            f"Falsifier/update: the directional {directional_endpoints[0]} receipt "
+            f"Falsifier/update: the directional-association {directional_endpoints[0]} receipt "
             "would weaken if a matched setting and metric replication reports a "
             "null or negative association."
         )
@@ -1500,8 +1529,8 @@ def payload(
     ]
     if not non_bio and "human clinical/observational" not in contexts:
         next_gaps.insert(0, "No source in this selected bundle tests human clinical endpoints.")
-    if non_bio and endpoints_by_label.get("directional estimate") and endpoints_by_label.get("null/mixed"):
-        directional = ", ".join(list(dict.fromkeys(endpoints_by_label["directional estimate"]))[:2])
+    if non_bio and directional_endpoints and endpoints_by_label.get("null/mixed"):
+        directional = ", ".join(directional_endpoints[:2])
         nullish = ", ".join(list(dict.fromkeys(endpoints_by_label["null/mixed"]))[:2])
         next_gaps.insert(
             0,
@@ -1547,15 +1576,26 @@ def payload(
         "",
         synthesis,
         "",
-        "## Directional grouping",
-        "",
-        *(_direction_category_lines(topic, profile.slug)),
-        "",
+        *(
+            [
+                "## Evidence role definitions",
+                "",
+                *_used_direction_category_lines(selected, topic, profile.slug),
+                "",
+            ]
+            if non_bio else
+            [
+                "## Directional grouping",
+                "",
+                *(_direction_category_lines(topic, profile.slug)),
+                "",
+                *(_direction_rows(selected, topic, profile.slug) or [
+                    "- Direction not extractable from the selected receipts.",
+                ]),
+                "",
+            ]
+        ),
         f"Evidence role summary: {role_text}.",
-        "",
-        *(_direction_rows(selected, topic, profile.slug) or [
-            "- Direction not extractable from the selected receipts.",
-        ]),
         "",
         moderator_note,
         "",
@@ -1634,8 +1674,9 @@ def payload(
         **({"revision_of": parent_submission_id} if parent_submission_id else {}),
     }
     title_tail = (
-        f"directional support for {directional_endpoints[0]} but null/mixed support "
-        f"for {nullish_endpoints[0]} ({len(bundle)}-source scoping map)"
+        f"directional evidence for {directional_endpoints[0]}, null/mixed for "
+        f"{nullish_endpoints[0]}, heterogeneous metrics across {len(bundle)} "
+        f"sources ({year_text})"
         if thin_non_bio_scope and directional_endpoints and nullish_endpoints else
         f"heterogeneity map across {join_contexts(outcome_families[:3])} receipts"
         if non_bio and len(outcome_families) >= 2 else

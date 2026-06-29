@@ -12665,7 +12665,7 @@ def test_source_literature_payload_uses_economics_language(
         "human clinical",
     ):
         assert phrase not in lower
-    assert "directional estimate:" in markdown
+    assert "null/mixed or other/mixed:" in markdown
     assert "policy/exposure/practice" in markdown
     assert "matched design" in markdown
     assert "pooled elasticity" in markdown
@@ -12775,10 +12775,10 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     markdown = payload["markdown"]
     assert payload["title"] == (
         "supply chain resilience performance: "
-        "directional support for supply chain performance but null/mixed support "
-        "for firm performance (5-source scoping map)"
+        "directional evidence for supply chain performance, null/mixed for "
+        "firm performance, heterogeneous metrics across 5 sources (2022-2023)"
     )
-    assert "directional estimate: 1 receipt(s)" in markdown
+    assert "directional association: 1 receipt(s)" in markdown
     assert "antecedent/support: 1 receipt(s)" in markdown
     assert "descriptive/modeling: 2 receipt(s)" in markdown
     assert "null/mixed: 1 receipt(s)" in markdown
@@ -12799,12 +12799,12 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "supply chain performance and firm performance" in markdown
     assert "inside one matched industry, comparator, and metric frame" in markdown
     assert (
-        "Evidence weight: this descriptive map rests on k=1 directional estimate, "
+        "Evidence weight: this descriptive map rests on k=1 directional association, "
         "k=1 null/mixed receipt, and k=3 context/antecedent/model receipts; "
         "it shows metric heterogeneity, not a broad empirical disagreement."
     ) in markdown
     assert (
-        "Falsifier/update: the directional supply chain performance receipt would "
+        "Falsifier/update: the directional-association supply chain performance receipt would "
         "weaken if a matched setting and metric replication reports a null or negative association."
     ) in markdown
     assert "Population/settings are separated as receipt context" in markdown
@@ -12813,6 +12813,8 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "manufacturing firms" in markdown
     assert "Concrete contrast:" in markdown
     assert "## Heterogeneity matrix" in markdown
+    assert "## Evidence role definitions" in markdown
+    assert "## Directional grouping" not in markdown
     assert "### Effect-bearing comparison" in markdown
     assert "### Context-only receipts" in markdown
     assert "| Outcome family | Receipt | Evidence role | Population/setting | Metric | Extracted finding |" in markdown
