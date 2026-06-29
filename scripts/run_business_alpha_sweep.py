@@ -1463,6 +1463,10 @@ def main() -> int:
                 profile.seed_topics_path,
                 limit=max(args.topics_per_domain, args.topics_per_domain * 8),
             )
+            repairable_source_lit_topics = publish_cycle._repairable_source_literature_topics(
+                args.runs_root, domain, limit=max(args.topics_per_domain, 3),
+            )
+            seed_pool = list(dict.fromkeys([*repairable_source_lit_topics, *seed_pool]))
             blocked_topic_keys = _recent_source_literature_blocked_topics(
                 args.runs_root, domain,
             )
