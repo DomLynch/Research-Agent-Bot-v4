@@ -4722,14 +4722,69 @@ def _source_literature_blocked_parent_variant_topics(
 ) -> list[str]:
     if not broad_blocked_topics or limit <= 0:
         return []
-    parents = _source_literature_topic_candidates(
-        runs_root,
-        profile_slug,
-        min_sources,
-        set(),
-        limit=max(limit * 3, limit),
-        soft_broad_blocked_topics=soft_broad_blocked_topics,
+    discovery_dir = runs_root / "_topics_discovery"
+    seed_scope = _seed_scope_tokens(_domain_seed_prefixes(profile_slug))
+    paths = sorted(
+        discovery_dir.glob("*.json"),
+        key=lambda path: path.stat().st_mtime if path.exists() else 0,
+        reverse=True,
     )
+    parent_limit = max(limit * 3, limit)
+    parents: list[str] = []
+    seen_parents: set[str] = set()
+    for path in paths:
+        data = _json(path, {})
+        if not isinstance(data, dict) or not _same_domain(_row_domain(data), profile_slug):
+            continue
+        rows = data.get("all")
+        if not isinstance(rows, list):
+            continue
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            topic = str(row.get("topic") or "").strip()
+            if (
+                not topic
+                or topic in seen_parents
+                or not _source_literature_family_blocked_topic(
+                    topic,
+                    broad_blocked_topics,
+                    soft_broad_blocked_topics=soft_broad_blocked_topics,
+                )
+                or _source_literature_family_blocked_topic(
+                    topic,
+                    hard_family_blocked_topics,
+                    soft_broad_blocked_topics=soft_broad_blocked_topics,
+                )
+            ):
+                continue
+            topic_key = _canonical_family_key(topic).removeprefix("topic:")
+            topic_tokens = {
+                token.rstrip("s") for token in topic_key.split("_")
+                if len(token.rstrip("s")) >= 3
+            }
+            if "anti" in topic_tokens and seed_scope and not ((topic_tokens - {"anti"}) & seed_scope):
+                continue
+            if topic_tokens and not (topic_tokens - _DISCOVERY_PARENT_GENERIC_TOKENS):
+                continue
+            raw_source_papers = row.get("source_papers")
+            source_paper_count = (
+                len(raw_source_papers) if isinstance(raw_source_papers, list) else 0
+            )
+            paper_count = int(row.get("paper_count") or 0)
+            fact_source_count = int(row.get("fact_source_count") or 0)
+            if paper_count < min_sources or (
+                fact_source_count < min_sources
+                and source_paper_count < min_sources
+                and not _source_literature_fallback_submit_enabled()
+            ):
+                continue
+            parents.append(topic)
+            seen_parents.add(topic)
+            if len(parents) >= parent_limit:
+                break
+        if len(parents) >= parent_limit:
+            break
     exact_keys = {_canonical_family_key(topic) for topic in exact_blocked_topics}
     topics: list[str] = []
     seen: set[str] = set()

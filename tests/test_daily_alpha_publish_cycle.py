@@ -14133,6 +14133,15 @@ def test_source_literature_fallback_derives_variant_from_blocked_rich_parent(
             "run_dir": "supply_chain_resilience-source-literature-ts",
         },
     ])
+    daily._write_json(root / "_daily_ledger" / "submitted-parent.json", {
+        "domain": {"slug": "business_research"},
+        "status": "submitted_to_researka",
+        "submitted": 1,
+        "candidate": {
+            "topic": "supply_chain_resilience_performance",
+            "run_dir": "runs/supply_chain_resilience_performance-source-literature-ts",
+        },
+    })
     daily._write_json(root / "_topics_discovery" / "business.json", {
         "domain": {"slug": "business_research"},
         "all": [
