@@ -213,10 +213,7 @@ def _fullraw_can_try_next_query(event: dict[str, Any]) -> bool:
     if not _business_fullraw_priority_enabled():
         return False
     status = str(event.get("status") or "")
-    if status in {
-        "busy", "failed", "health_unavailable", "inflight_saturated",
-        "queue_saturated", "async_queue_saturated",
-    }:
+    if status in {"busy", "failed", "health_unavailable"}:
         return False
     if event.get("key_queued") is True or event.get("key_running") is True:
         return False
