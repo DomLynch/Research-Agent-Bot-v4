@@ -14115,6 +14115,86 @@ def test_source_literature_payload_uses_economics_language(
     assert "pooled elasticity" in markdown
 
 
+def test_source_literature_payload_reconciles_single_outcome_economics_roles(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+
+    def paper(title: str, doi: str, phrase: str, population: str, metric: str) -> dict[str, Any]:
+        return {
+            "title": title,
+            "doi": doi,
+            "year": 2018,
+            "source_fact": {
+                "canonical_phrase": phrase,
+                "population": population,
+                "intervention": "minimum wage policy",
+                "comparator": "lower minimum wage baseline",
+                "metric": metric,
+            },
+        }
+
+    papers = [
+        paper(
+            "Short-run employment effects of recent minimum wage changes",
+            "10.1234/minwage-acs",
+            "large minimum wage increases reduced employment by just over 1 percentage point",
+            "low-skilled population groups in US states",
+            "employment effects",
+        ),
+        paper(
+            "Revisiting the Minimum Wage Employment Debate",
+            "10.1234/minwage-teen-elasticity",
+            "teen employment elasticities near -0.15",
+            "teen labor markets",
+            "employment elasticities",
+        ),
+        paper(
+            "Do Minimum Wages Really Reduce Teen Employment",
+            "10.1234/minwage-zero",
+            "controls render employment and hours elasticities indistinguishable from zero",
+            "teens",
+            "employment and hours elasticities",
+        ),
+        paper(
+            "Minimum Wage Increase Case Study",
+            "10.1234/minwage-case",
+            "associated with a 20.2% to 21.8% reduction in employment",
+            "less-skilled young workers",
+            "employment effects",
+        ),
+        paper(
+            "Credible Research Designs for Minimum Wage Studies",
+            "10.1234/minwage-design",
+            "estimated small employment elasticity of -0.01",
+            "US states, teen employment",
+            "employment elasticity",
+        ),
+    ]
+
+    _candidate, payload = daily._source_literature_payload(
+        profile_slug="business_research",
+        topic="minimum_wage_employment",
+        papers=papers,
+        runs_root=root,
+        date="2026-06-30T00-12-33Z",
+    )
+
+    markdown = payload["markdown"]
+    assert payload["title"] == (
+        "minimum wage employment: within-employment effects heterogeneity map across 5 sources"
+    )
+    assert len(payload["source_bundle"]) == 5
+    assert payload["evidence_bundle"]["direct_source_count"] == 5
+    assert "multi-outcome boundary map" not in markdown
+    assert "non-directional caveat" not in markdown
+    assert "Evidence role summary: direction-bearing receipts: 4; metric-scope caveat receipts: 1" in markdown
+    assert "directional association: 4 receipt(s)" in markdown
+    assert "metric-scope caveat: 1 receipt(s)" in markdown
+    assert "within-outcome heterogeneity map" in markdown
+    assert "### Context-only receipts" not in markdown
+
+
 def test_source_literature_payload_keeps_multiple_economics_directional_metrics(
     tmp_path: Path,
 ) -> None:
@@ -14185,7 +14265,11 @@ def test_source_literature_payload_keeps_multiple_economics_directional_metrics(
         "earnings inequality share comparator outcomes"
     )
     assert "direction-bearing receipts: 4" in markdown
-    assert "Substantive map: direction-bearing evidence covers price pass-through, poverty elasticity, and earnings inequality share." in markdown
+    assert (
+        "Substantive map: direction-bearing evidence covers price pass-through, "
+        "poverty elasticity, and earnings inequality share; metric-scope caveat "
+        "receipts concern employment effects."
+    ) in markdown
     assert "Coverage balance: price pass-through" in markdown
     assert "Bounded research signal: price pass-through is the repeated anchor" in markdown
     assert "Direction labels for audit" not in payload["abstract"]

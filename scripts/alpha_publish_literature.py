@@ -593,6 +593,7 @@ def _effect_direction(finding: str, fact: Json | None = None, topic: str = "") -
         return "comparator/not favorable"
     if any(term in text for term in (
         "no significant", "no effect", "null", "p = 0.83", "p=0.83",
+        "not statistically different", "indistinguishable from zero",
         "not associated", "no association", "hypothesis rejected",
         "hypotheses rejected", "hypotheses have been rejected",
         "hypothesis has been rejected", "rejected", "not supported",
@@ -723,10 +724,11 @@ def _non_bio_numeric_direction_receipt(paper: Json) -> bool:
     if re.search(r"\b(?:no significant|not statistically different|not supported)\b", text):
         return False
     return bool(
-        re.search(r"\d|percent|percentage|point|elasticity", text)
+        re.search(r"\d|percent|percentage|point|elasticit(?:y|ies)", text)
         and re.search(
-            r"\b(?:accounts? for|effect|effects|elasticity|fall|increas|pass(?:ed)? through|"
-            r"pass-through|rang(?:e|es)|reduc|rose|translates? into)\b",
+            r"\b(?:accounts? for|effect|effects|elasticit(?:y|ies)|estimat(?:e|es|ed)|fall|"
+            r"increas|pass(?:ed)? through|pass-through|rang(?:e|es)|reduc|rose|"
+            r"translates? into)\b",
             text,
         )
     )
@@ -1647,6 +1649,14 @@ def payload(
         endpoint = _source_fact_endpoint_label(source_fact, topic, paper)
         if endpoint:
             endpoints_by_label.setdefault(label, []).append(endpoint)
+    display_outcome_families = sorted({
+        _outcome_family(endpoint)
+        for endpoints in endpoints_by_label.values()
+        for endpoint in endpoints
+        if endpoint
+    }) or outcome_families
+    multi_display_outcome = non_bio and len(display_outcome_families) >= 2
+    non_bio_scope_axis = "outcomes/metrics" if multi_display_outcome else "settings/designs"
     directional_endpoints = list(dict.fromkeys(
         endpoints_by_label.get("directional association", [])
         + endpoints_by_label.get("directional estimate", [])
@@ -1775,7 +1785,7 @@ def payload(
         )
     bounded_signal = _bounded_signal_sentence(
         topic, endpoints_by_label, non_bio=non_bio,
-        outcome_families=outcome_families,
+        outcome_families=display_outcome_families,
     )
     directions = [_paper_effect_direction(paper, topic) for paper in selected]
     all_favorable = bool(directions) and all(
@@ -1791,7 +1801,9 @@ def payload(
         "not a pooled effect synthesis: "
         if thin_non_bio_scope else
         f"This receipt-backed scoping note is a multi-outcome boundary map for {topic}: "
-        if non_bio and len(outcome_families) >= 2 else
+        if multi_display_outcome else
+        f"This receipt-backed scoping note is a within-outcome heterogeneity map for {topic}: "
+        if non_bio and display_outcome_families else
         f"This receipt-backed scoping note maps separated evidence fronts for {topic}: "
         if split_front else
         f"This receipt-backed scoping note has one bounded signal: {topic} shows "
@@ -1808,8 +1820,8 @@ def payload(
         f"{len(populations) or 'multiple'} population/setting context(s) and "
         f"{len(interventions) or 'multiple'} "
         f"{'policy/exposure/practice' if non_bio else 'intervention/exposure'} context(s), "
-            f"so this is a {'multi-outcome scoping map' if non_bio and len(directional_endpoints) > 1 else 'scoping signal'} "
-            f"about where {'metrics' if non_bio else 'endpoints'} "
+            f"so this is a {'multi-outcome scoping map' if multi_display_outcome else 'scoping signal'} "
+            f"about where {non_bio_scope_axis if non_bio else 'endpoints'} "
             "diverge, without "
         + (
             "establishing a causal, policy-prescriptive, market-generalized, "
@@ -1830,7 +1842,7 @@ def payload(
         synthesis += (
             " Direction is homogeneous: all selected receipts point in the same "
             "estimated direction. The boundary is setting, comparator/reference, "
-            "and metric diversity, not directional disagreement."
+            f"and {non_bio_scope_axis} diversity, not directional disagreement."
             if non_bio else
             " Direction is homogeneous: all selected receipts are directionally "
             "favorable. The boundary is population, comparator, and endpoint "
@@ -1870,7 +1882,7 @@ def payload(
     if non_bio_signal_parts:
         signal_heading = "Substantive map" if non_bio and len(directional_endpoints) > 1 else "Substantive signal"
         synthesis += f" {signal_heading}: " + "; ".join(non_bio_signal_parts) + "."
-    if non_bio and duplicated_directional_endpoints:
+    if non_bio and duplicated_directional_endpoints and multi_display_outcome:
         duplicate_text = join_contexts(
             [
                 f"{endpoint} ({count} of {directional_count} direction-bearing receipts)"
@@ -1947,7 +1959,9 @@ def payload(
             f"Source-literature boundary for {topic}: the listed sources define "
             + (
                 "separate outcome-specific signals across multiple metric families. "
-                if non_bio and len(directional_endpoints) > 1 else
+                if multi_display_outcome else
+                "a within-outcome heterogeneity map across separate source contexts. "
+                if non_bio and display_outcome_families else
                 "one bounded, context-dependent signal across separate source contexts. "
             )
         )
@@ -2098,16 +2112,21 @@ def payload(
             f"{directional_endpoint_counts.get(primary_duplicated_endpoint, directional_count)} "
             f"receipts, with single {single_caveat_endpoint} caveat"
         )
-        if non_bio and primary_duplicated_endpoint and nullish_count == 1 else
+        if (
+            non_bio and multi_display_outcome and primary_duplicated_endpoint
+            and nullish_count == 1 and not comparator_title_endpoints
+        ) else
         f"{primary_duplicated_endpoint} with {join_contexts(comparator_title_endpoints[:3])} comparator outcomes"
         if non_bio and primary_duplicated_endpoint and comparator_title_endpoints else
+        f"within-{display_outcome_families[0]} heterogeneity map across {len(bundle)} sources"
+        if non_bio and len(display_outcome_families) == 1 else
         f"directional support for {join_contexts(title_directional_endpoints)} "
         f"but null or mixed support for {join_contexts(nullish_endpoints[:2])}"
         if non_bio and title_directional_endpoints and nullish_endpoints else
         f"direction-bearing map across {join_contexts(title_directional_endpoints)} receipts"
         if non_bio and len(title_directional_endpoints) > 1 else
-        f"boundary map across {join_contexts(outcome_families[:3])} receipts"
-        if non_bio and len(outcome_families) >= 2 else
+        f"boundary map across {join_contexts(display_outcome_families[:3])} receipts"
+        if multi_display_outcome else
         "separated intervention and predictive evidence fronts"
         if split_front and not non_bio else
         "separated policy/exposure and predictive evidence fronts"
