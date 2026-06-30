@@ -2674,6 +2674,7 @@ def _repairable_source_literature_decisions(
         days=_DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS,
         domain=domain,
     )
+    pending = _pending_source_literature_topics(runs_root / "_daily_ledger", domain)
     structurally_blocked = _recent_source_literature_structural_blocked_topics(
         runs_root / "_daily_ledger", days=2, domain=domain,
     )
@@ -2699,6 +2700,8 @@ def _repairable_source_literature_decisions(
             ):
                 continue
             if topic in published or _family_blocked_topic(topic, published):
+                continue
+            if topic in pending or _family_blocked_topic(topic, pending):
                 continue
             run_dir = _run_path(runs_root, run_ref)
             if not (run_dir / "source_literature_memo.md").exists():
@@ -2993,6 +2996,34 @@ def _recent_negative_topics(
         ):
             if value:
                 topics.add(str(value))
+    return topics
+
+
+def _pending_source_literature_topics(
+    ledger_dir: Path, domain: str | None = None,
+) -> set[str]:
+    topics: set[str] = set()
+    for path in ledger_dir.glob("*.json"):
+        if path.name.startswith("_"):
+            continue
+        ledger = _json(path, {})
+        if not isinstance(ledger, dict) or not _same_domain(_ledger_domain(ledger), domain):
+            continue
+        if (
+            ledger.get("status") != publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value
+            and ledger.get("final_verdict") != _DECISION_PENDING
+        ):
+            continue
+        candidate = ledger.get("candidate")
+        if not isinstance(candidate, dict):
+            candidate = {}
+        run_topic = _source_literature_topic_from_run(candidate.get("run_dir"))
+        if not run_topic:
+            continue
+        for value in (ledger.get("submitted_topic"), candidate.get("topic"), run_topic):
+            topic = str(value or "").strip()
+            if topic:
+                topics.add(topic)
     return topics
 
 

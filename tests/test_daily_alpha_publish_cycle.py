@@ -11298,6 +11298,144 @@ def test_repairable_source_literature_preflight_runs_before_fresh_topic(
     )
 
 
+def test_repairable_source_literature_preflight_skips_pending_same_family(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", raising=False)
+    root = tmp_path / "repo"
+    ledger_dir = root / "_daily_ledger"
+    discovery = root / "_topics_discovery"
+    old_run = root / "metformin use-source-literature-2026-06-09T18-00-00Z"
+    pending_run = root / "metformin use-source-literature-2099-06-10T18-00-00Z"
+    old_run.mkdir(parents=True)
+    pending_run.mkdir(parents=True)
+    for run_dir in (old_run, pending_run):
+        run_dir.joinpath("source_literature_memo.md").write_text(
+            "# Source literature boundary memo\n", encoding="utf-8",
+        )
+    daily._write_json(ledger_dir / "2026-06-09T18-00-00Z.json", {
+        "domain": {"slug": "longevity_research"},
+        "submitted": 1,
+        "candidate": {
+            "topic": "metformin use",
+            "run_dir": old_run.name,
+            "fingerprint": "old-fingerprint",
+        },
+        "researka_decision": {
+            "decision": "revise",
+            "claim_support_verdict": "partially_supported",
+            "notes": ["editorial decision is terminal; external author must resubmit"],
+            "required_revisions": ["repair once no pending submission exists"],
+            "resubmission": {"allowed": True},
+        },
+    })
+    daily._write_json(ledger_dir / "2099-06-10T18-00-00Z.json", {
+        "domain": {"slug": "longevity_research"},
+        "status": "submitted_to_researka",
+        "final_verdict": "pending",
+        "submitted": 1,
+        "submitted_topic": "metformin use",
+        "submission_id": "sub-pending-metformin",
+        "candidate": {
+            "topic": "metformin use",
+            "run_dir": pending_run.name,
+            "fingerprint": "pending-fingerprint",
+        },
+    })
+    acarbose_papers = [
+        {
+            "title": title,
+            "doi": f"10.1234/acarbose-pending-{idx}",
+            "source_fact": {
+                "canonical_phrase": phrase,
+                "population": "adults",
+                "intervention": "acarbose",
+                "endpoint": endpoint,
+            },
+        }
+        for idx, (title, phrase, endpoint) in enumerate((
+            (
+                "Acarbose trial and glycemic aging markers",
+                "acarbose improved glycemic aging markers",
+                "glycemic aging markers",
+            ),
+            (
+                "Acarbose cohort reports neutral mortality association",
+                "acarbose showed no mortality association",
+                "mortality",
+            ),
+            (
+                "Acarbose microbiome study links treatment to inflammation",
+                "acarbose reduced inflammation-linked microbiome signals",
+                "inflammation",
+            ),
+            (
+                "Acarbose metabolic stress response review",
+                "acarbose evidence remained context dependent for metabolic stress",
+                "metabolic stress",
+            ),
+            (
+                "Acarbose longevity translational boundary analysis",
+                "acarbose evidence was bounded by translational population context",
+                "longevity translation",
+            ),
+        ))
+    ]
+    discovery.mkdir(parents=True)
+    daily._write_json(discovery / "fresh.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{
+            "topic": "acarbose",
+            "paper_count": 5,
+            "fact_source_count": 5,
+            "source_papers": acarbose_papers,
+        }],
+    })
+    fetched_topics: list[str] = []
+    seen_payload: dict[str, Any] = {}
+
+    def source_papers(topic: str, _limit: int) -> list[dict[str, Any]]:
+        fetched_topics.append(topic)
+        if topic == "metformin use":
+            raise AssertionError("pending source-lit family should not be repaired")
+        return acarbose_papers
+
+    def decision_fetcher(submission_id: str) -> dict[str, Any]:
+        if submission_id == "sub-pending-metformin":
+            return {"status": "pending"}
+        return {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        }
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2099-06-10T19-00-00Z",
+        domain="longevity_research",
+        refresh_candidates=True,
+        max_refresh_batches=1,
+        queue=None,
+        submit=True,
+        source_paper_fetcher=source_papers,
+        submitter=lambda payload: (
+            seen_payload.update(payload)
+            or {"ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}}}
+        ),
+        decision_fetcher=decision_fetcher,
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert "metformin use" not in fetched_topics
+    assert "acarbose" in fetched_topics
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "acarbose"
+    assert "repair_submission" not in ledger["source_literature_fallback"]
+    assert seen_payload["topic"] == "acarbose"
+
+
 def test_repairable_source_literature_preflight_skips_broad_refresh(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
