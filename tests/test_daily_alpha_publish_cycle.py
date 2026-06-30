@@ -5760,7 +5760,7 @@ def test_submission_payload_uses_researka_source_bundle_schema(tmp_path: Path) -
                 "title": "Primary field trial",
                 "url": "https://example.test/primary",
                 "year": "2025",
-                "journal": "Ignored by public source bundle",
+                "journal": "Journal of Reserve Markets",
                 "is_retracted": False,
             },
         },
@@ -5788,6 +5788,7 @@ def test_submission_payload_uses_researka_source_bundle_schema(tmp_path: Path) -
             "doi": "10.1000/primary",
             "year": 2025,
             "evidence_type": "primary",
+            "journal": "Journal of Reserve Markets",
         },
         {
             "title": "Systematic review of reserve markets",
@@ -14829,6 +14830,25 @@ def test_source_literature_bundle_preserves_source_facts() -> None:
         "year": 2024,
         "source_fact": fact,
     }])[0]["source_fact"] == fact
+
+
+def test_source_literature_bundle_preserves_journal_outlet_metadata() -> None:
+    bundle = daily._source_bundle([{
+        "title": "Supply chain resilience systems receipt",
+        "doi": "10.3390/systems11080396",
+        "year": 2023,
+        "journal": "Systems",
+        "source_fact": {
+            "canonical_phrase": "supply chain resilience moved a bounded outcome",
+            "population": "firm setting",
+            "intervention": "supply chain resilience",
+            "endpoint": "supply chain performance",
+        },
+    }])
+
+    assert bundle[0]["journal"] == "Systems"
+    assert publish_literature.source_outlet_metadata_count(bundle) == 1
+    assert publish_literature.source_outlet_count(bundle) == 1
 
 
 def test_source_literature_payload_bundle_blocker_requires_fact_backed_identities() -> None:

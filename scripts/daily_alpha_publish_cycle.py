@@ -3837,7 +3837,7 @@ def _source_bundle(papers: list[Json]) -> list[Json]:
             "evidence_type": _evidence_type(paper),
         }
         for field in (
-            "journal_name", "venue", "publisher", "source",
+            "journal_name", "journal", "venue", "publisher", "source",
             "source_outlet", "source_name", "container_title",
             "publication_venue", "openalex_id", "doi_url", "canonical_url",
         ):
