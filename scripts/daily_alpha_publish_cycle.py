@@ -2675,6 +2675,10 @@ def _repairable_source_literature_decisions(
         domain=domain,
     )
     pending = _pending_source_literature_topics(runs_root / "_daily_ledger", domain)
+    source_floor_blocked = _recent_source_floor_topics(
+        runs_root / "_daily_ledger", days=2, domain=domain,
+        source_literature_only=True,
+    )
     structurally_blocked = _recent_source_literature_structural_blocked_topics(
         runs_root / "_daily_ledger", days=2, domain=domain,
     )
@@ -2702,6 +2706,11 @@ def _repairable_source_literature_decisions(
             if topic in published or _family_blocked_topic(topic, published):
                 continue
             if topic in pending or _family_blocked_topic(topic, pending):
+                continue
+            if (
+                topic in source_floor_blocked
+                or _family_blocked_topic(topic, source_floor_blocked)
+            ):
                 continue
             run_dir = _run_path(runs_root, run_ref)
             if not (run_dir / "source_literature_memo.md").exists():
