@@ -14482,9 +14482,11 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
 
     markdown = payload["markdown"]
     assert payload["title"] == (
-        "supply chain resilience performance: "
-        "directional support for supply chain performance but null or mixed support for firm performance"
+        "supply chain resilience performance: directional support for "
+        "supply chain performance across 3 receipts, with single firm performance caveat"
     )
+    assert len(payload["source_bundle"]) == 5
+    assert payload["evidence_bundle"]["direct_source_count"] == 5
     assert "unmatched metric-scope map" not in payload["title"]
     assert "source-scope boundary note" not in payload["title"]
     assert (
@@ -14496,6 +14498,16 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "other/mixed: 5 receipt(s)" not in markdown
     assert "fallback" not in markdown.lower()
     assert "Bounded signal:" in markdown
+    assert (
+        "Metric imbalance disclosure: supply chain performance has directional "
+        "support across 3 receipt(s), while firm performance is represented by "
+        "one caveat/null receipt. The caveat is a scoping constraint, not a "
+        "strong null claim."
+    ) in markdown
+    assert (
+        "Population/setting counts are context descriptors only; they are not "
+        "weighting, pooling, or aggregation evidence."
+    ) in markdown
     assert "directional support for supply chain performance" in markdown
     assert "firm performance is null or non-convergent" in markdown
     assert "not support for the topic as a whole" in markdown

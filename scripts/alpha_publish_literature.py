@@ -1733,7 +1733,9 @@ def payload(
         and _source_context_label(paper, non_bio=non_bio)
     })
     evidence_weight_note = ""
+    metric_imbalance_note = ""
     scope_integration_note = ""
+    single_caveat_endpoint = join_contexts(nullish_endpoints[:2]) or "the caveat outcome"
     if thin_non_bio_scope:
         context_tail = (
             f" in {join_contexts(directional_contexts[:2])}"
@@ -1758,6 +1760,18 @@ def payload(
             "Integrated reading: the directional and caveat receipts are not matched "
             "on setting, design, and metric, so the bundle supports only a narrow "
             "scope contrast between the named outcomes."
+        )
+    if non_bio and duplicated_directional_endpoints and nullish_count == 1:
+        repeated_endpoint, repeated_count = sorted(
+            duplicated_directional_endpoints,
+            key=lambda item: item[1],
+            reverse=True,
+        )[0]
+        metric_imbalance_note = (
+            f"Metric imbalance disclosure: {repeated_endpoint} has directional "
+            f"support across {repeated_count} receipt(s), while {single_caveat_endpoint} "
+            "is represented by one caveat/null receipt. The caveat is a scoping "
+            "constraint, not a strong null claim."
         )
     bounded_signal = _bounded_signal_sentence(
         topic, endpoints_by_label, non_bio=non_bio,
@@ -1805,6 +1819,13 @@ def payload(
             "integrated claim."
         )
     )
+    if metric_imbalance_note:
+        synthesis += f" {metric_imbalance_note}"
+    if non_bio and populations:
+        synthesis += (
+            " Population/setting counts are context descriptors only; they are "
+            "not weighting, pooling, or aggregation evidence."
+        )
     if all_favorable and (endpoint_count > 1 or len(populations) > 1 or len(interventions) > 1):
         synthesis += (
             " Direction is homogeneous: all selected receipts point in the same "
@@ -1955,6 +1976,7 @@ def payload(
         "",
         bounded_signal,
         "",
+        *([metric_imbalance_note, ""] if metric_imbalance_note else []),
         *([evidence_weight_note, ""] if evidence_weight_note else []),
         *([scope_integration_note, ""] if scope_integration_note else []),
         "",
@@ -2071,6 +2093,12 @@ def payload(
         if endpoint != primary_duplicated_endpoint
     ]
     title_tail = (
+        (
+            f"directional support for {primary_duplicated_endpoint} across "
+            f"{directional_endpoint_counts.get(primary_duplicated_endpoint, directional_count)} "
+            f"receipts, with single {single_caveat_endpoint} caveat"
+        )
+        if non_bio and primary_duplicated_endpoint and nullish_count == 1 else
         f"{primary_duplicated_endpoint} with {join_contexts(comparator_title_endpoints[:3])} comparator outcomes"
         if non_bio and primary_duplicated_endpoint and comparator_title_endpoints else
         f"directional support for {join_contexts(title_directional_endpoints)} "
