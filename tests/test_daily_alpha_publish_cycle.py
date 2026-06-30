@@ -9677,6 +9677,17 @@ def test_repairable_source_literature_skips_recent_directional_underfill(
             "selected_directional_receipt_count": 1,
         },
     })
+    daily._write_json(ledger_dir / "2026-06-29T08-04-00Z.json", {
+        "domain": {"slug": "business_research"},
+        "source_literature_fallback": {
+            "topic": "digital_transformation_firm",
+            "status": "blocked",
+            "reason": "requires_fact_level_source_synthesis",
+            "selected_source_count": 5,
+            "selected_source_fact_count": 5,
+            "selected_source_identity_count": 4,
+        },
+    })
 
     assert daily._recent_source_literature_structural_blocked_topics(
         ledger_dir, days=2, domain="business_research",
