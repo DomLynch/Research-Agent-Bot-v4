@@ -13271,6 +13271,122 @@ def test_source_literature_fallback_expands_final_empty_parent_topic(
     assert len(submissions) == 1
 
 
+def test_source_literature_fallback_expands_final_metadata_only_parent_topic(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    daily._write_json(root / "_topics_discovery" / "business.json", {
+        "domain": {"slug": "business_research"},
+        "all": [{
+            "topic": "platform_strategy_network_effects",
+            "paper_count": 8,
+            "fact_source_count": 8,
+        }],
+    })
+    fetches: list[str] = []
+    submissions: list[dict[str, Any]] = []
+    metadata_only = [
+        {
+            "title": f"Platform strategy network effects evidence {idx}",
+            "doi": f"10.8333/meta-{idx}",
+            "source_fact": {
+                "canonical_phrase": (
+                    "Title-level source match: "
+                    f"Platform strategy network effects evidence {idx}"
+                ),
+                "endpoint": "source-literature relevance",
+                "source_tier": "paper_metadata",
+            },
+        }
+        for idx in range(5)
+    ]
+    fact_backed = [
+        {
+            "title": title,
+            "doi": f"10.8333/platform-{idx}",
+            "source_fact": {
+                "canonical_phrase": phrase,
+                "population": population,
+                "intervention": "platform strategy",
+                "endpoint": endpoint,
+            },
+        }
+        for idx, (title, phrase, population, endpoint) in enumerate((
+            (
+                "Platform strategy and firm revenue performance",
+                "platform strategy network effects increased firm revenue",
+                "platform firms",
+                "firm revenue",
+            ),
+            (
+                "Platform governance and complementor productivity",
+                "platform strategy changed complementor productivity",
+                "platform ecosystems",
+                "productivity",
+            ),
+            (
+                "Pricing strategy in digital platform markets",
+                "platform strategy improved pricing performance",
+                "digital marketplaces",
+                "pricing performance",
+            ),
+            (
+                "Network effects and platform profitability",
+                "platform strategy network effects increased profitability",
+                "technology platforms",
+                "profitability",
+            ),
+            (
+                "Platform scaling strategy and sales growth",
+                "platform strategy was associated with sales growth",
+                "growth-stage platforms",
+                "sales growth",
+            ),
+        ), start=1)
+    ]
+
+    def fetch(topic: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        fetches.append(topic)
+        return fact_backed if topic == "platform_strategy" else metadata_only
+
+    def domain_int(domain: str, name: str, default: int) -> int:
+        return 1 if name == "source_literature_scan_limit" else default
+
+    monkeypatch.setattr(daily, "_fetch_source_literature_papers", fetch)
+    monkeypatch.setattr(daily, "_domain_alpha_memo_int", domain_int)
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submissions.append(payload)
+        return {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": "sub-expanded-facts"}},
+        }
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-30T17-05-00Z",
+        domain="business_research",
+        queue=_queue(),
+        submit=True,
+        submitter=submitter,
+        decision_poll_attempts=0,
+        sleep=lambda _seconds: None,
+    )
+
+    assert fetches == ["platform_strategy_network_effects", "platform_strategy"]
+    assert ledger["submitted_topic"] == "platform_strategy"
+    assert ledger["source_literature_fallback"]["expanded_from_topic"] == (
+        "platform_strategy_network_effects"
+    )
+    assert ledger["source_literature_fallback"]["status"] == "selected"
+    assert ledger["source_literature_fallback"]["selected_source_fact_count"] == 5
+    assert ledger["source_literature_fallback"]["selected_source_identity_count"] == 5
+    assert len(submissions) == 1
+
+
 def test_source_literature_fallback_skips_misaligned_candidate(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

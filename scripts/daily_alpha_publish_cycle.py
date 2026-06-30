@@ -6599,7 +6599,11 @@ def run_cycle(
                 )
                 if (
                     not ok
-                    and reason == "source_floor_below_min"
+                    and reason in {
+                        "source_floor_below_min",
+                        "requires_fact_level_source_synthesis",
+                        "source_fact_diversity_below_min",
+                    }
                     and idx == len(literature_topics) - 1
                     and paper_fetcher is None
                     and literature_topic not in forced_source_lit
