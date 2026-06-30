@@ -2246,14 +2246,19 @@ def _repairable_submission_records(ledger: Json) -> list[tuple[str, Any, Json]]:
     return records
 
 
-def _decision_with_resubmission_parent(decision: Json, parent_submission_id: Any) -> Json:
+def _decision_with_resubmission_parent(
+    decision: Json,
+    parent_submission_id: Any,
+    *,
+    override_existing: bool = False,
+) -> Json:
     parent = str(parent_submission_id or "").strip()
     if not parent:
         return decision
     resubmission = decision.get("resubmission")
     if not isinstance(resubmission, dict) or resubmission.get("allowed") is not True:
         return decision
-    if str(resubmission.get("parent_submission_id") or "").strip():
+    if str(resubmission.get("parent_submission_id") or "").strip() and not override_existing:
         return decision
     merged = dict(decision)
     merged["resubmission"] = dict(resubmission) | {"parent_submission_id": parent}
@@ -6918,7 +6923,9 @@ def run_cycle(
                                 and literature_topic not in terminal_resubmit_topics
                             ):
                                 repair_decision = _decision_with_resubmission_parent(
-                                    researka_decision, submission_id,
+                                    researka_decision,
+                                    submission_id,
+                                    override_existing=True,
                                 )
                                 terminal_resubmit_topics.add(literature_topic)
                                 fallback_attempt["terminal_resubmit_queued"] = True

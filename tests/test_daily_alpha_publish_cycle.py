@@ -12448,7 +12448,10 @@ def test_source_literature_fallback_resubmits_clean_terminal_revise_same_cycle(
                     "source_grounding": 5,
                     "synthesis_quality": 5,
                 },
-                "resubmission": {"allowed": True},
+                "resubmission": {
+                    "allowed": True,
+                    "parent_submission_id": "stale-prior-submission",
+                },
             }
         return {
             "status": "complete",
@@ -12485,6 +12488,7 @@ def test_source_literature_fallback_resubmits_clean_terminal_revise_same_cycle(
     assert submitted_payloads[1]["parent_object_id"] == "sub-clean-1"
     assert submitted_payloads[1]["metadata"]["revision_of"] == "sub-clean-1"
     assert submitted_payloads[1]["metadata"]["revision_of_object_id"] == "sub-clean-1"
+    assert "stale-prior-submission" not in json.dumps(submitted_payloads[1], sort_keys=True)
     assert ledger["source_literature_fallback_attempts"][0]["terminal_resubmit_queued"] is True
     assert ledger["source_literature_fallback_attempts"][0]["terminal_resubmit_immediate"] is True
     assert ledger["source_literature_fallback_attempts"][0]["terminal_resubmit_submission"]["status"] == "accepted"
