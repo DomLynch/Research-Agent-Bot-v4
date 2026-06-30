@@ -68,6 +68,7 @@ _BUSINESS_FULLRAW_LOCK_PATH = "/tmp/researka-v4-business-fullraw.lock"
 _BUSINESS_FULLRAW_LOCK_WAIT_SECONDS = "0"
 _BUSINESS_FULLRAW_BACKOFF_SECONDS = "180"
 _BUSINESS_FULLRAW_ADVANCE_MAX_SECONDS = "60"
+_BUSINESS_FULLRAW_CACHE_PROBE_TIMEOUT_SECONDS = "2"
 _FULLRAW_ENV_ALIASES = {
     "V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL": ("RESEARKA_FULLRAW_SEARCH_URL",),
     "V5_MEMO_FULL_RAW_INDEX_TOKEN": (
@@ -161,6 +162,19 @@ def _business_fullraw_advance_max_seconds() -> float:
         )
     except ValueError:
         return float(_BUSINESS_FULLRAW_ADVANCE_MAX_SECONDS)
+
+
+def _business_fullraw_cache_probe_timeout_seconds() -> float:
+    try:
+        return max(
+            0.2,
+            float(
+                os.environ.get("BUSINESS_SWEEP_FULLRAW_CACHE_PROBE_TIMEOUT_SECONDS")
+                or _BUSINESS_FULLRAW_CACHE_PROBE_TIMEOUT_SECONDS
+            ),
+        )
+    except ValueError:
+        return float(_BUSINESS_FULLRAW_CACHE_PROBE_TIMEOUT_SECONDS)
 
 
 def _business_fullraw_priority_enabled() -> bool:
@@ -870,6 +884,7 @@ def _strict_fullraw_probe_papers(
 
 def _fullraw_search_response(
     query: str, *, limit: int | None = None, queue_if_missing: bool = True,
+    timeout_seconds: float | None = None,
 ) -> dict[str, Any]:
     _load_fullraw_env_defaults()
     limit = _business_fullraw_result_limit() if limit is None else limit
@@ -897,7 +912,7 @@ def _fullraw_search_response(
         method="POST",
     )
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=timeout_seconds or 30) as resp:
             data = json.loads(resp.read().decode("utf-8"))
     except (OSError, urllib.error.HTTPError, ValueError, json.JSONDecodeError):
         return {}
@@ -928,7 +943,10 @@ def _cached_fullraw_complete_hit_count(topic: str) -> int:
     best = 0
     for query in _business_fullraw_queries(topic):
         data = _fullraw_search_response(
-            query, limit=_business_fullraw_result_limit(), queue_if_missing=False,
+            query,
+            limit=_business_fullraw_result_limit(),
+            queue_if_missing=False,
+            timeout_seconds=_business_fullraw_cache_probe_timeout_seconds(),
         )
         if not data or not _fullraw_response_complete(data):
             continue
@@ -945,7 +963,10 @@ def _rank_fullraw_queries_by_cached_receipt(queries: tuple[str, ...]) -> tuple[s
     ranked: list[tuple[int, int, int, int, str]] = []
     for idx, query in enumerate(queries):
         data = _fullraw_search_response(
-            query, limit=_business_fullraw_result_limit(), queue_if_missing=False,
+            query,
+            limit=_business_fullraw_result_limit(),
+            queue_if_missing=False,
+            timeout_seconds=_business_fullraw_cache_probe_timeout_seconds(),
         )
         items = data.get("results") or data.get("hits") or []
         complete = bool(data and _fullraw_response_complete(data))
@@ -1655,14 +1676,16 @@ def main() -> int:
                 topic for topic in fresh_topics
                 if topic not in repairable_source_lit_set
             ]
+            cache_rank_limit = max(args.topics_per_domain, args.topics_per_domain * 3)
+            cache_rank_topics = standard_fresh_topics[:cache_rank_limit]
             ranked_standard_topics = [
                 topic for _hits, _idx, topic in sorted(
                     (
                         (-_cached_fullraw_complete_hit_count(topic), idx, topic)
-                        for idx, topic in enumerate(standard_fresh_topics)
+                        for idx, topic in enumerate(cache_rank_topics)
                     )
                 )
-            ]
+            ] + standard_fresh_topics[cache_rank_limit:]
             selected_topics = [
                 *repairable_fresh_topics,
                 *ranked_standard_topics,

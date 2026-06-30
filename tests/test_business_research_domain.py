@@ -2098,6 +2098,47 @@ def test_business_fullraw_search_response_uses_canonical_payload(
     }
 
 
+def test_business_cached_fullraw_hit_probe_uses_short_bounded_timeout(
+    monkeypatch: Any,
+) -> None:
+    captured: list[dict[str, Any]] = []
+
+    class FakeResponse:
+        def __enter__(self) -> FakeResponse:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return b'{"results": []}'
+
+    def fake_urlopen(req: Any, timeout: float = 0.0) -> FakeResponse:
+        captured.append({
+            "timeout": timeout,
+            "body": json.loads(req.data.decode("utf-8")),
+        })
+        return FakeResponse()
+
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL", "http://fullraw/search")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv("BUSINESS_SWEEP_FULLRAW_CACHE_PROBE_TIMEOUT_SECONDS", "0.75")
+    monkeypatch.setattr(sweep, "_business_fullraw_queries", lambda _topic: ("minimum wage",))
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+    assert sweep._cached_fullraw_complete_hit_count("minimum_wage") == 0
+    assert captured == [{
+        "timeout": 0.75,
+        "body": {
+            "query": "minimum wage",
+            "limit": 10,
+            "rank_mode": "relevance",
+            "cache_only": True,
+            "queue_if_missing": False,
+        },
+    }]
+
+
 def test_business_sweep_fullraw_probe_continues_after_complete_source_poor_query(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
@@ -4124,6 +4165,50 @@ def test_business_sweep_promotes_cached_complete_fullraw_topic(
     assert submissions[0]["source_literature_forced_papers"] == {
         "platform_strategy_network": papers_for("platform_strategy_network"),
     }
+
+
+def test_business_sweep_bounds_cached_fullraw_ranking_before_selection(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    topics = [f"candidate_{idx}_performance" for idx in range(8)]
+    cache_calls: list[str] = []
+
+    def fake_cached_hit_count(topic: str) -> int:
+        cache_calls.append(topic)
+        return 0
+
+    def fake_fullraw(_topic: str, **_kwargs: Any) -> dict[str, Any]:
+        return {
+            "status": "queue_saturated",
+            "async_status": "queued",
+            "paper_count": 0,
+            "_papers": [],
+        }
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: topics[:limit])
+    monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", fake_cached_hit_count)
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", fake_fullraw)
+    monkeypatch.setattr(
+        sweep,
+        "fetch_business_facts",
+        lambda *_args, **_kwargs: ([], {"status": "failed"}),
+    )
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(tmp_path / "runs"),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-06-30T02-05-00Z",
+    ])
+
+    assert sweep.main() == 2
+    assert cache_calls == topics[:3]
 
 
 def test_business_sweep_fullraw_continues_after_reviewer_revise(
