@@ -4313,6 +4313,33 @@ def test_business_sweep_hands_off_selected_five_fact_backed_sources(
     assert publish_literature.substantive_fact_count(papers) == 5
 
 
+def test_business_sweep_counts_doi_prefixes_as_outlet_diversity() -> None:
+    rows = [
+        {
+            "doi": "10.3390/systems11080396",
+            "url": "https://doi.org/10.3390/systems11080396",
+        },
+        {
+            "doi": "10.3390/admsci13100225",
+            "url": "https://doi.org/10.3390/admsci13100225",
+        },
+        {
+            "doi": "10.57044/sajol.2022.1.2.2212",
+            "url": "https://doi.org/10.57044/sajol.2022.1.2.2212",
+        },
+        {
+            "doi": "10.5267/j.uscm.2022.8.001",
+            "url": "https://doi.org/10.5267/j.uscm.2022.8.001",
+        },
+        {
+            "doi": "10.1108/jmtm-08-2022-0307",
+            "url": "https://doi.org/10.1108/jmtm-08-2022-0307",
+        },
+    ]
+
+    assert sweep._source_outlet_count(rows) == 4
+
+
 def test_business_sweep_blocks_complete_metadata_with_thin_outlet_diversity(
     tmp_path: Path,
     monkeypatch: Any,

@@ -54,6 +54,18 @@ def test_resubmission_response_uses_job_id_before_parent_object() -> None:
     }) == "job-new"
 
 
+def test_doi_only_source_rows_keep_registrant_diversity() -> None:
+    rows = [
+        {"doi": "10.3390/systems11080396", "url": "https://doi.org/10.3390/systems11080396"},
+        {"doi": "10.3390/admsci13100225", "url": "https://doi.org/10.3390/admsci13100225"},
+        {"doi": "10.57044/sajol.2022.1.2.2212", "url": "https://doi.org/10.57044/sajol.2022.1.2.2212"},
+        {"doi": "10.5267/j.uscm.2022.8.001", "url": "https://doi.org/10.5267/j.uscm.2022.8.001"},
+        {"doi": "10.1108/jmtm-08-2022-0307", "url": "https://doi.org/10.1108/jmtm-08-2022-0307"},
+    ]
+
+    assert publish_literature.source_outlet_count(rows) == 4
+
+
 def test_run_subprocess_timeout_kills_descendant_process(tmp_path: Path) -> None:
     marker = tmp_path / "orphan-marker"
     grandchild = tmp_path / "grandchild.py"

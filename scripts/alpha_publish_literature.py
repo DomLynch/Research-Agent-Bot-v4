@@ -633,9 +633,12 @@ def source_outlet_key(paper: Json) -> str:
             value = " ".join(str(item) for item in value if item)
         if cleaned := title_key(value):
             return cleaned
+    doi_prefix = str(paper.get("doi") or "").strip().casefold().split("/", 1)[0]
     for key in ("url", "source_url", "landing_page_url"):
         value = str(paper.get(key) or "").strip()
         host = urllib.parse.urlparse(value).netloc.casefold().removeprefix("www.")
+        if host == "doi.org" and doi_prefix:
+            return "doi-prefix:" + doi_prefix
         if host:
             return host
     return ""
