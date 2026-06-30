@@ -475,21 +475,25 @@ def _mark_active_run_if_newer(
     summary["active_run_age_minutes"] = round(active_age_minutes, 1)
     summary["active_run_stale_after_minutes"] = stale_after_minutes
     summary["stale_ledger"] = {
+        "current": False,
         "ledger": summary.get("ledger"),
         "status": summary.get("status"),
         "reason": summary.get("reason"),
         "top_blockers": summary.get("top_blockers") or {},
         "queue_counts": summary.get("queue_counts") or {},
     }
+    summary["current_blocker_scope"] = "active_run"
     if stale_after_minutes > 0 and active_age_minutes > stale_after_minutes:
         summary["status"] = "active_run_stale"
         summary["reason"] = "active_run_stale"
         summary["top_blockers"] = {"active_run_stale": 1}
+        summary["current_top_blockers"] = summary["top_blockers"]
         summary["next_action"] = "inspect_or_restart_active_run"
         return
     summary["status"] = "active_run_in_progress"
     summary["reason"] = "active_run_in_progress"
     summary["top_blockers"] = {"active_run_in_progress": 1}
+    summary["current_top_blockers"] = summary["top_blockers"]
     summary["next_action"] = "wait_for_active_run_completion"
 
 

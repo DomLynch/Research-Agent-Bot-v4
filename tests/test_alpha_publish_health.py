@@ -322,7 +322,10 @@ def test_newer_active_systemd_run_marks_ledger_stale(
     assert summary["status"] == "active_run_in_progress"
     assert summary["reason"] == "active_run_in_progress"
     assert summary["top_blockers"] == {"active_run_in_progress": 1}
+    assert summary["current_blocker_scope"] == "active_run"
+    assert summary["current_top_blockers"] == {"active_run_in_progress": 1}
     assert summary["next_action"] == "wait_for_active_run_completion"
+    assert summary["stale_ledger"]["current"] is False
     assert summary["stale_ledger"]["status"] == "candidate_refresh_failed"
     assert summary["stale_ledger"]["top_blockers"] == {
         "candidate_refresh_failed": 1,
@@ -377,7 +380,9 @@ def test_domain_health_auto_checks_systemd_active_run(
     assert business["status"] == "active_run_in_progress"
     assert "active_run_age_minutes" in business
     assert business["top_blockers"] == {"active_run_in_progress": 1}
+    assert business["current_top_blockers"] == {"active_run_in_progress": 1}
     assert business["next_action"] == "wait_for_active_run_completion"
+    assert business["stale_ledger"]["current"] is False
     assert business["stale_ledger"]["top_blockers"]["fullraw_not_configured"] == 2
 
 
@@ -418,6 +423,7 @@ def test_running_started_ledger_reports_active_run(
     assert summary["status"] == "active_run_in_progress"
     assert summary["active_run_age_minutes"] == 10.0
     assert summary["top_blockers"] == {"active_run_in_progress": 1}
+    assert summary["current_top_blockers"] == {"active_run_in_progress": 1}
     assert summary["next_action"] == "wait_for_active_run_completion"
 
 
@@ -460,6 +466,7 @@ def test_active_systemd_run_past_sla_marks_stale(
     assert summary["reason"] == "active_run_stale"
     assert summary["active_run_age_minutes"] == 150.0
     assert summary["top_blockers"] == {"active_run_stale": 1}
+    assert summary["current_top_blockers"] == {"active_run_stale": 1}
     assert summary["next_action"] == "inspect_or_restart_active_run"
 
 
