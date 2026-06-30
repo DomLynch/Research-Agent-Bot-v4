@@ -3743,13 +3743,16 @@ def _source_bundle(papers: list[Json]) -> list[Json]:
             url = f"https://doi.org/{doi}"
         elif not url and pmid:
             url = f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/"
-        bundle.append({
+        item = {
             "title": title,
             "url": url,
             "doi": doi,
             "year": _year(paper.get("year") or paper.get("publication_year")),
             "evidence_type": _evidence_type(paper),
-        })
+        }
+        if isinstance(paper.get("source_fact"), dict):
+            item["source_fact"] = paper["source_fact"]
+        bundle.append(item)
     return bundle
 
 

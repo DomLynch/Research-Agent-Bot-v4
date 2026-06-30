@@ -13887,6 +13887,22 @@ def test_source_literature_bundle_resolves_doi_url_openalex_and_cochrane_review(
     }]
 
 
+def test_source_literature_bundle_preserves_source_facts() -> None:
+    fact = {
+        "canonical_phrase": "minimum wage estimate moved a bounded outcome",
+        "population": "market setting",
+        "intervention": "minimum wage increase",
+        "endpoint": "price pass-through",
+    }
+
+    assert daily._source_bundle([{
+        "title": "Minimum wage source fact paper",
+        "doi": "10.1234/min-wage-source-fact",
+        "year": 2024,
+        "source_fact": fact,
+    }])[0]["source_fact"] == fact
+
+
 def test_source_literature_payload_is_deterministic_boundary_only(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
@@ -14586,6 +14602,10 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     )
     assert len(payload["source_bundle"]) == 5
     assert payload["evidence_bundle"]["direct_source_count"] == 5
+    assert publish_literature.substantive_fact_count(payload["source_bundle"]) == 5
+    assert publish_literature.source_identity_count(
+        payload["source_bundle"], require_substantive=True,
+    ) == 5
     assert "unmatched metric-scope map" not in payload["title"]
     assert "source-scope boundary note" not in payload["title"]
     assert (
