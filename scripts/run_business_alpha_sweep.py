@@ -1982,6 +1982,11 @@ def main() -> int:
                         args.runs_root, domain, topic,
                     )
                     fullraw_from_cache = bool(fullraw_papers)
+                    cached_complete_trace = (
+                        dict(fullraw_trace)
+                        if fullraw_from_cache and fullraw_trace.get("status") == "complete"
+                        else {}
+                    )
                     if not fullraw_papers:
                         fullraw_papers, fullraw_trace = _strict_fullraw_probe_papers(
                             topic, args.runs_root,
@@ -2086,6 +2091,40 @@ def main() -> int:
                     ready_papers, ready_blocker = _source_literature_ready_papers(
                         topic, domain, fullraw_papers,
                     )
+                    if (
+                        cached_complete_trace
+                        and fullraw_trace.get("status") != "complete"
+                        and ready_blocker == "ok"
+                        and len(ready_papers) >= MIN_DIRECT_SOURCES
+                    ):
+                        live_completion_status = fullraw_trace.get("status")
+                        live_completion_async_status = fullraw_trace.get("async_status")
+                        live_completion_query = fullraw_trace.get("query")
+                        fullraw_trace = {**fullraw_trace, **cached_complete_trace}
+                        fullraw_trace["status"] = "complete"
+                        fullraw_trace["source"] = (
+                            "business_sweep_fullraw_cache_plus_fact_enrichment"
+                        )
+                        fullraw_trace["cached_complete_receipt_reused"] = True
+                        fullraw_trace["live_completion_status"] = live_completion_status
+                        if live_completion_async_status:
+                            fullraw_trace["live_completion_async_status"] = (
+                                live_completion_async_status
+                            )
+                        if live_completion_query:
+                            fullraw_trace["live_completion_query"] = live_completion_query
+                        fullraw_trace["paper_count"] = max(
+                            _count_int(fullraw_trace.get("paper_count")),
+                            len(fullraw_papers),
+                        )
+                        fullraw_trace["fact_source_count"] = fullraw_fact_count
+                        fullraw_trace["source_fact_identity_count"] = (
+                            fullraw_source_identity_count
+                        )
+                        fullraw_trace["candidate_fact_source_count"] = max(
+                            _count_int(fullraw_trace.get("candidate_fact_source_count")),
+                            fullraw_fact_count,
+                        )
                     ready_keys = {
                         key.casefold()
                         for paper in ready_papers
@@ -2111,6 +2150,10 @@ def main() -> int:
                     )
                     fullraw_trace["selected_source_outlet_count"] = _source_outlet_count(
                         ready_papers,
+                    )
+                    fullraw_has_complete_receipt = (
+                        fullraw_trace.get("status") == "complete"
+                        and len(fullraw_keys) >= 5
                     )
                     trace = {**trace, "fullraw": fullraw_trace}
                     row["trace"] = trace
@@ -2150,6 +2193,8 @@ def main() -> int:
                         row["blockers"] = blockers
                     if fullraw_ready:
                         row["status"] = "source_literature_candidate_available"
+                        row["ready"] = True
+                        row["blockers"] = []
                         fingerprint = "|".join((
                             domain,
                             topic,
