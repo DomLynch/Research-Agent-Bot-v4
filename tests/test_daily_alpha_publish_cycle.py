@@ -15069,6 +15069,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
             ),
             "doi": "10.3390/systems11080396",
             "year": 2023,
+            "journal_name": "Systems",
             "source_fact": {
                 "canonical_phrase": (
                     "In the first stage, significant criteria and their corresponding "
@@ -15089,6 +15090,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
             ),
             "doi": "10.3390/admsci13100225",
             "year": 2023,
+            "journal_name": "Administrative Sciences",
             "source_fact": {
                 "canonical_phrase": (
                     "The research findings reveal that visibility significantly "
@@ -15105,6 +15107,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
             "title": "Factors Affecting the Supply Chain Resilience and Supply Chain Performance",
             "doi": "10.57044/sajol.2022.1.2.2212",
             "year": 2022,
+            "journal_name": "South Asian Journal of Operations and Logistics",
             "source_fact": {
                 "canonical_phrase": (
                     "supply chain artificial intelligence, adaptive capability, and "
@@ -15123,6 +15126,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
             ),
             "doi": "10.5267/j.uscm.2022.8.001",
             "year": 2022,
+            "journal_name": "Uncertain Supply Chain Management",
             "source_fact": {
                 "canonical_phrase": (
                     "Analyzing data via SmartPLS 3.0, the results showed that "
@@ -15143,6 +15147,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
             ),
             "doi": "10.1108/jmtm-08-2022-0307",
             "year": 2023,
+            "journal_name": "Journal of Manufacturing Technology Management",
             "source_fact": {
                 "canonical_phrase": "SCR has a significant positive effect on SCP",
                 "population": "manufacturing firms",
@@ -15169,10 +15174,18 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert payload["metadata"]["topic_label"] == "supply chain resilience"
     assert len(payload["source_bundle"]) == 5
     assert payload["evidence_bundle"]["direct_source_count"] == 5
+    assert payload["evidence_bundle"]["source_diversity"] == {
+        "fact_backed_source_count": 5,
+        "source_identity_count": 5,
+        "source_outlet_metadata_count": 5,
+        "source_outlet_count": 5,
+        "source_setting_count": 4,
+    }
     assert publish_literature.substantive_fact_count(payload["source_bundle"]) == 5
     assert publish_literature.source_identity_count(
         payload["source_bundle"], require_substantive=True,
     ) == 5
+    assert publish_literature.source_outlet_count(payload["source_bundle"]) == 5
     source_contexts = {
         (
             source.get("population"),

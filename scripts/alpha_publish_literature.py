@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import re
+import urllib.parse
 import urllib.request
 from collections.abc import Callable
 from pathlib import Path
@@ -618,6 +619,30 @@ def source_identity_count(papers: list[Json], *, require_substantive: bool = Fal
         if key:
             keys.add(key)
     return len(keys)
+
+
+def source_outlet_key(paper: Json) -> str:
+    for key in (
+        "journal_name", "journal", "venue", "publisher", "source",
+        "source_outlet", "source_name", "container_title", "publication_venue",
+    ):
+        value = paper.get(key)
+        if isinstance(value, dict):
+            value = value.get("name") or value.get("title")
+        if isinstance(value, list):
+            value = " ".join(str(item) for item in value if item)
+        if cleaned := title_key(value):
+            return cleaned
+    for key in ("url", "source_url", "landing_page_url"):
+        value = str(paper.get(key) or "").strip()
+        host = urllib.parse.urlparse(value).netloc.casefold().removeprefix("www.")
+        if host:
+            return host
+    return ""
+
+
+def source_outlet_count(papers: list[Json]) -> int:
+    return len({key for paper in papers if (key := source_outlet_key(paper))})
 
 
 def source_fact(item: Json) -> Json:
@@ -1921,6 +1946,21 @@ def payload(
         finding = _display_finding(bundle_fact, _paper_effect_direction(paper, topic))
         if finding:
             item["excerpt"] = safe_excerpt(finding) or " ".join(finding.split())
+    bundle_identity_count = source_identity_count(bundle, require_substantive=True)
+    bundle_fact_count = substantive_fact_count(bundle)
+    source_outlet_metadata_count = sum(1 for source in bundle if source_outlet_key(source))
+    source_setting_count = len({
+        str(source.get("population") or source.get("setting") or "").strip().casefold()
+        for source in bundle
+        if str(source.get("population") or source.get("setting") or "").strip()
+    })
+    source_diversity = {
+        "fact_backed_source_count": bundle_fact_count,
+        "source_identity_count": bundle_identity_count,
+        "source_outlet_metadata_count": source_outlet_metadata_count,
+        "source_outlet_count": source_outlet_count(bundle),
+        "source_setting_count": source_setting_count,
+    }
     years = sorted(
         year for year in (year_value(source.get("year")) for source in bundle)
         if year is not None
@@ -2512,6 +2552,7 @@ def payload(
         "direct_source_count": len(bundle),
         "context_source_count": 0,
         "context_sources_are_not_direct_support": False,
+        "source_diversity": source_diversity,
         "source_literature_writer": writer_meta,
     }
     evidence_bundle.update(revision_metadata)
