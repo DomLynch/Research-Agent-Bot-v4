@@ -6551,7 +6551,7 @@ def run_cycle(
                     _source_literature_candidate_papers(
                         runs_root, profile.slug, literature_topic, min_submit_sources,
                         min_submit_sources * 3,
-                        allow_live_fetch=not forced_source_lit,
+                        allow_live_fetch=literature_topic not in forced_source_lit,
                     )
                 )
                 ok, reason = _source_literature_boundary_quality(

@@ -12063,7 +12063,7 @@ def test_fullraw_metadata_only_source_literature_fallback_does_not_submit(
     )
 
 
-def test_forced_source_literature_repair_does_not_live_fetch_fallback_topics(
+def test_forced_source_literature_repair_live_fetches_backup_topics(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
@@ -12071,7 +12071,7 @@ def test_forced_source_literature_repair_does_not_live_fetch_fallback_topics(
     (root / "_topics_discovery").mkdir(parents=True)
     daily._write_json(root / "_topics_discovery" / "longevity.json", {
         "domain": {"slug": "longevity_research"},
-        "all": [{"topic": "thin_followup", "paper_count": 8, "fact_source_count": 8}],
+        "all": [{"topic": "fresh_boundary", "paper_count": 8, "fact_source_count": 8}],
     })
     monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
         "writer_configured": False,
@@ -12079,15 +12079,40 @@ def test_forced_source_literature_repair_does_not_live_fetch_fallback_topics(
         "mimo_base_url": "",
     })())
 
-    def fail_live_fetch(*_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
-        raise AssertionError("forced source-lit repair fallback should stay cache-only")
+    def backup_papers(topic: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        assert topic == "fresh_boundary"
+        return [
+            {
+                "title": title,
+                "doi": f"10.1234/fresh-boundary-{idx}",
+                "source_fact": {
+                    "canonical_phrase": f"fresh boundary directional fact {idx}",
+                    "population": "adult source context",
+                    "intervention": "fresh boundary",
+                    "endpoint": "aging signal",
+                },
+            }
+            for idx, title in enumerate((
+                "Fresh boundary signaling in aging metabolism",
+                "Boundary markers for fresh inflammation evidence",
+                "Fresh lifespan conditions in mitochondrial stress",
+                "Proteostasis evidence for a fresh intervention boundary",
+                "Cellular senescence and fresh translational limits",
+            ))
+        ]
 
-    monkeypatch.setattr(daily, "_fetch_source_literature_papers", fail_live_fetch)
+    monkeypatch.setattr(daily, "_fetch_source_literature_papers", backup_papers)
     submitted: list[dict[str, Any]] = []
 
-    def duplicate_submitter(payload: dict[str, Any]) -> dict[str, Any]:
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
         submitted.append(payload)
-        return {"ok": False, "status": 409, "response": {"error": "duplicate submission"}}
+        if payload.get("topic") == "usable_boundary":
+            return {"ok": False, "status": 409, "response": {"error": "duplicate submission"}}
+        return {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": "sub-fresh-boundary"}},
+        }
 
     ledger = daily.run_cycle(
         runs_root=root,
@@ -12096,20 +12121,27 @@ def test_forced_source_literature_repair_does_not_live_fetch_fallback_topics(
         queue=_queue(),
         submit=True,
         source_literature_forced_papers={"usable_boundary": _usable_boundary_papers()},
-        submitter=duplicate_submitter,
+        submitter=submitter,
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/fresh"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Fresh</title>"},
         fetcher=lambda _doi: {"message": {}},
         sleep=lambda _seconds: None,
     )
 
-    assert len(submitted) == 1
-    assert ledger["submitted"] == 0
-    assert ledger["published"] == 0
+    assert [payload["topic"] for payload in submitted] == ["usable_boundary", "fresh_boundary"]
+    assert ledger["submitted"] == 1
+    assert ledger["published"] == 1
+    assert ledger["submitted_topic"] == "fresh_boundary"
     attempts = ledger["source_literature_fallback_attempts"]
     assert [attempt["topic"] for attempt in attempts] == [
-        "usable_boundary", "thin_followup",
+        "usable_boundary", "fresh_boundary",
     ]
     assert [attempt["reason"] for attempt in attempts] == [
-        "rejected_duplicate", "source_floor_below_min",
+        "rejected_duplicate", "ok",
     ]
 
 
