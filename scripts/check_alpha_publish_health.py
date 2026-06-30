@@ -29,6 +29,7 @@ _NUMERIC_LEDGER_TS_RE = re.compile(
     re.I,
 )
 _DRY_RUN_LEDGER_RE = re.compile(r"(^|[-_t])dry[-_]?run", re.I)
+_DEFAULT_ACTIVE_RUN_STALE_MINUTES = 120.0
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
@@ -449,7 +450,13 @@ def _parse_systemd_timestamp(value: Any) -> dt.datetime | None:
     return None
 
 
-def _mark_active_run_if_newer(summary: Json, *, ledger_mtime: dt.datetime) -> None:
+def _mark_active_run_if_newer(
+    summary: Json,
+    *,
+    ledger_mtime: dt.datetime,
+    now: dt.datetime,
+    stale_after_minutes: float,
+) -> None:
     active_run = summary.get("active_run")
     if not isinstance(active_run, dict) or not active_run.get("running"):
         return
@@ -464,6 +471,9 @@ def _mark_active_run_if_newer(summary: Json, *, ledger_mtime: dt.datetime) -> No
         return
     summary["active_run_supersedes_ledger"] = True
     summary["active_run_started_at"] = started_at.isoformat()
+    active_age_minutes = max(0.0, (now - started_at).total_seconds() / 60)
+    summary["active_run_age_minutes"] = round(active_age_minutes, 1)
+    summary["active_run_stale_after_minutes"] = stale_after_minutes
     summary["stale_ledger"] = {
         "ledger": summary.get("ledger"),
         "status": summary.get("status"),
@@ -471,6 +481,12 @@ def _mark_active_run_if_newer(summary: Json, *, ledger_mtime: dt.datetime) -> No
         "top_blockers": summary.get("top_blockers") or {},
         "queue_counts": summary.get("queue_counts") or {},
     }
+    if stale_after_minutes > 0 and active_age_minutes > stale_after_minutes:
+        summary["status"] = "active_run_stale"
+        summary["reason"] = "active_run_stale"
+        summary["top_blockers"] = {"active_run_stale": 1}
+        summary["next_action"] = "inspect_or_restart_active_run"
+        return
     summary["status"] = "active_run_in_progress"
     summary["reason"] = "active_run_in_progress"
     summary["top_blockers"] = {"active_run_in_progress": 1}
@@ -495,6 +511,7 @@ def summarize_latest(
     cycle_module: Any | None = None,
     timeout: float = 15.0,
     now: dt.datetime | None = None,
+    active_run_stale_minutes: float = _DEFAULT_ACTIVE_RUN_STALE_MINUTES,
 ) -> Json:
     decision_sync: Json | None = None
     if sync_pending_decisions:
@@ -605,7 +622,12 @@ def summarize_latest(
             summary["next_candidate_error"] = f"{type(exc).__name__}: {exc}"
     if systemd_unit:
         summary["active_run"] = _systemd_unit_status(systemd_unit)
-        _mark_active_run_if_newer(summary, ledger_mtime=mtime)
+        _mark_active_run_if_newer(
+            summary,
+            ledger_mtime=mtime,
+            now=current,
+            stale_after_minutes=active_run_stale_minutes,
+        )
     return summary
 
 
@@ -621,6 +643,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--write-summary", action="store_true")
     parser.add_argument("--systemd-unit")
     parser.add_argument("--max-age-minutes", type=float, default=0.0)
+    parser.add_argument("--active-run-stale-minutes", type=float, default=_DEFAULT_ACTIVE_RUN_STALE_MINUTES)
     parser.add_argument("--timeout", type=float, default=15.0)
     args = parser.parse_args(argv)
 
@@ -637,6 +660,7 @@ def main(argv: list[str] | None = None) -> int:
                 sync_pending_decisions=args.sync_pending_decisions,
                 systemd_unit=_default_systemd_unit(domain),
                 timeout=args.timeout,
+                active_run_stale_minutes=args.active_run_stale_minutes,
             )
             for domain in domains
         }
@@ -669,6 +693,7 @@ def main(argv: list[str] | None = None) -> int:
         sync_pending_decisions=args.sync_pending_decisions,
         systemd_unit=args.systemd_unit or _default_systemd_unit(args.domain),
         timeout=args.timeout,
+        active_run_stale_minutes=args.active_run_stale_minutes,
     )
     if args.max_age_minutes > 0 and float(summary.get("ledger_age_minutes") or 0) > args.max_age_minutes:
         summary["ok"] = False
