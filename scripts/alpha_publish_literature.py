@@ -806,7 +806,13 @@ def _non_bio_mixed_significant_performance_receipt(paper: Json) -> bool:
     )).casefold()
     return (
         _non_bio_directional_performance_receipt(paper)
-        and bool(re.search(r"\bsignificant\s+(?:effect|effects|influence|impact)s?\b", text))
+        and bool(re.search(
+            r"\b(?:significant(?:ly)?\s+(?:effect|effects|influence|impact|"
+            r"increas(?:e|es|ed|ing)|improv(?:e|es|ed|ing)|"
+            r"reduc(?:e|es|ed|ing)|decreas(?:e|es|ed|ing))|"
+            r"positive\s+significant|significant\s+positive)\b",
+            text,
+        ))
         and not re.search(r"\b(?:rejected|not supported|failed to support|no significant)\b", text)
     )
 

@@ -11651,6 +11651,9 @@ def test_source_literature_fallback_is_disabled_without_explicit_submit_flag(
         ledger["source_literature_fallback"]["reason"]
         == "requires_fact_level_source_synthesis"
     )
+    assert ledger["source_literature_fallback"]["selected_source_count"] == 5
+    assert ledger["source_literature_fallback"]["selected_source_fact_count"] == 0
+    assert ledger["source_literature_fallback"]["selected_directional_receipt_count"] == 0
 
 
 def test_fact_backed_source_literature_fallback_submits_without_flag(

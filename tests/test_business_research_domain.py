@@ -6438,6 +6438,25 @@ def test_business_source_literature_requires_two_directional_receipts() -> None:
     assert reason == "directional_receipt_floor_below_min"
 
 
+def test_business_source_literature_counts_significant_metric_change_directional() -> None:
+    paper = {
+        "title": "Digital transformation and firm profitability",
+        "doi": "10.5555/dt-profit",
+        "source_fact": {
+            "canonical_phrase": "digital transformation significantly increases firm profitability",
+            "population": "listed firms",
+            "intervention": "digital transformation",
+            "endpoint": "firm profitability",
+        },
+    }
+
+    assert publish_literature._paper_evidence_role(
+        paper,
+        "digital_transformation_firm",
+        "business_research",
+    ) == "directional association"
+
+
 def test_business_systemd_timers_are_eight_hour_guarded() -> None:
     expectations = {
         "business": ("business_research", "02/8:10:00"),

@@ -2184,6 +2184,19 @@ def main() -> int:
                             ready_papers, require_substantive=True,
                         )
                     )
+                    selected_roles = [
+                        publish_literature._paper_evidence_role(paper, topic, domain)
+                        for paper in ready_papers
+                    ]
+                    fullraw_trace["selected_source_evidence_roles"] = selected_roles
+                    fullraw_trace["selected_directional_receipt_count"] = sum(
+                        1 for role in selected_roles
+                        if role in {
+                            "directional association",
+                            "directional estimate",
+                            "directionally favorable",
+                        }
+                    )
                     fullraw_trace["selected_source_outlet_metadata_count"] = sum(
                         1 for paper in ready_papers if _source_outlet_key(paper)
                     )

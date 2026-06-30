@@ -6506,6 +6506,16 @@ def run_cycle(
                     literature_topic, papers, min_submit_sources, profile.slug,
                     require_substantive_sources=True,
                 )
+            selected_for_attempt = publish_literature.select_boundary_papers(
+                literature_topic,
+                papers,
+                min_submit_sources,
+                strict_topic_coverage=publish_literature._non_biomedical(profile.slug),
+            )
+            evidence_roles = [
+                publish_literature._paper_evidence_role(paper, literature_topic, profile.slug)
+                for paper in selected_for_attempt
+            ]
             relevant_paper_count = len(
                 publish_literature.relevant_papers(literature_topic, papers),
             )
@@ -6516,6 +6526,26 @@ def run_cycle(
                 "paper_count": len(papers),
                 "relevant_paper_count": relevant_paper_count,
             }
+            if not ok:
+                fallback_attempt.update({
+                    "selected_source_count": len(selected_for_attempt),
+                    "selected_source_fact_count": publish_literature.substantive_fact_count(
+                        selected_for_attempt,
+                    ),
+                    "selected_source_identity_count": publish_literature.source_identity_count(
+                        selected_for_attempt,
+                        require_substantive=True,
+                    ),
+                    "selected_source_evidence_roles": evidence_roles,
+                    "selected_directional_receipt_count": sum(
+                        1 for role in evidence_roles
+                        if role in {
+                            "directional association",
+                            "directional estimate",
+                            "directionally favorable",
+                        }
+                    ),
+                })
             if resumed is not None:
                 fallback_attempt["resumed_payload"] = True
             if literature_topic in repair_topic_set:
@@ -6524,12 +6554,7 @@ def run_cycle(
             ledger["source_literature_fallback"] = fallback_attempt
             _write_ledger(ledger_path, ledger)
             if ok:
-                selected_papers = publish_literature.select_boundary_papers(
-                    literature_topic,
-                    papers,
-                    min_submit_sources,
-                    strict_topic_coverage=publish_literature._non_biomedical(profile.slug),
-                )
+                selected_papers = selected_for_attempt
                 fact_backed = publish_literature.substantive_fact_count(
                     selected_papers,
                 ) >= min_submit_sources
