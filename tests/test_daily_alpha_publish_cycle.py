@@ -14407,6 +14407,7 @@ def test_source_literature_payload_prefers_distinct_outcomes_when_available(
             "title": "The Pass-Through of Minimum Wages into U.S. Retail Prices",
             "doi": "10.1162/rest_a_00981",
             "year": 2020,
+            "journal_name": "Review of Economics and Statistics",
             "source_fact": {
                 "canonical_phrase": "a 10% minimum wage hike translates into a 0.36% increase in the prices of grocery products",
                 "population": "U.S. grocery and drug stores",
@@ -14418,6 +14419,7 @@ def test_source_literature_payload_prefers_distinct_outcomes_when_available(
             "title": "The Short-Run Employment Effects of Recent Minimum Wage Changes",
             "doi": "10.1111/coep.12279",
             "year": 2018,
+            "journal_name": "Contemporary Economic Policy",
             "source_fact": {
                 "canonical_phrase": "large minimum wage increases reduced employment among low-skilled population groups",
                 "population": "low-skilled population groups in US states",
@@ -14429,6 +14431,7 @@ def test_source_literature_payload_prefers_distinct_outcomes_when_available(
             "title": "Are Local Minimum Wages Absorbed by Price Increases?",
             "doi": "10.1177/0019793917713735",
             "year": 2017,
+            "journal_name": "Industrial and Labor Relations Review",
             "source_fact": {
                 "canonical_phrase": "nearly all of the cost increase was passed through to consumers, as prices rose 1.45% on average",
                 "population": "Internet-based restaurants inside and outside San Jose",
@@ -14440,6 +14443,7 @@ def test_source_literature_payload_prefers_distinct_outcomes_when_available(
             "title": "Minimum Wages and the Distribution of Family Incomes",
             "doi": "10.1257/app.20170085",
             "year": 2019,
+            "journal_name": "American Economic Journal: Applied Economics",
             "source_fact": {
                 "canonical_phrase": "long-run minimum wage elasticity of the non-elderly poverty rate ranges between -0.220 and -0.459",
                 "metric": "minimum wage elasticity of poverty rate",
@@ -14452,6 +14456,7 @@ def test_source_literature_payload_prefers_distinct_outcomes_when_available(
             "title": "Earnings Inequality and the Minimum Wage: Evidence from Brazil",
             "doi": "10.1257/aer.20181506",
             "year": 2022,
+            "journal_name": "American Economic Review",
             "source_fact": {
                 "canonical_phrase": "The increased minimum wage accounts for 45 percent of a large fall in earnings inequality over this period.",
                 "metric": "share of fall in earnings inequality attributable to minimum wage",
@@ -14464,6 +14469,7 @@ def test_source_literature_payload_prefers_distinct_outcomes_when_available(
             "title": "Minimum wage worker turnover in service labor markets",
             "doi": "10.1234/minwage-turnover",
             "year": 2021,
+            "journal_name": "Service Labor Markets",
             "source_fact": {
                 "canonical_phrase": "minimum wage increases were associated with lower worker turnover in service labor markets",
                 "endpoint": "worker turnover",
@@ -14482,6 +14488,7 @@ def test_source_literature_payload_prefers_distinct_outcomes_when_available(
     source_titles = [source["title"] for source in payload["source_bundle"]]
     direct_papers = payload["evidence_bundle"]["direct_source_papers"]
     assert len(source_titles) == 5
+    assert len({source["journal_name"] for source in payload["source_bundle"]}) == 5
     assert publish_literature.substantive_fact_count(direct_papers) == 5
     assert publish_literature.source_identity_count(
         direct_papers, require_substantive=True,

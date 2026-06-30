@@ -3750,6 +3750,13 @@ def _source_bundle(papers: list[Json]) -> list[Json]:
             "year": _year(paper.get("year") or paper.get("publication_year")),
             "evidence_type": _evidence_type(paper),
         }
+        for field in (
+            "journal_name", "journal", "venue", "publisher", "source",
+            "source_outlet", "source_name", "container_title",
+            "publication_venue", "openalex_id", "doi_url", "canonical_url",
+        ):
+            if paper.get(field):
+                item[field] = paper[field]
         if isinstance(paper.get("source_fact"), dict):
             item["source_fact"] = paper["source_fact"]
         bundle.append(item)
