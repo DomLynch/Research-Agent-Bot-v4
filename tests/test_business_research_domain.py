@@ -1400,7 +1400,11 @@ def test_business_sweep_fullraw_probe_overrides_stale_short_timeout(
 
     captured: dict[str, str | None] = {}
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_ENV_FILE", str(tmp_path / "missing-fullraw.env"))
     monkeypatch.delenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", raising=False)
+    monkeypatch.delenv("RESEARKA_FULLRAW_SEARCH_BUDGET_SECONDS", raising=False)
+    monkeypatch.delenv("RESEARKA_FULLRAW_FOREGROUND_SWEEP_WAIT_SECONDS", raising=False)
+    monkeypatch.delenv("RESEARKA_FULLRAW_SWEEP_WAIT_SECONDS", raising=False)
     monkeypatch.delenv("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", raising=False)
     monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", "20")
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS", "20")
