@@ -5856,11 +5856,12 @@ def test_http_submitter_adapts_source_lit_payload_for_native_research_objects(
     assert result["ok"] is True
     assert headers["x-agent-slug"] == "agent-v4-alpha-business-research"
     assert headers["x-agent-key"] == "secret-token"
-    assert body["object_type"] == "proposal"
+    assert body["object_type"] == "rebuttal"
     assert body["article_type"] == "rapid_evidence_synthesis"
     assert body["research_mode"] == "source_grounded_synthesis"
     assert body["body_markdown"].startswith("## Signal")
     assert body["parent_object_id"] == parent
+    assert body["metadata"]["revision_of"] == parent
     assert body["metadata"]["revision_of_object_id"] == parent
     assert body["source_bundle"] == [{
         "source_type": "primary",
@@ -5930,10 +5931,12 @@ def test_http_submitter_falls_back_when_native_research_objects_route_missing(
         "https://api.example/v1/research-objects",
         "https://api.example/submissions",
     ]
-    assert seen[0]["body"]["object_type"] == "proposal"
+    assert seen[0]["body"]["object_type"] == "rebuttal"
     assert seen[1]["body"]["article_type"] == "alpha_memo"
+    assert seen[1]["body"]["object_type"] == "rebuttal"
     assert seen[1]["body"]["parent_submission_id"] == "4df8e329-b0ef-481b-81ab-c6fd75074557"
     assert seen[1]["body"]["parent_object_id"] == "4df8e329-b0ef-481b-81ab-c6fd75074557"
+    assert seen[1]["body"]["metadata"]["revision_of"] == "4df8e329-b0ef-481b-81ab-c6fd75074557"
     assert seen[1]["body"]["metadata"]["revision_of_object_id"] == "4df8e329-b0ef-481b-81ab-c6fd75074557"
     assert "parent_submission_id" not in payload
 
@@ -8986,13 +8989,17 @@ def test_source_literature_fallback_uses_default_fetcher_after_empty_submit_lane
     assert "## Context separation" in seen_payload["markdown"]
     assert "## Research question" in seen_payload["markdown"]
     assert "## Selection criteria" in seen_payload["markdown"]
-    assert seen_payload["source_bundle"][0] == {
+    first_source = seen_payload["source_bundle"][0]
+    assert {key: first_source.get(key) for key in (
+        "title", "url", "doi", "year", "evidence_type",
+    )} == {
         "title": "Metabolic pathway review in aging",
         "url": "https://doi.org/10.1234/1",
         "doi": "10.1234/1",
         "year": 2024,
         "evidence_type": "review",
     }
+    assert first_source["source_fact"]["canonical_phrase"] == "source rich parent fact 1"
     assert seen_payload["citations"] == seen_payload["source_bundle"]
     assert not seen_payload["abstract"].startswith("Answer:")
     assert "not uniformly convergent" in seen_payload["abstract"]
@@ -11588,12 +11595,15 @@ def test_source_literature_fallback_resubmits_clean_terminal_revise_same_cycle(
         "reviewer_revise", "published",
     ]
     assert len(submitted_payloads) == 2
+    assert submitted_payloads[1]["object_type"] == "rebuttal"
     assert submitted_payloads[1]["parent_submission_id"] == "sub-clean-1"
     assert submitted_payloads[1]["parent_object_id"] == "sub-clean-1"
     assert submitted_payloads[1]["metadata"]["revision_of"] == "sub-clean-1"
     assert submitted_payloads[1]["metadata"]["revision_of_object_id"] == "sub-clean-1"
     assert ledger["source_literature_fallback_attempts"][0]["terminal_resubmit_queued"] is True
     assert ledger["source_literature_fallback_attempts"][0]["terminal_resubmit_immediate"] is True
+    assert ledger["source_literature_fallback_attempts"][0]["terminal_resubmit_submission"]["status"] == "accepted"
+    assert ledger["submission"]["attempts"][0]["response"]["submission"]["id"] == "sub-clean-2"
     assert paper_fetch_calls == [("usable_boundary", 5)]
 
 
@@ -13993,6 +14003,7 @@ def test_source_literature_payload_carries_resubmission_parent_metadata(
         encoding="utf-8",
     ))
     assert payload["parent_submission_id"] == "sub-parent-123"
+    assert payload["object_type"] == "rebuttal"
     assert payload["parent_object_id"] == "sub-parent-123"
     assert payload["metadata"]["revision_of"] == "sub-parent-123"
     assert payload["metadata"]["revision_of_object_id"] == "sub-parent-123"
@@ -14000,6 +14011,7 @@ def test_source_literature_payload_carries_resubmission_parent_metadata(
     assert payload["evidence_bundle"]["revision_of"] == "sub-parent-123"
     assert payload["evidence_bundle"]["revision_of_object_id"] == "sub-parent-123"
     assert stored["parent_submission_id"] == "sub-parent-123"
+    assert stored["object_type"] == "rebuttal"
     assert stored["parent_object_id"] == "sub-parent-123"
     assert stored["metadata"]["revision_of"] == "sub-parent-123"
     assert stored["metadata"]["revision_of_object_id"] == "sub-parent-123"

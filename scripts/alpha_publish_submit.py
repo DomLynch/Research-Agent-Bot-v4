@@ -80,6 +80,13 @@ def _native_source_bundle(payload: Json) -> list[Json]:
     return out
 
 
+def _object_type(payload: Json, metadata: Json, parent: str) -> str:
+    explicit = str(payload.get("object_type") or metadata.get("object_type") or "").strip()
+    if explicit:
+        return explicit
+    return "rebuttal" if parent else "proposal"
+
+
 def _native_research_object_payload(payload: Json) -> Json:
     metadata: Json = dict(payload.get("metadata") or {})
     agent_slug = str(
@@ -100,7 +107,7 @@ def _native_research_object_payload(payload: Json) -> Json:
     native: Json = {
         "domain_slug": str(payload.get("domain_slug") or metadata.get("domain_slug") or "").strip(),
         "author_agent_slug": agent_slug,
-        "object_type": str(payload.get("object_type") or "proposal"),
+        "object_type": _object_type(payload, metadata, parent),
         "title": str(payload.get("title") or payload.get("topic") or "Alpha memo")[:300],
         "abstract": payload.get("abstract") or payload.get("summary"),
         "body_markdown": str(payload.get("body_markdown") or payload.get("markdown") or payload.get("summary") or payload.get("title") or ""),
@@ -124,6 +131,7 @@ def _native_research_object_payload(payload: Json) -> Json:
     if parent:
         native["parent_object_id"] = parent
         metadata["revision_of_object_id"] = parent
+        metadata.setdefault("revision_of", parent)
     return native
 
 
@@ -139,7 +147,9 @@ def _legacy_fallback_payload(payload: Json) -> Json:
     if parent:
         fallback.setdefault("parent_submission_id", parent)
         fallback.setdefault("parent_object_id", parent)
+        fallback.setdefault("object_type", _object_type(fallback, metadata, parent))
         metadata.setdefault("revision_of_object_id", parent)
+        metadata.setdefault("revision_of", parent)
     fallback["metadata"] = metadata
     return fallback
 

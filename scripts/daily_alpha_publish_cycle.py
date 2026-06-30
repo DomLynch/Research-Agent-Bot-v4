@@ -6509,7 +6509,7 @@ def run_cycle(
             relevant_paper_count = len(
                 publish_literature.relevant_papers(literature_topic, papers),
             )
-            fallback_attempt = {
+            fallback_attempt: Json = {
                 "topic": literature_topic,
                 "status": "selected" if ok else "blocked",
                 "reason": reason,
@@ -6652,8 +6652,11 @@ def run_cycle(
                                 )
                                 result = submit_with_backoff(payload, submitter)
                                 fallback_attempt["terminal_resubmit_status"] = result["status"]
+                                fallback_attempt["terminal_resubmit_submission"] = result
+                                ledger["terminal_resubmission"] = result
                                 if result["status"] == _DECISION_ACCEPTED:
                                     submission_id = publish_decisions.submission_id(result)
+                                    ledger["submission"] = result
                                     _record_submission_attempt(
                                         submitted_path,
                                         date=date,

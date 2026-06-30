@@ -2269,6 +2269,7 @@ def payload(
         "content_hash": "sha256:" + hashlib.sha256(markdown.encode("utf-8")).hexdigest(),
     }
     if parent_submission_id:
+        out["object_type"] = "rebuttal"
         out["parent_submission_id"] = parent_submission_id
         out["parent_object_id"] = parent_submission_id
     write_json(run_dir / "source_literature_payload.json", out)
