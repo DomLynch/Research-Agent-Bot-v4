@@ -5879,6 +5879,9 @@ def run_cycle(
         submitted_path.parent, days=min(published_topic_cooldown_days, 2),
         domain=profile.slug, source_literature_only=True,
     )
+    pending_source_literature_topics = _pending_source_literature_topics(
+        submitted_path.parent, profile.slug,
+    )
     blocked_topics = (
         published_blocked_topics
         | submitted_blocked_topics
@@ -5890,12 +5893,16 @@ def run_cycle(
         | submitted_blocked_topics
         | negative_blocked_topics
         | source_literature_source_floor_blocked_topics
+        | pending_source_literature_topics
     )
     source_literature_soft_blocked_topics = negative_blocked_topics
     ledger["recently_published_topics_blocked"] = sorted(published_blocked_topics)
     ledger["recently_submitted_topics_blocked"] = sorted(submitted_blocked_topics)
     ledger["recent_negative_topics_blocked"] = sorted(negative_blocked_topics)
     ledger["recent_source_floor_topics_blocked"] = sorted(source_floor_blocked_topics)
+    ledger["pending_source_literature_topics_blocked"] = sorted(
+        pending_source_literature_topics,
+    )
     force_refresh = False
     accepted_shape_profiles = _accepted_shape_profiles(runs_root, domain=profile.slug)
     all_considered: list[Json] = []
@@ -6615,7 +6622,7 @@ def run_cycle(
         ]
         forced_source_lit = source_literature_forced_papers or {}
         resumable_source_lit = _resumable_source_literature_payloads(
-            runs_root, profile.slug, min_submit_sources, published_blocked_topics,
+            runs_root, profile.slug, min_submit_sources, source_literature_blocked_topics,
             limit=source_lit_scan_limit,
         )
         fresh_topics = [
@@ -6637,6 +6644,10 @@ def run_cycle(
             *fresh_topics,
             *standard_repair_topics,
         ]:
+            if _source_literature_family_blocked_topic(
+                topic, pending_source_literature_topics,
+            ):
+                continue
             if topic not in literature_topics:
                 literature_topics.append(topic)
         if paper_fetcher is None:

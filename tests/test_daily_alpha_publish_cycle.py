@@ -12773,6 +12773,114 @@ def test_source_literature_fallback_resumes_stranded_fact_backed_payload(
     assert seen_payload["evidence_bundle"]["direct_source_count"] == 5
 
 
+def test_source_literature_fallback_skips_pending_priority_family(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    monkeypatch.delenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", raising=False)
+
+    def fact_papers(topic: str) -> list[dict[str, Any]]:
+        outlets = (
+            "Alpha Strategy Journal",
+            "Beta Evidence Review",
+            "Gamma Policy Quarterly",
+            "Delta Operations Letters",
+            "Epsilon Management Reports",
+        )
+        stems = (
+            "trial reports bounded endpoint movement",
+            "cohort estimates mixed longer-run association",
+            "policy comparison shows directional heterogeneity",
+            "field evidence maps context-dependent response",
+            "replication review narrows the practical boundary",
+        )
+        return [
+            {
+                "title": f"{topic.replace('_', ' ').title()} {stems[idx - 1]}",
+                "doi": f"10.1234/{topic}-{idx}",
+                "journal": outlets[idx - 1],
+                "source_fact": {
+                    "canonical_phrase": (
+                        f"{topic} reported directional endpoint signal {idx}"
+                    ),
+                    "population": "adult source context",
+                    "intervention": topic.replace("_", " "),
+                    "endpoint": f"bounded endpoint {idx}",
+                },
+            }
+            for idx in range(1, 6)
+        ]
+
+    pending_topic = "metformin_use"
+    fresh_topic = "acarbose"
+    pending_candidate, _pending_payload = daily._source_literature_payload(
+        profile_slug="longevity_research",
+        topic=pending_topic,
+        papers=fact_papers(pending_topic),
+        runs_root=root,
+        date="2099-06-09T17-00-00Z",
+    )
+    daily._write_json(root / "_daily_ledger" / "2099-06-09T17-10-00Z.json", {
+        "domain": {"slug": "longevity_research"},
+        "status": "submitted_to_researka",
+        "final_verdict": "pending",
+        "submitted": 1,
+        "submitted_topic": pending_topic,
+        "submission_id": "sub-pending-metformin",
+        "candidate": pending_candidate,
+    })
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [
+            {"topic": pending_topic, "paper_count": 9, "fact_source_count": 9},
+            {"topic": fresh_topic, "paper_count": 9, "fact_source_count": 9},
+        ],
+    })
+    fetches: list[str] = []
+    submissions: list[str] = []
+
+    def source_papers(topic: str, _limit: int) -> list[dict[str, Any]]:
+        fetches.append(topic)
+        return fact_papers(topic)
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submissions.append(str(payload.get("topic") or ""))
+        return {"ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}}}
+
+    def decision_fetcher(submission_id: str) -> dict[str, Any]:
+        if submission_id == "sub-pending-metformin":
+            return {"status": "pending"}
+        return {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        }
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2099-06-09T18-00-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        source_literature_priority_topics=[pending_topic],
+        source_paper_fetcher=source_papers,
+        submitter=submitter,
+        decision_fetcher=decision_fetcher,
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert ledger["pending_source_literature_topics_blocked"] == [pending_topic]
+    assert pending_topic not in fetches
+    assert submissions == [fresh_topic]
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == fresh_topic
+    assert ledger["source_literature_fallback"]["selected_source_count"] == 5
+    assert ledger["source_literature_fallback"]["selected_source_fact_count"] == 5
+    assert ledger["source_literature_fallback"]["selected_source_identity_count"] == 5
+
+
 def test_fullraw_metadata_only_source_literature_fallback_does_not_submit(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
