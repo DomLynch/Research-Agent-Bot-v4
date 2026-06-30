@@ -1845,9 +1845,18 @@ def main() -> int:
                 profile.seed_topics_path,
                 limit=max(args.topics_per_domain, args.topics_per_domain * 8),
             )
+            priority_source_lit_topics = list(
+                publish_cycle._priority_source_literature_repair_decisions(
+                    args.runs_root, domain, limit=max(args.topics_per_domain, 3),
+                )
+            )
             repairable_source_lit_topics = publish_cycle._repairable_source_literature_topics(
                 args.runs_root, domain, limit=max(args.topics_per_domain, 3),
             )
+            repairable_source_lit_topics = list(dict.fromkeys([
+                *priority_source_lit_topics,
+                *repairable_source_lit_topics,
+            ]))
             seed_pool = list(dict.fromkeys([*repairable_source_lit_topics, *seed_pool]))
             blocked_topic_keys = _recent_source_literature_blocked_topics(
                 args.runs_root, domain,
@@ -1864,8 +1873,17 @@ def main() -> int:
                     continue
                 fresh_topics.append(seed_topic)
             repairable_source_lit_set = set(repairable_source_lit_topics)
+            priority_source_lit_set = set(priority_source_lit_topics)
+            repairable_fresh_topics = [
+                topic for topic in priority_source_lit_topics
+                if topic in fresh_topics
+            ]
+            non_repair_fresh_topics = [
+                topic for topic in fresh_topics
+                if topic not in priority_source_lit_set
+            ]
             cache_rank_limit = max(args.topics_per_domain, args.topics_per_domain * 3)
-            cache_rank_topics = fresh_topics[:cache_rank_limit]
+            cache_rank_topics = non_repair_fresh_topics[:cache_rank_limit]
             ranked_topics = [
                 topic for _hits, _idx, topic in sorted(
                     (
@@ -1873,8 +1891,11 @@ def main() -> int:
                         for idx, topic in enumerate(cache_rank_topics)
                     )
                 )
-            ] + fresh_topics[cache_rank_limit:]
-            selected_topics = ranked_topics[:args.topics_per_domain]
+            ] + non_repair_fresh_topics[cache_rank_limit:]
+            selected_topics = list(dict.fromkeys([
+                *repairable_fresh_topics,
+                *ranked_topics,
+            ]))[:args.topics_per_domain]
             if skipped_recent:
                 print(
                     "[business-sweep] skipped_recent_source_literature_topics "
@@ -1898,7 +1919,14 @@ def main() -> int:
                         ) < MIN_DIRECT_SOURCES
                     ):
                         cached_repair_papers = []
-                if cached_repair_papers and args.submit_after_consistent_passes > 0:
+                source_lit_repair_kwargs: dict[str, Any] = {}
+                if cached_repair_papers:
+                    source_lit_repair_kwargs["source_literature_forced_papers"] = {
+                        topic: cached_repair_papers,
+                    }
+                elif topic in priority_source_lit_set:
+                    source_lit_repair_kwargs["source_literature_priority_topics"] = [topic]
+                if source_lit_repair_kwargs and args.submit_after_consistent_passes > 0:
                     repair_row: dict[str, Any] = {
                         "cycle": cycle + 1,
                         "domain": domain,
@@ -1932,7 +1960,7 @@ def main() -> int:
                         domain=domain,
                         submit=True,
                         refresh_candidates=False,
-                        source_literature_forced_papers={topic: cached_repair_papers},
+                        **source_lit_repair_kwargs,
                     )
                     repair_row["status"] = str(ledger.get("status") or "submit_failed")
                     repair_row["submission_ledger"] = ledger

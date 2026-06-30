@@ -4912,6 +4912,189 @@ def test_business_sweep_promotes_repairable_source_lit_outside_seed_window(
     }]
 
 
+def test_business_sweep_keeps_repairable_source_lit_ahead_of_cached_rank(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    runs_root = tmp_path / "runs"
+    submissions: list[dict[str, Any]] = []
+    repair_topic = "minimum_wage"
+
+    def papers_for(topic: str) -> list[dict[str, Any]]:
+        return [
+            {
+                "title": f"{topic.replace('_', ' ')} evidence paper {idx}",
+                "doi": f"10.5354/{topic}-{idx}",
+                "abstract": f"{topic} evidence.",
+                "source_fact": {
+                    "canonical_phrase": f"{topic} bounded source fact {idx}",
+                    "population": "market setting",
+                    "intervention": topic.replace("_", " "),
+                    "endpoint": "business performance",
+                    "source_tier": "fullraw_search",
+                },
+            }
+            for idx in range(5)
+        ]
+
+    def cached_papers(
+        _runs_root: Path, _domain: str, topic: str,
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        if topic != repair_topic:
+            raise AssertionError(f"non-repair topic should not outrank {repair_topic}")
+        return papers_for(topic), {"status": "complete"}
+
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        submissions.append(kwargs)
+        return {
+            "status": "published",
+            "submitted": 1,
+            "published": 1,
+            "publish_summary": {
+                "status": "published",
+                "submitted": 1,
+                "published": 1,
+                "top_blockers": {},
+                "next_action": "public_page_verified",
+                "queue_counts": {"ready_to_publish": 1},
+                "public_url_status": 200,
+            },
+        }
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [
+        "platform_strategy_network",
+        "digital_transformation_firm",
+        repair_topic,
+    ])
+    monkeypatch.setattr(
+        sweep,
+        "_prioritized_seed_topics",
+        lambda _root, _domain, _topics: [
+            "digital_transformation_firm",
+            "platform_strategy_network",
+            repair_topic,
+        ],
+    )
+    monkeypatch.setattr(
+        cycle,
+        "_priority_source_literature_repair_decisions",
+        lambda *_args, **_kwargs: {repair_topic: {}},
+    )
+    monkeypatch.setattr(
+        cycle,
+        "_repairable_source_literature_topics",
+        lambda *_args, **_kwargs: [repair_topic, "digital_transformation_firm"],
+    )
+    monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", lambda _topic: 10)
+    monkeypatch.setattr(sweep, "_cached_fullraw_discovery_papers", cached_papers)
+    monkeypatch.setattr(
+        sweep,
+        "_enrich_fullraw_papers_with_db_facts",
+        lambda _topic, *, domain, papers, settings: papers,
+    )
+    monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: (
+        (_ for _ in ()).throw(AssertionError("repair path should run before DB facts")),
+        {},
+    ))
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(runs_root),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-06-29T04-10-00Z",
+    ])
+
+    assert sweep.main() == 0
+    assert submissions == [{
+        "runs_root": runs_root,
+        "date": "2026-06-29T04-10-00Z",
+        "domain": "business_research",
+        "submit": True,
+        "refresh_candidates": False,
+        "source_literature_forced_papers": {repair_topic: papers_for(repair_topic)},
+    }]
+
+
+def test_business_sweep_delegates_uncached_priority_repair_to_daily_cycle(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    runs_root = tmp_path / "runs"
+    repair_topic = "minimum_wage"
+    submissions: list[dict[str, Any]] = []
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [
+        "platform_strategy_network",
+        repair_topic,
+    ])
+    monkeypatch.setattr(
+        sweep,
+        "_prioritized_seed_topics",
+        lambda _root, _domain, _topics: ["platform_strategy_network", repair_topic],
+    )
+    monkeypatch.setattr(
+        cycle,
+        "_priority_source_literature_repair_decisions",
+        lambda *_args, **_kwargs: {repair_topic: {}},
+    )
+    monkeypatch.setattr(
+        cycle,
+        "_repairable_source_literature_topics",
+        lambda *_args, **_kwargs: [repair_topic],
+    )
+    monkeypatch.setattr(
+        sweep,
+        "_cached_fullraw_discovery_papers",
+        lambda *_args, **_kwargs: ([], {}),
+    )
+    monkeypatch.setattr(
+        sweep,
+        "fetch_business_facts",
+        lambda *_args, **_kwargs: (
+            (_ for _ in ()).throw(AssertionError("daily repair selector should run first")),
+            {},
+        ),
+    )
+
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        submissions.append(kwargs)
+        return {
+            "status": "submitted_to_researka",
+            "submitted": 1,
+            "published": 0,
+        }
+
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(runs_root),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-06-29T04-12-00Z",
+    ])
+
+    assert sweep.main() == 0
+    assert submissions == [{
+        "runs_root": runs_root,
+        "date": "2026-06-29T04-12-00Z",
+        "domain": "business_research",
+        "submit": True,
+        "refresh_candidates": False,
+        "source_literature_priority_topics": [repair_topic],
+    }]
+
+
 def test_business_sweep_promotes_cached_complete_fullraw_topic(
     tmp_path: Path,
     monkeypatch: Any,
