@@ -31,7 +31,7 @@ def domain_alpha_memo_int(path: Path, domain: str, name: str, default: int) -> i
     domains = alpha.get("domains") if isinstance(alpha, dict) else {}
     domain_cfg = domains.get(domain) if isinstance(domains, dict) else {}
     if not isinstance(domain_cfg, dict) or name not in domain_cfg:
-        return default
+        return alpha_memo_int(path, name, default)
     with suppress(TypeError, ValueError):
         return max(0, int(str(domain_cfg.get(name))))
     return default
