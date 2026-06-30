@@ -1585,6 +1585,9 @@ def _recent_source_literature_blocked_topics(runs_root: Path, domain: str) -> se
         | publish_cycle._recent_submission_topics(submitted_path, days=days, domain=domain)
         | publish_cycle._recent_negative_topics(ledger_dir, days=days, domain=domain)
     )
+    structurally_blocked = publish_cycle._recent_source_literature_structural_blocked_topics(
+        ledger_dir, days=2, domain=domain,
+    )
     repairable_keys = {
         key for topic in publish_cycle._repairable_source_literature_topics(
             runs_root, domain,
@@ -1592,6 +1595,9 @@ def _recent_source_literature_blocked_topics(runs_root: Path, domain: str) -> se
         if (key := _topic_key(topic))
     }
     return {
+        key for topic in structurally_blocked
+        if (key := _topic_key(topic))
+    } | {
         key for topic in blocked
         if (key := _topic_key(topic)) and key not in repairable_keys
     }

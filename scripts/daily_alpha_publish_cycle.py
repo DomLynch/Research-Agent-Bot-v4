@@ -206,6 +206,13 @@ def _publish_tier_int(name: str, default: int) -> int:
 _DEFAULT_MIN_SUBMIT_SOURCES = _alpha_memo_int("min_source_papers", 5)
 _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES = _alpha_memo_int("min_direct_source_papers", 2)
 _SOURCE_LITERATURE_SCAN_LIMIT = max(10, _DEFAULT_MIN_SUBMIT_SOURCES * 3)
+_SOURCE_LITERATURE_STRUCTURAL_BLOCK_REASONS = frozenset({
+    "directional_receipt_floor_below_min",
+    "requires_fact_level_source_synthesis",
+    "source_bundle_below_min",
+    "source_fact_diversity_below_min",
+    "source_floor_below_min",
+})
 _DEFAULT_REFRESH_TOP = _alpha_memo_int("refresh_top", 1)
 _DEFAULT_REFRESH_COOLDOWN_HOURS = _alpha_memo_float("refresh_cooldown_hours", 2.0)
 _DEFAULT_PARENT_REFRESH_TOPIC_LIMIT = _alpha_memo_int("parent_refresh_topic_limit", 4)
@@ -2656,6 +2663,9 @@ def _repairable_source_literature_decisions(
         days=_DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS,
         domain=domain,
     )
+    structurally_blocked = _recent_source_literature_structural_blocked_topics(
+        runs_root / "_daily_ledger", days=2, domain=domain,
+    )
     for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
         ledger = _json(path, {})
         if (
@@ -2668,6 +2678,10 @@ def _repairable_source_literature_decisions(
         for _fp, run_ref, decision in _repairable_submission_records(ledger):
             topic = candidate_topic or _source_literature_topic_from_run(run_ref)
             if not topic or topic in decisions or topic in checked_topics:
+                continue
+            if topic in structurally_blocked or _family_blocked_topic(
+                topic, structurally_blocked,
+            ):
                 continue
             if topic in published or _family_blocked_topic(topic, published):
                 continue
@@ -2996,6 +3010,39 @@ def _recent_source_floor_topics(
         for batch in ledger.get("refresh_batches") or []:
             if isinstance(batch, dict):
                 remember(batch.get("skipped_below_source_floor"))
+    return topics
+
+
+def _recent_source_literature_structural_blocked_topics(
+    ledger_dir: Path, *, days: int, domain: str | None = None,
+) -> set[str]:
+    cutoff = time.time() - (max(0, days) * 86400)
+    topics: set[str] = set()
+    for path in ledger_dir.glob("*.json"):
+        if path.name.startswith("_"):
+            continue
+        with suppress(OSError):
+            if path.stat().st_mtime < cutoff:
+                continue
+        ledger = _json(path, {})
+        if not isinstance(ledger, dict) or not _same_domain(_ledger_domain(ledger), domain):
+            continue
+        attempts: list[Any] = []
+        fallback = ledger.get("source_literature_fallback")
+        if isinstance(fallback, dict):
+            attempts.append(fallback)
+        raw_attempts = ledger.get("source_literature_fallback_attempts")
+        if isinstance(raw_attempts, list):
+            attempts.extend(raw_attempts)
+        for attempt in attempts:
+            if not isinstance(attempt, dict):
+                continue
+            reason = str(attempt.get("reason") or "")
+            if reason not in _SOURCE_LITERATURE_STRUCTURAL_BLOCK_REASONS:
+                continue
+            topic = str(attempt.get("topic") or "").strip()
+            if topic:
+                topics.add(topic)
     return topics
 
 

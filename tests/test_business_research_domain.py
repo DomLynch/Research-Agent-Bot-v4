@@ -5209,6 +5209,37 @@ def test_business_sweep_demotes_cached_priority_repair_below_fact_floor(
     }]
 
 
+def test_business_sweep_blocks_recent_directional_underfill_repair_topic(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    runs_root = tmp_path / "runs"
+    ledger_dir = runs_root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    topic = "digital_transformation_firm"
+    cycle._write_json(ledger_dir / "2026-06-29T08-03-00Z.json", {
+        "domain": {"slug": "business_research"},
+        "source_literature_fallback_attempts": [{
+            "topic": topic,
+            "status": "blocked",
+            "reason": "directional_receipt_floor_below_min",
+            "selected_source_count": 5,
+            "selected_source_fact_count": 5,
+            "selected_source_identity_count": 5,
+            "selected_directional_receipt_count": 1,
+        }],
+    })
+    monkeypatch.setattr(
+        cycle,
+        "_repairable_source_literature_topics",
+        lambda *_args, **_kwargs: [topic],
+    )
+
+    assert sweep._recent_source_literature_blocked_topics(
+        runs_root, "business_research",
+    ) == {sweep._topic_key(topic)}
+
+
 def test_business_sweep_promotes_cached_complete_fullraw_topic(
     tmp_path: Path,
     monkeypatch: Any,

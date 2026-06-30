@@ -9551,6 +9551,61 @@ def test_repairable_source_literature_exhausted_topic_is_checked_once(
     assert budget_calls == 1
 
 
+def test_repairable_source_literature_skips_recent_directional_underfill(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    ledger_dir = root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    bad_topic = "digital_transformation_firm"
+    good_topic = "pricing_strategy_margin"
+    decision = {
+        "decision": "revise",
+        "claim_support_verdict": "supported",
+        "required_revisions": [],
+        "major_issues": [],
+        "minor_issues": [],
+        "failed_checks": [],
+        "gate_failures": [],
+        "resubmission": {"allowed": True},
+    }
+    for topic, minute in ((bad_topic, "01"), (good_topic, "02")):
+        run_dir = root / f"{topic}-source-literature-2026-06-29T08-{minute}-00Z"
+        run_dir.mkdir(parents=True)
+        run_dir.joinpath("source_literature_memo.md").write_text(
+            "# Source literature boundary memo\n", encoding="utf-8",
+        )
+        daily._write_json(ledger_dir / f"2026-06-29T08-{minute}-00Z.json", {
+            "domain": {"slug": "business_research"},
+            "submitted": 1,
+            "candidate": {
+                "topic": topic,
+                "run_dir": run_dir.name,
+                "fingerprint": f"fp-{topic}",
+            },
+            "researka_decision": decision,
+        })
+    daily._write_json(ledger_dir / "2026-06-29T08-03-00Z.json", {
+        "domain": {"slug": "business_research"},
+        "source_literature_fallback": {
+            "topic": bad_topic,
+            "status": "blocked",
+            "reason": "directional_receipt_floor_below_min",
+            "selected_source_count": 5,
+            "selected_source_fact_count": 5,
+            "selected_source_identity_count": 5,
+            "selected_directional_receipt_count": 1,
+        },
+    })
+
+    assert daily._recent_source_literature_structural_blocked_topics(
+        ledger_dir, days=2, domain="business_research",
+    ) == {bad_topic}
+    assert list(daily._repairable_source_literature_decisions(
+        root, "business_research", limit=3,
+    )) == [good_topic]
+
+
 def test_clean_terminal_source_literature_gets_parent_link_retry_after_old_attempts(
     tmp_path: Path,
 ) -> None:
