@@ -15068,15 +15068,45 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
 
     markdown = payload["markdown"]
     assert payload["title"] == (
-        "supply chain resilience performance: directional support for "
+        "supply chain resilience: directional support for "
         "supply chain performance across 3 receipts, with single firm performance caveat"
     )
+    assert payload["human_title"] == payload["title"]
+    assert payload["metadata"]["topic_label"] == "supply chain resilience"
     assert len(payload["source_bundle"]) == 5
     assert payload["evidence_bundle"]["direct_source_count"] == 5
     assert publish_literature.substantive_fact_count(payload["source_bundle"]) == 5
     assert publish_literature.source_identity_count(
         payload["source_bundle"], require_substantive=True,
     ) == 5
+    source_contexts = {
+        (
+            source.get("population"),
+            source.get("setting"),
+            source.get("endpoint"),
+            source.get("source_role"),
+        )
+        for source in payload["source_bundle"]
+    }
+    assert (
+        "automotive firms",
+        "automotive firms",
+        "resilience scoring model",
+        "descriptive/modeling",
+    ) in source_contexts
+    assert (
+        "chemical firms",
+        "chemical firms",
+        "supply chain performance",
+        "directional association",
+    ) in source_contexts
+    assert (
+        "manufacturing firms",
+        "manufacturing firms",
+        "supply chain performance",
+        "directional association",
+    ) in source_contexts
+    assert all(source.get("excerpt") for source in payload["source_bundle"])
     assert "unmatched metric-scope map" not in payload["title"]
     assert "source-scope boundary note" not in payload["title"]
     assert (
@@ -15094,6 +15124,9 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         "one caveat/null receipt. The caveat is a scoping constraint, not a "
         "strong null claim."
     ) in markdown
+    assert markdown.count("Metric imbalance disclosure:") == 1
+    assert markdown.count("Cross-setting contrast:") == 1
+    assert markdown.count("Context-only classification:") == 1
     assert (
         "Population/setting counts are context descriptors only; they are not "
         "weighting, pooling, or aggregation evidence."
@@ -15117,6 +15150,8 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "automotive firms" in markdown
     assert "chemical firms" in markdown
     assert "manufacturing firms" in markdown
+    assert "Effect-support accounting: 1 of 5 receipt(s) is context/modeling-only" in markdown
+    assert "Routing domain" not in markdown
     assert "directional association: 3 receipt(s)" in markdown
     assert "Within-vs-across outcome rule: direction-bearing rows are" in markdown
     assert "## Evidence matrix" in markdown

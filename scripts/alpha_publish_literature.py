@@ -1490,6 +1490,15 @@ def _title_endpoint_labels(labels: list[str], topic: str, papers: list[Json]) ->
     ))
 
 
+def _topic_title_label(topic: str) -> str:
+    words = topic.replace("_", " ").split()
+    if len(words) > 2 and words[-1] in {
+        "effect", "effects", "outcome", "outcomes", "performance",
+    }:
+        words = words[:-1]
+    return " ".join(words) or topic.replace("_", " ")
+
+
 def _bounded_signal_sentence(
     topic: str,
     endpoints_by_label: dict[str, list[str]],
@@ -1808,15 +1817,16 @@ def payload(
         raw_fact = paper.get("source_fact")
         if isinstance(raw_fact, dict):
             facts.append(raw_fact)
+    topic_label = _topic_title_label(topic)
     contexts = sorted({context_family(fact.get("population")) for fact in facts})
     context_text = join_contexts(contexts[:3])
     source_identity_total = source_identity_count(selected, require_substantive=True)
     question = (
-        f"Across retrieved source-level receipts for {topic}, which metrics, "
+        f"Across retrieved source-level receipts for {topic_label}, which metrics, "
         "settings, or contrasts carry directional support versus caveat evidence, "
         "and what matched design remains untested?"
         if non_bio else
-        f"Across retrieved source-level receipts for {topic}, which endpoints show "
+        f"Across retrieved source-level receipts for {topic_label}, which endpoints show "
         "directionally favorable versus null/non-convergent signals, and what "
         "matched PICO remains untested?"
     )
@@ -1830,7 +1840,7 @@ def payload(
         "## Selection criteria",
         "",
         (
-            f"The source-literature selector kept {topic} because the candidate "
+            f"The source-literature selector kept {topic_label} because the candidate "
             f"bundle met the public source rule: {len(selected)} citable papers, "
             f"{source_identity_total} distinct fact-backed source identities, "
             "topic-overlapping source facts, and enough shared scope to compare "
@@ -1892,6 +1902,25 @@ def payload(
             if value:
                 lines.append(f"  - {label}: {value}")
     bundle = source_bundle(selected)
+    for item, paper in zip(bundle, selected, strict=False):
+        raw_source_fact = paper.get("source_fact")
+        bundle_fact: Json = raw_source_fact if isinstance(raw_source_fact, dict) else {}
+        role = _paper_evidence_role(paper, topic, profile.slug)
+        setting = _source_context_label(paper, non_bio=non_bio)
+        if setting:
+            item["population"] = setting
+            item["setting"] = setting
+        exposure = _exposure_context_label(paper, non_bio=non_bio)
+        if exposure:
+            item["intervention"] = exposure
+        endpoint = _endpoint_context_label(paper, topic, non_bio=non_bio)
+        if endpoint:
+            item["endpoint"] = endpoint
+        item["source_role"] = role
+        item["source_type"] = item.get("evidence_type") or evidence_type(paper)
+        finding = _display_finding(bundle_fact, _paper_effect_direction(paper, topic))
+        if finding:
+            item["excerpt"] = safe_excerpt(finding) or " ".join(finding.split())
     years = sorted(
         year for year in (year_value(source.get("year")) for source in bundle)
         if year is not None
@@ -2294,6 +2323,27 @@ def payload(
         "metric-scope caveat, and context-only receipts separate."
         if non_bio else synthesis
     )
+    extra_source_notes = [
+        note for note in (
+            cross_setting_text, metric_imbalance_note, context_only_note,
+        )
+        if note and not source_synthesis_note
+    ]
+    modeling_boundary_note = (
+        f" Effect-support accounting: {context_only_count} of {len(selected)} "
+        "receipt(s) is context/modeling-only and contributes no effect estimate; "
+        f"{directional_count} receipt(s) are direction-bearing and {nullish_count} "
+        "receipt(s) are metric-scope caveats."
+        if non_bio and context_only_count else ""
+    )
+    routing_boundary_note = (
+        modeling_boundary_note
+        if non_bio else
+        (
+            f" Routing domain `{profile.slug}` is publication-lane metadata only; "
+            f"the source scope here is defined by the selected {topic} receipts."
+        )
+    )
     lines.extend([
         "",
         "## Source synthesis",
@@ -2301,11 +2351,9 @@ def payload(
         bounded_signal,
         "",
         *([source_synthesis_note, ""] if source_synthesis_note else []),
-        *([cross_setting_text, ""] if cross_setting_text else []),
-        *([metric_imbalance_note, ""] if metric_imbalance_note else []),
+        *([*extra_source_notes, ""] if extra_source_notes else []),
         *([evidence_weight_note, ""] if evidence_weight_note else []),
         *([scope_integration_note, ""] if scope_integration_note else []),
-        *([context_only_note, ""] if context_only_note else []),
         "",
         "## Evidence matrix",
         "",
@@ -2348,7 +2396,7 @@ def payload(
             )
             + ". "
             f"The selected receipts group because each carries a fact-level extraction "
-            f"for {topic}; they separate by context ({context_text}) and "
+            f"for {topic_label}; they separate by context ({context_text}) and "
             f"{'metric' if non_bio else 'endpoint'}, "
             "so they are not interchangeable evidence for one pooled claim."
             + (
@@ -2385,10 +2433,7 @@ def payload(
                 "and pooling across these PICOs would be inappropriate."
             )
         ),
-        (
-            f" Routing domain `{profile.slug}` is publication-lane metadata only; "
-            f"the source scope here is defined by the selected {topic} receipts."
-        ),
+        routing_boundary_note,
         "",
         "## Next gaps",
         "",
@@ -2453,6 +2498,7 @@ def payload(
         "category": category,
         "domain_slug": profile.slug,
         "topic": topic,
+        "topic_label": topic_label,
     }
     metadata.update(revision_metadata)
     evidence_bundle: dict[str, Any] = {
@@ -2477,7 +2523,8 @@ def payload(
         "domain": profile.as_metadata(),
         "domain_slug": profile.slug,
         "category": category,
-        "title": f"{topic.replace('_', ' ')}: {title_tail}",
+        "title": f"{topic_label}: {title_tail}",
+        "human_title": f"{topic_label}: {title_tail}",
         "abstract": safe_excerpt(abstract_text),
         "summary": safe_excerpt(abstract_text),
         "topic": topic,
