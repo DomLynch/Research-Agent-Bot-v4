@@ -54,6 +54,22 @@ def test_resubmission_response_uses_job_id_before_parent_object() -> None:
     }) == "job-new"
 
 
+def test_submission_response_uses_target_object_before_job_id() -> None:
+    assert publish_decisions.submission_id({
+        "status": "accepted",
+        "attempts": [{
+            "response": {
+                "job": {
+                    "id": "job-queued",
+                    "status": "queued",
+                    "target_object_id": "object-reviewed",
+                },
+                "submission": {"id": "object-reviewed"},
+            },
+        }],
+    }) == "object-reviewed"
+
+
 def test_doi_only_source_rows_keep_registrant_diversity() -> None:
     rows = [
         {"doi": "10.3390/systems11080396", "url": "https://doi.org/10.3390/systems11080396"},
@@ -6220,6 +6236,43 @@ def test_sync_submission_decisions_uses_top_level_submission_id(tmp_path: Path) 
     assert summary["checked"] == 1
     assert patched["final_verdict"] == "rejected"
     assert patched["researka_decision"]["seen_id"] == "sub_top"
+
+
+def test_sync_submission_decisions_recovers_target_object_id(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "submitted_to_researka",
+        "submission_id": "job-queued",
+        "submission": {
+            "attempts": [{
+                "response": {
+                    "job": {
+                        "id": "job-queued",
+                        "target_object_id": "object-reviewed",
+                    },
+                    "submission": {"id": "object-reviewed"},
+                },
+            }],
+        },
+    })
+
+    summary = daily.sync_submission_decisions(
+        root,
+        fetcher=lambda submission_id: {
+            "status": "complete",
+            "decision": "revise",
+            "seen_id": submission_id,
+        },
+    )
+
+    patched = json.loads(
+        (root / "_daily_ledger" / "2026-05-21.json").read_text(encoding="utf-8")
+    )
+    assert summary["checked"] == 1
+    assert summary["updated"] == 1
+    assert patched["submission_id"] == "object-reviewed"
+    assert patched["final_verdict"] == "revise"
+    assert patched["researka_decision"]["seen_id"] == "object-reviewed"
 
 
 def test_submission_id_reads_native_research_object_id() -> None:

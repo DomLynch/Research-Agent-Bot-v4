@@ -34,10 +34,14 @@ def submission_id(payload: Json) -> str:
     direct = payload.get("submission_id")
     if direct:
         return str(direct)
-    job = payload.get("job")
-    if isinstance(job, dict) and job.get("id"):
-        return str(job.get("id"))
     submission = payload.get("submission")
+    job = payload.get("job")
+    if isinstance(job, dict):
+        target_object_id = str(job.get("target_object_id") or "").strip()
+        if target_object_id:
+            return target_object_id
+        if job.get("id"):
+            return str(job.get("id"))
     if isinstance(submission, dict) and submission.get("id"):
         return str(submission.get("id"))
     for key in ("detail", "data"):

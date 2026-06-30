@@ -2037,6 +2037,12 @@ def _submission_record_patch(ledger: Json) -> Json:
     return patch
 
 
+def _ledger_submission_id(ledger: Json) -> str:
+    from_response = publish_decisions.submission_id(ledger.get("submission", {}))
+    stored = str(ledger.get("submission_id") or "").strip()
+    return from_response or stored
+
+
 def _stamp_to_utc(value: Any) -> dt.datetime | None:
     match = re.search(
         r"(\d{4}-\d{2}-\d{2})[Tt](\d{2})[-:](\d{2})[-:](\d{2})",
@@ -5003,9 +5009,7 @@ def _sync_submission_decisions_unlocked(
     for path in sorted(ledger_dir.glob("*.json")):
         ledger = _json(path, {})
         if isinstance(ledger, dict):
-            sid = str(ledger.get("submission_id") or "") or publish_decisions.submission_id(
-                ledger.get("submission", {}),
-            )
+            sid = _ledger_submission_id(ledger)
             if sid:
                 seen_submission_ids.add(sid)
                 patch = _submission_record_patch(ledger)
@@ -5055,9 +5059,7 @@ def _sync_submission_decisions_unlocked(
             continue
         if ledger.get("final_verdict") in _FINAL_DECISION_VERDICTS:
             continue
-        submission_id = str(ledger.get("submission_id") or "") or publish_decisions.submission_id(
-            ledger.get("submission", {}),
-        )
+        submission_id = _ledger_submission_id(ledger)
         if not submission_id:
             continue
         summary["checked"] += 1
