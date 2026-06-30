@@ -3785,13 +3785,17 @@ def _source_bundle(papers: list[Json]) -> list[Json]:
         title = str(paper.get("title") or "").strip()
         doi = str(paper.get("doi") or "").strip() or None
         pmid = str(paper.get("pmid") or "").strip() or None
-        ident = str(paper.get("id") or paper.get("paper_id") or "").strip()
+        ident = str(
+            paper.get("id") or paper.get("paper_id") or paper.get("openalex_id") or "",
+        ).strip()
         # Researka rejects bundles carrying unverifiable sources. A receipt is
         # only citable with a resolvable identifier or URL; drop title-only sources.
         # The accepted bundle schema has no pmid field, so a PMID-only paper is
         # made verifiable through its resolvable PubMed URL rather than presented
         # as identifier-less.
         url = paper.get("url") or None
+        if not url and ident.startswith("https://openalex.org/"):
+            url = ident
         if not url and ident.startswith("W") and ident[1:].isdigit():
             url = f"https://openalex.org/{ident}"
         if not title or not (doi or pmid or url):
@@ -4932,6 +4936,24 @@ def _source_literature_payload(
         parent_submission_id=parent_submission_id,
         strict_topic_coverage=publish_literature._non_biomedical(profile_slug),
     )
+
+
+def _source_literature_payload_bundle_blocker(payload: Json, min_sources: int) -> str:
+    bundle = payload.get("source_bundle")
+    sources = (
+        [source for source in bundle if isinstance(source, dict)]
+        if isinstance(bundle, list) else []
+    )
+    if len(sources) < min_sources:
+        return "source_bundle_below_min"
+    if publish_literature.substantive_fact_count(sources) < min_sources:
+        return "source_bundle_fact_floor_below_min"
+    if (
+        publish_literature.source_identity_count(sources, require_substantive=True)
+        < min_sources
+    ):
+        return "source_bundle_fact_diversity_below_min"
+    return ""
 
 
 _PUBLISH_RENDER_POLL_ATTEMPTS = publish_public.PUBLISH_RENDER_POLL_ATTEMPTS
@@ -6664,10 +6686,16 @@ def run_cycle(
                         fallback_attempt["reason"] = "duplicate_submission_fingerprint"
                         fallback_attempt["fingerprint"] = fingerprint
                         continue
-                if len(payload.get("source_bundle") or []) < min_submit_sources:
+                payload_blocker = _source_literature_payload_bundle_blocker(
+                    payload,
+                    min_submit_sources,
+                )
+                if payload_blocker:
                     fallback_attempt["status"] = "blocked"
-                    fallback_attempt["reason"] = "source_bundle_below_min"
-                    fallback_attempt["direct_source_count"] = len(payload.get("source_bundle") or [])
+                    fallback_attempt["reason"] = payload_blocker
+                    fallback_attempt["direct_source_count"] = len(
+                        payload.get("source_bundle") or [],
+                    )
                     continue
                 assert submitter is not None
                 result = submit_with_backoff(payload, submitter)
@@ -6753,6 +6781,17 @@ def run_cycle(
                                         repair_decision,
                                     ),
                                 )
+                                payload_blocker = _source_literature_payload_bundle_blocker(
+                                    payload,
+                                    min_submit_sources,
+                                )
+                                if payload_blocker:
+                                    fallback_attempt["terminal_resubmit_status"] = "blocked"
+                                    fallback_attempt["terminal_resubmit_reason"] = payload_blocker
+                                    fallback_attempt["terminal_resubmit_direct_source_count"] = len(
+                                        payload.get("source_bundle") or [],
+                                    )
+                                    continue
                                 result = submit_with_backoff(payload, submitter)
                                 fallback_attempt["terminal_resubmit_status"] = result["status"]
                                 fallback_attempt["terminal_resubmit_submission"] = result

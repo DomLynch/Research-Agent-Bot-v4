@@ -289,6 +289,62 @@ def test_select_boundary_papers_preserves_fact_backed_floor_before_metadata() ->
     )
 
 
+def test_select_boundary_papers_skips_internal_id_only_source() -> None:
+    topic = "operational_resilience_performance"
+    papers = [
+        {
+            "title": f"Operational resilience performance citable source {idx}",
+            "doi": f"10.7100/orp-{idx}",
+            "source_fact": {
+                "canonical_phrase": (
+                    f"operational resilience performance shifted bounded outcome {idx}"
+                ),
+                "population": f"firm setting {idx}",
+                "intervention": "operational resilience",
+                "endpoint": f"performance outcome {idx}",
+                "source_tier": "fullraw_abstract",
+            },
+        }
+        for idx in range(4)
+    ]
+    papers.append({
+        "title": "Operational resilience performance internal source",
+        "id": "internal-fullraw-row-5",
+        "source_fact": {
+            "canonical_phrase": "operational resilience performance internal fact",
+            "population": "internal row setting",
+            "intervention": "operational resilience",
+            "endpoint": "internal-only outcome",
+            "source_tier": "fullraw_abstract",
+        },
+    })
+    papers.append({
+        "title": "Operational resilience performance replacement source",
+        "openalex_id": "W123456789",
+        "source_fact": {
+            "canonical_phrase": "operational resilience performance replacement fact",
+            "population": "replacement firm setting",
+            "intervention": "operational resilience",
+            "endpoint": "replacement outcome",
+            "source_tier": "fullraw_abstract",
+        },
+    })
+
+    selected = literature.select_boundary_papers(
+        topic,
+        papers,
+        5,
+        strict_topic_coverage=True,
+        profile_slug="business_research",
+    )
+
+    assert len(selected) == 5
+    assert {paper.get("id") for paper in selected} == {None}
+    assert "W123456789" in {paper.get("openalex_id") for paper in selected}
+    assert literature.substantive_fact_count(selected) == 5
+    assert literature.source_identity_count(selected, require_substantive=True) == 5
+
+
 def test_non_bio_selection_prefers_second_directional_receipt() -> None:
     topic = "digital_transformation_firm"
     papers = [

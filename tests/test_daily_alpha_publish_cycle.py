@@ -8804,8 +8804,10 @@ def test_source_literature_fallback_blocks_under_citable_source_floor(
     assert submitted["called"] is False
     assert ledger["status"] == "no_fresh_candidate"
     assert ledger["source_literature_fallback"]["status"] == "blocked"
-    assert ledger["source_literature_fallback"]["reason"] == "source_bundle_below_min"
-    assert ledger["source_literature_fallback"]["direct_source_count"] == 3
+    assert ledger["source_literature_fallback"]["reason"] == "source_floor_below_min"
+    assert ledger["source_literature_fallback"]["selected_source_count"] == 3
+    assert ledger["source_literature_fallback"]["selected_source_fact_count"] == 3
+    assert ledger["source_literature_fallback"]["selected_source_identity_count"] == 3
 
 
 def test_source_literature_fallback_runs_after_refresh_failure(
@@ -14568,6 +14570,49 @@ def test_source_literature_bundle_preserves_source_facts() -> None:
         "year": 2024,
         "source_fact": fact,
     }])[0]["source_fact"] == fact
+
+
+def test_source_literature_payload_bundle_blocker_requires_fact_backed_identities() -> None:
+    def source(idx: int, *, doi: str | None = None) -> dict[str, Any]:
+        return {
+            "title": f"Operational resilience source {idx}",
+            "doi": doi or f"10.8123/or-{idx}",
+            "source_fact": {
+                "canonical_phrase": f"operational resilience moved outcome {idx}",
+                "population": f"firm setting {idx}",
+                "intervention": "operational resilience",
+                "endpoint": f"performance outcome {idx}",
+            },
+        }
+
+    good = [source(idx) for idx in range(5)]
+    assert daily._source_literature_payload_bundle_blocker(
+        {"source_bundle": good},
+        5,
+    ) == ""
+    assert daily._source_literature_payload_bundle_blocker(
+        {"source_bundle": good[:4]},
+        5,
+    ) == "source_bundle_below_min"
+
+    metadata_only = [*good[:4], {
+        "title": "Operational resilience metadata only",
+        "doi": "10.8123/meta",
+        "source_fact": {
+            "canonical_phrase": "Operational resilience metadata only",
+            "source_tier": "paper_metadata",
+        },
+    }]
+    assert daily._source_literature_payload_bundle_blocker(
+        {"source_bundle": metadata_only},
+        5,
+    ) == "source_bundle_fact_floor_below_min"
+
+    duplicate_identity = [*good[:4], source(5, doi="10.8123/or-3")]
+    assert daily._source_literature_payload_bundle_blocker(
+        {"source_bundle": duplicate_identity},
+        5,
+    ) == "source_bundle_fact_diversity_below_min"
 
 
 def test_source_literature_payload_is_deterministic_boundary_only(

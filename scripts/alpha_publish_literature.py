@@ -496,7 +496,7 @@ def select_boundary_papers(
         if isinstance(paper, dict)
         and topic_relevant(topic, paper)
         and str(paper.get("title") or "").strip()
-        and (paper.get("doi") or paper.get("url") or paper.get("pmid") or paper.get("id"))
+        and citable_source_ref(paper)
     ]
     if len(usable) < min_sources:
         return usable
@@ -605,9 +605,23 @@ def source_identity_key(paper: Json) -> str:
         or paper.get("id")
         or paper.get("url")
         or paper.get("paper_id")
+        or paper.get("openalex_id")
         or ""
     )
     return str(raw).strip().casefold()
+
+
+def _openalex_ref(value: Any) -> str:
+    raw = str(value or "").strip()
+    if raw.startswith("https://openalex.org/"):
+        raw = raw.rsplit("/", 1)[-1]
+    return raw if raw.startswith("W") and raw[1:].isdigit() else ""
+
+
+def citable_source_ref(paper: Json) -> bool:
+    if paper.get("doi") or paper.get("url") or paper.get("pmid"):
+        return True
+    return any(_openalex_ref(paper.get(key)) for key in ("id", "paper_id", "openalex_id"))
 
 
 def source_identity_count(papers: list[Json], *, require_substantive: bool = False) -> int:
