@@ -973,8 +973,8 @@ def _memo_role_label(label: str, profile_slug: str = "") -> str:
         return label
     return {
         "null/mixed": "metric-scope caveat",
-        "other/mixed": "non-directional caveat",
-        "null/non-convergent": "non-directional caveat",
+        "other/mixed": "context-only receipt",
+        "null/non-convergent": "metric-scope caveat",
     }.get(label, label)
 
 
@@ -1086,8 +1086,8 @@ def _direction_category_lines(topic: str, profile_slug: str = "") -> list[str]:
             "rather than a policy-effect estimate.",
             "- metric-scope caveat: the receipt constrains the directional "
             "scope to the named metric rather than the broader outcome set.",
-            "- non-directional caveat: the extracted finding is not directionally "
-            "interpretable for the named metric.",
+            "- context-only receipt: the extracted finding is retained as adjacent "
+            "scope context, not direction-bearing support for the named metric.",
         ]
     return [
         f"- directionally favorable: {topic_text} is the intervention/exposure "
@@ -1118,10 +1118,10 @@ def _used_direction_category_lines(
             label in used_roles
             or (
                 label == "metric-scope caveat"
-                and bool(used_roles & {"null/mixed", "other/mixed"})
+                and bool(used_roles & {"null/mixed", "null/non-convergent"})
             )
             or (
-                label == "non-directional caveat"
+                label == "context-only receipt"
                 and bool(used_roles & {"other/mixed"})
             )
         ):
@@ -1164,6 +1164,7 @@ def _evidence_role_summary(papers: list[Json], topic: str = "", profile_slug: st
             nullish += 1
         elif label in {
             "antecedent/support", "descriptive/modeling", "non-clinical/predictive",
+            "other/mixed",
         }:
             context_only += 1
     parts = [
@@ -1928,7 +1929,8 @@ def payload(
         endpoints_by_label.get("economic/context only", [])
         + endpoints_by_label.get("antecedent/support", [])
         + endpoints_by_label.get("descriptive/modeling", [])
-        + endpoints_by_label.get("non-clinical/predictive", []),
+        + endpoints_by_label.get("non-clinical/predictive", [])
+        + endpoints_by_label.get("other/mixed", []),
     ))
     context_only_note = (
         "Context-only classification: "
@@ -2105,6 +2107,8 @@ def payload(
     if non_bio_signal_parts:
         signal_heading = "Substantive map" if non_bio and len(directional_endpoints) > 1 else "Substantive signal"
         synthesis += f" {signal_heading}: " + "; ".join(non_bio_signal_parts) + "."
+    if non_bio and context_only_note:
+        synthesis += f" {context_only_note}"
     if non_bio and duplicated_directional_endpoints and multi_display_outcome:
         duplicate_text = join_contexts(
             [
@@ -2140,6 +2144,7 @@ def payload(
         synthesis += " " + contrast_text
     if cross_setting_text:
         synthesis += " " + cross_setting_text
+    source_synthesis_note = synthesis if non_bio else ""
     abstract_text = (
         f"{topic}: one receipt supports {join_contexts(directional_endpoints[:2])}; "
         f"one separate receipt is null or non-convergent for "
@@ -2147,6 +2152,12 @@ def payload(
         "only, so this is a scoping contrast rather than a generalized effect."
         if thin_non_bio_scope else synthesis
     )
+    if non_bio and not thin_non_bio_scope:
+        abstract_text = (
+            f"{topic.replace('_', ' ')}: {bounded_signal} Context-only rows are "
+            "adjacent scope, not effect support; no pooled causal, policy-prescriptive, "
+            "or market-generalized claim is made."
+        )
     moderator_note = _specific_moderator_note(facts, source_types)
     next_gaps = [
         _pico_gap(facts, profile.slug),
@@ -2207,7 +2218,11 @@ def payload(
         "Audit note: effect-bearing rows stay metric-specific; "
         "antecedent/support and descriptive/modeling rows are excluded from effect "
         "support and no rows are pooled."
-        if thin_non_bio_scope else synthesis
+        if thin_non_bio_scope else
+        "Audit note: effect-bearing rows stay metric-specific; context-only rows "
+        "are excluded from effect support; role counts below keep direction-bearing, "
+        "metric-scope caveat, and context-only receipts separate."
+        if non_bio else synthesis
     )
     lines.extend([
         "",
@@ -2215,6 +2230,7 @@ def payload(
         "",
         bounded_signal,
         "",
+        *([source_synthesis_note, ""] if source_synthesis_note else []),
         *([cross_setting_text, ""] if cross_setting_text else []),
         *([metric_imbalance_note, ""] if metric_imbalance_note else []),
         *([evidence_weight_note, ""] if evidence_weight_note else []),

@@ -14967,6 +14967,126 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "Finding: The aim of this study is to identify" not in markdown
 
 
+def test_source_literature_payload_collapses_business_context_rows(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    rows = [
+        (
+            "Digital Transformation and Firm Environmental Performance",
+            "10.17323/1998-0663.2025.2.188.214",
+            2025,
+            "Foresight and STI Governance",
+            "digital transformation significantly enhances firm environmental performance",
+            "firms",
+            "digital transformation",
+            "environmental performance",
+        ),
+        (
+            "The effects of digital transformation on firm performance",
+            "10.1016/j.jbusres.2024.114610",
+            2024,
+            "Journal of Business Research",
+            "although IT capabilities are assumed to enhance firm performance",
+            "firms",
+            "IT capabilities and digital transformation",
+            "firm performance",
+        ),
+        (
+            "Digital transformation: harnessing digital technologies for the next generation of services",
+            "10.1108/jsm-01-2019-0034",
+            2019,
+            "Journal of Service Management",
+            "71 per cent of banking firms report big data provides a competitive advantage",
+            "banking firms",
+            "use of big data",
+            "competitive advantage",
+        ),
+        (
+            "Assessing the mediating role of digital transformation",
+            "10.1234/digital-mediating-role",
+            2025,
+            "Digital Business Review",
+            "digital capabilities and management support substantially affect digital transformation",
+            "firms",
+            "digital capabilities and management support",
+            "digital transformation antecedents",
+        ),
+        (
+            "Impact of Digital Transformation on Firm Profitability",
+            "10.1234/digital-profitability",
+            2025,
+            "Strategic Performance Letters",
+            "digital transformation significantly increases return on assets",
+            "firms",
+            "digital transformation",
+            "return on assets",
+        ),
+    ]
+    papers = [
+        {
+            "title": title,
+            "doi": doi,
+            "year": year,
+            "journal_name": journal,
+            "source_fact": {
+                "canonical_phrase": phrase,
+                "population": population,
+                "intervention": intervention,
+                "endpoint": endpoint,
+            },
+        }
+        for title, doi, year, journal, phrase, population, intervention, endpoint in rows
+    ]
+
+    _candidate, payload = daily._source_literature_payload(
+        profile_slug="business_research",
+        topic="digital_transformation_firm",
+        papers=papers,
+        runs_root=root,
+        date="2026-06-30T12-00-00Z",
+    )
+
+    markdown = payload["markdown"]
+    source_bundle = payload["source_bundle"]
+    assert len(source_bundle) == 5
+    assert len({source["journal_name"] for source in source_bundle}) == 5
+    assert publish_literature.substantive_fact_count(source_bundle) == 5
+    assert publish_literature.source_identity_count(
+        source_bundle, require_substantive=True,
+    ) == 5
+    assert payload["abstract"].startswith(
+        "digital transformation firm: Bounded signal:",
+    )
+    assert "This receipt-backed scoping note" not in payload["abstract"]
+    assert "non-directional caveat" not in markdown
+    assert "- metric-scope caveat:" not in markdown
+    assert (
+        "Evidence role summary: direction-bearing receipts: 2; "
+        "metric-scope caveat receipts: 0; context/antecedent/model "
+        "receipts: 3 excluded from effect support."
+    ) in markdown
+    assert (
+        "Direction labels for audit: context-only receipt: 3 receipt(s) | "
+        "directional association: 2 receipt(s)."
+    ) in markdown
+    assert (
+        markdown.count(
+            "This receipt-backed scoping note is a multi-outcome boundary map",
+        )
+        == 1
+    )
+    assert (
+        "Audit note: effect-bearing rows stay metric-specific; context-only rows "
+        "are excluded from effect support"
+    ) in markdown
+    assert (
+        "| competitive advantage | Digital transformation: harnessing digital "
+        "technologies"
+    ) in markdown
+    assert "primary; 2019" in markdown
+
+
 def test_source_literature_endpoint_label_does_not_promote_topic_as_outcome() -> None:
     assert (
         publish_literature._source_fact_endpoint_label(
