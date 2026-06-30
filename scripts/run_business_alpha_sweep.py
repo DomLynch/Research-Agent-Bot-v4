@@ -1981,10 +1981,14 @@ def main() -> int:
                     )
                 )
             ] + non_repair_fresh_topics[cache_rank_limit:]
+            selected_limit = max(
+                args.topics_per_domain,
+                args.topics_per_domain + len(repairable_fresh_topics),
+            )
             selected_topics = list(dict.fromkeys([
                 *repairable_fresh_topics,
                 *ranked_topics,
-            ]))[:args.topics_per_domain]
+            ]))[:selected_limit]
             if skipped_recent:
                 print(
                     "[business-sweep] skipped_recent_source_literature_topics "

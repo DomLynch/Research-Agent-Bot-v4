@@ -5309,6 +5309,110 @@ def test_business_sweep_demotes_cached_priority_repair_below_fact_floor(
     }]
 
 
+def test_business_sweep_underfilled_repair_does_not_exhaust_scan_window(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    runs_root = tmp_path / "runs"
+    bad_topic = "digital_transformation_firm"
+    good_topic = "pricing_strategy_margin"
+    submissions: list[dict[str, Any]] = []
+
+    def papers_for(topic: str, *, bad: bool = False) -> list[dict[str, Any]]:
+        papers = [
+            {
+                "title": f"{topic.replace('_', ' ')} evidence paper {idx}",
+                "doi": f"10.5355/{topic}-{idx}",
+                "abstract": f"{topic} performance evidence.",
+                "source_fact": {
+                    "canonical_phrase": (
+                        f"{topic} improves business performance in bounded firm samples {idx}"
+                    ),
+                    "population": "firms",
+                    "intervention": topic.replace("_", " "),
+                    "endpoint": "business performance",
+                    "source_tier": "fullraw_search",
+                },
+            }
+            for idx in range(5)
+        ]
+        if bad:
+            papers[-1]["source_fact"] = {
+                "canonical_phrase": papers[-1]["title"],
+                "source_tier": "fullraw_search",
+            }
+        return papers
+
+    def cached_papers(
+        _runs_root: Path, _domain: str, topic: str,
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        if topic == bad_topic:
+            return papers_for(topic, bad=True), {"status": "complete", "paper_count": 5}
+        if topic == good_topic:
+            return papers_for(topic), {"status": "complete", "paper_count": 5}
+        return [], {}
+
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        if kwargs.get("source_literature_priority_topics") == [bad_topic]:
+            raise AssertionError("below-floor cached repair should not re-enter priority")
+        submissions.append(kwargs)
+        return {"status": "submitted_to_researka", "submitted": 1, "published": 0}
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [
+        bad_topic,
+        good_topic,
+    ])
+    monkeypatch.setattr(
+        sweep,
+        "_prioritized_seed_topics",
+        lambda _root, _domain, _topics: [bad_topic, good_topic],
+    )
+    monkeypatch.setattr(
+        cycle,
+        "_priority_source_literature_repair_decisions",
+        lambda *_args, **_kwargs: {bad_topic: {}, good_topic: {}},
+    )
+    monkeypatch.setattr(
+        cycle,
+        "_repairable_source_literature_topics",
+        lambda *_args, **_kwargs: [bad_topic, good_topic],
+    )
+    monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", lambda _topic: 0)
+    monkeypatch.setattr(sweep, "_cached_fullraw_discovery_papers", cached_papers)
+    monkeypatch.setattr(
+        sweep,
+        "_enrich_fullraw_papers_with_db_facts",
+        lambda _topic, *, domain, papers, settings: papers,
+    )
+    monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: (
+        [],
+        {"status": "empty"},
+    ))
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(runs_root),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-06-29T04-14-00Z",
+    ])
+
+    assert sweep.main() == 0
+    assert submissions == [{
+        "runs_root": runs_root,
+        "date": "2026-06-29T04-14-00Z",
+        "domain": "business_research",
+        "submit": True,
+        "refresh_candidates": False,
+        "source_literature_forced_papers": {good_topic: papers_for(good_topic)},
+    }]
+
+
 def test_business_sweep_allows_repairable_directional_underfill_topic(
     tmp_path: Path,
     monkeypatch: Any,
