@@ -924,9 +924,9 @@ def _direction_category_lines(topic: str, profile_slug: str = "") -> list[str]:
     topic_text = topic or "the selected topic"
     if _non_biomedical(profile_slug):
         return [
-            f"- directional association: {topic_text} is the policy, exposure, "
-            "method, or practice linked to the named metric; the label is not "
-            "an effect-size estimate or efficacy verdict.",
+            f"- directional association: source-level direction with design caveat; {topic_text} "
+            "is the policy, exposure, method, or practice linked to the named metric, "
+            "not a pooled effect-size estimate or efficacy verdict.",
             "- antecedent/support: the receipt explains inputs, enablers, or "
             "context for the topic rather than a clean topic-to-outcome effect.",
             f"- reference/comparator contrast: {topic_text} is the reference side "
@@ -1064,18 +1064,40 @@ def _direction_contrast_sentence(
     return "Concrete contrast: " + "; ".join(parts[:4]) + "."
 
 
+def _cross_setting_contrast_sentence(
+    papers: list[Json], topic: str = "", profile_slug: str = "",
+) -> str:
+    if not _non_biomedical(profile_slug):
+        return ""
+    clauses: list[str] = []
+    for paper in papers:
+        if _paper_evidence_role(paper, topic, profile_slug) not in {
+            "directional association", "directional estimate", "directionally favorable",
+        }:
+            continue
+        fact = paper.get("source_fact")
+        fact = fact if isinstance(fact, dict) else {}
+        finding = _display_finding(fact, _paper_effect_direction(paper, topic))
+        metric = _source_fact_endpoint_label(fact, topic, paper)
+        setting = _source_context_label(paper, non_bio=True)
+        if finding and metric and setting:
+            clauses.append(f"{metric} in {setting}: {_short_finding(finding, 105)}")
+    if len(clauses) < 2:
+        return ""
+    return (
+        "Cross-setting contrast: "
+        + "; ".join(clauses[:5])
+        + " are separate setting-metric cells, not one pooled topic effect."
+    )
+
+
 def _pico_gap(facts: list[Json], profile_slug: str = "") -> str:
-    endpoints = [
-        str(fact.get("endpoint") or fact.get("metric") or "").strip()
-        for fact in facts
-        if str(fact.get("endpoint") or fact.get("metric") or "").strip()
-    ]
     for fact in facts:
         population = str(fact.get("population") or "").strip()
         intervention = str(fact.get("intervention") or "").strip()
         comparator = str(fact.get("comparator") or "").strip()
-        if population and intervention and comparator and endpoints:
-            outcome = endpoints[0]
+        outcome = str(fact.get("endpoint") or fact.get("metric") or "").strip()
+        if population and intervention and comparator and outcome:
             return (
                 "A stronger memo needs a matched design that reduces this "
                 f"bundle's scope spread: hold metric={outcome} constant, "
@@ -1616,7 +1638,21 @@ def payload(
         lines.append(f"- {title}{suffix}" + (f" doi:{doi}" if doi else ""))
         phrase = _display_finding(fact, _paper_effect_direction(paper, topic))
         if phrase:
-            lines.append(f"  - Finding: {phrase}")
+            lines.append(
+                f"  - {'Bounded source claim' if non_bio else 'Finding'}: {phrase}",
+            )
+            if non_bio:
+                bounds = [
+                    ("setting", _source_context_label(paper, non_bio=True)),
+                    ("exposure", _exposure_context_label(paper, non_bio=True)),
+                    ("comparator/reference", str(fact.get("comparator") or "").strip()),
+                    ("metric", _endpoint_context_label(paper, topic, non_bio=True)),
+                ]
+                bound_text = "; ".join(
+                    f"{label}={value}" for label, value in bounds if value
+                )
+                if bound_text:
+                    lines.append(f"  - Claim bounds: {bound_text}")
         for label, key in (
             ("Population/setting" if non_bio else "Population", "population"),
             ("Policy/exposure/practice" if non_bio else "Intervention/exposure", "intervention"),
@@ -1662,6 +1698,7 @@ def payload(
     direction_text = _direction_summary(selected, topic, profile.slug)
     role_text = _evidence_role_summary(selected, topic, profile.slug)
     contrast_text = _direction_contrast_sentence(selected, topic, profile.slug)
+    cross_setting_text = _cross_setting_contrast_sentence(selected, topic, profile.slug)
     signal_label = _direction_signal_label(selected, topic, profile.slug)
     endpoints_by_label: dict[str, list[str]] = {}
     for paper in selected:
@@ -1737,6 +1774,19 @@ def payload(
         in {"null/mixed", "null/non-convergent"}
     )
     context_only_count = len(selected) - directional_count - nullish_count
+    context_only_endpoints = list(dict.fromkeys(
+        endpoints_by_label.get("economic/context only", [])
+        + endpoints_by_label.get("antecedent/support", [])
+        + endpoints_by_label.get("descriptive/modeling", [])
+        + endpoints_by_label.get("non-clinical/predictive", []),
+    ))
+    context_only_note = (
+        "Context-only classification: "
+        f"{join_contexts(context_only_endpoints[:3])} is retained as adjacent source "
+        f"context, not direction-bearing support, because it does not share the "
+        f"directional metric set ({join_contexts(directional_endpoints[:4])})."
+        if non_bio and context_only_endpoints and directional_endpoints else ""
+    )
     antecedent_count = sum(
         1 for paper in selected
         if _paper_evidence_role(paper, topic, profile.slug) == "antecedent/support"
@@ -1938,6 +1988,8 @@ def payload(
             )
     if contrast_text:
         synthesis += " " + contrast_text
+    if cross_setting_text:
+        synthesis += " " + cross_setting_text
     abstract_text = (
         f"{topic}: one receipt supports {join_contexts(directional_endpoints[:2])}; "
         f"one separate receipt is null or non-convergent for "
@@ -2013,9 +2065,11 @@ def payload(
         "",
         bounded_signal,
         "",
+        *([cross_setting_text, ""] if cross_setting_text else []),
         *([metric_imbalance_note, ""] if metric_imbalance_note else []),
         *([evidence_weight_note, ""] if evidence_weight_note else []),
         *([scope_integration_note, ""] if scope_integration_note else []),
+        *([context_only_note, ""] if context_only_note else []),
         "",
         "## Evidence matrix",
         "",

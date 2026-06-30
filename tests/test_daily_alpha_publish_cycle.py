@@ -14361,6 +14361,16 @@ def test_source_literature_payload_infers_missing_non_bio_metrics(
     assert "direction-bearing receipts: 5" in markdown
     assert "Substantive map: direction-bearing evidence covers price pass-through, employment effects, poverty elasticity, and earnings inequality share." in markdown
     assert "Named setting scope includes Brazilian labor market, 1996-2018" in markdown
+    assert "Bounded source claim: a 10% minimum wage hike translates into a 0.36% increase" in markdown
+    assert (
+        "Claim bounds: setting=U.S. grocery and drug stores; exposure=10% minimum wage hike; "
+        "comparator/reference=baseline prices before the minimum wage increase; "
+        "metric=price pass-through"
+    ) in markdown
+    assert "source-level direction with design caveat" in markdown
+    assert "Cross-setting contrast:" in markdown
+    assert "poverty elasticity in non-elderly population (US)" in markdown
+    assert "earnings inequality share in Brazilian labor market, 1996-2018" in markdown
     assert "Coverage balance: price pass-through (2 of 5 direction-bearing receipts)" in markdown
     assert (
         "Bounded research signal: price pass-through is the repeated anchor, while "
@@ -14609,6 +14619,10 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "inside one matched industry, comparator, and metric frame" in markdown
     assert "Evidence weight: one effect-bearing receipt supports supply chain performance" not in markdown
     assert "Population/settings are separated as receipt context" in markdown
+    assert (
+        "Context-only classification: resilience scoring model is retained as adjacent "
+        "source context, not direction-bearing support"
+    ) in markdown
     assert "automotive firms" in markdown
     assert "chemical firms" in markdown
     assert "manufacturing firms" in markdown
