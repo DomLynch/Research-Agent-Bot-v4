@@ -795,7 +795,7 @@ def _effect_direction(finding: str, fact: Json | None = None, topic: str = "") -
         "ranked as the best", "ranked best", "best approach", "ranked first",
         "positive and significant", "significant positive", "significantly influences",
         "significantly influence", "positive effect", "positive impact",
-        "positive influence",
+        "positive influence", "promote", "promotes", "promoted",
     )):
         return "directionally favorable"
     return "other/mixed"

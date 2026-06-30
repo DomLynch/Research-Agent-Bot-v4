@@ -355,6 +355,24 @@ def test_non_bio_selection_prefers_second_directional_receipt() -> None:
     ) == (False, "directional_receipt_floor_below_min")
 
 
+def test_non_bio_promote_receipt_counts_directional() -> None:
+    paper = {
+        "doi": "10.8100/dtf-promote",
+        "title": "Digital transformation and firm ESG performance",
+        "source_fact": {
+            "canonical_phrase": "digital reform promoted ESG performance after adoption",
+            "population": "firms",
+            "intervention": "digital transformation",
+            "endpoint": "ESG performance",
+            "source_tier": "tier2",
+        },
+    }
+
+    assert literature._paper_evidence_role(
+        paper, "digital_transformation_firm", "business_research",
+    ) == "directional association"
+
+
 def test_fullraw_relevant_papers_honors_researka_variant_cap(
     monkeypatch: MonkeyPatch,
 ) -> None:
