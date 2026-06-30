@@ -912,6 +912,12 @@ def _business_fact_source_literature_papers(
             "paper_id": source_paper.get("paper_id") or key,
             "source_fact": source_fact,
         }
+        for field in (
+            "journal_name", "journal", "venue", "publisher", "publication_year",
+            "url", "source_url",
+        ):
+            if source_paper.get(field):
+                candidate[field] = source_paper.get(field)
         if publish_literature.substantive_fact_count([candidate]) <= 0:
             continue
         if not publish_literature.topic_relevant(topic, candidate):
@@ -1004,6 +1010,30 @@ def _source_fact_claim_key(paper: dict[str, Any]) -> str:
     )))
 
 
+def _source_outlet_key(paper: dict[str, Any]) -> str:
+    for key in (
+        "journal_name", "journal", "venue", "publisher", "source",
+        "source_name", "container_title", "publication_venue",
+    ):
+        value = paper.get(key)
+        if isinstance(value, dict):
+            value = value.get("name") or value.get("title")
+        if isinstance(value, list):
+            value = " ".join(str(item) for item in value if item)
+        if cleaned := _norm_text(value):
+            return cleaned
+    for key in ("url", "source_url", "landing_page_url"):
+        value = str(paper.get(key) or "").strip()
+        host = urllib.parse.urlparse(value).netloc.casefold().removeprefix("www.")
+        if host:
+            return host
+    return ""
+
+
+def _source_outlet_count(papers: list[dict[str, Any]]) -> int:
+    return len({key for paper in papers if (key := _source_outlet_key(paper))})
+
+
 def _claim_diverse_source_papers(papers: list[dict[str, Any]]) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     seen_claims: set[str] = set()
@@ -1033,7 +1063,10 @@ def _source_literature_ready_papers(
         publish_literature.source_identity_count(selected, require_substantive=True)
         < MIN_DIRECT_SOURCES
     ):
-        return [], "source_fact_diversity_below_min"
+        return selected, "source_fact_diversity_below_min"
+    outlet_metadata = sum(1 for paper in selected if _source_outlet_key(paper))
+    if outlet_metadata >= MIN_DIRECT_SOURCES and _source_outlet_count(selected) < 3:
+        return selected, "source_outlet_diversity_below_min"
     return selected, "ok"
 
 
@@ -2073,6 +2106,12 @@ def main() -> int:
                             ready_papers, require_substantive=True,
                         )
                     )
+                    fullraw_trace["selected_source_outlet_metadata_count"] = sum(
+                        1 for paper in ready_papers if _source_outlet_key(paper)
+                    )
+                    fullraw_trace["selected_source_outlet_count"] = _source_outlet_count(
+                        ready_papers,
+                    )
                     trace = {**trace, "fullraw": fullraw_trace}
                     row["trace"] = trace
                     row["status"] = "no_bundle"
@@ -2091,6 +2130,7 @@ def main() -> int:
                         row["blockers"] = no_bundle_blockers_from_diagnostics(diagnostics)
                     fullraw_ready = (
                         fullraw_has_complete_receipt
+                        and ready_blocker == "ok"
                         and len(ready_papers) >= MIN_DIRECT_SOURCES
                     )
                     if fullraw_has_complete_receipt:

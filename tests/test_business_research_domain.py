@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime as dt
 import fcntl
 import json
 import os
@@ -3859,7 +3860,7 @@ def test_business_sweep_uses_distinct_db_facts_to_complete_fullraw_bundle(
             "paper": {
                 "doi": f"10.6161/min-wage-{idx}",
                 "title": f"Minimum wage employment source {idx}",
-                "journal_name": "Labour Economics",
+                "journal_name": f"Labour outlet {idx % 3}",
                 "publication_year": 2024,
             },
         }
@@ -3943,6 +3944,7 @@ def test_business_sweep_hands_off_selected_five_fact_backed_sources(
         {
             "title": f"Digital transformation firm performance source {idx}",
             "doi": f"10.6161/digital-selected-{idx}",
+            "journal_name": f"Digital outlet {idx}",
             "source_fact": {
                 "canonical_phrase": f"Digital transformation changed firm performance {idx}.",
                 "population": "firms",
@@ -3966,6 +3968,7 @@ def test_business_sweep_hands_off_selected_five_fact_backed_sources(
         {
             "title": "Digital transformation firm performance duplicate",
             "doi": "10.6161/digital-duplicate-claim",
+            "journal_name": "Digital outlet duplicate",
             "source_fact": good_papers[0]["source_fact"],
         },
     ]
@@ -3978,6 +3981,7 @@ def test_business_sweep_hands_off_selected_five_fact_backed_sources(
         assert publish_literature.source_identity_count(
             forced, require_substantive=True,
         ) == 5
+        assert sweep._source_outlet_count(forced) == 5
         claim_keys = [sweep._source_fact_claim_key(paper) for paper in forced]
         assert len(set(claim_keys)) == 5
         assert "10.6161/digital-metadata" not in {paper["doi"] for paper in forced}
@@ -4033,6 +4037,73 @@ def test_business_sweep_hands_off_selected_five_fact_backed_sources(
     papers = discovery["all"][0]["source_papers"]
     assert len(papers) == 5
     assert publish_literature.substantive_fact_count(papers) == 5
+
+
+def test_business_sweep_blocks_complete_metadata_with_thin_outlet_diversity(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    runs_root = tmp_path / "runs"
+    topic = "digital_transformation_firm"
+    papers = [
+        {
+            "title": f"Digital transformation firm performance source {idx}",
+            "doi": f"10.6161/digital-thin-outlet-{idx}",
+            "journal_name": f"Outlet {idx % 2}",
+            "source_fact": {
+                "canonical_phrase": f"Digital transformation changed firm outcome {idx}.",
+                "population": "firms",
+                "intervention": "digital transformation",
+                "endpoint": f"firm outcome {idx}",
+                "source_tier": "fullraw_search",
+            },
+        }
+        for idx in range(5)
+    ]
+    run_cycle_calls = 0
+
+    def fail_run_cycle(**_kwargs: Any) -> dict[str, Any]:
+        nonlocal run_cycle_calls
+        run_cycle_calls += 1
+        return {"status": "published", "submitted": 1, "published": 1}
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [topic])
+    monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: (
+        [], {"status": "failed"},
+    ))
+    monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", lambda _topic: 0)
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", lambda _topic, **_kwargs: {
+        "status": "complete",
+        "paper_count": 5,
+        "shards_searched": 1525,
+        "partial_shard_search": False,
+        "sweep_failed_shards": 0,
+        "_papers": papers,
+    })
+    monkeypatch.setattr(sweep, "run_cycle", fail_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(runs_root),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-06-30T03-30-00Z",
+    ])
+
+    assert sweep.main() == 2
+    row = json.loads(
+        (runs_root / "_business_diagnostics" / "latest_sweep.json").read_text(
+            encoding="utf-8",
+        ),
+    )["results"][0]
+    assert row["fullraw"]["selected_source_outlet_metadata_count"] == 5
+    assert row["fullraw"]["selected_source_outlet_count"] == 2
+    assert "source_outlet_diversity_below_min" in row["blockers"]
+    assert run_cycle_calls == 0
 
 
 def test_business_sweep_targets_near_ready_sources_to_complete_fact_gate(
@@ -4225,9 +4296,10 @@ def test_business_sweep_skips_recent_source_literature_topics_before_fullraw(
     runs_root = tmp_path / "runs"
     ledger_dir = runs_root / "_daily_ledger"
     ledger_dir.mkdir(parents=True)
+    recent_date = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
     (ledger_dir / "_submitted_fingerprints.json").write_text(
         json.dumps([{
-            "date": "2026-06-29T03-00-00Z",
+            "date": recent_date,
             "domain": "business_research",
             "topic": "supply_chain_resilience_performance",
         }]),
