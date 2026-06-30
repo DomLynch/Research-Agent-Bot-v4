@@ -3889,6 +3889,11 @@ def test_business_sweep_ranks_reusable_cached_receipt_before_pending_fullraw(
 
     monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
     monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(
+        cycle,
+        "_repairable_source_literature_topics",
+        lambda *_args, **_kwargs: ["minimum_wage"],
+    )
     monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [
         "minimum_wage",
         topic,
@@ -4792,8 +4797,8 @@ def test_business_sweep_promotes_repairable_source_lit_outside_seed_window(
         "a_core_fact_count": 0,
         "retrieval_trace": {
             "fullraw": {
-                "status": "complete",
-                "fact_source_count": 5,
+                "status": "failed",
+                "fact_source_count": 0,
             },
         },
     }), encoding="utf-8")
@@ -4886,7 +4891,7 @@ def test_business_sweep_promotes_repairable_source_lit_outside_seed_window(
     monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: ([], {"status": "failed"}))
     monkeypatch.setattr(
         sweep, "_cached_fullraw_complete_hit_count",
-        lambda topic: 99 if topic == seed_topic else 0,
+        lambda _topic: 0,
     )
     monkeypatch.setattr(sweep, "_strict_fullraw_probe", fake_fullraw)
     monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)

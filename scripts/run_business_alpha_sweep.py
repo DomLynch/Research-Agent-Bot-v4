@@ -1855,10 +1855,6 @@ def main() -> int:
             prioritized_topics = _prioritized_seed_topics(
                 args.runs_root, domain, seed_pool,
             )
-            prioritized_topics = list(dict.fromkeys([
-                *repairable_source_lit_topics,
-                *prioritized_topics,
-            ]))
             selected_topics: list[str] = []
             skipped_recent: list[str] = []
             fresh_topics: list[str] = []
@@ -1868,28 +1864,17 @@ def main() -> int:
                     continue
                 fresh_topics.append(seed_topic)
             repairable_source_lit_set = set(repairable_source_lit_topics)
-            repairable_fresh_topics = [
-                topic for topic in fresh_topics
-                if topic in repairable_source_lit_set
-            ]
-            standard_fresh_topics = [
-                topic for topic in fresh_topics
-                if topic not in repairable_source_lit_set
-            ]
             cache_rank_limit = max(args.topics_per_domain, args.topics_per_domain * 3)
-            cache_rank_topics = standard_fresh_topics[:cache_rank_limit]
-            ranked_standard_topics = [
+            cache_rank_topics = fresh_topics[:cache_rank_limit]
+            ranked_topics = [
                 topic for _hits, _idx, topic in sorted(
                     (
                         (-_cached_fullraw_complete_hit_count(topic), idx, topic)
                         for idx, topic in enumerate(cache_rank_topics)
                     )
                 )
-            ] + standard_fresh_topics[cache_rank_limit:]
-            selected_topics = [
-                *repairable_fresh_topics,
-                *ranked_standard_topics,
-            ][:args.topics_per_domain]
+            ] + fresh_topics[cache_rank_limit:]
+            selected_topics = ranked_topics[:args.topics_per_domain]
             if skipped_recent:
                 print(
                     "[business-sweep] skipped_recent_source_literature_topics "
