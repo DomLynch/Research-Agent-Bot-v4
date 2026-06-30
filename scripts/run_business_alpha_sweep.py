@@ -1971,6 +1971,10 @@ def main() -> int:
                 topic for topic in fresh_topics
                 if topic not in priority_source_lit_set
             ]
+            fallback_repair_fresh_count = sum(
+                1 for topic in fallback_repair_topics
+                if topic in fresh_topics and topic not in priority_source_lit_set
+            )
             cache_rank_limit = max(args.topics_per_domain, args.topics_per_domain * 3)
             cache_rank_topics = non_repair_fresh_topics[:cache_rank_limit]
             ranked_topics = [
@@ -1983,7 +1987,9 @@ def main() -> int:
             ] + non_repair_fresh_topics[cache_rank_limit:]
             selected_limit = max(
                 args.topics_per_domain,
-                args.topics_per_domain + len(repairable_fresh_topics),
+                args.topics_per_domain
+                + len(repairable_fresh_topics)
+                + fallback_repair_fresh_count,
             )
             selected_topics = list(dict.fromkeys([
                 *repairable_fresh_topics,

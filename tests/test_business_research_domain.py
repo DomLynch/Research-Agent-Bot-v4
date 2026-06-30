@@ -5315,9 +5315,23 @@ def test_business_sweep_underfilled_repair_does_not_exhaust_scan_window(
 ) -> None:
     profile = load_domain_profile("business_research")
     runs_root = tmp_path / "runs"
+    ledger_dir = runs_root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
     bad_topic = "digital_transformation_firm"
     good_topic = "pricing_strategy_margin"
     submissions: list[dict[str, Any]] = []
+    cycle._write_json(ledger_dir / "2026-06-29T08-03-00Z.json", {
+        "domain": {"slug": "business_research"},
+        "source_literature_fallback_attempts": [{
+            "topic": bad_topic,
+            "status": "blocked",
+            "reason": "directional_receipt_floor_below_min",
+            "repair_submission": True,
+            "selected_source_count": 5,
+            "selected_source_fact_count": 5,
+            "selected_source_identity_count": 5,
+        }],
+    })
 
     def papers_for(topic: str, *, bad: bool = False) -> list[dict[str, Any]]:
         papers = [
@@ -5373,12 +5387,12 @@ def test_business_sweep_underfilled_repair_does_not_exhaust_scan_window(
     monkeypatch.setattr(
         cycle,
         "_priority_source_literature_repair_decisions",
-        lambda *_args, **_kwargs: {bad_topic: {}, good_topic: {}},
+        lambda *_args, **_kwargs: {},
     )
     monkeypatch.setattr(
         cycle,
         "_repairable_source_literature_topics",
-        lambda *_args, **_kwargs: [bad_topic, good_topic],
+        lambda *_args, **_kwargs: [],
     )
     monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", lambda _topic: 0)
     monkeypatch.setattr(sweep, "_cached_fullraw_discovery_papers", cached_papers)
