@@ -14112,6 +14112,138 @@ def test_source_literature_fallback_expands_final_metadata_only_parent_topic(
     assert len(submissions) == 1
 
 
+def test_source_literature_fallback_derives_variant_from_blocked_rich_parent(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    (root / "_daily_ledger").mkdir()
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [
+        {
+            "date": "2026-06-30T18-00-00Z",
+            "domain": {"slug": "business_research"},
+            "topic": "supply_chain_resilience_performance",
+            "run_dir": "supply_chain_resilience_performance-source-literature-ts",
+        },
+        {
+            "date": "2026-06-30T18-05-00Z",
+            "domain": {"slug": "business_research"},
+            "topic": "supply_chain_resilience",
+            "run_dir": "supply_chain_resilience-source-literature-ts",
+        },
+    ])
+    daily._write_json(root / "_topics_discovery" / "business.json", {
+        "domain": {"slug": "business_research"},
+        "all": [
+            {
+                "topic": "supply_chain_resilience_performance",
+                "paper_count": 10,
+                "fact_source_count": 10,
+            },
+            {
+                "topic": "supply_chain_resilience",
+                "paper_count": 10,
+                "fact_source_count": 10,
+            },
+        ],
+    })
+    fetches: list[str] = []
+    submissions: list[dict[str, Any]] = []
+    outlets = (
+        "Operations Management Review",
+        "Logistics Systems Journal",
+        "Retail Supply Chain Quarterly",
+        "Service Reliability Research",
+        "Industrial Recovery Studies",
+    )
+    variant_papers = [
+        {
+            "title": title,
+            "doi": f"10.8444/supply-{idx}",
+            "journal_name": outlets[idx - 1],
+            "source_fact": {
+                "canonical_phrase": phrase,
+                "population": population,
+                "intervention": "supply chain",
+                "endpoint": endpoint,
+            },
+        }
+        for idx, (title, phrase, population, endpoint) in enumerate((
+            (
+                "Supply chain integration and delivery performance",
+                "supply chain integration improved delivery performance",
+                "manufacturing firms",
+                "delivery performance",
+            ),
+            (
+                "Supply chain visibility and operational resilience",
+                "supply chain visibility had a significant positive effect on operational performance",
+                "logistics networks",
+                "operational performance",
+            ),
+            (
+                "Supply chain collaboration and inventory outcomes",
+                "supply chain collaboration had no significant effect on inventory performance",
+                "retail supply chains",
+                "inventory performance",
+            ),
+            (
+                "Supply chain digitization and service reliability",
+                "supply chain digitization had a significant positive effect on service performance",
+                "service firms",
+                "service performance",
+            ),
+            (
+                "Supply chain flexibility and disruption recovery",
+                "supply chain flexibility had a significant positive effect on recovery performance",
+                "industrial firms",
+                "recovery performance",
+            ),
+        ), start=1)
+    ]
+
+    def fetch(topic: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        fetches.append(topic)
+        return variant_papers if topic == "supply_chain" else []
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submissions.append(payload)
+        return {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": "sub-supply-chain"}},
+        }
+
+    monkeypatch.setattr(daily, "_fetch_source_literature_papers", fetch)
+    monkeypatch.setattr(
+        daily,
+        "_domain_alpha_memo_int",
+        lambda _domain, name, default: 4 if name == "source_literature_scan_limit" else default,
+    )
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-30T19-00-00Z",
+        domain="business_research",
+        queue=_queue(),
+        submit=True,
+        submitter=submitter,
+        decision_poll_attempts=0,
+        sleep=lambda _seconds: None,
+    )
+
+    assert fetches == ["supply_chain"]
+    assert ledger["source_literature_scan_reason"] == "blocked_parent_variant_expansion"
+    assert ledger["submitted_topic"] == "supply_chain"
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["source_literature_fallback"]["selected_source_count"] == 5
+    assert ledger["source_literature_fallback"]["selected_source_fact_count"] == 5
+    assert ledger["source_literature_fallback"]["selected_source_identity_count"] == 5
+    assert publish_literature.source_outlet_count(submissions[0]["source_bundle"]) == 5
+    assert len(submissions) == 1
+
+
 def test_source_literature_fallback_skips_misaligned_candidate(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

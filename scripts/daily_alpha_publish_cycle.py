@@ -4709,6 +4709,59 @@ def _source_literature_topic_candidates(
     return topics[:limit]
 
 
+def _source_literature_blocked_parent_variant_topics(
+    runs_root: Path,
+    profile_slug: str,
+    min_sources: int,
+    broad_blocked_topics: set[str],
+    exact_blocked_topics: set[str],
+    hard_family_blocked_topics: set[str],
+    *,
+    limit: int,
+    soft_broad_blocked_topics: set[str] | None = None,
+) -> list[str]:
+    if not broad_blocked_topics or limit <= 0:
+        return []
+    parents = _source_literature_topic_candidates(
+        runs_root,
+        profile_slug,
+        min_sources,
+        set(),
+        limit=max(limit * 3, limit),
+        soft_broad_blocked_topics=soft_broad_blocked_topics,
+    )
+    exact_keys = {_canonical_family_key(topic) for topic in exact_blocked_topics}
+    topics: list[str] = []
+    seen: set[str] = set()
+    for parent in parents:
+        if not _source_literature_family_blocked_topic(
+            parent,
+            broad_blocked_topics,
+            soft_broad_blocked_topics=soft_broad_blocked_topics,
+        ):
+            continue
+        for variant in _source_literature_fetch_topics(parent)[1:]:
+            variant = cap_topic_slug(variant)
+            variant_key = _canonical_family_key(variant)
+            if (
+                not variant
+                or variant in seen
+                or variant in exact_blocked_topics
+                or variant_key in exact_keys
+                or _source_literature_family_blocked_topic(
+                    variant,
+                    hard_family_blocked_topics,
+                    soft_broad_blocked_topics=soft_broad_blocked_topics,
+                )
+            ):
+                continue
+            topics.append(variant)
+            seen.add(variant)
+            if len(topics) >= limit:
+                return topics
+    return topics
+
+
 def _source_literature_discovery_papers(
     runs_root: Path, profile_slug: str, topic: str, min_sources: int,
 ) -> list[Json]:
@@ -6647,6 +6700,23 @@ def run_cycle(
                 soft_broad_blocked_topics=source_literature_soft_blocked_topics,
             ) if topic not in repair_topic_set
         ]
+        blocked_parent_variant_topics = (
+            [] if fresh_topics else
+            _source_literature_blocked_parent_variant_topics(
+                runs_root,
+                profile.slug,
+                min_submit_sources,
+                submitted_blocked_topics
+                | source_literature_source_floor_blocked_topics
+                | pending_source_literature_topics,
+                source_literature_blocked_topics,
+                published_blocked_topics | negative_blocked_topics,
+                limit=source_lit_scan_limit,
+                soft_broad_blocked_topics=source_literature_soft_blocked_topics,
+            )
+        )
+        if blocked_parent_variant_topics:
+            ledger["source_literature_scan_reason"] = "blocked_parent_variant_expansion"
         forced_priority_topics = source_literature_priority_topics or []
         literature_topics: list[str] = []
         for topic in [
@@ -6656,9 +6726,10 @@ def run_cycle(
             *priority_repair_topics,
             *source_lit_preflight_selected,
             *fresh_topics,
+            *blocked_parent_variant_topics,
             *standard_repair_topics,
         ]:
-            if _source_literature_family_blocked_topic(
+            if topic not in blocked_parent_variant_topics and _source_literature_family_blocked_topic(
                 topic, pending_source_literature_topics,
             ):
                 continue
