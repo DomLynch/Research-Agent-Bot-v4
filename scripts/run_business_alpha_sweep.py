@@ -1904,6 +1904,7 @@ def main() -> int:
                 )
             for topic in selected_topics:
                 cached_repair_papers: list[dict[str, Any]] = []
+                cached_repair_below_floor = False
                 if topic in repairable_source_lit_set:
                     cached_repair_papers, _cached_repair_trace = (
                         _cached_fullraw_discovery_papers(args.runs_root, domain, topic)
@@ -1918,13 +1919,14 @@ def main() -> int:
                             cached_repair_papers, require_substantive=True,
                         ) < MIN_DIRECT_SOURCES
                     ):
+                        cached_repair_below_floor = bool(cached_repair_papers)
                         cached_repair_papers = []
                 source_lit_repair_kwargs: dict[str, Any] = {}
                 if cached_repair_papers:
                     source_lit_repair_kwargs["source_literature_forced_papers"] = {
                         topic: cached_repair_papers,
                     }
-                elif topic in priority_source_lit_set:
+                elif topic in priority_source_lit_set and not cached_repair_below_floor:
                     source_lit_repair_kwargs["source_literature_priority_topics"] = [topic]
                 if source_lit_repair_kwargs and args.submit_after_consistent_passes > 0:
                     repair_row: dict[str, Any] = {
