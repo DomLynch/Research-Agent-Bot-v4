@@ -4702,6 +4702,11 @@ def _source_literature_fetch_topics(topic: str) -> list[str]:
         for candidate in candidates:
             if candidate and candidate not in topics:
                 topics.append(candidate)
+    if len(topics) == 1 and len(raw_tokens) >= 2:
+        for pair in (raw_tokens[:2], raw_tokens[-2:]):
+            candidate = "_".join(pair)
+            if candidate and candidate not in topics:
+                topics.append(candidate)
     return topics
 
 
@@ -6569,6 +6574,7 @@ def run_cycle(
             literature_topics = expanded_topics
         terminal_resubmit_topics: set[str] = set()
         for idx, literature_topic in enumerate(literature_topics):
+            expanded_from_topic = ""
             resumed = resumable_source_lit.get(literature_topic)
             if resumed is not None:
                 papers = resumed[2]
@@ -6591,6 +6597,30 @@ def run_cycle(
                     literature_topic, papers, min_submit_sources, profile.slug,
                     require_substantive_sources=True,
                 )
+                if (
+                    not ok
+                    and reason == "source_floor_below_min"
+                    and idx == len(literature_topics) - 1
+                    and paper_fetcher is None
+                    and literature_topic not in forced_source_lit
+                ):
+                    for fetch_topic in _source_literature_fetch_topics(literature_topic)[1:]:
+                        if fetch_topic in literature_topics:
+                            continue
+                        expanded_papers = _source_literature_candidate_papers(
+                            runs_root, profile.slug, fetch_topic, min_submit_sources,
+                            min_submit_sources * 3,
+                        )
+                        expanded_ok, expanded_reason = _source_literature_boundary_quality(
+                            fetch_topic, expanded_papers, min_submit_sources, profile.slug,
+                            require_substantive_sources=True,
+                        )
+                        if expanded_ok:
+                            expanded_from_topic = literature_topic
+                            literature_topic = fetch_topic
+                            papers = expanded_papers
+                            ok, reason = expanded_ok, expanded_reason
+                            break
             selected_for_attempt = publish_literature.select_boundary_papers(
                 literature_topic,
                 papers,
@@ -6612,26 +6642,27 @@ def run_cycle(
                 "paper_count": len(papers),
                 "relevant_paper_count": relevant_paper_count,
             }
-            if not ok:
-                fallback_attempt.update({
-                    "selected_source_count": len(selected_for_attempt),
-                    "selected_source_fact_count": publish_literature.substantive_fact_count(
-                        selected_for_attempt,
-                    ),
-                    "selected_source_identity_count": publish_literature.source_identity_count(
-                        selected_for_attempt,
-                        require_substantive=True,
-                    ),
-                    "selected_source_evidence_roles": evidence_roles,
-                    "selected_directional_receipt_count": sum(
-                        1 for role in evidence_roles
-                        if role in {
-                            "directional association",
-                            "directional estimate",
-                            "directionally favorable",
-                        }
-                    ),
-                })
+            fallback_attempt.update({
+                "selected_source_count": len(selected_for_attempt),
+                "selected_source_fact_count": publish_literature.substantive_fact_count(
+                    selected_for_attempt,
+                ),
+                "selected_source_identity_count": publish_literature.source_identity_count(
+                    selected_for_attempt,
+                    require_substantive=True,
+                ),
+                "selected_source_evidence_roles": evidence_roles,
+                "selected_directional_receipt_count": sum(
+                    1 for role in evidence_roles
+                    if role in {
+                        "directional association",
+                        "directional estimate",
+                        "directionally favorable",
+                    }
+                ),
+            })
+            if expanded_from_topic:
+                fallback_attempt["expanded_from_topic"] = expanded_from_topic
             if resumed is not None:
                 fallback_attempt["resumed_payload"] = True
             if literature_topic in repair_topic_set:

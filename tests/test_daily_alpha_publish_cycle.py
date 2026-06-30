@@ -11481,7 +11481,14 @@ def test_source_literature_fallback_records_rejected_submit_status(
     )
 
     assert ledger["status"] == "no_fresh_candidate"
-    assert ledger["source_literature_fallback"] == {
+    fallback = ledger["source_literature_fallback"]
+    assert {
+        key: fallback[key]
+        for key in (
+            "topic", "status", "reason", "paper_count",
+            "relevant_paper_count", "submit_status",
+        )
+    } == {
         "topic": "usable_boundary",
         "status": "blocked",
         "reason": "rejected_duplicate",
@@ -11489,6 +11496,9 @@ def test_source_literature_fallback_records_rejected_submit_status(
         "relevant_paper_count": 5,
         "submit_status": "rejected_duplicate",
     }
+    assert fallback["selected_source_count"] == 5
+    assert fallback["selected_source_fact_count"] == 5
+    assert fallback["selected_source_identity_count"] == 5
 
 
 def test_source_literature_fallback_skips_exact_submitted_memo(
@@ -13174,11 +13184,91 @@ def test_source_literature_fallback_tries_candidate_topics_before_variants(
         sleep=lambda _seconds: None,
     )
 
-    assert fetches == candidate_topics
+    assert fetches[:4] == candidate_topics
     assert "platform_strategy_network" not in fetches
     assert "platform_strategy" not in fetches
+    assert fetches[4:] == ["operations_process"]
     assert len(ledger["source_literature_fallback_attempts"]) == 4
     assert ledger["status"] == "no_fresh_candidate"
+
+
+def test_source_literature_fallback_expands_final_empty_parent_topic(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    daily._write_json(root / "_topics_discovery" / "business.json", {
+        "domain": {"slug": "business_research"},
+        "all": [{
+            "topic": "business_model_performance",
+            "paper_count": 10,
+            "fact_source_count": 10,
+        }],
+    })
+    fetches: list[str] = []
+    submissions: list[dict[str, Any]] = []
+
+    def papers_for(topic: str) -> list[dict[str, Any]]:
+        rows = [
+            ("10.8222/bm-1", "Business model revenue performance", "business model had a significant positive effect on revenue performance", "revenue performance"),
+            ("10.8222/bm-2", "Business model firm performance", "business model had a significant positive effect on firm performance", "firm performance"),
+            ("10.8222/bm-3", "Business model operating context", "business model operating patterns were mapped across firms", "operating context"),
+            ("10.8222/bm-4", "Business model customer context", "business model customer channels varied across firm settings", "customer context"),
+            ("10.8222/bm-5", "Business model governance context", "business model governance constraints were documented across firms", "governance context"),
+        ]
+        return [
+            {
+                "title": title,
+                "doi": doi,
+                "source_fact": {
+                    "canonical_phrase": phrase,
+                    "population": "firms",
+                    "intervention": "business model",
+                    "endpoint": endpoint,
+                },
+            }
+            for doi, title, phrase, endpoint in rows
+        ]
+
+    def fetch(topic: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        fetches.append(topic)
+        return papers_for(topic) if topic == "business_model" else []
+
+    def domain_int(domain: str, name: str, default: int) -> int:
+        return 1 if name == "source_literature_scan_limit" else default
+
+    monkeypatch.setattr(daily, "_fetch_source_literature_papers", fetch)
+    monkeypatch.setattr(daily, "_domain_alpha_memo_int", domain_int)
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submissions.append(payload)
+        return {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": "sub-expanded"}},
+        }
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-30T16-30-00Z",
+        domain="business_research",
+        queue=_queue(),
+        submit=True,
+        submitter=submitter,
+        decision_poll_attempts=0,
+        sleep=lambda _seconds: None,
+    )
+
+    assert fetches == ["business_model_performance", "business_model"]
+    assert ledger["submitted_topic"] == "business_model"
+    assert ledger["source_literature_fallback"]["expanded_from_topic"] == (
+        "business_model_performance"
+    )
+    assert ledger["source_literature_fallback"]["status"] == "selected"
+    assert ledger["source_literature_fallback"]["selected_source_fact_count"] == 5
+    assert ledger["source_literature_fallback"]["selected_source_identity_count"] == 5
+    assert len(submissions) == 1
 
 
 def test_source_literature_fallback_skips_misaligned_candidate(
