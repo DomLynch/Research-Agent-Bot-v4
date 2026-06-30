@@ -6648,6 +6648,9 @@ def test_domain_source_floors_are_policy_owned() -> None:
         "longevity_research", "source_literature_scan_limit", 4,
     ) == 10
     assert daily._domain_alpha_memo_int(
+        "business_research", "source_literature_scan_limit", 4,
+    ) == 10
+    assert daily._domain_alpha_memo_int(
         "ai_research", "min_direct_source_papers", 99,
     ) == 5
 
