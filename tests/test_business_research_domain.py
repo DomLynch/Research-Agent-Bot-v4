@@ -3694,6 +3694,7 @@ def test_business_sweep_reuses_complete_cache_when_db_facts_fill_source_gate(
         for idx in range(2)
     ]
     submissions: list[dict[str, Any]] = []
+    fullraw_calls: list[str] = []
     sweep._write_fullraw_discovery(
         runs_root,
         domain="business_research",
@@ -3703,13 +3704,8 @@ def test_business_sweep_reuses_complete_cache_when_db_facts_fill_source_gate(
     )
 
     def fake_fullraw(_topic: str, **_kwargs: Any) -> dict[str, Any]:
-        return {
-            "status": "queue_saturated",
-            "async_status": "queued",
-            "query": "digital transformation firm performance completion",
-            "paper_count": 0,
-            "_papers": [],
-        }
+        fullraw_calls.append(_topic)
+        raise AssertionError("cache plus DB facts should avoid live completion probe")
 
     def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
         submissions.append(kwargs)
@@ -3762,9 +3758,8 @@ def test_business_sweep_reuses_complete_cache_when_db_facts_fill_source_gate(
     )
     row = summary["results"][0]
     assert row["status"] == "submitted_to_researka"
+    assert fullraw_calls == []
     assert row["fullraw"]["status"] == "complete"
-    assert row["fullraw"]["cached_complete_receipt_reused"] is True
-    assert row["fullraw"]["live_completion_status"] == "queue_saturated"
     assert row["fullraw"]["selected_source_count"] == 5
     assert row["fullraw"]["selected_source_fact_count"] == 5
     assert row["fullraw"]["selected_source_identity_count"] == 5
@@ -3916,7 +3911,7 @@ def test_business_sweep_ranks_reusable_cached_receipt_before_pending_fullraw(
     ])
 
     assert sweep.main() == 0
-    assert probed_topics == [topic]
+    assert probed_topics == []
     assert submissions
 
 

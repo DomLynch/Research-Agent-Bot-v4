@@ -1991,6 +1991,21 @@ def main() -> int:
                     fullraw_papers = _enrich_fullraw_papers_with_db_facts(
                         topic, domain=domain, papers=fullraw_papers, settings=settings,
                     )
+                    fact_papers = _business_fact_source_literature_papers(
+                        facts, topic=topic, domain=domain,
+                    )
+                    if fact_papers:
+                        fullraw_papers = _merge_source_literature_papers(
+                            fullraw_papers, fact_papers,
+                        )
+                        fullraw_trace["db_fact_source_count"] = (
+                            publish_literature.substantive_fact_count(fact_papers)
+                        )
+                        fullraw_trace["db_fact_source_identity_count"] = (
+                            publish_literature.source_identity_count(
+                                fact_papers, require_substantive=True,
+                            )
+                        )
                     if (
                         fullraw_from_cache
                         and publish_literature.substantive_fact_count(fullraw_papers)
@@ -2018,6 +2033,18 @@ def main() -> int:
                         fullraw_papers = _enrich_fullraw_papers_with_db_facts(
                             topic, domain=domain, papers=fullraw_papers, settings=settings,
                         )
+                        if fact_papers:
+                            fullraw_papers = _merge_source_literature_papers(
+                                fullraw_papers, fact_papers,
+                            )
+                            fullraw_trace["db_fact_source_count"] = (
+                                publish_literature.substantive_fact_count(fact_papers)
+                            )
+                            fullraw_trace["db_fact_source_identity_count"] = (
+                                publish_literature.source_identity_count(
+                                    fact_papers, require_substantive=True,
+                                )
+                            )
                         live_fact_count = publish_literature.substantive_fact_count(
                             fullraw_papers,
                         )
@@ -2033,21 +2060,6 @@ def main() -> int:
                                 )
                             ):
                                 fullraw_papers = merged_papers
-                    fact_papers = _business_fact_source_literature_papers(
-                        facts, topic=topic, domain=domain,
-                    )
-                    if fact_papers:
-                        fullraw_papers = _merge_source_literature_papers(
-                            fullraw_papers, fact_papers,
-                        )
-                        fullraw_trace["db_fact_source_count"] = (
-                            publish_literature.substantive_fact_count(fact_papers)
-                        )
-                        fullraw_trace["db_fact_source_identity_count"] = (
-                            publish_literature.source_identity_count(
-                                fact_papers, require_substantive=True,
-                            )
-                        )
                     fullraw_keys: set[str] = set()
                     for paper in fullraw_papers:
                         key = str(
