@@ -3159,7 +3159,7 @@ def test_business_sweep_complete_fullraw_hands_off_to_source_literature(
             "source_fact": {
                 "canonical_phrase": (
                     "Minimum wage policy changed employment outcomes in "
-                    "state labor markets."
+                    f"state labor market receipt {i}."
                 ),
                 "population": "state labor markets",
                 "intervention": "minimum wage policy",
@@ -3929,6 +3929,110 @@ def test_business_sweep_uses_distinct_db_facts_to_complete_fullraw_bundle(
     assert {paper["doi"] for paper in forced} == {
         f"10.6161/min-wage-{idx}" for idx in range(5)
     }
+
+
+def test_business_sweep_hands_off_selected_five_fact_backed_sources(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    runs_root = tmp_path / "runs"
+    topic = "digital_transformation_firm"
+    submissions: list[dict[str, Any]] = []
+    good_papers = [
+        {
+            "title": f"Digital transformation firm performance source {idx}",
+            "doi": f"10.6161/digital-selected-{idx}",
+            "source_fact": {
+                "canonical_phrase": f"Digital transformation changed firm performance {idx}.",
+                "population": "firms",
+                "intervention": "digital transformation",
+                "endpoint": f"firm performance signal {idx}",
+                "source_tier": "fullraw_search",
+            },
+        }
+        for idx in range(5)
+    ]
+    noisy_papers = [
+        {
+            "title": "Digital transformation metadata appendix",
+            "doi": "10.6161/digital-metadata",
+            "source_fact": {
+                "canonical_phrase": "Title-level source match: digital transformation",
+                "endpoint": "source-literature relevance",
+                "source_tier": "paper_metadata",
+            },
+        },
+        {
+            "title": "Digital transformation firm performance duplicate",
+            "doi": "10.6161/digital-duplicate-claim",
+            "source_fact": good_papers[0]["source_fact"],
+        },
+    ]
+
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        submissions.append(kwargs)
+        forced = kwargs["source_literature_forced_papers"][topic]
+        assert len(forced) == 5
+        assert publish_literature.substantive_fact_count(forced) == 5
+        assert publish_literature.source_identity_count(
+            forced, require_substantive=True,
+        ) == 5
+        claim_keys = [sweep._source_fact_claim_key(paper) for paper in forced]
+        assert len(set(claim_keys)) == 5
+        assert "10.6161/digital-metadata" not in {paper["doi"] for paper in forced}
+        return {
+            "status": "submitted_to_researka",
+            "submitted": 1,
+            "published": 0,
+            "publish_summary": {
+                "status": "submitted_to_researka",
+                "submitted": 1,
+                "published": 0,
+                "top_blockers": {},
+                "next_action": "watch_decision_or_public_page",
+                "queue_counts": {"ready_to_publish": 1},
+                "public_url_status": None,
+            },
+        }
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [topic])
+    monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: (
+        [], {"status": "failed"},
+    ))
+    monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", lambda _topic: 0)
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", lambda _topic, **_kwargs: {
+        "status": "complete",
+        "paper_count": 7,
+        "shards_searched": 1525,
+        "partial_shard_search": False,
+        "sweep_failed_shards": 0,
+        "_papers": [*noisy_papers, *good_papers],
+    })
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(runs_root),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-06-30T03-05-00Z",
+    ])
+
+    assert sweep.main() == 0
+    assert submissions
+    discovery = json.loads(
+        (
+            runs_root / "_topics_discovery"
+            / "business_sweep_fullraw.business_research.digital_transformation_firm.json"
+        ).read_text(encoding="utf-8"),
+    )
+    papers = discovery["all"][0]["source_papers"]
+    assert len(papers) == 5
+    assert publish_literature.substantive_fact_count(papers) == 5
 
 
 def test_business_sweep_targets_near_ready_sources_to_complete_fact_gate(

@@ -995,6 +995,48 @@ def _strict_fullraw_probe_papers(
     return papers, trace
 
 
+def _source_fact_claim_key(paper: dict[str, Any]) -> str:
+    fact = paper.get("source_fact")
+    if not isinstance(fact, dict):
+        return ""
+    return _norm_text(" ".join(str(fact.get(key) or "") for key in (
+        "canonical_phrase", "population", "intervention", "endpoint", "metric",
+    )))
+
+
+def _claim_diverse_source_papers(papers: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    seen_claims: set[str] = set()
+    for paper in papers:
+        claim_key = _source_fact_claim_key(paper)
+        if claim_key and claim_key in seen_claims:
+            continue
+        if claim_key:
+            seen_claims.add(claim_key)
+        out.append(paper)
+    return out
+
+
+def _source_literature_ready_papers(
+    topic: str, domain: str, papers: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], str]:
+    papers = _claim_diverse_source_papers(papers)
+    selected = publish_literature.select_boundary_papers(
+        topic,
+        papers,
+        MIN_DIRECT_SOURCES,
+        strict_topic_coverage=publish_literature._non_biomedical(domain),
+    )
+    if publish_literature.substantive_fact_count(selected) < MIN_DIRECT_SOURCES:
+        return [], "requires_fact_level_source_synthesis"
+    if (
+        publish_literature.source_identity_count(selected, require_substantive=True)
+        < MIN_DIRECT_SOURCES
+    ):
+        return [], "source_fact_diversity_below_min"
+    return selected, "ok"
+
+
 def _fullraw_search_response(
     query: str, *, limit: int | None = None, queue_if_missing: bool = True,
     timeout_seconds: float | None = None,
@@ -2008,6 +2050,29 @@ def main() -> int:
                     fullraw_trace["candidate_fact_source_count"] = max(
                         pre_enrichment_fact_count, fullraw_fact_count,
                     )
+                    ready_papers, ready_blocker = _source_literature_ready_papers(
+                        topic, domain, fullraw_papers,
+                    )
+                    ready_keys = {
+                        key.casefold()
+                        for paper in ready_papers
+                        if (key := str(
+                            paper.get("doi")
+                            or paper.get("pmid")
+                            or paper.get("paper_id")
+                            or paper.get("title")
+                            or "",
+                        ).strip())
+                    }
+                    fullraw_trace["selected_source_count"] = len(ready_papers)
+                    fullraw_trace["selected_source_fact_count"] = (
+                        publish_literature.substantive_fact_count(ready_papers)
+                    )
+                    fullraw_trace["selected_source_identity_count"] = (
+                        publish_literature.source_identity_count(
+                            ready_papers, require_substantive=True,
+                        )
+                    )
                     trace = {**trace, "fullraw": fullraw_trace}
                     row["trace"] = trace
                     row["status"] = "no_bundle"
@@ -2026,8 +2091,7 @@ def main() -> int:
                         row["blockers"] = no_bundle_blockers_from_diagnostics(diagnostics)
                     fullraw_ready = (
                         fullraw_has_complete_receipt
-                        and fullraw_fact_count >= MIN_DIRECT_SOURCES
-                        and fullraw_source_identity_count >= MIN_DIRECT_SOURCES
+                        and len(ready_papers) >= MIN_DIRECT_SOURCES
                     )
                     if fullraw_has_complete_receipt:
                         discovery_path = _write_fullraw_discovery(
@@ -2035,19 +2099,12 @@ def main() -> int:
                             domain=domain,
                             topic=topic,
                             profile=profile,
-                            papers=fullraw_papers,
+                            papers=ready_papers or fullraw_papers,
                         )
                         row["source_literature_discovery"] = str(discovery_path)
                     if fullraw_has_complete_receipt and not fullraw_ready:
                         blockers = list(row.get("blockers") or [])
-                        missing = (
-                            "source_fact_diversity_below_min"
-                            if (
-                                fullraw_fact_count >= MIN_DIRECT_SOURCES
-                                and fullraw_source_identity_count < MIN_DIRECT_SOURCES
-                            )
-                            else "requires_fact_level_source_synthesis"
-                        )
+                        missing = ready_blocker
                         if missing not in blockers:
                             blockers.append(missing)
                         row["blockers"] = blockers
@@ -2057,7 +2114,7 @@ def main() -> int:
                             domain,
                             topic,
                             "fullraw_source_literature",
-                            ",".join(sorted(fullraw_keys)),
+                            ",".join(sorted(ready_keys)),
                         ))
                         submit_after = max(0, args.submit_after_consistent_passes)
                         row["candidate_fingerprint"] = fingerprint
@@ -2115,7 +2172,7 @@ def main() -> int:
                             domain=domain,
                             submit=True,
                             refresh_candidates=False,
-                            source_literature_forced_papers={topic: fullraw_papers},
+                            source_literature_forced_papers={topic: ready_papers},
                         )
                         row["status"] = str(ledger.get("status") or "submit_failed")
                         row["submission_ledger"] = ledger
