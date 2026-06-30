@@ -13014,6 +13014,81 @@ def test_source_literature_fetcher_prefers_tier2_fact_backed_papers(
     assert timeouts == [12.0, 12.0]
 
 
+def test_source_literature_fetcher_scans_until_nonbio_direction_floor(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "researka_database_url": "https://db.test",
+        "researka_database_token": "tok",
+    })())
+    monkeypatch.setattr(
+        publish_literature,
+        "_fullraw_topic_papers",
+        lambda *_args: (_ for _ in ()).throw(AssertionError("fullraw not needed")),
+    )
+    rows = [
+        ("10.1/dt-1", "Digital transformation environmental performance", "digital transformation significantly improves environmental performance", "environmental performance"),
+        ("10.1/dt-2", "Digital transformation return on assets", "digital transformation significantly increases return on assets", "return on assets"),
+        ("10.1/dt-3", "Digital transformation governance in firms", "digital governance practices were documented across firms", "governance context"),
+        ("10.1/dt-4", "Digital transformation banking analytics", "71 per cent of banking firms report big data provides a competitive advantage", "competitive advantage"),
+        ("10.1/dt-5", "Digital transformation adoption scope", "digital adoption scope was mapped across firms", "adoption context"),
+        ("10.1/dt-6", "Digital transformation sales performance", "digital transformation significantly increases sales performance", "sales performance"),
+    ]
+
+    class Response:
+        def __enter__(self) -> Response:
+            return self
+
+        def __exit__(self, *_args: Any) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return json.dumps([
+                {
+                    "paper_id": doi,
+                    "paper": {"doi": doi, "title": title},
+                    "canonical_phrase": phrase,
+                    "population": "firms",
+                    "intervention": "digital transformation",
+                    "endpoint": endpoint,
+                }
+                for doi, title, phrase, endpoint in rows
+            ]).encode("utf-8")
+
+    monkeypatch.setattr(urllib.request, "urlopen", lambda *_args, **_kwargs: Response())
+
+    papers = daily._fetch_source_literature_papers(
+        "digital_transformation_firm", 5, domain="business_research",
+    )
+    first_five = papers[:5]
+    selected = publish_literature.select_boundary_papers(
+        "digital_transformation_firm",
+        papers,
+        5,
+        strict_topic_coverage=True,
+        profile_slug="business_research",
+    )
+
+    assert len(papers) == 6
+    assert publish_literature.boundary_quality(
+        "digital_transformation_firm",
+        first_five,
+        5,
+        strict_topic_coverage=True,
+        profile_slug="business_research",
+    ) == (False, "directional_receipt_floor_below_min")
+    assert publish_literature.boundary_quality(
+        "digital_transformation_firm",
+        papers,
+        5,
+        strict_topic_coverage=True,
+        profile_slug="business_research",
+    ) == (True, "ok")
+    assert publish_literature._directional_receipt_count(
+        selected, "digital_transformation_firm", "business_research",
+    ) == 3
+
+
 def test_source_literature_fetcher_supplements_thin_fact_search_with_fullraw(
     monkeypatch: MonkeyPatch,
 ) -> None:

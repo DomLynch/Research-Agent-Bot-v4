@@ -1600,6 +1600,23 @@ def fetch_papers(
         timeout = 12.0
     out: list[Json] = []
     seen: set[str] = set()
+    min_ready_sources = min(5, max(1, limit))
+    target_limit = (
+        max(limit * 2, 30)
+        if _non_biomedical(domain) and limit >= min_ready_sources else
+        limit
+    )
+
+    def ready_to_stop() -> bool:
+        if len(out) < limit:
+            return False
+        if not _non_biomedical(domain) or limit < min_ready_sources:
+            return True
+        ok, _reason = boundary_quality(
+            topic, out, min_ready_sources,
+            strict_topic_coverage=True, profile_slug=domain,
+        )
+        return ok or len(out) >= target_limit
 
     def fact_rows(query: str, *, row_timeout: float = timeout) -> list[Json]:
         req = urllib.request.Request(
@@ -1646,12 +1663,23 @@ def fetch_papers(
                 continue
             seen.add(key)
             out.append(candidate)
-            if len(out) >= limit:
+            if ready_to_stop():
                 break
-        if len(out) >= limit:
+        if ready_to_stop():
             break
-    if len(out) < limit:
-        out.extend(_fullraw_relevant_papers(topic, limit - len(out), seen))
+    needs_fullraw = len(out) < limit
+    if _non_biomedical(domain) and len(out) >= min_ready_sources:
+        needs_fullraw = needs_fullraw or not boundary_quality(
+            topic, out, min_ready_sources,
+            strict_topic_coverage=True, profile_slug=domain,
+        )[0]
+    if needs_fullraw:
+        fullraw_limit = (
+            max(limit - len(out), limit)
+            if _non_biomedical(domain) else
+            limit - len(out)
+        )
+        out.extend(_fullraw_relevant_papers(topic, fullraw_limit, seen))
     for idx, paper in enumerate(list(out)):
         raw_fact = paper.get("source_fact")
         if isinstance(raw_fact, dict) and raw_fact.get("source_tier") != "paper_metadata":
