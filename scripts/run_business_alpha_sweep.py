@@ -396,7 +396,6 @@ def _strict_fullraw_probe(
                     queries or _business_fullraw_queries(topic),
                 )
                 for idx, query in enumerate(queries):
-                    query_started = time.monotonic()
                     attempted.append(query)
                     events = discovery.__dict__.get("_FULLRAW_PROBE_EVENTS", [])
                     before = len(events)
@@ -506,11 +505,7 @@ def _strict_fullraw_probe(
                         break
                     if status in {"complete", "complete_no_hits", "no_hits"}:
                         continue
-                    if (
-                        _fullraw_can_try_next_query(result)
-                        and time.monotonic() - query_started
-                        <= _business_fullraw_advance_max_seconds()
-                    ):
+                    if _fullraw_can_try_next_query(result):
                         continue
                     break
                 if (

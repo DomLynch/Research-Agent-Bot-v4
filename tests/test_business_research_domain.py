@@ -2200,6 +2200,69 @@ def test_business_sweep_fullraw_probe_continues_after_complete_source_poor_query
     assert result["candidate_fact_source_count"] == 5
 
 
+def test_business_sweep_fullraw_probe_advances_after_bounded_incomplete_query(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import agent.topic_discovery as topic_discovery_mod
+    import scripts.run_topic_discovery as discovery
+
+    calls: list[str] = []
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
+        str(tmp_path / "fullraw.lock"),
+    )
+    monkeypatch.setenv("BUSINESS_SWEEP_FULLRAW_QUERY_LIMIT", "2")
+    monkeypatch.setattr(
+        sweep,
+        "_business_fullraw_queries",
+        lambda _topic: ("minimum wage", "minimum wage employment"),
+    )
+
+    complete_receipt = {
+        "shards_searched": 1525,
+        "partial_shard_search": False,
+        "sweep_failed_shards": 0,
+        "source_count_searched": 5,
+    }
+
+    def fake_seed_fullraw(query: str, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
+        if query == "minimum wage":
+            topic_discovery_mod._FULLRAW_LAST_RECEIPT = {
+                "shards_searched": 730,
+                "partial_shard_search": True,
+                "sweep_failed_shards": 0,
+                "source_count_searched": 5,
+            }
+            return [{"paper_id": "partial-1", "title": "Minimum wage partial receipt"}]
+        topic_discovery_mod._FULLRAW_LAST_RECEIPT = dict(complete_receipt)
+        return [
+            {
+                "paper_id": f"employment-{idx}",
+                "title": f"Minimum wage employment source {idx}",
+                "abstract": (
+                    "Results show minimum wage changes altered employment "
+                    f"outcomes in labor market source {idx}."
+                ),
+            }
+            for idx in range(5)
+        ]
+
+    monkeypatch.setattr(discovery, "_seed_fullraw_papers", fake_seed_fullraw)
+
+    result = sweep._strict_fullraw_probe(
+        "minimum_wage_employment",
+        include_papers=True,
+    )
+
+    assert calls == ["minimum wage", "minimum wage employment"]
+    assert result["status"] == "complete"
+    assert result["query"] == "minimum wage employment"
+    assert result["candidate_fact_source_count"] == 5
+
+
 def test_business_fullraw_queries_are_compact_deduped_and_alpha_shaped(
     monkeypatch: Any,
 ) -> None:
