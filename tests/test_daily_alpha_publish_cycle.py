@@ -11785,6 +11785,67 @@ def test_source_literature_fallback_widens_scan_after_recent_duplicate(
     assert ledger["submitted_topic"] == "fresh_boundary"
 
 
+def test_source_literature_fallback_writes_submitted_before_decision_poll(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
+    root = tmp_path / "repo"
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "writer_configured": False,
+        "mimo_model": "",
+        "mimo_base_url": "",
+    })())
+    papers = _usable_boundary_papers()
+    checks = 0
+
+    def sleep_check(_seconds: float) -> None:
+        nonlocal checks
+        checks += 1
+        ledger = json.loads(
+            (root / "_daily_ledger" / "2026-06-10T18-30-00Z.json").read_text(
+                encoding="utf-8",
+            ),
+        )
+        assert ledger["status"] == "submitted_to_researka"
+        assert ledger["submitted"] == 1
+        assert ledger["submitted_topic"] == "usable_boundary"
+        assert ledger["submission_id"] == "sub-visible"
+
+    decisions = iter((
+        {"status": "pending"},
+        {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/visible"},
+        },
+    ))
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-10T18-30-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        source_literature_priority_topics=["usable_boundary"],
+        source_paper_fetcher=lambda *_args, **_kwargs: papers,
+        submitter=lambda _payload: {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": "sub-visible"}},
+        },
+        decision_fetcher=lambda _submission_id: next(decisions),
+        decision_poll_attempts=2,
+        decision_poll_seconds=1.0,
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Visible</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=sleep_check,
+    )
+
+    assert checks == 1
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "usable_boundary"
+
+
 def test_source_literature_fallback_resubmits_parented_terminal_duplicate(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

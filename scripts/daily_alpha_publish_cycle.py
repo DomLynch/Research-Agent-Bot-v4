@@ -6422,6 +6422,7 @@ def run_cycle(
                 "submitted_topic": candidate.get("topic"),
                 "submission_id": submission_id,
             })
+            _write_ledger(ledger_path, ledger)
             if submission_id:
                 final = publish_decisions.poll_submission_decision(
                     ledger,
@@ -6795,6 +6796,7 @@ def run_cycle(
                         "submitted_topic": literature_topic,
                         "submission_id": submission_id,
                     })
+                    _write_ledger(ledger_path, ledger)
                     if submission_id:
                         final = publish_decisions.poll_submission_decision(
                             ledger,
@@ -6892,6 +6894,7 @@ def run_cycle(
                                         "submitted_topic": literature_topic,
                                         "submission_id": submission_id,
                                     })
+                                    _write_ledger(ledger_path, ledger)
                                     if submission_id and submission_id == parent_submission_id:
                                         fallback_attempt["terminal_resubmit_same_parent_id"] = True
                                         ledger["cycle_attempts"].append({
