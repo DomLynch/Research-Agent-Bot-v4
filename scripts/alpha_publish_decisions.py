@@ -34,6 +34,9 @@ def submission_id(payload: Json) -> str:
     direct = payload.get("submission_id")
     if direct:
         return str(direct)
+    job = payload.get("job")
+    if isinstance(job, dict) and job.get("id"):
+        return str(job.get("id"))
     submission = payload.get("submission")
     if isinstance(submission, dict) and submission.get("id"):
         return str(submission.get("id"))

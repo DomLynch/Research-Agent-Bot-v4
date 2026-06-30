@@ -42,6 +42,18 @@ def test_daily_alpha_publish_cycle_can_run_as_file() -> None:
     assert "--allow-tier2-repair" in result.stdout
 
 
+def test_resubmission_response_uses_job_id_before_parent_object() -> None:
+    assert publish_decisions.submission_id({
+        "status": "accepted",
+        "attempts": [{
+            "response": {
+                "job": {"id": "job-new", "status": "queued"},
+                "submission": {"id": "parent-old"},
+            },
+        }],
+    }) == "job-new"
+
+
 def test_run_subprocess_timeout_kills_descendant_process(tmp_path: Path) -> None:
     marker = tmp_path / "orphan-marker"
     grandchild = tmp_path / "grandchild.py"
@@ -11751,6 +11763,88 @@ def test_source_literature_fallback_resubmits_clean_terminal_revise_same_cycle(
     assert ledger["source_literature_fallback_attempts"][0]["terminal_resubmit_submission"]["status"] == "accepted"
     assert ledger["submission"]["attempts"][0]["response"]["submission"]["id"] == "sub-clean-2"
     assert paper_fetch_calls == [("usable_boundary", 5)]
+
+
+def test_source_literature_terminal_resubmit_polls_job_id_not_parent(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", raising=False)
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "usable_boundary", "paper_count": 9, "fact_source_count": 9}],
+    })
+    submitted_payloads: list[dict[str, Any]] = []
+    decision_calls: list[str] = []
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submitted_payloads.append(payload)
+        if len(submitted_payloads) == 1:
+            return {
+                "ok": True,
+                "status": 200,
+                "response": {"submission": {"id": "sub-clean-1"}},
+            }
+        return {
+            "ok": True,
+            "status": 200,
+            "response": {
+                "job": {
+                    "id": "job-clean-2",
+                    "status": "queued",
+                    "target_object_id": "sub-clean-1",
+                },
+                "submission": {"id": "sub-clean-1"},
+            },
+        }
+
+    def decision_fetcher(submission_id: str) -> dict[str, Any]:
+        decision_calls.append(submission_id)
+        if submission_id == "sub-clean-1":
+            return {
+                "status": "complete",
+                "decision": "revise",
+                "claim_support_verdict": "supported",
+                "notes": ["editorial decision is terminal; external author must resubmit"],
+                "required_revisions": [],
+                "major_issues": [],
+                "minor_issues": [],
+                "failed_checks": [],
+                "gate_failures": [],
+                "rubric_scores": {
+                    "claim_evidence_alignment": 5,
+                    "source_grounding": 5,
+                    "synthesis_quality": 5,
+                },
+                "resubmission": {"allowed": True},
+            }
+        assert submission_id == "job-clean-2"
+        return {"status": "pending"}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-11T19-45-30Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        source_paper_fetcher=lambda _topic, _limit: _usable_boundary_papers(),
+        submitter=submitter,
+        decision_fetcher=decision_fetcher,
+        page_fetcher=lambda _url: {"ok": False, "status": "missing_public_url"},
+        fetcher=lambda _doi: {"message": {}},
+        decision_poll_attempts=1,
+        decision_poll_seconds=0,
+        sleep=lambda _seconds: None,
+    )
+
+    assert decision_calls == ["sub-clean-1", "job-clean-2"]
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["final_verdict"] == "pending"
+    assert ledger["submission_id"] == "job-clean-2"
+    assert [row["status"] for row in ledger["cycle_attempts"]] == [
+        "reviewer_revise", "submitted_to_researka",
+    ]
 
 
 def test_source_literature_same_parent_terminal_resubmit_stays_pending(
