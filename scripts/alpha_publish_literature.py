@@ -862,6 +862,7 @@ def _non_bio_mixed_significant_performance_receipt(paper: Json) -> bool:
         _non_bio_directional_performance_receipt(paper)
         and bool(re.search(
             r"\b(?:significant(?:ly)?\s+(?:effect|effects|influence|impact|"
+            r"enhanc(?:e|es|ed|ing)|"
             r"increas(?:e|es|ed|ing)|improv(?:e|es|ed|ing)|"
             r"reduc(?:e|es|ed|ing)|decreas(?:e|es|ed|ing))|"
             r"positive\s+significant|significant\s+positive)\b",

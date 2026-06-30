@@ -6484,6 +6484,31 @@ def test_business_source_literature_counts_significant_metric_change_directional
     ) == "directional association"
 
 
+def test_business_source_literature_counts_significant_enhancement_directional() -> None:
+    paper = {
+        "title": "Digital Transformation and Firm Environmental Performance",
+        "doi": "10.5555/dt-environment",
+        "source_fact": {
+            "canonical_phrase": (
+                "digital transformation significantly enhances firm environmental performance"
+            ),
+            "population": "firms",
+            "intervention": "digital transformation",
+            "endpoint": "firm environmental performance",
+        },
+    }
+
+    assert publish_literature._paper_effect_direction(
+        paper,
+        "digital_transformation_firm",
+    ) == "other/mixed"
+    assert publish_literature._paper_evidence_role(
+        paper,
+        "digital_transformation_firm",
+        "business_research",
+    ) == "directional association"
+
+
 def test_business_systemd_timers_are_eight_hour_guarded() -> None:
     expectations = {
         "business": ("business_research", "02/8:10:00"),
