@@ -3433,6 +3433,84 @@ def test_business_sweep_merges_cached_and_live_fullraw_facts_to_reach_gate(
     assert "10.6161/live-merge-digital-5" in {paper["doi"] for paper in forced}
 
 
+def test_business_sweep_rejects_complete_fullraw_without_five_citable_fact_sources(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    runs_root = tmp_path / "runs"
+    topic = "digital_transformation_firm"
+    papers = [
+        {
+            "title": f"Digital transformation firm performance paper {idx}",
+            "doi": f"10.6161/citable-digital-{idx}",
+            "source_fact": {
+                "canonical_phrase": f"Digital transformation fact {idx}.",
+                "population": "firms",
+                "intervention": "digital transformation",
+                "endpoint": "firm performance",
+                "source_tier": "fullraw_search",
+            },
+        }
+        for idx in range(4)
+    ] + [{
+        "title": "Uncited digital transformation performance paper",
+        "source_fact": {
+            "canonical_phrase": "Digital transformation fact without a citable source id.",
+            "population": "firms",
+            "intervention": "digital transformation",
+            "endpoint": "firm performance",
+            "source_tier": "fullraw_search",
+        },
+    }]
+
+    def fake_fullraw(_topic: str, **_kwargs: Any) -> dict[str, Any]:
+        return {
+            "status": "complete",
+            "paper_count": 5,
+            "shards_searched": 1525,
+            "partial_shard_search": False,
+            "sweep_failed_shards": 0,
+            "_papers": papers,
+        }
+
+    def fail_run_cycle(**_kwargs: Any) -> dict[str, Any]:
+        raise AssertionError("non-citable fifth fact source must not submit")
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [topic])
+    monkeypatch.setattr(
+        sweep,
+        "fetch_business_facts",
+        lambda *_args, **_kwargs: ([], {"status": "failed"}),
+    )
+    monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", lambda _topic: 0)
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", fake_fullraw)
+    monkeypatch.setattr(sweep, "run_cycle", fail_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(runs_root),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-06-30T01-20-00Z",
+    ])
+
+    assert sweep.main() == 2
+    summary = json.loads(
+        (runs_root / "_business_diagnostics" / "latest_sweep.json").read_text(
+            encoding="utf-8",
+        ),
+    )
+    row = summary["results"][0]
+    assert row["status"] == "no_bundle"
+    assert row["fullraw_fact_source_count"] == 5
+    assert row["fullraw"]["source_fact_identity_count"] == 4
+    assert "source_fact_diversity_below_min" in row["blockers"]
+
+
 def test_business_sweep_targets_near_ready_sources_to_complete_fact_gate(
     tmp_path: Path,
     monkeypatch: Any,

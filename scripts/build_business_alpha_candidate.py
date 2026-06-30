@@ -57,8 +57,20 @@ def no_bundle_blockers_from_diagnostics(data: dict[str, Any]) -> list[str]:
             paper_count = int(fullraw.get("paper_count") or 0)
         except (TypeError, ValueError):
             paper_count = 0
+        try:
+            source_fact_identity_count = int(fullraw.get("source_fact_identity_count") or 0)
+        except (TypeError, ValueError):
+            source_fact_identity_count = 0
+        try:
+            fact_source_count = int(fullraw.get("fact_source_count") or 0)
+        except (TypeError, ValueError):
+            fact_source_count = 0
         if status == "complete" and paper_count >= 5:
-            blockers.append("requires_fact_level_source_synthesis")
+            blockers.append(
+                "source_fact_diversity_below_min"
+                if fact_source_count >= 5 and 0 < source_fact_identity_count < 5
+                else "requires_fact_level_source_synthesis"
+            )
         elif status == "complete":
             blockers.append("fullraw_insufficient_papers")
         elif status == "complete_no_hits":

@@ -1822,11 +1822,16 @@ def main() -> int:
                     fullraw_fact_count = publish_literature.substantive_fact_count(
                         fullraw_papers,
                     )
+                    fullraw_source_identity_count = publish_literature.source_identity_count(
+                        fullraw_papers,
+                        require_substantive=True,
+                    )
                     fullraw_trace["paper_count"] = max(
                         _count_int(fullraw_trace.get("paper_count")),
                         len(fullraw_papers),
                     )
                     fullraw_trace["fact_source_count"] = fullraw_fact_count
+                    fullraw_trace["source_fact_identity_count"] = fullraw_source_identity_count
                     try:
                         pre_enrichment_fact_count = int(
                             fullraw_trace.get("candidate_fact_source_count") or 0,
@@ -1855,6 +1860,7 @@ def main() -> int:
                     fullraw_ready = (
                         fullraw_has_complete_receipt
                         and fullraw_fact_count >= MIN_DIRECT_SOURCES
+                        and fullraw_source_identity_count >= MIN_DIRECT_SOURCES
                     )
                     if fullraw_has_complete_receipt:
                         discovery_path = _write_fullraw_discovery(
@@ -1867,8 +1873,16 @@ def main() -> int:
                         row["source_literature_discovery"] = str(discovery_path)
                     if fullraw_has_complete_receipt and not fullraw_ready:
                         blockers = list(row.get("blockers") or [])
-                        if "requires_fact_level_source_synthesis" not in blockers:
-                            blockers.append("requires_fact_level_source_synthesis")
+                        missing = (
+                            "source_fact_diversity_below_min"
+                            if (
+                                fullraw_fact_count >= MIN_DIRECT_SOURCES
+                                and fullraw_source_identity_count < MIN_DIRECT_SOURCES
+                            )
+                            else "requires_fact_level_source_synthesis"
+                        )
+                        if missing not in blockers:
+                            blockers.append(missing)
                         row["blockers"] = blockers
                     if fullraw_ready:
                         row["status"] = "source_literature_candidate_available"
