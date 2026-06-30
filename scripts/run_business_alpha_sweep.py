@@ -252,6 +252,20 @@ def _fullraw_unadmitted_queue_event(event: dict[str, Any]) -> bool:
     return event.get("key_queued") is not True and event.get("key_running") is not True
 
 
+def _fullraw_admitted_pending_event(event: dict[str, Any]) -> bool:
+    if event.get("key_queued") is not True and event.get("key_running") is not True:
+        return False
+    status = str(event.get("status") or "")
+    return (
+        status in {
+            "async_queued", "async_running", "in_progress_cache_hit",
+            "in_progress_poll_due", "incomplete_receipt",
+        }
+        or str(event.get("async_status") or "") in {"queued", "running"}
+        or event.get("partial_shard_search") is True
+    )
+
+
 def _fullraw_backoff_path(runs_root: Path) -> Path:
     return runs_root / "_business_diagnostics" / "fullraw_backoff.json"
 
@@ -556,7 +570,10 @@ def _strict_fullraw_probe(
                         if _fullraw_can_try_next_query(result):
                             continue
                         break
-                    if not _fullraw_unadmitted_queue_event(result):
+                    if (
+                        not _fullraw_unadmitted_queue_event(result)
+                        and not _fullraw_admitted_pending_event(result)
+                    ):
                         break
                     remaining = queue_retry_deadline - time.monotonic()
                     if remaining <= 0:
