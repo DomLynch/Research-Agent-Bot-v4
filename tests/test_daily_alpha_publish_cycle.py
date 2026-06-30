@@ -15807,6 +15807,116 @@ def test_source_literature_payload_uses_economics_language(
     assert "pooled elasticity" in markdown
 
 
+def test_source_literature_payload_does_not_overclaim_context_only_receipts(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    papers = [
+        {
+            "title": "Digital transformation and firm environmental performance",
+            "doi": "10.9000/dtf-env",
+            "year": 2024,
+            "journal_name": "Journal A",
+            "source_fact": {
+                "canonical_phrase": (
+                    "digital transformation significantly improves firm environmental performance"
+                ),
+                "population": "firms",
+                "intervention": "digital transformation",
+                "endpoint": "firm environmental performance",
+                "source_tier": "fullraw_abstract",
+            },
+        },
+        {
+            "title": "Digital transformation and firm profitability in listed firms",
+            "doi": "10.9000/dtf-roa",
+            "year": 2023,
+            "journal_name": "Journal B",
+            "source_fact": {
+                "canonical_phrase": (
+                    "digital transformation increased ROA by 8 percent in Chinese A-share firms"
+                ),
+                "population": "Chinese A-share firms 2010-2023",
+                "intervention": "digital transformation",
+                "endpoint": "firm profitability",
+                "source_tier": "fullraw_abstract",
+            },
+        },
+        {
+            "title": "Digital transformation: harnessing digital technologies in banking",
+            "doi": "10.9000/dtf-bank",
+            "year": 2022,
+            "journal_name": "Journal C",
+            "source_fact": {
+                "canonical_phrase": (
+                    "71 percent of banking firms reported big data provides a competitive advantage"
+                ),
+                "population": "banking firms",
+                "intervention": "big data capability",
+                "endpoint": "competitive advantage share",
+                "source_tier": "fullraw_abstract",
+            },
+        },
+        {
+            "title": "Digital transformation firm governance context",
+            "doi": "10.9000/dtf-gov",
+            "year": 2021,
+            "journal_name": "Journal D",
+            "source_fact": {
+                "canonical_phrase": "digital transformation governance differs across firms",
+                "population": "firms",
+                "intervention": "digital transformation governance",
+                "endpoint": "governance context",
+                "source_tier": "fullraw_abstract",
+            },
+        },
+        {
+            "title": "Digital transformation firm implementation context",
+            "doi": "10.9000/dtf-impl",
+            "year": 2020,
+            "journal_name": "Journal E",
+            "source_fact": {
+                "canonical_phrase": (
+                    "digital transformation implementation varies across firm settings"
+                ),
+                "population": "firms",
+                "intervention": "digital transformation implementation",
+                "endpoint": "implementation context",
+                "source_tier": "fullraw_abstract",
+            },
+        },
+    ]
+
+    _candidate, payload = daily._source_literature_payload(
+        profile_slug="business_research",
+        topic="digital_transformation_firm",
+        papers=papers,
+        runs_root=root,
+        date="2026-07-01T00-00-00Z",
+    )
+
+    public_text = " ".join((
+        payload["title"],
+        payload["abstract"],
+        payload["markdown"],
+    ))
+    assert payload["title"] == (
+        "digital transformation: non-poolable direction-bearing cells for "
+        "firm environmental performance and firm profitability"
+    )
+    assert "direction-bearing map across" not in public_text
+    assert "direction-bearing evidence across" not in public_text
+    assert "has separate direction-bearing receipts for" in payload["abstract"]
+    assert "non-poolable metric cells" in payload["abstract"]
+    assert "context-only endpoints" in payload["abstract"]
+    assert payload["evidence_bundle"]["source_bundle_count"] == 5
+    assert payload["evidence_bundle"]["source_diversity"]["source_identity_count"] == 5
+    assert payload["evidence_bundle"]["source_diversity"]["source_outlet_count"] == 5
+    assert payload["evidence_bundle"]["context_source_count"] == 3
+    assert "direction-bearing receipts: 2" in payload["markdown"]
+    assert "context/antecedent/model receipts: 3 excluded from effect support" in payload["markdown"]
+
+
 def test_source_literature_payload_reconciles_single_outcome_economics_roles(
     tmp_path: Path,
 ) -> None:
@@ -16533,8 +16643,10 @@ def test_source_literature_payload_collapses_business_context_rows(
     assert payload["evidence_bundle"]["context_source_count"] == 3
     assert payload["evidence_bundle"]["context_sources_are_not_direct_support"] is True
     assert payload["abstract"].startswith(
-        "digital transformation firm: Bounded signal:",
+        "digital transformation: Bounded signal:",
     )
+    assert "direction-bearing evidence across" not in payload["abstract"]
+    assert "non-poolable metric cells" in payload["abstract"]
     assert "This receipt-backed scoping note" not in payload["abstract"]
     assert "non-directional caveat" not in markdown
     assert "- metric-scope caveat:" not in markdown
@@ -16549,7 +16661,7 @@ def test_source_literature_payload_collapses_business_context_rows(
     ) in markdown
     assert (
         markdown.count(
-            "This receipt-backed scoping note is a multi-outcome boundary map",
+            "This receipt-backed scoping note maps separate non-poolable metric cells",
         )
         == 1
     )

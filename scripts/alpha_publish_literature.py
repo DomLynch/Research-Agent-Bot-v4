@@ -125,6 +125,10 @@ _NON_BIOMEDICAL_DOMAINS = frozenset({
     "business_research", "economics_research", "finance_research",
     "management_research", "marketing_research", "ai_research",
 })
+_CONTEXT_ONLY_ROLES = frozenset({
+    "economic/context only", "antecedent/support", "descriptive/modeling",
+    "non-clinical/predictive", "other/mixed",
+})
 _OUTCOME_QUERY_TOKENS = frozenset({
     "employment", "margin", "margins", "performance", "price", "pricing",
     "profit", "profitability", "return", "returns", "revenue", "risk",
@@ -1584,6 +1588,15 @@ def _topic_title_label(topic: str) -> str:
     return " ".join(words) or topic.replace("_", " ")
 
 
+def _topic_signal_label(topic: str, *, non_bio: bool = False) -> str:
+    words = _topic_title_label(topic).split()
+    if non_bio and len(words) > 2 and words[-1] in {
+        "firm", "firms", "company", "companies", "organization", "organizations",
+    }:
+        words = words[:-1]
+    return " ".join(words) or _topic_title_label(topic)
+
+
 def _bounded_signal_sentence(
     topic: str,
     endpoints_by_label: dict[str, list[str]],
@@ -1591,7 +1604,7 @@ def _bounded_signal_sentence(
     non_bio: bool,
     outcome_families: list[str] | None = None,
 ) -> str:
-    topic_text = topic.replace("_", " ")
+    topic_text = _topic_signal_label(topic, non_bio=non_bio)
     family_text = join_contexts((outcome_families or [])[:3])
     directional = list(dict.fromkeys(
         endpoints_by_label.get("directional association", [])
@@ -1605,6 +1618,11 @@ def _bounded_signal_sentence(
     descriptive = list(dict.fromkeys(
         endpoints_by_label.get("descriptive/modeling", [])
         + endpoints_by_label.get("non-clinical/predictive", []),
+    ))
+    context_only = list(dict.fromkeys(
+        endpoint
+        for label in _CONTEXT_ONLY_ROLES
+        for endpoint in endpoints_by_label.get(label, [])
     ))
     if non_bio and directional and nullish:
         return (
@@ -1621,6 +1639,14 @@ def _bounded_signal_sentence(
             f"{', '.join(descriptive[:2])}"
             if descriptive else ""
         )
+        if len(directional) > 1 and context_only:
+            return (
+                f"Bounded signal: {topic_text} has separate direction-bearing receipts for "
+                f"{directional_text}; context-only endpoints "
+                f"({join_contexts(context_only[:2])}) remain adjacent "
+                "scope context only. These are non-poolable metric cells, not support "
+                "for the topic as a whole."
+            )
         if len(directional) > 1:
             return (
                 f"Bounded signal: {topic_text} has direction-bearing evidence across "
@@ -1903,7 +1929,7 @@ def payload(
         raw_fact = paper.get("source_fact")
         if isinstance(raw_fact, dict):
             facts.append(raw_fact)
-    topic_label = _topic_title_label(topic)
+    topic_label = _topic_signal_label(topic, non_bio=non_bio)
     contexts = sorted({context_family(fact.get("population")) for fact in facts})
     context_text = join_contexts(contexts[:3])
     source_identity_total = source_identity_count(selected, require_substantive=True)
@@ -2078,6 +2104,14 @@ def payload(
         + endpoints_by_label.get("directional estimate", [])
         + endpoints_by_label.get("directionally favorable", [])
     )
+    context_only_endpoints = list(dict.fromkeys(
+        endpoint
+        for label in _CONTEXT_ONLY_ROLES
+        for endpoint in endpoints_by_label.get(label, [])
+    ))
+    non_bio_nonpoolable_direction_scope = (
+        non_bio and len(directional_endpoints) > 1 and bool(context_only_endpoints)
+    )
     directional_endpoint_counts = {
         endpoint: directional_endpoint_rows.count(endpoint)
         for endpoint in dict.fromkeys(directional_endpoint_rows)
@@ -2098,14 +2132,20 @@ def payload(
     non_bio_signal_parts: list[str] = []
     if non_bio:
         if directional_endpoints:
-            direction_prefix = (
-                "direction-bearing evidence covers"
-                if len(directional_endpoints) > 1
-                else "direction-bearing evidence is limited to"
-            )
-            non_bio_signal_parts.append(
-                f"{direction_prefix} {join_contexts(directional_endpoints[:4])}",
-            )
+            if non_bio_nonpoolable_direction_scope:
+                non_bio_signal_parts.append(
+                    "separate direction-bearing cells are limited to "
+                    f"{join_contexts(directional_endpoints[:4])}",
+                )
+            else:
+                direction_prefix = (
+                    "direction-bearing evidence covers"
+                    if len(directional_endpoints) > 1
+                    else "direction-bearing evidence is limited to"
+                )
+                non_bio_signal_parts.append(
+                    f"{direction_prefix} {join_contexts(directional_endpoints[:4])}",
+                )
         for label, prefix in (
             ("null/mixed", "metric-scope caveat receipts concern"),
             ("antecedent/support", "antecedent/support receipts contextualize"),
@@ -2125,16 +2165,9 @@ def payload(
         in {"null/mixed", "null/non-convergent"}
     )
     context_only_count = len(selected) - directional_count - nullish_count
-    context_only_endpoints = list(dict.fromkeys(
-        endpoints_by_label.get("economic/context only", [])
-        + endpoints_by_label.get("antecedent/support", [])
-        + endpoints_by_label.get("descriptive/modeling", [])
-        + endpoints_by_label.get("non-clinical/predictive", [])
-        + endpoints_by_label.get("other/mixed", []),
-    ))
     context_only_note = (
         "Context-only classification: "
-        f"{join_contexts(context_only_endpoints[:3])} is retained as adjacent source "
+        f"context-only endpoints ({join_contexts(context_only_endpoints[:3])}) remain adjacent source "
         f"context, not direction-bearing support, because it does not share the "
         f"directional metric set ({join_contexts(directional_endpoints[:4])})."
         if non_bio and context_only_endpoints and directional_endpoints else ""
@@ -2209,16 +2242,18 @@ def payload(
         and "non-clinical/predictive" in direction_text
     )
     lead = (
-        f"This memo makes a narrow source-grounded scope claim for {topic}, "
+        f"This memo makes a narrow source-grounded scope claim for {topic_label}, "
         "not a pooled effect synthesis: "
         if thin_non_bio_scope else
-        f"This receipt-backed scoping note is a multi-outcome boundary map for {topic}: "
+        f"This receipt-backed scoping note maps separate non-poolable metric cells for {topic_label}: "
+        if non_bio_nonpoolable_direction_scope else
+        f"This receipt-backed scoping note is a multi-outcome boundary map for {topic_label}: "
         if multi_display_outcome else
-        f"This receipt-backed scoping note is a within-outcome heterogeneity map for {topic}: "
+        f"This receipt-backed scoping note is a within-outcome heterogeneity map for {topic_label}: "
         if non_bio and display_outcome_families else
-        f"This receipt-backed scoping note maps separated evidence fronts for {topic}: "
+        f"This receipt-backed scoping note maps separated evidence fronts for {topic_label}: "
         if split_front else
-        f"This receipt-backed scoping note has one bounded signal: {topic} shows "
+        f"This receipt-backed scoping note has one bounded signal: {topic_label} shows "
     )
     group_label = (
         "Evidence role grouping; non-directional method receipts are context only"
@@ -2374,7 +2409,7 @@ def payload(
     )
     if non_bio and not thin_non_bio_scope:
         abstract_text = (
-            f"{topic.replace('_', ' ')}: {bounded_signal} Context-only rows are "
+            f"{topic_label}: {bounded_signal} Context-only rows are "
             "adjacent scope, not effect support; no pooled causal, policy-prescriptive, "
             "or market-generalized claim is made."
         )
@@ -2620,6 +2655,8 @@ def payload(
         f"directional support for {join_contexts(title_directional_endpoints)} "
         f"but null or mixed support for {join_contexts(nullish_endpoints[:2])}"
         if non_bio and title_directional_endpoints and nullish_endpoints else
+        f"non-poolable direction-bearing cells for {join_contexts(title_directional_endpoints)}"
+        if non_bio and len(title_directional_endpoints) > 1 and context_only_count else
         f"direction-bearing map across {join_contexts(title_directional_endpoints)} receipts"
         if non_bio and len(title_directional_endpoints) > 1 else
         f"boundary map across {join_contexts(display_outcome_families[:3])} receipts"
