@@ -411,6 +411,40 @@ def test_non_bio_selection_prefers_second_directional_receipt() -> None:
     ) == (True, "ok")
 
 
+def test_select_boundary_papers_prefers_distinct_source_outlets() -> None:
+    topic = "digital_transformation_firm"
+    papers = [
+        {
+            "doi": f"10.820{idx}/dtf-{idx}",
+            "journal_name": outlet,
+            "title": f"Digital transformation firm performance outlet {idx}",
+            "source_fact": {
+                "canonical_phrase": (
+                    f"digital transformation significantly increases firm performance {idx}"
+                ),
+                "population": f"firm setting {idx}",
+                "intervention": "digital transformation",
+                "endpoint": "firm performance",
+                "source_tier": "fullraw_abstract",
+            },
+        }
+        for idx, outlet in enumerate((
+            "Outlet A", "Outlet A", "Outlet B", "Outlet C", "Outlet D", "Outlet E",
+        ), start=1)
+    ]
+
+    selected = literature.select_boundary_papers(
+        topic, papers, 5, profile_slug="business_research",
+    )
+
+    assert len(selected) == 5
+    assert literature.substantive_fact_count(selected) == 5
+    assert literature.source_identity_count(selected, require_substantive=True) == 5
+    assert literature.source_outlet_count(selected) == 5
+    assert "10.8206/dtf-6" in {paper["doi"] for paper in selected}
+    assert "10.8202/dtf-2" not in {paper["doi"] for paper in selected}
+
+
 def test_non_bio_promote_receipt_counts_directional() -> None:
     paper = {
         "doi": "10.8100/dtf-promote",

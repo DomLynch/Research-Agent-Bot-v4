@@ -14832,10 +14832,13 @@ def test_source_literature_bundle_preserves_source_facts() -> None:
 
 
 def test_source_literature_payload_bundle_blocker_requires_fact_backed_identities() -> None:
-    def source(idx: int, *, doi: str | None = None) -> dict[str, Any]:
+    def source(
+        idx: int, *, doi: str | None = None, outlet: str | None = None,
+    ) -> dict[str, Any]:
         return {
             "title": f"Operational resilience source {idx}",
-            "doi": doi or f"10.8123/or-{idx}",
+            "doi": doi or f"10.812{idx}/or-{idx}",
+            "journal_name": outlet or f"Outlet {chr(65 + idx)}",
             "source_fact": {
                 "canonical_phrase": f"operational resilience moved outcome {idx}",
                 "population": f"firm setting {idx}",
@@ -14872,6 +14875,12 @@ def test_source_literature_payload_bundle_blocker_requires_fact_backed_identitie
         {"source_bundle": duplicate_identity},
         5,
     ) == "source_bundle_fact_diversity_below_min"
+
+    duplicate_outlet = [*good[:4], source(5, outlet="Outlet D")]
+    assert daily._source_literature_payload_bundle_blocker(
+        {"source_bundle": duplicate_outlet},
+        5,
+    ) == "source_bundle_outlet_diversity_below_min"
 
 
 def test_source_literature_payload_is_deterministic_boundary_only(

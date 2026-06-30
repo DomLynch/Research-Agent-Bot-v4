@@ -3258,6 +3258,25 @@ def _resubmission_parent_submission_id(decision: Json) -> str:
     return str(resubmission.get("parent_submission_id") or "").strip()
 
 
+def _terminal_resubmit_poll_submission_id(result: Json, parent_submission_id: str) -> str:
+    parent = str(parent_submission_id or "").strip()
+    if parent:
+        for attempt in result.get("attempts") or []:
+            if not isinstance(attempt, dict):
+                continue
+            response = attempt.get("response")
+            if not isinstance(response, dict):
+                continue
+            job = response.get("job")
+            if not isinstance(job, dict):
+                continue
+            job_id = str(job.get("id") or "").strip()
+            target_id = str(job.get("target_object_id") or "").strip()
+            if job_id and target_id == parent:
+                return job_id
+    return publish_decisions.submission_id(result)
+
+
 def _repairable_ledger(ledger: Json) -> bool:
     decision = ledger.get("researka_decision")
     if isinstance(decision, dict) and _repairable_rejection(decision):
@@ -4470,6 +4489,8 @@ def _source_literature_boundary_quality(
             require_substantive=True,
         ) < min_sources:
             return False, "source_fact_diversity_below_min"
+        if publish_literature.source_outlet_diversity_below_min(selected, min_sources):
+            return False, "source_outlet_diversity_below_min"
     ok, reason = publish_literature.boundary_quality(
         topic,
         papers,
@@ -4964,6 +4985,8 @@ def _source_literature_payload_bundle_blocker(payload: Json, min_sources: int) -
         < min_sources
     ):
         return "source_bundle_fact_diversity_below_min"
+    if publish_literature.source_outlet_diversity_below_min(sources, min_sources):
+        return "source_bundle_outlet_diversity_below_min"
     return ""
 
 
@@ -6684,7 +6707,12 @@ def run_cycle(
                 source_diverse = publish_literature.source_identity_count(
                     selected_papers,
                     require_substantive=True,
-                ) >= min_submit_sources
+                ) >= min_submit_sources and not (
+                    publish_literature.source_outlet_diversity_below_min(
+                        selected_papers,
+                        min_submit_sources,
+                    )
+                )
                 if not fact_backed:
                     fallback_attempt["status"] = "disabled"
                     fallback_attempt["reason"] = "requires_fact_level_source_synthesis"
@@ -6834,9 +6862,12 @@ def run_cycle(
                                 fallback_attempt["terminal_resubmit_submission"] = result
                                 ledger["terminal_resubmission"] = result
                                 if result["status"] == _DECISION_ACCEPTED:
-                                    submission_id = publish_decisions.submission_id(result)
                                     parent_submission_id = _resubmission_parent_submission_id(
                                         repair_decision,
+                                    )
+                                    submission_id = _terminal_resubmit_poll_submission_id(
+                                        result,
+                                        parent_submission_id,
                                     )
                                     ledger["submission"] = result
                                     _record_submission_attempt(

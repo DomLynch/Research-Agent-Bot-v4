@@ -456,34 +456,56 @@ def _source_lit_selection(
     selected = ordered[:min_sources]
     required_directional = min(3 if _non_biomedical(profile_slug) else 2, min_sources)
     if (
-        not _non_biomedical(profile_slug)
-        or _directional_receipt_count(selected, topic, profile_slug) >= required_directional
+        _non_biomedical(profile_slug)
+        and _directional_receipt_count(selected, topic, profile_slug) < required_directional
     ):
-        return selected
-    for candidate in ordered[min_sources:]:
-        if (
-            _paper_evidence_role(candidate, topic, profile_slug)
-            not in _DIRECTIONAL_SOURCE_LIT_ROLES
-        ):
-            continue
-        candidate_key = source_identity_key(candidate)
-        if candidate_key and candidate_key in {
-            source_identity_key(paper) for paper in selected
-        }:
-            continue
-        for idx in range(len(selected) - 1, -1, -1):
+        for candidate in ordered[min_sources:]:
             if (
-                _paper_evidence_role(selected[idx], topic, profile_slug)
-                in _DIRECTIONAL_SOURCE_LIT_ROLES
+                _paper_evidence_role(candidate, topic, profile_slug)
+                not in _DIRECTIONAL_SOURCE_LIT_ROLES
             ):
                 continue
-            trial = [*selected]
-            trial[idx] = candidate
-            if source_identity_count(trial, require_substantive=True) >= min_sources:
-                selected = trial
+            candidate_key = source_identity_key(candidate)
+            if candidate_key and candidate_key in {
+                source_identity_key(paper) for paper in selected
+            }:
+                continue
+            for idx in range(len(selected) - 1, -1, -1):
+                if (
+                    _paper_evidence_role(selected[idx], topic, profile_slug)
+                    in _DIRECTIONAL_SOURCE_LIT_ROLES
+                ):
+                    continue
+                trial = [*selected]
+                trial[idx] = candidate
+                if source_identity_count(trial, require_substantive=True) >= min_sources:
+                    selected = trial
+                    break
+            if _directional_receipt_count(selected, topic, profile_slug) >= required_directional:
                 break
-        if _directional_receipt_count(selected, topic, profile_slug) >= required_directional:
-            break
+    if source_outlet_count(selected) < min_sources:
+        selected_ids = {source_identity_key(paper) for paper in selected}
+        for candidate in ordered[min_sources:]:
+            candidate_id = source_identity_key(candidate)
+            candidate_outlet = source_outlet_key(candidate)
+            if not candidate_id or candidate_id in selected_ids or not candidate_outlet:
+                continue
+            if candidate_outlet in {source_outlet_key(paper) for paper in selected}:
+                continue
+            current_outlet_count = source_outlet_count(selected)
+            for idx in range(len(selected) - 1, -1, -1):
+                trial = [*selected]
+                trial[idx] = candidate
+                if (
+                    source_identity_count(trial, require_substantive=True) >= min_sources
+                    and source_outlet_count(trial) > current_outlet_count
+                    and _directional_receipt_count(trial, topic, profile_slug) >= required_directional
+                ):
+                    selected = trial
+                    selected_ids = {source_identity_key(paper) for paper in selected}
+                    break
+            if source_outlet_count(selected) >= min_sources:
+                break
     return selected
 
 
@@ -635,11 +657,14 @@ def source_identity_count(papers: list[Json], *, require_substantive: bool = Fal
     return len(keys)
 
 
-def source_outlet_key(paper: Json) -> str:
-    for key in (
-        "journal_name", "journal", "venue", "publisher", "source",
-        "source_outlet", "source_name", "container_title", "publication_venue",
-    ):
+_SOURCE_OUTLET_FIELDS = (
+    "journal_name", "journal", "venue", "publisher", "source",
+    "source_outlet", "source_name", "container_title", "publication_venue",
+)
+
+
+def _explicit_source_outlet_key(paper: Json) -> str:
+    for key in _SOURCE_OUTLET_FIELDS:
         value = paper.get(key)
         if isinstance(value, dict):
             value = value.get("name") or value.get("title")
@@ -647,6 +672,12 @@ def source_outlet_key(paper: Json) -> str:
             value = " ".join(str(item) for item in value if item)
         if cleaned := title_key(value):
             return cleaned
+    return ""
+
+
+def source_outlet_key(paper: Json) -> str:
+    if cleaned := _explicit_source_outlet_key(paper):
+        return cleaned
     doi_prefix = str(paper.get("doi") or "").strip().casefold().split("/", 1)[0]
     for key in ("url", "source_url", "landing_page_url"):
         value = str(paper.get(key) or "").strip()
@@ -660,6 +691,17 @@ def source_outlet_key(paper: Json) -> str:
 
 def source_outlet_count(papers: list[Json]) -> int:
     return len({key for paper in papers if (key := source_outlet_key(paper))})
+
+
+def source_outlet_metadata_count(papers: list[Json]) -> int:
+    return sum(1 for paper in papers if _explicit_source_outlet_key(paper))
+
+
+def source_outlet_diversity_below_min(papers: list[Json], min_sources: int) -> bool:
+    return (
+        source_outlet_metadata_count(papers) >= min_sources
+        and source_outlet_count(papers) < min_sources
+    )
 
 
 def source_fact(item: Json) -> Json:
@@ -1967,7 +2009,7 @@ def payload(
             item["excerpt"] = safe_excerpt(finding) or " ".join(finding.split())
     bundle_identity_count = source_identity_count(bundle, require_substantive=True)
     bundle_fact_count = substantive_fact_count(bundle)
-    source_outlet_metadata_count = sum(1 for source in bundle if source_outlet_key(source))
+    bundle_outlet_metadata_count = source_outlet_metadata_count(bundle)
     source_setting_count = len({
         str(source.get("population") or source.get("setting") or "").strip().casefold()
         for source in bundle
@@ -1976,7 +2018,7 @@ def payload(
     source_diversity = {
         "fact_backed_source_count": bundle_fact_count,
         "source_identity_count": bundle_identity_count,
-        "source_outlet_metadata_count": source_outlet_metadata_count,
+        "source_outlet_metadata_count": bundle_outlet_metadata_count,
         "source_outlet_count": source_outlet_count(bundle),
         "source_setting_count": source_setting_count,
     }
@@ -2300,6 +2342,29 @@ def payload(
             )
     else:
         source_synthesis_note = ""
+    body_synthesis = synthesis
+    if nullish_count == 1 and single_caveat_endpoint:
+        for noisy_note in (
+            contrast_text,
+            cross_setting_text,
+            context_only_note,
+            (
+                "Population/setting counts are context descriptors only; they are "
+                "not weighting, pooling, or aggregation evidence."
+            ),
+        ):
+            if noisy_note:
+                body_synthesis = body_synthesis.replace(f" {noisy_note}", "")
+        body_synthesis = re.sub(
+            r" Within-vs-across outcome rule: .*?not treated as one outcome\.",
+            "",
+            body_synthesis,
+        )
+        body_synthesis = re.sub(
+            r" Outcome families named here are .*?not one harmonized endpoint\.",
+            "",
+            body_synthesis,
+        )
     abstract_text = (
         f"{topic}: one receipt supports {join_contexts(directional_endpoints[:2])}; "
         f"one separate receipt is null or non-convergent for "
@@ -2419,6 +2484,7 @@ def payload(
         "",
         bounded_signal,
         "",
+        *([body_synthesis, ""] if non_bio else []),
         *([source_synthesis_note, ""] if source_synthesis_note else []),
         *([*extra_source_notes, ""] if extra_source_notes else []),
         *([evidence_weight_note, ""] if evidence_weight_note else []),
