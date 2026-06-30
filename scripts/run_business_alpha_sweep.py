@@ -1619,6 +1619,10 @@ def _recent_source_literature_blocked_topics(runs_root: Path, domain: str) -> se
         )
         if (key := _topic_key(topic))
     }
+    repairable_keys.update(
+        key for topic in _recent_source_literature_repair_attempt_topics(runs_root, domain)
+        if (key := _topic_key(topic))
+    )
     return {
         key for topic in structurally_blocked
         if (key := _topic_key(topic)) and key not in repairable_keys
@@ -1626,6 +1630,56 @@ def _recent_source_literature_blocked_topics(runs_root: Path, domain: str) -> se
         key for topic in blocked
         if (key := _topic_key(topic)) and key not in repairable_keys
     }
+
+
+def _recent_source_literature_repair_attempt_topics(
+    runs_root: Path, domain: str, *, days: int = 2,
+) -> list[str]:
+    ledger_dir = runs_root / "_daily_ledger"
+    cutoff = time.time() - (max(0, days) * 86400)
+    topics: list[str] = []
+    seen: set[str] = set()
+    for path in sorted(ledger_dir.glob("*.json"), key=lambda item: item.stat().st_mtime, reverse=True):
+        if path.name.startswith("_"):
+            continue
+        with suppress(OSError):
+            if path.stat().st_mtime < cutoff:
+                continue
+        ledger = read_json(path, {})
+        if not isinstance(ledger, dict):
+            continue
+        raw_domain = ledger.get("domain_slug") or ledger.get("domain")
+        ledger_domain = (
+            str(raw_domain.get("slug") or "") if isinstance(raw_domain, dict)
+            else str(raw_domain or "")
+        )
+        if ledger_domain and ledger_domain != domain:
+            continue
+        attempts: list[Any] = []
+        fallback = ledger.get("source_literature_fallback")
+        if isinstance(fallback, dict):
+            attempts.append(fallback)
+        raw_attempts = ledger.get("source_literature_fallback_attempts")
+        if isinstance(raw_attempts, list):
+            attempts.extend(raw_attempts)
+        for attempt in attempts:
+            if not isinstance(attempt, dict) or not attempt.get("repair_submission"):
+                continue
+            reason = str(attempt.get("reason") or "")
+            if reason not in publish_cycle._SOURCE_LITERATURE_STRUCTURAL_BLOCK_REASONS:
+                continue
+            topic = str(attempt.get("topic") or "").strip()
+            key = _topic_key(topic)
+            if not key or key in seen:
+                continue
+            if (
+                int(attempt.get("selected_source_count") or 0) >= MIN_DIRECT_SOURCES
+                and int(attempt.get("selected_source_fact_count") or 0) >= MIN_DIRECT_SOURCES
+                and int(attempt.get("selected_source_identity_count") or 0) >= MIN_DIRECT_SOURCES
+            ):
+                seen.add(key)
+                topics.append(topic)
+    return topics
 
 
 def _write_sweep_summary(runs_root: Path, rows: list[dict[str, Any]]) -> Path:
@@ -1884,9 +1938,13 @@ def main() -> int:
             repairable_source_lit_topics = publish_cycle._repairable_source_literature_topics(
                 args.runs_root, domain, limit=max(args.topics_per_domain, 3),
             )
+            fallback_repair_topics = _recent_source_literature_repair_attempt_topics(
+                args.runs_root, domain,
+            )
             repairable_source_lit_topics = list(dict.fromkeys([
                 *priority_source_lit_topics,
                 *repairable_source_lit_topics,
+                *fallback_repair_topics,
             ]))
             seed_pool = list(dict.fromkeys([*repairable_source_lit_topics, *seed_pool]))
             blocked_topic_keys = _recent_source_literature_blocked_topics(

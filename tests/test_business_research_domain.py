@@ -5023,6 +5023,104 @@ def test_business_sweep_keeps_repairable_source_lit_ahead_of_cached_rank(
     }]
 
 
+def test_business_sweep_retries_repair_submission_fallback_attempt(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    runs_root = tmp_path / "runs"
+    ledger_dir = runs_root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    repair_topic = "digital_transformation_firm"
+    submissions: list[dict[str, Any]] = []
+
+    cycle._write_json(ledger_dir / "2026-06-29T08-03-00Z.json", {
+        "domain": {"slug": "business_research"},
+        "source_literature_fallback_attempts": [{
+            "topic": repair_topic,
+            "status": "blocked",
+            "reason": "directional_receipt_floor_below_min",
+            "repair_submission": True,
+            "selected_source_count": 5,
+            "selected_source_fact_count": 5,
+            "selected_source_identity_count": 5,
+        }],
+    })
+
+    def papers_for(topic: str) -> list[dict[str, Any]]:
+        endpoints = [
+            "firm performance", "firm profitability", "firm productivity",
+            "operating margin", "environmental performance",
+        ]
+        return [
+            {
+                "title": f"{topic.replace('_', ' ')} evidence paper {idx}",
+                "doi": f"10.5555/{topic}-{idx}",
+                "abstract": f"{topic} evidence.",
+                "source_fact": {
+                    "canonical_phrase": (
+                        f"{topic.replace('_', ' ')} significantly improves {endpoint}"
+                    ),
+                    "population": "firms",
+                    "intervention": topic.replace("_", " "),
+                    "endpoint": endpoint,
+                    "source_tier": "fullraw_search",
+                },
+            }
+            for idx, endpoint in enumerate(endpoints, 1)
+        ]
+
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        submissions.append(kwargs)
+        return {
+            "status": "submitted_to_researka",
+            "submitted": 1,
+            "published": 0,
+        }
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(
+        sweep,
+        "_seed_topics",
+        lambda _path, *, limit: ["operations_process_improvement"],
+    )
+    monkeypatch.setattr(sweep, "_prioritized_seed_topics", lambda _root, _domain, topics: topics)
+    monkeypatch.setattr(cycle, "_priority_source_literature_repair_decisions", lambda *_args, **_kwargs: {})
+    monkeypatch.setattr(cycle, "_repairable_source_literature_topics", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", lambda _topic: 0)
+    monkeypatch.setattr(
+        sweep,
+        "_cached_fullraw_discovery_papers",
+        lambda _root, _domain, topic: (papers_for(topic), {"status": "complete"}),
+    )
+    monkeypatch.setattr(
+        sweep,
+        "_enrich_fullraw_papers_with_db_facts",
+        lambda _topic, *, domain, papers, settings: papers,
+    )
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(runs_root),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-06-29T04-12-00Z",
+    ])
+
+    assert sweep.main() == 0
+    assert submissions == [{
+        "runs_root": runs_root,
+        "date": "2026-06-29T04-12-00Z",
+        "domain": "business_research",
+        "submit": True,
+        "refresh_candidates": False,
+        "source_literature_forced_papers": {repair_topic: papers_for(repair_topic)},
+    }]
+
+
 def test_business_sweep_delegates_uncached_priority_repair_to_daily_cycle(
     tmp_path: Path,
     monkeypatch: Any,
