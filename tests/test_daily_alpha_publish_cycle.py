@@ -12550,8 +12550,7 @@ def test_source_literature_terminal_resubmit_polls_job_id_not_parent(
                 },
                 "resubmission": {"allowed": True},
             }
-        assert submission_id == "job-clean-2"
-        return {"status": "pending"}
+        raise AssertionError("queued terminal resubmit job should sync later")
 
     ledger = daily.run_cycle(
         runs_root=root,
@@ -12569,13 +12568,22 @@ def test_source_literature_terminal_resubmit_polls_job_id_not_parent(
         sleep=lambda _seconds: None,
     )
 
-    assert decision_calls == ["sub-clean-1", "job-clean-2"]
+    assert decision_calls == ["sub-clean-1"]
     assert ledger["status"] == "submitted_to_researka"
     assert ledger["final_verdict"] == "pending"
     assert ledger["submission_id"] == "job-clean-2"
     assert [row["status"] for row in ledger["cycle_attempts"]] == [
         "reviewer_revise", "submitted_to_researka",
     ]
+    assert ledger["cycle_attempts"][-1]["pending_reason"] == (
+        "terminal_resubmit_job_queued"
+    )
+    assert (
+        ledger["source_literature_fallback_attempts"][0][
+            "terminal_resubmit_queued_job_id"
+        ]
+        == "job-clean-2"
+    )
 
 
 def test_source_literature_same_parent_terminal_resubmit_stays_pending(

@@ -3341,6 +3341,27 @@ def _terminal_resubmit_poll_submission_id(result: Json, parent_submission_id: st
     return publish_decisions.submission_id(result)
 
 
+def _terminal_resubmit_queued_job_id(result: Json, parent_submission_id: str) -> str:
+    parent = str(parent_submission_id or "").strip()
+    if not parent:
+        return ""
+    for attempt in result.get("attempts") or []:
+        if not isinstance(attempt, dict):
+            continue
+        response = attempt.get("response")
+        if not isinstance(response, dict):
+            continue
+        job = response.get("job")
+        if not isinstance(job, dict):
+            continue
+        job_id = str(job.get("id") or "").strip()
+        target_id = str(job.get("target_object_id") or "").strip()
+        status = str(job.get("status") or "").lower()
+        if job_id and target_id == parent and status in {"pending", "queued", "running"}:
+            return job_id
+    return ""
+
+
 def _repairable_ledger(ledger: Json) -> bool:
     decision = ledger.get("researka_decision")
     if isinstance(decision, dict) and _repairable_rejection(decision):
@@ -7152,7 +7173,11 @@ def run_cycle(
                                     parent_submission_id = _resubmission_parent_submission_id(
                                         repair_decision,
                                     )
-                                    submission_id = _terminal_resubmit_poll_submission_id(
+                                    queued_job_id = _terminal_resubmit_queued_job_id(
+                                        result,
+                                        parent_submission_id,
+                                    )
+                                    submission_id = queued_job_id or _terminal_resubmit_poll_submission_id(
                                         result,
                                         parent_submission_id,
                                     )
@@ -7172,6 +7197,17 @@ def run_cycle(
                                         "submission_id": submission_id,
                                     })
                                     _write_ledger(ledger_path, ledger)
+                                    if queued_job_id:
+                                        fallback_attempt["terminal_resubmit_queued_job_id"] = queued_job_id
+                                        ledger["cycle_attempts"].append({
+                                            "topic": literature_topic,
+                                            "run_dir": candidate.get("run_dir"),
+                                            "fingerprint": candidate.get("memo_fingerprint"),
+                                            "status": publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value,
+                                            "pending_reason": "terminal_resubmit_job_queued",
+                                        })
+                                        _write_ledger(ledger_path, ledger)
+                                        return ledger
                                     if submission_id and submission_id == parent_submission_id:
                                         fallback_attempt["terminal_resubmit_same_parent_id"] = True
                                         ledger["cycle_attempts"].append({
