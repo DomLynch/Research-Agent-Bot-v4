@@ -6639,6 +6639,14 @@ def run_cycle(
                         reviewer_notes=_revision_notes(repair_decision),
                         parent_submission_id=_resubmission_parent_submission_id(repair_decision),
                     )
+                fingerprint = str(candidate.get("memo_fingerprint") or "")
+                if fingerprint and _same_memo_seen(
+                    submitted_path, fingerprint, _memo_sha256(candidate, runs_root), profile.slug,
+                ):
+                    fallback_attempt["status"] = "blocked"
+                    fallback_attempt["reason"] = "duplicate_submission_fingerprint"
+                    fallback_attempt["fingerprint"] = fingerprint
+                    continue
                 if len(payload.get("source_bundle") or []) < min_submit_sources:
                     fallback_attempt["status"] = "blocked"
                     fallback_attempt["reason"] = "source_bundle_below_min"
