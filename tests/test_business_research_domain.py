@@ -3770,6 +3770,151 @@ def test_business_sweep_reuses_complete_cache_when_db_facts_fill_source_gate(
     assert row["fullraw"]["selected_source_identity_count"] == 5
 
 
+def test_business_sweep_ranks_reusable_cached_receipt_before_pending_fullraw(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    runs_root = tmp_path / "runs"
+    diagnostics_dir = runs_root / "_business_diagnostics"
+    diagnostics_dir.mkdir(parents=True)
+    (diagnostics_dir / "business_research-minimum_wage.json").write_text(
+        json.dumps({
+            "retrieval_trace": {
+                "fullraw": {
+                    "status": "incomplete_receipt",
+                    "async_status": "queued",
+                    "fact_source_count": 14,
+                },
+            },
+        }),
+        encoding="utf-8",
+    )
+    (diagnostics_dir / "business_research-digital_transformation_firm.json").write_text(
+        json.dumps({
+            "retrieval_trace": {
+                "fullraw": {
+                    "status": "queue_saturated",
+                    "fact_source_count": 6,
+                },
+            },
+        }),
+        encoding="utf-8",
+    )
+    topic = "digital_transformation_firm"
+    cached_papers = [
+        {
+            "title": f"Cached digital transformation ranked paper {idx}",
+            "doi": f"10.6161/cached-ranked-digital-{idx}",
+            **({
+                "source_fact": {
+                    "canonical_phrase": f"Cached ranked digital fact {idx}.",
+                    "population": "firms",
+                    "intervention": "digital transformation",
+                    "endpoint": "firm performance",
+                    "source_tier": "fullraw_search",
+                },
+            } if idx < 4 else {}),
+        }
+        for idx in range(5)
+    ]
+    db_facts = [
+        {
+            "id": f"digital-ranked-db-{idx}",
+            "topic": topic,
+            "claim_type": "performance_estimate",
+            "numeric_value": idx + 1,
+            "units": "index points",
+            "canonical_phrase": (
+                "Digital transformation changed firm performance in "
+                f"ranked receipt {idx}."
+            ),
+            "population": "firms",
+            "intervention": "digital transformation",
+            "comparator": "lower digital transformation baseline",
+            "outcome": f"firm performance signal {idx}",
+            "metric": "firm performance",
+            "study_design": f"quasi experimental design {idx}",
+            "effect_size": idx + 1,
+            "paper": {
+                "doi": f"10.6161/digital-ranked-db-{idx}",
+                "title": f"Digital transformation ranked DB source {idx}",
+                "journal_name": f"Digital ranked outlet {idx}",
+                "publication_year": 2024,
+            },
+        }
+        for idx in range(2)
+    ]
+    submissions: list[dict[str, Any]] = []
+    probed_topics: list[str] = []
+    sweep._write_fullraw_discovery(
+        runs_root,
+        domain="business_research",
+        topic=topic,
+        profile=profile,
+        papers=cached_papers,
+    )
+
+    def fake_fullraw(probed_topic: str, **_kwargs: Any) -> dict[str, Any]:
+        probed_topics.append(probed_topic)
+        return {
+            "status": "queue_saturated",
+            "async_status": "queued",
+            "query": f"{probed_topic} completion",
+            "paper_count": 0,
+            "_papers": [],
+        }
+
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        submissions.append(kwargs)
+        forced = kwargs["source_literature_forced_papers"][topic]
+        assert publish_literature.substantive_fact_count(forced) == 5
+        assert publish_literature.source_identity_count(
+            forced, require_substantive=True,
+        ) == 5
+        return {
+            "status": "submitted_to_researka",
+            "submitted": 1,
+            "published": 0,
+            "publish_summary": {
+                "status": "submitted_to_researka",
+                "submitted": 1,
+                "published": 0,
+                "top_blockers": {},
+                "next_action": "watch_decision_or_public_page",
+                "queue_counts": {"ready_to_publish": 1},
+                "public_url_status": None,
+            },
+        }
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [
+        "minimum_wage",
+        topic,
+    ])
+    monkeypatch.setattr(sweep, "fetch_business_facts", lambda selected, **_kwargs: (
+        db_facts if selected == topic else [],
+        {"status": "ok"},
+    ))
+    monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", lambda _topic: 0)
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", fake_fullraw)
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(runs_root),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-06-29T04-38-00Z",
+    ])
+
+    assert sweep.main() == 0
+    assert probed_topics == [topic]
+    assert submissions
+
+
 def test_business_sweep_merges_cached_and_live_fullraw_facts_to_reach_gate(
     tmp_path: Path,
     monkeypatch: Any,

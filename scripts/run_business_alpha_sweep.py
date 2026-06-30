@@ -1480,16 +1480,20 @@ def _diagnostic_rank(
         fullraw = {}
     status = str(fullraw.get("status") or "")
     fullraw_fact_count = count(fullraw.get("fact_source_count"))
-    if not fullraw_fact_count:
-        discovery = read_json(
-            runs_root / "_topics_discovery"
-            / f"business_sweep_fullraw.{domain}.{topic}.json",
-            {},
-        )
-        if isinstance(discovery, dict):
-            rows = discovery.get("all")
-            if isinstance(rows, list) and rows and isinstance(rows[0], dict):
-                fullraw_fact_count = count(rows[0].get("fact_source_count"))
+    cached_fact_count = 0
+    cached_paper_count = 0
+    discovery = read_json(
+        runs_root / "_topics_discovery"
+        / f"business_sweep_fullraw.{domain}.{topic}.json",
+        {},
+    )
+    if isinstance(discovery, dict):
+        rows = discovery.get("all")
+        if isinstance(rows, list) and rows and isinstance(rows[0], dict):
+            cached_fact_count = count(rows[0].get("fact_source_count"))
+            cached_paper_count = count(rows[0].get("paper_count"))
+            if not fullraw_fact_count:
+                fullraw_fact_count = cached_fact_count
     fullraw_pending = (
         str(fullraw.get("async_status") or "") in {"queued", "running"}
         or status in {"async_queued", "async_running"}
@@ -1501,8 +1505,16 @@ def _diagnostic_rank(
     )
     if source_literature_ready:
         return (0, -fullraw_fact_count, -top_sources, -a_core, idx)
-    if fullraw_fact_count > 0:
+    cached_receipt_reusable = (
+        cached_paper_count >= MIN_DIRECT_SOURCES
+        and cached_fact_count > 0
+    )
+    if cached_receipt_reusable:
         return (0, -fullraw_fact_count, -top_sources, -a_core, idx)
+    if fullraw_pending and fullraw_fact_count > 0:
+        return (1, -fullraw_fact_count, -top_sources, -a_core, idx)
+    if fullraw_fact_count > 0:
+        return (1, -fullraw_fact_count, -top_sources, -a_core, idx)
     if source_rich or fullraw_pending:
         return (0, -top_sources, -a_core, -raw, idx)
     service_busy = status in {
