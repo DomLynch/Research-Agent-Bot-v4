@@ -4949,7 +4949,7 @@ def _source_literature_fetch_topics(topic: str) -> list[str]:
     if len(tokens) >= 4:
         add_candidate([*tokens[:2], tokens[-1]])
         add_candidate(tokens[-2:])
-    if len(tokens) > 2 or len(tokens) == len(raw_tokens):
+    if len(tokens) < 4 and (len(tokens) > 2 or len(tokens) == len(raw_tokens)):
         add_candidate(tokens[:2])
     if len(topics) == 1 and len(raw_tokens) >= 2:
         for pair in (raw_tokens[:2], raw_tokens[-2:]):

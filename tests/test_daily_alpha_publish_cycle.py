@@ -14270,6 +14270,9 @@ def test_source_literature_fallback_derives_variant_from_blocked_rich_parent(
 
     assert fetches == []
     assert ledger["source_literature_scan_reason"] == "blocked_parent_variant_expansion"
+    assert "supply_chain" not in daily._source_literature_fetch_topics(
+        "supply_chain_resilience_performance",
+    )
     assert ledger["source_literature_source_floor_revalidated_topics"] == [
         "supply_chain_performance",
     ]
