@@ -4851,6 +4851,41 @@ def _source_literature_discovery_papers(
     return []
 
 
+def _source_literature_related_discovery_papers(
+    runs_root: Path, profile_slug: str, topic: str, min_sources: int,
+) -> list[Json]:
+    discovery_dir = runs_root / "_topics_discovery"
+    paths = sorted(
+        discovery_dir.glob("*.json"),
+        key=lambda path: path.stat().st_mtime if path.exists() else 0,
+        reverse=True,
+    )
+    for path in paths:
+        data = _json(path, {})
+        if not isinstance(data, dict) or not _same_domain(_row_domain(data), profile_slug):
+            continue
+        rows = data.get("all")
+        if not isinstance(rows, list):
+            continue
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            parent = str(row.get("topic") or "").strip()
+            if topic not in _source_literature_fetch_topics(parent)[1:]:
+                continue
+            raw = row.get("source_papers")
+            papers = [paper for paper in raw if isinstance(paper, dict)] if isinstance(raw, list) else []
+            if len(papers) < min_sources:
+                continue
+            papers = publish_literature.with_metadata_source_facts(topic, papers)
+            if _source_literature_boundary_quality(
+                topic, papers, min_sources, profile_slug,
+                require_substantive_sources=_source_literature_fallback_submit_enabled(),
+            )[0]:
+                return papers
+    return []
+
+
 def _source_literature_candidate_papers(
     runs_root: Path, profile_slug: str, topic: str, min_sources: int, fetch_limit: int,
     *, allow_live_fetch: bool = True,
@@ -4863,6 +4898,11 @@ def _source_literature_candidate_papers(
         require_substantive_sources=_source_literature_fallback_submit_enabled(),
     )[0]:
         return papers
+    related = _source_literature_related_discovery_papers(
+        runs_root, profile_slug, topic, min_sources,
+    )
+    if related:
+        return related
     if not allow_live_fetch:
         return papers
     fetched = _fetch_source_literature_papers(topic, fetch_limit, domain=profile_slug)
@@ -4904,11 +4944,13 @@ def _source_literature_fetch_topics(topic: str) -> list[str]:
             if candidate and candidate not in topics:
                 topics.append(candidate)
 
-    for size in range(len(tokens) - 1, 1, -1):
+    for size in range(len(tokens) - 1, 2, -1):
         add_candidate(tokens[:size])
     if len(tokens) >= 4:
         add_candidate([*tokens[:2], tokens[-1]])
         add_candidate(tokens[-2:])
+    if len(tokens) > 2 or len(tokens) == len(raw_tokens):
+        add_candidate(tokens[:2])
     if len(topics) == 1 and len(raw_tokens) >= 2:
         for pair in (raw_tokens[:2], raw_tokens[-2:]):
             candidate = "_".join(pair)
