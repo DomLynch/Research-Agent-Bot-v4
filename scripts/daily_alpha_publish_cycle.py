@@ -6534,6 +6534,15 @@ def run_cycle(
                 min(4, _SOURCE_LITERATURE_SCAN_LIMIT),
             )
         )
+        if (
+            paper_fetcher is None
+            and submitted_blocked_topics
+            and source_lit_scan_limit < _SOURCE_LITERATURE_SCAN_LIMIT
+        ):
+            source_lit_scan_limit = _SOURCE_LITERATURE_SCAN_LIMIT
+            ledger["source_literature_scan_reason"] = (
+                "recent_submissions_expand_candidate_window"
+            )
         repair_decisions = _repairable_source_literature_decisions(
             runs_root, profile.slug,
         )

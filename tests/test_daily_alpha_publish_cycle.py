@@ -11654,6 +11654,137 @@ def test_source_literature_fallback_skips_exact_submitted_memo(
     assert ledger["submitted_topic"] == "fresh_boundary"
 
 
+def test_source_literature_fallback_widens_scan_after_recent_duplicate(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
+    root = tmp_path / "repo"
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "writer_configured": False,
+        "mimo_model": "",
+        "mimo_base_url": "",
+    })())
+    duplicate_papers = _usable_boundary_papers()
+    fresh_papers = [
+        {
+            "title": title,
+            "doi": f"10.1234/wide-fresh-{idx}",
+            "source_fact": {
+                "canonical_phrase": f"fresh widened scan fact {idx}",
+                "population": "adult source context",
+                "intervention": "fresh boundary",
+                "endpoint": "aging signal",
+            },
+        }
+        for idx, title in enumerate((
+            "Fresh widened scan aging metabolism",
+            "Fresh widened scan inflammation evidence",
+            "Fresh widened scan mitochondrial stress",
+            "Fresh widened scan proteostasis response",
+            "Fresh widened scan cellular senescence",
+        ))
+    ]
+    thin_papers = [
+        {
+            "title": f"Thin widened scan source {idx}",
+            "doi": f"10.1234/wide-thin-{idx}",
+        }
+        for idx in range(4)
+    ]
+    old_candidate, _old_payload = daily._source_literature_payload(
+        profile_slug="longevity_research",
+        topic="usable_boundary",
+        papers=duplicate_papers,
+        runs_root=root,
+        date="2026-06-10T17-00-00Z",
+    )
+    fp = str(old_candidate.get("memo_fingerprint") or "")
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+        "date": "2026-06-10T17-00-00Z",
+        "domain": old_candidate.get("domain"),
+        "topic": "usable_boundary",
+        "run_dir": old_candidate.get("run_dir"),
+        "fingerprint": fp,
+        "memo_sha256": daily._memo_sha256(old_candidate, root),
+        "submission_id": "old-sub",
+    }])
+    candidate_topics = [
+        "usable_boundary",
+        "thin_boundary_0",
+        "thin_boundary_1",
+        "thin_boundary_2",
+        "thin_boundary_3",
+        "thin_boundary_4",
+        "fresh_boundary",
+    ]
+    candidate_limits: list[int] = []
+    fetches: list[str] = []
+    submissions: list[str] = []
+
+    def candidates(*_args: Any, limit: int, **_kwargs: Any) -> list[str]:
+        candidate_limits.append(limit)
+        return candidate_topics[:limit]
+
+    def fetch(topic: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        fetches.append(topic)
+        if topic == "usable_boundary":
+            return duplicate_papers
+        if topic == "fresh_boundary":
+            return fresh_papers
+        return thin_papers
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submissions.append(str(payload.get("topic") or ""))
+        return {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": "sub-fresh"}},
+        }
+
+    monkeypatch.setattr(daily, "_source_literature_topic_candidates", candidates)
+    monkeypatch.setattr(daily, "_fetch_source_literature_papers", fetch)
+    monkeypatch.setattr(
+        daily,
+        "_domain_alpha_memo_int",
+        lambda _domain, name, default: 4 if name == "source_literature_scan_limit" else default,
+    )
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-10T18-00-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        submitter=submitter,
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/fresh"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Fresh</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert candidate_limits == [daily._SOURCE_LITERATURE_SCAN_LIMIT]
+    assert fetches[:7] == candidate_topics
+    assert submissions == ["fresh_boundary"]
+    assert ledger["source_literature_scan_reason"] == (
+        "recent_submissions_expand_candidate_window"
+    )
+    assert [row["reason"] for row in ledger["source_literature_fallback_attempts"]] == [
+        "duplicate_submission_fingerprint",
+        "source_floor_below_min",
+        "source_floor_below_min",
+        "source_floor_below_min",
+        "source_floor_below_min",
+        "source_floor_below_min",
+        "ok",
+    ]
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "fresh_boundary"
+
+
 def test_source_literature_fallback_resubmits_parented_terminal_duplicate(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
