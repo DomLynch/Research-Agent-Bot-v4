@@ -72,6 +72,7 @@ _BUSINESS_FULLRAW_LOCK_PATH = "/tmp/researka-v4-business-fullraw.lock"
 _BUSINESS_FULLRAW_LOCK_WAIT_SECONDS = "0"
 _BUSINESS_FULLRAW_BACKOFF_SECONDS = "180"
 _BUSINESS_FULLRAW_ADVANCE_MAX_SECONDS = "60"
+_BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS = "600"
 _BUSINESS_FULLRAW_CACHE_PROBE_TIMEOUT_SECONDS = "2"
 _FULLRAW_ENV_ALIASES = {
     "V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL": ("RESEARKA_FULLRAW_SEARCH_URL",),
@@ -168,6 +169,19 @@ def _business_fullraw_advance_max_seconds() -> float:
         return float(_BUSINESS_FULLRAW_ADVANCE_MAX_SECONDS)
 
 
+def _business_fullraw_queue_retry_seconds() -> float:
+    try:
+        return max(
+            0.0,
+            float(
+                os.environ.get("TOPIC_DISCOVERY_BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS")
+                or _BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS
+            ),
+        )
+    except ValueError:
+        return float(_BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS)
+
+
 def _business_fullraw_cache_probe_timeout_seconds() -> float:
     try:
         return max(
@@ -229,6 +243,13 @@ def _fullraw_can_try_next_query(event: dict[str, Any]) -> bool:
         or str(event.get("async_status") or "") in {"queued", "running"}
         or event.get("partial_shard_search") is True
     )
+
+
+def _fullraw_unadmitted_queue_event(event: dict[str, Any]) -> bool:
+    status = str(event.get("status") or "")
+    if status not in {"async_queue_saturated", "inflight_saturated", "queue_saturated"}:
+        return False
+    return event.get("key_queued") is not True and event.get("key_running") is not True
 
 
 def _fullraw_backoff_path(runs_root: Path) -> Path:
@@ -396,119 +417,151 @@ def _strict_fullraw_probe(
                 queries = _rank_fullraw_queries_by_cached_receipt(
                     queries or _business_fullraw_queries(topic),
                 )
-                for idx, query in enumerate(queries):
-                    attempted.append(query)
-                    events = discovery.__dict__.get("_FULLRAW_PROBE_EVENTS", [])
-                    before = len(events)
-                    papers = discovery.__dict__["_seed_fullraw_papers"](
-                        query, client=client, limit=result_limit,
-                    )
-                    receipt = topic_discovery_mod.__dict__.get("_FULLRAW_LAST_RECEIPT", {})
-                    if (not isinstance(receipt, dict) or not receipt) and papers:
-                        paper_receipt = papers[0].get("fullraw_shard_receipt")
-                        if isinstance(paper_receipt, dict):
-                            receipt = paper_receipt
-                    async_sweep = topic_discovery_mod.__dict__.get("_FULLRAW_LAST_ASYNC_SWEEP", {})
-                    receipt_complete = bool(discovery.__dict__["_fullraw_receipt_complete"](receipt))
-                    events = discovery.__dict__.get("_FULLRAW_PROBE_EVENTS", [])
-                    new_events = [
-                        event for event in events[before:]
-                        if isinstance(event, dict)
-                    ]
-                    event = next(
-                        (item for item in reversed(new_events) if _fullraw_busy_event(item)),
-                        new_events[-1] if new_events else {},
-                    )
-                    status = (
-                        "complete" if papers and receipt_complete else
-                        "incomplete_receipt" if papers else
-                        "complete_no_hits" if receipt_complete else
-                        str(event.get("status") or "no_hits")
-                    )
-                    result = {
-                        "status": status,
-                        "query": query,
-                        "attempted_queries": list(attempted),
-                        "paper_count": len(papers),
-                        "async_status": (
-                            async_sweep.get("status") if isinstance(async_sweep, dict) else None
-                        ) or event.get("async_status"),
-                        "key_queued": (
-                            async_sweep.get("key_queued") if isinstance(async_sweep, dict) else None
-                        ) if isinstance(async_sweep, dict) and "key_queued" in async_sweep
-                        else event.get("key_queued"),
-                        "key_running": (
-                            async_sweep.get("key_running") if isinstance(async_sweep, dict) else None
-                        ) if isinstance(async_sweep, dict) and "key_running" in async_sweep
-                        else event.get("key_running"),
-                        "queued_count": (
-                            async_sweep.get("queued_count") if isinstance(async_sweep, dict) else None
-                        ) if isinstance(async_sweep, dict) and "queued_count" in async_sweep
-                        else event.get("queued_count"),
-                        "inflight_count": (
-                            async_sweep.get("inflight_count") if isinstance(async_sweep, dict) else None
-                        ) if isinstance(async_sweep, dict) and "inflight_count" in async_sweep
-                        else event.get("inflight_count"),
-                        "max_inflight": (
-                            async_sweep.get("max_inflight") if isinstance(async_sweep, dict) else None
-                        ) if isinstance(async_sweep, dict) and "max_inflight" in async_sweep
-                        else event.get("max_inflight"),
-                        "max_queue": (
-                            async_sweep.get("max_queue") if isinstance(async_sweep, dict) else None
-                        ) if isinstance(async_sweep, dict) and "max_queue" in async_sweep
-                        else event.get("max_queue"),
-                        "shards_searched": (
-                            receipt.get("shards_searched") if isinstance(receipt, dict) else None
-                        ) or event.get("shards_searched"),
-                        "partial_shard_search": (
-                            receipt.get("partial_shard_search") if isinstance(receipt, dict) else None
-                        ) if isinstance(receipt, dict) and "partial_shard_search" in receipt
-                        else event.get("partial_shard_search"),
-                        "sweep_failed_shards": (
-                            receipt.get("sweep_failed_shards") if isinstance(receipt, dict) else None
-                        ) if isinstance(receipt, dict) and "sweep_failed_shards" in receipt
-                        else event.get("sweep_failed_shards"),
-                        "sources_searched": (
-                            receipt.get("sources_searched") if isinstance(receipt, dict) else None
-                        ) or event.get("sources_searched"),
-                        "papers_searched": (
-                            receipt.get("papers_searched") if isinstance(receipt, dict) else None
-                        ) or event.get("papers_searched"),
-                        "papers_total": (
-                            receipt.get("papers_total") if isinstance(receipt, dict) else None
-                        ) or event.get("papers_total"),
-                        "result_count_returned": (
-                            receipt.get("result_count_returned") if isinstance(receipt, dict) else None
-                        ) or event.get("result_count_returned"),
-                        "result_count_unique": (
-                            receipt.get("result_count_unique") if isinstance(receipt, dict) else None
-                        ) or event.get("result_count_unique"),
-                        "result_citation_diversity": (
-                            receipt.get("result_citation_diversity")
-                            if isinstance(receipt, dict) else None
-                        ) or event.get("result_citation_diversity"),
-                    }
-                    source_papers = papers
-                    if status == "complete" and papers:
-                        source_papers = _merge_fullraw_hit_text(
-                            papers, _fullraw_search_hits(query, limit=result_limit),
+                queue_retry_deadline = (
+                    time.monotonic() + _business_fullraw_queue_retry_seconds()
+                )
+                while True:
+                    for idx, query in enumerate(queries):
+                        attempted.append(query)
+                        events = discovery.__dict__.get("_FULLRAW_PROBE_EVENTS", [])
+                        before = len(events)
+                        papers = discovery.__dict__["_seed_fullraw_papers"](
+                            query, client=client, limit=result_limit,
                         )
-                        result["candidate_fact_source_count"] = (
-                            _fullraw_substantive_fact_candidates(topic, source_papers)
+                        receipt = topic_discovery_mod.__dict__.get("_FULLRAW_LAST_RECEIPT", {})
+                        if (not isinstance(receipt, dict) or not receipt) and papers:
+                            paper_receipt = papers[0].get("fullraw_shard_receipt")
+                            if isinstance(paper_receipt, dict):
+                                receipt = paper_receipt
+                        async_sweep = topic_discovery_mod.__dict__.get(
+                            "_FULLRAW_LAST_ASYNC_SWEEP", {},
                         )
-                    if include_papers:
-                        result["_papers"] = source_papers
-                    _record_fullraw_backoff(runs_root, topic, result)
-                    if _fullraw_busy_event(result):
-                        best_progress = result
-                    source_candidates = int(result.get("candidate_fact_source_count") or 0)
-                    if source_candidates >= MIN_DIRECT_SOURCES or idx + 1 >= len(queries):
+                        receipt_complete = bool(
+                            discovery.__dict__["_fullraw_receipt_complete"](receipt),
+                        )
+                        events = discovery.__dict__.get("_FULLRAW_PROBE_EVENTS", [])
+                        new_events = [
+                            event for event in events[before:]
+                            if isinstance(event, dict)
+                        ]
+                        event = next(
+                            (item for item in reversed(new_events) if _fullraw_busy_event(item)),
+                            new_events[-1] if new_events else {},
+                        )
+                        status = (
+                            "complete" if papers and receipt_complete else
+                            "incomplete_receipt" if papers else
+                            "complete_no_hits" if receipt_complete else
+                            str(event.get("status") or "no_hits")
+                        )
+                        result = {
+                            "status": status,
+                            "query": query,
+                            "attempted_queries": list(attempted),
+                            "paper_count": len(papers),
+                            "async_status": (
+                                async_sweep.get("status")
+                                if isinstance(async_sweep, dict) else None
+                            ) or event.get("async_status"),
+                            "key_queued": (
+                                async_sweep.get("key_queued")
+                                if isinstance(async_sweep, dict)
+                                and "key_queued" in async_sweep else event.get("key_queued")
+                            ),
+                            "key_running": (
+                                async_sweep.get("key_running")
+                                if isinstance(async_sweep, dict)
+                                and "key_running" in async_sweep else event.get("key_running")
+                            ),
+                            "queued_count": (
+                                async_sweep.get("queued_count")
+                                if isinstance(async_sweep, dict)
+                                and "queued_count" in async_sweep else event.get("queued_count")
+                            ),
+                            "inflight_count": (
+                                async_sweep.get("inflight_count")
+                                if isinstance(async_sweep, dict)
+                                and "inflight_count" in async_sweep
+                                else event.get("inflight_count")
+                            ),
+                            "max_inflight": (
+                                async_sweep.get("max_inflight")
+                                if isinstance(async_sweep, dict)
+                                and "max_inflight" in async_sweep else event.get("max_inflight")
+                            ),
+                            "max_queue": (
+                                async_sweep.get("max_queue")
+                                if isinstance(async_sweep, dict)
+                                and "max_queue" in async_sweep else event.get("max_queue")
+                            ),
+                            "shards_searched": (
+                                receipt.get("shards_searched")
+                                if isinstance(receipt, dict) else None
+                            ) or event.get("shards_searched"),
+                            "partial_shard_search": (
+                                receipt.get("partial_shard_search")
+                                if isinstance(receipt, dict)
+                                and "partial_shard_search" in receipt
+                                else event.get("partial_shard_search")
+                            ),
+                            "sweep_failed_shards": (
+                                receipt.get("sweep_failed_shards")
+                                if isinstance(receipt, dict)
+                                and "sweep_failed_shards" in receipt
+                                else event.get("sweep_failed_shards")
+                            ),
+                            "sources_searched": (
+                                receipt.get("sources_searched")
+                                if isinstance(receipt, dict) else None
+                            ) or event.get("sources_searched"),
+                            "papers_searched": (
+                                receipt.get("papers_searched")
+                                if isinstance(receipt, dict) else None
+                            ) or event.get("papers_searched"),
+                            "papers_total": (
+                                receipt.get("papers_total")
+                                if isinstance(receipt, dict) else None
+                            ) or event.get("papers_total"),
+                            "result_count_returned": (
+                                receipt.get("result_count_returned")
+                                if isinstance(receipt, dict) else None
+                            ) or event.get("result_count_returned"),
+                            "result_count_unique": (
+                                receipt.get("result_count_unique")
+                                if isinstance(receipt, dict) else None
+                            ) or event.get("result_count_unique"),
+                            "result_citation_diversity": (
+                                receipt.get("result_citation_diversity")
+                                if isinstance(receipt, dict) else None
+                            ) or event.get("result_citation_diversity"),
+                        }
+                        source_papers = papers
+                        if status == "complete" and papers:
+                            source_papers = _merge_fullraw_hit_text(
+                                papers, _fullraw_search_hits(query, limit=result_limit),
+                            )
+                            result["candidate_fact_source_count"] = (
+                                _fullraw_substantive_fact_candidates(topic, source_papers)
+                            )
+                        if include_papers:
+                            result["_papers"] = source_papers
+                        _record_fullraw_backoff(runs_root, topic, result)
+                        if _fullraw_busy_event(result):
+                            best_progress = result
+                        source_candidates = int(result.get("candidate_fact_source_count") or 0)
+                        if source_candidates >= MIN_DIRECT_SOURCES or idx + 1 >= len(queries):
+                            break
+                        if status in {"complete", "complete_no_hits", "no_hits"}:
+                            continue
+                        if _fullraw_can_try_next_query(result):
+                            continue
                         break
-                    if status in {"complete", "complete_no_hits", "no_hits"}:
-                        continue
-                    if _fullraw_can_try_next_query(result):
-                        continue
-                    break
+                    if not _fullraw_unadmitted_queue_event(result):
+                        break
+                    remaining = queue_retry_deadline - time.monotonic()
+                    if remaining <= 0:
+                        break
+                    time.sleep(min(poll_seconds, remaining))
                 if (
                     best_progress
                     and result.get("status") in {"complete_no_hits", "no_hits"}
