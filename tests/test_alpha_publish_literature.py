@@ -102,6 +102,113 @@ def test_fetch_papers_enriches_fullraw_metadata_with_adjacent_fact_rows(
     ) == (True, "ok")
 
 
+def test_fetch_papers_topups_nonbio_directional_underfill(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    topic = "digital_transformation_firm"
+    initial_rows = [
+        (
+            "10.9100/dtf-1",
+            "Digital transformation firm profitability",
+            "digital transformation significantly increases firm profitability",
+            "firm profitability",
+        ),
+        (
+            "10.9100/dtf-2",
+            "Digital transformation firm governance context",
+            "digital transformation governance differs across firms",
+            "governance context",
+        ),
+        (
+            "10.9100/dtf-3",
+            "Digital transformation firm operating model",
+            "digital transformation changes operating model descriptions",
+            "operating model",
+        ),
+        (
+            "10.9100/dtf-4",
+            "Digital transformation firm capability map",
+            "digital transformation capability bundles are described in firms",
+            "capability map",
+        ),
+        (
+            "10.9100/dtf-5",
+            "Digital transformation firm revenue",
+            "digital transformation increased firm revenue by 12 percent",
+            "firm revenue",
+        ),
+    ]
+    topup_rows = [(
+        "10.9100/dtf-6",
+        "Digital transformation firm productivity",
+        "digital transformation significantly improves firm productivity",
+        "firm productivity",
+    )]
+    calls: list[str] = []
+
+    monkeypatch.setattr(
+        literature,
+        "_fullraw_relevant_papers",
+        lambda *_args: (_ for _ in ()).throw(AssertionError("fullraw not needed")),
+    )
+
+    def rows_payload(rows: list[tuple[str, str, str, str]]) -> list[dict[str, Any]]:
+        return [
+            {
+                "paper_id": doi,
+                "paper": {"doi": doi, "title": title},
+                "canonical_phrase": phrase,
+                "population": "firms",
+                "intervention": "digital transformation firm",
+                "endpoint": endpoint,
+                "source_tier": "tier2",
+            }
+            for doi, title, phrase, endpoint in rows
+        ]
+
+    def urlopen(request: Any, *, timeout: float) -> _Response:
+        body = json.loads(request.data.decode("utf-8"))
+        calls.append(body["query"])
+        if body["query"] == "digital transformation firm profitability":
+            return _Response(rows_payload(topup_rows))
+        return _Response(rows_payload(initial_rows))
+
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    settings = type("Settings", (), {
+        "researka_database_url": "https://database.example",
+        "researka_database_token": "token",
+    })()
+
+    papers = literature.fetch_papers(
+        topic,
+        5,
+        domain="business_research",
+        settings_loader=lambda: settings,
+    )
+    selected = literature.select_boundary_papers(
+        topic,
+        papers,
+        5,
+        strict_topic_coverage=True,
+        profile_slug="business_research",
+    )
+
+    assert "digital transformation firm profitability" in calls
+    assert len(selected) == 5
+    assert literature.substantive_fact_count(selected) == 5
+    assert literature.source_identity_count(selected, require_substantive=True) == 5
+    assert literature._directional_receipt_count(
+        selected, topic, "business_research",
+    ) == 3
+    assert literature.boundary_quality(
+        topic,
+        papers,
+        5,
+        strict_topic_coverage=True,
+        profile_slug="business_research",
+    ) == (True, "ok")
+
+
 def test_select_boundary_papers_preserves_fact_backed_floor_before_metadata() -> None:
     topic = "supply_chain_resilience_performance"
     fact_backed = [
@@ -245,7 +352,7 @@ def test_non_bio_selection_prefers_second_directional_receipt() -> None:
     assert roles.count("directional association") == 2
     assert literature.boundary_quality(
         topic, papers, 5, profile_slug="business_research",
-    ) == (True, "ok")
+    ) == (False, "directional_receipt_floor_below_min")
 
 
 def test_fullraw_relevant_papers_honors_researka_variant_cap(

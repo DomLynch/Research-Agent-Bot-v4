@@ -129,6 +129,10 @@ _OUTCOME_QUERY_TOKENS = frozenset({
     "profit", "profitability", "return", "returns", "revenue", "risk",
     "sales", "volatility",
 })
+_DIRECTIONAL_TOPUP_QUERY_TOKENS = (
+    "profitability", "revenue", "sales", "productivity", "margin", "returns",
+    "employment", "price", "risk", "volatility",
+)
 
 
 def title_key(title: Any) -> str:
@@ -258,6 +262,21 @@ def query_variants(topic: str) -> tuple[str, ...]:
     )
     return tuple(dict.fromkeys(
         q for q in (outcome_context, focused, contextual, raw, *windows) if q
+    ))
+
+
+def _directional_topup_queries(topic: str) -> tuple[str, ...]:
+    base = " ".join(_topic_token_sequence(topic))
+    if not base:
+        return ()
+    topic_tokens = set(base.split())
+    existing = set(query_variants(topic))
+    return tuple(dict.fromkeys(
+        query
+        for token in _DIRECTIONAL_TOPUP_QUERY_TOKENS
+        if token not in topic_tokens
+        for query in (f"{base} {token}",)
+        if query not in existing
     ))
 
 
@@ -1644,29 +1663,46 @@ def fetch_papers(
             if isinstance(data, list) else []
         )
 
+    def add_fact_row(item: Json) -> bool:
+        if not isinstance(item, dict):
+            return False
+        raw_paper = item.get("paper")
+        paper: Json = raw_paper if isinstance(raw_paper, dict) else {}
+        key = paper_key(paper, item.get("paper_id"))
+        title = paper.get("title") or paper.get("paper_title")
+        if not key or not title or key in seen:
+            return False
+        candidate = paper | {
+            "id": key,
+            "title": title,
+            "source_fact": source_fact(item),
+        }
+        if not topic_relevant(topic, candidate):
+            return False
+        seen.add(key)
+        out.append(candidate)
+        return True
+
     for query in query_variants(topic):
         for item in fact_rows(query):
-            if not isinstance(item, dict):
-                continue
-            raw_paper = item.get("paper")
-            paper: Json = raw_paper if isinstance(raw_paper, dict) else {}
-            key = paper_key(paper, item.get("paper_id"))
-            title = paper.get("title") or paper.get("paper_title")
-            if not key or not title or key in seen:
-                continue
-            candidate = paper | {
-                "id": key,
-                "title": title,
-                "source_fact": source_fact(item),
-            }
-            if not topic_relevant(topic, candidate):
-                continue
-            seen.add(key)
-            out.append(candidate)
+            add_fact_row(item)
             if ready_to_stop():
                 break
         if ready_to_stop():
             break
+    if _non_biomedical(domain) and len(out) >= min_ready_sources:
+        ok, reason = boundary_quality(
+            topic, out, min_ready_sources,
+            strict_topic_coverage=True, profile_slug=domain,
+        )
+        if not ok and reason == "directional_receipt_floor_below_min":
+            for query in _directional_topup_queries(topic):
+                for item in fact_rows(query):
+                    add_fact_row(item)
+                    if ready_to_stop():
+                        break
+                if ready_to_stop():
+                    break
     needs_fullraw = len(out) < limit
     if _non_biomedical(domain) and len(out) >= min_ready_sources:
         needs_fullraw = needs_fullraw or not boundary_quality(
