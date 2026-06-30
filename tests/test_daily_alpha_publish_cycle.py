@@ -8704,7 +8704,9 @@ def test_source_literature_fallback_blocks_under_citable_source_floor(
             "doi": "10.1234/minwage-1",
             "year": 2024,
             "source_fact": {
-                "canonical_phrase": "minimum wage employment elasticity was modelled",
+                "canonical_phrase": (
+                    "minimum wage employment elasticity had a significant negative effect"
+                ),
                 "intervention": "minimum wage",
                 "endpoint": "employment elasticity",
             },
@@ -8714,7 +8716,9 @@ def test_source_literature_fallback_blocks_under_citable_source_floor(
             "doi": "10.1234/minwage-2",
             "year": 2024,
             "source_fact": {
-                "canonical_phrase": "minimum wage employment estimates were mixed",
+                "canonical_phrase": (
+                    "minimum wage employment estimates showed a significant positive 2 percent effect"
+                ),
                 "intervention": "minimum wage",
                 "endpoint": "employment",
             },

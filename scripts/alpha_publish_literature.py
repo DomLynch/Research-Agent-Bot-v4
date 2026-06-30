@@ -414,6 +414,16 @@ def boundary_quality(
         return False, "predictive_model_only_bundle"
     if _uniform_favorable_cross_pico(usable, min_sources):
         return False, "directionally_uniform_cross_pico_bundle"
+    if _non_biomedical(profile_slug):
+        directional_roles = {
+            "directional association", "directional estimate", "directionally favorable",
+        }
+        directional_count = sum(
+            1 for paper in usable
+            if _paper_evidence_role(paper, topic, profile_slug) in directional_roles
+        )
+        if directional_count < min(2, min_sources):
+            return False, "directional_receipt_floor_below_min"
     return True, "ok"
 
 
@@ -491,7 +501,20 @@ def _substantive_source_fact(fact: Json) -> bool:
 
 def _paper_has_substantive_source_fact(paper: Json) -> bool:
     fact = paper.get("source_fact")
-    return isinstance(fact, dict) and _substantive_source_fact(fact)
+    if not isinstance(fact, dict) or not _substantive_source_fact(fact):
+        return False
+    phrase_key = title_key(fact.get("canonical_phrase"))
+    if not phrase_key:
+        return False
+    for key in (
+        title_key(paper.get("title")),
+        title_key(paper.get("paper_title")),
+    ):
+        if not key:
+            continue
+        if phrase_key == key:
+            return False
+    return True
 
 
 def substantive_fact_count(papers: list[Json]) -> int:

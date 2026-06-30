@@ -6011,6 +6011,136 @@ def test_daily_cycle_preserves_stored_business_candidate_verdict(
     assert queue_payload["agent_repair_needed"] == []
 
 
+def test_business_source_literature_blocks_title_echo_fact_bundle() -> None:
+    papers = [
+        {
+            "title": "Digital Transformation and Firm Environmental Performance",
+            "doi": "10.17323/example-env",
+            "source_fact": {
+                "canonical_phrase": (
+                    "digital transformation significantly enhances firm environmental "
+                    "performance"
+                ),
+                "population": "firms",
+                "intervention": "digital transformation",
+                "endpoint": "environmental performance",
+            },
+        },
+        {
+            "title": "Effects of digital transformation on firm performance",
+            "doi": "10.1016/example-title",
+            "source_fact": {
+                "canonical_phrase": "Effects of digital transformation on firm performance",
+                "population": "firms",
+                "intervention": "digital transformation",
+                "endpoint": "firm performance",
+            },
+        },
+        {
+            "title": "Digital transformation and next generation services",
+            "doi": "10.1108/example-services",
+            "source_fact": {
+                "canonical_phrase": (
+                    "71 percent of banking firms report that big data provides "
+                    "competitive advantage"
+                ),
+                "population": "banking firms",
+                "intervention": "big data use",
+                "endpoint": "competitive advantage",
+            },
+        },
+        {
+            "title": "Human capital in digital transformation",
+            "doi": "10.1108/example-human-capital",
+            "source_fact": {
+                "canonical_phrase": (
+                    "digital capabilities and management support substantially affect "
+                    "digital transformation"
+                ),
+                "population": "firms",
+                "intervention": "digital transformation",
+                "endpoint": "firm performance",
+            },
+        },
+        {
+            "title": "The impact of digital transformation on firm profitability",
+            "doi": "10.64753/example-profit",
+            "source_fact": {
+                "canonical_phrase": (
+                    "digital transformation significantly increases return on assets"
+                ),
+                "population": "listed firms",
+                "intervention": "digital transformation",
+                "endpoint": "firm profitability",
+            },
+        },
+    ]
+
+    selected = publish_literature.select_boundary_papers(
+        "digital_transformation_firm",
+        papers,
+        5,
+        strict_topic_coverage=True,
+    )
+    assert len(selected) == 5
+    assert publish_literature.substantive_fact_count(selected) == 4
+
+    ready, reason = sweep._source_literature_ready_papers(
+        "digital_transformation_firm", "business_research", papers,
+    )
+
+    assert ready == []
+    assert reason == "requires_fact_level_source_synthesis"
+
+
+def test_business_source_literature_requires_two_directional_receipts() -> None:
+    papers = [
+        {
+            "title": "Digital transformation and firm profitability",
+            "doi": "10.5555/dt-profit",
+            "source_fact": {
+                "canonical_phrase": (
+                    "digital transformation significantly increases firm profitability"
+                ),
+                "population": "listed firms",
+                "intervention": "digital transformation",
+                "endpoint": "firm profitability",
+            },
+        },
+        *[
+            {
+                "title": [
+                    "Digital transformation in firm operating models",
+                    "Firm digital transformation governance map",
+                    "Enterprise digital transformation adoption context",
+                    "Digital transformation capability scope in firms",
+                ][idx - 1],
+                "doi": f"10.5555/dt-context-{idx}",
+                "source_fact": {
+                    "canonical_phrase": (
+                        f"implementation scope marker {idx} was documented across firms"
+                    ),
+                    "population": "firms",
+                    "intervention": "digital transformation",
+                    "endpoint": f"context marker {idx}",
+                },
+            }
+            for idx in range(1, 5)
+        ],
+    ]
+
+    ok, reason = publish_literature.boundary_quality(
+        "digital_transformation_firm",
+        papers,
+        5,
+        strict_topic_coverage=True,
+        profile_slug="business_research",
+    )
+
+    assert not ok
+    assert reason == "directional_receipt_floor_below_min"
+
+
 def test_business_systemd_timers_are_eight_hour_guarded() -> None:
     expectations = {
         "business": ("business_research", "02/8:10:00"),
