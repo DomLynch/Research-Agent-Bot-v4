@@ -5205,7 +5205,7 @@ def test_business_sweep_demotes_cached_priority_repair_below_fact_floor(
     }]
 
 
-def test_business_sweep_blocks_recent_directional_underfill_repair_topic(
+def test_business_sweep_allows_repairable_directional_underfill_topic(
     tmp_path: Path,
     monkeypatch: Any,
 ) -> None:
@@ -5229,6 +5229,16 @@ def test_business_sweep_blocks_recent_directional_underfill_repair_topic(
         cycle,
         "_repairable_source_literature_topics",
         lambda *_args, **_kwargs: [topic],
+    )
+
+    assert sweep._recent_source_literature_blocked_topics(
+        runs_root, "business_research",
+    ) == set()
+
+    monkeypatch.setattr(
+        cycle,
+        "_repairable_source_literature_topics",
+        lambda *_args, **_kwargs: [],
     )
 
     assert sweep._recent_source_literature_blocked_topics(

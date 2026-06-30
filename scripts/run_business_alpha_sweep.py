@@ -1621,7 +1621,7 @@ def _recent_source_literature_blocked_topics(runs_root: Path, domain: str) -> se
     }
     return {
         key for topic in structurally_blocked
-        if (key := _topic_key(topic))
+        if (key := _topic_key(topic)) and key not in repairable_keys
     } | {
         key for topic in blocked
         if (key := _topic_key(topic)) and key not in repairable_keys
@@ -1943,13 +1943,12 @@ def main() -> int:
                     cached_repair_papers = _enrich_fullraw_papers_with_db_facts(
                         topic, domain=domain, papers=cached_repair_papers, settings=settings,
                     )
-                    if (
-                        publish_literature.substantive_fact_count(cached_repair_papers)
-                        < MIN_DIRECT_SOURCES
-                        or publish_literature.source_identity_count(
-                            cached_repair_papers, require_substantive=True,
-                        ) < MIN_DIRECT_SOURCES
-                    ):
+                    cached_repair_ready, _cached_repair_reason = _source_literature_ready_papers(
+                        topic, domain, cached_repair_papers,
+                    )
+                    if cached_repair_ready:
+                        cached_repair_papers = cached_repair_ready
+                    else:
                         cached_repair_below_floor = bool(cached_repair_papers)
                         cached_repair_papers = []
                 source_lit_repair_kwargs: dict[str, Any] = {}
