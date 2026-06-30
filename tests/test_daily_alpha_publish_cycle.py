@@ -8734,9 +8734,9 @@ def test_source_literature_fallback_blocks_under_citable_source_floor(
             "id": "local-3",
             "year": 2024,
             "source_fact": {
-                "canonical_phrase": "minimum wage policy evidence was descriptive",
+                "canonical_phrase": "minimum wage policy significantly reduced employment",
                 "intervention": "minimum wage policy",
-                "endpoint": "employment policy",
+                "endpoint": "employment",
             },
         },
         {

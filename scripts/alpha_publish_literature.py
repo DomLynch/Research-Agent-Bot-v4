@@ -434,7 +434,7 @@ def _source_lit_selection(
 ) -> list[Json]:
     ordered = _source_diverse_order(topic, papers)
     selected = ordered[:min_sources]
-    required_directional = min(2, min_sources)
+    required_directional = min(3 if _non_biomedical(profile_slug) else 2, min_sources)
     if (
         not _non_biomedical(profile_slug)
         or _directional_receipt_count(selected, topic, profile_slug) >= required_directional
@@ -559,11 +559,12 @@ def boundary_quality(
         directional_roles = {
             "directional association", "directional estimate", "directionally favorable",
         }
+        required_directional = min(3, min_sources)
         directional_count = sum(
             1 for paper in usable
             if _paper_evidence_role(paper, topic, profile_slug) in directional_roles
         )
-        if directional_count < min(2, min_sources):
+        if directional_count < required_directional:
             return False, "directional_receipt_floor_below_min"
     return True, "ok"
 

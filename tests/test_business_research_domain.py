@@ -6640,7 +6640,7 @@ def test_business_source_literature_blocks_title_echo_fact_bundle() -> None:
     assert reason == "requires_fact_level_source_synthesis"
 
 
-def test_business_source_literature_requires_two_directional_receipts() -> None:
+def test_business_source_literature_requires_three_directional_receipts() -> None:
     papers = [
         {
             "title": "Digital transformation and firm profitability",
@@ -6654,13 +6654,24 @@ def test_business_source_literature_requires_two_directional_receipts() -> None:
                 "endpoint": "firm profitability",
             },
         },
+        {
+            "title": "Digital transformation and return on assets",
+            "doi": "10.5555/dt-roa",
+            "source_fact": {
+                "canonical_phrase": (
+                    "digital transformation significantly increases return on assets"
+                ),
+                "population": "listed firms",
+                "intervention": "digital transformation",
+                "endpoint": "return on assets",
+            },
+        },
         *[
             {
                 "title": [
                     "Digital transformation in firm operating models",
                     "Firm digital transformation governance map",
                     "Enterprise digital transformation adoption context",
-                    "Digital transformation capability scope in firms",
                 ][idx - 1],
                 "doi": f"10.5555/dt-context-{idx}",
                 "source_fact": {
@@ -6672,7 +6683,7 @@ def test_business_source_literature_requires_two_directional_receipts() -> None:
                     "endpoint": f"context marker {idx}",
                 },
             }
-            for idx in range(1, 5)
+            for idx in range(1, 4)
         ],
     ]
 
