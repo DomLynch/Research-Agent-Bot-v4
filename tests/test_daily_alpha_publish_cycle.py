@@ -12838,6 +12838,7 @@ def test_source_literature_fallback_skips_pending_priority_family(
     })
     fetches: list[str] = []
     submissions: list[str] = []
+    submitted_payloads: list[dict[str, Any]] = []
 
     def source_papers(topic: str, _limit: int) -> list[dict[str, Any]]:
         fetches.append(topic)
@@ -12845,6 +12846,7 @@ def test_source_literature_fallback_skips_pending_priority_family(
 
     def submitter(payload: dict[str, Any]) -> dict[str, Any]:
         submissions.append(str(payload.get("topic") or ""))
+        submitted_payloads.append(payload)
         return {"ok": True, "status": 200, "response": {"submission": {"id": "sub-1"}}}
 
     def decision_fetcher(submission_id: str) -> dict[str, Any]:
@@ -12879,6 +12881,13 @@ def test_source_literature_fallback_skips_pending_priority_family(
     assert ledger["source_literature_fallback"]["selected_source_count"] == 5
     assert ledger["source_literature_fallback"]["selected_source_fact_count"] == 5
     assert ledger["source_literature_fallback"]["selected_source_identity_count"] == 5
+    source_bundle = submitted_payloads[0]["source_bundle"]
+    assert len(source_bundle) == 5
+    assert publish_literature.substantive_fact_count(source_bundle) == 5
+    assert publish_literature.source_identity_count(
+        source_bundle, require_substantive=True,
+    ) == 5
+    assert publish_literature.source_outlet_count(source_bundle) == 5
 
 
 def test_fullraw_metadata_only_source_literature_fallback_does_not_submit(
