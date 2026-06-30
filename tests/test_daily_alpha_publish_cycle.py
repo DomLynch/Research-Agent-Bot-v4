@@ -14142,6 +14142,15 @@ def test_source_literature_fallback_derives_variant_from_blocked_rich_parent(
             "run_dir": "runs/supply_chain_resilience_performance-source-literature-ts",
         },
     })
+    daily._write_json(root / "_daily_ledger" / "stale-source-floor-child.json", {
+        "domain": {"slug": "business_research"},
+        "status": "no_fresh_candidate",
+        "source_literature_fallback": {
+            "topic": "supply_chain_performance",
+            "status": "blocked",
+            "reason": "source_floor_below_min",
+        },
+    })
     daily._write_json(root / "_topics_discovery" / "business.json", {
         "domain": {"slug": "business_research"},
         "all": [
@@ -14261,6 +14270,10 @@ def test_source_literature_fallback_derives_variant_from_blocked_rich_parent(
 
     assert fetches == []
     assert ledger["source_literature_scan_reason"] == "blocked_parent_variant_expansion"
+    assert ledger["source_literature_source_floor_revalidated_topics"] == [
+        "supply_chain_performance",
+    ]
+    assert "supply_chain_performance" not in ledger["recent_source_floor_topics_blocked"]
     assert ledger["submitted_topic"] == "supply_chain_performance"
     assert ledger["status"] == "submitted_to_researka"
     assert ledger["source_literature_fallback"]["selected_source_count"] == 5

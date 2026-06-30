@@ -6051,6 +6051,19 @@ def run_cycle(
         submitted_path.parent, days=min(published_topic_cooldown_days, 2),
         domain=profile.slug, source_literature_only=True,
     )
+    source_literature_source_floor_revalidated_topics = {
+        topic for topic in source_literature_source_floor_blocked_topics
+        if _source_literature_candidate_papers(
+            runs_root, profile.slug, topic, min_submit_sources,
+            min_submit_sources * 3,
+            allow_live_fetch=False,
+        )
+    }
+    if source_literature_source_floor_revalidated_topics:
+        source_literature_source_floor_blocked_topics -= (
+            source_literature_source_floor_revalidated_topics
+        )
+        source_floor_blocked_topics -= source_literature_source_floor_revalidated_topics
     pending_source_literature_topics = _pending_source_literature_topics(
         submitted_path.parent, profile.slug,
     )
@@ -6072,6 +6085,9 @@ def run_cycle(
     ledger["recently_submitted_topics_blocked"] = sorted(submitted_blocked_topics)
     ledger["recent_negative_topics_blocked"] = sorted(negative_blocked_topics)
     ledger["recent_source_floor_topics_blocked"] = sorted(source_floor_blocked_topics)
+    ledger["source_literature_source_floor_revalidated_topics"] = sorted(
+        source_literature_source_floor_revalidated_topics,
+    )
     ledger["pending_source_literature_topics_blocked"] = sorted(
         pending_source_literature_topics,
     )
