@@ -2265,7 +2265,7 @@ def test_business_sweep_fullraw_probe_advances_after_bounded_incomplete_query(
     assert result["candidate_fact_source_count"] == 5
 
 
-def test_business_sweep_fullraw_probe_advances_after_unadmitted_saturated_query(
+def test_business_sweep_fullraw_probe_sheds_unadmitted_saturated_query(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
     import agent.topic_discovery as topic_discovery_mod
@@ -2325,13 +2325,13 @@ def test_business_sweep_fullraw_probe_advances_after_unadmitted_saturated_query(
         include_papers=True,
     )
 
-    assert calls == ["minimum wage performance", "minimum wage employment"]
-    assert result["status"] == "complete"
-    assert result["query"] == "minimum wage employment"
-    assert result["candidate_fact_source_count"] == 5
+    assert calls == ["minimum wage performance"]
+    assert result["status"] == "queue_saturated"
+    assert result["query"] == "minimum wage performance"
+    assert result["queue_shed"] is True
 
 
-def test_business_sweep_fullraw_probe_retries_when_all_queries_unadmitted(
+def test_business_sweep_fullraw_probe_does_not_retry_unadmitted_full_queue(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
     import agent.topic_discovery as topic_discovery_mod
@@ -2397,14 +2397,10 @@ def test_business_sweep_fullraw_probe_retries_when_all_queries_unadmitted(
         include_papers=True,
     )
 
-    assert calls == [
-        "minimum wage performance",
-        "minimum wage employment",
-        "minimum wage performance",
-    ]
-    assert sleeps == [15.0]
-    assert result["status"] == "complete"
-    assert result["candidate_fact_source_count"] == 5
+    assert calls == ["minimum wage performance"]
+    assert sleeps == []
+    assert result["status"] == "queue_saturated"
+    assert result["queue_shed"] is True
 
 
 def test_business_sweep_fullraw_probe_retries_admitted_pending_key(

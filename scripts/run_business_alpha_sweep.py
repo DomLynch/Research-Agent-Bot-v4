@@ -252,6 +252,21 @@ def _fullraw_unadmitted_queue_event(event: dict[str, Any]) -> bool:
     return event.get("key_queued") is not True and event.get("key_running") is not True
 
 
+def _fullraw_queue_full(event: dict[str, Any]) -> bool:
+    status = str(event.get("status") or "")
+    saturated_status = status in {
+        "async_queue_saturated", "inflight_saturated", "queue_saturated",
+    }
+    try:
+        queued = int(event.get("queued_count") or 0)
+        max_queue = int(event.get("max_queue") or 0)
+    except (TypeError, ValueError):
+        return saturated_status
+    if saturated_status and max_queue <= 0:
+        return True
+    return max_queue > 0 and queued >= max_queue
+
+
 def _fullraw_admitted_pending_event(event: dict[str, Any]) -> bool:
     if event.get("key_queued") is not True and event.get("key_running") is not True:
         return False
@@ -563,6 +578,13 @@ def _strict_fullraw_probe(
                         if _fullraw_busy_event(result):
                             best_progress = result
                         source_candidates = int(result.get("candidate_fact_source_count") or 0)
+                        if (
+                            _fullraw_unadmitted_queue_event(result)
+                            and _fullraw_queue_full(result)
+                        ):
+                            result["queue_shed"] = True
+                            result["backoff_seconds"] = _business_fullraw_backoff_seconds()
+                            break
                         if source_candidates >= MIN_DIRECT_SOURCES or idx + 1 >= len(queries):
                             break
                         if status in {"complete", "complete_no_hits", "no_hits"}:
@@ -574,6 +596,8 @@ def _strict_fullraw_probe(
                         not _fullraw_unadmitted_queue_event(result)
                         and not _fullraw_admitted_pending_event(result)
                     ):
+                        break
+                    if result.get("queue_shed") is True:
                         break
                     remaining = queue_retry_deadline - time.monotonic()
                     if remaining <= 0:
