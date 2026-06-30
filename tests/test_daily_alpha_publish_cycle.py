@@ -11975,6 +11975,56 @@ def test_fullraw_metadata_only_source_literature_fallback_does_not_submit(
     )
 
 
+def test_forced_source_literature_repair_does_not_live_fetch_fallback_topics(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "thin_followup", "paper_count": 8, "fact_source_count": 8}],
+    })
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "writer_configured": False,
+        "mimo_model": "",
+        "mimo_base_url": "",
+    })())
+
+    def fail_live_fetch(*_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        raise AssertionError("forced source-lit repair fallback should stay cache-only")
+
+    monkeypatch.setattr(daily, "_fetch_source_literature_papers", fail_live_fetch)
+    submitted: list[dict[str, Any]] = []
+
+    def duplicate_submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submitted.append(payload)
+        return {"ok": False, "status": 409, "response": {"error": "duplicate submission"}}
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-11T20-00-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        source_literature_forced_papers={"usable_boundary": _usable_boundary_papers()},
+        submitter=duplicate_submitter,
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert len(submitted) == 1
+    assert ledger["submitted"] == 0
+    assert ledger["published"] == 0
+    attempts = ledger["source_literature_fallback_attempts"]
+    assert [attempt["topic"] for attempt in attempts] == [
+        "usable_boundary", "thin_followup",
+    ]
+    assert [attempt["reason"] for attempt in attempts] == [
+        "rejected_duplicate", "source_floor_below_min",
+    ]
+
+
 def test_source_literature_fallback_ignores_stale_source_floor_block(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
@@ -12960,8 +13010,8 @@ def test_source_literature_fetcher_prefers_tier2_fact_backed_papers(
 
     assert [p["doi"] for p in papers] == ["10.1/a", "10.1/b"]
     assert papers[0]["source_fact"]["canonical_phrase"] == "Acarbose increased lifespan in mice."
-    assert calls == ["https://db.test/api/v1/tier2/facts/search"]
-    assert timeouts == [12.0]
+    assert calls == ["https://db.test/api/v1/tier2/facts/search"] * 2
+    assert timeouts == [12.0, 12.0]
 
 
 def test_source_literature_fetcher_supplements_thin_fact_search_with_fullraw(
@@ -13445,7 +13495,10 @@ def test_source_literature_fullraw_requires_multi_token_title_alignment(
     )
 
     assert [paper["doi"] for paper in papers] == ["10.1/resistance"]
-    assert queries == [("resistance training", 25)]
+    assert queries == [
+        ("resistance training performance", 25),
+        ("resistance training", 25),
+    ]
 
 
 def test_source_literature_fullraw_uses_relevance_not_exact_phrase(

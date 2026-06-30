@@ -3797,7 +3797,7 @@ def _source_bundle(papers: list[Json]) -> list[Json]:
             "evidence_type": _evidence_type(paper),
         }
         for field in (
-            "journal_name", "journal", "venue", "publisher", "source",
+            "journal_name", "venue", "publisher", "source",
             "source_outlet", "source_name", "container_title",
             "publication_venue", "openalex_id", "doi_url", "canonical_url",
         ):
@@ -4639,6 +4639,7 @@ def _source_literature_discovery_papers(
 
 def _source_literature_candidate_papers(
     runs_root: Path, profile_slug: str, topic: str, min_sources: int, fetch_limit: int,
+    *, allow_live_fetch: bool = True,
 ) -> list[Json]:
     papers = _source_literature_discovery_papers(
         runs_root, profile_slug, topic, min_sources,
@@ -4647,6 +4648,8 @@ def _source_literature_candidate_papers(
         topic, papers, min_sources, profile_slug,
         require_substantive_sources=_source_literature_fallback_submit_enabled(),
     )[0]:
+        return papers
+    if not allow_live_fetch:
         return papers
     fetched = _fetch_source_literature_papers(topic, fetch_limit, domain=profile_slug)
     return fetched or papers
@@ -6548,6 +6551,7 @@ def run_cycle(
                     _source_literature_candidate_papers(
                         runs_root, profile.slug, literature_topic, min_submit_sources,
                         min_submit_sources * 3,
+                        allow_live_fetch=not forced_source_lit,
                     )
                 )
                 ok, reason = _source_literature_boundary_quality(

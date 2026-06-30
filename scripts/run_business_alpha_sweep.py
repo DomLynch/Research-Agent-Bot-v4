@@ -1991,7 +1991,10 @@ def main() -> int:
                     f"{domain} topics={','.join(skipped_recent[:5])}",
                     flush=True,
                 )
+            source_lit_attempted_topic_keys: set[str] = set()
             for topic in selected_topics:
+                if _topic_key(topic) in source_lit_attempted_topic_keys:
+                    continue
                 cached_repair_papers: list[dict[str, Any]] = []
                 cached_repair_below_floor = False
                 if topic in repairable_source_lit_set:
@@ -2054,6 +2057,9 @@ def main() -> int:
                     )
                     repair_row["status"] = str(ledger.get("status") or "submit_failed")
                     repair_row["submission_ledger"] = ledger
+                    for attempt in ledger.get("source_literature_fallback_attempts") or []:
+                        if isinstance(attempt, dict) and attempt.get("topic"):
+                            source_lit_attempted_topic_keys.add(_topic_key(attempt["topic"]))
                     _write_sweep_summary(args.runs_root, rows)
                     _write_sweep_end_summary(
                         args.runs_root,

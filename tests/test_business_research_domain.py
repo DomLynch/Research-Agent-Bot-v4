@@ -5586,6 +5586,115 @@ def test_business_sweep_fullraw_continues_after_reviewer_revise(
     ]
 
 
+def test_business_sweep_skips_topics_attempted_by_source_lit_cycle(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    runs_root = tmp_path / "runs"
+    repair_topic = "digital_transformation_firm"
+    thin_topic = "operations_process_improvement"
+    submissions: list[dict[str, Any]] = []
+    fact_fetches: list[str] = []
+
+    def papers_for(topic: str) -> list[dict[str, Any]]:
+        return [
+            {
+                "title": f"{topic.replace('_', ' ')} evidence paper {idx}",
+                "doi": f"10.8181/{topic}-{idx}",
+                "abstract": f"{topic} evidence.",
+                "source_fact": {
+                    "canonical_phrase": f"{topic} bounded source fact {idx}",
+                    "population": "firms",
+                    "intervention": topic.replace("_", " "),
+                    "endpoint": "firm performance",
+                    "source_tier": "fullraw_search",
+                },
+            }
+            for idx in range(5)
+        ]
+
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        submissions.append(kwargs)
+        return {
+            "status": "no_fresh_candidate",
+            "submitted": 0,
+            "published": 0,
+            "source_literature_fallback_attempts": [
+                {
+                    "topic": repair_topic,
+                    "status": "blocked",
+                    "reason": "rejected_duplicate",
+                },
+                {
+                    "topic": thin_topic,
+                    "status": "blocked",
+                    "reason": "source_floor_below_min",
+                },
+            ],
+        }
+
+    def fail_if_reprobed(topic: str, **_kwargs: Any) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        fact_fetches.append(topic)
+        if topic == thin_topic:
+            raise AssertionError("source-lit attempted topic should not be probed again")
+        return [], {"status": "empty"}
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [
+        repair_topic, thin_topic,
+    ])
+    monkeypatch.setattr(
+        sweep,
+        "_prioritized_seed_topics",
+        lambda _root, _domain, _topics: [repair_topic, thin_topic],
+    )
+    monkeypatch.setattr(
+        cycle,
+        "_priority_source_literature_repair_decisions",
+        lambda *_args, **_kwargs: {repair_topic: {}},
+    )
+    monkeypatch.setattr(
+        cycle,
+        "_repairable_source_literature_topics",
+        lambda *_args, **_kwargs: [repair_topic],
+    )
+    monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", lambda _topic: 0)
+    monkeypatch.setattr(
+        sweep,
+        "_cached_fullraw_discovery_papers",
+        lambda _root, _domain, topic: (
+            (papers_for(topic), {"status": "complete"})
+            if topic == repair_topic else
+            ([], {})
+        ),
+    )
+    monkeypatch.setattr(
+        sweep,
+        "_enrich_fullraw_papers_with_db_facts",
+        lambda _topic, *, domain, papers, settings: papers,
+    )
+    monkeypatch.setattr(sweep, "fetch_business_facts", fail_if_reprobed)
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "2",
+        "--domains", "business_research",
+        "--runs-root", str(runs_root),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-06-30T02-20-00Z",
+    ])
+
+    assert sweep.main() == 2
+    assert len(submissions) == 1
+    assert submissions[0]["source_literature_forced_papers"] == {
+        repair_topic: papers_for(repair_topic),
+    }
+    assert fact_fetches == []
+
+
 def test_business_sweep_fullraw_discovery_does_not_count_metadata_as_facts(
     tmp_path: Path,
 ) -> None:
