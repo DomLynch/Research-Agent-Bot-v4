@@ -3997,14 +3997,14 @@ def test_business_sweep_retries_repairable_recent_source_literature_topic(
     ])
 
     assert sweep.main() == 0
-    assert fullraw_calls == []
+    assert fullraw_calls == [repaired_topic]
     assert submissions == [{
         "runs_root": runs_root,
         "date": "2026-06-29T04-00-00Z",
         "domain": "business_research",
         "submit": True,
         "refresh_candidates": False,
-        "source_literature_priority_topics": [repaired_topic],
+        "source_literature_forced_papers": {repaired_topic: papers_for(repaired_topic)},
     }]
 
 
@@ -4137,14 +4137,14 @@ def test_business_sweep_promotes_repairable_source_lit_outside_seed_window(
     ])
 
     assert sweep.main() == 0
-    assert fullraw_calls == []
+    assert fullraw_calls == [repaired_topic]
     assert submissions == [{
         "runs_root": runs_root,
         "date": "2026-06-29T04-00-00Z",
         "domain": "business_research",
         "submit": True,
         "refresh_candidates": False,
-        "source_literature_priority_topics": [repaired_topic],
+        "source_literature_forced_papers": {repaired_topic: papers_for(repaired_topic)},
     }]
 
 

@@ -1692,7 +1692,23 @@ def main() -> int:
                     flush=True,
                 )
             for topic in selected_topics:
-                if topic in repairable_source_lit_set and max(0, args.submit_after_consistent_passes):
+                cached_repair_papers: list[dict[str, Any]] = []
+                if topic in repairable_source_lit_set:
+                    cached_repair_papers, _cached_repair_trace = (
+                        _cached_fullraw_discovery_papers(args.runs_root, domain, topic)
+                    )
+                    cached_repair_papers = _enrich_fullraw_papers_with_db_facts(
+                        topic, domain=domain, papers=cached_repair_papers, settings=settings,
+                    )
+                    if (
+                        publish_literature.substantive_fact_count(cached_repair_papers)
+                        < MIN_DIRECT_SOURCES
+                        or publish_literature.source_identity_count(
+                            cached_repair_papers, require_substantive=True,
+                        ) < MIN_DIRECT_SOURCES
+                    ):
+                        cached_repair_papers = []
+                if cached_repair_papers and args.submit_after_consistent_passes > 0:
                     repair_row: dict[str, Any] = {
                         "cycle": cycle + 1,
                         "domain": domain,
@@ -1726,7 +1742,7 @@ def main() -> int:
                         domain=domain,
                         submit=True,
                         refresh_candidates=False,
-                        source_literature_priority_topics=[topic],
+                        source_literature_forced_papers={topic: cached_repair_papers},
                     )
                     repair_row["status"] = str(ledger.get("status") or "submit_failed")
                     repair_row["submission_ledger"] = ledger
