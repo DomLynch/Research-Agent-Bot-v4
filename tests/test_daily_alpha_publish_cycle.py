@@ -12926,6 +12926,12 @@ def test_source_literature_query_variants_include_two_token_windows() -> None:
     assert "model performance" in variants
 
 
+def test_source_literature_query_variants_shape_short_non_biomedical_topics() -> None:
+    variants = publish_literature.query_variants("minimum_wage")
+
+    assert variants[:2] == ("minimum wage performance", "minimum wage")
+
+
 def test_fullraw_metadata_relevance_requires_title_context(
     monkeypatch: MonkeyPatch,
 ) -> None:

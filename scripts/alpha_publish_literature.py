@@ -47,6 +47,11 @@ _NON_BIOMEDICAL_DOMAINS = frozenset({
     "business_research", "economics_research", "finance_research",
     "management_research", "marketing_research", "ai_research",
 })
+_OUTCOME_QUERY_TOKENS = frozenset({
+    "employment", "margin", "margins", "performance", "price", "pricing",
+    "profit", "profitability", "return", "returns", "revenue", "risk",
+    "sales", "volatility",
+})
 
 
 def title_key(title: Any) -> str:
@@ -165,7 +170,18 @@ def query_variants(topic: str) -> tuple[str, ...]:
         if len(token) >= 3 and token not in _GENERIC_TOPIC_TOKENS
     )
     windows = [" ".join(pair) for pair in zip(raw.split(), raw.split()[1:], strict=False)]
-    return tuple(dict.fromkeys(q for q in (focused, contextual, raw, *windows) if q))
+    tokens = set(raw.split())
+    outcome_context = (
+        f"{focused} performance"
+        if (
+            focused
+            and not (tokens & _LONGEVITY_CONTEXT_TOKENS)
+            and not (tokens & _OUTCOME_QUERY_TOKENS)
+        ) else ""
+    )
+    return tuple(dict.fromkeys(
+        q for q in (outcome_context, focused, contextual, raw, *windows) if q
+    ))
 
 
 def _fullraw_topic_papers(topic: str, limit: int) -> list[Json]:
