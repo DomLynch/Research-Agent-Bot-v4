@@ -6730,6 +6730,9 @@ def run_cycle(
                                 ledger["terminal_resubmission"] = result
                                 if result["status"] == _DECISION_ACCEPTED:
                                     submission_id = publish_decisions.submission_id(result)
+                                    parent_submission_id = _resubmission_parent_submission_id(
+                                        repair_decision,
+                                    )
                                     ledger["submission"] = result
                                     _record_submission_attempt(
                                         submitted_path,
@@ -6745,6 +6748,17 @@ def run_cycle(
                                         "submitted_topic": literature_topic,
                                         "submission_id": submission_id,
                                     })
+                                    if submission_id and submission_id == parent_submission_id:
+                                        fallback_attempt["terminal_resubmit_same_parent_id"] = True
+                                        ledger["cycle_attempts"].append({
+                                            "topic": literature_topic,
+                                            "run_dir": candidate.get("run_dir"),
+                                            "fingerprint": candidate.get("memo_fingerprint"),
+                                            "status": publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value,
+                                            "pending_reason": "same_parent_terminal_resubmit_queued",
+                                        })
+                                        _write_ledger(ledger_path, ledger)
+                                        return ledger
                                     if submission_id:
                                         final = publish_decisions.poll_submission_decision(
                                             ledger,
