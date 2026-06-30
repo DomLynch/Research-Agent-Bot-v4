@@ -11656,6 +11656,32 @@ def test_source_literature_fallback_is_disabled_without_explicit_submit_flag(
     assert ledger["source_literature_fallback"]["selected_directional_receipt_count"] == 0
 
 
+def test_source_literature_boundary_quality_prioritizes_fact_synthesis_for_metadata() -> None:
+    papers = [
+        {
+            "title": f"Platform strategy network effects performance evidence {idx}",
+            "doi": f"10.1234/platform-meta-{idx}",
+            "source_fact": {
+                "canonical_phrase": (
+                    "Title-level source match: "
+                    f"Platform strategy network effects performance evidence {idx}"
+                ),
+                "endpoint": "source-literature relevance",
+                "source_tier": "paper_metadata",
+            },
+        }
+        for idx in range(5)
+    ]
+
+    assert daily._source_literature_boundary_quality(
+        "platform_strategy_network",
+        papers,
+        5,
+        "business_research",
+        require_substantive_sources=True,
+    ) == (False, "requires_fact_level_source_synthesis")
+
+
 def test_fact_backed_source_literature_fallback_submits_without_flag(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

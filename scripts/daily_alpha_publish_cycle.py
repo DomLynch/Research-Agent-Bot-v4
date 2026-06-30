@@ -4388,6 +4388,20 @@ def _source_literature_boundary_quality(
     topic: str, papers: list[Json], min_sources: int, profile_slug: str = "",
     *, require_substantive_sources: bool = False,
 ) -> tuple[bool, str]:
+    selected = publish_literature.select_boundary_papers(
+        topic,
+        papers,
+        min_sources,
+        strict_topic_coverage=publish_literature._non_biomedical(profile_slug),
+    )
+    if require_substantive_sources and len(selected) >= min_sources:
+        if publish_literature.substantive_fact_count(selected) < min_sources:
+            return False, "requires_fact_level_source_synthesis"
+        if publish_literature.source_identity_count(
+            selected,
+            require_substantive=True,
+        ) < min_sources:
+            return False, "source_fact_diversity_below_min"
     ok, reason = publish_literature.boundary_quality(
         topic,
         papers,
@@ -4397,19 +4411,6 @@ def _source_literature_boundary_quality(
     )
     if not ok or not require_substantive_sources:
         return ok, reason
-    selected = publish_literature.select_boundary_papers(
-        topic,
-        papers,
-        min_sources,
-        strict_topic_coverage=publish_literature._non_biomedical(profile_slug),
-    )
-    if publish_literature.substantive_fact_count(selected) < min_sources:
-        return False, "requires_fact_level_source_synthesis"
-    if publish_literature.source_identity_count(
-        selected,
-        require_substantive=True,
-    ) < min_sources:
-        return False, "source_fact_diversity_below_min"
     return True, "ok"
 
 
