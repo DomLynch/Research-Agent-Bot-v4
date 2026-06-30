@@ -1407,16 +1407,17 @@ def _exposure_context_label(paper: Json, *, non_bio: bool) -> str:
     text = title_key(" ".join(str(value or "") for value in (
         paper.get("title"), paper.get("paper_title"), fact.get("canonical_phrase"), base,
     )))
-    if {"artificial", "intelligence"} <= set(text.split()) or "collaboration" in text:
+    tokens = set(text.split())
+    if {"flexibility", "agility"} & tokens:
+        return "flexibility, collaboration, and agility antecedents"
+    if {"artificial", "intelligence"} <= tokens or "adaptive" in tokens or "collaboration" in text:
         return "AI, adaptive capability, and collaboration antecedents"
     if "visibility" in text:
         return "supply chain visibility and capability antecedents"
     if "disruption" in text:
         return "supply chain disruption context"
-    if {"fuzzy", "ahp"} <= set(text.split()) or "vikor" in text:
+    if {"fuzzy", "ahp"} <= tokens or "vikor" in text:
         return "Pythagorean fuzzy AHP-VIKOR modelling"
-    if {"flexibility", "collaboration", "agility"} & set(text.split()):
-        return "flexibility, collaboration, and agility antecedents"
     return base
 
 

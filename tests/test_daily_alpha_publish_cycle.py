@@ -15631,6 +15631,36 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         "supply chain performance",
         "directional association",
     ) in source_contexts
+    interventions_by_title = {
+        str(source.get("title") or ""): source.get("intervention")
+        for source in payload["source_bundle"]
+    }
+    assert interventions_by_title[
+        "Factors Affecting the Supply Chain Resilience and Supply Chain Performance"
+    ] == "AI, adaptive capability, and collaboration antecedents"
+    assert interventions_by_title[
+        "The effect of supply chain resilience on supply chain performance of "
+        "chemical industrial companies"
+    ] == "supply chain resilience"
+    assert publish_literature._exposure_context_label(
+        {
+            "title": (
+                "The effect of supply chain resilience on supply chain performance of "
+                "chemical industrial companies"
+            ),
+            "source_fact": {
+                "canonical_phrase": (
+                    "Analyzing data via SmartPLS 3.0, the results showed that "
+                    "supply chain collaboration and supply chain agility as key "
+                    "dimensions of supply chain resilience had significant effects "
+                    "on supply chain performance, while supply chain flexibility "
+                    "exerted insignificant effect on supply chain performance"
+                ),
+                "intervention": "chain resilience supply",
+            },
+        },
+        non_bio=True,
+    ) == "flexibility, collaboration, and agility antecedents"
     assert all(source.get("excerpt") for source in payload["source_bundle"])
     assert "unmatched metric-scope map" not in payload["title"]
     assert "source-scope boundary note" not in payload["title"]
