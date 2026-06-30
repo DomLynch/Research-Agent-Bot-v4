@@ -14187,6 +14187,7 @@ def test_source_literature_payload_reconciles_single_outcome_economics_roles(
     assert len(payload["source_bundle"]) == 5
     assert payload["evidence_bundle"]["direct_source_count"] == 5
     assert "multi-outcome boundary map" not in markdown
+    assert "Metric imbalance disclosure" not in markdown
     assert "non-directional caveat" not in markdown
     assert "Evidence role summary: direction-bearing receipts: 4; metric-scope caveat receipts: 1" in markdown
     assert "directional association: 4 receipt(s)" in markdown

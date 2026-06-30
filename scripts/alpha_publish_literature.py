@@ -1771,7 +1771,7 @@ def payload(
             "on setting, design, and metric, so the bundle supports only a narrow "
             "scope contrast between the named outcomes."
         )
-    if non_bio and duplicated_directional_endpoints and nullish_count == 1:
+    if non_bio and multi_display_outcome and duplicated_directional_endpoints and nullish_count == 1:
         repeated_endpoint, repeated_count = sorted(
             duplicated_directional_endpoints,
             key=lambda item: item[1],
