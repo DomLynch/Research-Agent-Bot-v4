@@ -1632,6 +1632,29 @@ def _recent_source_literature_blocked_topics(runs_root: Path, domain: str) -> se
     }
 
 
+def _hard_source_literature_blocked_topic_keys(runs_root: Path, domain: str) -> set[str]:
+    ledger_dir = runs_root / "_daily_ledger"
+    days = int(getattr(publish_cycle, "_DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS", 30))
+    hard_blocked = (
+        publish_cycle._recently_published_topics(ledger_dir, days=days, domain=domain)
+        | publish_cycle._recent_negative_topics(ledger_dir, days=days, domain=domain)
+    )
+    return {key for topic in hard_blocked if (key := _topic_key(topic))}
+
+
+def _cached_ready_source_literature_papers(
+    runs_root: Path, domain: str, topic: str, settings: Any,
+) -> list[dict[str, Any]]:
+    papers, _trace = _cached_fullraw_discovery_papers(runs_root, domain, topic)
+    if not papers:
+        return []
+    papers = _enrich_fullraw_papers_with_db_facts(
+        topic, domain=domain, papers=papers, settings=settings,
+    )
+    ready, _reason = _source_literature_ready_papers(topic, domain, papers)
+    return ready
+
+
 def _recent_source_literature_repair_attempt_topics(
     runs_root: Path, domain: str, *, days: int = 2,
 ) -> list[str]:
@@ -1950,6 +1973,31 @@ def main() -> int:
             blocked_topic_keys = _recent_source_literature_blocked_topics(
                 args.runs_root, domain,
             )
+            hard_blocked_topic_keys = _hard_source_literature_blocked_topic_keys(
+                args.runs_root, domain,
+            )
+            cached_ready_source_lit: dict[str, list[dict[str, Any]]] = {}
+            for seed_topic in seed_pool:
+                seed_key = _topic_key(seed_topic)
+                if seed_key not in blocked_topic_keys or seed_key in hard_blocked_topic_keys:
+                    continue
+                ready_papers = _cached_ready_source_literature_papers(
+                    args.runs_root, domain, seed_topic, settings,
+                )
+                if len(ready_papers) >= MIN_DIRECT_SOURCES:
+                    cached_ready_source_lit[seed_topic] = ready_papers
+            if cached_ready_source_lit:
+                blocked_topic_keys -= {
+                    _topic_key(topic) for topic in cached_ready_source_lit
+                }
+                repairable_source_lit_topics = list(dict.fromkeys([
+                    *cached_ready_source_lit,
+                    *repairable_source_lit_topics,
+                ]))
+                seed_pool = list(dict.fromkeys([
+                    *cached_ready_source_lit,
+                    *seed_pool,
+                ]))
             prioritized_topics = _prioritized_seed_topics(
                 args.runs_root, domain, seed_pool,
             )
@@ -2008,20 +2056,26 @@ def main() -> int:
                 cached_repair_papers: list[dict[str, Any]] = []
                 cached_repair_below_floor = False
                 if topic in repairable_source_lit_set:
-                    cached_repair_papers, _cached_repair_trace = (
-                        _cached_fullraw_discovery_papers(args.runs_root, domain, topic)
-                    )
-                    cached_repair_papers = _enrich_fullraw_papers_with_db_facts(
-                        topic, domain=domain, papers=cached_repair_papers, settings=settings,
-                    )
-                    cached_repair_ready, _cached_repair_reason = _source_literature_ready_papers(
-                        topic, domain, cached_repair_papers,
-                    )
-                    if cached_repair_ready:
-                        cached_repair_papers = cached_repair_ready
+                    if topic in cached_ready_source_lit:
+                        cached_repair_papers = cached_ready_source_lit[topic]
                     else:
-                        cached_repair_below_floor = bool(cached_repair_papers)
-                        cached_repair_papers = []
+                        cached_repair_papers, _cached_repair_trace = (
+                            _cached_fullraw_discovery_papers(args.runs_root, domain, topic)
+                        )
+                        cached_repair_papers = _enrich_fullraw_papers_with_db_facts(
+                            topic, domain=domain, papers=cached_repair_papers,
+                            settings=settings,
+                        )
+                        cached_repair_ready, _cached_repair_reason = (
+                            _source_literature_ready_papers(
+                                topic, domain, cached_repair_papers,
+                            )
+                        )
+                        if cached_repair_ready:
+                            cached_repair_papers = cached_repair_ready
+                        else:
+                            cached_repair_below_floor = bool(cached_repair_papers)
+                            cached_repair_papers = []
                 source_lit_repair_kwargs: dict[str, Any] = {}
                 if cached_repair_papers:
                     source_lit_repair_kwargs["source_literature_forced_papers"] = {
