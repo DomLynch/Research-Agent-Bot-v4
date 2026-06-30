@@ -12113,6 +12113,36 @@ def test_source_literature_fullraw_fetch_defaults_to_supply_bounds(
     }
 
 
+def test_source_literature_fullraw_fetch_caps_inherited_publish_budget(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    from scripts import run_topic_discovery
+
+    seen: dict[str, str | None] = {}
+
+    def fake_seed_fullraw_papers(*_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        for key in (
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS",
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS",
+            "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
+            "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS",
+        ):
+            seen[key] = os.environ.get(key)
+        return []
+
+    monkeypatch.setenv("RESEARKA_FULLRAW_SEARCH_BUDGET_SECONDS", "7200")
+    monkeypatch.setenv("RESEARKA_FULLRAW_FOREGROUND_SWEEP_WAIT_SECONDS", "7200")
+    monkeypatch.setattr(run_topic_discovery, "_seed_fullraw_papers", fake_seed_fullraw_papers)
+
+    assert publish_literature._fullraw_topic_papers("platform strategy", 5) == []
+    assert seen == {
+        "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS": "300",
+        "TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS": "120",
+        "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS": "300",
+        "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS": "120",
+    }
+
+
 def test_source_literature_candidates_skip_exhausted_topic_family(
     tmp_path: Path,
 ) -> None:

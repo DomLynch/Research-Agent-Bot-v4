@@ -24,6 +24,8 @@ _FULLRAW_MIN_SHARDS_ENV = "RESEARKA_SOURCE_LITERATURE_FULLRAW_MIN_SHARDS_SEARCHE
 _FULLRAW_MIN_SOURCES_ENV = "RESEARKA_SOURCE_LITERATURE_FULLRAW_MIN_SOURCES_SEARCHED"
 _FULLRAW_MIN_SHARDS = 1525
 _FULLRAW_MIN_SOURCES = 5
+_FULLRAW_SOURCE_LIT_BUDGET_CAP_SECONDS = 300
+_FULLRAW_SOURCE_LIT_SWEEP_CAP_SECONDS = 120
 _GENERIC_TOPIC_TOKENS = frozenset({
     "association", "associations", "clinical", "effect", "effects", "evidence",
     "exposure", "intervention", "outcome", "outcomes", "review", "study",
@@ -39,6 +41,62 @@ def _int_env_floor(name: str, fallback: str | None, floor: int) -> str:
         return str(max(floor, int(os.environ.get(name, fallback or str(floor)))))
     except (TypeError, ValueError):
         return str(floor)
+
+
+def _first_env(*names: str) -> str | None:
+    for name in names:
+        value = os.environ.get(name)
+        if value is not None:
+            return value
+    return None
+
+
+def _seconds(raw: str | None, default: str, *, cap: int | None = None) -> str:
+    try:
+        value = max(1.0, float(raw if raw is not None else default))
+    except (TypeError, ValueError):
+        value = float(default)
+    if cap is not None:
+        value = min(value, float(cap))
+    return str(int(value)) if value.is_integer() else str(value)
+
+
+def _source_lit_budget_seconds() -> str:
+    explicit = _first_env(
+        _FULLRAW_BUDGET_ENV,
+        "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS",
+    )
+    if explicit is not None:
+        return _seconds(explicit, str(_FULLRAW_SOURCE_LIT_BUDGET_CAP_SECONDS))
+    inherited = _first_env(
+        "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
+        "V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS",
+        "RESEARKA_FULLRAW_SEARCH_BUDGET_SECONDS",
+    )
+    return _seconds(
+        inherited, str(_FULLRAW_SOURCE_LIT_BUDGET_CAP_SECONDS),
+        cap=_FULLRAW_SOURCE_LIT_BUDGET_CAP_SECONDS,
+    )
+
+
+def _source_lit_sweep_wait_seconds() -> str:
+    explicit = _first_env(
+        _FULLRAW_SWEEP_WAIT_ENV,
+        "TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS",
+    )
+    if explicit is not None:
+        return _seconds(explicit, str(_FULLRAW_SOURCE_LIT_SWEEP_CAP_SECONDS))
+    inherited = _first_env(
+        "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS",
+        "V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS",
+        "V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS",
+        "RESEARKA_FULLRAW_FOREGROUND_SWEEP_WAIT_SECONDS",
+        "RESEARKA_FULLRAW_SWEEP_WAIT_SECONDS",
+    )
+    return _seconds(
+        inherited, str(_FULLRAW_SOURCE_LIT_SWEEP_CAP_SECONDS),
+        cap=_FULLRAW_SOURCE_LIT_SWEEP_CAP_SECONDS,
+    )
 
 
 def _fullraw_max_variants() -> int:
@@ -216,19 +274,8 @@ def _fullraw_topic_papers(topic: str, limit: int) -> list[Json]:
                        os.environ.get("V5_MEMO_FULL_RAW_QUERY_TIMEOUT",
                                       os.environ.get("V5_MEMO_FULL_RAW_CORPUS_TIMEOUT", "35"))),
     )
-    budget = os.environ.get(
-        _FULLRAW_BUDGET_ENV,
-        os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS",
-                       os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
-                                      os.environ.get("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "45"))),
-    )
-    sweep_wait = os.environ.get(
-        _FULLRAW_SWEEP_WAIT_ENV,
-        os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS",
-                       os.environ.get("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS",
-                                      os.environ.get("V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS",
-                                                     os.environ.get("V5_MEMO_FULL_RAW_SWEEP_WAIT_SECONDS", "15")))),
-    )
+    budget = _source_lit_budget_seconds()
+    sweep_wait = _source_lit_sweep_wait_seconds()
     max_variants = os.environ.get(
         _FULLRAW_MAX_VARIANTS_ENV,
         os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_MAX_VARIANTS",
