@@ -6285,6 +6285,63 @@ def test_submission_id_reads_native_research_object_id() -> None:
     }) == "native-object-123"
 
 
+def test_sync_submission_decisions_backfills_terminal_resubmit_job(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "date": "2026-05-21",
+        "domain_slug": "business_research",
+        "status": "reviewer_revise",
+        "submission_id": "parent-submission",
+        "source_literature_fallback_attempts": [{
+            "topic": "supply_chain_performance",
+            "run_dir": "supply-chain-run",
+            "terminal_resubmit_submission": {
+                "status": "accepted",
+                "attempts": [{
+                    "response": {
+                        "job": {
+                            "id": "queued-job-1",
+                            "target_object_id": "parent-submission",
+                            "status": "queued",
+                        },
+                    },
+                }],
+            },
+        }],
+    })
+
+    summary = daily.sync_submission_decisions(
+        root,
+        fetcher=lambda submission_id: {
+            "status": "pending",
+            "seen_id": submission_id,
+        },
+    )
+
+    submitted = json.loads(
+        (root / "_daily_ledger" / "_submitted_fingerprints.json").read_text(
+            encoding="utf-8",
+        ),
+    )
+    assert summary["checked"] == 1
+    assert summary["pending"] == 1
+    assert submitted[0]["submission_id"] == "queued-job-1"
+    assert submitted[0]["parent_submission_id"] == "parent-submission"
+    assert submitted[0]["pending_reason"] == "terminal_resubmit_job_queued"
+    assert submitted[0]["topic"] == "supply_chain_performance"
+    synthetic = json.loads(
+        (
+            root / "_daily_ledger" / "2026-05-21-decision-queued-j.json"
+        ).read_text(encoding="utf-8"),
+    )
+    assert synthetic["submission_id"] == "queued-job-1"
+    assert synthetic["status"] == "submitted_to_researka"
+    assert synthetic["final_verdict"] == "pending"
+    assert synthetic["researka_decision"]["seen_id"] == "queued-job-1"
+
+
 def test_sync_submission_decisions_records_revise_as_retryable(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("revise")

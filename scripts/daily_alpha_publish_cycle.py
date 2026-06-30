@@ -3362,6 +3362,49 @@ def _terminal_resubmit_queued_job_id(result: Json, parent_submission_id: str) ->
     return ""
 
 
+def _terminal_resubmit_queued_submission_records(ledger: Json) -> list[Json]:
+    records: list[Json] = []
+    for fallback_attempt in ledger.get("source_literature_fallback_attempts") or []:
+        if not isinstance(fallback_attempt, dict):
+            continue
+        result = fallback_attempt.get("terminal_resubmit_submission")
+        if not isinstance(result, dict):
+            continue
+        for submit_attempt in result.get("attempts") or []:
+            if not isinstance(submit_attempt, dict):
+                continue
+            response = submit_attempt.get("response")
+            if not isinstance(response, dict):
+                continue
+            job = response.get("job")
+            if not isinstance(job, dict):
+                continue
+            job_id = str(job.get("id") or "").strip()
+            parent_id = str(job.get("target_object_id") or "").strip()
+            status = str(job.get("status") or "").lower()
+            if not job_id or status not in {"pending", "queued", "running"}:
+                continue
+            records.append({
+                "date": ledger.get("date"),
+                "domain": ledger.get("domain"),
+                "domain_slug": _ledger_domain(ledger),
+                "topic": (
+                    fallback_attempt.get("topic")
+                    or ledger.get("submitted_topic")
+                    or ledger.get("topic")
+                ),
+                "run_dir": fallback_attempt.get("run_dir") or ledger.get("run_dir"),
+                "fingerprint": ledger.get("fingerprint") or ledger.get("memo_sha256"),
+                "memo_sha256": ledger.get("memo_sha256"),
+                "submission_id": job_id,
+                "parent_submission_id": parent_id,
+                "status": publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value,
+                "submit_status": result.get("status"),
+                "pending_reason": "terminal_resubmit_job_queued",
+            })
+    return records
+
+
 def _repairable_ledger(ledger: Json) -> bool:
     decision = ledger.get("researka_decision")
     if isinstance(decision, dict) and _repairable_rejection(decision):
@@ -5272,6 +5315,7 @@ def _sync_submission_decisions_unlocked(
     }
     seen_submission_ids: set[str] = set()
     submission_record_updates: dict[str, Json] = {}
+    backfill_submission_records: list[Json] = []
     for path in sorted(ledger_dir.glob("*.json")):
         ledger = _json(path, {})
         if isinstance(ledger, dict):
@@ -5281,6 +5325,9 @@ def _sync_submission_decisions_unlocked(
                 patch = _submission_record_patch(ledger)
                 if patch:
                     submission_record_updates[sid] = patch
+            backfill_submission_records.extend(
+                _terminal_resubmit_queued_submission_records(ledger),
+            )
         if not isinstance(ledger, dict):
             continue
         if ledger.get("status") == publish_status.CycleStatus.PUBLISHED.value:
@@ -5367,7 +5414,19 @@ def _sync_submission_decisions_unlocked(
 
     def update_submitted_records(submitted: list[Any]) -> bool:
         submitted_changed = False
-        for row in submitted:
+        submitted_ids = {
+            str(row.get("submission_id") or "").strip()
+            for row in submitted
+            if isinstance(row, dict)
+        }
+        for record in backfill_submission_records:
+            submission_id = str(record.get("submission_id") or "").strip()
+            if not submission_id or submission_id in submitted_ids:
+                continue
+            submitted.append(record)
+            submitted_ids.add(submission_id)
+            submitted_changed = True
+        for row in list(submitted):
             if not isinstance(row, dict):
                 continue
             submission_id = str(row.get("submission_id") or "")
