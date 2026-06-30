@@ -182,6 +182,72 @@ def test_select_boundary_papers_preserves_fact_backed_floor_before_metadata() ->
     )
 
 
+def test_non_bio_selection_prefers_second_directional_receipt() -> None:
+    topic = "digital_transformation_firm"
+    papers = [
+        {
+            "doi": f"10.8100/dtf-{idx}",
+            "title": title,
+            "source_fact": {
+                "canonical_phrase": phrase,
+                "population": "firms",
+                "intervention": "digital transformation",
+                "endpoint": endpoint,
+                "source_tier": "fullraw_abstract",
+            },
+        }
+        for idx, (title, endpoint, phrase) in enumerate((
+            (
+                "Digital transformation and firm profitability",
+                "firm profitability",
+                "digital transformation significantly increases firm profitability",
+            ),
+            (
+                "Digital transformation firm implementation context",
+                "implementation context",
+                "digital transformation adoption varies across firm settings",
+            ),
+            (
+                "Digital transformation firm operating model",
+                "operating model",
+                "digital transformation changes operating model descriptions",
+            ),
+            (
+                "Digital transformation firm governance context",
+                "governance context",
+                "digital transformation governance differs across firms",
+            ),
+            (
+                "Digital transformation firm capability map",
+                "capability map",
+                "digital transformation capability bundles are described in firms",
+            ),
+            (
+                "Digital transformation and firm revenue",
+                "firm revenue",
+                "digital transformation increased firm revenue by 12 percent",
+            ),
+        ), start=1)
+    ]
+
+    selected = literature.select_boundary_papers(
+        topic, papers, 5, profile_slug="business_research",
+    )
+    roles = [
+        literature._paper_evidence_role(paper, topic, "business_research")
+        for paper in selected
+    ]
+
+    assert len(selected) == 5
+    assert literature.substantive_fact_count(selected) == 5
+    assert literature.source_identity_count(selected, require_substantive=True) == 5
+    assert "10.8100/dtf-6" in {paper["doi"] for paper in selected}
+    assert roles.count("directional association") == 2
+    assert literature.boundary_quality(
+        topic, papers, 5, profile_slug="business_research",
+    ) == (True, "ok")
+
+
 def test_fullraw_relevant_papers_honors_researka_variant_cap(
     monkeypatch: MonkeyPatch,
 ) -> None:

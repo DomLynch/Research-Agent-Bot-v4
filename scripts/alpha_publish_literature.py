@@ -417,8 +417,59 @@ def _source_diverse_order(topic: str, papers: list[Json]) -> list[Json]:
     return picked
 
 
+_DIRECTIONAL_SOURCE_LIT_ROLES = frozenset({
+    "directional association", "directional estimate", "directionally favorable",
+})
+
+
+def _directional_receipt_count(papers: list[Json], topic: str, profile_slug: str) -> int:
+    return sum(
+        1 for paper in papers
+        if _paper_evidence_role(paper, topic, profile_slug) in _DIRECTIONAL_SOURCE_LIT_ROLES
+    )
+
+
+def _source_lit_selection(
+    topic: str, papers: list[Json], min_sources: int, profile_slug: str,
+) -> list[Json]:
+    ordered = _source_diverse_order(topic, papers)
+    selected = ordered[:min_sources]
+    required_directional = min(2, min_sources)
+    if (
+        not _non_biomedical(profile_slug)
+        or _directional_receipt_count(selected, topic, profile_slug) >= required_directional
+    ):
+        return selected
+    for candidate in ordered[min_sources:]:
+        if (
+            _paper_evidence_role(candidate, topic, profile_slug)
+            not in _DIRECTIONAL_SOURCE_LIT_ROLES
+        ):
+            continue
+        candidate_key = source_identity_key(candidate)
+        if candidate_key and candidate_key in {
+            source_identity_key(paper) for paper in selected
+        }:
+            continue
+        for idx in range(len(selected) - 1, -1, -1):
+            if (
+                _paper_evidence_role(selected[idx], topic, profile_slug)
+                in _DIRECTIONAL_SOURCE_LIT_ROLES
+            ):
+                continue
+            trial = [*selected]
+            trial[idx] = candidate
+            if source_identity_count(trial, require_substantive=True) >= min_sources:
+                selected = trial
+                break
+        if _directional_receipt_count(selected, topic, profile_slug) >= required_directional:
+            break
+    return selected
+
+
 def select_boundary_papers(
     topic: str, papers: list[Json], min_sources: int, *, strict_topic_coverage: bool = False,
+    profile_slug: str = "",
 ) -> list[Json]:
     usable = [
         paper for paper in papers
@@ -451,8 +502,10 @@ def select_boundary_papers(
             if family != "other source context" and len(rows) >= min_sources
         ]
         if coherent_substantive:
-            return _source_diverse_order(topic, max(coherent_substantive, key=len))[:min_sources]
-        return _source_diverse_order(topic, substantive)[:min_sources]
+            return _source_lit_selection(
+                topic, max(coherent_substantive, key=len), min_sources, profile_slug,
+            )
+        return _source_lit_selection(topic, substantive, min_sources, profile_slug)
     buckets: dict[str, list[Json]] = {}
     for paper in usable:
         buckets.setdefault(_paper_context_family(paper), []).append(paper)
@@ -461,8 +514,8 @@ def select_boundary_papers(
         if family != "other source context" and len(rows) >= min_sources
     ]
     if coherent:
-        return _source_diverse_order(topic, max(coherent, key=len))[:min_sources]
-    return _source_diverse_order(topic, usable)[:min_sources]
+        return _source_lit_selection(topic, max(coherent, key=len), min_sources, profile_slug)
+    return _source_lit_selection(topic, usable, min_sources, profile_slug)
 
 
 def boundary_quality(
@@ -472,6 +525,7 @@ def boundary_quality(
 ) -> tuple[bool, str]:
     usable = select_boundary_papers(
         topic, papers, min_sources, strict_topic_coverage=strict_topic_coverage,
+        profile_slug=profile_slug,
     )
     if len(usable) < min_sources:
         return False, "source_floor_below_min"
@@ -843,7 +897,8 @@ def _non_bio_numeric_direction_receipt(paper: Json) -> bool:
         re.search(r"\d|percent|percentage|point|elasticit(?:y|ies)", text)
         and re.search(
             r"\b(?:accounts? for|effect|effects|elasticit(?:y|ies)|estimat(?:e|es|ed)|fall|"
-            r"increas|pass(?:ed)? through|pass-through|rang(?:e|es)|reduc|rose|"
+            r"increas(?:e|es|ed|ing)?|pass(?:ed)? through|pass-through|rang(?:e|es)|"
+            r"reduc(?:e|es|ed|ing)?|rose|"
             r"translates? into)\b",
             text,
         )
@@ -1672,6 +1727,7 @@ def payload(
     parent_submission_id = parent_submission_id.strip()
     selected = select_boundary_papers(
         topic, papers, 5, strict_topic_coverage=strict_topic_coverage,
+        profile_slug=profile.slug,
     )
     run_dir = runs_root / f"{topic}-source-literature-{date}"
     run_dir.mkdir(parents=True, exist_ok=True)

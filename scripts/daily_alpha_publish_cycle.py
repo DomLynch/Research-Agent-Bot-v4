@@ -209,9 +209,8 @@ _SOURCE_LITERATURE_SCAN_LIMIT = max(10, _DEFAULT_MIN_SUBMIT_SOURCES * 3)
 _SOURCE_LITERATURE_STRUCTURAL_BLOCK_REASONS = frozenset({
     "directional_receipt_floor_below_min",
     "requires_fact_level_source_synthesis",
-    "source_bundle_below_min",
     "source_fact_diversity_below_min",
-    "source_floor_below_min",
+    "source_diverse_floor_below_min",
 })
 _DEFAULT_REFRESH_TOP = _alpha_memo_int("refresh_top", 1)
 _DEFAULT_REFRESH_COOLDOWN_HOURS = _alpha_memo_float("refresh_cooldown_hours", 2.0)
@@ -4440,6 +4439,7 @@ def _source_literature_boundary_quality(
         papers,
         min_sources,
         strict_topic_coverage=publish_literature._non_biomedical(profile_slug),
+        profile_slug=profile_slug,
     )
     if require_substantive_sources and len(selected) >= min_sources:
         if publish_literature.substantive_fact_count(selected) < min_sources:
@@ -6559,6 +6559,7 @@ def run_cycle(
                 papers,
                 min_submit_sources,
                 strict_topic_coverage=publish_literature._non_biomedical(profile.slug),
+                profile_slug=profile.slug,
             )
             evidence_roles = [
                 publish_literature._paper_evidence_role(paper, literature_topic, profile.slug)

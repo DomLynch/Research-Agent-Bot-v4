@@ -1056,6 +1056,7 @@ def _source_literature_ready_papers(
         papers,
         MIN_DIRECT_SOURCES,
         strict_topic_coverage=publish_literature._non_biomedical(domain),
+        profile_slug=domain,
     )
     if publish_literature.substantive_fact_count(selected) < MIN_DIRECT_SOURCES:
         return [], "requires_fact_level_source_synthesis"
