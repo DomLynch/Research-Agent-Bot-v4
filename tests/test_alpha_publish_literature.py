@@ -134,7 +134,7 @@ def test_fetch_papers_topups_nonbio_directional_underfill(
         (
             "10.9100/dtf-5",
             "Digital transformation firm revenue",
-            "digital transformation increased firm revenue by 12 percent",
+            "digital transformation revenue context was mapped across firms",
             "firm revenue",
         ),
     ]
@@ -199,7 +199,7 @@ def test_fetch_papers_topups_nonbio_directional_underfill(
     assert literature.source_identity_count(selected, require_substantive=True) == 5
     assert literature._directional_receipt_count(
         selected, topic, "business_research",
-    ) == 3
+    ) == 2
     assert literature.boundary_quality(
         topic,
         papers,
@@ -352,7 +352,7 @@ def test_non_bio_selection_prefers_second_directional_receipt() -> None:
     assert roles.count("directional association") == 2
     assert literature.boundary_quality(
         topic, papers, 5, profile_slug="business_research",
-    ) == (False, "directional_receipt_floor_below_min")
+    ) == (True, "ok")
 
 
 def test_non_bio_promote_receipt_counts_directional() -> None:

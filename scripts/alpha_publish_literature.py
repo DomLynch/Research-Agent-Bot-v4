@@ -583,7 +583,12 @@ def boundary_quality(
             1 for paper in usable
             if _paper_evidence_role(paper, topic, profile_slug) in directional_roles
         )
-        if directional_count < required_directional:
+        fact_backed_map = (
+            source_identity_count(usable, require_substantive=True) >= min_sources
+            and substantive_fact_count(usable) >= min_sources
+            and directional_count >= 2
+        )
+        if directional_count < required_directional and not fact_backed_map:
             return False, "directional_receipt_floor_below_min"
     return True, "ok"
 

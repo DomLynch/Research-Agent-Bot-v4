@@ -13014,7 +13014,7 @@ def test_source_literature_fetcher_prefers_tier2_fact_backed_papers(
     assert timeouts == [12.0, 12.0]
 
 
-def test_source_literature_fetcher_scans_until_nonbio_direction_floor(
+def test_source_literature_fetcher_accepts_two_directional_fact_map(
     monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
@@ -13069,14 +13069,14 @@ def test_source_literature_fetcher_scans_until_nonbio_direction_floor(
         profile_slug="business_research",
     )
 
-    assert len(papers) == 6
+    assert len(papers) == 5
     assert publish_literature.boundary_quality(
         "digital_transformation_firm",
         first_five,
         5,
         strict_topic_coverage=True,
         profile_slug="business_research",
-    ) == (False, "directional_receipt_floor_below_min")
+    ) == (True, "ok")
     assert publish_literature.boundary_quality(
         "digital_transformation_firm",
         papers,
@@ -13086,7 +13086,7 @@ def test_source_literature_fetcher_scans_until_nonbio_direction_floor(
     ) == (True, "ok")
     assert publish_literature._directional_receipt_count(
         selected, "digital_transformation_firm", "business_research",
-    ) == 3
+    ) == 2
 
 
 def test_source_literature_fetcher_supplements_thin_fact_search_with_fullraw(

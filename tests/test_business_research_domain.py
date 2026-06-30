@@ -6758,7 +6758,7 @@ def test_business_source_literature_blocks_title_echo_fact_bundle() -> None:
     assert reason == "requires_fact_level_source_synthesis"
 
 
-def test_business_source_literature_requires_three_directional_receipts() -> None:
+def test_business_source_literature_allows_two_directional_fact_backed_map() -> None:
     papers = [
         {
             "title": "Digital transformation and firm profitability",
@@ -6802,6 +6802,54 @@ def test_business_source_literature_requires_three_directional_receipts() -> Non
                 },
             }
             for idx in range(1, 4)
+        ],
+    ]
+
+    ok, reason = publish_literature.boundary_quality(
+        "digital_transformation_firm",
+        papers,
+        5,
+        strict_topic_coverage=True,
+        profile_slug="business_research",
+    )
+
+    assert ok
+    assert reason == "ok"
+
+
+def test_business_source_literature_blocks_one_directional_receipt() -> None:
+    papers = [
+        {
+            "title": "Digital transformation and firm profitability",
+            "doi": "10.5555/dt-profit",
+            "source_fact": {
+                "canonical_phrase": (
+                    "digital transformation significantly increases firm profitability"
+                ),
+                "population": "listed firms",
+                "intervention": "digital transformation",
+                "endpoint": "firm profitability",
+            },
+        },
+        *[
+            {
+                "title": [
+                    "Digital transformation in firm operating models",
+                    "Firm digital transformation governance map",
+                    "Enterprise digital transformation adoption context",
+                    "Digital transformation adoption scope in firms",
+                ][idx - 1],
+                "doi": f"10.5555/dt-context-{idx}",
+                "source_fact": {
+                    "canonical_phrase": (
+                        f"implementation scope marker {idx} was documented across firms"
+                    ),
+                    "population": "firms",
+                    "intervention": "digital transformation",
+                    "endpoint": f"context marker {idx}",
+                },
+            }
+            for idx in range(1, 5)
         ],
     ]
 
