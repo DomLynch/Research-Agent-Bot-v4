@@ -27,7 +27,11 @@ from agent.business_research import (
     MIN_DIRECT_SOURCES,
     build_candidate_bundle,
     fetch_business_facts,
+    normalize_business_fact,
     write_candidate_run,
+)
+from agent.business_research import (
+    source_key as business_fact_source_key,
 )
 from agent.domain_profile import load_domain_profile
 from agent.researka_facts import tier2_domain
@@ -786,18 +790,65 @@ def _merge_source_literature_papers(
     *paper_sets: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     merged: list[dict[str, Any]] = []
-    seen: set[str] = set()
+    seen: dict[str, int] = {}
     for papers in paper_sets:
         for paper in papers:
             key = publish_literature.source_identity_key(paper) or _fullraw_hit_key(paper)
-            if not key or key in seen:
+            if not key:
                 continue
-            seen.add(key)
+            existing_idx = seen.get(key)
+            if existing_idx is not None:
+                existing = merged[existing_idx]
+                if (
+                    publish_literature.substantive_fact_count([paper]) > 0
+                    and publish_literature.substantive_fact_count([existing]) <= 0
+                ):
+                    merged[existing_idx] = paper
+                continue
+            seen[key] = len(merged)
             merged.append(paper)
     return sorted(
         merged,
         key=lambda paper: not publish_literature.substantive_fact_count([paper]),
     )
+
+
+def _business_fact_source_literature_papers(
+    facts: list[dict[str, Any]], *, topic: str, domain: str,
+) -> list[dict[str, Any]]:
+    papers: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for item in facts:
+        if not isinstance(item, dict):
+            continue
+        fact = normalize_business_fact(item, topic=topic, domain=domain)
+        key = business_fact_source_key(fact)
+        phrase = str(fact.get("canonical_phrase") or "").strip()
+        if not key or key in seen or not phrase:
+            continue
+        if fact.get("numeric_value") is None and fact.get("effect_size") is None:
+            continue
+        source_paper = fact.get("source_paper")
+        source_paper = source_paper if isinstance(source_paper, dict) else {}
+        title = str(source_paper.get("title") or phrase).strip()
+        source_fact = publish_literature.source_fact(fact | {"id": fact.get("fact_id") or key})
+        candidate = {
+            "id": key,
+            "title": title,
+            "paper_title": title,
+            "doi": source_paper.get("doi"),
+            "pmid": source_paper.get("pmid"),
+            "pmcid": source_paper.get("pmcid"),
+            "paper_id": source_paper.get("paper_id") or key,
+            "source_fact": source_fact,
+        }
+        if publish_literature.substantive_fact_count([candidate]) <= 0:
+            continue
+        if not publish_literature.topic_relevant(topic, candidate):
+            continue
+        seen.add(key)
+        papers.append(candidate)
+    return papers
 
 
 _SOURCE_COMPLETION_QUERY_STOP_TOKENS = _BROAD_SEED_TOKENS | frozenset({
@@ -1835,6 +1886,21 @@ def main() -> int:
                                 )
                             ):
                                 fullraw_papers = merged_papers
+                    fact_papers = _business_fact_source_literature_papers(
+                        facts, topic=topic, domain=domain,
+                    )
+                    if fact_papers:
+                        fullraw_papers = _merge_source_literature_papers(
+                            fullraw_papers, fact_papers,
+                        )
+                        fullraw_trace["db_fact_source_count"] = (
+                            publish_literature.substantive_fact_count(fact_papers)
+                        )
+                        fullraw_trace["db_fact_source_identity_count"] = (
+                            publish_literature.source_identity_count(
+                                fact_papers, require_substantive=True,
+                            )
+                        )
                     fullraw_keys: set[str] = set()
                     for paper in fullraw_papers:
                         key = str(

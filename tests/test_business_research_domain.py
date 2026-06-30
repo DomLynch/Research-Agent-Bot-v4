@@ -3681,6 +3681,107 @@ def test_business_sweep_rejects_complete_fullraw_without_five_citable_fact_sourc
     assert "source_fact_diversity_below_min" in row["blockers"]
 
 
+def test_business_sweep_uses_distinct_db_facts_to_complete_fullraw_bundle(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("economics_research")
+    runs_root = tmp_path / "runs"
+    topic = "minimum_wage_employment"
+    submissions: list[dict[str, Any]] = []
+    facts = [
+        {
+            "id": f"mw-{idx}",
+            "topic": "minimum wage employment",
+            "claim_type": "employment_estimate",
+            "numeric_value": idx,
+            "units": "percentage points",
+            "canonical_phrase": (
+                "Minimum wage policy changed employment outcomes in "
+                f"state labor market receipt {idx}."
+            ),
+            "population": "state labor markets",
+            "intervention": "minimum wage policy",
+            "comparator": "lower minimum wage baseline",
+            "outcome": "employment outcomes",
+            "metric": "employment",
+            "study_design": f"quasi experimental design {idx}",
+            "effect_size": idx,
+            "paper": {
+                "doi": f"10.6161/min-wage-{idx}",
+                "title": f"Minimum wage employment source {idx}",
+                "journal_name": "Labour Economics",
+                "publication_year": 2024,
+            },
+        }
+        for idx in range(5)
+    ]
+    metadata_papers = [
+        {
+            "title": f"Minimum wage employment source {idx}",
+            "doi": f"10.6161/min-wage-{idx}",
+        }
+        for idx in range(5)
+    ]
+
+    assert build_candidate_bundle(facts, topic=topic, domain="economics_research") is None
+
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        submissions.append(kwargs)
+        forced = kwargs["source_literature_forced_papers"][topic]
+        assert publish_literature.substantive_fact_count(forced) == 5
+        assert publish_literature.source_identity_count(
+            forced, require_substantive=True,
+        ) == 5
+        return {
+            "status": "submitted_to_researka",
+            "submitted": 1,
+            "published": 0,
+            "publish_summary": {
+                "status": "submitted_to_researka",
+                "submitted": 1,
+                "published": 0,
+                "top_blockers": {},
+                "next_action": "watch_decision_or_public_page",
+                "queue_counts": {"ready_to_publish": 1},
+                "public_url_status": None,
+            },
+        }
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("economics_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [topic])
+    monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: (
+        facts,
+        {"status": "ok", "facts": len(facts)},
+    ))
+    monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", lambda _topic: 0)
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", lambda _topic, **_kwargs: {
+        "status": "complete",
+        "paper_count": 5,
+        "shards_searched": 1525,
+        "partial_shard_search": False,
+        "sweep_failed_shards": 0,
+        "_papers": metadata_papers,
+    })
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "economics_research",
+        "--runs-root", str(runs_root),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-06-30T01-50-00Z",
+    ])
+
+    assert sweep.main() == 0
+    forced = submissions[0]["source_literature_forced_papers"][topic]
+    assert {paper["doi"] for paper in forced} == {
+        f"10.6161/min-wage-{idx}" for idx in range(5)
+    }
+
+
 def test_business_sweep_targets_near_ready_sources_to_complete_fact_gate(
     tmp_path: Path,
     monkeypatch: Any,
