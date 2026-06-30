@@ -4891,8 +4891,10 @@ def _source_literature_fetch_topics(topic: str) -> list[str]:
         if len(token) >= 3 and token not in (_DISCOVERY_PARENT_GENERIC_TOKENS | {"longevity"})
     ]
     topics = [topic]
-    for size in range(len(tokens) - 1, 1, -1):
-        core = tokens[:size]
+
+    def add_candidate(core: list[str]) -> None:
+        if len(core) < 2:
+            return
         candidates = []
         if domain_token and domain_token not in core:
             candidates.append("_".join([*core, domain_token]))
@@ -4901,6 +4903,12 @@ def _source_literature_fetch_topics(topic: str) -> list[str]:
         for candidate in candidates:
             if candidate and candidate not in topics:
                 topics.append(candidate)
+
+    for size in range(len(tokens) - 1, 1, -1):
+        add_candidate(tokens[:size])
+    if len(tokens) >= 4:
+        add_candidate([*tokens[:2], tokens[-1]])
+        add_candidate(tokens[-2:])
     if len(topics) == 1 and len(raw_tokens) >= 2:
         for pair in (raw_tokens[:2], raw_tokens[-2:]):
             candidate = "_".join(pair)

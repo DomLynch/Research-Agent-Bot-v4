@@ -14214,7 +14214,7 @@ def test_source_literature_fallback_derives_variant_from_blocked_rich_parent(
 
     def fetch(topic: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
         fetches.append(topic)
-        return variant_papers if topic == "supply_chain" else []
+        return variant_papers if topic == "supply_chain_performance" else []
 
     def submitter(payload: dict[str, Any]) -> dict[str, Any]:
         submissions.append(payload)
@@ -14242,9 +14242,9 @@ def test_source_literature_fallback_derives_variant_from_blocked_rich_parent(
         sleep=lambda _seconds: None,
     )
 
-    assert fetches == ["supply_chain"]
+    assert fetches == ["supply_chain", "supply_chain_performance"]
     assert ledger["source_literature_scan_reason"] == "blocked_parent_variant_expansion"
-    assert ledger["submitted_topic"] == "supply_chain"
+    assert ledger["submitted_topic"] == "supply_chain_performance"
     assert ledger["status"] == "submitted_to_researka"
     assert ledger["source_literature_fallback"]["selected_source_count"] == 5
     assert ledger["source_literature_fallback"]["selected_source_fact_count"] == 5
