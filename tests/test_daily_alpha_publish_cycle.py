@@ -15661,6 +15661,12 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         },
         non_bio=True,
     ) == "flexibility, collaboration, and agility antecedents"
+    assert "one firm performance receipt is a heterogeneous caveat" in payload["abstract"]
+    assert "not a general null" in payload["markdown"]
+    assert (
+        "do not pool them or treat antecedent/modeling rows as the same estimand"
+        in payload["markdown"]
+    )
     assert all(source.get("excerpt") for source in payload["source_bundle"])
     assert "unmatched metric-scope map" not in payload["title"]
     assert "source-scope boundary note" not in payload["title"]
@@ -15673,21 +15679,13 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "other/mixed: 5 receipt(s)" not in markdown
     assert "fallback" not in markdown.lower()
     assert "Bounded signal:" in markdown
-    assert (
-        "Metric imbalance disclosure: supply chain performance has directional "
-        "support across 3 receipt(s), while firm performance is represented by "
-        "one caveat/null receipt. The caveat is a scoping constraint, not a "
-        "strong null claim."
-    ) in markdown
-    assert markdown.count("Metric imbalance disclosure:") == 1
-    assert markdown.count("Cross-setting contrast:") == 1
-    assert markdown.count("Context-only classification:") == 1
-    assert (
-        "Population/setting counts are context descriptors only; they are not "
-        "weighting, pooling, or aggregation evidence."
-    ) in markdown
+    assert "Metric imbalance disclosure:" not in markdown
+    assert "strong null claim" not in markdown
+    assert "Cross-setting contrast:" not in markdown
+    assert "Context-only classification:" not in markdown
+    assert "Population/setting counts are context descriptors only" not in markdown
     assert "directional support for supply chain performance" in markdown
-    assert "firm performance is null or non-convergent" in markdown
+    assert "firm performance is null or non-convergent" not in markdown
     assert "not support for the topic as a whole" in markdown
     assert "direction-bearing receipts: 3" in markdown
     assert "context/antecedent/model receipts: 1 excluded from effect support" in markdown
@@ -15698,21 +15696,17 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "inside one matched industry, comparator, and metric frame" in markdown
     assert "Evidence weight: one effect-bearing receipt supports supply chain performance" not in markdown
     assert "Population/settings are separated as receipt context" in markdown
-    assert (
-        "Context-only classification: resilience scoring model is retained as adjacent "
-        "source context, not direction-bearing support"
-    ) in markdown
     assert "automotive firms" in markdown
     assert "chemical firms" in markdown
     assert "manufacturing firms" in markdown
     assert "Effect-support accounting: 1 of 5 receipt(s) is context/modeling-only" in markdown
     assert "Routing domain" not in markdown
     assert "directional association: 3 receipt(s)" in markdown
-    assert "Within-vs-across outcome rule: direction-bearing rows are" in markdown
+    assert "Within-vs-across outcome rule:" not in markdown
     assert "## Evidence matrix" in markdown
     assert "## Evidence role definitions" in markdown
     assert "## Directional grouping" not in markdown
-    assert "Concrete contrast:" in markdown
+    assert "Concrete contrast:" not in markdown
     assert (
         "Matrix guard: effect-bearing rows below are metric-specific source facts, "
         "not a pooled comparison; context-only rows are excluded from effect support."

@@ -1567,8 +1567,9 @@ def _bounded_signal_sentence(
     if non_bio and directional and nullish:
         return (
             f"Bounded signal: {topic_text} has directional support for "
-            f"{', '.join(directional[:2])}, while {', '.join(nullish[:2])} "
-            f"is null or non-convergent{f' across {family_text}' if family_text else ''}. "
+            f"{', '.join(directional[:2])}; one {', '.join(nullish[:2])} "
+            f"receipt is a heterogeneous caveat, not a general null"
+            f"{f' across {family_text}' if family_text else ''}. "
             "That supports a narrow scoping contrast, not support for the topic as a whole."
         )
     if non_bio and directional:
@@ -2125,7 +2126,6 @@ def payload(
         and _source_context_label(paper, non_bio=non_bio)
     })
     evidence_weight_note = ""
-    metric_imbalance_note = ""
     scope_integration_note = ""
     single_caveat_endpoint = join_contexts(nullish_endpoints[:2]) or "the caveat outcome"
     if thin_non_bio_scope:
@@ -2152,18 +2152,6 @@ def payload(
             "Integrated reading: the directional and caveat receipts are not matched "
             "on setting, design, and metric, so the bundle supports only a narrow "
             "scope contrast between the named outcomes."
-        )
-    if non_bio and multi_display_outcome and duplicated_directional_endpoints and nullish_count == 1:
-        repeated_endpoint, repeated_count = sorted(
-            duplicated_directional_endpoints,
-            key=lambda item: item[1],
-            reverse=True,
-        )[0]
-        metric_imbalance_note = (
-            f"Metric imbalance disclosure: {repeated_endpoint} has directional "
-            f"support across {repeated_count} receipt(s), while {single_caveat_endpoint} "
-            "is represented by one caveat/null receipt. The caveat is a scoping "
-            "constraint, not a strong null claim."
         )
     bounded_signal = _bounded_signal_sentence(
         topic, endpoints_by_label, non_bio=non_bio,
@@ -2213,8 +2201,6 @@ def payload(
             "integrated claim."
         )
     )
-    if metric_imbalance_note:
-        synthesis += f" {metric_imbalance_note}"
     if non_bio and populations:
         synthesis += (
             " Population/setting counts are context descriptors only; they are "
@@ -2301,7 +2287,19 @@ def payload(
         synthesis += " " + contrast_text
     if cross_setting_text:
         synthesis += " " + cross_setting_text
-    source_synthesis_note = synthesis if non_bio else ""
+    if non_bio:
+        source_synthesis_note = (
+            "Interpretation: keep direction-bearing, caveat, and context/model "
+            "rows separate; do not pool them or treat antecedent/modeling rows as "
+            "the same estimand."
+        )
+        if nullish_count == 1 and single_caveat_endpoint:
+            source_synthesis_note += (
+                f" The {single_caveat_endpoint} caveat is based on one heterogeneous "
+                "receipt, so it is not a general null for that outcome family."
+            )
+    else:
+        source_synthesis_note = ""
     abstract_text = (
         f"{topic}: one receipt supports {join_contexts(directional_endpoints[:2])}; "
         f"one separate receipt is null or non-convergent for "
@@ -2383,7 +2381,7 @@ def payload(
     )
     extra_source_notes = [
         note for note in (
-            cross_setting_text, metric_imbalance_note, context_only_note,
+            cross_setting_text, context_only_note,
         )
         if note and not source_synthesis_note
     ]
