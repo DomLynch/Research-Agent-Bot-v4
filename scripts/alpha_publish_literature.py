@@ -39,6 +39,25 @@ def _int_env_floor(name: str, fallback: str | None, floor: int) -> str:
         return str(max(floor, int(os.environ.get(name, fallback or str(floor)))))
     except (TypeError, ValueError):
         return str(floor)
+
+
+def _fullraw_max_variants() -> int:
+    for name in (
+        _FULLRAW_MAX_VARIANTS_ENV,
+        "TOPIC_DISCOVERY_FULLRAW_SUPPLY_MAX_VARIANTS",
+        "V5_MEMO_FULL_RAW_MAX_VARIANTS",
+        "RESEARKA_FULLRAW_MAX_VARIANTS",
+    ):
+        raw = os.environ.get(name)
+        if raw is None:
+            continue
+        try:
+            return max(1, int(raw))
+        except (TypeError, ValueError):
+            continue
+    return 2
+
+
 _LONGEVITY_CONTEXT_TOKENS = frozenset({
     "ageing", "aging", "longevity", "lifespan", "senescence", "geroscience",
     "mortality", "survival", "frailty", "biological", "epigenetic", "clock",
@@ -213,13 +232,18 @@ def _fullraw_topic_papers(topic: str, limit: int) -> list[Json]:
     max_variants = os.environ.get(
         _FULLRAW_MAX_VARIANTS_ENV,
         os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_MAX_VARIANTS",
-                       os.environ.get("V5_MEMO_FULL_RAW_MAX_VARIANTS", "2")),
+                       os.environ.get(
+                           "V5_MEMO_FULL_RAW_MAX_VARIANTS",
+                           os.environ.get("RESEARKA_FULLRAW_MAX_VARIANTS", "2"),
+                       )),
     )
     bounds = {
         "TOPIC_DISCOVERY_V5_TIMEOUT_SECONDS": timeout,
         "TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS": timeout,
         "TOPIC_DISCOVERY_SEED_PAPER_TIMEOUT_SECONDS": timeout,
         "TOPIC_DISCOVERY_SEED_PAPER_BUDGET_SECONDS": budget,
+        "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS": budget,
+        "TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS": sweep_wait,
         "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS": budget,
         "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS": sweep_wait,
         "TOPIC_DISCOVERY_V5_MAX_VARIANTS": max_variants,
@@ -252,7 +276,7 @@ def _fullraw_topic_papers(topic: str, limit: int) -> list[Json]:
 
 def _fullraw_relevant_papers(topic: str, limit: int, seen: set[str]) -> list[Json]:
     out: list[Json] = []
-    for query in query_variants(topic):
+    for query in query_variants(topic)[:_fullraw_max_variants()]:
         for paper in _fullraw_topic_papers(query, max(25, limit * 6)):
             if not isinstance(paper, dict):
                 continue

@@ -12030,6 +12030,8 @@ def test_source_literature_fullraw_fetch_uses_separate_query_budget(
             "TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS",
             "TOPIC_DISCOVERY_SEED_PAPER_TIMEOUT_SECONDS",
             "TOPIC_DISCOVERY_SEED_PAPER_BUDGET_SECONDS",
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS",
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS",
             "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
             "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS",
             "TOPIC_DISCOVERY_V5_MAX_VARIANTS",
@@ -12056,6 +12058,8 @@ def test_source_literature_fullraw_fetch_uses_separate_query_budget(
         "TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS": "7",
         "TOPIC_DISCOVERY_SEED_PAPER_TIMEOUT_SECONDS": "7",
         "TOPIC_DISCOVERY_SEED_PAPER_BUDGET_SECONDS": "88",
+        "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS": "88",
+        "TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS": "9",
         "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS": "88",
         "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS": "9",
         "TOPIC_DISCOVERY_V5_MAX_VARIANTS": "3",
@@ -12077,6 +12081,8 @@ def test_source_literature_fullraw_fetch_defaults_to_supply_bounds(
     def fake_seed_fullraw_papers(*_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
         for key in (
             "TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS",
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS",
+            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS",
             "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS",
             "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS",
             "TOPIC_DISCOVERY_V5_MAX_VARIANTS",
@@ -12096,6 +12102,8 @@ def test_source_literature_fullraw_fetch_defaults_to_supply_bounds(
     assert publish_literature._fullraw_topic_papers("plant based diet", 5) == []
     assert seen == {
         "TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS": "120",
+        "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS": "300",
+        "TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS": "120",
         "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS": "300",
         "TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS": "120",
         "TOPIC_DISCOVERY_V5_MAX_VARIANTS": "4",

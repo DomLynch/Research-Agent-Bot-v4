@@ -180,3 +180,21 @@ def test_select_boundary_papers_preserves_fact_backed_floor_before_metadata() ->
         paper["source_fact"]["source_tier"] == "fullraw_abstract"
         for paper in selected
     )
+
+
+def test_fullraw_relevant_papers_honors_researka_variant_cap(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    calls: list[str] = []
+
+    def fullraw(query: str, _limit: int) -> list[dict[str, Any]]:
+        calls.append(query)
+        return []
+
+    monkeypatch.setenv("RESEARKA_FULLRAW_MAX_VARIANTS", "1")
+    monkeypatch.setattr(literature, "_fullraw_topic_papers", fullraw)
+
+    assert literature._fullraw_relevant_papers(
+        "platform_strategy_network_effects", 5, set(),
+    ) == []
+    assert calls == ["platform strategy network performance"]
