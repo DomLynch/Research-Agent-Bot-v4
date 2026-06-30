@@ -11577,6 +11577,105 @@ def test_source_literature_fallback_skips_exact_submitted_memo(
     assert ledger["submitted_topic"] == "fresh_boundary"
 
 
+def test_source_literature_fallback_resubmits_parented_terminal_duplicate(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
+    root = tmp_path / "repo"
+    topic = "usable_boundary"
+    ledger_dir = root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "writer_configured": False,
+        "mimo_model": "",
+        "mimo_base_url": "",
+    })())
+    papers = _usable_boundary_papers()
+    old_candidate, _old_payload = daily._source_literature_payload(
+        profile_slug="longevity_research",
+        topic=topic,
+        papers=papers,
+        runs_root=root,
+        date="2026-06-10T17-00-00Z",
+    )
+    fp = str(old_candidate.get("memo_fingerprint") or "")
+    daily._write_json(ledger_dir / "_submitted_fingerprints.json", [{
+        "date": "2026-06-10T17-00-00Z",
+        "domain": old_candidate.get("domain"),
+        "topic": topic,
+        "run_dir": old_candidate.get("run_dir"),
+        "fingerprint": fp,
+        "memo_sha256": daily._memo_sha256(old_candidate, root),
+        "submission_id": "sub-clean-old",
+    }])
+    daily._write_json(ledger_dir / "2026-06-10T17-00-00Z.json", {
+        "domain": {"slug": "longevity_research"},
+        "submitted": 1,
+        "submission_id": "sub-clean-old",
+        "candidate": {
+            "topic": topic,
+            "run_dir": old_candidate.get("run_dir"),
+            "fingerprint": fp,
+        },
+        "researka_decision": {
+            "decision": "revise",
+            "claim_support_verdict": "supported",
+            "notes": ["editorial decision is terminal; external author must resubmit"],
+            "resubmission": {"allowed": True},
+        },
+    })
+    daily._write_json(ledger_dir / "2026-06-10T17-30-00Z.json", {
+        "domain": {"slug": "longevity_research"},
+        "source_literature_fallback": {
+            "topic": topic,
+            "status": "blocked",
+            "reason": "source_fact_diversity_below_min",
+        },
+    })
+    submitted_payloads: list[dict[str, Any]] = []
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submitted_payloads.append(payload)
+        return {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": "sub-clean-new"}},
+        }
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-10T18-00-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        source_paper_fetcher=lambda _topic, _limit: papers,
+        source_literature_priority_topics=[topic],
+        submitter=submitter,
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert len(submitted_payloads) == 1
+    assert submitted_payloads[0]["object_type"] == "rebuttal"
+    assert submitted_payloads[0]["parent_submission_id"] == "sub-clean-old"
+    assert submitted_payloads[0]["metadata"]["revision_of"] == "sub-clean-old"
+    assert ledger["source_literature_fallback_attempts"][0]["repair_submission"] is True
+    assert (
+        ledger["source_literature_fallback_attempts"][0][
+            "duplicate_resubmission_allowed"
+        ]
+        is True
+    )
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == topic
+
+
 def test_source_literature_fallback_records_reviewer_revise_decision(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

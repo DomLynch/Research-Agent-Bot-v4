@@ -2609,6 +2609,13 @@ def _source_literature_clean_terminal_resubmit(decision: Json) -> bool:
     )
 
 
+def _source_literature_parented_terminal_resubmit(decision: Json) -> bool:
+    return (
+        _source_literature_clean_terminal_resubmit(decision)
+        and bool(_resubmission_parent_submission_id(decision))
+    )
+
+
 def _source_literature_source_scope_repair_needed(
     runs_root: Path, domain: str | None, topic: str, decision: Json,
 ) -> bool:
@@ -2678,8 +2685,12 @@ def _repairable_source_literature_decisions(
             topic = candidate_topic or _source_literature_topic_from_run(run_ref)
             if not topic or topic in decisions or topic in checked_topics:
                 continue
-            if topic in structurally_blocked or _family_blocked_topic(
-                topic, structurally_blocked,
+            if (
+                not _source_literature_parented_terminal_resubmit(decision)
+                and (
+                    topic in structurally_blocked
+                    or _family_blocked_topic(topic, structurally_blocked)
+                )
             ):
                 continue
             if topic in published or _family_blocked_topic(topic, published):
@@ -6643,10 +6654,16 @@ def run_cycle(
                 if fingerprint and _same_memo_seen(
                     submitted_path, fingerprint, _memo_sha256(candidate, runs_root), profile.slug,
                 ):
-                    fallback_attempt["status"] = "blocked"
-                    fallback_attempt["reason"] = "duplicate_submission_fingerprint"
-                    fallback_attempt["fingerprint"] = fingerprint
-                    continue
+                    if _source_literature_parented_terminal_resubmit(repair_decision):
+                        fallback_attempt["duplicate_resubmission_allowed"] = True
+                        fallback_attempt["parent_submission_id"] = (
+                            _resubmission_parent_submission_id(repair_decision)
+                        )
+                    else:
+                        fallback_attempt["status"] = "blocked"
+                        fallback_attempt["reason"] = "duplicate_submission_fingerprint"
+                        fallback_attempt["fingerprint"] = fingerprint
+                        continue
                 if len(payload.get("source_bundle") or []) < min_submit_sources:
                     fallback_attempt["status"] = "blocked"
                     fallback_attempt["reason"] = "source_bundle_below_min"
