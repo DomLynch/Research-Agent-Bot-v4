@@ -14737,6 +14737,8 @@ def test_source_literature_payload_is_deterministic_boundary_only(
     assert "## Selection criteria" in payload["markdown"]
     assert "without establishing" in payload["markdown"]
     assert "## Context separation" in payload["markdown"]
+    assert "## What would weaken this" in payload["markdown"]
+    assert "five citable, fact-backed receipts" in payload["markdown"]
     assert "## Next gaps" in payload["markdown"]
     assert "primary; 2024" in payload["markdown"]
     assert writer["status"] == "skipped"
@@ -14749,6 +14751,7 @@ def test_source_literature_payload_is_deterministic_boundary_only(
     assert len(payload["evidence_bundle"]["source_papers"]) == 5
     assert len(payload["evidence_bundle"]["direct_source_papers"]) == 5
     assert payload["evidence_bundle"]["context_source_count"] == 0
+    assert payload["evidence_bundle"]["context_sources_are_not_direct_support"] is False
     assert sidecar["content_hash"] == writer["content_hash"]
     assert (run_dir / "source_literature_memo.md").read_text(
         encoding="utf-8",
@@ -15638,6 +15641,8 @@ def test_source_literature_payload_collapses_business_context_rows(
     assert publish_literature.source_identity_count(
         source_bundle, require_substantive=True,
     ) == 5
+    assert payload["evidence_bundle"]["context_source_count"] == 3
+    assert payload["evidence_bundle"]["context_sources_are_not_direct_support"] is True
     assert payload["abstract"].startswith(
         "digital transformation firm: Bounded signal:",
     )

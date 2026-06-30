@@ -2401,6 +2401,19 @@ def payload(
             f"the source scope here is defined by the selected {topic} receipts."
         )
     )
+    weakening_note = (
+        "This scoping signal would weaken if a matched rerun finds five citable, "
+        "fact-backed receipts in one setting and metric frame that remove the "
+        "reported boundary, if the direction-bearing rows fail to reproduce within "
+        "their named metric family, or if the context-only rows are the only "
+        "topic-overlapping receipts."
+        if non_bio else
+        "This scoping signal would weaken if a matched rerun finds five citable, "
+        "fact-backed receipts in one population, intervention, and endpoint frame "
+        "that remove the reported boundary, if the direction-bearing rows fail to "
+        "reproduce within their named endpoint family, or if the context-only rows "
+        "are the only topic-overlapping receipts."
+    )
     lines.extend([
         "",
         "## Source synthesis",
@@ -2492,6 +2505,10 @@ def payload(
         ),
         routing_boundary_note,
         "",
+        "## What would weaken this",
+        "",
+        f"- {weakening_note}",
+        "",
         "## Next gaps",
         "",
         *next_gaps,
@@ -2567,8 +2584,8 @@ def payload(
         "source_bundle_count": len(bundle),
         "bound_source_count": len(selected),
         "direct_source_count": len(bundle),
-        "context_source_count": 0,
-        "context_sources_are_not_direct_support": False,
+        "context_source_count": context_only_count if non_bio else 0,
+        "context_sources_are_not_direct_support": bool(non_bio and context_only_count),
         "source_diversity": source_diversity,
         "source_literature_writer": writer_meta,
     }
