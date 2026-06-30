@@ -11785,6 +11785,159 @@ def test_source_literature_fallback_widens_scan_after_recent_duplicate(
     assert ledger["submitted_topic"] == "fresh_boundary"
 
 
+def test_source_literature_fallback_skips_recent_underfilled_attempts_after_duplicate(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
+    root = tmp_path / "repo"
+    monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
+        "writer_configured": False,
+        "mimo_model": "",
+        "mimo_base_url": "",
+    })())
+    duplicate_papers = _usable_boundary_papers()
+    fresh_papers = [
+        {
+            "title": title,
+            "doi": f"10.1234/skip-fresh-{idx}",
+            "source_fact": {
+                "canonical_phrase": f"cellular resilience skip fact {idx}",
+                "population": "adult source context",
+                "intervention": "cellular resilience",
+                "endpoint": "aging signal",
+            },
+        }
+        for idx, title in enumerate((
+            "Cellular resilience aging metabolism",
+            "Cellular resilience inflammation evidence",
+            "Cellular resilience mitochondrial stress",
+            "Cellular resilience proteostasis response",
+            "Cellular resilience senescence markers",
+        ))
+    ]
+    thin_papers = [
+        {
+            "title": f"Thin skipped source {idx}",
+            "doi": f"10.1234/skip-thin-{idx}",
+        }
+        for idx in range(4)
+    ]
+    old_candidate, _old_payload = daily._source_literature_payload(
+        profile_slug="longevity_research",
+        topic="usable_boundary",
+        papers=duplicate_papers,
+        runs_root=root,
+        date="2026-06-10T17-00-00Z",
+    )
+    fp = str(old_candidate.get("memo_fingerprint") or "")
+    ledger_dir = root / "_daily_ledger"
+    daily._write_json(ledger_dir / "_submitted_fingerprints.json", [{
+        "date": "2026-06-10T17-00-00Z",
+        "domain": old_candidate.get("domain"),
+        "topic": "usable_boundary",
+        "run_dir": old_candidate.get("run_dir"),
+        "fingerprint": fp,
+        "memo_sha256": daily._memo_sha256(old_candidate, root),
+        "submission_id": "old-sub",
+    }])
+    daily._write_json(ledger_dir / "2026-06-10T17-30-00Z.json", {
+        "domain": {"slug": "longevity_research"},
+        "source_literature_fallback_attempts": [
+            {
+                "topic": "thin_boundary_0",
+                "status": "blocked",
+                "reason": "source_floor_below_min",
+            },
+            {
+                "topic": "thin_boundary_1",
+                "status": "blocked",
+                "reason": "requires_fact_level_source_synthesis",
+            },
+        ],
+    })
+    (root / "_topics_discovery").mkdir(parents=True)
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [
+            {
+                "topic": "usable_boundary",
+                "paper_count": 5,
+                "fact_source_count": 5,
+                "source_papers": duplicate_papers,
+            },
+            {
+                "topic": "thin_boundary_0",
+                "paper_count": 5,
+                "fact_source_count": 5,
+                "source_papers": thin_papers,
+            },
+            {
+                "topic": "thin_boundary_1",
+                "paper_count": 5,
+                "fact_source_count": 5,
+                "source_papers": thin_papers,
+            },
+            {
+                "topic": "cellular_resilience",
+                "paper_count": 5,
+                "fact_source_count": 5,
+                "source_papers": fresh_papers,
+            },
+        ],
+    })
+    live_fetches: list[str] = []
+    submissions: list[str] = []
+
+    def live_fetch(topic: str, *_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        live_fetches.append(topic)
+        return thin_papers
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submissions.append(str(payload.get("topic") or ""))
+        return {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": "sub-fresh"}},
+        }
+
+    monkeypatch.setattr(daily, "_fetch_source_literature_papers", live_fetch)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-10T18-00-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        source_literature_priority_topics=["usable_boundary"],
+        submitter=submitter,
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/fresh"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Fresh</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    attempted_topics = [
+        str(row.get("topic") or "")
+        for row in ledger["source_literature_fallback_attempts"]
+    ]
+    assert ledger["recent_source_floor_topics_blocked"] == [
+        "thin_boundary_0", "thin_boundary_1",
+    ]
+    assert "thin_boundary_0" not in attempted_topics
+    assert "thin_boundary_1" not in attempted_topics
+    assert live_fetches == []
+    assert submissions == ["cellular_resilience"]
+    assert [row["reason"] for row in ledger["source_literature_fallback_attempts"]] == [
+        "duplicate_submission_fingerprint", "ok",
+    ]
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "cellular_resilience"
+
+
 def test_source_literature_fallback_writes_submitted_before_decision_poll(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

@@ -2998,6 +2998,7 @@ def _recent_negative_topics(
 
 def _recent_source_floor_topics(
     ledger_dir: Path, *, days: int, domain: str | None = None,
+    source_literature_only: bool = False,
 ) -> set[str]:
     cutoff = time.time() - (max(0, days) * 86400)
     topics: set[str] = set()
@@ -3021,10 +3022,29 @@ def _recent_source_floor_topics(
         ledger = _json(path, {})
         if not isinstance(ledger, dict) or not _same_domain(_ledger_domain(ledger), domain):
             continue
-        remember(ledger.get("source_floor_refresh_topics"))
-        for batch in ledger.get("refresh_batches") or []:
-            if isinstance(batch, dict):
-                remember(batch.get("skipped_below_source_floor"))
+        if not source_literature_only:
+            remember(ledger.get("source_floor_refresh_topics"))
+            for batch in ledger.get("refresh_batches") or []:
+                if isinstance(batch, dict):
+                    remember(batch.get("skipped_below_source_floor"))
+        attempts: list[Any] = []
+        fallback = ledger.get("source_literature_fallback")
+        if isinstance(fallback, dict):
+            attempts.append(fallback)
+        raw_attempts = ledger.get("source_literature_fallback_attempts")
+        if isinstance(raw_attempts, list):
+            attempts.extend(raw_attempts)
+        for attempt in attempts:
+            if not isinstance(attempt, dict):
+                continue
+            if str(attempt.get("reason") or "") not in {
+                "source_floor_below_min",
+                "direct_source_floor_below_min",
+                "source_bundle_below_min",
+                "requires_fact_level_source_synthesis",
+            }:
+                continue
+            remember(str(attempt.get("topic") or ""))
     return topics
 
 
@@ -5824,6 +5844,10 @@ def run_cycle(
         submitted_path.parent, days=min(published_topic_cooldown_days, 2),
         domain=profile.slug,
     )
+    source_literature_source_floor_blocked_topics = _recent_source_floor_topics(
+        submitted_path.parent, days=min(published_topic_cooldown_days, 2),
+        domain=profile.slug, source_literature_only=True,
+    )
     blocked_topics = (
         published_blocked_topics
         | submitted_blocked_topics
@@ -5831,7 +5855,10 @@ def run_cycle(
         | source_floor_blocked_topics
     )
     source_literature_blocked_topics = (
-        published_blocked_topics | submitted_blocked_topics | negative_blocked_topics
+        published_blocked_topics
+        | submitted_blocked_topics
+        | negative_blocked_topics
+        | source_literature_source_floor_blocked_topics
     )
     source_literature_soft_blocked_topics = negative_blocked_topics
     ledger["recently_published_topics_blocked"] = sorted(published_blocked_topics)
