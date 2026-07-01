@@ -105,7 +105,6 @@ class TopicCandidate:
                 "sub_topic": self.sub_topic,
                 "claim_type": self.claim_type}
 
-
 @lru_cache(maxsize=1)
 def load_seed_topics(path: Path | None = None) -> tuple[str, ...]:
     """Load seed topic list from TOML. Cached. Returns () on error."""
@@ -1208,6 +1207,7 @@ def _fetch_fullraw_topic_papers(topic: str, *, client: httpx.Client, limit: int 
     for _ in polls:
         try:
             response = client.post(url, headers={"Authorization": f"Bearer {token}"} if token else {}, json=payload, timeout=timeout + 2.0)
+            payload["queue_if_missing"] = False
             data = response.json()
             has_receipt_error = isinstance(data, dict) and (data.get("shard_receipt") or data.get("receipt"))
             if response.is_error and not has_receipt_error:

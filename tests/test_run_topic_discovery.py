@@ -416,18 +416,13 @@ def test_seed_fullraw_default_polls_until_budget_not_derived_attempts(
         lambda seconds: now.__setitem__(0, now[0] + seconds),
     )
     calls = 0
+    payloads: list[dict[str, Any]] = []
 
     def handler(req: Any) -> Any:
         nonlocal calls
         calls += 1
         body = json.loads(req.content.decode("utf-8"))
-        assert body == {
-            "query": "metformin longevity",
-            "limit": 10,
-            "rank_mode": "relevance",
-            "cache_only": True,
-            "queue_if_missing": True,
-        }
+        payloads.append(body)
         if calls < 3:
             return run_topic_discovery.httpx.Response(200, json={
                 "meta": {"async_sweep": {"status": "queued", "shard_limit": 1525}},
@@ -445,6 +440,18 @@ def test_seed_fullraw_default_polls_until_budget_not_derived_attempts(
         )
 
     assert calls == 3
+    base_payload = {
+        "query": "metformin longevity",
+        "limit": 10,
+        "rank_mode": "relevance",
+        "cache_only": True,
+    }
+    assert payloads[0] == {**base_payload, "queue_if_missing": True}
+    assert payloads[1:]
+    assert all(
+        payload == {**base_payload, "queue_if_missing": False}
+        for payload in payloads[1:]
+    )
     assert papers[0]["title"] == "Complete budget-polled result"
 
 
