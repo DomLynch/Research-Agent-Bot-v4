@@ -2162,6 +2162,12 @@ def payload(
         in {"null/mixed", "null/non-convergent"}
     )
     context_only_count = len(selected) - directional_count - nullish_count
+    context_heavy_non_bio_scope = (
+        non_bio
+        and context_only_count >= 2
+        and directional_count <= min(3, len(selected))
+        and bool(directional_endpoints)
+    )
     context_only_note = (
         "Context-only classification: "
         f"context-only endpoints ({join_contexts(context_only_endpoints[:3])}) remain adjacent source "
@@ -2229,6 +2235,13 @@ def payload(
         topic, endpoints_by_label, non_bio=non_bio,
         outcome_families=display_outcome_families,
     )
+    if context_heavy_non_bio_scope:
+        bounded_signal = (
+            f"Source-scope map: {directional_count} of {len(selected)} receipts are "
+            f"direction-bearing for {join_contexts(directional_endpoints[:3])}; "
+            f"{context_only_count} adjacent receipts remain context-only. This is "
+            "not a comparator claim, pooled effect, or broad market signal."
+        )
     directions = [_paper_effect_direction(paper, topic) for paper in selected]
     all_favorable = bool(directions) and all(
         direction == "directionally favorable" for direction in directions
@@ -2239,6 +2252,8 @@ def payload(
         and "non-clinical/predictive" in direction_text
     )
     lead = (
+        f"This receipt-backed source-scope note maps a heterogeneous source set for {topic_label}: "
+        if context_heavy_non_bio_scope else
         f"This memo makes a narrow source-grounded scope claim for {topic_label}, "
         "not a pooled effect synthesis: "
         if thin_non_bio_scope else
@@ -2309,7 +2324,7 @@ def payload(
         )
     if non_bio and populations:
         synthesis += f" Named setting scope includes {join_contexts(populations[:5])}."
-    if non_bio and primary_duplicated_endpoint:
+    if non_bio and primary_duplicated_endpoint and not context_heavy_non_bio_scope:
         comparator_endpoints = [
             endpoint for endpoint in directional_endpoints
             if endpoint != primary_duplicated_endpoint
@@ -2322,7 +2337,13 @@ def payload(
                 "the memo tests outcome-specific divergence, not one topic-level effect."
             )
     if non_bio_signal_parts:
-        signal_heading = "Substantive map" if non_bio and len(directional_endpoints) > 1 else "Substantive signal"
+        signal_heading = (
+            "Source-scope map"
+            if context_heavy_non_bio_scope else
+            "Substantive map"
+            if non_bio and len(directional_endpoints) > 1 else
+            "Substantive signal"
+        )
         synthesis += f" {signal_heading}: " + "; ".join(non_bio_signal_parts) + "."
     if non_bio and context_only_note:
         synthesis += f" {context_only_note}"
@@ -2404,7 +2425,16 @@ def payload(
         "only, so this is a scoping contrast rather than a generalized effect."
         if thin_non_bio_scope else synthesis
     )
-    if non_bio and not thin_non_bio_scope:
+    if context_heavy_non_bio_scope:
+        abstract_text = (
+            f"{topic_label}: Source-scope map: {directional_count} of "
+            f"{len(selected)} receipts are direction-bearing for "
+            f"{join_contexts(directional_endpoints[:3])}; {context_only_count} "
+            "adjacent receipts remain context-only. This is a source-bundle "
+            "scoping map, not a comparator claim, pooled effect, or broad market "
+            "signal."
+        )
+    elif non_bio and not thin_non_bio_scope:
         abstract_text = (
             f"{topic_label}: {bounded_signal} Context-only rows are "
             "adjacent scope, not effect support; no pooled causal, policy-prescriptive, "
@@ -2636,6 +2666,8 @@ def payload(
         if endpoint != primary_duplicated_endpoint
     ]
     title_tail = (
+        f"source-scope map across {join_contexts(title_directional_endpoints[:3])} receipts"
+        if context_heavy_non_bio_scope else
         (
             f"directional support for {primary_duplicated_endpoint} across "
             f"{directional_endpoint_counts.get(primary_duplicated_endpoint, directional_count)} "

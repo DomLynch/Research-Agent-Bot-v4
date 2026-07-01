@@ -16220,14 +16220,15 @@ def test_source_literature_payload_does_not_overclaim_context_only_receipts(
         payload["markdown"],
     ))
     assert payload["title"] == (
-        "digital transformation: non-poolable direction-bearing cells for "
-        "firm environmental performance and firm profitability"
+        "digital transformation: source-scope map across firm environmental "
+        "performance and firm profitability receipts"
     )
     assert "direction-bearing map across" not in public_text
     assert "direction-bearing evidence across" not in public_text
-    assert "has separate direction-bearing receipts for" in payload["abstract"]
-    assert "non-poolable metric cells" in payload["abstract"]
-    assert "context-only endpoints" in payload["abstract"]
+    assert "has separate direction-bearing receipts for" not in public_text
+    assert "comparator outcomes" not in public_text
+    assert "Source-scope map:" in payload["abstract"]
+    assert "not a comparator claim" in payload["abstract"]
     assert payload["evidence_bundle"]["source_bundle_count"] == 5
     assert payload["evidence_bundle"]["source_diversity"]["source_identity_count"] == 5
     assert payload["evidence_bundle"]["source_diversity"]["source_outlet_count"] == 5
@@ -16962,10 +16963,10 @@ def test_source_literature_payload_collapses_business_context_rows(
     assert payload["evidence_bundle"]["context_source_count"] == 3
     assert payload["evidence_bundle"]["context_sources_are_not_direct_support"] is True
     assert payload["abstract"].startswith(
-        "digital transformation: Bounded signal:",
+        "digital transformation: Source-scope map:",
     )
     assert "direction-bearing evidence across" not in payload["abstract"]
-    assert "non-poolable metric cells" in payload["abstract"]
+    assert "not a comparator claim" in payload["abstract"]
     assert "This receipt-backed scoping note" not in payload["abstract"]
     assert "non-directional caveat" not in markdown
     assert "- metric-scope caveat:" not in markdown
@@ -16978,12 +16979,8 @@ def test_source_literature_payload_collapses_business_context_rows(
         "Direction labels for audit: context-only receipt: 3 receipt(s) | "
         "directional association: 2 receipt(s)."
     ) in markdown
-    assert (
-        markdown.count(
-            "This receipt-backed scoping note maps separate non-poolable metric cells",
-        )
-        == 1
-    )
+    assert "This receipt-backed source-scope note maps a heterogeneous source set" in markdown
+    assert "maps separate non-poolable metric cells" not in markdown
     assert (
         "Audit note: effect-bearing rows stay metric-specific; context-only rows "
         "are excluded from effect support"
@@ -16993,6 +16990,106 @@ def test_source_literature_payload_collapses_business_context_rows(
         "technologies"
     ) in markdown
     assert "primary; 2019" in markdown
+
+
+def test_source_literature_payload_scopes_three_directional_two_context_rows(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    rows = [
+        (
+            "Digital Transformation and Firm Environmental Performance",
+            "10.17323/j.jcfr.2073-0438.19.3.2025.5-18",
+            2025,
+            "Journal A",
+            "digital transformation significantly enhances firm environmental performance",
+            "firms",
+            "digital transformation",
+            "environmental performance",
+        ),
+        (
+            "Effects of digital transformation on firm performance",
+            "10.1016/j.heliyon.2024.e27725",
+            2024,
+            "Heliyon",
+            (
+                "Results confirm a positive effect of IT capabilities on firm performance "
+                "through digital transformation"
+            ),
+            "firms",
+            "IT capabilities and digital transformation",
+            "firm performance",
+        ),
+        (
+            "Digital transformation: harnessing digital technologies for services",
+            "10.1108/jsm-01-2019-0034",
+            2019,
+            "Journal of Services Marketing",
+            "71 percent of banking firms report big data provides a competitive advantage",
+            "banking firms",
+            "big data capability",
+            "competitive advantage",
+        ),
+        (
+            "Assessing the mediating role of human capital in digital transformation",
+            "10.1108/jmtm-02-2025-0122",
+            2025,
+            "Journal of Manufacturing Technology Management",
+            "digital capabilities and management support substantially affect digital transformation",
+            "firms",
+            "digital capabilities and management support",
+            "digital transformation antecedents",
+        ),
+        (
+            "The Impact of Digital Transformation on Firm Profitability",
+            "10.64753/jcasc.v10i4.3152",
+            2025,
+            "Journal of Cultural Analysis and Social Change",
+            "digital transformation significantly increases return on assets",
+            "firms",
+            "digital transformation",
+            "firm performance",
+        ),
+    ]
+    papers = [
+        {
+            "title": title,
+            "doi": doi,
+            "year": year,
+            "journal_name": journal,
+            "source_fact": {
+                "canonical_phrase": phrase,
+                "population": population,
+                "intervention": intervention,
+                "endpoint": endpoint,
+            },
+        }
+        for title, doi, year, journal, phrase, population, intervention, endpoint in rows
+    ]
+
+    _candidate, payload = daily._source_literature_payload(
+        profile_slug="business_research",
+        topic="digital_transformation_firm",
+        papers=papers,
+        runs_root=root,
+        date="2026-07-01T08-13-42Z",
+    )
+
+    public_text = " ".join((
+        payload["title"],
+        payload["abstract"],
+        payload["markdown"],
+    ))
+    assert payload["title"] == (
+        "digital transformation: source-scope map across environmental "
+        "performance and firm performance receipts"
+    )
+    assert "comparator outcomes" not in public_text
+    assert "Bounded research signal" not in public_text
+    assert "has separate direction-bearing receipts for" not in public_text
+    assert "not a comparator claim" in payload["abstract"]
+    assert "direction-bearing receipts: 3" in payload["markdown"]
+    assert "context/antecedent/model receipts: 2 excluded from effect support" in payload["markdown"]
 
 
 def test_source_literature_endpoint_label_does_not_promote_topic_as_outcome() -> None:
