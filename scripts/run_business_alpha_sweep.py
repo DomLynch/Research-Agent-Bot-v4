@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import fcntl
+import hashlib
 import importlib
 import json
 import math
@@ -1942,6 +1943,47 @@ def _cached_source_literature_discovery_topics(
     return topics
 
 
+def _source_literature_bundle_signature(papers: list[dict[str, Any]]) -> str:
+    ids: set[str] = set()
+    for paper in papers:
+        if not isinstance(paper, dict):
+            continue
+        doi = str(paper.get("doi") or "").strip().casefold()
+        pmid = str(paper.get("pmid") or "").strip()
+        url = str(paper.get("url") or paper.get("source_url") or "").strip().casefold()
+        key = doi or (f"pmid:{pmid}" if pmid else "") or url
+        if key:
+            ids.add(key)
+    sorted_ids = sorted(ids)
+    return (
+        hashlib.sha256("|".join(sorted_ids).encode("utf-8")).hexdigest()
+        if len(sorted_ids) >= 2 else ""
+    )
+
+
+def _submitted_source_literature_bundle_signatures(
+    runs_root: Path, domain: str,
+) -> set[str]:
+    data = read_json(runs_root / "_daily_ledger" / "_submitted_fingerprints.json", [])
+    if not isinstance(data, list):
+        return set()
+    signatures: set[str] = set()
+    for row in data:
+        if not isinstance(row, dict):
+            continue
+        raw_domain = row.get("domain_slug") or row.get("domain")
+        row_domain = (
+            str(raw_domain.get("slug") or "") if isinstance(raw_domain, dict)
+            else str(raw_domain or "")
+        )
+        if row_domain and row_domain != domain:
+            continue
+        signature = str(row.get("bundle_signature") or "").strip()
+        if signature:
+            signatures.add(signature)
+    return signatures
+
+
 def _cached_pending_fullraw_completion(topic: str) -> bool:
     try:
         discovery = importlib.import_module("scripts.run_topic_discovery")
@@ -2332,6 +2374,9 @@ def main() -> int:
             hard_blocked_topic_keys = _hard_source_literature_blocked_topic_keys(
                 args.runs_root, domain,
             )
+            submitted_source_lit_bundle_signatures = (
+                _submitted_source_literature_bundle_signatures(args.runs_root, domain)
+            )
             repairable_source_lit_topic_keys = {
                 _topic_key(topic) for topic in repairable_source_lit_topics
             }
@@ -2446,7 +2491,11 @@ def main() -> int:
                     ready_papers = _cached_ready_source_literature_papers(
                         args.runs_root, domain, topic, settings,
                     )
-                    if len(ready_papers) >= MIN_DIRECT_SOURCES:
+                    signature = _source_literature_bundle_signature(ready_papers)
+                    if (
+                        len(ready_papers) >= MIN_DIRECT_SOURCES
+                        and signature not in submitted_source_lit_bundle_signatures
+                    ):
                         cached_ready_fresh_topics.append(topic)
             cache_rank_topics = non_repair_fresh_topics[:cache_rank_limit]
             ranked_topics = [
@@ -2594,7 +2643,11 @@ def main() -> int:
                                 ready_papers = _cached_ready_source_literature_papers(
                                     args.runs_root, domain, candidate_topic, settings,
                                 )
-                                if len(ready_papers) >= MIN_DIRECT_SOURCES:
+                                signature = _source_literature_bundle_signature(ready_papers)
+                                if (
+                                    len(ready_papers) >= MIN_DIRECT_SOURCES
+                                    and signature not in submitted_source_lit_bundle_signatures
+                                ):
                                     extra_ready_topics.append(candidate_topic)
                                     existing_topic_keys.add(candidate_key)
                             if extra_ready_topics:
@@ -2620,6 +2673,11 @@ def main() -> int:
                             args.runs_root, domain, topic, settings,
                         )
                     )
+                    if cached_ready_papers:
+                        signature = _source_literature_bundle_signature(cached_ready_papers)
+                        if signature in submitted_source_lit_bundle_signatures:
+                            cached_ready_papers = []
+                            cache_topic = ""
                     if cached_ready_papers:
                         fullraw_papers = cached_ready_papers
                         fullraw_trace = {
