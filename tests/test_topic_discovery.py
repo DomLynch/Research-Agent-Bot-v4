@@ -404,7 +404,7 @@ def test_seed_fullraw_papers_does_not_enqueue_when_fullraw_queue_saturated(
     }
 
 
-def test_seed_fullraw_papers_allows_priority_when_background_queue_saturated(
+def test_seed_fullraw_papers_backs_off_priority_when_queue_saturated_without_burst(
     monkeypatch: Any, tmp_path: Path,
 ) -> None:
     from scripts import run_topic_discovery as discovery
@@ -432,23 +432,19 @@ def test_seed_fullraw_papers_allows_priority_when_background_queue_saturated(
                     "priority_burst": False,
                 },
             })
-        if str(req.url) == "https://fullraw/search":
-            return httpx.Response(200, json={
-                "meta": {"shard_receipt": _fullraw_receipt()},
-                "results": [{"title": "Priority fullraw source", "source": "openalex"}],
-            })
-        raise AssertionError(f"unexpected request: {req.method} {req.url}")
+        raise AssertionError(f"unexpected enqueue request: {req.method} {req.url}")
 
     with httpx.Client(transport=httpx.MockTransport(handler)) as client:
         papers = discovery._seed_fullraw_papers(
             "pricing strategy margin", client=client, limit=10,
         )
 
-    assert papers and papers[0]["title"] == "Priority fullraw source"
-    assert requests[0][0:2] == ("POST", "https://fullraw/search")
-    payload = requests[0][2]
-    assert payload is not None
-    assert payload["priority"] is True
+    assert papers == []
+    assert requests == [("GET", "https://fullraw/health", None)]
+    event = discovery._FULLRAW_PROBE_EVENTS[-1]
+    assert event["status"] == "queue_saturated"
+    assert event["priority_burst"] is False
+    assert event["priority_queued_count"] == 0
 
 
 def test_seed_fullraw_papers_allows_priority_burst_when_priority_queue_exists(
@@ -492,8 +488,9 @@ def test_seed_fullraw_papers_allows_priority_burst_when_priority_queue_exists(
         )
 
     assert papers and papers[0]["title"] == "Priority burst fullraw source"
-    assert requests[0][0:2] == ("POST", "https://fullraw/search")
-    payload = requests[0][2]
+    assert requests[0][0:2] == ("GET", "https://fullraw/health")
+    assert requests[1][0:2] == ("POST", "https://fullraw/search")
+    payload = requests[1][2]
     assert payload is not None
     assert payload["priority"] is True
 

@@ -295,11 +295,7 @@ def _seed_fullraw_papers(
             "cache_age_seconds": cache_age,
             "paper_count": 0,
         })
-    saturated = (
-        {}
-        if should_poll_in_progress or priority_requested
-        else _fullraw_queue_saturated(client=client)
-    )
+    saturated = {} if should_poll_in_progress else _fullraw_queue_saturated(client=client)
     if saturated:
         saturated_event = {
             **saturated,
@@ -537,14 +533,13 @@ def _fullraw_queue_saturated(*, client: httpx.Client) -> dict[str, object]:
         max_queue = int(async_sweep.get("max_queue") or 0)
         inflight = int(async_sweep.get("inflight_count") or 0)
         max_inflight = int(async_sweep.get("max_inflight") or 0)
-        priority_queued = int(async_sweep.get("priority_queued_count") or 0)
     except (TypeError, ValueError):
         return {}
     priority_requested = os.environ.get(
         "TOPIC_DISCOVERY_FULLRAW_PRIORITY", "",
     ).lower() in {"1", "true", "yes", "on"}
     priority_burst = async_sweep.get("priority_burst") is True
-    if priority_requested and (priority_burst or priority_queued == 0):
+    if priority_requested and priority_burst:
         return {}
     saturated_status = ""
     reserved_inflight = _fullraw_reserved_inflight_slots()
