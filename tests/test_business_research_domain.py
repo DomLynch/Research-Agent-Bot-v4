@@ -2623,11 +2623,9 @@ def test_business_sweep_fullraw_probe_polls_in_progress_cache_hit_without_key_fl
             discovery._FULLRAW_PROBE_EVENTS.append({
                 "query": query,
                 "status": "in_progress_cache_hit",
-                "queued_count": 6,
-                "max_queue": 6,
                 "paper_count": 1,
             })
-            return []
+            return [{"paper_id": "partial-employee-engagement"}]
         topic_discovery_mod._FULLRAW_LAST_RECEIPT = {
             "shards_searched": 1525,
             "partial_shard_search": False,

@@ -278,8 +278,14 @@ def _fullraw_queue_full(event: dict[str, Any]) -> bool:
 
 def _fullraw_admitted_pending_event(event: dict[str, Any]) -> bool:
     status = str(event.get("status") or "")
+    probe_status = str(event.get("probe_status") or "")
     if event.get("key_queued") is not True and event.get("key_running") is not True:
-        return status == "in_progress_cache_hit" and _fullraw_queue_full(event)
+        return (
+            probe_status == "in_progress_cache_hit"
+            and _count_int(event.get("paper_count")) > 0
+        ) or (
+            status == "in_progress_cache_hit" and _fullraw_queue_full(event)
+        )
     return (
         status in {
             "async_queued", "async_running", "in_progress_cache_hit",
@@ -494,6 +500,7 @@ def _strict_fullraw_probe(
                         )
                         result = {
                             "status": status,
+                            "probe_status": event.get("status"),
                             "query": query,
                             "attempted_queries": list(attempted),
                             "paper_count": len(papers),
