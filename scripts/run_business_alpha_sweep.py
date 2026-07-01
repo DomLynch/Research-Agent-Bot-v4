@@ -932,6 +932,10 @@ def _source_literature_cache_topics(topic: str) -> tuple[str, ...]:
         alias = "_".join(trimmed)
         if alias and alias not in variants:
             variants.append(alias)
+    if len(tokens) >= 3:
+        for alias in _derived_seed_topic_variants(variants[0]):
+            if alias not in variants:
+                variants.append(alias)
     return tuple(variants)
 
 
@@ -943,12 +947,14 @@ def _cache_alias_selected_papers_allowed(
     topic_tokens = set(publish_literature._topic_token_sequence(topic))
     cache_tokens = set(publish_literature._topic_token_sequence(cache_topic))
     removed = topic_tokens - cache_tokens
+    added = cache_tokens - topic_tokens
+    base_tokens = topic_tokens - _BUSINESS_REPLACEABLE_OUTCOME_TOKENS
     if (
         len(topic_tokens) < 3
         or not cache_tokens
-        or not cache_tokens < topic_tokens
         or not removed
-        or not removed <= _BUSINESS_REPLACEABLE_OUTCOME_TOKENS
+        or not (removed | added) <= _BUSINESS_REPLACEABLE_OUTCOME_TOKENS
+        or not base_tokens <= cache_tokens
     ):
         return False
     required = len(topic_tokens)

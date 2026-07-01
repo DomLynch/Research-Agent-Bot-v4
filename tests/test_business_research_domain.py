@@ -6734,6 +6734,67 @@ def test_business_sweep_reuses_parent_cache_only_with_child_topic_coverage(
     assert cache_topic == parent_topic
 
 
+def test_business_sweep_reuses_sibling_outcome_cache_with_active_topic_coverage(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    topic = "platform_strategy_network_profitability"
+    sibling_topic = "platform_strategy_network_performance"
+    journals = (
+        "Alpha Strategy Review",
+        "Beta Platform Journal",
+        "Gamma Network Letters",
+        "Delta Business Quarterly",
+        "Epsilon Profitability Studies",
+    )
+    papers = [
+        {
+            "title": f"Platform strategy network profitability source {idx}",
+            "doi": f"10.5454/platform-profitability-{idx}",
+            "journal_name": journals[idx],
+            "source_fact": {
+                "canonical_phrase": (
+                    "Platform strategy network effects improved firm profitability in "
+                    f"bounded business setting {idx}."
+                ),
+                "population": "firms",
+                "intervention": "platform strategy network effects",
+                "endpoint": "firm profitability",
+                "source_tier": "fullraw_search",
+            },
+        }
+        for idx in range(5)
+    ]
+
+    def cached_papers(
+        _runs_root: Path, _domain: str, cache_topic: str,
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        if cache_topic == sibling_topic:
+            return papers, {"status": "complete", "paper_count": 5}
+        return [], {}
+
+    monkeypatch.setattr(sweep, "_cached_fullraw_discovery_papers", cached_papers)
+    monkeypatch.setattr(
+        sweep,
+        "_enrich_fullraw_papers_with_db_facts",
+        lambda _topic, *, domain, papers, settings: papers,
+    )
+
+    ready, cache_topic = sweep._cached_ready_source_literature_papers_with_topic(
+        tmp_path / "runs",
+        "business_research",
+        topic,
+        object(),
+    )
+
+    assert len(ready) == 5
+    assert cache_topic == sibling_topic
+    assert publish_literature.source_identity_count(
+        ready, require_substantive=True,
+    ) == 5
+    assert publish_literature.source_outlet_count(ready) == 5
+
+
 def test_business_sweep_rejects_parent_cache_without_child_topic_coverage(
     tmp_path: Path,
     monkeypatch: Any,
