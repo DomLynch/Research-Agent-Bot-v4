@@ -1667,6 +1667,7 @@ def _recent_source_literature_blocked_topics(runs_root: Path, domain: str) -> se
         publish_cycle._recently_published_topics(ledger_dir, days=days, domain=domain)
         | publish_cycle._recent_submission_topics(submitted_path, days=days, domain=domain)
         | publish_cycle._recent_negative_topics(ledger_dir, days=days, domain=domain)
+        | publish_cycle._recent_source_floor_topics(ledger_dir, days=2, domain=domain)
     )
     structurally_blocked = publish_cycle._recent_source_literature_structural_blocked_topics(
         ledger_dir, days=2, domain=domain,

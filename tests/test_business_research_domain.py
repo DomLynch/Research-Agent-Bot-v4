@@ -5701,6 +5701,33 @@ def test_business_sweep_underfilled_repair_does_not_exhaust_scan_window(
     }]
 
 
+def test_business_sweep_blocks_recent_source_floor_topic_without_cached_ready(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    runs_root = tmp_path / "runs"
+    ledger_dir = runs_root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    topic = "operations_process_improvement"
+    cycle._write_json(ledger_dir / "2026-06-29T09-00-00Z.json", {
+        "domain": {"slug": "business_research"},
+        "source_literature_fallback": {
+            "topic": topic,
+            "status": "blocked",
+            "reason": "source_floor_below_min",
+        },
+    })
+    monkeypatch.setattr(
+        cycle,
+        "_repairable_source_literature_topics",
+        lambda *_args, **_kwargs: [],
+    )
+
+    assert topic in sweep._recent_source_literature_blocked_topics(
+        runs_root, "business_research",
+    )
+
+
 def test_business_sweep_allows_repairable_directional_underfill_topic(
     tmp_path: Path,
     monkeypatch: Any,
