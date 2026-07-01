@@ -902,17 +902,33 @@ def _cached_fullraw_discovery_papers(
     papers = [paper for paper in row.get("source_papers") or [] if isinstance(paper, dict)]
     if _count_int(row.get("paper_count")) < MIN_DIRECT_SOURCES:
         return [], {}
+    query = str(row.get("query") or topic)
+    cached_hits = _fullraw_search_response(
+        query,
+        limit=_business_fullraw_result_limit(),
+        queue_if_missing=False,
+        timeout_seconds=_business_fullraw_cache_probe_timeout_seconds(),
+    )
+    hit_items = cached_hits.get("results") or cached_hits.get("hits") or []
+    papers = _merge_fullraw_hit_text(
+        papers,
+        [item for item in hit_items if isinstance(item, dict)],
+    )
     fact_count = publish_literature.substantive_fact_count(papers)
+    candidate_fact_count = max(
+        fact_count,
+        _fullraw_substantive_fact_candidates(topic, papers),
+    )
     source_count = publish_literature.source_identity_count(papers)
-    if fact_count <= 0 or source_count < MIN_DIRECT_SOURCES:
+    if candidate_fact_count <= 0 or source_count < MIN_DIRECT_SOURCES:
         return [], {}
     trace = {
         "status": "complete",
         "source": "business_sweep_fullraw_cache",
-        "query": str(row.get("query") or topic),
+        "query": query,
         "paper_count": len(papers),
         "fact_source_count": fact_count,
-        "candidate_fact_source_count": fact_count,
+        "candidate_fact_source_count": candidate_fact_count,
         "source_identity_count": source_count,
     }
     return papers, trace

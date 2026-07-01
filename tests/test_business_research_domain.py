@@ -6795,6 +6795,75 @@ def test_business_sweep_reuses_sibling_outcome_cache_with_active_topic_coverage(
     assert publish_literature.source_outlet_count(ready) == 5
 
 
+def test_business_sweep_hydrates_metadata_cache_from_fullraw_hits(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    runs_root = tmp_path / "runs"
+    topic = "platform_strategy_network_profitability"
+    discovery_dir = runs_root / "_topics_discovery"
+    discovery_dir.mkdir(parents=True)
+    journals = (
+        "Alpha Strategy Review",
+        "Beta Platform Journal",
+        "Gamma Network Letters",
+        "Delta Business Quarterly",
+        "Epsilon Profitability Studies",
+    )
+    papers = [
+        {
+            "title": f"Platform strategy network profitability source {idx}",
+            "doi": f"10.5454/platform-profitability-{idx}",
+            "journal_name": journals[idx],
+        }
+        for idx in range(5)
+    ]
+    (discovery_dir / f"business_sweep_fullraw.business_research.{topic}.json").write_text(
+        json.dumps({"all": [{
+            "topic": topic,
+            "query": "platform strategy network profitability",
+            "paper_count": 5,
+            "source_papers": papers,
+        }]}),
+        encoding="utf-8",
+    )
+
+    def cached_search_response(
+        query: str, **kwargs: Any,
+    ) -> dict[str, Any]:
+        assert query == "platform strategy network profitability"
+        assert kwargs["queue_if_missing"] is False
+        return {
+            "results": [
+                paper | {
+                    "abstract": (
+                        "Results show platform strategy network effects improved firm "
+                        f"profitability in bounded business setting {idx}. The evidence "
+                        "uses observed firms and reports a directional receipt for the "
+                        "platform strategy network profitability signal."
+                    ),
+                }
+                for idx, paper in enumerate(papers)
+            ],
+        }
+
+    monkeypatch.setattr(sweep, "_fullraw_search_response", cached_search_response)
+
+    ready = sweep._cached_ready_source_literature_papers(
+        runs_root,
+        "business_research",
+        topic,
+        object(),
+    )
+
+    assert len(ready) == 5
+    assert publish_literature.substantive_fact_count(ready) == 5
+    assert publish_literature.source_identity_count(
+        ready, require_substantive=True,
+    ) == 5
+    assert publish_literature.source_outlet_count(ready) == 5
+
+
 def test_business_sweep_rejects_parent_cache_without_child_topic_coverage(
     tmp_path: Path,
     monkeypatch: Any,
