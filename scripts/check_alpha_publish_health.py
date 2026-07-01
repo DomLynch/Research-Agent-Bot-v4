@@ -172,6 +172,23 @@ def _domain_list(value: str | None) -> list[str]:
     return [part.strip() for part in value.split(",") if part.strip()]
 
 
+def _pending_submission_records(runs_root: Path, domain: str | None) -> list[Json]:
+    path = runs_root / "_daily_ledger" / "_submitted_fingerprints.json"
+    data = publish_io.read_json(path, [])
+    rows = data if isinstance(data, list) else []
+    pending: list[Json] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        if domain is not None and _ledger_domain_slug(row) != domain:
+            continue
+        status = str(row.get("status") or "").strip()
+        pending_reason = str(row.get("pending_reason") or "").strip()
+        if status in {"submitted_to_researka", "decision_stale_pending"} or pending_reason:
+            pending.append(row)
+    return pending
+
+
 def _queue_sidecar(runs_root: Path, domain: str | None) -> Json | None:
     path = runs_root / (f"_publish_queue.{domain}.json" if domain else "_publish_queue.json")
     if not path.exists():
@@ -566,6 +583,10 @@ def summarize_latest(
     )
     url_status = url_check.get("http_status")
     published = int(ledger.get("published") or 0) == 1
+    domain_slug = domain or _ledger_domain_slug(ledger)
+    pending_submissions = _pending_submission_records(runs_root, domain_slug)
+    pending_submission_count = len(pending_submissions)
+    ledger_submitted = int(ledger.get("submitted") or 0)
     publish_summary = _publish_summary(ledger)
     considered_counts = _considered_counts(ledger)
     started_without_terminal = (
@@ -595,7 +616,15 @@ def summarize_latest(
         "ledger_mtime": mtime.isoformat(),
         "ledger_age_minutes": round((current - mtime).total_seconds() / 60, 1),
         "status": ledger.get("status"),
-        "submitted": int(ledger.get("submitted") or 0),
+        "submitted": (
+            ledger_submitted if published else max(ledger_submitted, pending_submission_count)
+        ),
+        "pending_submissions": pending_submission_count,
+        "pending_submission_ids": [
+            str(row.get("submission_id") or "").strip()
+            for row in pending_submissions[-5:]
+            if str(row.get("submission_id") or "").strip()
+        ],
         "published": int(ledger.get("published") or 0),
         "topic": ledger.get("published_topic") or ledger.get("submitted_topic"),
         "public_url": url or None,

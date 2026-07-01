@@ -205,6 +205,45 @@ def test_health_summary_can_scope_latest_ledger_by_domain(
     assert json.loads(capsys.readouterr().out)["domain"] == "business_research"
 
 
+def test_health_summary_counts_pending_resubmits_when_latest_ledger_failed(
+    tmp_path: Path,
+) -> None:
+    _write_ledger(tmp_path, "2026-06-01T08-29-49Z-business.json", {
+        "status": "candidate_refresh_failed",
+        "submitted": 0,
+        "published": 0,
+        "domain_slug": "business_research",
+        "considered": [{
+            "status": "no_bundle",
+            "blockers": ["no_source_diverse_bundle"],
+        }],
+    })
+    submitted_path = tmp_path / "_daily_ledger" / "_submitted_fingerprints.json"
+    submitted_path.write_text(json.dumps([
+        {
+            "domain": {"slug": "business_research"},
+            "topic": "digital_transformation_firm",
+            "status": "submitted_to_researka",
+            "pending_reason": "terminal_resubmit_job_queued",
+            "submission_id": "queued-job-1",
+        },
+        {
+            "domain": {"slug": "ai_research"},
+            "topic": "ignored",
+            "status": "submitted_to_researka",
+            "submission_id": "queued-job-2",
+        },
+    ]), encoding="utf-8")
+
+    summary = health.summarize_latest(tmp_path, domain="business_research")
+
+    assert summary["ok"] is False
+    assert summary["published"] == 0
+    assert summary["submitted"] == 1
+    assert summary["pending_submissions"] == 1
+    assert summary["pending_submission_ids"] == ["queued-job-1"]
+
+
 def test_health_main_reports_multi_domain_failures(tmp_path: Path, capsys: Any) -> None:
     _write_ledger(tmp_path, "2026-06-01T08-29-49Z-business.json", {
         "status": "candidate_refresh_failed",
