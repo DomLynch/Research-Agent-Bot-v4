@@ -245,6 +245,7 @@ def test_fullraw_payload_can_request_foreground_priority(
         "rank_mode": "relevance",
         "cache_only": True,
         "queue_if_missing": True,
+        "priority": True,
     }
 
 
@@ -447,7 +448,7 @@ def test_seed_fullraw_papers_allows_priority_when_background_queue_saturated(
     assert requests[0][0:2] == ("POST", "https://fullraw/search")
     payload = requests[0][2]
     assert payload is not None
-    assert "priority" not in payload
+    assert payload["priority"] is True
 
 
 def test_seed_fullraw_papers_allows_priority_burst_when_priority_queue_exists(
@@ -494,7 +495,7 @@ def test_seed_fullraw_papers_allows_priority_burst_when_priority_queue_exists(
     assert requests[0][0:2] == ("POST", "https://fullraw/search")
     payload = requests[0][2]
     assert payload is not None
-    assert "priority" not in payload
+    assert payload["priority"] is True
 
 
 def test_seed_fullraw_papers_refetches_smaller_completed_sweep_cache(
