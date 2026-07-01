@@ -9712,6 +9712,109 @@ def test_business_source_literature_blocks_two_directional_fact_backed_map() -> 
     assert ready_reason == "directional_receipt_floor_below_min"
 
 
+def test_business_source_literature_allows_bounded_mixed_evidence_bundle() -> None:
+    papers = [
+        {
+            "title": "Supply chain resilience employment and worker retention",
+            "doi": "10.5555/scr-employment-retention",
+            "journal_name": "Operations Outlet A",
+            "source_fact": {
+                "canonical_phrase": (
+                    "supply chain resilience significantly improves worker retention"
+                ),
+                "population": "firms",
+                "intervention": "supply chain resilience",
+                "endpoint": "employment retention",
+                "source_tier": "fullraw_abstract",
+            },
+        },
+        {
+            "title": "Supply chain resilience employment and turnover",
+            "doi": "10.5555/scr-employment-turnover",
+            "journal_name": "Operations Outlet B",
+            "source_fact": {
+                "canonical_phrase": (
+                    "supply chain resilience significantly reduces employee turnover"
+                ),
+                "population": "firms",
+                "intervention": "supply chain resilience",
+                "endpoint": "employment turnover",
+                "source_tier": "fullraw_abstract",
+            },
+        },
+        {
+            "title": "Supply chain resilience employment and hiring",
+            "doi": "10.5555/scr-employment-hiring",
+            "journal_name": "Operations Outlet C",
+            "source_fact": {
+                "canonical_phrase": (
+                    "supply chain resilience showed no significant association with hiring"
+                ),
+                "population": "firms",
+                "intervention": "supply chain resilience",
+                "endpoint": "employment hiring",
+                "source_tier": "fullraw_abstract",
+            },
+        },
+        {
+            "title": "Supply chain resilience employment and payroll growth",
+            "doi": "10.5555/scr-employment-payroll",
+            "journal_name": "Operations Outlet D",
+            "source_fact": {
+                "canonical_phrase": (
+                    "supply chain resilience effects on payroll growth were not supported"
+                ),
+                "population": "firms",
+                "intervention": "supply chain resilience",
+                "endpoint": "employment payroll growth",
+                "source_tier": "fullraw_abstract",
+            },
+        },
+        {
+            "title": "Supply chain resilience employment prediction model",
+            "doi": "10.5555/scr-employment-model",
+            "journal_name": "Operations Outlet E",
+            "source_fact": {
+                "canonical_phrase": (
+                    "a machine learning prediction model classified supply chain resilience "
+                    "employment exposure across firms"
+                ),
+                "population": "firms",
+                "intervention": "supply chain resilience",
+                "endpoint": "employment exposure model",
+                "source_tier": "fullraw_abstract",
+            },
+        },
+    ]
+
+    ok, reason = publish_literature.boundary_quality(
+        "supply_chain_resilience_employment",
+        papers,
+        5,
+        strict_topic_coverage=True,
+        profile_slug="business_research",
+    )
+    ready, ready_reason = sweep._source_literature_ready_papers(
+        "supply_chain_resilience_employment", "business_research", papers,
+    )
+    roles = [
+        publish_literature._paper_evidence_role(
+            paper, "supply_chain_resilience_employment", "business_research",
+        )
+        for paper in ready
+    ]
+
+    assert (ok, reason) == (True, "ok")
+    assert ready_reason == "ok"
+    assert publish_literature.source_identity_count(
+        ready, require_substantive=True,
+    ) == 5
+    assert publish_literature.source_outlet_count(ready) == 5
+    assert roles.count("directional association") == 2
+    assert roles.count("null/mixed") == 2
+    assert roles.count("descriptive/modeling") == 1
+
+
 def test_business_source_literature_allows_three_directional_fact_backed_map() -> None:
     papers = [
         {

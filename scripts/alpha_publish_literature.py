@@ -444,12 +444,42 @@ def _source_diverse_order(topic: str, papers: list[Json]) -> list[Json]:
 _DIRECTIONAL_SOURCE_LIT_ROLES = frozenset({
     "directional association", "directional estimate", "directionally favorable",
 })
+_BOUNDARY_SOURCE_LIT_ROLES = frozenset({"null/mixed", "descriptive/modeling"})
 
 
 def _directional_receipt_count(papers: list[Json], topic: str, profile_slug: str) -> int:
     return sum(
         1 for paper in papers
         if _paper_evidence_role(paper, topic, profile_slug) in _DIRECTIONAL_SOURCE_LIT_ROLES
+    )
+
+
+def _boundary_receipt_count(papers: list[Json], topic: str, profile_slug: str) -> int:
+    return sum(
+        1 for paper in papers
+        if _paper_evidence_role(paper, topic, profile_slug) in _BOUNDARY_SOURCE_LIT_ROLES
+    )
+
+
+def _null_mixed_receipt_count(papers: list[Json], topic: str, profile_slug: str) -> int:
+    return sum(
+        1 for paper in papers
+        if _paper_evidence_role(paper, topic, profile_slug) == "null/mixed"
+    )
+
+
+def _directional_floor_met(
+    papers: list[Json], topic: str, profile_slug: str, min_sources: int,
+) -> bool:
+    required_directional = min(3, min_sources)
+    directional_count = _directional_receipt_count(papers, topic, profile_slug)
+    if directional_count >= required_directional:
+        return True
+    return (
+        _non_biomedical(profile_slug)
+        and directional_count >= 2
+        and _null_mixed_receipt_count(papers, topic, profile_slug) >= 1
+        and _boundary_receipt_count(papers, topic, profile_slug) >= 2
     )
 
 
@@ -503,7 +533,7 @@ def _source_lit_selection(
                 if (
                     source_identity_count(trial, require_substantive=True) >= min_sources
                     and source_outlet_count(trial) > current_outlet_count
-                    and _directional_receipt_count(trial, topic, profile_slug) >= required_directional
+                    and _directional_floor_met(trial, topic, profile_slug, min_sources)
                 ):
                     selected = trial
                     selected_ids = {source_identity_key(paper) for paper in selected}
@@ -601,17 +631,10 @@ def boundary_quality(
         return False, "predictive_model_only_bundle"
     if _uniform_favorable_cross_pico(usable, min_sources):
         return False, "directionally_uniform_cross_pico_bundle"
-    if _non_biomedical(profile_slug):
-        directional_roles = {
-            "directional association", "directional estimate", "directionally favorable",
-        }
-        required_directional = min(3, min_sources)
-        directional_count = sum(
-            1 for paper in usable
-            if _paper_evidence_role(paper, topic, profile_slug) in directional_roles
-        )
-        if directional_count < required_directional:
-            return False, "directional_receipt_floor_below_min"
+    if _non_biomedical(profile_slug) and not _directional_floor_met(
+        usable, topic, profile_slug, min_sources,
+    ):
+        return False, "directional_receipt_floor_below_min"
     return True, "ok"
 
 

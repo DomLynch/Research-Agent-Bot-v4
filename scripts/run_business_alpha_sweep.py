@@ -1255,9 +1255,9 @@ def _source_literature_ready_papers(
         return selected, "source_outlet_diversity_below_min"
     if (
         publish_literature._non_biomedical(domain)
-        and publish_literature._directional_receipt_count(
-            selected, topic, domain,
-        ) < min(3, MIN_DIRECT_SOURCES)
+        and not publish_literature._directional_floor_met(
+            selected, topic, domain, MIN_DIRECT_SOURCES,
+        )
     ):
         return selected, "directional_receipt_floor_below_min"
     return selected, "ok"
