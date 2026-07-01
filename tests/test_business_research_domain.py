@@ -1896,6 +1896,9 @@ def test_business_sweep_priority_probe_checks_exact_key_when_queue_is_full(
         str(tmp_path / "fullraw.lock"),
     )
     monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS", "0")
+    topic_discovery_mod._FULLRAW_LAST_RECEIPT = {}
+    topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
+    discovery._FULLRAW_PROBE_EVENTS.clear()
 
     monkeypatch.setattr(
         discovery,
@@ -1933,6 +1936,7 @@ def test_business_sweep_priority_probe_checks_exact_key_when_queue_is_full(
     assert calls == ["digital transformation firm performance"]
     assert result["status"] == "incomplete_receipt"
     assert result["async_status"] == "running"
+    assert result["key_running"] is True
     assert result["shards_searched"] == 1453
 
 
@@ -7173,12 +7177,18 @@ def test_business_sweep_reports_enriched_fullraw_candidate_fact_source_count(
 def test_business_sweep_enriches_fullraw_papers_with_exact_db_facts(
     monkeypatch: Any,
 ) -> None:
-    calls: list[str] = []
+    calls: list[tuple[str, bool]] = []
 
     def fake_facts_for_paper(
-        *, base: str, token: str, paper_id: str, domain: str, timeout: float,
+        *,
+        base: str,
+        token: str,
+        paper_id: str,
+        domain: str,
+        timeout: float,
+        numeric_only: bool = True,
     ) -> list[dict[str, Any]]:
-        calls.append(paper_id)
+        calls.append((paper_id, numeric_only))
         if paper_id != "W123":
             return []
         return [{
@@ -7210,12 +7220,84 @@ def test_business_sweep_enriches_fullraw_papers_with_exact_db_facts(
         settings=settings,
     )
 
-    assert calls == ["https://openalex.org/W123", "W123"]
+    assert calls == [("https://openalex.org/W123", True), ("W123", True)]
     assert publish_literature.substantive_fact_count(enriched) == 1
     assert enriched[0]["id"] == "W123"
     assert enriched[0]["source_fact"]["canonical_phrase"].startswith(
         "Platform strategy changed network-effect monetization",
     )
+
+
+def test_business_sweep_enriches_non_numeric_directional_by_paper_facts(
+    monkeypatch: Any,
+) -> None:
+    calls: list[tuple[str, bool]] = []
+
+    def fake_facts_for_paper(
+        *,
+        base: str,
+        token: str,
+        paper_id: str,
+        domain: str,
+        timeout: float,
+        numeric_only: bool = True,
+    ) -> list[dict[str, Any]]:
+        calls.append((paper_id, numeric_only))
+        if numeric_only:
+            return []
+        suffix = paper_id.rsplit("/", 1)[-1]
+        return [{
+            "id": f"fact-{suffix}",
+            "canonical_phrase": (
+                "Platform strategy network effects improved firm profitability "
+                f"in firm sample {suffix}."
+            ),
+            "population": f"firm sample {suffix}",
+            "intervention": "platform strategy network effects",
+            "endpoint": "firm profitability",
+            "source_tier": "tier2_directional",
+        }]
+
+    monkeypatch.setattr(sweep, "_tier2_facts_for_paper", fake_facts_for_paper)
+    settings = SimpleNamespace(
+        researka_database_url="https://db.test",
+        researka_database_token="tok-test",
+    )
+    papers = [
+        {
+            "openalex_id": f"https://openalex.org/W{i}",
+            "title": (
+                "Platform strategy network profitability evidence "
+                f"from firms {i}"
+            ),
+            "journal_name": journal,
+        }
+        for i, journal in enumerate((
+            "Alpha Strategy Review",
+            "Beta Management Journal",
+            "Gamma Platform Studies",
+            "Delta Business Research",
+            "Epsilon Market Evidence",
+        ), start=1)
+    ]
+
+    enriched = sweep._enrich_fullraw_papers_with_db_facts(
+        "platform_strategy_network_profitability",
+        domain="business_research",
+        papers=papers,
+        settings=settings,
+    )
+    ready, reason = sweep._source_literature_ready_papers(
+        "platform_strategy_network_profitability",
+        "business_research",
+        enriched,
+    )
+
+    assert reason == "ok"
+    assert publish_literature.substantive_fact_count(ready) == 5
+    assert publish_literature.source_identity_count(ready, require_substantive=True) == 5
+    assert publish_literature.source_outlet_count(ready) == 5
+    assert {numeric_only for _paper_id, numeric_only in calls} == {True, False}
 
 
 def test_business_sweep_enriches_fullraw_article_abstracts_without_metadata_only(

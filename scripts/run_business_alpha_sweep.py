@@ -1372,7 +1372,13 @@ def _fetch_crossref_abstract(doi: str, settings: Any) -> str:
 
 
 def _tier2_facts_for_paper(
-    *, base: str, token: str, paper_id: str, domain: str, timeout: float,
+    *,
+    base: str,
+    token: str,
+    paper_id: str,
+    domain: str,
+    timeout: float,
+    numeric_only: bool = True,
 ) -> list[dict[str, Any]]:
     req = urllib.request.Request(
         f"{base}/api/v1/tier2/facts/by-paper",
@@ -1380,7 +1386,7 @@ def _tier2_facts_for_paper(
             "paper_id": paper_id,
             "limit": 5,
             "min_confidence": "medium",
-            "numeric_only": True,
+            "numeric_only": numeric_only,
             "strict_audit_required": False,
             "domain": tier2_domain(domain),
         }).encode("utf-8"),
@@ -1418,20 +1424,34 @@ def _enrich_fullraw_papers_with_db_facts(
             continue
         replacement = paper
         if base and token:
-            for paper_id in _fullraw_paper_lookup_ids(paper):
-                rows = _tier2_facts_for_paper(
-                    base=base, token=token, paper_id=paper_id, domain=domain, timeout=timeout,
-                )
-                for row in rows:
-                    candidate = paper | {
-                        "id": publish_literature.paper_key(paper, paper_id),
-                        "source_fact": publish_literature.source_fact(row),
-                    }
-                    if (
-                        publish_literature.substantive_fact_count([candidate]) > 0
-                        and publish_literature.topic_relevant(topic, candidate)
-                    ):
-                        replacement = candidate
+            numeric_modes = (
+                (True, False)
+                if publish_literature._non_biomedical(domain)
+                else (True,)
+            )
+            lookup_ids = _fullraw_paper_lookup_ids(paper)
+            for numeric_only in numeric_modes:
+                for paper_id in lookup_ids:
+                    rows = _tier2_facts_for_paper(
+                        base=base,
+                        token=token,
+                        paper_id=paper_id,
+                        domain=domain,
+                        timeout=timeout,
+                        numeric_only=numeric_only,
+                    )
+                    for row in rows:
+                        candidate = paper | {
+                            "id": publish_literature.paper_key(paper, paper_id),
+                            "source_fact": publish_literature.source_fact(row),
+                        }
+                        if (
+                            publish_literature.substantive_fact_count([candidate]) > 0
+                            and publish_literature.topic_relevant(topic, candidate)
+                        ):
+                            replacement = candidate
+                            break
+                    if replacement is not paper:
                         break
                 if replacement is not paper:
                     break
