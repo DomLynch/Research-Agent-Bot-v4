@@ -178,13 +178,13 @@ def _business_fullraw_advance_max_seconds() -> float:
 
 
 def _business_fullraw_queue_retry_seconds() -> float:
+    raw = os.environ.get("TOPIC_DISCOVERY_BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS")
+    if raw is None:
+        raw = _business_fullraw_foreground_seconds()
     try:
         return max(
             0.0,
-            float(
-                os.environ.get("TOPIC_DISCOVERY_BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS")
-                or _BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS
-            ),
+            float(raw),
         )
     except ValueError:
         return float(_BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS)

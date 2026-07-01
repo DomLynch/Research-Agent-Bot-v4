@@ -1512,6 +1512,15 @@ def test_business_sweep_fullraw_probe_uses_strict_floor_over_generic_budget(
     assert sweep._business_fullraw_foreground_seconds() == "2400"
 
 
+def test_business_sweep_fullraw_queue_retry_defaults_to_strict_foreground_budget(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.delenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS", raising=False)
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_FOREGROUND_SECONDS", "1800")
+
+    assert sweep._business_fullraw_queue_retry_seconds() == 1800.0
+
+
 def test_business_sweep_fullraw_probe_preserves_in_progress_cache_receipt(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
