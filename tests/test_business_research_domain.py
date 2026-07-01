@@ -6351,6 +6351,152 @@ def test_business_sweep_demotes_cached_priority_repair_below_fact_floor(
     }]
 
 
+def test_business_sweep_retries_cached_ready_source_lit_despite_recent_submission(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    runs_root = tmp_path / "runs"
+    topic = "supply_chain_resilience"
+    submissions: list[dict[str, Any]] = []
+    papers = [
+        {
+            "title": f"Supply chain resilience performance source paper {idx}",
+            "doi": f"10.5354/supply-chain-{idx}",
+            "journal_name": journal,
+            "source_fact": {
+                "canonical_phrase": (
+                    "Supply chain resilience changed firm performance in "
+                    f"bounded source setting {idx}."
+                ),
+                "population": "firms",
+                "intervention": "supply chain resilience",
+                "endpoint": "firm performance",
+                "source_tier": "fullraw_search",
+            },
+        }
+        for idx, journal in enumerate((
+            "Supply Chain Review",
+            "Operations Evidence Journal",
+            "Resilience Management Letters",
+            "Logistics Performance Studies",
+            "Firm Operations Quarterly",
+        ))
+    ]
+
+    def cached_papers(
+        _runs_root: Path, _domain: str, seed_topic: str,
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        if seed_topic == topic:
+            return papers, {"status": "complete", "paper_count": 5}
+        return [], {}
+
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        submissions.append(kwargs)
+        return {
+            "status": "submitted_to_researka",
+            "submitted": 1,
+            "published": 0,
+        }
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [topic])
+    monkeypatch.setattr(sweep, "_prioritized_seed_topics", lambda _root, _domain, topics: topics)
+    monkeypatch.setattr(sweep, "_recent_source_literature_blocked_topics", lambda *_args: {
+        sweep._topic_key(topic),
+    })
+    monkeypatch.setattr(sweep, "_hard_source_literature_blocked_topic_keys", lambda *_args: set())
+    monkeypatch.setattr(
+        cycle,
+        "_priority_source_literature_repair_decisions",
+        lambda *_args, **_kwargs: {},
+    )
+    monkeypatch.setattr(cycle, "_repairable_source_literature_topics", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(cycle, "_pending_source_literature_topics", lambda *_args, **_kwargs: set())
+    monkeypatch.setattr(cycle, "_recent_submission_topics", lambda *_args, **_kwargs: {topic})
+    monkeypatch.setattr(cycle, "_recent_source_floor_topics", lambda *_args, **_kwargs: {topic})
+    monkeypatch.setattr(
+        cycle,
+        "_recent_source_literature_structural_blocked_topics",
+        lambda *_args, **_kwargs: set(),
+    )
+    monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", lambda _topic: 0)
+    monkeypatch.setattr(sweep, "_cached_fullraw_discovery_papers", cached_papers)
+    monkeypatch.setattr(
+        sweep,
+        "_enrich_fullraw_papers_with_db_facts",
+        lambda _topic, *, domain, papers, settings: papers,
+    )
+    monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: (
+        [],
+        {"status": "empty"},
+    ))
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(runs_root),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-06-29T04-16-00Z",
+    ])
+
+    assert sweep.main() == 0
+    assert submissions == [{
+        "runs_root": runs_root,
+        "date": "2026-06-29T04-16-00Z",
+        "domain": "business_research",
+        "submit": True,
+        "refresh_candidates": False,
+        "source_literature_forced_papers": {topic: papers},
+    }]
+
+
+def test_business_sweep_cached_ready_requires_ok_readiness_reason(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    topic = "supply_chain_resilience"
+    papers = [
+        {
+            "title": f"Supply chain resilience source paper {idx}",
+            "doi": f"10.5354/supply-chain-duplicate-outlet-{idx}",
+            "journal_name": "Same Outlet Journal",
+            "source_fact": {
+                "canonical_phrase": (
+                    "Supply chain resilience changed firm performance in "
+                    f"bounded source setting {idx}."
+                ),
+                "population": "firms",
+                "intervention": "supply chain resilience",
+                "endpoint": "firm performance",
+                "source_tier": "fullraw_search",
+            },
+        }
+        for idx in range(5)
+    ]
+
+    monkeypatch.setattr(
+        sweep,
+        "_cached_fullraw_discovery_papers",
+        lambda *_args, **_kwargs: (papers, {"status": "complete", "paper_count": 5}),
+    )
+    monkeypatch.setattr(
+        sweep,
+        "_enrich_fullraw_papers_with_db_facts",
+        lambda _topic, *, domain, papers, settings: papers,
+    )
+
+    assert sweep._cached_ready_source_literature_papers(
+        tmp_path / "runs",
+        "business_research",
+        topic,
+        object(),
+    ) == []
+
+
 def test_business_sweep_underfilled_repair_does_not_exhaust_scan_window(
     tmp_path: Path,
     monkeypatch: Any,

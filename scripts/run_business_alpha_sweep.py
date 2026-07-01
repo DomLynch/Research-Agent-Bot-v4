@@ -1735,8 +1735,8 @@ def _cached_ready_source_literature_papers(
     papers = _enrich_fullraw_papers_with_db_facts(
         topic, domain=domain, papers=papers, settings=settings,
     )
-    ready, _reason = _source_literature_ready_papers(topic, domain, papers)
-    return ready
+    ready, reason = _source_literature_ready_papers(topic, domain, papers)
+    return ready if reason == "ok" else []
 
 
 def _cached_pending_fullraw_completion(topic: str) -> bool:
@@ -2134,7 +2134,6 @@ def main() -> int:
                     continue
                 soft_repair = (
                     seed_key in soft_source_lit_repair_keys
-                    and seed_key not in recent_submission_topic_keys
                     and seed_key not in pending_source_lit_topic_keys
                 )
                 if seed_topic not in priority_source_lit_topics and not soft_repair:
@@ -2144,7 +2143,11 @@ def main() -> int:
                 )
                 if len(ready_papers) >= MIN_DIRECT_SOURCES:
                     cached_ready_source_lit[seed_topic] = ready_papers
-                elif soft_repair and _cached_pending_fullraw_completion(seed_topic):
+                elif (
+                    soft_repair
+                    and seed_key not in recent_submission_topic_keys
+                    and _cached_pending_fullraw_completion(seed_topic)
+                ):
                     cached_pending_source_lit.add(seed_topic)
             if cached_ready_source_lit or cached_pending_source_lit:
                 blocked_topic_keys -= {
