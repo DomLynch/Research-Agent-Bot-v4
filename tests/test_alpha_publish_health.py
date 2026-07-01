@@ -244,6 +244,30 @@ def test_health_summary_counts_pending_resubmits_when_latest_ledger_failed(
     assert summary["pending_submission_ids"] == ["queued-job-1"]
 
 
+def test_health_summary_prefers_queued_terminal_resubmit_attempt(
+    tmp_path: Path,
+) -> None:
+    _write_ledger(tmp_path, "2026-06-01T08-29-49Z-business.json", {
+        "status": "reviewer_revise",
+        "submitted": 1,
+        "published": 0,
+        "domain_slug": "business_research",
+        "cycle_attempts": [
+            {"status": "reviewer_revise"},
+            {
+                "status": "submitted_to_researka",
+                "pending_reason": "terminal_resubmit_job_queued",
+            },
+        ],
+    })
+
+    summary = health.summarize_latest(tmp_path, domain="business_research")
+
+    assert summary["status"] == "submitted_to_researka"
+    assert summary["next_action"] == "watch_decision_or_public_page"
+    assert summary["published"] == 0
+
+
 def test_health_main_reports_multi_domain_failures(tmp_path: Path, capsys: Any) -> None:
     _write_ledger(tmp_path, "2026-06-01T08-29-49Z-business.json", {
         "status": "candidate_refresh_failed",

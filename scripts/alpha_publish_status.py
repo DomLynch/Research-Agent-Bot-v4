@@ -155,6 +155,17 @@ def next_action_for_status(status: str) -> str:
     return "inspect_ledger"
 
 
+def effective_cycle_status(ledger: Json) -> str:
+    status = str(ledger.get("status") or "")
+    attempts = [r for r in ledger.get("cycle_attempts") or [] if isinstance(r, dict)]
+    if attempts:
+        latest = attempts[-1]
+        latest_status = str(latest.get("status") or "")
+        if latest_status in PENDING_SUCCESS_STATUSES and latest.get("pending_reason"):
+            return latest_status
+    return status
+
+
 def no_candidate_reason(considered: list[Json]) -> str:
     statuses = [str(row.get("status") or "") for row in considered if isinstance(row, dict)]
     duplicate = CandidateStatus.DUPLICATE_SUBMISSION_FINGERPRINT.value
@@ -208,8 +219,8 @@ def publish_summary(ledger: Json) -> Json:
         for event in refresh.get("fullraw_probe_events") or []:
             if isinstance(event, dict) and event.get("status"):
                 blockers.append("fullraw_" + str(event.get("status")))
-    status = str(ledger.get("status") or "")
-    if status and status not in SUBMIT_SUCCESS_STATUSES | {CycleStatus.STARTED.value}:
+    status = effective_cycle_status(ledger)
+    if status and status not in SUBMIT_SUCCESS_STATUSES | PENDING_SUCCESS_STATUSES | {CycleStatus.STARTED.value}:
         blockers.append(status)
     if (
         status == CycleStatus.STARTED.value
@@ -239,7 +250,7 @@ def publish_summary(ledger: Json) -> Json:
     ):
         next_action = "wait_for_fullraw_completion"
     summary = {
-        "status": ledger.get("status"),
+        "status": status,
         "submitted": int(ledger.get("submitted") or 0),
         "published": int(ledger.get("published") or 0),
         "considered": len(considered),

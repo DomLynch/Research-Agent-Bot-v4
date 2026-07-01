@@ -588,6 +588,7 @@ def summarize_latest(
     pending_submission_count = len(pending_submissions)
     ledger_submitted = int(ledger.get("submitted") or 0)
     publish_summary = _publish_summary(ledger)
+    effective_status = publish_summary.get("status") or ledger.get("status")
     considered_counts = _considered_counts(ledger)
     started_without_terminal = (
         str(ledger.get("status") or "") == "started"
@@ -615,7 +616,7 @@ def summarize_latest(
         "domain": _ledger_domain_slug(ledger),
         "ledger_mtime": mtime.isoformat(),
         "ledger_age_minutes": round((current - mtime).total_seconds() / 60, 1),
-        "status": ledger.get("status"),
+        "status": effective_status,
         "submitted": (
             ledger_submitted if published else max(ledger_submitted, pending_submission_count)
         ),
@@ -636,7 +637,7 @@ def summarize_latest(
         "queue_counts": ledger.get("queue_counts") or publish_summary.get("queue_counts") or {},
         "top_blockers": top_blockers,
         "next_action": publish_summary.get("next_action") or _next_action_for_status(
-            ledger.get("status"),
+            effective_status,
         ),
         "reason": reason,
     }

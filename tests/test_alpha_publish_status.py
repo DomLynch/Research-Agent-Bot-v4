@@ -153,6 +153,25 @@ def test_publish_summary_uses_terminal_status_for_reviewer_rejection() -> None:
     assert summary["top_blockers"]["reviewer_rejected"] == 1
 
 
+def test_publish_summary_prefers_queued_terminal_resubmit_attempt() -> None:
+    summary = publish_summary({
+        "status": CycleStatus.REVIEWER_REVISE.value,
+        "submitted": 1,
+        "published": 0,
+        "cycle_attempts": [
+            {"status": "reviewer_revise"},
+            {
+                "status": "submitted_to_researka",
+                "pending_reason": "terminal_resubmit_job_queued",
+            },
+        ],
+    })
+
+    assert summary["status"] == "submitted_to_researka"
+    assert summary["next_action"] == "watch_decision_or_public_page"
+    assert "reviewer_revise" not in summary["top_blockers"]
+
+
 def test_publish_summary_flags_unterminated_started_cycle() -> None:
     summary = publish_summary({
         "status": CycleStatus.STARTED.value,
