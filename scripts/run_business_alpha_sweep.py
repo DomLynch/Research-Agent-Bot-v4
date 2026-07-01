@@ -1678,10 +1678,6 @@ def _recent_source_literature_blocked_topics(runs_root: Path, domain: str) -> se
         )
         if (key := _topic_key(topic))
     }
-    repairable_keys.update(
-        key for topic in _recent_source_literature_repair_attempt_topics(runs_root, domain)
-        if (key := _topic_key(topic))
-    )
     return {
         key for topic in structurally_blocked
         if (key := _topic_key(topic)) and key not in repairable_keys
