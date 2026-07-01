@@ -131,16 +131,29 @@ def _publish_summary(ledger: Json) -> Json:
     if not isinstance(stored, dict):
         return computed
     summary = dict(stored)
-    for key in ("considered", "queue_counts", "public_url_status", "public_page_status"):
-        if key not in summary and key in computed:
+    for key in (
+        "status",
+        "considered",
+        "attempts",
+        "queue_counts",
+        "last_attempt_status",
+        "public_url_status",
+        "public_page_status",
+    ):
+        if key in computed:
             summary[key] = computed[key]
     if computed.get("next_action"):
         summary["next_action"] = computed["next_action"]
+    raw_status = str(ledger.get("status") or "")
+    effective_status = str(computed.get("status") or "")
     blockers = summary.get("top_blockers")
+    if effective_status and effective_status != raw_status:
+        summary["top_blockers"] = computed.get("top_blockers") or {}
+        return summary
     if not isinstance(blockers, dict) or not blockers:
         summary["top_blockers"] = computed.get("top_blockers") or {}
         return summary
-    status = str(ledger.get("status") or "")
+    status = raw_status
     if status and status not in (
         status_module.SUBMIT_SUCCESS_STATUSES | {status_module.CycleStatus.STARTED.value}
     ):

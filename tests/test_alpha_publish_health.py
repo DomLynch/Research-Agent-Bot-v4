@@ -259,6 +259,11 @@ def test_health_summary_prefers_queued_terminal_resubmit_attempt(
                 "pending_reason": "terminal_resubmit_job_queued",
             },
         ],
+        "publish_summary": {
+            "status": "reviewer_revise",
+            "top_blockers": {"reviewer_revise": 1},
+            "next_action": "repair_researka_review_feedback",
+        },
     })
 
     summary = health.summarize_latest(tmp_path, domain="business_research")
