@@ -1990,10 +1990,12 @@ def payload(
         "## Boundary map",
         "",
     ]
-    for paper in selected:
+    bundle = source_bundle(selected)
+    for idx, paper in enumerate(selected):
+        bundled = bundle[idx] if idx < len(bundle) else {}
         title = str(paper.get("title") or "Untitled source").strip()
         doi = str(paper.get("doi") or "").strip()
-        year = paper.get("year") or paper.get("publication_year")
+        year = bundled.get("year") or paper.get("year") or paper.get("publication_year")
         source_type = evidence_type(paper)
         raw_fact = paper.get("source_fact")
         fact: Json = raw_fact if isinstance(raw_fact, dict) else {}
@@ -2034,7 +2036,6 @@ def payload(
             )
             if value:
                 lines.append(f"  - {label}: {value}")
-    bundle = source_bundle(selected)
     for item, paper in zip(bundle, selected, strict=False):
         raw_source_fact = paper.get("source_fact")
         bundle_fact: Json = raw_source_fact if isinstance(raw_source_fact, dict) else {}
@@ -2272,9 +2273,9 @@ def payload(
     )
     source_types = sorted({evidence_type(paper) for paper in selected})
     missing_year_titles = [
-        str(paper.get("title") or "Untitled source").strip()
-        for paper in selected
-        if year_value(paper.get("year") or paper.get("publication_year")) is None
+        str(source.get("title") or "Untitled source").strip()
+        for source in bundle
+        if year_value(source.get("year")) is None
     ]
     split_front = (
         "directionally favorable" in direction_text

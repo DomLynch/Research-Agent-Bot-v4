@@ -3968,6 +3968,19 @@ def _year(value: Any) -> int | None:
     return year if 1000 <= year <= 3000 else None
 
 
+def _source_year(paper: Json) -> int | None:
+    explicit = _year(paper.get("year") or paper.get("publication_year"))
+    if explicit is not None:
+        return explicit
+    text = " ".join(str(paper.get(key) or "") for key in (
+        "doi", "url", "doi_url", "canonical_url", "title", "paper_title",
+    ))
+    for match in re.findall(r"\b(?:19|20)\d{2}\b", text):
+        if (year := _year(match)) is not None:
+            return year
+    return None
+
+
 def _evidence_type(paper: Json) -> str:
     text = _norm(" ".join(
         str(paper.get(key) or "")
@@ -4016,7 +4029,7 @@ def _source_bundle(papers: list[Json]) -> list[Json]:
             "title": title,
             "url": url,
             "doi": doi,
-            "year": _year(paper.get("year") or paper.get("publication_year")),
+            "year": _source_year(paper),
             "evidence_type": _evidence_type(paper),
         }
         for field in (

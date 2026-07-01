@@ -16994,7 +16994,7 @@ def test_source_literature_payload_collapses_business_context_rows(
         (
             "Digital transformation: harnessing digital technologies for the next generation of services",
             "10.1108/jsm-01-2019-0034",
-            2019,
+            None,
             "Journal of Service Management",
             "71 per cent of banking firms report big data provides a competitive advantage",
             "banking firms",
@@ -17050,6 +17050,12 @@ def test_source_literature_payload_collapses_business_context_rows(
     source_bundle = payload["source_bundle"]
     assert len(source_bundle) == 5
     assert len({source["journal_name"] for source in source_bundle}) == 5
+    assert {
+        source["title"]: source.get("year") for source in source_bundle
+    }[
+        "Digital transformation: harnessing digital technologies for the "
+        "next generation of services"
+    ] == 2019
     assert publish_literature.substantive_fact_count(source_bundle) == 5
     assert publish_literature.source_identity_count(
         source_bundle, require_substantive=True,
@@ -17085,6 +17091,7 @@ def test_source_literature_payload_collapses_business_context_rows(
         "technologies"
     ) in markdown
     assert "primary; 2019" in markdown
+    assert "Publication-year audit" not in markdown
 
 
 def test_source_literature_payload_scopes_three_directional_two_context_rows(
