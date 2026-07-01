@@ -2527,7 +2527,7 @@ def main() -> int:
                                     extra_ready_topics.append(candidate_topic)
                                     existing_topic_keys.add(candidate_key)
                             if extra_ready_topics:
-                                selected_topics[topic_idx:topic_idx] = extra_ready_topics
+                                selected_topics[topic_idx:] = extra_ready_topics
                         continue
                     return 0 if repair_row["status"] in {
                         "submitted_to_researka", "published",
