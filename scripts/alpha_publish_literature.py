@@ -1525,6 +1525,8 @@ def _exposure_context_label(paper: Json, *, non_bio: bool) -> str:
         paper.get("title"), paper.get("paper_title"), fact.get("canonical_phrase"), base,
     )))
     tokens = set(text.split())
+    if {"fuzzy", "ahp"} <= tokens or "vikor" in text:
+        return "Pythagorean fuzzy AHP-VIKOR modelling"
     if {"flexibility", "agility"} & tokens:
         return "flexibility, collaboration, and agility antecedents"
     if {"artificial", "intelligence"} <= tokens or "adaptive" in tokens or "collaboration" in text:
@@ -1533,8 +1535,6 @@ def _exposure_context_label(paper: Json, *, non_bio: bool) -> str:
         return "supply chain visibility and capability antecedents"
     if "disruption" in text:
         return "supply chain disruption context"
-    if {"fuzzy", "ahp"} <= tokens or "vikor" in text:
-        return "Pythagorean fuzzy AHP-VIKOR modelling"
     return base
 
 
@@ -2225,9 +2225,13 @@ def payload(
         exposure = _exposure_context_label(paper, non_bio=non_bio)
         if exposure:
             item["intervention"] = exposure
+            if isinstance(item.get("source_fact"), dict):
+                item["source_fact"] = dict(item["source_fact"]) | {"intervention": exposure}
         endpoint = _endpoint_context_label(paper, topic, non_bio=non_bio)
         if endpoint:
             item["endpoint"] = endpoint
+            if isinstance(item.get("source_fact"), dict):
+                item["source_fact"] = dict(item["source_fact"]) | {"endpoint": endpoint}
         item["source_role"] = role
         item["source_type"] = item.get("evidence_type") or evidence_type(paper)
         finding = _display_finding(bundle_fact, _paper_effect_direction(paper, topic))

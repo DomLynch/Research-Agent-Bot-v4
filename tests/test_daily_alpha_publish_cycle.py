@@ -17248,6 +17248,37 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "productivity" not in productivity_payload["markdown"].lower()
     assert "firm performance caveat" in productivity_payload["title"]
 
+    sales_papers: list[dict[str, Any]] = []
+    for paper in papers:
+        raw_fact = paper.get("source_fact")
+        source_fact = dict(raw_fact) if isinstance(raw_fact, dict) else {}
+        source_fact["intervention"] = "chain resilience sales supply"
+        sales_papers.append(paper | {"source_fact": source_fact})
+    _candidate, sales_payload = daily._source_literature_payload(
+        profile_slug="business_research",
+        topic="resilience_sales",
+        papers=sales_papers,
+        runs_root=root,
+        date="2026-06-29T03-00-00Z",
+    )
+
+    assert sales_payload["metadata"]["topic"] == "resilience_sales"
+    assert sales_payload["metadata"]["topic_label"] == "supply chain resilience"
+    assert sales_payload["title"].startswith("supply chain resilience:")
+    assert "resilience sales" not in sales_payload["title"].lower()
+    assert "resilience sales" not in sales_payload["abstract"].lower()
+    assert "resilience sales" not in sales_payload["markdown"].lower()
+    assert {
+        source.get("source_fact", {}).get("intervention")
+        for source in sales_payload["source_bundle"]
+    } == {
+        "AI, adaptive capability, and collaboration antecedents",
+        "Pythagorean fuzzy AHP-VIKOR modelling",
+        "flexibility, collaboration, and agility antecedents",
+        "supply chain disruption context",
+        "supply chain visibility and capability antecedents",
+    }
+
 
 def test_source_literature_payload_collapses_business_context_rows(
     tmp_path: Path,
