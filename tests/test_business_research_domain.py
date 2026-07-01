@@ -2463,7 +2463,7 @@ def test_business_sweep_fullraw_probe_sheds_unadmitted_saturated_query(
     assert result["queue_shed"] is True
 
 
-def test_business_sweep_fullraw_probe_retries_unadmitted_full_queue(
+def test_business_sweep_fullraw_probe_sheds_unadmitted_full_queue_without_sleep(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
     import agent.topic_discovery as topic_discovery_mod
@@ -2491,36 +2491,18 @@ def test_business_sweep_fullraw_probe_retries_unadmitted_full_queue(
     def fake_seed_fullraw(query: str, **_kwargs: Any) -> list[dict[str, Any]]:
         calls.append(query)
         topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
-        if len(calls) == 1:
-            topic_discovery_mod._FULLRAW_LAST_RECEIPT = {}
-            discovery._FULLRAW_PROBE_EVENTS.append({
-                "query": query,
-                "status": "queue_saturated",
-                "async_status": "queued",
-                "key_queued": False,
-                "key_running": False,
-                "queued_count": 4,
-                "max_queue": 4,
-                "paper_count": 0,
-            })
-            return []
-        topic_discovery_mod._FULLRAW_LAST_RECEIPT = {
-            "shards_searched": 1525,
-            "partial_shard_search": False,
-            "sweep_failed_shards": 0,
-            "source_count_searched": 5,
-        }
-        return [
-            {
-                "paper_id": f"employment-{idx}",
-                "title": f"Minimum wage employment source {idx}",
-                "abstract": (
-                    "Results show minimum wage changes altered employment "
-                    f"outcomes in labor market source {idx}."
-                ),
-            }
-            for idx in range(5)
-        ]
+        topic_discovery_mod._FULLRAW_LAST_RECEIPT = {}
+        discovery._FULLRAW_PROBE_EVENTS.append({
+            "query": query,
+            "status": "queue_saturated",
+            "async_status": "queued",
+            "key_queued": False,
+            "key_running": False,
+            "queued_count": 4,
+            "max_queue": 4,
+            "paper_count": 0,
+        })
+        return []
 
     monkeypatch.setattr(discovery, "_seed_fullraw_papers", fake_seed_fullraw)
 
@@ -2529,10 +2511,10 @@ def test_business_sweep_fullraw_probe_retries_unadmitted_full_queue(
         include_papers=True,
     )
 
-    assert calls == ["minimum wage performance", "minimum wage performance"]
-    assert sleeps == [15.0]
-    assert result["status"] == "complete"
-    assert result["candidate_fact_source_count"] == 5
+    assert calls == ["minimum wage performance"]
+    assert sleeps == []
+    assert result["status"] == "queue_saturated"
+    assert result["queue_shed"] is True
 
 
 def test_business_sweep_fullraw_probe_retries_admitted_pending_key(
