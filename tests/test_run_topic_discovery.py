@@ -652,7 +652,7 @@ def test_seed_fullraw_polls_due_in_progress_receipt_before_ttl(
     assert run_topic_discovery._FULLRAW_PROBE_EVENTS[-1]["status"] == "in_progress_poll_due"
 
 
-def test_seed_fullraw_priority_polls_recent_in_progress_receipt(
+def test_seed_fullraw_priority_reuses_recent_in_progress_receipt(
     monkeypatch: Any,
 ) -> None:
     calls: list[str] = []
@@ -692,9 +692,9 @@ def test_seed_fullraw_priority_polls_recent_in_progress_receipt(
             "platform strategy network", client=client, limit=5,
         )
 
-    assert calls == ["platform strategy network", "platform strategy network"]
-    assert rows[0]["title"] == "Priority platform strategy receipt"
-    assert run_topic_discovery._FULLRAW_PROBE_EVENTS[-1]["status"] == "in_progress_poll_due"
+    assert calls == ["platform strategy network"]
+    assert rows == []
+    assert run_topic_discovery._FULLRAW_PROBE_EVENTS[-1]["status"] == "in_progress_cache_hit"
 
 
 def test_seed_fullraw_polls_due_in_progress_despite_full_queue(
