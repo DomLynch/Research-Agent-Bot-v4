@@ -12930,7 +12930,7 @@ def test_source_literature_fallback_tries_next_after_reviewer_revise(
     ]
 
 
-def test_source_literature_fallback_resubmits_clean_terminal_revise_same_cycle(
+def test_source_literature_fallback_resubmits_supported_minor_revise_same_cycle(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.delenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", raising=False)
@@ -12961,7 +12961,10 @@ def test_source_literature_fallback_resubmits_clean_terminal_revise_same_cycle(
                 "notes": ["editorial decision is terminal; external author must resubmit"],
                 "required_revisions": [],
                 "major_issues": [],
-                "minor_issues": [],
+                "minor_issues": [
+                    "Outcome family labels should separate business outcome from "
+                    "supply chain performance more sharply.",
+                ],
                 "failed_checks": [],
                 "gate_failures": [],
                 "rubric_scores": {
@@ -13009,6 +13012,7 @@ def test_source_literature_fallback_resubmits_clean_terminal_revise_same_cycle(
     assert submitted_payloads[1]["parent_object_id"] == "sub-clean-1"
     assert submitted_payloads[1]["metadata"]["revision_of"] == "sub-clean-1"
     assert submitted_payloads[1]["metadata"]["revision_of_object_id"] == "sub-clean-1"
+    assert "Outcome family labels" in submitted_payloads[1]["metadata"]["reviewer_repair_notes"]
     assert "stale-prior-submission" not in json.dumps(submitted_payloads[1], sort_keys=True)
     assert ledger["source_literature_fallback_attempts"][0]["terminal_resubmit_queued"] is True
     assert ledger["source_literature_fallback_attempts"][0]["terminal_resubmit_immediate"] is True

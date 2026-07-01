@@ -2705,7 +2705,7 @@ def _source_literature_writer_framing_repair_needed(
 
 def _source_literature_clean_terminal_resubmit(decision: Json) -> bool:
     return (
-        _clean_supported_revise(decision)
+        (_clean_supported_revise(decision) or _supported_minor_revise(decision))
         and "external author must resubmit" in _norm(_revision_notes(decision))
     )
 
@@ -3431,6 +3431,27 @@ def _source_literature_render_repair_revise(decision: Any) -> bool:
 
 
 def _clean_supported_revise(decision: Any) -> bool:
+    if not _supported_revise_without_hard_failures(decision):
+        return False
+    for key in ("required_revisions", "major_issues", "minor_issues", "failed_checks", "gate_failures"):
+        values = decision.get(key)
+        if isinstance(values, list) and values:
+            return False
+    return True
+
+
+def _supported_minor_revise(decision: Any) -> bool:
+    if not _supported_revise_without_hard_failures(decision):
+        return False
+    for key in ("required_revisions", "major_issues", "failed_checks", "gate_failures"):
+        values = decision.get(key)
+        if isinstance(values, list) and values:
+            return False
+    minor = decision.get("minor_issues")
+    return isinstance(minor, list) and bool(minor)
+
+
+def _supported_revise_without_hard_failures(decision: Any) -> bool:
     if (
         not isinstance(decision, dict)
         or decision.get("decision") != _DECISION_REVISE
@@ -3440,13 +3461,6 @@ def _clean_supported_revise(decision: Any) -> bool:
         return False
     if decision.get("failure_category"):
         return False
-    for key in (
-        "required_revisions", "major_issues", "minor_issues", "failed_checks",
-        "gate_failures",
-    ):
-        values = decision.get(key)
-        if isinstance(values, list) and values:
-            return False
     scores = decision.get("rubric_scores")
     if isinstance(scores, dict):
         for value in scores.values():
