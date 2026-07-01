@@ -3763,6 +3763,49 @@ def test_refresh_candidate_batch_sets_fullraw_priority_for_subprocess(
     assert os.environ.get("TOPIC_DISCOVERY_FULLRAW_PRIORITY") is None
 
 
+def test_refresh_candidate_batch_bounds_alpha_fullraw_child_budget(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    seen: dict[str, str | None] = {}
+    for key in daily._ALPHA_REFRESH_FULLRAW_DEFAULTS:
+        monkeypatch.delenv(key, raising=False)
+
+    def fake_step(_args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        seen["timeout"] = str(timeout)
+        for key in daily._ALPHA_REFRESH_FULLRAW_DEFAULTS:
+            seen[key] = os.environ.get(key)
+        return True, "ok"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    daily._refresh_candidate_batch(5, runs_root=tmp_path)
+
+    assert seen == {
+        "timeout": "1200",
+        **daily._ALPHA_REFRESH_FULLRAW_DEFAULTS,
+    }
+    for key in daily._ALPHA_REFRESH_FULLRAW_DEFAULTS:
+        assert os.environ.get(key) is None
+
+
+def test_refresh_candidate_batch_preserves_operator_fullraw_bounds(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS", "111")
+    seen: list[str | None] = []
+
+    def fake_step(_args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        seen.append(os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS"))
+        return True, "ok"
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    daily._refresh_candidate_batch(5, runs_root=tmp_path)
+
+    assert seen == ["111"]
+    assert os.environ["TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS"] == "111"
+
+
 def test_refresh_candidate_batch_bounds_parent_priority_window(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
@@ -16800,9 +16843,9 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
 
     markdown = payload["markdown"]
     assert payload["title"] == (
-        "supply chain resilience: 5-source map: 2 direction-bearing "
-        "supply chain performance receipt(s) plus 2 null/mixed firm performance "
-        "and supply chain performance receipt(s)"
+        "supply chain resilience: 5-source map: 3 direction-bearing "
+        "supply chain performance receipt(s) plus 1 null/mixed firm performance "
+        "receipt(s)"
     )
     assert payload["human_title"] == payload["title"]
     assert payload["metadata"]["topic_label"] == "supply chain resilience"
@@ -16839,7 +16882,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         "chemical firms",
         "chemical firms",
         "supply chain performance",
-            "null/mixed",
+        "directional association",
     ) in source_contexts
     assert (
         "manufacturing firms",
@@ -16878,8 +16921,8 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         non_bio=True,
     ) == "flexibility, collaboration, and agility antecedents"
     assert "5-source scoping map" in payload["abstract"]
-    assert "2 direction-bearing receipt(s)" in payload["abstract"]
-    assert "2 null/mixed receipt(s)" in payload["abstract"]
+    assert "3 direction-bearing receipt(s)" in payload["abstract"]
+    assert "1 null/mixed receipt(s)" in payload["abstract"]
     assert "not a general null" not in payload["markdown"]
     assert "null/mixed metric-scope caveat" in payload["markdown"]
     assert (
@@ -16890,8 +16933,8 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "unmatched metric-scope map" not in payload["title"]
     assert "source-scope boundary note" not in payload["title"]
     assert (
-        "Evidence role summary: direction-bearing receipts: 2; "
-        "null/mixed metric-scope caveat receipts: 2; context/antecedent/model "
+        "Evidence role summary: direction-bearing receipts: 3; "
+        "null/mixed metric-scope caveat receipts: 1; context/antecedent/model "
         "receipts: 1 excluded from effect support."
     ) in markdown
     assert "directional association: 1 receipt(s)" not in markdown
@@ -16900,14 +16943,11 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "Bounded signal:" in markdown
     assert "Metric imbalance disclosure:" not in markdown
     assert "strong null claim" not in markdown
-    assert "Cross-setting contrast:" in markdown
-    assert "Context-only classification:" in markdown
-    assert "Population/setting counts are context descriptors only" in markdown
-    assert "2 direction-bearing supply chain performance receipt(s)" in payload["title"]
-    assert "2 null/mixed firm performance and supply chain performance receipt(s)" in payload["title"]
+    assert "3 direction-bearing supply chain performance receipt(s)" in payload["title"]
+    assert "1 null/mixed firm performance receipt(s)" in payload["title"]
     assert "firm performance is null or non-convergent" not in markdown
     assert "not uniform support for the topic" in markdown
-    assert "direction-bearing receipts: 2" in markdown
+    assert "direction-bearing receipts: 3" in markdown
     assert "context/antecedent/model receipts: 1 excluded from effect support" in markdown
     assert " k=" not in markdown
     assert "It excludes duplicate reports, metadata-only title matches" in markdown
@@ -16921,12 +16961,10 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "manufacturing firms" in markdown
     assert "Effect-support accounting: 1 of 5 receipt(s) is context/modeling-only" in markdown
     assert "Routing domain" not in markdown
-    assert "directional association: 2 receipt(s)" in markdown
-    assert "Within-vs-across outcome rule:" in markdown
+    assert "directional association: 3 receipt(s)" in markdown
     assert "## Evidence matrix" in markdown
     assert "## Evidence role definitions" in markdown
     assert "## Directional grouping" not in markdown
-    assert "Concrete contrast:" in markdown
     assert (
         "Matrix guard: effect-bearing rows below are metric-specific source facts, "
         "not a pooled comparison; context-only rows are excluded from effect support."

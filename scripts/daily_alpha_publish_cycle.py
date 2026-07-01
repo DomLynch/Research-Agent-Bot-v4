@@ -234,6 +234,13 @@ _SUBMIT_WARM_BACKLOG_MAX_PROBE_TOPICS = max(
     min(4, _DEFAULT_MIN_SUBMIT_SOURCES),
 )
 _REFRESH_TIMEOUT_SECONDS = 1200
+_ALPHA_REFRESH_FULLRAW_DEFAULTS = {
+    "TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS": "45",
+    "TOPIC_DISCOVERY_FULLRAW_SUPPLY_PARENT_TIMEOUT_SECONDS": "420",
+    "TOPIC_DISCOVERY_FULLRAW_SUPPLY_BUDGET_SECONDS": "360",
+    "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS": "300",
+    "TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS": "240",
+}
 # User-facing "3x" repair limit: one initial submit plus three repaired
 # resubmits for the same evidence fingerprint.
 _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT = 4
@@ -5806,7 +5813,12 @@ def _refresh_candidate_batch(
         args.extend(["--exclude-topic", topic])
     priority_key = "TOPIC_DISCOVERY_FULLRAW_PRIORITY"
     old_priority = os.environ.get(priority_key)
+    old_fullraw_bounds = {
+        key: os.environ.get(key) for key in _ALPHA_REFRESH_FULLRAW_DEFAULTS
+    }
     os.environ[priority_key] = "1"
+    for key, value in _ALPHA_REFRESH_FULLRAW_DEFAULTS.items():
+        os.environ.setdefault(key, value)
     try:
         ok, note = _run_step(args, timeout=_REFRESH_TIMEOUT_SECONDS)
     finally:
@@ -5814,6 +5826,11 @@ def _refresh_candidate_batch(
             os.environ.pop(priority_key, None)
         else:
             os.environ[priority_key] = old_priority
+        for key, old_value in old_fullraw_bounds.items():
+            if old_value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = old_value
     result = {
         "ok": ok,
         "note": note,

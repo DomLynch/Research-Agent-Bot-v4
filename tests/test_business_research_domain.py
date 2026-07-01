@@ -6684,6 +6684,13 @@ def test_business_sweep_demotes_cached_priority_repair_below_fact_floor(
         [],
         {"status": "empty"},
     ))
+    monkeypatch.setattr(
+        sweep,
+        "_strict_fullraw_probe",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("cached scan-window repair should not touch live fullraw"),
+        ),
+    )
     monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
     monkeypatch.setattr(sys, "argv", [
         "run_business_alpha_sweep.py",

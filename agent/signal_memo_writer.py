@@ -2296,7 +2296,7 @@ def render_signal_memo(
         str(llm_cluster.get("claim") or "").strip().rstrip(".")
         if isinstance(llm_cluster, dict) else ""
     )
-    if cluster_claim and not evidence_map and not m3_cluster_incoherent:
+    if cluster_claim and not evidence_map and not m3_cluster_incoherent and not _headline_claim_mismatch(cluster_claim, claim, topic):
         cluster_claim = cluster_claim[0].upper() + cluster_claim[1:]
         headline = cluster_claim
         thesis = (

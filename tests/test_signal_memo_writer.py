@@ -2171,6 +2171,33 @@ def test_headline_uses_m3_cluster_claim_not_topic_slug(tmp_path: Path) -> None:
     run = tmp_path / "open_source_models_achieves_llama-evidence-ts"
     _write_run(run)
     claim = "Open-source models can match GPT-4 on specific tasks"
+    (run / "frontier_review.json").write_text(json.dumps({
+        "topic": "open_source_models",
+        "snapshot_utc": "2026-05-16T18-00-00Z",
+        "reviewer_objections": ["task selection can drive the result"],
+        "next_extractions": ["replicate on another benchmark"],
+    }), encoding="utf-8")
+    (run / "opportunities_gate.json").write_text(json.dumps({
+        "audits": [{
+            "title": claim,
+            "status": "survives",
+            "capped_opportunity": 88,
+            "rationale": "Bound receipts match the open-source model claim.",
+            "cited_fact_ids": ["101"],
+        }],
+    }), encoding="utf-8")
+    (run / "all_facts.json").write_text(json.dumps([{
+        "fact_id": "101",
+        "canonical_phrase": "Open-source models matched GPT-4 on specific tasks.",
+        "source_paper": {"doi": "10.x/open-models"},
+    }]), encoding="utf-8")
+    (run / "top_5.md").write_text(
+        "# Top 1\n\n"
+        "## #1 — score 90\n\n"
+        "**Finding:** Open-source models matched GPT-4 on specific tasks.\n"
+        "- **Alpha cues:** replication, benchmark\n",
+        encoding="utf-8",
+    )
     (run / "claim_cluster.json").write_text(
         json.dumps({"lead_fact_ids": ["101"], "claim": claim}), encoding="utf-8")
 
@@ -2179,6 +2206,21 @@ def test_headline_uses_m3_cluster_claim_not_topic_slug(tmp_path: Path) -> None:
 
     assert claim in headline
     assert "open_source_models_achieves_llama" not in headline.lower()
+
+
+def test_off_claim_m3_cluster_claim_does_not_become_headline(tmp_path: Path) -> None:
+    run = tmp_path / "carbon_tax-evidence-ts"
+    _write_run(run)
+    (run / "claim_cluster.json").write_text(json.dumps({
+        "lead_fact_ids": ["101"],
+        "claim": "Supply chain resilience improves firm profitability",
+    }), encoding="utf-8")
+
+    memo = render_signal_memo(run)
+    headline = next(line for line in memo.splitlines() if line.startswith("**Headline:**"))
+
+    assert "Supply chain resilience improves firm profitability" not in headline
+    assert "Carbon" in headline or "emissions" in headline.lower()
 
 
 def test_writer_adopts_three_source_cluster_receipts(tmp_path: Path) -> None:
