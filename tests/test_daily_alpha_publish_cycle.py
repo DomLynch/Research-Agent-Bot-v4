@@ -16207,7 +16207,7 @@ def test_source_literature_payload_uses_economics_language(
         "human clinical",
     ):
         assert phrase not in lower
-    assert "metric-scope caveat:" in markdown
+    assert "null/mixed metric-scope caveat:" in markdown
     assert "policy/exposure/practice" in markdown
     assert "matched design" in markdown
     assert "pooled elasticity" in markdown
@@ -16398,9 +16398,12 @@ def test_source_literature_payload_reconciles_single_outcome_economics_roles(
     assert "multi-outcome boundary map" not in markdown
     assert "Metric imbalance disclosure" not in markdown
     assert "non-directional caveat" not in markdown
-    assert "Evidence role summary: direction-bearing receipts: 4; metric-scope caveat receipts: 1" in markdown
+    assert (
+        "Evidence role summary: direction-bearing receipts: 4; "
+        "null/mixed metric-scope caveat receipts: 1"
+    ) in markdown
     assert "directional association: 4 receipt(s)" in markdown
-    assert "metric-scope caveat: 1 receipt(s)" in markdown
+    assert "null/mixed metric-scope caveat: 1 receipt(s)" in markdown
     assert "within-outcome heterogeneity map" in markdown
     assert "### Context-only receipts" not in markdown
 
@@ -16477,7 +16480,7 @@ def test_source_literature_payload_keeps_multiple_economics_directional_metrics(
     assert "direction-bearing receipts: 4" in markdown
     assert (
         "Substantive map: direction-bearing evidence covers price pass-through, "
-        "poverty elasticity, and earnings inequality share; metric-scope caveat "
+        "poverty elasticity, and earnings inequality share; null/mixed metric-scope caveat "
         "receipts concern employment effects."
     ) in markdown
     assert "Coverage balance: price pass-through" in markdown
@@ -16703,11 +16706,9 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
             "journal_name": "Systems",
             "source_fact": {
                 "canonical_phrase": (
-                    "In the first stage, significant criteria and their corresponding "
-                    "sub-criteria were determined through a vast review of the literature "
-                    "and nominal group technique, while the relative weights for RSS were "
-                    "obtained through the Pythagorean Fuzzy Analytic Hierarchy Process "
-                    "(PFAHP) method"
+                    "The results of the hybrid approach revealed that flexibility "
+                    "is the most important criterion among resilience criteria that "
+                    "constitute the most significant dimensions for RSS"
                 ),
                 "population": "automotive firms",
                 "intervention": "supply chain resilience",
@@ -16798,8 +16799,9 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
 
     markdown = payload["markdown"]
     assert payload["title"] == (
-        "supply chain resilience: directional support for "
-        "supply chain performance across 3 receipts, with single firm performance caveat"
+        "supply chain resilience: 5-source map: 2 direction-bearing "
+        "supply chain performance receipt(s) plus 2 null/mixed firm performance "
+        "and supply chain performance receipt(s)"
     )
     assert payload["human_title"] == payload["title"]
     assert payload["metadata"]["topic_label"] == "supply chain resilience"
@@ -16836,7 +16838,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         "chemical firms",
         "chemical firms",
         "supply chain performance",
-        "directional association",
+            "null/mixed",
     ) in source_contexts
     assert (
         "manufacturing firms",
@@ -16874,8 +16876,11 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         },
         non_bio=True,
     ) == "flexibility, collaboration, and agility antecedents"
-    assert "one firm performance receipt is a heterogeneous caveat" in payload["abstract"]
-    assert "not a general null" in payload["markdown"]
+    assert "5-source scoping map" in payload["abstract"]
+    assert "2 direction-bearing receipt(s)" in payload["abstract"]
+    assert "2 null/mixed receipt(s)" in payload["abstract"]
+    assert "not a general null" not in payload["markdown"]
+    assert "null/mixed metric-scope caveat" in payload["markdown"]
     assert (
         "do not pool them or treat antecedent/modeling rows as the same estimand"
         in payload["markdown"]
@@ -16884,8 +16889,8 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "unmatched metric-scope map" not in payload["title"]
     assert "source-scope boundary note" not in payload["title"]
     assert (
-        "Evidence role summary: direction-bearing receipts: 3; "
-        "metric-scope caveat receipts: 1; context/antecedent/model "
+        "Evidence role summary: direction-bearing receipts: 2; "
+        "null/mixed metric-scope caveat receipts: 2; context/antecedent/model "
         "receipts: 1 excluded from effect support."
     ) in markdown
     assert "directional association: 1 receipt(s)" not in markdown
@@ -16894,17 +16899,18 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "Bounded signal:" in markdown
     assert "Metric imbalance disclosure:" not in markdown
     assert "strong null claim" not in markdown
-    assert "Cross-setting contrast:" not in markdown
-    assert "Context-only classification:" not in markdown
-    assert "Population/setting counts are context descriptors only" not in markdown
-    assert "directional support for supply chain performance" in markdown
+    assert "Cross-setting contrast:" in markdown
+    assert "Context-only classification:" in markdown
+    assert "Population/setting counts are context descriptors only" in markdown
+    assert "2 direction-bearing supply chain performance receipt(s)" in payload["title"]
+    assert "2 null/mixed firm performance and supply chain performance receipt(s)" in payload["title"]
     assert "firm performance is null or non-convergent" not in markdown
-    assert "not support for the topic as a whole" in markdown
-    assert "direction-bearing receipts: 3" in markdown
+    assert "not uniform support for the topic" in markdown
+    assert "direction-bearing receipts: 2" in markdown
     assert "context/antecedent/model receipts: 1 excluded from effect support" in markdown
     assert " k=" not in markdown
     assert "It excludes duplicate reports, metadata-only title matches" in markdown
-    assert "Resolve the metric-scope caveat" in markdown
+    assert "Resolve the null/mixed metric-scope caveat" in markdown
     assert "supply chain performance and firm performance" in markdown
     assert "inside one matched industry, comparator, and metric frame" in markdown
     assert "Evidence weight: one effect-bearing receipt supports supply chain performance" not in markdown
@@ -16914,12 +16920,12 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "manufacturing firms" in markdown
     assert "Effect-support accounting: 1 of 5 receipt(s) is context/modeling-only" in markdown
     assert "Routing domain" not in markdown
-    assert "directional association: 3 receipt(s)" in markdown
-    assert "Within-vs-across outcome rule:" not in markdown
+    assert "directional association: 2 receipt(s)" in markdown
+    assert "Within-vs-across outcome rule:" in markdown
     assert "## Evidence matrix" in markdown
     assert "## Evidence role definitions" in markdown
     assert "## Directional grouping" not in markdown
-    assert "Concrete contrast:" not in markdown
+    assert "Concrete contrast:" in markdown
     assert (
         "Matrix guard: effect-bearing rows below are metric-specific source facts, "
         "not a pooled comparison; context-only rows are excluded from effect support."
@@ -16952,8 +16958,9 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "non-directional caveat | chemical firms | supply chain performance" not in markdown
     assert "hypotheses of a positive impact" in markdown
     assert "have been rejected" in markdown
-    assert "method or modelling receipt; no direct effect estimate extracted" in markdown
-    assert "null/mixed" not in markdown
+    assert "most important criterion" in markdown
+    assert "method or modelling receipt; no direct effect estimate extracted" not in markdown
+    assert "null/mixed metric-scope caveat" in markdown
     assert "heterogeneity" not in markdown.lower()
     assert "Policy/exposure/practice: supply chain resilience" in markdown
     assert "Finding: The aim of this study is to identify" not in markdown
@@ -17059,7 +17066,7 @@ def test_source_literature_payload_collapses_business_context_rows(
     assert "- metric-scope caveat:" not in markdown
     assert (
         "Evidence role summary: direction-bearing receipts: 2; "
-        "metric-scope caveat receipts: 0; context/antecedent/model "
+        "null/mixed metric-scope caveat receipts: 0; context/antecedent/model "
         "receipts: 3 excluded from effect support."
     ) in markdown
     assert (

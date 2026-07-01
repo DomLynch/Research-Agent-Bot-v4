@@ -866,7 +866,9 @@ def _effect_direction(finding: str, fact: Json | None = None, topic: str = "") -
     if any(term in text for term in (
         "no significant", "no effect", "null", "p = 0.83", "p=0.83",
         "not statistically different", "indistinguishable from zero",
-        "not associated", "no association", "hypothesis rejected",
+        "not associated", "no association", "insignificant effect",
+        "insignificant effects", "insignificant influence",
+        "insignificant impact", "hypothesis rejected",
         "hypotheses rejected", "hypotheses have been rejected",
         "hypothesis has been rejected", "rejected", "not supported",
         "failed to support",
@@ -916,6 +918,12 @@ def _display_finding(fact: Json, direction: str = "") -> str:
     if not finding:
         return ""
     if direction == "non-clinical/predictive" and _looks_method_or_aim_only(finding.casefold()):
+        if re.search(
+            r"\b(?:important|importance|ranking|ranked|criterion|criteria|ahp|vikor)\b",
+            finding,
+            flags=re.I,
+        ) and not re.search(r"\b(?:aim|purpose|objective)s? of (?:this|the) study\b", finding, flags=re.I):
+            return finding
         return "method or modelling receipt; no direct effect estimate extracted"
     return finding
 
@@ -1082,9 +1090,9 @@ def _memo_role_label(label: str, profile_slug: str = "") -> str:
     if not _non_biomedical(profile_slug):
         return label
     return {
-        "null/mixed": "metric-scope caveat",
+        "null/mixed": "null/mixed metric-scope caveat",
         "other/mixed": "context-only receipt",
-        "null/non-convergent": "metric-scope caveat",
+        "null/non-convergent": "null/mixed metric-scope caveat",
     }.get(label, label)
 
 
@@ -1194,8 +1202,9 @@ def _direction_category_lines(topic: str, profile_slug: str = "") -> list[str]:
             "policy, or institutional context rather than a policy-effect estimate.",
             "- descriptive/modeling: the receipt reports modelling or prediction "
             "rather than a policy-effect estimate.",
-            "- metric-scope caveat: the receipt constrains the directional "
-            "scope to the named metric rather than the broader outcome set.",
+            "- null/mixed metric-scope caveat: the receipt reports null, mixed, "
+            "or rejected findings for the named metric/outcome and must not be "
+            "softened into directional support.",
             "- context-only receipt: the extracted finding is retained as adjacent "
             "scope context, not direction-bearing support for the named metric.",
         ]
@@ -1227,7 +1236,7 @@ def _used_direction_category_lines(
         if (
             label in used_roles
             or (
-                label == "metric-scope caveat"
+                label == "null/mixed metric-scope caveat"
                 and bool(used_roles & {"null/mixed", "null/non-convergent"})
             )
             or (
@@ -1279,7 +1288,7 @@ def _evidence_role_summary(papers: list[Json], topic: str = "", profile_slug: st
             context_only += 1
     parts = [
         f"direction-bearing receipts: {directional}",
-        f"metric-scope caveat receipts: {nullish}",
+        f"null/mixed metric-scope caveat receipts: {nullish}",
     ]
     if context_only:
         parts.append(
@@ -1622,12 +1631,14 @@ def _bounded_signal_sentence(
         for endpoint in endpoints_by_label.get(label, [])
     ))
     if non_bio and directional and nullish:
+        nullish_text = ", ".join(nullish[:2])
+        nullish_verb = "are" if len(nullish) > 1 else "is"
         return (
-            f"Bounded signal: {topic_text} has directional support for "
-            f"{', '.join(directional[:2])}; one {', '.join(nullish[:2])} "
-            f"receipt is a heterogeneous caveat, not a general null"
+            f"Bounded signal: {topic_text} has direction-bearing receipts for "
+            f"{', '.join(directional[:2])}; {nullish_text} {nullish_verb} "
+            "null/mixed in separate receipt(s), not softened scope caveats"
             f"{f' across {family_text}' if family_text else ''}. "
-            "That supports a narrow scoping contrast, not support for the topic as a whole."
+            "That supports only a narrow scoping contrast, not uniform support for the topic."
         )
     if non_bio and directional:
         directional_text = join_contexts(directional[:3])
@@ -1932,7 +1943,7 @@ def payload(
     source_identity_total = source_identity_count(selected, require_substantive=True)
     question = (
         f"Across retrieved source-level receipts for {topic_label}, which metrics, "
-        "settings, or contrasts carry directional support versus caveat evidence, "
+        "settings, or contrasts carry direction-bearing versus null/mixed or context-only evidence, "
         "and what matched design remains untested?"
         if non_bio else
         f"Across retrieved source-level receipts for {topic_label}, which endpoints show "
@@ -2144,7 +2155,7 @@ def payload(
                     f"{direction_prefix} {join_contexts(directional_endpoints[:4])}",
                 )
         for label, prefix in (
-            ("null/mixed", "metric-scope caveat receipts concern"),
+            ("null/mixed", "null/mixed metric-scope caveat receipts concern"),
             ("antecedent/support", "antecedent/support receipts contextualize"),
             ("descriptive/modeling", "descriptive/modeling receipts only contextualize"),
         ):
@@ -2384,14 +2395,14 @@ def payload(
         synthesis += " " + cross_setting_text
     if non_bio:
         source_synthesis_note = (
-            "Interpretation: keep direction-bearing, caveat, and context/model "
+            "Interpretation: keep direction-bearing, null/mixed caveat, and context/model "
             "rows separate; do not pool them or treat antecedent/modeling rows as "
             "the same estimand."
         )
         if nullish_count == 1 and single_caveat_endpoint:
             source_synthesis_note += (
                 f" The {single_caveat_endpoint} caveat is based on one heterogeneous "
-                "receipt, so it is not a general null for that outcome family."
+                "receipt, and remains an explicit null/mixed boundary for that outcome family."
             )
     else:
         source_synthesis_note = ""
@@ -2434,6 +2445,16 @@ def payload(
             "scoping map, not a comparator claim, pooled effect, or broad market "
             "signal."
         )
+    elif non_bio and directional_endpoints and nullish_endpoints:
+        abstract_text = (
+            f"{topic_label}: {len(bundle)}-source scoping map: "
+            f"{directional_count} direction-bearing receipt(s) for "
+            f"{join_contexts(directional_endpoints[:3])}; {nullish_count} "
+            f"null/mixed receipt(s) for {join_contexts(nullish_endpoints[:2])}; "
+            f"{context_only_count} context/model receipt(s) excluded from effect support. "
+            "Primary next gap: retest inside one matched industry, comparator, and metric frame. "
+            "No pooled causal, policy-prescriptive, or market-generalized claim is made."
+        )
     elif non_bio and not thin_non_bio_scope:
         abstract_text = (
             f"{topic_label}: {bounded_signal} Context-only rows are "
@@ -2455,7 +2476,7 @@ def payload(
         nullish = ", ".join(list(dict.fromkeys(endpoints_by_label["null/mixed"]))[:2])
         next_gaps.insert(
             0,
-            "Resolve the metric-scope caveat by retesting "
+            "Resolve the null/mixed metric-scope caveat by retesting "
             f"{directional} and {nullish} inside one matched industry, comparator, "
             "and metric frame before generalizing the directional receipts.",
         )
@@ -2503,7 +2524,7 @@ def payload(
         if thin_non_bio_scope else
         "Audit note: effect-bearing rows stay metric-specific; context-only rows "
         "are excluded from effect support; role counts below keep direction-bearing, "
-        "metric-scope caveat, and context-only receipts separate."
+        "null/mixed metric-scope caveat, and context-only receipts separate."
         if non_bio else synthesis
     )
     extra_source_notes = [
@@ -2516,7 +2537,7 @@ def payload(
         f" Effect-support accounting: {context_only_count} of {len(selected)} "
         "receipt(s) is context/modeling-only and contributes no effect estimate; "
         f"{directional_count} receipt(s) are direction-bearing and {nullish_count} "
-        "receipt(s) are metric-scope caveats."
+        "receipt(s) are null/mixed metric-scope caveats."
         if non_bio and context_only_count else ""
     )
     routing_boundary_note = (
@@ -2669,9 +2690,10 @@ def payload(
         f"source-scope map across {join_contexts(title_directional_endpoints[:3])} receipts"
         if context_heavy_non_bio_scope else
         (
-            f"directional support for {primary_duplicated_endpoint} across "
+            f"{len(bundle)}-source map: "
             f"{directional_endpoint_counts.get(primary_duplicated_endpoint, directional_count)} "
-            f"receipts, with single {single_caveat_endpoint} caveat"
+            f"direction-bearing {primary_duplicated_endpoint} receipt(s) plus "
+            f"{nullish_count} null/mixed {single_caveat_endpoint} receipt(s)"
         )
         if (
             non_bio and multi_display_outcome and primary_duplicated_endpoint
@@ -2681,8 +2703,9 @@ def payload(
         if non_bio and primary_duplicated_endpoint and comparator_title_endpoints else
         f"within-{display_outcome_families[0]} heterogeneity map across {len(bundle)} sources"
         if non_bio and len(display_outcome_families) == 1 else
-        f"directional support for {join_contexts(title_directional_endpoints)} "
-        f"but null or mixed support for {join_contexts(nullish_endpoints[:2])}"
+        f"{len(bundle)}-source map: {directional_count} direction-bearing "
+        f"{join_contexts(title_directional_endpoints)} receipt(s) plus "
+        f"{nullish_count} null/mixed {join_contexts(nullish_endpoints[:2])} receipt(s)"
         if non_bio and title_directional_endpoints and nullish_endpoints else
         f"non-poolable direction-bearing cells for {join_contexts(title_directional_endpoints)}"
         if non_bio and len(title_directional_endpoints) > 1 and context_only_count else
