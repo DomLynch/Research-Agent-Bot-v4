@@ -5874,6 +5874,116 @@ def test_business_sweep_skips_cached_recent_submission_without_priority_repair(
     assert submissions == [fresh_topic]
 
 
+def test_business_sweep_retries_cached_ready_source_floor_without_priority_repair(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    runs_root = tmp_path / "runs"
+    ledger_dir = runs_root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    topic = "operations_process_improvement"
+    submissions: list[dict[str, Any]] = []
+
+    cycle._write_json(ledger_dir / "2026-06-30T08-00-00Z.json", {
+        "domain": {"slug": "business_research"},
+        "source_literature_fallback": {
+            "topic": topic,
+            "status": "blocked",
+            "reason": "source_floor_below_min",
+        },
+    })
+
+    def papers_for(value: str) -> list[dict[str, Any]]:
+        return [
+            {
+                "title": f"{value.replace('_', ' ')} source {idx}",
+                "doi": f"10.6464/{value}-{idx}",
+                "journal_name": f"Outlet {idx}",
+                "abstract": (
+                    f"{value.replace('_', ' ')} changes bounded operating "
+                    f"outcome {idx}."
+                ),
+                "source_fact": {
+                    "canonical_phrase": (
+                        f"{value.replace('_', ' ')} changes bounded operating "
+                        f"outcome {idx}"
+                    ),
+                    "population": "firms",
+                    "intervention": value.replace("_", " "),
+                    "endpoint": f"operating outcome {idx}",
+                    "source_tier": "fullraw_search",
+                },
+            }
+            for idx in range(1, 6)
+        ]
+
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        submissions.append(kwargs)
+        forced = kwargs["source_literature_forced_papers"][topic]
+        assert len(forced) == 5
+        assert publish_literature.substantive_fact_count(forced) == 5
+        assert publish_literature.source_identity_count(
+            forced, require_substantive=True,
+        ) == 5
+        assert sweep._source_outlet_count(forced) == 5
+        return {"status": "submitted_to_researka", "submitted": 1, "published": 0}
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [topic])
+    monkeypatch.setattr(
+        sweep,
+        "_prioritized_seed_topics",
+        lambda _root, _domain, topics: topics,
+    )
+    monkeypatch.setattr(
+        cycle,
+        "_priority_source_literature_repair_decisions",
+        lambda *_args, **_kwargs: {},
+    )
+    monkeypatch.setattr(
+        cycle,
+        "_repairable_source_literature_topics",
+        lambda *_args, **_kwargs: [],
+    )
+    monkeypatch.setattr(
+        cycle,
+        "_pending_source_literature_topics",
+        lambda *_args, **_kwargs: [],
+    )
+    monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", lambda _topic: 0)
+    monkeypatch.setattr(
+        sweep,
+        "_cached_ready_source_literature_papers",
+        lambda _root, _domain, value, _settings: papers_for(value),
+    )
+    monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: (
+        (_ for _ in ()).throw(AssertionError("cached-ready topic should run first")),
+        {},
+    ))
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(runs_root),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-07-01T05-45-00Z",
+    ])
+
+    assert sweep.main() == 0
+    assert submissions == [{
+        "runs_root": runs_root,
+        "date": "2026-07-01T05-45-00Z",
+        "domain": "business_research",
+        "submit": True,
+        "refresh_candidates": False,
+        "source_literature_forced_papers": {topic: papers_for(topic)},
+    }]
+
+
 def test_business_sweep_skips_pending_source_literature_topic(
     tmp_path: Path,
     monkeypatch: Any,

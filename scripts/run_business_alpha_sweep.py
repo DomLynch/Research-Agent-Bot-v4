@@ -2042,6 +2042,38 @@ def main() -> int:
                 )
                 if _topic_key(topic)
             }
+            recent_submission_topic_keys = {
+                _topic_key(topic)
+                for topic in publish_cycle._recent_submission_topics(
+                    args.runs_root / "_daily_ledger" / "_submitted_fingerprints.json",
+                    days=int(
+                        getattr(
+                            publish_cycle,
+                            "_DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS",
+                            30,
+                        ),
+                    ),
+                    domain=domain,
+                )
+                if _topic_key(topic)
+            }
+            soft_source_lit_repair_keys = {
+                _topic_key(topic)
+                for topic in (
+                    publish_cycle._recent_source_floor_topics(
+                        args.runs_root / "_daily_ledger",
+                        days=2,
+                        domain=domain,
+                        source_literature_only=True,
+                    )
+                    | publish_cycle._recent_source_literature_structural_blocked_topics(
+                        args.runs_root / "_daily_ledger",
+                        days=2,
+                        domain=domain,
+                    )
+                )
+                if _topic_key(topic)
+            }
             repairable_source_lit_topics = list(dict.fromkeys([
                 *priority_source_lit_topics,
                 *repairable_source_lit_topics,
@@ -2063,7 +2095,12 @@ def main() -> int:
                 seed_key = _topic_key(seed_topic)
                 if seed_key not in blocked_topic_keys or seed_key in hard_blocked_topic_keys:
                     continue
-                if seed_topic not in priority_source_lit_topics:
+                soft_repair = (
+                    seed_key in soft_source_lit_repair_keys
+                    and seed_key not in recent_submission_topic_keys
+                    and seed_key not in pending_source_lit_topic_keys
+                )
+                if seed_topic not in priority_source_lit_topics and not soft_repair:
                     continue
                 ready_papers = _cached_ready_source_literature_papers(
                     args.runs_root, domain, seed_topic, settings,
