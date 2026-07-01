@@ -412,7 +412,9 @@ def test_business_fetch_filters_global_fallback_when_live_schema_rejects_domain(
 
     assert [row["id"] for row in rows] == ["finance-1"]
     assert calls[0]["domain"] == "econ_business"
+    assert calls[0]["numeric_only"] is True
     assert "domain" not in calls[1]
+    assert calls[1]["numeric_only"] is True
     assert len(calls) == 2
     assert timeouts == [90.0, 90.0]
     assert trace["status"] == "fallback_filtered"
@@ -421,6 +423,58 @@ def test_business_fetch_filters_global_fallback_when_live_schema_rejects_domain(
     assert trace["fallback_unfiltered_facts"] == 2
     assert trace["facts"] == 1
     assert trace["domain_filter_used"] is False
+
+
+def test_fetch_business_facts_can_include_directional_source_literature(
+    monkeypatch: Any,
+) -> None:
+    calls: list[dict[str, Any]] = []
+
+    class _Settings:
+        researka_database_url = "https://database.test"
+        researka_database_token = "tok"
+
+    def fake_post(
+        url: str,
+        *,
+        headers: dict[str, str],
+        json: dict[str, Any],
+        timeout: float,
+    ) -> httpx.Response:
+        calls.append(json)
+        return httpx.Response(
+            200,
+            json=[{
+                "id": "directional-1",
+                "topic": "platform strategy network profitability",
+                "claim_type": "directional_receipt",
+                "canonical_phrase": (
+                    "Platform strategy network effects improved firm profitability."
+                ),
+                "population": "firms",
+                "intervention": "platform strategy network effects",
+                "outcome": "firm profitability",
+                "metric": "firm profitability",
+                "paper": {
+                    "doi": "10.6161/platform-directional",
+                    "title": "Platform strategy network effects and firm profitability",
+                    "journal_name": "Strategy Evidence Letters",
+                },
+            }],
+            request=httpx.Request("POST", url),
+        )
+
+    monkeypatch.setattr("agent.business_research.httpx.post", fake_post)
+
+    rows, _trace = fetch_business_facts(
+        "platform_strategy_network_profitability",
+        domain="business_research",
+        settings=cast(Any, _Settings()),
+        numeric_only=False,
+    )
+
+    assert len(rows) == 1
+    assert calls[0]["numeric_only"] is False
 
 
 def test_business_bundle_rejects_off_topic_medical_management_fact() -> None:
@@ -4323,6 +4377,116 @@ def test_business_sweep_uses_distinct_db_facts_to_complete_fullraw_bundle(
     assert {paper["doi"] for paper in forced} == {
         f"10.6161/min-wage-{idx}" for idx in range(5)
     }
+
+
+def test_business_sweep_refetches_directional_source_lit_facts_after_numeric_miss(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    runs_root = tmp_path / "runs"
+    topic = "platform_strategy_network_profitability"
+    submissions: list[dict[str, Any]] = []
+    outlets = (
+        "Alpha Strategy Review",
+        "Beta Platform Journal",
+        "Gamma Network Letters",
+        "Delta Business Quarterly",
+        "Epsilon Profitability Studies",
+    )
+    directional_facts = [
+        {
+            "id": f"platform-{idx}",
+            "topic": "platform strategy network profitability",
+            "claim_type": "directional_receipt",
+            "canonical_phrase": (
+                "Platform strategy network effects improved firm profitability "
+                f"in bounded receipt {idx}."
+            ),
+            "population": "firms",
+            "intervention": "platform strategy network effects",
+            "comparator": "non-platform strategy baseline",
+            "outcome": "firm profitability",
+            "metric": "firm profitability",
+            "study_design": f"empirical strategy design {idx}",
+            "paper": {
+                "doi": f"10.6161/platform-directional-{idx}",
+                "title": f"Platform strategy networks and profitability source {idx}",
+                "journal_name": outlets[idx],
+                "publication_year": 2024,
+            },
+        }
+        for idx in range(5)
+    ]
+
+    def fake_fetch(
+        *_args: Any,
+        **kwargs: Any,
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        if kwargs.get("numeric_only") is False:
+            return directional_facts, {
+                "status": "ok",
+                "facts": len(directional_facts),
+                "numeric_only": False,
+            }
+        return [], {"status": "ok", "facts": 0, "numeric_only": True}
+
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        submissions.append(kwargs)
+        forced = kwargs["source_literature_forced_papers"][topic]
+        assert publish_literature.substantive_fact_count(forced) == 5
+        assert publish_literature.source_identity_count(
+            forced,
+            require_substantive=True,
+        ) == 5
+        assert publish_literature.source_outlet_count(forced) == 5
+        return {
+            "status": "submitted_to_researka",
+            "submitted": 1,
+            "published": 0,
+            "publish_summary": {
+                "status": "submitted_to_researka",
+                "submitted": 1,
+                "published": 0,
+                "top_blockers": {},
+                "next_action": "watch_decision_or_public_page",
+                "queue_counts": {"ready_to_publish": 1},
+                "public_url_status": None,
+            },
+        }
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [topic])
+    monkeypatch.setattr(sweep, "fetch_business_facts", fake_fetch)
+    monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", lambda _topic: 0)
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", lambda _topic, **_kwargs: {
+        "status": "complete",
+        "paper_count": 5,
+        "shards_searched": 1525,
+        "partial_shard_search": False,
+        "sweep_failed_shards": 0,
+        "_papers": [
+            {
+                "title": f"Platform strategy networks and profitability source {idx}",
+                "doi": f"10.6161/platform-directional-{idx}",
+            }
+            for idx in range(5)
+        ],
+    })
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(runs_root),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-07-01T03-30-00Z",
+    ])
+
+    assert sweep.main() == 0
+    assert submissions
 
 
 def test_business_sweep_hands_off_selected_five_fact_backed_sources(

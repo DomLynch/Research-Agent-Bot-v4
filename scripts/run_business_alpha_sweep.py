@@ -938,8 +938,6 @@ def _business_fact_source_literature_papers(
         phrase = str(fact.get("canonical_phrase") or "").strip()
         if not key or key in seen or not phrase:
             continue
-        if fact.get("numeric_value") is None and fact.get("effect_size") is None:
-            continue
         source_paper = fact.get("source_paper")
         source_paper = source_paper if isinstance(source_paper, dict) else {}
         title = str(source_paper.get("title") or phrase).strip()
@@ -2278,6 +2276,33 @@ def main() -> int:
                     fact_papers = _business_fact_source_literature_papers(
                         facts, topic=topic, domain=domain,
                     )
+                    if (
+                        fullraw_papers
+                        and publish_literature.substantive_fact_count(fact_papers)
+                        < MIN_DIRECT_SOURCES
+                    ):
+                        source_lit_facts, source_lit_trace = fetch_business_facts(
+                            topic,
+                            domain=domain,
+                            settings=settings,
+                            numeric_only=False,
+                        )
+                        source_lit_fact_papers = _business_fact_source_literature_papers(
+                            source_lit_facts,
+                            topic=topic,
+                            domain=domain,
+                        )
+                        if source_lit_fact_papers:
+                            fact_papers = _merge_source_literature_papers(
+                                fact_papers,
+                                source_lit_fact_papers,
+                            )
+                            fullraw_trace["source_literature_fact_fetch_status"] = (
+                                source_lit_trace.get("status")
+                            )
+                            fullraw_trace["source_literature_fact_fetch_count"] = len(
+                                source_lit_facts,
+                            )
                     if fact_papers:
                         fullraw_papers = _merge_source_literature_papers(
                             fullraw_papers, fact_papers,

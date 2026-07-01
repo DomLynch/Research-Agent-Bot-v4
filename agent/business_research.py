@@ -321,11 +321,11 @@ def _matches_topic_intent(fact: Json) -> bool:
     return len(tokens & words) >= min(2, len(tokens))
 
 
-def _fallback_rows(raw_rows: list[Json], *, topic: str, domain: str) -> list[Json]:
+def _fallback_rows(raw_rows: list[Json], *, topic: str, domain: str, numeric_only: bool) -> list[Json]:
     rows: list[Json] = []
     for row in raw_rows:
         fact = normalize_business_fact(row, topic=topic, domain=domain)
-        if not source_key(fact) or fact.get("numeric_value") is None:
+        if not source_key(fact) or (numeric_only and fact.get("numeric_value") is None):
             continue
         if not _matches_topic_intent(fact):
             continue
@@ -819,7 +819,7 @@ def fetch_business_facts(
     *,
     domain: str,
     settings: Settings,
-    top_k: int = FETCH_TOP_K,
+    top_k: int = FETCH_TOP_K, numeric_only: bool = True,
 ) -> tuple[list[Json], Json]:
     base = settings.researka_database_url.rstrip("/")
     token = settings.researka_database_token.strip()
@@ -829,7 +829,7 @@ def fetch_business_facts(
         "query": topic.replace("_", " "),
         "top_k": top_k,
         "min_confidence": "medium",
-        "numeric_only": True,
+        "numeric_only": numeric_only,
     }
     domain_body = {"domain": _database_domain(domain), **body}
     try:
@@ -852,7 +852,7 @@ def fetch_business_facts(
             response.raise_for_status()
             data = response.json()
             raw_rows = [row for row in data if isinstance(row, dict)] if isinstance(data, list) else []
-            rows = _fallback_rows(raw_rows, topic=topic, domain=domain)
+            rows = _fallback_rows(raw_rows, topic=topic, domain=domain, numeric_only=numeric_only)
             return rows, {
                 "status": "fallback_filtered",
                 "facts": len(rows),
