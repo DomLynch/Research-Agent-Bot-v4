@@ -2226,11 +2226,20 @@ def main() -> int:
             hard_blocked_topic_keys = _hard_source_literature_blocked_topic_keys(
                 args.runs_root, domain,
             )
+            repairable_source_lit_topic_keys = {
+                _topic_key(topic) for topic in repairable_source_lit_topics
+            }
             cached_ready_source_lit: dict[str, list[dict[str, Any]]] = {}
             cached_pending_source_lit: set[str] = set()
             for seed_topic in seed_pool:
                 seed_key = _topic_key(seed_topic)
-                if seed_key not in blocked_topic_keys or seed_key in hard_blocked_topic_keys:
+                if (
+                    seed_key in hard_blocked_topic_keys
+                    or (
+                        seed_key not in blocked_topic_keys
+                        and seed_key not in repairable_source_lit_topic_keys
+                    )
+                ):
                     continue
                 soft_repair = (
                     (
