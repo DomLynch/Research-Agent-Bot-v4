@@ -1911,6 +1911,37 @@ def _cached_ready_source_literature_papers(
     return ready
 
 
+def _cached_source_literature_discovery_topics(
+    runs_root: Path, domain: str, *, limit: int,
+) -> list[str]:
+    discovery_dir = runs_root / "_topics_discovery"
+    prefix = f"business_sweep_fullraw.{domain}."
+    topics: list[str] = []
+    seen: set[str] = set()
+    files = sorted(
+        discovery_dir.glob(f"{prefix}*.json"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    for path in files:
+        if len(topics) >= limit:
+            break
+        discovery = read_json(path, {})
+        rows = discovery.get("all") if isinstance(discovery, dict) else None
+        row = rows[0] if isinstance(rows, list) and rows and isinstance(rows[0], dict) else {}
+        if _count_int(row.get("paper_count")) < MIN_DIRECT_SOURCES:
+            continue
+        topic = str(row.get("topic") or "").strip()
+        if not topic and path.name.startswith(prefix):
+            topic = path.name[len(prefix):-5]
+        key = _topic_key(topic)
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        topics.append(topic)
+    return topics
+
+
 def _cached_pending_fullraw_completion(topic: str) -> bool:
     try:
         discovery = importlib.import_module("scripts.run_topic_discovery")
@@ -2395,6 +2426,20 @@ def main() -> int:
                 topic for topic in non_repair_fresh_topics
                 if _topic_key(topic) not in repairable_source_lit_topic_keys
             ]
+            discovery_cache_scan_topics = [
+                topic for topic in _cached_source_literature_discovery_topics(
+                    args.runs_root, domain, limit=cache_ready_scan_limit,
+                )
+                if (
+                    _topic_key(topic) not in blocked_topic_keys
+                    and _topic_key(topic) not in pending_source_lit_topic_keys
+                    and _topic_key(topic) not in repairable_source_lit_topic_keys
+                )
+            ]
+            cache_ready_scan_topics = list(dict.fromkeys([
+                *cache_ready_scan_topics,
+                *discovery_cache_scan_topics,
+            ]))
             cached_ready_fresh_topics: list[str] = []
             if not repairable_fresh_topics:
                 for topic in cache_ready_scan_topics[:cache_ready_scan_limit]:
