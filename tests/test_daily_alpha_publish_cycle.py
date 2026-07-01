@@ -11782,6 +11782,93 @@ def _usable_boundary_papers() -> list[dict[str, Any]]:
     ]
 
 
+def test_forced_source_literature_bypasses_broad_pending_family_block(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", "1")
+    root = tmp_path / "repo"
+    ledger_dir = root / "_daily_ledger"
+    daily._write_json(ledger_dir / "2026-07-01T09-00-00Z.json", {
+        "domain": {"slug": "business_research"},
+        "status": "submitted_to_researka",
+        "final_verdict": "pending",
+        "submitted_topic": "supply_chain_resilience_performance",
+        "candidate": {
+            "topic": "supply_chain_resilience_performance",
+            "run_dir": "supply_chain_resilience_performance-source-literature-2026-07-01T09-00-00Z",
+        },
+    })
+    forced_topic = "supply_chain_resilience_value"
+    outlets = (
+        "Alpha Supply Review",
+        "Beta Operations Journal",
+        "Gamma Logistics Letters",
+        "Delta Strategy Quarterly",
+        "Epsilon Value Studies",
+    )
+    titles = (
+        "Supply chain resilience value in manufacturing networks",
+        "Supplier flexibility and business value after disruption",
+        "Operational resilience capabilities and firm value creation",
+        "Logistics recovery practices and value protection",
+        "Procurement resilience routines and value outcomes",
+    )
+    papers = [
+        {
+            "title": titles[idx],
+            "doi": f"10.4321/forced-value-{idx}",
+            "journal_name": outlets[idx],
+            "source_fact": {
+                "canonical_phrase": (
+                    f"{forced_topic.replace('_', ' ')} significantly improves "
+                    f"bounded firm value outcome {idx}"
+                ),
+                "population": "firms",
+                "intervention": forced_topic.replace("_", " "),
+                "endpoint": f"firm value outcome {idx}",
+                "source_tier": "fullraw_search",
+            },
+        }
+        for idx in range(5)
+    ]
+    submitted: list[str] = []
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submitted.append(str(payload.get("topic") or ""))
+        return {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": "sub-forced-value"}},
+        }
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-07-01T11-30-00Z",
+        domain="business_research",
+        queue=_queue(),
+        submit=True,
+        source_literature_forced_papers={forced_topic: papers},
+        submitter=submitter,
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/forced-value"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Forced</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert submitted == [forced_topic]
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == forced_topic
+    attempt = ledger["source_literature_fallback_attempts"][0]
+    assert attempt["reason"] == "ok"
+    assert attempt["selected_source_count"] == 5
+    assert attempt["selected_source_fact_count"] == 5
+    assert attempt["selected_source_identity_count"] == 5
+
+
 def test_published_source_literature_topic_is_not_repaired_again(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

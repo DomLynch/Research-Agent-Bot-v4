@@ -6985,8 +6985,13 @@ def run_cycle(
             *blocked_parent_variant_topics,
             *standard_repair_topics,
         ]:
-            if topic not in blocked_parent_variant_topics and _source_literature_family_blocked_topic(
-                topic, pending_source_literature_topics,
+            if (
+                topic not in forced_source_lit
+                and topic not in resumable_source_lit
+                and topic not in blocked_parent_variant_topics
+                and _source_literature_family_blocked_topic(
+                    topic, pending_source_literature_topics,
+                )
             ):
                 continue
             if topic not in literature_topics:
