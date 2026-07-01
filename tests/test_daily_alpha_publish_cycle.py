@@ -6294,6 +6294,7 @@ def test_sync_submission_decisions_backfills_terminal_resubmit_job(
         "domain_slug": "business_research",
         "status": "reviewer_revise",
         "submission_id": "parent-submission",
+        "submission": {"id": "parent-submission"},
         "source_literature_fallback_attempts": [{
             "topic": "supply_chain_performance",
             "run_dir": "supply-chain-run",

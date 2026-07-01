@@ -2037,8 +2037,14 @@ def _submission_record_patch(ledger: Json) -> Json:
 
 
 def _ledger_submission_id(ledger: Json) -> str:
-    from_response = publish_decisions.submission_id(ledger.get("submission", {}))
     stored = str(ledger.get("submission_id") or "").strip()
+    pending_reason = str(ledger.get("pending_reason") or "").strip()
+    if stored and pending_reason in {
+        "terminal_resubmit_job_queued",
+        "same_parent_terminal_resubmit_queued",
+    }:
+        return stored
+    from_response = publish_decisions.submission_id(ledger.get("submission", {}))
     return from_response or stored
 
 
