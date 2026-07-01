@@ -589,7 +589,7 @@ def _strict_fullraw_probe(
                             _fullraw_unadmitted_queue_event(result)
                             and _fullraw_queue_full(result)
                         ):
-                            result["queue_shed"] = True
+                            result["queue_waiting"] = True
                             result["backoff_seconds"] = _business_fullraw_backoff_seconds()
                             break
                         if source_candidates >= MIN_DIRECT_SOURCES or idx + 1 >= len(queries):
@@ -604,6 +604,16 @@ def _strict_fullraw_probe(
                         and not _fullraw_admitted_pending_event(result)
                     ):
                         break
+                    if (
+                        _fullraw_unadmitted_queue_event(result)
+                        and _fullraw_queue_full(result)
+                    ):
+                        remaining = queue_retry_deadline - time.monotonic()
+                        if remaining <= 0:
+                            result["queue_shed"] = True
+                            break
+                        time.sleep(min(poll_seconds, remaining))
+                        continue
                     if result.get("queue_shed") is True:
                         break
                     remaining = queue_retry_deadline - time.monotonic()
