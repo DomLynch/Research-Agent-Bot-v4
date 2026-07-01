@@ -2365,12 +2365,12 @@ def main() -> int:
             )
             cache_rank_limit = max(args.topics_per_domain, args.topics_per_domain * 3)
             cache_ready_scan_limit = max(cache_rank_limit, args.topics_per_domain * 8)
+            cache_ready_scan_topics = [
+                topic for topic in non_repair_fresh_topics
+                if _topic_key(topic) not in repairable_source_lit_topic_keys
+            ]
             cached_ready_fresh_topics: list[str] = []
             if not repairable_fresh_topics:
-                cache_ready_scan_topics = [
-                    topic for topic in non_repair_fresh_topics
-                    if _topic_key(topic) not in repairable_source_lit_topic_keys
-                ]
                 for topic in cache_ready_scan_topics[:cache_ready_scan_limit]:
                     ready_papers = _cached_ready_source_literature_papers(
                         args.runs_root, domain, topic, settings,
@@ -2404,7 +2404,11 @@ def main() -> int:
                     flush=True,
                 )
             source_lit_attempted_topic_keys: set[str] = set()
-            for topic in selected_topics:
+            deferred_cache_ready_scan_done = not repairable_fresh_topics
+            topic_idx = 0
+            while topic_idx < len(selected_topics):
+                topic = selected_topics[topic_idx]
+                topic_idx += 1
                 if _topic_key(topic) in source_lit_attempted_topic_keys:
                     continue
                 cached_repair_papers: list[dict[str, Any]] = []
@@ -2501,6 +2505,29 @@ def main() -> int:
                         "reviewer_rejected",
                         "reviewer_revise",
                     }:
+                        if not deferred_cache_ready_scan_done:
+                            deferred_cache_ready_scan_done = True
+                            existing_topic_keys = {
+                                _topic_key(item) for item in selected_topics
+                            }
+                            extra_ready_topics: list[str] = []
+                            for candidate_topic in (
+                                cache_ready_scan_topics[:cache_ready_scan_limit]
+                            ):
+                                candidate_key = _topic_key(candidate_topic)
+                                if (
+                                    candidate_key in existing_topic_keys
+                                    or candidate_key in source_lit_attempted_topic_keys
+                                ):
+                                    continue
+                                ready_papers = _cached_ready_source_literature_papers(
+                                    args.runs_root, domain, candidate_topic, settings,
+                                )
+                                if len(ready_papers) >= MIN_DIRECT_SOURCES:
+                                    extra_ready_topics.append(candidate_topic)
+                                    existing_topic_keys.add(candidate_key)
+                            if extra_ready_topics:
+                                selected_topics[topic_idx:topic_idx] = extra_ready_topics
                         continue
                     return 0 if repair_row["status"] in {
                         "submitted_to_researka", "published",
