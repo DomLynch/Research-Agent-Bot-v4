@@ -2054,6 +2054,8 @@ def main() -> int:
                 seed_key = _topic_key(seed_topic)
                 if seed_key not in blocked_topic_keys or seed_key in hard_blocked_topic_keys:
                     continue
+                if seed_topic not in priority_source_lit_topics:
+                    continue
                 ready_papers = _cached_ready_source_literature_papers(
                     args.runs_root, domain, seed_topic, settings,
                 )
