@@ -5984,6 +5984,133 @@ def test_business_sweep_retries_cached_ready_source_floor_without_priority_repai
     }]
 
 
+def test_business_sweep_retries_source_floor_with_pending_fullraw_completion(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    runs_root = tmp_path / "runs"
+    ledger_dir = runs_root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    topic = "platform_strategy_network"
+    fullraw_calls: list[str] = []
+    submissions: list[str] = []
+
+    cycle._write_json(ledger_dir / "2026-06-30T08-05-00Z.json", {
+        "domain": {"slug": "business_research"},
+        "source_literature_fallback": {
+            "topic": topic,
+            "status": "blocked",
+            "reason": "source_floor_below_min",
+        },
+    })
+
+    def papers_for(value: str) -> list[dict[str, Any]]:
+        outlets = (
+            "Platform Strategy Review",
+            "Network Economics Journal",
+            "Digital Market Quarterly",
+            "Management Systems Letters",
+            "Firm Performance Studies",
+        )
+        return [
+            {
+                "title": f"{value.replace('_', ' ')} source {idx}",
+                "doi": f"10.6565/{value}-{idx}",
+                "journal_name": outlets[idx - 1],
+                "abstract": (
+                    f"{value.replace('_', ' ')} changes bounded firm "
+                    f"performance outcome {idx}."
+                ),
+                "source_fact": {
+                    "canonical_phrase": (
+                        f"{value.replace('_', ' ')} changes bounded firm "
+                        f"performance outcome {idx}"
+                    ),
+                    "population": "firms",
+                    "intervention": value.replace("_", " "),
+                    "endpoint": f"firm performance outcome {idx}",
+                    "source_tier": "fullraw_search",
+                },
+            }
+            for idx in range(1, 6)
+        ]
+
+    def fake_fullraw(value: str, **kwargs: Any) -> dict[str, Any]:
+        fullraw_calls.append(value)
+        result = {
+            "status": "complete",
+            "paper_count": 5,
+            "candidate_fact_source_count": 5,
+            "shards_searched": 1525,
+            "partial_shard_search": False,
+            "sweep_failed_shards": 0,
+            "_papers": papers_for(value),
+        }
+        if kwargs.get("include_papers"):
+            return result
+        return {key: item for key, item in result.items() if key != "_papers"}
+
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        forced = kwargs["source_literature_forced_papers"]
+        submissions.append(next(iter(forced)))
+        return {"status": "published", "submitted": 1, "published": 1}
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [topic])
+    monkeypatch.setattr(
+        sweep,
+        "_prioritized_seed_topics",
+        lambda _root, _domain, topics: topics,
+    )
+    monkeypatch.setattr(
+        cycle,
+        "_priority_source_literature_repair_decisions",
+        lambda *_args, **_kwargs: {},
+    )
+    monkeypatch.setattr(
+        cycle,
+        "_repairable_source_literature_topics",
+        lambda *_args, **_kwargs: [],
+    )
+    monkeypatch.setattr(
+        cycle,
+        "_pending_source_literature_topics",
+        lambda *_args, **_kwargs: [],
+    )
+    monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", lambda _topic: 0)
+    monkeypatch.setattr(
+        sweep,
+        "_cached_ready_source_literature_papers",
+        lambda *_args, **_kwargs: [],
+    )
+    monkeypatch.setattr(
+        sweep,
+        "_cached_pending_fullraw_completion",
+        lambda value: value == topic,
+    )
+    monkeypatch.setattr(sweep, "fetch_business_facts", lambda *_args, **_kwargs: (
+        [],
+        {"status": "empty"},
+    ))
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", fake_fullraw)
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(runs_root),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-07-01T06-05-00Z",
+    ])
+
+    assert sweep.main() == 0
+    assert fullraw_calls == [topic]
+    assert submissions == [topic]
+
+
 def test_business_sweep_skips_pending_source_literature_topic(
     tmp_path: Path,
     monkeypatch: Any,

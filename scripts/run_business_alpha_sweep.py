@@ -1719,6 +1719,22 @@ def _cached_ready_source_literature_papers(
     return ready
 
 
+def _cached_pending_fullraw_completion(topic: str) -> bool:
+    try:
+        discovery = importlib.import_module("scripts.run_topic_discovery")
+    except (ImportError, AttributeError):
+        return False
+    fingerprint = discovery.__dict__.get("_fullraw_query_fingerprint")
+    cached = discovery.__dict__.get("_cached_fullraw_in_progress")
+    if not callable(fingerprint) or not callable(cached):
+        return False
+    for query in _business_fullraw_queries(topic):
+        key = fingerprint(query)
+        if key and cached(key):
+            return True
+    return False
+
+
 def _recent_source_literature_repair_attempt_topics(
     runs_root: Path, domain: str, *, days: int = 2,
 ) -> list[str]:
@@ -2091,6 +2107,7 @@ def main() -> int:
                 args.runs_root, domain,
             )
             cached_ready_source_lit: dict[str, list[dict[str, Any]]] = {}
+            cached_pending_source_lit: set[str] = set()
             for seed_topic in seed_pool:
                 seed_key = _topic_key(seed_topic)
                 if seed_key not in blocked_topic_keys or seed_key in hard_blocked_topic_keys:
@@ -2107,16 +2124,22 @@ def main() -> int:
                 )
                 if len(ready_papers) >= MIN_DIRECT_SOURCES:
                     cached_ready_source_lit[seed_topic] = ready_papers
-            if cached_ready_source_lit:
+                elif soft_repair and _cached_pending_fullraw_completion(seed_topic):
+                    cached_pending_source_lit.add(seed_topic)
+            if cached_ready_source_lit or cached_pending_source_lit:
                 blocked_topic_keys -= {
                     _topic_key(topic) for topic in cached_ready_source_lit
+                } | {
+                    _topic_key(topic) for topic in cached_pending_source_lit
                 }
                 repairable_source_lit_topics = list(dict.fromkeys([
                     *cached_ready_source_lit,
+                    *cached_pending_source_lit,
                     *repairable_source_lit_topics,
                 ]))
                 seed_pool = list(dict.fromkeys([
                     *cached_ready_source_lit,
+                    *cached_pending_source_lit,
                     *seed_pool,
                 ]))
             prioritized_topics = _prioritized_seed_topics(
@@ -2134,12 +2157,14 @@ def main() -> int:
             repairable_source_lit_set = set(repairable_source_lit_topics)
             priority_source_lit_set = set(priority_source_lit_topics)
             cached_ready_source_lit_set = set(cached_ready_source_lit)
+            cached_pending_source_lit_set = set(cached_pending_source_lit)
             repairable_fresh_topics = [
                 topic for topic in repairable_source_lit_topics
                 if topic in fresh_topics
                 and (
                     topic in priority_source_lit_set
                     or topic in cached_ready_source_lit_set
+                    or topic in cached_pending_source_lit_set
                 )
             ]
             repairable_budget_fresh_topics = {
