@@ -5953,7 +5953,7 @@ def test_business_sweep_skips_cached_recent_submission_without_priority_repair(
     fullraw_calls: list[str] = []
 
     cycle._write_json(ledger_dir / "_submitted_fingerprints.json", [{
-        "date": "2026-06-30T08-00-00Z",
+        "date": dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ"),
         "domain": "business_research",
         "topic": stale_topic,
         "fingerprint": "old-source-lit-payload",
@@ -6534,7 +6534,7 @@ def test_business_sweep_retries_cached_ready_source_lit_despite_recent_submissio
     topic = "supply_chain_resilience"
     submissions: list[dict[str, Any]] = []
     cycle._write_json(ledger_dir / "_submitted_fingerprints.json", [{
-        "date": "2026-06-30T08-00-00Z",
+        "date": dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ"),
         "domain": "business_research",
         "status": "reviewer_revise",
         "topic": topic,
@@ -7794,6 +7794,103 @@ def test_business_sweep_enriches_fullraw_article_abstracts_without_metadata_only
     assert enriched[0]["source_fact"]["endpoint"] == "environmental performance"
     assert enriched[0]["source_fact"]["canonical_phrase"].startswith("Findings show")
     assert "source_fact" not in enriched[1]
+
+
+def test_business_sweep_prefers_result_sentence_for_abstract_source_fact(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(sweep, "_tier2_facts_for_paper", lambda **_kwargs: [])
+    settings = SimpleNamespace(
+        researka_database_url="",
+        researka_database_token="",
+    )
+
+    def source(
+        suffix: str, title: str, outlet: str, phrase: str, endpoint: str,
+        *, abstract: str = "",
+    ) -> dict[str, Any]:
+        return {
+            "title": title,
+            "doi": f"10.6161/dt-result-{suffix}",
+            "journal_name": outlet,
+            **({"abstract": abstract} if abstract else {}),
+            "source_fact": {
+                "canonical_phrase": phrase,
+                "population": "firms",
+                "intervention": "digital transformation",
+                "endpoint": endpoint,
+                "source_tier": "fullraw_search",
+            },
+        }
+
+    title_echo = (
+        "Effects of digital transformation on firm performance: "
+        "The role of IT capabilities and digital orientation"
+    )
+    papers = [
+        source(
+            "a", "Digital transformation and firm environmental performance",
+            "Alpha Strategy Journal",
+            "digital transformation significantly enhances firm environmental performance",
+            "environmental performance",
+        ),
+        source(
+            "b", title_echo, "Beta Management Journal", title_echo,
+            "firm performance",
+            abstract=(
+                "However, although IT capabilities play a critical role, the "
+                "mechanism driving IT capabilities towards enhanced firm "
+                "performance is not fully understood. Results confirm a "
+                "positive effect of IT capabilities on firm performance through "
+                "the development of a digital orientation and the digital "
+                "transformation of the organisation."
+            ),
+        ),
+        source(
+            "c", "Digital transformation and return on assets",
+            "Gamma Finance Review",
+            "digital transformation significantly increases return on assets",
+            "return on assets",
+        ),
+        source(
+            "d", "Digital transformation context source one",
+            "Delta Operations Review",
+            "digital transformation context marker one was documented across firms",
+            "context marker one",
+        ),
+        source(
+            "e", "Digital transformation context source two",
+            "Epsilon Digital Business",
+            "digital transformation context marker two was documented across firms",
+            "context marker two",
+        ),
+    ]
+
+    enriched = sweep._enrich_fullraw_papers_with_db_facts(
+        "digital_transformation_firm",
+        domain="business_research",
+        papers=papers,
+        settings=settings,
+    )
+    ready, reason = sweep._source_literature_ready_papers(
+        "digital_transformation_firm",
+        "business_research",
+        enriched,
+    )
+
+    assert reason == "ok"
+    assert publish_literature.substantive_fact_count(ready) == 5
+    assert publish_literature.source_identity_count(ready, require_substantive=True) == 5
+    assert publish_literature.source_outlet_count(ready) == 5
+    assert publish_literature._directional_receipt_count(
+        ready, "digital_transformation_firm", "business_research",
+    ) == 3
+    assert any(
+        str((paper.get("source_fact") or {}).get("canonical_phrase") or "").startswith(
+            "Results confirm a positive effect",
+        )
+        for paper in ready
+    )
 
 
 def test_business_sweep_resynthesizes_stale_parent_facts_for_child_topic(

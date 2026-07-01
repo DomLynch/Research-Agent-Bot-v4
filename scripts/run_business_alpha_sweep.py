@@ -773,6 +773,15 @@ _ABSTRACT_AIM_ONLY_RE = re.compile(
     r"this (?:paper|study|research) (?:examines|investigates|seeks)|"
     r"identify|evaluate|assess)\b"
 )
+_ABSTRACT_RESULT_CUE_RE = re.compile(
+    r"\b(?:findings?|results?|reveals?|revealed|shows?|showed|indicates?|"
+    r"indicated|demonstrates?|demonstrated|suggests?|suggested|confirms?|"
+    r"confirmed|we find|we found)\b"
+)
+_ABSTRACT_GAP_CUE_RE = re.compile(
+    r"\b(?:although|however|not fully understood|gap|aims? to|purpose|"
+    r"objective|background)\b"
+)
 
 
 def _first_sentence(text: str, *, limit: int = 220) -> str:
@@ -788,6 +797,7 @@ def _first_sentence(text: str, *, limit: int = 220) -> str:
 def _abstract_finding_sentence(text: str, *, limit: int = 700) -> str:
     clean = re.sub(r"<[^>]+>", " ", str(text or ""))
     clean = " ".join(clean.split()).strip()
+    candidates: list[tuple[int, int, str]] = []
     for sentence in re.split(r"(?<=[.!?])\s+", clean):
         candidate = sentence.strip()
         lowered = candidate.casefold()
@@ -797,9 +807,19 @@ def _abstract_finding_sentence(text: str, *, limit: int = 700) -> str:
         if _ABSTRACT_AIM_ONLY_RE.search(lowered) and not (tokens & _ABSTRACT_RESULT_TERMS):
             continue
         if tokens & _ABSTRACT_RESULT_TERMS:
-            if len(candidate) <= limit:
-                return candidate.rstrip(".")
-            return candidate[:limit].rsplit(" ", 1)[0].rstrip(".,;")
+            score = 0
+            if _ABSTRACT_RESULT_CUE_RE.search(lowered):
+                score += 3
+            if lowered.startswith(("findings", "results", "we find", "we found")):
+                score += 2
+            if _ABSTRACT_GAP_CUE_RE.search(lowered):
+                score -= 2
+            candidates.append((score, -len(candidates), candidate))
+    if candidates:
+        candidate = max(candidates)[2]
+        if len(candidate) <= limit:
+            return candidate.rstrip(".")
+        return candidate[:limit].rsplit(" ", 1)[0].rstrip(".,;")
     return ""
 
 
