@@ -9999,6 +9999,80 @@ def test_parented_terminal_source_literature_repair_bypasses_stale_source_floor(
     )
 
 
+def test_terminal_feedback_source_literature_repair_bypasses_stale_source_floor(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    ledger_dir = root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    topic = "supply_chain_resilience_employment"
+    run_dir = root / f"{topic}-source-literature-2026-07-01T23-15-26Z"
+    run_dir.mkdir(parents=True)
+    run_dir.joinpath("source_literature_memo.md").write_text(
+        "# Source literature boundary memo\n", encoding="utf-8",
+    )
+    daily._write_json(ledger_dir / "2026-07-01T23-10-00Z.json", {
+        "domain": {"slug": "business_research"},
+        "source_literature_fallback": {
+            "topic": topic,
+            "status": "blocked",
+            "reason": "source_floor_below_min",
+            "selected_source_count": 3,
+            "selected_source_fact_count": 3,
+            "selected_source_identity_count": 3,
+        },
+    })
+    daily._write_json(ledger_dir / "2026-07-01T23-15-26Z.json", {
+        "domain": {"slug": "business_research"},
+        "submitted": 1,
+        "submission_id": "sub-terminal-feedback",
+        "candidate": {
+            "topic": topic,
+            "run_dir": run_dir.name,
+            "fingerprint": f"fp-{topic}",
+        },
+        "researka_decision": {
+            "decision": "revise",
+            "claim_support_verdict": "partially_supported",
+            "required_revisions": [
+                "Rename or reclassify the automotive AHP-VIKOR receipt in the title and abstract.",
+                "Tighten the boundary-map language so effect-bearing rows stay distinct.",
+            ],
+            "major_issues": [],
+            "minor_issues": [],
+            "failed_checks": [],
+            "gate_failures": [],
+            "rubric_scores": {
+                "claim_evidence_alignment": 4,
+                "source_grounding": 4,
+                "synthesis_quality": 4,
+            },
+            "notes": ["editorial decision is terminal; external author must resubmit"],
+            "resubmission": {"allowed": True},
+        },
+    })
+    daily._write_json(ledger_dir / "2026-07-01T23-16-00Z.json", {
+        "domain": {"slug": "business_research"},
+        "source_literature_fallback": {
+            "topic": topic,
+            "status": "blocked",
+            "reason": "duplicate_submission_fingerprint",
+            "selected_source_count": 5,
+            "selected_source_fact_count": 5,
+            "selected_source_identity_count": 5,
+        },
+    })
+
+    repair_decisions = daily._repairable_source_literature_decisions(
+        root, "business_research", limit=3,
+    )
+
+    assert list(repair_decisions) == [topic]
+    assert daily._priority_source_literature_repair_decisions(
+        root, "business_research", limit=3,
+    ) == {topic: repair_decisions[topic]}
+
+
 def test_clean_terminal_source_literature_gets_parent_link_retry_after_old_attempts(
     tmp_path: Path,
 ) -> None:

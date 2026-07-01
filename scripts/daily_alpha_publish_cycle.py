@@ -2838,8 +2838,16 @@ def _repairable_source_literature_decisions(
             writer_framing_repair = _source_literature_writer_framing_repair_needed(
                 runs_root, domain, topic, decision,
             )
+            terminal_feedback_repair = _source_literature_terminal_feedback_repair_needed(
+                decision,
+            )
+            source_floor_repair = (
+                parented_terminal_resubmit
+                or writer_framing_repair
+                or terminal_feedback_repair
+            )
             if (
-                not (parented_terminal_resubmit or writer_framing_repair)
+                not source_floor_repair
                 and (
                     topic in structurally_blocked
                     or _family_blocked_topic(topic, structurally_blocked)
@@ -2852,7 +2860,7 @@ def _repairable_source_literature_decisions(
                 continue
             if (
                 not (
-                    (parented_terminal_resubmit or writer_framing_repair)
+                    source_floor_repair
                     and (
                         topic in source_floor_satisfied
                         or _family_blocked_topic(topic, source_floor_satisfied)
