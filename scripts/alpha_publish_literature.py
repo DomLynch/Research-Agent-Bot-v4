@@ -1062,6 +1062,15 @@ def _uniform_favorable_cross_pico(papers: list[Json], min_sources: int) -> bool:
 
 def _paper_evidence_role(paper: Json, topic: str = "", profile_slug: str = "") -> str:
     direction = _paper_effect_direction(paper, topic)
+    if _non_biomedical(profile_slug) and direction == "other/mixed":
+        fact = paper.get("source_fact")
+        fact = fact if isinstance(fact, dict) else {}
+        text = title_key(" ".join(str(value or "") for value in (
+            paper.get("title"), paper.get("paper_title"), fact.get("canonical_phrase"),
+            fact.get("endpoint"), fact.get("metric"), fact.get("intervention"),
+        )))
+        if "antecedent" in text or "mediat" in text:
+            return "antecedent/support"
     if (
         _non_biomedical(profile_slug)
         and direction == "other/mixed"
@@ -1942,9 +1951,9 @@ def payload(
     context_text = join_contexts(contexts[:3])
     source_identity_total = source_identity_count(selected, require_substantive=True)
     question = (
-        f"Across retrieved source-level receipts for {topic_label}, which metrics, "
-        "settings, or contrasts carry direction-bearing versus null/mixed or context-only evidence, "
-        "and what matched design remains untested?"
+        f"Does {topic_label} show a consistent direction-bearing association in "
+        "the selected source bundle, and where do null/mixed or context-only "
+        "receipts bound the claim?"
         if non_bio else
         f"Across retrieved source-level receipts for {topic_label}, which endpoints show "
         "directionally favorable versus null/non-convergent signals, and what "
@@ -1973,6 +1982,10 @@ def payload(
                 "scoping front rather than proof of intervention efficacy."
             )
         ),
+        "",
+        "## Plain-language synthesis",
+        "",
+        "",
         "",
         "## Boundary map",
         "",
@@ -2258,6 +2271,11 @@ def payload(
         direction == "directionally favorable" for direction in directions
     )
     source_types = sorted({evidence_type(paper) for paper in selected})
+    missing_year_titles = [
+        str(paper.get("title") or "Untitled source").strip()
+        for paper in selected
+        if year_value(paper.get("year") or paper.get("publication_year")) is None
+    ]
     split_front = (
         "directionally favorable" in direction_text
         and "non-clinical/predictive" in direction_text
@@ -2487,6 +2505,8 @@ def payload(
             f"{join_contexts([endpoint for endpoint, _count in duplicated_directional_endpoints[:3]])} "
             "is not over-represented relative to the other named metrics inside the same scoping map.",
         )
+    if non_bio:
+        next_gaps = list(dict.fromkeys(next_gaps))[:3]
     boundary_summary = (
         (
             f"Source-literature boundary for {topic}: the listed sources define "
@@ -2662,6 +2682,21 @@ def payload(
         *next_gaps,
         "",
     ])
+    plain_language = (
+        f"{directional_count} of {len(selected)} selected receipts are direction-bearing "
+        f"for {join_contexts(directional_endpoints[:3]) or 'the named outcome'}; "
+        f"{nullish_count} receipt(s) are null/mixed and {context_only_count} are "
+        "context/model only. This is a bounded source-literature signal, not a pooled effect."
+        if non_bio else bounded_signal
+    )
+    if missing_year_titles:
+        plain_language += (
+            " Publication-year audit: missing year for "
+            f"{join_contexts([_short_finding(title, 80) for title in missing_year_titles[:3]])}."
+        )
+    if "## Plain-language synthesis" in lines:
+        idx = lines.index("## Plain-language synthesis") + 2
+        lines[idx] = plain_language
     markdown = "\n".join(lines)
     (run_dir / "source_literature_memo.md").write_text(markdown, encoding="utf-8")
     write_json(run_dir / "source_literature_writer.json", writer_meta)

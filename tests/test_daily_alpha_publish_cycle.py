@@ -17070,9 +17070,10 @@ def test_source_literature_payload_collapses_business_context_rows(
         "receipts: 3 excluded from effect support."
     ) in markdown
     assert (
-        "Direction labels for audit: context-only receipt: 3 receipt(s) | "
-        "directional association: 2 receipt(s)."
+        "Direction labels for audit: context-only receipt: 2 receipt(s) | "
+        "directional association: 2 receipt(s) | antecedent/support: 1 receipt(s)."
     ) in markdown
+    assert "## Plain-language synthesis" in markdown
     assert "This receipt-backed source-scope note maps a heterogeneous source set" in markdown
     assert "maps separate non-poolable metric cells" not in markdown
     assert (
