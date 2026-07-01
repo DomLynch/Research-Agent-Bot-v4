@@ -2364,6 +2364,19 @@ def main() -> int:
                 repairable_budget_fresh_topics - repairable_fresh_set,
             )
             cache_rank_limit = max(args.topics_per_domain, args.topics_per_domain * 3)
+            cache_ready_scan_limit = max(cache_rank_limit, args.topics_per_domain * 8)
+            cached_ready_fresh_topics: list[str] = []
+            if not repairable_fresh_topics:
+                cache_ready_scan_topics = [
+                    topic for topic in non_repair_fresh_topics
+                    if _topic_key(topic) not in repairable_source_lit_topic_keys
+                ]
+                for topic in cache_ready_scan_topics[:cache_ready_scan_limit]:
+                    ready_papers = _cached_ready_source_literature_papers(
+                        args.runs_root, domain, topic, settings,
+                    )
+                    if len(ready_papers) >= MIN_DIRECT_SOURCES:
+                        cached_ready_fresh_topics.append(topic)
             cache_rank_topics = non_repair_fresh_topics[:cache_rank_limit]
             ranked_topics = [
                 topic for _hits, _idx, topic in sorted(
@@ -2381,6 +2394,7 @@ def main() -> int:
             )
             selected_topics = list(dict.fromkeys([
                 *repairable_fresh_topics,
+                *cached_ready_fresh_topics,
                 *ranked_topics,
             ]))[:selected_limit]
             if skipped_recent:
