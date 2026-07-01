@@ -138,12 +138,20 @@ def test_fetch_papers_topups_nonbio_directional_underfill(
             "firm revenue",
         ),
     ]
-    topup_rows = [(
-        "10.9100/dtf-6",
-        "Digital transformation firm productivity",
-        "digital transformation significantly improves firm productivity",
-        "firm productivity",
-    )]
+    topup_rows = [
+        (
+            "10.9100/dtf-6",
+            "Digital transformation firm productivity",
+            "digital transformation significantly improves firm productivity",
+            "firm productivity",
+        ),
+        (
+            "10.9100/dtf-7",
+            "Digital transformation firm margin",
+            "digital transformation significantly improves firm operating margin",
+            "operating margin",
+        ),
+    ]
     calls: list[str] = []
 
     monkeypatch.setattr(
@@ -199,7 +207,7 @@ def test_fetch_papers_topups_nonbio_directional_underfill(
     assert literature.source_identity_count(selected, require_substantive=True) == 5
     assert literature._directional_receipt_count(
         selected, topic, "business_research",
-    ) == 2
+    ) == 3
     assert literature.boundary_quality(
         topic,
         papers,
@@ -345,7 +353,7 @@ def test_select_boundary_papers_skips_internal_id_only_source() -> None:
     assert literature.source_identity_count(selected, require_substantive=True) == 5
 
 
-def test_non_bio_selection_prefers_second_directional_receipt() -> None:
+def test_non_bio_selection_prefers_third_directional_receipt() -> None:
     topic = "digital_transformation_firm"
     papers = [
         {
@@ -390,6 +398,11 @@ def test_non_bio_selection_prefers_second_directional_receipt() -> None:
                 "firm revenue",
                 "digital transformation increased firm revenue by 12 percent",
             ),
+            (
+                "Digital transformation and operating margin",
+                "operating margin",
+                "digital transformation significantly improves operating margin",
+            ),
         ), start=1)
     ]
 
@@ -405,7 +418,8 @@ def test_non_bio_selection_prefers_second_directional_receipt() -> None:
     assert literature.substantive_fact_count(selected) == 5
     assert literature.source_identity_count(selected, require_substantive=True) == 5
     assert "10.8100/dtf-6" in {paper["doi"] for paper in selected}
-    assert roles.count("directional association") == 2
+    assert "10.8100/dtf-7" in {paper["doi"] for paper in selected}
+    assert roles.count("directional association") == 3
     assert literature.boundary_quality(
         topic, papers, 5, profile_slug="business_research",
     ) == (True, "ok")

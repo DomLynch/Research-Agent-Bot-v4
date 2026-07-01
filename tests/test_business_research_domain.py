@@ -8339,7 +8339,7 @@ def test_business_source_literature_blocks_title_echo_fact_bundle() -> None:
     assert reason == "requires_fact_level_source_synthesis"
 
 
-def test_business_source_literature_allows_two_directional_fact_backed_map() -> None:
+def test_business_source_literature_blocks_two_directional_fact_backed_map() -> None:
     papers = [
         {
             "title": "Digital transformation and firm profitability",
@@ -8383,6 +8383,76 @@ def test_business_source_literature_allows_two_directional_fact_backed_map() -> 
                 },
             }
             for idx in range(1, 4)
+        ],
+    ]
+
+    ok, reason = publish_literature.boundary_quality(
+        "digital_transformation_firm",
+        papers,
+        5,
+        strict_topic_coverage=True,
+        profile_slug="business_research",
+    )
+
+    assert not ok
+    assert reason == "directional_receipt_floor_below_min"
+
+
+def test_business_source_literature_allows_three_directional_fact_backed_map() -> None:
+    papers = [
+        {
+            "title": "Digital transformation and firm profitability",
+            "doi": "10.5555/dt-profit",
+            "source_fact": {
+                "canonical_phrase": (
+                    "digital transformation significantly increases firm profitability"
+                ),
+                "population": "listed firms",
+                "intervention": "digital transformation",
+                "endpoint": "firm profitability",
+            },
+        },
+        {
+            "title": "Digital transformation and return on assets",
+            "doi": "10.5555/dt-roa",
+            "source_fact": {
+                "canonical_phrase": (
+                    "digital transformation significantly increases return on assets"
+                ),
+                "population": "listed firms",
+                "intervention": "digital transformation",
+                "endpoint": "return on assets",
+            },
+        },
+        {
+            "title": "Digital transformation and operating margin",
+            "doi": "10.5555/dt-margin",
+            "source_fact": {
+                "canonical_phrase": (
+                    "digital transformation significantly increases operating margin"
+                ),
+                "population": "listed firms",
+                "intervention": "digital transformation",
+                "endpoint": "operating margin",
+            },
+        },
+        *[
+            {
+                "title": [
+                    "Digital transformation in firm operating models",
+                    "Firm digital transformation governance map",
+                ][idx - 1],
+                "doi": f"10.5555/dt-context-{idx}",
+                "source_fact": {
+                    "canonical_phrase": (
+                        f"implementation scope marker {idx} was documented across firms"
+                    ),
+                    "population": "firms",
+                    "intervention": "digital transformation",
+                    "endpoint": f"context marker {idx}",
+                },
+            }
+            for idx in range(1, 3)
         ],
     ]
 

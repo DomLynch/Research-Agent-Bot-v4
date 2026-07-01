@@ -14079,7 +14079,7 @@ def test_source_literature_fallback_expands_final_empty_parent_topic(
         rows = [
             ("10.8222/bm-1", "Business model revenue performance", "business model had a significant positive effect on revenue performance", "revenue performance"),
             ("10.8222/bm-2", "Business model firm performance", "business model had a significant positive effect on firm performance", "firm performance"),
-            ("10.8222/bm-3", "Business model operating context", "business model operating patterns were mapped across firms", "operating context"),
+            ("10.8222/bm-3", "Business model operating margin", "business model had a significant positive effect on operating margin", "operating margin"),
             ("10.8222/bm-4", "Business model customer context", "business model customer channels varied across firm settings", "customer context"),
             ("10.8222/bm-5", "Business model governance context", "business model governance constraints were documented across firms", "governance context"),
         ]
@@ -14587,7 +14587,7 @@ def test_source_literature_fetcher_prefers_tier2_fact_backed_papers(
     assert timeouts == [12.0, 12.0]
 
 
-def test_source_literature_fetcher_accepts_two_directional_fact_map(
+def test_source_literature_fetcher_keeps_topup_for_three_directional_fact_map(
     monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(daily, "load_settings", lambda: type("S", (), {
@@ -14642,14 +14642,14 @@ def test_source_literature_fetcher_accepts_two_directional_fact_map(
         profile_slug="business_research",
     )
 
-    assert len(papers) == 5
+    assert len(papers) == 6
     assert publish_literature.boundary_quality(
         "digital_transformation_firm",
         first_five,
         5,
         strict_topic_coverage=True,
         profile_slug="business_research",
-    ) == (True, "ok")
+    ) == (False, "directional_receipt_floor_below_min")
     assert publish_literature.boundary_quality(
         "digital_transformation_firm",
         papers,
@@ -14659,7 +14659,7 @@ def test_source_literature_fetcher_accepts_two_directional_fact_map(
     ) == (True, "ok")
     assert publish_literature._directional_receipt_count(
         selected, "digital_transformation_firm", "business_research",
-    ) == 2
+    ) == 3
 
 
 def test_source_literature_fetcher_supplements_thin_fact_search_with_fullraw(
