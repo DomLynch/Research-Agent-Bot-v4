@@ -134,6 +134,14 @@ _OUTCOME_QUERY_TOKENS = frozenset({
     "profit", "profitability", "return", "returns", "revenue", "risk",
     "sales", "volatility",
 })
+_SOURCE_LABEL_GENERIC_TOKENS = _GENERIC_TOPIC_TOKENS | _OUTCOME_QUERY_TOKENS | frozenset({
+    "business", "businesses", "chain", "companies", "company", "firm", "firms",
+    "market", "markets", "metric", "metrics", "source", "sources", "supply",
+})
+_SOURCE_LABEL_EDGE_TOKENS = frozenset({
+    "and", "as", "by", "for", "from", "in", "into", "of", "on", "or", "the",
+    "to", "with",
+})
 _DIRECTIONAL_TOPUP_QUERY_TOKENS = (
     "profitability", "revenue", "sales", "productivity", "margin", "returns",
     "employment", "price", "risk", "volatility",
@@ -1660,14 +1668,70 @@ def _topic_signal_label(topic: str, *, non_bio: bool = False) -> str:
     return " ".join(words) or _topic_title_label(topic)
 
 
+def _source_label_text(paper: Json) -> str:
+    fact = paper.get("source_fact")
+    fact = fact if isinstance(fact, dict) else {}
+    return title_key(" ".join(str(value or "") for value in (
+        paper.get("title"), paper.get("paper_title"), fact.get("canonical_phrase"),
+        fact.get("endpoint"), fact.get("metric"),
+    )))
+
+
+def _source_grounded_topic_label(topic: str, papers: list[Json], profile_slug: str) -> str:
+    non_bio = _non_biomedical(profile_slug)
+    label = _topic_signal_label(topic, non_bio=non_bio)
+    if not non_bio or not papers:
+        return label
+    label_tokens = [
+        token for token in title_key(label).split()
+        if len(token) >= 3 and token not in _GENERIC_TOPIC_TOKENS
+    ]
+    corpus_words = " ".join(_source_label_text(paper) for paper in papers).split()
+    if label_tokens and all(
+        any(_token_matches(word, token) for word in corpus_words)
+        for token in label_tokens
+    ):
+        return label
+    counts: dict[str, int] = {}
+    order: dict[str, int] = {}
+    label_token_set = set(label_tokens)
+    for paper in papers:
+        words = _source_label_text(paper).split()
+        seen: set[str] = set()
+        for size in (4, 3, 2):
+            for idx in range(0, max(0, len(words) - size + 1)):
+                tokens = words[idx:idx + size]
+                if (
+                    tokens[0] in _SOURCE_LABEL_EDGE_TOKENS
+                    or tokens[-1] in _SOURCE_LABEL_EDGE_TOKENS
+                    or not label_token_set.intersection(tokens)
+                    or all(token in _SOURCE_LABEL_GENERIC_TOKENS for token in tokens)
+                ):
+                    continue
+                phrase = " ".join(tokens)
+                if phrase in seen:
+                    continue
+                seen.add(phrase)
+                order.setdefault(phrase, len(order))
+                counts[phrase] = counts.get(phrase, 0) + 1
+    candidates = [
+        phrase for phrase, count in counts.items()
+        if count >= min(3, max(2, len(papers)))
+    ]
+    if not candidates:
+        return label
+    return sorted(candidates, key=lambda item: (-counts[item], -len(item.split()), order[item]))[0]
+
+
 def _bounded_signal_sentence(
     topic: str,
     endpoints_by_label: dict[str, list[str]],
     *,
     non_bio: bool,
     outcome_families: list[str] | None = None,
+    display_label: str = "",
 ) -> str:
-    topic_text = _topic_signal_label(topic, non_bio=non_bio)
+    topic_text = display_label or _topic_signal_label(topic, non_bio=non_bio)
     family_text = join_contexts((outcome_families or [])[:3])
     directional = list(dict.fromkeys(
         endpoints_by_label.get("directional association", [])
@@ -1994,7 +2058,7 @@ def payload(
         raw_fact = paper.get("source_fact")
         if isinstance(raw_fact, dict):
             facts.append(raw_fact)
-    topic_label = _topic_signal_label(topic, non_bio=non_bio)
+    topic_label = _source_grounded_topic_label(topic, selected, profile.slug)
     contexts = sorted({context_family(fact.get("population")) for fact in facts})
     context_text = join_contexts(contexts[:3])
     source_identity_total = source_identity_count(selected, require_substantive=True)
@@ -2306,7 +2370,7 @@ def payload(
         )
     bounded_signal = _bounded_signal_sentence(
         topic, endpoints_by_label, non_bio=non_bio,
-        outcome_families=display_outcome_families,
+        outcome_families=display_outcome_families, display_label=topic_label,
     )
     if context_heavy_non_bio_scope:
         bounded_signal = (
@@ -2411,7 +2475,7 @@ def payload(
             synthesis += (
                 f" Bounded research signal: {primary_duplicated_endpoint} is the repeated "
                 f"anchor, while {join_contexts(comparator_endpoints[:3])} are comparator "
-                f"outcome families under the shared {topic.replace('_', ' ')} exposure; "
+                f"outcome families under the shared {topic_label} exposure; "
                 "the memo tests outcome-specific divergence, not one topic-level effect."
             )
     if non_bio_signal_parts:
@@ -2497,7 +2561,7 @@ def payload(
             body_synthesis,
         )
     abstract_text = (
-        f"{topic}: one receipt supports {join_contexts(directional_endpoints[:2])}; "
+        f"{topic_label}: one receipt supports {join_contexts(directional_endpoints[:2])}; "
         f"one separate receipt is null or non-convergent for "
         f"{join_contexts(nullish_endpoints[:2])}; the remaining sources are context "
         "only, so this is a scoping contrast rather than a generalized effect."
@@ -2532,7 +2596,7 @@ def payload(
     next_gaps = [
         _pico_gap(facts, profile.slug),
         (
-            f"If {topic} is promoted beyond a scoping note, the next run should "
+            f"If {topic_label} is promoted beyond a scoping note, the next run should "
             f"select sources sharing one context family rather than spanning {context_text}."
         ),
     ]
@@ -2558,13 +2622,13 @@ def payload(
         next_gaps = list(dict.fromkeys(next_gaps))[:3]
     boundary_summary = (
         (
-            f"Source-literature boundary for {topic}: the listed sources define "
+            f"Source-literature boundary for {topic_label}: the listed sources define "
             "separated intervention and predictive evidence fronts, not one pooled "
             "evidence front. "
         )
         if split_front else
         (
-            f"Source-literature boundary for {topic}: the listed sources define "
+            f"Source-literature boundary for {topic_label}: the listed sources define "
             + (
                 "separate outcome-specific signals across multiple metric families. "
                 if multi_display_outcome else

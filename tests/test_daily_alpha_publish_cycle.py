@@ -17004,6 +17004,27 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "Policy/exposure/practice: supply chain resilience" in markdown
     assert "Finding: The aim of this study is to identify" not in markdown
 
+    margin_papers: list[dict[str, Any]] = []
+    for paper in papers:
+        raw_fact = paper.get("source_fact")
+        source_fact = dict(raw_fact) if isinstance(raw_fact, dict) else {}
+        source_fact["intervention"] = "chain resilience margin supply"
+        margin_papers.append(paper | {"source_fact": source_fact})
+    _candidate, repaired_payload = daily._source_literature_payload(
+        profile_slug="business_research",
+        topic="supply_chain_margin",
+        papers=margin_papers,
+        runs_root=root,
+        date="2026-06-29T02-30-00Z",
+    )
+
+    assert repaired_payload["metadata"]["topic"] == "supply_chain_margin"
+    assert repaired_payload["metadata"]["topic_label"] == "supply chain resilience"
+    assert repaired_payload["title"].startswith("supply chain resilience:")
+    assert "supply chain margin" not in repaired_payload["title"].lower()
+    assert "supply chain margin" not in repaired_payload["abstract"].lower()
+    assert "supply chain margin" not in repaired_payload["markdown"].lower()
+
 
 def test_source_literature_payload_collapses_business_context_rows(
     tmp_path: Path,
