@@ -2412,6 +2412,7 @@ def main() -> int:
                 _topic_key(topic) for topic in repairable_source_lit_topics
             }
             cached_ready_source_lit: dict[str, list[dict[str, Any]]] = {}
+            duplicate_cached_source_lit_keys: set[str] = set()
             cached_pending_source_lit: set[str] = set()
             for seed_topic in seed_pool:
                 seed_key = _topic_key(seed_topic)
@@ -2436,7 +2437,11 @@ def main() -> int:
                     args.runs_root, domain, seed_topic, settings,
                 )
                 if len(ready_papers) >= MIN_DIRECT_SOURCES:
-                    cached_ready_source_lit[seed_topic] = ready_papers
+                    ready_signature = _source_literature_bundle_signature(ready_papers)
+                    if ready_signature in submitted_source_lit_bundle_signatures:
+                        duplicate_cached_source_lit_keys.add(seed_key)
+                    else:
+                        cached_ready_source_lit[seed_topic] = ready_papers
                 elif (
                     soft_repair
                     and seed_key not in recent_submission_topic_keys
@@ -2566,6 +2571,9 @@ def main() -> int:
                     continue
                 cached_repair_papers: list[dict[str, Any]] = []
                 cached_repair_below_floor = False
+                cached_repair_duplicate = (
+                    _topic_key(topic) in duplicate_cached_source_lit_keys
+                )
                 if topic in repairable_source_lit_set:
                     if topic in cached_ready_source_lit:
                         cached_repair_papers = cached_ready_source_lit[topic]
@@ -2582,17 +2590,41 @@ def main() -> int:
                                 topic, domain, cached_repair_papers,
                             )
                         )
-                        if cached_repair_ready:
+                        if (
+                            cached_repair_ready
+                            and _source_literature_bundle_signature(cached_repair_ready)
+                            not in submitted_source_lit_bundle_signatures
+                        ):
                             cached_repair_papers = cached_repair_ready
                         else:
+                            cached_repair_duplicate = (
+                                _source_literature_bundle_signature(cached_repair_ready)
+                                in submitted_source_lit_bundle_signatures
+                            )
                             cached_repair_below_floor = bool(cached_repair_papers)
                             cached_repair_papers = []
+                    if not cached_repair_papers and not cached_repair_duplicate:
+                        ready_check = _cached_ready_source_literature_papers(
+                            args.runs_root, domain, topic, settings,
+                        )
+                        cached_repair_duplicate = (
+                            len(ready_check) >= MIN_DIRECT_SOURCES
+                            and _source_literature_bundle_signature(ready_check)
+                            in submitted_source_lit_bundle_signatures
+                        )
+                    if cached_repair_duplicate:
+                        source_lit_attempted_topic_keys.add(_topic_key(topic))
+                        continue
                 source_lit_repair_kwargs: dict[str, Any] = {}
                 if cached_repair_papers:
                     source_lit_repair_kwargs["source_literature_forced_papers"] = {
                         topic: cached_repair_papers,
                     }
-                elif topic in priority_source_lit_set and not cached_repair_below_floor:
+                elif (
+                    topic in priority_source_lit_set
+                    and not cached_repair_below_floor
+                    and not cached_repair_duplicate
+                ):
                     source_lit_repair_kwargs["source_literature_priority_topics"] = [topic]
                 if source_lit_repair_kwargs and args.submit_after_consistent_passes > 0:
                     repair_row: dict[str, Any] = {
