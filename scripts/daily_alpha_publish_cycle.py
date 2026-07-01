@@ -2050,6 +2050,23 @@ def _ledger_submission_id(ledger: Json) -> str:
         "terminal_resubmit_job_queued",
         "same_parent_terminal_resubmit_queued",
     }:
+        terminal = ledger.get("terminal_resubmission")
+        if not isinstance(terminal, dict):
+            for attempt in reversed(ledger.get("source_literature_fallback_attempts") or []):
+                if not isinstance(attempt, dict):
+                    continue
+                result = attempt.get("terminal_resubmit_submission")
+                if isinstance(result, dict):
+                    terminal = result
+                    break
+        if isinstance(terminal, dict):
+            parent = (
+                _terminal_resubmit_parent_submission_id(terminal)
+                or str(ledger.get("parent_submission_id") or "").strip()
+            )
+            resolved = _terminal_resubmit_poll_submission_id(terminal, parent)
+            if resolved:
+                return resolved
         return stored
     from_response = publish_decisions.submission_id(ledger.get("submission", {}))
     return from_response or stored
@@ -3390,23 +3407,24 @@ def _resubmission_parent_submission_id(decision: Json) -> str:
 
 def _terminal_resubmit_poll_submission_id(result: Json, parent_submission_id: str) -> str:
     parent = str(parent_submission_id or "").strip()
-    if parent:
-        for attempt in result.get("attempts") or []:
-            if not isinstance(attempt, dict):
-                continue
-            response = attempt.get("response")
-            if not isinstance(response, dict):
-                continue
-            job = response.get("job")
-            if not isinstance(job, dict):
-                continue
-            job_id = str(job.get("id") or "").strip()
-            target_id = str(job.get("target_object_id") or "").strip()
-            status = str(job.get("status") or "").lower()
-            if job_id and status in {"pending", "queued", "running"}:
-                return job_id
-            if job_id and target_id == parent:
-                return job_id
+    for attempt in result.get("attempts") or []:
+        if not isinstance(attempt, dict):
+            continue
+        response = attempt.get("response")
+        if not isinstance(response, dict):
+            continue
+        job = response.get("job")
+        if not isinstance(job, dict):
+            continue
+        job_id = str(job.get("id") or "").strip()
+        target_id = str(job.get("target_object_id") or "").strip()
+        status = str(job.get("status") or "").lower()
+        if target_id and target_id != parent:
+            return target_id
+        if job_id and status in {"pending", "queued", "running"}:
+            return job_id
+        if job_id and parent and target_id == parent:
+            return job_id
     return publish_decisions.submission_id(result)
 
 
@@ -3430,6 +3448,30 @@ def _terminal_resubmit_queued_job_id(result: Json, parent_submission_id: str) ->
     return ""
 
 
+def _terminal_resubmit_parent_submission_id(result: Json) -> str:
+    for attempt in result.get("attempts") or []:
+        if not isinstance(attempt, dict):
+            continue
+        response = attempt.get("response")
+        if not isinstance(response, dict):
+            continue
+        submission = response.get("submission")
+        if not isinstance(submission, dict):
+            continue
+        for key in ("parent_submission_id", "parent_object_id"):
+            value = str(submission.get(key) or "").strip()
+            if value:
+                return value
+        metadata = submission.get("metadata")
+        if not isinstance(metadata, dict):
+            continue
+        for key in ("revision_of", "revision_of_object_id"):
+            value = str(metadata.get(key) or "").strip()
+            if value:
+                return value
+    return ""
+
+
 def _terminal_resubmit_queued_submission_records(ledger: Json) -> list[Json]:
     records: list[Json] = []
     for fallback_attempt in ledger.get("source_literature_fallback_attempts") or []:
@@ -3448,7 +3490,12 @@ def _terminal_resubmit_queued_submission_records(ledger: Json) -> list[Json]:
             if not isinstance(job, dict):
                 continue
             job_id = str(job.get("id") or "").strip()
-            parent_id = str(job.get("target_object_id") or "").strip()
+            parent_id = (
+                _terminal_resubmit_parent_submission_id(result)
+                or str(ledger.get("parent_submission_id") or ledger.get("submission_id") or "").strip()
+            )
+            target_id = str(job.get("target_object_id") or "").strip()
+            poll_id = _terminal_resubmit_poll_submission_id(result, parent_id)
             status = str(job.get("status") or "").lower()
             if not job_id or status not in {"pending", "queued", "running"}:
                 continue
@@ -3464,8 +3511,10 @@ def _terminal_resubmit_queued_submission_records(ledger: Json) -> list[Json]:
                 "run_dir": fallback_attempt.get("run_dir") or ledger.get("run_dir"),
                 "fingerprint": ledger.get("fingerprint") or ledger.get("memo_sha256"),
                 "memo_sha256": ledger.get("memo_sha256"),
-                "submission_id": job_id,
+                "submission_id": poll_id or job_id,
                 "parent_submission_id": parent_id,
+                "terminal_resubmit_target_object_id": target_id,
+                "terminal_resubmit_queued_job_id": job_id,
                 "status": publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value,
                 "submit_status": result.get("status"),
                 "pending_reason": "terminal_resubmit_job_queued",
@@ -7362,7 +7411,7 @@ def run_cycle(
                                         result,
                                         parent_submission_id,
                                     )
-                                    submission_id = queued_job_id or _terminal_resubmit_poll_submission_id(
+                                    submission_id = _terminal_resubmit_poll_submission_id(
                                         result,
                                         parent_submission_id,
                                     )
@@ -7384,6 +7433,9 @@ def run_cycle(
                                     _write_ledger(ledger_path, ledger)
                                     if queued_job_id:
                                         fallback_attempt["terminal_resubmit_queued_job_id"] = queued_job_id
+                                    if queued_job_id and submission_id != queued_job_id:
+                                        fallback_attempt["terminal_resubmit_poll_object_id"] = submission_id
+                                    if queued_job_id and submission_id == queued_job_id:
                                         ledger["cycle_attempts"].append({
                                             "topic": literature_topic,
                                             "run_dir": candidate.get("run_dir"),

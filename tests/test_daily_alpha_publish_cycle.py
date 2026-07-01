@@ -6386,6 +6386,75 @@ def test_sync_submission_decisions_backfills_terminal_resubmit_job(
     assert not (root / "_daily_ledger" / "2026-05-21-decision-queued-j.json").exists()
 
 
+def test_sync_submission_decisions_polls_terminal_resubmit_target_object(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "date": "2026-05-21",
+        "domain_slug": "business_research",
+        "status": "reviewer_revise",
+        "submission_id": "parent-submission",
+        "submission": {"id": "parent-submission"},
+        "source_literature_fallback_attempts": [{
+            "topic": "supply_chain_performance",
+            "run_dir": "supply-chain-run",
+            "terminal_resubmit_submission": {
+                "status": "accepted",
+                "attempts": [{
+                    "response": {
+                        "job": {
+                            "id": "queued-job-1",
+                            "target_object_id": "object-reviewed",
+                            "status": "queued",
+                        },
+                        "submission": {
+                            "id": "object-reviewed",
+                            "metadata": {"revision_of": "parent-submission"},
+                        },
+                    },
+                }],
+            },
+        }],
+    })
+
+    def fetcher(submission_id: str) -> dict[str, Any]:
+        assert submission_id == "object-reviewed"
+        return {
+            "status": "complete",
+            "decision": "accept",
+            "seen_id": submission_id,
+            "publication": {"url": "https://researka.org/alpha/object-reviewed"},
+        }
+
+    summary = daily.sync_submission_decisions(
+        root,
+        fetcher=fetcher,
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "ok"},
+    )
+
+    submitted = json.loads(
+        (root / "_daily_ledger" / "_submitted_fingerprints.json").read_text(
+            encoding="utf-8",
+        ),
+    )
+    promoted = json.loads(
+        (root / "_daily_ledger" / "2026-05-21.json").read_text(encoding="utf-8"),
+    )
+    assert summary["checked"] == 1
+    assert summary["updated"] == 2
+    assert summary["published"] == 1
+    assert submitted[0]["submission_id"] == "object-reviewed"
+    assert submitted[0]["parent_submission_id"] == "parent-submission"
+    assert submitted[0]["terminal_resubmit_target_object_id"] == "object-reviewed"
+    assert submitted[0]["terminal_resubmit_queued_job_id"] == "queued-job-1"
+    assert promoted["submission_id"] == "object-reviewed"
+    assert promoted["status"] == "published"
+    assert promoted["published"] == 1
+    assert promoted["public_url"] == "https://researka.org/alpha/object-reviewed"
+    assert promoted["researka_decision"]["seen_id"] == "object-reviewed"
+
+
 def test_sync_submission_decisions_records_revise_as_retryable(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("revise")
@@ -12760,7 +12829,7 @@ def test_source_literature_fallback_resubmits_clean_terminal_revise_same_cycle(
     assert paper_fetch_calls == [("usable_boundary", 5)]
 
 
-def test_source_literature_terminal_resubmit_polls_job_id_not_parent(
+def test_source_literature_terminal_resubmit_polls_target_object_not_job_id(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.delenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", raising=False)
@@ -12790,7 +12859,10 @@ def test_source_literature_terminal_resubmit_polls_job_id_not_parent(
                     "status": "queued",
                     "target_object_id": "sub-clean-2",
                 },
-                "submission": {"id": "sub-clean-1"},
+                "submission": {
+                    "id": "sub-clean-2",
+                    "metadata": {"revision_of": "sub-clean-1"},
+                },
             },
         }
 
@@ -12814,7 +12886,13 @@ def test_source_literature_terminal_resubmit_polls_job_id_not_parent(
                 },
                 "resubmission": {"allowed": True},
             }
-        raise AssertionError("queued terminal resubmit job should sync later")
+        if submission_id == "sub-clean-2":
+            return {
+                "status": "complete",
+                "decision": "accept",
+                "publication": {"url": "https://researka.org/alpha/source-lit"},
+            }
+        raise AssertionError(f"unexpected decision poll id: {submission_id}")
 
     ledger = daily.run_cycle(
         runs_root=root,
@@ -12825,28 +12903,32 @@ def test_source_literature_terminal_resubmit_polls_job_id_not_parent(
         source_paper_fetcher=lambda _topic, _limit: _usable_boundary_papers(),
         submitter=submitter,
         decision_fetcher=decision_fetcher,
-        page_fetcher=lambda _url: {"ok": False, "status": "missing_public_url"},
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "ok"},
         fetcher=lambda _doi: {"message": {}},
         decision_poll_attempts=1,
         decision_poll_seconds=0,
         sleep=lambda _seconds: None,
     )
 
-    assert decision_calls == ["sub-clean-1"]
-    assert ledger["status"] == "submitted_to_researka"
-    assert ledger["final_verdict"] == "pending"
-    assert ledger["submission_id"] == "job-clean-2"
+    assert decision_calls == ["sub-clean-1", "sub-clean-2"]
+    assert ledger["status"] == "published"
+    assert ledger["final_verdict"] == "accepted"
+    assert ledger["submission_id"] == "sub-clean-2"
+    assert ledger["public_url"] == "https://researka.org/alpha/source-lit"
     assert [row["status"] for row in ledger["cycle_attempts"]] == [
-        "reviewer_revise", "submitted_to_researka",
+        "reviewer_revise", "published",
     ]
-    assert ledger["cycle_attempts"][-1]["pending_reason"] == (
-        "terminal_resubmit_job_queued"
-    )
     assert (
         ledger["source_literature_fallback_attempts"][0][
             "terminal_resubmit_queued_job_id"
         ]
         == "job-clean-2"
+    )
+    assert (
+        ledger["source_literature_fallback_attempts"][0][
+            "terminal_resubmit_poll_object_id"
+        ]
+        == "sub-clean-2"
     )
 
 
