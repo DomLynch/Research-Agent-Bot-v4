@@ -9977,6 +9977,56 @@ def test_business_source_literature_counts_significant_enhancement_directional()
     ) == "directional association"
 
 
+def test_business_source_literature_counts_significant_subdimensions_directional() -> None:
+    paper = {
+        "title": "Supply chain resilience and supply chain performance",
+        "doi": "10.5555/scr-subdimensions",
+        "source_fact": {
+            "canonical_phrase": (
+                "supply chain collaboration and supply chain agility had significant effects "
+                "on supply chain performance, while supply chain flexibility exerted "
+                "insignificant effect on supply chain performance"
+            ),
+            "population": "chemical industrial companies",
+            "intervention": "supply chain resilience",
+            "endpoint": "supply chain performance",
+        },
+    }
+
+    assert publish_literature._paper_effect_direction(
+        paper,
+        "supply_chain_resilience_profitability",
+    ) == "null/non-convergent"
+    assert publish_literature._paper_evidence_role(
+        paper,
+        "supply_chain_resilience_profitability",
+        "business_research",
+    ) == "directional association"
+
+
+def test_business_source_literature_keeps_rejected_path_null_mixed() -> None:
+    paper = {
+        "title": "Supply chain resilience and firm performance",
+        "doi": "10.5555/scr-rejected",
+        "source_fact": {
+            "canonical_phrase": (
+                "visibility significantly influences supply chain resilience; while the "
+                "hypotheses of a positive impact of supply chain visibility and supply "
+                "chain resilience on firm performance have been rejected"
+            ),
+            "population": "firms",
+            "intervention": "supply chain resilience",
+            "endpoint": "firm performance",
+        },
+    }
+
+    assert publish_literature._paper_evidence_role(
+        paper,
+        "supply_chain_resilience_profitability",
+        "business_research",
+    ) == "null/mixed"
+
+
 def test_business_source_literature_does_not_treat_improves_as_method_only() -> None:
     paper = {
         "title": "Business model performance source paper",

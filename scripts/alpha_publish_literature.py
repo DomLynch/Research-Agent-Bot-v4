@@ -1047,6 +1047,25 @@ def _non_bio_numeric_direction_receipt(paper: Json) -> bool:
     )
 
 
+def _non_bio_directional_with_subdimension_caveat(paper: Json) -> bool:
+    fact = paper.get("source_fact")
+    fact = fact if isinstance(fact, dict) else {}
+    text = " ".join(str(value or "") for value in (
+        paper.get("title"), paper.get("paper_title"), fact.get("canonical_phrase"),
+        fact.get("endpoint"), fact.get("metric"),
+    )).casefold()
+    return (
+        _non_bio_directional_performance_receipt(paper)
+        and bool(re.search(
+            r"\b(?:positive\s+and\s+significant|significant(?:ly)?\s+"
+            r"(?:effect|effects|influence|impact|influences|impacts))\b",
+            text,
+        ))
+        and bool(re.search(r"\b(?:insignificant|non-significant)\s+effect\b", text))
+        and not re.search(r"\b(?:rejected|not supported|failed to support)\b", text)
+    )
+
+
 def _fact_complete(fact: Json) -> bool:
     phrase = str(fact.get("canonical_phrase") or "").strip()
     if not phrase:
@@ -1085,6 +1104,12 @@ def _uniform_favorable_cross_pico(papers: list[Json], min_sources: int) -> bool:
 
 def _paper_evidence_role(paper: Json, topic: str = "", profile_slug: str = "") -> str:
     direction = _paper_effect_direction(paper, topic)
+    if (
+        _non_biomedical(profile_slug)
+        and direction == "null/non-convergent"
+        and _non_bio_directional_with_subdimension_caveat(paper)
+    ):
+        return "directional association"
     if _non_biomedical(profile_slug) and direction == "other/mixed":
         fact = paper.get("source_fact")
         fact = fact if isinstance(fact, dict) else {}
