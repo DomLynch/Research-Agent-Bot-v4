@@ -1280,6 +1280,7 @@ def test_business_sweep_fullraw_probe_inherits_fullraw_search_budget(
     monkeypatch.setenv("V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS", "7200")
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", "7200")
     monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_POLL_ATTEMPTS", "999")
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS", "0")
     discovery._FULLRAW_PROBE_EVENTS.clear()
 
     def fake_seed_fullraw(topic: str, **_kwargs: Any) -> list[dict[str, Any]]:
@@ -1359,6 +1360,7 @@ def test_business_sweep_fullraw_probe_priority_can_be_disabled(
     captured: dict[str, str | None] = {}
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
     monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_PRIORITY", "0")
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS", "0")
     monkeypatch.setenv(
         "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
         str(tmp_path / "fullraw.lock"),
@@ -1405,6 +1407,7 @@ def test_business_sweep_fullraw_probe_defaults_to_strict_sweep_budget(
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_ENV_FILE", str(tmp_path / "missing-fullraw.env"))
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS", "0")
     monkeypatch.setenv(
         "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
         str(tmp_path / "fullraw.lock"),
@@ -1462,6 +1465,7 @@ def test_business_sweep_fullraw_probe_overrides_stale_short_timeout(
     monkeypatch.delenv("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS", raising=False)
     monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_TIMEOUT_SECONDS", "20")
     monkeypatch.setenv("TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS", "20")
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS", "0")
     monkeypatch.setenv(
         "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
         str(tmp_path / "fullraw.lock"),
@@ -1528,6 +1532,7 @@ def test_business_sweep_fullraw_probe_preserves_in_progress_cache_receipt(
     import scripts.run_topic_discovery as discovery
 
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS", "0")
     monkeypatch.setenv(
         "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
         str(tmp_path / "fullraw.lock"),
@@ -1581,6 +1586,7 @@ def test_business_sweep_priority_probe_tries_next_query_after_quick_incomplete_f
 
     calls: list[str] = []
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS", "0")
     monkeypatch.setenv(
         "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
         str(tmp_path / "fullraw.lock"),
@@ -1661,6 +1667,7 @@ def test_business_sweep_fullraw_probe_preserves_in_progress_event_over_no_hits(
     import scripts.run_topic_discovery as discovery
 
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS", "0")
     monkeypatch.setenv(
         "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
         str(tmp_path / "fullraw.lock"),
@@ -1795,6 +1802,7 @@ def test_business_sweep_priority_probe_honors_fresh_fullraw_backoff(
     calls: list[str] = []
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
     monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_PRIORITY", "1")
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS", "0")
     monkeypatch.setenv(
         "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
         str(tmp_path / "fullraw.lock"),
@@ -2701,7 +2709,7 @@ def test_business_sweep_fullraw_probe_recovers_missing_async_status(
             "meta": {
                 "async_sweep": {
                     "status": "queued",
-                    "key_queued": True,
+                    "key_queued": False,
                     "key_running": False,
                     "queued_count": 6,
                     "max_queue": 6,

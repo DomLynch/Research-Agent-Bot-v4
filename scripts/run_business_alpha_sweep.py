@@ -279,6 +279,11 @@ def _fullraw_queue_full(event: dict[str, Any]) -> bool:
 def _fullraw_admitted_pending_event(event: dict[str, Any]) -> bool:
     status = str(event.get("status") or "")
     probe_status = str(event.get("probe_status") or "")
+    if (
+        _business_fullraw_priority_enabled()
+        and str(event.get("async_status") or "") in {"queued", "running"}
+    ):
+        return True
     if event.get("key_queued") is not True and event.get("key_running") is not True:
         return (
             probe_status == "in_progress_cache_hit"
@@ -291,7 +296,6 @@ def _fullraw_admitted_pending_event(event: dict[str, Any]) -> bool:
             "async_queued", "async_running", "in_progress_cache_hit",
             "in_progress_poll_due", "incomplete_receipt",
         }
-        or str(event.get("async_status") or "") in {"queued", "running"}
         or event.get("partial_shard_search") is True
     )
 
