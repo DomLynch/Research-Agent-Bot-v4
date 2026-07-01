@@ -1,0 +1,62 @@
+{
+  "all": [],
+  "cache_first": false,
+  "cache_only": false,
+  "cache_supported": true,
+  "candidate_count": 0,
+  "derived_topic_limit": 250,
+  "domain": {
+    "claim_schema_path": "publication.toml",
+    "database_domain": "longevity_research",
+    "display_name": "Longevity / anti-aging research",
+    "dry_run_only": false,
+    "seed_topics_path": "discovery_seeds.toml",
+    "slug": "longevity_research",
+    "source_policy_path": "publication.toml"
+  },
+  "fact_probe_topics": null,
+  "fullraw_seed_probe": {
+    "configured": true,
+    "event_count": 4,
+    "events": [
+      {
+        "cache_key": "aging anti longevity",
+        "paper_count": 0,
+        "query": "longevity anti aging",
+        "status": "health_unavailable"
+      },
+      {
+        "cache_key": "longevity rapamycin",
+        "paper_count": 0,
+        "query": "rapamycin longevity",
+        "status": "health_unavailable"
+      },
+      {
+        "cache_key": "null rapamycin",
+        "paper_count": 0,
+        "query": "rapamycin null",
+        "status": "health_unavailable"
+      },
+      {
+        "attempted_queries": [
+          "longevity anti aging",
+          "rapamycin longevity",
+          "rapamycin null"
+        ],
+        "skipped_query_count": 2,
+        "status": "fullraw_busy_probe_limit_reached"
+      }
+    ],
+    "receipt_count": 0,
+    "receipts": []
+  },
+  "fullraw_supply_only": true,
+  "seed_count": 100,
+  "seed_paper_only": false,
+  "snapshot_utc": "2026-07-01T06-43-18Z",
+  "source_rich_count": 0,
+  "source_rich_floor": 5,
+  "top": [],
+  "warm_backlog": false,
+  "year": 2026
+}
