@@ -1841,6 +1841,32 @@ def join_contexts(values: list[str]) -> str:
     return ", ".join(values[:-1]) + f", and {values[-1]}"
 
 
+def _source_design_labels(papers: list[Json]) -> list[str]:
+    labels: list[str] = []
+    patterns = (
+        ("PLS-SEM", (r"\bpls[-\s]?sem\b", r"\bsmartpls\b")),
+        (
+            "NGT+AHP-VIKOR",
+            (r"\bnominal group technique\b[^.]{0,120}\bahp\b",),
+        ),
+        ("AHP-VIKOR", (r"\bahp[-\s]?vikor\b", r"\banalytic hierarchy process\b")),
+        ("factor analysis", (r"\bfactor analysis\b",)),
+        ("regression/survey design", (r"\bregression\b", r"\bsurvey\b")),
+    )
+    for paper in papers:
+        fact = paper.get("source_fact")
+        fact = fact if isinstance(fact, dict) else {}
+        text = " ".join(str(value or "") for value in (
+            paper.get("title"), paper.get("paper_title"),
+            fact.get("canonical_phrase"), fact.get("method"),
+            fact.get("study_design"), fact.get("estimation_method"),
+        ))
+        for label, regexes in patterns:
+            if label not in labels and any(re.search(pattern, text, re.I) for pattern in regexes):
+                labels.append(label)
+    return labels
+
+
 def _specific_moderator_note(facts: list[Json], source_types: list[str]) -> str:
     endpoints = sorted({
         str(fact.get("endpoint") or fact.get("metric") or "").strip()
@@ -2141,6 +2167,7 @@ def payload(
         annotation = "; ".join(str(x) for x in (source_type, year) if x)
         suffix = f" [{annotation}]" if annotation else ""
         lines.append(f"- {title}{suffix}" + (f" doi:{doi}" if doi else ""))
+        role = _paper_evidence_role(paper, topic, profile.slug)
         phrase = _display_finding(fact, _paper_effect_direction(paper, topic))
         if phrase:
             lines.append(
@@ -2158,6 +2185,18 @@ def payload(
                 )
                 if bound_text:
                     lines.append(f"  - Claim bounds: {bound_text}")
+        if non_bio and role == "descriptive/modeling":
+            lines.append(
+                "  - Effect accounting: descriptive/modeling context only; "
+                f"this receipt does not test an effect of {topic_label} "
+                "on a performance endpoint.",
+            )
+        if non_bio and _non_bio_directional_with_subdimension_caveat(paper):
+            lines.append(
+                "  - Within-source caveat: significant dimensions drive the "
+                "directional role, but the same receipt includes a null/mixed "
+                f"subdimension ({_short_finding(phrase, 140)}).",
+            )
         for label, key in (
             ("Population/setting" if non_bio else "Population", "population"),
             ("Policy/exposure/practice" if non_bio else "Intervention/exposure", "intervention"),
@@ -2411,6 +2450,13 @@ def payload(
         direction == "directionally favorable" for direction in directions
     )
     source_types = sorted({evidence_type(paper) for paper in selected})
+    design_labels = _source_design_labels(selected)
+    design_heterogeneity_note = (
+        "Design heterogeneity: selected receipts span "
+        f"{join_contexts(design_labels[:4])}; treat this as a boundary map, "
+        "not pooled evidence."
+        if non_bio and len(design_labels) >= 2 else ""
+    )
     missing_year_titles = [
         str(source.get("title") or "Untitled source").strip()
         for source in bundle
@@ -2605,13 +2651,14 @@ def payload(
         )
     elif non_bio and directional_endpoints and nullish_endpoints:
         abstract_text = (
-            f"{topic_label}: {len(bundle)}-source scoping map: "
-            f"{directional_count} direction-bearing receipt(s) for "
-            f"{join_contexts(directional_endpoints[:3])}; {nullish_count} "
-            f"null/mixed receipt(s) for {join_contexts(nullish_endpoints[:2])}; "
-            f"{context_only_count} context/model receipt(s) excluded from effect support. "
-            "Primary next gap: retest inside one matched industry, comparator, and metric frame. "
-            "No pooled causal, policy-prescriptive, or market-generalized claim is made."
+            f"{topic_label}: direction-bearing receipts concern "
+            f"{join_contexts(directional_endpoints[:3])}, while null/mixed "
+            f"receipts concern {join_contexts(nullish_endpoints[:2])}; counts: "
+            f"{directional_count} direction-bearing receipt(s), {nullish_count} "
+            f"null/mixed receipt(s), and {context_only_count} context/model receipt(s). "
+            "The context/model receipts do not test performance effects and stay "
+            "outside effect accounting. This is an outcome-family boundary, not a "
+            "pooled causal, policy-prescriptive, or market-generalized claim."
         )
     elif non_bio and not thin_non_bio_scope:
         abstract_text = (
@@ -2729,6 +2776,7 @@ def payload(
         "",
         *([body_synthesis, ""] if non_bio else []),
         *([source_synthesis_note, ""] if source_synthesis_note else []),
+        *([design_heterogeneity_note, ""] if design_heterogeneity_note else []),
         *([*extra_source_notes, ""] if extra_source_notes else []),
         *([evidence_weight_note, ""] if evidence_weight_note else []),
         *([scope_integration_note, ""] if scope_integration_note else []),
@@ -2823,10 +2871,17 @@ def payload(
         "",
     ])
     plain_language = (
-        f"{directional_count} of {len(selected)} selected receipts are direction-bearing "
-        f"for {join_contexts(directional_endpoints[:3]) or 'the named outcome'}; "
-        f"{nullish_count} receipt(s) are null/mixed and {context_only_count} are "
-        "context/model only. This is a bounded source-literature signal, not a pooled effect."
+        (
+            f"Outcome-family boundary: direction-bearing receipts concern "
+            f"{join_contexts(directional_endpoints[:3])}, while null/mixed receipts "
+            f"concern {join_contexts(nullish_endpoints[:2])}; context/model receipts "
+            "do not test performance effects."
+            if directional_endpoints and nullish_endpoints else
+            f"{directional_count} of {len(selected)} selected receipts are direction-bearing "
+            f"for {join_contexts(directional_endpoints[:3]) or 'the named outcome'}; "
+            f"{nullish_count} receipt(s) are null/mixed and {context_only_count} are "
+            "context/model only. This is a bounded source-literature signal, not a pooled effect."
+        )
         if non_bio else bounded_signal
     )
     if missing_year_titles:
@@ -2862,6 +2917,12 @@ def payload(
         if endpoint != primary_duplicated_endpoint
     ]
     title_tail = (
+        f"direction-bearing {join_contexts(title_directional_endpoints[:2])} signal with "
+        f"{join_contexts(nullish_endpoints[:2])} caveat"
+        if (
+            non_bio and multi_display_outcome and context_only_count
+            and title_directional_endpoints and nullish_endpoints
+        ) else
         f"source-scope map across {join_contexts(title_directional_endpoints[:3])} receipts"
         if context_heavy_non_bio_scope else
         (

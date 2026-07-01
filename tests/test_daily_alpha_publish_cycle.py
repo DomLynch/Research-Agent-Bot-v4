@@ -16925,9 +16925,8 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
 
     markdown = payload["markdown"]
     assert payload["title"] == (
-        "supply chain resilience: 5-source map: 3 direction-bearing "
-        "supply chain performance receipt(s) plus 1 null/mixed firm performance "
-        "receipt(s) plus 1 context/model receipt(s) excluded from effect support"
+        "supply chain resilience: direction-bearing supply chain performance "
+        "signal with firm performance caveat"
     )
     assert payload["human_title"] == payload["title"]
     assert payload["metadata"]["topic_label"] == "supply chain resilience"
@@ -17002,7 +17001,11 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         },
         non_bio=True,
     ) == "flexibility, collaboration, and agility antecedents"
-    assert "5-source scoping map" in payload["abstract"]
+    assert "5-source map:" not in payload["title"]
+    assert "5-source scoping map" not in payload["abstract"]
+    assert "direction-bearing receipts concern supply chain performance" in payload["abstract"]
+    assert "null/mixed receipts concern firm performance" in payload["abstract"]
+    assert "context/model receipts do not test performance effects" in payload["abstract"]
     assert "3 direction-bearing receipt(s)" in payload["abstract"]
     assert "1 null/mixed receipt(s)" in payload["abstract"]
     assert "not a general null" not in payload["markdown"]
@@ -17025,9 +17028,8 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "Bounded signal:" in markdown
     assert "Metric imbalance disclosure:" not in markdown
     assert "strong null claim" not in markdown
-    assert "3 direction-bearing supply chain performance receipt(s)" in payload["title"]
-    assert "1 null/mixed firm performance receipt(s)" in payload["title"]
-    assert "1 context/model receipt(s) excluded from effect support" in payload["title"]
+    assert "direction-bearing supply chain performance signal" in payload["title"]
+    assert "firm performance caveat" in payload["title"]
     assert "firm performance is null or non-convergent" not in markdown
     assert "not uniform support for the topic" in markdown
     assert "direction-bearing receipts: 3" in markdown
@@ -17083,7 +17085,15 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "most important criterion" in markdown
     assert "method or modelling receipt; no direct effect estimate extracted" not in markdown
     assert "null/mixed metric-scope caveat" in markdown
-    assert "heterogeneity" not in markdown.lower()
+    assert "Design heterogeneity:" in markdown
+    assert "PLS-SEM" in markdown
+    assert "AHP-VIKOR" in markdown
+    assert (
+        "this receipt does not test an effect of supply chain resilience "
+        "on a performance endpoint"
+    ) in markdown
+    assert "Within-source caveat:" in markdown
+    assert "supply chain flexibility exerted insignificant effect" in markdown
     assert "Policy/exposure/practice: supply chain resilience" in markdown
     assert "Finding: The aim of this study is to identify" not in markdown
 
@@ -17122,7 +17132,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "productivity" not in productivity_payload["title"].lower()
     assert "productivity" not in productivity_payload["abstract"].lower()
     assert "productivity" not in productivity_payload["markdown"].lower()
-    assert "1 context/model receipt(s) excluded from effect support" in productivity_payload["title"]
+    assert "firm performance caveat" in productivity_payload["title"]
 
 
 def test_source_literature_payload_collapses_business_context_rows(
