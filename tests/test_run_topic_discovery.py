@@ -885,11 +885,15 @@ def test_seed_fullraw_completed_sweep_overrides_in_progress_backoff(
             key: {
                 "query": "platform strategy network",
                 "ts": 2,
-                "papers": [{
-                    "doi": "10.1/platform",
-                    "title": "Platform strategy network replication",
-                    "fullraw_shard_receipt": receipt,
-                }],
+                "result_limit": 5,
+                "papers": [
+                    {
+                        "doi": f"10.1/platform-{idx}",
+                        "title": f"Platform strategy network replication {idx}",
+                        "fullraw_shard_receipt": receipt,
+                    }
+                    for idx in range(5)
+                ],
             },
         },
     )
@@ -904,7 +908,8 @@ def test_seed_fullraw_completed_sweep_overrides_in_progress_backoff(
             "platform strategy network", client=client, limit=5,
         )
 
-    assert rows[0]["title"] == "Platform strategy network replication"
+    assert len(rows) == 5
+    assert rows[0]["title"] == "Platform strategy network replication 0"
 
 
 def test_seed_fullraw_does_not_use_client_fallback_when_endpoint_incomplete(
@@ -2369,8 +2374,19 @@ def test_fullraw_supply_query_cap_defaults_to_small_candidate_window(
     monkeypatch: Any,
 ) -> None:
     monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_CAP_MULTIPLIER", raising=False)
+    monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_PRIORITY", raising=False)
 
     assert run_topic_discovery._fullraw_supply_query_cap(2) == 16
+
+
+def test_priority_fullraw_supply_query_cap_verifies_only_winner_by_default(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.delenv("TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_CAP_MULTIPLIER", raising=False)
+    monkeypatch.setenv("TOPIC_DISCOVERY_FULLRAW_PRIORITY", "1")
+
+    assert run_topic_discovery._fullraw_supply_query_cap(1) == 1
+    assert run_topic_discovery._fullraw_supply_query_cap(2) == 2
 
 
 def test_fullraw_supply_prefers_alpha_shape_queries_before_bare_seed(

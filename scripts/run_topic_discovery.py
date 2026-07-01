@@ -249,6 +249,7 @@ def _seed_fullraw_papers(
     query: str, *, client: httpx.Client, limit: int,
 ) -> list[dict[str, object]]:
     cache_key = _fullraw_query_fingerprint(query)
+    request_limit = max(10, limit)
     cached = _cached_fullraw_sweep(cache_key, limit=limit) if cache_key else []
     if cached:
         _FULLRAW_PROBE_EVENTS.append({
@@ -313,10 +314,10 @@ def _seed_fullraw_papers(
     topic_discovery_mod._FULLRAW_LAST_RECEIPT = {}
     topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
     papers = _fetch_fullraw_topic_papers(
-        query, client=client, limit=limit,
+        query, client=client, limit=request_limit,
     )
     if cache_key and papers:
-        _remember_fullraw_sweep(cache_key, query, papers, limit=limit)
+        _remember_fullraw_sweep(cache_key, query, papers, limit=request_limit)
     if not papers:
         event: dict[str, object] = {"query": query, "status": "no_hits"}
         receipt = getattr(topic_discovery_mod, "_FULLRAW_LAST_RECEIPT", {})
@@ -365,7 +366,7 @@ def _seed_fullraw_papers(
         if cache_key:
             _remember_fullraw_in_progress(cache_key, event)
         _FULLRAW_PROBE_EVENTS.append(event)
-    return papers
+    return papers[:limit]
 
 
 def _hydrate_limit() -> int:
@@ -702,10 +703,11 @@ def _remember_fullraw_in_progress(cache_key: str, event: dict[str, object]) -> N
 
 
 def _fullraw_supply_query_cap(top: int) -> int:
+    explicit = os.environ.get("TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_CAP_MULTIPLIER")
+    if explicit is None and os.environ.get("TOPIC_DISCOVERY_FULLRAW_PRIORITY", "").strip().lower() in {"1", "true", "yes", "on"}:
+        return max(1, top)
     try:
-        multiplier = max(1, int(os.environ.get(
-            "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_CAP_MULTIPLIER", "8",
-        )))
+        multiplier = max(1, int(explicit or "8"))
     except (TypeError, ValueError):
         multiplier = 8
     return max(_seed_paper_probe_limit(top), top * multiplier)
