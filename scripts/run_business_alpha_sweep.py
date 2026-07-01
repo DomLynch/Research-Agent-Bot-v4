@@ -66,6 +66,13 @@ _BUSINESS_OUTCOME_QUERY_TOKENS = frozenset({
     "employment", "margin", "margins", "performance", "productivity",
     "profit", "profitability", "return", "returns", "sales", "value",
 })
+_BUSINESS_DERIVED_OUTCOME_TOKENS = (
+    "performance", "productivity", "profitability", "margin",
+    "sales", "value", "returns", "employment",
+)
+_BUSINESS_REPLACEABLE_OUTCOME_TOKENS = _BUSINESS_OUTCOME_QUERY_TOKENS | {
+    "effect", "effects", "improvement",
+}
 _BUSINESS_FULLRAW_FOREGROUND_SECONDS = "2400"
 _BUSINESS_FULLRAW_RESULT_LIMIT = "10"
 _BUSINESS_FULLRAW_LOCK_PATH = "/tmp/researka-v4-business-fullraw.lock"
@@ -1457,13 +1464,49 @@ def _seed_topic_variants(topic: str) -> tuple[str, ...]:
     return tuple(out)
 
 
+def _derived_seed_topic_variants(topic: str) -> tuple[str, ...]:
+    tokens = [
+        token for token in re.findall(r"[a-z0-9]+", topic.replace("-", "_").lower())
+        if token
+    ]
+    if len(tokens) < 2:
+        return ()
+    core = [
+        token for token in tokens
+        if token not in _BROAD_SEED_TOKENS
+        and token not in _BUSINESS_REPLACEABLE_OUTCOME_TOKENS
+    ]
+    if len(core) < 2:
+        core = [
+            token for token in tokens
+            if token not in _BUSINESS_REPLACEABLE_OUTCOME_TOKENS
+        ]
+    if len(core) < 2:
+        return ()
+    out: list[str] = []
+    seen = {topic}
+    for outcome in _BUSINESS_DERIVED_OUTCOME_TOKENS:
+        slug = "_".join([*core, outcome])
+        if slug in seen or slug == topic or slug.endswith(_NON_BUSINESS_QUERY_SUFFIXES):
+            continue
+        seen.add(slug)
+        out.append(slug)
+    return tuple(out)
+
+
 def _seed_topics(seed_path: Path, *, limit: int) -> list[str]:
     data = tomllib.loads(seed_path.read_text(encoding="utf-8"))
-    topics = data.get("seeds", {}).get("topics", [])
+    seeds = data.get("seeds", {})
+    topics = seeds.get("topics", []) if isinstance(seeds, dict) else []
     if not isinstance(topics, list):
         return []
+    try:
+        effective_limit = max(limit, int(seeds.get("derived_topic_limit") or 0))
+    except (TypeError, ValueError, AttributeError):
+        effective_limit = limit
     base_ranked: list[tuple[int, int, str]] = []
     variant_ranked: list[tuple[int, int, str]] = []
+    derived_ranked: list[tuple[int, int, str]] = []
     seen: set[str] = set()
     for idx, raw in enumerate(topics):
         for offset, topic in enumerate(_seed_topic_variants(str(raw).strip())):
@@ -1479,9 +1522,19 @@ def _seed_topics(seed_path: Path, *, limit: int) -> list[str]:
                 base_ranked.append(row)
             else:
                 variant_ranked.append(row)
+        for offset, topic in enumerate(_derived_seed_topic_variants(str(raw).strip())):
+            if topic in seen:
+                continue
+            seen.add(topic)
+            tokens = {
+                token for token in topic.replace("-", "_").split("_")
+                if token and token not in _BROAD_SEED_TOKENS
+            }
+            derived_ranked.append((-len(tokens), idx * 10 + offset, topic))
     ordered = [topic for *_rank, topic in sorted(base_ranked)]
     ordered.extend(topic for *_rank, topic in sorted(variant_ranked))
-    return ordered[:limit]
+    ordered.extend(topic for *_rank, topic in sorted(derived_ranked))
+    return ordered[:effective_limit]
 
 
 def _diagnostic_rank(

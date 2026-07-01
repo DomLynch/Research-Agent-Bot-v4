@@ -3054,6 +3054,54 @@ topics = [
     )[0] == topics[8]
 
 
+def test_business_seed_topics_honor_derived_topic_limit_after_static_window(
+    tmp_path: Path,
+) -> None:
+    seed_path = tmp_path / "seeds.toml"
+    seed_path.write_text(
+        """
+[seeds]
+derived_topic_limit = 64
+topics = [
+    "platform_strategy_network_effects",
+    "supply_chain_resilience_performance",
+    "pricing_strategy_margin",
+    "operations_process_improvement",
+    "digital_transformation_firm_performance",
+    "business_model_performance",
+]
+""",
+        encoding="utf-8",
+    )
+
+    topics = sweep._seed_topics(seed_path, limit=16)
+
+    assert topics[:9] == [
+        "platform_strategy_network_effects",
+        "supply_chain_resilience_performance",
+        "pricing_strategy_margin",
+        "operations_process_improvement",
+        "digital_transformation_firm_performance",
+        "business_model_performance",
+        "platform_strategy_network",
+        "supply_chain_resilience",
+        "digital_transformation_firm",
+    ]
+    assert len(topics) > 16
+    assert "pricing_strategy_profitability" in topics
+    assert "operations_process_productivity" in topics
+    assert "digital_transformation_firm_value" in topics
+    assert "platform_strategy" not in topics
+    blocked = {sweep._topic_key(topic) for topic in topics[:9]}
+    fresh = [
+        topic for topic in sweep._prioritized_seed_topics(
+            tmp_path / "runs", "business_research", topics,
+        )
+        if sweep._topic_key(topic) not in blocked
+    ]
+    assert fresh[0] == "platform_strategy_network_productivity"
+
+
 def test_business_sweep_continues_after_running_fullraw_probe(
     tmp_path: Path,
     monkeypatch: Any,
