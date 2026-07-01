@@ -1723,6 +1723,53 @@ def test_business_sweep_fullraw_probe_backoff_is_topic_scoped(
     assert calls == ["platform strategy network performance", "pricing strategy margin"]
 
 
+def test_business_sweep_priority_probe_honors_fresh_fullraw_backoff(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import agent.topic_discovery as topic_discovery_mod
+    import scripts.run_topic_discovery as discovery
+
+    calls: list[str] = []
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_PRIORITY", "1")
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
+        str(tmp_path / "fullraw.lock"),
+    )
+
+    def fake_seed_fullraw(query: str, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        topic_discovery_mod._FULLRAW_LAST_RECEIPT = {
+            "shards_searched": 311,
+            "partial_shard_search": True,
+            "sweep_failed_shards": 0,
+        }
+        topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {"status": "running"}
+        discovery._FULLRAW_PROBE_EVENTS.append({
+            "query": query,
+            "status": "incomplete_receipt",
+            "async_status": "running",
+            "partial_shard_search": True,
+            "shards_searched": 311,
+        })
+        return []
+
+    monkeypatch.setattr(discovery, "_seed_fullraw_papers", fake_seed_fullraw)
+
+    first = sweep._strict_fullraw_probe(
+        "platform_strategy_network", runs_root=tmp_path / "runs",
+    )
+    same_topic = sweep._strict_fullraw_probe(
+        "platform_strategy_network", runs_root=tmp_path / "runs",
+    )
+
+    assert first["status"] == "incomplete_receipt"
+    assert same_topic["status"] == "busy"
+    assert same_topic["reason"] == "fullraw_backoff"
+    assert same_topic["previous_status"] == "incomplete_receipt"
+    assert calls == ["platform strategy network performance"]
+
+
 def test_business_sweep_priority_probe_bypasses_stale_fullraw_backoff(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

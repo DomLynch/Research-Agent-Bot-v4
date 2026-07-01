@@ -385,7 +385,7 @@ def _strict_fullraw_probe(
         or os.environ.get("V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL")
     ):
         return {"status": "not_configured"}
-    backoff = None if _business_fullraw_priority_enabled() else _fullraw_backoff(runs_root, topic)
+    backoff = _fullraw_backoff(runs_root, topic)
     if backoff:
         return backoff
     lock_handle = None
