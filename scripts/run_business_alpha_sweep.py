@@ -1741,13 +1741,19 @@ def _recent_source_literature_repair_attempt_topics(
         if isinstance(raw_attempts, list):
             attempts.extend(raw_attempts)
         for attempt in attempts:
-            if not isinstance(attempt, dict) or not attempt.get("repair_submission"):
+            if not isinstance(attempt, dict):
                 continue
             reason = str(attempt.get("reason") or "")
-            if reason not in publish_cycle._SOURCE_LITERATURE_STRUCTURAL_BLOCK_REASONS:
-                continue
             topic = str(attempt.get("topic") or "").strip()
             key = _topic_key(topic)
+            if reason == "duplicate_submission_fingerprint":
+                if key:
+                    seen.add(key)
+                continue
+            if not attempt.get("repair_submission"):
+                continue
+            if reason not in publish_cycle._SOURCE_LITERATURE_STRUCTURAL_BLOCK_REASONS:
+                continue
             if not key or key in seen:
                 continue
             if (

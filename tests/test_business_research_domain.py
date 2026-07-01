@@ -5290,6 +5290,45 @@ def test_business_sweep_repair_rows_do_not_starve_fresh_source_lit(
     assert fullraw_calls == [fresh_topic]
 
 
+def test_business_sweep_duplicate_fallback_suppresses_older_repair_attempt(
+    tmp_path: Path,
+) -> None:
+    runs_root = tmp_path / "runs"
+    ledger_dir = runs_root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    topic = "digital_transformation_firm"
+    older = ledger_dir / "2026-07-01T00-00-00Z-business_research.json"
+    newer = ledger_dir / "2026-07-01T01-00-00Z-business_research.json"
+    cycle._write_json(older, {
+        "domain": {"slug": "business_research"},
+        "source_literature_fallback_attempts": [{
+            "topic": topic,
+            "status": "blocked",
+            "reason": "directional_receipt_floor_below_min",
+            "repair_submission": True,
+            "selected_source_count": 5,
+            "selected_source_fact_count": 5,
+            "selected_source_identity_count": 5,
+        }],
+    })
+    cycle._write_json(newer, {
+        "domain": {"slug": "business_research"},
+        "source_literature_fallback": {
+            "topic": topic,
+            "status": "blocked",
+            "reason": "duplicate_submission_fingerprint",
+            "selected_source_count": 5,
+            "selected_source_fact_count": 5,
+            "selected_source_identity_count": 5,
+        },
+    })
+    os.utime(older, (older.stat().st_atime - 20, older.stat().st_mtime - 20))
+
+    assert sweep._recent_source_literature_repair_attempt_topics(
+        runs_root, "business_research",
+    ) == []
+
+
 def test_business_sweep_retries_repair_submission_fallback_attempt(
     tmp_path: Path,
     monkeypatch: Any,
