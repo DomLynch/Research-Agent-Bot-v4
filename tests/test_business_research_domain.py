@@ -1899,6 +1899,7 @@ def test_business_sweep_priority_probe_checks_exact_key_when_queue_is_full(
     topic_discovery_mod._FULLRAW_LAST_RECEIPT = {}
     topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
     discovery._FULLRAW_PROBE_EVENTS.clear()
+    monkeypatch.setattr(discovery, "_cached_fullraw_in_progress", lambda _cache_key: None)
 
     monkeypatch.setattr(
         discovery,
@@ -1933,11 +1934,13 @@ def test_business_sweep_priority_probe_checks_exact_key_when_queue_is_full(
         "digital_transformation_firm", runs_root=tmp_path / "runs",
     )
 
-    assert calls == ["digital transformation firm performance"]
-    assert result["status"] == "incomplete_receipt"
-    assert result["async_status"] == "running"
-    assert result["key_running"] is True
-    assert result["shards_searched"] == 1453
+    assert calls == []
+    assert result["query"] == "digital transformation firm performance"
+    assert result["status"] == "inflight_saturated"
+    assert result["inflight_count"] == 2
+    assert result["max_inflight"] == 2
+    assert result["queue_waiting"] is True
+    assert result["queue_shed"] is True
 
 
 def test_business_sweep_fullraw_probe_rejects_papers_without_complete_receipt(
