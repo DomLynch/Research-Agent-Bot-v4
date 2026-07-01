@@ -2512,6 +2512,8 @@ def main() -> int:
                 + len(repairable_fresh_topics)
                 + repairable_extra_budget,
             )
+            if not repairable_fresh_topics and not cached_ready_fresh_topics:
+                selected_limit = max(selected_limit, cache_rank_limit)
             selected_topics = list(dict.fromkeys([
                 *repairable_fresh_topics,
                 *cached_ready_fresh_topics,

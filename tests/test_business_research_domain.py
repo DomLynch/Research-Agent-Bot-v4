@@ -7665,6 +7665,130 @@ def test_business_sweep_skips_submitted_discovery_cache_source_set(
     assert submissions == [fresh_topic]
 
 
+def test_business_sweep_widens_ranked_topics_when_cache_supply_is_exhausted(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    runs_root = tmp_path / "runs"
+    stale_topic = "stale_strategy_performance"
+    weak_topic = "weak_market_productivity"
+    live_topic = "fresh_channel_productivity"
+    probe_calls: list[str] = []
+    submissions: list[str] = []
+
+    def papers_for(topic: str) -> list[dict[str, Any]]:
+        outlets = (
+            "Alpha Strategy Review",
+            "Beta Channel Journal",
+            "Gamma Market Letters",
+            "Delta Business Quarterly",
+            "Epsilon Productivity Studies",
+        )
+        return [
+            {
+                "title": f"{topic.replace('_', ' ')} source {idx}",
+                "doi": f"10.9898/{topic}-{idx}",
+                "journal_name": outlets[idx],
+                "abstract": (
+                    f"{topic.replace('_', ' ')} significantly improves bounded "
+                    f"firm productivity outcome {idx}."
+                ),
+                "source_fact": {
+                    "canonical_phrase": (
+                        f"{topic.replace('_', ' ')} significantly improves bounded "
+                        f"firm productivity outcome {idx}"
+                    ),
+                    "population": "firms",
+                    "intervention": topic.replace("_", " "),
+                    "endpoint": f"productivity outcome {idx}",
+                    "source_tier": "fullraw_search",
+                },
+            }
+            for idx in range(5)
+        ]
+
+    def fake_fullraw_probe(
+        topic: str, *_args: Any, **_kwargs: Any,
+    ) -> dict[str, Any]:
+        probe_calls.append(topic)
+        if topic == live_topic:
+            return {
+                "status": "complete",
+                "query": topic.replace("_", " "),
+                "paper_count": 5,
+                "_papers": papers_for(topic),
+            }
+        return {"status": "queue_saturated", "paper_count": 0, "_papers": []}
+
+    def fake_run_cycle(**kwargs: Any) -> dict[str, Any]:
+        forced = kwargs.get("source_literature_forced_papers") or {}
+        topic = next(iter(forced), "")
+        submissions.append(str(topic))
+        assert topic == live_topic
+        forced_papers = forced[live_topic]
+        assert len(forced_papers) == 5
+        assert publish_literature.substantive_fact_count(forced_papers) == 5
+        assert publish_literature.source_identity_count(
+            forced_papers, require_substantive=True,
+        ) == 5
+        assert sweep._source_outlet_count(forced_papers) == 5
+        return {"status": "submitted_to_researka", "submitted": 1, "published": 0}
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(
+        sweep,
+        "_seed_topics",
+        lambda _path, *, limit: [stale_topic, weak_topic, live_topic],
+    )
+    monkeypatch.setattr(
+        sweep,
+        "_prioritized_seed_topics",
+        lambda _root, _domain, seed_topics: seed_topics,
+    )
+    monkeypatch.setattr(cycle, "_priority_source_literature_repair_decisions", lambda *_args, **_kwargs: {})
+    monkeypatch.setattr(cycle, "_repairable_source_literature_topics", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(cycle, "_pending_source_literature_topics", lambda *_args, **_kwargs: set())
+    monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", lambda _topic: 0)
+    monkeypatch.setattr(
+        sweep,
+        "_cached_ready_source_literature_papers_with_topic",
+        lambda *_args, **_kwargs: ([], ""),
+    )
+    monkeypatch.setattr(
+        sweep,
+        "_cached_source_literature_discovery_topics",
+        lambda *_args, **_kwargs: [],
+    )
+    monkeypatch.setattr(
+        sweep,
+        "fetch_business_facts",
+        lambda *_args, **_kwargs: ([], {"status": "failed"}),
+    )
+    monkeypatch.setattr(
+        sweep,
+        "_enrich_fullraw_papers_with_db_facts",
+        lambda _topic, *, domain, papers, settings: papers,
+    )
+    monkeypatch.setattr(sweep, "_fullraw_search_hits", lambda _query: [])
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", fake_fullraw_probe)
+    monkeypatch.setattr(sweep, "run_cycle", fake_run_cycle)
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(runs_root),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-07-01T10-40-00Z",
+    ])
+
+    assert sweep.main() == 0
+    assert probe_calls == [stale_topic, weak_topic, live_topic]
+    assert submissions == [live_topic]
+
+
 def test_business_sweep_uses_cached_ready_backup_after_duplicate_repair(
     tmp_path: Path,
     monkeypatch: Any,
