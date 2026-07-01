@@ -370,6 +370,17 @@ _SOURCE_LITERATURE_OLD_PUBLISH_FRAMING_MARKERS = (
     "heterogeneity",
     "heterogeneous",
 )
+_SOURCE_LITERATURE_WRITER_REPAIR_TERMS = (
+    "raw accounting",
+    "headline research signal",
+    "outcome-family",
+    "descriptive modeling",
+    "modeling-only",
+    "effect accounting",
+    "design heterogeneity",
+    "within-source caveat",
+    "insignificant effect",
+)
 _SOURCE_LITERATURE_FIELD_OWNERSHIP_MARKERS = (
     "policy/exposure/practice",
     "source synthesis",
@@ -2642,6 +2653,56 @@ def _source_literature_terminal_feedback_repair_needed(decision: Json) -> bool:
     )
 
 
+def _source_literature_writer_framing_repair_needed(
+    runs_root: Path, domain: str | None, topic: str, decision: Json,
+) -> bool:
+    if not _source_literature_render_repair_revise(decision):
+        return False
+    notes = _norm(_revision_notes(decision))
+    if not any(term in notes for term in _SOURCE_LITERATURE_WRITER_REPAIR_TERMS):
+        return False
+    for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
+        ledger = _json(path, {})
+        if (
+            not isinstance(ledger, dict)
+            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
+        ):
+            continue
+        candidate = ledger.get("candidate")
+        if not isinstance(candidate, dict) or not int(ledger.get("submitted") or 0):
+            continue
+        run_ref = candidate.get("run_dir")
+        if not _source_literature_topic_from_run(run_ref):
+            continue
+        row_topic = str(candidate.get("topic") or "") or _source_literature_topic_from_run(run_ref)
+        if row_topic != topic:
+            continue
+        payload = _json(_run_path(runs_root, run_ref) / "source_literature_payload.json", {})
+        if not isinstance(payload, dict):
+            return False
+        title = str(payload.get("title") or "").lower()
+        markdown = str(payload.get("markdown") or "").lower()
+        if (
+            ("raw accounting" in notes or "headline research signal" in notes)
+            and ("5-source map:" in title or "direction-bearing" not in title)
+        ):
+            return True
+        if "outcome-family" in notes and "outcome-family boundary" not in markdown:
+            return True
+        if (
+            ("descriptive modeling" in notes or "modeling-only" in notes or "effect accounting" in notes)
+            and "does not test an effect" not in markdown
+        ):
+            return True
+        if "design heterogeneity" in notes and "design heterogeneity:" not in markdown:
+            return True
+        return (
+            ("within-source caveat" in notes or "insignificant effect" in notes)
+            and "within-source caveat:" not in markdown
+        )
+    return False
+
+
 def _source_literature_clean_terminal_resubmit(decision: Json) -> bool:
     return (
         _clean_supported_revise(decision)
@@ -2774,8 +2835,11 @@ def _repairable_source_literature_decisions(
             parented_terminal_resubmit = _source_literature_parented_terminal_resubmit(
                 decision,
             )
+            writer_framing_repair = _source_literature_writer_framing_repair_needed(
+                runs_root, domain, topic, decision,
+            )
             if (
-                not parented_terminal_resubmit
+                not (parented_terminal_resubmit or writer_framing_repair)
                 and (
                     topic in structurally_blocked
                     or _family_blocked_topic(topic, structurally_blocked)
@@ -2788,7 +2852,7 @@ def _repairable_source_literature_decisions(
                 continue
             if (
                 not (
-                    parented_terminal_resubmit
+                    (parented_terminal_resubmit or writer_framing_repair)
                     and (
                         topic in source_floor_satisfied
                         or _family_blocked_topic(topic, source_floor_satisfied)
@@ -2824,6 +2888,9 @@ def _priority_source_literature_repair_decisions(
     for topic, decision in decisions.items():
         if (
             _source_literature_publish_framing_repair_needed(
+                runs_root, domain, topic, decision,
+            )
+            or _source_literature_writer_framing_repair_needed(
                 runs_root, domain, topic, decision,
             )
             or _source_literature_terminal_feedback_repair_needed(decision)
@@ -2970,6 +3037,11 @@ def _source_literature_attempt_budget(
                             _SOURCE_LITERATURE_PUBLISH_FRAMING_ATTEMPT_LIMIT,
                         ),
                     )
+                if _source_literature_writer_framing_repair_needed(
+                    runs_root, domain, topic, decision,
+                ):
+                    count = _source_literature_submission_count(runs_root, domain, topic)
+                    budget = max(budget, count + 1)
                 if (
                     _source_literature_terminal_feedback_repair_needed(decision)
                     and not _clean_supported_revise(decision)

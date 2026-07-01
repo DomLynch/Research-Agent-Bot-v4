@@ -10461,6 +10461,120 @@ def test_source_literature_renderer_feedback_gets_one_bounded_retry(
     ) == []
 
 
+def test_source_literature_writer_framing_repair_bypasses_old_attempt_exhaustion(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    topic = "supply_chain_resilience_performance"
+    ledger_dir = root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    decision = {
+        "decision": "revise",
+        "claim_support_verdict": "supported",
+        "required_revisions": [
+            "Rewrite the title and lead paragraph so the headline research signal "
+            "states the outcome-family divergence instead of raw accounting."
+        ],
+        "major_issues": [
+            "Descriptive modeling receipt needs explicit effect accounting.",
+        ],
+        "minor_issues": [
+            "Add design heterogeneity and the within-source caveat for the "
+            "insignificant effect.",
+        ],
+        "failed_checks": [],
+        "gate_failures": [],
+        "rubric_scores": {
+            "claim_evidence_alignment": 5,
+            "source_grounding": 5,
+            "synthesis_quality": 4,
+        },
+        "resubmission": {
+            "allowed": True,
+            "parent_submission_id": "sub-writer-parent",
+        },
+    }
+    old_count = daily._SOURCE_LITERATURE_SOURCE_SCOPE_ATTEMPT_LIMIT + 3
+    for idx in range(old_count):
+        run_dir = root / f"{topic}-source-literature-2026-06-29T10-{idx:02d}-00Z"
+        run_dir.mkdir(parents=True)
+        run_dir.joinpath("source_literature_memo.md").write_text(
+            "# Source literature boundary memo\n", encoding="utf-8",
+        )
+        daily._write_json(run_dir / "source_literature_payload.json", {
+            "title": (
+                "supply chain resilience: 5-source map: 3 direction-bearing "
+                "supply chain performance receipt(s) plus 1 null/mixed "
+                "firm performance receipt(s)"
+            ),
+            "markdown": "## Source synthesis\n\nOld raw accounting memo.",
+        })
+        daily._write_json(ledger_dir / f"2026-06-29T10-{idx:02d}-00Z.json", {
+            "domain": {"slug": "business_research"},
+            "submitted": 1,
+            "submission_id": f"sub-writer-{idx}",
+            "candidate": {
+                "topic": topic,
+                "run_dir": run_dir.name,
+                "fingerprint": f"fp-writer-{idx}",
+            },
+            "researka_decision": decision,
+            "source_literature_fallback": {
+                "topic": topic,
+                "selected_source_count": 5,
+                "selected_source_fact_count": 5,
+                "selected_source_identity_count": 5,
+            },
+        })
+
+    assert daily._source_literature_submission_count(
+        root, "business_research", topic,
+    ) == old_count
+    assert daily._source_literature_attempt_budget(
+        root, "business_research", topic,
+    ) == old_count + 1
+    assert daily._repairable_source_literature_topics(
+        root, "business_research", limit=3,
+    ) == [topic]
+
+    final_run = root / f"{topic}-source-literature-2026-06-29T11-00-00Z"
+    final_run.mkdir(parents=True)
+    final_run.joinpath("source_literature_memo.md").write_text(
+        "# Source literature boundary memo\n", encoding="utf-8",
+    )
+    daily._write_json(final_run / "source_literature_payload.json", {
+        "title": (
+            "supply chain resilience: direction-bearing supply chain performance "
+            "signal with firm performance caveat"
+        ),
+        "markdown": (
+            "Outcome-family boundary. This receipt does not test an effect. "
+            "Design heterogeneity: selected receipts span PLS-SEM and AHP-VIKOR. "
+            "Within-source caveat: insignificant effect."
+        ),
+    })
+    daily._write_json(ledger_dir / "2026-06-29T11-00-00Z.json", {
+        "domain": {"slug": "business_research"},
+        "submitted": 1,
+        "submission_id": "sub-writer-final",
+        "candidate": {
+            "topic": topic,
+            "run_dir": final_run.name,
+            "fingerprint": "fp-writer-final",
+        },
+        "researka_decision": decision,
+        "source_literature_fallback": {
+            "topic": topic,
+            "selected_source_count": 5,
+            "selected_source_fact_count": 5,
+            "selected_source_identity_count": 5,
+        },
+    })
+    assert daily._repairable_source_literature_topics(
+        root, "business_research", limit=3,
+    ) == []
+
+
 def test_source_literature_unowned_title_gets_one_bounded_retry(
     tmp_path: Path,
 ) -> None:
