@@ -1716,6 +1716,34 @@ def _recent_source_literature_blocked_topics(runs_root: Path, domain: str) -> se
     }
 
 
+def _recent_reviewer_revise_submission_topic_keys(
+    runs_root: Path, domain: str,
+) -> set[str]:
+    submitted_path = runs_root / "_daily_ledger" / "_submitted_fingerprints.json"
+    days = int(getattr(publish_cycle, "_DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS", 30))
+    cutoff = time.time() - (max(0, days) * 86400)
+    data = read_json(submitted_path, [])
+    if not isinstance(data, list):
+        return set()
+    topics: set[str] = set()
+    for row in data:
+        if not isinstance(row, dict) or row.get("status") != "reviewer_revise":
+            continue
+        raw_domain = row.get("domain_slug") or row.get("domain")
+        row_domain = (
+            str(raw_domain.get("slug") or "") if isinstance(raw_domain, dict)
+            else str(raw_domain or "")
+        )
+        if row_domain and row_domain != domain:
+            continue
+        ts = publish_cycle._stamp_ts(row.get("date"))
+        if ts is None or ts < cutoff:
+            continue
+        if key := _topic_key(row.get("topic")):
+            topics.add(key)
+    return topics
+
+
 def _hard_source_literature_blocked_topic_keys(runs_root: Path, domain: str) -> set[str]:
     ledger_dir = runs_root / "_daily_ledger"
     days = int(getattr(publish_cycle, "_DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS", 30))
@@ -2110,6 +2138,9 @@ def main() -> int:
                 )
                 if _topic_key(topic)
             }
+            reviewer_revise_topic_keys = _recent_reviewer_revise_submission_topic_keys(
+                args.runs_root, domain,
+            )
             repairable_source_lit_topics = list(dict.fromkeys([
                 *priority_source_lit_topics,
                 *repairable_source_lit_topics,
@@ -2133,7 +2164,10 @@ def main() -> int:
                 if seed_key not in blocked_topic_keys or seed_key in hard_blocked_topic_keys:
                     continue
                 soft_repair = (
-                    seed_key in soft_source_lit_repair_keys
+                    (
+                        seed_key in soft_source_lit_repair_keys
+                        or seed_key in reviewer_revise_topic_keys
+                    )
                     and seed_key not in pending_source_lit_topic_keys
                 )
                 if seed_topic not in priority_source_lit_topics and not soft_repair:

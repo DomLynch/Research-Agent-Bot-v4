@@ -6357,8 +6357,16 @@ def test_business_sweep_retries_cached_ready_source_lit_despite_recent_submissio
 ) -> None:
     profile = load_domain_profile("business_research")
     runs_root = tmp_path / "runs"
+    ledger_dir = runs_root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
     topic = "supply_chain_resilience"
     submissions: list[dict[str, Any]] = []
+    cycle._write_json(ledger_dir / "_submitted_fingerprints.json", [{
+        "date": "2026-06-30T08-00-00Z",
+        "domain": "business_research",
+        "status": "reviewer_revise",
+        "topic": topic,
+    }])
     papers = [
         {
             "title": f"Supply chain resilience performance source paper {idx}",
@@ -6415,7 +6423,7 @@ def test_business_sweep_retries_cached_ready_source_lit_despite_recent_submissio
     monkeypatch.setattr(cycle, "_repairable_source_literature_topics", lambda *_args, **_kwargs: [])
     monkeypatch.setattr(cycle, "_pending_source_literature_topics", lambda *_args, **_kwargs: set())
     monkeypatch.setattr(cycle, "_recent_submission_topics", lambda *_args, **_kwargs: {topic})
-    monkeypatch.setattr(cycle, "_recent_source_floor_topics", lambda *_args, **_kwargs: {topic})
+    monkeypatch.setattr(cycle, "_recent_source_floor_topics", lambda *_args, **_kwargs: set())
     monkeypatch.setattr(
         cycle,
         "_recent_source_literature_structural_blocked_topics",
