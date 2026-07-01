@@ -2517,7 +2517,7 @@ def test_business_sweep_fullraw_probe_sheds_unadmitted_full_queue_without_sleep(
     assert result["queue_shed"] is True
 
 
-def test_business_sweep_fullraw_probe_retries_admitted_pending_key(
+def test_business_sweep_fullraw_probe_sheds_admitted_pending_key_without_sleep(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
     import agent.topic_discovery as topic_discovery_mod
@@ -2545,36 +2545,18 @@ def test_business_sweep_fullraw_probe_retries_admitted_pending_key(
     def fake_seed_fullraw(query: str, **_kwargs: Any) -> list[dict[str, Any]]:
         calls.append(query)
         topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
-        if len(calls) == 1:
-            topic_discovery_mod._FULLRAW_LAST_RECEIPT = {}
-            discovery._FULLRAW_PROBE_EVENTS.append({
-                "query": query,
-                "status": "incomplete_receipt",
-                "async_status": "queued",
-                "key_queued": True,
-                "key_running": False,
-                "queued_count": 4,
-                "max_queue": 4,
-                "paper_count": 0,
-            })
-            return []
-        topic_discovery_mod._FULLRAW_LAST_RECEIPT = {
-            "shards_searched": 1525,
-            "partial_shard_search": False,
-            "sweep_failed_shards": 0,
-            "source_count_searched": 5,
-        }
-        return [
-            {
-                "paper_id": f"employment-{idx}",
-                "title": f"Minimum wage employment source {idx}",
-                "abstract": (
-                    "Results show minimum wage changes altered employment "
-                    f"outcomes in labor market source {idx}."
-                ),
-            }
-            for idx in range(5)
-        ]
+        topic_discovery_mod._FULLRAW_LAST_RECEIPT = {}
+        discovery._FULLRAW_PROBE_EVENTS.append({
+            "query": query,
+            "status": "incomplete_receipt",
+            "async_status": "queued",
+            "key_queued": True,
+            "key_running": False,
+            "queued_count": 4,
+            "max_queue": 4,
+            "paper_count": 0,
+        })
+        return []
 
     monkeypatch.setattr(discovery, "_seed_fullraw_papers", fake_seed_fullraw)
 
@@ -2583,13 +2565,13 @@ def test_business_sweep_fullraw_probe_retries_admitted_pending_key(
         include_papers=True,
     )
 
-    assert calls == ["minimum wage performance", "minimum wage performance"]
-    assert sleeps == [15.0]
-    assert result["status"] == "complete"
-    assert result["candidate_fact_source_count"] == 5
+    assert calls == ["minimum wage performance"]
+    assert sleeps == []
+    assert result["status"] == "incomplete_receipt"
+    assert result["queue_waiting"] is True
 
 
-def test_business_sweep_fullraw_probe_polls_in_progress_cache_hit_without_key_flag(
+def test_business_sweep_fullraw_probe_sheds_in_progress_cache_hit_without_sleep(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
     import agent.topic_discovery as topic_discovery_mod
@@ -2617,31 +2599,13 @@ def test_business_sweep_fullraw_probe_polls_in_progress_cache_hit_without_key_fl
     def fake_seed_fullraw(query: str, **_kwargs: Any) -> list[dict[str, Any]]:
         calls.append(query)
         topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
-        if len(calls) == 1:
-            topic_discovery_mod._FULLRAW_LAST_RECEIPT = {}
-            discovery._FULLRAW_PROBE_EVENTS.append({
-                "query": query,
-                "status": "in_progress_cache_hit",
-                "paper_count": 1,
-            })
-            return [{"paper_id": "partial-employee-engagement"}]
-        topic_discovery_mod._FULLRAW_LAST_RECEIPT = {
-            "shards_searched": 1525,
-            "partial_shard_search": False,
-            "sweep_failed_shards": 0,
-            "source_count_searched": 5,
-        }
-        return [
-            {
-                "paper_id": f"employee-engagement-{idx}",
-                "title": f"Employee engagement turnover sales source {idx}",
-                "abstract": (
-                    "Results show employee engagement changes altered turnover "
-                    f"and sales outcomes in workplace source {idx}."
-                ),
-            }
-            for idx in range(5)
-        ]
+        topic_discovery_mod._FULLRAW_LAST_RECEIPT = {}
+        discovery._FULLRAW_PROBE_EVENTS.append({
+            "query": query,
+            "status": "in_progress_cache_hit",
+            "paper_count": 1,
+        })
+        return [{"paper_id": "partial-employee-engagement"}]
 
     monkeypatch.setattr(discovery, "_seed_fullraw_papers", fake_seed_fullraw)
 
@@ -2650,13 +2614,10 @@ def test_business_sweep_fullraw_probe_polls_in_progress_cache_hit_without_key_fl
         include_papers=True,
     )
 
-    assert calls == [
-        "employee engagement turnover sales",
-        "employee engagement turnover sales",
-    ]
-    assert sleeps == [15.0]
-    assert result["status"] == "complete"
-    assert result["candidate_fact_source_count"] == 5
+    assert calls == ["employee engagement turnover sales"]
+    assert sleeps == []
+    assert result["status"] == "incomplete_receipt"
+    assert result["queue_waiting"] is True
 
 
 def test_business_sweep_fullraw_probe_recovers_missing_async_status(
@@ -2737,13 +2698,10 @@ def test_business_sweep_fullraw_probe_recovers_missing_async_status(
     )
 
     assert status_checks[0] == "employee engagement turnover productivity"
-    assert calls == [
-        "employee engagement turnover productivity",
-        "employee engagement turnover productivity",
-    ]
-    assert sleeps == [15.0]
-    assert result["status"] == "complete"
-    assert result["candidate_fact_source_count"] == 5
+    assert calls == ["employee engagement turnover productivity"]
+    assert sleeps == []
+    assert result["status"] == "incomplete_receipt"
+    assert result["queue_waiting"] is True
 
 
 def test_business_fullraw_queries_are_compact_deduped_and_alpha_shaped(

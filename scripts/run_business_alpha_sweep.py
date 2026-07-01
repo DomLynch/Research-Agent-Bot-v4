@@ -648,6 +648,12 @@ def _strict_fullraw_probe(
                         break
                     if result.get("queue_shed") is True:
                         break
+                    if _fullraw_admitted_pending_event(result):
+                        result["queue_waiting"] = True
+                        result.setdefault(
+                            "backoff_seconds", _business_fullraw_backoff_seconds(),
+                        )
+                        break
                     remaining = queue_retry_deadline - time.monotonic()
                     if remaining <= 0:
                         break
