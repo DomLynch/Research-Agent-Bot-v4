@@ -3389,6 +3389,9 @@ def _terminal_resubmit_poll_submission_id(result: Json, parent_submission_id: st
                 continue
             job_id = str(job.get("id") or "").strip()
             target_id = str(job.get("target_object_id") or "").strip()
+            status = str(job.get("status") or "").lower()
+            if job_id and status in {"pending", "queued", "running"}:
+                return job_id
             if job_id and target_id == parent:
                 return job_id
     return publish_decisions.submission_id(result)
@@ -3408,9 +3411,8 @@ def _terminal_resubmit_queued_job_id(result: Json, parent_submission_id: str) ->
         if not isinstance(job, dict):
             continue
         job_id = str(job.get("id") or "").strip()
-        target_id = str(job.get("target_object_id") or "").strip()
         status = str(job.get("status") or "").lower()
-        if job_id and target_id == parent and status in {"pending", "queued", "running"}:
+        if job_id and status in {"pending", "queued", "running"}:
             return job_id
     return ""
 

@@ -12657,7 +12657,7 @@ def test_source_literature_terminal_resubmit_polls_job_id_not_parent(
                 "job": {
                     "id": "job-clean-2",
                     "status": "queued",
-                    "target_object_id": "sub-clean-1",
+                    "target_object_id": "sub-clean-2",
                 },
                 "submission": {"id": "sub-clean-1"},
             },
