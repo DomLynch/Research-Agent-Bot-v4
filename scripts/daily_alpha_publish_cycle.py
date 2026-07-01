@@ -2669,6 +2669,44 @@ def _repairable_source_literature_topics(
     ))
 
 
+def _recent_source_literature_floor_satisfied_topics(
+    ledger_dir: Path, domain: str | None, *, days: int = 2,
+) -> set[str]:
+    cutoff = time.time() - (max(0, days) * 86400)
+    topics: set[str] = set()
+    for path in _ledger_paths_newest_first(ledger_dir):
+        if path.name.startswith("_"):
+            continue
+        with suppress(OSError):
+            if path.stat().st_mtime < cutoff:
+                continue
+        ledger = _json(path, {})
+        if (
+            not isinstance(ledger, dict)
+            or not _same_domain(_ledger_domain_for_runs(ledger_dir.parent, ledger), domain)
+        ):
+            continue
+        attempts: list[Any] = []
+        fallback = ledger.get("source_literature_fallback")
+        if isinstance(fallback, dict):
+            attempts.append(fallback)
+        raw_attempts = ledger.get("source_literature_fallback_attempts")
+        if isinstance(raw_attempts, list):
+            attempts.extend(raw_attempts)
+        for attempt in attempts:
+            if not isinstance(attempt, dict):
+                continue
+            topic = str(attempt.get("topic") or "").strip()
+            if (
+                topic
+                and int(attempt.get("selected_source_count") or 0) >= _DEFAULT_MIN_SUBMIT_SOURCES
+                and int(attempt.get("selected_source_fact_count") or 0) >= _DEFAULT_MIN_SUBMIT_SOURCES
+                and int(attempt.get("selected_source_identity_count") or 0) >= _DEFAULT_MIN_SUBMIT_SOURCES
+            ):
+                topics.add(topic)
+    return topics
+
+
 def _repairable_source_literature_decisions(
     runs_root: Path, domain: str | None, *, limit: int = 3,
 ) -> dict[str, Json]:
@@ -2683,6 +2721,9 @@ def _repairable_source_literature_decisions(
     source_floor_blocked = _recent_source_floor_topics(
         runs_root / "_daily_ledger", days=2, domain=domain,
         source_literature_only=True,
+    )
+    source_floor_satisfied = _recent_source_literature_floor_satisfied_topics(
+        runs_root / "_daily_ledger", domain, days=2,
     )
     structurally_blocked = _recent_source_literature_structural_blocked_topics(
         runs_root / "_daily_ledger", days=2, domain=domain,
@@ -2700,8 +2741,11 @@ def _repairable_source_literature_decisions(
             topic = candidate_topic or _source_literature_topic_from_run(run_ref)
             if not topic or topic in decisions or topic in checked_topics:
                 continue
+            parented_terminal_resubmit = _source_literature_parented_terminal_resubmit(
+                decision,
+            )
             if (
-                not _source_literature_parented_terminal_resubmit(decision)
+                not parented_terminal_resubmit
                 and (
                     topic in structurally_blocked
                     or _family_blocked_topic(topic, structurally_blocked)
@@ -2713,8 +2757,17 @@ def _repairable_source_literature_decisions(
             if topic in pending or _family_blocked_topic(topic, pending):
                 continue
             if (
-                topic in source_floor_blocked
-                or _family_blocked_topic(topic, source_floor_blocked)
+                not (
+                    parented_terminal_resubmit
+                    and (
+                        topic in source_floor_satisfied
+                        or _family_blocked_topic(topic, source_floor_satisfied)
+                    )
+                )
+                and (
+                    topic in source_floor_blocked
+                    or _family_blocked_topic(topic, source_floor_blocked)
+                )
             ):
                 continue
             run_dir = _run_path(runs_root, run_ref)

@@ -9810,6 +9810,82 @@ def test_repairable_source_literature_skips_recent_source_floor_underfill(
     )) == [good_topic]
 
 
+def test_parented_terminal_source_literature_repair_bypasses_stale_source_floor(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    ledger_dir = root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    topic = "digital_transformation_firm"
+    run_dir = root / f"{topic}-source-literature-2026-06-29T08-01-00Z"
+    run_dir.mkdir(parents=True)
+    run_dir.joinpath("source_literature_memo.md").write_text(
+        "# Source literature boundary memo\n", encoding="utf-8",
+    )
+    daily._write_json(ledger_dir / "2026-06-29T08-01-00Z.json", {
+        "domain": {"slug": "business_research"},
+        "submitted": 1,
+        "submission_id": "sub-terminal-parent",
+        "candidate": {
+            "topic": topic,
+            "run_dir": run_dir.name,
+            "fingerprint": f"fp-{topic}",
+        },
+        "researka_decision": {
+            "decision": "revise",
+            "claim_support_verdict": "supported",
+            "notes": ["editorial decision is terminal; external author must resubmit"],
+            "required_revisions": [],
+            "major_issues": [],
+            "minor_issues": [],
+            "failed_checks": [],
+            "gate_failures": [],
+            "rubric_scores": {
+                "claim_evidence_alignment": 5,
+                "source_grounding": 5,
+                "synthesis_quality": 5,
+            },
+            "resubmission": {"allowed": True},
+        },
+    })
+    daily._write_json(ledger_dir / "2026-06-29T08-02-00Z.json", {
+        "domain": {"slug": "business_research"},
+        "source_literature_fallback": {
+            "topic": topic,
+            "status": "blocked",
+            "reason": "source_floor_below_min",
+            "selected_source_count": 3,
+            "selected_source_fact_count": 3,
+            "selected_source_identity_count": 3,
+        },
+    })
+
+    assert daily._repairable_source_literature_decisions(
+        root, "business_research", limit=3,
+    ) == {}
+
+    daily._write_json(ledger_dir / "2026-06-29T08-03-00Z.json", {
+        "domain": {"slug": "business_research"},
+        "source_literature_fallback": {
+            "topic": topic,
+            "status": "blocked",
+            "reason": "duplicate_submission_fingerprint",
+            "selected_source_count": 5,
+            "selected_source_fact_count": 5,
+            "selected_source_identity_count": 5,
+        },
+    })
+
+    repair_decisions = daily._repairable_source_literature_decisions(
+        root, "business_research", limit=3,
+    )
+
+    assert list(repair_decisions) == [topic]
+    assert repair_decisions[topic]["resubmission"]["parent_submission_id"] == (
+        "sub-terminal-parent"
+    )
+
+
 def test_clean_terminal_source_literature_gets_parent_link_retry_after_old_attempts(
     tmp_path: Path,
 ) -> None:
