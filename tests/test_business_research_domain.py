@@ -7616,6 +7616,74 @@ def test_business_sweep_enriches_fullraw_article_abstracts_without_metadata_only
     assert "source_fact" not in enriched[1]
 
 
+def test_business_sweep_resynthesizes_stale_parent_facts_for_child_topic(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(sweep, "_tier2_facts_for_paper", lambda **_kwargs: [])
+    settings = SimpleNamespace(
+        researka_database_url="",
+        researka_database_token="",
+    )
+    papers = [
+        {
+            "doi": f"10.1000/dt-child-{idx}",
+            "title": (
+                f"Digital transformation in firm operating systems sample {idx}"
+            ),
+            "journal_name": journal,
+            "abstract": (
+                "This study examines digital transformation in firms and tests "
+                "whether the transformation changes operating outcomes. Our "
+                "findings show that digital transformation improves firm "
+                f"performance in operating sample {idx}."
+            ),
+            "source_fact": {
+                "canonical_phrase": (
+                    "digital transformation adoption was documented across firms"
+                ),
+                "population": "firms",
+                "intervention": "digital transformation",
+                "endpoint": "adoption",
+                "source_tier": "parent_topic_fact",
+            },
+        }
+        for idx, journal in enumerate((
+            "Alpha Strategy Review",
+            "Beta Management Journal",
+            "Gamma Platform Studies",
+            "Delta Business Research",
+            "Epsilon Market Evidence",
+        ), start=1)
+    ]
+
+    enriched = sweep._enrich_fullraw_papers_with_db_facts(
+        "digital_transformation_firm_performance",
+        domain="business_research",
+        papers=papers,
+        settings=settings,
+    )
+    ready, reason = sweep._source_literature_ready_papers(
+        "digital_transformation_firm_performance",
+        "business_research",
+        enriched,
+    )
+
+    assert reason == "ok"
+    assert publish_literature.substantive_fact_count(ready) == 5
+    assert publish_literature.source_identity_count(ready, require_substantive=True) == 5
+    assert publish_literature.source_outlet_count(ready) == 5
+    assert {
+        paper["source_fact"]["source_tier"] for paper in ready
+    } == {"fullraw_abstract"}
+    assert all(
+        publish_literature._topic_token_coverage(
+            "digital_transformation_firm_performance",
+            paper,
+        ) == 4
+        for paper in ready
+    )
+
+
 def test_business_sweep_backfills_crossref_abstracts_and_strips_markup(
     monkeypatch: Any,
 ) -> None:

@@ -1363,6 +1363,21 @@ def _fullraw_paper_lookup_ids(paper: dict[str, Any]) -> tuple[str, ...]:
     return tuple(ids)
 
 
+def _source_fact_covers_active_topic(topic: str, domain: str, paper: dict[str, Any]) -> bool:
+    if publish_literature.substantive_fact_count([paper]) <= 0:
+        return False
+    if not publish_literature.topic_relevant(topic, paper):
+        return False
+    if publish_literature._non_biomedical(domain):
+        topic_tokens = set(publish_literature._topic_token_sequence(topic))
+        if (
+            len(topic_tokens) >= 3
+            and publish_literature._topic_token_coverage(topic, paper) < len(topic_tokens)
+        ):
+            return False
+    return True
+
+
 def _pubmed_backfill_limit() -> int:
     explicit = os.environ.get("BUSINESS_SWEEP_PUBMED_ABSTRACT_BACKFILL_LIMIT")
     raw = explicit or os.environ.get("RESEARKA_FULLRAW_DOI_ABSTRACT_BACKFILL_LIMIT") or "10"
@@ -1459,7 +1474,7 @@ def _enrich_fullraw_papers_with_db_facts(
     enriched: list[dict[str, Any]] = []
     for paper in papers:
         paper = _clean_paper_source_fact(paper)
-        if publish_literature.substantive_fact_count([paper]) > 0:
+        if _source_fact_covers_active_topic(topic, domain, paper):
             enriched.append(paper)
             continue
         replacement = paper
