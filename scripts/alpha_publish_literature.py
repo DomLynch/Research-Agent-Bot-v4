@@ -131,7 +131,7 @@ _CONTEXT_ONLY_ROLES = frozenset({
 })
 _OUTCOME_QUERY_TOKENS = frozenset({
     "employment", "margin", "margins", "performance", "price", "pricing",
-    "profit", "profitability", "return", "returns", "revenue", "risk",
+    "productivity", "profit", "profitability", "return", "returns", "revenue", "risk",
     "sales", "volatility",
 })
 _SOURCE_LABEL_GENERIC_TOKENS = _GENERIC_TOPIC_TOKENS | _OUTCOME_QUERY_TOKENS | frozenset({
@@ -1687,10 +1687,24 @@ def _source_grounded_topic_label(topic: str, papers: list[Json], profile_slug: s
         if len(token) >= 3 and token not in _GENERIC_TOPIC_TOKENS
     ]
     corpus_words = " ".join(_source_label_text(paper) for paper in papers).split()
+    trimmed_unsupported_suffix = False
+    if (
+        label_tokens
+        and label_tokens[-1] in _OUTCOME_QUERY_TOKENS
+        and not any(_token_matches(word, label_tokens[-1]) for word in corpus_words)
+    ):
+        trimmed = " ".join(label.split()[:-1]).strip()
+        if trimmed:
+            label = trimmed
+            label_tokens = [
+                token for token in title_key(label).split()
+                if len(token) >= 3 and token not in _GENERIC_TOPIC_TOKENS
+            ]
+            trimmed_unsupported_suffix = True
     if label_tokens and all(
         any(_token_matches(word, token) for word in corpus_words)
         for token in label_tokens
-    ):
+    ) and not trimmed_unsupported_suffix:
         return label
     counts: dict[str, int] = {}
     order: dict[str, int] = {}
@@ -2047,11 +2061,24 @@ def payload(
     non_bio = _non_biomedical(profile.slug)
     reviewer_notes = reviewer_notes.strip()
     parent_submission_id = parent_submission_id.strip()
+    requested_topic = topic
     selected = select_boundary_papers(
         topic, papers, 5, strict_topic_coverage=strict_topic_coverage,
         profile_slug=profile.slug,
     )
-    run_dir = runs_root / f"{topic}-source-literature-{date}"
+    if non_bio and len(selected) < 5:
+        grounded_label = _source_grounded_topic_label(topic, papers, profile.slug)
+        grounded_topic = "_".join(title_key(grounded_label).split())
+        if grounded_topic and grounded_topic != topic:
+            grounded_selected = select_boundary_papers(
+                grounded_topic, papers, 5,
+                strict_topic_coverage=strict_topic_coverage,
+                profile_slug=profile.slug,
+            )
+            if len(grounded_selected) > len(selected):
+                selected = grounded_selected
+                topic = grounded_topic
+    run_dir = runs_root / f"{requested_topic}-source-literature-{date}"
     run_dir.mkdir(parents=True, exist_ok=True)
     facts: list[Json] = []
     for paper in selected:
@@ -2814,7 +2841,7 @@ def payload(
     (run_dir / "source_literature_memo.md").write_text(markdown, encoding="utf-8")
     write_json(run_dir / "source_literature_writer.json", writer_meta)
     candidate = {
-        "topic": topic,
+        "topic": requested_topic,
         "run_dir": str(run_dir.relative_to(runs_root)),
         "memo_fingerprint": hashlib.sha256(markdown.encode("utf-8")).hexdigest(),
         "domain": profile.as_metadata(),
@@ -2842,6 +2869,10 @@ def payload(
             f"{directional_endpoint_counts.get(primary_duplicated_endpoint, directional_count)} "
             f"direction-bearing {primary_duplicated_endpoint} receipt(s) plus "
             f"{nullish_count} null/mixed {single_caveat_endpoint} receipt(s)"
+            + (
+                f" plus {context_only_count} context/model receipt(s) excluded from effect support"
+                if context_only_count else ""
+            )
         )
         if (
             non_bio and multi_display_outcome and primary_duplicated_endpoint
@@ -2873,7 +2904,7 @@ def payload(
         "article_type": "alpha_memo",
         "category": category,
         "domain_slug": profile.slug,
-        "topic": topic,
+        "topic": requested_topic,
         "topic_label": topic_label,
     }
     metadata.update(revision_metadata)
@@ -2904,7 +2935,7 @@ def payload(
         "human_title": f"{topic_label}: {title_tail}",
         "abstract": safe_excerpt(abstract_text),
         "summary": safe_excerpt(abstract_text),
-        "topic": topic,
+        "topic": requested_topic,
         "metadata": metadata,
         "markdown": markdown,
         "citations": bundle,

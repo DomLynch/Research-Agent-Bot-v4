@@ -16927,7 +16927,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert payload["title"] == (
         "supply chain resilience: 5-source map: 3 direction-bearing "
         "supply chain performance receipt(s) plus 1 null/mixed firm performance "
-        "receipt(s)"
+        "receipt(s) plus 1 context/model receipt(s) excluded from effect support"
     )
     assert payload["human_title"] == payload["title"]
     assert payload["metadata"]["topic_label"] == "supply chain resilience"
@@ -17027,6 +17027,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "strong null claim" not in markdown
     assert "3 direction-bearing supply chain performance receipt(s)" in payload["title"]
     assert "1 null/mixed firm performance receipt(s)" in payload["title"]
+    assert "1 context/model receipt(s) excluded from effect support" in payload["title"]
     assert "firm performance is null or non-convergent" not in markdown
     assert "not uniform support for the topic" in markdown
     assert "direction-bearing receipts: 3" in markdown
@@ -17106,6 +17107,22 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "supply chain margin" not in repaired_payload["title"].lower()
     assert "supply chain margin" not in repaired_payload["abstract"].lower()
     assert "supply chain margin" not in repaired_payload["markdown"].lower()
+
+    _candidate, productivity_payload = daily._source_literature_payload(
+        profile_slug="business_research",
+        topic="supply_chain_resilience_productivity",
+        papers=papers,
+        runs_root=root,
+        date="2026-06-29T02-45-00Z",
+    )
+
+    assert productivity_payload["metadata"]["topic"] == "supply_chain_resilience_productivity"
+    assert productivity_payload["metadata"]["topic_label"] == "supply chain resilience"
+    assert productivity_payload["title"].startswith("supply chain resilience:")
+    assert "productivity" not in productivity_payload["title"].lower()
+    assert "productivity" not in productivity_payload["abstract"].lower()
+    assert "productivity" not in productivity_payload["markdown"].lower()
+    assert "1 context/model receipt(s) excluded from effect support" in productivity_payload["title"]
 
 
 def test_source_literature_payload_collapses_business_context_rows(
