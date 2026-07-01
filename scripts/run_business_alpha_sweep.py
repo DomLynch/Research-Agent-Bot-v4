@@ -898,6 +898,46 @@ def _cached_fullraw_discovery_papers(
     return papers, trace
 
 
+def _source_literature_cache_topics(topic: str) -> tuple[str, ...]:
+    tokens = [
+        token for token in re.findall(r"[a-z0-9]+", str(topic).replace("-", "_").lower())
+        if token
+    ]
+    if not tokens:
+        return ()
+    variants = ["_".join(tokens)]
+    trimmed = list(tokens)
+    while len(trimmed) > 1 and trimmed[-1] in _BUSINESS_REPLACEABLE_OUTCOME_TOKENS:
+        trimmed = trimmed[:-1]
+        alias = "_".join(trimmed)
+        if alias and alias not in variants:
+            variants.append(alias)
+    return tuple(variants)
+
+
+def _cache_alias_selected_papers_allowed(
+    topic: str, cache_topic: str, selected: list[dict[str, Any]],
+) -> bool:
+    if cache_topic == topic:
+        return True
+    topic_tokens = set(publish_literature._topic_token_sequence(topic))
+    cache_tokens = set(publish_literature._topic_token_sequence(cache_topic))
+    removed = topic_tokens - cache_tokens
+    if (
+        len(topic_tokens) < 3
+        or not cache_tokens
+        or not cache_tokens < topic_tokens
+        or not removed
+        or not removed <= _BUSINESS_REPLACEABLE_OUTCOME_TOKENS
+    ):
+        return False
+    required = len(topic_tokens)
+    return all(
+        publish_literature._topic_token_coverage(topic, paper) >= required
+        for paper in selected
+    )
+
+
 def _merge_source_literature_papers(
     *paper_sets: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
@@ -1754,17 +1794,31 @@ def _hard_source_literature_blocked_topic_keys(runs_root: Path, domain: str) -> 
     return {key for topic in hard_blocked if (key := _topic_key(topic))}
 
 
+def _cached_ready_source_literature_papers_with_topic(
+    runs_root: Path, domain: str, topic: str, settings: Any,
+) -> tuple[list[dict[str, Any]], str]:
+    for cache_topic in _source_literature_cache_topics(topic):
+        papers, _trace = _cached_fullraw_discovery_papers(runs_root, domain, cache_topic)
+        if not papers:
+            continue
+        papers = _enrich_fullraw_papers_with_db_facts(
+            topic, domain=domain, papers=papers, settings=settings,
+        )
+        ready, reason = _source_literature_ready_papers(topic, domain, papers)
+        if reason == "ok" and _cache_alias_selected_papers_allowed(
+            topic, cache_topic, ready,
+        ):
+            return ready, cache_topic
+    return [], ""
+
+
 def _cached_ready_source_literature_papers(
     runs_root: Path, domain: str, topic: str, settings: Any,
 ) -> list[dict[str, Any]]:
-    papers, _trace = _cached_fullraw_discovery_papers(runs_root, domain, topic)
-    if not papers:
-        return []
-    papers = _enrich_fullraw_papers_with_db_facts(
-        topic, domain=domain, papers=papers, settings=settings,
+    ready, _cache_topic = _cached_ready_source_literature_papers_with_topic(
+        runs_root, domain, topic, settings,
     )
-    ready, reason = _source_literature_ready_papers(topic, domain, papers)
-    return ready if reason == "ok" else []
+    return ready
 
 
 def _cached_pending_fullraw_completion(topic: str) -> bool:
@@ -2376,9 +2430,48 @@ def main() -> int:
                     "ready": bundle is not None,
                 }
                 if bundle is None:
-                    fullraw_papers, fullraw_trace = _cached_fullraw_discovery_papers(
-                        args.runs_root, domain, topic,
+                    cached_ready_papers, cache_topic = (
+                        _cached_ready_source_literature_papers_with_topic(
+                            args.runs_root, domain, topic, settings,
+                        )
                     )
+                    if cached_ready_papers:
+                        fullraw_papers = cached_ready_papers
+                        fullraw_trace = {
+                            "status": "complete",
+                            "source": "business_sweep_fullraw_cache",
+                            "query": cache_topic or topic,
+                            "paper_count": len(cached_ready_papers),
+                            "fact_source_count": (
+                                publish_literature.substantive_fact_count(
+                                    cached_ready_papers,
+                                )
+                            ),
+                            "candidate_fact_source_count": (
+                                publish_literature.substantive_fact_count(
+                                    cached_ready_papers,
+                                )
+                            ),
+                            "source_identity_count": (
+                                publish_literature.source_identity_count(
+                                    cached_ready_papers,
+                                    require_substantive=True,
+                                )
+                            ),
+                        }
+                        if cache_topic and cache_topic != topic:
+                            fullraw_trace["requested_topic"] = topic
+                            fullraw_trace["cached_alias_topic"] = cache_topic
+                            fullraw_trace["cached_alias_reused"] = True
+                            print(
+                                "[business-sweep] source_literature_cache_alias "
+                                f"{domain} requested={topic} cache={cache_topic}",
+                                flush=True,
+                            )
+                    else:
+                        fullraw_papers, fullraw_trace = _cached_fullraw_discovery_papers(
+                            args.runs_root, domain, topic,
+                        )
                     fullraw_from_cache = bool(fullraw_papers)
                     cached_complete_trace = (
                         dict(fullraw_trace)
@@ -2516,12 +2609,9 @@ def main() -> int:
                     )
                     fullraw_trace["fact_source_count"] = fullraw_fact_count
                     fullraw_trace["source_fact_identity_count"] = fullraw_source_identity_count
-                    try:
-                        pre_enrichment_fact_count = int(
-                            fullraw_trace.get("candidate_fact_source_count") or 0,
-                        )
-                    except (TypeError, ValueError):
-                        pre_enrichment_fact_count = 0
+                    pre_enrichment_fact_count = _count_int(
+                        fullraw_trace.get("candidate_fact_source_count"),
+                    )
                     fullraw_trace["candidate_fact_source_count"] = max(
                         pre_enrichment_fact_count, fullraw_fact_count,
                     )

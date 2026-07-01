@@ -6505,6 +6505,117 @@ def test_business_sweep_cached_ready_requires_ok_readiness_reason(
     ) == []
 
 
+def test_business_sweep_reuses_parent_cache_only_with_child_topic_coverage(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    topic = "digital_transformation_firm_performance"
+    parent_topic = "digital_transformation_firm"
+    journals = (
+        "Digital Strategy Journal",
+        "Firm Performance Review",
+        "Transformation Management Letters",
+        "Business Technology Quarterly",
+        "Enterprise Performance Studies",
+    )
+    papers = [
+        {
+            "title": f"Digital transformation firm performance source {idx}",
+            "doi": f"10.5454/digital-performance-{idx}",
+            "journal_name": journals[idx],
+            "source_fact": {
+                "canonical_phrase": (
+                    "Digital transformation changed firm performance in "
+                    f"bounded business setting {idx}."
+                ),
+                "population": "firms",
+                "intervention": "digital transformation",
+                "endpoint": "firm performance",
+                "source_tier": "fullraw_search",
+            },
+        }
+        for idx in range(5)
+    ]
+
+    def cached_papers(
+        _runs_root: Path, _domain: str, cache_topic: str,
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        if cache_topic == parent_topic:
+            return papers, {"status": "complete", "paper_count": 5}
+        return [], {}
+
+    monkeypatch.setattr(sweep, "_cached_fullraw_discovery_papers", cached_papers)
+    monkeypatch.setattr(
+        sweep,
+        "_enrich_fullraw_papers_with_db_facts",
+        lambda _topic, *, domain, papers, settings: papers,
+    )
+
+    ready, cache_topic = sweep._cached_ready_source_literature_papers_with_topic(
+        tmp_path / "runs",
+        "business_research",
+        topic,
+        object(),
+    )
+
+    assert len(ready) == 5
+    assert cache_topic == parent_topic
+
+
+def test_business_sweep_rejects_parent_cache_without_child_topic_coverage(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    topic = "minimum_wage_employment"
+    parent_topic = "minimum_wage"
+    journals = (
+        "Wage Policy Journal",
+        "Labor Cost Review",
+        "Firm Regulation Letters",
+        "Business Cost Quarterly",
+        "Policy Operations Studies",
+    )
+    papers = [
+        {
+            "title": f"Minimum wage policy source {idx}",
+            "doi": f"10.5454/minimum-wage-{idx}",
+            "journal_name": journals[idx],
+            "source_fact": {
+                "canonical_phrase": (
+                    "Minimum wage policy changed operating costs in "
+                    f"bounded business setting {idx}."
+                ),
+                "population": "firms",
+                "intervention": "minimum wage",
+                "endpoint": "operating costs",
+                "source_tier": "fullraw_search",
+            },
+        }
+        for idx in range(5)
+    ]
+
+    def cached_papers(
+        _runs_root: Path, _domain: str, cache_topic: str,
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        if cache_topic == parent_topic:
+            return papers, {"status": "complete", "paper_count": 5}
+        return [], {}
+
+    monkeypatch.setattr(sweep, "_cached_fullraw_discovery_papers", cached_papers)
+    monkeypatch.setattr(
+        sweep,
+        "_enrich_fullraw_papers_with_db_facts",
+        lambda _topic, *, domain, papers, settings: papers,
+    )
+
+    assert sweep._cached_ready_source_literature_papers_with_topic(
+        tmp_path / "runs",
+        "business_research",
+        topic,
+        object(),
+    ) == ([], "")
+
+
 def test_business_sweep_underfilled_repair_does_not_exhaust_scan_window(
     tmp_path: Path,
     monkeypatch: Any,
