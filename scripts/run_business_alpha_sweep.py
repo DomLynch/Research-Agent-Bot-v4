@@ -1092,8 +1092,10 @@ def _source_literature_ready_papers(
         < MIN_DIRECT_SOURCES
     ):
         return selected, "source_fact_diversity_below_min"
-    outlet_metadata = sum(1 for paper in selected if _source_outlet_key(paper))
-    if outlet_metadata >= MIN_DIRECT_SOURCES and _source_outlet_count(selected) < 3:
+    if publish_literature.source_outlet_diversity_below_min(
+        selected,
+        MIN_DIRECT_SOURCES,
+    ):
         return selected, "source_outlet_diversity_below_min"
     return selected, "ok"
 

@@ -4113,6 +4113,13 @@ def test_business_sweep_uses_distinct_db_facts_to_complete_fullraw_bundle(
     runs_root = tmp_path / "runs"
     topic = "minimum_wage_employment"
     submissions: list[dict[str, Any]] = []
+    labour_outlets = (
+        "Alpha Labour Review",
+        "Beta Employment Journal",
+        "Gamma Policy Quarterly",
+        "Delta Wage Studies",
+        "Epsilon Labor Economics",
+    )
     facts = [
         {
             "id": f"mw-{idx}",
@@ -4134,7 +4141,7 @@ def test_business_sweep_uses_distinct_db_facts_to_complete_fullraw_bundle(
             "paper": {
                 "doi": f"10.6161/min-wage-{idx}",
                 "title": f"Minimum wage employment source {idx}",
-                "journal_name": f"Labour outlet {idx % 3}",
+                "journal_name": labour_outlets[idx],
                 "publication_year": 2024,
             },
         }
@@ -4157,6 +4164,7 @@ def test_business_sweep_uses_distinct_db_facts_to_complete_fullraw_bundle(
         assert publish_literature.source_identity_count(
             forced, require_substantive=True,
         ) == 5
+        assert publish_literature.source_outlet_count(forced) == 5
         return {
             "status": "submitted_to_researka",
             "submitted": 1,
@@ -4214,11 +4222,18 @@ def test_business_sweep_hands_off_selected_five_fact_backed_sources(
     runs_root = tmp_path / "runs"
     topic = "digital_transformation_firm"
     submissions: list[dict[str, Any]] = []
+    outlets = (
+        "Alpha Business Review",
+        "Beta Operations Journal",
+        "Gamma Strategy Letters",
+        "Delta Management Quarterly",
+        "Epsilon Firm Studies",
+    )
     good_papers = [
         {
             "title": f"Digital transformation firm performance source {idx}",
             "doi": f"10.6161/digital-selected-{idx}",
-            "journal_name": f"Digital outlet {idx}",
+            "journal_name": outlets[idx],
             "source_fact": {
                 "canonical_phrase": f"Digital transformation changed firm performance {idx}.",
                 "population": "firms",
@@ -4338,6 +4353,41 @@ def test_business_sweep_counts_doi_prefixes_as_outlet_diversity() -> None:
     ]
 
     assert sweep._source_outlet_count(rows) == 4
+
+
+def test_business_sweep_requires_five_fact_backed_outlets() -> None:
+    outlets = ("Alpha Journal", "Beta Journal", "Gamma Journal", "Delta Journal")
+    papers = [
+        {
+            "title": f"Digital transformation firm performance source {idx}",
+            "doi": f"10.6161/digital-outlet-floor-{idx}",
+            "journal_name": outlets[min(idx, 3)],
+            "source_fact": {
+                "canonical_phrase": (
+                    f"digital transformation changed firm outcome {idx}"
+                ),
+                "population": "firms",
+                "intervention": "digital transformation",
+                "endpoint": f"firm outcome {idx}",
+                "source_tier": "fullraw_search",
+            },
+        }
+        for idx in range(5)
+    ]
+
+    selected, reason = sweep._source_literature_ready_papers(
+        "digital_transformation_firm",
+        "business_research",
+        papers,
+    )
+
+    assert len(selected) == 5
+    assert publish_literature.substantive_fact_count(selected) == 5
+    assert publish_literature.source_identity_count(
+        selected, require_substantive=True,
+    ) == 5
+    assert publish_literature.source_outlet_count(selected) == 4
+    assert reason == "source_outlet_diversity_below_min"
 
 
 def test_business_sweep_blocks_complete_metadata_with_thin_outlet_diversity(
@@ -5167,11 +5217,18 @@ def test_business_sweep_retries_cached_ready_recent_submission(
     }])
 
     def papers_for(value: str) -> list[dict[str, Any]]:
+        outlets = (
+            "Alpha Operations Review",
+            "Beta Process Journal",
+            "Gamma Management Letters",
+            "Delta Productivity Quarterly",
+            "Epsilon Firm Systems",
+        )
         return [
             {
                 "title": f"{value.replace('_', ' ')} source {idx}",
                 "doi": f"10.6262/{value}-{idx}",
-                "journal_name": f"Outlet {idx}",
+                "journal_name": outlets[idx],
                 "source_fact": {
                     "canonical_phrase": (
                         f"{value.replace('_', ' ')} changed bounded firm outcome {idx}"
