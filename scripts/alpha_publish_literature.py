@@ -901,7 +901,9 @@ def _looks_method_or_aim_only(text: str) -> bool:
             )
             and not re.search(
                 r"\b(?:positive|negative|rejected|not supported|"
-                r"no significant|improv|reduc|increas|decreas|effect|"
+                r"no significant|improv(?:e|es|ed|ing|ement)?|"
+                r"reduc(?:e|es|ed|ing|tion)?|"
+                r"increas(?:e|es|ed|ing)?|decreas(?:e|es|ed|ing)?|effect|"
                 r"rank(?:ed|ing)?|best)\b",
                 text,
             )

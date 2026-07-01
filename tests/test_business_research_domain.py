@@ -3333,7 +3333,14 @@ def test_business_sweep_complete_fullraw_hands_off_to_source_literature(
             "abstract": "Minimum wage and employment evidence.",
             "source_fact": {
                 "canonical_phrase": (
-                    "Minimum wage policy changed employment outcomes in "
+                    (
+                        "Minimum wage policy significantly increases "
+                        "employment outcomes in "
+                    )
+                    if i < 3
+                    else "Minimum wage policy contextualizes employment outcomes in "
+                )
+                + (
                     f"state labor market receipt {i}."
                 ),
                 "population": "state labor markets",
@@ -3449,8 +3456,14 @@ def test_business_sweep_uses_cached_complete_fullraw_discovery_without_live_prob
             "abstract": "Business model evidence tied to firm performance.",
             "source_fact": {
                 "canonical_phrase": (
-                    "Business model changes were associated with bounded firm "
-                    f"performance outcomes in source setting {idx}."
+                    (
+                        "Business model changes significantly improve bounded "
+                        "firm performance outcomes in "
+                        if idx < 3
+                        else "Business model changes contextualize bounded "
+                        "firm performance outcomes in "
+                    )
+                    + f"source setting {idx}."
                 ),
                 "population": "firms",
                 "intervention": "business model changes",
@@ -3541,8 +3554,14 @@ def test_business_sweep_enriches_cached_fullraw_discovery_before_fact_gate(
             **({
                 "source_fact": {
                     "canonical_phrase": (
-                        "Digital transformation was associated with bounded firm "
-                        f"performance outcomes in source setting {idx}."
+                        (
+                            "Digital transformation significantly improves "
+                            "bounded firm performance outcomes in "
+                            if idx < 3
+                            else "Digital transformation contextualizes "
+                            "bounded firm performance outcomes in "
+                        )
+                        + f"source setting {idx}."
                     ),
                     "population": "firms",
                     "intervention": "digital transformation",
@@ -3557,7 +3576,7 @@ def test_business_sweep_enriches_cached_fullraw_discovery_before_fact_gate(
         paper if idx < 4 else paper | {
             "source_fact": {
                 "canonical_phrase": (
-                    "Digital transformation changed firm performance in the "
+                    "Digital transformation significantly improves firm performance in the "
                     "fifth independent source setting."
                 ),
                 "population": "firms",
@@ -3650,7 +3669,10 @@ def test_business_sweep_falls_back_to_live_probe_when_cached_discovery_stays_und
             "doi": f"10.6161/cached-digital-{idx}",
             **({
                 "source_fact": {
-                    "canonical_phrase": f"Cached digital transformation fact {idx}.",
+                    "canonical_phrase": (
+                        f"Digital transformation significantly improves firm performance "
+                        f"in cached enriched source {idx}."
+                    ),
                     "population": "firms",
                     "intervention": "digital transformation",
                     "endpoint": "firm performance",
@@ -3665,7 +3687,10 @@ def test_business_sweep_falls_back_to_live_probe_when_cached_discovery_stays_und
             "title": f"Live digital transformation paper {idx}",
             "doi": f"10.6161/live-digital-{idx}",
             "source_fact": {
-                "canonical_phrase": f"Live digital transformation fact {idx}.",
+                    "canonical_phrase": (
+                        f"Live digital transformation significantly improves "
+                        f"firm performance in source {idx}."
+                    ),
                 "population": "firms",
                 "intervention": "digital transformation",
                 "endpoint": "firm performance",
@@ -3749,7 +3774,10 @@ def test_business_sweep_keeps_cached_facts_when_live_fullraw_is_busy(
             "doi": f"10.6161/cached-busy-digital-{idx}",
             **({
                 "source_fact": {
-                    "canonical_phrase": f"Cached digital transformation fact {idx}.",
+                    "canonical_phrase": (
+                        f"Digital transformation significantly improves firm performance "
+                        f"in cached source {idx}."
+                    ),
                     "population": "firms",
                     "intervention": "digital transformation",
                     "endpoint": "firm performance",
@@ -3848,7 +3876,7 @@ def test_business_sweep_reuses_complete_cache_when_db_facts_fill_source_gate(
             "numeric_value": idx + 1,
             "units": "index points",
             "canonical_phrase": (
-                "Digital transformation changed firm performance in "
+                "Digital transformation significantly improves firm performance in "
                 f"bounded receipt {idx}."
             ),
             "population": "firms",
@@ -3865,7 +3893,7 @@ def test_business_sweep_reuses_complete_cache_when_db_facts_fill_source_gate(
                 "publication_year": 2024,
             },
         }
-        for idx in range(2)
+        for idx in range(3)
     ]
     submissions: list[dict[str, Any]] = []
     fullraw_calls: list[str] = []
@@ -3977,7 +4005,11 @@ def test_business_sweep_ranks_reusable_cached_receipt_before_pending_fullraw(
             "doi": f"10.6161/cached-ranked-digital-{idx}",
             **({
                 "source_fact": {
-                    "canonical_phrase": f"Cached ranked digital fact {idx}.",
+                    "canonical_phrase": (
+                        f"Digital transformation significantly improves firm performance in cached ranked source {idx}."
+                        if idx < 3
+                        else f"Cached ranked digital fact {idx}."
+                    ),
                     "population": "firms",
                     "intervention": "digital transformation",
                     "endpoint": "firm performance",
@@ -3995,7 +4027,7 @@ def test_business_sweep_ranks_reusable_cached_receipt_before_pending_fullraw(
             "numeric_value": idx + 1,
             "units": "index points",
             "canonical_phrase": (
-                "Digital transformation changed firm performance in "
+                "Digital transformation significantly improves firm performance in "
                 f"ranked receipt {idx}."
             ),
             "population": "firms",
@@ -4103,7 +4135,11 @@ def test_business_sweep_merges_cached_and_live_fullraw_facts_to_reach_gate(
             "doi": f"10.6161/cached-merge-digital-{idx}",
             **({
                 "source_fact": {
-                    "canonical_phrase": f"Cached digital transformation fact {idx}.",
+                    "canonical_phrase": (
+                        f"Digital transformation significantly improves firm performance in cached source {idx}."
+                        if idx < 3
+                        else f"Cached digital transformation fact {idx}."
+                    ),
                     "population": "firms",
                     "intervention": "digital transformation",
                     "endpoint": "firm performance",
@@ -4118,7 +4154,7 @@ def test_business_sweep_merges_cached_and_live_fullraw_facts_to_reach_gate(
             "title": "Live digital transformation fifth source",
             "doi": "10.6161/live-merge-digital-5",
             "source_fact": {
-                "canonical_phrase": "Live digital transformation fifth fact.",
+                "canonical_phrase": "Live digital transformation significantly improves firm performance.",
                 "population": "firms",
                 "intervention": "digital transformation",
                 "endpoint": "firm performance",
@@ -4300,7 +4336,7 @@ def test_business_sweep_uses_distinct_db_facts_to_complete_fullraw_bundle(
             "numeric_value": idx,
             "units": "percentage points",
             "canonical_phrase": (
-                "Minimum wage policy changed employment outcomes in "
+                "Minimum wage policy significantly increases employment outcomes in "
                 f"state labor market receipt {idx}."
             ),
             "population": "state labor markets",
@@ -4517,7 +4553,9 @@ def test_business_sweep_hands_off_selected_five_fact_backed_sources(
             "doi": f"10.6161/digital-selected-{idx}",
             "journal_name": outlets[idx],
             "source_fact": {
-                "canonical_phrase": f"Digital transformation changed firm performance {idx}.",
+                "canonical_phrase": (
+                    f"Digital transformation significantly improves firm performance {idx}."
+                ),
                 "population": "firms",
                 "intervention": "digital transformation",
                 "endpoint": f"firm performance signal {idx}",
@@ -4756,7 +4794,10 @@ def test_business_sweep_targets_near_ready_sources_to_complete_fact_gate(
             "title": f"Cached digital transformation paper {idx}",
             "doi": f"10.6161/cached-target-digital-{idx}",
             "source_fact": {
-                "canonical_phrase": f"Cached digital transformation fact {idx}.",
+                "canonical_phrase": (
+                    f"Digital transformation significantly improves firm performance "
+                    f"in cached target source {idx}."
+                ),
                 "population": "firms",
                 "intervention": "digital transformation",
                 "endpoint": "firm performance",
@@ -4946,7 +4987,11 @@ def test_business_sweep_skips_recent_source_literature_topics_before_fullraw(
                 "doi": f"10.4242/{topic}-{idx}",
                 "abstract": f"{topic} evidence.",
                 "source_fact": {
-                    "canonical_phrase": f"{topic} bounded source fact {idx}",
+                    "canonical_phrase": (
+                        f"{topic} significantly improves business performance in source {idx}"
+                        if idx < 3
+                        else f"{topic} bounded source fact {idx}"
+                    ),
                     "population": "firms",
                     "intervention": topic.replace("_", " "),
                     "endpoint": "business performance",
@@ -5067,7 +5112,11 @@ def test_business_sweep_retries_repairable_recent_source_literature_topic(
                 "doi": f"10.5253/{topic}-{idx}",
                 "abstract": f"{topic} evidence.",
                 "source_fact": {
-                    "canonical_phrase": f"{topic} bounded source fact {idx}",
+                    "canonical_phrase": (
+                        f"{topic} significantly improves business performance in source {idx}"
+                        if idx < 3
+                        else f"{topic} bounded source fact {idx}"
+                    ),
                     "population": "firms",
                     "intervention": topic.replace("_", " "),
                     "endpoint": "business performance",
@@ -5203,7 +5252,11 @@ def test_business_sweep_promotes_repairable_source_lit_outside_seed_window(
                 "doi": f"10.5353/{topic}-{idx}",
                 "abstract": f"{topic} evidence.",
                 "source_fact": {
-                    "canonical_phrase": f"{topic} bounded source fact {idx}",
+                    "canonical_phrase": (
+                        f"{topic} significantly improves business performance in source {idx}"
+                        if idx < 3
+                        else f"{topic} bounded source fact {idx}"
+                    ),
                     "population": "firms",
                     "intervention": topic.replace("_", " "),
                     "endpoint": "business performance",
@@ -5412,8 +5465,14 @@ def test_business_sweep_repair_rows_do_not_starve_fresh_source_lit(
                 ),
                 "source_fact": {
                     "canonical_phrase": (
-                        f"{topic.replace('_', ' ')} changed bounded firm "
-                        f"productivity outcome {idx}"
+                        (
+                            f"{topic.replace('_', ' ')} significantly improves "
+                            "bounded firm productivity "
+                            if idx <= 3
+                            else f"{topic.replace('_', ' ')} contextualizes "
+                            "bounded firm productivity "
+                        )
+                        + f"outcome {idx}"
                     ),
                     "population": "firms",
                     "intervention": topic.replace("_", " "),
@@ -5698,7 +5757,13 @@ def test_business_sweep_retries_cached_ready_recent_submission(
                 "journal_name": outlets[idx],
                 "source_fact": {
                     "canonical_phrase": (
-                        f"{value.replace('_', ' ')} changed bounded firm outcome {idx}"
+                        (
+                            f"{value.replace('_', ' ')} significantly improves "
+                            "bounded firm "
+                            if idx < 3
+                            else f"{value.replace('_', ' ')} contextualizes bounded firm "
+                        )
+                        + f"outcome {idx}"
                     ),
                     "population": "firms",
                     "intervention": value.replace("_", " "),
@@ -6132,8 +6197,14 @@ def test_business_sweep_retries_source_floor_with_pending_fullraw_completion(
                 ),
                 "source_fact": {
                     "canonical_phrase": (
-                        f"{value.replace('_', ' ')} changes bounded firm "
-                        f"performance outcome {idx}"
+                        (
+                            f"{value.replace('_', ' ')} significantly improves "
+                            "bounded firm performance "
+                            if idx <= 3
+                            else f"{value.replace('_', ' ')} contextualizes "
+                            "bounded firm performance "
+                        )
+                        + f"outcome {idx}"
                     ),
                     "population": "firms",
                     "intervention": value.replace("_", " "),
@@ -6475,7 +6546,7 @@ def test_business_sweep_retries_cached_ready_source_lit_despite_recent_submissio
             "journal_name": journal,
             "source_fact": {
                 "canonical_phrase": (
-                    "Supply chain resilience changed firm performance in "
+                    "Supply chain resilience significantly improves firm performance in "
                     f"bounded source setting {idx}."
                 ),
                 "population": "firms",
@@ -6626,7 +6697,7 @@ def test_business_sweep_reuses_parent_cache_only_with_child_topic_coverage(
             "journal_name": journals[idx],
             "source_fact": {
                 "canonical_phrase": (
-                    "Digital transformation changed firm performance in "
+                    "Digital transformation significantly improves firm performance in "
                     f"bounded business setting {idx}."
                 ),
                 "population": "firms",
@@ -6923,7 +6994,11 @@ def test_business_sweep_promotes_cached_complete_fullraw_topic(
                 "doi": f"10.5252/{topic}-{idx}",
                 "abstract": f"{topic} evidence.",
                 "source_fact": {
-                    "canonical_phrase": f"{topic} bounded fact {idx}",
+                    "canonical_phrase": (
+                        f"{topic} significantly improves business performance in source {idx}"
+                        if idx < 3
+                        else f"{topic} bounded fact {idx}"
+                    ),
                     "population": "firms",
                     "intervention": topic.replace("_", " "),
                     "endpoint": "business performance",
@@ -7044,7 +7119,11 @@ def test_business_sweep_fullraw_continues_after_reviewer_revise(
                 "doi": f"10.7777/{topic}-{idx}",
                 "abstract": f"{topic} evidence.",
                 "source_fact": {
-                    "canonical_phrase": f"{topic} bounded evidence fact {idx}",
+                    "canonical_phrase": (
+                        f"{topic} significantly improves research outcome in source {idx}"
+                        if idx < 3
+                        else f"{topic} bounded evidence fact {idx}"
+                    ),
                     "population": "market setting",
                     "intervention": topic.replace("_", " "),
                     "endpoint": "research outcome",
@@ -8396,6 +8475,11 @@ def test_business_source_literature_blocks_two_directional_fact_backed_map() -> 
 
     assert not ok
     assert reason == "directional_receipt_floor_below_min"
+    ready, ready_reason = sweep._source_literature_ready_papers(
+        "digital_transformation_firm", "business_research", papers,
+    )
+    assert len(ready) == 5
+    assert ready_reason == "directional_receipt_floor_below_min"
 
 
 def test_business_source_literature_allows_three_directional_fact_backed_map() -> None:
@@ -8556,6 +8640,28 @@ def test_business_source_literature_counts_significant_enhancement_directional()
     assert publish_literature._paper_evidence_role(
         paper,
         "digital_transformation_firm",
+        "business_research",
+    ) == "directional association"
+
+
+def test_business_source_literature_does_not_treat_improves_as_method_only() -> None:
+    paper = {
+        "title": "Business model performance source paper",
+        "doi": "10.5555/business-model-performance",
+        "source_fact": {
+            "canonical_phrase": (
+                "Business model changes significantly improve bounded firm "
+                "performance outcomes in source setting 1."
+            ),
+            "population": "firms",
+            "intervention": "business model changes",
+            "endpoint": "firm performance",
+        },
+    }
+
+    assert publish_literature._paper_evidence_role(
+        paper,
+        "business_model_performance",
         "business_research",
     ) == "directional association"
 
