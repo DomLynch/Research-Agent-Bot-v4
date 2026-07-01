@@ -580,6 +580,26 @@ def _strict_fullraw_probe(
                                 if isinstance(receipt, dict) else None
                             ) or event.get("result_citation_diversity"),
                         }
+                        if status == "incomplete_receipt" and not result.get("async_status"):
+                            live_status = _fullraw_search_response(
+                                query,
+                                limit=result_limit,
+                                queue_if_missing=True,
+                                timeout_seconds=_business_fullraw_cache_probe_timeout_seconds(),
+                            )
+                            meta = live_status.get("meta") if isinstance(live_status, dict) else {}
+                            async_sweep = (
+                                meta.get("async_sweep") if isinstance(meta, dict) else {}
+                            )
+                            if isinstance(async_sweep, dict):
+                                result["async_status"] = async_sweep.get("status")
+                                for key in (
+                                    "cache_key", "inflight_count", "key_queued",
+                                    "key_running", "max_inflight", "max_queue",
+                                    "queued_count", "shard_limit",
+                                ):
+                                    if async_sweep.get(key) is not None:
+                                        result[key] = async_sweep.get(key)
                         source_papers = papers
                         if status == "complete" and papers:
                             source_papers = _merge_fullraw_hit_text(

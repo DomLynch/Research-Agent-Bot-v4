@@ -2660,6 +2660,93 @@ def test_business_sweep_fullraw_probe_polls_in_progress_cache_hit_without_key_fl
     assert result["candidate_fact_source_count"] == 5
 
 
+def test_business_sweep_fullraw_probe_recovers_missing_async_status(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import agent.topic_discovery as topic_discovery_mod
+    import scripts.run_topic_discovery as discovery
+
+    calls: list[str] = []
+    sleeps: list[float] = []
+    status_checks: list[str] = []
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
+        str(tmp_path / "fullraw.lock"),
+    )
+    monkeypatch.setenv("BUSINESS_SWEEP_FULLRAW_QUERY_LIMIT", "1")
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS", "30")
+    monkeypatch.setattr(
+        sweep,
+        "_business_fullraw_queries",
+        lambda _topic: ("employee engagement turnover productivity",),
+    )
+    monkeypatch.setattr(
+        "scripts.run_business_alpha_sweep.time.sleep",
+        lambda seconds: sleeps.append(seconds),
+    )
+
+    def fake_status(query: str, **_kwargs: Any) -> dict[str, Any]:
+        status_checks.append(query)
+        return {
+            "meta": {
+                "async_sweep": {
+                    "status": "queued",
+                    "key_queued": True,
+                    "key_running": False,
+                    "queued_count": 6,
+                    "max_queue": 6,
+                },
+            },
+        }
+
+    def fake_seed_fullraw(query: str, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
+        if len(calls) == 1:
+            topic_discovery_mod._FULLRAW_LAST_RECEIPT = {}
+            discovery._FULLRAW_PROBE_EVENTS.append({
+                "query": query,
+                "status": "no_hits",
+                "paper_count": 0,
+            })
+            return [{"paper_id": "partial-employee-engagement"}]
+        topic_discovery_mod._FULLRAW_LAST_RECEIPT = {
+            "shards_searched": 1525,
+            "partial_shard_search": False,
+            "sweep_failed_shards": 0,
+            "source_count_searched": 5,
+        }
+        return [
+            {
+                "paper_id": f"employee-engagement-{idx}",
+                "title": f"Employee engagement turnover source {idx}",
+                "abstract": (
+                    "Results show employee engagement changes altered turnover "
+                    f"and productivity outcomes in workplace source {idx}."
+                ),
+            }
+            for idx in range(5)
+        ]
+
+    monkeypatch.setattr(discovery, "_seed_fullraw_papers", fake_seed_fullraw)
+    monkeypatch.setattr(sweep, "_fullraw_search_response", fake_status)
+
+    result = sweep._strict_fullraw_probe(
+        "employee_engagement_turnover_productivity",
+        include_papers=True,
+    )
+
+    assert status_checks[0] == "employee engagement turnover productivity"
+    assert calls == [
+        "employee engagement turnover productivity",
+        "employee engagement turnover productivity",
+    ]
+    assert sleeps == [15.0]
+    assert result["status"] == "complete"
+    assert result["candidate_fact_source_count"] == 5
+
+
 def test_business_fullraw_queries_are_compact_deduped_and_alpha_shaped(
     monkeypatch: Any,
 ) -> None:
