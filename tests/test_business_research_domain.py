@@ -6734,6 +6734,64 @@ def test_business_sweep_reuses_parent_cache_only_with_child_topic_coverage(
     assert cache_topic == parent_topic
 
 
+def test_business_sweep_rejects_parent_cache_when_child_outcome_is_generated_only(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    topic = "supply_chain_resilience_employment"
+    parent_topic = "supply_chain_resilience"
+    journals = (
+        "Supply Chain Review",
+        "Operations Resilience Journal",
+        "Logistics Management Letters",
+        "Business Continuity Quarterly",
+        "Procurement Risk Studies",
+    )
+    papers = [
+        {
+            "title": f"Supply chain resilience performance source {idx}",
+            "doi": f"10.5454/supply-resilience-{idx}",
+            "journal_name": journals[idx],
+            "abstract": (
+                "Supply chain resilience evidence maps operational continuity, "
+                "supplier risk, and performance recovery."
+            ),
+            "source_fact": {
+                "canonical_phrase": (
+                    "Supply chain resilience improved employment outcomes in "
+                    f"bounded business setting {idx}."
+                ),
+                "population": "firms",
+                "intervention": "supply chain resilience",
+                "endpoint": "employment outcomes",
+                "source_tier": "fullraw_search",
+            },
+        }
+        for idx in range(5)
+    ]
+
+    def cached_papers(
+        _runs_root: Path, _domain: str, cache_topic: str,
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        if cache_topic == parent_topic:
+            return papers, {"status": "complete", "paper_count": 5}
+        return [], {}
+
+    monkeypatch.setattr(sweep, "_cached_fullraw_discovery_papers", cached_papers)
+    monkeypatch.setattr(
+        sweep,
+        "_enrich_fullraw_papers_with_db_facts",
+        lambda _topic, *, domain, papers, settings: papers,
+    )
+
+    assert sweep._cached_ready_source_literature_papers_with_topic(
+        tmp_path / "runs",
+        "business_research",
+        topic,
+        object(),
+    ) == ([], "")
+
+
 def test_business_sweep_reuses_sibling_outcome_cache_with_active_topic_coverage(
     tmp_path: Path,
     monkeypatch: Any,

@@ -977,7 +977,33 @@ def _cache_alias_selected_papers_allowed(
     return all(
         publish_literature._topic_token_coverage(topic, paper) >= required
         for paper in selected
-    )
+    ) and _cache_alias_outcome_supported_by_sources(removed, selected)
+
+
+def _cache_alias_outcome_supported_by_sources(
+    outcome_tokens: set[str], selected: list[dict[str, Any]],
+) -> bool:
+    if not outcome_tokens:
+        return True
+    supported_sources = 0
+    for paper in selected:
+        fact = paper.get("source_fact")
+        fact = fact if isinstance(fact, dict) else {}
+        source_text = publish_literature.title_key(" ".join(str(value or "") for value in (
+            paper.get("title"),
+            paper.get("paper_title"),
+            paper.get("abstract"),
+            paper.get("snippet"),
+            paper.get("source_excerpt"),
+            fact.get("source_excerpt"),
+        )))
+        words = source_text.split()
+        if words and all(
+            any(publish_literature._token_matches(word, token) for word in words)
+            for token in outcome_tokens
+        ):
+            supported_sources += 1
+    return supported_sources >= MIN_DIRECT_SOURCES
 
 
 def _merge_source_literature_papers(
