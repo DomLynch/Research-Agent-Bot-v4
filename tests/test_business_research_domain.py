@@ -2674,6 +2674,7 @@ def test_business_sweep_fullraw_probe_does_not_dogpile_busy_worker(
     handle = lock_path.open("a", encoding="utf-8")
     fcntl.flock(handle, fcntl.LOCK_EX)
     monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH", str(lock_path))
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_WAIT_SECONDS", "0")
     monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
 
     try:
@@ -2684,6 +2685,14 @@ def test_business_sweep_fullraw_probe_does_not_dogpile_busy_worker(
 
     assert result == {"status": "busy"}
     assert os.environ.get("TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS") is None
+
+
+def test_business_fullraw_lock_wait_defaults_to_queue_retry_window(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.delenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_WAIT_SECONDS", raising=False)
+
+    assert sweep._business_fullraw_lock_wait_seconds() == 600.0
 
 
 def test_business_sweep_fullraw_probe_waits_for_busy_worker(
