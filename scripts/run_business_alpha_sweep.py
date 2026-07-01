@@ -209,10 +209,11 @@ def _business_fullraw_priority_enabled() -> bool:
 
 
 def _business_fullraw_query_limit() -> int:
+    default = "1" if _business_fullraw_priority_enabled() else "3"
     try:
-        return max(1, int(os.environ.get("BUSINESS_SWEEP_FULLRAW_QUERY_LIMIT", "3")))
+        return max(1, int(os.environ.get("BUSINESS_SWEEP_FULLRAW_QUERY_LIMIT", default)))
     except ValueError:
-        return 3
+        return int(default)
 
 
 def _business_fullraw_poll_attempts(poll_seconds: float) -> int:

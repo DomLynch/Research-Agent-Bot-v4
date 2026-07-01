@@ -2506,13 +2506,28 @@ def test_business_fullraw_queries_are_compact_deduped_and_alpha_shaped(
     })
 
 
-def test_business_fullraw_queries_default_to_source_rich_compact_sweeps(
+def test_business_fullraw_queries_priority_defaults_to_single_compact_sweep(
     monkeypatch: Any,
 ) -> None:
     monkeypatch.setenv(
         "TOPIC_DISCOVERY_FULLRAW_ALPHA_SHAPE_TERMS",
         "replication,primary endpoint",
     )
+    monkeypatch.delenv("BUSINESS_SWEEP_FULLRAW_QUERY_LIMIT", raising=False)
+
+    assert sweep._business_fullraw_queries("pricing_strategy_margin_effects") == (
+        "pricing strategy margin",
+    )
+
+
+def test_business_fullraw_queries_nonpriority_default_keeps_source_rich_sweeps(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_FULLRAW_ALPHA_SHAPE_TERMS",
+        "replication,primary endpoint",
+    )
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_PRIORITY", "0")
     monkeypatch.delenv("BUSINESS_SWEEP_FULLRAW_QUERY_LIMIT", raising=False)
 
     assert sweep._business_fullraw_queries("pricing_strategy_margin_effects") == (
