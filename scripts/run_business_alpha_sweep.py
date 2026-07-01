@@ -2083,17 +2083,26 @@ def main() -> int:
                 fresh_topics.append(seed_topic)
             repairable_source_lit_set = set(repairable_source_lit_topics)
             priority_source_lit_set = set(priority_source_lit_topics)
+            cached_ready_source_lit_set = set(cached_ready_source_lit)
             repairable_fresh_topics = [
-                topic for topic in priority_source_lit_topics
+                topic for topic in repairable_source_lit_topics
                 if topic in fresh_topics
+                and (
+                    topic in priority_source_lit_set
+                    or topic in cached_ready_source_lit_set
+                )
             ]
+            repairable_budget_fresh_topics = {
+                topic for topic in repairable_source_lit_topics
+                if topic in fresh_topics
+            }
+            repairable_fresh_set = set(repairable_fresh_topics)
             non_repair_fresh_topics = [
                 topic for topic in fresh_topics
-                if topic not in priority_source_lit_set
+                if topic not in repairable_fresh_set
             ]
-            fallback_repair_fresh_count = sum(
-                1 for topic in fallback_repair_topics
-                if topic in fresh_topics and topic not in priority_source_lit_set
+            repairable_extra_budget = len(
+                repairable_budget_fresh_topics - repairable_fresh_set,
             )
             cache_rank_limit = max(args.topics_per_domain, args.topics_per_domain * 3)
             cache_rank_topics = non_repair_fresh_topics[:cache_rank_limit]
@@ -2109,7 +2118,7 @@ def main() -> int:
                 args.topics_per_domain,
                 args.topics_per_domain
                 + len(repairable_fresh_topics)
-                + fallback_repair_fresh_count,
+                + repairable_extra_budget,
             )
             selected_topics = list(dict.fromkeys([
                 *repairable_fresh_topics,
