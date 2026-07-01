@@ -6331,15 +6331,15 @@ def test_sync_submission_decisions_backfills_terminal_resubmit_job(
     assert submitted[0]["parent_submission_id"] == "parent-submission"
     assert submitted[0]["pending_reason"] == "terminal_resubmit_job_queued"
     assert submitted[0]["topic"] == "supply_chain_performance"
-    synthetic = json.loads(
-        (
-            root / "_daily_ledger" / "2026-05-21-decision-queued-j.json"
-        ).read_text(encoding="utf-8"),
+    promoted = json.loads(
+        (root / "_daily_ledger" / "2026-05-21.json").read_text(encoding="utf-8"),
     )
-    assert synthetic["submission_id"] == "queued-job-1"
-    assert synthetic["status"] == "submitted_to_researka"
-    assert synthetic["final_verdict"] == "pending"
-    assert synthetic["researka_decision"]["seen_id"] == "queued-job-1"
+    assert promoted["submission_id"] == "queued-job-1"
+    assert promoted["status"] == "submitted_to_researka"
+    assert promoted["final_verdict"] == "pending"
+    assert promoted["pending_reason"] == "terminal_resubmit_job_queued"
+    assert promoted["researka_decision"]["seen_id"] == "queued-job-1"
+    assert not (root / "_daily_ledger" / "2026-05-21-decision-queued-j.json").exists()
 
 
 def test_sync_submission_decisions_records_revise_as_retryable(tmp_path: Path) -> None:

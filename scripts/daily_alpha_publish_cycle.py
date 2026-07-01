@@ -3460,6 +3460,33 @@ def _terminal_resubmit_queued_submission_records(ledger: Json) -> list[Json]:
     return records
 
 
+def _promote_terminal_resubmit_ledger(ledger: Json) -> bool:
+    records = _terminal_resubmit_queued_submission_records(ledger)
+    if not records:
+        return False
+    record = records[-1]
+    submission_id = str(record.get("submission_id") or "").strip()
+    if not submission_id:
+        return False
+    if (
+        ledger.get("status") == publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value
+        and _ledger_submission_id(ledger) == submission_id
+        and ledger.get("final_verdict") == _DECISION_PENDING
+    ):
+        return False
+    ledger.update({
+        "status": publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value,
+        "final_verdict": _DECISION_PENDING,
+        "submitted": 1,
+        "published": 0,
+        "submitted_topic": record.get("topic") or ledger.get("submitted_topic"),
+        "submission_id": submission_id,
+        "pending_reason": record.get("pending_reason"),
+        "parent_submission_id": record.get("parent_submission_id"),
+    })
+    return True
+
+
 def _repairable_ledger(ledger: Json) -> bool:
     decision = ledger.get("researka_decision")
     if isinstance(decision, dict) and _repairable_rejection(decision):
@@ -5387,6 +5414,7 @@ def _sync_submission_decisions_unlocked(
     for path in sorted(ledger_dir.glob("*.json")):
         ledger = _json(path, {})
         if isinstance(ledger, dict):
+            promoted_terminal_resubmit = _promote_terminal_resubmit_ledger(ledger)
             sid = _ledger_submission_id(ledger)
             if sid:
                 seen_submission_ids.add(sid)
@@ -5396,6 +5424,8 @@ def _sync_submission_decisions_unlocked(
             backfill_submission_records.extend(
                 _terminal_resubmit_queued_submission_records(ledger),
             )
+            if promoted_terminal_resubmit:
+                summary["updated"] += 1
         if not isinstance(ledger, dict):
             continue
         if ledger.get("status") == publish_status.CycleStatus.PUBLISHED.value:
