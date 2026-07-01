@@ -1969,11 +1969,23 @@ def main() -> int:
             fallback_repair_topics = _recent_source_literature_repair_attempt_topics(
                 args.runs_root, domain,
             )
+            pending_source_lit_topic_keys = {
+                _topic_key(topic)
+                for topic in publish_cycle._pending_source_literature_topics(
+                    args.runs_root / "_daily_ledger",
+                    domain,
+                )
+                if _topic_key(topic)
+            }
             repairable_source_lit_topics = list(dict.fromkeys([
                 *priority_source_lit_topics,
                 *repairable_source_lit_topics,
                 *fallback_repair_topics,
             ]))
+            repairable_source_lit_topics = [
+                topic for topic in repairable_source_lit_topics
+                if _topic_key(topic) not in pending_source_lit_topic_keys
+            ]
             seed_pool = list(dict.fromkeys([*repairable_source_lit_topics, *seed_pool]))
             blocked_topic_keys = _recent_source_literature_blocked_topics(
                 args.runs_root, domain,
@@ -2010,7 +2022,8 @@ def main() -> int:
             skipped_recent: list[str] = []
             fresh_topics: list[str] = []
             for seed_topic in prioritized_topics:
-                if _topic_key(seed_topic) in blocked_topic_keys:
+                seed_key = _topic_key(seed_topic)
+                if seed_key in blocked_topic_keys or seed_key in pending_source_lit_topic_keys:
                     skipped_recent.append(seed_topic)
                     continue
                 fresh_topics.append(seed_topic)

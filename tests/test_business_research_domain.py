@@ -5302,6 +5302,51 @@ def test_business_sweep_retries_cached_ready_recent_submission(
     }]
 
 
+def test_business_sweep_skips_pending_source_literature_topic(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    runs_root = tmp_path / "runs"
+    pending_topic = "supply_chain_resilience_performance"
+    next_topic = "digital_transformation_firm"
+    fetched_topics: list[str] = []
+
+    def fake_fetch(topic: str, **_kwargs: Any) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        fetched_topics.append(topic)
+        return [], {"status": "failed"}
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [
+        pending_topic,
+        next_topic,
+    ])
+    monkeypatch.setattr(sweep, "_prioritized_seed_topics", lambda _root, _domain, topics: topics)
+    monkeypatch.setattr(cycle, "_priority_source_literature_repair_decisions", lambda *_args, **_kwargs: {})
+    monkeypatch.setattr(cycle, "_repairable_source_literature_topics", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(cycle, "_pending_source_literature_topics", lambda *_args, **_kwargs: {
+        pending_topic,
+    })
+    monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", lambda _topic: 0)
+    monkeypatch.setattr(sweep, "fetch_business_facts", fake_fetch)
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", lambda _topic, **_kwargs: {
+        "status": "not_configured",
+    })
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "2",
+        "--domains", "business_research",
+        "--runs-root", str(runs_root),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-06-30T08-45-00Z",
+    ])
+
+    assert sweep.main() == 2
+    assert fetched_topics == [next_topic]
+
+
 def test_business_sweep_delegates_uncached_priority_repair_to_daily_cycle(
     tmp_path: Path,
     monkeypatch: Any,
