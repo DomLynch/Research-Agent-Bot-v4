@@ -7264,7 +7264,7 @@ def test_alpha_research_services_retry_infra_interruptions_without_masking_no_pu
 def test_alpha_research_services_write_health_summary_after_every_run() -> None:
     for service_path in sorted(Path("deploy/systemd").glob("researka-alpha-*-research.service")):
         service = service_path.read_text(encoding="utf-8")
-        assert "ExecStopPost=-/root/Research-Agent-Bot-v4/.venv/bin/python scripts/check_alpha_publish_health.py" in service, service_path.name
+        assert "ExecStopPost=-/usr/bin/timeout 75s /root/Research-Agent-Bot-v4/.venv/bin/python scripts/check_alpha_publish_health.py" in service, service_path.name
         assert "--domains longevity_research,ai_research,business_research" in service, service_path.name
         assert ",management_research,economics_research,finance_research,marketing_research" in service, service_path.name
         assert "--expect-published" in service, service_path.name
