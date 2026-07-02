@@ -12817,6 +12817,113 @@ def test_source_literature_fallback_resubmits_parented_terminal_duplicate(
     assert ledger["submitted_topic"] == topic
 
 
+def test_parented_terminal_resubmit_reuses_previous_payload_sources(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    topic = "usable_boundary"
+    ledger_dir = root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    outlets = (
+        "Alpha Aging Journal",
+        "Beta Inflammation Review",
+        "Gamma Mitochondria Letters",
+        "Delta Proteostasis Quarterly",
+        "Epsilon Senescence Reports",
+    )
+    papers = [
+        paper | {"journal_name": outlets[idx]}
+        for idx, paper in enumerate(_usable_boundary_papers())
+    ]
+    old_candidate, _old_payload = daily._source_literature_payload(
+        profile_slug="longevity_research",
+        topic=topic,
+        papers=papers,
+        runs_root=root,
+        date="2026-06-10T17-00-00Z",
+    )
+    fp = str(old_candidate.get("memo_fingerprint") or "")
+    daily._write_json(ledger_dir / "_submitted_fingerprints.json", [{
+        "date": "2026-06-10T17-00-00Z",
+        "domain": old_candidate.get("domain"),
+        "topic": topic,
+        "run_dir": old_candidate.get("run_dir"),
+        "fingerprint": fp,
+        "memo_sha256": daily._memo_sha256(old_candidate, root),
+        "submission_id": "sub-clean-old",
+    }])
+    daily._write_json(ledger_dir / "2026-06-10T17-00-00Z.json", {
+        "domain": {"slug": "longevity_research"},
+        "submitted": 1,
+        "submission_id": "sub-clean-old",
+        "candidate": {
+            "topic": topic,
+            "run_dir": old_candidate.get("run_dir"),
+            "fingerprint": fp,
+        },
+        "researka_decision": {
+            "decision": "revise",
+            "claim_support_verdict": "supported",
+            "notes": ["editorial decision is terminal; external author must resubmit"],
+            "required_revisions": [],
+            "major_issues": [],
+            "minor_issues": [],
+            "failed_checks": [],
+            "gate_failures": [],
+            "rubric_scores": {
+                "claim_evidence_alignment": 5,
+                "source_grounding": 5,
+                "synthesis_quality": 5,
+            },
+            "resubmission": {"allowed": True},
+        },
+    })
+
+    def fail_fresh_fetch(*_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        raise AssertionError("terminal resubmit should reuse the previous payload papers")
+
+    monkeypatch.setattr(daily, "_source_literature_candidate_papers", fail_fresh_fetch)
+    submitted_payloads: list[dict[str, Any]] = []
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submitted_payloads.append(payload)
+        return {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": "sub-clean-new"}},
+        }
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-10T18-00-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        source_literature_priority_topics=[topic],
+        submitter=submitter,
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert len(submitted_payloads) == 1
+    assert submitted_payloads[0]["object_type"] == "rebuttal"
+    assert submitted_payloads[0]["parent_submission_id"] == "sub-clean-old"
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == topic
+    attempt = ledger["source_literature_fallback_attempts"][0]
+    assert attempt["terminal_resubmit_reused_payload"] is True
+    assert attempt["selected_source_count"] == 5
+    assert attempt["selected_source_fact_count"] == 5
+    assert attempt["selected_source_identity_count"] == 5
+    assert publish_literature.source_outlet_count(submitted_payloads[0]["source_bundle"]) == 5
+
+
 def test_source_literature_fallback_records_reviewer_revise_decision(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

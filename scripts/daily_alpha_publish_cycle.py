@@ -2362,6 +2362,47 @@ def _resumable_source_literature_payloads(
     return out
 
 
+def _previous_source_literature_payload_papers(
+    runs_root: Path, domain: str | None, topic: str, min_sources: int,
+) -> list[Json]:
+    for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
+        ledger = _json(path, {})
+        if (
+            not isinstance(ledger, dict)
+            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
+            or not int(ledger.get("submitted") or 0)
+        ):
+            continue
+        candidate = ledger.get("candidate")
+        if not isinstance(candidate, dict):
+            continue
+        run_ref = candidate.get("run_dir")
+        if not _source_literature_topic_from_run(run_ref):
+            continue
+        row_topic = str(candidate.get("topic") or "") or _source_literature_topic_from_run(run_ref)
+        if row_topic != topic:
+            continue
+        payload = _json(_run_path(runs_root, run_ref) / "source_literature_payload.json", {})
+        evidence = payload.get("evidence_bundle") if isinstance(payload, dict) else {}
+        source_bundle = payload.get("source_bundle") if isinstance(payload, dict) else None
+        direct_papers = [
+            paper for paper in evidence.get("direct_source_papers") or []
+            if isinstance(paper, dict)
+        ] if isinstance(evidence, dict) else []
+        if (
+            isinstance(source_bundle, list)
+            and len(source_bundle) >= min_sources
+            and isinstance(evidence, dict)
+            and int(evidence.get("direct_source_count") or 0) >= min_sources
+            and publish_literature.substantive_fact_count(direct_papers) >= min_sources
+            and publish_literature.source_identity_count(
+                direct_papers, require_substantive=True,
+            ) >= min_sources
+        ):
+            return direct_papers
+    return []
+
+
 def _source_literature_submission_count(
     runs_root: Path, domain: str | None, topic: str,
 ) -> int:
@@ -7236,23 +7277,40 @@ def run_cycle(
         for idx, literature_topic in enumerate(literature_topics):
             expanded_from_topic = ""
             resumed = resumable_source_lit.get(literature_topic)
+            repair_decision = (
+                repair_decisions.get(literature_topic, {})
+                if literature_topic in repair_topic_set else {}
+            )
+            terminal_resubmit_reused_payload = False
             if resumed is not None:
                 papers = resumed[2]
                 ok, reason = True, "ok"
             else:
-                papers = (
-                    forced_source_lit[literature_topic]
-                    if literature_topic in forced_source_lit else
-                    source_lit_preflight_papers[literature_topic]
-                    if literature_topic in source_lit_preflight_papers else
-                    paper_fetcher(literature_topic, min_submit_sources)
-                    if paper_fetcher is not None else
-                    _source_literature_candidate_papers(
+                papers = []
+                if (
+                    _source_literature_parented_terminal_resubmit(repair_decision)
+                    and literature_topic not in forced_source_lit
+                    and literature_topic not in source_lit_preflight_papers
+                    and paper_fetcher is None
+                ):
+                    papers = _previous_source_literature_payload_papers(
                         runs_root, profile.slug, literature_topic, min_submit_sources,
-                        min_submit_sources * 3,
-                        allow_live_fetch=literature_topic not in forced_source_lit,
                     )
-                )
+                    terminal_resubmit_reused_payload = bool(papers)
+                if not papers:
+                    papers = (
+                        forced_source_lit[literature_topic]
+                        if literature_topic in forced_source_lit else
+                        source_lit_preflight_papers[literature_topic]
+                        if literature_topic in source_lit_preflight_papers else
+                        paper_fetcher(literature_topic, min_submit_sources)
+                        if paper_fetcher is not None else
+                        _source_literature_candidate_papers(
+                            runs_root, profile.slug, literature_topic, min_submit_sources,
+                            min_submit_sources * 3,
+                            allow_live_fetch=literature_topic not in forced_source_lit,
+                        )
+                    )
                 ok, reason = _source_literature_boundary_quality(
                     literature_topic, papers, min_submit_sources, profile.slug,
                     require_substantive_sources=True,
@@ -7329,6 +7387,11 @@ def run_cycle(
                 fallback_attempt["expanded_from_topic"] = expanded_from_topic
             if resumed is not None:
                 fallback_attempt["resumed_payload"] = True
+            if terminal_resubmit_reused_payload:
+                fallback_attempt["terminal_resubmit_reused_payload"] = True
+                fallback_attempt["parent_submission_id"] = (
+                    _resubmission_parent_submission_id(repair_decision)
+                )
             if literature_topic in repair_topic_set:
                 fallback_attempt["repair_submission"] = True
             ledger.setdefault("source_literature_fallback_attempts", []).append(fallback_attempt)
@@ -7359,10 +7422,6 @@ def run_cycle(
                 if resumed is not None:
                     candidate, payload, _resumed_papers = resumed
                 else:
-                    repair_decision = (
-                        repair_decisions.get(literature_topic, {})
-                        if literature_topic in repair_topic_set else {}
-                    )
                     candidate, payload = _source_literature_payload(
                         profile_slug=profile.slug,
                         topic=literature_topic,
