@@ -285,10 +285,12 @@ def publish_summary(ledger: Json) -> Json:
     for row in ledger.get("source_literature_fallback_attempts") or []:
         if not isinstance(row, dict):
             continue
-        if row.get("status"):
-            blockers.append("source_literature_" + str(row.get("status")))
-        if row.get("reason"):
-            blockers.append(str(row.get("reason")))
+        status_text = str(row.get("status") or "")
+        reason_text = str(row.get("reason") or "")
+        if status_text and status_text != "selected":
+            blockers.append("source_literature_" + status_text)
+        if reason_text and reason_text != "ok":
+            blockers.append(reason_text)
     refresh = ledger.get("refresh_candidates")
     if isinstance(refresh, dict):
         for event in refresh.get("fullraw_probe_events") or []:
