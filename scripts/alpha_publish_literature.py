@@ -2622,9 +2622,11 @@ def payload(
         synthesis += " " + cross_setting_text
     if non_bio:
         source_synthesis_note = (
-            "Interpretation: keep direction-bearing, null/mixed caveat, and context/model "
-            "rows separate; do not pool them or treat antecedent/modeling rows as "
-            "the same estimand."
+            "Role definitions: direction-bearing rows carry metric-specific effect "
+            "or association text; null/mixed rows carry rejected or non-convergent "
+            "metric evidence; context/model rows rank, model, or contextualize "
+            "adjacent constructs. Interpretation: keep these rows separate; do "
+            "not pool them or treat antecedent/modeling rows as the same estimand."
         )
         if antecedent_count >= 2 and antecedent_endpoints:
             source_synthesis_note += (
@@ -2792,10 +2794,9 @@ def payload(
             "design and becomes the dominant result."
         )
         if non_bio and antecedent_count >= 2 and antecedent_endpoints and nullish_count else
-        "This scoping signal would weaken if a matched rerun finds five citable, "
-        "fact-backed receipts in one setting and metric frame that remove the "
-        "reported boundary, if the direction-bearing rows fail to reproduce within "
-        "their named metric family, or if the context-only rows are the only "
+        "This scoping signal would weaken if the null/mixed metric replicates in "
+        "matched designs, if direction-bearing rows fail to reproduce within their "
+        "named metric family, or if context/model rows become the only "
         "topic-overlapping receipts."
         if non_bio else
         "This scoping signal would weaken if a matched rerun finds five citable, "
@@ -2878,7 +2879,8 @@ def payload(
         boundary_summary,
         (
             f" Material limitations: small {len(bundle)}-source bundle; no pooled "
-            "estimate is possible; method/model receipts without direct effect "
+            "estimate is possible; outlet/tier heterogeneity is scope, not weight; "
+            "method/model receipts without direct effect "
             "estimates are context only; outcomes are not harmonized across studies."
             if non_bio else
             f" Material limitations: small {len(bundle)}-source bundle; no pooled "
@@ -2965,7 +2967,7 @@ def payload(
         if antecedent_heavy_title and nullish_endpoints else
         f"antecedent-mediated {join_contexts(title_antecedent_endpoints[:2])} source map"
         if antecedent_heavy_title else
-        f"direction-bearing {join_contexts(title_directional_endpoints[:2])} signal with "
+        f"cross-construct {join_contexts(title_directional_endpoints[:2])} boundary with "
         f"{join_contexts(nullish_endpoints[:2])} caveat"
         if (
             non_bio and multi_display_outcome and context_only_count

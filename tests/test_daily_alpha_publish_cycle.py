@@ -17388,8 +17388,8 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
 
     markdown = payload["markdown"]
     assert payload["title"] == (
-        "supply chain resilience: direction-bearing supply chain performance "
-        "signal with firm performance caveat"
+        "supply chain resilience: cross-construct supply chain performance "
+        "boundary with firm performance caveat"
     )
     assert payload["human_title"] == payload["title"]
     assert payload["metadata"]["topic_label"] == "supply chain resilience"
@@ -17475,10 +17475,8 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         "do not pool them or treat antecedent/modeling rows as the same estimand"
         in payload["markdown"]
     )
-    assert (
-        "Interpretation: keep direction-bearing, null/mixed caveat, and "
-        "context/model rows separate"
-    ) in payload["markdown"]
+    assert "Role definitions: direction-bearing rows carry metric-specific effect" in markdown
+    assert "Interpretation: keep these rows separate" in markdown
     assert all(source.get("excerpt") for source in payload["source_bundle"])
     assert "unmatched metric-scope map" not in payload["title"]
     assert "source-scope boundary note" not in payload["title"]
@@ -17493,7 +17491,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "Outcome-family boundary:" in markdown
     assert "Metric imbalance disclosure:" not in markdown
     assert "strong null claim" not in markdown
-    assert "direction-bearing supply chain performance signal" in payload["title"]
+    assert "cross-construct supply chain performance boundary" in payload["title"]
     assert "firm performance caveat" in payload["title"]
     assert "firm performance is null/mixed in separate receipt(s)" in markdown
     assert "direction-bearing receipts: 3" in markdown
@@ -17585,7 +17583,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
 
     assert repaired_payload["metadata"]["topic"] == "supply_chain_margin"
     assert repaired_payload["metadata"]["topic_label"] == "supply chain resilience"
-    assert repaired_payload["title"].startswith("supply chain resilience: direction-bearing")
+    assert repaired_payload["title"].startswith("supply chain resilience: cross-construct")
     assert "supply chain margin" not in repaired_payload["title"].lower()
     assert "supply chain margin" not in repaired_payload["abstract"].lower()
     assert "supply chain margin" not in repaired_payload["markdown"].lower()
@@ -17600,7 +17598,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
 
     assert productivity_payload["metadata"]["topic"] == "supply_chain_resilience_productivity"
     assert productivity_payload["metadata"]["topic_label"] == "supply chain resilience"
-    assert productivity_payload["title"].startswith("supply chain resilience: direction-bearing")
+    assert productivity_payload["title"].startswith("supply chain resilience: cross-construct")
     assert "productivity" not in productivity_payload["title"].lower()
     assert "productivity" not in productivity_payload["abstract"].lower()
     assert "productivity" not in productivity_payload["markdown"].lower()
@@ -17622,7 +17620,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
 
     assert sales_payload["metadata"]["topic"] == "resilience_sales"
     assert sales_payload["metadata"]["topic_label"] == "supply chain resilience"
-    assert sales_payload["title"].startswith("supply chain resilience: direction-bearing")
+    assert sales_payload["title"].startswith("supply chain resilience: cross-construct")
     assert "resilience sales" not in sales_payload["title"].lower()
     assert "resilience sales" not in sales_payload["abstract"].lower()
     assert "resilience sales" not in sales_payload["markdown"].lower()
