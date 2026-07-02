@@ -1128,6 +1128,8 @@ def _paper_evidence_role(paper: Json, topic: str = "", profile_slug: str = "") -
         exposure = title_key(_exposure_context_label(paper, non_bio=True))
         if direction == "null/non-convergent" and "firm performance" in text:
             return "null/mixed"
+        if _non_bio_mixed_significant_performance_receipt(paper):
+            return "directional association"
         if "antecedent" in exposure:
             return "antecedent/support"
         if "context" in exposure or "modeling" in exposure or "modelling" in exposure:

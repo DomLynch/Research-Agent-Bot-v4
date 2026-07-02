@@ -17432,7 +17432,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         "manufacturing firms",
         "manufacturing firms",
         "supply chain performance",
-        "descriptive/modeling",
+        "directional association",
     ) in source_contexts
     interventions_by_title = {
         str(source.get("title") or ""): source.get("intervention")
@@ -17466,9 +17466,8 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     ) == "flexibility, collaboration, and agility antecedents"
     assert "5-source map:" not in payload["title"]
     assert "5-source scoping map" not in payload["abstract"]
-    assert "Source-scope map" in payload["abstract"]
-    assert "not a comparator claim" in payload["abstract"]
-    assert "broad market signal" in payload["abstract"]
+    assert "direction-bearing receipts concern supply chain performance" in payload["abstract"]
+    assert "outcome-family boundary" in payload["abstract"]
     assert "policy-prescriptive, market-generalized" in payload["markdown"]
     assert "not a general null" not in payload["markdown"]
     assert "null/mixed metric-scope caveat" in payload["markdown"]
@@ -17477,43 +17476,44 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         in payload["markdown"]
     )
     assert (
-        "Integrated reading: the directional and caveat receipts are not matched "
-        "on setting, design, and metric"
+        "Interpretation: keep direction-bearing, null/mixed caveat, and "
+        "context/model rows separate"
     ) in payload["markdown"]
     assert all(source.get("excerpt") for source in payload["source_bundle"])
     assert "unmatched metric-scope map" not in payload["title"]
     assert "source-scope boundary note" not in payload["title"]
     assert (
-        "Evidence role summary: direction-bearing receipts: 1; "
+        "Evidence role summary: direction-bearing receipts: 3; "
         "null/mixed metric-scope caveat receipts: 1; context/antecedent/model "
-        "receipts: 3 excluded from effect support."
+        "receipts: 1 excluded from effect support."
     ) in markdown
-    assert "directional association: 1 receipt(s)" in markdown
+    assert "directional association: 3 receipt(s)" in markdown
     assert "other/mixed: 5 receipt(s)" not in markdown
     assert "fallback" not in markdown.lower()
-    assert "Source-scope map:" in markdown
+    assert "Outcome-family boundary:" in markdown
     assert "Metric imbalance disclosure:" not in markdown
     assert "strong null claim" not in markdown
     assert "direction-bearing supply chain performance signal" in payload["title"]
     assert "firm performance caveat" in payload["title"]
-    assert "firm performance in firms as null or non-convergent" in markdown
-    assert "direction-bearing receipts: 1" in markdown
-    assert "context/antecedent/model receipts: 3 excluded from effect support" in markdown
+    assert "firm performance is null/mixed in separate receipt(s)" in markdown
+    assert "direction-bearing receipts: 3" in markdown
+    assert "context/antecedent/model receipts: 1 excluded from effect support" in markdown
     assert " k=" not in markdown
     assert "It excludes duplicate reports, metadata-only title matches" in markdown
-    assert "the directional-association supply chain performance receipt would weaken" in markdown
+    assert "Coverage balance: supply chain performance (3 of 3 direction-bearing receipts)" in markdown
     assert "supply chain performance" in markdown
     assert "firm performance" in markdown
-    assert "matched industry/setting, comparator/reference, and metric replication" in markdown
-    assert "Evidence weight: one effect-bearing receipt supports supply chain performance" in markdown
+    assert "one matched design: one setting, one policy/exposure" in markdown
+    assert "Substantive signal: direction-bearing evidence is limited to supply chain performance" in markdown
     assert "Population/settings are separated as receipt context" in markdown
     assert "automotive firms" in markdown
     assert "chemical firms" in markdown
     assert "manufacturing firms" in markdown
-    assert "Effect-support accounting: 3 of 5 receipt(s) is context/modeling-only" in markdown
+    assert "Effect-support accounting: 1 of 5 receipt(s) is context/modeling-only" in markdown
+    assert "3 receipt(s) are direction-bearing" in markdown
     assert "Routing domain" not in markdown
-    assert "antecedent/support: 1 receipt(s)" in markdown
-    assert "descriptive/modeling: 2 receipt(s)" in markdown
+    assert "antecedent/support: 1 receipt(s)" not in markdown
+    assert "descriptive/modeling: 1 receipt(s)" in markdown
     assert "## Evidence matrix" in markdown
     assert "## Evidence role definitions" in markdown
     assert "## Directional grouping" not in markdown
@@ -17524,7 +17524,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "### Effect-bearing comparison" in markdown
     assert "### Context-only receipts" in markdown
     assert "| Outcome family | Receipt | Evidence role | Population/setting | Metric | Extracted finding |" in markdown
-    assert "| modeling-context | Supply chain resilience and performance of manufacturing firms" in markdown
+    assert "| chain-level | Supply chain resilience and performance of manufacturing firms" in markdown
     assert "| manufacturing firms | supply chain performance | SCR has a significant positive effect on SCP |" in markdown
     assert "| chain-level | Factors Affecting the Supply Chain Resilience" in markdown
     assert "| firm-level | The Impacts of Supply Chain Capabilities" in markdown
@@ -17542,14 +17542,14 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         < context_section_start
     )
     assert (
-        markdown.index("| modeling-context | Supply chain resilience and performance of manufacturing firms", context_section_start)
-        > context_section_start
+        markdown.index("| chain-level | Supply chain resilience and performance of manufacturing firms", effect_section_start)
+        < context_section_start
     )
     assert (
-        markdown.index("| chain-level | Factors Affecting the Supply Chain Resilience", context_section_start)
-        > context_section_start
+        markdown.index("| chain-level | Factors Affecting the Supply Chain Resilience", effect_section_start)
+        < context_section_start
     )
-    assert "antecedent/support | firms | supply chain performance" in markdown
+    assert "directional association | firms | supply chain performance" in markdown
     assert "non-directional caveat | chemical firms | supply chain performance" not in markdown
     assert "hypotheses of a positive impact" in markdown
     assert "have been rejected" in markdown

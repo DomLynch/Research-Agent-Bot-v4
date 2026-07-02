@@ -10130,6 +10130,32 @@ def test_business_source_literature_counts_significant_metric_change_directional
     ) == "directional association"
 
 
+def test_business_source_literature_keeps_significant_context_effect_directional() -> None:
+    paper = {
+        "title": (
+            "Supply chain resilience and performance of manufacturing firms: "
+            "role of supply chain disruption"
+        ),
+        "doi": "10.1108/jmtm-08-2022-0307",
+        "source_fact": {
+            "canonical_phrase": (
+                "Findings First, the study revealed that SCR has a significant "
+                "positive effect on SCP"
+            ),
+            "population": "firms",
+            "intervention": "supply chain disruption context",
+            "endpoint": "supply chain performance",
+            "source_tier": "fullraw_abstract",
+        },
+    }
+
+    assert publish_literature._paper_evidence_role(
+        paper,
+        "resilience_sales",
+        "business_research",
+    ) == "directional association"
+
+
 def test_business_source_literature_counts_significant_enhancement_directional() -> None:
     paper = {
         "title": "Digital Transformation and Firm Environmental Performance",
