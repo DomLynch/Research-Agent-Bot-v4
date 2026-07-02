@@ -452,8 +452,12 @@ def _source_diverse_order(topic: str, papers: list[Json]) -> list[Json]:
     return picked
 
 
+_DIRECTIONAL_WITHIN_SOURCE_CAVEAT_ROLE = (
+    "directional association with within-source caveat"
+)
 _DIRECTIONAL_SOURCE_LIT_ROLES = frozenset({
-    "directional association", "directional estimate", "directionally favorable",
+    "directional association", _DIRECTIONAL_WITHIN_SOURCE_CAVEAT_ROLE,
+    "directional estimate", "directionally favorable",
 })
 _BOUNDARY_SOURCE_LIT_ROLES = frozenset({"null/mixed", "descriptive/modeling"})
 
@@ -1120,7 +1124,7 @@ def _paper_evidence_role(paper: Json, topic: str = "", profile_slug: str = "") -
         and direction == "null/non-convergent"
         and _non_bio_directional_with_subdimension_caveat(paper)
     ):
-        return "directional association"
+        return _DIRECTIONAL_WITHIN_SOURCE_CAVEAT_ROLE
     if _non_biomedical(profile_slug):
         fact = paper.get("source_fact")
         fact = fact if isinstance(fact, dict) else {}
@@ -1208,17 +1212,14 @@ def _heterogeneity_matrix_lines(
             + " | ".join((
                 _table_cell(family, 40),
                 _table_cell(paper.get("title") or "Untitled source", 72),
-                _table_cell(_memo_role_label(role, profile_slug), 36),
+                _table_cell(_memo_role_label(role, profile_slug), 52),
                 _table_cell(_source_context_label(paper, non_bio=non_bio), 48),
                 _table_cell(metric, 40),
                 _table_cell(finding, 110),
             ))
             + " |"
         )
-        if role in {
-            "directional association", "directional estimate", "directionally favorable",
-            "null/mixed", "null/non-convergent",
-        }:
+        if role in _DIRECTIONAL_SOURCE_LIT_ROLES | {"null/mixed", "null/non-convergent"}:
             effect_rows.append(row)
         else:
             context_rows.append(row)
@@ -1278,6 +1279,9 @@ def _direction_category_lines(topic: str, profile_slug: str = "") -> list[str]:
             f"- directional association: source-level direction with design caveat; {topic_text} "
             "is the policy, exposure, method, or practice linked to the named metric, "
             "not a pooled effect-size estimate or efficacy verdict.",
+            "- directional association with within-source caveat: source-level direction "
+            "plus an explicit null/mixed subdimension inside the same receipt; do not "
+            "read as uniformly directional support.",
             "- antecedent/support: the receipt explains inputs, enablers, or "
             "context for the topic rather than a clean topic-to-outcome effect.",
             f"- reference/comparator contrast: {topic_text} is the reference side "
@@ -1361,7 +1365,7 @@ def _evidence_role_summary(papers: list[Json], topic: str = "", profile_slug: st
     directional = nullish = context_only = 0
     for paper in papers:
         label = _paper_evidence_role(paper, topic, profile_slug)
-        if label in {"directional association", "directional estimate", "directionally favorable"}:
+        if label in _DIRECTIONAL_SOURCE_LIT_ROLES:
             directional += 1
         elif label in {"null/mixed", "null/non-convergent"}:
             nullish += 1
@@ -1401,7 +1405,8 @@ def _direction_contrast_sentence(
     if len(groups) < 2:
         return ""
     priority = (
-        "directional association", "directional estimate", "null/mixed", "reference/comparator contrast",
+        "directional association", _DIRECTIONAL_WITHIN_SOURCE_CAVEAT_ROLE,
+        "directional estimate", "null/mixed", "reference/comparator contrast",
         "antecedent/support", "descriptive/modeling", "economic/context only", "other/mixed",
         "directionally favorable", "null/non-convergent", "comparator/not favorable",
         "non-clinical/predictive",
@@ -1424,9 +1429,7 @@ def _cross_setting_contrast_sentence(
         return ""
     clauses: list[str] = []
     for paper in papers:
-        if _paper_evidence_role(paper, topic, profile_slug) not in {
-            "directional association", "directional estimate", "directionally favorable",
-        }:
+        if _paper_evidence_role(paper, topic, profile_slug) not in _DIRECTIONAL_SOURCE_LIT_ROLES:
             continue
         fact = paper.get("source_fact")
         fact = fact if isinstance(fact, dict) else {}
@@ -1832,6 +1835,7 @@ def _bounded_signal_sentence(
     family_text = join_contexts((outcome_families or [])[:3])
     directional = list(dict.fromkeys(
         endpoints_by_label.get("directional association", [])
+        + endpoints_by_label.get(_DIRECTIONAL_WITHIN_SOURCE_CAVEAT_ROLE, [])
         + endpoints_by_label.get("directional estimate", [])
         + endpoints_by_label.get("directionally favorable", []),
     ))
@@ -2383,11 +2387,13 @@ def payload(
     non_bio_scope_axis = "outcomes/metrics" if multi_display_outcome else "settings/designs"
     directional_endpoints = list(dict.fromkeys(
         endpoints_by_label.get("directional association", [])
+        + endpoints_by_label.get(_DIRECTIONAL_WITHIN_SOURCE_CAVEAT_ROLE, [])
         + endpoints_by_label.get("directional estimate", [])
         + endpoints_by_label.get("directionally favorable", []),
     ))
     directional_endpoint_rows = (
         endpoints_by_label.get("directional association", [])
+        + endpoints_by_label.get(_DIRECTIONAL_WITHIN_SOURCE_CAVEAT_ROLE, [])
         + endpoints_by_label.get("directional estimate", [])
         + endpoints_by_label.get("directionally favorable", [])
     )
@@ -2443,8 +2449,7 @@ def payload(
                 non_bio_signal_parts.append(f"{prefix} {join_contexts(endpoints[:3])}")
     directional_count = sum(
         1 for paper in selected
-        if _paper_evidence_role(paper, topic, profile.slug)
-        in {"directional association", "directional estimate", "directionally favorable"}
+        if _paper_evidence_role(paper, topic, profile.slug) in _DIRECTIONAL_SOURCE_LIT_ROLES
     )
     nullish_count = sum(
         1 for paper in selected
@@ -2485,8 +2490,7 @@ def payload(
     directional_contexts = sorted({
         _source_context_label(paper, non_bio=non_bio)
         for paper in selected
-        if _paper_evidence_role(paper, topic, profile.slug)
-        in {"directional association", "directional estimate", "directionally favorable"}
+        if _paper_evidence_role(paper, topic, profile.slug) in _DIRECTIONAL_SOURCE_LIT_ROLES
         and _source_context_label(paper, non_bio=non_bio)
     })
     nullish_contexts = sorted({

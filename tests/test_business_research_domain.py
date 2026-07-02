@@ -10284,7 +10284,7 @@ def test_business_source_literature_counts_significant_subdimensions_directional
         paper,
         "supply_chain_resilience_profitability",
         "business_research",
-    ) == "directional association"
+    ) == "directional association with within-source caveat"
 
 
 def test_business_source_literature_keeps_rejected_path_null_mixed() -> None:

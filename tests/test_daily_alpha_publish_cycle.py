@@ -17588,7 +17588,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         "chemical firms",
         "chemical firms",
         "supply chain performance",
-        "directional association",
+        "directional association with within-source caveat",
     ) in source_contexts
     assert (
         "manufacturing firms",
@@ -17647,7 +17647,8 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         "null/mixed metric-scope caveat receipts: 1; context/antecedent/model "
         "receipts: 1 excluded from effect support."
     ) in markdown
-    assert "directional association: 3 receipt(s)" in markdown
+    assert "directional association: 2 receipt(s)" in markdown
+    assert "directional association with within-source caveat: 1 receipt(s)" in markdown
     assert "other/mixed: 5 receipt(s)" not in markdown
     assert "fallback" not in markdown.lower()
     assert "Outcome-family boundary:" in markdown
@@ -17714,6 +17715,10 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         < context_section_start
     )
     assert "directional association | firms | supply chain performance" in markdown
+    assert (
+        "directional association with within-source caveat | chemical firms | "
+        "supply chain performance"
+    ) in markdown
     assert "non-directional caveat | chemical firms | supply chain performance" not in markdown
     assert "hypotheses of a positive impact" in markdown
     assert "have been rejected" in markdown
