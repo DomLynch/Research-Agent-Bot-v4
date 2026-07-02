@@ -10033,18 +10033,22 @@ def test_terminal_feedback_source_literature_repair_bypasses_stale_source_floor(
         },
         "researka_decision": {
             "decision": "revise",
-            "claim_support_verdict": "partially_supported",
-            "required_revisions": [
-                "Rename or reclassify the automotive AHP-VIKOR receipt in the title and abstract.",
-                "Tighten the boundary-map language so effect-bearing rows stay distinct.",
+            "claim_support_verdict": "supported",
+            "review_summary": (
+                "Each cited DOI aligns with a bundle entry; outcome family labels "
+                "could separate business outcome from supply chain performance more sharply."
+            ),
+            "required_revisions": [],
+            "minor_issues": [
+                "Outcome family labels could separate business outcome from "
+                "supply chain performance more sharply.",
             ],
             "major_issues": [],
-            "minor_issues": [],
             "failed_checks": [],
             "gate_failures": [],
             "rubric_scores": {
-                "claim_evidence_alignment": 4,
-                "source_grounding": 4,
+                "claim_evidence_alignment": 5,
+                "source_grounding": 5,
                 "synthesis_quality": 4,
             },
             "notes": ["editorial decision is terminal; external author must resubmit"],

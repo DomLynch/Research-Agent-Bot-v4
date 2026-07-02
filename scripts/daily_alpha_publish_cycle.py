@@ -2647,9 +2647,11 @@ def _source_literature_publish_framing_repair_needed(
 
 
 def _source_literature_terminal_feedback_repair_needed(decision: Json) -> bool:
+    if "external author must resubmit" not in _norm(_revision_notes(decision)):
+        return False
     return (
         _source_literature_render_repair_revise(decision)
-        and "external author must resubmit" in _norm(_revision_notes(decision))
+        or _supported_minor_revise(decision)
     )
 
 
