@@ -13287,7 +13287,7 @@ def test_source_literature_fallback_resubmits_supported_minor_revise_same_cycle(
     assert paper_fetch_calls == [("usable_boundary", 5)]
 
 
-def test_source_literature_terminal_resubmit_polls_target_object_not_job_id(
+def test_source_literature_terminal_resubmit_waits_for_queued_target_object(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.delenv("RESEARKA_SOURCE_LITERATURE_FALLBACK_SUBMIT", raising=False)
@@ -13368,14 +13368,14 @@ def test_source_literature_terminal_resubmit_polls_target_object_not_job_id(
         sleep=lambda _seconds: None,
     )
 
-    assert decision_calls == ["sub-clean-1", "sub-clean-2"]
-    assert ledger["status"] == "published"
-    assert ledger["final_verdict"] == "accepted"
+    assert decision_calls == ["sub-clean-1"]
+    assert ledger["status"] == "submitted_to_researka"
+    assert ledger["final_verdict"] == "pending"
     assert ledger["submission_id"] == "sub-clean-2"
-    assert ledger["public_url"] == "https://researka.org/alpha/source-lit"
     assert [row["status"] for row in ledger["cycle_attempts"]] == [
-        "reviewer_revise", "published",
+        "reviewer_revise", "submitted_to_researka",
     ]
+    assert ledger["cycle_attempts"][-1]["pending_reason"] == "terminal_resubmit_job_queued"
     assert (
         ledger["source_literature_fallback_attempts"][0][
             "terminal_resubmit_queued_job_id"

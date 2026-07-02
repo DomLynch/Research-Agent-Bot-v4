@@ -7622,7 +7622,7 @@ def run_cycle(
                                         fallback_attempt["terminal_resubmit_queued_job_id"] = queued_job_id
                                     if queued_job_id and submission_id != queued_job_id:
                                         fallback_attempt["terminal_resubmit_poll_object_id"] = submission_id
-                                    if queued_job_id and submission_id == queued_job_id:
+                                    if queued_job_id:
                                         ledger["cycle_attempts"].append({
                                             "topic": literature_topic,
                                             "run_dir": candidate.get("run_dir"),
