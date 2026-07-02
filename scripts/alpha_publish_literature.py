@@ -3087,8 +3087,6 @@ def payload(
             [
                 *title_directional_endpoints,
                 *comparator_title_endpoints,
-                *nullish_endpoints,
-                *display_outcome_families,
             ],
             selected,
         )

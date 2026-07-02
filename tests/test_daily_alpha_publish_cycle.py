@@ -17454,7 +17454,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
 
     markdown = payload["markdown"]
     assert payload["title"] == (
-        "supply chain resilience: supply chain performance, firm performance"
+        "supply chain resilience: supply chain performance"
     )
     assert payload["human_title"] == payload["title"]
     assert payload["metadata"]["topic_label"] == "supply chain resilience"
@@ -17560,7 +17560,8 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "boundary" not in payload["title"]
     assert "caveat" not in payload["title"]
     assert "supply chain performance" in payload["title"]
-    assert "firm performance" in payload["title"]
+    assert "firm performance" not in payload["title"]
+    assert "firm performance" in markdown
     assert "firm performance is null/mixed in separate receipt(s)" in markdown
     assert "direction-bearing receipts: 3" in markdown
     assert "context/antecedent/model receipts: 1 excluded from effect support" in markdown
@@ -17655,7 +17656,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert repaired_payload["metadata"]["requested_topic"] == "supply_chain_margin"
     assert repaired_payload["metadata"]["topic_label"] == "supply chain resilience"
     assert repaired_payload["title"] == (
-        "supply chain resilience: supply chain performance, firm performance"
+        "supply chain resilience: supply chain performance"
     )
     assert "supply chain margin" not in repaired_payload["title"].lower()
     assert "supply chain margin" not in repaired_payload["abstract"].lower()
@@ -17677,12 +17678,12 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     )
     assert productivity_payload["metadata"]["topic_label"] == "supply chain resilience"
     assert productivity_payload["title"] == (
-        "supply chain resilience: supply chain performance, firm performance"
+        "supply chain resilience: supply chain performance"
     )
     assert "productivity" not in productivity_payload["title"].lower()
     assert "productivity" not in productivity_payload["abstract"].lower()
     assert "productivity" not in productivity_payload["markdown"].lower()
-    assert "firm performance" in productivity_payload["title"]
+    assert "firm performance" not in productivity_payload["title"]
     assert "caveat" not in productivity_payload["title"]
 
     sales_papers: list[dict[str, Any]] = []
@@ -17705,7 +17706,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert sales_payload["metadata"]["requested_topic"] == "resilience_sales"
     assert sales_payload["metadata"]["topic_label"] == "supply chain resilience"
     assert sales_payload["title"] == (
-        "supply chain resilience: supply chain performance, firm performance"
+        "supply chain resilience: supply chain performance"
     )
     source_title_terms = {
         token
