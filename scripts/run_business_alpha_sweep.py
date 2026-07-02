@@ -431,6 +431,58 @@ def _load_fullraw_env_defaults() -> None:
                 break
 
 
+def _cached_complete_fullraw_probe(
+    topic: str, *, include_papers: bool = False,
+    queries: tuple[str, ...] | None = None,
+) -> dict[str, Any] | None:
+    result_limit = _business_fullraw_result_limit()
+    attempted: list[str] = []
+    for query in _rank_fullraw_queries_by_cached_receipt(
+        queries or _business_fullraw_queries(topic),
+    ):
+        attempted.append(query)
+        data = _fullraw_search_response(
+            query,
+            limit=result_limit,
+            queue_if_missing=False,
+            timeout_seconds=_business_fullraw_cache_probe_timeout_seconds(),
+        )
+        if not data or not _fullraw_response_complete(data):
+            continue
+        items = data.get("results") or data.get("hits") or []
+        papers = [item for item in items if isinstance(item, dict)]
+        if len(papers) < MIN_DIRECT_SOURCES:
+            continue
+        raw_meta = data.get("meta")
+        meta = raw_meta if isinstance(raw_meta, dict) else data
+        raw_receipt = meta.get("shard_receipt")
+        receipt = raw_receipt if isinstance(raw_receipt, dict) else meta
+        result: dict[str, Any] = {
+            "status": "complete",
+            "probe_status": "cache_complete",
+            "source": "fullraw_cache_complete",
+            "query": query,
+            "attempted_queries": list(attempted),
+            "paper_count": len(papers),
+            "shards_searched": receipt.get("shards_searched"),
+            "partial_shard_search": receipt.get("partial_shard_search"),
+            "sweep_failed_shards": receipt.get("sweep_failed_shards"),
+            "sources_searched": receipt.get("sources_searched"),
+            "papers_searched": receipt.get("papers_searched"),
+            "papers_total": receipt.get("papers_total"),
+            "result_count_returned": receipt.get("result_count_returned"),
+            "result_count_unique": receipt.get("result_count_unique"),
+            "result_citation_diversity": receipt.get("result_citation_diversity"),
+            "candidate_fact_source_count": _fullraw_substantive_fact_candidates(
+                topic, papers,
+            ),
+        }
+        if include_papers:
+            result["_papers"] = papers
+        return result
+    return None
+
+
 def _strict_fullraw_probe(
     topic: str, *, include_papers: bool = False, runs_root: Path | None = None,
     queries: tuple[str, ...] | None = None,
@@ -443,6 +495,14 @@ def _strict_fullraw_probe(
         return {"status": "not_configured"}
     backoff = _fullraw_backoff(runs_root, topic)
     if backoff:
+        cached_complete = _cached_complete_fullraw_probe(
+            topic, include_papers=include_papers, queries=queries,
+        )
+        if cached_complete:
+            cached_complete["backoff_bypassed"] = True
+            cached_complete["previous_status"] = backoff.get("previous_status")
+            cached_complete["backoff_key"] = backoff.get("backoff_key")
+            return cached_complete
         return backoff
     lock_handle = None
     budget_key = "TOPIC_DISCOVERY_V5_SEARCH_BUDGET_SECONDS"

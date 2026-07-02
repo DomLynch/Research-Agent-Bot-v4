@@ -1578,6 +1578,85 @@ def test_business_sweep_fullraw_probe_preserves_in_progress_cache_receipt(
     }) == ["no_source_diverse_bundle", "fullraw_probe_busy"]
 
 
+def test_business_sweep_fullraw_backoff_uses_completed_cache_receipt(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    runs_root = tmp_path / "runs"
+    backoff_path = sweep._fullraw_backoff_path(runs_root)
+    backoff_path.parent.mkdir(parents=True)
+    backoff_path.write_text(json.dumps({
+        "entries": {
+            "platform strategy network": {
+                "key": "platform strategy network",
+                "ts": dt.datetime.now(dt.UTC).timestamp(),
+                "status": "incomplete_receipt",
+                "partial_shard_search": True,
+                "backoff_seconds": 7200,
+            },
+        },
+    }), encoding="utf-8")
+    papers = [
+        {
+            "doi": f"10.4242/cache-complete-{idx}",
+            "title": f"Platform strategy network sales evidence {idx}",
+            "journal_name": f"Business Outlet {idx}",
+            "source_fact": {
+                "canonical_phrase": (
+                    f"Platform strategy network adoption changed sales performance {idx}."
+                ),
+                "population": "platform firms",
+                "intervention": "platform strategy network adoption",
+                "endpoint": "sales performance",
+                "source_tier": "fullraw_search",
+            },
+        }
+        for idx in range(5)
+    ]
+    calls: list[bool] = []
+
+    def fake_response(
+        _query: str, *, limit: int | None = None,
+        queue_if_missing: bool = True, timeout_seconds: float | None = None,
+    ) -> dict[str, Any]:
+        assert limit == sweep._business_fullraw_result_limit()
+        assert timeout_seconds == sweep._business_fullraw_cache_probe_timeout_seconds()
+        calls.append(queue_if_missing)
+        return {
+            "meta": {
+                "shard_receipt": {
+                    "shards_searched": 1525,
+                    "partial_shard_search": False,
+                    "sweep_failed_shards": 0,
+                    "sources_searched": {
+                        "openalex": 900,
+                        "crossref": 400,
+                        "semantic_scholar": 225,
+                    },
+                },
+            },
+            "results": papers,
+        }
+
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setattr(sweep, "_fullraw_search_response", fake_response)
+    monkeypatch.setattr(sweep, "_rank_fullraw_queries_by_cached_receipt", lambda q: q)
+
+    result = sweep._strict_fullraw_probe(
+        "platform_strategy_network_sales",
+        include_papers=True,
+        runs_root=runs_root,
+    )
+
+    assert result["status"] == "complete"
+    assert result["probe_status"] == "cache_complete"
+    assert result["backoff_bypassed"] is True
+    assert result["previous_status"] == "incomplete_receipt"
+    assert result["paper_count"] == 5
+    assert result["candidate_fact_source_count"] == 5
+    assert len(result["_papers"]) == 5
+    assert calls and set(calls) == {False}
+
+
 def test_business_sweep_priority_probe_tries_next_query_after_quick_incomplete_fullraw(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
