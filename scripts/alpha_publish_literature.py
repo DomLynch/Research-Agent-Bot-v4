@@ -1112,6 +1112,20 @@ def _uniform_favorable_cross_pico(papers: list[Json], min_sources: int) -> bool:
 
 def _paper_evidence_role(paper: Json, topic: str = "", profile_slug: str = "") -> str:
     direction = _paper_effect_direction(paper, topic)
+    if _non_biomedical(profile_slug):
+        fact = paper.get("source_fact")
+        fact = fact if isinstance(fact, dict) else {}
+        text = title_key(" ".join(str(value or "") for value in (
+            paper.get("title"), paper.get("paper_title"), fact.get("canonical_phrase"),
+            fact.get("endpoint"), fact.get("metric"), fact.get("intervention"),
+        )))
+        exposure = title_key(_exposure_context_label(paper, non_bio=True))
+        if direction == "null/non-convergent" and "firm performance" in text:
+            return "null/mixed"
+        if "antecedent" in exposure:
+            return "antecedent/support"
+        if "context" in exposure or "modeling" in exposure or "modelling" in exposure:
+            return "descriptive/modeling"
     if (
         _non_biomedical(profile_slug)
         and direction == "null/non-convergent"
@@ -2386,6 +2400,9 @@ def payload(
         1 for paper in selected
         if _paper_evidence_role(paper, topic, profile.slug) == "antecedent/support"
     )
+    antecedent_endpoints = list(dict.fromkeys(
+        endpoints_by_label.get("antecedent/support", [])
+    ))
     modeling_count = sum(
         1 for paper in selected
         if _paper_evidence_role(paper, topic, profile.slug) == "descriptive/modeling"
@@ -2607,6 +2624,12 @@ def payload(
             "rows separate; do not pool them or treat antecedent/modeling rows as "
             "the same estimand."
         )
+        if antecedent_count >= 2 and antecedent_endpoints:
+            source_synthesis_note += (
+                " Construct alignment: the antecedent/support rows are source-overlapping "
+                f"for {join_contexts(antecedent_endpoints[:2])}, but they do not by "
+                f"themselves test {topic_label} as a direct exposure."
+            )
         if nullish_count == 1 and single_caveat_endpoint:
             source_synthesis_note += (
                 f" The {single_caveat_endpoint} caveat is based on one heterogeneous "
@@ -2760,6 +2783,13 @@ def payload(
         )
     )
     weakening_note = (
+        (
+            f"The antecedent-mediated map would weaken if matched {join_contexts(antecedent_endpoints[:2])} "
+            "receipts show no link from the named antecedents to the outcome, or if "
+            f"the {single_caveat_endpoint} null/mixed receipt replicates in a matched "
+            "design and becomes the dominant result."
+        )
+        if non_bio and antecedent_count >= 2 and antecedent_endpoints and nullish_count else
         "This scoping signal would weaken if a matched rerun finds five citable, "
         "fact-backed receipts in one setting and metric frame that remove the "
         "reported boundary, if the direction-bearing rows fail to reproduce within "
@@ -2916,11 +2946,23 @@ def payload(
     title_directional_endpoints = _title_endpoint_labels(
         directional_endpoints[:4], topic, selected,
     )
+    title_antecedent_endpoints = _title_endpoint_labels(
+        antecedent_endpoints[:4], topic, selected,
+    )
     comparator_title_endpoints = [
         endpoint for endpoint in title_directional_endpoints
         if endpoint != primary_duplicated_endpoint
     ]
+    antecedent_heavy_title = (
+        non_bio and antecedent_count >= 2 and bool(title_antecedent_endpoints)
+    )
+    title_topic_label = f"{topic_label} antecedents" if antecedent_heavy_title else topic_label
     title_tail = (
+        f"antecedent-mediated {join_contexts(title_antecedent_endpoints[:2])} map with "
+        f"{join_contexts(nullish_endpoints[:2])} caveat"
+        if antecedent_heavy_title and nullish_endpoints else
+        f"antecedent-mediated {join_contexts(title_antecedent_endpoints[:2])} source map"
+        if antecedent_heavy_title else
         f"direction-bearing {join_contexts(title_directional_endpoints[:2])} signal with "
         f"{join_contexts(nullish_endpoints[:2])} caveat"
         if (
@@ -2996,8 +3038,8 @@ def payload(
         "domain": profile.as_metadata(),
         "domain_slug": profile.slug,
         "category": category,
-        "title": f"{topic_label}: {title_tail}",
-        "human_title": f"{topic_label}: {title_tail}",
+        "title": f"{title_topic_label}: {title_tail}",
+        "human_title": f"{title_topic_label}: {title_tail}",
         "abstract": safe_excerpt(abstract_text),
         "summary": safe_excerpt(abstract_text),
         "topic": requested_topic,

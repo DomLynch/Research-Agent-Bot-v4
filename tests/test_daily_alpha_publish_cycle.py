@@ -14487,10 +14487,10 @@ def test_source_literature_fallback_expands_final_empty_parent_topic(
     def papers_for(topic: str) -> list[dict[str, Any]]:
         rows = [
             ("10.8222/bm-1", "Business model revenue performance", "business model had a significant positive effect on revenue performance", "revenue performance"),
-            ("10.8222/bm-2", "Business model firm performance", "business model had a significant positive effect on firm performance", "firm performance"),
+            ("10.8222/bm-2", "Business model firm performance", "business model had no significant effect on firm performance", "firm performance"),
             ("10.8222/bm-3", "Business model operating margin", "business model had a significant positive effect on operating margin", "operating margin"),
-            ("10.8222/bm-4", "Business model customer context", "business model customer channels varied across firm settings", "customer context"),
-            ("10.8222/bm-5", "Business model governance context", "business model governance constraints were documented across firms", "governance context"),
+            ("10.8222/bm-4", "Business model customer retention performance", "business model improved customer retention performance", "customer retention performance"),
+            ("10.8222/bm-5", "Business model governance growth performance", "business model governance improved growth performance", "growth performance"),
         ]
         return [
             {
@@ -14733,39 +14733,44 @@ def test_source_literature_fallback_derives_variant_from_blocked_rich_parent(
             "source_fact": {
                 "canonical_phrase": phrase,
                 "population": population,
-                "intervention": "supply chain",
+                "intervention": intervention,
                 "endpoint": endpoint,
             },
         }
-        for idx, (title, phrase, population, endpoint) in enumerate((
+        for idx, (title, phrase, population, intervention, endpoint) in enumerate((
             (
                 "Supply chain integration and delivery performance",
                 "supply chain integration improved delivery performance",
                 "manufacturing firms",
+                "supply chain integration",
                 "delivery performance",
             ),
             (
-                "Supply chain visibility and operational resilience",
-                "supply chain visibility had a significant positive effect on operational performance",
+                "Supply chain process redesign and operational performance",
+                "supply chain process redesign had a significant positive effect on operational performance",
                 "logistics networks",
+                "supply chain process redesign",
                 "operational performance",
             ),
             (
-                "Supply chain collaboration and inventory outcomes",
-                "supply chain collaboration had no significant effect on inventory performance",
+                "Supply chain inventory policy and inventory outcomes",
+                "supply chain inventory policy had no significant effect on inventory performance",
                 "retail supply chains",
+                "supply chain inventory policy",
                 "inventory performance",
             ),
             (
                 "Supply chain digitization and service reliability",
                 "supply chain digitization had a significant positive effect on service performance",
                 "service firms",
+                "supply chain digitization",
                 "service performance",
             ),
             (
-                "Supply chain flexibility and disruption recovery",
-                "supply chain flexibility had a significant positive effect on recovery performance",
+                "Supply chain recovery planning and disruption recovery",
+                "supply chain recovery planning had a significant positive effect on recovery performance",
                 "industrial firms",
+                "supply chain recovery planning",
                 "recovery performance",
             ),
         ), start=1)
@@ -17090,7 +17095,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
                     "exerted insignificant effect on supply chain performance"
                 ),
                 "population": "chemical firms",
-                "intervention": "supply chain resilience",
+                "intervention": "chain resilience supply",
                 "endpoint": "supply chain performance",
             },
         },
@@ -17121,8 +17126,8 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
 
     markdown = payload["markdown"]
     assert payload["title"] == (
-        "supply chain resilience: direction-bearing supply chain performance "
-        "signal with firm performance caveat"
+        "supply chain resilience antecedents: antecedent-mediated supply chain "
+        "performance map with firm performance caveat"
     )
     assert payload["human_title"] == payload["title"]
     assert payload["metadata"]["topic_label"] == "supply chain resilience"
@@ -17159,13 +17164,13 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         "chemical firms",
         "chemical firms",
         "supply chain performance",
-        "directional association",
+        "antecedent/support",
     ) in source_contexts
     assert (
         "manufacturing firms",
         "manufacturing firms",
         "supply chain performance",
-        "directional association",
+        "descriptive/modeling",
     ) in source_contexts
     interventions_by_title = {
         str(source.get("title") or ""): source.get("intervention")
@@ -17177,7 +17182,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert interventions_by_title[
         "The effect of supply chain resilience on supply chain performance of "
         "chemical industrial companies"
-    ] == "supply chain resilience"
+    ] == "flexibility, collaboration, and agility antecedents"
     assert publish_literature._exposure_context_label(
         {
             "title": (
@@ -17199,24 +17204,27 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     ) == "flexibility, collaboration, and agility antecedents"
     assert "5-source map:" not in payload["title"]
     assert "5-source scoping map" not in payload["abstract"]
-    assert "direction-bearing receipts concern supply chain performance" in payload["abstract"]
-    assert "null/mixed receipts concern firm performance" in payload["abstract"]
-    assert "context/model receipts do not test performance effects" in payload["abstract"]
-    assert "3 direction-bearing receipt(s)" in payload["abstract"]
-    assert "1 null/mixed receipt(s)" in payload["abstract"]
+    assert "source-level context map" in payload["abstract"]
+    assert "selected receipts do not establish one pooled effect" in payload["abstract"]
+    assert "policy-prescriptive, or market-generalized claim" in payload["abstract"]
     assert "not a general null" not in payload["markdown"]
     assert "null/mixed metric-scope caveat" in payload["markdown"]
     assert (
         "do not pool them or treat antecedent/modeling rows as the same estimand"
         in payload["markdown"]
     )
+    assert (
+        "Construct alignment: the antecedent/support rows are source-overlapping "
+        "for supply chain performance, but they do not by themselves test "
+        "supply chain resilience as a direct exposure."
+    ) in payload["markdown"]
     assert all(source.get("excerpt") for source in payload["source_bundle"])
     assert "unmatched metric-scope map" not in payload["title"]
     assert "source-scope boundary note" not in payload["title"]
     assert (
-        "Evidence role summary: direction-bearing receipts: 3; "
+        "Evidence role summary: direction-bearing receipts: 0; "
         "null/mixed metric-scope caveat receipts: 1; context/antecedent/model "
-        "receipts: 1 excluded from effect support."
+        "receipts: 4 excluded from effect support."
     ) in markdown
     assert "directional association: 1 receipt(s)" not in markdown
     assert "other/mixed: 5 receipt(s)" not in markdown
@@ -17224,25 +17232,26 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "Bounded signal:" in markdown
     assert "Metric imbalance disclosure:" not in markdown
     assert "strong null claim" not in markdown
-    assert "direction-bearing supply chain performance signal" in payload["title"]
+    assert "antecedent-mediated supply chain performance map" in payload["title"]
     assert "firm performance caveat" in payload["title"]
     assert "firm performance is null or non-convergent" not in markdown
-    assert "not uniform support for the topic" in markdown
-    assert "direction-bearing receipts: 3" in markdown
-    assert "context/antecedent/model receipts: 1 excluded from effect support" in markdown
+    assert "direction-bearing receipts: 0" in markdown
+    assert "context/antecedent/model receipts: 4 excluded from effect support" in markdown
     assert " k=" not in markdown
     assert "It excludes duplicate reports, metadata-only title matches" in markdown
-    assert "Resolve the null/mixed metric-scope caveat" in markdown
-    assert "supply chain performance and firm performance" in markdown
-    assert "inside one matched industry, comparator, and metric frame" in markdown
+    assert "The antecedent-mediated map would weaken" in markdown
+    assert "supply chain performance" in markdown
+    assert "firm performance" in markdown
+    assert "matched supply chain performance receipts show no link" in markdown
     assert "Evidence weight: one effect-bearing receipt supports supply chain performance" not in markdown
     assert "Population/settings are separated as receipt context" in markdown
     assert "automotive firms" in markdown
     assert "chemical firms" in markdown
     assert "manufacturing firms" in markdown
-    assert "Effect-support accounting: 1 of 5 receipt(s) is context/modeling-only" in markdown
+    assert "Effect-support accounting: 4 of 5 receipt(s) is context/modeling-only" in markdown
     assert "Routing domain" not in markdown
-    assert "directional association: 3 receipt(s)" in markdown
+    assert "antecedent/support: 2 receipt(s)" in markdown
+    assert "descriptive/modeling: 2 receipt(s)" in markdown
     assert "## Evidence matrix" in markdown
     assert "## Evidence role definitions" in markdown
     assert "## Directional grouping" not in markdown
@@ -17253,7 +17262,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "### Effect-bearing comparison" in markdown
     assert "### Context-only receipts" in markdown
     assert "| Outcome family | Receipt | Evidence role | Population/setting | Metric | Extracted finding |" in markdown
-    assert "| chain-level | Supply chain resilience and performance of manufacturing firms" in markdown
+    assert "| modeling-context | Supply chain resilience and performance of manufacturing firms" in markdown
     assert "| manufacturing firms | supply chain performance | SCR has a significant positive effect on SCP |" in markdown
     assert "| chain-level | Factors Affecting the Supply Chain Resilience" in markdown
     assert "| firm-level | The Impacts of Supply Chain Capabilities" in markdown
@@ -17263,18 +17272,22 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     effect_section_start = markdown.index("### Effect-bearing comparison")
     context_section_start = markdown.index("### Context-only receipts")
     assert (
-        markdown.index("| chain-level | Supply chain resilience and performance of manufacturing firms", effect_section_start)
+        markdown.index("| firm-level | The Impacts of Supply Chain Capabilities", effect_section_start)
         < context_section_start
     )
     assert (
-        markdown.index("| chain-level | Factors Affecting the Supply Chain Resilience", effect_section_start)
-        < context_section_start
+        markdown.index("| modeling-context | Supply chain resilience and performance of manufacturing firms", context_section_start)
+        > context_section_start
     )
     assert (
-        markdown.index("| chain-level | The effect of supply chain resilience on", effect_section_start)
-        < context_section_start
+        markdown.index("| chain-level | Factors Affecting the Supply Chain Resilience", context_section_start)
+        > context_section_start
     )
-    assert "antecedent/support | firms | supply chain performance" not in markdown
+    assert (
+        markdown.index("| chain-level | The effect of supply chain resilience on", context_section_start)
+        > context_section_start
+    )
+    assert "antecedent/support | firms | supply chain performance" in markdown
     assert "non-directional caveat | chemical firms | supply chain performance" not in markdown
     assert "hypotheses of a positive impact" in markdown
     assert "have been rejected" in markdown
@@ -17290,7 +17303,8 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     ) in markdown
     assert "Within-source caveat:" in markdown
     assert "supply chain flexibility exerted insignificant effect" in markdown
-    assert "Policy/exposure/practice: supply chain resilience" in markdown
+    assert "Policy/exposure/practice: flexibility, collaboration, and agility antecedents" in markdown
+    assert "Policy/exposure/practice: supply chain disruption context" in markdown
     assert "Finding: The aim of this study is to identify" not in markdown
 
     margin_papers: list[dict[str, Any]] = []
@@ -17309,7 +17323,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
 
     assert repaired_payload["metadata"]["topic"] == "supply_chain_margin"
     assert repaired_payload["metadata"]["topic_label"] == "supply chain resilience"
-    assert repaired_payload["title"].startswith("supply chain resilience:")
+    assert repaired_payload["title"].startswith("supply chain resilience antecedents:")
     assert "supply chain margin" not in repaired_payload["title"].lower()
     assert "supply chain margin" not in repaired_payload["abstract"].lower()
     assert "supply chain margin" not in repaired_payload["markdown"].lower()
@@ -17324,7 +17338,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
 
     assert productivity_payload["metadata"]["topic"] == "supply_chain_resilience_productivity"
     assert productivity_payload["metadata"]["topic_label"] == "supply chain resilience"
-    assert productivity_payload["title"].startswith("supply chain resilience:")
+    assert productivity_payload["title"].startswith("supply chain resilience antecedents:")
     assert "productivity" not in productivity_payload["title"].lower()
     assert "productivity" not in productivity_payload["abstract"].lower()
     assert "productivity" not in productivity_payload["markdown"].lower()
@@ -17346,7 +17360,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
 
     assert sales_payload["metadata"]["topic"] == "resilience_sales"
     assert sales_payload["metadata"]["topic_label"] == "supply chain resilience"
-    assert sales_payload["title"].startswith("supply chain resilience:")
+    assert sales_payload["title"].startswith("supply chain resilience antecedents:")
     assert "resilience sales" not in sales_payload["title"].lower()
     assert "resilience sales" not in sales_payload["abstract"].lower()
     assert "resilience sales" not in sales_payload["markdown"].lower()
