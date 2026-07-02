@@ -10357,7 +10357,12 @@ def test_business_systemd_timers_are_eight_hour_guarded() -> None:
         assert "EnvironmentFile=/etc/researka-agent-v4.env" in service
         assert "EnvironmentFile=/root/Research-Agent-Bot-v4/.env" in service
         assert "EnvironmentFile=/etc/researka-fullraw.env" in service
-        assert "researka-fullraw-search.service" in service
+        expected_fullraw_service = (
+            "researka-v4-fullraw-search.service"
+            if name == "business" else
+            "researka-fullraw-search.service"
+        )
+        assert expected_fullraw_service in service
         assert "Environment=TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_WAIT_SECONDS=" not in service
         assert "Environment=TOPIC_DISCOVERY_BUSINESS_FULLRAW_FOREGROUND_SECONDS=" not in service
         assert "Environment=TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS=" not in service

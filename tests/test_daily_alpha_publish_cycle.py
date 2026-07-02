@@ -7208,14 +7208,16 @@ def test_alpha_systemd_services_do_not_mask_no_publish_exits() -> None:
         assert "--allow-pending-success" not in service, service_path.name
 
 
-def test_alpha_fullraw_runtime_services_use_generic_fullraw_service() -> None:
-    fullraw_services = {
+def test_alpha_fullraw_runtime_services_use_expected_fullraw_service() -> None:
+    v4_fullraw_services = {
         "researka-alpha-ai-research.service",
         "researka-alpha-business-research.service",
+        "researka-alpha-longevity-research.service",
+    }
+    shared_fullraw_services = {
         "researka-alpha-cache-warm.service",
         "researka-alpha-economics-research.service",
         "researka-alpha-finance-research.service",
-        "researka-alpha-longevity-research.service",
         "researka-alpha-management-research.service",
         "researka-alpha-marketing-research.service",
     }
@@ -7223,7 +7225,13 @@ def test_alpha_fullraw_runtime_services_use_generic_fullraw_service() -> None:
         service = service_path.read_text(encoding="utf-8")
         assert "v5-memo-fullraw-index.service" not in service, service_path.name
         assert "/etc/v5-memo/env" not in service, service_path.name
-        if service_path.name not in fullraw_services:
+        if service_path.name in v4_fullraw_services:
+            assert "researka-v4-fullraw-search.service" in service, service_path.name
+            assert "RESEARKA_FULLRAW_SEARCH_URL=http://127.0.0.1:9924/search" in service, service_path.name
+            assert "V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL=http://127.0.0.1:9924/search" in service, service_path.name
+            assert "RESEARKA_FULLRAW_INDEX_PORT=9924" in service, service_path.name
+            assert "V5_MEMO_FULL_RAW_INDEX_PORT=9924" in service, service_path.name
+        if service_path.name not in shared_fullraw_services:
             continue
         assert "researka-fullraw-search.service" in service, service_path.name
         assert "EnvironmentFile=/etc/researka-fullraw.env" in service, service_path.name

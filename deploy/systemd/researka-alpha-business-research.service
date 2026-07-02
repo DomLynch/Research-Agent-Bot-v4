@@ -1,7 +1,7 @@
 [Unit]
 Description=Research Agent v4 Business Research guarded alpha submit sweep
-Wants=network-online.target researka-fullraw-search.service
-After=network-online.target researka-fullraw-search.service
+Wants=network-online.target researka-v4-fullraw-search.service
+After=network-online.target researka-v4-fullraw-search.service
 
 [Service]
 Type=oneshot
@@ -10,6 +10,14 @@ EnvironmentFile=/root/Research-Agent-Bot-v4/.env
 EnvironmentFile=/etc/researka-agent-v4.env
 EnvironmentFile=/etc/researka-fullraw.env
 Environment=RESEARKA_DATABASE_URL=http://127.0.0.1:8810
+Environment=RESEARKA_SOURCE_LITERATURE_FULLRAW_MAX_VARIANTS=4
+Environment=RESEARKA_FULLRAW_SEARCH_URL=http://127.0.0.1:9924/search
+Environment=V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL=http://127.0.0.1:9924/search
+Environment=RESEARKA_FULLRAW_INDEX_PORT=9924
+Environment=V5_MEMO_FULL_RAW_INDEX_PORT=9924
+Environment=TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH=/tmp/researka-v4-business-fullraw-9924.lock
+Environment=TOPIC_DISCOVERY_BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS=1800
+Environment=TOPIC_DISCOVERY_BUSINESS_FULLRAW_POLL_SECONDS=20
 ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/run_business_alpha_sweep.py --domains business_research --cycles 1 --topics-per-domain 2 --submit-after-consistent-passes 2
 ExecStopPost=-/usr/bin/timeout 75s /root/Research-Agent-Bot-v4/.venv/bin/python scripts/check_alpha_publish_health.py --domains longevity_research,ai_research,business_research,management_research,economics_research,finance_research,marketing_research --expect-published --check-url --sync-pending-decisions --show-next-candidate --write-summary --max-age-minutes 540
 TimeoutStartSec=7200
